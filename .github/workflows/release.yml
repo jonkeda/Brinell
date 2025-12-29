@@ -1,0 +1,46 @@
+name: Release
+
+on:
+  release:
+    types: [ published ]
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+
+jobs:
+  release:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+    
+    - name: Restore dependencies
+      run: dotnet restore Brinell.sln
+    
+    - name: Build
+      run: dotnet build Brinell.sln --configuration Release --no-restore
+    
+    - name: Test
+      run: dotnet test Brinell.sln --configuration Release --no-build --verbosity normal
+    
+    - name: Pack
+      run: dotnet pack Brinell.sln --configuration Release --no-build --output ./artifacts -p:PackageVersion=${{ github.event.release.tag_name }}
+    
+    - name: Push to NuGet
+      run: dotnet nuget push ./artifacts/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+    
+    - name: Upload release assets
+      uses: actions/upload-artifact@v4
+      with:
+        name: release-packages
+        path: ./artifacts/*.nupkg

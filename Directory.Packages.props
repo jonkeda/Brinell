@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <!-- Testing -->
+    <PackageVersion Include="xunit" Version="2.9.3" />
+    <PackageVersion Include="xunit.extensibility.core" Version="2.9.3" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageVersion Include="FluentAssertions" Version="8.0.0" />
+    <PackageVersion Include="coverlet.collector" Version="6.0.4" />
+    
+    <!-- FlaUI for WPF -->
+    <PackageVersion Include="FlaUI.Core" Version="5.0.0" />
+    <PackageVersion Include="FlaUI.UIA3" Version="5.0.0" />
+    
+    <!-- Selenium for HTML/Web -->
+    <PackageVersion Include="Selenium.WebDriver" Version="4.27.0" />
+    <PackageVersion Include="Selenium.Support" Version="4.27.0" />
+    
+    <!-- Appium for MAUI/Mobile -->
+    <PackageVersion Include="Appium.WebDriver" Version="8.0.1" />
+    
+    <!-- WireMock for API mocking -->
+    <PackageVersion Include="WireMock.Net" Version="1.6.10" />
+    
+    <!-- Source Link -->
+    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="8.0.0" />
+  </ItemGroup>
+</Project>

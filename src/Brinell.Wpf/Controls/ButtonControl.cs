@@ -1,0 +1,62 @@
+using FlaUI.Core.AutomationElements;
+using Brinell.Core.Abstractions.Controls;
+using Brinell.Wpf.Controls.Base;
+using Brinell.Wpf.Infrastructure;
+
+namespace Brinell.Wpf.Controls;
+
+/// <summary>
+/// WPF Button control wrapper.
+/// Uses WPF-specific ContentControlBase for FlaUI integration.
+/// </summary>
+public class ButtonControl : ContentControlBase, IButton
+{
+    public ButtonControl(FlaUITestContext context, PageBase? page, string automationId)
+        : base(context, page, automationId)
+    {
+    }
+
+    /// <summary>
+    /// Create a button control that searches within a container element.
+    /// Use this for buttons inside list items or repeated templates.
+    /// </summary>
+    public ButtonControl(FlaUITestContext context, PageBase? page, AutomationElement container, string automationId)
+        : base(context, page, container, automationId)
+    {
+    }
+
+    public ButtonControl(FlaUITestContext context, string automationId)
+        : base(context, null, automationId)
+    {
+    }
+
+    /// <summary>
+    /// Click the button using the Invoke pattern.
+    /// </summary>
+    public override void Click()
+    {
+        var element = WaitForElementVisible();
+        if (element == null)
+        {
+            ThrowCheckFailed("Click", $"Element '{AutomationId}' not visible for click.");
+        }
+        
+        var button = element!.AsButton();
+        button.Invoke();
+        LogAction("Click");
+    }
+
+    /// <summary>
+    /// Get button text/content.
+    /// </summary>
+    public override string GetText()
+    {
+        var element = FindElement();
+        if (element != null)
+        {
+            var button = element.AsButton();
+            return button?.Name ?? element.Name ?? string.Empty;
+        }
+        return string.Empty;
+    }
+}

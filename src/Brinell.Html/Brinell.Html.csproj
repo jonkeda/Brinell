@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Brinell.Html</RootNamespace>
+    <Description>Selenium-based HTML/web UI test automation framework for Brinell</Description>
+    <PackageTags>ui-testing;selenium;html;web;automation;testing</PackageTags>
+    <!-- Suppress Selenium obsolete GetAttribute warnings - will migrate to GetDomAttribute in future -->
+    <NoWarn>$(NoWarn);CS0618</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Selenium.WebDriver" />
+    <PackageReference Include="Selenium.Support" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Brinell.Core\Brinell.Core.csproj" />
+  </ItemGroup>
+
+</Project>

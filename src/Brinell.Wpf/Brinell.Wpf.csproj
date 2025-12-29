@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0-windows;net9.0-windows</TargetFrameworks>
+    <RootNamespace>Brinell.Wpf</RootNamespace>
+    <Description>WPF UI testing support using FlaUI for Windows UI Automation. Part of the Brinell UI testing framework.</Description>
+    <PackageId>Brinell.Wpf</PackageId>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <!-- Suppress FlaUI's System.Drawing.Common vulnerability warning -->
+    <NoWarn>$(NoWarn);NU1904</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FlaUI.Core" />
+    <PackageReference Include="FlaUI.UIA3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Brinell.Core\Brinell.Core.csproj" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
+
+</Project>

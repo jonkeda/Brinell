@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Brinell.Maui</RootNamespace>
+    <Description>Appium-based MAUI/mobile UI test automation framework for Brinell</Description>
+    <PackageTags>ui-testing;appium;maui;mobile;automation;testing</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Appium.WebDriver" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Brinell.Core\Brinell.Core.csproj" />
+  </ItemGroup>
+
+</Project>
