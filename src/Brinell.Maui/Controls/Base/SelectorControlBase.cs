@@ -130,6 +130,8 @@ public abstract class SelectorControlBase : ControlBase, ISelectorControl
         return GetItems().Count;
     }
 
+    #region Assert Methods
+
     /// <summary>
     /// Assert selected text equals expected.
     /// Captures screenshot on failure.
@@ -145,4 +147,70 @@ public abstract class SelectorControlBase : ControlBase, ISelectorControl
         }
         LogAssertPass("SelectedText", actual ?? "(null)", expected);
     }
+
+    /// <summary>
+    /// Assert selected text contains expected.
+    /// Captures screenshot on failure.
+    /// </summary>
+    public virtual void AssertSelectedTextContains(string expected, string? message = null)
+    {
+        CheckVisible(expected: true);
+        var actual = GetSelectedText() ?? string.Empty;
+        if (!actual.Contains(expected))
+        {
+            ThrowAssertionFailed("SelectedTextContains", actual, $"contains '{expected}'",
+                message ?? $"Expected selected text to contain '{expected}' but got '{actual}' for '{AutomationId}'.");
+        }
+        LogAssertPass("SelectedTextContains", actual, expected);
+    }
+
+    /// <summary>
+    /// Assert selected index equals expected.
+    /// Captures screenshot on failure.
+    /// </summary>
+    public virtual void AssertSelectedIndex(int expected, string? message = null)
+    {
+        CheckVisible(expected: true);
+        var actual = GetSelectedIndex();
+        if (actual != expected)
+        {
+            ThrowAssertionFailed("SelectedIndex", actual.ToString(), expected.ToString(),
+                message ?? $"Expected selected index {expected} but got {actual} for '{AutomationId}'.");
+        }
+        LogAssertPass("SelectedIndex", actual.ToString(), expected.ToString());
+    }
+
+    /// <summary>
+    /// Assert item count equals expected.
+    /// Captures screenshot on failure.
+    /// </summary>
+    public virtual void AssertItemCount(int expected, string? message = null)
+    {
+        CheckVisible(expected: true);
+        var actual = GetItemCount();
+        if (actual != expected)
+        {
+            ThrowAssertionFailed("ItemCount", actual.ToString(), expected.ToString(),
+                message ?? $"Expected {expected} items but got {actual} for '{AutomationId}'.");
+        }
+        LogAssertPass("ItemCount", actual.ToString(), expected.ToString());
+    }
+
+    /// <summary>
+    /// Assert no item is selected.
+    /// Captures screenshot on failure.
+    /// </summary>
+    public virtual void AssertNoSelection(string? message = null)
+    {
+        CheckVisible(expected: true);
+        var selected = GetSelectedText();
+        if (!string.IsNullOrEmpty(selected))
+        {
+            ThrowAssertionFailed("NoSelection", selected, "(no selection)",
+                message ?? $"Expected no selection but got '{selected}' for '{AutomationId}'.");
+        }
+        LogAssertPass("NoSelection", "(none)", "(no selection)");
+    }
+
+    #endregion
 }

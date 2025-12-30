@@ -1,5 +1,8 @@
 using System.Diagnostics;
 using OpenQA.Selenium.Appium;
+using OpenQA.Selenium.Appium.Windows;
+using OpenQA.Selenium.Appium.Android;
+using OpenQA.Selenium.Appium.iOS;
 using Brinell.Core.Abstractions;
 using Brinell.Core.Logging;
 using Brinell.Core.Screenshots;
@@ -10,7 +13,7 @@ namespace Brinell.Maui.Infrastructure;
 /// Appium test context implementation for MAUI app UI testing.
 /// Implements ITestContext with Appium-specific functionality.
 /// </summary>
-public class AppiumTestContext : ITestContext
+public class AppiumTestContext : ITestContext, IDisposable
 {
     private readonly Action<string>? _consoleLogger;
     private readonly AppiumDriverAdapter _driver;
@@ -76,6 +79,47 @@ public class AppiumTestContext : ITestContext
         Logger = csvLogger;
         _consoleLogger = consoleLogger;
         _screenshotService = new AppiumScreenshotService(() => _driver.Driver);
+    }
+
+    /// <summary>
+    /// Create a test context from options.
+    /// </summary>
+    public static AppiumTestContext Create(AppiumTestOptions options, Action<string>? logger = null)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        var serverUri = new Uri(options.ServerUrl);
+        AppiumDriverAdapter driver;
+
+        switch (options.PlatformName.ToUpperInvariant())
+        {
+            case "ANDROID":
+                driver = AppiumDriverAdapter.CreateAndroid(
+                    options.AppPath,
+                    serverUri,
+                    options.DeviceName,
+                    options.CommandTimeout);
+                break;
+
+            case "IOS":
+                driver = AppiumDriverAdapter.CreateiOS(
+                    options.AppPath,
+                    serverUri,
+                    options.DeviceName,
+                    options.PlatformVersion,
+                    options.CommandTimeout);
+                break;
+
+            case "WINDOWS":
+            default:
+                driver = new AppiumDriverAdapter(options.AppPath, serverUri, options.CommandTimeout);
+                break;
+        }
+
+        return new AppiumTestContext(driver, logger)
+        {
+            DefaultTimeoutMs = options.DefaultTimeoutMs
+        };
     }
     
     /// <summary>
@@ -297,5 +341,14 @@ public class AppiumTestContext : ITestContext
             Log($"Swipe from ({startX},{startY}) to ({endX},{endY})");
             // Implementation would use touch actions
         }
+    }
+
+    /// <summary>
+    /// Dispose the test context and underlying driver.
+    /// </summary>
+    public void Dispose()
+    {
+        _driver?.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

@@ -16,8 +16,10 @@ Get up and running with the UI Test Framework in 5 minutes.
 <ProjectReference Include="..\..\UITestFramework\Oravey.UITestFramework.Wpf.csproj" />
 <!-- OR -->
 <ProjectReference Include="..\..\UITestFramework\Oravey.UITestFramework.Maui.csproj" />
-<!-- OR -->
+<!-- OR for Web (Selenium) -->
 <ProjectReference Include="..\..\UITestFramework\Oravey.UITestFramework.Html.csproj" />
+<!-- OR for Web (Playwright) -->
+<ProjectReference Include="..\..\Brinell.Html.Playwright\Brinell.Html.Playwright.csproj" />
 ```
 
 ### 2. Create Configuration File
@@ -175,6 +177,7 @@ settings.SaveButton.Click();
 - **[Control Objects](04-control-objects.md)** - Learn about control patterns
 - **[Page Objects](05-page-objects.md)** - Master page encapsulation
 - **[Test Writing Guide](15-test-writing-guide.md)** - Quick reference for common patterns
+- **[Playwright Guide](platform-guides/playwright.md)** - Modern browser automation alternative
 
 ---
 

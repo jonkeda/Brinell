@@ -220,4 +220,52 @@ public class LoginPage : BusyPageBase
     {
         return LoginErrorText.GetText();
     }
+    
+    /// <summary>
+    /// Assert username validation error is visible.
+    /// </summary>
+    public void AssertHasUsernameError(string? message = null)
+    {
+        UsernameErrorText.AssertVisible(message ?? "Username validation error should be visible");
+    }
+    
+    /// <summary>
+    /// Assert username error contains expected text.
+    /// </summary>
+    public void AssertUsernameErrorContains(string expected, string? message = null)
+    {
+        UsernameErrorText.AssertTextContains(expected, message);
+    }
+    
+    /// <summary>
+    /// Assert password validation error is visible.
+    /// </summary>
+    public void AssertHasPasswordError(string? message = null)
+    {
+        PasswordErrorText.AssertVisible(message ?? "Password validation error should be visible");
+    }
+    
+    /// <summary>
+    /// Assert password error contains expected text.
+    /// </summary>
+    public void AssertPasswordErrorContains(string expected, string? message = null)
+    {
+        PasswordErrorText.AssertTextContains(expected, message);
+    }
+    
+    /// <summary>
+    /// Assert login error is visible.
+    /// </summary>
+    public void AssertHasLoginError(string? message = null)
+    {
+        LoginErrorText.AssertVisible(message ?? "Login error should be visible");
+    }
+    
+    /// <summary>
+    /// Assert login error contains expected text.
+    /// </summary>
+    public void AssertLoginErrorContains(string expected, string? message = null)
+    {
+        LoginErrorText.AssertTextContains(expected, message);
+    }
 }

@@ -2,7 +2,7 @@
 
 **Version:** 3.0  
 **Last Updated:** December 2025  
-**Framework Stack:** FlaUI (WPF) + Appium (MAUI/Mobile) + Selenium (Web) + xUnit
+**Framework Stack:** FlaUI (WPF) + Appium (MAUI/Mobile) + Selenium/Playwright (Web) + xUnit
 
 ---
 
@@ -37,17 +37,18 @@ The UI Test Framework provides a multi-platform test automation solution with co
 ### Platform-Specific
 7. **[WPF Platform (FlaUI)](07-wpf-platform.md)** - Windows desktop automation
 8. **[MAUI Platform (Appium)](08-maui-platform.md)** - Cross-platform and mobile
-9. **[Web Platform (Selenium)](09-web-platform.md)** - Browser automation
+9. **[Web Platform (Selenium)](09-web-platform.md)** - Browser automation (WebDriver-based)
+10. **[Web Platform (Playwright)](platform-guides/playwright.md)** - Browser automation (modern alternative)
 
 ### Advanced Topics
-10. **[IsBusy State Tracking](10-isbusy-tracking.md)** - Page readiness detection
-11. **[Multi-Platform Testing](11-multi-platform.md)** - Write once, run anywhere
-12. **[Best Practices](12-best-practices.md)** - Guidelines for maintainable tests
-13. **[Troubleshooting](13-troubleshooting.md)** - Common issues and solutions
+11. **[IsBusy State Tracking](10-isbusy-tracking.md)** - Page readiness detection
+12. **[Multi-Platform Testing](11-multi-platform.md)** - Write once, run anywhere
+13. **[Best Practices](12-best-practices.md)** - Guidelines for maintainable tests
+14. **[Troubleshooting](13-troubleshooting.md)** - Common issues and solutions
 
 ### Reference
-14. **[API Reference](14-api-reference.md)** - Complete interface documentation
-15. **[Test Writing Guide](15-test-writing-guide.md)** - Quick reference for writing tests
+15. **[API Reference](14-api-reference.md)** - Complete interface documentation
+16. **[Test Writing Guide](15-test-writing-guide.md)** - Quick reference for writing tests
 
 ---
 
@@ -88,7 +89,8 @@ The UI Test Framework provides a multi-platform test automation solution with co
 |-----------|---------|---------|
 | FlaUI | 4.0.0 | WPF automation via UI Automation |
 | Appium.WebDriver | 8.0.0 | MAUI/Mobile automation |
-| Selenium.WebDriver | 4.27.0 | Web browser automation |
+| Selenium.WebDriver | 4.27.0 | Web browser automation (WebDriver) |
+| Playwright | 1.50.0 | Web browser automation (modern) |
 | xUnit | 2.9.x | Test framework |
 | FluentAssertions | 6.x | Assertion library |
 

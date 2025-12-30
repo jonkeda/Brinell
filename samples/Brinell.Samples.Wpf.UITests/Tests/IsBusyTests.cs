@@ -1,6 +1,5 @@
 using Brinell.Samples.Wpf.UITests.PageObjects;
 using Brinell.Samples.Wpf.UITests.TestBase;
-using FluentAssertions;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -34,7 +33,7 @@ public class IsBusyTests : WpfSampleTestBase
         // Assert - Busy indicator should appear during login operation
         // The login has a 1500ms simulated delay, so we should catch the busy state
         var wasBusy = loginPage.WaitForBusy(timeoutMs: 2000);
-        wasBusy.Should().BeTrue("Busy indicator should appear during login operation");
+        Assert.True(wasBusy, "Busy indicator should appear during login operation");
     }
 
     [Fact]
@@ -59,8 +58,8 @@ public class IsBusyTests : WpfSampleTestBase
         var isNotBusy = loginPage.WaitForNotBusy(timeoutMs: 5000);
         
         // Assert
-        isNotBusy.Should().BeTrue("Busy indicator should hide after login completes");
-        loginPage.IsBusy().Should().BeFalse("Page should not be busy after operation completes");
+        Assert.True(isNotBusy, "Busy indicator should hide after login completes");
+        Assert.False(loginPage.IsBusy(), "Page should not be busy after operation completes");
     }
 
     [Fact]
@@ -90,7 +89,7 @@ public class IsBusyTests : WpfSampleTestBase
         {
             // If we caught the busy state, check that inputs are disabled
             var isUsernameEnabled = loginPage.UsernameTextBox.IsEnabled();
-            isUsernameEnabled.Should().BeFalse("Username input should be disabled while busy");
+            Assert.False(isUsernameEnabled, "Username input should be disabled while busy");
         }
     }
 
@@ -108,8 +107,7 @@ public class IsBusyTests : WpfSampleTestBase
         var isReady = loginPage.WaitForReady();
         
         // Assert
-        isReady.Should().BeTrue("Page should be ready (displayed and not busy)");
-        loginPage.IsDisplayed().Should().BeTrue("Page should be displayed");
-        loginPage.IsBusy().Should().BeFalse("Page should not be busy");
+        loginPage.AssertDisplayed("Page should be displayed");
+        loginPage.BusyIndicator.AssertNotVisible("Page should not be busy");
     }
 }

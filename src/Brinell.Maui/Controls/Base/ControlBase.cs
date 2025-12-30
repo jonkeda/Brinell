@@ -3,6 +3,7 @@ using Brinell.Core.Abstractions;
 using Brinell.Core.Abstractions.Controls;
 using Brinell.Core.Exceptions;
 using Brinell.Core.Logging;
+using Brinell.Maui.Gestures;
 using Brinell.Maui.Infrastructure;
 
 namespace Brinell.Maui.Controls.Base;
@@ -451,6 +452,154 @@ public abstract class ControlBase : IControlObject
         }
         LogAssertPass("TextContains", actual, expected);
     }
+    
+    /// <summary>
+    /// Assert element text is empty.
+    /// Captures screenshot on failure.
+    /// </summary>
+    public virtual void AssertTextEmpty(string? message = null)
+    {
+        CheckVisible(expected: true);
+        var actual = GetText();
+        if (!string.IsNullOrEmpty(actual))
+        {
+            ThrowAssertionFailed("TextEmpty", actual, "(empty)",
+                message ?? $"Expected empty text but got '{actual}' for element '{AutomationId}'.");
+        }
+        LogAssertPass("TextEmpty", "(empty)", "(empty)");
+    }
+    
+    /// <summary>
+    /// Assert element text is not empty.
+    /// Captures screenshot on failure.
+    /// </summary>
+    public virtual void AssertTextNotEmpty(string? message = null)
+    {
+        CheckVisible(expected: true);
+        var actual = GetText();
+        if (string.IsNullOrEmpty(actual))
+        {
+            ThrowAssertionFailed("TextNotEmpty", "(empty)", "(non-empty)",
+                message ?? $"Expected non-empty text but got empty for element '{AutomationId}'.");
+        }
+        LogAssertPass("TextNotEmpty", actual, "(non-empty)");
+    }
+    
+    /// <summary>
+    /// Assert element text starts with expected prefix.
+    /// Captures screenshot on failure.
+    /// </summary>
+    public virtual void AssertTextStartsWith(string prefix, string? message = null)
+    {
+        CheckVisible(expected: true);
+        var actual = GetText();
+        if (!actual.StartsWith(prefix, StringComparison.Ordinal))
+        {
+            ThrowAssertionFailed("TextStartsWith", actual, $"starts with '{prefix}'",
+                message ?? $"Expected text to start with '{prefix}' but got '{actual}'.");
+        }
+        LogAssertPass("TextStartsWith", actual, prefix);
+    }
+    
+    /// <summary>
+    /// Assert element text ends with expected suffix.
+    /// Captures screenshot on failure.
+    /// </summary>
+    public virtual void AssertTextEndsWith(string suffix, string? message = null)
+    {
+        CheckVisible(expected: true);
+        var actual = GetText();
+        if (!actual.EndsWith(suffix, StringComparison.Ordinal))
+        {
+            ThrowAssertionFailed("TextEndsWith", actual, $"ends with '{suffix}'",
+                message ?? $"Expected text to end with '{suffix}' but got '{actual}'.");
+        }
+        LogAssertPass("TextEndsWith", actual, suffix);
+    }
+
+    #endregion
+
+    #region Gesture Methods (Touch Actions)
+
+    /// <summary>
+    /// Tap the control. Waits for visibility before tapping.
+    /// </summary>
+    public virtual void Tap()
+    {
+        var element = WaitForElementVisible();
+        if (element == null)
+            ThrowCheckFailed("Tap", $"Element '{AutomationId}' not visible for tap.");
+        element!.Click();
+        LogAction("Tap");
+    }
+
+    /// <summary>
+    /// Click the control. Alias for Tap on mobile.
+    /// </summary>
+    public virtual void Click() => Tap();
+
+    /// <summary>
+    /// Double-tap the control. Waits for visibility before double-tapping.
+    /// </summary>
+    public virtual void DoubleTap()
+    {
+        var element = WaitForElementVisible();
+        if (element == null)
+            ThrowCheckFailed("DoubleTap", $"Element '{AutomationId}' not visible for double-tap.");
+        _context.Driver.PerformDoubleTap(element!);
+        LogAction("DoubleTap");
+    }
+
+    /// <summary>
+    /// Long-press the control. Waits for visibility before long-pressing.
+    /// </summary>
+    /// <param name="durationMs">Duration of press in milliseconds. Default 1000ms.</param>
+    public virtual void LongPress(int durationMs = 1000)
+    {
+        var element = WaitForElementVisible();
+        if (element == null)
+            ThrowCheckFailed("LongPress", $"Element '{AutomationId}' not visible for long press.");
+        _context.Driver.PerformLongPress(element!, durationMs);
+        LogAction("LongPress", durationMs.ToString());
+    }
+
+    /// <summary>
+    /// Swipe in a direction starting from this control. Waits for visibility before swiping.
+    /// </summary>
+    /// <param name="direction">Direction to swipe.</param>
+    /// <param name="distance">Distance in pixels. Default 200.</param>
+    public virtual void Swipe(SwipeDirection direction, int distance = 200)
+    {
+        var element = WaitForElementVisible();
+        if (element == null)
+            ThrowCheckFailed("Swipe", $"Element '{AutomationId}' not visible for swipe.");
+        _context.Driver.PerformSwipe(element!, direction, distance);
+        LogAction("Swipe", $"{direction}, {distance}px");
+    }
+
+    /// <summary>
+    /// Swipe left on this control. Waits for visibility before swiping.
+    /// </summary>
+    /// <param name="distance">Distance in pixels. Default 200.</param>
+    public virtual void SwipeLeft(int distance = 200) => Swipe(SwipeDirection.Left, distance);
+
+    /// <summary>
+    /// Swipe right on this control. Waits for visibility before swiping.
+    /// </summary>
+    /// <param name="distance">Distance in pixels. Default 200.</param>
+    public virtual void SwipeRight(int distance = 200) => Swipe(SwipeDirection.Right, distance);
+
+    /// <summary>
+    /// Swipe up on this control. Waits for visibility before swiping.
+    /// </summary>
+    /// <param name="distance">Distance in pixels. Default 200.</param>
+    public virtual void SwipeUp(int distance = 200) => Swipe(SwipeDirection.Up, distance);
+
+    /// <summary>
+    /// Swipe down on this control. Waits for visibility before swiping.
+    /// </summary>
+    /// <param name="distance">Distance in pixels. Default 200.</param>
+    public virtual void SwipeDown(int distance = 200) => Swipe(SwipeDirection.Down, distance);
 
     #endregion
 }

@@ -188,4 +188,28 @@ public class LoginPage : LoadingPageBase
         var timeout = timeoutMs ?? _context.DefaultTimeoutMs;
         return _context.WaitFor(() => HasErrorMessage(), timeout, "error message");
     }
+    
+    /// <summary>
+    /// Assert error message is visible.
+    /// </summary>
+    public void AssertHasError(string? message = null)
+    {
+        ErrorMessage.AssertVisible(message ?? "Error message should be visible");
+    }
+    
+    /// <summary>
+    /// Assert error message contains expected text.
+    /// </summary>
+    public void AssertErrorContains(string expected, string? message = null)
+    {
+        ErrorMessage.AssertTextContains(expected, message);
+    }
+    
+    /// <summary>
+    /// Assert error message is not empty.
+    /// </summary>
+    public void AssertErrorNotEmpty(string? message = null)
+    {
+        ErrorMessage.AssertTextNotEmpty(message ?? "Error message should not be empty");
+    }
 }

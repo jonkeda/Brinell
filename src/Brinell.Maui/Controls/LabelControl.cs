@@ -9,6 +9,7 @@ namespace Brinell.Maui.Controls;
 /// MAUI Label control wrapper.
 /// Corresponds to MAUI Label and Span controls.
 /// Inherits from ContentControlBase for tap/click support (gesture recognizers).
+/// Tap(), Click(), DoubleTap(), and LongPress() methods are inherited from ControlBase.
 /// </summary>
 public class LabelControl : ContentControlBase
 {
@@ -21,9 +22,4 @@ public class LabelControl : ContentControlBase
         : base(context, automationId)
     {
     }
-
-    /// <summary>
-    /// Tap the label (alias for Click - for labels with gesture recognizers).
-    /// </summary>
-    public void Tap() => Click();
 }

@@ -193,20 +193,52 @@ page.WaitForDisplayed(timeoutMs: 10000);
 ```
 
 ## Assertion Methods
-Controls and pages provide built-in assertions:
+Controls and pages provide built-in assertions that offer:
+- Better error messages with control context
+- Automatic screenshot capture on failure
+- CSV logging for test analytics
+- Consistent wait-before-assert behavior
 
+**Prefer control assertions over xUnit `Assert.*` for UI checks.**
+
+### All Controls (ControlBase)
 ```csharp
-// Control assertions
-control.AssertVisible("Button should be visible");
-control.AssertNotVisible("Loading should disappear");
-control.AssertEnabled("Button should be enabled");
-control.AssertDisabled("Button should be disabled during loading");
-control.AssertText("Expected Text", "Label should show expected text");
-
-// Page assertions
-page.AssertDisplayed("Login page should be displayed");
-page.AssertNotDisplayed("Login page should not be visible after logout");
+control.AssertExists("message");
+control.AssertNotExists("message");
+control.AssertVisible("message");
+control.AssertNotVisible("message");
+control.AssertEnabled("message");
+control.AssertDisabled("message");
+control.AssertTextEquals("expected", "message");
+control.AssertTextContains("expected", "message");
+control.AssertTextEmpty("message");
+control.AssertTextNotEmpty("message");
+control.AssertTextStartsWith("prefix", "message");
+control.AssertTextEndsWith("suffix", "message");
 ```
+
+### Page Assertions
+```csharp
+page.AssertDisplayed("message");
+page.AssertNotDisplayed("message");
+```
+
+### Migration from xUnit Assert
+| Instead of | Use |
+|------------|-----|
+| `Assert.True(control.IsVisible())` | `control.AssertVisible()` |
+| `Assert.False(control.IsVisible())` | `control.AssertNotVisible()` |
+| `Assert.Equal(expected, control.GetText())` | `control.AssertTextEquals(expected)` |
+| `Assert.Contains(expected, control.GetText())` | `control.AssertTextContains(expected)` |
+| `Assert.Empty(control.GetText())` | `control.AssertTextEmpty()` |
+| `Assert.NotEmpty(control.GetText())` | `control.AssertTextNotEmpty()` |
+| `Assert.True(page.IsDisplayed())` | `page.AssertDisplayed()` |
+
+### When to Still Use xUnit Assert
+Use xUnit `Assert.*` only for:
+- Non-UI assertions (business logic, calculations)
+- Complex comparisons not covered by control assertions
+- Collection assertions on non-control data
 
 ## Test Organization
 

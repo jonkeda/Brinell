@@ -120,4 +120,12 @@ public class DashboardPage : PageBase
     {
         return ActivityTable.IsVisible();
     }
+    
+    /// <summary>
+    /// Assert welcome alert is visible.
+    /// </summary>
+    public void AssertHasWelcomeAlert(string? message = null)
+    {
+        WelcomeAlert.AssertVisible(message ?? "Welcome alert should be visible");
+    }
 }

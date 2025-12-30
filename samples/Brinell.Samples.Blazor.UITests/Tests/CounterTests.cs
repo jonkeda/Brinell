@@ -1,6 +1,5 @@
 using Brinell.Samples.Blazor.UITests.PageObjects;
 using Brinell.Samples.Blazor.UITests.TestBase;
-using FluentAssertions;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -28,7 +27,7 @@ public class CounterTests : BlazorSampleTestBase
 
         // Assert
         counterPage.AssertDisplayed("Counter page should be displayed");
-        counterPage.GetCurrentCount().Should().Be(0, "Initial count should be zero");
+        counterPage.AssertCount(0);
     }
 
     [Fact]
@@ -46,7 +45,7 @@ public class CounterTests : BlazorSampleTestBase
 
         // Assert - Wait for count to update (Blazor async rendering)
         counterPage.WaitForCount(1);
-        counterPage.GetCurrentCount().Should().Be(1, "Count should be 1 after one click");
+        counterPage.AssertCount(1);
     }
 
     [Fact]
@@ -64,7 +63,7 @@ public class CounterTests : BlazorSampleTestBase
 
         // Assert - Wait for count to update (Blazor async rendering)
         counterPage.WaitForCount(5);
-        counterPage.GetCurrentCount().Should().Be(5, "Count should be 5 after five clicks");
+        counterPage.AssertCount(5);
     }
 
     [Fact]
@@ -80,14 +79,14 @@ public class CounterTests : BlazorSampleTestBase
         // Increment first
         counterPage.IncrementMultiple(3);
         counterPage.WaitForCount(3);
-        counterPage.GetCurrentCount().Should().Be(3, "Count should be 3 before reset");
+        counterPage.AssertCount(3);
 
         // Act
         counterPage.ClickReset();
 
         // Assert - Wait for count to update
         counterPage.WaitForCount(0);
-        counterPage.GetCurrentCount().Should().Be(0, "Count should be 0 after reset");
+        counterPage.AssertCount(0);
     }
 
     [Fact]
@@ -111,7 +110,7 @@ public class CounterTests : BlazorSampleTestBase
 
         // Assert - Wait for count to update
         counterPage.WaitForCount(2);
-        counterPage.GetCurrentCount().Should().Be(2, "Count should be 2 after reset and two increments");
+        counterPage.AssertCount(2);
     }
 
     [Fact]

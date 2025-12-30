@@ -358,5 +358,65 @@ public abstract class ControlBase : IControlObject
         LogAssertPass("TextContains", actual, expected);
     }
     
+    /// <summary>
+    /// Assert element text is empty.
+    /// </summary>
+    public virtual void AssertTextEmpty(string? message = null)
+    {
+        CheckVisible(expected: true);
+        var actual = GetText();
+        if (!string.IsNullOrEmpty(actual))
+        {
+            ThrowAssertionFailed("TextEmpty", actual, "(empty)",
+                message ?? $"Expected empty text but got '{actual}' for element '{AutomationId}'.");
+        }
+        LogAssertPass("TextEmpty", "(empty)", "(empty)");
+    }
+    
+    /// <summary>
+    /// Assert element text is not empty.
+    /// </summary>
+    public virtual void AssertTextNotEmpty(string? message = null)
+    {
+        CheckVisible(expected: true);
+        var actual = GetText();
+        if (string.IsNullOrEmpty(actual))
+        {
+            ThrowAssertionFailed("TextNotEmpty", "(empty)", "(non-empty)",
+                message ?? $"Expected non-empty text but got empty for element '{AutomationId}'.");
+        }
+        LogAssertPass("TextNotEmpty", actual, "(non-empty)");
+    }
+    
+    /// <summary>
+    /// Assert element text starts with expected prefix.
+    /// </summary>
+    public virtual void AssertTextStartsWith(string prefix, string? message = null)
+    {
+        CheckVisible(expected: true);
+        var actual = GetText();
+        if (!actual.StartsWith(prefix, StringComparison.Ordinal))
+        {
+            ThrowAssertionFailed("TextStartsWith", actual, $"starts with '{prefix}'",
+                message ?? $"Expected text to start with '{prefix}' but got '{actual}'.");
+        }
+        LogAssertPass("TextStartsWith", actual, prefix);
+    }
+    
+    /// <summary>
+    /// Assert element text ends with expected suffix.
+    /// </summary>
+    public virtual void AssertTextEndsWith(string suffix, string? message = null)
+    {
+        CheckVisible(expected: true);
+        var actual = GetText();
+        if (!actual.EndsWith(suffix, StringComparison.Ordinal))
+        {
+            ThrowAssertionFailed("TextEndsWith", actual, $"ends with '{suffix}'",
+                message ?? $"Expected text to end with '{suffix}' but got '{actual}'.");
+        }
+        LogAssertPass("TextEndsWith", actual, suffix);
+    }
+    
     #endregion
 }

@@ -123,10 +123,48 @@ public class LoginTests : WpfUITestBase
 - `GetText()` - Get text value
 - `IsVisible()` - Check if control is visible
 - `IsEnabled()` - Check if control is enabled
-- `AssertVisible(string message)` - Assert control is visible
-- `AssertText(string expected)` - Assert text matches
 - `WaitForVisible()` - Wait for element to be visible
 - `WaitForEnabled()` - Wait for element to be enabled
+
+## Assertion Methods
+Prefer control assertions over xUnit `Assert.*` for UI checks.
+
+### All Controls
+```csharp
+control.AssertVisible("message");
+control.AssertNotVisible("message");
+control.AssertEnabled("message");
+control.AssertDisabled("message");
+control.AssertTextEquals("expected", "message");
+control.AssertTextContains("expected", "message");
+control.AssertTextEmpty("message");
+control.AssertTextNotEmpty("message");
+control.AssertTextStartsWith("prefix", "message");
+control.AssertTextEndsWith("suffix", "message");
+```
+
+### Page Assertions
+```csharp
+page.AssertDisplayed("message");
+page.AssertNotDisplayed("message");
+```
+
+### Semantic Page Assertions
+Add domain-specific assertions to page objects:
+```csharp
+public class LoginPage : PageBase
+{
+    public void AssertHasError(string? message = null)
+    {
+        ErrorLabel.AssertVisible(message);
+    }
+    
+    public void AssertErrorContains(string expected, string? message = null)
+    {
+        ErrorLabel.AssertTextContains(expected, message);
+    }
+}
+```
 
 ## AutomationProperties Setup
 In your WPF XAML, set AutomationProperties for testability:

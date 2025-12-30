@@ -111,4 +111,17 @@ public class CounterPage : PageBase
             timeout,
             $"count = {expectedCount}");
     }
+    
+    /// <summary>
+    /// Assert count equals expected value.
+    /// </summary>
+    public void AssertCount(int expected, string? message = null)
+    {
+        var actual = GetCurrentCount();
+        if (actual != expected)
+        {
+            throw new Brinell.Core.Logging.AssertionException(
+                message ?? $"Expected count {expected} but got {actual}.");
+        }
+    }
 }

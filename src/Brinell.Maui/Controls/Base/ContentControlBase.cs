@@ -7,6 +7,7 @@ namespace Brinell.Maui.Controls.Base;
 
 /// <summary>
 /// MAUI base class for clickable content controls (buttons, labels).
+/// Note: Click, DoubleTap, and LongPress are inherited from ControlBase.
 /// </summary>
 public abstract class ContentControlBase : ControlBase, IContentControl
 {
@@ -21,56 +22,18 @@ public abstract class ContentControlBase : ControlBase, IContentControl
     }
 
     /// <summary>
-    /// Click the control.
-    /// </summary>
-    public virtual void Click()
-    {
-        LogAction("Click");
-        var element = WaitForElementVisible();
-        if (element == null)
-            throw new InvalidOperationException($"Element '{AutomationId}' not visible for click.");
-        element.Click();
-    }
-
-    /// <summary>
-    /// Double-click (tap twice on mobile).
+    /// Double-click (tap twice on mobile). Alias for DoubleTap.
     /// </summary>
     public virtual void DoubleClick()
     {
-        LogAction("DoubleClick");
-        var element = WaitForElementVisible();
-        if (element == null)
-            throw new InvalidOperationException($"Element '{AutomationId}' not visible for double-click.");
-        element.Click();
-        Thread.Sleep(100);
-        element.Click();
+        DoubleTap();
     }
 
     /// <summary>
-    /// Right-click (long press on mobile).
+    /// Right-click. On mobile, this performs a long press.
     /// </summary>
     public virtual void RightClick()
     {
-        LogAction("RightClick");
-        var element = WaitForElementVisible();
-        if (element == null)
-            throw new InvalidOperationException($"Element '{AutomationId}' not visible for right-click.");
-        // On mobile, right-click is typically a long press
-        // For now, just click as a fallback
-        element.Click();
-    }
-
-    /// <summary>
-    /// Long press (right-click equivalent on mobile).
-    /// </summary>
-    public virtual void LongPress()
-    {
-        LogAction("LongPress");
-        var element = WaitForElementVisible();
-        if (element == null)
-            throw new InvalidOperationException($"Element '{AutomationId}' not visible for long press.");
-        // Long press implementation would use touch actions
-        // For now, just click as a fallback
-        element.Click();
+        LongPress();
     }
 }

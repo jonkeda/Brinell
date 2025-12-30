@@ -81,6 +81,8 @@ public abstract class RangeControlBase : ControlBase, IRangeControl
         return (value - min) / (max - min) * 100;
     }
 
+    #region Assert Methods
+
     /// <summary>
     /// Assert value equals expected (within tolerance).
     /// Captures screenshot on failure.
@@ -96,4 +98,72 @@ public abstract class RangeControlBase : ControlBase, IRangeControl
         }
         LogAssertPass("Value", actual.ToString(), expected.ToString());
     }
+
+    /// <summary>
+    /// Assert value is within a range (inclusive).
+    /// Captures screenshot on failure.
+    /// </summary>
+    public virtual void AssertValueInRange(double min, double max, string? message = null)
+    {
+        CheckVisible(expected: true);
+        var actual = GetValue();
+        if (actual < min || actual > max)
+        {
+            ThrowAssertionFailed("ValueInRange", actual.ToString(), $"[{min}, {max}]",
+                message ?? $"Expected value between {min} and {max} but got '{actual}' for element '{AutomationId}'.");
+        }
+        LogAssertPass("ValueInRange", actual.ToString(), $"[{min}, {max}]");
+    }
+
+    /// <summary>
+    /// Assert percentage equals expected (within tolerance).
+    /// Captures screenshot on failure.
+    /// </summary>
+    public virtual void AssertPercentage(double expected, double tolerance = 0.1, string? message = null)
+    {
+        CheckVisible(expected: true);
+        var actual = GetPercentage();
+        if (Math.Abs(actual - expected) > tolerance)
+        {
+            ThrowAssertionFailed("Percentage", $"{actual:F1}%", $"{expected}%",
+                message ?? $"Expected {expected}% but got {actual:F1}% for element '{AutomationId}'.");
+        }
+        LogAssertPass("Percentage", $"{actual:F1}%", $"{expected}%");
+    }
+
+    /// <summary>
+    /// Assert value is at minimum.
+    /// Captures screenshot on failure.
+    /// </summary>
+    public virtual void AssertAtMinimum(string? message = null)
+    {
+        CheckVisible(expected: true);
+        var actual = GetValue();
+        var min = GetMinimum();
+        if (Math.Abs(actual - min) > 0.001)
+        {
+            ThrowAssertionFailed("AtMinimum", actual.ToString(), min.ToString(),
+                message ?? $"Expected value at minimum ({min}) but got '{actual}' for element '{AutomationId}'.");
+        }
+        LogAssertPass("AtMinimum", actual.ToString(), min.ToString());
+    }
+
+    /// <summary>
+    /// Assert value is at maximum.
+    /// Captures screenshot on failure.
+    /// </summary>
+    public virtual void AssertAtMaximum(string? message = null)
+    {
+        CheckVisible(expected: true);
+        var actual = GetValue();
+        var max = GetMaximum();
+        if (Math.Abs(actual - max) > 0.001)
+        {
+            ThrowAssertionFailed("AtMaximum", actual.ToString(), max.ToString(),
+                message ?? $"Expected value at maximum ({max}) but got '{actual}' for element '{AutomationId}'.");
+        }
+        LogAssertPass("AtMaximum", actual.ToString(), max.ToString());
+    }
+
+    #endregion
 }

@@ -1,6 +1,5 @@
 using Brinell.Samples.Wpf.UITests.PageObjects;
 using Brinell.Samples.Wpf.UITests.TestBase;
-using FluentAssertions;
 using Xunit;
 using Xunit.Abstractions;
 

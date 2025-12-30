@@ -12,6 +12,7 @@
 | **FlaUI** | 4.0.0 | UI Automation 3 (UIA3) | Windows WPF |
 | **Appium.WebDriver** | 8.0.0 | W3C WebDriver protocol | Windows MAUI, Android, iOS |
 | **Selenium.WebDriver** | 4.27.0 | Browser automation | Chrome, Firefox, Edge, Safari |
+| **Playwright** | 1.50.0 | Modern browser automation | Chromium, Firefox, WebKit |
 | **xUnit** | 2.9.x | Test framework | All platforms |
 | **FluentAssertions** | 6.x | Assertion library | All platforms |
 
@@ -34,6 +35,7 @@
 │ • Oravey.UITestFramework.Wpf     (FlaUI)                   │
 │ • Oravey.UITestFramework.Maui    (Appium)                  │
 │ • Oravey.UITestFramework.Html    (Selenium)                │
+│ • Brinell.Html.Playwright        (Playwright)              │
 │                                                              │
 │ Each platform provides:                                     │
 │ • TestContext with native driver access                     │
@@ -147,13 +149,13 @@ Timestamp;TestName;PageName;ControlId;Action;Value;ExpectedValue;Result;Message
 
 ## Platform Comparison
 
-| Feature | WPF (FlaUI) | MAUI (Appium) | Web (Selenium) |
-|---------|-------------|---------------|----------------|
-| **Automation** | UI Automation 3 | W3C WebDriver | W3C WebDriver |
-| **Element Type** | `AutomationElement` | `AppiumElement` | `IWebElement` |
-| **AutomationId** | `AutomationProperties.AutomationId` | `AutomationId` | `data-automation-id` or `id` |
-| **Context Class** | `FlaUITestContext` | `AppiumTestContext` | `SeleniumTestContext` |
-| **Base Hierarchy** | WPF-specific | MAUI-specific | HTML-specific |
+| Feature | WPF (FlaUI) | MAUI (Appium) | Web (Selenium) | Web (Playwright) |
+|---------|-------------|---------------|----------------|------------------|
+| **Automation** | UI Automation 3 | W3C WebDriver | W3C WebDriver | Playwright CDP |
+| **Element Type** | `AutomationElement` | `AppiumElement` | `IWebElement` | `ILocator` |
+| **AutomationId** | `AutomationProperties.AutomationId` | `AutomationId` | `data-automation-id` or `id` | CSS/XPath selectors |
+| **Context Class** | `FlaUITestContext` | `AppiumTestContext` | `SeleniumTestContext` | `PlaywrightTestContext` |
+| **Base Hierarchy** | WPF-specific | MAUI-specific | HTML-specific | HTML-specific |
 
 ---
 
@@ -485,6 +487,7 @@ platform.SupportsGestures() // true for mobile platforms
 - **[Control Objects](04-control-objects.md)** - Master control patterns
 - **[Page Objects](05-page-objects.md)** - Learn page encapsulation
 - **[WPF Platform](07-wpf-platform.md)** - Windows desktop specifics
+- **[Playwright Platform](platform-guides/playwright.md)** - Modern browser automation
 
 ---
 

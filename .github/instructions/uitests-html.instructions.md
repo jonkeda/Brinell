@@ -163,9 +163,46 @@ new ButtonControl(context, this, "login-btn");  // finds id="login-btn"
 - `GetAttribute(string)` - Get HTML attribute value
 - `IsVisible()` - Check if control is visible
 - `IsEnabled()` - Check if control is enabled
-- `AssertVisible(string message)` - Assert control is visible
-- `AssertText(string expected)` - Assert text matches
 - `WaitForVisible()` - Wait for element to be visible
+
+## Assertion Methods
+Prefer control assertions over xUnit `Assert.*` for UI checks.
+
+### All Controls
+```csharp
+control.AssertVisible("message");
+control.AssertNotVisible("message");
+control.AssertEnabled("message");
+control.AssertDisabled("message");
+control.AssertTextEquals("expected", "message");
+control.AssertTextContains("expected", "message");
+control.AssertTextEmpty("message");
+control.AssertTextNotEmpty("message");
+```
+
+### HTML-Specific Assertions
+```csharp
+control.AssertHasClass("class-name", "message");
+control.AssertNotHasClass("class-name", "message");
+control.AssertAttribute("name", "expected", "message");
+control.AssertHasPlaceholder("message");
+```
+
+### TextInputControl Assertions
+```csharp
+textInput.AssertInputType("password", "message");
+textInput.AssertPlaceholder("Enter email", "message");
+textInput.AssertIsReadOnly("message");
+textInput.AssertIsNotReadOnly("message");
+```
+
+### URL/Title Assertions (TestBase)
+```csharp
+AssertUrl("http://...", "message");
+AssertUrlContains("/path", "message");
+AssertTitle("Page Title", "message");
+AssertTitleContains("Title", "message");
+```
 
 ## Blazor-Specific Considerations
 

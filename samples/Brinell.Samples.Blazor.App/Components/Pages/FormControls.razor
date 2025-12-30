@@ -1,0 +1,185 @@
+@page "/form-controls"
+
+<PageTitle>Form Controls - Brinell Blazor Sample</PageTitle>
+
+<h1 id="form-controls-title">Form Controls</h1>
+
+<div class="container mt-4">
+    <!-- CheckBox Section -->
+    <section class="mb-4">
+        <h2 id="checkbox-section-title">Checkboxes</h2>
+        
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="terms-checkbox" 
+                   @bind="_termsAccepted" />
+            <label class="form-check-label" for="terms-checkbox">
+                I accept the terms and conditions
+            </label>
+        </div>
+        
+        <div class="form-check mt-2">
+            <input class="form-check-input" type="checkbox" id="newsletter-checkbox" 
+                   @bind="_newsletterSubscribed" />
+            <label class="form-check-label" for="newsletter-checkbox">
+                Subscribe to newsletter
+            </label>
+        </div>
+        
+        <div class="form-check mt-2">
+            <input class="form-check-input" type="checkbox" id="disabled-checkbox" 
+                   disabled="disabled" />
+            <label class="form-check-label" for="disabled-checkbox">
+                Disabled checkbox
+            </label>
+        </div>
+        
+        <p id="checkbox-status" class="mt-2">
+            Terms: @(_termsAccepted ? "Accepted" : "Not Accepted") | 
+            Newsletter: @(_newsletterSubscribed ? "Subscribed" : "Not Subscribed")
+        </p>
+    </section>
+
+    <!-- Select/Dropdown Section -->
+    <section class="mb-4">
+        <h2 id="select-section-title">Select Controls</h2>
+        
+        <div class="mb-3">
+            <label for="country-select" class="form-label">Country</label>
+            <select class="form-select" id="country-select" @bind="_selectedCountry">
+                <option value="">-- Select a country --</option>
+                <option value="us">United States</option>
+                <option value="uk">United Kingdom</option>
+                <option value="de">Germany</option>
+                <option value="fr">France</option>
+                <option value="jp">Japan</option>
+            </select>
+        </div>
+        
+        <div class="mb-3">
+            <label for="colors-select" class="form-label">Favorite Color</label>
+            <select class="form-select" id="colors-select" @bind="_selectedColor">
+                <option value="">-- Select a color --</option>
+                <option value="red">Red</option>
+                <option value="green">Green</option>
+                <option value="blue">Blue</option>
+                <option value="yellow">Yellow</option>
+                <option value="purple">Purple</option>
+            </select>
+        </div>
+        
+        <p id="select-status">
+            Country: @(string.IsNullOrEmpty(_selectedCountry) ? "None" : _selectedCountry) | 
+            Color: @(string.IsNullOrEmpty(_selectedColor) ? "None" : _selectedColor)
+        </p>
+    </section>
+
+    <!-- Links Section -->
+    <section class="mb-4">
+        <h2 id="links-section-title">Links</h2>
+        
+        <p>
+            <a id="internal-link" href="/counter">Go to Counter</a>
+        </p>
+        
+        <p>
+            <a id="external-link" href="https://example.com" target="_blank" rel="noopener noreferrer">
+                External Link (opens in new tab)
+            </a>
+        </p>
+        
+        <p>
+            <a id="download-link" href="/sample.pdf" download="sample.pdf">
+                Download Sample PDF
+            </a>
+        </p>
+    </section>
+
+    <!-- TextArea Section -->
+    <section class="mb-4">
+        <h2 id="textarea-section-title">Text Areas</h2>
+        
+        <div class="mb-3">
+            <label for="comments-textarea" class="form-label">Comments</label>
+            <textarea class="form-control" id="comments-textarea" rows="4" cols="50"
+                      placeholder="Enter your comments here..."
+                      @bind="_comments"></textarea>
+        </div>
+        
+        <p id="textarea-status">
+            Character count: @(_comments?.Length ?? 0)
+        </p>
+    </section>
+
+    <!-- Range Section -->
+    <section class="mb-4">
+        <h2 id="range-section-title">Range Inputs</h2>
+        
+        <div class="mb-3">
+            <label for="volume-range" class="form-label">Volume: @_volume</label>
+            <input type="range" class="form-range" id="volume-range" 
+                   min="0" max="100" step="5" @bind="_volume" />
+        </div>
+        
+        <div class="mb-3">
+            <label for="brightness-range" class="form-label">Brightness: @_brightness%</label>
+            <input type="range" class="form-range" id="brightness-range" 
+                   min="0" max="100" step="1" @bind="_brightness" />
+        </div>
+    </section>
+
+    <!-- Progress Section -->
+    <section class="mb-4">
+        <h2 id="progress-section-title">Progress Bars</h2>
+        
+        <div class="mb-3">
+            <label class="form-label">Upload Progress</label>
+            <progress id="upload-progress" class="w-100" value="@_uploadProgress" max="100"></progress>
+            <p id="progress-status">@_uploadProgress% complete</p>
+        </div>
+        
+        <div class="mb-3">
+            <label class="form-label">Indeterminate Progress</label>
+            <progress id="indeterminate-progress" class="w-100"></progress>
+        </div>
+        
+        <button class="btn btn-primary" id="simulate-upload-btn" @onclick="SimulateUpload" disabled="@_isUploading">
+            @(_isUploading ? "Uploading..." : "Simulate Upload")
+        </button>
+    </section>
+</div>
+
+@code {
+    // Checkbox state
+    private bool _termsAccepted = false;
+    private bool _newsletterSubscribed = true;
+
+    // Select state
+    private string _selectedCountry = "";
+    private string _selectedColor = "";
+
+    // TextArea state
+    private string? _comments;
+
+    // Range state
+    private int _volume = 50;
+    private int _brightness = 75;
+
+    // Progress state
+    private int _uploadProgress = 0;
+    private bool _isUploading = false;
+
+    private async Task SimulateUpload()
+    {
+        _isUploading = true;
+        _uploadProgress = 0;
+        
+        while (_uploadProgress < 100)
+        {
+            await Task.Delay(100);
+            _uploadProgress += 10;
+            StateHasChanged();
+        }
+        
+        _isUploading = false;
+    }
+}

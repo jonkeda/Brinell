@@ -95,4 +95,84 @@ public abstract class TextControlBase : ControlBase, ITextControl
     {
         return GetText().Length;
     }
+
+    /// <summary>
+    /// Get the placeholder text.
+    /// </summary>
+    public virtual string? GetPlaceholder()
+    {
+        var element = FindElement();
+        if (element == null) return null;
+        
+        // Try different attribute names used by different platforms
+        return element.GetAttribute("placeholder") 
+            ?? element.GetAttribute("hint")
+            ?? element.GetAttribute("hintText");
+    }
+
+    #region Assert Methods
+
+    /// <summary>
+    /// Assert the control is read-only.
+    /// Captures screenshot on failure.
+    /// </summary>
+    public virtual void AssertIsReadOnly(string? message = null)
+    {
+        CheckVisible(expected: true);
+        if (!IsReadOnly())
+        {
+            ThrowAssertionFailed("IsReadOnly", "false", "true",
+                message ?? $"Expected element '{AutomationId}' to be read-only but it is editable.");
+        }
+        LogAssertPass("IsReadOnly", "true", "true");
+    }
+
+    /// <summary>
+    /// Assert the control is not read-only (editable).
+    /// Captures screenshot on failure.
+    /// </summary>
+    public virtual void AssertIsNotReadOnly(string? message = null)
+    {
+        CheckVisible(expected: true);
+        if (IsReadOnly())
+        {
+            ThrowAssertionFailed("IsNotReadOnly", "true", "false",
+                message ?? $"Expected element '{AutomationId}' to be editable but it is read-only.");
+        }
+        LogAssertPass("IsNotReadOnly", "false", "false");
+    }
+
+    /// <summary>
+    /// Assert the placeholder text equals expected.
+    /// Captures screenshot on failure.
+    /// </summary>
+    public virtual void AssertPlaceholder(string expected, string? message = null)
+    {
+        CheckVisible(expected: true);
+        var actual = GetPlaceholder();
+        if (actual != expected)
+        {
+            ThrowAssertionFailed("Placeholder", actual ?? "(null)", expected,
+                message ?? $"Expected placeholder '{expected}' but got '{actual}' for element '{AutomationId}'.");
+        }
+        LogAssertPass("Placeholder", actual ?? "(null)", expected);
+    }
+
+    /// <summary>
+    /// Assert the placeholder contains expected text.
+    /// Captures screenshot on failure.
+    /// </summary>
+    public virtual void AssertPlaceholderContains(string expected, string? message = null)
+    {
+        CheckVisible(expected: true);
+        var actual = GetPlaceholder() ?? string.Empty;
+        if (!actual.Contains(expected))
+        {
+            ThrowAssertionFailed("PlaceholderContains", actual, $"contains '{expected}'",
+                message ?? $"Expected placeholder to contain '{expected}' but got '{actual}' for element '{AutomationId}'.");
+        }
+        LogAssertPass("PlaceholderContains", actual, expected);
+    }
+
+    #endregion
 }

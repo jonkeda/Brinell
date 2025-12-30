@@ -460,6 +460,134 @@ public abstract class ControlBase : IControlObject
         }
         LogAssertPass("TextContains", actual, expected);
     }
+    
+    /// <summary>
+    /// Assert element text is empty.
+    /// Captures screenshot on failure.
+    /// </summary>
+    public virtual void AssertTextEmpty(string? message = null)
+    {
+        CheckVisible(expected: true);
+        var actual = GetText();
+        if (!string.IsNullOrEmpty(actual))
+        {
+            ThrowAssertionFailed("TextEmpty", actual, "(empty)",
+                message ?? $"Expected empty text but got '{actual}' for element '{AutomationId}'.");
+        }
+        LogAssertPass("TextEmpty", "(empty)", "(empty)");
+    }
+    
+    /// <summary>
+    /// Assert element text is not empty.
+    /// Captures screenshot on failure.
+    /// </summary>
+    public virtual void AssertTextNotEmpty(string? message = null)
+    {
+        CheckVisible(expected: true);
+        var actual = GetText();
+        if (string.IsNullOrEmpty(actual))
+        {
+            ThrowAssertionFailed("TextNotEmpty", "(empty)", "(non-empty)",
+                message ?? $"Expected non-empty text but got empty for element '{AutomationId}'.");
+        }
+        LogAssertPass("TextNotEmpty", actual, "(non-empty)");
+    }
+    
+    /// <summary>
+    /// Assert element text starts with expected prefix.
+    /// Captures screenshot on failure.
+    /// </summary>
+    public virtual void AssertTextStartsWith(string prefix, string? message = null)
+    {
+        CheckVisible(expected: true);
+        var actual = GetText();
+        if (!actual.StartsWith(prefix, StringComparison.Ordinal))
+        {
+            ThrowAssertionFailed("TextStartsWith", actual, $"starts with '{prefix}'",
+                message ?? $"Expected text to start with '{prefix}' but got '{actual}'.");
+        }
+        LogAssertPass("TextStartsWith", actual, prefix);
+    }
+    
+    /// <summary>
+    /// Assert element text ends with expected suffix.
+    /// Captures screenshot on failure.
+    /// </summary>
+    public virtual void AssertTextEndsWith(string suffix, string? message = null)
+    {
+        CheckVisible(expected: true);
+        var actual = GetText();
+        if (!actual.EndsWith(suffix, StringComparison.Ordinal))
+        {
+            ThrowAssertionFailed("TextEndsWith", actual, $"ends with '{suffix}'",
+                message ?? $"Expected text to end with '{suffix}' but got '{actual}'.");
+        }
+        LogAssertPass("TextEndsWith", actual, suffix);
+    }
+    
+    /// <summary>
+    /// Assert element has a CSS class.
+    /// Captures screenshot on failure.
+    /// </summary>
+    public virtual void AssertHasClass(string className, string? message = null)
+    {
+        CheckVisible(expected: true);
+        if (!HasClass(className))
+        {
+            var classes = GetAttribute("class") ?? "(none)";
+            ThrowAssertionFailed("HasClass", classes, className,
+                message ?? $"Expected element to have class '{className}' but has '{classes}'.");
+        }
+        LogAssertPass("HasClass", className, className);
+    }
+    
+    /// <summary>
+    /// Assert element does not have a CSS class.
+    /// Captures screenshot on failure.
+    /// </summary>
+    public virtual void AssertNotHasClass(string className, string? message = null)
+    {
+        CheckVisible(expected: true);
+        if (HasClass(className))
+        {
+            var classes = GetAttribute("class") ?? "(none)";
+            ThrowAssertionFailed("NotHasClass", classes, $"not '{className}'",
+                message ?? $"Expected element to not have class '{className}' but it does.");
+        }
+        LogAssertPass("NotHasClass", "(no class)", className);
+    }
+    
+    /// <summary>
+    /// Assert element attribute equals expected value.
+    /// Captures screenshot on failure.
+    /// </summary>
+    public virtual void AssertAttribute(string attributeName, string expected, string? message = null)
+    {
+        CheckVisible(expected: true);
+        var actual = GetAttribute(attributeName) ?? "(null)";
+        if (actual != expected)
+        {
+            ThrowAssertionFailed($"Attribute[{attributeName}]", actual, expected,
+                message ?? $"Expected attribute '{attributeName}' to be '{expected}' but got '{actual}'.");
+        }
+        LogAssertPass($"Attribute[{attributeName}]", actual, expected);
+    }
+    
+    /// <summary>
+    /// Assert element has a non-empty placeholder attribute.
+    /// Captures screenshot on failure.
+    /// </summary>
+    public virtual void AssertHasPlaceholder(string? message = null)
+    {
+        CheckVisible(expected: true);
+        var placeholder = GetAttribute("placeholder");
+        if (string.IsNullOrEmpty(placeholder))
+        {
+            ThrowAssertionFailed("HasPlaceholder", "(none)", "(placeholder)",
+                message ?? $"Expected element to have a placeholder but it doesn't.");
+        }
+        LogAssertPass("HasPlaceholder", placeholder, "(placeholder)");
+    }
 
     #endregion
     

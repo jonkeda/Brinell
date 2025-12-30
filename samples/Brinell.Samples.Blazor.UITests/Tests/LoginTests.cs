@@ -1,6 +1,5 @@
 using Brinell.Samples.Blazor.UITests.PageObjects;
 using Brinell.Samples.Blazor.UITests.TestBase;
-using FluentAssertions;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -31,7 +30,7 @@ public class LoginTests : BlazorSampleTestBase
 
         // Assert
         dashboardPage.AssertDisplayed("Dashboard page should be displayed after successful login");
-        dashboardPage.HasWelcomeAlert().Should().BeTrue("Welcome alert should be shown");
+        dashboardPage.AssertHasWelcomeAlert("Welcome alert should be shown");
     }
 
     [Fact]
@@ -48,8 +47,9 @@ public class LoginTests : BlazorSampleTestBase
         loginPage.SubmitInvalidLogin("wrong@example.com", "wrongpassword");
 
         // Assert
-        loginPage.WaitForError().Should().BeTrue("Error message should appear for invalid credentials");
-        loginPage.GetErrorMessage().Should().NotBeEmpty("Error message should have text");
+        loginPage.WaitForError();
+        loginPage.AssertHasError("Error message should appear for invalid credentials");
+        loginPage.AssertErrorNotEmpty();
     }
 
     [Fact]
@@ -81,8 +81,7 @@ public class LoginTests : BlazorSampleTestBase
         loginPage.WaitForDisplayed();
 
         // Assert
-        var placeholder = loginPage.EmailInput.GetPlaceholder();
-        placeholder.Should().NotBeNullOrEmpty("Email input should have a placeholder");
+        loginPage.EmailInput.AssertHasPlaceholder("Email input should have a placeholder");
     }
 
     [Fact]
@@ -96,8 +95,7 @@ public class LoginTests : BlazorSampleTestBase
         loginPage.WaitForDisplayed();
 
         // Assert
-        var inputType = loginPage.PasswordInput.GetInputType();
-        inputType.Should().Be("password", "Password input should be of type password");
+        loginPage.PasswordInput.AssertInputType("password");
     }
 
     [Fact]
@@ -122,7 +120,7 @@ public class LoginTests : BlazorSampleTestBase
             10000,
             "success message or dashboard");
 
-        result.Should().BeTrue("Login should complete with success message or dashboard");
+        Assert.True(result, "Login should complete with success message or dashboard");
     }
 
     [Fact]
@@ -144,7 +142,7 @@ public class LoginTests : BlazorSampleTestBase
         loginPage.PasswordInput.Clear();
 
         // Assert
-        loginPage.EmailInput.GetText().Should().BeEmpty("Email should be cleared");
-        loginPage.PasswordInput.GetText().Should().BeEmpty("Password should be cleared");
+        loginPage.EmailInput.AssertTextEmpty("Email should be empty after clear");
+        loginPage.PasswordInput.AssertTextEmpty("Password should be empty after clear");
     }
 }

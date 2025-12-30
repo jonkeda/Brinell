@@ -57,4 +57,16 @@ public class SwitchControl : ToggleControlBase
     /// Wait for switch to have specific state (alias for WaitChecked).
     /// </summary>
     public bool WaitForState(bool expectedOn, int? timeoutMs = null) => WaitChecked(expectedOn, timeoutMs);
+
+    // ===== Switch-specific Assert aliases =====
+
+    /// <summary>
+    /// Assert switch is on (alias for AssertChecked).
+    /// </summary>
+    public void AssertIsOn(string? message = null) => AssertChecked(message ?? $"Expected switch '{AutomationId}' to be on.");
+
+    /// <summary>
+    /// Assert switch is off (alias for AssertUnchecked).
+    /// </summary>
+    public void AssertIsOff(string? message = null) => AssertUnchecked(message ?? $"Expected switch '{AutomationId}' to be off.");
 }

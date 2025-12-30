@@ -121,14 +121,91 @@ public class LoginTests : MauiUITestBase
 
 ## Control Methods
 - `Click()` / `Tap()` - Tap the control
+- `DoubleTap()` - Double tap the control
+- `LongPress(durationMs)` - Long press (default 1000ms)
+- `SwipeLeft(distance)` / `SwipeRight(distance)` - Swipe horizontally
+- `SwipeUp(distance)` / `SwipeDown(distance)` - Swipe vertically
 - `SetText(string)` - Set text value
 - `Clear()` - Clear text content
 - `GetText()` - Get text value
 - `IsVisible()` - Check if control is visible
 - `IsEnabled()` - Check if control is enabled
-- `AssertVisible(string message)` - Assert control is visible
-- `AssertText(string expected)` - Assert text matches
-- `WaitForVisible()` - Wait for element to be visible
+
+## Control Assertions
+Use control-level assertions instead of xUnit Assert methods:
+
+### Common Assertions (All Controls)
+```csharp
+// Visibility and state
+control.AssertVisible();
+control.AssertNotVisible();
+control.AssertEnabled();
+control.AssertDisabled();
+control.AssertExists();
+control.AssertNotExists();
+
+// Text assertions
+control.AssertTextEquals("Expected Text");
+control.AssertTextContains("partial");
+control.AssertTextStartsWith("prefix");
+control.AssertTextEndsWith("suffix");
+control.AssertTextEmpty();
+control.AssertTextNotEmpty();
+```
+
+### Toggle Controls (CheckBox, Switch)
+```csharp
+checkBox.AssertChecked();
+checkBox.AssertUnchecked();
+
+// Switch-specific aliases
+toggleSwitch.AssertIsOn();
+toggleSwitch.AssertIsOff();
+```
+
+### Range Controls (Slider, ProgressBar)
+```csharp
+slider.AssertValue(50.0);
+slider.AssertValueInRange(0, 100);
+slider.AssertPercentage(50.0);
+slider.AssertAtMinimum();
+slider.AssertAtMaximum();
+
+// ProgressBar-specific
+progressBar.AssertComplete();
+progressBar.AssertNotComplete();
+progressBar.AssertProgressAtLeast(75);
+```
+
+### Selector Controls (Picker)
+```csharp
+picker.AssertSelectedText("Option 1");
+picker.AssertSelectedTextContains("Option");
+picker.AssertSelectedIndex(0);
+picker.AssertItemCount(5);
+picker.AssertNoSelection();
+```
+
+### Text Input Controls (Entry, Editor)
+```csharp
+entry.AssertIsReadOnly();
+entry.AssertIsNotReadOnly();
+entry.AssertPlaceholder("Enter your name");
+entry.AssertPlaceholderContains("name");
+```
+
+### Page-Level Semantic Assertions
+```csharp
+// In your page object class
+public void AssertLoginError()
+{
+    ErrorLabel.AssertVisible();
+    ErrorLabel.AssertTextContains("Invalid");
+}
+
+// In tests
+loginPage.AssertLoginError();  // Semantic, self-documenting
+```
 
 ## MAUI AutomationId Setup
 Set AutomationId in your MAUI XAML:
@@ -207,15 +284,38 @@ protected override AppiumOptions GetAppiumOptions()
 ```
 
 ## Gestures and Touch Actions
+
+### Control-Level Gestures (Single Element)
+All gestures wait for element visibility before executing:
 ```csharp
-// Swipe
-context.Swipe(startX, startY, endX, endY);
+// Tap gestures
+control.Tap();           // Single tap
+control.DoubleTap();     // Double tap
+control.LongPress(1500); // Long press (ms)
 
-// Long press
-control.LongPress();
+// Swipe gestures on control
+control.SwipeLeft();     // Default 200px
+control.SwipeRight(300); // Custom distance
+control.SwipeUp();
+control.SwipeDown(400);
+control.Swipe(SwipeDirection.Left, 200);
+```
 
-// Scroll to element
-context.ScrollTo(automationId);
+### GestureService (Advanced Multi-Element Gestures)
+Use `GestureService` for complex gestures:
+```csharp
+using Brinell.Maui.Gestures;
+
+var gestures = new GestureService(Context);
+
+// Drag and drop between elements
+await gestures.DragTo(sourceControl, targetControl);
+await gestures.DragByOffset(control, offsetX: 100, offsetY: 50);
+
+// Screen-level gestures
+await gestures.SwipeScreen(SwipeDirection.Up);
+await gestures.TapAtCoordinates(100, 200);
+await gestures.ScrollScreen(SwipeDirection.Down);
 ```
 
 ## Navigation Pattern

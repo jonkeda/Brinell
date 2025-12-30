@@ -1,6 +1,5 @@
 using Brinell.Samples.Wpf.UITests.PageObjects;
 using Brinell.Samples.Wpf.UITests.TestBase;
-using FluentAssertions;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -49,8 +48,8 @@ public class LoginTests : WpfSampleTestBase
         loginPage.SubmitInvalidLogin("wronguser", "wrongpass");
         
         // Assert
-        loginPage.HasLoginError().Should().BeTrue("Login error should be displayed for invalid credentials");
-        loginPage.GetLoginError().Should().Contain("Invalid", "Error message should indicate invalid credentials");
+        loginPage.AssertHasLoginError("Login error should be displayed for invalid credentials");
+        loginPage.AssertLoginErrorContains("Invalid");
     }
 
     [Fact]
@@ -72,7 +71,7 @@ public class LoginTests : WpfSampleTestBase
         // Note: Based on ViewModel, the button is disabled when fields are empty
         // The validation happens on property change
         loginPage.UsernameTextBox.SetText("ab"); // Too short
-        loginPage.HasUsernameError().Should().BeTrue("Username validation error should appear for short username");
+        loginPage.AssertHasUsernameError("Username validation error should appear for short username");
     }
 
     [Fact]
@@ -91,8 +90,8 @@ public class LoginTests : WpfSampleTestBase
         loginPage.EnterPassword("12345"); // Less than 6 characters
         
         // Assert
-        loginPage.HasPasswordError().Should().BeTrue("Password validation error should appear for short password");
-        loginPage.GetPasswordError().Should().Contain("6 characters", "Error should mention minimum length");
+        loginPage.AssertHasPasswordError("Password validation error should appear for short password");
+        loginPage.AssertPasswordErrorContains("6 characters");
     }
 
     [Fact]
@@ -111,6 +110,6 @@ public class LoginTests : WpfSampleTestBase
         loginPage.ClickCancel();
         
         // Assert - Fields should be cleared
-        loginPage.UsernameTextBox.GetText().Should().BeEmpty("Username should be cleared after cancel");
+        loginPage.UsernameTextBox.AssertTextEmpty("Username should be empty after cancel");
     }
 }

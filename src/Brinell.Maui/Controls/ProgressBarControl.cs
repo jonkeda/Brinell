@@ -93,4 +93,56 @@ public class ProgressBarControl : RangeControlBase
     {
         return WaitForProgress(100, timeoutMs);
     }
+
+    #region Assert Methods
+
+    /// <summary>
+    /// Assert progress is complete (at 100%).
+    /// Captures screenshot on failure.
+    /// </summary>
+    public void AssertComplete(string? message = null)
+    {
+        CheckVisible(expected: true);
+        if (!IsComplete())
+        {
+            var actual = GetPercentage();
+            ThrowAssertionFailed("Complete", $"{actual:F1}%", "100%",
+                message ?? $"Expected progress to be complete but got {actual:F1}% for element '{AutomationId}'.");
+        }
+        LogAssertPass("Complete", "100%", "100%");
+    }
+
+    /// <summary>
+    /// Assert progress is not complete (less than 100%).
+    /// Captures screenshot on failure.
+    /// </summary>
+    public void AssertNotComplete(string? message = null)
+    {
+        CheckVisible(expected: true);
+        if (IsComplete())
+        {
+            ThrowAssertionFailed("NotComplete", "100%", "<100%",
+                message ?? $"Expected progress to not be complete but it is at 100% for element '{AutomationId}'.");
+        }
+        var actual = GetPercentage();
+        LogAssertPass("NotComplete", $"{actual:F1}%", "<100%");
+    }
+
+    /// <summary>
+    /// Assert progress percentage is at least the expected value.
+    /// Captures screenshot on failure.
+    /// </summary>
+    public void AssertProgressAtLeast(double expectedPercentage, string? message = null)
+    {
+        CheckVisible(expected: true);
+        var actual = GetPercentage();
+        if (actual < expectedPercentage)
+        {
+            ThrowAssertionFailed("ProgressAtLeast", $"{actual:F1}%", $">= {expectedPercentage}%",
+                message ?? $"Expected progress at least {expectedPercentage}% but got {actual:F1}% for element '{AutomationId}'.");
+        }
+        LogAssertPass("ProgressAtLeast", $"{actual:F1}%", $">= {expectedPercentage}%");
+    }
+
+    #endregion
 }

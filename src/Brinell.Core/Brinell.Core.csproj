@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
     <RootNamespace>Brinell.Core</RootNamespace>
     <Description>Platform-agnostic UI testing abstractions for .NET applications. Provides interfaces and base classes for building cross-platform UI test automation with support for WPF, MAUI, and web applications.</Description>
     <PackageId>Brinell.Core</PackageId>

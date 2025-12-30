@@ -1,6 +1,5 @@
 using Brinell.Samples.Blazor.UITests.PageObjects;
 using Brinell.Samples.Blazor.UITests.TestBase;
-using FluentAssertions;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -47,7 +46,7 @@ public class NavigationTests : BlazorSampleTestBase
 
         // Assert
         counterPage.AssertDisplayed("Counter page should be displayed after navigation");
-        GetCurrentUrl().Should().Contain("/counter", "URL should contain /counter");
+        AssertUrlContains("/counter");
     }
 
     [Fact]
@@ -65,7 +64,7 @@ public class NavigationTests : BlazorSampleTestBase
 
         // Assert
         loginPage.AssertDisplayed("Login page should be displayed after navigation");
-        GetCurrentUrl().Should().Contain("/login", "URL should contain /login");
+        AssertUrlContains("/login");
     }
 
     [Fact]
@@ -83,7 +82,7 @@ public class NavigationTests : BlazorSampleTestBase
 
         // Assert
         dashboardPage.AssertDisplayed("Dashboard page should be displayed after navigation");
-        GetCurrentUrl().Should().Contain("/dashboard", "URL should contain /dashboard");
+        AssertUrlContains("/dashboard");
     }
 
     [Fact]
@@ -159,7 +158,7 @@ public class NavigationTests : BlazorSampleTestBase
 
         // Increment the counter
         counterPage.IncrementMultiple(3);
-        counterPage.GetCurrentCount().Should().Be(3, "Count should be 3");
+        counterPage.AssertCount(3);
 
         // Navigate away
         NavigateToPage("/");
@@ -173,7 +172,7 @@ public class NavigationTests : BlazorSampleTestBase
 
         // Assert - Note: Blazor Server state is lost on full navigation
         // This test documents the expected behavior
-        counterPage.GetCurrentCount().Should().Be(0, "Count resets on navigation (Blazor Server behavior)");
+        counterPage.AssertCount(0);
     }
 
     [Fact]

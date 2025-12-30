@@ -164,6 +164,58 @@ public abstract class HtmlUITestBase : UITestBase<SeleniumTestContext>
     {
         return _driver?.GetTitle() ?? string.Empty;
     }
+    
+    /// <summary>
+    /// Assert current URL equals expected value.
+    /// </summary>
+    protected void AssertUrl(string expected, string? message = null)
+    {
+        var actual = GetCurrentUrl();
+        if (actual != expected)
+        {
+            throw new Brinell.Core.Logging.AssertionException(
+                message ?? $"Expected URL '{expected}' but got '{actual}'.");
+        }
+    }
+    
+    /// <summary>
+    /// Assert current URL contains expected substring.
+    /// </summary>
+    protected void AssertUrlContains(string expected, string? message = null)
+    {
+        var actual = GetCurrentUrl();
+        if (!actual.Contains(expected))
+        {
+            throw new Brinell.Core.Logging.AssertionException(
+                message ?? $"Expected URL to contain '{expected}' but got '{actual}'.");
+        }
+    }
+    
+    /// <summary>
+    /// Assert page title equals expected value.
+    /// </summary>
+    protected void AssertTitle(string expected, string? message = null)
+    {
+        var actual = GetPageTitle();
+        if (actual != expected)
+        {
+            throw new Brinell.Core.Logging.AssertionException(
+                message ?? $"Expected title '{expected}' but got '{actual}'.");
+        }
+    }
+    
+    /// <summary>
+    /// Assert page title contains expected substring.
+    /// </summary>
+    protected void AssertTitleContains(string expected, string? message = null)
+    {
+        var actual = GetPageTitle();
+        if (!actual.Contains(expected))
+        {
+            throw new Brinell.Core.Logging.AssertionException(
+                message ?? $"Expected title to contain '{expected}' but got '{actual}'.");
+        }
+    }
 
     /// <summary>
     /// Execute JavaScript on the page.
