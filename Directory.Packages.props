@@ -11,6 +11,7 @@
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.0" />
     <PackageVersion Include="coverlet.collector" Version="6.0.4" />
+    <PackageVersion Include="FluentAssertions" Version="6.12.0" />
     
     <!-- FlaUI for WPF -->
     <PackageVersion Include="FlaUI.Core" Version="5.0.0" />
@@ -36,5 +37,13 @@
     
     <!-- Source Link -->
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="8.0.0" />
+    
+    <!-- Stride 3D Engine -->
+    <PackageVersion Include="Stride.Engine" Version="4.3.0.2507" />
+    <PackageVersion Include="Stride.UI" Version="4.3.0.2507" />
+    <PackageVersion Include="Stride.Graphics" Version="4.3.0.2507" />
+    <PackageVersion Include="Stride.Rendering" Version="4.3.0.2507" />
+    <PackageVersion Include="Stride.CommunityToolkit.Windows" Version="1.0.0-preview.62" />
+    <PackageVersion Include="Stride.CommunityToolkit.Bepu" Version="1.0.0-preview.62" />
   </ItemGroup>
 </Project>

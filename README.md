@@ -8,12 +8,13 @@ A cross-platform UI testing framework for .NET applications. Brinell provides a 
 
 ## Features
 
-- **Unified API**: Consistent interface across WPF, HTML, and MAUI platforms
+- **Unified API**: Consistent interface across WPF, HTML, MAUI, and Stride platforms
 - **Page Object Pattern**: Built-in support for maintainable test architecture
 - **Rich Control Library**: Pre-built control wrappers for common UI elements
 - **Visual Validation**: Screenshot capture and comparison capabilities
 - **API Mocking**: WireMock integration for isolated UI testing
-- **Multi-targeting**: Supports .NET 8.0 and .NET 9.0
+- **Stride 3D Engine Support**: UI testing for Stride game engine applications
+- **Multi-targeting**: Supports .NET 8.0, .NET 9.0, and .NET 10.0
 
 ## Packages
 
@@ -22,7 +23,10 @@ A cross-platform UI testing framework for .NET applications. Brinell provides a 
 | [Brinell.Core](https://www.nuget.org/packages/Brinell.Core) | Core abstractions and interfaces |
 | [Brinell.Wpf](https://www.nuget.org/packages/Brinell.Wpf) | WPF automation using FlaUI |
 | [Brinell.Html](https://www.nuget.org/packages/Brinell.Html) | Web automation using Selenium |
+| [Brinell.Html.Playwright](https://www.nuget.org/packages/Brinell.Html.Playwright) | Web automation using Playwright |
 | [Brinell.Maui](https://www.nuget.org/packages/Brinell.Maui) | Mobile automation using Appium |
+| [Brinell.Stride](https://www.nuget.org/packages/Brinell.Stride) | Stride 3D game engine UI testing |
+| [Brinell.Stride.Automation](https://www.nuget.org/packages/Brinell.Stride.Automation) | In-game automation hooks for Stride |
 | [Brinell.Mocking](https://www.nuget.org/packages/Brinell.Mocking) | API mocking using WireMock |
 
 ## Installation
@@ -31,11 +35,18 @@ A cross-platform UI testing framework for .NET applications. Brinell provides a 
 # For WPF applications
 dotnet add package Brinell.Wpf
 
-# For web applications
+# For web applications (Selenium)
 dotnet add package Brinell.Html
+
+# For web applications (Playwright)
+dotnet add package Brinell.Html.Playwright
 
 # For MAUI/mobile applications
 dotnet add package Brinell.Maui
+
+# For Stride 3D game engine
+dotnet add package Brinell.Stride           # Test project
+dotnet add package Brinell.Stride.Automation  # Game project
 
 # For API mocking
 dotnet add package Brinell.Mocking
@@ -147,15 +158,16 @@ mockServer.Stop();
 Brinell follows a layered architecture:
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    Your UI Tests                        │
-├─────────────────────────────────────────────────────────┤
-│    Brinell.Wpf   │  Brinell.Html  │   Brinell.Maui     │
-├─────────────────────────────────────────────────────────┤
-│                    Brinell.Core                         │
-├─────────────────────────────────────────────────────────┤
-│      FlaUI       │   Selenium     │      Appium        │
-└─────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────────────┐
+│                           Your UI Tests                                   │
+├───────────────────────────────────────────────────────────────────────────┤
+│  Brinell.Wpf  │  Brinell.Html  │  Brinell.Maui  │  Brinell.Stride        │
+├───────────────────────────────────────────────────────────────────────────┤
+│                           Brinell.Core                                    │
+├───────────────────────────────────────────────────────────────────────────┤
+│    FlaUI      │   Selenium/    │    Appium      │  Named Pipe + Win32    │
+│               │   Playwright   │                │  + Stride.Automation   │
+└───────────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Test Attributes

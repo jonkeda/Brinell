@@ -21,7 +21,10 @@ public enum Platform
     iOS,
     
     /// <summary>Web browser using Selenium.</summary>
-    Web
+    Web,
+    
+    /// <summary>Stride 3D game engine using named pipe automation.</summary>
+    Stride
 }
 
 /// <summary>

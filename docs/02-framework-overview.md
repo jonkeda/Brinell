@@ -13,6 +13,8 @@
 | **Appium.WebDriver** | 8.0.0 | W3C WebDriver protocol | Windows MAUI, Android, iOS |
 | **Selenium.WebDriver** | 4.27.0 | Browser automation | Chrome, Firefox, Edge, Safari |
 | **Playwright** | 1.50.0 | Modern browser automation | Chromium, Firefox, WebKit |
+| **Stride.Engine** | 4.2.1 | 3D game engine | Windows (Stride games) |
+| **Named Pipes** | .NET | IPC communication | Stride automation |
 | **xUnit** | 2.9.x | Test framework | All platforms |
 | **FluentAssertions** | 6.x | Assertion library | All platforms |
 
@@ -36,6 +38,7 @@
 │ • Oravey.UITestFramework.Maui    (Appium)                  │
 │ • Oravey.UITestFramework.Html    (Selenium)                │
 │ • Brinell.Html.Playwright        (Playwright)              │
+│ • Brinell.Stride                 (Named Pipe + Win32)      │
 │                                                              │
 │ Each platform provides:                                     │
 │ • TestContext with native driver access                     │
@@ -149,13 +152,14 @@ Timestamp;TestName;PageName;ControlId;Action;Value;ExpectedValue;Result;Message
 
 ## Platform Comparison
 
-| Feature | WPF (FlaUI) | MAUI (Appium) | Web (Selenium) | Web (Playwright) |
-|---------|-------------|---------------|----------------|------------------|
-| **Automation** | UI Automation 3 | W3C WebDriver | W3C WebDriver | Playwright CDP |
-| **Element Type** | `AutomationElement` | `AppiumElement` | `IWebElement` | `ILocator` |
-| **AutomationId** | `AutomationProperties.AutomationId` | `AutomationId` | `data-automation-id` or `id` | CSS/XPath selectors |
-| **Context Class** | `FlaUITestContext` | `AppiumTestContext` | `SeleniumTestContext` | `PlaywrightTestContext` |
-| **Base Hierarchy** | WPF-specific | MAUI-specific | HTML-specific | HTML-specific |
+| Feature | WPF (FlaUI) | MAUI (Appium) | Web (Selenium) | Web (Playwright) | Stride |
+|---------|-------------|---------------|----------------|------------------|--------|
+| **Automation** | UI Automation 3 | W3C WebDriver | W3C WebDriver | Playwright CDP | Named Pipe IPC |
+| **Element Type** | `AutomationElement` | `AppiumElement` | `IWebElement` | `ILocator` | `ElementState` |
+| **AutomationId** | `AutomationProperties.AutomationId` | `AutomationId` | `data-automation-id` or `id` | CSS/XPath selectors | `SetAutomationId()` |
+| **Context Class** | `FlaUITestContext` | `AppiumTestContext` | `SeleniumTestContext` | `PlaywrightTestContext` | `StrideTestContext` |
+| **Base Hierarchy** | WPF-specific | MAUI-specific | HTML-specific | HTML-specific | Stride-specific |
+| **Input Method** | UI Automation | WebDriver | WebDriver | Playwright | Win32 SendInput |
 
 ---
 
@@ -469,13 +473,15 @@ public enum Platform
     WindowsMaui,  // MAUI on Windows
     Android,      // MAUI on Android
     iOS,          // MAUI on iOS
-    Web           // Browser (Chrome, Firefox, Edge, Safari)
+    Web,          // Browser (Chrome, Firefox, Edge, Safari)
+    Stride        // Stride 3D game engine
 }
 
 // Extension methods
 platform.IsMobile()        // true for Android/iOS
 platform.IsDesktop()       // true for Windows/WindowsMaui
 platform.IsWeb()           // true for Web
+platform.IsGame()          // true for Stride
 platform.SupportsGestures() // true for mobile platforms
 ```
 
@@ -488,6 +494,7 @@ platform.SupportsGestures() // true for mobile platforms
 - **[Page Objects](05-page-objects.md)** - Learn page encapsulation
 - **[WPF Platform](07-wpf-platform.md)** - Windows desktop specifics
 - **[Playwright Platform](platform-guides/playwright.md)** - Modern browser automation
+- **[Stride Platform](platform-guides/stride.md)** - Stride 3D game engine testing
 
 ---
 

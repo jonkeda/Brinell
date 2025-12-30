@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Brinell.Samples.Stride.App</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Suppress transitive vulnerability warning from Stride.CommunityToolkit -->
+    <NoWarn>$(NoWarn);NU1903</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <DefineConstants>$(DefineConstants);AUTOMATION_ENABLED</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Stride.Engine" />
+    <PackageReference Include="Stride.UI" />
+    <PackageReference Include="Stride.Graphics" />
+    <PackageReference Include="Stride.Rendering" />
+    <PackageReference Include="Stride.CommunityToolkit.Windows" />
+    <PackageReference Include="Stride.CommunityToolkit.Bepu" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Brinell.Stride.Automation\Brinell.Stride.Automation.csproj" />
+  </ItemGroup>
+
+</Project>
