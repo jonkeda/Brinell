@@ -36,14 +36,22 @@ public class SeleniumDriverAdapter : IDriverAdapter
 
     /// <summary>
     /// Find element by AutomationId (data-automation-id attribute by default).
+    /// Supports CSS selectors if the automationId starts with '#', '.', or '['.
     /// </summary>
     public IElementAdapter? FindElement(string automationId)
     {
         try
         {
+            // Check if this is a CSS selector (starts with #, ., or [)
+            if (automationId.StartsWith('#') || automationId.StartsWith('.') || automationId.StartsWith('['))
+            {
+                var element = _driver.FindElement(By.CssSelector(automationId));
+                return new SeleniumElementAdapter(element, automationId);
+            }
+            
             // First try data-automation-id attribute
-            var element = _driver.FindElement(By.CssSelector($"[{_automationIdAttribute}='{automationId}']"));
-            return new SeleniumElementAdapter(element, automationId);
+            var elem = _driver.FindElement(By.CssSelector($"[{_automationIdAttribute}='{automationId}']"));
+            return new SeleniumElementAdapter(elem, automationId);
         }
         catch (NoSuchElementException)
         {
@@ -62,11 +70,18 @@ public class SeleniumDriverAdapter : IDriverAdapter
 
     /// <summary>
     /// Find element by AutomationId and return the raw IWebElement directly.
+    /// Supports CSS selectors if the automationId starts with '#', '.', or '['.
     /// </summary>
     public IWebElement? FindElementDirect(string automationId)
     {
         try
         {
+            // Check if this is a CSS selector (starts with #, ., or [)
+            if (automationId.StartsWith('#') || automationId.StartsWith('.') || automationId.StartsWith('['))
+            {
+                return _driver.FindElement(By.CssSelector(automationId));
+            }
+            
             // First try data-automation-id attribute
             return _driver.FindElement(By.CssSelector($"[{_automationIdAttribute}='{automationId}']"));
         }

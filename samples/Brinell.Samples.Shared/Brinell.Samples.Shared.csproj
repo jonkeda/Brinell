@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Brinell.Samples.Shared</RootNamespace>
+    <Description>Shared MVVM infrastructure for Brinell sample applications (WPF, MAUI)</Description>
+  </PropertyGroup>
+
+  <!-- No WPF or MAUI dependencies - pure .NET -->
+
+</Project>

@@ -1,0 +1,114 @@
+@page "/login"
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
+
+<PageTitle>Login - Brinell Blazor Sample</PageTitle>
+
+<h1 id="login-title">Login</h1>
+
+<div class="row">
+    <div class="col-md-6">
+        <EditForm Model="_loginModel" OnValidSubmit="HandleValidSubmit" FormName="LoginForm">
+            <DataAnnotationsValidator />
+
+            <div class="mb-3">
+                <label for="email-input" class="form-label">Email</label>
+                <InputText id="email-input"
+                           class="form-control"
+                           @bind-Value="_loginModel.Email"
+                           placeholder="Enter your email"
+                           disabled="@_isLoading" />
+                <ValidationMessage For="() => _loginModel.Email" class="text-danger" />
+            </div>
+
+            <div class="mb-3">
+                <label for="password-input" class="form-label">Password</label>
+                <InputText id="password-input"
+                           type="password"
+                           class="form-control"
+                           @bind-Value="_loginModel.Password"
+                           placeholder="Enter your password"
+                           disabled="@_isLoading" />
+                <ValidationMessage For="() => _loginModel.Password" class="text-danger" />
+            </div>
+
+            @if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <div class="alert alert-danger" role="alert" id="error-message">
+                    @_errorMessage
+                </div>
+            }
+
+            @if (_isSuccess)
+            {
+                <div class="alert alert-success" role="alert" id="success-message">
+                    Login successful! Redirecting...
+                </div>
+            }
+
+            <button type="submit"
+                    class="btn btn-primary"
+                    id="login-btn"
+                    disabled="@_isLoading">
+                @if (_isLoading)
+                {
+                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" id="loading-spinner"></span>
+                    <span>Logging in...</span>
+                }
+                else
+                {
+                    <span>Login</span>
+                }
+            </button>
+        </EditForm>
+    </div>
+</div>
+
+<div class="mt-4">
+    <h3>Test Credentials</h3>
+    <p id="test-credentials-info">
+        Use <strong>test@example.com</strong> with password <strong>password123</strong> to login successfully.
+    </p>
+</div>
+
+@code {
+    private LoginModel _loginModel = new();
+    private bool _isLoading = false;
+    private bool _isSuccess = false;
+    private string? _errorMessage;
+
+    private async Task HandleValidSubmit()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+        _isSuccess = false;
+        StateHasChanged();
+
+        try
+        {
+            var result = await AuthService.LoginAsync(_loginModel.Email!, _loginModel.Password!);
+
+            if (result.Success)
+            {
+                _isSuccess = true;
+                StateHasChanged();
+
+                // Brief delay to show success message before redirect
+                await Task.Delay(1000);
+                Navigation.NavigateTo("/dashboard");
+            }
+            else
+            {
+                _errorMessage = result.ErrorMessage ?? "Login failed. Please try again.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"An error occurred: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+}

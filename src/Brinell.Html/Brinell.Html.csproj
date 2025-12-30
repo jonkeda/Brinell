@@ -14,6 +14,7 @@
   <ItemGroup>
     <PackageReference Include="Selenium.WebDriver" />
     <PackageReference Include="Selenium.Support" />
+    <PackageReference Include="WebDriverManager" />
   </ItemGroup>
 
   <ItemGroup>

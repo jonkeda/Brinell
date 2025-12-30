@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Brinell.Samples.Blazor.App</RootNamespace>
+    <Description>Blazor Server sample application for Brinell UI testing framework</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Brinell.Samples.Shared\Brinell.Samples.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

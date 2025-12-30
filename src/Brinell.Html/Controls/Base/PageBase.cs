@@ -111,6 +111,28 @@ public abstract class PageBase : IPageObject
     }
 
     /// <summary>
+    /// Assert page is displayed.
+    /// </summary>
+    public virtual void AssertDisplayed(string? message = null)
+    {
+        CheckDisplayed();
+        LogAssertPass("Displayed", "true", "true");
+    }
+
+    /// <summary>
+    /// Assert page is not displayed.
+    /// </summary>
+    public virtual void AssertNotDisplayed(string? message = null)
+    {
+        if (IsDisplayed())
+        {
+            ThrowAssertionFailed("NotDisplayed", "true", "false",
+                message ?? $"Page '{Name}' is displayed but expected not displayed.");
+        }
+        LogAssertPass("NotDisplayed", "false", "false");
+    }
+
+    /// <summary>
     /// Take a screenshot of the current page.
     /// </summary>
     public virtual string? TakeScreenshot(string suffix = "")
@@ -140,6 +162,22 @@ public abstract class PageBase : IPageObject
     protected void ThrowPageNotReady(string action, string message)
     {
         Logger.ThrowPageNotReady(TestName, Name, AutomationId, action, message, _context);
+    }
+    
+    /// <summary>
+    /// Log assertion success.
+    /// </summary>
+    protected void LogAssertPass(string assertType, string? actual, string? expected)
+    {
+        Logger?.LogAssertPass(TestName, Name, AutomationId, assertType, actual, expected);
+    }
+    
+    /// <summary>
+    /// Log assertion failure and throw.
+    /// </summary>
+    protected void ThrowAssertionFailed(string assertType, string? actual, string? expected, string message)
+    {
+        Logger.ThrowAssertionFailed(TestName, Name, AutomationId, assertType, actual, expected, message, _context);
     }
     
     /// <summary>

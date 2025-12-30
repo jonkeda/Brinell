@@ -2,6 +2,8 @@ using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Edge;
 using OpenQA.Selenium.Firefox;
+using WebDriverManager;
+using WebDriverManager.DriverConfigs.Impl;
 using Brinell.Core.Logging;
 using Brinell.Core.Testing;
 using Brinell.Html.Infrastructure;
@@ -202,6 +204,8 @@ public abstract class HtmlUITestBase : UITestBase<SeleniumTestContext>
     /// </summary>
     protected virtual IWebDriver CreateChromeDriver()
     {
+        new DriverManager().SetUpDriver(new ChromeConfig());
+        
         var options = new ChromeOptions();
         
         if (Headless)
@@ -222,6 +226,8 @@ public abstract class HtmlUITestBase : UITestBase<SeleniumTestContext>
     /// </summary>
     protected virtual IWebDriver CreateFirefoxDriver()
     {
+        new DriverManager().SetUpDriver(new FirefoxConfig());
+        
         var options = new FirefoxOptions();
         
         if (Headless)
@@ -240,6 +246,8 @@ public abstract class HtmlUITestBase : UITestBase<SeleniumTestContext>
     /// </summary>
     protected virtual IWebDriver CreateEdgeDriver()
     {
+        new DriverManager().SetUpDriver(new EdgeConfig());
+        
         var options = new EdgeOptions();
         
         if (Headless)
