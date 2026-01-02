@@ -1,6 +1,6 @@
 # DES-001: Architectural Decisions
 
-**Version:** 3.1  
+**Version:** 3.2  
 **Status:** Active  
 **Last Updated:** January 2026  
 **Relates To:** SPEC-001 (Core Architecture), REQ-001 (Functional Requirements)
@@ -18,14 +18,14 @@ This document records the key architectural decisions made in designing the UI T
 | ID | Decision | Status | Impact |
 |----|----------|--------|--------|
 | AD-001 | Core Contains Only Interfaces | **ADOPTED** | High |
-| AD-002 | No Adapter Abstraction Layer | **ADOPTED** | High |
+| AD-002 | No Shared Adapter Classes (Interfaces OK) | **ADOPTED** | High |
 | AD-003 | Platform-Specific Base Classes | **ADOPTED** | High |
 | AD-004 | Navigation Returns Void | **ADOPTED** | Medium |
 | AD-005 | All Base Methods Virtual | **ADOPTED** | Medium |
 | AD-006 | Four-Tier State Verification | **ADOPTED** | Medium |
 | AD-007 | CSV Structured Logging | **ADOPTED** | Low |
 | AD-008 | Platform Enum (Not String) | **ADOPTED** | Low |
-| AD-009 | Synchronous Control Operations | **ADOPTED** | Medium |
+| AD-009 | Synchronous Control Operations (with Async Exception) | **ADOPTED** | Medium |
 | AD-010 | Platform Extension Points | **ADOPTED** | Low |
 
 ---
@@ -124,30 +124,34 @@ Use composition instead of inheritance.
 
 ---
 
-## 4. AD-002: No Adapter Abstraction Layer
+## 4. AD-002: No Shared Adapter Classes
 
 ### 4.1 Context
 
-v1.0-v2.0 used adapter pattern to abstract differences between FlaUI, Appium, and Selenium:
+v1.0-v2.0 used adapter pattern with shared base classes to abstract differences between FlaUI, Appium, and Selenium:
 
 ```csharp
-public interface IDriverAdapter
+// v1.0-v2.0: Shared adapter BASE CLASSES (problematic)
+public abstract class DriverAdapterBase : IDriverAdapter
 {
-    IElementAdapter FindElement(string automationId);
+    protected abstract IElementAdapter FindElementCore(string automationId);
+    public IElementAdapter FindElement(string automationId) { ... }  // Shared logic
 }
 
-public interface IElementAdapter
+public abstract class ElementAdapterBase : IElementAdapter
 {
-    void Click();
-    string GetText();
+    public virtual void Click() { ... }  // Shared implementation
 }
 ```
 
-Platforms implemented adapters that wrapped native drivers.
+Platforms extended these shared classes, leading to tight coupling.
 
 ### 4.2 Decision
 
-**Remove all adapter abstractions.** Platform implementations access native drivers (FlaUI, Appium, Selenium) directly.
+**No shared adapter base classes in Core.** Platform implementations access native drivers directly.
+
+**Interfaces ARE allowed** - `IDriverAdapter` and `IElementAdapter` remain in Core as contracts.  
+**Shared classes are NOT allowed** - No `DriverAdapterBase` or `ElementAdapterBase` in Core.
 
 ```csharp
 // WPF - Direct FlaUI access
