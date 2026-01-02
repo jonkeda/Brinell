@@ -30,7 +30,7 @@ public class PasswordBoxControl : InputControlBase
     /// <summary>
     /// Enter password into the password box.
     /// </summary>
-    public void Enter(string password)
+    public new void Enter(string password)
     {
         SetText(password);
     }
@@ -38,7 +38,7 @@ public class PasswordBoxControl : InputControlBase
     /// <summary>
     /// Clear the password box and enter new password.
     /// </summary>
-    public void ClearAndEnter(string password)
+    public new void ClearAndEnter(string password)
     {
         Clear();
         Enter(password);

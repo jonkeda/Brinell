@@ -1,5 +1,6 @@
 using Brinell.Core.Abstractions;
 using Brinell.Core.Abstractions.Controls;
+using Brinell.Core.Exceptions;
 using Brinell.Core.Logging;
 using Brinell.Stride.Infrastructure;
 
@@ -26,6 +27,7 @@ public abstract class StrideToggleControlBase : StrideContentControlBase, IToggl
     {
         var before = IsChecked();
         Click();
+        Thread.Sleep(50); // Small delay to ensure toggle state persists
         LogAction("Toggle", $"{before} -> {!before}");
     }
 
@@ -35,6 +37,7 @@ public abstract class StrideToggleControlBase : StrideContentControlBase, IToggl
         if (!IsChecked())
         {
             Click();
+            Thread.Sleep(50); // Small delay to ensure toggle state persists
         }
         LogAction("Check");
     }
@@ -45,6 +48,7 @@ public abstract class StrideToggleControlBase : StrideContentControlBase, IToggl
         if (IsChecked())
         {
             Click();
+            Thread.Sleep(50); // Small delay to ensure toggle state persists
         }
         LogAction("Uncheck");
     }

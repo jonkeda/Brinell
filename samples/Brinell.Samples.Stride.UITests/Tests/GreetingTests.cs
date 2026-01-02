@@ -1,5 +1,4 @@
 using Brinell.Samples.Stride.UITests.PageObjects;
-using FluentAssertions;
 using Xunit;
 using Xunit.Abstractions;
 

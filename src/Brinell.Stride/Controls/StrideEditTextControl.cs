@@ -24,9 +24,27 @@ public class StrideEditTextControl : StrideTextControlBase, IEditableTextControl
     /// <inheritdoc />
     public override void SetText(string text)
     {
-        Focus();
-        Clear();
-        Context.TypeText(text);
+        // Ensure game window has focus before any input operations
+        if (!Context.EnsureGameHasFocus())
+        {
+            Context.Log($"SetText: Warning - could not ensure game has focus");
+        }
+
+        // Use server-side text setting for reliability
+        Context.Log($"SetText: Attempting server-side text setting for '{text}'");
+        var success = Context.SetElementText(_automationId, text);
+        if (!success)
+        {
+            Context.Log($"SetText: Server-side failed, falling back to keyboard simulation");
+            // Fallback to keyboard simulation if server-side fails
+            Focus();
+            Clear();
+            Context.TypeText(text);
+        }
+        else
+        {
+            Context.Log($"SetText: Server-side succeeded");
+        }
         LogAction("SetText", text);
     }
 

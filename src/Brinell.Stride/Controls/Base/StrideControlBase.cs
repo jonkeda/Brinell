@@ -1,8 +1,10 @@
 using Brinell.Core.Abstractions;
 using Brinell.Core.Abstractions.Controls;
 using Brinell.Core.Exceptions;
+using Brinell.Core.Logging;
 using Brinell.Stride.Communication;
 using Brinell.Stride.Infrastructure;
+using System.Diagnostics;
 
 namespace Brinell.Stride.Controls.Base;
 
@@ -95,28 +97,40 @@ public abstract class StrideControlBase : IControlObject
     /// <inheritdoc />
     public bool WaitExists(bool expected = true, int? timeoutMs = null)
     {
-        return Context.WaitFor(
+        var sw = Stopwatch.StartNew();
+        var result = Context.WaitFor(
             () => IsExists() == expected,
             timeoutMs,
             $"element '{_automationId}' exists={expected}");
+        sw.Stop();
+        Context.Logger?.LogWait(Context.TestName, Page?.Name ?? "", _automationId, $"Exists={expected}", result, (int)sw.ElapsedMilliseconds);
+        return result;
     }
 
     /// <inheritdoc />
     public bool WaitVisible(bool expected = true, int? timeoutMs = null)
     {
-        return Context.WaitFor(
+        var sw = Stopwatch.StartNew();
+        var result = Context.WaitFor(
             () => IsVisible() == expected,
             timeoutMs,
             $"element '{_automationId}' visible={expected}");
+        sw.Stop();
+        Context.Logger?.LogWait(Context.TestName, Page?.Name ?? "", _automationId, $"Visible={expected}", result, (int)sw.ElapsedMilliseconds);
+        return result;
     }
 
     /// <inheritdoc />
     public bool WaitEnabled(bool expected = true, int? timeoutMs = null)
     {
-        return Context.WaitFor(
+        var sw = Stopwatch.StartNew();
+        var result = Context.WaitFor(
             () => IsEnabled() == expected,
             timeoutMs,
             $"element '{_automationId}' enabled={expected}");
+        sw.Stop();
+        Context.Logger?.LogWait(Context.TestName, Page?.Name ?? "", _automationId, $"Enabled={expected}", result, (int)sw.ElapsedMilliseconds);
+        return result;
     }
 
     /// <summary>
@@ -124,10 +138,14 @@ public abstract class StrideControlBase : IControlObject
     /// </summary>
     public bool WaitClickable(int? timeoutMs = null)
     {
-        return Context.WaitFor(
+        var sw = Stopwatch.StartNew();
+        var result = Context.WaitFor(
             () => IsClickable(),
             timeoutMs,
             $"element '{_automationId}' clickable");
+        sw.Stop();
+        Context.Logger?.LogWait(Context.TestName, Page?.Name ?? "", _automationId, "Clickable", result, (int)sw.ElapsedMilliseconds);
+        return result;
     }
 
     /// <summary>
@@ -135,10 +153,14 @@ public abstract class StrideControlBase : IControlObject
     /// </summary>
     public bool WaitText(string expected, int? timeoutMs = null)
     {
-        return Context.WaitFor(
+        var sw = Stopwatch.StartNew();
+        var result = Context.WaitFor(
             () => GetText() == expected,
             timeoutMs,
             $"element '{_automationId}' text='{expected}'");
+        sw.Stop();
+        Context.Logger?.LogWait(Context.TestName, Page?.Name ?? "", _automationId, $"Text='{expected}'", result, (int)sw.ElapsedMilliseconds);
+        return result;
     }
 
     /// <summary>
@@ -146,10 +168,14 @@ public abstract class StrideControlBase : IControlObject
     /// </summary>
     public bool WaitTextContains(string substring, int? timeoutMs = null)
     {
-        return Context.WaitFor(
+        var sw = Stopwatch.StartNew();
+        var result = Context.WaitFor(
             () => GetText().Contains(substring),
             timeoutMs,
             $"element '{_automationId}' text contains '{substring}'");
+        sw.Stop();
+        Context.Logger?.LogWait(Context.TestName, Page?.Name ?? "", _automationId, $"TextContains='{substring}'", result, (int)sw.ElapsedMilliseconds);
+        return result;
     }
 
     #endregion
@@ -161,8 +187,13 @@ public abstract class StrideControlBase : IControlObject
     {
         if (!WaitExists(expected, timeoutMs))
         {
-            throw new CheckFailedException(
-                $"Control '{_automationId}' exists check failed. Expected: {expected}, Actual: {IsExists()}");
+            Context.Logger.ThrowCheckFailed(
+                Context.TestName,
+                Page?.Name ?? "",
+                _automationId,
+                "Exists",
+                $"Control '{_automationId}' exists check failed. Expected: {expected}, Actual: {IsExists()}",
+                Context);
         }
     }
 
@@ -171,8 +202,13 @@ public abstract class StrideControlBase : IControlObject
     {
         if (!WaitVisible(expected, timeoutMs))
         {
-            throw new CheckFailedException(
-                $"Control '{_automationId}' visibility check failed. Expected: {expected}, Actual: {IsVisible()}");
+            Context.Logger.ThrowCheckFailed(
+                Context.TestName,
+                Page?.Name ?? "",
+                _automationId,
+                "Visible",
+                $"Control '{_automationId}' visibility check failed. Expected: {expected}, Actual: {IsVisible()}",
+                Context);
         }
     }
 
@@ -181,8 +217,13 @@ public abstract class StrideControlBase : IControlObject
     {
         if (!WaitEnabled(expected, timeoutMs))
         {
-            throw new CheckFailedException(
-                $"Control '{_automationId}' enabled check failed. Expected: {expected}, Actual: {IsEnabled()}");
+            Context.Logger.ThrowCheckFailed(
+                Context.TestName,
+                Page?.Name ?? "",
+                _automationId,
+                "Enabled",
+                $"Control '{_automationId}' enabled check failed. Expected: {expected}, Actual: {IsEnabled()}",
+                Context);
         }
     }
 
@@ -194,9 +235,13 @@ public abstract class StrideControlBase : IControlObject
         if (!WaitClickable(timeoutMs))
         {
             var state = GetState();
-            throw new CheckFailedException(
-                $"Control '{_automationId}' is not clickable. " +
-                $"Visible: {state.IsVisible}, Enabled: {state.IsEnabled}, HitTestVisible: {state.IsHitTestVisible}");
+            Context.Logger.ThrowCheckFailed(
+                Context.TestName,
+                Page?.Name ?? "",
+                _automationId,
+                "Clickable",
+                $"Control '{_automationId}' is not clickable. Visible: {state.IsVisible}, Enabled: {state.IsEnabled}, HitTestVisible: {state.IsHitTestVisible}",
+                Context);
         }
     }
 
@@ -207,8 +252,13 @@ public abstract class StrideControlBase : IControlObject
     {
         if (!WaitText(expected, timeoutMs))
         {
-            throw new CheckFailedException(
-                $"Control '{_automationId}' text check failed. Expected: '{expected}', Actual: '{GetText()}'");
+            Context.Logger.ThrowCheckFailed(
+                Context.TestName,
+                Page?.Name ?? "",
+                _automationId,
+                "Text",
+                $"Control '{_automationId}' text check failed. Expected: '{expected}', Actual: '{GetText()}'",
+                Context);
         }
     }
 
@@ -220,12 +270,21 @@ public abstract class StrideControlBase : IControlObject
     public void AssertExists(string? message = null)
     {
         var exists = IsExists();
-        LogAssertion("AssertExists", true, exists);
-
-        if (!exists)
+        if (exists)
         {
-            throw new AssertionException(
-                message ?? $"Control '{_automationId}' should exist but does not.");
+            LogAssertion("AssertExists", true, exists);
+        }
+        else
+        {
+            Context.Logger.ThrowAssertionFailed(
+                Context.TestName,
+                Page?.Name ?? "",
+                _automationId,
+                "Exists",
+                exists.ToString(),
+                true.ToString(),
+                message ?? $"Control '{_automationId}' should exist but does not.",
+                Context);
         }
     }
 
@@ -233,12 +292,21 @@ public abstract class StrideControlBase : IControlObject
     public void AssertNotExists(string? message = null)
     {
         var exists = IsExists();
-        LogAssertion("AssertNotExists", false, exists);
-
-        if (exists)
+        if (!exists)
         {
-            throw new AssertionException(
-                message ?? $"Control '{_automationId}' should not exist but does.");
+            LogAssertion("AssertNotExists", false, exists);
+        }
+        else
+        {
+            Context.Logger.ThrowAssertionFailed(
+                Context.TestName,
+                Page?.Name ?? "",
+                _automationId,
+                "NotExists",
+                exists.ToString(),
+                false.ToString(),
+                message ?? $"Control '{_automationId}' should not exist but does.",
+                Context);
         }
     }
 
@@ -247,12 +315,21 @@ public abstract class StrideControlBase : IControlObject
     {
         CheckExists();
         var visible = IsVisible();
-        LogAssertion("AssertVisible", true, visible);
-
-        if (!visible)
+        if (visible)
         {
-            throw new AssertionException(
-                message ?? $"Control '{_automationId}' should be visible but is not.");
+            LogAssertion("AssertVisible", true, visible);
+        }
+        else
+        {
+            Context.Logger.ThrowAssertionFailed(
+                Context.TestName,
+                Page?.Name ?? "",
+                _automationId,
+                "Visible",
+                visible.ToString(),
+                true.ToString(),
+                message ?? $"Control '{_automationId}' should be visible but is not.",
+                Context);
         }
     }
 
@@ -260,12 +337,21 @@ public abstract class StrideControlBase : IControlObject
     public void AssertNotVisible(string? message = null)
     {
         var visible = IsExists() && IsVisible();
-        LogAssertion("AssertNotVisible", false, visible);
-
-        if (visible)
+        if (!visible)
         {
-            throw new AssertionException(
-                message ?? $"Control '{_automationId}' should not be visible but is.");
+            LogAssertion("AssertNotVisible", false, visible);
+        }
+        else
+        {
+            Context.Logger.ThrowAssertionFailed(
+                Context.TestName,
+                Page?.Name ?? "",
+                _automationId,
+                "NotVisible",
+                visible.ToString(),
+                false.ToString(),
+                message ?? $"Control '{_automationId}' should not be visible but is.",
+                Context);
         }
     }
 
@@ -274,12 +360,21 @@ public abstract class StrideControlBase : IControlObject
     {
         CheckVisible();
         var enabled = IsEnabled();
-        LogAssertion("AssertEnabled", true, enabled);
-
-        if (!enabled)
+        if (enabled)
         {
-            throw new AssertionException(
-                message ?? $"Control '{_automationId}' should be enabled but is not.");
+            LogAssertion("AssertEnabled", true, enabled);
+        }
+        else
+        {
+            Context.Logger.ThrowAssertionFailed(
+                Context.TestName,
+                Page?.Name ?? "",
+                _automationId,
+                "Enabled",
+                enabled.ToString(),
+                true.ToString(),
+                message ?? $"Control '{_automationId}' should be enabled but is not.",
+                Context);
         }
     }
 
@@ -288,12 +383,21 @@ public abstract class StrideControlBase : IControlObject
     {
         CheckVisible();
         var enabled = IsEnabled();
-        LogAssertion("AssertDisabled", false, enabled);
-
-        if (enabled)
+        if (!enabled)
         {
-            throw new AssertionException(
-                message ?? $"Control '{_automationId}' should be disabled but is not.");
+            LogAssertion("AssertDisabled", false, enabled);
+        }
+        else
+        {
+            Context.Logger.ThrowAssertionFailed(
+                Context.TestName,
+                Page?.Name ?? "",
+                _automationId,
+                "Disabled",
+                enabled.ToString(),
+                false.ToString(),
+                message ?? $"Control '{_automationId}' should be disabled but is not.",
+                Context);
         }
     }
 
@@ -301,12 +405,21 @@ public abstract class StrideControlBase : IControlObject
     public void AssertTextEquals(string expected, string? message = null)
     {
         var actual = GetText();
-        LogAssertion("AssertTextEquals", expected, actual);
-
-        if (actual != expected)
+        if (actual == expected)
         {
-            throw new AssertionException(
-                message ?? $"Control '{_automationId}' text mismatch. Expected: '{expected}', Actual: '{actual}'");
+            LogAssertion("AssertTextEquals", expected, actual);
+        }
+        else
+        {
+            Context.Logger.ThrowAssertionFailed(
+                Context.TestName,
+                Page?.Name ?? "",
+                _automationId,
+                "TextEquals",
+                actual,
+                expected,
+                message ?? $"Control '{_automationId}' text mismatch. Expected: '{expected}', Actual: '{actual}'",
+                Context);
         }
     }
 
@@ -315,12 +428,21 @@ public abstract class StrideControlBase : IControlObject
     {
         var actual = GetText();
         var contains = actual.Contains(expected);
-        LogAssertion("AssertTextContains", expected, actual);
-
-        if (!contains)
+        if (contains)
         {
-            throw new AssertionException(
-                message ?? $"Control '{_automationId}' text should contain '{expected}' but was '{actual}'");
+            LogAssertion("AssertTextContains", expected, actual);
+        }
+        else
+        {
+            Context.Logger.ThrowAssertionFailed(
+                Context.TestName,
+                Page?.Name ?? "",
+                _automationId,
+                "TextContains",
+                actual,
+                expected,
+                message ?? $"Control '{_automationId}' text should contain '{expected}' but was '{actual}'",
+                Context);
         }
     }
 

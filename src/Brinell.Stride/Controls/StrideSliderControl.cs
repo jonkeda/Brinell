@@ -33,14 +33,18 @@ public class StrideSliderControl : StrideRangeControlBase
                 $"Value {value} is outside range [{min}, {max}]");
         }
 
-        // Calculate position on the track
-        var bounds = GetBounds();
-        var percentage = (value - min) / (max - min);
-        var targetX = bounds.X + (int)(bounds.Width * percentage);
-        var targetY = bounds.CenterY;
-
-        // Click on the track at the calculated position
-        Context.Input.Click(targetX, targetY);
+        // Use server-side slider value setting for reliability
+        var success = Context.SetSliderValue(_automationId, value);
+        if (!success)
+        {
+            // Fallback to mouse clicking if server-side fails
+            var bounds = GetBounds();
+            var percentage = (value - min) / (max - min);
+            var targetX = bounds.X + (int)(bounds.Width * percentage);
+            var targetY = bounds.CenterY;
+            Context.Input.Click(targetX, targetY);
+        }
+        
         LogAction("SetValue", value.ToString());
     }
 

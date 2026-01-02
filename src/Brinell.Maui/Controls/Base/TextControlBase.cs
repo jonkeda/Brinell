@@ -89,14 +89,6 @@ public abstract class TextControlBase : ControlBase, ITextControl
     }
 
     /// <summary>
-    /// Get the text length.
-    /// </summary>
-    public virtual int GetTextLength()
-    {
-        return GetText().Length;
-    }
-
-    /// <summary>
     /// Get the placeholder text.
     /// </summary>
     public virtual string? GetPlaceholder()

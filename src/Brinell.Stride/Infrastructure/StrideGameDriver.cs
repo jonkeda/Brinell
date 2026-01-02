@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace Brinell.Stride.Infrastructure;
 
@@ -20,6 +21,11 @@ public class StrideGameDriver : IDisposable
     /// Whether the game is currently running.
     /// </summary>
     public bool IsRunning => _gameProcess?.HasExited == false;
+
+    /// <summary>
+    /// The game window handle (Windows only).
+    /// </summary>
+    public IntPtr GameWindowHandle => _gameProcess?.MainWindowHandle ?? IntPtr.Zero;
 
     /// <summary>
     /// Create a new game driver.

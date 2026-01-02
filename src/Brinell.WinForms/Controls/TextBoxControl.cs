@@ -32,17 +32,17 @@ public class TextBoxControl : InputControlBase, ITextBox
     }
 
     /// <summary>
-    /// Enter text into the textbox.
+    /// Enter text into the textbox (appends to existing text).
     /// </summary>
-    public void Enter(string text)
+    public override void Enter(string text)
     {
-        SetText(text);
+        AppendText(text);
     }
 
     /// <summary>
     /// Clear the textbox and enter text.
     /// </summary>
-    public void ClearAndEnter(string text)
+    public override void ClearAndEnter(string text)
     {
         Clear();
         Enter(text);
@@ -51,7 +51,7 @@ public class TextBoxControl : InputControlBase, ITextBox
     /// <summary>
     /// Append text to the textbox (convenience method for AppendText from InputControlBase).
     /// </summary>
-    public void Append(string text)
+    public override void Append(string text)
     {
         AppendText(text);
     }

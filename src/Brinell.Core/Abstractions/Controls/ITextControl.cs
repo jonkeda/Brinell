@@ -39,4 +39,29 @@ public interface ITextControl : IControlObject
     /// Get the length of the text.
     /// </summary>
     int GetTextLength();
+    
+    /// <summary>
+    /// Assert text is empty or null.
+    /// </summary>
+    void AssertTextEmpty(string? message = null);
+    
+    /// <summary>
+    /// Assert text is not empty.
+    /// </summary>
+    void AssertTextNotEmpty(string? message = null);
+    
+    /// <summary>
+    /// Assert text starts with expected prefix.
+    /// </summary>
+    void AssertTextStartsWith(string prefix, string? message = null);
+    
+    /// <summary>
+    /// Assert text ends with expected suffix.
+    /// </summary>
+    void AssertTextEndsWith(string suffix, string? message = null);
+    
+    /// <summary>
+    /// Assert text matches the specified regex pattern.
+    /// </summary>
+    void AssertTextMatches(string pattern, string? message = null);
 }

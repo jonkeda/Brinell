@@ -135,13 +135,3 @@ public static class LoggingExtensions
             .Replace("]", "");
     }
 }
-
-/// <summary>
-/// Exception for assertion failures in control methods.
-/// Moved here for easy access from LoggingExtensions.
-/// </summary>
-public class AssertionException : Exception
-{
-    public AssertionException(string message) : base(message) { }
-    public AssertionException(string message, Exception inner) : base(message, inner) { }
-}

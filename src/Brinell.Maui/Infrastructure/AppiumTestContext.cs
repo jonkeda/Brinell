@@ -40,7 +40,7 @@ public class AppiumTestContext : ITestContext, IDisposable
     
     // MAUI apps may need longer timeouts than WPF due to app startup and rendering
     public int DefaultTimeoutMs { get; init; } = 15000;
-    public int ShortTimeoutMs { get; init; } = 3000;
+    public int ShortTimeoutMs { get; init; } = 100;
     public int PollingIntervalMs { get; init; } = 200;
     
     /// <summary>

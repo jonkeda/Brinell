@@ -1,5 +1,6 @@
 using Brinell.Core.Abstractions;
 using Brinell.Core.Abstractions.Controls;
+using Brinell.Core.Exceptions;
 using Brinell.Core.Logging;
 using Brinell.Stride.Communication;
 using Brinell.Stride.Infrastructure;

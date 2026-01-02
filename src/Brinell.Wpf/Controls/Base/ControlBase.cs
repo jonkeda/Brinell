@@ -153,7 +153,7 @@ public abstract class ControlBase : IControlObject
         string? expected, 
         string message)
     {
-        Logger.ThrowAssertionFailed(TestName, PageName, AutomationId, assertType, actual, expected, message);
+        Logger?.ThrowAssertionFailed(TestName, PageName, AutomationId, assertType, actual, expected, message, _context);
     }
     
     /// <summary>
@@ -161,7 +161,7 @@ public abstract class ControlBase : IControlObject
     /// </summary>
     protected void ThrowCheckFailed(string checkType, string message)
     {
-        Logger.ThrowCheckFailed(TestName, PageName, AutomationId, checkType, message);
+        Logger?.ThrowCheckFailed(TestName, PageName, AutomationId, checkType, message, _context);
     }
     
     /// <summary>
@@ -334,6 +334,14 @@ public abstract class ControlBase : IControlObject
         return element.Name ?? string.Empty;
     }
     
+    /// <summary>
+    /// Get the length of the text in the element.
+    /// </summary>
+    public virtual int GetTextLength()
+    {
+        return GetText().Length;
+    }
+    
     public virtual void AssertTextEquals(string expected, string? message = null)
     {
         CheckVisible(expected: true);
@@ -416,6 +424,22 @@ public abstract class ControlBase : IControlObject
                 message ?? $"Expected text to end with '{suffix}' but got '{actual}'.");
         }
         LogAssertPass("TextEndsWith", actual, suffix);
+    }
+    
+    /// <summary>
+    /// Assert element text matches the specified regex pattern.
+    /// Captures screenshot on failure.
+    /// </summary>
+    public virtual void AssertTextMatches(string pattern, string? message = null)
+    {
+        CheckVisible(expected: true);
+        var actual = GetText();
+        if (!System.Text.RegularExpressions.Regex.IsMatch(actual, pattern))
+        {
+            ThrowAssertionFailed("TextMatches", actual, $"matches pattern '{pattern}'",
+                message ?? $"Expected text to match pattern '{pattern}' but got '{actual}'.");
+        }
+        LogAssertPass("TextMatches", actual, pattern);
     }
     
     #endregion

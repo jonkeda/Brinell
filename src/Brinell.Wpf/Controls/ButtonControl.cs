@@ -32,6 +32,7 @@ public class ButtonControl : ContentControlBase, IButton
 
     /// <summary>
     /// Click the button using the Invoke pattern.
+    /// Waits for the button to be both visible and enabled before clicking.
     /// </summary>
     public override void Click()
     {
@@ -41,6 +42,14 @@ public class ButtonControl : ContentControlBase, IButton
             ThrowCheckFailed("Click", $"Element '{AutomationId}' not visible for click.");
         }
         
+        // Wait for the button to be enabled before clicking
+        if (!WaitEnabled(expected: true))
+        {
+            ThrowCheckFailed("Click", $"Element '{AutomationId}' is not enabled for click.");
+        }
+        
+        // Re-fetch the element to ensure we have the latest state
+        element = FindElement();
         var button = element!.AsButton();
         button.Invoke();
         LogAction("Click");

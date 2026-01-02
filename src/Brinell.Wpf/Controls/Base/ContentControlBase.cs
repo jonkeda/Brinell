@@ -69,4 +69,18 @@ public abstract class ContentControlBase : ControlBase, IContentControl
         element!.RightClick();
         LogAction("RightClick");
     }
+
+    /// <summary>
+    /// Hover over the control.
+    /// </summary>
+    public virtual void Hover()
+    {
+        var element = WaitForElementVisible();
+        if (element == null)
+        {
+            ThrowCheckFailed("Hover", $"Element '{AutomationId}' not visible for hover.");
+        }
+        element!.Focus();
+        LogAction("Hover");
+    }
 }

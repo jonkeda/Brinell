@@ -40,6 +40,8 @@ public class StrideUIHandler : IAutomationHandler
     {
         try
         {
+            // UI operations must run on the game thread
+            // For now, execute directly since we're called from the game system update
             var response = command.Type switch
             {
                 "Query" => HandleQuery(command),
@@ -94,6 +96,8 @@ public class StrideUIHandler : IAutomationHandler
         {
             "Click" => PerformClick(element),
             "SetText" => SetText(element, command.Args?.FirstOrDefault()?.ToString() ?? ""),
+            "SetElementText" => SetElementText(element, command.Args?.FirstOrDefault()?.ToString() ?? ""),
+            "SetSliderValue" => SetSliderValue(element, Convert.ToDouble(command.Args?.FirstOrDefault() ?? 0)),
             "Toggle" => PerformToggle(element),
             "SelectIndex" => SelectByIndex(element, Convert.ToInt32(command.Args?.FirstOrDefault() ?? 0)),
             "ScrollToIndex" => ScrollToIndex(element, Convert.ToInt32(command.Args?.FirstOrDefault() ?? 0)),
@@ -212,6 +216,31 @@ public class StrideUIHandler : IAutomationHandler
         return AutomationResponse.Fail($"Element is not an EditText");
     }
 
+    private AutomationResponse SetElementText(UIElement element, string text)
+    {
+        if (element is EditText editText)
+        {
+            // Direct text setting on server side - more reliable than keyboard simulation
+            System.Diagnostics.Debug.WriteLine($"SetElementText: Setting text to '{text}' on element '{element.Name}'");
+            editText.Text = text;
+            System.Diagnostics.Debug.WriteLine($"SetElementText: Text is now '{editText.Text}'");
+            return AutomationResponse.Ok(true);
+        }
+        return AutomationResponse.Fail($"Element is not an EditText");
+    }
+
+    private AutomationResponse SetSliderValue(UIElement element, double value)
+    {
+        if (element is Slider slider)
+        {
+            // Clamp value to slider range
+            var clampedValue = Math.Clamp(value, slider.Minimum, slider.Maximum);
+            slider.Value = (float)clampedValue;
+            return AutomationResponse.Ok(true);
+        }
+        return AutomationResponse.Fail($"Element is not a Slider");
+    }
+
     private AutomationResponse PerformToggle(UIElement element)
     {
         if (element is ToggleButton toggle)
@@ -303,9 +332,9 @@ public class StrideUIHandler : IAutomationHandler
         {
             AutomationId = automationId,
             Exists = true,
-            IsVisible = element.IsVisible,
-            IsEnabled = element.IsEnabled,
-            IsHitTestVisible = true, // Stride doesn't have this property directly
+            IsVisible = IsElementActuallyVisible(element),
+            IsEnabled = IsElementActuallyEnabled(element),
+            IsHitTestVisible = IsElementActuallyVisible(element) && IsElementActuallyEnabled(element),
             IsFocused = false, // Would need to track focus state
             Bounds = GetElementBounds(element),
             Text = GetElementText(element),
@@ -319,6 +348,52 @@ public class StrideUIHandler : IAutomationHandler
         };
 
         return state;
+    }
+
+    /// <summary>
+    /// Check if element is actually visible by checking both its Visibility and parent chain.
+    /// </summary>
+    private bool IsElementActuallyVisible(UIElement element)
+    {
+        // Check this element's Visibility
+        if (!element.IsVisible)
+            return false;
+
+        // Check parent chain - any invisible parent makes this invisible
+        var current = element.VisualParent as UIElement;
+        while (current != null)
+        {
+            if (!current.IsVisible)
+                return false;
+            current = current.VisualParent as UIElement;
+        }
+
+        // Also check if element has zero opacity
+        if (element.Opacity <= 0.01f)
+            return false;
+
+        return true;
+    }
+
+    /// <summary>
+    /// Check if element is actually enabled by checking both its own state and parent chain.
+    /// </summary>
+    private bool IsElementActuallyEnabled(UIElement element)
+    {
+        // Check this element's enabled state
+        if (!element.IsEnabled)
+            return false;
+
+        // Check parent chain - any disabled parent makes children disabled
+        var current = element.VisualParent as UIElement;
+        while (current != null)
+        {
+            if (!current.IsEnabled)
+                return false;
+            current = current.VisualParent as UIElement;
+        }
+
+        return true;
     }
 
     private ElementBounds GetElementBounds(UIElement element)
@@ -382,13 +457,21 @@ public class StrideUIHandler : IAutomationHandler
 
     private string? GetElementText(UIElement element)
     {
-        return element switch
+        var text = element switch
         {
             TextBlock textBlock => textBlock.Text,
             EditText editText => editText.Text,
             Button button => (button.Content as TextBlock)?.Text,
             _ => null
         };
+
+        // Debug logging for text retrieval issues
+        if (element is TextBlock tb && string.IsNullOrEmpty(text))
+        {
+            System.Diagnostics.Debug.WriteLine($"TextBlock '{element.Name}' returned empty text. IsVisible: {element.IsVisible}, Text property: '{tb.Text}'");
+        }
+
+        return text;
     }
 
     private bool? GetToggleState(UIElement element)

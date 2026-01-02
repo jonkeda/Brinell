@@ -1,14 +1,16 @@
 using Brinell.Core.Abstractions;
 using Brinell.Core.Logging;
+using Xunit;
 
 namespace Brinell.Core.Testing;
 
 /// <summary>
 /// Generic base class for UI tests. Platform-specific test bases derive from this.
 /// TContext is the platform-specific context implementation (e.g., FlaUITestContext, AppiumTestContext).
+/// Implements both IDisposable (for sync cleanup) and IAsyncLifetime (for xUnit async lifecycle).
 /// </summary>
 /// <typeparam name="TContext">The platform-specific test context type.</typeparam>
-public abstract class UITestBase<TContext> : IDisposable 
+public abstract class UITestBase<TContext> : IDisposable, IAsyncLifetime 
     where TContext : class, ITestContext
 {
     private readonly Action<string>? _outputWriter;
@@ -162,4 +164,35 @@ public abstract class UITestBase<TContext> : IDisposable
             _disposed = true;
         }
     }
+
+    #region IAsyncLifetime Implementation
+
+    /// <summary>
+    /// Async initialization hook for xUnit. Override in derived classes for async setup.
+    /// Called by xUnit before each test method.
+    /// </summary>
+    /// <remarks>
+    /// Platform-specific test bases can override this to perform async initialization
+    /// such as launching applications, establishing connections, etc.
+    /// </remarks>
+    public virtual Task InitializeAsync()
+    {
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Async cleanup hook for xUnit. Override in derived classes for async teardown.
+    /// Called by xUnit after each test method.
+    /// </summary>
+    /// <remarks>
+    /// By default, calls Dispose() synchronously. Override to add async cleanup
+    /// such as closing connections, waiting for processes to exit, etc.
+    /// </remarks>
+    public virtual Task DisposeAsync()
+    {
+        Dispose();
+        return Task.CompletedTask;
+    }
+
+    #endregion
 }

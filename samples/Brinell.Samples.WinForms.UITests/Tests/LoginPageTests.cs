@@ -23,6 +23,7 @@ public class LoginPageTests
 
     /// <summary>
     /// Reset form to clean state before each test.
+    /// Uses intelligent wait pattern instead of Thread.Sleep.
     /// </summary>
     private void ResetForm()
     {
@@ -30,11 +31,12 @@ public class LoginPageTests
         try
         {
             page.ClickClear();
-            System.Threading.Thread.Sleep(100);
+            page.WaitForFormCleared(timeoutMs: 2000);
         }
         catch
         {
-            // Form might already be clean
+            // Form might already be clean - wait for ready state
+            page.WaitForReady(timeoutMs: 1000);
         }
     }
 
@@ -128,7 +130,7 @@ public class LoginPageTests
         page.EnterUsername(username);
         page.SelectRole(role);
         page.ClickLogin();
-        System.Threading.Thread.Sleep(500); // Wait for status update
+        page.WaitForLoginComplete(); // Wait for status update using intelligent wait
 
         // Assert
         var statusMessage = page.GetStatusMessage();
@@ -148,7 +150,7 @@ public class LoginPageTests
 
         // Act
         page.ClickClear();
-        System.Threading.Thread.Sleep(300); // Wait for clear
+        page.WaitForFormCleared(); // Wait for clear using intelligent wait
 
         // Assert
         page.GetUsername().Should().BeEmpty();
@@ -197,14 +199,14 @@ public class LoginPageTests
             page.EnterUsername(username);
             page.SelectRole(role);
             page.ClickLogin();
-            System.Threading.Thread.Sleep(300);
+            page.WaitForLoginComplete(); // Wait for login using intelligent wait
 
             var status = page.GetStatusMessage();
             status.Should().Contain("Logged in");
             status.Should().Contain(role);
 
             page.ClickClear();
-            System.Threading.Thread.Sleep(200);
+            page.WaitForFormCleared(); // Wait for clear using intelligent wait
         }
     }
 }

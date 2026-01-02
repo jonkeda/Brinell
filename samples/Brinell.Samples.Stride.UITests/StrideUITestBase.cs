@@ -126,6 +126,29 @@ public abstract class StrideUITestBase : IAsyncLifetime
         Context = new StrideTestContext(channel, options);
         Context.TestName = GetType().Name;
 
+        // Wait for window to be created and get its handle
+        if (_gameProcess != null)
+        {
+            var windowReady = false;
+            for (int i = 0; i < 20; i++) // Try for 2 seconds
+            {
+                _gameProcess.Refresh();
+                if (_gameProcess.MainWindowHandle != IntPtr.Zero)
+                {
+                    Context.SetGameWindowHandle(_gameProcess.MainWindowHandle);
+                    _output.WriteLine($"Game window handle: {_gameProcess.MainWindowHandle:X}");
+                    windowReady = true;
+                    break;
+                }
+                await Task.Delay(100);
+            }
+
+            if (!windowReady)
+            {
+                _output.WriteLine("Warning: Could not get game window handle");
+            }
+        }
+
         _output.WriteLine("Connected to game automation");
     }
 

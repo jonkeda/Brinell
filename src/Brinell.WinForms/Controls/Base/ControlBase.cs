@@ -334,6 +334,14 @@ public abstract class ControlBase : IControlObject
         return element.Name ?? string.Empty;
     }
     
+    /// <summary>
+    /// Get the length of the text in the element.
+    /// </summary>
+    public virtual int GetTextLength()
+    {
+        return GetText().Length;
+    }
+    
     public virtual void AssertTextEquals(string expected, string? message = null)
     {
         CheckVisible(expected: true);
@@ -406,6 +414,20 @@ public abstract class ControlBase : IControlObject
     }
     
     /// <summary>
+    /// Hover over the control.
+    /// </summary>
+    public virtual void Hover()
+    {
+        var element = WaitForElementVisible();
+        if (element == null)
+        {
+            ThrowCheckFailed("Hover", $"Element '{AutomationId}' not visible for hover.");
+        }
+        element?.Focus();
+        LogAction("Hover");
+    }
+    
+    /// <summary>
     /// Set text in the control.
     /// Override in derived classes that support text input.
     /// </summary>
@@ -432,6 +454,84 @@ public abstract class ControlBase : IControlObject
         {
             ThrowCheckFailed("SetText", $"Element '{AutomationId}' is not a TextBox.");
         }
+    }
+
+    /// <summary>
+    /// Assert element text is empty.
+    /// </summary>
+    public virtual void AssertTextEmpty(string? message = null)
+    {
+        CheckVisible(expected: true);
+        var actual = GetText();
+        if (!string.IsNullOrEmpty(actual))
+        {
+            ThrowAssertionFailed("TextEmpty", actual, "(empty)",
+                message ?? $"Expected empty text but got '{actual}' for element '{AutomationId}'.");
+        }
+        LogAssertPass("TextEmpty", "(empty)", "(empty)");
+    }
+
+    /// <summary>
+    /// Assert element text is not empty.
+    /// </summary>
+    public virtual void AssertTextNotEmpty(string? message = null)
+    {
+        CheckVisible(expected: true);
+        var actual = GetText();
+        if (string.IsNullOrEmpty(actual))
+        {
+            ThrowAssertionFailed("TextNotEmpty", "(empty)", "(non-empty)",
+                message ?? $"Expected non-empty text but got empty for element '{AutomationId}'.");
+        }
+        LogAssertPass("TextNotEmpty", actual, "(non-empty)");
+    }
+
+    /// <summary>
+    /// Assert element text starts with the specified prefix.
+    /// Captures screenshot on failure.
+    /// </summary>
+    public virtual void AssertTextStartsWith(string prefix, string? message = null)
+    {
+        CheckVisible(expected: true);
+        var actual = GetText();
+        if (!actual.StartsWith(prefix, StringComparison.Ordinal))
+        {
+            ThrowAssertionFailed("TextStartsWith", actual, $"starts with '{prefix}'",
+                message ?? $"Expected text to start with '{prefix}' but got '{actual}'.");
+        }
+        LogAssertPass("TextStartsWith", actual, prefix);
+    }
+
+    /// <summary>
+    /// Assert element text ends with the specified suffix.
+    /// Captures screenshot on failure.
+    /// </summary>
+    public virtual void AssertTextEndsWith(string suffix, string? message = null)
+    {
+        CheckVisible(expected: true);
+        var actual = GetText();
+        if (!actual.EndsWith(suffix, StringComparison.Ordinal))
+        {
+            ThrowAssertionFailed("TextEndsWith", actual, $"ends with '{suffix}'",
+                message ?? $"Expected text to end with '{suffix}' but got '{actual}'.");
+        }
+        LogAssertPass("TextEndsWith", actual, suffix);
+    }
+
+    /// <summary>
+    /// Assert element text matches the specified regex pattern.
+    /// Captures screenshot on failure.
+    /// </summary>
+    public virtual void AssertTextMatches(string pattern, string? message = null)
+    {
+        CheckVisible(expected: true);
+        var actual = GetText();
+        if (!System.Text.RegularExpressions.Regex.IsMatch(actual, pattern))
+        {
+            ThrowAssertionFailed("TextMatches", actual, $"matches pattern '{pattern}'",
+                message ?? $"Expected text to match pattern '{pattern}' but got '{actual}'.");
+        }
+        LogAssertPass("TextMatches", actual, pattern);
     }
     
     #endregion

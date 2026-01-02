@@ -46,5 +46,13 @@
     <PackageVersion Include="Stride.Rendering" Version="4.3.0.2507" />
     <PackageVersion Include="Stride.CommunityToolkit.Windows" Version="1.0.0-preview.62" />
     <PackageVersion Include="Stride.CommunityToolkit.Bepu" Version="1.0.0-preview.62" />
+    
+    <!-- Entity Framework Core -->
+    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.0" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.0" />
+    
+    <!-- Serilog -->
+    <PackageVersion Include="Serilog" Version="4.1.0" />
+    <PackageVersion Include="Serilog.Sinks.Console" Version="6.0.0" />
   </ItemGroup>
 </Project>

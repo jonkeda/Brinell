@@ -219,4 +219,53 @@ public class LoginPage : PageBase
     {
         return _roleCombo.GetSelectedItem();
     }
+
+    #region Wait Methods
+
+    /// <summary>
+    /// Wait for status message to contain specific text.
+    /// </summary>
+    public void WaitForStatusContains(string text, int? timeoutMs = null)
+    {
+        _context.WaitFor(
+            () => GetStatusMessage().Contains(text, StringComparison.OrdinalIgnoreCase),
+            timeoutMs,
+            $"status contains '{text}'");
+    }
+
+    /// <summary>
+    /// Wait for form to be cleared (username empty and remember unchecked).
+    /// </summary>
+    public void WaitForFormCleared(int? timeoutMs = null)
+    {
+        _context.WaitFor(
+            () => string.IsNullOrEmpty(GetUsername()) && !IsRememberMeChecked(),
+            timeoutMs,
+            "form cleared");
+    }
+
+    /// <summary>
+    /// Wait for form to be in ready state.
+    /// Overrides base implementation with status-specific check.
+    /// </summary>
+    public override bool WaitForReady(int? timeoutMs = null)
+    {
+        return _context.WaitFor(
+            () => GetStatusMessage().Contains("Ready", StringComparison.OrdinalIgnoreCase),
+            timeoutMs,
+            "form ready");
+    }
+
+    /// <summary>
+    /// Wait for login to complete (status contains "Logged in").
+    /// </summary>
+    public void WaitForLoginComplete(int? timeoutMs = null)
+    {
+        _context.WaitFor(
+            () => GetStatusMessage().Contains("Logged in", StringComparison.OrdinalIgnoreCase),
+            timeoutMs,
+            "login complete");
+    }
+
+    #endregion
 }

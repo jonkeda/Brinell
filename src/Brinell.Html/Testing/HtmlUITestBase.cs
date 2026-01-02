@@ -4,6 +4,7 @@ using OpenQA.Selenium.Edge;
 using OpenQA.Selenium.Firefox;
 using WebDriverManager;
 using WebDriverManager.DriverConfigs.Impl;
+using Brinell.Core.Exceptions;
 using Brinell.Core.Logging;
 using Brinell.Core.Testing;
 using Brinell.Html.Infrastructure;
@@ -173,7 +174,7 @@ public abstract class HtmlUITestBase : UITestBase<SeleniumTestContext>
         var actual = GetCurrentUrl();
         if (actual != expected)
         {
-            throw new Brinell.Core.Logging.AssertionException(
+            throw new AssertionException(
                 message ?? $"Expected URL '{expected}' but got '{actual}'.");
         }
     }
@@ -186,7 +187,7 @@ public abstract class HtmlUITestBase : UITestBase<SeleniumTestContext>
         var actual = GetCurrentUrl();
         if (!actual.Contains(expected))
         {
-            throw new Brinell.Core.Logging.AssertionException(
+            throw new AssertionException(
                 message ?? $"Expected URL to contain '{expected}' but got '{actual}'.");
         }
     }
@@ -199,7 +200,7 @@ public abstract class HtmlUITestBase : UITestBase<SeleniumTestContext>
         var actual = GetPageTitle();
         if (actual != expected)
         {
-            throw new Brinell.Core.Logging.AssertionException(
+            throw new AssertionException(
                 message ?? $"Expected title '{expected}' but got '{actual}'.");
         }
     }
@@ -212,7 +213,7 @@ public abstract class HtmlUITestBase : UITestBase<SeleniumTestContext>
         var actual = GetPageTitle();
         if (!actual.Contains(expected))
         {
-            throw new Brinell.Core.Logging.AssertionException(
+            throw new AssertionException(
                 message ?? $"Expected title to contain '{expected}' but got '{actual}'.");
         }
     }

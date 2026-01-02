@@ -1,4 +1,5 @@
 using Microsoft.Playwright;
+using Brinell.Core.Exceptions;
 using Brinell.Core.Logging;
 using Brinell.Core.Testing;
 using Brinell.Html.Playwright.Infrastructure;
@@ -274,7 +275,7 @@ public abstract class PlaywrightUITestBase : UITestBase<PlaywrightTestContext>
         var actual = GetCurrentUrl();
         if (actual != expected)
         {
-            throw new Brinell.Core.Logging.AssertionException(
+            throw new Brinell.Core.Exceptions.AssertionException(
                 message ?? $"Expected URL '{expected}' but got '{actual}'.");
         }
     }
@@ -287,7 +288,7 @@ public abstract class PlaywrightUITestBase : UITestBase<PlaywrightTestContext>
         var actual = GetCurrentUrl();
         if (!actual.Contains(expected))
         {
-            throw new Brinell.Core.Logging.AssertionException(
+            throw new Brinell.Core.Exceptions.AssertionException(
                 message ?? $"Expected URL to contain '{expected}' but got '{actual}'.");
         }
     }
@@ -300,7 +301,7 @@ public abstract class PlaywrightUITestBase : UITestBase<PlaywrightTestContext>
         var actual = await GetPageTitleAsync();
         if (actual != expected)
         {
-            throw new Brinell.Core.Logging.AssertionException(
+            throw new Brinell.Core.Exceptions.AssertionException(
                 message ?? $"Expected title '{expected}' but got '{actual}'.");
         }
     }
@@ -313,7 +314,7 @@ public abstract class PlaywrightUITestBase : UITestBase<PlaywrightTestContext>
         var actual = await GetPageTitleAsync();
         if (!actual.Contains(expected))
         {
-            throw new Brinell.Core.Logging.AssertionException(
+            throw new Brinell.Core.Exceptions.AssertionException(
                 message ?? $"Expected title to contain '{expected}' but got '{actual}'.");
         }
     }

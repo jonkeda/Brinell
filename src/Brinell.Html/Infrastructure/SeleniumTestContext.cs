@@ -20,7 +20,7 @@ public class SeleniumTestContext : ITestContext
     public TestPlatform Platform => TestPlatform.Web;
     
     public int DefaultTimeoutMs { get; init; } = 10000;
-    public int ShortTimeoutMs { get; init; } = 2000;
+    public int ShortTimeoutMs { get; init; } = 100;
     public int PollingIntervalMs { get; init; } = 100;
     
     /// <summary>

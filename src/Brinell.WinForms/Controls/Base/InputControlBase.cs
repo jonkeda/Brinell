@@ -1,5 +1,6 @@
 using FlaUI.Core.AutomationElements;
 using Brinell.Core.Abstractions;
+using Brinell.Core.Abstractions.Controls;
 using Brinell.WinForms.Infrastructure;
 
 namespace Brinell.WinForms.Controls.Base;
@@ -8,7 +9,7 @@ namespace Brinell.WinForms.Controls.Base;
 /// Abstract base class for input controls (TextBox, PasswordBox, NumericUpDown, RichTextBox).
 /// Extends ControlBase with text input-specific operations.
 /// </summary>
-public abstract class InputControlBase : ControlBase
+public abstract class InputControlBase : ControlBase, IEditableTextControl
 {
     /// <summary>
     /// Create an input control with page context and AutomationId.
@@ -84,6 +85,116 @@ public abstract class InputControlBase : ControlBase
     }
 
     /// <summary>
+    /// Enter text into the control (appends to existing text).
+    /// </summary>
+    public virtual void Enter(string text)
+    {
+        AppendText(text);
+    }
+
+    /// <summary>
+    /// Clear and enter new text.
+    /// </summary>
+    public virtual void ClearAndEnter(string text)
+    {
+        Clear();
+        Enter(text);
+    }
+
+    /// <summary>
+    /// Set text (alias for ClearAndEnter for backward compatibility).
+    /// </summary>
+    public override void SetText(string text)
+    {
+        ClearAndEnter(text);
+    }
+
+    /// <summary>
+    /// Append text to existing text.
+    /// </summary>
+    public virtual void Append(string text)
+    {
+        AppendText(text);
+    }
+
+    /// <summary>
+    /// Focus the control.
+    /// </summary>
+    public virtual void Focus()
+    {
+        var element = WaitForElementVisible();
+        if (element == null)
+        {
+            ThrowCheckFailed("Focus", $"Element '{AutomationId}' not visible for focus.");
+        }
+        element?.Focus();
+        LogAction("Focus");
+    }
+
+    /// <summary>
+    /// Select all text in the control.
+    /// </summary>
+    public virtual void SelectAll()
+    {
+        var element = WaitForElementVisible();
+        if (element == null)
+        {
+            ThrowCheckFailed("SelectAll", $"Element '{AutomationId}' not visible for select all.");
+        }
+        
+        element?.Focus();
+        System.Windows.Forms.SendKeys.SendWait("^a");
+        LogAction("SelectAll");
+    }
+
+    /// <summary>
+    /// Copy selected text to clipboard.
+    /// </summary>
+    public virtual void Copy()
+    {
+        var element = WaitForElementVisible();
+        if (element == null)
+        {
+            ThrowCheckFailed("Copy", $"Element '{AutomationId}' not visible for copy.");
+        }
+        
+        SelectAll();
+        System.Windows.Forms.SendKeys.SendWait("^c");
+        LogAction("Copy");
+    }
+
+    /// <summary>
+    /// Cut selected text to clipboard.
+    /// </summary>
+    public virtual void Cut()
+    {
+        var element = WaitForElementVisible();
+        if (element == null)
+        {
+            ThrowCheckFailed("Cut", $"Element '{AutomationId}' not visible for cut.");
+        }
+        
+        SelectAll();
+        System.Windows.Forms.SendKeys.SendWait("^x");
+        LogAction("Cut");
+    }
+
+    /// <summary>
+    /// Paste from clipboard.
+    /// </summary>
+    public virtual void Paste()
+    {
+        var element = WaitForElementVisible();
+        if (element == null)
+        {
+            ThrowCheckFailed("Paste", $"Element '{AutomationId}' not visible for paste.");
+        }
+        
+        System.Windows.Forms.SendKeys.SendWait("^v");
+        LogAction("Paste");
+    }
+
+    /// <summary>
     /// Check if the control is read-only.
     /// </summary>
     public virtual bool IsReadOnly()
@@ -103,7 +214,7 @@ public abstract class InputControlBase : ControlBase
     /// <summary>
     /// Get the length of text in the control.
     /// </summary>
-    public virtual int GetTextLength()
+    public override int GetTextLength()
     {
         var text = GetText();
         return text.Length;

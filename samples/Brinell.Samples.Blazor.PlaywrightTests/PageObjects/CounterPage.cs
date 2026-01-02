@@ -191,7 +191,7 @@ public class CounterPage : PageBase
         var actual = GetCurrentCount();
         if (actual != expected)
         {
-            throw new Brinell.Core.Logging.AssertionException(
+            throw new Brinell.Core.Exceptions.AssertionException(
                 message ?? $"Expected count {expected} but got {actual}.");
         }
     }
@@ -204,7 +204,7 @@ public class CounterPage : PageBase
         var actual = await GetCurrentCountAsync();
         if (actual != expected)
         {
-            throw new Brinell.Core.Logging.AssertionException(
+            throw new Brinell.Core.Exceptions.AssertionException(
                 message ?? $"Expected count {expected} but got {actual}.");
         }
     }

@@ -8,7 +8,7 @@ namespace Brinell.Wpf.Controls.Base;
 /// <summary>
 /// WPF base class for text input controls.
 /// </summary>
-public abstract class TextControlBase : ControlBase, ITextControl
+public abstract class TextControlBase : ControlBase, IEditableTextControl
 {
     protected TextControlBase(FlaUITestContext context, IPageObject? page, string automationId)
         : base(context, page, automationId)
@@ -112,14 +112,6 @@ public abstract class TextControlBase : ControlBase, ITextControl
     }
 
     /// <summary>
-    /// Get the length of the text.
-    /// </summary>
-    public virtual int GetTextLength()
-    {
-        return GetText().Length;
-    }
-
-    /// <summary>
     /// Get element text.
     /// </summary>
     public override string GetText()
@@ -127,4 +119,80 @@ public abstract class TextControlBase : ControlBase, ITextControl
         var textBox = GetTextBox();
         return textBox?.Text ?? string.Empty;
     }
-}
+
+    /// <summary>
+    /// Focus the control.
+    /// </summary>
+    public virtual void Focus()
+    {
+        var element = WaitForElementVisible();
+        if (element == null)
+        {
+            ThrowCheckFailed("Focus", $"Element '{AutomationId}' not visible for focus.");
+        }
+        element?.Focus();
+        LogAction("Focus");
+    }
+
+    /// <summary>
+    /// Select all text in the control.
+    /// </summary>
+    public virtual void SelectAll()
+    {
+        var element = WaitForElementVisible();
+        if (element == null)
+        {
+            ThrowCheckFailed("SelectAll", $"Element '{AutomationId}' not visible for select all.");
+        }
+        
+        element?.Focus();
+        System.Windows.Forms.SendKeys.SendWait("^a");
+        LogAction("SelectAll");
+    }
+
+    /// <summary>
+    /// Copy selected text to clipboard.
+    /// </summary>
+    public virtual void Copy()
+    {
+        var element = WaitForElementVisible();
+        if (element == null)
+        {
+            ThrowCheckFailed("Copy", $"Element '{AutomationId}' not visible for copy.");
+        }
+        
+        SelectAll();
+        System.Windows.Forms.SendKeys.SendWait("^c");
+        LogAction("Copy");
+    }
+
+    /// <summary>
+    /// Cut selected text to clipboard.
+    /// </summary>
+    public virtual void Cut()
+    {
+        var element = WaitForElementVisible();
+        if (element == null)
+        {
+            ThrowCheckFailed("Cut", $"Element '{AutomationId}' not visible for cut.");
+        }
+        
+        SelectAll();
+        System.Windows.Forms.SendKeys.SendWait("^x");
+        LogAction("Cut");
+    }
+
+    /// <summary>
+    /// Paste from clipboard.
+    /// </summary>
+    public virtual void Paste()
+    {
+        var element = WaitForElementVisible();
+        if (element == null)
+        {
+            ThrowCheckFailed("Paste", $"Element '{AutomationId}' not visible for paste.");
+        }
+        
+        System.Windows.Forms.SendKeys.SendWait("^v");
+        LogAction("Paste");
+    }}

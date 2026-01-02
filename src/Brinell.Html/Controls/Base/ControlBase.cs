@@ -224,6 +224,14 @@ public abstract class ControlBase : IControlObject
         return element.Text ?? string.Empty;
     }
 
+    /// <summary>
+    /// Get the length of the text in the element.
+    /// </summary>
+    public virtual int GetTextLength()
+    {
+        return GetText().Length;
+    }
+
     #endregion
 
     #region Wait Methods (Poll until condition or timeout)
@@ -523,6 +531,22 @@ public abstract class ControlBase : IControlObject
                 message ?? $"Expected text to end with '{suffix}' but got '{actual}'.");
         }
         LogAssertPass("TextEndsWith", actual, suffix);
+    }
+    
+    /// <summary>
+    /// Assert element text matches the specified regex pattern.
+    /// Captures screenshot on failure.
+    /// </summary>
+    public virtual void AssertTextMatches(string pattern, string? message = null)
+    {
+        CheckVisible(expected: true);
+        var actual = GetText();
+        if (!System.Text.RegularExpressions.Regex.IsMatch(actual, pattern))
+        {
+            ThrowAssertionFailed("TextMatches", actual, $"matches pattern '{pattern}'",
+                message ?? $"Expected text to match pattern '{pattern}' but got '{actual}'.");
+        }
+        LogAssertPass("TextMatches", actual, pattern);
     }
     
     /// <summary>

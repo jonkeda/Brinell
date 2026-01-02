@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using Brinell.Core.Abstractions;
 using Brinell.Core.Logging;
@@ -17,6 +18,7 @@ public class StrideTestContext : ITestContext, IDisposable
     private readonly JsonSerializerOptions _jsonOptions;
     private bool _disposed;
     private WindowInfo? _cachedWindowInfo;
+    private IntPtr _gameWindowHandle;
 
     /// <inheritdoc />
     public string TestName { get; set; } = string.Empty;
@@ -54,6 +56,15 @@ public class StrideTestContext : ITestContext, IDisposable
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             PropertyNameCaseInsensitive = true
         };
+    }
+
+    /// <summary>
+    /// Set the game window handle for focus management.
+    /// </summary>
+    public void SetGameWindowHandle(IntPtr handle)
+    {
+        _gameWindowHandle = handle;
+        Log($"Game window handle set: {handle:X}");
     }
 
     /// <inheritdoc />
@@ -185,10 +196,84 @@ public class StrideTestContext : ITestContext, IDisposable
         => GetElementState(automationId).Text ?? string.Empty;
 
     /// <summary>
+    /// Set element text directly via server-side command (more reliable than keyboard simulation).
+    /// </summary>
+    public bool SetElementText(string automationId, string text)
+    {
+        var response = SendCommand(AutomationCommand.Action("SetElementText", automationId, text));
+        return response.Success;
+    }
+
+    /// <summary>
+    /// Set slider value directly via server-side command (more reliable than mouse clicks).
+    /// </summary>
+    public bool SetSliderValue(string automationId, double value)
+    {
+        var response = SendCommand(AutomationCommand.Action("SetSliderValue", automationId, value));
+        return response.Success;
+    }
+
+    /// <summary>
     /// Get element bounds.
     /// </summary>
     public ElementBounds GetElementBounds(string automationId)
         => GetElementState(automationId).Bounds;
+
+    #endregion
+
+    #region Window Focus Management
+
+    /// <summary>
+    /// Ensure the game window has focus before input operations.
+    /// </summary>
+    public bool EnsureGameHasFocus(int timeoutMs = 5000)
+    {
+        if (_gameWindowHandle == IntPtr.Zero)
+        {
+            Log("Warning: Game window handle not set, cannot ensure focus");
+            return false;
+        }
+
+        if (!OperatingSystem.IsWindows())
+        {
+            Log("Window focus management is only supported on Windows");
+            return true; // Don't fail on other platforms
+        }
+
+        var stopwatch = Stopwatch.StartNew();
+        while (stopwatch.ElapsedMilliseconds < timeoutMs)
+        {
+            var currentForeground = GetForegroundWindow();
+            if (currentForeground == _gameWindowHandle)
+            {
+                Log("Game window already has focus");
+                return true;
+            }
+
+            Log($"Setting game window to foreground (current: {currentForeground:X}, target: {_gameWindowHandle:X})");
+            SetForegroundWindow(_gameWindowHandle);
+            Thread.Sleep(50); // Give window time to receive focus
+
+            // Verify focus was set
+            currentForeground = GetForegroundWindow();
+            if (currentForeground == _gameWindowHandle)
+            {
+                Log("Game window focus set successfully");
+                return true;
+            }
+
+            Thread.Sleep(100); // Wait before retry
+        }
+
+        Log($"Failed to set game window focus after {timeoutMs}ms");
+        return false;
+    }
+
+    [DllImport("user32.dll")]
+    private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetForegroundWindow();
 
     #endregion
 
@@ -267,13 +352,25 @@ public class StrideTestContext : ITestContext, IDisposable
     /// Type text using keyboard simulation.
     /// </summary>
     public void TypeText(string text)
-        => _inputSimulator.TypeText(text);
+    {
+        if (!EnsureGameHasFocus())
+        {
+            Log("Warning: Game may not have focus, text input might go to wrong window");
+        }
+        _inputSimulator.TypeText(text);
+    }
 
     /// <summary>
     /// Press a key.
     /// </summary>
     public void PressKey(VirtualKey key)
-        => _inputSimulator.PressKey(key);
+    {
+        if (!EnsureGameHasFocus())
+        {
+            Log("Warning: Game may not have focus, key press might go to wrong window");
+        }
+        _inputSimulator.PressKey(key);
+    }
 
     /// <summary>
     /// Hold a key for a duration.

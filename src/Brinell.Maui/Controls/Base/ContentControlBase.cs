@@ -36,4 +36,12 @@ public abstract class ContentControlBase : ControlBase, IContentControl
     {
         LongPress();
     }
+
+    /// <summary>
+    /// Hover over the control. On mobile, this is implemented as a tap.
+    /// </summary>
+    public virtual void Hover()
+    {
+        Tap();
+    }
 }

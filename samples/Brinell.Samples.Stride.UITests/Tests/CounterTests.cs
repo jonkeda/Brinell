@@ -47,13 +47,15 @@ public class CounterTests : StrideUITestBase
         // Arrange
         var mainPage = new MainPage(Context);
         mainPage.CheckActive();
+        mainPage.ResetCounter(); // Ensure we start at 0
         mainPage.IncrementCounter(); // Start at 1
+        mainPage.IncrementCounter(); // Increment again to 2 for stability
 
         // Act
         mainPage.DecrementCounter();
 
         // Assert
-        mainPage.GetCounterValue().Should().Be(0);
+        mainPage.GetCounterValue().Should().Be(1);
     }
 
     [Fact]

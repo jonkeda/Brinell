@@ -283,6 +283,14 @@ public abstract class ControlBase : IControlObject
     }
 
     /// <summary>
+    /// Get the length of the text in the element.
+    /// </summary>
+    public virtual int GetTextLength()
+    {
+        return GetText().Length;
+    }
+
+    /// <summary>
     /// Get element text asynchronously.
     /// </summary>
     public virtual async Task<string> GetTextAsync()
@@ -572,6 +580,54 @@ public abstract class ControlBase : IControlObject
         }
 
         LogAssertPass("TextNotEmpty", actual, "(non-empty)");
+    }
+
+    /// <summary>
+    /// Assert element text starts with the specified prefix.
+    /// Captures screenshot on failure.
+    /// </summary>
+    public virtual void AssertTextStartsWith(string prefix, string? message = null)
+    {
+        CheckVisible(expected: true);
+        var actual = GetText();
+        if (!actual.StartsWith(prefix, StringComparison.Ordinal))
+        {
+            ThrowAssertionFailed("TextStartsWith", actual, $"starts with '{prefix}'",
+                message ?? $"Expected text to start with '{prefix}' but got '{actual}'.");
+        }
+        LogAssertPass("TextStartsWith", actual, prefix);
+    }
+
+    /// <summary>
+    /// Assert element text ends with the specified suffix.
+    /// Captures screenshot on failure.
+    /// </summary>
+    public virtual void AssertTextEndsWith(string suffix, string? message = null)
+    {
+        CheckVisible(expected: true);
+        var actual = GetText();
+        if (!actual.EndsWith(suffix, StringComparison.Ordinal))
+        {
+            ThrowAssertionFailed("TextEndsWith", actual, $"ends with '{suffix}'",
+                message ?? $"Expected text to end with '{suffix}' but got '{actual}'.");
+        }
+        LogAssertPass("TextEndsWith", actual, suffix);
+    }
+
+    /// <summary>
+    /// Assert element text matches the specified regex pattern.
+    /// Captures screenshot on failure.
+    /// </summary>
+    public virtual void AssertTextMatches(string pattern, string? message = null)
+    {
+        CheckVisible(expected: true);
+        var actual = GetText();
+        if (!System.Text.RegularExpressions.Regex.IsMatch(actual, pattern))
+        {
+            ThrowAssertionFailed("TextMatches", actual, $"matches pattern '{pattern}'",
+                message ?? $"Expected text to match pattern '{pattern}' but got '{actual}'.");
+        }
+        LogAssertPass("TextMatches", actual, pattern);
     }
 
     #endregion

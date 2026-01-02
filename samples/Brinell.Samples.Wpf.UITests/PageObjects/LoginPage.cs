@@ -27,7 +27,7 @@ public class LoginPage : BusyPageBase
     /// <summary>
     /// Password input field (PasswordBox).
     /// </summary>
-    public TextBoxControl PasswordBox { get; }
+    public PasswordBoxControl PasswordBox { get; }
     
     /// <summary>
     /// Password validation error label.
@@ -65,7 +65,7 @@ public class LoginPage : BusyPageBase
         LoginHeader = new LabelControl(context, this, "LoginHeader");
         UsernameTextBox = new TextBoxControl(context, this, "UsernameTextBox");
         UsernameErrorText = new LabelControl(context, this, "UsernameErrorText");
-        PasswordBox = new TextBoxControl(context, this, "PasswordBox");
+        PasswordBox = new PasswordBoxControl(context, this, "PasswordBox");
         PasswordErrorText = new LabelControl(context, this, "PasswordErrorText");
         LoginErrorText = new LabelControl(context, this, "LoginErrorText");
         LoginButton = new ButtonControl(context, this, "LoginButton");
