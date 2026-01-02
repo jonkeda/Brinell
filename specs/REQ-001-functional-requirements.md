@@ -205,6 +205,39 @@ The framework MUST provide consistent patterns for verifying element and page st
 - Assertion methods MUST throw exceptions on assertion failure
 - Assertion methods MUST include expected and actual values in error messages
 
+#### FR-004.4.1: Assert Method Prerequisites
+
+**Priority:** MUST
+
+Assert methods MUST perform prerequisite checks before evaluating the assertion condition:
+
+- Assert methods MUST call the corresponding Check method (with waiting/polling) before evaluating
+- This ensures the UI state has stabilized before the assertion is evaluated
+- Assert methods MUST NOT use Is* methods directly (which don't wait)
+
+**Pattern:**
+```csharp
+// ✅ CORRECT - Assert calls Check first
+public void AssertVisible(string? message = null)
+{
+    CheckVisible(expected: true);  // Waits for element to be visible
+    LogAssertPass("Visible", "true", "true");
+}
+
+// ❌ INCORRECT - Assert using Is directly (no waiting)
+public void AssertVisible(string? message = null)
+{
+    if (!IsVisible())  // No waiting, may fail prematurely
+        throw new AssertionException("...");
+}
+```
+
+**Rationale:**
+- UI state may not be immediately stable after actions
+- Check methods provide built-in waiting/polling behavior
+- Eliminates flaky tests caused by timing issues
+- Consistent behavior across all Assert methods
+
 #### FR-004.5: Prefer Control Object Assertions
 
 **Priority:** SHOULD
@@ -581,6 +614,7 @@ The framework MAY integrate with accessibility testing tools.
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 3.2 | Jan 2026 | Added FR-004.4.1 (Assert method prerequisites) |
 | 3.1 | Jan 2026 | Added FR-002.5-7 (interfaces, containers, scroll), FR-004.5-6 (assertions, fail-fast), FR-005.4.1-5.5 (BusyPageBase, sync model), FR-007.2.1-7.7 (gestures, platforms), FR-008.4 (third-party controls), FR-011 (licensing), expanded scope |
 | 3.0 | Dec 2025 | Added FR-001.3 (platform-specific implementations), FR-007.4 (direct driver access) |
 | 2.0 | Dec 2025 | Added FR-006 (logging), FR-010 (error handling) |
