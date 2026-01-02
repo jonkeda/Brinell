@@ -24,4 +24,9 @@
     <ProjectReference Include="..\..\src\Brinell.Core\Brinell.Core.csproj" />
   </ItemGroup>
 
+  <!-- Copy xunit.runner.json to output for sequential test execution -->
+  <ItemGroup>
+    <Content Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

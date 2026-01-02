@@ -16,6 +16,7 @@ public class StrideTestContext : ITestContext, IDisposable
     private readonly StrideTestOptions _options;
     private readonly JsonSerializerOptions _jsonOptions;
     private bool _disposed;
+    private WindowInfo? _cachedWindowInfo;
 
     /// <inheritdoc />
     public string TestName { get; set; } = string.Empty;
@@ -103,7 +104,15 @@ public class StrideTestContext : ITestContext, IDisposable
         try
         {
             var response = SendCommand(AutomationCommand.Action("TakeScreenshot", null, name));
-            return response.Success ? response.Result?.ToString() : null;
+            if (response.Success)
+            {
+                return response.Result?.ToString();
+            }
+            else
+            {
+                Log($"Screenshot failed: {response.Error}");
+                return null;
+            }
         }
         catch (Exception ex)
         {
@@ -196,7 +205,62 @@ public class StrideTestContext : ITestContext, IDisposable
             throw new InvalidOperationException($"Cannot click element '{automationId}' - not found or has no bounds");
         }
 
-        _inputSimulator.Click(bounds.CenterX, bounds.CenterY);
+        // Transform UI-local coordinates to screen coordinates
+        var (screenX, screenY) = TransformToScreenCoordinates(bounds.CenterX, bounds.CenterY);
+        Log($"Clicking '{automationId}' at UI({bounds.CenterX}, {bounds.CenterY}) -> Screen({screenX}, {screenY})");
+        _inputSimulator.Click(screenX, screenY);
+    }
+
+    /// <summary>
+    /// Transform UI-local coordinates to screen coordinates.
+    /// </summary>
+    private (int screenX, int screenY) TransformToScreenCoordinates(int uiX, int uiY)
+    {
+        var windowInfo = GetWindowInfo();
+        if (windowInfo == null)
+        {
+            Log("Warning: Could not get window info, using UI coordinates as screen coordinates");
+            return (uiX, uiY);
+        }
+
+        // Add window position offset to convert UI-local to screen coordinates
+        var screenX = windowInfo.WindowX + uiX;
+        var screenY = windowInfo.WindowY + uiY;
+
+        return (screenX, screenY);
+    }
+
+    /// <summary>
+    /// Get current window information from the game.
+    /// </summary>
+    private WindowInfo? GetWindowInfo()
+    {
+        // Refresh window info each time since window might move
+        try
+        {
+            var response = SendCommand(AutomationCommand.GameQuery("GetWindowInfo"));
+            if (response.Success && response.Result != null)
+            {
+                var json = response.Result.ToString()!;
+                var dict = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json, _jsonOptions);
+                if (dict != null)
+                {
+                    _cachedWindowInfo = new WindowInfo
+                    {
+                        WindowX = dict.TryGetValue("windowX", out var x) ? x.GetInt32() : 0,
+                        WindowY = dict.TryGetValue("windowY", out var y) ? y.GetInt32() : 0,
+                        WindowWidth = dict.TryGetValue("windowWidth", out var w) ? w.GetInt32() : 1280,
+                        WindowHeight = dict.TryGetValue("windowHeight", out var h) ? h.GetInt32() : 720
+                    };
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Log($"Failed to get window info: {ex.Message}");
+        }
+
+        return _cachedWindowInfo;
     }
 
     /// <summary>

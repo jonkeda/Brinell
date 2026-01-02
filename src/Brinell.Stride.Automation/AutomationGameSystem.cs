@@ -15,6 +15,8 @@ public class AutomationGameSystem : GameSystemBase
     private readonly AutomationServerOptions _options;
     private readonly Func<UIElement?>? _uiRootProvider;
     private readonly IAutomationHandler? _customHandler;
+    private readonly IGame? _game;
+    private bool _initialized;
 
     /// <summary>
     /// Create with default UI handler.
@@ -22,11 +24,13 @@ public class AutomationGameSystem : GameSystemBase
     public AutomationGameSystem(
         IServiceRegistry registry,
         Func<UIElement?> uiRootProvider,
-        AutomationServerOptions? options = null)
+        AutomationServerOptions? options = null,
+        IGame? game = null)
         : base(registry)
     {
         _uiRootProvider = uiRootProvider ?? throw new ArgumentNullException(nameof(uiRootProvider));
         _options = options ?? new AutomationServerOptions();
+        _game = game;
     }
 
     /// <summary>
@@ -47,6 +51,13 @@ public class AutomationGameSystem : GameSystemBase
     {
         base.Initialize();
 
+        // Prevent double initialization - Stride can call this multiple times
+        if (_initialized)
+        {
+            return;
+        }
+        _initialized = true;
+
         IAutomationHandler handler;
         if (_customHandler != null)
         {
@@ -54,7 +65,7 @@ public class AutomationGameSystem : GameSystemBase
         }
         else if (_uiRootProvider != null)
         {
-            handler = new StrideUIHandler(_uiRootProvider);
+            handler = new StrideUIHandler(_uiRootProvider, game: _game);
         }
         else
         {

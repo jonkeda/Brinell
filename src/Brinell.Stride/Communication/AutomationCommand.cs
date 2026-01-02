@@ -70,4 +70,14 @@ public class AutomationCommand
         TimeoutMs = timeoutMs,
         Args = args.Length > 0 ? args : null
     };
+
+    /// <summary>
+    /// Create a game query command (for game-level queries like window info).
+    /// </summary>
+    public static AutomationCommand GameQuery(string method, params object[] args) => new()
+    {
+        Type = "GameQuery",
+        Method = method,
+        Args = args.Length > 0 ? args : null
+    };
 }

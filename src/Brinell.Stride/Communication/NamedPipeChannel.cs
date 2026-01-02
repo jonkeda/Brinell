@@ -1,3 +1,4 @@
+using System.IO;
 using System.IO.Pipes;
 using System.Text;
 using System.Text.Json;
@@ -74,21 +75,34 @@ public class NamedPipeChannel : IAutomationChannel
             throw new InvalidOperationException("Not connected to game. Call ConnectAsync first.");
         }
 
-        // Serialize and send command
-        var json = JsonSerializer.Serialize(command, _jsonOptions);
-        await _writer.WriteLineAsync(json.AsMemory(), cancellationToken);
-
-        // Read response
-        var responseJson = await _reader.ReadLineAsync(cancellationToken);
-        if (string.IsNullOrEmpty(responseJson))
-        {
-            return AutomationResponse.Fail("Empty response from game");
-        }
+        // Apply timeout to the entire operation
+        using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
 
         try
         {
+            // Serialize and send command
+            var json = JsonSerializer.Serialize(command, _jsonOptions);
+            await _writer.WriteLineAsync(json.AsMemory(), linkedCts.Token);
+            await _writer.FlushAsync(linkedCts.Token);
+
+            // Read response with timeout
+            var responseJson = await _reader.ReadLineAsync(linkedCts.Token);
+            if (string.IsNullOrEmpty(responseJson))
+            {
+                return AutomationResponse.Fail("Empty response from game");
+            }
+
             return JsonSerializer.Deserialize<AutomationResponse>(responseJson, _jsonOptions)
                 ?? AutomationResponse.Fail("Failed to deserialize response");
+        }
+        catch (OperationCanceledException) when (timeoutCts.IsCancellationRequested)
+        {
+            return AutomationResponse.Fail("Timeout waiting for game response");
+        }
+        catch (IOException ex)
+        {
+            return AutomationResponse.Fail($"Pipe communication error: {ex.Message}");
         }
         catch (JsonException ex)
         {

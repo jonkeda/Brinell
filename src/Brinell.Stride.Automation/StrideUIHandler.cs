@@ -1,8 +1,11 @@
 using Brinell.Stride.Communication;
 using Stride.Core.Mathematics;
+using Stride.Games;
 using Stride.UI;
 using Stride.UI.Controls;
 using Stride.UI.Panels;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Text.Json;
 
 namespace Brinell.Stride.Automation;
@@ -15,6 +18,7 @@ public class StrideUIHandler : IAutomationHandler
     private readonly Func<UIElement?> _rootProvider;
     private readonly Func<bool>? _isReadyProvider;
     private readonly Func<bool>? _isBusyProvider;
+    private readonly IGame? _game;
 
     /// <summary>
     /// Create a handler with a UI root element provider.
@@ -22,11 +26,13 @@ public class StrideUIHandler : IAutomationHandler
     public StrideUIHandler(
         Func<UIElement?> rootProvider,
         Func<bool>? isReadyProvider = null,
-        Func<bool>? isBusyProvider = null)
+        Func<bool>? isBusyProvider = null,
+        IGame? game = null)
     {
         _rootProvider = rootProvider ?? throw new ArgumentNullException(nameof(rootProvider));
         _isReadyProvider = isReadyProvider;
         _isBusyProvider = isBusyProvider;
+        _game = game;
     }
 
     /// <inheritdoc />
@@ -66,10 +72,22 @@ public class StrideUIHandler : IAutomationHandler
     private AutomationResponse HandleAction(AutomationCommand command)
     {
         var target = command.Target ?? "";
+        
+        // Handle screenshot action (doesn't need a target element)
+        if (command.Method == "TakeScreenshot")
+        {
+            var screenshotName = command.Args?.FirstOrDefault()?.ToString() ?? "screenshot";
+            if (OperatingSystem.IsWindows())
+            {
+                return TakeScreenshot(screenshotName);
+            }
+            return AutomationResponse.Fail("Screenshot is only supported on Windows");
+        }
+        
         var element = FindElement(target);
         if (element == null)
         {
-            return AutomationResponse.Fail($"Element not found: {target}");
+            return AutomationResponse.Fail($"NotFound:{target}:{command.Method}");
         }
 
         return command.Method switch
@@ -89,9 +107,69 @@ public class StrideUIHandler : IAutomationHandler
         {
             "IsReady" => AutomationResponse.Ok(_isReadyProvider?.Invoke() ?? true),
             "IsBusy" => AutomationResponse.Ok(_isBusyProvider?.Invoke() ?? false),
+            "GetWindowInfo" => GetWindowInfo(),
             _ => AutomationResponse.Fail($"Unknown game query: {command.Method}")
         };
     }
+
+    private AutomationResponse GetWindowInfo()
+    {
+        // Get window position using Windows API
+        var windowInfo = new Dictionary<string, object>
+        {
+            ["windowX"] = 0,
+            ["windowY"] = 0,
+            ["windowWidth"] = 1280,
+            ["windowHeight"] = 720,
+            ["uiResolutionX"] = 1280,
+            ["uiResolutionY"] = 720
+        };
+
+        if (_game?.Window != null)
+        {
+            var window = _game.Window;
+            windowInfo["windowWidth"] = window.ClientBounds.Width;
+            windowInfo["windowHeight"] = window.ClientBounds.Height;
+
+            // Get actual window screen position using Windows API
+            var hwnd = window.NativeWindow.Handle;
+            if (hwnd != IntPtr.Zero && GetWindowRect(hwnd, out var rect))
+            {
+                // Client area offset from window position
+                var clientPoint = new POINT { X = 0, Y = 0 };
+                ClientToScreen(hwnd, ref clientPoint);
+                
+                windowInfo["windowX"] = clientPoint.X;
+                windowInfo["windowY"] = clientPoint.Y;
+            }
+        }
+
+        return AutomationResponse.Ok(windowInfo);
+    }
+
+    #region Windows API for window position
+    
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool ClientToScreen(IntPtr hWnd, ref POINT lpPoint);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct RECT
+    {
+        public int Left, Top, Right, Bottom;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct POINT
+    {
+        public int X, Y;
+    }
+
+    #endregion
 
     private AutomationResponse GetElementState(string automationId)
     {
@@ -245,38 +323,60 @@ public class StrideUIHandler : IAutomationHandler
 
     private ElementBounds GetElementBounds(UIElement element)
     {
-        // Get element's screen bounds
+        // Get element's position from world matrix
         var worldMatrix = element.WorldMatrix;
         var renderSize = element.RenderSize;
 
-        // Fallback to explicit size if render size is zero (layout not yet computed)
-        if (renderSize.X <= 0 && renderSize.Y <= 0)
+        var width = renderSize.X;
+        var height = renderSize.Y;
+
+        // RenderSize often returns content size, not full control size
+        // For buttons, this is just the text size, not including padding
+        // Use minimum reasonable sizes for interactive controls
+        var minWidth = 60f;  // Minimum clickable width
+        var minHeight = 25f; // Minimum clickable height
+
+        // Apply minimum sizes for interactive controls
+        if (width < minWidth)
         {
-            // Try Width/Height properties
-            var width = element.Width;
-            var height = element.Height;
-
-            // Fallback to minimum size if Width/Height are NaN
-            if (float.IsNaN(width) || width <= 0)
+            width = element.Width;
+            if (float.IsNaN(width) || width < minWidth)
                 width = element.MinimumWidth;
-            if (float.IsNaN(height) || height <= 0)
-                height = element.MinimumHeight;
-
-            // Default to a reasonable size if nothing is specified
-            if (float.IsNaN(width) || width <= 0)
-                width = 100;
-            if (float.IsNaN(height) || height <= 0)
-                height = 30;
-
-            renderSize = new Vector3(width, height, 0);
+            if (float.IsNaN(width) || width < minWidth)
+                width = minWidth;
         }
+
+        // Apply minimum height
+        if (height < minHeight)
+        {
+            height = element.Height;
+            if (float.IsNaN(height) || height < minHeight)
+                height = element.MinimumHeight;
+            if (float.IsNaN(height) || height < minHeight)
+                height = minHeight;
+        }
+
+        // Stride UI uses center-based coordinates
+        // WorldMatrix.TranslationVector gives the element's CENTER position relative to UI center
+        // UI center is at (resolution/2, resolution/2) = (640, 360) for 1280x720
+        var uiCenterX = 640f;
+        var uiCenterY = 360f;
+
+        // Translation gives CENTER of element relative to UI center
+        // Convert to top-left corner in screen coordinates
+        var elementCenterX = uiCenterX + worldMatrix.TranslationVector.X;
+        var elementCenterY = uiCenterY + worldMatrix.TranslationVector.Y;
+
+        // Convert center to top-left
+        var x = elementCenterX - width / 2;
+        var y = elementCenterY - height / 2;
 
         return new ElementBounds
         {
-            X = (int)worldMatrix.TranslationVector.X,
-            Y = (int)worldMatrix.TranslationVector.Y,
-            Width = (int)renderSize.X,
-            Height = (int)renderSize.Y
+            X = (int)x,
+            Y = (int)y,
+            Width = (int)width,
+            Height = (int)height
         };
     }
 
@@ -342,4 +442,132 @@ public class StrideUIHandler : IAutomationHandler
     {
         return null;
     }
+
+    [SupportedOSPlatform("windows")]
+    private AutomationResponse TakeScreenshot(string screenshotName)
+    {
+        try
+        {
+            // Create screenshots directory if it doesn't exist
+            var screenshotDir = Path.Combine(Path.GetTempPath(), "stride_screenshots");
+            Directory.CreateDirectory(screenshotDir);
+
+            // Take a screenshot using Windows screenshot API
+            var screenshotPath = Path.Combine(screenshotDir, $"{screenshotName}_{DateTime.Now:yyyyMMdd_HHmmss}.png");
+            
+            // Debug logging
+            string debugInfo = $"Game={_game != null}, Window={_game?.Window != null}";
+            
+            // Use Windows screenshot functionality
+            if (_game == null)
+                return AutomationResponse.Fail($"Game instance not provided to handler [{debugInfo}]");
+            
+            if (_game.Window == null)
+                return AutomationResponse.Fail($"Game window is null [{debugInfo}]");
+                
+            var hwnd = _game.Window.NativeWindow.Handle;
+            debugInfo += $", Hwnd={hwnd:X}";
+            if (hwnd == IntPtr.Zero)
+                return AutomationResponse.Fail($"Invalid window handle (IntPtr.Zero) [{debugInfo}]");
+
+            CaptureWindowScreenshot(hwnd, screenshotPath);
+            return AutomationResponse.Ok(screenshotPath);
+        }
+        catch (Exception ex)
+        {
+            return AutomationResponse.Fail($"Failed to take screenshot: {ex.Message}");
+        }
+    }
+
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    private void CaptureWindowScreenshot(IntPtr hwnd, string filePath)
+    {
+        // Get window dimensions
+        if (!GetWindowRect(hwnd, out var rect))
+            throw new InvalidOperationException("Failed to get window rect");
+
+        var width = rect.Right - rect.Left;
+        var height = rect.Bottom - rect.Top;
+
+        // Create device context for the window
+        var hdcWindow = GetDC(hwnd);
+        if (hdcWindow == IntPtr.Zero)
+            throw new InvalidOperationException("Failed to get device context");
+
+        try
+        {
+            // Create compatible device context
+            var hdcMemDC = CreateCompatibleDC(hdcWindow);
+            if (hdcMemDC == IntPtr.Zero)
+                throw new InvalidOperationException("Failed to create compatible DC");
+
+            try
+            {
+                // Create compatible bitmap
+                var hBitmap = CreateCompatibleBitmap(hdcWindow, width, height);
+                if (hBitmap == IntPtr.Zero)
+                    throw new InvalidOperationException("Failed to create compatible bitmap");
+
+                try
+                {
+                    // Select bitmap into device context
+                    var hOldBitmap = SelectObject(hdcMemDC, hBitmap);
+
+                    // Copy pixels from window to memory DC
+                    if (!BitBlt(hdcMemDC, 0, 0, width, height, hdcWindow, 0, 0, 0x00CC0020)) // SRCCOPY
+                        throw new InvalidOperationException("BitBlt failed");
+
+                    // Restore old bitmap
+                    SelectObject(hdcMemDC, hOldBitmap);
+
+                    // Convert bitmap to image and save
+                    using (var bitmap = System.Drawing.Image.FromHbitmap(hBitmap))
+                    {
+                        bitmap.Save(filePath, System.Drawing.Imaging.ImageFormat.Png);
+                    }
+                }
+                finally
+                {
+                    DeleteObject(hBitmap);
+                }
+            }
+            finally
+            {
+                DeleteDC(hdcMemDC);
+            }
+        }
+        finally
+        {
+            ReleaseDC(hwnd, hdcWindow);
+        }
+    }
+
+    #region Windows API for screenshots
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetDC(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern int ReleaseDC(IntPtr hWnd, IntPtr hDC);
+
+    [DllImport("gdi32.dll")]
+    private static extern IntPtr CreateCompatibleDC(IntPtr hdc);
+
+    [DllImport("gdi32.dll")]
+    private static extern bool DeleteDC(IntPtr hdc);
+
+    [DllImport("gdi32.dll")]
+    private static extern IntPtr CreateCompatibleBitmap(IntPtr hdc, int nWidth, int nHeight);
+
+    [DllImport("gdi32.dll")]
+    private static extern IntPtr SelectObject(IntPtr hdc, IntPtr hgdiobj);
+
+    [DllImport("gdi32.dll")]
+    private static extern bool BitBlt(IntPtr hdcDest, int nXDest, int nYDest, int nWidth, int nHeight,
+        IntPtr hdcSrc, int nXSrc, int nYSrc, uint dwRop);
+
+    [DllImport("gdi32.dll")]
+    private static extern bool DeleteObject(IntPtr hObject);
+
+    #endregion
 }

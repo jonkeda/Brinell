@@ -16,7 +16,7 @@ public static class StrideAutomationExtensions
         Func<UIElement?> uiRootProvider,
         AutomationServerOptions? options = null)
     {
-        var system = new AutomationGameSystem(game.Services, uiRootProvider, options);
+        var system = new AutomationGameSystem(game.Services, uiRootProvider, options, game);
         game.GameSystems.Add(system);
         return game;
     }

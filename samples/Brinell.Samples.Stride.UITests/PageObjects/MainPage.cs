@@ -6,7 +6,9 @@ using Brinell.Stride.Pages;
 namespace Brinell.Samples.Stride.UITests.PageObjects;
 
 /// <summary>
-/// Page object for the main sample app page.
+/// Page object for the main sample app page (legacy, for backward compatibility).
+/// Note: With the new game-focused UI, use GamePage for gameplay and SettingsPage for settings.
+/// This page is kept for compatibility with existing tests.
 /// </summary>
 public class MainPage : StridePageBase
 {
@@ -17,7 +19,7 @@ public class MainPage : StridePageBase
     {
     }
 
-    #region Controls
+    #region Legacy Counter & Greeting Controls
 
     /// <summary>
     /// Title text block.

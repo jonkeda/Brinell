@@ -47,16 +47,36 @@ public class StrideSliderControl : StrideRangeControlBase
     /// <inheritdoc />
     public override void Increment()
     {
-        Focus();
-        Context.PressKey(VirtualKey.Right);
+        // Stride sliders don't respond to keyboard keys reliably
+        // Instead, calculate a position increment based on slider step
+        var current = GetValue();
+        var min = GetMinimum();
+        var max = GetMaximum();
+        var step = (max - min) / 10.0; // 10% increments
+
+        var newValue = Math.Min(current + step, max);
+        if (newValue != current)
+        {
+            SetValue(newValue);
+        }
         LogAction("Increment");
     }
 
     /// <inheritdoc />
     public override void Decrement()
     {
-        Focus();
-        Context.PressKey(VirtualKey.Left);
+        // Stride sliders don't respond to keyboard keys reliably
+        // Instead, calculate a position decrement based on slider step
+        var current = GetValue();
+        var min = GetMinimum();
+        var max = GetMaximum();
+        var step = (max - min) / 10.0; // 10% decrements
+
+        var newValue = Math.Max(current - step, min);
+        if (newValue != current)
+        {
+            SetValue(newValue);
+        }
         LogAction("Decrement");
     }
 
@@ -65,10 +85,9 @@ public class StrideSliderControl : StrideRangeControlBase
     /// </summary>
     public void IncrementBy(int steps)
     {
-        Focus();
         for (int i = 0; i < steps; i++)
         {
-            Context.PressKey(VirtualKey.Right);
+            Increment();
         }
         LogAction("IncrementBy", steps.ToString());
     }
@@ -78,10 +97,9 @@ public class StrideSliderControl : StrideRangeControlBase
     /// </summary>
     public void DecrementBy(int steps)
     {
-        Focus();
         for (int i = 0; i < steps; i++)
         {
-            Context.PressKey(VirtualKey.Left);
+            Decrement();
         }
         LogAction("DecrementBy", steps.ToString());
     }

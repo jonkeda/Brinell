@@ -1,21 +1,22 @@
-# Plan 12: Stride 3D Engine UI Testing Integration
+# 
+    Plan 12: Stride 3D Engine UI Testing Integration
 
-**Status:** ✅ Complete  
-**Date:** January 2025  
-**Depends On:** Plan 08 (Playwright Infrastructure)  
-**Framework:** Brinell UI Test Framework  
+**Status:** ✅ Complete
+**Date:** January 2025
+**Depends On:** Plan 08 (Playwright Infrastructure)
+**Framework:** Brinell UI Test Framework
 **Implementation Date:** December 2025
 
 ### Completion Summary
 
-| Phase | Status | Description |
-|-------|--------|-------------|
-| Phase 1: Core Infrastructure | ✅ | Named pipes, input simulation, game driver |
-| Phase 2: In-Game Automation | ✅ | AutomationService, StrideUIHandler, element registry |
-| Phase 3: Control Objects | ✅ | All Stride controls with Wait/Check/Is/Assert pattern |
-| Phase 4: Page Objects & Sample App | ✅ | StridePageBase, sample game with menus |
-| Phase 5: Test Suite | ✅ | Test infrastructure and sample tests |
-| Phase 6: Documentation | ✅ | Platform guide, Copilot instructions, README updates |
+| Phase                              | Status | Description                                           |
+| ---------------------------------- | ------ | ----------------------------------------------------- |
+| Phase 1: Core Infrastructure       | ✅     | Named pipes, input simulation, game driver            |
+| Phase 2: In-Game Automation        | ✅     | AutomationService, StrideUIHandler, element registry  |
+| Phase 3: Control Objects           | ✅     | All Stride controls with Wait/Check/Is/Assert pattern |
+| Phase 4: Page Objects & Sample App | ✅     | StridePageBase, sample game with menus                |
+| Phase 5: Test Suite                | ✅     | Test infrastructure and sample tests                  |
+| Phase 6: Documentation             | ✅     | Platform guide, Copilot instructions, README updates  |
 
 ---
 
@@ -29,12 +30,12 @@ This plan integrates Stride 3D game engine UI testing into the Brinell framework
 
 ### Key Deliverables
 
-| Deliverable | Description |
-|-------------|-------------|
-| `Brinell.Stride` | Core framework library for Stride UI testing |
-| `Brinell.Stride.Automation` | In-game automation hooks package |
-| `Brinell.Samples.Stride.App` | Sample Stride application with testable UI |
-| `Brinell.Samples.Stride.UITests` | Sample tests demonstrating the framework |
+| Deliverable                        | Description                                  |
+| ---------------------------------- | -------------------------------------------- |
+| `Brinell.Stride`                 | Core framework library for Stride UI testing |
+| `Brinell.Stride.Automation`      | In-game automation hooks package             |
+| `Brinell.Samples.Stride.App`     | Sample Stride application with testable UI   |
+| `Brinell.Samples.Stride.UITests` | Sample tests demonstrating the framework     |
 
 ---
 
@@ -181,6 +182,7 @@ public enum Platform
 ### Phase 1: Core Infrastructure (Week 1-2)
 
 #### 4.1.1 Goals
+
 - Create `Brinell.Stride` project structure
 - Implement communication channel
 - Implement input simulation
@@ -188,29 +190,31 @@ public enum Platform
 
 #### 4.1.2 Deliverables
 
-| File | Description | Priority |
-|------|-------------|----------|
-| `Brinell.Stride.csproj` | Project with dependencies | High |
-| `IAutomationChannel.cs` | Channel abstraction | High |
-| `NamedPipeChannel.cs` | Named pipe implementation | High |
-| `AutomationCommand.cs` | Command serialization | High |
-| `AutomationResponse.cs` | Response serialization | High |
-| `StrideInputSimulator.cs` | Keyboard/mouse simulation | High |
-| `StrideTestOptions.cs` | Configuration class | High |
-| `StrideGameDriver.cs` | Game lifecycle management | High |
+| File                        | Description               | Priority |
+| --------------------------- | ------------------------- | -------- |
+| `Brinell.Stride.csproj`   | Project with dependencies | High     |
+| `IAutomationChannel.cs`   | Channel abstraction       | High     |
+| `NamedPipeChannel.cs`     | Named pipe implementation | High     |
+| `AutomationCommand.cs`    | Command serialization     | High     |
+| `AutomationResponse.cs`   | Response serialization    | High     |
+| `StrideInputSimulator.cs` | Keyboard/mouse simulation | High     |
+| `StrideTestOptions.cs`    | Configuration class       | High     |
+| `StrideGameDriver.cs`     | Game lifecycle management | High     |
 
 #### 4.1.3 Acceptance Criteria
-- [x] Can connect to a running game via named pipe
-- [x] Can send commands and receive JSON responses
-- [x] Can simulate mouse clicks at screen coordinates
-- [x] Can simulate keyboard input
-- [x] Can start and stop game process
+
+- [X] Can connect to a running game via named pipe
+- [X] Can send commands and receive JSON responses
+- [X] Can simulate mouse clicks at screen coordinates
+- [X] Can simulate keyboard input
+- [X] Can start and stop game process
 
 ---
 
 ### Phase 2: In-Game Automation Hooks (Week 2-3)
 
 #### 4.2.1 Goals
+
 - Create `Brinell.Stride.Automation` package
 - Implement UI element registry
 - Implement command processing
@@ -218,106 +222,112 @@ public enum Platform
 
 #### 4.2.2 Deliverables
 
-| File | Description | Priority |
-|------|-------------|----------|
-| `Brinell.Stride.Automation.csproj` | Project with Stride dependency | High |
-| `AutomationService.cs` | Element registry | High |
-| `AutomationHost.cs` | Named pipe server | High |
-| `UIElementProvider.cs` | Element state queries | High |
-| `AutomationExtensions.cs` | SetAutomationId helper | High |
-| `ElementState.cs` | State DTO | High |
+| File                                 | Description                    | Priority |
+| ------------------------------------ | ------------------------------ | -------- |
+| `Brinell.Stride.Automation.csproj` | Project with Stride dependency | High     |
+| `AutomationService.cs`             | Element registry               | High     |
+| `AutomationHost.cs`                | Named pipe server              | High     |
+| `UIElementProvider.cs`             | Element state queries          | High     |
+| `AutomationExtensions.cs`          | SetAutomationId helper         | High     |
+| `ElementState.cs`                  | State DTO                      | High     |
 
 #### 4.2.3 Acceptance Criteria
-- [x] Game can start with automation enabled
-- [x] Game accepts automation connections
-- [x] Can query element state via named pipe
-- [x] Element registration works with Stride UI
-- [x] Commands execute on game thread
+
+- [X] Game can start with automation enabled
+- [X] Game accepts automation connections
+- [X] Can query element state via named pipe
+- [X] Element registration works with Stride UI
+- [X] Commands execute on game thread
 
 ---
 
 ### Phase 3: Control Objects (Week 3-4)
 
 #### 4.3.1 Goals
+
 - Implement `StrideTestContext`
 - Implement all control wrappers
 - Follow Wait/Check/Is/Assert pattern
 
 #### 4.3.2 Deliverables
 
-| File | Description | Priority |
-|------|-------------|----------|
-| `StrideTestContext.cs` | ITestContext implementation | High |
-| `StrideControlBase.cs` | Base control class | High |
-| `StrideContentControlBase.cs` | Clickable controls base | High |
-| `StrideTextControlBase.cs` | Text controls base | High |
-| `StrideButtonControl.cs` | Button wrapper | High |
-| `StrideTextBlockControl.cs` | TextBlock wrapper | High |
-| `StrideEditTextControl.cs` | EditText wrapper | High |
-| `StrideCheckBoxControl.cs` | CheckBox wrapper | Medium |
-| `StrideSliderControl.cs` | Slider wrapper | Medium |
-| `StrideListBoxControl.cs` | ListBox wrapper | Medium |
+| File                            | Description                 | Priority |
+| ------------------------------- | --------------------------- | -------- |
+| `StrideTestContext.cs`        | ITestContext implementation | High     |
+| `StrideControlBase.cs`        | Base control class          | High     |
+| `StrideContentControlBase.cs` | Clickable controls base     | High     |
+| `StrideTextControlBase.cs`    | Text controls base          | High     |
+| `StrideButtonControl.cs`      | Button wrapper              | High     |
+| `StrideTextBlockControl.cs`   | TextBlock wrapper           | High     |
+| `StrideEditTextControl.cs`    | EditText wrapper            | High     |
+| `StrideCheckBoxControl.cs`    | CheckBox wrapper            | Medium   |
+| `StrideSliderControl.cs`      | Slider wrapper              | Medium   |
+| `StrideListBoxControl.cs`     | ListBox wrapper             | Medium   |
 
 #### 4.3.3 Control Type Mapping
 
-| Stride UI Class | Control Wrapper | Interface |
-|-----------------|-----------------|-----------|
-| `Button` | `StrideButtonControl` | `IButton` |
-| `TextBlock` | `StrideTextBlockControl` | `ILabel` |
-| `EditText` | `StrideEditTextControl` | `ITextBox` |
-| `CheckBox` | `StrideCheckBoxControl` | `ICheckBox` |
-| `ToggleButton` | `StrideToggleButtonControl` | `IToggleControl` |
-| `Slider` | `StrideSliderControl` | `IRangeControl` |
-| `ListBox` | `StrideListBoxControl` | `ISelectorControl` |
+| Stride UI Class  | Control Wrapper               | Interface            |
+| ---------------- | ----------------------------- | -------------------- |
+| `Button`       | `StrideButtonControl`       | `IButton`          |
+| `TextBlock`    | `StrideTextBlockControl`    | `ILabel`           |
+| `EditText`     | `StrideEditTextControl`     | `ITextBox`         |
+| `CheckBox`     | `StrideCheckBoxControl`     | `ICheckBox`        |
+| `ToggleButton` | `StrideToggleButtonControl` | `IToggleControl`   |
+| `Slider`       | `StrideSliderControl`       | `IRangeControl`    |
+| `ListBox`      | `StrideListBoxControl`      | `ISelectorControl` |
 
 #### 4.3.4 Acceptance Criteria
-- [x] All controls implement appropriate interfaces
-- [x] Wait/Check/Is/Assert pattern works correctly
-- [x] Input simulation clicks buttons correctly
-- [x] Text input works with EditText
+
+- [X] All controls implement appropriate interfaces
+- [X] Wait/Check/Is/Assert pattern works correctly
+- [X] Input simulation clicks buttons correctly
+- [X] Text input works with EditText
 
 ---
 
 ### Phase 4: Page Objects & Sample App (Week 4-5)
 
 #### 4.4.1 Goals
+
 - Create `StridePageBase`
 - Create sample Stride application
 - Create sample page objects
 
 #### 4.4.2 Sample App UI Screens
 
-| Screen | Class | Controls |
-|--------|-------|----------|
-| **Main Menu** | `MainMenuUI` | Start, Settings, Exit buttons |
-| **Settings** | `SettingsUI` | Volume slider, Fullscreen toggle, Back button |
-| **Gameplay** | `GameplayUI` | Pause button, Score label |
-| **Pause** | `PauseMenuUI` | Resume, Settings, Main Menu buttons |
+| Screen              | Class           | Controls                                      |
+| ------------------- | --------------- | --------------------------------------------- |
+| **Main Menu** | `MainMenuUI`  | Start, Settings, Exit buttons                 |
+| **Settings**  | `SettingsUI`  | Volume slider, Fullscreen toggle, Back button |
+| **Gameplay**  | `GameplayUI`  | Pause button, Score label                     |
+| **Pause**     | `PauseMenuUI` | Resume, Settings, Main Menu buttons           |
 
 #### 4.4.3 Deliverables
 
-| File | Description | Priority |
-|------|-------------|----------|
-| `StridePageBase.cs` | Base page class | High |
-| `SampleGame.cs` | Main game class | High |
-| `MainMenuUI.cs` | Main menu UI | High |
-| `SettingsUI.cs` | Settings UI | High |
-| `GameplayUI.cs` | In-game HUD | Medium |
-| `MainMenuPage.cs` | Page object | High |
-| `SettingsPage.cs` | Page object | High |
-| `GameplayPage.cs` | Page object | Medium |
+| File                  | Description     | Priority |
+| --------------------- | --------------- | -------- |
+| `StridePageBase.cs` | Base page class | High     |
+| `SampleGame.cs`     | Main game class | High     |
+| `MainMenuUI.cs`     | Main menu UI    | High     |
+| `SettingsUI.cs`     | Settings UI     | High     |
+| `GameplayUI.cs`     | In-game HUD     | Medium   |
+| `MainMenuPage.cs`   | Page object     | High     |
+| `SettingsPage.cs`   | Page object     | High     |
+| `GameplayPage.cs`   | Page object     | Medium   |
 
 #### 4.4.4 Acceptance Criteria
-- [x] Sample app runs and displays main menu
-- [x] All UI elements have automation IDs
-- [x] Page objects correctly detect display state
-- [x] Navigation between screens works
+
+- [X] Sample app runs and displays main menu
+- [X] All UI elements have automation IDs
+- [X] Page objects correctly detect display state
+- [X] Navigation between screens works
 
 ---
 
 ### Phase 5: Test Suite (Week 5-6)
 
 #### 4.5.1 Goals
+
 - Create test infrastructure
 - Implement smoke tests
 - Implement navigation tests
@@ -325,29 +335,30 @@ public enum Platform
 
 #### 4.5.2 Deliverables
 
-| File | Description | Priority |
-|------|-------------|----------|
-| `StrideGameFixture.cs` | Game lifecycle fixture | High |
-| `StrideTestBase.cs` | Base test class | High |
-| `MainMenuTests.cs` | Main menu tests | High |
-| `NavigationTests.cs` | Navigation tests | High |
-| `SettingsTests.cs` | Settings tests | Medium |
+| File                     | Description            | Priority |
+| ------------------------ | ---------------------- | -------- |
+| `StrideGameFixture.cs` | Game lifecycle fixture | High     |
+| `StrideTestBase.cs`    | Base test class        | High     |
+| `MainMenuTests.cs`     | Main menu tests        | High     |
+| `NavigationTests.cs`   | Navigation tests       | High     |
+| `SettingsTests.cs`     | Settings tests         | Medium   |
 
 #### 4.5.3 Test Categories
 
-| Category | Description |
-|----------|-------------|
-| `Smoke` | Critical path tests (always run) |
-| `UI.MainMenu` | Main menu functionality |
-| `UI.Settings` | Settings functionality |
-| `UI.Navigation` | Screen navigation |
-| `UI.Gameplay` | In-game UI |
+| Category          | Description                      |
+| ----------------- | -------------------------------- |
+| `Smoke`         | Critical path tests (always run) |
+| `UI.MainMenu`   | Main menu functionality          |
+| `UI.Settings`   | Settings functionality           |
+| `UI.Navigation` | Screen navigation                |
+| `UI.Gameplay`   | In-game UI                       |
 
 #### 4.5.4 Acceptance Criteria
-- [x] All smoke tests pass
-- [x] Tests run reliably in isolation
-- [x] Tests clean up after themselves
-- [x] CSV logging works correctly
+
+- [X] All smoke tests pass
+- [X] Tests run reliably in isolation
+- [X] Tests clean up after themselves
+- [X] CSV logging works correctly
 
 ---
 
@@ -355,12 +366,12 @@ public enum Platform
 
 #### 4.6.1 Deliverables
 
-| File | Description |
-|------|-------------|
-| `docs/05-stride-testing.md` | Stride platform guide |
-| `.github/instructions/stride.instructions.md` | Copilot instructions |
-| Updated README | Stride platform in overview |
-| Updated framework-overview | Architecture diagram |
+| File                                            | Description                 |
+| ----------------------------------------------- | --------------------------- |
+| `docs/05-stride-testing.md`                   | Stride platform guide       |
+| `.github/instructions/stride.instructions.md` | Copilot instructions        |
+| Updated README                                  | Stride platform in overview |
+| Updated framework-overview                      | Architecture diagram        |
 
 ---
 
@@ -394,18 +405,18 @@ public class AutomationResponse
 
 #### 5.1.3 Supported Commands
 
-| Type | Method | Description |
-|------|--------|-------------|
-| Query | GetState | Get full element state |
-| Query | IsGameReady | Check if game initialized |
-| Query | GetAllElements | List registered elements |
-| Action | Click | Trigger click on element |
-| Action | SetText | Set text content |
-| Action | SetChecked | Set toggle state |
-| Action | SetValue | Set range value |
-| Action | TakeScreenshot | Capture screenshot |
-| Wait | WaitVisible | Wait for visibility |
-| Wait | WaitEnabled | Wait for enabled |
+| Type   | Method         | Description               |
+| ------ | -------------- | ------------------------- |
+| Query  | GetState       | Get full element state    |
+| Query  | IsGameReady    | Check if game initialized |
+| Query  | GetAllElements | List registered elements  |
+| Action | Click          | Trigger click on element  |
+| Action | SetText        | Set text content          |
+| Action | SetChecked     | Set toggle state          |
+| Action | SetValue       | Set range value           |
+| Action | TakeScreenshot | Capture screenshot        |
+| Wait   | WaitVisible    | Wait for visibility       |
+| Wait   | WaitEnabled    | Wait for enabled          |
 
 ### 5.2 Element State DTO
 
@@ -419,14 +430,14 @@ public class ElementState
     public string? Text { get; set; }
     public string? AutomationId { get; set; }
     public Rectangle Bounds { get; set; }
-    
+  
     // Toggle control state
     public bool? IsChecked { get; set; }
-    
+  
     // Selector control state
     public int SelectedIndex { get; set; }
     public List<string>? Items { get; set; }
-    
+  
     // Range control state
     public double? Value { get; set; }
     public double? Minimum { get; set; }
@@ -483,7 +494,7 @@ public class ElementState
 public class SampleGame : Game
 {
     private AutomationService? _automationService;
-    
+  
     protected override Task LoadContent()
     {
         // Initialize automation if enabled
@@ -492,13 +503,13 @@ public class SampleGame : Game
             _automationService = new AutomationService(this);
             _automationService.Start();
         }
-        
+      
         // Create main menu
         ShowMainMenu();
-        
+      
         return base.LoadContent();
     }
-    
+  
     private void ShowMainMenu()
     {
         var menu = new MainMenuUI(this, _automationService);
@@ -519,12 +530,12 @@ public class MainMenuUI
         {
             Content = new TextBlock { Text = "Start Game" }
         }.WithAutomationId("MainMenu.Start");
-        
+      
         var settingsButton = new Button
         {
             Content = new TextBlock { Text = "Settings" }
         }.WithAutomationId("MainMenu.Settings");
-        
+      
         var exitButton = new Button
         {
             Content = new TextBlock { Text = "Exit" }
@@ -542,9 +553,9 @@ public class MainMenuPage : StridePageBase
     public StrideButtonControl StartButton { get; }
     public StrideButtonControl SettingsButton { get; }
     public StrideButtonControl ExitButton { get; }
-    
+  
     protected override StrideControlBase KeyControl => StartButton;
-    
+  
     public MainMenuPage(StrideTestContext context) 
         : base(context, "MainMenu", "MainMenu.Root")
     {
@@ -552,12 +563,12 @@ public class MainMenuPage : StridePageBase
         SettingsButton = new StrideButtonControl(context, this, "MainMenu.Settings");
         ExitButton = new StrideButtonControl(context, this, "MainMenu.Exit");
     }
-    
+  
     public void NavigateToSettings()
     {
         SettingsButton.Click();
     }
-    
+  
     public void StartGame()
     {
         StartButton.Click();
@@ -574,26 +585,26 @@ public class MainMenuPage : StridePageBase
 public class MainMenuTests : StrideTestBase
 {
     public MainMenuTests(StrideGameFixture fixture) : base(fixture) { }
-    
+  
     [Fact]
     public void MainMenu_AllButtons_AreVisible()
     {
         var mainMenu = new MainMenuPage(Context);
         mainMenu.WaitForReady();
-        
+      
         mainMenu.StartButton.AssertVisible();
         mainMenu.SettingsButton.AssertVisible();
         mainMenu.ExitButton.AssertVisible();
     }
-    
+  
     [Fact]
     public void Settings_Navigate_ShowsSettingsPage()
     {
         var mainMenu = new MainMenuPage(Context);
         mainMenu.WaitForReady();
-        
+      
         mainMenu.NavigateToSettings();
-        
+      
         var settings = new SettingsPage(Context);
         settings.WaitForReady();
         settings.AssertDisplayed();
@@ -607,13 +618,13 @@ public class MainMenuTests : StrideTestBase
 
 ### 7.1 Technical Risks
 
-| Risk | Probability | Impact | Mitigation |
-|------|-------------|--------|------------|
-| Named pipe reliability | Medium | High | Retry logic, fallback to in-process |
-| Input simulation accuracy | Medium | Medium | Calibrate delays, configurable timing |
-| Game thread synchronization | High | High | Use Stride's Script.Scheduler |
-| Screen resolution differences | Medium | Medium | Use relative coordinates |
-| Test flakiness | High | High | Robust waits, retry mechanism |
+| Risk                          | Probability | Impact | Mitigation                            |
+| ----------------------------- | ----------- | ------ | ------------------------------------- |
+| Named pipe reliability        | Medium      | High   | Retry logic, fallback to in-process   |
+| Input simulation accuracy     | Medium      | Medium | Calibrate delays, configurable timing |
+| Game thread synchronization   | High        | High   | Use Stride's Script.Scheduler         |
+| Screen resolution differences | Medium      | Medium | Use relative coordinates              |
+| Test flakiness                | High        | High   | Robust waits, retry mechanism         |
 
 ### 7.2 Dependencies
 
@@ -625,25 +636,25 @@ public class MainMenuTests : StrideTestBase
 
 ## 8. Success Metrics
 
-| Metric | Target |
-|--------|--------|
-| Test reliability | > 95% pass rate on same code |
-| Test execution time | < 30 seconds for smoke tests |
-| Sample app coverage | All UI paths tested |
-| Documentation completeness | All features documented |
+| Metric                     | Target                       |
+| -------------------------- | ---------------------------- |
+| Test reliability           | > 95% pass rate on same code |
+| Test execution time        | < 30 seconds for smoke tests |
+| Sample app coverage        | All UI paths tested          |
+| Documentation completeness | All features documented      |
 
 ---
 
 ## 9. Timeline Summary
 
-| Week | Phase | Key Milestone |
-|------|-------|---------------|
-| 1-2 | Phase 1 | Named pipe connection working |
-| 2-3 | Phase 2 | Can query element state from game |
-| 3-4 | Phase 3 | All control wrappers functional |
-| 4-5 | Phase 4 | Sample app with page objects |
-| 5-6 | Phase 5 | All tests passing |
-| 6 | Phase 6 | Documentation complete |
+| Week | Phase   | Key Milestone                     |
+| ---- | ------- | --------------------------------- |
+| 1-2  | Phase 1 | Named pipe connection working     |
+| 2-3  | Phase 2 | Can query element state from game |
+| 3-4  | Phase 3 | All control wrappers functional   |
+| 4-5  | Phase 4 | Sample app with page objects      |
+| 5-6  | Phase 5 | All tests passing                 |
+| 6    | Phase 6 | Documentation complete            |
 
 **Total Duration:** 6 weeks
 
@@ -653,24 +664,24 @@ public class MainMenuTests : StrideTestBase
 
 ### 10.1 Stride.UI.Controls
 
-| Class | Description | Wrapper |
-|-------|-------------|---------|
-| `Button` | Clickable button | `StrideButtonControl` |
-| `TextBlock` | Display text | `StrideTextBlockControl` |
-| `EditText` | Text input | `StrideEditTextControl` |
-| `CheckBox` | Toggle checkbox | `StrideCheckBoxControl` |
-| `ToggleButton` | Toggle button | `StrideToggleButtonControl` |
-| `Slider` | Value slider | `StrideSliderControl` |
+| Class            | Description          | Wrapper                       |
+| ---------------- | -------------------- | ----------------------------- |
+| `Button`       | Clickable button     | `StrideButtonControl`       |
+| `TextBlock`    | Display text         | `StrideTextBlockControl`    |
+| `EditText`     | Text input           | `StrideEditTextControl`     |
+| `CheckBox`     | Toggle checkbox      | `StrideCheckBoxControl`     |
+| `ToggleButton` | Toggle button        | `StrideToggleButtonControl` |
+| `Slider`       | Value slider         | `StrideSliderControl`       |
 | `ScrollViewer` | Scrollable container | `StrideScrollViewerControl` |
 
 ### 10.2 Stride.UI.Panels
 
-| Class | Description |
-|-------|-------------|
-| `StackPanel` | Stack layout |
-| `Grid` | Grid layout |
-| `Canvas` | Absolute positioning |
-| `UniformGrid` | Uniform grid layout |
+| Class           | Description          |
+| --------------- | -------------------- |
+| `StackPanel`  | Stack layout         |
+| `Grid`        | Grid layout          |
+| `Canvas`      | Absolute positioning |
+| `UniformGrid` | Uniform grid layout  |
 
 ---
 
@@ -680,12 +691,12 @@ This section covers the Oravey-specific extensions that live **outside** of Brin
 
 ### 11.1 Separation of Concerns
 
-| Component | Location | Responsibility |
-|-----------|----------|----------------|
-| `Brinell.Stride` | Brinell repo | Generic Stride UI testing |
-| `Brinell.Stride.Automation` | Brinell repo | Generic in-game UI hooks |
-| `Oravey.Game.Automation` | Oravey repo | **Oravey-specific game state** |
-| `Oravey.Game.StrideUITests` | Oravey repo | **Oravey-specific tests** |
+| Component                     | Location     | Responsibility                       |
+| ----------------------------- | ------------ | ------------------------------------ |
+| `Brinell.Stride`            | Brinell repo | Generic Stride UI testing            |
+| `Brinell.Stride.Automation` | Brinell repo | Generic in-game UI hooks             |
+| `Oravey.Game.Automation`    | Oravey repo  | **Oravey-specific game state** |
+| `Oravey.Game.StrideUITests` | Oravey repo  | **Oravey-specific tests**      |
 
 ### 11.2 Architecture with Oravey Extension
 
@@ -748,13 +759,13 @@ public class OraveyAutomationService : AutomationService
     private readonly PlayerStateProvider _playerState;
     private readonly WorldStateProvider _worldState;
     private readonly CameraStateProvider _cameraState;
-    
+  
     public OraveyAutomationService(OraveyGame game) : base(game)
     {
         _playerState = new PlayerStateProvider(game.Player);
         _worldState = new WorldStateProvider(game.WorldManager);
         _cameraState = new CameraStateProvider(game.Camera);
-        
+      
         // Register Oravey-specific command handlers
         RegisterCommandHandler("GetPlayerPosition", _playerState.GetPosition);
         RegisterCommandHandler("GetPlayerHealth", _playerState.GetHealth);
@@ -772,9 +783,9 @@ public class OraveyAutomationService : AutomationService
 public class PlayerStateProvider
 {
     private readonly Player _player;
-    
+  
     public PlayerStateProvider(Player player) => _player = player;
-    
+  
     public Vector3 GetPosition() => _player.Transform.Position;
     public float GetHealth() => _player.Health;
     public float GetMaxHealth() => _player.MaxHealth;
@@ -790,15 +801,15 @@ public class PlayerStateProvider
 public class WorldStateProvider
 {
     private readonly WorldManager _world;
-    
+  
     public WorldStateProvider(WorldManager world) => _world = world;
-    
+  
     public string GetCurrentArea() => _world.CurrentArea?.Name ?? "Unknown";
     public string GetCurrentMap() => _world.CurrentMap?.Name ?? "Unknown";
     public Vector2 GetMapDimensions() => _world.CurrentMap?.Dimensions ?? Vector2.Zero;
     public float GetTimeOfDay() => _world.TimeOfDay;
     public bool IsNight() => _world.IsNight;
-    
+  
     public EntityInfo[] GetVisibleEntities() => 
         _world.VisibleEntities.Select(e => new EntityInfo
         {
@@ -807,7 +818,7 @@ public class WorldStateProvider
             Type = e.EntityType.ToString(),
             Position = e.Transform.Position
         }).ToArray();
-    
+  
     public EntityInfo? GetEntity(string entityId) =>
         _world.FindEntity(entityId) is Entity e 
             ? new EntityInfo { Id = e.Id, Name = e.Name, Position = e.Transform.Position }
@@ -823,50 +834,50 @@ public class OraveyTestContext : StrideTestContext
 {
     public OraveyTestContext(IAutomationChannel channel, StrideTestOptions options) 
         : base(channel, options) { }
-    
+  
     #region Player State
-    
+  
     public Vector3 GetPlayerPosition()
         => Query<Vector3>("GetPlayerPosition");
-    
+  
     public float GetPlayerHealth()
         => Query<float>("GetPlayerHealth");
-    
+  
     public string[] GetInventory()
         => Query<string[]>("GetInventory");
-    
+  
     public bool WaitForPlayerPosition(Func<Vector3, bool> condition, int? timeoutMs = null)
         => WaitFor(() => condition(GetPlayerPosition()), timeoutMs, "player position");
-    
+  
     #endregion
-    
+  
     #region World State
-    
+  
     public string GetCurrentArea()
         => Query<string>("GetCurrentArea");
-    
+  
     public bool WaitForArea(string areaName, int? timeoutMs = null)
         => WaitFor(() => GetCurrentArea() == areaName, timeoutMs, $"area '{areaName}'");
-    
+  
     public EntityInfo[] GetVisibleEntities()
         => Query<EntityInfo[]>("GetVisibleEntities");
-    
+  
     public bool IsEntityVisible(string entityId)
         => Query<bool>("IsEntityInView", entityId);
-    
+  
     #endregion
-    
+  
     #region Player Actions (Input Helpers)
-    
+  
     public void MoveNorth(int durationMs = 500) => HoldKey(VirtualKeyCode.W, durationMs);
     public void MoveSouth(int durationMs = 500) => HoldKey(VirtualKeyCode.S, durationMs);
     public void MoveEast(int durationMs = 500) => HoldKey(VirtualKeyCode.D, durationMs);
     public void MoveWest(int durationMs = 500) => HoldKey(VirtualKeyCode.A, durationMs);
-    
+  
     public void Attack() => PressKey(VirtualKeyCode.SPACE);
     public void Interact() => PressKey(VirtualKeyCode.E);
     public void OpenInventory() => PressKey(VirtualKeyCode.I);
-    
+  
     #endregion
 }
 ```
@@ -881,37 +892,37 @@ public class OraveyTestContext : StrideTestContext
 public class MovementTests : OraveyTestBase
 {
     public MovementTests(OraveyGameFixture fixture) : base(fixture) { }
-    
+  
     [Fact]
     public void Player_MoveNorth_PositionIncreases()
     {
         // Arrange - start a new game and get to gameplay
         StartNewGameAndWaitForGameplay();
-        
+      
         var startPos = Context.GetPlayerPosition();
-        
+      
         // Act
         Context.MoveNorth(durationMs: 1000);
-        
+      
         // Assert
         var endPos = Context.GetPlayerPosition();
         Assert.True(endPos.Z > startPos.Z, 
             $"Player should move north. Start: {startPos.Z}, End: {endPos.Z}");
     }
-    
+  
     [Fact]
     public void Player_CannotWalkThroughWalls()
     {
         StartNewGameAndWaitForGameplay();
-        
+      
         // Move toward known wall position
         var startPos = Context.GetPlayerPosition();
-        
+      
         // Try to move into wall for 2 seconds
         Context.MoveNorth(durationMs: 2000);
-        
+      
         var endPos = Context.GetPlayerPosition();
-        
+      
         // Should have stopped at wall
         Assert.True(endPos.Z < 100f, "Player should be blocked by wall");
     }
@@ -928,34 +939,34 @@ public class AreaTransitionTests : OraveyTestBase
     public void Player_EntersForest_ShowsAreaName()
     {
         StartNewGameAndWaitForGameplay();
-        
+      
         var gameplay = new GameplayPage(Context);
-        
+      
         // Move to forest entrance (known position)
         Context.MoveNorth(durationMs: 3000);
-        
+      
         // Assert area name popup appears
         gameplay.AreaNamePopup.WaitVisible();
         gameplay.AreaNamePopup.AssertTextContains("Forest");
-        
+      
         // Assert world state updated
         Assert.Equal("Dark Forest", Context.GetCurrentArea());
     }
-    
+  
     [Fact]
     public void AreaTransition_UpdatesMiniMap()
     {
         StartNewGameAndWaitForGameplay();
-        
+      
         var gameplay = new GameplayPage(Context);
         var beforeScreenshot = gameplay.MiniMap.TakeScreenshot("before-transition");
-        
+      
         // Trigger area transition
         Context.MoveNorth(durationMs: 3000);
         Context.WaitForArea("Dark Forest");
-        
+      
         var afterScreenshot = gameplay.MiniMap.TakeScreenshot("after-transition");
-        
+      
         // Screenshots should differ (minimap updated)
         Assert.NotEqual(beforeScreenshot, afterScreenshot);
     }
@@ -972,12 +983,12 @@ public class CombatTests : OraveyTestBase
     public void Player_AttacksEnemy_DealsDamage()
     {
         StartNewGameAndWaitForGameplay();
-        
+      
         // Get visible enemy
         var enemies = Context.GetVisibleEntities()
             .Where(e => e.Type == "Enemy")
             .ToList();
-        
+      
         if (enemies.Count == 0)
         {
             // Move to area with enemies
@@ -986,35 +997,35 @@ public class CombatTests : OraveyTestBase
                 .Where(e => e.Type == "Enemy")
                 .ToList();
         }
-        
+      
         Assert.NotEmpty(enemies);
-        
+      
         // Attack
         Context.Attack();
-        
+      
         // Could verify via damage numbers UI or enemy health query
         var gameplay = new GameplayPage(Context);
         gameplay.DamageNumber.WaitVisible(timeoutMs: 1000);
     }
-    
+  
     [Fact]
     public void Player_TakesDamage_HealthBarUpdates()
     {
         StartNewGameAndWaitForGameplay();
-        
+      
         var startHealth = Context.GetPlayerHealth();
         var gameplay = new GameplayPage(Context);
-        
+      
         // Get hit by standing near enemy
         Context.WaitFor(() => Context.GetPlayerHealth() < startHealth, 
             timeoutMs: 5000, 
             description: "take damage");
-        
+      
         // Verify health bar UI reflects damage
         var healthPercent = startHealth > 0 
             ? Context.GetPlayerHealth() / startHealth 
             : 0;
-        
+      
         gameplay.HealthBar.AssertValueLessThan(startHealth);
     }
 }
@@ -1072,13 +1083,13 @@ Oravey/Sources/
 
 ### 11.6 Oravey Phase Timeline
 
-| Phase | Focus | Duration | Depends On |
-|-------|-------|----------|------------|
-| 7A | Create `Oravey.Game.Automation` project | 1 week | Plan 12 Phase 2 |
-| 7B | Implement state providers | 1 week | Phase 7A |
-| 7C | Create `Oravey.Game.StrideUITests` project | 1 week | Plan 12 Phase 5 |
-| 7D | Implement Oravey page objects | 1-2 weeks | Phase 7C |
-| 7E | Implement gameplay tests | 2 weeks | Phase 7D |
+| Phase | Focus                                        | Duration  | Depends On      |
+| ----- | -------------------------------------------- | --------- | --------------- |
+| 7A    | Create `Oravey.Game.Automation` project    | 1 week    | Plan 12 Phase 2 |
+| 7B    | Implement state providers                    | 1 week    | Phase 7A        |
+| 7C    | Create `Oravey.Game.StrideUITests` project | 1 week    | Plan 12 Phase 5 |
+| 7D    | Implement Oravey page objects                | 1-2 weeks | Phase 7C        |
+| 7E    | Implement gameplay tests                     | 2 weeks   | Phase 7D        |
 
 **Total Oravey Extension: 6-7 weeks** (can run in parallel with Brinell phases 3-6)
 
@@ -1086,27 +1097,27 @@ Oravey/Sources/
 
 #### Generic Commands (Brinell.Stride.Automation)
 
-| Command | Description |
-|---------|-------------|
-| `GetState` | Get UI element state |
-| `IsGameReady` | Check game initialized |
-| `Click` | Click UI element |
-| `SetText` | Set text content |
-| `TakeScreenshot` | Capture screenshot |
+| Command            | Description            |
+| ------------------ | ---------------------- |
+| `GetState`       | Get UI element state   |
+| `IsGameReady`    | Check game initialized |
+| `Click`          | Click UI element       |
+| `SetText`        | Set text content       |
+| `TakeScreenshot` | Capture screenshot     |
 
 #### Oravey Commands (Oravey.Game.Automation)
 
-| Command | Description |
-|---------|-------------|
-| `GetPlayerPosition` | Get player world position |
-| `GetPlayerHealth` | Get current health |
-| `GetInventory` | Get inventory items |
-| `GetCurrentArea` | Get area name |
-| `GetVisibleEntities` | Get entities in view |
-| `GetTimeOfDay` | Get world time |
-| `IsEntityInView` | Check if entity visible |
+| Command                | Description               |
+| ---------------------- | ------------------------- |
+| `GetPlayerPosition`  | Get player world position |
+| `GetPlayerHealth`    | Get current health        |
+| `GetInventory`       | Get inventory items       |
+| `GetCurrentArea`     | Get area name             |
+| `GetVisibleEntities` | Get entities in view      |
+| `GetTimeOfDay`       | Get world time            |
+| `IsEntityInView`     | Check if entity visible   |
 
 ---
 
-*Document Version: 1.1*  
+*Document Version: 1.1*
 *Last Updated: December 2025*

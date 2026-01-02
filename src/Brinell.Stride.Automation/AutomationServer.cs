@@ -20,7 +20,7 @@ public class AutomationServerOptions
     public int MaxConnections { get; set; } = 4;
 
     /// <summary>
-    /// Enable verbose logging.
+    /// Enable verbose logging. Default: false for production.
     /// </summary>
     public bool VerboseLogging { get; set; } = false;
 }
@@ -96,20 +96,24 @@ public sealed class AutomationServer : IDisposable
 
     private async Task ListenAsync(CancellationToken cancellationToken)
     {
+        int consecutiveErrors = 0;
+        const int maxConsecutiveErrors = 5;
+
         while (!cancellationToken.IsCancellationRequested)
         {
             try
             {
-#pragma warning disable CA1416 // Validate platform compatibility (PipeTransmissionMode.Message is Windows-only)
+                // Use Byte mode for cross-platform compatibility and simpler line-based protocol
                 using var pipeServer = new NamedPipeServerStream(
                     _options.PipeName,
                     PipeDirection.InOut,
                     _options.MaxConnections,
-                    PipeTransmissionMode.Message,
+                    PipeTransmissionMode.Byte,
                     PipeOptions.Asynchronous);
-#pragma warning restore CA1416
 
                 Log("Waiting for connection...");
+                consecutiveErrors = 0; // Reset on successful pipe creation
+                
                 await pipeServer.WaitForConnectionAsync(cancellationToken).ConfigureAwait(false);
                 Log("Client connected");
 
@@ -123,7 +127,10 @@ public sealed class AutomationServer : IDisposable
                 }
                 finally
                 {
-                    pipeServer.Disconnect();
+                    if (pipeServer.IsConnected)
+                    {
+                        pipeServer.Disconnect();
+                    }
                     Log("Client disconnected");
                 }
             }
@@ -131,48 +138,99 @@ public sealed class AutomationServer : IDisposable
             {
                 break;
             }
+            catch (IOException ex) when (ex.Message.Contains("All pipe instances are busy"))
+            {
+                // This happens if server is started twice - stop this listener
+                Log("Pipe instances busy - this listener will stop");
+                break;
+            }
             catch (Exception ex)
             {
-                Log($"Error in listener: {ex.Message}");
-                await Task.Delay(100, cancellationToken).ConfigureAwait(false);
+                consecutiveErrors++;
+                Log($"Error in listener ({consecutiveErrors}/{maxConsecutiveErrors}): {ex.Message}");
+                
+                if (consecutiveErrors >= maxConsecutiveErrors)
+                {
+                    Log("Too many consecutive errors, stopping listener");
+                    break;
+                }
+                
+                // Exponential backoff
+                var delay = Math.Min(1000 * consecutiveErrors, 5000);
+                await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
             }
         }
     }
 
     private async Task HandleConnectionAsync(NamedPipeServerStream pipe, CancellationToken cancellationToken)
     {
-        using var reader = new StreamReader(pipe);
-        using var writer = new StreamWriter(pipe) { AutoFlush = true };
+        Log("Setting up streams...");
+        // Use simple constructors to avoid BOM issues
+        var reader = new StreamReader(pipe);
+        var writer = new StreamWriter(pipe) { AutoFlush = true };
+        Log("Streams ready, entering message loop");
 
-        while (pipe.IsConnected && !cancellationToken.IsCancellationRequested)
+        try
         {
-            var line = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
-            if (string.IsNullOrEmpty(line))
-                break;
-
-            Log($"Received: {line}");
-
-            AutomationResponse response;
-            try
+            while (pipe.IsConnected && !cancellationToken.IsCancellationRequested)
             {
-                var command = JsonSerializer.Deserialize<AutomationCommand>(line);
-                if (command != null)
+                string? line;
+                try
                 {
-                    response = await _handler.HandleCommandAsync(command, cancellationToken).ConfigureAwait(false);
+                    Log("Waiting for command...");
+                    line = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
+                    Log($"ReadLine returned: '{line ?? "(null)"}'");
                 }
-                else
+                catch (IOException ex)
                 {
-                    response = AutomationResponse.Fail("Failed to parse command");
+                    // Pipe closed by client
+                    Log($"IOException during read: {ex.Message}");
+                    break;
                 }
-            }
-            catch (Exception ex)
-            {
-                response = AutomationResponse.Fail($"Error: {ex.Message}");
-            }
+                catch (OperationCanceledException)
+                {
+                    Log("Read cancelled");
+                    break;
+                }
+                
+                if (string.IsNullOrEmpty(line))
+                {
+                    Log("Empty line received, closing connection");
+                    break;
+                }
 
-            var responseJson = JsonSerializer.Serialize(response);
-            Log($"Sending: {responseJson}");
-            await writer.WriteLineAsync(responseJson).ConfigureAwait(false);
+                Log($"Received: {line}");
+
+                AutomationResponse response;
+                try
+                {
+                    var command = JsonSerializer.Deserialize<AutomationCommand>(line);
+                    if (command != null)
+                    {
+                        Log($"Parsed command: Type={command.Type}, Method={command.Method}");
+                        response = await _handler.HandleCommandAsync(command, cancellationToken).ConfigureAwait(false);
+                        Log($"Handler returned: Success={response.Success}");
+                    }
+                    else
+                    {
+                        response = AutomationResponse.Fail("Failed to parse command");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log($"Error processing command: {ex}");
+                    response = AutomationResponse.Fail($"Error: {ex.Message}");
+                }
+
+                var responseJson = JsonSerializer.Serialize(response);
+                Log($"Sending: {responseJson}");
+                await writer.WriteLineAsync(responseJson).ConfigureAwait(false);
+                await writer.FlushAsync(cancellationToken).ConfigureAwait(false);
+            }
+        }
+        finally
+        {
+            // Don't dispose - the pipe owns the stream
         }
     }
 

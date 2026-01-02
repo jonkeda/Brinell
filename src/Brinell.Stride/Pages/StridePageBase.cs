@@ -217,6 +217,14 @@ public abstract class StridePageBase : IPageObject
     }
 
     /// <summary>
+    /// Hold a key for a specified duration.
+    /// </summary>
+    protected void HoldKey(VirtualKey key, int durationMs)
+    {
+        StrideContext.HoldKey(key, durationMs);
+    }
+
+    /// <summary>
     /// Press Escape key (common for closing dialogs).
     /// </summary>
     protected void PressEscape()
