@@ -1,8 +1,8 @@
 # REQ-002: Non-Functional Requirements
 
-**Version:** 3.0  
+**Version:** 3.1  
 **Status:** Active  
-**Last Updated:** December 2025
+**Last Updated:** January 2026
 
 ---
 
@@ -95,6 +95,33 @@ This document specifies the non-functional requirements for the UI Test Framewor
 - The framework MUST detect application crashes
 - The framework MUST provide diagnostic information when application crashes
 - The framework MUST clean up resources after application crash
+
+---
+
+### NFR-REL-003: Test Execution Timeout
+
+**Priority:** SHOULD
+
+The framework SHOULD support test-level execution timeouts:
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `TestTimeoutMs` | 120000 (2 min) | Maximum test execution time |
+| `SetupTimeoutMs` | 60000 (1 min) | Maximum setup time |
+| `TeardownTimeoutMs` | 30000 (30 sec) | Maximum teardown time |
+
+When timeout is exceeded:
+- Test MUST be terminated
+- Application SHOULD be force-closed
+- Failure MUST be logged with timeout reason
+- Screenshot SHOULD be captured before termination
+
+**Implementation Options:**
+1. xUnit `[Fact(Timeout = 120000)]` attribute
+2. Custom test wrapper with CancellationToken in UITestBase
+3. Process-level watchdog
+
+**Note:** Framework element timeouts (WaitFor, Check, etc.) are separate from test-level timeouts.
 
 ---
 
@@ -354,6 +381,7 @@ This document specifies the non-functional requirements for the UI Test Framewor
 - NFR-PERF-001: Test Execution Speed
 - NFR-PERF-002: Resource Usage
 - NFR-PERF-003: Scalability
+- NFR-REL-003: Test Execution Timeout
 - NFR-MAINT-002: Code Quality
 - NFR-USE-001: Learning Curve
 - NFR-USE-003: Debugging Support
@@ -375,6 +403,7 @@ This document specifies the non-functional requirements for the UI Test Framewor
 | NFR-PERF-003 | Parallel test execution tests |
 | NFR-REL-001 | Test flakiness rate (< 1%) |
 | NFR-REL-002 | Error handling test coverage |
+| NFR-REL-003 | Test timeout verification, CI/CD hang prevention |
 | NFR-MAINT-001 | Code review, architecture review |
 | NFR-MAINT-002 | Code analysis tools, code review |
 | NFR-MAINT-003 | Documentation completeness audit |
@@ -392,6 +421,7 @@ This document specifies the non-functional requirements for the UI Test Framewor
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 3.1 | Jan 2026 | Added NFR-REL-003 (Test Execution Timeout) |
 | 3.0 | Dec 2025 | Added extensibility, security, compliance requirements |
 | 2.0 | Dec 2025 | Added performance and reliability metrics |
 | 1.0 | Nov 2025 | Initial non-functional requirements |

@@ -1,8 +1,8 @@
 # REQ-001: Functional Requirements
 
-**Version:** 3.0  
+**Version:** 3.1  
 **Status:** Active  
-**Last Updated:** December 2025
+**Last Updated:** January 2026
 
 ---
 
@@ -15,9 +15,16 @@ This document specifies the functional requirements for the UI Test Framework. I
 ## 2. Scope
 
 The framework SHALL support automated testing of:
-- Windows desktop applications (WPF)
-- Cross-platform desktop and mobile applications (MAUI)
-- Web applications (HTML/JavaScript in browsers)
+- Windows desktop applications (WPF) - via FlaUI/UIA3
+- Windows Forms applications (WinForms) - via FlaUI/UIA3
+- Cross-platform desktop and mobile applications (MAUI) - via Appium
+- Web applications (HTML) - via Selenium WebDriver
+- Web applications (Blazor) - via Playwright
+- 3D game applications (Stride Engine) - via named pipes
+
+Supporting projects:
+- Test utilities (Brinell.Testing) - Database fixtures, test helpers
+- Mocking support (Brinell.Mocking) - API mocking integration
 
 ---
 
@@ -78,6 +85,58 @@ The framework MUST provide abstraction for UI control interactions.
 - The framework MUST support selection controls (dropdowns, lists)
 - The framework MUST support range controls (sliders, progress bars)
 - The framework MUST support collection controls (lists, grids)
+
+Each platform MUST support the controls listed in the platform-specific appendix.
+
+#### FR-002.5: Unified Control Interface Hierarchy
+
+**Priority:** MUST
+
+The framework MUST define a single, unified interface hierarchy for control objects in Core:
+
+```
+IControlObject (base)
+├── IClickableControl
+│   └── IContentControl
+├── ITextControl
+├── IToggleControl
+├── ISelectorControl
+├── IRangeControl
+├── IItemsControl
+└── IContainerControl
+```
+
+All platform implementations MUST implement these interfaces.
+Platform-specific interfaces MAY extend the core interfaces.
+
+#### FR-002.6: Container-Scoped Control Objects
+
+**Priority:** MUST
+
+Platform control base classes MUST support container-scoped element searching:
+
+1. All control base classes MUST accept an optional container parameter
+2. When container is specified, element search MUST be scoped to descendants of that container
+3. When container is null, element search MUST search from the application/window root
+
+**Use Cases:**
+- Controls inside list item templates
+- Controls within data-bound repeaters
+- Performance optimization for large UI trees
+
+#### FR-002.7: Scroll-to-Element Support
+
+**Priority:** SHOULD
+
+Scrollable container controls SHOULD support scrolling to make elements visible:
+
+| Method | Description |
+|--------|-------------|
+| `ScrollToElement(automationId)` | Scroll until element with ID is visible |
+| `ScrollToTop()` | Scroll to top of content |
+| `ScrollToBottom()` | Scroll to bottom of content |
+| `ScrollUp(distance)` | Scroll up by distance |
+| `ScrollDown(distance)` | Scroll down by distance |
 
 **Specification:** See [SPEC-003: Control Objects](SPEC-003-control-objects.md)
 
@@ -146,6 +205,44 @@ The framework MUST provide consistent patterns for verifying element and page st
 - Assertion methods MUST throw exceptions on assertion failure
 - Assertion methods MUST include expected and actual values in error messages
 
+#### FR-004.5: Prefer Control Object Assertions
+
+**Priority:** SHOULD
+
+Test code SHOULD prefer using control object assertion methods over external assertion libraries:
+
+```csharp
+// ✅ PREFERRED - Uses control's Assert method
+loginButton.AssertEnabled();
+usernameField.AssertTextEquals("admin");
+
+// ❌ DISCOURAGED - External library
+Assert.True(loginButton.IsEnabled());  // xUnit
+```
+
+**Rationale:**
+- Control assertions include automatic logging
+- Control assertions capture screenshots on failure
+- Control assertions provide better error messages with context
+- Removes dependency on external assertion libraries
+
+#### FR-004.6: Fail-Fast on Timeout
+
+**Priority:** MUST
+
+When a timeout expires during a Check* or Action method:
+- The method MUST throw an exception immediately
+- The method MUST NOT return false and continue
+- The method MUST NOT silently swallow the timeout
+- The exception MUST include: element ID, timeout value, and current state
+
+**Method Distinction:**
+- `Is*` methods return bool immediately (no waiting)
+- `Wait*` methods return bool after polling (caller decides on failure)
+- `Check*` methods throw on failure (preconditions)
+- `Assert*` methods throw on failure (test assertions)
+- Action methods throw on failure (Click, Enter, etc.)
+
 **Specification:** See [SPEC-005: State Verification](SPEC-005-state-verification.md)
 
 ---
@@ -178,6 +275,37 @@ The framework MUST handle asynchronous UI updates and state changes.
 - The framework MUST support page-level busy state tracking
 - Page objects MUST be able to indicate when asynchronous operations are in progress
 - The framework MUST provide methods to wait for busy state to clear
+
+#### FR-005.4.1: BusyPageBase Pattern
+
+**Priority:** SHOULD
+
+Platform implementations SHOULD provide a `BusyPageBase` class:
+
+| Method | Description |
+|--------|-------------|
+| `IsBusy()` | Returns true if page is showing loading/busy state |
+| `IsNotBusy()` | Returns true if page is not busy |
+| `WaitForNotBusy(timeout)` | Waits for busy state to clear |
+| `IsReady()` override | Returns `IsDisplayed() && !IsBusy()` |
+
+**Implementation Options:**
+1. Override `BusyIndicatorId` property (element-based)
+2. Override `IsBusy()` method (custom logic)
+
+#### FR-005.5: Synchronous Operation Model
+
+**Priority:** MUST
+
+Control and page object operations MUST be synchronous:
+- Action methods (`Click`, `Enter`, `Select`) - Synchronous
+- Wait methods (`WaitVisible`, `WaitEnabled`) - Synchronous with internal polling
+- Is methods (`IsVisible`, `IsEnabled`) - Synchronous immediate check
+- Get/Set methods (`GetText`, `SetText`) - Synchronous
+
+Test base classes SHOULD implement `IAsyncLifetime` for async test setup/teardown.
+
+**Rationale:** Native automation drivers are synchronous. Async wrappers add overhead without benefit. See [DES-001: AD-009](DES-001-architectural-decisions.md#ad-009).
 
 **Specification:** See [SPEC-005: State Verification](SPEC-005-state-verification.md)  
 **Design:** See [DES-006: IsBusy Tracking](DES-006-isbusy-tracking.md)
@@ -232,12 +360,43 @@ The framework MUST integrate with native automation libraries for each platform.
 - The framework MUST support Windows, Android, and iOS targets
 - The framework MUST support platform-specific gestures (mobile)
 
+##### FR-007.2.1: Mobile Gesture Support
+
+**Priority:** MUST (for mobile platforms)
+
+Mobile platform implementations (MAUI for Android/iOS) MUST support:
+
+| Gesture | Method | Description |
+|---------|--------|-------------|
+| Tap | `Tap()` | Single tap/touch |
+| Double Tap | `DoubleTap()` | Two taps in quick succession |
+| Long Press | `LongPress(durationMs)` | Extended press with configurable duration |
+| Swipe | `Swipe(direction, distance)` | Directional swipe gesture |
+
+**Platform Mapping:**
+- `Click()` SHOULD alias to `Tap()` for mobile
+- Desktop platforms MAY implement gestures as no-ops or throw NotSupportedException
+
+**SwipeDirection Enum:** `Left`, `Right`, `Up`, `Down`
+
 #### FR-007.3: Web Platform
-- The framework MUST use Selenium WebDriver for web automation
+- The framework MUST support Selenium WebDriver for traditional web automation
+- The framework MUST support Playwright for modern web applications and Blazor
 - The framework MUST support Chrome, Firefox, Edge, and Safari browsers
 - The framework MUST support standard HTML elements and custom components
+- Each web driver MUST have its own platform implementation project
 
-#### FR-007.4: Direct Driver Access
+#### FR-007.4: WinForms Platform
+- The framework MUST use FlaUI for WinForms automation
+- The framework MUST access UI Automation 3 (UIA3) directly
+- The framework MUST support all standard WinForms controls
+
+#### FR-007.5: Stride Platform
+- The framework MUST support Stride Engine 3D game UI testing
+- The framework MUST use named pipes for test-to-game communication
+- The framework MUST support Stride UIElement hierarchy
+
+#### FR-007.6: Direct Driver Access
 - Platform implementations MUST access automation drivers directly
 - The framework MUST NOT introduce adapter abstraction layers
 - Platform implementations MUST expose native driver capabilities
@@ -268,6 +427,24 @@ The framework SHOULD support extension and customization by users.
 - Users MUST be able to create custom page object base classes
 - Custom page objects MUST be able to override default behaviors
 - Custom page objects MUST maintain framework patterns
+
+#### FR-008.4: Third-Party Control Library Support
+
+**Priority:** SHOULD
+
+For third-party control libraries (e.g., Telerik, DevExpress, Syncfusion), separate NuGet packages SHOULD be created:
+
+```
+Brinell.Wpf.Telerik       - Telerik WPF controls
+Brinell.Wpf.DevExpress    - DevExpress WPF controls
+Brinell.Maui.Syncfusion   - Syncfusion MAUI controls
+```
+
+These packages:
+- MUST reference the base platform package
+- MUST follow the same interface patterns
+- SHOULD be maintained separately from core framework
+- MAY be community-contributed
 
 **Rationale:** See [DES-005: Virtual Methods](DES-005-virtual-methods.md)
 
@@ -324,6 +501,34 @@ The framework MUST provide clear, actionable error messages.
 
 ---
 
+---
+
+### FR-011: Dependency Licensing
+
+**Priority:** SHOULD  
+**Category:** Compliance
+
+#### FR-011.1: License Requirements
+Framework dependencies SHOULD use permissive open source licenses:
+- Allow commercial use without fees
+- Do not require per-developer or per-seat licensing
+- Include at minimum: MIT, Apache 2.0, BSD, LGPL
+
+Commercial/paid dependencies MUST be documented and approved.
+
+#### FR-011.2: Prohibited Dependencies
+The framework MUST NOT depend on FluentAssertions library.
+
+**Rationale:** FluentAssertions adopted commercial licensing (post v6.x) requiring paid licenses for commercial use.
+
+**Alternatives:**
+- Built-in Assert methods on control objects (preferred)
+- Shouldly (MIT license)
+- xUnit assertions
+- Custom assertion helpers
+
+---
+
 ## 4. Optional Functional Requirements
 
 ### FR-OPT-001: API Mocking
@@ -337,6 +542,16 @@ The framework MAY support cloud-based testing services (BrowserStack, Sauce Labs
 ### FR-OPT-003: Visual Testing
 **Priority:** MAY  
 The framework MAY support visual regression testing.
+
+Platforms MAY provide visual validation capabilities:
+
+| Feature | Description |
+|---------|-------------|
+| Screenshot capture | Capture element or page screenshots |
+| Baseline comparison | Compare against baseline images |
+| Difference highlighting | Highlight visual differences |
+| Threshold tolerance | Configurable pixel difference tolerance |
+| Report generation | Generate HTML/Markdown reports |
 
 ### FR-OPT-004: Accessibility Testing
 **Priority:** MAY  
@@ -358,6 +573,7 @@ The framework MAY integrate with accessibility testing tools.
 | FR-008 | SPEC-003, SPEC-004 | DES-005 |
 | FR-009 | SPEC-001 | - |
 | FR-010 | SPEC-002 | - |
+| FR-011 | - | - |
 
 ---
 
@@ -365,6 +581,7 @@ The framework MAY integrate with accessibility testing tools.
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 3.1 | Jan 2026 | Added FR-002.5-7 (interfaces, containers, scroll), FR-004.5-6 (assertions, fail-fast), FR-005.4.1-5.5 (BusyPageBase, sync model), FR-007.2.1-7.7 (gestures, platforms), FR-008.4 (third-party controls), FR-011 (licensing), expanded scope |
 | 3.0 | Dec 2025 | Added FR-001.3 (platform-specific implementations), FR-007.4 (direct driver access) |
 | 2.0 | Dec 2025 | Added FR-006 (logging), FR-010 (error handling) |
 | 1.0 | Nov 2025 | Initial requirements |

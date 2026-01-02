@@ -1,8 +1,8 @@
 # DES-001: Architectural Decisions
 
-**Version:** 3.0  
+**Version:** 3.1  
 **Status:** Active  
-**Last Updated:** December 2025  
+**Last Updated:** January 2026  
 **Relates To:** SPEC-001 (Core Architecture), REQ-001 (Functional Requirements)
 
 ---
@@ -25,6 +25,8 @@ This document records the key architectural decisions made in designing the UI T
 | AD-006 | Four-Tier State Verification | **ADOPTED** | Medium |
 | AD-007 | CSV Structured Logging | **ADOPTED** | Low |
 | AD-008 | Platform Enum (Not String) | **ADOPTED** | Low |
+| AD-009 | Synchronous Control Operations | **ADOPTED** | Medium |
+| AD-010 | Platform Extension Points | **ADOPTED** | Low |
 
 ---
 
@@ -233,7 +235,7 @@ With Core containing only interfaces (AD-001) and no adapter layer (AD-002), eac
 **Each platform project contains its own complete base class hierarchy:**
 
 ```
-Platform.Wpf/
+Brinell.Wpf/
 ├── ControlBase : IControlObject
 ├── PageBase : IPageObject
 ├── BusyPageBase : PageBase
@@ -241,12 +243,12 @@ Platform.Wpf/
 ├── TextControlBase : ControlBase, ITextControl
 └── ... (all capability base classes)
 
-Platform.Maui/
+Brinell.Maui/
 ├── ControlBase : IControlObject
 ├── PageBase : IPageObject
 └── ... (same hierarchy, different implementation)
 
-Platform.Html/
+Brinell.Html/
 ├── ControlBase : IControlObject
 ├── PageBase : IPageObject
 └── ... (same hierarchy, different implementation)
@@ -483,7 +485,151 @@ Only allow composition, not inheritance.
 
 ---
 
-## 8. Decision Record Template
+## 8. AD-009: Synchronous Control Operations
+
+### 8.1 Context
+
+UI automation operations can be implemented as synchronous or asynchronous. Modern C# favors async patterns, but UI automation drivers (FlaUI, Selenium, Appium) are typically synchronous.
+
+### 8.2 Decision
+
+**Control operations are synchronous.** Test base classes implement `IAsyncLifetime` for async setup/teardown only.
+
+```csharp
+// Control methods - Synchronous
+public virtual void Click() { ... }
+public virtual bool WaitVisible(bool expected = true, int? timeoutMs = null) { ... }
+public virtual string GetText() { ... }
+
+// Test lifecycle - Async (xUnit IAsyncLifetime)
+public virtual Task InitializeAsync() { ... }
+public virtual Task DisposeAsync() { ... }
+```
+
+### 8.3 Rationale
+
+**Benefits:**
+1. **Matches Native APIs** - FlaUI, Selenium, Appium are all synchronous
+2. **Simpler Test Code** - No await on every control operation
+3. **Natural Blocking** - Polling waits block naturally without Task.Delay overhead
+4. **Easier Debugging** - Synchronous stack traces are clearer
+
+**Drawbacks:**
+1. **Cannot Parallelize** - Control operations cannot run in parallel within a test
+2. **Thread Blocking** - Thread is blocked during waits
+3. **Modern C# Preference** - Async is generally preferred in modern .NET
+
+### 8.4 Alternatives Considered
+
+#### Alternative 1: Async-First Design
+
+```csharp
+await button.ClickAsync();
+await textBox.WaitVisibleAsync();
+```
+
+**Rejected Because:**
+- Every test line needs await keyword
+- Native drivers are synchronous anyway
+- Would require wrapping sync calls in Task.Run (overhead)
+- Makes test code more verbose
+
+#### Alternative 2: Dual Sync/Async APIs
+
+```csharp
+button.Click();        // Sync
+await button.ClickAsync();  // Async
+```
+
+**Rejected Because:**
+- Doubles API surface area
+- Maintenance burden (two implementations)
+- No real benefit since drivers are sync
+- Confusing for users
+
+### 8.5 Consequences
+
+**Positive:**
+- Clean, simple test code
+- Matches underlying driver behavior
+- Easy to debug
+
+**Negative:**
+- Cannot easily parallelize operations within a test
+
+**Mitigation:**
+- Parallel execution at test level (xUnit parallel tests)
+- Async lifecycle for resource-intensive setup/teardown
+
+### 8.6 Status
+
+**ADOPTED** in v3.0, **DOCUMENTED** in v3.1 (January 2026)
+
+**Related:** REQ-001 FR-005.5
+
+---
+
+## 9. AD-010: Platform Extension Points
+
+### 9.1 Context
+
+Different platforms have unique capabilities that don't exist on other platforms (e.g., mobile gestures, HTML attributes, WPF automation patterns). Need to decide how to handle platform-specific functionality.
+
+### 9.2 Decision
+
+**Platform implementations MAY add methods beyond interface contracts** for platform-specific capabilities.
+
+### 9.3 Guidelines
+
+1. **Core interfaces** define the cross-platform contract
+2. **Platform base classes** MAY add platform-specific methods
+3. **Platform-specific methods** MUST be documented
+4. **Tests using platform-specific methods** are not portable
+
+### 9.4 Examples
+
+| Platform | Extension Methods | Description |
+|----------|-------------------|-------------|
+| MAUI | `Swipe()`, `LongPress()`, `DoubleTap()` | Mobile gesture support |
+| WPF | `GetAutomationPatterns()` | UIA pattern access |
+| HTML | `GetAttribute()`, `GetCssProperty()`, `ExecuteScript()` | Web-specific operations |
+| Stride | `GetUIElementProperty()` | Game engine UI access |
+
+```csharp
+// MAUI - Platform-specific gesture methods
+public virtual void Swipe(SwipeDirection direction, int distance = 200) { ... }
+public virtual void LongPress(int durationMs = 1000) { ... }
+
+// HTML - Platform-specific web methods
+public virtual string GetAttribute(string name) { ... }
+public virtual string GetCssProperty(string name) { ... }
+```
+
+### 9.5 Consequences
+
+**Positive:**
+- Full access to platform capabilities
+- No artificial limitations
+- Clean separation of portable vs platform-specific code
+
+**Negative:**
+- Tests using platform-specific methods are not portable
+- Users must be aware of what's portable vs platform-specific
+
+**Mitigation:**
+- Document which methods are platform-specific
+- Interface contracts clearly show portable API
+- Use `#if` directives or separate test files for platform-specific tests
+
+### 9.6 Status
+
+**ADOPTED** in v3.0, **DOCUMENTED** in v3.1 (January 2026)
+
+**Related:** AD-003 (Platform-Specific Base Classes)
+
+---
+
+## 10. Decision Record Template
 
 For new architectural decisions, use this template:
 
@@ -522,10 +668,11 @@ For new architectural decisions, use this template:
 
 ---
 
-## 9. Change History
+## 11. Change History
 
 | Version | Date | Decisions Added/Changed |
 |---------|------|------------------------|
+| 3.1 | Jan 2026 | Added AD-009 (Sync Operations), AD-010 (Platform Extensions), updated naming to Brinell |
 | 3.0 | Dec 2025 | AD-001 through AD-008 |
 
 ---

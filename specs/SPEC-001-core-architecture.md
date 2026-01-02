@@ -1,8 +1,8 @@
 # SPEC-001: Core Architecture
 
-**Version:** 3.0  
+**Version:** 3.1  
 **Status:** Active  
-**Last Updated:** December 2025  
+**Last Updated:** January 2026  
 **Implements:** REQ-001 (Multi-Platform Support), REQ-009 (Test Isolation)
 
 ---
@@ -29,9 +29,12 @@ The framework consists of four distinct layers:
                          │ depends on
 ┌────────────────────────▼───────────────────────────────────┐
 │ Layer 3: Platform Implementations (Self-Contained)        │
-│ • Oravey.UITestFramework.Wpf                              │
-│ • Oravey.UITestFramework.Maui                             │
-│ • Oravey.UITestFramework.Html                             │
+│ • Brinell.Wpf                                             │
+│ • Brinell.WinForms                                        │
+│ • Brinell.Maui                                            │
+│ • Brinell.Html                                            │
+│ • Brinell.Html.Playwright                                 │
+│ • Brinell.Stride                                          │
 │                                                            │
 │ Each contains:                                            │
 │ • TestContext (ITestContext + element operations)         │
@@ -42,7 +45,7 @@ The framework consists of four distinct layers:
                          │ depends on
 ┌────────────────────────▼───────────────────────────────────┐
 │ Layer 2: Core (Interfaces Only)                          │
-│ • Oravey.UITestFramework.Core                             │
+│ • Brinell.Core                                            │
 │                                                            │
 │ Contains:                                                 │
 │ • Interface contracts (ITestContext, IPageObject, etc.)   │
@@ -54,10 +57,11 @@ The framework consists of four distinct layers:
                          │
 ┌────────────────────────▼───────────────────────────────────┐
 │ Layer 1: External Libraries                               │
-│ • FlaUI.Core (WPF)                                        │
+│ • FlaUI.Core (WPF, WinForms)                              │
 │ • Appium.WebDriver (MAUI/Mobile)                          │
 │ • Selenium.WebDriver (Web)                                │
-│ • xUnit, FluentAssertions                                 │
+│ • Playwright (Blazor/Modern Web)                          │
+│ • xUnit                                                   │
 └────────────────────────────────────────────────────────────┘
 ```
 
@@ -67,7 +71,7 @@ The framework consists of four distinct layers:
 
 ### 3.1 Core Layer (Layer 2)
 
-**Project:** `Oravey.UITestFramework.Core`  
+**Project:** `Brinell.Core`  
 **Purpose:** Define interface contracts without implementation
 
 #### 3.1.1 Core Layer MUST Contain
@@ -105,16 +109,19 @@ The framework consists of four distinct layers:
 ### 3.2 Platform Layer (Layer 3)
 
 **Projects:** 
-- `Oravey.UITestFramework.Wpf`
-- `Oravey.UITestFramework.Maui`
-- `Oravey.UITestFramework.Html`
+- `Brinell.Wpf`
+- `Brinell.WinForms`
+- `Brinell.Maui`
+- `Brinell.Html`
+- `Brinell.Html.Playwright`
+- `Brinell.Stride`
 
 **Purpose:** Provide complete, self-contained implementations for each platform
 
 #### 3.2.1 Platform Project Structure
 
 ```
-Oravey.UITestFramework.{Platform}/
+Brinell.{Platform}/
 ├── Infrastructure/
 │   ├── {Platform}TestContext.cs       # Implements ITestContext
 │   └── {Platform}DriverAdapter.cs     # App lifecycle management
@@ -122,7 +129,7 @@ Oravey.UITestFramework.{Platform}/
 │   ├── Base/
 │   │   ├── ControlBase.cs             # Implements IControlObject
 │   │   ├── PageBase.cs                # Implements IPageObject
-│   │   ├── BusyPageBase.cs            # Optional: IsBusy tracking
+│   │   ├── BusyPageBase.cs            # IsBusy tracking (required)
 │   │   ├── ContentControlBase.cs      # Clickable controls
 │   │   ├── TextControlBase.cs         # Text input controls
 │   │   ├── ToggleControlBase.cs       # Toggle controls
@@ -161,14 +168,14 @@ Oravey.UITestFramework.{Platform}/
 #### 3.2.3 Platform Layer Dependencies
 
 Each platform project references:
-- `Oravey.UITestFramework.Core` (interfaces)
-- Native automation library (FlaUI, Appium, or Selenium)
+- `Brinell.Core` (interfaces)
+- Native automation library (FlaUI, Appium, Selenium, or Playwright)
 - xUnit framework
 
 ```xml
 <!-- WPF Example -->
 <ItemGroup>
-  <ProjectReference Include="..\Core\Oravey.UITestFramework.Core.csproj" />
+  <ProjectReference Include="..\Brinell.Core\Brinell.Core.csproj" />
   <PackageReference Include="FlaUI.Core" Version="4.0.0" />
   <PackageReference Include="FlaUI.UIA3" Version="4.0.0" />
   <PackageReference Include="xunit" Version="2.9.*" />
@@ -238,12 +245,12 @@ MyApp.UITests/
 ```xml
 <ItemGroup>
   <!-- Reference ONE platform implementation -->
-  <ProjectReference Include="..\UITestFramework\Oravey.UITestFramework.Wpf.csproj" />
+  <ProjectReference Include="..\Brinell.Wpf\Brinell.Wpf.csproj" />
   
   <!-- Test framework -->
   <PackageReference Include="xunit" Version="2.9.*" />
   <PackageReference Include="xunit.runner.visualstudio" Version="2.9.*" />
-  <PackageReference Include="FluentAssertions" Version="6.*" />
+  <!-- Note: FluentAssertions is NOT recommended - use built-in Assert methods -->
 </ItemGroup>
 ```
 
@@ -309,7 +316,7 @@ Applications select platform at compile time by referencing the appropriate plat
 
 ```csharp
 // WPF Application
-using Oravey.UITestFramework.Wpf;
+using Brinell.Wpf;
 
 public class MyTests : WpfUITestBase
 {
@@ -329,48 +336,59 @@ public class MyTests : WpfUITestBase
 ### 6.1 Solution Structure
 
 ```
-UITestFramework.sln
+Brinell.sln
 ├── src/
-│   ├── Core/
-│   │   └── Oravey.UITestFramework.Core/
-│   ├── Platforms/
-│   │   ├── Oravey.UITestFramework.Wpf/
-│   │   ├── Oravey.UITestFramework.Maui/
-│   │   └── Oravey.UITestFramework.Html/
-│   └── Mocking/
-│       └── Oravey.UITestFramework.Mocking/    # Optional
+│   ├── Brinell.Core/
+│   ├── Brinell.Wpf/
+│   ├── Brinell.WinForms/
+│   ├── Brinell.Maui/
+│   ├── Brinell.Html/
+│   ├── Brinell.Html.Playwright/
+│   ├── Brinell.Stride/
+│   ├── Brinell.Stride.Automation/    # In-game automation handler
+│   ├── Brinell.Testing/              # Test utilities
+│   └── Brinell.Mocking/              # API mocking support
 ├── samples/
-│   ├── SampleWpfApp.UITests/
-│   ├── SampleMauiApp.UITests/
-│   └── SampleWebApp.UITests/
+│   ├── Brinell.Samples.Wpf.App/
+│   ├── Brinell.Samples.Wpf.UITests/
+│   ├── Brinell.Samples.Maui.App/
+│   ├── Brinell.Samples.Maui.UITests/
+│   ├── Brinell.Samples.Blazor.App/
+│   ├── Brinell.Samples.Blazor.PlaywrightTests/
+│   └── ...
+├── tests/
 └── docs/
-    └── ...
 ```
 
 ### 6.2 Namespace Organization
 
 ```
-Oravey.UITestFramework.Core
+Brinell.Core
 ├── Abstractions
 │   ├── ITestContext
 │   ├── IPageObject
 │   └── Controls
 │       ├── IControlObject
 │       ├── ITextControl
-│       └── ...
+│       ├── IToggleControl
+│       ├── ISelectorControl
+│       ├── IRangeControl
+│       ├── IItemsControl
+│       └── IContainerControl
 ├── Logging
 │   ├── ITestLogger
 │   └── CsvTestLogger
 ├── Exceptions
 └── Configuration
 
-Oravey.UITestFramework.Wpf
+Brinell.Wpf
 ├── Infrastructure
 │   └── FlaUITestContext
 ├── Controls
 │   ├── Base
 │   │   ├── ControlBase
 │   │   ├── PageBase
+│   │   ├── BusyPageBase
 │   │   └── ...
 │   └── [Concrete controls]
 └── Testing
@@ -505,6 +523,7 @@ The architecture MUST be verified through:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 3.1 | Jan 2026 | Renamed to Brinell.*, added WinForms/Playwright/Stride platforms, BusyPageBase now required, removed FluentAssertions reference |
 | 3.0 | Dec 2025 | Core = interfaces only, platform-specific base classes, direct driver access |
 | 2.0 | Dec 2025 | Added logging layer, structured configuration |
 | 1.0 | Nov 2025 | Initial architecture specification |
