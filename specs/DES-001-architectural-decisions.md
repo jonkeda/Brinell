@@ -485,15 +485,24 @@ Only allow composition, not inheritance.
 
 ---
 
-## 8. AD-009: Synchronous Control Operations
+## 8. AD-009: Synchronous Control Operations (with Async Exception)
 
 ### 8.1 Context
 
-UI automation operations can be implemented as synchronous or asynchronous. Modern C# favors async patterns, but UI automation drivers (FlaUI, Selenium, Appium) are typically synchronous.
+UI automation operations can be implemented as synchronous or asynchronous. Modern C# favors async patterns, but UI automation drivers (FlaUI, Selenium, Appium) are typically synchronous. However, some modern drivers like Playwright are inherently async.
 
 ### 8.2 Decision
 
-**Control operations are synchronous.** Test base classes implement `IAsyncLifetime` for async setup/teardown only.
+**Control operations follow the native driver pattern:**
+
+1. **Synchronous platforms** (FlaUI, Selenium, Appium) - Control operations are synchronous
+2. **Asynchronous platforms** (Playwright) - Control operations MAY be async if the driver is natively async
+
+### 8.3 Implementation Guidelines
+
+#### Synchronous Platforms (Default)
+
+For platforms with synchronous drivers (WPF, WinForms, MAUI, HTML/Selenium, Stride):
 
 ```csharp
 // Control methods - Synchronous
@@ -506,64 +515,121 @@ public virtual Task InitializeAsync() { ... }
 public virtual Task DisposeAsync() { ... }
 ```
 
-### 8.3 Rationale
+#### Asynchronous Platforms (Exception)
+
+For platforms with natively async drivers (Playwright):
+
+```csharp
+// Core defines async interface
+public interface IControlObjectAsync
+{
+    ValueTask<bool> IsVisibleAsync(CancellationToken ct = default);
+    ValueTask<bool> WaitVisibleAsync(bool expected = true, int? timeoutMs = null, CancellationToken ct = default);
+    ValueTask ClickAsync(CancellationToken ct = default);
+}
+
+// Platform implements async control base
+public abstract class ControlBaseAsync : IControlObjectAsync
+{
+    public virtual async ValueTask ClickAsync(CancellationToken ct = default)
+    {
+        await _element.ClickAsync();
+    }
+}
+```
+
+#### Dual API Pattern (Playwright)
+
+Playwright platforms SHOULD provide both sync and async variants:
+
+```csharp
+// Sync wrapper (for simpler tests)
+public class ControlBase : IControlObject
+{
+    public virtual void Click()
+    {
+        _element.ClickAsync().GetAwaiter().GetResult();
+    }
+}
+
+// Async native (for async tests)
+public class ControlBaseAsync : IControlObjectAsync
+{
+    public virtual async ValueTask ClickAsync(CancellationToken ct = default)
+    {
+        await _element.ClickAsync();
+    }
+}
+```
+
+### 8.4 Rationale
 
 **Benefits:**
-1. **Matches Native APIs** - FlaUI, Selenium, Appium are all synchronous
-2. **Simpler Test Code** - No await on every control operation
-3. **Natural Blocking** - Polling waits block naturally without Task.Delay overhead
-4. **Easier Debugging** - Synchronous stack traces are clearer
+1. **Matches Native APIs** - Each platform uses its natural driver pattern
+2. **Playwright Optimization** - Async platforms can use native async without sync wrappers
+3. **Simpler Sync Tests** - Synchronous platforms still have clean, simple test code
+4. **Choice** - Users can choose sync or async based on preference
 
 **Drawbacks:**
-1. **Cannot Parallelize** - Control operations cannot run in parallel within a test
-2. **Thread Blocking** - Thread is blocked during waits
-3. **Modern C# Preference** - Async is generally preferred in modern .NET
+1. **Inconsistency** - Different platforms have different patterns
+2. **Learning Curve** - Users must understand when to use async
 
-### 8.4 Alternatives Considered
+### 8.5 Platform Pattern Summary
 
-#### Alternative 1: Async-First Design
+| Platform | Driver | Primary Pattern | Async Interface |
+|----------|--------|-----------------|-----------------|
+| Brinell.Wpf | FlaUI | Sync | No |
+| Brinell.WinForms | FlaUI | Sync | No |
+| Brinell.Maui | Appium | Sync | No |
+| Brinell.Html | Selenium | Sync | No |
+| Brinell.Html.Playwright | Playwright | **Dual (Sync + Async)** | **Yes** |
+| Brinell.Stride | Named Pipes | Sync | No |
 
-```csharp
-await button.ClickAsync();
-await textBox.WaitVisibleAsync();
-```
+### 8.6 Core Interface Requirements
+
+Core MUST define:
+- `IControlObject` - Synchronous interface (all platforms)
+- `IControlObjectAsync` - Asynchronous interface (async-capable platforms)
+
+Async-capable platforms:
+- MUST implement `IControlObjectAsync`
+- SHOULD also implement `IControlObject` (sync wrapper) for compatibility
+
+### 8.7 Alternatives Considered
+
+#### Alternative 1: Sync-Only (Original AD-009)
 
 **Rejected Because:**
-- Every test line needs await keyword
-- Native drivers are synchronous anyway
-- Would require wrapping sync calls in Task.Run (overhead)
-- Makes test code more verbose
+- Forces sync wrappers on natively async drivers (Playwright)
+- Loses async benefits (non-blocking, cancellation)
+- `.GetAwaiter().GetResult()` pattern is discouraged in async contexts
 
-#### Alternative 2: Dual Sync/Async APIs
-
-```csharp
-button.Click();        // Sync
-await button.ClickAsync();  // Async
-```
+#### Alternative 2: Async-Only
 
 **Rejected Because:**
-- Doubles API surface area
-- Maintenance burden (two implementations)
-- No real benefit since drivers are sync
-- Confusing for users
+- Adds overhead to sync drivers
+- Makes simple tests verbose with await everywhere
+- Not all platforms benefit from async
 
-### 8.5 Consequences
+### 8.8 Consequences
 
 **Positive:**
-- Clean, simple test code
-- Matches underlying driver behavior
-- Easy to debug
+- Each platform uses optimal pattern
+- Playwright tests can be fully async
+- Backward compatible with sync platforms
 
 **Negative:**
-- Cannot easily parallelize operations within a test
+- Platform-specific test patterns
+- Async tests not portable to sync platforms
 
 **Mitigation:**
-- Parallel execution at test level (xUnit parallel tests)
-- Async lifecycle for resource-intensive setup/teardown
+- Clear documentation per platform
+- `IControlObject` sync interface available on all platforms
+- Examples for both patterns
 
-### 8.6 Status
+### 8.9 Status
 
-**ADOPTED** in v3.0, **DOCUMENTED** in v3.1 (January 2026)
+**ADOPTED** in v3.0, **REVISED** in v3.2 (January 2026) to allow async for async-native platforms
 
 **Related:** REQ-001 FR-005.5
 
@@ -672,6 +738,7 @@ For new architectural decisions, use this template:
 
 | Version | Date | Decisions Added/Changed |
 |---------|------|------------------------|
+| 3.2 | Jan 2026 | Revised AD-009 to allow async interfaces for async-native platforms (Playwright) |
 | 3.1 | Jan 2026 | Added AD-009 (Sync Operations), AD-010 (Platform Extensions), updated naming to Brinell |
 | 3.0 | Dec 2025 | AD-001 through AD-008 |
 
