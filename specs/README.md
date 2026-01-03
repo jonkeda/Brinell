@@ -34,7 +34,12 @@ Define **why** specific architectural decisions were made. Document alternatives
 
 ### Specifications
 - **[SPEC-001: Core Architecture](SPEC-001-core-architecture.md)** - Component relationships, layers, and dependencies
-- **[SPEC-002: Interface Contracts](SPEC-002-interface-contracts.md)** - Core interfaces and their contracts
+- **[SPEC-002: Interface Contracts](SPEC-002-interface-contracts.md)** - Core interfaces and their contracts (ITestContext, IPageObject, IControlObject and specializations)
+- **[SPEC-002b: Enhanced Design Documentation](SPEC-002b-INDEX.md)** - Enhanced design with diagrams, analysis, and improvement proposals
+  - **[SPEC-002b-SUMMARY](SPEC-002b-SUMMARY.md)** - Overview and next steps
+  - **[SPEC-002b-ANALYSIS-AND-IMPROVEMENTS](SPEC-002b-ANALYSIS-AND-IMPROVEMENTS.md)** - Strategic analysis and 4 major improvements (A-D) with 8 clarifying questions
+  - **[SPEC-002b-001: Control Hierarchy Diagrams](SPEC-002b-001-CONTROL-HIERARCHY-DIAGRAMS.md)** - Mermaid diagrams for all interfaces and controls (MAUI/Blazor)
+  - **[SPEC-002b-002: Interface Catalog](SPEC-002b-002-INTERFACE-CATALOG.md)** - Complete method specifications for all 15 interfaces
 - **[SPEC-003: Control Object Specification](SPEC-003-control-objects.md)** - Control hierarchy and behavior
 - **[SPEC-004: Page Object Specification](SPEC-004-page-objects.md)** - Page object pattern and lifecycle
 - **[SPEC-005: State Verification Pattern](SPEC-005-state-verification.md)** - Wait/Check/Is/Assert pattern specification
