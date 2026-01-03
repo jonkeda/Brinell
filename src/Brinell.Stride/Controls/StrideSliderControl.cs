@@ -35,6 +35,7 @@ public class StrideSliderControl : StrideRangeControlBase
 
         // Use server-side slider value setting for reliability
         var success = Context.SetSliderValue(_automationId, value);
+        
         if (!success)
         {
             // Fallback to mouse clicking if server-side fails
@@ -44,6 +45,9 @@ public class StrideSliderControl : StrideRangeControlBase
             var targetY = bounds.CenterY;
             Context.Input.Click(targetX, targetY);
         }
+        
+        // Wait for UI to update
+        Thread.Sleep(50);
         
         LogAction("SetValue", value.ToString());
     }

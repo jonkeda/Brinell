@@ -157,6 +157,16 @@ public abstract class StrideUITestBase : IAsyncLifetime
     {
         try
         {
+            // Release any stuck modifier keys before cleanup
+            try
+            {
+                Context?.Input?.ReleaseAllModifiers();
+            }
+            catch
+            {
+                // Ignore errors releasing keys
+            }
+
             // Dispose context first to close pipe gracefully
             Context?.Dispose();
             

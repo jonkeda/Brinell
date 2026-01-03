@@ -146,7 +146,7 @@ public class StrideInputSimulator
     public void PressKey(VirtualKey key)
     {
         KeyDown(key);
-        Thread.Sleep(10);
+        Thread.Sleep(50); // Hold for ~3 frames at 60fps to ensure game detects it
         KeyUp(key);
     }
 
@@ -180,9 +180,15 @@ public class StrideInputSimulator
     /// </summary>
     public void HoldKey(VirtualKey key, int durationMs)
     {
-        KeyDown(key);
-        Thread.Sleep(durationMs);
-        KeyUp(key);
+        try
+        {
+            KeyDown(key);
+            Thread.Sleep(durationMs);
+        }
+        finally
+        {
+            KeyUp(key);
+        }
     }
 
     /// <summary>
@@ -190,18 +196,23 @@ public class StrideInputSimulator
     /// </summary>
     public void PressKeyCombination(params VirtualKey[] keys)
     {
-        // Press all keys down
-        foreach (var key in keys)
+        try
         {
-            KeyDown(key);
-            Thread.Sleep(10);
+            // Press all keys down
+            foreach (var key in keys)
+            {
+                KeyDown(key);
+                Thread.Sleep(10);
+            }
         }
-
-        // Release in reverse order
-        for (var i = keys.Length - 1; i >= 0; i--)
+        finally
         {
-            KeyUp(keys[i]);
-            Thread.Sleep(10);
+            // Release in reverse order (always release even on exception)
+            for (var i = keys.Length - 1; i >= 0; i--)
+            {
+                KeyUp(keys[i]);
+                Thread.Sleep(10);
+            }
         }
     }
 
@@ -210,11 +221,17 @@ public class StrideInputSimulator
     /// </summary>
     public void HotKey(VirtualKey key, VirtualKey modifier)
     {
-        KeyDown(modifier);
-        Thread.Sleep(10);
-        PressKey(key);
-        Thread.Sleep(10);
-        KeyUp(modifier);
+        try
+        {
+            KeyDown(modifier);
+            Thread.Sleep(10);
+            PressKey(key);
+            Thread.Sleep(10);
+        }
+        finally
+        {
+            KeyUp(modifier);
+        }
     }
 
     /// <summary>
@@ -222,22 +239,47 @@ public class StrideInputSimulator
     /// </summary>
     public void HotKey(VirtualKey key, params VirtualKey[] modifiers)
     {
-        // Press modifiers down
-        foreach (var mod in modifiers)
+        try
         {
-            KeyDown(mod);
-            Thread.Sleep(10);
+            // Press modifiers down
+            foreach (var mod in modifiers)
+            {
+                KeyDown(mod);
+                Thread.Sleep(10);
+            }
+
+            // Press the key
+            PressKey(key);
         }
-
-        // Press the key
-        PressKey(key);
-
-        // Release modifiers in reverse
-        for (var i = modifiers.Length - 1; i >= 0; i--)
+        finally
         {
-            KeyUp(modifiers[i]);
-            Thread.Sleep(10);
+            // Release modifiers in reverse (always release even on exception)
+            for (var i = modifiers.Length - 1; i >= 0; i--)
+            {
+                KeyUp(modifiers[i]);
+                Thread.Sleep(10);
+            }
         }
+    }
+
+    /// <summary>
+    /// Release all modifier keys that might be stuck.
+    /// Call this on test cleanup to ensure no keys remain pressed.
+    /// </summary>
+    public void ReleaseAllModifiers()
+    {
+        // Release both generic and left/right variants for complete cleanup
+        KeyUp(VirtualKey.Shift);
+        KeyUp(VirtualKey.LeftShift);
+        KeyUp(VirtualKey.RightShift);
+        KeyUp(VirtualKey.Control);
+        KeyUp(VirtualKey.LeftControl);
+        KeyUp(VirtualKey.RightControl);
+        KeyUp(VirtualKey.Alt);
+        KeyUp(VirtualKey.LeftAlt);
+        KeyUp(VirtualKey.RightAlt);
+        KeyUp(VirtualKey.LeftWindows);
+        KeyUp(VirtualKey.RightWindows);
     }
 
     #endregion
@@ -319,8 +361,14 @@ public enum VirtualKey : ushort
     Tab = 0x09,
     CapsLock = 0x14,
     Shift = 0x10,
+    LeftShift = 0xA0,
+    RightShift = 0xA1,
     Control = 0x11,
+    LeftControl = 0xA2,
+    RightControl = 0xA3,
     Alt = 0x12,
+    LeftAlt = 0xA4,
+    RightAlt = 0xA5,
     Space = 0x20,
     Enter = 0x0D,
     Backspace = 0x08,
@@ -336,6 +384,10 @@ public enum VirtualKey : ushort
     Up = 0x26,
     Right = 0x27,
     Down = 0x28,
+
+    // Windows keys
+    LeftWindows = 0x5B,
+    RightWindows = 0x5C,
 
     // Numpad
     NumPad0 = 0x60, NumPad1 = 0x61, NumPad2 = 0x62, NumPad3 = 0x63,

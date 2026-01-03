@@ -225,6 +225,7 @@ public class StrideTestContext : ITestContext, IDisposable
 
     /// <summary>
     /// Ensure the game window has focus before input operations.
+    /// Uses aggressive focus-stealing techniques to work around Windows restrictions.
     /// </summary>
     public bool EnsureGameHasFocus(int timeoutMs = 5000)
     {
@@ -251,8 +252,10 @@ public class StrideTestContext : ITestContext, IDisposable
             }
 
             Log($"Setting game window to foreground (current: {currentForeground:X}, target: {_gameWindowHandle:X})");
-            SetForegroundWindow(_gameWindowHandle);
-            Thread.Sleep(50); // Give window time to receive focus
+            
+            // Use aggressive focus-stealing technique
+            ForceForegroundWindow(_gameWindowHandle);
+            Thread.Sleep(100); // Give window time to receive focus
 
             // Verify focus was set
             currentForeground = GetForegroundWindow();
@@ -262,18 +265,185 @@ public class StrideTestContext : ITestContext, IDisposable
                 return true;
             }
 
-            Thread.Sleep(100); // Wait before retry
+            Thread.Sleep(150); // Wait before retry
         }
 
         Log($"Failed to set game window focus after {timeoutMs}ms");
         return false;
     }
 
+    /// <summary>
+    /// Forcefully set a window to foreground, bypassing Windows restrictions.
+    /// </summary>
+    private void ForceForegroundWindow(IntPtr targetWindow)
+    {
+        var currentThread = GetCurrentThreadId();
+        var foregroundWindow = GetForegroundWindow();
+        var foregroundThread = GetWindowThreadProcessId(foregroundWindow, out _);
+        
+        // Attach input threads to allow focus stealing
+        var attached = false;
+        if (foregroundThread != currentThread)
+        {
+            attached = AttachThreadInput(currentThread, foregroundThread, true);
+        }
+
+        try
+        {
+            // Try multiple methods to set foreground
+            
+            // Method 1: Standard SetForegroundWindow
+            SetForegroundWindow(targetWindow);
+            
+            // Method 2: Show and activate the window
+            ShowWindow(targetWindow, SW_RESTORE);
+            
+            // Method 3: Bring to top and activate
+            BringWindowToTop(targetWindow);
+            
+            // Method 4: Set focus explicitly
+            SetFocus(targetWindow);
+            
+            // Method 5: Simulate Alt key to unlock foreground locking
+            // Windows allows focus changes immediately after Alt is pressed
+            var inputs = new INPUT[2];
+            inputs[0].type = INPUT_KEYBOARD;
+            inputs[0].ki.wVk = VK_MENU; // Alt key
+            inputs[1].type = INPUT_KEYBOARD;
+            inputs[1].ki.wVk = VK_MENU;
+            inputs[1].ki.dwFlags = KEYEVENTF_KEYUP;
+            SendInput(2, inputs, Marshal.SizeOf<INPUT>());
+            
+            // Try SetForegroundWindow again after Alt
+            SetForegroundWindow(targetWindow);
+        }
+        finally
+        {
+            // Detach input threads
+            if (attached)
+            {
+                AttachThreadInput(currentThread, foregroundThread, false);
+            }
+        }
+    }
+
+    // Window focus P/Invoke declarations
     [DllImport("user32.dll")]
     private static extern bool SetForegroundWindow(IntPtr hWnd);
 
     [DllImport("user32.dll")]
     private static extern IntPtr GetForegroundWindow();
+
+    [DllImport("user32.dll")]
+    private static extern bool AttachThreadInput(uint idAttach, uint idAttachTo, bool fAttach);
+
+    [DllImport("user32.dll")]
+    private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
+
+    [DllImport("kernel32.dll")]
+    private static extern uint GetCurrentThreadId();
+
+    [DllImport("user32.dll")]
+    private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+    [DllImport("user32.dll")]
+    private static extern bool BringWindowToTop(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr SetFocus(IntPtr hWnd);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern uint SendInput(uint nInputs, INPUT[] pInputs, int cbSize);
+
+    private const int SW_RESTORE = 9;
+    private const int INPUT_KEYBOARD = 1;
+    private const ushort VK_MENU = 0x12; // Alt key
+    private const uint KEYEVENTF_KEYUP = 0x0002;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct INPUT
+    {
+        public int type;
+        public KEYBDINPUT ki;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct KEYBDINPUT
+    {
+        public ushort wVk;
+        public ushort wScan;
+        public uint dwFlags;
+        public uint time;
+        public IntPtr dwExtraInfo;
+    }
+
+    // Win32 GetWindowRect for fallback window position
+    [DllImport("user32.dll")]
+    private static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct RECT
+    {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
+    }
+
+    /// <summary>
+    /// Get window rectangle using Win32 API as fallback.
+    /// </summary>
+    private (int x, int y, int width, int height)? GetWindowRectFallback()
+    {
+        if (_gameWindowHandle == IntPtr.Zero)
+        {
+            Log("GetWindowRectFallback: No window handle");
+            return null;
+        }
+
+        if (!OperatingSystem.IsWindows())
+        {
+            return null;
+        }
+
+        if (GetWindowRect(_gameWindowHandle, out RECT rect))
+        {
+            var x = rect.Left;
+            var y = rect.Top;
+            var width = rect.Right - rect.Left;
+            var height = rect.Bottom - rect.Top;
+            Log($"GetWindowRectFallback: ({x}, {y}) {width}x{height}");
+            return (x, y, width, height);
+        }
+
+        Log("GetWindowRectFallback: GetWindowRect failed");
+        return null;
+    }
+
+    /// <summary>
+    /// Get window rectangle, trying pipe query first, then Win32 fallback.
+    /// </summary>
+    private (int x, int y, int width, int height) GetWindowRectWithFallback()
+    {
+        // Try pipe query first
+        var windowInfo = GetWindowInfo();
+        if (windowInfo != null && windowInfo.WindowWidth > 0)
+        {
+            Log($"GetWindowRectWithFallback: Via pipe - ({windowInfo.WindowX}, {windowInfo.WindowY}) {windowInfo.WindowWidth}x{windowInfo.WindowHeight}");
+            return (windowInfo.WindowX, windowInfo.WindowY,
+                    windowInfo.WindowWidth, windowInfo.WindowHeight);
+        }
+
+        // Fallback to Win32 API
+        var fallback = GetWindowRectFallback();
+        if (fallback.HasValue)
+        {
+            return fallback.Value;
+        }
+
+        Log("GetWindowRectWithFallback: No window info available");
+        return (0, 0, 0, 0);
+    }
 
     #endregion
 
@@ -361,22 +531,57 @@ public class StrideTestContext : ITestContext, IDisposable
     }
 
     /// <summary>
-    /// Press a key.
+    /// Press a key using Windows SendInput.
     /// </summary>
     public void PressKey(VirtualKey key)
     {
-        if (!EnsureGameHasFocus())
-        {
-            Log("Warning: Game may not have focus, key press might go to wrong window");
-        }
+        EnsureGameHasKeyboardFocus();
+        Thread.Sleep(50); // Small delay after focus
         _inputSimulator.PressKey(key);
+        Thread.Sleep(50); // Small delay for game to process
     }
 
     /// <summary>
-    /// Hold a key for a duration.
+    /// Hold a key for a duration using Windows SendInput.
     /// </summary>
     public void HoldKey(VirtualKey key, int durationMs)
-        => _inputSimulator.HoldKey(key, durationMs);
+    {
+        EnsureGameHasKeyboardFocus();
+        Thread.Sleep(100); // Give game time to process focus change
+        Log($"HoldKey: Sending {key} for {durationMs}ms");
+        _inputSimulator.HoldKey(key, durationMs);
+        Log($"HoldKey: Released {key}");
+        Thread.Sleep(100); // Give game time to process key release
+    }
+
+    /// <summary>
+    /// Ensure the game has TRUE keyboard focus by clicking on the window.
+    /// Windows SendInput goes to the window with keyboard focus, which isn't always
+    /// the same as the foreground window. The ONLY reliable way to get keyboard
+    /// focus is to physically click the window.
+    /// </summary>
+    private void EnsureGameHasKeyboardFocus()
+    {
+        // First, try to ensure the window is foreground
+        EnsureGameHasFocus();
+
+        // Get window rectangle using pipe query or Win32 fallback
+        var (x, y, width, height) = GetWindowRectWithFallback();
+
+        if (width > 0 && height > 0)
+        {
+            // Click in the center of the game window
+            var centerX = x + width / 2;
+            var centerY = y + height / 2;
+            Log($"Clicking center of game window at ({centerX}, {centerY}) to ensure keyboard focus");
+            _inputSimulator.Click(centerX, centerY);
+            Thread.Sleep(200); // Wait for focus to be established (at least 2-3 game frames)
+        }
+        else
+        {
+            Log("ERROR: Cannot determine window position for focus click - keyboard input may fail!");
+        }
+    }
 
     /// <summary>
     /// Move mouse to position.

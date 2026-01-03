@@ -10,27 +10,27 @@ public class StrideTestOptions
     /// <summary>
     /// Default timeout in milliseconds for wait operations.
     /// </summary>
-    public int DefaultTimeoutMs { get; set; } = 10000;
+    public int DefaultTimeoutMs { get; set; } = 3000;
 
     /// <summary>
     /// Short timeout in milliseconds for quick checks.
     /// </summary>
-    public int ShortTimeoutMs { get; set; } = 3000;
+    public int ShortTimeoutMs { get; set; } = 1000;
 
     /// <summary>
     /// Polling interval in milliseconds for wait operations.
     /// </summary>
-    public int PollingIntervalMs { get; set; } = 250;
+    public int PollingIntervalMs { get; set; } = 100;
 
     /// <summary>
     /// Timeout in milliseconds for game startup.
     /// </summary>
-    public int StartupTimeoutMs { get; set; } = 30000;
+    public int StartupTimeoutMs { get; set; } = 10000;
 
     /// <summary>
     /// Timeout in milliseconds for connecting to automation channel.
     /// </summary>
-    public int ConnectionTimeoutMs { get; set; } = 10000;
+    public int ConnectionTimeoutMs { get; set; } = 5000;
 
     #endregion
 

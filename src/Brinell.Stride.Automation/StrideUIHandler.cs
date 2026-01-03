@@ -1,6 +1,8 @@
 using Brinell.Stride.Communication;
 using Stride.Core.Mathematics;
+using Stride.Engine;
 using Stride.Games;
+using Stride.Input;
 using Stride.UI;
 using Stride.UI.Controls;
 using Stride.UI.Panels;
@@ -19,6 +21,10 @@ public class StrideUIHandler : IAutomationHandler
     private readonly Func<bool>? _isReadyProvider;
     private readonly Func<bool>? _isBusyProvider;
     private readonly IGame? _game;
+    
+    // NOTE: Simulated keyboard input was removed due to threading issues.
+    // InputSourceSimulated cannot be used from the pipe handler thread.
+    // Keyboard simulation is done via Windows SendInput from the test process.
 
     /// <summary>
     /// Create a handler with a UI root element provider.
@@ -86,6 +92,11 @@ public class StrideUIHandler : IAutomationHandler
             return AutomationResponse.Fail("Screenshot is only supported on Windows");
         }
         
+        // NOTE: Keyboard simulation via InputSourceSimulated was removed due to threading issues.
+        // These commands now return NotSupported so the test process uses SendInput instead.
+        if (command.Method is "SimulateKeyDown" or "SimulateKeyUp" or "SimulateKeyPress" or "SimulateKeyHold")
+            return AutomationResponse.Fail("NotSupported:KeyboardSimulation:UseWindowsSendInput");
+        
         var element = FindElement(target);
         if (element == null)
         {
@@ -95,15 +106,67 @@ public class StrideUIHandler : IAutomationHandler
         return command.Method switch
         {
             "Click" => PerformClick(element),
-            "SetText" => SetText(element, command.Args?.FirstOrDefault()?.ToString() ?? ""),
-            "SetElementText" => SetElementText(element, command.Args?.FirstOrDefault()?.ToString() ?? ""),
-            "SetSliderValue" => SetSliderValue(element, Convert.ToDouble(command.Args?.FirstOrDefault() ?? 0)),
+            "SetText" => SetText(element, GetArgString(command.Args, 0) ?? ""),
+            "SetElementText" => SetElementText(element, GetArgString(command.Args, 0) ?? ""),
+            "SetSliderValue" => SetSliderValue(element, GetArgDouble(command.Args, 0)),
             "Toggle" => PerformToggle(element),
-            "SelectIndex" => SelectByIndex(element, Convert.ToInt32(command.Args?.FirstOrDefault() ?? 0)),
-            "ScrollToIndex" => ScrollToIndex(element, Convert.ToInt32(command.Args?.FirstOrDefault() ?? 0)),
+            "SelectIndex" => SelectByIndex(element, GetArgInt(command.Args, 0)),
+            "ScrollToIndex" => ScrollToIndex(element, GetArgInt(command.Args, 0)),
             _ => AutomationResponse.Fail($"Unknown action method: {command.Method}")
         };
     }
+
+    #region Argument Helpers
+    
+    /// <summary>
+    /// Get argument as string, handling JsonElement properly.
+    /// </summary>
+    private static string? GetArgString(object[]? args, int index)
+    {
+        if (args == null || args.Length <= index) return null;
+        var arg = args[index];
+        if (arg is JsonElement je) return je.GetString() ?? je.GetRawText();
+        return arg?.ToString();
+    }
+    
+    /// <summary>
+    /// Get argument as double, handling JsonElement properly.
+    /// </summary>
+    private static double GetArgDouble(object[]? args, int index)
+    {
+        if (args == null || args.Length <= index) return 0;
+        var arg = args[index];
+        if (arg is JsonElement je)
+        {
+            if (je.TryGetDouble(out var d)) return d;
+            if (je.TryGetInt32(out var i)) return i;
+            return 0;
+        }
+        return Convert.ToDouble(arg);
+    }
+    
+    /// <summary>
+    /// Get argument as int, handling JsonElement properly.
+    /// </summary>
+    private static int GetArgInt(object[]? args, int index)
+    {
+        if (args == null || args.Length <= index) return 0;
+        var arg = args[index];
+        if (arg is JsonElement je)
+        {
+            if (je.TryGetInt32(out var i)) return i;
+            if (je.TryGetDouble(out var d)) return (int)d;
+            return 0;
+        }
+        return Convert.ToInt32(arg);
+    }
+    
+    #endregion
+
+    // NOTE: Keyboard simulation region removed. See PLAN-008f for details.
+    // The InputSourceSimulated approach caused threading crashes because
+    // SimulateDown/Up were called from the pipe handler thread while
+    // InputManager.Update() runs on the game thread.
 
     private AutomationResponse HandleGameQuery(AutomationCommand command)
     {
