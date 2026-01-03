@@ -13,8 +13,8 @@
 | 2  | PLAN-003  | Brinell.Maui            | ✅ Complete               |
 | 2b | PLAN-003b | MAUI Test Fixes         | ✅ Complete (21/21 tests) |
 | 3  | PLAN-004  | Brinell.Wpf             | ✅ Complete (14/14 tests) |
-| 4  | PLAN-005  | Brinell.WinForms        | ⏳ Next                   |
-| 5  | PLAN-006  | Brinell.Html            | Not Started               |
+| 4  | PLAN-005  | Brinell.WinForms        | ✅ Complete (71 passing)  |
+| 5  | PLAN-006  | Brinell.Html            | 🔄 In Progress            |
 | 6  | PLAN-007  | Brinell.Html.Playwright | Not Started               |
 | 7  | PLAN-008  | Brinell.Stride          | Not Started               |
 
@@ -70,7 +70,7 @@
 - [X] PLAN-003: MAUI Update (Complete)
 - [X] PLAN-003b: MAUI Test Fixes (21/21 passing)
 - [X] PLAN-004: WPF Update (14/14 passing)
-- [ ] PLAN-005: WinForms Update
+- [X] PLAN-005: WinForms Update (67 passing)
 - [ ] PLAN-006: Html Update
 - [ ] PLAN-007: Playwright Update
 - [ ] PLAN-008: Stride Update

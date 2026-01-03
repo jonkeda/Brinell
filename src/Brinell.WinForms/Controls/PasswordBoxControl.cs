@@ -1,72 +1,190 @@
 using FlaUI.Core.AutomationElements;
+using FlaUI.Core.Input;
+using FlaUI.Core.WindowsAPI;
 using Brinell.Core.Abstractions;
-using Brinell.WinForms.Controls.Base;
-using Brinell.WinForms.Infrastructure;
+using Brinell.Core.Abstractions.Controls;
+using Brinell.FlaUI;
+using Brinell.FlaUI.Controls.Base;
 
 namespace Brinell.WinForms.Controls;
 
 /// <summary>
-/// WinForms TextBox used as password input control wrapper.
-/// Inherits from InputControlBase which provides Clear, AppendText, IsReadOnly, GetTextLength, and WaitForTextEquals.
-/// Note: Password box in WinForms is typically a TextBox with UseSystemPasswordChar = true.
+/// WinForms PasswordBox/MaskedTextBox control wrapper.
+/// Handles password input since it doesn't expose Text property through UI Automation.
+/// Uses keyboard input to set password value.
 /// </summary>
-public class PasswordBoxControl : InputControlBase
+public class PasswordBoxControl : ControlBase, IEditableTextControl
 {
-    public PasswordBoxControl(FlaUITestContext context, IPageObject? page, string automationId)
+    public PasswordBoxControl(FlaUITestContext context, PageBase? page, string automationId)
         : base(context, page, automationId)
     {
     }
 
-    public PasswordBoxControl(FlaUITestContext context, IPageObject? page, AutomationElement container, string automationId)
+    /// <summary>
+    /// Create a password control that searches within a container element.
+    /// </summary>
+    public PasswordBoxControl(FlaUITestContext context, PageBase? page, AutomationElement container, string automationId)
         : base(context, page, container, automationId)
     {
     }
 
     public PasswordBoxControl(FlaUITestContext context, string automationId)
-        : base(context, automationId)
+        : base(context, null, automationId)
     {
     }
 
     /// <summary>
-    /// Enter password into the password box.
+    /// Enter text into the password box using keyboard simulation.
     /// </summary>
-    public new void Enter(string password)
+    public virtual void Enter(string text)
     {
-        SetText(password);
+        var element = WaitForElementVisible();
+        if (element == null)
+        {
+            ThrowCheckFailed("Enter", $"Element '{AutomationId}' not visible for text entry.");
+        }
+        
+        element!.Focus();
+        Keyboard.Type(text);
+        LogAction("Enter", "***");
     }
 
     /// <summary>
-    /// Clear the password box and enter new password.
+    /// Clear the password box using keyboard shortcuts.
     /// </summary>
-    public new void ClearAndEnter(string password)
+    public virtual void Clear()
     {
-        Clear();
-        Enter(password);
+        var element = WaitForElementVisible();
+        if (element == null)
+        {
+            ThrowCheckFailed("Clear", $"Element '{AutomationId}' not visible for clear.");
+        }
+        
+        element!.Focus();
+        Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_A);
+        Keyboard.Press(VirtualKeyShort.DELETE);
+        LogAction("Clear");
     }
 
     /// <summary>
-    /// Get the current password value.
-    /// Note: In real WinForms with password masking, the value will appear masked in automation.
-    /// This method returns the actual text content.
+    /// Clear and enter new password text.
     /// </summary>
-    public string GetPassword()
+    public virtual void ClearAndEnter(string text)
     {
-        return GetText();
+        var element = WaitForElementVisible();
+        if (element == null)
+        {
+            ThrowCheckFailed("ClearAndEnter", $"Element '{AutomationId}' not visible for text entry.");
+        }
+        
+        element!.Focus();
+        Thread.Sleep(50);
+        
+        Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_A);
+        Thread.Sleep(50);
+        Keyboard.Type(text);
+        Thread.Sleep(50);
+        LogAction("ClearAndEnter", "***");
     }
 
     /// <summary>
-    /// Assert that password equals expected value.
+    /// Set password text (alias for ClearAndEnter).
     /// </summary>
-    public void AssertPasswordEquals(string expected)
+    public virtual void SetText(string text)
     {
-        AssertTextEquals(expected);
+        ClearAndEnter(text);
     }
 
     /// <summary>
-    /// Wait and assert that password equals expected value.
+    /// Append text to existing password.
     /// </summary>
-    public void AssertPasswordEqualsWait(string expected, int? timeoutMs = null)
+    public virtual void Append(string text)
     {
-        AssertTextEqualsWait(expected, timeoutMs);
+        Enter(text);
+    }
+
+    /// <summary>
+    /// Check if control is read-only.
+    /// </summary>
+    public virtual bool IsReadOnly()
+    {
+        var element = FindElement();
+        return element == null || !element.IsEnabled;
+    }
+
+    /// <summary>
+    /// Get password text.
+    /// Note: For security, password fields don't expose their value through UI Automation.
+    /// This returns empty string by design.
+    /// </summary>
+    public override string GetText()
+    {
+        return string.Empty;
+    }
+
+    /// <summary>
+    /// Focus the control.
+    /// </summary>
+    public virtual void Focus()
+    {
+        var element = WaitForElementVisible();
+        if (element == null)
+        {
+            ThrowCheckFailed("Focus", $"Element '{AutomationId}' not visible for focus.");
+        }
+        element?.Focus();
+        LogAction("Focus");
+    }
+
+    /// <summary>
+    /// Select all text in the control.
+    /// </summary>
+    public virtual void SelectAll()
+    {
+        var element = WaitForElementVisible();
+        if (element == null)
+        {
+            ThrowCheckFailed("SelectAll", $"Element '{AutomationId}' not visible for select all.");
+        }
+        
+        element?.Focus();
+        Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_A);
+        LogAction("SelectAll");
+    }
+
+    /// <summary>
+    /// Copy selected text to clipboard.
+    /// </summary>
+    public virtual void Copy()
+    {
+        SelectAll();
+        Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_C);
+        LogAction("Copy");
+    }
+
+    /// <summary>
+    /// Cut selected text to clipboard.
+    /// </summary>
+    public virtual void Cut()
+    {
+        SelectAll();
+        Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_X);
+        LogAction("Cut");
+    }
+
+    /// <summary>
+    /// Paste from clipboard.
+    /// </summary>
+    public virtual void Paste()
+    {
+        var element = WaitForElementVisible();
+        if (element == null)
+        {
+            ThrowCheckFailed("Paste", $"Element '{AutomationId}' not visible for paste.");
+        }
+        
+        element?.Focus();
+        Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_V);
+        LogAction("Paste");
     }
 }

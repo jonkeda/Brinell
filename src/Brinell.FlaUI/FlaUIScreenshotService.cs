@@ -1,11 +1,12 @@
+using System.IO;
 using FlaUI.Core.AutomationElements;
 using FlaUI.Core.Capturing;
 using Brinell.Core.Screenshots;
 
-namespace Brinell.WinForms.Infrastructure;
+namespace Brinell.FlaUI;
 
 /// <summary>
-/// WinForms/FlaUI-specific screenshot capture service.
+/// FlaUI-specific screenshot capture service.
 /// Captures only the test window, not the entire desktop.
 /// </summary>
 public class FlaUIScreenshotService : ScreenshotServiceBase

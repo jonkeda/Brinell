@@ -1,7 +1,9 @@
 using FlaUI.Core;
 using Brinell.Core.Logging;
 using Brinell.Core.Testing;
-using Brinell.WinForms.Infrastructure;
+using Brinell.FlaUI;
+
+using Application = FlaUI.Core.Application;
 
 namespace Brinell.WinForms.Testing;
 

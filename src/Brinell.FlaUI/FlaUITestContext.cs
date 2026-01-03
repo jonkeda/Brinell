@@ -1,15 +1,16 @@
 using System.Diagnostics;
+using System.IO;
 using FlaUI.Core.AutomationElements;
 using FlaUI.Core.Capturing;
 using Brinell.Core.Abstractions;
 using Brinell.Core.Logging;
 using Brinell.Core.Screenshots;
 
-namespace Brinell.WinForms.Infrastructure;
+namespace Brinell.FlaUI;
 
 /// <summary>
-/// FlaUI test context implementation for WinForms UI testing.
-/// Implements ITestContext for common operations, adds WinForms-specific methods.
+/// FlaUI test context implementation for WPF/WinForms UI testing.
+/// Implements ITestContext for common operations, adds FlaUI-specific methods.
 /// </summary>
 public class FlaUITestContext : ITestContext
 {
@@ -48,7 +49,7 @@ public class FlaUITestContext : ITestContext
     public Window MainWindow => _driver.MainWindow;
     
     /// <summary>
-    /// The underlying FlaUI driver adapter.
+    /// The underlying FlaUI driver adapter (for backward compatibility).
     /// </summary>
     public FlaUIDriverAdapter Driver => _driver;
 
@@ -68,9 +69,9 @@ public class FlaUITestContext : ITestContext
     }
     
     /// <summary>
-    /// Capture a failure screenshot.
+    /// Capture a failure screenshot. Call this before throwing exceptions.
     /// </summary>
-    /// <param name="suffix">Descriptive suffix for the screenshot file (e.g., "dialog-not-displayed").</param>
+    /// <param name="suffix">Descriptive suffix for the screenshot file (e.g., "page-not-displayed").</param>
     /// <returns>Path to saved screenshot, or empty string if capture failed.</returns>
     public string CaptureFailureScreenshot(string suffix = "failure")
     {
@@ -145,7 +146,7 @@ public class FlaUITestContext : ITestContext
         return false;
     }
 
-    #region WinForms-specific element operations
+    #region Element operations (direct FlaUI access)
     
     /// <summary>
     /// Find an element by AutomationId directly using FlaUI.
@@ -200,7 +201,7 @@ public class FlaUITestContext : ITestContext
     
     #endregion
 
-    #region Element operations (WinForms-specific)
+    #region Element operations (not part of ITestContext)
     
     internal bool ElementExistsInternal(string automationId)
     {
@@ -319,7 +320,7 @@ public class FlaUITestContext : ITestContext
         {
             var screenshot = Capture.Screen();
             var fileName = $"{TestName}_{name}_{DateTime.Now:yyyyMMdd_HHmmss}.png";
-            var screenshotDir = Path.Combine(Path.GetTempPath(), "BrinellUITests");
+            var screenshotDir = Path.Combine(Path.GetTempPath(), "OraveyUITests");
             Directory.CreateDirectory(screenshotDir);
             var path = Path.Combine(screenshotDir, fileName);
             screenshot.ToFile(path);

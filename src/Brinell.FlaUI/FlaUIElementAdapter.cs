@@ -1,10 +1,10 @@
 using FlaUI.Core.AutomationElements;
 using Brinell.Core.Abstractions;
 
-namespace Brinell.WinForms.Infrastructure;
+namespace Brinell.FlaUI;
 
 /// <summary>
-/// FlaUI element adapter implementing IElementAdapter for WinForms.
+/// FlaUI element adapter implementing IElementAdapter.
 /// </summary>
 public class FlaUIElementAdapter : IElementAdapter
 {

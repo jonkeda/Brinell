@@ -3,11 +3,12 @@ using FlaUI.Core.AutomationElements;
 using FlaUI.UIA3;
 using Brinell.Core.Abstractions;
 
-namespace Brinell.WinForms.Infrastructure;
+using Application = FlaUI.Core.Application;
+
+namespace Brinell.FlaUI;
 
 /// <summary>
-/// FlaUI driver adapter for WinForms UI automation.
-/// Handles application launch and element finding for Windows Forms applications.
+/// FlaUI driver adapter for WPF/WinForms UI automation.
 /// </summary>
 public class FlaUIDriverAdapter : IDriverAdapter
 {

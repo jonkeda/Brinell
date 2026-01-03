@@ -1,12 +1,17 @@
 using FlaUI.Core.AutomationElements;
+using FlaUI.Core.Definitions;
+using FlaUI.Core.Exceptions;
+using FlaUI.Core.Input;
 using Brinell.Core.Abstractions;
 using Brinell.Core.Abstractions.Controls;
-using Brinell.Wpf.Infrastructure;
 
-namespace Brinell.Wpf.Controls.Base;
+using ComboBox = FlaUI.Core.AutomationElements.ComboBox;
+using ListBox = FlaUI.Core.AutomationElements.ListBox;
+
+namespace Brinell.FlaUI.Controls.Base;
 
 /// <summary>
-/// WPF base class for controls that select from a list of items.
+/// Shared base class for controls that select from a list of items.
 /// </summary>
 public abstract class SelectorControlBase : ControlBase, ISelectorControl
 {
@@ -66,7 +71,7 @@ public abstract class SelectorControlBase : ControlBase, ISelectorControl
                     return value;
                 }
             }
-            catch (FlaUI.Core.Exceptions.PatternNotSupportedException)
+            catch (PatternNotSupportedException)
             {
                 // Value pattern not supported, fall through to other methods
             }
@@ -109,7 +114,7 @@ public abstract class SelectorControlBase : ControlBase, ISelectorControl
             {
                 var expandCollapsePattern = comboBox.Patterns.ExpandCollapse.PatternOrDefault;
                 var wasExpanded = expandCollapsePattern?.ExpandCollapseState.Value == 
-                    FlaUI.Core.Definitions.ExpandCollapseState.Expanded;
+                    ExpandCollapseState.Expanded;
                 
                 if (!wasExpanded)
                 {
@@ -188,7 +193,7 @@ public abstract class SelectorControlBase : ControlBase, ISelectorControl
     /// <summary>
     /// Recursively search for text content in the visual tree.
     /// </summary>
-    private static string? SearchForTextInVisualTree(FlaUI.Core.AutomationElements.AutomationElement element, int maxDepth)
+    private static string? SearchForTextInVisualTree(AutomationElement element, int maxDepth)
     {
         if (maxDepth <= 0) return null;
         
@@ -197,15 +202,15 @@ public abstract class SelectorControlBase : ControlBase, ISelectorControl
         {
             // Skip popup/list items - we want the displayed selection, not the dropdown items
             var controlType = child.ControlType;
-            if (controlType == FlaUI.Core.Definitions.ControlType.List ||
-                controlType == FlaUI.Core.Definitions.ControlType.ListItem ||
-                controlType == FlaUI.Core.Definitions.ControlType.Window)
+            if (controlType == ControlType.List ||
+                controlType == ControlType.ListItem ||
+                controlType == ControlType.Window)
             {
                 continue;
             }
             
             // For TextBlock-like elements, check the Name property (holds displayed text)
-            if (controlType == FlaUI.Core.Definitions.ControlType.Text)
+            if (controlType == ControlType.Text)
             {
                 if (!string.IsNullOrEmpty(child.Name))
                 {
@@ -228,7 +233,7 @@ public abstract class SelectorControlBase : ControlBase, ISelectorControl
     /// Try to extract content text from child elements of a ComboBoxItem.
     /// WPF static ComboBoxItems with Content="Text" render the text in a child TextBlock.
     /// </summary>
-    private static string? GetContentFromChildren(FlaUI.Core.AutomationElements.AutomationElement element)
+    private static string? GetContentFromChildren(AutomationElement element)
     {
         // Try finding child elements with text content
         var children = element.FindAllChildren();
@@ -356,7 +361,7 @@ public abstract class SelectorControlBase : ControlBase, ISelectorControl
             var centerY = bounds.Top + bounds.Height / 2;
             
             // Use Mouse click directly at the center point
-            FlaUI.Core.Input.Mouse.Click(new System.Drawing.Point((int)centerX, (int)centerY));
+            Mouse.Click(new System.Drawing.Point((int)centerX, (int)centerY));
             Thread.Sleep(200);
             return;
         }
@@ -444,13 +449,13 @@ public abstract class SelectorControlBase : ControlBase, ISelectorControl
     /// <summary>
     /// Get the displayed text from a ComboBoxItem by searching its children.
     /// </summary>
-    private static string? GetDisplayedTextFromItem(FlaUI.Core.AutomationElements.AutomationElement item)
+    private static string? GetDisplayedTextFromItem(AutomationElement item)
     {
         // Look in the item's children for text content
         var children = item.FindAllChildren();
         foreach (var child in children)
         {
-            if (child.ControlType == FlaUI.Core.Definitions.ControlType.Text)
+            if (child.ControlType == ControlType.Text)
             {
                 if (!string.IsNullOrEmpty(child.Name))
                     return child.Name;
@@ -471,7 +476,7 @@ public abstract class SelectorControlBase : ControlBase, ISelectorControl
             // Expand to get items (WPF may not populate items collection until expanded)
             var expandPattern = comboBox.Patterns.ExpandCollapse.PatternOrDefault;
             var wasExpanded = expandPattern?.ExpandCollapseState.Value == 
-                FlaUI.Core.Definitions.ExpandCollapseState.Expanded;
+                ExpandCollapseState.Expanded;
             
             if (!wasExpanded)
             {

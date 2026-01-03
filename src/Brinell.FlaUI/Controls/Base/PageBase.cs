@@ -3,12 +3,11 @@ using FlaUI.Core.AutomationElements;
 using Brinell.Core.Abstractions;
 using Brinell.Core.Exceptions;
 using Brinell.Core.Logging;
-using Brinell.WinForms.Infrastructure;
 
-namespace Brinell.WinForms.Controls.Base;
+namespace Brinell.FlaUI.Controls.Base;
 
 /// <summary>
-/// WinForms-specific base class for page objects using FlaUI.
+/// Shared base class for page objects using FlaUI (WPF and WinForms).
 /// </summary>
 public abstract class PageBase : IPageObject
 {
@@ -149,30 +148,6 @@ public abstract class PageBase : IPageObject
     }
 
     /// <summary>
-    /// Assert that the page is currently displayed.
-    /// </summary>
-    public virtual void AssertDisplayed(string? message = null)
-    {
-        if (!IsDisplayed())
-        {
-            ThrowPageNotDisplayed("AssertDisplayed", message ?? $"Page '{Name}' is not displayed.");
-        }
-        LogAssertPass("Displayed", "true", "true");
-    }
-
-    /// <summary>
-    /// Assert that the page is ready.
-    /// </summary>
-    public virtual void AssertReady(string? message = null)
-    {
-        if (!IsReady())
-        {
-            ThrowPageNotReady("AssertReady", message ?? $"Page '{Name}' is not ready.");
-        }
-        LogAssertPass("Ready", "true", "true");
-    }
-
-    /// <summary>
     /// Check page is displayed - waits and throws if not.
     /// </summary>
     public virtual void CheckDisplayed(int? timeoutMs = null)
@@ -197,11 +172,84 @@ public abstract class PageBase : IPageObject
     }
 
     /// <summary>
+    /// Assert page is displayed.
+    /// </summary>
+    public virtual void AssertDisplayed(string? message = null)
+    {
+        CheckDisplayed();
+        LogAssertPass("Displayed", "true", "true");
+    }
+
+    /// <summary>
+    /// Assert page is not displayed.
+    /// </summary>
+    public virtual void AssertNotDisplayed(string? message = null)
+    {
+        if (IsDisplayed())
+        {
+            ThrowAssertionFailed("NotDisplayed", "true", "false",
+                message ?? $"Page '{Name}' is displayed but expected not displayed.");
+        }
+        LogAssertPass("NotDisplayed", "false", "false");
+    }
+
+    /// <summary>
     /// Take a screenshot of the current page.
     /// </summary>
     public virtual string? TakeScreenshot(string suffix = "")
     {
         var filename = string.IsNullOrEmpty(suffix) ? Name : $"{Name}_{suffix}";
         return _context.TakeScreenshot(filename);
+    }
+}
+
+/// <summary>
+/// Shared base class for pages that support IsBusy state tracking.
+/// </summary>
+public abstract class BusyPageBase : PageBase
+{
+    protected BusyPageBase(FlaUITestContext context, string pageAutomationId)
+        : base(context, pageAutomationId)
+    {
+    }
+
+    /// <summary>
+    /// Check if page is currently busy (loading, processing, etc.).
+    /// Override in derived classes with page-specific busy indicator check.
+    /// </summary>
+    public abstract bool IsBusy();
+
+    /// <summary>
+    /// Check if page is not busy.
+    /// </summary>
+    public bool IsNotBusy() => !IsBusy();
+
+    /// <summary>
+    /// Check if page is ready (displayed and not busy).
+    /// </summary>
+    public override bool IsReady() => IsDisplayed() && !IsBusy();
+
+    /// <summary>
+    /// Wait for page to not be busy.
+    /// </summary>
+    public virtual bool WaitForNotBusy(int? timeoutMs = null)
+    {
+        var timeout = timeoutMs ?? _context.DefaultTimeoutMs;
+        var sw = Stopwatch.StartNew();
+        var result = _context.WaitFor(IsNotBusy, timeout, $"page '{Name}' not busy");
+        LogWait("NotBusy", result, (int)sw.ElapsedMilliseconds);
+        return result;
+    }
+
+    /// <summary>
+    /// Wait for page to become busy (for validating loading started).
+    /// </summary>
+    public virtual bool WaitForBusy(int? timeoutMs = null)
+    {
+        var timeout = timeoutMs ?? _context.ShortTimeoutMs;
+        var sw = Stopwatch.StartNew();
+        var result = _context.WaitFor(IsBusy, timeout, $"page '{Name}' busy");
+        LogWait("Busy", result, (int)sw.ElapsedMilliseconds);
+        return result;
     }
 }

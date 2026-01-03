@@ -1,198 +1,112 @@
-using System.Globalization;
+using System.Diagnostics;
 using FlaUI.Core.AutomationElements;
-using Brinell.Core.Abstractions;
-using Brinell.WinForms.Controls.Base;
-using Brinell.WinForms.Infrastructure;
+using Brinell.Core.Abstractions.Controls;
+using Brinell.FlaUI;
+using Brinell.FlaUI.Controls.Base;
 
 namespace Brinell.WinForms.Controls;
 
 /// <summary>
 /// WinForms NumericUpDown control wrapper.
-/// Inherits from InputControlBase which provides Clear, AppendText, IsReadOnly, GetTextLength.
-/// Provides numeric-specific operations for setting and getting numeric values.
+/// Combines a text box with increment/decrement buttons.
 /// </summary>
-public class NumericUpDownControl : InputControlBase
+public class NumericUpDownControl : RangeControlBase, IRangeControl
 {
-    public NumericUpDownControl(FlaUITestContext context, IPageObject? page, string automationId)
+    public NumericUpDownControl(FlaUITestContext context, PageBase? page, string automationId)
         : base(context, page, automationId)
     {
     }
 
-    public NumericUpDownControl(FlaUITestContext context, IPageObject? page, AutomationElement container, string automationId)
-        : base(context, page, container, automationId)
-    {
-    }
-
     public NumericUpDownControl(FlaUITestContext context, string automationId)
-        : base(context, automationId)
+        : base(context, null, automationId)
     {
     }
 
     /// <summary>
-    /// Set the numeric value by entering text.
+    /// Get current numeric value from the spinner.
     /// </summary>
-    public void SetValue(decimal value)
+    public override double GetValue()
     {
-        SetText(value.ToString(CultureInfo.InvariantCulture));
+        var spinner = GetSpinner();
+        return spinner?.Value ?? 0;
     }
 
     /// <summary>
-    /// Get the current numeric value.
+    /// Set numeric value using the RangeValue pattern.
     /// </summary>
-    public decimal GetValue()
+    public override void SetValue(double value)
     {
-        var text = GetText();
-        if (decimal.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out var result))
-        {
-            return result;
-        }
-        ThrowCheckFailed("GetValue", $"Element '{AutomationId}' contains non-numeric value: '{text}'");
-        return 0; // Never reached
-    }
-
-    /// <summary>
-    /// Get the minimum value of the numeric up down.
-    /// Note: This requires UI automation support for Minimum property, which may not always be available.
-    /// </summary>
-    public decimal GetMinimum()
-    {
-        var element = FindElement();
-        if (element == null)
-        {
-            ThrowCheckFailed("GetMinimum", $"Element '{AutomationId}' not found.");
-        }
-
-        // Try to get the RangeValue pattern from the element
-        try
-        {
-            var rangePattern = element!.Patterns.RangeValue.PatternOrDefault;
-            if (rangePattern != null)
-            {
-                return (decimal)(double)rangePattern.Minimum;
-            }
-        }
-        catch (Exception ex)
-        {
-            LogDebug($"Could not retrieve RangeValue pattern for element '{AutomationId}': {ex.Message}");
-        }
-
-        return 0m; // Default minimum
-    }
-
-    /// <summary>
-    /// Get the maximum value of the numeric up down.
-    /// </summary>
-    public decimal GetMaximum()
-    {
-        var element = FindElement();
-        if (element == null)
-        {
-            ThrowCheckFailed("GetMaximum", $"Element '{AutomationId}' not found.");
-        }
-
-        // Try to get the RangeValue pattern from the element
-        try
-        {
-            var rangePattern = element!.Patterns.RangeValue.PatternOrDefault;
-            if (rangePattern != null)
-            {
-                return (decimal)(double)rangePattern.Maximum;
-            }
-        }
-        catch (Exception ex)
-        {
-            LogDebug($"Could not retrieve RangeValue pattern for element '{AutomationId}': {ex.Message}");
-        }
-
-        return 100m; // Default maximum
-    }
-
-    /// <summary>
-    /// Increment the value by clicking the up button.
-    /// </summary>
-    public void Increment()
-    {
-        var element = WaitForElementVisible();
-        if (element == null)
-        {
-            ThrowCheckFailed("Increment", $"Element '{AutomationId}' not visible.");
-        }
-
-        // Find and click the up button (typically an increase button in the NumericUpDown)
-        var upButton = element!.FindFirstDescendant(cf => cf.ByControlType(FlaUI.Core.Definitions.ControlType.Button).And(cf.ByName("Increase")));
-        if (upButton != null)
-        {
-            upButton.Click();
-            System.Threading.Thread.Sleep(50);
-            LogAction("Increment");
-        }
-        else
-        {
-            // Alternative: use keyboard to increment
-            element.Focus();
-            System.Windows.Forms.SendKeys.SendWait("{UP}");
-            System.Threading.Thread.Sleep(50);
-            LogAction("Increment");
-        }
-    }
-
-    /// <summary>
-    /// Decrement the value by clicking the down button.
-    /// </summary>
-    public void Decrement()
-    {
-        var element = WaitForElementVisible();
-        if (element == null)
-        {
-            ThrowCheckFailed("Decrement", $"Element '{AutomationId}' not visible.");
-        }
-
-        // Find and click the down button (typically a decrease button in the NumericUpDown)
-        var downButton = element!.FindFirstDescendant(cf => cf.ByControlType(FlaUI.Core.Definitions.ControlType.Button).And(cf.ByName("Decrease")));
-        if (downButton != null)
-        {
-            downButton.Click();
-            System.Threading.Thread.Sleep(50);
-            LogAction("Decrement");
-        }
-        else
-        {
-            // Alternative: use keyboard to decrement
-            element.Focus();
-            System.Windows.Forms.SendKeys.SendWait("{DOWN}");
-            System.Threading.Thread.Sleep(50);
-            LogAction("Decrement");
-        }
-    }
-
-    /// <summary>
-    /// Assert that the numeric value equals expected.
-    /// </summary>
-    public void AssertValueEquals(decimal expected)
-    {
-        var actual = GetValue();
-        if (actual != expected)
-        {
-            ThrowAssertionFailed("ValueEquals", actual.ToString(CultureInfo.InvariantCulture), expected.ToString(CultureInfo.InvariantCulture),
-                $"NumericUpDown '{AutomationId}' value is {actual}, expected {expected}.");
-        }
-        LogAssertPass("ValueEquals", actual.ToString(CultureInfo.InvariantCulture), expected.ToString(CultureInfo.InvariantCulture));
-    }
-
-    /// <summary>
-    /// Wait and assert that the numeric value equals expected.
-    /// </summary>
-    public void AssertValueEqualsWait(decimal expected, int? timeoutMs = null)
-    {
-        var timeout = timeoutMs ?? _context.DefaultTimeoutMs;
-        var result = _context.WaitFor(() => GetValue() == expected, timeout, $"value equals {expected}");
+        CheckVisible();
         
-        if (!result)
+        var spinner = GetSpinner();
+        if (spinner != null)
         {
-            var actual = GetValue();
-            ThrowAssertionFailed("ValueEqualsWait", actual.ToString(CultureInfo.InvariantCulture), expected.ToString(CultureInfo.InvariantCulture),
-                $"NumericUpDown '{AutomationId}' value is {actual}, expected {expected}.");
+            spinner.Value = value;
+            LogAction("SetValue", value.ToString());
         }
-        LogAssertPass("ValueEqualsWait", expected.ToString(CultureInfo.InvariantCulture), expected.ToString(CultureInfo.InvariantCulture));
+    }
+
+    /// <summary>
+    /// Get minimum value.
+    /// </summary>
+    public override double GetMinimum()
+    {
+        var spinner = GetSpinner();
+        return spinner?.Minimum ?? 0;
+    }
+
+    /// <summary>
+    /// Get maximum value.
+    /// </summary>
+    public override double GetMaximum()
+    {
+        var spinner = GetSpinner();
+        return spinner?.Maximum ?? 100;
+    }
+
+    /// <summary>
+    /// Increment the value.
+    /// </summary>
+    public override void Increment()
+    {
+        CheckVisible();
+        
+        var spinner = GetSpinner();
+        spinner?.Increment();
+        LogAction("Increment");
+    }
+
+    /// <summary>
+    /// Decrement the value.
+    /// </summary>
+    public override void Decrement()
+    {
+        CheckVisible();
+        
+        var spinner = GetSpinner();
+        spinner?.Decrement();
+        LogAction("Decrement");
+    }
+
+    /// <summary>
+    /// Get the value as text.
+    /// </summary>
+    public override string GetText()
+    {
+        return GetValue().ToString();
+    }
+
+    /// <summary>
+    /// Wait for value to match expected.
+    /// </summary>
+    public bool WaitForValue(double expected, int? timeoutMs = null)
+    {
+        var sw = Stopwatch.StartNew();
+        var result = _context.WaitFor(
+            () => Math.Abs(GetValue() - expected) < 0.001,
+            timeoutMs,
+            $"value = {expected}");
+        LogWait($"Value={expected}", result, (int)sw.ElapsedMilliseconds);
+        return result;
     }
 }

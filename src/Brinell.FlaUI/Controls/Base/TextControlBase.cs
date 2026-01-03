@@ -1,12 +1,13 @@
 using FlaUI.Core.AutomationElements;
 using Brinell.Core.Abstractions;
 using Brinell.Core.Abstractions.Controls;
-using Brinell.Wpf.Infrastructure;
 
-namespace Brinell.Wpf.Controls.Base;
+using TextBox = FlaUI.Core.AutomationElements.TextBox;
+
+namespace Brinell.FlaUI.Controls.Base;
 
 /// <summary>
-/// WPF base class for text input controls.
+/// Shared base class for text input controls.
 /// </summary>
 public abstract class TextControlBase : ControlBase, IEditableTextControl
 {
@@ -116,7 +117,8 @@ public abstract class TextControlBase : ControlBase, IEditableTextControl
     /// </summary>
     public override string GetText()
     {
-        var textBox = GetTextBox();
+        var element = GetRequiredElement("GetText");
+        var textBox = element.AsTextBox();
         return textBox?.Text ?? string.Empty;
     }
 
@@ -195,4 +197,5 @@ public abstract class TextControlBase : ControlBase, IEditableTextControl
         
         System.Windows.Forms.SendKeys.SendWait("^v");
         LogAction("Paste");
-    }}
+    }
+}

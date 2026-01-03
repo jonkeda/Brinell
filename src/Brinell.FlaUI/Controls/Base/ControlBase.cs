@@ -4,12 +4,11 @@ using Brinell.Core.Abstractions;
 using Brinell.Core.Abstractions.Controls;
 using Brinell.Core.Exceptions;
 using Brinell.Core.Logging;
-using Brinell.Wpf.Infrastructure;
 
-namespace Brinell.Wpf.Controls.Base;
+namespace Brinell.FlaUI.Controls.Base;
 
 /// <summary>
-/// WPF-specific base class for all controls using FlaUI directly.
+/// Shared base class for all FlaUI controls (WPF and WinForms).
 /// Implements the Is/Wait/Check/Assert pattern for consistent control interaction.
 /// </summary>
 public abstract class ControlBase : IControlObject
@@ -89,6 +88,23 @@ public abstract class ControlBase : IControlObject
             return _container.FindFirstDescendant(cf => cf.ByAutomationId(AutomationId));
         }
         return _context.FindElementInternal(AutomationId);
+    }
+    
+    /// <summary>
+    /// Get the element, throwing CheckFailedException if not found.
+    /// Use this for Get* methods that require the element to exist.
+    /// </summary>
+    /// <param name="action">The action being performed (for error message).</param>
+    /// <returns>The found element, never null.</returns>
+    /// <exception cref="CheckFailedException">Thrown when element is not found.</exception>
+    protected virtual AutomationElement GetRequiredElement(string action)
+    {
+        var element = FindElement();
+        if (element == null)
+        {
+            ThrowCheckFailed(action, $"Element '{AutomationId}' not found.");
+        }
+        return element!;
     }
     
     /// <summary>
@@ -321,8 +337,7 @@ public abstract class ControlBase : IControlObject
     
     public virtual string GetText()
     {
-        var element = FindElement();
-        if (element == null) return string.Empty;
+        var element = GetRequiredElement("GetText");
         
         // Try different patterns
         var textBox = element.AsTextBox();

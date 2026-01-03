@@ -1,5 +1,5 @@
 using Brinell.Samples.WinForms.UITests.Pages;
-using Brinell.WinForms.Infrastructure;
+using Brinell.FlaUI;
 using Xunit;
 
 namespace Brinell.Samples.WinForms.UITests.Fixtures;
@@ -14,7 +14,7 @@ public class AppFixture : IAsyncLifetime
     private FlaUITestContext? _context;
     private LoginPage? _loginPage;
     
-    private const string AppPath = @"E:\repos\Private\Iosk\Oravey\Brinell\samples\Brinell.Samples.WinForms.App\bin\Debug\net8.0-windows\Brinell.Samples.WinForms.App.exe";
+    private const string AppPath = @"E:\repos\Private\Iosk\Oravey\Brinell\samples\Brinell.Samples.WinForms.App\bin\Debug\net9.0-windows\Brinell.Samples.WinForms.App.exe";
 
     /// <summary>
     /// The shared application driver.

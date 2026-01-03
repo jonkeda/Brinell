@@ -2,12 +2,11 @@ using System.Diagnostics;
 using FlaUI.Core.AutomationElements;
 using Brinell.Core.Abstractions;
 using Brinell.Core.Abstractions.Controls;
-using Brinell.Wpf.Infrastructure;
 
-namespace Brinell.Wpf.Controls.Base;
+namespace Brinell.FlaUI.Controls.Base;
 
 /// <summary>
-/// WPF base class for toggle/boolean controls (checkbox, radio button, toggle button).
+/// Shared base class for toggle/boolean controls (checkbox, radio button, toggle button).
 /// </summary>
 public abstract class ToggleControlBase : ControlBase, IToggleControl
 {

@@ -1,8 +1,9 @@
 using System.Diagnostics;
 using FlaUI.Core.AutomationElements;
+using FlaUI.Core.Definitions;
 using Brinell.Core.Abstractions.Controls;
-using Brinell.Wpf.Controls.Base;
-using Brinell.Wpf.Infrastructure;
+using Brinell.FlaUI;
+using Brinell.FlaUI.Controls.Base;
 
 namespace Brinell.Wpf.Controls;
 
@@ -157,7 +158,7 @@ public class TreeViewControl : ItemsControlBase, IItemsControl
         
         try
         {
-            return node.ExpandCollapseState == FlaUI.Core.Definitions.ExpandCollapseState.Expanded;
+            return node.ExpandCollapseState == ExpandCollapseState.Expanded;
         }
         catch
         {

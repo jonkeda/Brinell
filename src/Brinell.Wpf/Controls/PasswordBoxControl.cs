@@ -1,9 +1,10 @@
 using FlaUI.Core.AutomationElements;
+using FlaUI.Core.Input;
 using FlaUI.Core.WindowsAPI;
 using Brinell.Core.Abstractions;
 using Brinell.Core.Abstractions.Controls;
-using Brinell.Wpf.Controls.Base;
-using Brinell.Wpf.Infrastructure;
+using Brinell.FlaUI;
+using Brinell.FlaUI.Controls.Base;
 
 namespace Brinell.Wpf.Controls;
 
@@ -47,7 +48,7 @@ public class PasswordBoxControl : ControlBase, IEditableTextControl
         
         element!.Focus();
         // Use keyboard simulation to enter text which triggers events properly
-        FlaUI.Core.Input.Keyboard.Type(text);
+        Keyboard.Type(text);
         LogAction("Enter", "***");
     }
 
@@ -64,8 +65,8 @@ public class PasswordBoxControl : ControlBase, IEditableTextControl
         
         element!.Focus();
         // Select all and delete
-        FlaUI.Core.Input.Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_A);
-        FlaUI.Core.Input.Keyboard.Press(VirtualKeyShort.DELETE);
+        Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_A);
+        Keyboard.Press(VirtualKeyShort.DELETE);
         LogAction("Clear");
     }
 
@@ -84,9 +85,9 @@ public class PasswordBoxControl : ControlBase, IEditableTextControl
         Thread.Sleep(50); // Give focus time to settle
         
         // Select all and type new text (replaces selection)
-        FlaUI.Core.Input.Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_A);
+        Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_A);
         Thread.Sleep(50);
-        FlaUI.Core.Input.Keyboard.Type(text);
+        Keyboard.Type(text);
         Thread.Sleep(50); // Give keyboard input time to be processed
         LogAction("ClearAndEnter", "***");
     }
@@ -156,7 +157,7 @@ public class PasswordBoxControl : ControlBase, IEditableTextControl
         }
         
         element?.Focus();
-        FlaUI.Core.Input.Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_A);
+        Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_A);
         LogAction("SelectAll");
     }
 
@@ -173,7 +174,7 @@ public class PasswordBoxControl : ControlBase, IEditableTextControl
         }
         
         SelectAll();
-        FlaUI.Core.Input.Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_C);
+        Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_C);
         LogAction("Copy");
     }
 
@@ -190,7 +191,7 @@ public class PasswordBoxControl : ControlBase, IEditableTextControl
         }
         
         SelectAll();
-        FlaUI.Core.Input.Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_X);
+        Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_X);
         LogAction("Cut");
     }
 
@@ -206,7 +207,7 @@ public class PasswordBoxControl : ControlBase, IEditableTextControl
         }
         
         element?.Focus();
-        FlaUI.Core.Input.Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_V);
+        Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_V);
         LogAction("Paste");
     }
 }

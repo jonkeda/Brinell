@@ -1,12 +1,11 @@
 using FlaUI.Core.AutomationElements;
 using Brinell.Core.Abstractions;
 using Brinell.Core.Abstractions.Controls;
-using Brinell.Wpf.Infrastructure;
 
-namespace Brinell.Wpf.Controls.Base;
+namespace Brinell.FlaUI.Controls.Base;
 
 /// <summary>
-/// WPF base class for controls that display content and can be clicked.
+/// Shared base class for controls that display content and can be clicked.
 /// </summary>
 public abstract class ContentControlBase : ControlBase, IContentControl
 {

@@ -1,12 +1,13 @@
 using FlaUI.Core.AutomationElements;
 using Brinell.Core.Abstractions;
 using Brinell.Core.Abstractions.Controls;
-using Brinell.Wpf.Infrastructure;
 
-namespace Brinell.Wpf.Controls.Base;
+using ProgressBar = FlaUI.Core.AutomationElements.ProgressBar;
+
+namespace Brinell.FlaUI.Controls.Base;
 
 /// <summary>
-/// WPF base class for controls with numeric range values (slider, progress bar).
+/// Shared base class for controls with numeric range values (slider, progress bar).
 /// </summary>
 public abstract class RangeControlBase : ControlBase, IRangeControl
 {
@@ -47,17 +48,28 @@ public abstract class RangeControlBase : ControlBase, IRangeControl
     }
 
     /// <summary>
+    /// Get the Spinner pattern from the element (for NumericUpDown).
+    /// </summary>
+    protected Spinner? GetSpinner()
+    {
+        var element = FindElement();
+        return element?.AsSpinner();
+    }
+
+    /// <summary>
     /// Get the current value.
     /// </summary>
     public virtual double GetValue()
     {
-        var slider = GetSlider();
+        var element = GetRequiredElement("GetValue");
+        
+        var slider = element.AsSlider();
         if (slider != null)
         {
             return slider.Value;
         }
         
-        var progressBar = GetProgressBar();
+        var progressBar = element.AsProgressBar();
         if (progressBar != null)
         {
             return progressBar.Value;
@@ -71,13 +83,15 @@ public abstract class RangeControlBase : ControlBase, IRangeControl
     /// </summary>
     public virtual double GetMinimum()
     {
-        var slider = GetSlider();
+        var element = GetRequiredElement("GetMinimum");
+        
+        var slider = element.AsSlider();
         if (slider != null)
         {
             return slider.Minimum;
         }
         
-        var progressBar = GetProgressBar();
+        var progressBar = element.AsProgressBar();
         if (progressBar != null)
         {
             return progressBar.Minimum;
@@ -91,13 +105,15 @@ public abstract class RangeControlBase : ControlBase, IRangeControl
     /// </summary>
     public virtual double GetMaximum()
     {
-        var slider = GetSlider();
+        var element = GetRequiredElement("GetMaximum");
+        
+        var slider = element.AsSlider();
         if (slider != null)
         {
             return slider.Maximum;
         }
         
-        var progressBar = GetProgressBar();
+        var progressBar = element.AsProgressBar();
         if (progressBar != null)
         {
             return progressBar.Maximum;

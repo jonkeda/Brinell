@@ -11,12 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="FlaUI.Core" />
-    <PackageReference Include="FlaUI.UIA3" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Brinell.Core\Brinell.Core.csproj" />
+    <ProjectReference Include="..\Brinell.FlaUI\Brinell.FlaUI.csproj" />
   </ItemGroup>
   
   <ItemGroup>

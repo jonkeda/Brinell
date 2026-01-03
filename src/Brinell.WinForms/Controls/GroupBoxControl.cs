@@ -1,210 +1,83 @@
-using System.Collections.Generic;
-using System.Linq;
 using FlaUI.Core.AutomationElements;
 using Brinell.Core.Abstractions;
-using Brinell.WinForms.Controls.Base;
-using Brinell.WinForms.Infrastructure;
+using Brinell.FlaUI;
+using Brinell.FlaUI.Controls.Base;
 
 namespace Brinell.WinForms.Controls;
 
 /// <summary>
 /// WinForms GroupBox control wrapper.
-/// Provides container access and label operations.
+/// Provides a container for grouping related controls.
+/// Can be used as a container for finding child controls.
 /// </summary>
 public class GroupBoxControl : ControlBase
 {
-    public GroupBoxControl(FlaUITestContext context, IPageObject? page, string automationId)
+    public GroupBoxControl(FlaUITestContext context, PageBase? page, string automationId)
         : base(context, page, automationId)
     {
     }
 
-    public GroupBoxControl(FlaUITestContext context, IPageObject? page, AutomationElement container, string automationId)
-        : base(context, page, container, automationId)
-    {
-    }
-
     public GroupBoxControl(FlaUITestContext context, string automationId)
-        : base(context, automationId)
+        : base(context, null, automationId)
     {
     }
 
     /// <summary>
-    /// Get the GroupBox label/title.
+    /// Get the GroupBox header/title text.
     /// </summary>
-    public string GetLabel()
+    public override string GetText()
     {
         var element = FindElement();
-        if (element == null)
-        {
-            ThrowCheckFailed("GetLabel", $"Element '{AutomationId}' not found.");
-        }
-
-        var label = element!.Name ?? string.Empty;
-        LogAction("GetLabel", label);
-        return label;
+        return element?.Name ?? string.Empty;
     }
 
     /// <summary>
-    /// Assert that the label matches expected.
+    /// Get the GroupBox element to use as a container for child controls.
     /// </summary>
-    public void AssertLabelEquals(string expected)
+    public AutomationElement? GetContainer()
     {
-        var actual = GetLabel();
-        if (actual != expected)
-        {
-            ThrowAssertionFailed("LabelEquals", actual, expected,
-                $"GroupBox '{AutomationId}' label is '{actual}', expected '{expected}'.");
-        }
-        LogAssertPass("LabelEquals", actual, expected);
+        return FindElement();
     }
 
     /// <summary>
-    /// Assert that the label contains expected text.
+    /// Create a child control within this GroupBox.
     /// </summary>
-    public void AssertLabelContains(string expectedText)
+    public TControl CreateChild<TControl>(string automationId) 
+        where TControl : ControlBase
     {
-        var actual = GetLabel();
-        if (!actual.Contains(expectedText, System.StringComparison.Ordinal))
+        var container = GetContainer();
+        if (container == null)
         {
-            ThrowAssertionFailed("LabelContains", actual, expectedText,
-                $"GroupBox '{AutomationId}' label '{actual}' does not contain '{expectedText}'.");
+            throw new InvalidOperationException($"GroupBox '{AutomationId}' not found, cannot create child control.");
         }
-        LogAssertPass("LabelContains", actual, expectedText);
-    }
-
-    /// <summary>
-    /// Get the number of child controls.
-    /// </summary>
-    public int GetChildCount()
-    {
-        var element = FindElement();
-        if (element == null)
+        
+        // Use Activator to create the control with container
+        var ctor = typeof(TControl).GetConstructor(new[] 
+        { 
+            typeof(FlaUITestContext), 
+            typeof(PageBase), 
+            typeof(AutomationElement), 
+            typeof(string) 
+        });
+        
+        if (ctor != null)
         {
-            ThrowCheckFailed("GetChildCount", $"Element '{AutomationId}' not found.");
+            return (TControl)ctor.Invoke(new object?[] { _context, _page, container, automationId });
         }
-
-        try
+        
+        // Fallback: try constructor without container
+        var fallbackCtor = typeof(TControl).GetConstructor(new[] 
+        { 
+            typeof(FlaUITestContext), 
+            typeof(PageBase), 
+            typeof(string) 
+        });
+        
+        if (fallbackCtor != null)
         {
-            var children = element!.FindAllChildren().ToList();
-            LogAction("GetChildCount", children.Count.ToString());
-            return children.Count;
+            return (TControl)fallbackCtor.Invoke(new object?[] { _context, _page, automationId });
         }
-        catch (Exception ex)
-        {
-            ThrowCheckFailed("GetChildCount", $"Failed to get child count: {ex.Message}");
-        }
-
-        return 0;
-    }
-
-    /// <summary>
-    /// Get names of all child controls.
-    /// </summary>
-    public List<string> GetChildNames()
-    {
-        var element = FindElement();
-        if (element == null)
-        {
-            ThrowCheckFailed("GetChildNames", $"Element '{AutomationId}' not found.");
-        }
-
-        var names = new List<string>();
-        try
-        {
-            var children = element!.FindAllChildren();
-            foreach (var child in children)
-            {
-                if (!string.IsNullOrEmpty(child.AutomationId))
-                {
-                    names.Add(child.AutomationId);
-                }
-                else if (!string.IsNullOrEmpty(child.Name))
-                {
-                    names.Add(child.Name);
-                }
-            }
-            LogAction("GetChildNames", $"{names.Count} children");
-        }
-        catch (Exception ex)
-        {
-            ThrowCheckFailed("GetChildNames", $"Failed to get child names: {ex.Message}");
-        }
-
-        return names;
-    }
-
-    /// <summary>
-    /// Check if a child control exists by AutomationId.
-    /// </summary>
-    public bool ChildExists(string automationId)
-    {
-        var element = FindElement();
-        if (element == null)
-        {
-            return false;
-        }
-
-        try
-        {
-            var child = element!.FindFirstDescendant(cf => cf.ByAutomationId(automationId));
-            var exists = child != null;
-            LogAction("ChildExists", $"{automationId}: {exists}");
-            return exists;
-        }
-        catch (Exception ex)
-        {
-            LogDebug($"Failed to check if child exists: {ex.Message}");
-            return false;
-        }
-    }
-
-    /// <summary>
-    /// Assert that the child control exists.
-    /// </summary>
-    public void AssertChildExists(string automationId)
-    {
-        if (!ChildExists(automationId))
-        {
-            ThrowAssertionFailed("ChildExists", "not found", "exists",
-                $"GroupBox '{AutomationId}' child '{automationId}' does not exist.");
-        }
-        LogAssertPass("ChildExists", automationId, "exists");
-    }
-
-    /// <summary>
-    /// Assert that the child count matches expected.
-    /// </summary>
-    public void AssertChildCount(int expected)
-    {
-        var actual = GetChildCount();
-        if (actual != expected)
-        {
-            ThrowAssertionFailed("ChildCount", actual.ToString(), expected.ToString(),
-                $"GroupBox '{AutomationId}' has {actual} children, expected {expected}.");
-        }
-        LogAssertPass("ChildCount", actual.ToString(), expected.ToString());
-    }
-
-    /// <summary>
-    /// Check if the GroupBox is visible and enabled.
-    /// </summary>
-    public override bool IsEnabled()
-    {
-        var element = FindElement();
-        if (element == null) return false;
-        return element.IsEnabled && !element.IsOffscreen;
-    }
-
-    /// <summary>
-    /// Assert that the GroupBox is enabled and visible.
-    /// </summary>
-    public void AssertIsEnabled()
-    {
-        if (!IsEnabled())
-        {
-            ThrowAssertionFailed("IsEnabled", "false", "true",
-                $"GroupBox '{AutomationId}' is not enabled or visible.");
-        }
-        LogAssertPass("IsEnabled", "true", "true");
+        
+        throw new InvalidOperationException($"Cannot find suitable constructor for control type {typeof(TControl).Name}");
     }
 }

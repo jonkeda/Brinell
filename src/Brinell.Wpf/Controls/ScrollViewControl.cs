@@ -1,9 +1,10 @@
 using FlaUI.Core.AutomationElements;
 using FlaUI.Core.Definitions;
+using FlaUI.Core.Patterns;
 using Brinell.Core.Abstractions;
 using Brinell.Core.Abstractions.Controls;
-using Brinell.Wpf.Controls.Base;
-using Brinell.Wpf.Infrastructure;
+using Brinell.FlaUI;
+using Brinell.FlaUI.Controls.Base;
 
 namespace Brinell.Wpf.Controls;
 
@@ -41,7 +42,7 @@ public class ScrollViewControl : ControlBase, IScrollableControl
     /// <summary>
     /// Get the scroll pattern from the element.
     /// </summary>
-    private FlaUI.Core.Patterns.IScrollPattern? GetScrollPattern()
+    private IScrollPattern? GetScrollPattern()
     {
         var element = FindElement();
         if (element == null) return null;

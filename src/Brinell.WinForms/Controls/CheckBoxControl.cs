@@ -1,62 +1,101 @@
 using FlaUI.Core.AutomationElements;
-using Brinell.Core.Abstractions;
 using Brinell.Core.Abstractions.Controls;
-using Brinell.WinForms.Controls.Base;
-using Brinell.WinForms.Infrastructure;
+using Brinell.FlaUI;
+using Brinell.FlaUI.Controls.Base;
 
 namespace Brinell.WinForms.Controls;
 
 /// <summary>
 /// WinForms CheckBox control wrapper.
-/// Inherits from ToggleControlBase which provides IsChecked, SetChecked, Check, Uncheck, WaitChecked, AssertChecked, AssertUnchecked.
+/// Uses shared ToggleControlBase for FlaUI integration.
 /// </summary>
 public class CheckBoxControl : ToggleControlBase, ICheckBox
 {
-    public CheckBoxControl(FlaUITestContext context, IPageObject? page, string automationId)
+    public CheckBoxControl(FlaUITestContext context, PageBase? page, string automationId)
         : base(context, page, automationId)
     {
     }
 
-    public CheckBoxControl(FlaUITestContext context, IPageObject? page, AutomationElement container, string automationId)
+    /// <summary>
+    /// Create a checkbox control that searches within a container element.
+    /// Use this for checkboxes inside list items or repeated templates.
+    /// </summary>
+    public CheckBoxControl(FlaUITestContext context, PageBase? page, AutomationElement container, string automationId)
         : base(context, page, container, automationId)
     {
     }
 
     public CheckBoxControl(FlaUITestContext context, string automationId)
-        : base(context, automationId)
+        : base(context, null, automationId)
     {
     }
 
     /// <summary>
-    /// Get checkbox text/label.
+    /// Check if checkbox is checked (immediate, no wait).
     /// </summary>
-    public override string GetText()
+    public override bool IsChecked()
     {
         var element = FindElement();
-        return element?.Name ?? string.Empty;
+        if (element != null)
+        {
+            var checkBox = element.AsCheckBox();
+            return checkBox?.IsChecked == true;
+        }
+        return false;
     }
 
     /// <summary>
-    /// Toggle the checkbox (convenience method for SetChecked(!IsChecked())).
+    /// Toggle the checkbox using FlaUI's native toggle pattern.
+    /// This is more reliable than Click() for data-bound checkboxes.
     /// </summary>
-    public void Toggle()
+    public override void Toggle()
     {
         var element = WaitForElementVisible();
         if (element == null)
         {
-            ThrowCheckFailed("Toggle", $"Element '{AutomationId}' not visible.");
+            ThrowCheckFailed("Toggle", $"Element '{AutomationId}' not visible for toggle.");
+            return; // Never reached, but satisfies null analysis
         }
         
-        var checkbox = element!.AsCheckBox();
-        checkbox.Toggle();
+        var checkBox = element.AsCheckBox();
+        if (checkBox != null)
+        {
+            // Use FlaUI's native toggle which works better with bindings
+            checkBox.Toggle();
+        }
+        else
+        {
+            // Fallback to click
+            element.Click();
+        }
         LogAction("Toggle");
     }
 
     /// <summary>
-    /// Wait for checkbox to be checked (convenience method for WaitChecked(true)).
+    /// Check if checkbox is in indeterminate state (three-state checkbox).
     /// </summary>
-    public bool WaitForChecked(int? timeoutMs = null)
+    public bool IsIndeterminate()
     {
-        return WaitChecked(true, timeoutMs);
+        var element = FindElement();
+        if (element != null)
+        {
+            var checkBox = element.AsCheckBox();
+            return checkBox?.IsChecked == null;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Get checkbox label text.
+    /// </summary>
+    public override string GetText()
+    {
+        var element = FindElement();
+        if (element != null)
+        {
+            var checkBox = element.AsCheckBox();
+            return checkBox?.Name ?? string.Empty;
+        }
+        return string.Empty;
     }
 }

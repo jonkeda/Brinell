@@ -37,7 +37,7 @@ public class DashboardPage : PageBase
     /// <summary>
     /// Activity table element.
     /// </summary>
-    public LabelControl ActivityTable { get; }
+    public TableControl ActivityTable { get; }
 
     /// <summary>
     /// Back to home button.
@@ -52,7 +52,7 @@ public class DashboardPage : PageBase
         TotalUsers = new LabelControl(context, this, "#total-users");
         ActiveSessions = new LabelControl(context, this, "#active-sessions");
         TestsPassed = new LabelControl(context, this, "#tests-passed");
-        ActivityTable = new LabelControl(context, this, "#activity-table");
+        ActivityTable = new TableControl(context, this, "#activity-table");
         BackHomeButton = new LinkControl(context, this, "#back-home-btn");
     }
 
@@ -119,6 +119,30 @@ public class DashboardPage : PageBase
     public bool HasActivityTable()
     {
         return ActivityTable.IsVisible();
+    }
+    
+    /// <summary>
+    /// Get the number of activity rows.
+    /// </summary>
+    public int GetActivityRowCount()
+    {
+        return ActivityTable.GetRowCount();
+    }
+
+    /// <summary>
+    /// Get the activity table headers.
+    /// </summary>
+    public IReadOnlyList<string> GetActivityHeaders()
+    {
+        return ActivityTable.GetHeaders();
+    }
+
+    /// <summary>
+    /// Get a specific activity row's cells.
+    /// </summary>
+    public IReadOnlyList<string> GetActivityRow(int index)
+    {
+        return ActivityTable.GetRowCells(index);
     }
     
     /// <summary>

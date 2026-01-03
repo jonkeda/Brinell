@@ -1,26 +1,19 @@
-using System.Collections.Generic;
-using System.Linq;
+using System.Diagnostics;
 using FlaUI.Core.AutomationElements;
-using FlaUI.Core.Definitions;
-using Brinell.Core.Abstractions;
-using Brinell.WinForms.Controls.Base;
-using Brinell.WinForms.Infrastructure;
+using Brinell.Core.Abstractions.Controls;
+using Brinell.FlaUI;
+using Brinell.FlaUI.Controls.Base;
 
 namespace Brinell.WinForms.Controls;
 
 /// <summary>
 /// WinForms DataGridView control wrapper.
-/// Provides table/grid data access and row/cell operations.
+/// Provides row/column navigation and cell value access.
 /// </summary>
-public class DataGridViewControl : ControlBase
+public class DataGridViewControl : ItemsControlBase, IItemsControl
 {
-    public DataGridViewControl(FlaUITestContext context, IPageObject? page, string automationId)
+    public DataGridViewControl(FlaUITestContext context, PageBase? page, string automationId)
         : base(context, page, automationId)
-    {
-    }
-
-    public DataGridViewControl(FlaUITestContext context, IPageObject? page, AutomationElement container, string automationId)
-        : base(context, page, container, automationId)
     {
     }
 
@@ -30,280 +23,241 @@ public class DataGridViewControl : ControlBase
     }
 
     /// <summary>
-    /// Get the number of rows in the grid (excluding header).
+    /// Get row elements from the grid.
     /// </summary>
-    public int GetRowCount()
+    protected override AutomationElement[] GetItemElements()
     {
         var element = FindElement();
-        if (element == null)
+        if (element != null)
         {
-            ThrowCheckFailed("GetRowCount", $"Element '{AutomationId}' not found.");
+            var grid = element.AsGrid();
+            if (grid != null)
+            {
+                // Get all rows
+                var rows = new List<AutomationElement>();
+                for (int i = 0; i < grid.RowCount; i++)
+                {
+                    var row = grid.GetRowByIndex(i);
+                    if (row != null)
+                    {
+                        rows.Add(row);
+                    }
+                }
+                return rows.ToArray();
+            }
         }
+        return Array.Empty<AutomationElement>();
+    }
 
-        try
+    /// <summary>
+    /// Get row count.
+    /// </summary>
+    public virtual int GetRowCount()
+    {
+        var element = FindElement();
+        if (element != null)
         {
-            var rows = element!.FindAllChildren(cf => cf.ByControlType(ControlType.DataItem)).ToList();
-            LogAction("GetRowCount", rows.Count.ToString());
-            return rows.Count;
+            var grid = element.AsGrid();
+            return grid?.RowCount ?? 0;
         }
-        catch (Exception ex)
-        {
-            ThrowCheckFailed("GetRowCount", $"Failed to get row count: {ex.Message}");
-        }
-
         return 0;
     }
 
     /// <summary>
-    /// Get the number of columns in the grid.
+    /// Get column count.
     /// </summary>
-    public int GetColumnCount()
+    public virtual int GetColumnCount()
     {
         var element = FindElement();
-        if (element == null)
+        if (element != null)
         {
-            ThrowCheckFailed("GetColumnCount", $"Element '{AutomationId}' not found.");
+            var grid = element.AsGrid();
+            return grid?.ColumnCount ?? 0;
         }
-
-        try
-        {
-            var headers = element!.FindAllChildren(cf => cf.ByControlType(ControlType.HeaderItem)).ToList();
-            LogAction("GetColumnCount", headers.Count.ToString());
-            return headers.Count;
-        }
-        catch (Exception ex)
-        {
-            LogDebug($"Failed to get column count: {ex.Message}");
-            return 0;
-        }
+        return 0;
     }
 
     /// <summary>
-    /// Get the value of a cell at the specified row and column index.
+    /// Get cell value by row and column index.
     /// </summary>
-    public string GetCellValue(int rowIndex, int columnIndex)
+    public virtual string GetCellValue(int row, int column)
     {
         var element = FindElement();
-        if (element == null)
+        if (element != null)
         {
-            ThrowCheckFailed("GetCellValue", $"Element '{AutomationId}' not found.");
-        }
-
-        try
-        {
-            var rows = element!.FindAllChildren(cf => cf.ByControlType(ControlType.DataItem)).ToList();
-            if (rowIndex < 0 || rowIndex >= rows.Count)
+            var grid = element.AsGrid();
+            if (grid != null && row < grid.RowCount && column < grid.ColumnCount)
             {
-                ThrowCheckFailed("GetCellValue", $"Row index {rowIndex} out of range (0-{rows.Count - 1}).");
+                var cell = grid.GetRowByIndex(row)?.Cells[column];
+                if (cell != null)
+                {
+                    // Try value pattern first
+                    var valuePattern = cell.Patterns.Value.PatternOrDefault;
+                    if (valuePattern != null)
+                    {
+                        return valuePattern.Value.Value ?? string.Empty;
+                    }
+                    // Fall back to Name
+                    return cell.Name ?? string.Empty;
+                }
             }
-
-            var cells = rows[rowIndex].FindAllChildren(cf => cf.ByControlType(ControlType.Custom)).ToList();
-            if (columnIndex < 0 || columnIndex >= cells.Count)
-            {
-                ThrowCheckFailed("GetCellValue", $"Column index {columnIndex} out of range (0-{cells.Count - 1}).");
-            }
-
-            var value = cells[columnIndex].Name ?? string.Empty;
-            LogAction("GetCellValue", $"[{rowIndex},{columnIndex}]={value}");
-            return value;
         }
-        catch (Exception ex)
-        {
-            ThrowCheckFailed("GetCellValue", $"Failed to get cell value: {ex.Message}");
-        }
-
         return string.Empty;
     }
 
     /// <summary>
-    /// Get all values in a specific row.
+    /// Set cell value by row and column index.
     /// </summary>
-    public List<string> GetRowValues(int rowIndex)
+    public virtual void SetCellValue(int row, int column, string value)
     {
-        var values = new List<string>();
-        var columnCount = GetColumnCount();
-
-        for (int col = 0; col < columnCount; col++)
+        CheckVisible();
+        
+        var element = FindElement();
+        if (element != null)
         {
-            values.Add(GetCellValue(rowIndex, col));
+            var grid = element.AsGrid();
+            if (grid != null && row < grid.RowCount && column < grid.ColumnCount)
+            {
+                var cell = grid.GetRowByIndex(row)?.Cells[column];
+                if (cell != null)
+                {
+                    var valuePattern = cell.Patterns.Value.PatternOrDefault;
+                    if (valuePattern != null)
+                    {
+                        valuePattern.SetValue(value);
+                        LogAction("SetCellValue", $"[{row},{column}]={value}");
+                    }
+                }
+            }
         }
-
-        LogAction("GetRowValues", $"Row {rowIndex}: {values.Count} columns");
-        return values;
-    }
-
-    /// <summary>
-    /// Get all values in a specific column.
-    /// </summary>
-    public List<string> GetColumnValues(int columnIndex)
-    {
-        var values = new List<string>();
-        var rowCount = GetRowCount();
-
-        for (int row = 0; row < rowCount; row++)
-        {
-            values.Add(GetCellValue(row, columnIndex));
-        }
-
-        LogAction("GetColumnValues", $"Column {columnIndex}: {values.Count} rows");
-        return values;
     }
 
     /// <summary>
     /// Select a row by index.
     /// </summary>
-    public void SelectRow(int rowIndex)
+    public virtual void SelectRow(int row)
     {
-        var element = WaitForElementVisible();
-        if (element == null)
+        CheckVisible();
+        
+        var element = FindElement();
+        if (element != null)
         {
-            ThrowCheckFailed("SelectRow", $"Element '{AutomationId}' not visible.");
-        }
-
-        try
-        {
-            var rows = element!.FindAllChildren(cf => cf.ByControlType(ControlType.DataItem)).ToList();
-            if (rowIndex < 0 || rowIndex >= rows.Count)
+            var grid = element.AsGrid();
+            if (grid != null && row < grid.RowCount)
             {
-                ThrowCheckFailed("SelectRow", $"Row index {rowIndex} out of range (0-{rows.Count - 1}).");
-            }
-
-            var selectionPattern = rows[rowIndex].Patterns.SelectionItem.PatternOrDefault;
-            if (selectionPattern != null)
-            {
-                selectionPattern.Select();
-                System.Threading.Thread.Sleep(100);
-                LogAction("SelectRow", rowIndex.ToString());
-            }
-            else
-            {
-                rows[rowIndex].Click();
-                System.Threading.Thread.Sleep(100);
-                LogAction("SelectRow", rowIndex.ToString());
-            }
-        }
-        catch (Exception ex)
-        {
-            ThrowCheckFailed("SelectRow", $"Failed to select row {rowIndex}: {ex.Message}");
-        }
-    }
-
-    /// <summary>
-    /// Double-click a cell to edit.
-    /// </summary>
-    public void DoubleClickCell(int rowIndex, int columnIndex)
-    {
-        var element = WaitForElementVisible();
-        if (element == null)
-        {
-            ThrowCheckFailed("DoubleClickCell", $"Element '{AutomationId}' not visible.");
-        }
-
-        try
-        {
-            var rows = element!.FindAllChildren(cf => cf.ByControlType(ControlType.DataItem)).ToList();
-            if (rowIndex < 0 || rowIndex >= rows.Count)
-            {
-                ThrowCheckFailed("DoubleClickCell", $"Row index {rowIndex} out of range.");
-            }
-
-            var cells = rows[rowIndex].FindAllChildren(cf => cf.ByControlType(ControlType.Custom)).ToList();
-            if (columnIndex < 0 || columnIndex >= cells.Count)
-            {
-                ThrowCheckFailed("DoubleClickCell", $"Column index {columnIndex} out of range.");
-            }
-
-            cells[columnIndex].DoubleClick();
-            System.Threading.Thread.Sleep(100);
-            LogAction("DoubleClickCell", $"[{rowIndex},{columnIndex}]");
-        }
-        catch (Exception ex)
-        {
-            ThrowCheckFailed("DoubleClickCell", $"Failed to double-click cell: {ex.Message}");
-        }
-    }
-
-    /// <summary>
-    /// Find a row that contains the specified value in any column.
-    /// </summary>
-    public int FindRow(string value)
-    {
-        var rowCount = GetRowCount();
-        var columnCount = GetColumnCount();
-
-        for (int row = 0; row < rowCount; row++)
-        {
-            for (int col = 0; col < columnCount; col++)
-            {
-                if (GetCellValue(row, col) == value)
+                var gridRow = grid.GetRowByIndex(row);
+                if (gridRow != null)
                 {
-                    LogAction("FindRow", $"Found at [{row},{col}]");
-                    return row;
+                    var selectionPattern = gridRow.Patterns.SelectionItem.PatternOrDefault;
+                    selectionPattern?.Select();
+                    LogAction("SelectRow", row.ToString());
                 }
             }
         }
+    }
 
+    /// <summary>
+    /// Get selected row index. Returns -1 if none selected.
+    /// </summary>
+    public virtual int GetSelectedRowIndex()
+    {
+        var element = FindElement();
+        if (element != null)
+        {
+            var grid = element.AsGrid();
+            if (grid != null)
+            {
+                for (int i = 0; i < grid.RowCount; i++)
+                {
+                    var row = grid.GetRowByIndex(i);
+                    var selectionPattern = row?.Patterns.SelectionItem.PatternOrDefault;
+                    if (selectionPattern?.IsSelected.Value == true)
+                    {
+                        return i;
+                    }
+                }
+            }
+        }
         return -1;
     }
 
     /// <summary>
-    /// Assert that the row count matches expected.
+    /// Get column headers as array.
     /// </summary>
-    public void AssertRowCount(int expected)
+    public virtual string[] GetColumnHeaders()
     {
-        var actual = GetRowCount();
-        if (actual != expected)
+        var element = FindElement();
+        if (element != null)
         {
-            ThrowAssertionFailed("RowCount", actual.ToString(), expected.ToString(),
-                $"DataGridView '{AutomationId}' has {actual} rows, expected {expected}.");
+            var grid = element.AsGrid();
+            if (grid != null)
+            {
+                return grid.Header?.Columns.Select(c => c.Text ?? c.Name ?? "").ToArray() 
+                    ?? Array.Empty<string>();
+            }
         }
-        LogAssertPass("RowCount", actual.ToString(), expected.ToString());
+        return Array.Empty<string>();
     }
 
     /// <summary>
-    /// Assert that a cell value matches expected.
+    /// Click a cell to select or edit it.
     /// </summary>
-    public void AssertCellValueEquals(int rowIndex, int columnIndex, string expected)
+    public virtual void ClickCell(int row, int column)
     {
-        var actual = GetCellValue(rowIndex, columnIndex);
-        if (actual != expected)
+        CheckVisible();
+        
+        var element = FindElement();
+        if (element != null)
         {
-            ThrowAssertionFailed("CellValueEquals", actual, expected,
-                $"DataGridView '{AutomationId}' cell [{rowIndex},{columnIndex}] is '{actual}', expected '{expected}'.");
+            var grid = element.AsGrid();
+            if (grid != null && row < grid.RowCount && column < grid.ColumnCount)
+            {
+                var cell = grid.GetRowByIndex(row)?.Cells[column];
+                cell?.Click();
+                LogAction("ClickCell", $"[{row},{column}]");
+            }
         }
-        LogAssertPass("CellValueEquals", actual, expected);
     }
 
     /// <summary>
-    /// Assert that the grid is not empty.
+    /// Double-click a cell (often to edit).
     /// </summary>
-    public void AssertNotEmpty()
+    public virtual void DoubleClickCell(int row, int column)
     {
-        var rowCount = GetRowCount();
-        if (rowCount == 0)
+        CheckVisible();
+        
+        var element = FindElement();
+        if (element != null)
         {
-            ThrowAssertionFailed("NotEmpty", "0", "> 0",
-                $"DataGridView '{AutomationId}' is empty.");
+            var grid = element.AsGrid();
+            if (grid != null && row < grid.RowCount && column < grid.ColumnCount)
+            {
+                var cell = grid.GetRowByIndex(row)?.Cells[column];
+                cell?.DoubleClick();
+                LogAction("DoubleClickCell", $"[{row},{column}]");
+            }
         }
-        LogAssertPass("NotEmpty", rowCount.ToString(), "> 0");
     }
 
     /// <summary>
-    /// Get all rows from the data grid as text (legacy method).
+    /// Wait for row count.
     /// </summary>
-    public IReadOnlyList<string> GetRowTexts()
+    public bool WaitForRowCount(int expectedCount, int? timeoutMs = null)
     {
-        var rows = new List<string>();
-        var rowCount = GetRowCount();
-        var columnCount = GetColumnCount();
+        var sw = Stopwatch.StartNew();
+        var result = _context.WaitFor(
+            () => GetRowCount() == expectedCount,
+            timeoutMs,
+            $"row count = {expectedCount}");
+        LogWait($"RowCount={expectedCount}", result, (int)sw.ElapsedMilliseconds);
+        return result;
+    }
 
-        for (int row = 0; row < rowCount; row++)
-        {
-            var values = GetRowValues(row);
-            rows.Add(string.Join(" | ", values));
-        }
-
-        return rows;
+    /// <summary>
+    /// Get grid info as text (row x column).
+    /// </summary>
+    public override string GetText()
+    {
+        return $"{GetRowCount()} rows x {GetColumnCount()} columns";
     }
 }
-

@@ -73,7 +73,7 @@ public class AdvancedLoginTests
         page.CheckDisplayed(timeoutMs: 2000);
     }
 
-    [Fact(Skip = "ComboBox control needs additional fixes - Phase 3+ work")]
+    [Fact]
     public void AdvancedLogin_DemonstatesAssertPattern()
     {
         // Assert pattern provides explicit assertions for test verification
@@ -89,7 +89,7 @@ public class AdvancedLoginTests
         page.GetSelectedRole().Should().Be("Admin", "because we selected Admin");
     }
 
-    [Fact(Skip = "ComboBox control needs additional fixes - Phase 3+ work")]
+    [Fact]
     public void AdvancedLogin_TestCompleteWorkflow()
     {
         // This test demonstrates a complete user workflow
@@ -125,7 +125,7 @@ public class AdvancedLoginTests
         statusMessage.Should().Contain(testRole);
     }
 
-    [Fact(Skip = "ComboBox control needs additional fixes - Phase 3+ work")]
+    [Fact]
     public void AdvancedLogin_TestFormReset()
     {
         // This test verifies that the clear functionality works correctly
@@ -156,7 +156,7 @@ public class AdvancedLoginTests
         page.GetStatusMessage().Should().Contain("Ready");
     }
 
-    [Fact(Skip = "ComboBox control needs additional fixes - Phase 3+ work")]
+    [Fact]
     public void AdvancedLogin_TestMultipleLogins()
     {
         // This test verifies the application handles multiple login attempts

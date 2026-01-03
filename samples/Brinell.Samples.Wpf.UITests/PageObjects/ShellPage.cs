@@ -1,6 +1,6 @@
+using Brinell.FlaUI;
+using Brinell.FlaUI.Controls.Base;
 using Brinell.Wpf.Controls;
-using Brinell.Wpf.Controls.Base;
-using Brinell.Wpf.Infrastructure;
 
 namespace Brinell.Samples.Wpf.UITests.PageObjects;
 

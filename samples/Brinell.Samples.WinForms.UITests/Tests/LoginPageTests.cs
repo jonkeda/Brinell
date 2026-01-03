@@ -103,7 +103,7 @@ public class LoginPageTests
         page.IsRememberMeChecked().Should().BeFalse();
     }
 
-    [Fact(Skip = "ComboBox control needs additional fixes - Phase 3+ work")]
+    [Fact]
     public void LoginPage_CanSelectRole()
     {
         // Arrange
@@ -117,7 +117,7 @@ public class LoginPageTests
         page.GetSelectedRole().Should().Be("Admin");
     }
 
-    [Fact(Skip = "ComboBox control needs additional fixes - Phase 3+ work")]
+    [Fact]
     public void LoginPage_CanLogin()
     {
         // Arrange
@@ -168,7 +168,7 @@ public class LoginPageTests
         page.GetStatusMessage().Should().Contain("Ready");
     }
 
-    [Fact(Skip = "ComboBox control needs additional fixes - Phase 3+ work")]
+    [Fact]
     public void LoginPage_CanSelectMultipleRoles()
     {
         // Arrange
@@ -184,7 +184,7 @@ public class LoginPageTests
         }
     }
 
-    [Fact(Skip = "ComboBox control needs additional fixes - Phase 3+ work")]
+    [Fact]
     public void LoginPage_CanLoginWithAllRoles()
     {
         // Arrange

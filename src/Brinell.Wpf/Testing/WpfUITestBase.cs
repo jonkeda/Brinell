@@ -1,7 +1,7 @@
 using FlaUI.Core;
 using Brinell.Core.Logging;
 using Brinell.Core.Testing;
-using Brinell.Wpf.Infrastructure;
+using Brinell.FlaUI;
 
 namespace Brinell.Wpf.Testing;
 

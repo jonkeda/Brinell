@@ -1,22 +1,27 @@
+using System.Diagnostics;
 using FlaUI.Core.AutomationElements;
-using Brinell.Core.Abstractions;
 using Brinell.Core.Abstractions.Controls;
-using Brinell.WinForms.Controls.Base;
-using Brinell.WinForms.Infrastructure;
+using Brinell.FlaUI;
+using Brinell.FlaUI.Controls.Base;
 
 namespace Brinell.WinForms.Controls;
 
 /// <summary>
 /// WinForms Label control wrapper.
+/// Uses shared ContentControlBase (read-only content display).
 /// </summary>
-public class LabelControl : ControlBase, ILabel
+public class LabelControl : ContentControlBase, ILabel
 {
-    public LabelControl(FlaUITestContext context, IPageObject? page, string automationId)
+    public LabelControl(FlaUITestContext context, PageBase? page, string automationId)
         : base(context, page, automationId)
     {
     }
 
-    public LabelControl(FlaUITestContext context, IPageObject? page, AutomationElement container, string automationId)
+    /// <summary>
+    /// Create a label control that searches within a container element.
+    /// Use this for labels inside list items or repeated templates.
+    /// </summary>
+    public LabelControl(FlaUITestContext context, PageBase? page, AutomationElement container, string automationId)
         : base(context, page, container, automationId)
     {
     }
@@ -41,30 +46,30 @@ public class LabelControl : ControlBase, ILabel
     }
 
     /// <summary>
-    /// Assert label text equals expected value.
+    /// Wait for text to equal expected value.
     /// </summary>
-    public override void AssertTextEquals(string expected, string? message = null)
+    public bool WaitForText(string expected, int? timeoutMs = null)
     {
-        var actual = GetText();
-        if (actual != expected)
-        {
-            ThrowAssertionFailed("TextEquals", actual, expected,
-                message ?? $"Label '{AutomationId}' text is '{actual}', expected '{expected}'.");
-        }
-        LogAssertPass("TextEquals", actual, expected);
+        var sw = Stopwatch.StartNew();
+        var result = _context.WaitFor(
+            () => GetText() == expected,
+            timeoutMs,
+            $"text = '{expected}'");
+        LogWait($"Text={expected}", result, (int)sw.ElapsedMilliseconds);
+        return result;
     }
 
     /// <summary>
-    /// Assert label text contains substring.
+    /// Wait for text to contain expected value.
     /// </summary>
-    public override void AssertTextContains(string substring, string? message = null)
+    public bool WaitForTextContains(string expected, int? timeoutMs = null)
     {
-        var actual = GetText();
-        if (!actual.Contains(substring))
-        {
-            ThrowAssertionFailed("TextContains", actual, substring,
-                message ?? $"Label '{AutomationId}' text does not contain '{substring}'.");
-        }
-        LogAssertPass("TextContains", actual, substring);
+        var sw = Stopwatch.StartNew();
+        var result = _context.WaitFor(
+            () => GetText().Contains(expected),
+            timeoutMs,
+            $"text contains '{expected}'");
+        LogWait($"TextContains={expected}", result, (int)sw.ElapsedMilliseconds);
+        return result;
     }
 }

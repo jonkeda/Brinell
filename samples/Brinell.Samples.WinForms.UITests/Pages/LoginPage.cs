@@ -1,7 +1,7 @@
 using Brinell.Core.Abstractions;
 using Brinell.WinForms.Controls;
-using Brinell.WinForms.Controls.Base;
-using Brinell.WinForms.Infrastructure;
+using Brinell.FlaUI;
+using Brinell.FlaUI.Controls.Base;
 
 namespace Brinell.Samples.WinForms.UITests.Pages;
 
@@ -11,7 +11,7 @@ namespace Brinell.Samples.WinForms.UITests.Pages;
 public class LoginPage : PageBase
 {
     private readonly TextBoxControl _usernameField;
-    private readonly TextBoxControl _passwordField;
+    private readonly PasswordBoxControl _passwordField;
     private readonly CheckBoxControl _rememberCheckBox;
     private readonly ComboBoxControl _roleCombo;
     private readonly NumericUpDownControl _portNumeric;
@@ -27,7 +27,7 @@ public class LoginPage : PageBase
         : base(context, "LoginPage")
     {
         _usernameField = new TextBoxControl(context, this, "txtUsername");
-        _passwordField = new TextBoxControl(context, this, "txtPassword");
+        _passwordField = new PasswordBoxControl(context, this, "txtPassword");
         _rememberCheckBox = new CheckBoxControl(context, this, "chkRemember");
         _roleCombo = new ComboBoxControl(context, this, "cmbRole");
         _portNumeric = new NumericUpDownControl(context, this, "nudPort");
@@ -95,7 +95,7 @@ public class LoginPage : PageBase
     /// <summary>
     /// Set the port number.
     /// </summary>
-    public void SetPort(decimal port)
+    public void SetPort(double port)
     {
         _portNumeric.SetValue(port);
     }
@@ -103,7 +103,7 @@ public class LoginPage : PageBase
     /// <summary>
     /// Get the current port number.
     /// </summary>
-    public decimal GetPort()
+    public double GetPort()
     {
         return _portNumeric.GetValue();
     }
@@ -143,7 +143,7 @@ public class LoginPage : PageBase
     /// <summary>
     /// Set the volume level.
     /// </summary>
-    public void SetVolume(int level)
+    public void SetVolume(double level)
     {
         _volumeTrackBar.SetValue(level);
     }
@@ -151,7 +151,7 @@ public class LoginPage : PageBase
     /// <summary>
     /// Get the current volume level.
     /// </summary>
-    public int GetVolume()
+    public double GetVolume()
     {
         return _volumeTrackBar.GetValue();
     }
@@ -159,7 +159,7 @@ public class LoginPage : PageBase
     /// <summary>
     /// Get the current progress.
     /// </summary>
-    public int GetProgress()
+    public double GetProgress()
     {
         return _progressBar.GetValue();
     }
@@ -217,7 +217,7 @@ public class LoginPage : PageBase
     /// </summary>
     public string GetSelectedRole()
     {
-        return _roleCombo.GetSelectedItem();
+        return _roleCombo.GetSelectedText() ?? string.Empty;
     }
 
     #region Wait Methods

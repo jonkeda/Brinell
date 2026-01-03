@@ -1,266 +1,155 @@
-using System.Collections.Generic;
-using System.Linq;
+using System.Diagnostics;
 using FlaUI.Core.AutomationElements;
-using FlaUI.Core.Definitions;
-using Brinell.Core.Abstractions;
-using Brinell.WinForms.Controls.Base;
-using Brinell.WinForms.Infrastructure;
+using Brinell.Core.Abstractions.Controls;
+using Brinell.FlaUI;
+using Brinell.FlaUI.Controls.Base;
 
 namespace Brinell.WinForms.Controls;
 
 /// <summary>
 /// WinForms TabControl control wrapper.
-/// Provides tab navigation and selection operations.
+/// Provides tab navigation and selection.
 /// </summary>
-public class TabControlControl : ControlBase
+public class TabControlControl : ItemsControlBase, IItemsControl
 {
-    public TabControlControl(FlaUITestContext context, IPageObject? page, string automationId)
+    public TabControlControl(FlaUITestContext context, PageBase? page, string automationId)
         : base(context, page, automationId)
     {
     }
 
-    public TabControlControl(FlaUITestContext context, IPageObject? page, AutomationElement container, string automationId)
-        : base(context, page, container, automationId)
-    {
-    }
-
     public TabControlControl(FlaUITestContext context, string automationId)
-        : base(context, automationId)
+        : base(context, null, automationId)
     {
     }
 
     /// <summary>
-    /// Get the number of tabs in the control.
+    /// Get tab item elements.
     /// </summary>
-    public int GetTabCount()
+    protected override AutomationElement[] GetItemElements()
     {
         var element = FindElement();
-        if (element == null)
+        if (element != null)
         {
-            ThrowCheckFailed("GetTabCount", $"Element '{AutomationId}' not found.");
+            var tab = element.AsTab();
+            return tab?.TabItems.Cast<AutomationElement>().ToArray() ?? Array.Empty<AutomationElement>();
         }
-
-        try
-        {
-            var tabs = element!.FindAllChildren(cf => cf.ByControlType(ControlType.TabItem)).ToList();
-            var count = tabs.Count();
-            LogAction("GetTabCount", count.ToString());
-            return count;
-        }
-        catch (Exception ex)
-        {
-            ThrowCheckFailed("GetTabCount", $"Failed to get tab count: {ex.Message}");
-        }
-
-        return 0;
+        return Array.Empty<AutomationElement>();
     }
 
     /// <summary>
-    /// Get tab names/headers.
+    /// Get selected tab text (immediate, no wait).
     /// </summary>
-    public List<string> GetTabNames()
+    public virtual string? GetSelectedTabText()
     {
         var element = FindElement();
-        if (element == null)
+        if (element != null)
         {
-            ThrowCheckFailed("GetTabNames", $"Element '{AutomationId}' not found.");
+            var tab = element.AsTab();
+            return tab?.SelectedTabItem?.Name;
         }
-
-        var names = new List<string>();
-        try
-        {
-            var tabs = element!.FindAllChildren(cf => cf.ByControlType(ControlType.TabItem)).ToList();
-            foreach (var tab in tabs)
-            {
-                var name = tab.Name ?? $"Tab {names.Count + 1}";
-                names.Add(name);
-            }
-            LogAction("GetTabNames", $"{names.Count} tabs");
-        }
-        catch (Exception ex)
-        {
-            ThrowCheckFailed("GetTabNames", $"Failed to get tab names: {ex.Message}");
-        }
-
-        return names;
+        return null;
     }
 
     /// <summary>
-    /// Select a tab by index (0-based).
+    /// Get selected tab index (immediate, no wait). Returns -1 if none selected.
     /// </summary>
-    public void SelectTab(int index)
-    {
-        var element = WaitForElementVisible();
-        if (element == null)
-        {
-            ThrowCheckFailed("SelectTab", $"Element '{AutomationId}' not visible.");
-        }
-
-        try
-        {
-            var tabs = element!.FindAllChildren(cf => cf.ByControlType(ControlType.TabItem)).ToList();
-            if (index < 0 || index >= tabs.Count)
-            {
-                ThrowCheckFailed("SelectTab", $"Tab index {index} out of range (0-{tabs.Count - 1}).");
-            }
-
-            tabs[index].Click();
-            System.Threading.Thread.Sleep(100);
-            LogAction("SelectTab", index.ToString());
-        }
-        catch (Exception ex)
-        {
-            ThrowCheckFailed("SelectTab", $"Failed to select tab {index}: {ex.Message}");
-        }
-    }
-
-    /// <summary>
-    /// Select a tab by name/header text.
-    /// </summary>
-    public void SelectTabByName(string tabName)
-    {
-        var element = WaitForElementVisible();
-        if (element == null)
-        {
-            ThrowCheckFailed("SelectTabByName", $"Element '{AutomationId}' not visible.");
-        }
-
-        try
-        {
-            var tabs = element!.FindAllChildren(cf => cf.ByControlType(ControlType.TabItem)).ToList();
-            for (int i = 0; i < tabs.Count; i++)
-            {
-                if (tabs[i].Name == tabName)
-                {
-                    tabs[i].Click();
-                    System.Threading.Thread.Sleep(100);
-                    LogAction("SelectTabByName", tabName);
-                    return;
-                }
-            }
-            ThrowCheckFailed("SelectTabByName", $"Tab '{tabName}' not found.");
-        }
-        catch (Exception ex)
-        {
-            ThrowCheckFailed("SelectTabByName", $"Failed to select tab '{tabName}': {ex.Message}");
-        }
-    }
-
-    /// <summary>
-    /// Get the currently selected tab index.
-    /// </summary>
-    public int GetSelectedTabIndex()
+    public virtual int GetSelectedTabIndex()
     {
         var element = FindElement();
-        if (element == null)
+        if (element != null)
         {
-            ThrowCheckFailed("GetSelectedTabIndex", $"Element '{AutomationId}' not found.");
+            var tab = element.AsTab();
+            return tab?.SelectedTabItemIndex ?? -1;
         }
-
-        try
-        {
-            var tabs = element!.FindAllChildren(cf => cf.ByControlType(ControlType.TabItem)).ToList();
-            for (int i = 0; i < tabs.Count; i++)
-            {
-                var selectionPattern = tabs[i].Patterns.SelectionItem.PatternOrDefault;
-                if (selectionPattern != null && selectionPattern.IsSelected)
-                {
-                    LogAction("GetSelectedTabIndex", i.ToString());
-                    return i;
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            LogDebug($"Failed to get selected tab index: {ex.Message}");
-        }
-
         return -1;
     }
 
     /// <summary>
-    /// Get the currently selected tab name.
+    /// Select tab by index.
     /// </summary>
-    public string GetSelectedTabName()
+    public virtual void SelectTabByIndex(int index)
     {
+        CheckVisible();
+        
         var element = FindElement();
-        if (element == null)
+        if (element != null)
         {
-            ThrowCheckFailed("GetSelectedTabName", $"Element '{AutomationId}' not found.");
-        }
-
-        try
-        {
-            var tabs = element!.FindAllChildren(cf => cf.ByControlType(ControlType.TabItem)).ToList();
-            for (int i = 0; i < tabs.Count; i++)
+            var tab = element.AsTab();
+            if (tab != null && index < tab.TabItems.Length)
             {
-                var selectionPattern = tabs[i].Patterns.SelectionItem.PatternOrDefault;
-                if (selectionPattern != null && selectionPattern.IsSelected)
-                {
-                    var name = tabs[i].Name ?? $"Tab {i}";
-                    LogAction("GetSelectedTabName", name);
-                    return name;
-                }
+                tab.SelectTabItem(index);
+                LogAction("SelectTabByIndex", index.ToString());
             }
         }
-        catch (Exception ex)
-        {
-            ThrowCheckFailed("GetSelectedTabName", $"Failed to get selected tab name: {ex.Message}");
-        }
-
-        return string.Empty;
     }
 
     /// <summary>
-    /// Assert that the selected tab index matches expected.
+    /// Select tab by text.
     /// </summary>
-    public void AssertSelectedTabIs(int expectedIndex)
+    public virtual void SelectTabByText(string text)
     {
-        var actual = GetSelectedTabIndex();
-        if (actual != expectedIndex)
+        CheckVisible();
+        
+        var element = FindElement();
+        if (element != null)
         {
-            ThrowAssertionFailed("SelectedTabIs", actual.ToString(), expectedIndex.ToString(),
-                $"TabControl '{AutomationId}' selected tab is {actual}, expected {expectedIndex}.");
+            var tab = element.AsTab();
+            var tabItem = tab?.TabItems.FirstOrDefault(t => t.Name == text);
+            if (tabItem != null)
+            {
+                tabItem.Select();
+                LogAction("SelectTabByText", text);
+            }
         }
-        LogAssertPass("SelectedTabIs", actual.ToString(), expectedIndex.ToString());
     }
 
     /// <summary>
-    /// Assert that the selected tab name matches expected.
+    /// Get all tab texts.
     /// </summary>
-    public void AssertSelectedTabNameIs(string expectedName)
+    public virtual string[] GetTabTexts()
     {
-        var actual = GetSelectedTabName();
-        if (actual != expectedName)
+        var element = FindElement();
+        if (element != null)
         {
-            ThrowAssertionFailed("SelectedTabNameIs", actual, expectedName,
-                $"TabControl '{AutomationId}' selected tab is '{actual}', expected '{expectedName}'.");
+            var tab = element.AsTab();
+            return tab?.TabItems.Select(t => t.Name ?? "").ToArray() ?? Array.Empty<string>();
         }
-        LogAssertPass("SelectedTabNameIs", actual, expectedName);
+        return Array.Empty<string>();
     }
 
     /// <summary>
-    /// Assert that the tab count matches expected.
+    /// Get tab count.
     /// </summary>
-    public void AssertTabCount(int expected)
+    public virtual int GetTabCount()
     {
-        var actual = GetTabCount();
-        if (actual != expected)
+        var element = FindElement();
+        if (element != null)
         {
-            ThrowAssertionFailed("TabCount", actual.ToString(), expected.ToString(),
-                $"TabControl '{AutomationId}' has {actual} tabs, expected {expected}.");
+            var tab = element.AsTab();
+            return tab?.TabItems.Length ?? 0;
         }
-        LogAssertPass("TabCount", actual.ToString(), expected.ToString());
+        return 0;
     }
 
     /// <summary>
-    /// Check if a tab exists by name.
+    /// Wait for tab to be selected.
     /// </summary>
-    public bool TabExists(string tabName)
+    public bool WaitForTab(string tabText, int? timeoutMs = null)
     {
-        var names = GetTabNames();
-        var exists = names.Contains(tabName);
-        LogAction("TabExists", $"{tabName}: {exists}");
-        return exists;
+        var sw = Stopwatch.StartNew();
+        var result = _context.WaitFor(
+            () => GetSelectedTabText() == tabText,
+            timeoutMs,
+            $"tab = '{tabText}'");
+        LogWait($"Tab={tabText}", result, (int)sw.ElapsedMilliseconds);
+        return result;
+    }
+
+    /// <summary>
+    /// Get selected tab text.
+    /// </summary>
+    public override string GetText()
+    {
+        return GetSelectedTabText() ?? string.Empty;
     }
 }
