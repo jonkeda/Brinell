@@ -17,6 +17,11 @@ public abstract class ItemsControlBase : ControlBase, IItemsControl
     /// </summary>
     protected abstract string ItemSelector { get; }
 
+    /// <summary>
+    /// Maximum retry attempts for stale element handling.
+    /// </summary>
+    protected virtual int MaxStaleRetries => 2;
+
     protected ItemsControlBase(SeleniumTestContext context, IPageObject? page, string automationId)
         : base(context, page, automationId)
     {
@@ -34,13 +39,29 @@ public abstract class ItemsControlBase : ControlBase, IItemsControl
 
     /// <summary>
     /// Find all item elements within this control.
+    /// Handles stale element references for SPA frameworks like Blazor.
     /// </summary>
     protected virtual IReadOnlyList<IWebElement> FindItems()
     {
-        var container = FindElement();
-        if (container == null) return Array.Empty<IWebElement>();
+        for (int attempt = 0; attempt <= MaxStaleRetries; attempt++)
+        {
+            try
+            {
+                var container = FindElement();
+                if (container == null) return Array.Empty<IWebElement>();
+                
+                return container.FindElements(By.CssSelector(ItemSelector)).ToList();
+            }
+            catch (StaleElementReferenceException) when (attempt < MaxStaleRetries)
+            {
+                // DOM changed, retry with fresh lookup
+                Log($"Stale element detected, retrying ({attempt + 1}/{MaxStaleRetries})...");
+                Thread.Sleep(50); // Brief pause before retry
+            }
+        }
         
-        return container.FindElements(By.CssSelector(ItemSelector)).ToList();
+        // Final attempt failed
+        return Array.Empty<IWebElement>();
     }
 
     /// <summary>
