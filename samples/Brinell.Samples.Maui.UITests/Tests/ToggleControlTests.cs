@@ -36,6 +36,9 @@ public class ToggleControlTests : MauiTestBase
 
         // Act
         _mainPage.NotificationSwitch.Toggle();
+        
+        // Wait for state to change (give UI time to update)
+        _mainPage.NotificationSwitch.WaitChecked(expected: false, timeoutMs: 2000);
 
         // Assert
         _mainPage.NotificationSwitch.AssertIsOff();

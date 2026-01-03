@@ -36,6 +36,9 @@ public class ActivityIndicatorTests : MauiTestBase
 
         // Act
         _mainPage.ToggleLoadingButton.Tap();
+        
+        // Wait for indicator to start (give UI time to update)
+        _mainPage.LoadingIndicator.WaitForStart(timeoutMs: 2000);
 
         // Assert
         _mainPage.LoadingIndicator.AssertRunning();

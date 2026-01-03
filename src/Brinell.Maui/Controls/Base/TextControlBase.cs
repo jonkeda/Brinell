@@ -15,6 +15,11 @@ public abstract class TextControlBase : ControlBase, ITextControl
     {
     }
 
+    protected TextControlBase(AppiumTestContext context, IPageObject? page, AppiumElement? container, string automationId)
+        : base(context, page, container, automationId)
+    {
+    }
+
     protected TextControlBase(AppiumTestContext context, string automationId)
         : base(context, automationId)
     {

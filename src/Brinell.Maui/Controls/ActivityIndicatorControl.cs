@@ -22,14 +22,45 @@ public class ActivityIndicatorControl : ControlBase
 
     /// <summary>
     /// Check if the activity indicator is running (animating).
+    /// Handles different attribute names for Windows/Android/iOS platforms.
+    /// On Windows, the control may only be visible when running.
     /// </summary>
     public bool IsRunning()
     {
         var element = FindElement();
         if (element == null) return false;
+
+        // Try IsRunning for MAUI ActivityIndicator
+        var isRunning = element.GetAttribute("IsRunning");
+        if (isRunning != null)
+        {
+            return isRunning.Equals("true", StringComparison.OrdinalIgnoreCase) || isRunning == "1";
+        }
+
+        // Try lowercase variants
+        isRunning = element.GetAttribute("isRunning") ?? element.GetAttribute("running");
+        if (isRunning != null)
+        {
+            return isRunning.Equals("true", StringComparison.OrdinalIgnoreCase);
+        }
+
+        // Windows: check for animation state if exposed
+        var animating = element.GetAttribute("animating");
+        if (animating != null)
+        {
+            return animating.Equals("true", StringComparison.OrdinalIgnoreCase);
+        }
         
-        var isRunning = element.GetAttribute("isRunning") ?? element.GetAttribute("running");
-        return isRunning?.Equals("true", StringComparison.OrdinalIgnoreCase) ?? false;
+        // Windows: Check for ProgressRing pattern - if IsActive attribute
+        var isActive = element.GetAttribute("IsActive");
+        if (isActive != null)
+        {
+            return isActive.Equals("true", StringComparison.OrdinalIgnoreCase) || isActive == "1";
+        }
+        
+        // Fallback: On Windows, an ActivityIndicator is only visible (Displayed=true) when running
+        // and hidden when not running. Check the element's displayed and enabled state.
+        return element.Displayed && element.Enabled;
     }
 
     /// <summary>

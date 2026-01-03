@@ -24,16 +24,59 @@ public class SwitchControl : ToggleControlBase
 
     /// <summary>
     /// Check if the switch is on/checked (immediate, no wait).
+    /// Handles different attribute names for Windows/Android/iOS platforms.
     /// </summary>
     public override bool IsChecked()
     {
         var element = FindElement();
-        if (element != null)
+        if (element == null) return false;
+
+        // Windows UIA uses Toggle.ToggleState ("1" = on, "0" = off)
+        var toggleState = element.GetAttribute("Toggle.ToggleState");
+        if (toggleState != null)
         {
-            var checkedAttr = element.GetAttribute("checked");
-            return checkedAttr?.Equals("true", StringComparison.OrdinalIgnoreCase) ?? false;
+            return toggleState == "1" || toggleState.Equals("On", StringComparison.OrdinalIgnoreCase);
         }
+
+        // Try standard checked attribute (Android/iOS)
+        var checkedAttr = element.GetAttribute("checked");
+        if (checkedAttr != null)
+        {
+            return checkedAttr.Equals("true", StringComparison.OrdinalIgnoreCase);
+        }
+
+        // Try IsToggled for MAUI Switch
+        var isToggled = element.GetAttribute("IsToggled");
+        if (isToggled != null)
+        {
+            return isToggled.Equals("true", StringComparison.OrdinalIgnoreCase) || isToggled == "1";
+        }
+
         return false;
+    }
+
+    /// <summary>
+    /// Toggle the switch state.
+    /// On Windows, uses TapAtCoordinates for more reliable toggling.
+    /// </summary>
+    public override void Toggle()
+    {
+        LogAction("Toggle");
+        var element = WaitForElementVisible();
+        if (element == null)
+            throw new InvalidOperationException($"Switch '{AutomationId}' not visible for toggle.");
+        
+        // On Windows, clicking on the switch element may not toggle it.
+        // Use TapAtCoordinates on the element center for more reliable interaction.
+        var location = element.Location;
+        var size = element.Size;
+        var centerX = location.X + (size.Width / 2);
+        var centerY = location.Y + (size.Height / 2);
+        
+        _context.Driver.TapAtCoordinates(centerX, centerY);
+        
+        // Small delay for UI to update
+        Thread.Sleep(100);
     }
 
     // ===== Switch-specific aliases =====

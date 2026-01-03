@@ -546,7 +546,14 @@ public abstract class ControlBase : IControlObject
     #region Gesture Methods (Touch Actions)
 
     /// <summary>
+    /// Default delay after tap in milliseconds to allow UI to update.
+    /// Can be overridden in derived classes or via configuration.
+    /// </summary>
+    protected virtual int PostTapDelayMs => 100;
+
+    /// <summary>
     /// Tap the control. Waits for visibility before tapping.
+    /// Includes a small delay after tap for UI thread to process the event.
     /// </summary>
     public virtual void Tap()
     {
@@ -555,6 +562,12 @@ public abstract class ControlBase : IControlObject
             ThrowCheckFailed("Tap", $"Element '{AutomationId}' not visible for tap.");
         element!.Click();
         LogAction("Tap");
+        
+        // Small delay to allow UI thread to process the click event
+        if (PostTapDelayMs > 0)
+        {
+            Thread.Sleep(PostTapDelayMs);
+        }
     }
 
     /// <summary>

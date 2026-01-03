@@ -22,15 +22,21 @@ public class SliderControl : RangeControlBase
 
     /// <summary>
     /// Get current value.
+    /// Windows UIA uses RangeValue.Value pattern.
     /// </summary>
     public override double GetValue()
     {
         var element = FindElement();
         if (element != null)
         {
-            // Try different attribute names used by different platforms
-            var value = element.GetAttribute("value");
+            // Windows UIA uses RangeValue pattern
+            var value = element.GetAttribute("RangeValue.Value");
             if (double.TryParse(value, out var result))
+                return result;
+            
+            // Try standard value attribute
+            value = element.GetAttribute("value") ?? element.GetAttribute("Value");
+            if (double.TryParse(value, out result))
                 return result;
             
             // Try text as fallback
@@ -43,15 +49,21 @@ public class SliderControl : RangeControlBase
 
     /// <summary>
     /// Get minimum value.
-    /// Note: MAUI Slider may not expose min via automation - defaults to 0.
+    /// Windows UIA uses RangeValue.Minimum, MAUI uses Minimum or minimum.
     /// </summary>
     public override double GetMinimum()
     {
         var element = FindElement();
         if (element != null)
         {
-            var min = element.GetAttribute("minimum") ?? element.GetAttribute("min");
+            // Windows UIA uses RangeValue pattern
+            var min = element.GetAttribute("RangeValue.Minimum");
             if (double.TryParse(min, out var result))
+                return result;
+            
+            // Try MAUI-specific attributes
+            min = element.GetAttribute("Minimum") ?? element.GetAttribute("minimum") ?? element.GetAttribute("min");
+            if (double.TryParse(min, out result))
                 return result;
         }
         return 0;
@@ -59,22 +71,29 @@ public class SliderControl : RangeControlBase
 
     /// <summary>
     /// Get maximum value.
-    /// Note: MAUI Slider may not expose max via automation - defaults to 1.
+    /// Windows UIA uses RangeValue.Maximum, MAUI uses Maximum or maximum.
     /// </summary>
     public override double GetMaximum()
     {
         var element = FindElement();
         if (element != null)
         {
-            var max = element.GetAttribute("maximum") ?? element.GetAttribute("max");
+            // Windows UIA uses RangeValue pattern
+            var max = element.GetAttribute("RangeValue.Maximum");
             if (double.TryParse(max, out var result))
                 return result;
+            
+            // Try MAUI-specific attributes
+            max = element.GetAttribute("Maximum") ?? element.GetAttribute("maximum") ?? element.GetAttribute("max");
+            if (double.TryParse(max, out result))
+                return result;
         }
-        return 1;
+        return 100; // Default to 100 for percentage-based sliders
     }
 
     /// <summary>
-    /// Set the slider value.
+    /// Set the slider value by clicking at the appropriate position on the slider track.
+    /// Uses touch gestures for Windows compatibility.
     /// </summary>
     public override void SetValue(double value)
     {
@@ -88,9 +107,29 @@ public class SliderControl : RangeControlBase
         var max = GetMaximum();
         value = Math.Max(min, Math.Min(max, value));
         
-        // For now, log what we're trying to do
-        // Actual implementation would use touch/drag gestures
-        Log($"SetValue({value}) - would require platform-specific touch gestures");
+        // Calculate relative position (0.0 to 1.0)
+        var range = max - min;
+        if (range <= 0) range = 1;
+        var relativePosition = (value - min) / range;
+        
+        // Get element bounds
+        var location = element.Location;
+        var size = element.Size;
+        
+        // Calculate click position (horizontal slider assumed)
+        // Use minimal padding (2px) for thumb at edges - most sliders handle this well
+        var padding = 2;
+        var effectiveWidth = size.Width - (2 * padding);
+        var clickX = (int)(location.X + padding + (effectiveWidth * relativePosition));
+        var clickY = location.Y + (size.Height / 2);
+        
+        // Use the driver's tap at coordinates
+        _context.Driver.TapAtCoordinates(clickX, clickY);
+        
+        // Small delay for UI to update
+        Thread.Sleep(100);
+        
+        Log($"SetValue({value}) - tapped at position ({clickX}, {clickY})");
     }
 
     /// <summary>

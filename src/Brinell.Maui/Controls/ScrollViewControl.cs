@@ -1,4 +1,5 @@
 using Brinell.Core.Abstractions;
+using Brinell.Core.Abstractions.Controls;
 using Brinell.Maui.Controls.Base;
 using Brinell.Maui.Gestures;
 using Brinell.Maui.Infrastructure;
@@ -8,8 +9,9 @@ namespace Brinell.Maui.Controls;
 /// <summary>
 /// MAUI ScrollView control wrapper.
 /// Provides scrollable container functionality.
+/// Implements IScrollableControl per FR-002.7.
 /// </summary>
-public class ScrollViewControl : ControlBase
+public class ScrollViewControl : ControlBase, IScrollableControl
 {
     public ScrollViewControl(AppiumTestContext context, IPageObject? page, string automationId)
         : base(context, page, automationId)
@@ -130,10 +132,11 @@ public class ScrollViewControl : ControlBase
 
     /// <summary>
     /// Scroll to element with automation ID.
+    /// Throws if element not found after max attempts.
     /// </summary>
     /// <param name="automationId">The automation ID of the element to scroll to.</param>
     /// <param name="maxAttempts">Maximum scroll attempts.</param>
-    public bool ScrollToElement(string automationId, int maxAttempts = 10)
+    public void ScrollToElement(string automationId, int maxAttempts = 10)
     {
         LogAction("ScrollToElement", automationId);
         
@@ -145,7 +148,7 @@ public class ScrollViewControl : ControlBase
                 if (element?.Displayed == true)
                 {
                     Log($"ScrollToElement: Found '{automationId}' after {i} scrolls.");
-                    return true;
+                    return;
                 }
             }
             catch (Exception ex)
@@ -158,7 +161,14 @@ public class ScrollViewControl : ControlBase
             Thread.Sleep(300); // Slightly longer wait for scroll to settle
         }
         
-        Log($"ScrollToElement: Element '{automationId}' not found after {maxAttempts} attempts.");
-        return false;
+        throw new InvalidOperationException($"ScrollToElement: Element '{automationId}' not found after {maxAttempts} attempts.");
+    }
+
+    /// <summary>
+    /// Scroll to element with automation ID (IScrollableControl interface).
+    /// </summary>
+    void IScrollableControl.ScrollToElement(string automationId)
+    {
+        ScrollToElement(automationId);
     }
 }

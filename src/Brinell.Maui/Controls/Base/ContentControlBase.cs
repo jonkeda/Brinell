@@ -16,6 +16,11 @@ public abstract class ContentControlBase : ControlBase, IContentControl
     {
     }
 
+    protected ContentControlBase(AppiumTestContext context, IPageObject? page, AppiumElement? container, string automationId)
+        : base(context, page, container, automationId)
+    {
+    }
+
     protected ContentControlBase(AppiumTestContext context, string automationId)
         : base(context, automationId)
     {

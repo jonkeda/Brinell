@@ -27,6 +27,11 @@ public abstract class SelectorControlBase : ControlBase, ISelectorControl
     }
 
     /// <summary>
+    /// Delay after opening picker (ms). Override to customize.
+    /// </summary>
+    protected virtual int PickerOpenDelayMs => 500;
+
+    /// <summary>
     /// Get the selected item text.
     /// </summary>
     public virtual string? GetSelectedText()
@@ -57,7 +62,7 @@ public abstract class SelectorControlBase : ControlBase, ISelectorControl
         
         // Open the selector
         element.Click();
-        Thread.Sleep(500); // Wait for picker to open
+        Thread.Sleep(PickerOpenDelayMs); // Wait for picker to open
         
         PerformSelectByIndex(index);
     }
@@ -88,7 +93,7 @@ public abstract class SelectorControlBase : ControlBase, ISelectorControl
         
         // Open the selector
         element.Click();
-        Thread.Sleep(500); // Wait for picker to open
+        Thread.Sleep(PickerOpenDelayMs); // Wait for picker to open
         
         PerformSelectByText(text);
     }

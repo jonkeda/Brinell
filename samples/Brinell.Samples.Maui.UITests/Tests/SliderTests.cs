@@ -21,7 +21,7 @@ public class SliderTests : MauiTestBase
     {
         // Arrange
         _mainPage.WaitForPageLoad();
-        _mainPage.MainScrollView.ScrollToElement("VolumeSlider");
+        _mainPage.MainScrollView.ScrollToElement("VolumeLabel");
 
         // Assert
         _mainPage.VolumeLabel.AssertTextContains("Volume: 50%");
@@ -37,7 +37,8 @@ public class SliderTests : MauiTestBase
         // Act
         _mainPage.VolumeSlider.SetValue(75);
 
-        // Assert
+        // Assert - scroll to label to ensure it's visible
+        _mainPage.MainScrollView.ScrollToElement("VolumeLabel");
         _mainPage.VolumeLabel.AssertTextContains("75");
     }
 
