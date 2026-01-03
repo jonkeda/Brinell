@@ -257,6 +257,7 @@ public abstract class ControlBase : IControlObject
 
     /// <summary>
     /// Get element text (immediate).
+    /// Uses InnerTextAsync which normalizes whitespace for visible text.
     /// </summary>
     public virtual string GetText()
     {
@@ -275,11 +276,13 @@ public abstract class ControlBase : IControlObject
         if (tagName == "select")
         {
             // For select, get selected option text
-            return element.Locator("option:checked").TextContentAsync()
+            var text = element.Locator("option:checked").TextContentAsync()
                 .GetAwaiter().GetResult() ?? string.Empty;
+            return text.Trim();
         }
 
-        return element.TextContentAsync().GetAwaiter().GetResult() ?? string.Empty;
+        // Use InnerTextAsync for visible text with normalized whitespace
+        return element.InnerTextAsync().GetAwaiter().GetResult() ?? string.Empty;
     }
 
     /// <summary>
@@ -292,6 +295,7 @@ public abstract class ControlBase : IControlObject
 
     /// <summary>
     /// Get element text asynchronously.
+    /// Uses InnerTextAsync which normalizes whitespace for visible text.
     /// </summary>
     public virtual async Task<string> GetTextAsync()
     {
@@ -307,10 +311,12 @@ public abstract class ControlBase : IControlObject
 
         if (tagName == "select")
         {
-            return await element.Locator("option:checked").TextContentAsync() ?? string.Empty;
+            var text = await element.Locator("option:checked").TextContentAsync() ?? string.Empty;
+            return text.Trim();
         }
 
-        return await element.TextContentAsync() ?? string.Empty;
+        // Use InnerTextAsync for visible text with normalized whitespace
+        return await element.InnerTextAsync() ?? string.Empty;
     }
 
     #endregion

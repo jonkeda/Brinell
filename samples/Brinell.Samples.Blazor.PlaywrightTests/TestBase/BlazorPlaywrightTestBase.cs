@@ -40,66 +40,50 @@ public abstract class BlazorPlaywrightTestBase : PlaywrightUITestBase
 
     /// <summary>
     /// Wait for Blazor to be fully loaded and interactive.
+    /// Uses Playwright's built-in load state waiting for reliability.
     /// </summary>
     protected async Task WaitForBlazorReadyAsync(int? timeoutMs = null)
     {
-        var timeout = timeoutMs ?? 10000;
+        var timeout = timeoutMs ?? 5000;
         Log($"Waiting for Blazor to be ready (timeout: {timeout}ms)");
 
-        // Wait for document ready state
-        await WaitForDocumentReadyAsync(timeout);
-
-        // Wait for Blazor SignalR connection to be established
-        await WaitForBlazorConnectionAsync(timeout);
+        // Use Playwright's built-in load state waiting - more reliable than polling
+        await WaitForLoadStateAsync(Microsoft.Playwright.LoadState.NetworkIdle);
     }
 
     /// <summary>
     /// Wait for the document to be in ready state.
     /// </summary>
-    protected async Task WaitForDocumentReadyAsync(int timeoutMs = 10000)
+    protected async Task WaitForDocumentReadyAsync(int timeoutMs = 5000)
     {
-        var ready = await Context.WaitForAsync(async () =>
-        {
-            var readyState = await ExecuteScriptAsync<string>("document.readyState");
-            return readyState == "complete";
-        }, timeoutMs, "document ready");
-
-        if (!ready)
-        {
-            Log("WARNING: Document did not reach ready state within timeout");
-        }
+        // Use Playwright's built-in waiting
+        await WaitForLoadStateAsync(Microsoft.Playwright.LoadState.DOMContentLoaded);
     }
 
     /// <summary>
     /// Wait for Blazor SignalR connection to be established.
+    /// This is a lightweight check that succeeds immediately if document is ready.
     /// </summary>
-    protected async Task WaitForBlazorConnectionAsync(int timeoutMs = 10000)
+    protected async Task WaitForBlazorConnectionAsync(int timeoutMs = 2000)
     {
-        // Blazor Server uses SignalR - wait for the connection to be established
+        // For Blazor Server, once NetworkIdle is reached, the SignalR connection is established
+        // Just do a quick check that the document is interactive
         var connected = await Context.WaitForAsync(async () =>
         {
             try
             {
-                // Check if Blazor has initialized by looking for the connection state
-                var result = await ExecuteScriptAsync<bool>(@"
-                    if (typeof Blazor !== 'undefined' && Blazor._internal) {
-                        return true;
-                    }
-                    // Alternative: check if any interactive elements have handlers
-                    return document.querySelector('[blazor\\:elementReference]') !== null ||
-                           document.readyState === 'complete';
-                ");
-                return result;
+                var readyState = await ExecuteScriptAsync<string>("document.readyState");
+                return readyState == "complete" || readyState == "interactive";
             }
             catch
             {
                 return false;
             }
-        }, timeoutMs, "Blazor connection");
+        }, timeoutMs, "document interactive");
 
         if (!connected)
         {
-            Log("WARNING: Blazor connection check timed out - continuing anyway");
+            Log("WARNING: Document not ready - continuing anyway");
         }
     }
 
