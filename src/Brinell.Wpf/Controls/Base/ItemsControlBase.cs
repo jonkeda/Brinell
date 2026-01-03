@@ -16,6 +16,14 @@ public abstract class ItemsControlBase : ControlBase, IItemsControl
     {
     }
 
+    /// <summary>
+    /// Create a control that searches within a container element.
+    /// </summary>
+    protected ItemsControlBase(FlaUITestContext context, IPageObject? page, AutomationElement container, string automationId)
+        : base(context, page, container, automationId)
+    {
+    }
+
     protected ItemsControlBase(FlaUITestContext context, string automationId)
         : base(context, automationId)
     {

@@ -15,6 +15,14 @@ public abstract class SelectorControlBase : ControlBase, ISelectorControl
     {
     }
 
+    /// <summary>
+    /// Create a control that searches within a container element.
+    /// </summary>
+    protected SelectorControlBase(FlaUITestContext context, IPageObject? page, AutomationElement container, string automationId)
+        : base(context, page, container, automationId)
+    {
+    }
+
     protected SelectorControlBase(FlaUITestContext context, string automationId)
         : base(context, automationId)
     {

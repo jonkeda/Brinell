@@ -1,22 +1,22 @@
 # PLAN-000: Master Implementation Plan
 
-**Created:** January 3, 2026  
+**Created:** January 3, 2026
 **Status:** In Progress
 
 ---
 
 ## Execution Order
 
-| # | Plan | Platform | Status |
-|---|------|----------|--------|
-| 1 | PLAN-002 | Brinell.Core | ✅ Complete |
-| 2 | PLAN-003 | Brinell.Maui | ✅ Complete |
-| 2b | PLAN-003b | MAUI Test Fixes | ✅ Complete (21/21 tests) |
-| 3 | PLAN-004 | Brinell.Wpf | ⏳ Next |
-| 4 | PLAN-005 | Brinell.WinForms | Not Started |
-| 5 | PLAN-006 | Brinell.Html | Not Started |
-| 6 | PLAN-007 | Brinell.Html.Playwright | Not Started |
-| 7 | PLAN-008 | Brinell.Stride | Not Started |
+| #  | Plan      | Platform                | Status                    |
+| -- | --------- | ----------------------- | ------------------------- |
+| 1  | PLAN-002  | Brinell.Core            | ✅ Complete               |
+| 2  | PLAN-003  | Brinell.Maui            | ✅ Complete               |
+| 2b | PLAN-003b | MAUI Test Fixes         | ✅ Complete (21/21 tests) |
+| 3  | PLAN-004  | Brinell.Wpf             | ✅ Complete (14/14 tests) |
+| 4  | PLAN-005  | Brinell.WinForms        | ⏳ Next                   |
+| 5  | PLAN-006  | Brinell.Html            | Not Started               |
+| 6  | PLAN-007  | Brinell.Html.Playwright | Not Started               |
+| 7  | PLAN-008  | Brinell.Stride          | Not Started               |
 
 ---
 
@@ -26,11 +26,13 @@
 1. Create PLAN-00X
 2. Implement changes
 3. Build platform
-4. Run tests (see docs/run/{Platform}.md)
-5. Fix errors
-6. Create/update docs/run/{Platform}.md
-7. Mark complete
-8. Next platform
+4. Create/update docs/run/{Platform}.md
+5. Run tests (see docs/run/{Platform}.md)
+6. document errors in PLAN-XXXb-{Platform}-Test-Fixes.md
+7. Fix errors
+8. Create/update docs/run/{Platform}.md
+9. Mark complete
+10. Next platform
 ```
 
 ---
@@ -49,25 +51,25 @@
 
 ## Key Updates Per Platform
 
-| Platform | Key Updates |
-|----------|-------------|
-| Core | ✅ IScrollableControl, PlatformExtensions, Exceptions |
-| MAUI | ✅ Container constructors, ScrollViewControl, Windows UIA fixes |
-| WPF | Add BusyPageBase, scroll support, container verification |
-| WinForms | Rename InputControlBase→TextControlBase, add missing base classes |
-| Html | Add BusyPageBase, ItemsControlBase, container/scroll support |
-| Html.Playwright | Add BusyPageBase, ItemsControlBase, scroll support |
-| Stride | Add StridePageBase, BusyPageBase, ItemsControlBase, scroll |
+| Platform        | Key Updates                                                        |
+| --------------- | ------------------------------------------------------------------ |
+| Core            | ✅ IScrollableControl, PlatformExtensions, Exceptions              |
+| MAUI            | ✅ Container constructors, ScrollViewControl, Windows UIA fixes    |
+| WPF             | ✅ ScrollViewControl, container constructors for all base classes  |
+| WinForms        | Rename InputControlBase→TextControlBase, add missing base classes |
+| Html            | Add BusyPageBase, ItemsControlBase, container/scroll support       |
+| Html.Playwright | Add BusyPageBase, ItemsControlBase, scroll support                 |
+| Stride          | Add StridePageBase, BusyPageBase, ItemsControlBase, scroll         |
 
 ---
 
 ## Current Progress
 
-- [x] PLAN-001: Platform Review Summary
-- [x] PLAN-002: Core Update (Complete)
-- [x] PLAN-003: MAUI Update (Complete)
-- [x] PLAN-003b: MAUI Test Fixes (21/21 passing)
-- [ ] PLAN-004: WPF Update
+- [X] PLAN-001: Platform Review Summary
+- [X] PLAN-002: Core Update (Complete)
+- [X] PLAN-003: MAUI Update (Complete)
+- [X] PLAN-003b: MAUI Test Fixes (21/21 passing)
+- [X] PLAN-004: WPF Update (14/14 passing)
 - [ ] PLAN-005: WinForms Update
 - [ ] PLAN-006: Html Update
 - [ ] PLAN-007: Playwright Update
