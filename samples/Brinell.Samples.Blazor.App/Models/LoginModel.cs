@@ -8,6 +8,11 @@ namespace Brinell.Samples.Blazor.App.Models;
 public class LoginModel
 {
     /// <summary>
+    /// Gets or sets the username.
+    /// </summary>
+    public string? Username { get; set; }
+
+    /// <summary>
     /// Gets or sets the email address.
     /// </summary>
     [Required(ErrorMessage = "Email is required")]

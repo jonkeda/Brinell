@@ -2,16 +2,16 @@
 
 <PageTitle>Counter - Brinell Blazor Sample</PageTitle>
 
-<h1 id="counter-title">Counter</h1>
+<h1 data-testid="counter-title">Counter</h1>
 
-<p role="status" id="count-display">Current count: @_currentCount</p>
+<p role="status" data-testid="count-display">Current count: @_currentCount</p>
 
-<button class="btn btn-primary" @onclick="IncrementCount" id="increment-btn">
+<button class="btn btn-primary" @onclick="IncrementCount" data-testid="increment-btn">
     Click me
 </button>
 
 <div class="mt-3">
-    <button class="btn btn-secondary" @onclick="ResetCount" id="reset-btn">
+    <button class="btn btn-secondary" @onclick="ResetCount" data-testid="reset-btn">
         Reset
     </button>
 </div>

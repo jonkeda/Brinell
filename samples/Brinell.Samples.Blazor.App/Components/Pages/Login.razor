@@ -4,16 +4,25 @@
 
 <PageTitle>Login - Brinell Blazor Sample</PageTitle>
 
-<h1 id="login-title">Login</h1>
+<h1 data-testid="login-title">Login</h1>
 
-<div class="row">
+<div class="row" data-testid="login-form">
     <div class="col-md-6">
         <EditForm Model="_loginModel" OnValidSubmit="HandleValidSubmit" FormName="LoginForm">
             <DataAnnotationsValidator />
 
             <div class="mb-3">
+                <label for="username-input" class="form-label">Username</label>
+                <InputText data-testid="username-input"
+                           class="form-control"
+                           @bind-Value="_loginModel.Username"
+                           placeholder="Enter your username"
+                           disabled="@_isLoading" />
+            </div>
+
+            <div class="mb-3">
                 <label for="email-input" class="form-label">Email</label>
-                <InputText id="email-input"
+                <InputText data-testid="email-input"
                            class="form-control"
                            @bind-Value="_loginModel.Email"
                            placeholder="Enter your email"
@@ -23,7 +32,7 @@
 
             <div class="mb-3">
                 <label for="password-input" class="form-label">Password</label>
-                <InputText id="password-input"
+                <InputText data-testid="password-input"
                            type="password"
                            class="form-control"
                            @bind-Value="_loginModel.Password"
@@ -34,25 +43,25 @@
 
             @if (!string.IsNullOrEmpty(_errorMessage))
             {
-                <div class="alert alert-danger" role="alert" id="error-message">
+                <div class="alert alert-danger" role="alert" data-testid="error-message">
                     @_errorMessage
                 </div>
             }
 
             @if (_isSuccess)
             {
-                <div class="alert alert-success" role="alert" id="success-message">
+                <div class="alert alert-success" role="alert" data-testid="success-message">
                     Login successful! Redirecting...
                 </div>
             }
 
             <button type="submit"
                     class="btn btn-primary"
-                    id="login-btn"
+                    data-testid="login-btn"
                     disabled="@_isLoading">
                 @if (_isLoading)
                 {
-                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" id="loading-spinner"></span>
+                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" data-testid="loading-spinner"></span>
                     <span>Logging in...</span>
                 }
                 else
@@ -66,7 +75,7 @@
 
 <div class="mt-4">
     <h3>Test Credentials</h3>
-    <p id="test-credentials-info">
+    <p data-testid="test-credentials-info">
         Use <strong>test@example.com</strong> with password <strong>password123</strong> to login successfully.
     </p>
 </div>

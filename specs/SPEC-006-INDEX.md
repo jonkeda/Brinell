@@ -1,6 +1,6 @@
 # SPEC-006: ControlObject Framework - Complete Specification
 
-**Version:** 1.1  
+**Version:** 1.2  
 **Status:** Final  
 **Date:** January 2026
 
@@ -12,6 +12,10 @@
 |----------|-------------|
 | [SPEC-006-001](SPEC-006-001-INTERFACES.md) | Interface Definitions |
 | [SPEC-006-002](SPEC-006-002-CLASSES.md) | Class Definitions |
+| [SPEC-006-003](SPEC-006-003-HIERARCHY-INDEX.md) | Control Hierarchy Design (v1.2) |
+| [SPEC-006-003-MAUI](SPEC-006-003-HIERARCHY-MAUI.md) | MAUI Hierarchy |
+| [SPEC-006-003-BLAZOR](SPEC-006-003-HIERARCHY-BLAZOR.md) | Blazor Async Hierarchy |
+| [SPEC-006-004](SPEC-006-004-TESTING-GUIDE.md) | Testing & Mockability Guide |
 
 ---
 
