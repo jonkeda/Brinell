@@ -1610,3 +1610,911 @@ public class TestableEditorControl : TestableTextControlBase
         }
     }
 }
+
+/// <summary>
+/// Testable RadioButton control for unit testing.
+/// RadioButton can only be checked, not unchecked directly.
+/// </summary>
+public class TestableRadioButtonControl : TestableToggleControlBase
+{
+    public TestableRadioButtonControl(TestableMauiTestContext context, ControlLocator locator, IPageObject? page = null)
+        : base(context, locator, page)
+    {
+    }
+
+    public TestableRadioButtonControl(TestableMauiTestContext context, string automationId, IPageObject? page = null)
+        : base(context, automationId, page)
+    {
+    }
+
+    /// <summary>
+    /// Selects this radio button. Alias for Check.
+    /// </summary>
+    public void Select(int? timeoutMs = null)
+    {
+        Log("Select()");
+        Check(timeoutMs);
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// RadioButtons cannot be unchecked directly - select another RadioButton in the group instead.
+    /// This method is a no-op for RadioButton.
+    /// </remarks>
+    public override void Uncheck(int? timeoutMs = null)
+    {
+        Log("Uncheck() - RadioButton cannot be unchecked directly");
+        // RadioButtons cannot be unchecked directly
+    }
+}
+
+/// <summary>
+/// Abstract base class for testable range controls.
+/// </summary>
+public abstract class TestableRangeControlBase : TestableControlBase, IRangeControlObject
+{
+    protected TestableRangeControlBase(TestableMauiTestContext context, ControlLocator locator, IPageObject? page)
+        : base(context, locator, page)
+    {
+    }
+
+    protected TestableRangeControlBase(TestableMauiTestContext context, string automationId, IPageObject? page)
+        : base(context, automationId, page)
+    {
+    }
+
+    protected double _value = 50;
+    protected double _minimum = 0;
+    protected double _maximum = 100;
+
+    /// <inheritdoc />
+    public virtual double GetValue(int? timeoutMs = null)
+    {
+        FindElement();
+        return _value;
+    }
+
+    /// <inheritdoc />
+    public virtual void SetValue(double? value, int? timeoutMs = null)
+    {
+        if (value is null) return;
+        
+        Log($"SetValue({value})");
+        FindElementRequired(timeoutMs);
+        
+        // Clamp to range
+        _value = Math.Clamp(value.Value, _minimum, _maximum);
+    }
+
+    /// <inheritdoc />
+    public virtual bool WaitValue(double? expected, double tolerance = 0.01, int? timeoutMs = null)
+    {
+        if (expected is null) return true;
+        return Math.Abs(_value - expected.Value) <= tolerance;
+    }
+
+    /// <inheritdoc />
+    public virtual void AssertValue(double? expected, double tolerance = 0.01, string? message = null, int? timeoutMs = null)
+    {
+        if (expected is null) return;
+
+        if (Math.Abs(_value - expected.Value) > tolerance)
+        {
+            throw new AssertionException(
+                message ?? $"Expected value {expected} (±{tolerance}), but was {_value}",
+                Locator.Value,
+                "AssertValue");
+        }
+    }
+
+    /// <inheritdoc />
+    public virtual double GetMinimum(int? timeoutMs = null) => _minimum;
+
+    /// <inheritdoc />
+    public virtual double GetMaximum(int? timeoutMs = null) => _maximum;
+
+    /// <inheritdoc />
+    public virtual (double minimum, double maximum) GetRange(int? timeoutMs = null) => (_minimum, _maximum);
+
+    /// <inheritdoc />
+    public virtual double GetValuePercent(int? timeoutMs = null)
+    {
+        if (Math.Abs(_maximum - _minimum) < 0.0001) return 0;
+        return (_value - _minimum) / (_maximum - _minimum);
+    }
+
+    /// <inheritdoc />
+    public virtual void SetValuePercent(double? percent, int? timeoutMs = null)
+    {
+        if (percent is null) return;
+        
+        Log($"SetValuePercent({percent})");
+        var p = Math.Clamp(percent.Value, 0, 1);
+        _value = _minimum + (_maximum - _minimum) * p;
+    }
+
+    /// <inheritdoc />
+    public virtual void Increase(int? timeoutMs = null)
+    {
+        Log("Increase()");
+        var step = (_maximum - _minimum) / 10;
+        _value = Math.Min(_value + step, _maximum);
+    }
+
+    /// <inheritdoc />
+    public virtual void Decrease(int? timeoutMs = null)
+    {
+        Log("Decrease()");
+        var step = (_maximum - _minimum) / 10;
+        _value = Math.Max(_value - step, _minimum);
+    }
+
+    /// <inheritdoc />
+    public virtual void SetToMinimum(int? timeoutMs = null)
+    {
+        Log("SetToMinimum()");
+        _value = _minimum;
+    }
+
+    /// <inheritdoc />
+    public virtual void SetToMaximum(int? timeoutMs = null)
+    {
+        Log("SetToMaximum()");
+        _value = _maximum;
+    }
+
+    /// <summary>
+    /// Sets the range for testing purposes.
+    /// </summary>
+    public void SetRange(double min, double max)
+    {
+        _minimum = min;
+        _maximum = max;
+    }
+}
+
+/// <summary>
+/// Testable slider control for unit testing.
+/// </summary>
+public class TestableSliderControl : TestableRangeControlBase
+{
+    public TestableSliderControl(TestableMauiTestContext context, ControlLocator locator, IPageObject? page = null)
+        : base(context, locator, page)
+    {
+    }
+
+    public TestableSliderControl(TestableMauiTestContext context, string automationId, IPageObject? page = null)
+        : base(context, automationId, page)
+    {
+    }
+
+    /// <summary>
+    /// Slides to a specific percentage (0-100).
+    /// </summary>
+    public void SlideToPercent(double percent, int? timeoutMs = null)
+    {
+        Log($"SlideToPercent({percent})");
+        SetValuePercent(percent / 100.0, timeoutMs);
+    }
+
+    /// <summary>
+    /// Slides left (decreases value).
+    /// </summary>
+    public void SlideLeft(int? timeoutMs = null)
+    {
+        Log("SlideLeft()");
+        Decrease(timeoutMs);
+    }
+
+    /// <summary>
+    /// Slides right (increases value).
+    /// </summary>
+    public void SlideRight(int? timeoutMs = null)
+    {
+        Log("SlideRight()");
+        Increase(timeoutMs);
+    }
+}
+
+/// <summary>
+/// Testable stepper control for unit testing.
+/// </summary>
+public class TestableStepperControl : TestableRangeControlBase
+{
+    private double _increment = 1;
+
+    public TestableStepperControl(TestableMauiTestContext context, ControlLocator locator, IPageObject? page = null)
+        : base(context, locator, page)
+    {
+        _value = 0;
+    }
+
+    public TestableStepperControl(TestableMauiTestContext context, string automationId, IPageObject? page = null)
+        : base(context, automationId, page)
+    {
+        _value = 0;
+    }
+
+    /// <summary>
+    /// Gets the increment/step size.
+    /// </summary>
+    public double GetIncrement(int? timeoutMs = null)
+    {
+        return _increment;
+    }
+
+    /// <summary>
+    /// Sets the increment for testing purposes.
+    /// </summary>
+    public void SetIncrement(double increment)
+    {
+        _increment = increment;
+    }
+
+    /// <inheritdoc />
+    public override void Increase(int? timeoutMs = null)
+    {
+        Log("Increase()");
+        _value = Math.Min(_value + _increment, _maximum);
+    }
+
+    /// <inheritdoc />
+    public override void Decrease(int? timeoutMs = null)
+    {
+        Log("Decrease()");
+        _value = Math.Max(_value - _increment, _minimum);
+    }
+
+    /// <summary>
+    /// Clicks the increment button once.
+    /// </summary>
+    public void Increment(int? timeoutMs = null)
+    {
+        Log("Increment()");
+        Increase(timeoutMs);
+    }
+
+    /// <summary>
+    /// Clicks the decrement button once.
+    /// </summary>
+    public void Decrement(int? timeoutMs = null)
+    {
+        Log("Decrement()");
+        Decrease(timeoutMs);
+    }
+
+    /// <summary>
+    /// Clicks the increment button multiple times.
+    /// </summary>
+    public void IncrementBy(int steps, int? timeoutMs = null)
+    {
+        Log($"IncrementBy({steps})");
+        for (int i = 0; i < steps; i++)
+            Increase(timeoutMs);
+    }
+
+    /// <summary>
+    /// Clicks the decrement button multiple times.
+    /// </summary>
+    public void DecrementBy(int steps, int? timeoutMs = null)
+    {
+        Log($"DecrementBy({steps})");
+        for (int i = 0; i < steps; i++)
+            Decrease(timeoutMs);
+    }
+}
+
+/// <summary>
+/// Testable date picker control for unit testing.
+/// </summary>
+public class TestableDatePickerControl : TestableControlBase, IDateControlObject
+{
+    private DateTime _date = DateTime.Today;
+    private DateTime _minDate = DateTime.MinValue;
+    private DateTime _maxDate = DateTime.MaxValue;
+    private bool _isPickerOpen = false;
+
+    public TestableDatePickerControl(TestableMauiTestContext context, ControlLocator locator, IPageObject? page = null)
+        : base(context, locator, page)
+    {
+    }
+
+    public TestableDatePickerControl(TestableMauiTestContext context, string automationId, IPageObject? page = null)
+        : base(context, automationId, page)
+    {
+    }
+
+    /// <inheritdoc />
+    public DateTime GetDate(int? timeoutMs = null)
+    {
+        FindElement();
+        return _date;
+    }
+
+    /// <inheritdoc />
+    public void SetDate(DateTime? date, int? timeoutMs = null)
+    {
+        if (date is null) return;
+        Log($"SetDate({date:yyyy-MM-dd})");
+        FindElementRequired(timeoutMs);
+        _date = date.Value.Date;
+    }
+
+    /// <inheritdoc />
+    public bool WaitDate(DateTime? expected, int? timeoutMs = null)
+    {
+        if (expected is null) return true;
+        return _date.Date == expected.Value.Date;
+    }
+
+    /// <inheritdoc />
+    public void AssertDate(DateTime? expected, string? message = null, int? timeoutMs = null)
+    {
+        if (expected is null) return;
+
+        if (_date.Date != expected.Value.Date)
+        {
+            throw new AssertionException(
+                message ?? $"Expected date {expected:yyyy-MM-dd} but was {_date:yyyy-MM-dd}",
+                Locator.Value,
+                "AssertDate");
+        }
+    }
+
+    /// <inheritdoc />
+    public void AssertDateInRange(DateTime? min, DateTime? max, string? message = null, int? timeoutMs = null)
+    {
+        if (min.HasValue && _date.Date < min.Value.Date)
+        {
+            throw new AssertionException(
+                message ?? $"Date {_date:yyyy-MM-dd} is less than minimum {min:yyyy-MM-dd}",
+                Locator.Value,
+                "AssertDateInRange");
+        }
+
+        if (max.HasValue && _date.Date > max.Value.Date)
+        {
+            throw new AssertionException(
+                message ?? $"Date {_date:yyyy-MM-dd} is greater than maximum {max:yyyy-MM-dd}",
+                Locator.Value,
+                "AssertDateInRange");
+        }
+    }
+
+    /// <inheritdoc />
+    public DateTime GetMinDate(int? timeoutMs = null) => _minDate;
+
+    /// <inheritdoc />
+    public DateTime GetMaxDate(int? timeoutMs = null) => _maxDate;
+
+    /// <inheritdoc />
+    public bool IsPickerOpen(int? timeoutMs = null) => _isPickerOpen;
+
+    /// <inheritdoc />
+    public void OpenPicker(int? timeoutMs = null)
+    {
+        Log("OpenPicker");
+        _isPickerOpen = true;
+    }
+
+    /// <inheritdoc />
+    public void ClosePicker(int? timeoutMs = null)
+    {
+        Log("ClosePicker");
+        _isPickerOpen = false;
+    }
+
+    /// <summary>
+    /// Sets the date range for testing purposes.
+    /// </summary>
+    public void SetDateRange(DateTime min, DateTime max)
+    {
+        _minDate = min;
+        _maxDate = max;
+    }
+
+    /// <summary>
+    /// Gets the date format.
+    /// </summary>
+    public string GetFormat(int? timeoutMs = null)
+    {
+        return "d";
+    }
+}
+
+/// <summary>
+/// Testable time picker control for unit testing.
+/// </summary>
+public class TestableTimePickerControl : TestableControlBase, ITimeControlObject
+{
+    private TimeSpan _time = TimeSpan.FromHours(12);
+    private TimeSpan _minTime = TimeSpan.Zero;
+    private TimeSpan _maxTime = new TimeSpan(23, 59, 59);
+    private bool _isPickerOpen = false;
+
+    public TestableTimePickerControl(TestableMauiTestContext context, ControlLocator locator, IPageObject? page = null)
+        : base(context, locator, page)
+    {
+    }
+
+    public TestableTimePickerControl(TestableMauiTestContext context, string automationId, IPageObject? page = null)
+        : base(context, automationId, page)
+    {
+    }
+
+    /// <inheritdoc />
+    public TimeSpan GetTime(int? timeoutMs = null)
+    {
+        FindElement();
+        return _time;
+    }
+
+    /// <inheritdoc />
+    public void SetTime(TimeSpan? time, int? timeoutMs = null)
+    {
+        if (time is null) return;
+        Log($"SetTime({time})");
+        FindElementRequired(timeoutMs);
+        _time = time.Value;
+    }
+
+    /// <inheritdoc />
+    public bool WaitTime(TimeSpan? expected, int? timeoutMs = null)
+    {
+        if (expected is null) return true;
+        return _time.Hours == expected.Value.Hours && _time.Minutes == expected.Value.Minutes;
+    }
+
+    /// <inheritdoc />
+    public void AssertTime(TimeSpan? expected, string? message = null, int? timeoutMs = null)
+    {
+        if (expected is null) return;
+
+        if (_time.Hours != expected.Value.Hours || _time.Minutes != expected.Value.Minutes)
+        {
+            throw new AssertionException(
+                message ?? $"Expected time {expected:hh\\:mm} but was {_time:hh\\:mm}",
+                Locator.Value,
+                "AssertTime");
+        }
+    }
+
+    /// <inheritdoc />
+    public void AssertTimeInRange(TimeSpan? min, TimeSpan? max, string? message = null, int? timeoutMs = null)
+    {
+        if (min.HasValue && _time < min.Value)
+        {
+            throw new AssertionException(
+                message ?? $"Time {_time:hh\\:mm} is less than minimum {min:hh\\:mm}",
+                Locator.Value,
+                "AssertTimeInRange");
+        }
+
+        if (max.HasValue && _time > max.Value)
+        {
+            throw new AssertionException(
+                message ?? $"Time {_time:hh\\:mm} is greater than maximum {max:hh\\:mm}",
+                Locator.Value,
+                "AssertTimeInRange");
+        }
+    }
+
+    /// <inheritdoc />
+    public TimeSpan GetMinTime(int? timeoutMs = null) => _minTime;
+
+    /// <inheritdoc />
+    public TimeSpan GetMaxTime(int? timeoutMs = null) => _maxTime;
+
+    /// <inheritdoc />
+    public bool IsPickerOpen(int? timeoutMs = null) => _isPickerOpen;
+
+    /// <inheritdoc />
+    public void OpenPicker(int? timeoutMs = null)
+    {
+        Log("OpenPicker");
+        _isPickerOpen = true;
+    }
+
+    /// <inheritdoc />
+    public void ClosePicker(int? timeoutMs = null)
+    {
+        Log("ClosePicker");
+        _isPickerOpen = false;
+    }
+
+    /// <summary>
+    /// Sets the time range for testing purposes.
+    /// </summary>
+    public void SetTimeRange(TimeSpan min, TimeSpan max)
+    {
+        _minTime = min;
+        _maxTime = max;
+    }
+
+    /// <summary>
+    /// Gets the time format.
+    /// </summary>
+    public string GetFormat(int? timeoutMs = null)
+    {
+        return "t";
+    }
+}
+
+/// <summary>
+/// Testable progress bar control for unit testing.
+/// </summary>
+public class TestableProgressBarControl : TestableControlBase, IProgressControlObject
+{
+    private double _progress = 0;
+    private double _min = 0;
+    private double _max = 1;
+
+    public TestableProgressBarControl(TestableMauiTestContext context, ControlLocator locator, IPageObject? page = null)
+        : base(context, locator, page)
+    {
+    }
+
+    public TestableProgressBarControl(TestableMauiTestContext context, string automationId, IPageObject? page = null)
+        : base(context, automationId, page)
+    {
+    }
+
+    /// <inheritdoc />
+    public double GetProgress(int? timeoutMs = null)
+    {
+        FindElement();
+        return _progress;
+    }
+
+    /// <inheritdoc />
+    public bool WaitProgress(double? expected, int? timeoutMs = null)
+    {
+        if (expected is null) return true;
+        return Math.Abs(_progress - expected.Value) < 0.001;
+    }
+
+    /// <inheritdoc />
+    public void AssertProgress(double? expected, double? tolerance = null, string? message = null, int? timeoutMs = null)
+    {
+        if (expected is null) return;
+
+        var tol = tolerance ?? 0.001;
+        if (Math.Abs(_progress - expected.Value) > tol)
+        {
+            throw new AssertionException(
+                message ?? $"Expected progress {expected} but was {_progress}",
+                Locator.Value,
+                "AssertProgress");
+        }
+    }
+
+    /// <inheritdoc />
+    public (double min, double max) GetMinMax(int? timeoutMs = null) => (_min, _max);
+
+    /// <inheritdoc />
+    public double GetProgressPercent(int? timeoutMs = null)
+    {
+        if (Math.Abs(_max - _min) < 0.001) return 0;
+        return (_progress - _min) / (_max - _min) * 100;
+    }
+
+    /// <inheritdoc />
+    public bool IsComplete(int? timeoutMs = null)
+    {
+        return Math.Abs(_progress - _max) < 0.001;
+    }
+
+    /// <inheritdoc />
+    public bool WaitComplete(int? timeoutMs = null)
+    {
+        return IsComplete();
+    }
+
+    /// <inheritdoc />
+    public void AssertComplete(string? message = null, int? timeoutMs = null)
+    {
+        if (!IsComplete())
+        {
+            throw new AssertionException(
+                message ?? $"Expected progress to be complete ({_max}) but was {_progress}",
+                Locator.Value,
+                "AssertComplete");
+        }
+    }
+
+    /// <summary>
+    /// Sets the progress value for testing purposes.
+    /// </summary>
+    public void SetProgress(double progress)
+    {
+        _progress = progress;
+    }
+
+    /// <summary>
+    /// Sets the min/max range for testing purposes.
+    /// </summary>
+    public void SetMinMax(double min, double max)
+    {
+        _min = min;
+        _max = max;
+    }
+
+    /// <summary>
+    /// Gets the progress color.
+    /// </summary>
+    public string? GetProgressColor(int? timeoutMs = null)
+    {
+        return "Blue";
+    }
+}
+
+/// <summary>
+/// Testable image control for unit testing.
+/// </summary>
+public class TestableImageControl : TestableControlBase, IImageControlObject
+{
+    private string? _source = "image.png";
+    private (int width, int height) _dimensions = (100, 100);
+    private bool _isLoading = false;
+
+    public TestableImageControl(TestableMauiTestContext context, ControlLocator locator, IPageObject? page = null)
+        : base(context, locator, page)
+    {
+    }
+
+    public TestableImageControl(TestableMauiTestContext context, string automationId, IPageObject? page = null)
+        : base(context, automationId, page)
+    {
+    }
+
+    /// <inheritdoc />
+    public string? GetSource(int? timeoutMs = null)
+    {
+        FindElement();
+        return _source;
+    }
+
+    /// <inheritdoc />
+    public bool HasSource(int? timeoutMs = null)
+    {
+        return !string.IsNullOrEmpty(_source);
+    }
+
+    /// <inheritdoc />
+    public void AssertSource(string? expected, string? message = null, int? timeoutMs = null)
+    {
+        if (expected is null) return;
+
+        if (_source != expected)
+        {
+            throw new AssertionException(
+                message ?? $"Expected image source '{expected}' but was '{_source}'",
+                Locator.Value,
+                "AssertSource");
+        }
+    }
+
+    /// <inheritdoc />
+    public (int width, int height) GetDimensions(int? timeoutMs = null)
+    {
+        FindElement();
+        return _dimensions;
+    }
+
+    /// <inheritdoc />
+    public void AssertDimensions(int? expectedWidth, int? expectedHeight, string? message = null, int? timeoutMs = null)
+    {
+        if (expectedWidth.HasValue && _dimensions.width != expectedWidth.Value)
+        {
+            throw new AssertionException(
+                message ?? $"Expected width {expectedWidth} but was {_dimensions.width}",
+                Locator.Value,
+                "AssertDimensions");
+        }
+
+        if (expectedHeight.HasValue && _dimensions.height != expectedHeight.Value)
+        {
+            throw new AssertionException(
+                message ?? $"Expected height {expectedHeight} but was {_dimensions.height}",
+                Locator.Value,
+                "AssertDimensions");
+        }
+    }
+
+    /// <inheritdoc />
+    public bool IsLoading(int? timeoutMs = null)
+    {
+        FindElement();
+        return _isLoading;
+    }
+
+    /// <inheritdoc />
+    public bool WaitLoaded(int? timeoutMs = null)
+    {
+        return !_isLoading;
+    }
+
+    /// <inheritdoc />
+    public void AssertLoaded(string? message = null, int? timeoutMs = null)
+    {
+        if (_isLoading)
+        {
+            throw new AssertionException(
+                message ?? "Image is still loading",
+                Locator.Value,
+                "AssertLoaded");
+        }
+    }
+
+    /// <summary>
+    /// Sets the source for testing purposes.
+    /// </summary>
+    public void SetSource(string? source)
+    {
+        _source = source;
+    }
+
+    /// <summary>
+    /// Sets the dimensions for testing purposes.
+    /// </summary>
+    public void SetDimensions(int width, int height)
+    {
+        _dimensions = (width, height);
+    }
+
+    /// <summary>
+    /// Sets the loading state for testing purposes.
+    /// </summary>
+    public void SetLoading(bool isLoading)
+    {
+        _isLoading = isLoading;
+    }
+
+    /// <summary>
+    /// Gets the aspect ratio setting.
+    /// </summary>
+    public string? GetAspect(int? timeoutMs = null)
+    {
+        return "AspectFit";
+    }
+
+    /// <summary>
+    /// Checks if the image is opaque.
+    /// </summary>
+    public bool IsOpaque(int? timeoutMs = null)
+    {
+        return true;
+    }
+}
+
+/// <summary>
+/// Testable scroll view control for unit testing.
+/// </summary>
+public class TestableScrollViewControl : TestableControlBase, IScrollableControlObject
+{
+    private (double horizontal, double vertical) _scrollPosition = (0, 0);
+    private bool _canScrollH = false;
+    private bool _canScrollV = true;
+
+    public TestableScrollViewControl(TestableMauiTestContext context, ControlLocator locator, IPageObject? page = null)
+        : base(context, locator, page)
+    {
+    }
+
+    public TestableScrollViewControl(TestableMauiTestContext context, string automationId, IPageObject? page = null)
+        : base(context, automationId, page)
+    {
+    }
+
+    /// <inheritdoc />
+    public (double horizontal, double vertical) GetScrollPosition(int? timeoutMs = null)
+    {
+        FindElement();
+        return _scrollPosition;
+    }
+
+    /// <inheritdoc />
+    public bool CanScrollHorizontally(int? timeoutMs = null)
+    {
+        return _canScrollH;
+    }
+
+    /// <inheritdoc />
+    public bool CanScrollVertically(int? timeoutMs = null)
+    {
+        return _canScrollV;
+    }
+
+    /// <inheritdoc />
+    public void ScrollTo(double? horizontalPercent, double? verticalPercent, int? timeoutMs = null)
+    {
+        Log($"ScrollTo({horizontalPercent}, {verticalPercent})");
+        if (horizontalPercent.HasValue)
+            _scrollPosition = (horizontalPercent.Value, _scrollPosition.vertical);
+        if (verticalPercent.HasValue)
+            _scrollPosition = (_scrollPosition.horizontal, verticalPercent.Value);
+    }
+
+    /// <inheritdoc />
+    public void ScrollToTop(int? timeoutMs = null)
+    {
+        Log("ScrollToTop");
+        _scrollPosition = (_scrollPosition.horizontal, 0);
+    }
+
+    /// <inheritdoc />
+    public void ScrollToBottom(int? timeoutMs = null)
+    {
+        Log("ScrollToBottom");
+        _scrollPosition = (_scrollPosition.horizontal, 100);
+    }
+
+    /// <inheritdoc />
+    public void ScrollToLeft(int? timeoutMs = null)
+    {
+        Log("ScrollToLeft");
+        _scrollPosition = (0, _scrollPosition.vertical);
+    }
+
+    /// <inheritdoc />
+    public void ScrollToRight(int? timeoutMs = null)
+    {
+        Log("ScrollToRight");
+        _scrollPosition = (100, _scrollPosition.vertical);
+    }
+
+    /// <inheritdoc />
+    public void ScrollUp(double? amount = null, int? timeoutMs = null)
+    {
+        Log($"ScrollUp({amount})");
+        var newV = Math.Max(0, _scrollPosition.vertical - (amount ?? 10));
+        _scrollPosition = (_scrollPosition.horizontal, newV);
+    }
+
+    /// <inheritdoc />
+    public void ScrollDown(double? amount = null, int? timeoutMs = null)
+    {
+        Log($"ScrollDown({amount})");
+        var newV = Math.Min(100, _scrollPosition.vertical + (amount ?? 10));
+        _scrollPosition = (_scrollPosition.horizontal, newV);
+    }
+
+    /// <inheritdoc />
+    public void ScrollLeft(double? amount = null, int? timeoutMs = null)
+    {
+        Log($"ScrollLeft({amount})");
+        var newH = Math.Max(0, _scrollPosition.horizontal - (amount ?? 10));
+        _scrollPosition = (newH, _scrollPosition.vertical);
+    }
+
+    /// <inheritdoc />
+    public void ScrollRight(double? amount = null, int? timeoutMs = null)
+    {
+        Log($"ScrollRight({amount})");
+        var newH = Math.Min(100, _scrollPosition.horizontal + (amount ?? 10));
+        _scrollPosition = (newH, _scrollPosition.vertical);
+    }
+
+    /// <inheritdoc />
+    public void ScrollToElement(IControlObject? control, int? timeoutMs = null)
+    {
+        if (control is null) return;
+        Log($"ScrollToElement({control})");
+        // For testing, just pretend we scrolled to make the element visible
+    }
+
+    /// <inheritdoc />
+    public bool WaitScrollComplete(int? timeoutMs = null)
+    {
+        return true;
+    }
+
+    /// <summary>
+    /// Sets scroll capabilities for testing purposes.
+    /// </summary>
+    public void SetScrollCapabilities(bool canScrollH, bool canScrollV)
+    {
+        _canScrollH = canScrollH;
+        _canScrollV = canScrollV;
+    }
+}
