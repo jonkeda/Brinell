@@ -1,0 +1,361 @@
+@page "/datatable"
+@using Brinell.Samples.Blazor.App.Models
+@inject Brinell.Samples.Blazor.App.Services.DataService DataService
+
+<PageTitle>Data Table - Brinell Blazor Sample</PageTitle>
+
+<div data-automation-id="DataTablePage">
+    <h1 data-automation-id="DataTableTitle">Data Management</h1>
+
+    <!-- Search and Filter Section -->
+    <div class="card mb-4" data-automation-id="FilterSection">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Search</label>
+                    <input type="text" class="form-control" placeholder="Search..."
+                           @bind="searchTerm" @bind:event="oninput" @onkeyup="OnSearchChange"
+                           data-automation-id="SearchInput" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Category</label>
+                    <select class="form-select" @bind="selectedCategory" @bind:after="ApplyFilter"
+                            data-automation-id="CategoryFilter">
+                        <option value="">All Categories</option>
+                        @foreach (var cat in categories)
+                        {
+                            <option value="@cat">@cat</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select class="form-select" @bind="selectedStatus" @bind:after="ApplyFilter"
+                            data-automation-id="StatusFilter">
+                        <option value="">All Statuses</option>
+                        @foreach (var status in statuses)
+                        {
+                            <option value="@status">@status</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button class="btn btn-outline-secondary w-100" @onclick="ClearFilters"
+                            data-automation-id="ClearFiltersButton">Clear</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Actions -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="btn-group" data-automation-id="BulkActions">
+            <button class="btn btn-outline-primary" @onclick="SelectAllVisible" disabled="@(!filteredItems.Any())"
+                    data-automation-id="SelectAllButton">Select All</button>
+            <button class="btn btn-outline-secondary" @onclick="ClearSelection" disabled="@(!selectedItems.Any())"
+                    data-automation-id="ClearSelectionButton">Clear Selection</button>
+            <button class="btn btn-outline-danger" @onclick="DeleteSelected" disabled="@(!selectedItems.Any())"
+                    data-automation-id="DeleteSelectedButton">Delete Selected (@selectedItems.Count)</button>
+        </div>
+        <span class="text-muted" data-automation-id="RecordCount">
+            Showing @GetCurrentPageItems().Count() of @filteredItems.Count records
+        </span>
+    </div>
+
+    <!-- Data Table -->
+    <div class="table-responsive" data-automation-id="TableContainer">
+        <table class="table table-striped table-hover" data-automation-id="DataTable">
+            <thead class="table-dark">
+                <tr>
+                    <th style="width: 40px;">
+                        <input type="checkbox" class="form-check-input"
+                               @onchange="ToggleSelectAll"
+                               data-automation-id="SelectAllCheckbox" />
+                    </th>
+                    <th @onclick="SortById" style="cursor: pointer;"
+                        data-automation-id="HeaderId">
+                        ID @GetSortIcon("Id")
+                    </th>
+                    <th @onclick="SortByTitle" style="cursor: pointer;"
+                        data-automation-id="HeaderTitle">
+                        Title @GetSortIcon("Title")
+                    </th>
+                    <th data-automation-id="HeaderCategory">Category</th>
+                    <th @onclick="SortByStatus" style="cursor: pointer;"
+                        data-automation-id="HeaderStatus">
+                        Status @GetSortIcon("Status")
+                    </th>
+                    <th @onclick="SortByPrice" style="cursor: pointer;"
+                        data-automation-id="HeaderPrice">
+                        Price @GetSortIcon("Price")
+                    </th>
+                    <th data-automation-id="HeaderActions">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (isLoading)
+                {
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </td>
+                    </tr>
+                }
+                else if (!filteredItems.Any())
+                {
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-muted"
+                            data-automation-id="NoDataMessage">
+                            No data found
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var item in GetCurrentPageItems())
+                    {
+                        <tr class="@(selectedItems.Contains(item.Id) ? "table-primary" : "")"
+                            data-automation-id="@("Row_" + item.Id)">
+                            <td>
+                                <input type="checkbox" class="form-check-input"
+                                       checked="@selectedItems.Contains(item.Id)"
+                                       @onchange="() => ToggleItemSelection(item.Id)"
+                                       data-automation-id="@("RowCheckbox_" + item.Id)" />
+                            </td>
+                            <td data-automation-id="@("Cell_Id_" + item.Id)">@item.Id</td>
+                            <td data-automation-id="@("Cell_Title_" + item.Id)">@item.Title</td>
+                            <td data-automation-id="@("Cell_Category_" + item.Id)">@item.Category</td>
+                            <td>
+                                <span class="badge @GetStatusBadgeClass(item.Status)"
+                                      data-automation-id="@("Cell_Status_" + item.Id)">
+                                    @item.Status
+                                </span>
+                            </td>
+                            <td data-automation-id="@("Cell_Price_" + item.Id)">@item.Price.ToString("C")</td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary" @onclick="() => ViewItem(item)"
+                                            data-automation-id="@("ViewButton_" + item.Id)">View</button>
+                                    <button class="btn btn-outline-secondary" @onclick="() => EditItem(item)"
+                                            data-automation-id="@("EditButton_" + item.Id)">Edit</button>
+                                    <button class="btn btn-outline-danger" @onclick="() => DeleteItem(item)"
+                                            data-automation-id="@("DeleteButton_" + item.Id)">Delete</button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    <nav aria-label="Table pagination" data-automation-id="TablePagination">
+        <ul class="pagination justify-content-center">
+            <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                <button class="page-link" @onclick="GoPrevPage" data-automation-id="PrevPageButton">
+                    Previous
+                </button>
+            </li>
+            @for (int i = 1; i <= totalPages; i++)
+            {
+                var pageNum = i;
+                <li class="page-item @(currentPage == pageNum ? "active" : "")">
+                    <button class="page-link" @onclick="() => GoToPage(pageNum)"
+                            data-automation-id="@("PageButton_" + pageNum)">@pageNum</button>
+                </li>
+            }
+            <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                <button class="page-link" @onclick="GoNextPage" data-automation-id="NextPageButton">
+                    Next
+                </button>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Page Size Selector -->
+    <div class="d-flex justify-content-center align-items-center gap-2 mt-2">
+        <span>Items per page:</span>
+        <select class="form-select form-select-sm" style="width: auto;" @bind="pageSize" @bind:after="OnPageSizeChange"
+                data-automation-id="PageSizeSelector">
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+        </select>
+    </div>
+
+    <!-- Refresh Button -->
+    <div class="mt-4 text-center">
+        <button class="btn btn-primary" @onclick="LoadData" disabled="@isLoading"
+                data-automation-id="RefreshButton">
+            @if (isLoading)
+            {
+                <span class="spinner-border spinner-border-sm" role="status"></span>
+            }
+            Refresh Data
+        </button>
+    </div>
+</div>
+
+@code {
+    private List<DataItem> allItems = new();
+    private List<DataItem> filteredItems = new();
+    private HashSet<int> selectedItems = new();
+    private List<string> categories = new();
+    private List<string> statuses = new();
+
+    private string searchTerm = "";
+    private string selectedCategory = "";
+    private string selectedStatus = "";
+    private string sortColumn = "Id";
+    private bool sortAscending = true;
+    private bool isLoading = true;
+
+    private int currentPage = 1;
+    private int pageSize = 10;
+    private int totalPages => Math.Max(1, (int)Math.Ceiling(filteredItems.Count / (double)pageSize));
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        await Task.Delay(300);
+        allItems = await DataService.GetItemsAsync();
+        categories = await DataService.GetCategoriesAsync();
+        statuses = await DataService.GetStatusesAsync();
+        ApplyFilter();
+        isLoading = false;
+    }
+
+    private void OnSearchChange() => ApplyFilter();
+
+    private void ApplyFilter()
+    {
+        filteredItems = allItems
+            .Where(i => string.IsNullOrEmpty(searchTerm) || 
+                       i.Title.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                       i.Description.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+            .Where(i => string.IsNullOrEmpty(selectedCategory) || i.Category == selectedCategory)
+            .Where(i => string.IsNullOrEmpty(selectedStatus) || i.Status == selectedStatus)
+            .ToList();
+        
+        ApplySort();
+        currentPage = 1;
+    }
+
+    private void ApplySort()
+    {
+        filteredItems = sortColumn switch
+        {
+            "Id" => sortAscending ? filteredItems.OrderBy(x => x.Id).ToList() : filteredItems.OrderByDescending(x => x.Id).ToList(),
+            "Title" => sortAscending ? filteredItems.OrderBy(x => x.Title).ToList() : filteredItems.OrderByDescending(x => x.Title).ToList(),
+            "Status" => sortAscending ? filteredItems.OrderBy(x => x.Status).ToList() : filteredItems.OrderByDescending(x => x.Status).ToList(),
+            "Price" => sortAscending ? filteredItems.OrderBy(x => x.Price).ToList() : filteredItems.OrderByDescending(x => x.Price).ToList(),
+            _ => filteredItems
+        };
+    }
+
+    private void SortByColumn(string column)
+    {
+        if (sortColumn == column)
+            sortAscending = !sortAscending;
+        else
+        {
+            sortColumn = column;
+            sortAscending = true;
+        }
+        ApplySort();
+    }
+
+    private void SortById() => SortByColumn("Id");
+    private void SortByTitle() => SortByColumn("Title");
+    private void SortByStatus() => SortByColumn("Status");
+    private void SortByPrice() => SortByColumn("Price");
+
+    private string GetSortIcon(string column)
+    {
+        if (sortColumn != column) return "";
+        return sortAscending ? "^" : "v";
+    }
+
+    private void ClearFilters()
+    {
+        searchTerm = "";
+        selectedCategory = "";
+        selectedStatus = "";
+        ApplyFilter();
+    }
+
+    private IEnumerable<DataItem> GetCurrentPageItems()
+    {
+        return filteredItems.Skip((currentPage - 1) * pageSize).Take(pageSize);
+    }
+
+    private void GoToPage(int page)
+    {
+        currentPage = Math.Max(1, Math.Min(page, totalPages));
+    }
+
+    private void GoPrevPage() => GoToPage(currentPage - 1);
+    private void GoNextPage() => GoToPage(currentPage + 1);
+
+    private void OnPageSizeChange()
+    {
+        currentPage = 1;
+    }
+
+    private void ToggleSelectAll(ChangeEventArgs e)
+    {
+        if ((bool)(e.Value ?? false))
+            SelectAllVisible();
+        else
+            ClearSelection();
+    }
+
+    private void SelectAllVisible()
+    {
+        foreach (var item in GetCurrentPageItems())
+            selectedItems.Add(item.Id);
+    }
+
+    private void ClearSelection() => selectedItems.Clear();
+
+    private void ToggleItemSelection(int id)
+    {
+        if (selectedItems.Contains(id))
+            selectedItems.Remove(id);
+        else
+            selectedItems.Add(id);
+    }
+
+    private void DeleteSelected()
+    {
+        allItems.RemoveAll(x => selectedItems.Contains(x.Id));
+        selectedItems.Clear();
+        ApplyFilter();
+    }
+
+    private string GetStatusBadgeClass(string status) => status switch
+    {
+        "Active" => "bg-success",
+        "Pending" => "bg-warning text-dark",
+        "Inactive" => "bg-secondary",
+        "Completed" => "bg-info",
+        _ => "bg-primary"
+    };
+
+    private void ViewItem(DataItem item) { }
+    private void EditItem(DataItem item) { }
+    private void DeleteItem(DataItem item)
+    {
+        allItems.Remove(item);
+        ApplyFilter();
+    }
+}

@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:Brinell.Samples.Maui.App.ViewModels"
+             x:Class="Brinell.Samples.Maui.App.Pages.MediaGalleryPage"
+             Title="Media Gallery"
+             AutomationId="MediaGalleryPage">
+
+    <ContentPage.BindingContext>
+        <viewmodels:MediaGalleryViewModel />
+    </ContentPage.BindingContext>
+
+    <ScrollView AutomationId="MediaScrollView">
+        <VerticalStackLayout Spacing="15" Padding="20">
+
+            <!-- Page Header -->
+            <Label Text="Media Gallery" 
+                   AutomationId="MediaGalleryTitle"
+                   FontSize="28" 
+                   FontAttributes="Bold" />
+
+            <!-- Image Gallery Section (IImage) -->
+            <Frame AutomationId="ImageSection" 
+                   CornerRadius="10" 
+                   Padding="15">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Image Gallery" 
+                           FontSize="18" 
+                           FontAttributes="Bold"
+                           AutomationId="ImageSectionLabel" />
+
+                    <!-- Main Image Display -->
+                    <Frame CornerRadius="10" 
+                           Padding="0"
+                           HeightRequest="200"
+                           AutomationId="MainImageFrame">
+                        <Image Source="{Binding SelectedMedia.FullUrl}"
+                               Aspect="AspectFill"
+                               AutomationId="MainImage" />
+                    </Frame>
+
+                    <!-- Thumbnail Strip -->
+                    <CollectionView ItemsSource="{Binding Thumbnails}"
+                                    SelectedItem="{Binding SelectedMedia}"
+                                    SelectionMode="Single"
+                                    HeightRequest="80"
+                                    AutomationId="ThumbnailCollection">
+                        <CollectionView.ItemsLayout>
+                            <LinearItemsLayout Orientation="Horizontal" ItemSpacing="5" />
+                        </CollectionView.ItemsLayout>
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Frame CornerRadius="5" 
+                                       Padding="0"
+                                       WidthRequest="70"
+                                       HeightRequest="70"
+                                       AutomationId="{Binding Id, StringFormat='Thumbnail_{0}'}">
+                                    <Image Source="{Binding ThumbnailUrl}"
+                                           Aspect="AspectFill" />
+                                </Frame>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Media Player Section (simulated) -->
+            <Frame AutomationId="MediaPlayerSection" 
+                   CornerRadius="10" 
+                   Padding="15">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Media Player" 
+                           FontSize="18" 
+                           FontAttributes="Bold"
+                           AutomationId="MediaPlayerLabel" />
+
+                    <!-- Video placeholder -->
+                    <Frame BackgroundColor="Black" 
+                           HeightRequest="180" 
+                           CornerRadius="10"
+                           AutomationId="VideoFrame">
+                        <Label Text="▶ Video Player"
+                               TextColor="White"
+                               HorizontalOptions="Center"
+                               VerticalOptions="Center"
+                               AutomationId="VideoPlaceholder" />
+                    </Frame>
+
+                    <!-- Progress Slider -->
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                        <Label Grid.Column="0" 
+                               Text="{Binding PositionText}"
+                               AutomationId="PositionLabel" />
+                        <Slider Grid.Column="1"
+                                Minimum="0"
+                                Maximum="{Binding Duration}"
+                                Value="{Binding Position}"
+                                AutomationId="MediaProgressSlider" />
+                        <Label Grid.Column="2" 
+                               Text="{Binding DurationText}"
+                               AutomationId="DurationLabel" />
+                    </Grid>
+
+                    <!-- Playback Controls -->
+                    <HorizontalStackLayout Spacing="15" 
+                                           HorizontalOptions="Center"
+                                           AutomationId="PlaybackControls">
+                        <Button Text="⏹" 
+                                WidthRequest="50"
+                                Command="{Binding StopCommand}"
+                                AutomationId="StopButton" />
+                        <Button Text="{Binding IsPlaying, Converter={StaticResource PlayPauseConverter}}"
+                                WidthRequest="60"
+                                Command="{Binding PlayCommand}"
+                                AutomationId="PlayPauseButton" />
+                        <Button Text="⏸" 
+                                WidthRequest="50"
+                                Command="{Binding PauseCommand}"
+                                AutomationId="PauseButton" />
+                    </HorizontalStackLayout>
+
+                    <!-- Volume Control -->
+                    <HorizontalStackLayout Spacing="10">
+                        <Label Text="🔊" 
+                               VerticalOptions="Center"
+                               AutomationId="VolumeIcon" />
+                        <Slider Minimum="0" 
+                                Maximum="100" 
+                                Value="{Binding Volume}"
+                                WidthRequest="150"
+                                AutomationId="VolumeSlider" />
+                        <Switch IsToggled="{Binding IsMuted}"
+                                AutomationId="MuteSwitch" />
+                        <Label Text="Mute" 
+                               VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- WebView Section (IWebView) -->
+            <Frame AutomationId="WebViewSection" 
+                   CornerRadius="10" 
+                   Padding="15">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Web Content" 
+                           FontSize="18" 
+                           FontAttributes="Bold"
+                           AutomationId="WebViewLabel" />
+
+                    <!-- URL Bar -->
+                    <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+                        <Entry Grid.Column="0"
+                               Text="{Binding CurrentUrl}"
+                               Placeholder="Enter URL..."
+                               AutomationId="UrlEntry" />
+                        <Button Grid.Column="1" 
+                                Text="Go"
+                                Command="{Binding NavigateCommand}"
+                                AutomationId="NavigateButton" />
+                        <Button Grid.Column="2" 
+                                Text="←"
+                                Command="{Binding WebBackCommand}"
+                                AutomationId="WebBackButton" />
+                        <Button Grid.Column="3" 
+                                Text="→"
+                                Command="{Binding WebForwardCommand}"
+                                AutomationId="WebForwardButton" />
+                    </Grid>
+
+                    <!-- Loading Indicator -->
+                    <ActivityIndicator IsRunning="{Binding IsWebLoading}"
+                                       AutomationId="WebLoadingIndicator" />
+
+                    <!-- WebView -->
+                    <WebView Source="{Binding CurrentUrl}"
+                             HeightRequest="300"
+                             AutomationId="ContentWebView" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Reload Button -->
+            <Button Text="Reload Page"
+                    Command="{Binding WebReloadCommand}"
+                    AutomationId="WebReloadButton" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

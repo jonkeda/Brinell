@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:Brinell.Samples.Maui.App.ViewModels"
+             x:Class="Brinell.Samples.Maui.App.Pages.ValidationPage"
+             Title="Validation"
+             AutomationId="ValidationPage">
+
+    <ContentPage.BindingContext>
+        <viewmodels:ValidationViewModel />
+    </ContentPage.BindingContext>
+
+    <ScrollView AutomationId="ValidationScrollView">
+        <VerticalStackLayout Spacing="15" Padding="20">
+
+            <!-- Page Header -->
+            <Label Text="Form Validation" 
+                   AutomationId="ValidationTitle"
+                   FontSize="28" 
+                   FontAttributes="Bold" />
+
+            <Label Text="Enter values to see validation in action"
+                   TextColor="Gray"
+                   AutomationId="ValidationSubtitle" />
+
+            <!-- Validation Summary -->
+            <Frame BackgroundColor="#FFF3E0" 
+                   CornerRadius="10" 
+                   Padding="15"
+                   IsVisible="{Binding ErrorCount, Converter={StaticResource IntToBoolConverter}}"
+                   AutomationId="ValidationSummaryFrame">
+                <VerticalStackLayout>
+                    <Label Text="{Binding ErrorCount, StringFormat='Validation Errors: {0}'}"
+                           FontAttributes="Bold"
+                           TextColor="Red"
+                           AutomationId="ErrorCountLabel" />
+                    <Label Text="{Binding ValidationSummary}"
+                           TextColor="Red"
+                           AutomationId="ValidationSummary" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Success Message -->
+            <Frame BackgroundColor="#E8F5E9" 
+                   CornerRadius="10" 
+                   Padding="15"
+                   IsVisible="{Binding SuccessMessage, Converter={StaticResource StringToBoolConverter}}"
+                   AutomationId="SuccessFrame">
+                <Label Text="{Binding SuccessMessage}"
+                       TextColor="Green"
+                       FontAttributes="Bold"
+                       AutomationId="SuccessMessage" />
+            </Frame>
+
+            <!-- Required Field Validation -->
+            <Frame AutomationId="RequiredSection" 
+                   CornerRadius="10" 
+                   Padding="15">
+                <VerticalStackLayout Spacing="5">
+                    <Label Text="Required Field *" 
+                           FontAttributes="Bold"
+                           AutomationId="RequiredLabel" />
+                    <Entry Placeholder="This field is required"
+                           Text="{Binding RequiredValue}"
+                           AutomationId="RequiredEntry" />
+                    <Label Text="{Binding RequiredError}"
+                           TextColor="Red"
+                           FontSize="12"
+                           AutomationId="RequiredError" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Email Validation -->
+            <Frame AutomationId="EmailSection" 
+                   CornerRadius="10" 
+                   Padding="15">
+                <VerticalStackLayout Spacing="5">
+                    <Label Text="Email Address" 
+                           FontAttributes="Bold"
+                           AutomationId="EmailLabel" />
+                    <Entry Placeholder="user@example.com"
+                           Keyboard="Email"
+                           Text="{Binding EmailValue}"
+                           AutomationId="EmailEntry" />
+                    <Label Text="{Binding EmailError}"
+                           TextColor="Red"
+                           FontSize="12"
+                           AutomationId="EmailError" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Phone Validation -->
+            <Frame AutomationId="PhoneSection" 
+                   CornerRadius="10" 
+                   Padding="15">
+                <VerticalStackLayout Spacing="5">
+                    <Label Text="Phone Number (format: 123-456-7890)" 
+                           FontAttributes="Bold"
+                           AutomationId="PhoneLabel" />
+                    <Entry Placeholder="123-456-7890"
+                           Keyboard="Telephone"
+                           Text="{Binding PhoneValue}"
+                           AutomationId="PhoneEntry" />
+                    <Label Text="{Binding PhoneError}"
+                           TextColor="Red"
+                           FontSize="12"
+                           AutomationId="PhoneError" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Min Length Validation -->
+            <Frame AutomationId="MinLengthSection" 
+                   CornerRadius="10" 
+                   Padding="15">
+                <VerticalStackLayout Spacing="5">
+                    <Label Text="Minimum Length (5 characters)" 
+                           FontAttributes="Bold"
+                           AutomationId="MinLengthLabel" />
+                    <Entry Placeholder="Enter at least 5 characters"
+                           Text="{Binding MinLengthValue}"
+                           AutomationId="MinLengthEntry" />
+                    <Label Text="{Binding MinLengthError}"
+                           TextColor="Red"
+                           FontSize="12"
+                           AutomationId="MinLengthError" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Max Length Validation -->
+            <Frame AutomationId="MaxLengthSection" 
+                   CornerRadius="10" 
+                   Padding="15">
+                <VerticalStackLayout Spacing="5">
+                    <Label Text="Maximum Length (20 characters)" 
+                           FontAttributes="Bold"
+                           AutomationId="MaxLengthLabel" />
+                    <Entry Placeholder="Maximum 20 characters"
+                           MaxLength="25"
+                           Text="{Binding MaxLengthValue}"
+                           AutomationId="MaxLengthEntry" />
+                    <Label Text="{Binding MaxLengthError}"
+                           TextColor="Red"
+                           FontSize="12"
+                           AutomationId="MaxLengthError" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Range Validation -->
+            <Frame AutomationId="RangeSection" 
+                   CornerRadius="10" 
+                   Padding="15">
+                <VerticalStackLayout Spacing="5">
+                    <Label Text="Number Range (1-100)" 
+                           FontAttributes="Bold"
+                           AutomationId="RangeLabel" />
+                    <Entry Placeholder="Enter a number between 1 and 100"
+                           Keyboard="Numeric"
+                           Text="{Binding RangeValue}"
+                           AutomationId="RangeEntry" />
+                    <Label Text="{Binding RangeError}"
+                           TextColor="Red"
+                           FontSize="12"
+                           AutomationId="RangeError" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Regex Validation -->
+            <Frame AutomationId="RegexSection" 
+                   CornerRadius="10" 
+                   Padding="15">
+                <VerticalStackLayout Spacing="5">
+                    <Label Text="Alphanumeric Only (regex)" 
+                           FontAttributes="Bold"
+                           AutomationId="RegexLabel" />
+                    <Entry Placeholder="Letters and numbers only"
+                           Text="{Binding RegexValue}"
+                           AutomationId="RegexEntry" />
+                    <Label Text="{Binding RegexError}"
+                           TextColor="Red"
+                           FontSize="12"
+                           AutomationId="RegexError" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Action Buttons -->
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                <Button Text="Validate &amp; Submit"
+                        Grid.Column="0"
+                        Command="{Binding SubmitCommand}"
+                        BackgroundColor="Blue"
+                        TextColor="White"
+                        AutomationId="ValidateSubmitButton" />
+                <Button Text="Clear Form"
+                        Grid.Column="1"
+                        Command="{Binding ClearCommand}"
+                        AutomationId="ClearFormButton" />
+            </Grid>
+
+            <!-- Validation Rules Reference -->
+            <Frame AutomationId="ValidationRulesSection" 
+                   CornerRadius="10" 
+                   Padding="15"
+                   BackgroundColor="#F5F5F5">
+                <VerticalStackLayout Spacing="5">
+                    <Label Text="Validation Rules Applied:" 
+                           FontAttributes="Bold"
+                           AutomationId="RulesLabel" />
+                    <Label Text="• Required: Field must not be empty"
+                           FontSize="12"
+                           AutomationId="Rule1" />
+                    <Label Text="• Email: Valid email format (user@domain.tld)"
+                           FontSize="12"
+                           AutomationId="Rule2" />
+                    <Label Text="• Phone: Format 123-456-7890"
+                           FontSize="12"
+                           AutomationId="Rule3" />
+                    <Label Text="• MinLength: At least 5 characters"
+                           FontSize="12"
+                           AutomationId="Rule4" />
+                    <Label Text="• MaxLength: Maximum 20 characters"
+                           FontSize="12"
+                           AutomationId="Rule5" />
+                    <Label Text="• Range: Number between 1-100"
+                           FontSize="12"
+                           AutomationId="Rule6" />
+                    <Label Text="• Regex: Alphanumeric characters only"
+                           FontSize="12"
+                           AutomationId="Rule7" />
+                </VerticalStackLayout>
+            </Frame>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>
