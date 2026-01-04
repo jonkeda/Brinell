@@ -5,6 +5,11 @@
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     
+    <!-- Versioning -->
+    <Version>0.1.0</Version>
+    <FileVersion>0.1.0.0</FileVersion>
+    <AssemblyVersion>0.1.0.0</AssemblyVersion>
+    
     <!-- Package metadata -->
     <Authors>Brinell Contributors</Authors>
     <Company>Brinell</Company>

@@ -1,0 +1,263 @@
+name: Build & Test - Phase 001
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'src/**'
+      - 'samples/Brinell.Samples.Maui.Fixtures/**'
+      - 'tests/**'
+      - '.github/workflows/**'
+      - 'Directory.Build.props'
+      - 'Directory.Packages.props'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'src/**'
+      - 'samples/Brinell.Samples.Maui.Fixtures/**'
+      - 'tests/**'
+      - '.github/workflows/**'
+  workflow_dispatch:
+
+env:
+  DOTNET_VERSION: '9.0.x'
+  CONFIGURATION: Release
+  BUILD_VERBOSITY: minimal
+
+jobs:
+  build:
+    name: Build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        include:
+          - os: windows-latest
+            os-name: Windows
+          - os: ubuntu-latest
+            os-name: Linux
+          - os: macos-latest
+            os-name: macOS
+      fail-fast: false
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore Brinell.sln
+        
+      - name: Build solution
+        run: dotnet build Brinell.sln -c ${{ env.CONFIGURATION }} --no-restore --verbosity ${{ env.BUILD_VERBOSITY }}
+        
+      - name: Check for build warnings
+        run: |
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "❌ Build failed"
+            exit 1
+          }
+          Write-Host "✅ Build succeeded on ${{ matrix.os-name }}"
+        shell: pwsh
+
+  test-fixtures:
+    name: Test Fixtures (Phase 001, Task 3)
+    runs-on: windows-latest
+    needs: build
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore samples/Brinell.Samples.Maui.Fixtures/
+        
+      - name: Run fixture tests
+        run: dotnet test samples/Brinell.Samples.Maui.Fixtures/ -c ${{ env.CONFIGURATION }} --no-restore --verbosity ${{ env.BUILD_VERBOSITY }} --logger "trx;LogFileName=test-results.trx" --collect:"XPlat Code Coverage"
+        
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: fixture-test-results
+          path: '**/test-results.trx'
+          retention-days: 30
+
+  test-core:
+    name: Test Core
+    runs-on: windows-latest
+    needs: build
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore Brinell.sln
+        
+      - name: Run unit tests
+        run: dotnet test Brinell.sln -c ${{ env.CONFIGURATION }} --no-restore --verbosity ${{ env.BUILD_VERBOSITY }} --logger "trx;LogFileName=test-results.trx" --collect:"XPlat Code Coverage"
+        
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: test-results
+          path: '**/test-results.trx'
+          retention-days: 30
+
+  coverage:
+    name: Code Coverage
+    runs-on: windows-latest
+    needs: test
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Install coverage tools
+        run: dotnet tool install --global coverlet.console
+        
+      - name: Restore dependencies
+        run: dotnet restore src/Brinell.Maui.Controls/
+        
+      - name: Generate coverage report
+        run: |
+          coverlet src/Brinell.Maui.Controls/bin/Release/net8.0/Brinell.Maui.Controls.dll `
+            --target dotnet `
+            --targetargs "test src/Brinell.Maui.Controls/ -c Release --no-build" `
+            --format opencover `
+            --output coverage.xml
+        shell: pwsh
+        
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+          
+      - name: Upload coverage artifacts
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: coverage-report
+          path: coverage.xml
+          retention-days: 30
+
+  package:
+    name: Package
+    runs-on: windows-latest
+    needs: [build, test]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore src/Brinell.Maui.Controls/
+        
+      - name: Build solution
+        run: dotnet build src/Brinell.Maui.Controls/ -c ${{ env.CONFIGURATION }} --no-restore --verbosity ${{ env.BUILD_VERBOSITY }}
+        
+      - name: Create NuGet package
+        run: dotnet pack src/Brinell.Maui.Controls/ -c ${{ env.CONFIGURATION }} --no-build -o packages/
+        
+      - name: Upload package artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: nuget-packages
+          path: packages/
+          retention-days: 90
+
+  analyze:
+    name: Code Analysis
+    runs-on: windows-latest
+    needs: build
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore src/Brinell.Maui.Controls/
+        
+      - name: Install analysis tools
+        run: |
+          dotnet tool install --global StyleCopAnalyzers
+          dotnet tool install --global SonarAnalyzer
+        
+      - name: Run static analysis
+        run: dotnet build src/Brinell.Maui.Controls/ -c ${{ env.CONFIGURATION }} --no-restore /p:TreatWarningsAsErrors=true
+        continue-on-error: true
+
+  summary:
+    name: Build Summary
+    runs-on: windows-latest
+    needs: [build, test, coverage, package, analyze]
+    if: always()
+    
+    steps:
+      - name: Check build status
+        run: |
+          Write-Host "=== Build Summary ===" -ForegroundColor Cyan
+          Write-Host "Build: ${{ needs.build.result }}" -ForegroundColor Green
+          Write-Host "Tests: ${{ needs.test.result }}" -ForegroundColor Green
+          Write-Host "Coverage: ${{ needs.coverage.result }}" -ForegroundColor Green
+          Write-Host "Package: ${{ needs.package.result }}" -ForegroundColor Green
+          Write-Host "Analysis: ${{ needs.analyze.result }}" -ForegroundColor Green
+        shell: pwsh
+        
+      - name: Create badge status
+        run: |
+          if ("${{ needs.build.result }}" -eq "success" -and "${{ needs.test.result }}" -eq "success") {
+            Write-Host "✅ All checks passed"
+            exit 0
+          } else {
+            Write-Host "❌ Some checks failed"
+            exit 1
+          }
+        shell: pwsh
+        continue-on-error: true

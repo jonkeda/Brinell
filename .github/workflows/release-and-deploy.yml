@@ -1,0 +1,190 @@
+name: Release & Deploy
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+      - 'v*.*.*-*'
+  workflow_dispatch:
+    inputs:
+      publish-to-nuget:
+        description: 'Publish to NuGet.org'
+        required: true
+        default: 'false'
+      publish-to-github:
+        description: 'Publish to GitHub Packages'
+        required: true
+        default: 'true'
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  CONFIGURATION: Release
+  BUILD_VERBOSITY: minimal
+
+jobs:
+  prepare:
+    name: Prepare Release
+    runs-on: windows-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      is-prerelease: ${{ steps.version.outputs.is-prerelease }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          $tag = "${{ github.ref }}"
+          $version = $tag -replace "refs/tags/v", ""
+          $isPrerelease = $version -match "-"
+          
+          Write-Host "Version: $version"
+          Write-Host "Is Prerelease: $isPrerelease"
+          
+          echo "version=$version" >> $env:GITHUB_OUTPUT
+          echo "is-prerelease=$isPrerelease" >> $env:GITHUB_OUTPUT
+        shell: pwsh
+
+  build:
+    name: Build Release
+    runs-on: windows-latest
+    needs: prepare
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore src/Brinell.Maui.Controls/
+        
+      - name: Build solution
+        run: dotnet build src/Brinell.Maui.Controls/ -c ${{ env.CONFIGURATION }} --no-restore --verbosity ${{ env.BUILD_VERBOSITY }}
+        
+      - name: Run tests
+        run: dotnet test src/Brinell.Maui.Controls/ -c ${{ env.CONFIGURATION }} --no-restore --verbosity ${{ env.BUILD_VERBOSITY }}
+        
+      - name: Create NuGet package
+        run: dotnet pack src/Brinell.Maui.Controls/ -c ${{ env.CONFIGURATION }} --no-build -o packages/ /p:Version=${{ needs.prepare.outputs.version }}
+        
+      - name: Upload package artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: nuget-packages-release
+          path: packages/
+          retention-days: 90
+
+  publish-github:
+    name: Publish to GitHub Packages
+    runs-on: windows-latest
+    needs: [prepare, build]
+    
+    permissions:
+      packages: write
+      contents: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: nuget-packages-release
+          path: packages/
+
+      - name: Publish to GitHub Packages
+        run: |
+          dotnet nuget add source --username github --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
+          dotnet nuget push "packages/*.nupkg" --source github --skip-duplicate
+        shell: pwsh
+
+  publish-nuget:
+    name: Publish to NuGet.org
+    runs-on: windows-latest
+    needs: [prepare, build]
+    if: github.event_name == 'push' || github.event.inputs.publish-to-nuget == 'true'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: nuget-packages-release
+          path: packages/
+
+      - name: Publish to NuGet.org
+        run: |
+          dotnet nuget push "packages/*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+        shell: pwsh
+        if: secrets.NUGET_API_KEY != ''
+
+  release:
+    name: Create GitHub Release
+    runs-on: windows-latest
+    needs: [prepare, build, publish-github]
+    
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: nuget-packages-release
+          path: packages/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ needs.prepare.outputs.version }}
+          files: packages/*
+          draft: false
+          prerelease: ${{ needs.prepare.outputs.is-prerelease }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  notify:
+    name: Send Notifications
+    runs-on: windows-latest
+    needs: [prepare, publish-github]
+    if: always()
+    
+    steps:
+      - name: Publish release notification
+        run: |
+          $status = "${{ needs.publish-github.result }}"
+          $version = "${{ needs.prepare.outputs.version }}"
+          
+          if ($status -eq "success") {
+            Write-Host "✅ Release v$version published successfully"
+          } else {
+            Write-Host "❌ Release v$version failed to publish"
+          }
+        shell: pwsh
