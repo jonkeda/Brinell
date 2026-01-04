@@ -1,6 +1,6 @@
 # SPEC-006-001: Interface Definitions
 
-**Version:** 1.0  
+**Version:** 1.1  
 **Status:** Final  
 **Date:** January 2026
 
@@ -969,6 +969,109 @@ public interface IPageObject
     void TakeScreenshot(string? filename, int? timeoutMs = null);
     void ScrollToControl(ControlLocator? locator, int? timeoutMs = null);
 }
+```
+
+### IBusyPageObject
+
+Extends `IPageObject` with busy/loading state tracking for pages that display loading indicators during asynchronous operations.
+
+```csharp
+public interface IBusyPageObject : IPageObject
+{
+    /// <summary>
+    /// Gets the locator for the busy indicator element.
+    /// Override to specify a custom busy indicator.
+    /// </summary>
+    ControlLocator? BusyIndicatorLocator { get; }
+    
+    /// <summary>
+    /// Returns true if the page is currently showing a busy/loading state.
+    /// Default implementation checks if BusyIndicatorLocator element is visible.
+    /// </summary>
+    bool IsBusy(int? timeoutMs = null);
+    
+    /// <summary>
+    /// Returns true if the page is not busy (ready for interaction).
+    /// </summary>
+    bool IsNotBusy(int? timeoutMs = null);
+    
+    /// <summary>
+    /// Waits for the busy state to match the expected value.
+    /// </summary>
+    bool WaitBusy(bool? expected, int? timeoutMs = null);
+    
+    /// <summary>
+    /// Waits for the page to become not busy (loading complete).
+    /// </summary>
+    bool WaitNotBusy(int? timeoutMs = null);
+    
+    /// <summary>
+    /// Throws if busy state doesn't match expected within timeout.
+    /// </summary>
+    void CheckBusy(bool? expected, int? timeoutMs = null);
+    
+    /// <summary>
+    /// Throws if page is still busy after timeout.
+    /// </summary>
+    void CheckNotBusy(int? timeoutMs = null);
+    
+    /// <summary>
+    /// Asserts the busy state matches expected.
+    /// </summary>
+    void AssertBusy(bool? expected, string? message = null, int? timeoutMs = null);
+    
+    /// <summary>
+    /// Asserts the page is not busy.
+    /// </summary>
+    void AssertNotBusy(string? message = null, int? timeoutMs = null);
+    
+    /// <summary>
+    /// Returns true when page is loaded AND not busy.
+    /// Override of IsLoaded that includes busy state check.
+    /// </summary>
+    bool IsReady(int? timeoutMs = null);
+    
+    /// <summary>
+    /// Waits for page to be ready (loaded and not busy).
+    /// </summary>
+    bool WaitReady(bool? expected, int? timeoutMs = null);
+    
+    /// <summary>
+    /// Throws if page is not ready within timeout.
+    /// </summary>
+    void CheckReady(int? timeoutMs = null);
+    
+    /// <summary>
+    /// Asserts the page is ready (loaded and not busy).
+    /// </summary>
+    void AssertReady(string? message = null, int? timeoutMs = null);
+}
+```
+
+**Usage Examples:**
+
+```csharp
+// Simple busy indicator by element
+public class DashboardPage : BusyPageBase
+{
+    public override ControlLocator? BusyIndicatorLocator => 
+        By.AutomationId("LoadingSpinner");
+}
+
+// Custom busy logic
+public class DataGridPage : BusyPageBase
+{
+    public override bool IsBusy(int? timeoutMs = null)
+    {
+        var grid = GetControl<IControlObject>("DataGrid");
+        return grid.GetText().Contains("Loading...");
+    }
+}
+
+// In tests
+var dashboard = new DashboardPage(context);
+dashboard.WaitNotBusy();  // Wait for loading to complete
+dashboard.AssertReady();  // Assert page is loaded and not busy
 ```
 
 ---

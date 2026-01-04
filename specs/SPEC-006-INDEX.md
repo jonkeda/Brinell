@@ -1,6 +1,6 @@
 # SPEC-006: ControlObject Framework - Complete Specification
 
-**Version:** 1.0  
+**Version:** 1.1  
 **Status:** Final  
 **Date:** January 2026
 
@@ -19,6 +19,7 @@
 
 1. **Nullable expected on Wait/Check/Assert** - If null, skip the operation
 2. **Locator Strategy** - Find elements by AutomationId, Name, Id, XPath, CSS, Text, etc.
+3. **IBusyPageObject** - Page interface for busy/loading state tracking (v1.1)
 
 ---
 
