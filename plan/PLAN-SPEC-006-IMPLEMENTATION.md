@@ -1,9 +1,9 @@
 # PLAN: SPEC-006 ControlObject Framework Implementation
 
-**Version:** 1.2  
+**Version:** 1.3  
 **Status:** Draft  
 **Date:** January 4, 2026  
-**Last Updated:** January 4, 2026 (Aligned with POC implementation approach)  
+**Last Updated:** January 4, 2026 (Added SPEC-006-003b complete hierarchy documentation)  
 **Source:** [SPEC-006-INDEX](../specs/SPEC-006-INDEX.md)
 
 ---
@@ -25,8 +25,28 @@ This plan outlines the implementation of SPEC-006 ControlObject Framework as a n
 | [REVIEW-006](../Reviews/REVIEW-006-SPEC-006-Requirements-Compliance.md) | Requirements compliance review |
 | [PROPOSAL-V6-MIGRATION](../plan/PROPOSAL-V6-MIGRATION-STRATEGY.md) | Migration strategy |
 | [SPEC-006-004-TESTING-GUIDE](../specs/SPEC-006-004-TESTING-GUIDE.md) | Testing patterns & mockability |
+| [SPEC-006-003b-INDEX](../specs/SPEC-006-003b-INDEX.md) | Complete control hierarchy documentation |
 | [PLAN-SPEC-006b-POC](./PLAN-SPEC-006b-POC.md) | Vertical slice POC implementation |
 | [PLAN-SPEC-006c-POC](./PLAN-SPEC-006c-POC.md) | POC updates from review findings |
+
+### SPEC-006-003b: Complete Hierarchy Documentation
+
+The following files document the complete control class hierarchy for both MAUI and Blazor:
+
+| Document | Content |
+|----------|---------|
+| [SPEC-006-003b-INDEX](../specs/SPEC-006-003b-INDEX.md) | Master index with hierarchy diagrams |
+| [SPEC-006-003b-FOUNDATION](../specs/SPEC-006-003b-FOUNDATION.md) | Core base classes (ControlObjectBase, ClickableControlBase, TextControlBase) |
+| [SPEC-006-003b-TOGGLE](../specs/SPEC-006-003b-TOGGLE.md) | Toggle controls (CheckBox, Switch, RadioButton) |
+| [SPEC-006-003b-SELECTION](../specs/SPEC-006-003b-SELECTION.md) | Selection controls (Picker, Select) |
+| [SPEC-006-003b-RANGE](../specs/SPEC-006-003b-RANGE.md) | Range controls (Slider, Stepper) |
+| [SPEC-006-003b-DATETIME](../specs/SPEC-006-003b-DATETIME.md) | DateTime controls (DatePicker, TimePicker) |
+| [SPEC-006-003b-COLLECTION](../specs/SPEC-006-003b-COLLECTION.md) | Collection controls (ListView, CollectionView, Table) |
+| [SPEC-006-003b-CONTAINER](../specs/SPEC-006-003b-CONTAINER.md) | Container controls (ScrollView, Expander, RefreshView) |
+| [SPEC-006-003b-DISPLAY](../specs/SPEC-006-003b-DISPLAY.md) | Display controls (Image, ProgressBar, ActivityIndicator) |
+| [SPEC-006-003b-NAVIGATION](../specs/SPEC-006-003b-NAVIGATION.md) | Navigation controls (Tab, Menu, Flyout, Toolbar) |
+| [SPEC-006-003b-MEDIA](../specs/SPEC-006-003b-MEDIA.md) | Media controls (Video, Audio, WebView, IFrame) |
+| [SPEC-006-003b-PAGE](../specs/SPEC-006-003b-PAGE.md) | Page object classes (PageObjectBase, BusyPageBase) |
 
 ---
 
