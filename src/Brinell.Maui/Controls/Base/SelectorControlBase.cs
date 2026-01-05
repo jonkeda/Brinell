@@ -69,15 +69,44 @@ public abstract class SelectorControlBase : ControlBase, ISelectorControl
 
     /// <summary>
     /// Platform-specific selection by index.
+    /// Uses keyboard navigation for reliable selection on Windows MAUI.
     /// </summary>
     protected virtual void PerformSelectByIndex(int index)
     {
-        // Try to find items and select by index
-        var items = _context.Driver.Driver.FindElements(By.XPath("//*[@clickable='true']"));
-        if (index < items.Count)
+        // On Windows MAUI, the picker opens as a ComboBox dropdown
+        // Use keyboard navigation which is more reliable than element finding
+        var driver = _context.Driver.Driver;
+        
+        // First, try to find ListItem elements in the popup
+        try
         {
-            items[index].Click();
+            var items = driver.FindElements(By.XPath("//ListItem | //List/ListItem"));
+            if (items.Count > index)
+            {
+                items[index].Click();
+                Thread.Sleep(200); // Wait for selection to apply
+                return;
+            }
         }
+        catch
+        {
+            // Fall through to keyboard navigation
+        }
+        
+        // Fallback: Use keyboard navigation (Down arrow to navigate, Enter to select)
+        // Use Actions for sending keys without targeting a specific element
+        var actions = new OpenQA.Selenium.Interactions.Actions(driver);
+        
+        // Navigate down to the desired index
+        for (int i = 0; i <= index; i++)
+        {
+            actions.SendKeys(Keys.ArrowDown).Perform();
+            Thread.Sleep(50);
+        }
+        
+        // Confirm selection with Enter
+        actions.SendKeys(Keys.Enter).Perform();
+        Thread.Sleep(200); // Wait for selection to apply
     }
 
     /// <summary>

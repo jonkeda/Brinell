@@ -128,6 +128,9 @@ public class ScrollViewControl : ControlBase, IScrollableControl
                 break;
             lastPosition = newPosition;
         }
+        
+        // Final wait for UI to stabilize after scroll completes
+        Thread.Sleep(300);
     }
 
     /// <summary>

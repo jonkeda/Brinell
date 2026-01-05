@@ -10,6 +10,11 @@
             "matchCommandLine": true
         },
         "Get-Content": true,
-        "Get-Job": true
+        "Get-Job": true,
+        "Measure-Object": true,
+        "/^Start-Sleep -Seconds 3; \\(Invoke-WebRequest -Uri \"http://127\\.0\\.0\\.1:4723/status\" -UseBasicParsing\\)\\.Content$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
     }
 }
