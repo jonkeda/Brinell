@@ -2518,3 +2518,1292 @@ public class TestableScrollViewControl : TestableControlBase, IScrollableControl
         _canScrollV = canScrollV;
     }
 }
+
+/// <summary>
+/// Testable container control base for unit testing.
+/// </summary>
+public abstract class TestableContainerControlBase : TestableControlBase, IContainerControlObject
+{
+    protected readonly List<IControlObject> _children = new();
+
+    protected TestableContainerControlBase(TestableMauiTestContext context, ControlLocator locator, IPageObject? page)
+        : base(context, locator, page)
+    {
+    }
+
+    protected TestableContainerControlBase(TestableMauiTestContext context, string automationId, IPageObject? page)
+        : base(context, automationId, page)
+    {
+    }
+
+    /// <inheritdoc />
+    public virtual int GetChildCount(int? timeoutMs = null)
+    {
+        FindElement();
+        return _children.Count;
+    }
+
+    /// <inheritdoc />
+    public virtual void AssertChildCount(int? expected, string? message = null, int? timeoutMs = null)
+    {
+        if (expected is null) return;
+
+        var actual = GetChildCount(timeoutMs);
+        if (actual != expected.Value)
+        {
+            throw new AssertionException(
+                message ?? $"Expected {expected} children but found {actual}",
+                Locator.Value,
+                "AssertChildCount");
+        }
+    }
+
+    /// <inheritdoc />
+    public virtual T FindChild<T>(ControlLocator locator) where T : IControlObject
+    {
+        return (T)Activator.CreateInstance(typeof(T), Context, locator, Page)!;
+    }
+
+    /// <inheritdoc />
+    public virtual T FindChild<T>(string automationId) where T : IControlObject
+    {
+        var locator = By.AutomationId(automationId);
+        return FindChild<T>(locator);
+    }
+
+    /// <inheritdoc />
+    public virtual IReadOnlyList<T> FindChildren<T>(ControlLocator locator) where T : IControlObject
+    {
+        var results = new List<T>();
+        foreach (var child in _children.OfType<T>())
+        {
+            results.Add(child);
+        }
+        return results.AsReadOnly();
+    }
+
+    /// <summary>
+    /// Sets the child count for testing purposes.
+    /// </summary>
+    public void SetChildCount(int count)
+    {
+        _children.Clear();
+        for (int i = 0; i < count; i++)
+        {
+            _children.Add(new TestableLabelControl(Context, $"child{i}", Page));
+        }
+    }
+}
+
+/// <summary>
+/// Testable frame control for unit testing.
+/// </summary>
+public class TestableFrameControl : TestableContainerControlBase
+{
+    public TestableFrameControl(TestableMauiTestContext context, ControlLocator locator, IPageObject? page = null)
+        : base(context, locator, page)
+    {
+    }
+
+    public TestableFrameControl(TestableMauiTestContext context, string automationId, IPageObject? page = null)
+        : base(context, automationId, page)
+    {
+    }
+
+    /// <summary>
+    /// Gets the border color.
+    /// </summary>
+    public string? GetBorderColor(int? timeoutMs = null)
+    {
+        FindElement();
+        return "Gray";
+    }
+
+    /// <summary>
+    /// Gets the corner radius.
+    /// </summary>
+    public double GetCornerRadius(int? timeoutMs = null)
+    {
+        FindElement();
+        return 5.0;
+    }
+
+    /// <summary>
+    /// Gets whether the frame has a shadow.
+    /// </summary>
+    public bool HasShadow(int? timeoutMs = null)
+    {
+        FindElement();
+        return true;
+    }
+}
+
+/// <summary>
+/// Testable border control for unit testing.
+/// </summary>
+public class TestableBorderControl : TestableContainerControlBase
+{
+    public TestableBorderControl(TestableMauiTestContext context, ControlLocator locator, IPageObject? page = null)
+        : base(context, locator, page)
+    {
+    }
+
+    public TestableBorderControl(TestableMauiTestContext context, string automationId, IPageObject? page = null)
+        : base(context, automationId, page)
+    {
+    }
+
+    /// <summary>
+    /// Gets the stroke color.
+    /// </summary>
+    public string? GetStrokeColor(int? timeoutMs = null)
+    {
+        FindElement();
+        return "Black";
+    }
+
+    /// <summary>
+    /// Gets the stroke thickness.
+    /// </summary>
+    public double GetStrokeThickness(int? timeoutMs = null)
+    {
+        FindElement();
+        return 1.0;
+    }
+}
+
+/// <summary>
+/// Testable expander control for unit testing.
+/// </summary>
+public class TestableExpanderControl : TestableContainerControlBase, IExpandableControlObject
+{
+    private bool _isExpanded = false;
+    private string _headerText = "Header";
+
+    public TestableExpanderControl(TestableMauiTestContext context, ControlLocator locator, IPageObject? page = null)
+        : base(context, locator, page)
+    {
+    }
+
+    public TestableExpanderControl(TestableMauiTestContext context, string automationId, IPageObject? page = null)
+        : base(context, automationId, page)
+    {
+    }
+
+    /// <inheritdoc />
+    public bool IsExpanded(int? timeoutMs = null)
+    {
+        FindElement();
+        return _isExpanded;
+    }
+
+    /// <inheritdoc />
+    public bool WaitExpanded(bool? expected, int? timeoutMs = null)
+    {
+        if (expected is null) return true;
+        return _isExpanded == expected.Value;
+    }
+
+    /// <inheritdoc />
+    public void AssertExpanded(bool? expected, string? message = null, int? timeoutMs = null)
+    {
+        if (expected is null) return;
+
+        if (_isExpanded != expected.Value)
+        {
+            throw new AssertionException(
+                message ?? $"Expected expander to be {(expected.Value ? "expanded" : "collapsed")} but was {(_isExpanded ? "expanded" : "collapsed")}",
+                Locator.Value,
+                "AssertExpanded");
+        }
+    }
+
+    /// <inheritdoc />
+    public void Expand(int? timeoutMs = null)
+    {
+        Log("Expand()");
+        FindElementRequired(timeoutMs);
+        _isExpanded = true;
+    }
+
+    /// <inheritdoc />
+    public void Collapse(int? timeoutMs = null)
+    {
+        Log("Collapse()");
+        FindElementRequired(timeoutMs);
+        _isExpanded = false;
+    }
+
+    /// <inheritdoc />
+    public void Toggle(int? timeoutMs = null)
+    {
+        Log("Toggle()");
+        FindElementRequired(timeoutMs);
+        _isExpanded = !_isExpanded;
+    }
+
+    /// <inheritdoc />
+    public string GetHeaderText(int? timeoutMs = null)
+    {
+        FindElement();
+        return _headerText;
+    }
+
+    /// <summary>
+    /// Sets the header text for testing purposes.
+    /// </summary>
+    public void SetHeaderText(string text)
+    {
+        _headerText = text;
+    }
+
+    /// <summary>
+    /// Sets the expanded state for testing purposes.
+    /// </summary>
+    public void SetExpanded(bool expanded)
+    {
+        _isExpanded = expanded;
+    }
+}
+
+/// <summary>
+/// Testable refresh view control for unit testing.
+/// </summary>
+public class TestableRefreshViewControl : TestableContainerControlBase, IRefreshableControlObject
+{
+    private bool _isRefreshing = false;
+
+    public TestableRefreshViewControl(TestableMauiTestContext context, ControlLocator locator, IPageObject? page = null)
+        : base(context, locator, page)
+    {
+    }
+
+    public TestableRefreshViewControl(TestableMauiTestContext context, string automationId, IPageObject? page = null)
+        : base(context, automationId, page)
+    {
+    }
+
+    /// <inheritdoc />
+    public bool IsRefreshing(int? timeoutMs = null)
+    {
+        FindElement();
+        return _isRefreshing;
+    }
+
+    /// <inheritdoc />
+    public bool WaitRefreshing(bool? expected, int? timeoutMs = null)
+    {
+        if (expected is null) return true;
+        return _isRefreshing == expected.Value;
+    }
+
+    /// <inheritdoc />
+    public void AssertRefreshing(bool? expected, string? message = null, int? timeoutMs = null)
+    {
+        if (expected is null) return;
+
+        if (_isRefreshing != expected.Value)
+        {
+            throw new AssertionException(
+                message ?? $"Expected IsRefreshing to be {expected} but was {_isRefreshing}",
+                Locator.Value,
+                "AssertRefreshing");
+        }
+    }
+
+    /// <inheritdoc />
+    public void Refresh(int? timeoutMs = null)
+    {
+        Log("Refresh()");
+        FindElementRequired(timeoutMs);
+        _isRefreshing = true;
+    }
+
+    /// <inheritdoc />
+    public void WaitRefreshComplete(int? timeoutMs = null)
+    {
+        Log("WaitRefreshComplete()");
+        _isRefreshing = false;
+    }
+
+    /// <summary>
+    /// Sets the refreshing state for testing purposes.
+    /// </summary>
+    public void SetRefreshing(bool isRefreshing)
+    {
+        _isRefreshing = isRefreshing;
+    }
+}
+
+/// <summary>
+/// Testable activity indicator control for unit testing.
+/// </summary>
+public class TestableActivityIndicatorControl : TestableControlBase, IActivityIndicatorControlObject
+{
+    private bool _isRunning = false;
+    private string _color = "Blue";
+
+    public TestableActivityIndicatorControl(TestableMauiTestContext context, ControlLocator locator, IPageObject? page = null)
+        : base(context, locator, page)
+    {
+    }
+
+    public TestableActivityIndicatorControl(TestableMauiTestContext context, string automationId, IPageObject? page = null)
+        : base(context, automationId, page)
+    {
+    }
+
+    /// <inheritdoc />
+    public bool IsRunning(int? timeoutMs = null)
+    {
+        FindElement();
+        return _isRunning;
+    }
+
+    /// <inheritdoc />
+    public bool WaitRunning(bool? expected, int? timeoutMs = null)
+    {
+        if (expected is null) return true;
+        return _isRunning == expected.Value;
+    }
+
+    /// <inheritdoc />
+    public void AssertRunning(bool? expected, string? message = null, int? timeoutMs = null)
+    {
+        if (expected is null) return;
+
+        if (_isRunning != expected.Value)
+        {
+            throw new AssertionException(
+                message ?? $"Expected activity indicator to be {(expected.Value ? "running" : "stopped")} but was {(_isRunning ? "running" : "stopped")}",
+                Locator.Value,
+                "AssertRunning");
+        }
+    }
+
+    /// <inheritdoc />
+    public void WaitUntilStopped(int? timeoutMs = null)
+    {
+        Log("WaitUntilStopped()");
+        WaitRunning(false, timeoutMs);
+    }
+
+    /// <inheritdoc />
+    public void WaitUntilStarted(int? timeoutMs = null)
+    {
+        Log("WaitUntilStarted()");
+        WaitRunning(true, timeoutMs);
+    }
+
+    /// <summary>
+    /// Gets the indicator color.
+    /// </summary>
+    public string? GetColor(int? timeoutMs = null)
+    {
+        FindElement();
+        return _color;
+    }
+
+    /// <summary>
+    /// Sets the running state for testing purposes.
+    /// </summary>
+    public void SetRunning(bool isRunning)
+    {
+        _isRunning = isRunning;
+    }
+
+    /// <summary>
+    /// Sets the color for testing purposes.
+    /// </summary>
+    public void SetColor(string color)
+    {
+        _color = color;
+    }
+}
+
+/// <summary>
+/// Testable tab control base for unit testing.
+/// </summary>
+public class TestableTabControlBase : TestableControlBase, ITabControlObject
+{
+    private List<string> _tabNames = new() { "Tab1", "Tab2", "Tab3" };
+    private int _selectedTabIndex = 0;
+
+    public TestableTabControlBase(TestableMauiTestContext context, ControlLocator locator, IPageObject? page = null)
+        : base(context, locator, page)
+    {
+    }
+
+    public TestableTabControlBase(TestableMauiTestContext context, string automationId, IPageObject? page = null)
+        : base(context, automationId, page)
+    {
+    }
+
+    /// <inheritdoc />
+    public int GetTabCount(int? timeoutMs = null)
+    {
+        FindElement();
+        return _tabNames.Count;
+    }
+
+    /// <inheritdoc />
+    public void AssertTabCount(int? expected, string? message = null, int? timeoutMs = null)
+    {
+        if (expected is null) return;
+
+        var actual = GetTabCount(timeoutMs);
+        if (actual != expected.Value)
+        {
+            throw new AssertionException(
+                message ?? $"Expected {expected} tabs but found {actual}",
+                Locator.Value,
+                "AssertTabCount");
+        }
+    }
+
+    /// <inheritdoc />
+    public IReadOnlyList<string> GetTabNames(int? timeoutMs = null)
+    {
+        FindElement();
+        return _tabNames.AsReadOnly();
+    }
+
+    /// <inheritdoc />
+    public int GetSelectedTabIndex(int? timeoutMs = null)
+    {
+        FindElement();
+        return _selectedTabIndex;
+    }
+
+    /// <inheritdoc />
+    public void AssertSelectedTabIndex(int? expected, string? message = null, int? timeoutMs = null)
+    {
+        if (expected is null) return;
+
+        var actual = GetSelectedTabIndex(timeoutMs);
+        if (actual != expected.Value)
+        {
+            throw new AssertionException(
+                message ?? $"Expected selected tab index {expected} but was {actual}",
+                Locator.Value,
+                "AssertSelectedTabIndex");
+        }
+    }
+
+    /// <inheritdoc />
+    public string? GetSelectedTabName(int? timeoutMs = null)
+    {
+        var index = GetSelectedTabIndex(timeoutMs);
+        if (index < 0 || index >= _tabNames.Count) return null;
+        return _tabNames[index];
+    }
+
+    /// <inheritdoc />
+    public void AssertSelectedTabName(string? expected, string? message = null, int? timeoutMs = null)
+    {
+        if (expected is null) return;
+
+        var actual = GetSelectedTabName(timeoutMs);
+        if (actual != expected)
+        {
+            throw new AssertionException(
+                message ?? $"Expected selected tab name '{expected}' but was '{actual}'",
+                Locator.Value,
+                "AssertSelectedTabName");
+        }
+    }
+
+    /// <inheritdoc />
+    public void SelectTab(int? index, int? timeoutMs = null)
+    {
+        if (index is null) return;
+        Log($"SelectTab({index})");
+        FindElementRequired(timeoutMs);
+
+        if (index.Value < 0 || index.Value >= _tabNames.Count)
+            throw new ArgumentOutOfRangeException(nameof(index), $"Index {index} out of range");
+
+        _selectedTabIndex = index.Value;
+    }
+
+    /// <inheritdoc />
+    public void SelectTab(string? name, int? timeoutMs = null)
+    {
+        if (name is null) return;
+        Log($"SelectTab(\"{name}\")");
+        FindElementRequired(timeoutMs);
+
+        var index = _tabNames.IndexOf(name);
+        if (index < 0)
+            throw new ElementNotFoundException($"Tab with name '{name}' not found");
+
+        _selectedTabIndex = index;
+    }
+
+    /// <inheritdoc />
+    public bool WaitTabSelected(int index, int? timeoutMs = null)
+    {
+        return _selectedTabIndex == index;
+    }
+
+    /// <summary>
+    /// Sets the tab names for testing purposes.
+    /// </summary>
+    public void SetTabNames(params string[] names)
+    {
+        _tabNames = names.ToList();
+    }
+
+    /// <summary>
+    /// Sets the selected tab index for testing purposes.
+    /// </summary>
+    public void SetSelectedTabIndex(int index)
+    {
+        _selectedTabIndex = index;
+    }
+}
+
+/// <summary>
+/// Testable TabbedPage control for unit testing.
+/// </summary>
+public class TestableTabbedPageControl : TestableTabControlBase
+{
+    public TestableTabbedPageControl(TestableMauiTestContext context, ControlLocator locator, IPageObject? page = null)
+        : base(context, locator, page)
+    {
+    }
+
+    public TestableTabbedPageControl(TestableMauiTestContext context, string automationId, IPageObject? page = null)
+        : base(context, automationId, page)
+    {
+    }
+}
+
+/// <summary>
+/// Testable TabBar control for unit testing.
+/// </summary>
+public class TestableTabBarControl : TestableTabControlBase
+{
+    public TestableTabBarControl(TestableMauiTestContext context, ControlLocator locator, IPageObject? page = null)
+        : base(context, locator, page)
+    {
+    }
+
+    public TestableTabBarControl(TestableMauiTestContext context, string automationId, IPageObject? page = null)
+        : base(context, automationId, page)
+    {
+    }
+}
+
+/// <summary>
+/// Testable SearchBar control for unit testing.
+/// </summary>
+public class TestableSearchBarControl : TestableTextControlBase
+{
+    private string _searchText = "";
+    private string _placeholder = "Search...";
+    private bool _isSubmitted = false;
+
+    public TestableSearchBarControl(TestableMauiTestContext context, ControlLocator locator, IPageObject? page = null)
+        : base(context, locator, page)
+    {
+    }
+
+    public TestableSearchBarControl(TestableMauiTestContext context, string automationId, IPageObject? page = null)
+        : base(context, automationId, page)
+    {
+    }
+
+    /// <summary>
+    /// Gets the search text.
+    /// </summary>
+    public string GetSearchText(int? timeoutMs = null)
+    {
+        FindElement();
+        return _searchText;
+    }
+
+    /// <summary>
+    /// Enters search text and submits.
+    /// </summary>
+    public void Search(string searchText, int? timeoutMs = null)
+    {
+        Log($"Search(\"{searchText}\")");
+        FindElementRequired(timeoutMs);
+        _searchText = searchText;
+        Submit(timeoutMs);
+    }
+
+    /// <summary>
+    /// Submits the current search query.
+    /// </summary>
+    public void Submit(int? timeoutMs = null)
+    {
+        Log("Submit()");
+        FindElementRequired(timeoutMs);
+        _isSubmitted = true;
+    }
+
+    /// <summary>
+    /// Clears the search text.
+    /// </summary>
+    public void ClearSearch(int? timeoutMs = null)
+    {
+        Log("ClearSearch()");
+        FindElementRequired(timeoutMs);
+        _searchText = "";
+    }
+
+    /// <summary>
+    /// Gets the placeholder text.
+    /// </summary>
+    public string GetPlaceholder(int? timeoutMs = null)
+    {
+        FindElement();
+        return _placeholder;
+    }
+
+    /// <summary>
+    /// Sets the search text for testing purposes.
+    /// </summary>
+    public void SetSearchText(string text)
+    {
+        _searchText = text;
+    }
+
+    /// <summary>
+    /// Sets the placeholder for testing purposes.
+    /// </summary>
+    public void SetPlaceholder(string placeholder)
+    {
+        _placeholder = placeholder;
+    }
+
+    /// <summary>
+    /// Gets whether the search was submitted.
+    /// </summary>
+    public bool WasSubmitted()
+    {
+        return _isSubmitted;
+    }
+}
+
+/// <summary>
+/// Testable ContentView control for unit testing.
+/// </summary>
+public class TestableContentViewControl : TestableContainerControlBase
+{
+    private bool _hasContent = true;
+
+    public TestableContentViewControl(TestableMauiTestContext context, ControlLocator locator, IPageObject? page = null)
+        : base(context, locator, page)
+    {
+    }
+
+    public TestableContentViewControl(TestableMauiTestContext context, string automationId, IPageObject? page = null)
+        : base(context, automationId, page)
+    {
+    }
+
+    /// <summary>
+    /// Gets whether the content view has content.
+    /// </summary>
+    public bool HasContent(int? timeoutMs = null)
+    {
+        FindElement();
+        return _hasContent;
+    }
+
+    /// <summary>
+    /// Sets whether the content view has content.
+    /// </summary>
+    public void SetHasContent(bool hasContent)
+    {
+        _hasContent = hasContent;
+    }
+
+    /// <summary>
+    /// Asserts that the content view has content.
+    /// </summary>
+    public void AssertHasContent(string? message = null, int? timeoutMs = null)
+    {
+        if (!HasContent(timeoutMs))
+        {
+            throw new AssertionException(
+                message ?? "Expected ContentView to have content",
+                Locator.Value,
+                "AssertHasContent");
+        }
+    }
+}
+
+/// <summary>
+/// Testable CarouselView control for unit testing.
+/// </summary>
+public class TestableCarouselViewControl : TestableItemsControlBase
+{
+    private int _currentPosition = 0;
+
+    public TestableCarouselViewControl(TestableMauiTestContext context, ControlLocator locator, IPageObject? page = null)
+        : base(context, locator, page)
+    {
+    }
+
+    public TestableCarouselViewControl(TestableMauiTestContext context, string automationId, IPageObject? page = null)
+        : base(context, automationId, page)
+    {
+    }
+
+    /// <summary>
+    /// Gets the current position.
+    /// </summary>
+    public int GetCurrentPosition(int? timeoutMs = null)
+    {
+        FindElement();
+        return _currentPosition;
+    }
+
+    /// <summary>
+    /// Swipes to the next item.
+    /// </summary>
+    public void SwipeNext(int? timeoutMs = null)
+    {
+        Log("SwipeNext()");
+        FindElementRequired(timeoutMs);
+        if (_currentPosition < Items.Count - 1)
+            _currentPosition++;
+    }
+
+    /// <summary>
+    /// Swipes to the previous item.
+    /// </summary>
+    public void SwipePrevious(int? timeoutMs = null)
+    {
+        Log("SwipePrevious()");
+        FindElementRequired(timeoutMs);
+        if (_currentPosition > 0)
+            _currentPosition--;
+    }
+
+    /// <summary>
+    /// Navigates to a specific position.
+    /// </summary>
+    public void GoToPosition(int position, int? timeoutMs = null)
+    {
+        Log($"GoToPosition({position})");
+        FindElementRequired(timeoutMs);
+        if (position < 0 || position >= Items.Count)
+            throw new ArgumentOutOfRangeException(nameof(position));
+        _currentPosition = position;
+    }
+
+    /// <summary>
+    /// Checks if at the start.
+    /// </summary>
+    public bool IsAtStart()
+    {
+        return _currentPosition == 0;
+    }
+
+    /// <summary>
+    /// Checks if at the end.
+    /// </summary>
+    public bool IsAtEnd()
+    {
+        return _currentPosition == Items.Count - 1;
+    }
+
+    /// <summary>
+    /// Asserts the current position.
+    /// </summary>
+    public void AssertPosition(int expected, string? message = null, int? timeoutMs = null)
+    {
+        var actual = GetCurrentPosition(timeoutMs);
+        if (actual != expected)
+        {
+            throw new AssertionException(
+                message ?? $"Expected position {expected} but was {actual}",
+                Locator.Value,
+                "AssertPosition");
+        }
+    }
+
+    /// <summary>
+    /// Sets the current position for testing.
+    /// </summary>
+    public void SetCurrentPosition(int position)
+    {
+        _currentPosition = position;
+    }
+}
+
+/// <summary>
+/// Testable SwipeView control for unit testing.
+/// </summary>
+public class TestableSwipeViewControl : TestableContainerControlBase
+{
+    private bool _isLeftSwipeOpen = false;
+    private bool _isRightSwipeOpen = false;
+
+    public TestableSwipeViewControl(TestableMauiTestContext context, ControlLocator locator, IPageObject? page = null)
+        : base(context, locator, page)
+    {
+    }
+
+    public TestableSwipeViewControl(TestableMauiTestContext context, string automationId, IPageObject? page = null)
+        : base(context, automationId, page)
+    {
+    }
+
+    /// <summary>
+    /// Swipes left to reveal right actions.
+    /// </summary>
+    public void SwipeLeft(int distance = 200, int? timeoutMs = null)
+    {
+        Log($"SwipeLeft({distance})");
+        FindElementRequired(timeoutMs);
+        _isRightSwipeOpen = true;
+        _isLeftSwipeOpen = false;
+    }
+
+    /// <summary>
+    /// Swipes right to reveal left actions.
+    /// </summary>
+    public void SwipeRight(int distance = 200, int? timeoutMs = null)
+    {
+        Log($"SwipeRight({distance})");
+        FindElementRequired(timeoutMs);
+        _isLeftSwipeOpen = true;
+        _isRightSwipeOpen = false;
+    }
+
+    /// <summary>
+    /// Closes any open swipe actions.
+    /// </summary>
+    public void CloseSwipe(int? timeoutMs = null)
+    {
+        Log("CloseSwipe()");
+        FindElementRequired(timeoutMs);
+        _isLeftSwipeOpen = false;
+        _isRightSwipeOpen = false;
+    }
+
+    /// <summary>
+    /// Checks if left swipe is open.
+    /// </summary>
+    public bool IsLeftSwipeOpen()
+    {
+        return _isLeftSwipeOpen;
+    }
+
+    /// <summary>
+    /// Checks if right swipe is open.
+    /// </summary>
+    public bool IsRightSwipeOpen()
+    {
+        return _isRightSwipeOpen;
+    }
+
+    /// <summary>
+    /// Asserts left swipe is open.
+    /// </summary>
+    public void AssertLeftSwipeOpen(string? message = null, int? timeoutMs = null)
+    {
+        if (!_isLeftSwipeOpen)
+        {
+            throw new AssertionException(
+                message ?? "Expected left swipe to be open",
+                Locator.Value,
+                "AssertLeftSwipeOpen");
+        }
+    }
+
+    /// <summary>
+    /// Asserts right swipe is open.
+    /// </summary>
+    public void AssertRightSwipeOpen(string? message = null, int? timeoutMs = null)
+    {
+        if (!_isRightSwipeOpen)
+        {
+            throw new AssertionException(
+                message ?? "Expected right swipe to be open",
+                Locator.Value,
+                "AssertRightSwipeOpen");
+        }
+    }
+}
+
+/// <summary>
+/// Testable WebView control for unit testing.
+/// </summary>
+public class TestableWebViewControl : TestableControlBase
+{
+    private string? _url = "https://example.com";
+    private string? _title = "Example Page";
+    private bool _isLoading = false;
+
+    public TestableWebViewControl(TestableMauiTestContext context, ControlLocator locator, IPageObject? page = null)
+        : base(context, locator, page)
+    {
+    }
+
+    public TestableWebViewControl(TestableMauiTestContext context, string automationId, IPageObject? page = null)
+        : base(context, automationId, page)
+    {
+    }
+
+    /// <summary>
+    /// Gets the current URL.
+    /// </summary>
+    public string? GetCurrentUrl(int? timeoutMs = null)
+    {
+        FindElement();
+        return _url;
+    }
+
+    /// <summary>
+    /// Gets the page title.
+    /// </summary>
+    public string? GetTitle(int? timeoutMs = null)
+    {
+        FindElement();
+        return _title;
+    }
+
+    /// <summary>
+    /// Checks if the WebView is loading.
+    /// </summary>
+    public bool IsLoading(int? timeoutMs = null)
+    {
+        FindElement();
+        return _isLoading;
+    }
+
+    /// <summary>
+    /// Navigates to a URL.
+    /// </summary>
+    public void NavigateTo(string url, int? timeoutMs = null)
+    {
+        Log($"NavigateTo(\"{url}\")");
+        FindElementRequired(timeoutMs);
+        _url = url;
+    }
+
+    /// <summary>
+    /// Navigates back.
+    /// </summary>
+    public void GoBack(int? timeoutMs = null)
+    {
+        Log("GoBack()");
+        FindElementRequired(timeoutMs);
+    }
+
+    /// <summary>
+    /// Navigates forward.
+    /// </summary>
+    public void GoForward(int? timeoutMs = null)
+    {
+        Log("GoForward()");
+        FindElementRequired(timeoutMs);
+    }
+
+    /// <summary>
+    /// Reloads the page.
+    /// </summary>
+    public void Reload(int? timeoutMs = null)
+    {
+        Log("Reload()");
+        FindElementRequired(timeoutMs);
+    }
+
+    /// <summary>
+    /// Waits for page to finish loading.
+    /// </summary>
+    public bool WaitForPageLoad(int? timeoutMs = null)
+    {
+        return !_isLoading;
+    }
+
+    /// <summary>
+    /// Asserts the current URL.
+    /// </summary>
+    public void AssertUrl(string expected, string? message = null, int? timeoutMs = null)
+    {
+        var actual = GetCurrentUrl(timeoutMs);
+        if (actual != expected)
+        {
+            throw new AssertionException(
+                message ?? $"Expected URL '{expected}' but was '{actual}'",
+                Locator.Value,
+                "AssertUrl");
+        }
+    }
+
+    /// <summary>
+    /// Asserts URL contains expected text.
+    /// </summary>
+    public void AssertUrlContains(string expected, string? message = null, int? timeoutMs = null)
+    {
+        var actual = GetCurrentUrl(timeoutMs) ?? "";
+        if (!actual.Contains(expected))
+        {
+            throw new AssertionException(
+                message ?? $"Expected URL to contain '{expected}' but was '{actual}'",
+                Locator.Value,
+                "AssertUrlContains");
+        }
+    }
+
+    /// <summary>
+    /// Asserts the page title.
+    /// </summary>
+    public void AssertTitle(string expected, string? message = null, int? timeoutMs = null)
+    {
+        var actual = GetTitle(timeoutMs);
+        if (actual != expected)
+        {
+            throw new AssertionException(
+                message ?? $"Expected title '{expected}' but was '{actual}'",
+                Locator.Value,
+                "AssertTitle");
+        }
+    }
+
+    /// <summary>
+    /// Asserts WebView is loaded.
+    /// </summary>
+    public void AssertLoaded(string? message = null, int? timeoutMs = null)
+    {
+        if (_isLoading)
+        {
+            throw new AssertionException(
+                message ?? "Expected WebView to be loaded but it is still loading",
+                Locator.Value,
+                "AssertLoaded");
+        }
+    }
+
+    /// <summary>
+    /// Sets URL for testing.
+    /// </summary>
+    public void SetUrl(string? url)
+    {
+        _url = url;
+    }
+
+    /// <summary>
+    /// Sets title for testing.
+    /// </summary>
+    public void SetTitle(string? title)
+    {
+        _title = title;
+    }
+
+    /// <summary>
+    /// Sets loading state for testing.
+    /// </summary>
+    public void SetLoading(bool isLoading)
+    {
+        _isLoading = isLoading;
+    }
+}
+
+/// <summary>
+/// Testable FlyoutItem control for unit testing.
+/// </summary>
+public class TestableFlyoutItemControl : TestableContainerControlBase
+{
+    private bool _isSelected = false;
+    private string? _icon = "icon.png";
+
+    public TestableFlyoutItemControl(TestableMauiTestContext context, ControlLocator locator, IPageObject? page = null)
+        : base(context, locator, page)
+    {
+    }
+
+    public TestableFlyoutItemControl(TestableMauiTestContext context, string automationId, IPageObject? page = null)
+        : base(context, automationId, page)
+    {
+    }
+
+    /// <summary>
+    /// Checks if the flyout item is selected.
+    /// </summary>
+    public bool IsSelected(int? timeoutMs = null)
+    {
+        FindElement();
+        return _isSelected;
+    }
+
+    /// <summary>
+    /// Gets the icon.
+    /// </summary>
+    public string? GetIcon(int? timeoutMs = null)
+    {
+        FindElement();
+        return _icon;
+    }
+
+    /// <summary>
+    /// Selects this flyout item.
+    /// </summary>
+    public void Select(int? timeoutMs = null)
+    {
+        Log("Select()");
+        FindElementRequired(timeoutMs);
+        _isSelected = true;
+    }
+
+    /// <summary>
+    /// Asserts the flyout item is selected.
+    /// </summary>
+    public void AssertSelected(string? message = null, int? timeoutMs = null)
+    {
+        if (!IsSelected(timeoutMs))
+        {
+            throw new AssertionException(
+                message ?? "Expected flyout item to be selected",
+                Locator.Value,
+                "AssertSelected");
+        }
+    }
+
+    /// <summary>
+    /// Asserts the flyout item is not selected.
+    /// </summary>
+    public void AssertNotSelected(string? message = null, int? timeoutMs = null)
+    {
+        if (IsSelected(timeoutMs))
+        {
+            throw new AssertionException(
+                message ?? "Expected flyout item to not be selected",
+                Locator.Value,
+                "AssertNotSelected");
+        }
+    }
+
+    /// <summary>
+    /// Sets the selected state for testing.
+    /// </summary>
+    public void SetSelected(bool isSelected)
+    {
+        _isSelected = isSelected;
+    }
+
+    /// <summary>
+    /// Sets the icon for testing.
+    /// </summary>
+    public void SetIcon(string? icon)
+    {
+        _icon = icon;
+    }
+}
+
+/// <summary>
+/// Testable Shell control for unit testing.
+/// </summary>
+public class TestableShellControl : TestableControlBase
+{
+    private bool _isFlyoutOpen = false;
+
+    public TestableShellControl(TestableMauiTestContext context, ControlLocator locator, IPageObject? page = null)
+        : base(context, locator, page)
+    {
+    }
+
+    public TestableShellControl(TestableMauiTestContext context, string automationId, IPageObject? page = null)
+        : base(context, automationId, page)
+    {
+    }
+
+    /// <summary>
+    /// Checks if the flyout menu is open.
+    /// </summary>
+    public bool IsFlyoutOpen(int? timeoutMs = null)
+    {
+        FindElement();
+        return _isFlyoutOpen;
+    }
+
+    /// <summary>
+    /// Opens the flyout menu.
+    /// </summary>
+    public void OpenFlyout(int? timeoutMs = null)
+    {
+        Log("OpenFlyout()");
+        FindElementRequired(timeoutMs);
+        _isFlyoutOpen = true;
+    }
+
+    /// <summary>
+    /// Closes the flyout menu.
+    /// </summary>
+    public void CloseFlyout(int? timeoutMs = null)
+    {
+        Log("CloseFlyout()");
+        FindElementRequired(timeoutMs);
+        _isFlyoutOpen = false;
+    }
+
+    /// <summary>
+    /// Navigates to a Shell route.
+    /// </summary>
+    public void NavigateToRoute(string route, int? timeoutMs = null)
+    {
+        Log($"NavigateToRoute(\"{route}\")");
+        FindElementRequired(timeoutMs);
+    }
+
+    /// <summary>
+    /// Gets a flyout item by title.
+    /// </summary>
+    public TestableFlyoutItemControl GetFlyoutItem(string title)
+    {
+        OpenFlyout();
+        return new TestableFlyoutItemControl(Context, title, Page);
+    }
+
+    /// <summary>
+    /// Gets the tab bar control.
+    /// </summary>
+    public TestableTabBarControl GetTabBar()
+    {
+        return new TestableTabBarControl(Context, "ShellTabBar", Page);
+    }
+
+    /// <summary>
+    /// Asserts the flyout is open.
+    /// </summary>
+    public void AssertFlyoutOpen(string? message = null, int? timeoutMs = null)
+    {
+        if (!IsFlyoutOpen(timeoutMs))
+        {
+            throw new AssertionException(
+                message ?? "Expected flyout to be open",
+                Locator.Value,
+                "AssertFlyoutOpen");
+        }
+    }
+
+    /// <summary>
+    /// Asserts the flyout is closed.
+    /// </summary>
+    public void AssertFlyoutClosed(string? message = null, int? timeoutMs = null)
+    {
+        if (IsFlyoutOpen(timeoutMs))
+        {
+            throw new AssertionException(
+                message ?? "Expected flyout to be closed",
+                Locator.Value,
+                "AssertFlyoutClosed");
+        }
+    }
+
+    /// <summary>
+    /// Sets the flyout state for testing.
+    /// </summary>
+    public void SetFlyoutOpen(bool isOpen)
+    {
+        _isFlyoutOpen = isOpen;
+    }
+}
