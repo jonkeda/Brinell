@@ -44,12 +44,17 @@ public class CounterTests : MauiTestBase
     {
         // Arrange
         _mainPage.WaitForPageLoad();
+        
+        // First reset and increment to have a known state
+        _mainPage.ResetButton.Tap();
+        _mainPage.IncrementButton.Tap();
+        _mainPage.CounterLabel.AssertTextContains("Counter: 1", "Counter should be 1 after increment");
 
         // Act
         _mainPage.DecrementButton.Tap();
 
-        // Assert
-        _mainPage.CounterLabel.AssertTextContains("Counter: -1");
+        // Assert - counter should go from 1 to 0
+        _mainPage.CounterLabel.AssertTextContains("Counter: 0");
     }
 
     [Fact]

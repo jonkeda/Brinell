@@ -1,0 +1,15 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "appium": true,
+        "Start-Process": true,
+        "Write-Host": true,
+        "Test-NetConnection": true,
+        "Start-Job": true,
+        "/^Start-Sleep -Seconds 5; Invoke-WebRequest -Uri \"http://localhost:5180\" -UseBasicParsing -TimeoutSec 5 \\| Select-Object StatusCode$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "Get-Content": true,
+        "Get-Job": true
+    }
+}

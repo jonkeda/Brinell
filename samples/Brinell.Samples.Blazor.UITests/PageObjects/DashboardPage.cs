@@ -47,19 +47,19 @@ public class DashboardPage : PageBase
     public DashboardPage(SeleniumTestContext context)
         : base(context)
     {
-        DashboardTitle = new LabelControl(context, this, "#dashboard-title");
-        WelcomeAlert = new LabelControl(context, this, "#welcome-alert");
-        TotalUsers = new LabelControl(context, this, "#total-users");
-        ActiveSessions = new LabelControl(context, this, "#active-sessions");
-        TestsPassed = new LabelControl(context, this, "#tests-passed");
-        ActivityTable = new TableControl(context, this, "#activity-table");
-        BackHomeButton = new LinkControl(context, this, "#back-home-btn");
+        DashboardTitle = new LabelControl(context, this, "[data-automation-id='DashboardTitle']");
+        WelcomeAlert = new LabelControl(context, this, "[data-automation-id='WelcomeAlert']");
+        TotalUsers = new LabelControl(context, this, "[data-automation-id='Kpi1Value']");
+        ActiveSessions = new LabelControl(context, this, "[data-automation-id='Kpi2Value']");
+        TestsPassed = new LabelControl(context, this, "[data-automation-id='Kpi4Value']");
+        ActivityTable = new TableControl(context, this, "[data-automation-id='ActivityTable']");
+        BackHomeButton = new LinkControl(context, this, "[data-automation-id='BackHomeButton']");
     }
 
     /// <summary>
     /// CSS selector that identifies this page.
     /// </summary>
-    public override string AutomationId => "#dashboard-title";
+    public override string AutomationId => "[data-automation-id='DashboardTitle']";
 
     /// <summary>
     /// Check if the dashboard page is displayed.

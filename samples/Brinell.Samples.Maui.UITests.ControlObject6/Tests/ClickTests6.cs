@@ -1,5 +1,4 @@
 using Brinell.Samples.Maui.UITests.ControlObject6.Pages;
-using FluentAssertions;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -31,7 +30,7 @@ public class ClickTests6 : MauiTestBase6
         _mainPage.IncrementButton.Click();
 
         // Assert
-        _mainPage.GetCounterValue().Should().Be(initialCount + 1);
+        Assert.Equal(initialCount + 1, _mainPage.GetCounterValue());
     }
 
     [Fact]
@@ -77,7 +76,7 @@ public class ClickTests6 : MauiTestBase6
         }
 
         // Assert
-        _mainPage.GetCounterValue().Should().Be(clickCount);
+        Assert.Equal(clickCount, _mainPage.GetCounterValue());
     }
 
     [Fact]
@@ -92,7 +91,7 @@ public class ClickTests6 : MauiTestBase6
         _mainPage.IncrementButton.Click(5000);
 
         // Assert - if we get here without exception, click worked
-        _mainPage.IncrementButton.IsVisible().Should().BeTrue();
+        Assert.True(_mainPage.IncrementButton.IsVisible());
     }
 
     [Fact]

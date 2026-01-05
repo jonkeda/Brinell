@@ -1,5 +1,4 @@
 using Brinell.Samples.Maui.UITests.ControlObject6.Pages;
-using FluentAssertions;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -154,7 +153,7 @@ public class TextInputTests6 : MauiTestBase6
         var text = _mainPage.NameEntry.GetText();
 
         // Assert
-        text.Should().Be(testText);
+        Assert.Equal(testText, text);
     }
 
     [Fact]
@@ -166,7 +165,7 @@ public class TextInputTests6 : MauiTestBase6
         _mainPage.WaitLoaded(true);
 
         // Assert
-        _mainPage.NameEntry.IsEnabled().Should().BeTrue();
+        Assert.True(_mainPage.NameEntry.IsEnabled());
     }
 
     [Fact]

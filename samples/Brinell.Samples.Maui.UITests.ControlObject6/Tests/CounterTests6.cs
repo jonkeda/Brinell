@@ -1,5 +1,4 @@
 using Brinell.Samples.Maui.UITests.ControlObject6.Pages;
-using FluentAssertions;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -43,7 +42,7 @@ public class CounterTests6 : MauiTestBase6
 
         // Assert
         var newValue = _mainPage.GetCounterValue();
-        newValue.Should().Be(initialValue + 1);
+        Assert.Equal(initialValue + 1, newValue);
     }
 
     [Fact]
@@ -61,7 +60,7 @@ public class CounterTests6 : MauiTestBase6
 
         // Assert
         var newValue = _mainPage.GetCounterValue();
-        newValue.Should().Be(initialValue - 1);
+        Assert.Equal(initialValue - 1, newValue);
     }
 
     [Fact]
@@ -79,7 +78,7 @@ public class CounterTests6 : MauiTestBase6
         _mainPage.ClickReset();
 
         // Assert
-        _mainPage.GetCounterValue().Should().Be(0);
+        Assert.Equal(0, _mainPage.GetCounterValue());
     }
 
     [Fact]
@@ -98,7 +97,7 @@ public class CounterTests6 : MauiTestBase6
         }
 
         // Assert
-        _mainPage.GetCounterValue().Should().Be(5);
+        Assert.Equal(5, _mainPage.GetCounterValue());
     }
 
     [Fact]

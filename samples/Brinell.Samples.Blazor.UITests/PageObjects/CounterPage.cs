@@ -32,16 +32,16 @@ public class CounterPage : PageBase
     public CounterPage(SeleniumTestContext context)
         : base(context)
     {
-        CounterTitle = new LabelControl(context, this, "#counter-title");
-        CountDisplay = new LabelControl(context, this, "#count-display");
-        IncrementButton = new ButtonControl(context, this, "#increment-btn");
-        ResetButton = new ButtonControl(context, this, "#reset-btn");
+        CounterTitle = new LabelControl(context, this, "[data-testid='counter-title']");
+        CountDisplay = new LabelControl(context, this, "[data-testid='count-display']");
+        IncrementButton = new ButtonControl(context, this, "[data-testid='increment-btn']");
+        ResetButton = new ButtonControl(context, this, "[data-testid='reset-btn']");
     }
 
     /// <summary>
     /// CSS selector that identifies this page.
     /// </summary>
-    public override string AutomationId => "#counter-title";
+    public override string AutomationId => "[data-testid='counter-title']";
 
     /// <summary>
     /// Check if the counter page is displayed.

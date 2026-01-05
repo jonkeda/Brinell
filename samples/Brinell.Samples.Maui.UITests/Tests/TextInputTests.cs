@@ -48,6 +48,9 @@ public class TextInputTests : MauiTestBase
         // Arrange
         _mainPage.WaitForPageLoad();
         _mainPage.NameEntry.SetText("Alice");
+        
+        // Scroll to reveal GreetButton
+        _mainPage.MainScrollView.ScrollToElement("GreetButton");
 
         // Act
         _mainPage.GreetButton.Tap();
@@ -62,6 +65,9 @@ public class TextInputTests : MauiTestBase
         // Arrange
         _mainPage.WaitForPageLoad();
         _mainPage.NameEntry.Clear();
+        
+        // Scroll to reveal GreetButton
+        _mainPage.MainScrollView.ScrollToElement("GreetButton");
 
         // Act
         _mainPage.GreetButton.Tap();
@@ -75,7 +81,9 @@ public class TextInputTests : MauiTestBase
     {
         // Arrange
         _mainPage.WaitForPageLoad();
-        _mainPage.MainScrollView.ScrollDown(200);
+        
+        // Scroll to reveal MessageEditor
+        _mainPage.MainScrollView.ScrollToElement("MessageEditor");
 
         // Act
         _mainPage.MessageEditor.SetText("Line 1\nLine 2\nLine 3");

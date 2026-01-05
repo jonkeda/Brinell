@@ -29,7 +29,7 @@ public class TableTests : BlazorSampleTestBase
         var rowCount = dashboard.GetActivityRowCount();
 
         // Assert
-        Assert.Equal(3, rowCount); // Dashboard has 3 activity rows
+        Assert.Equal(5, rowCount); // Dashboard has 5 activity rows
     }
 
     [Fact]
@@ -135,10 +135,12 @@ public class TableTests : BlazorSampleTestBase
         var actions = dashboard.ActivityTable.GetColumnCells(1); // Action column
 
         // Assert
-        Assert.Equal(3, actions.Count);
+        Assert.Equal(5, actions.Count);
         Assert.Contains("User Login", actions);
         Assert.Contains("Test Suite Run", actions);
         Assert.Contains("Configuration Update", actions);
+        Assert.Contains("Data Export", actions);
+        Assert.Contains("System Backup", actions);
     }
 
     [Fact]
@@ -152,7 +154,7 @@ public class TableTests : BlazorSampleTestBase
         dashboard.WaitForDisplayed();
 
         // Act & Assert - should not throw
-        dashboard.ActivityTable.AssertRowCount(3);
+        dashboard.ActivityTable.AssertRowCount(5);
     }
 
     [Fact]

@@ -434,35 +434,42 @@ public class AppiumDriverAdapter : IDriverAdapter
     }
 
     /// <summary>
-    /// Perform Windows-specific scrolling using mouse drag.
-    /// Uses PointerKind.Pen for Windows desktop compatibility.
+    /// Perform Windows-specific scrolling using keyboard navigation.
+    /// Fixed: Appium Windows driver only supports pen/touch pointer types, not mouse wheel.
+    /// Using keyboard Page Up/Down for reliable scrolling within the app window.
+    /// See ISSUE-001-MAUI-SCROLL-WRONG-WINDOW.md for details.
     /// </summary>
     private void PerformWindowsScroll(AppiumElement element, SwipeDirection direction, int distance)
     {
-        var pen = new PointerInputDevice(PointerKind.Pen, "pen");
-        var actions = new ActionSequence(pen);
-        
-        var location = element.Location;
-        var size = element.Size;
-        var startX = location.X + size.Width / 2;
-        var startY = location.Y + size.Height / 2;
-        
-        var (endX, endY) = direction switch
+        // First, click on the element to ensure it has focus and the app window is active
+        try
         {
-            SwipeDirection.Left => (startX - distance, startY),
-            SwipeDirection.Right => (startX + distance, startY),
-            SwipeDirection.Up => (startX, startY - distance),
-            SwipeDirection.Down => (startX, startY + distance),
-            _ => (startX, startY)
+            element.Click();
+            Thread.Sleep(100);
+        }
+        catch
+        {
+            // Element may not be clickable, continue anyway
+        }
+
+        // Use keyboard for scrolling - this is more reliable than pointer actions on Windows
+        // Page Up/Down move roughly 200-300 pixels depending on content
+        int scrollSteps = Math.Max(1, distance / 200);
+        
+        string key = direction switch
+        {
+            SwipeDirection.Up => Keys.PageDown,    // Swipe up = scroll content down
+            SwipeDirection.Down => Keys.PageUp,   // Swipe down = scroll content up
+            SwipeDirection.Left => Keys.Right,    // Swipe left = scroll right
+            SwipeDirection.Right => Keys.Left,    // Swipe right = scroll left
+            _ => Keys.PageDown
         };
         
-        // Move to element center, click, drag, release
-        actions.AddAction(pen.CreatePointerMove(CoordinateOrigin.Viewport, startX, startY, TimeSpan.Zero));
-        actions.AddAction(pen.CreatePointerDown(MouseButton.Left));
-        actions.AddAction(pen.CreatePointerMove(CoordinateOrigin.Viewport, endX, endY, TimeSpan.FromMilliseconds(300)));
-        actions.AddAction(pen.CreatePointerUp(MouseButton.Left));
-        
-        _driver.PerformActions(new List<ActionSequence> { actions });
+        for (int i = 0; i < scrollSteps; i++)
+        {
+            element.SendKeys(key);
+            Thread.Sleep(50);
+        }
         
         // Brief pause to let the UI settle after scroll
         Thread.Sleep(150);

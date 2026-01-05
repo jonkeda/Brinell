@@ -52,20 +52,20 @@ public class LoginPage : LoadingPageBase
     public LoginPage(SeleniumTestContext context)
         : base(context)
     {
-        LoginTitle = new LabelControl(context, this, "#login-title");
-        EmailInput = new TextInputControl(context, this, "#email-input");
-        PasswordInput = new TextInputControl(context, this, "#password-input");
-        LoginButton = new ButtonControl(context, this, "#login-btn");
-        ErrorMessage = new LabelControl(context, this, "#error-message");
-        SuccessMessage = new LabelControl(context, this, "#success-message");
-        LoadingSpinner = new LabelControl(context, this, "#loading-spinner");
-        TestCredentialsInfo = new LabelControl(context, this, "#test-credentials-info");
+        LoginTitle = new LabelControl(context, this, "[data-testid='login-title']");
+        EmailInput = new TextInputControl(context, this, "[data-testid='email-input']");
+        PasswordInput = new TextInputControl(context, this, "[data-testid='password-input']");
+        LoginButton = new ButtonControl(context, this, "[data-testid='login-btn']");
+        ErrorMessage = new LabelControl(context, this, "[data-testid='error-message']");
+        SuccessMessage = new LabelControl(context, this, "[data-testid='success-message']");
+        LoadingSpinner = new LabelControl(context, this, "[data-testid='loading-spinner']");
+        TestCredentialsInfo = new LabelControl(context, this, "[data-testid='test-credentials-info']");
     }
 
     /// <summary>
     /// CSS selector that identifies this page.
     /// </summary>
-    public override string AutomationId => "#login-title";
+    public override string AutomationId => "[data-testid='login-title']";
 
     /// <summary>
     /// CSS selector for the loading indicator.

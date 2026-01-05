@@ -1,5 +1,4 @@
 using Brinell.Samples.Maui.UITests.ControlObject6.Pages;
-using FluentAssertions;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -29,7 +28,7 @@ public class ControlStateTests6 : MauiTestBase6
         _mainPage.WaitLoaded(true);
 
         // Act & Assert
-        _mainPage.IncrementButton.IsExists().Should().BeTrue();
+        Assert.True(_mainPage.IncrementButton.IsExists());
     }
 
     [Fact]
@@ -44,7 +43,7 @@ public class ControlStateTests6 : MauiTestBase6
         var result = _mainPage.IncrementButton.WaitExists(true, 5000);
 
         // Assert
-        result.Should().BeTrue();
+        Assert.True(result);
     }
 
     [Fact]
@@ -84,7 +83,7 @@ public class ControlStateTests6 : MauiTestBase6
         _mainPage.WaitLoaded(true);
 
         // Act & Assert
-        _mainPage.IncrementButton.IsVisible().Should().BeTrue();
+        Assert.True(_mainPage.IncrementButton.IsVisible());
     }
 
     [Fact]
@@ -99,7 +98,7 @@ public class ControlStateTests6 : MauiTestBase6
         var result = _mainPage.CounterLabel.WaitVisible(true, 5000);
 
         // Assert
-        result.Should().BeTrue();
+        Assert.True(result);
     }
 
     [Fact]
@@ -139,7 +138,7 @@ public class ControlStateTests6 : MauiTestBase6
         _mainPage.WaitLoaded(true);
 
         // Act & Assert
-        _mainPage.IncrementButton.IsEnabled().Should().BeTrue();
+        Assert.True(_mainPage.IncrementButton.IsEnabled());
     }
 
     [Fact]
@@ -154,7 +153,7 @@ public class ControlStateTests6 : MauiTestBase6
         var result = _mainPage.GreetButton.WaitEnabled(true, 5000);
 
         // Assert
-        result.Should().BeTrue();
+        Assert.True(result);
     }
 
     [Fact]
@@ -197,7 +196,7 @@ public class ControlStateTests6 : MauiTestBase6
         var result = _mainPage.IncrementButton.WaitExists(null, 100);
 
         // Assert
-        result.Should().BeTrue();
+        Assert.True(result);
     }
 
     [Fact]
@@ -212,7 +211,7 @@ public class ControlStateTests6 : MauiTestBase6
         var result = _mainPage.IncrementButton.WaitVisible(null, 100);
 
         // Assert
-        result.Should().BeTrue();
+        Assert.True(result);
     }
 
     [Fact]
@@ -227,7 +226,7 @@ public class ControlStateTests6 : MauiTestBase6
         var result = _mainPage.IncrementButton.WaitEnabled(null, 100);
 
         // Assert
-        result.Should().BeTrue();
+        Assert.True(result);
     }
 
     #endregion
