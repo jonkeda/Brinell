@@ -147,8 +147,9 @@ public abstract class PageBase : IPageObject
 
 /// <summary>
 /// Page base class that includes a busy indicator.
+/// Implements IBusyPageObject for cross-platform busy state tracking.
 /// </summary>
-public abstract class BusyPageBase : PageBase
+public abstract class BusyPageBase : PageBase, IBusyPageObject
 {
     /// <summary>
     /// AutomationId of the busy indicator control.
@@ -181,6 +182,19 @@ public abstract class BusyPageBase : PageBase
         var timeout = timeoutMs ?? _context.DefaultTimeoutMs;
         Log($"WaitForNotBusy (timeout: {timeout}ms)");
         return _context.WaitFor(() => !IsBusy(), timeout, "page not busy");
+    }
+
+    /// <summary>
+    /// Assert the page is not busy.
+    /// Captures screenshot on failure.
+    /// </summary>
+    public virtual void AssertNotBusy(string? message = null)
+    {
+        if (IsBusy())
+        {
+            ThrowPageNotReady("AssertNotBusy", 
+                message ?? $"Expected page '{Name}' to not be busy but it is currently busy.");
+        }
     }
 
     /// <summary>
