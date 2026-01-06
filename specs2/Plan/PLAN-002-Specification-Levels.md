@@ -27,14 +27,16 @@ If Level 1 is correct, Level 2 only adds more controls. No changes to existing s
 
 Based on [SPX V7 Block Index](../../SPX/Docs/V7/_Index2.md):
 
-| Block | Code | Purpose for Brinell |
-|-------|------|---------------------|
+| SPX Block | Code | Purpose for Brinell |
+|-----------|------|---------------------|
 | 150 specification | SPC | Main specification container |
 | 151 behavior | BHV | What the control does |
 | 152 boundary | BND | Edge cases, limits, error handling |
 | 153 acceptance | ACC | Testable acceptance criteria |
 | 154 assumption | ASM | Preconditions and dependencies |
 | 155 exclusion | EXC | Explicit out-of-scope items |
+
+**Note:** SPX V7 uses 150 for specifications. Brinell uses **250** to place specifications after architecture (200).
 
 ---
 
@@ -118,32 +120,32 @@ All remaining controls as documented in existing requirements.
 
 ```
 specs2/
-├── 150_specifications/
-│   ├── 150_INDEX.md                    # Specification index
+├── 250_specifications/
+│   ├── 250_INDEX.md                    # Specification index
 │   │
 │   ├── Level0_Foundation/
-│   │   ├── 150_000_IControlObject.spx.md
-│   │   ├── 150_001_IPageObject.spx.md
-│   │   ├── 150_002_IContainerScope.spx.md
-│   │   └── 150_003_TestContext.spx.md
+│   │   ├── 250_000_IControlObject.spx.md
+│   │   ├── 250_001_IPageObject.spx.md
+│   │   ├── 250_002_IContainerScope.spx.md
+│   │   └── 250_003_TestContext.spx.md
 │   │
 │   ├── Level1_CoreControls/
-│   │   ├── 150_100_Button.spx.md
-│   │   ├── 150_101_Label.spx.md
-│   │   ├── 150_102_Entry.spx.md
-│   │   ├── 150_103_CheckBox.spx.md
-│   │   └── 150_104_Container.spx.md
+│   │   ├── 250_100_Button.spx.md
+│   │   ├── 250_101_Label.spx.md
+│   │   ├── 250_102_Entry.spx.md
+│   │   ├── 250_103_CheckBox.spx.md
+│   │   └── 250_104_Container.spx.md
 │   │
 │   ├── Level2_SelectionControls/
-│   │   ├── 150_200_Dropdown.spx.md
-│   │   ├── 150_201_ListBox.spx.md
-│   │   └── 150_202_RadioGroup.spx.md
+│   │   ├── 250_200_Dropdown.spx.md
+│   │   ├── 250_201_ListBox.spx.md
+│   │   └── 250_202_RadioGroup.spx.md
 │   │
 │   ├── Level3_AdvancedControls/
-│   │   ├── 150_300_Slider.spx.md
-│   │   ├── 150_301_DatePicker.spx.md
-│   │   ├── 150_302_DataGrid.spx.md
-│   │   └── 150_303_Tab.spx.md
+│   │   ├── 250_300_Slider.spx.md
+│   │   ├── 250_301_DatePicker.spx.md
+│   │   ├── 250_302_DataGrid.spx.md
+│   │   └── 250_303_Tab.spx.md
 │   │
 │   ├── Level4_PlatformSpecific/
 │   │   └── ...
@@ -419,7 +421,7 @@ All other controls from existing requirements.
 
 - [PLAN-001-Architecture-Creation](PLAN-001-Architecture-Creation.md) — Complete architecture plan
 - [120_100_ControlObject](../100_requirements/120_functional/120_100_ControlObject.spx.md) — Control requirements
-- [SPX V7 Specification Overview](../../SPX/Docs/V7/blocks2/150_specifications/15X_overview.md)
+- [SPX V7 Specification Overview](../../SPX/Docs/V7/blocks2/150_specifications/15X_overview.md) — SPX uses 150, Brinell uses 250
 
 ### Testing Infrastructure Requirements
 
