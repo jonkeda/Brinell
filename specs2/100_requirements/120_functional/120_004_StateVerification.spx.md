@@ -11,9 +11,29 @@ The framework must provide consistent patterns for verifying element and page st
 
 ### ImmediateStateChecks
 - **id**: FR-004.1
-- **title**: Is* methods for immediate checks
+- **title**: Is* and Get* methods for immediate checks
 
-The framework must provide methods to immediately check current state. Immediate checks must return boolean values. Immediate checks must not wait or retry. Immediate checks must not perform logging.
+The framework must provide methods to immediately check current state or retrieve values.
+
+**Return Values:**
+All Is* and Get* methods must return nullable types:
+- `bool?` for Is* methods (IsVisible, IsEnabled, IsExists, etc.)
+- `string?` for GetText, GetValue, etc.
+- `T?` for generic Get methods
+
+**Nullable Semantics:**
+- Non-null value — Element exists and value/condition retrieved
+- `null` — Element does not exist
+
+For `bool?` specifically:
+- `true` — Element exists and condition is met
+- `false` — Element exists and condition is not met
+- `null` — Element does not exist
+
+**Behavior:**
+- Immediate checks must not wait or retry
+- Immediate checks must not perform logging
+- Immediate checks must not throw exceptions for non-existent elements
 
 ### PollingWaits
 - **id**: FR-004.2

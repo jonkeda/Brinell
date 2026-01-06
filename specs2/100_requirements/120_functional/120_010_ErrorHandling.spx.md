@@ -34,3 +34,15 @@ The framework must provide specific exception types for different failure modes:
 - **title**: Recovery and fail-fast
 
 The framework should support retry logic for transient failures. The framework must fail fast for non-recoverable errors. The framework must not silently ignore errors.
+
+### ExceptionLogging
+- **id**: FR-010.4
+- **title**: Log exceptions before throwing
+
+All exceptions must be logged before being thrown. The log entry must include:
+- Exception type
+- Exception message
+- Element context (if applicable)
+- Stack trace information
+
+This ensures exceptions are captured in test logs even if the exception is caught and handled upstream.

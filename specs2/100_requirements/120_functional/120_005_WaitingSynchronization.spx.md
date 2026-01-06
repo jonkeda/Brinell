@@ -51,3 +51,27 @@ Control and page object operations must be synchronous:
 - Get/Set methods (GetText, SetText) — Synchronous
 
 Test base classes should implement IAsyncLifetime for async test setup/teardown.
+
+Asynchronous operation variants may also be implemented when platform requirements demand it.
+
+### WaitForNotAfter
+- **id**: FR-005.6
+- **title**: Wait for conditions, not after events
+
+Wait operations should wait **for** a condition to become true, not wait **after** an event has occurred.
+
+**Preferred:**
+```csharp
+button.Click();
+page.WaitForNotBusy();           // Wait FOR busy state to clear
+resultLabel.WaitVisible();        // Wait FOR element to appear
+```
+
+**Avoid:**
+```csharp
+button.Click();
+Thread.Sleep(2000);               // Wait AFTER click - fragile
+await Task.Delay(500);            // Arbitrary delay - unreliable
+```
+
+Only in exceptional cases should a wait be placed after an action without a condition. Always strive to find a condition to wait for instead of using arbitrary delays.
