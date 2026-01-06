@@ -5,7 +5,12 @@
 - **status**: draft
 - **category**: Object Model
 
-The framework must provide a Page Object abstraction for organizing test code. Page objects represent views/screens in the application and provide access to controls on that page.
+The framework Core must define page object interfaces for organizing test code. Page objects represent views/screens in the application and provide access to controls on that page.
+
+**Architecture:**
+- **Core defines IPageObject interface** with contracts for page behavior
+- **Technology packages provide base classes** that implement IPageObject
+- Tests inherit from technology-specific page base classes
 
 ## capabilities
 

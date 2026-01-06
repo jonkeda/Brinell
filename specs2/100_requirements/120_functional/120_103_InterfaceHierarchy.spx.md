@@ -5,18 +5,26 @@
 - **status**: draft
 - **category**: Object Model
 
-The framework must define a unified interface hierarchy for control objects. Interfaces are shared across all platform implementations.
+The framework Core must define a unified interface hierarchy for control objects. Interfaces are defined in Core and implemented by technology-specific packages.
+
+**Critical Design Principle:**
+- **Core defines interfaces ONLY** - no concrete implementations in Core
+- **Technology packages provide implementations** - concrete classes that implement Core interfaces
+- Tests depend on Core interfaces; runtime uses technology implementations
 
 ## capabilities
 
-### UnifiedInterfaces
+### CoreInterfacesOnly
 - **id**: FR-103.1
-- **title**: Framework-level interface definitions
+- **title**: Core defines interfaces only
 
-Interfaces must be defined at the framework core level:
-- Shared across all technology implementations
-- Platform-agnostic contracts
-- Single source of truth for control capabilities
+The framework Core package must:
+- Define all control and page interfaces
+- Provide **NO** concrete control or page implementations
+- Be technology-agnostic (no platform-specific types)
+- Serve as contracts for all technology implementations
+
+Technology packages (Brinell.Maui, Brinell.Web, Brinell.Wpf, etc.) provide concrete implementations.
 
 ### InterfaceStructure
 - **id**: FR-103.2
@@ -116,29 +124,40 @@ Interface combination reflects actual control capabilities.
 
 ### TechnologyClassHierarchy
 - **id**: FR-103.6
-- **title**: Per-technology class hierarchy
+- **title**: Per-technology class hierarchy implements Core interfaces
 
-Each technology implementation defines its own class hierarchy:
-- Classes implement the shared interfaces
-- Class hierarchy optimized for platform
-- Base classes provide common functionality
+Each technology package defines its own class hierarchy:
+- Classes implement Core interfaces (IControlObject, IClickableControl, etc.)
+- Class hierarchy optimized for that platform's automation needs
+- Base classes provide common functionality within that technology
 - Concrete classes for specific control types
 
-Example structure:
+**Package Structure:**
 ```
-Technology A:
+Core Package (Brinell.Core):
+  Interfaces ONLY:
+    IControlObject
+    IClickableControl
+    ITextControl
+    IEditableTextControl
+    IPageObject
+    ...
+
+Technology Package A (Brinell.Maui):
   ControlBase (implements IControlObject)
   ├── ClickableControlBase (implements IClickableControl)
   │   ├── ButtonControl
-  │   └── LinkControl
+  │   └── ImageButtonControl
   └── TextControlBase (implements ITextControl)
-      └── InputControl (implements IEditableTextControl)
+      └── EntryControl (implements IEditableTextControl)
 
-Technology B:
+Technology Package B (Brinell.Web):
   WebControlBase (implements IControlObject)
   ├── WebButtonControl (implements IClickableControl)
   └── WebInputControl (implements IEditableTextControl)
 ```
+
+**NO implementations in Core** - Core is purely interface definitions.
 
 ### CodeReuse
 - **id**: FR-103.7

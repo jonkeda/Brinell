@@ -5,7 +5,12 @@
 - **status**: draft
 - **category**: Object Model
 
-The framework must provide a Control Object abstraction for UI element interactions. Control objects encapsulate element location, state verification, and actions.
+The framework Core must define control object interfaces for UI element interactions. Control objects encapsulate element location, state verification, and actions.
+
+**Architecture:**
+- **Core defines interfaces only** (IControlObject, IClickableControl, ITextControl, etc.)
+- **Technology packages provide concrete implementations** that implement these interfaces
+- Each technology has its own class hierarchy optimized for that platform
 
 ## capabilities
 

@@ -91,6 +91,16 @@ Requirements for licensing and accessibility.
 | [120_900_Licensing](120_900_Licensing.spx.md) | FR-900 | Dependency Licensing | Medium |
 | [120_901_Accessibility](120_901_Accessibility.spx.md) | FR-901 | Accessibility Support | Low |
 
+### Category K: Testing Infrastructure (120_95x-97x)
+Requirements for sample applications and tests that validate the framework.
+
+| File | ID | Title | Priority |
+|------|-----|-------|----------|
+| [120_950_SampleApplications](120_950_SampleApplications.spx.md) | FR-950 | Sample Applications per Technology | High |
+| [120_960_UnitTests](120_960_UnitTests.spx.md) | FR-960 | Unit Tests for ControlObjects | High |
+| [120_961_UnitTestsFramework](120_961_UnitTestsFramework.spx.md) | FR-961 | Unit Tests for Framework Infrastructure | High |
+| [120_970_UITests](120_970_UITests.spx.md) | FR-970 | UI Integration Tests | High |
+
 ---
 
 ## migration from V1
