@@ -61,7 +61,7 @@ Controls must provide state query methods:
 
 | Method Pattern | Return | Behavior |
 |----------------|--------|----------|
-| IsExists | Boolean or null | Immediate check, no waiting |
+| IsExists | Boolean | Immediate check, no waiting |
 | IsVisible | Boolean or null | Immediate check, no waiting |
 | IsEnabled | Boolean or null | Immediate check, no waiting |
 | IsClickable | Boolean or null | Visible AND enabled |
@@ -73,6 +73,12 @@ Controls must provide state query methods:
 - Non-null value = element exists and state was determined
 - Null = element does not exist (not found in UI tree)
 
+**Exception: IsExists()**
+- `IsExists()` returns `bool` (not `bool?`) because:
+  - The question "does element exist?" always has a definitive answer
+  - Returning `null` for "doesn't exist" would be semantically redundant
+  - `false` clearly means "not found in UI tree"
+
 ### ControlActions
 - **id**: FR-100.4
 - **title**: Control action methods
@@ -82,7 +88,6 @@ Controls must provide action methods appropriate to their type:
 **Common actions:**
 - Click - Perform click/tap
 - DoubleClick - Perform double click/tap
-- Focus - Set focus to element
 
 **Text input actions:**
 - Enter - Input text (append or replace based on control)

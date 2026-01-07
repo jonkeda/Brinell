@@ -20,7 +20,6 @@ All state verification methods must follow consistent naming:
 | Is* | Immediate state query | Returns value or null, no waiting |
 | Get* | Immediate value retrieval | Returns value or null, no waiting |
 | Wait* | Poll for expected state | Returns boolean, polls with timeout |
-| Check* | Precondition verification | Throws on failure, waits with timeout |
 | Assert* | Test assertion | Throws on failure, logs result |
 
 ### IsMethods
@@ -39,8 +38,14 @@ Is* methods perform immediate state checks:
 - Non-null value = element exists, state determined
 - Null = element does not exist
 
+**Exception: IsExists()**
+- `IsExists()` returns `bool` (not `bool?`) because:
+  - The question "does element exist?" always has a definitive answer
+  - Returning `null` for "doesn't exist" would be semantically redundant
+  - `false` clearly means "not found in UI tree"
+
 **Examples:**
-- IsExists → true/false/null
+- IsExists → true/false (not nullable)
 - IsVisible → true/false/null
 - IsEnabled → true/false/null
 - IsChecked → true/false/null
@@ -95,30 +100,8 @@ bool WaitEnabled(bool? expected, int? timeoutMs = null)
 - When expected is null, return true immediately (skip operation)
 - Enables conditional waiting without explicit null checks
 
-### CheckMethods
-- **id**: FR-300.5
-- **title**: Check* method behavior
-
-Check* methods verify preconditions:
-
-**Behavior:**
-- Wait for condition with timeout
-- Throw exception if condition not met
-- Used internally before actions
-- May be called explicitly
-
-**Return semantics:**
-- Returns normally = condition met
-- Throws = condition not met after timeout
-
-**Examples:**
-- CheckExists(timeout) → void or throws
-- CheckVisible(timeout) → void or throws
-- CheckEnabled(timeout) → void or throws
-- CheckClickable(timeout) → void or throws
-
 ### AssertMethods
-- **id**: FR-300.6
+- **id**: FR-300.5
 - **title**: Assert* method behavior
 
 Assert* methods verify test expectations:
@@ -139,7 +122,7 @@ void AssertText(string? expected, string? message = null, int? timeoutMs = null)
 
 **Pattern:**
 1. If expected is null, return immediately (skip)
-2. Call corresponding Check* method first
+2. Wait for element to be testable (with timeout)
 3. Retrieve actual value
 4. Compare with expected
 5. Log result
@@ -149,17 +132,8 @@ void AssertText(string? expected, string? message = null, int? timeoutMs = null)
 - When expected is null, do nothing (skip operation)
 - Enables conditional assertions without explicit null checks
 
-### AssertCallsCheck
-- **id**: FR-300.7
-- **title**: Assert methods call Check first
-
-Assert methods must call the corresponding Check method:
-- AssertVisible calls CheckVisible internally
-- Ensures element is in testable state before comparison
-- Separates "can we test this?" from "is the value correct?"
-
 ### PreferControlAssertions
-- **id**: FR-300.8
+- **id**: FR-300.6
 - **title**: Prefer control object assertions
 
 Tests should prefer control object assertions over external libraries:
@@ -184,4 +158,3 @@ Tests should prefer control object assertions over external libraries:
 - Method naming must be consistent across all control types
 - Is*/Get* methods must never throw exceptions for missing elements
 - Assert* methods must always log before throwing
-- Check* methods must not log (internal use)

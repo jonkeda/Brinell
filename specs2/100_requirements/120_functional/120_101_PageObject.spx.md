@@ -112,7 +112,7 @@ Pages must support page-level operations:
 - **id**: FR-101.7
 - **title**: Page busy state tracking
 
-Pages may track busy/loading state:
+Pages that track busy/loading state should implement `IBusyPageObject`:
 
 | Method | Description |
 |--------|-------------|
@@ -120,6 +120,11 @@ Pages may track busy/loading state:
 | WaitForNotBusy | Wait until busy state clears |
 
 Busy indicator definition is page-specific (spinner, overlay, progress bar).
+
+This capability is provided as an optional interface because:
+- Not all pages have busy indicators
+- Busy indicator implementations vary by application
+- Tests can opt-in by casting or interface check
 
 ### DefaultLocatorStrategy
 - **id**: FR-101.8
