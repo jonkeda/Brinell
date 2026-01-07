@@ -53,7 +53,8 @@ Brinell.MAUI/
 │   ├── ToggleControlBase.cs
 │   └── ... (capability base classes)
 ├── Context/
-│   ├── AppiumTestContext.cs
+│   ├── IMauiTestContext.cs         # Platform interface extending ITestContext
+│   ├── AppiumTestContext.cs        # Implements IMauiTestContext
 │   └── MauiPageBase.cs
 └── Utilities/
     ├── ElementFinder.cs
@@ -79,7 +80,8 @@ Brinell.Blazor/
 │   ├── TextControlBase.cs
 │   └── ... (capability base classes)
 ├── Context/
-│   ├── SeleniumTestContext.cs
+│   ├── IBlazorTestContext.cs       # Platform interface extending ITestContext
+│   ├── SeleniumTestContext.cs      # Implements IBlazorTestContext
 │   └── BlazorPageBase.cs
 └── Utilities/
     ├── ElementFinder.cs
@@ -98,7 +100,8 @@ Brinell.WPF/
 │   ├── ControlBase.cs
 │   └── ... (WPF controls)
 ├── Context/
-│   └── WpfTestContext.cs
+│   ├── IWpfTestContext.cs          # Platform interface extending ITestContext
+│   └── WpfTestContext.cs           # Implements IWpfTestContext
 └── ...
 ```
 
@@ -207,7 +210,7 @@ Brinell.Blazor
 Brinell.MAUI
 ├── Brinell.MAUI.Controls         # Concrete control implementations
 ├── Brinell.MAUI.Base             # Base classes
-├── Brinell.MAUI.Context          # Test context and page base
+├── Brinell.MAUI.Context          # IMauiTestContext, TestContext, PageBase
 └── Brinell.MAUI.Utilities        # Internal helpers
 ```
 
@@ -217,7 +220,7 @@ Brinell.MAUI
 Brinell.Blazor
 ├── Brinell.Blazor.Controls       # Concrete control implementations
 ├── Brinell.Blazor.Base           # Base classes
-├── Brinell.Blazor.Context        # Test context and page base
+├── Brinell.Blazor.Context        # IBlazorTestContext, TestContext, PageBase
 └── Brinell.Blazor.Utilities      # Internal helpers
 ```
 
@@ -225,33 +228,33 @@ Brinell.Blazor
 
 ## 8. Control Implementation Pattern
 
-All controls follow this pattern:
+All controls follow this pattern. Base classes take the platform-specific interface (e.g., `IMauiTestContext`) rather than casting to concrete types:
 
 ```csharp
 public class EntryControl : EditableTextControlBase, IEditableTextControlObject
 {
-    public EntryControl(ITestContext context, string automationId) 
-        : base(context, automationId)
+    public EntryControl(IMauiTestContext context, Locator locator) 
+        : base(context, locator)
     {
     }
 
-    // Interface implementation
+    // Interface implementation uses base class element finding
     public override void Enter(string text)
     {
-        var element = FindElement();
+        var element = (AppiumElement)FindElement();
         element.Clear();
         element.SendKeys(text);
     }
 
     public override void Clear()
     {
-        var element = FindElement();
+        var element = (AppiumElement)FindElement();
         element.Clear();
     }
 
     public override string GetText()
     {
-        var element = FindElement();
+        var element = (AppiumElement)FindElement();
         return element.Text;
     }
 }
@@ -264,6 +267,9 @@ public class EntryControl : EditableTextControlBase, IEditableTextControlObject
 A platform package is valid when:
 
 - [ ] Implements all required Core interfaces
+- [ ] Defines a platform-specific TestContext interface (e.g., IMauiTestContext)
+- [ ] TestContext implementation provides type-safe element finding
+- [ ] Base classes use the platform-specific interface, not concrete casts
 - [ ] Does not reference other platform packages
 - [ ] Does not expose automation library types in public API
 - [ ] Has parallel base class hierarchy matching Core interfaces

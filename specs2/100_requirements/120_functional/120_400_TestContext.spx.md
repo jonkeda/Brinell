@@ -14,13 +14,15 @@ The framework must provide test context management for controlling test executio
 - **title**: Test context definition
 
 A test context provides:
-- Configuration access
-- Logger factory
+- Configuration access (TimeoutSettings)
+- Logger (ITestLogger)
 - Screenshot service
-- Default timeout settings
 - Driver/session management
+- Navigation methods
 
 Tests receive a context and use it to create page objects.
+
+**Note:** Context does NOT track current page. Controls receive their page reference via constructor parameter, enabling explicit page scoping without global state.
 
 ### ContextCreationModes
 - **id**: FR-400.2

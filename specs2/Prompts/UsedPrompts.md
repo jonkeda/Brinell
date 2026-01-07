@@ -70,7 +70,7 @@ add the the 120_functional
 
 1. Add the Async Blazor pattern as a generic manner. No need to describe the classes. Only if it doesn yet fit another requirements
 
-## Add requirements
+## Add requirements for
 
 we need to add some requirements.
 
@@ -97,9 +97,63 @@ But each time that we only have to add code and not really refactor. So base cla
 
 The definition of the architecture must be complete. But the specifications can be by level.
 
-
 ## 200_Architecture
 
 ### Review
 
 in folder reviews could you make a review doc of the architecture and make sure it is based on all the requirements in spec2\100\Requirements
+
+## 203
+
+Changes for:
+
+203_001
+
+The corelayer should also contain the crosscutting concerns. Logging etc.
+
+design rules:
+No technology specific implementation code.
+
+Als make requirements changes to make this clearer
+
+Interface design principles
+The examles do not follow the requirements. timeout and nullable types for instance.
+
+5.3 Composition Over Inheritance
+
+Use inheritance and base classes where possible.
+
+Namespace structure
+Do not use the ControlObject6 name. This was old. ( just remove no need to document )
+
+## 211
+
+211_002
+
+6. Platform-Specific Base Classes
+   6.1 MAUI (Appium)
+
+In this example you are using casting to AppiumTestContext
+and passing the AppiumTestContext instead of an interface.
+
+create things like IMauiTestContext, IBlazorContext and pass those
+
+    protected override object FindElement()
+    {
+        return ((SeleniumTestContext)_context).FindElement(_locator);
+    }
+
+and check if you need to change other documents to make this clear req and arch
+
+## 211_003 and 211_004
+
+the modules 211_003 and 211_004 have a lot of mistakes. Have a good look at the existing implementation of for instance:
+
+Brinell.Maui.UITests.ControlObject6
+
+
+### stop
+
+stop. Except for 211_003 and 211_004 mainly follow the requirements and architecture documents. AN duse the implementation as example.
+
+You know what. First write an Issue document with what you learned and what you are plannign to do.

@@ -158,6 +158,42 @@ Technology implementations should maximize code reuse:
 - Utility classes for shared operations
 - Only platform-specific code in concrete classes
 
+### PlatformContextInterfaces
+- **id**: FR-103.8
+- **title**: Platform-specific context interfaces
+
+Each technology package defines a platform-specific context interface:
+- Extends `ITestContext` from Core
+- Adds platform-specific element finding methods
+- Exposes driver for advanced scenarios
+- Controls use the platform context interface type
+
+**Pattern:**
+```
+Core (Brinell.Core):
+  ITestContext (base interface)
+
+MAUI (Brinell.Maui):
+  IMauiTestContext : ITestContext
+    - AppiumDriver Driver
+    - FindElement(Locator)
+    - TryFindElement(Locator)
+    - FindElements(Locator)
+
+Blazor (Brinell.Blazor):
+  IBlazorTestContext : ITestContext
+    - IWebDriver Driver
+    - string BaseUrl
+    - FindElement(Locator)
+    - TryFindElement(Locator)
+    - FindElements(Locator)
+```
+
+This enables:
+- Interface-based programming in controls
+- Mocking for unit tests
+- Consistent element finding API per platform
+
 ---
 
 ## relationships

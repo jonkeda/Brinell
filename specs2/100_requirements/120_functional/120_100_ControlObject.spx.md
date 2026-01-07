@@ -24,7 +24,16 @@ A control object represents a single UI element and provides:
 - Actions appropriate to control type (click, enter text, select)
 - Assertions for verification
 
-Controls are created within a page or container scope.
+Controls are created with:
+- Platform context (IMauiTestContext, IBlazorTestContext, etc.)
+- Locator for element identification
+- Optional page reference for scoping and logging
+
+```
+// Pseudocode - control constructor pattern
+ButtonControl(context, locator, page?)
+EntryControl(context, "AutomationId", page?)
+```
 
 ### ControlTypes
 - **id**: FR-100.2
@@ -81,7 +90,8 @@ Controls must provide action methods appropriate to their type:
 - SetText - Clear then enter
 
 **Selection actions:**
-- Select - Select item by text or index
+- SelectByText - Select item by display text
+- SelectByIndex - Select item by position
 - Deselect - Remove selection
 
 **Toggle actions:**

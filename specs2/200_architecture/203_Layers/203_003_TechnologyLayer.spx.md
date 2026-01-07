@@ -96,11 +96,11 @@ Brinell.Blazor.Playwright
 
 ### 4.1 TestContext Pattern
 
-Each technology has a TestContext that manages the driver and element finding:
+Each technology has a TestContext that implements both `ITestContext` and the platform-specific interface. The platform interface provides type-safe element finding methods:
 
 ```csharp
-// MAUI with Appium
-public class AppiumTestContext : ITestContext
+// MAUI with Appium - implements IMauiTestContext
+public class AppiumTestContext : IMauiTestContext
 {
     private readonly AppiumDriver _driver;
     
@@ -109,7 +109,8 @@ public class AppiumTestContext : ITestContext
         _driver = new AppiumDriver(new Uri(serverUrl), options);
     }
     
-    internal AppiumElement FindElement(Locator locator)
+    // IMauiTestContext implementation
+    public AppiumElement FindElement(Locator locator)
     {
         // Locator translates to technology-specific lookup
         return locator.Strategy switch
@@ -120,12 +121,18 @@ public class AppiumTestContext : ITestContext
             _ => throw new NotSupportedException($"Locator strategy {locator.Strategy} not supported")
         };
     }
+    
+    public AppiumElement? TryFindElement(Locator locator)
+    {
+        try { return FindElement(locator); }
+        catch (NoSuchElementException) { return null; }
+    }
 }
 ```
 
 ```csharp
-// Blazor with Selenium
-public class SeleniumTestContext : ITestContext
+// Blazor with Selenium - implements IBlazorTestContext
+public class SeleniumTestContext : IBlazorTestContext
 {
     private readonly IWebDriver _driver;
     
@@ -134,7 +141,8 @@ public class SeleniumTestContext : ITestContext
         _driver = new ChromeDriver(options);
     }
     
-    internal IWebElement FindElement(Locator locator)
+    // IBlazorTestContext implementation
+    public IWebElement FindElement(Locator locator)
     {
         return locator.Strategy switch
         {
@@ -144,6 +152,12 @@ public class SeleniumTestContext : ITestContext
             LocatorStrategy.Id => _driver.FindElement(By.Id(locator.Value)),
             _ => throw new NotSupportedException($"Locator strategy {locator.Strategy} not supported")
         };
+    }
+    
+    public IWebElement? TryFindElement(Locator locator)
+    {
+        try { return FindElement(locator); }
+        catch (NoSuchElementException) { return null; }
     }
 }
 ```

@@ -74,20 +74,26 @@ Get* methods retrieve values immediately:
 Wait* methods poll for expected state:
 
 **Behavior:**
+- Accept nullable expected parameter for skip-on-null
 - Poll repeatedly until condition met or timeout
 - Configurable polling interval
 - Return boolean result
 - No exceptions thrown on timeout
 
+**Signature pattern:**
+```
+bool WaitExists(bool? expected, int? timeoutMs = null)
+bool WaitVisible(bool? expected, int? timeoutMs = null)
+bool WaitEnabled(bool? expected, int? timeoutMs = null)
+```
+
 **Return semantics:**
-- true = condition met within timeout
+- true = condition met within timeout (or expected was null)
 - false = timeout expired, condition not met
 
-**Examples:**
-- WaitExists(timeout) → true/false
-- WaitVisible(timeout) → true/false
-- WaitEnabled(timeout) → true/false
-- WaitText(expected, timeout) → true/false
+**Null handling:**
+- When expected is null, return true immediately (skip operation)
+- Enables conditional waiting without explicit null checks
 
 ### CheckMethods
 - **id**: FR-300.5
@@ -118,23 +124,30 @@ Check* methods verify preconditions:
 Assert* methods verify test expectations:
 
 **Behavior:**
+- Accept nullable expected parameter for skip-on-null
 - Log the assertion attempt
 - Compare expected vs actual
 - Throw on mismatch with detailed message
 - Include expected and actual values in exception
 
-**Pattern:**
-1. Call corresponding Check* method first
-2. Retrieve actual value
-3. Compare with expected
-4. Log result
-5. Throw AssertionException if mismatch
+**Signature pattern:**
+```
+void AssertExists(bool? expected, string? message = null, int? timeoutMs = null)
+void AssertVisible(bool? expected, string? message = null, int? timeoutMs = null)
+void AssertText(string? expected, string? message = null, int? timeoutMs = null)
+```
 
-**Examples:**
-- AssertExists(message) → void or throws
-- AssertVisible(message) → void or throws
-- AssertText(expected, message) → void or throws
-- AssertValue(expected, message) → void or throws
+**Pattern:**
+1. If expected is null, return immediately (skip)
+2. Call corresponding Check* method first
+3. Retrieve actual value
+4. Compare with expected
+5. Log result
+6. Throw AssertionException if mismatch
+
+**Null handling:**
+- When expected is null, do nothing (skip operation)
+- Enables conditional assertions without explicit null checks
 
 ### AssertCallsCheck
 - **id**: FR-300.7

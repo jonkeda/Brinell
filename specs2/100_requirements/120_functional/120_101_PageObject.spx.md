@@ -30,19 +30,24 @@ Pages search for elements from the application/document root.
 - **id**: FR-101.2
 - **title**: Page state verification
 
-Pages must provide state verification:
+Pages must provide state verification using nullable skip pattern:
 
 | Method | Description |
 |--------|-------------|
-| IsDisplayed | Check if page is currently displayed |
-| IsReady | Check if page is ready for interaction |
-| WaitForDisplayed | Wait until page is displayed |
-| WaitForReady | Wait until page is ready |
+| IsLoaded | Check if page is currently loaded (immediate) |
+| WaitLoaded(expected?) | Wait for loaded/unloaded state; null skips |
+| AssertLoaded(expected?) | Assert loaded state; null skips |
+| GetTitle | Get page title |
+| AssertTitle(expected?) | Assert page title; null skips |
+
+**Nullable skip pattern:**
+- When `expected` parameter is null, method returns immediately
+- Enables conditional verification without explicit null checks
 
 **Ready state:**
 - Page-specific readiness criteria
 - May include: loading complete, required elements present, no busy indicators
-- Customizable per page type
+- Customizable per page type via PageLocator override
 
 ### AutomaticReadinessCheck
 - **id**: FR-101.3
@@ -59,12 +64,18 @@ This ensures page is interactive before tests proceed.
 - **id**: FR-101.4
 - **title**: Control access from page
 
-Pages must provide control access:
-- Define controls as properties or methods
-- Controls created with locator relative to page
-- Controls inherit page's default settings (timeout)
+Pages provide control access via direct construction:
+- Define controls as properties using `new` pattern
+- Pass page reference (`this`) to enable scoping and logging
+- Controls inherit page's context settings
 
-Control definitions should be declarative, not imperative.
+```
+// Pseudocode - page defines controls via new
+public EntryControl UsernameField => new(Context, "UsernameEntry", this);
+public ButtonControl LoginButton => new(Context, "LoginButton", this);
+```
+
+Control definitions should be declarative properties, not factory methods.
 
 ### NavigationMethods
 - **id**: FR-101.5
