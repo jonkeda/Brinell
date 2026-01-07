@@ -34,15 +34,25 @@ This requirement ensures the framework codebase is maintainable through proper o
 
 ```
 src/
-├── Brinell.Core/              # Interfaces, no platform deps
-│   ├── Interfaces/
-│   ├── Abstractions/
-│   └── Exceptions/
+├── Brinell.Core/              # Interfaces + cross-cutting concerns
+│   ├── Interfaces/            # Control and page interfaces
+│   ├── Exceptions/            # Exception types
+│   ├── Configuration/         # Configuration contracts
+│   ├── Logging/               # Logging (contracts + default impl)
+│   ├── Timeout/               # Timeout and wait utilities
+│   ├── Retry/                 # Retry policies
+│   └── Assertions/            # Common assertion logic
 ├── Brinell.Maui/              # MAUI + Appium implementation
 ├── Brinell.Blazor/            # Blazor + Selenium implementation
 ├── Brinell.Wpf/               # WPF + FlaUI implementation
 └── Brinell.Testing/           # Test utilities
 ```
+
+**Core Contains:**
+- Interfaces (contracts for all controls and pages)
+- Exceptions (framework exception types)
+- Cross-cutting concerns (logging, timeout, retry, assertions) using only .NET types
+- **NO** technology-specific code (no Appium, Selenium, Playwright references)
 
 ---
 
@@ -50,10 +60,10 @@ src/
 
 | Project | May Reference | Must NOT Reference |
 |---------|---------------|-------------------|
-| Core | None (minimal) | Platform projects |
-| Maui | Core | Blazor, Wpf |
-| Blazor | Core | Maui, Wpf |
-| Wpf | Core | Maui, Blazor |
+| Core | .NET Standard only | Platform projects, automation libraries |
+| Maui | Core, Appium | Blazor, Wpf |
+| Blazor | Core, Selenium/Playwright | Maui, Wpf |
+| Wpf | Core, FlaUI/WinAppDriver | Maui, Blazor |
 | Testing | Core | Platform projects |
 
 ---

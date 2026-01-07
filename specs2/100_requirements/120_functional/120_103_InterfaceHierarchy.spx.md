@@ -16,15 +16,17 @@ The framework Core must define a unified interface hierarchy for control objects
 
 ### CoreInterfacesOnly
 - **id**: FR-103.1
-- **title**: Core defines interfaces only
+- **title**: Core defines interfaces and cross-cutting concerns
 
 The framework Core package must:
 - Define all control and page interfaces
+- Provide cross-cutting concerns (logging, timeout, retry, assertions) using only .NET types
 - Provide **NO** concrete control or page implementations
+- Contain **NO** technology-specific code (no Appium, Selenium, Playwright references)
 - Be technology-agnostic (no platform-specific types)
 - Serve as contracts for all technology implementations
 
-Technology packages (Brinell.Maui, Brinell.Web, Brinell.Wpf, etc.) provide concrete implementations.
+Technology packages (Brinell.Maui, Brinell.Web, Brinell.Wpf, etc.) provide concrete control implementations.
 
 ### InterfaceStructure
 - **id**: FR-103.2
