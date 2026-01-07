@@ -6,7 +6,35 @@ This document provides guidance for GitHub Copilot and other AI assistants worki
 
 ---
 
-## 1. Mermaid Diagram Syntax (Critical)
+## 1. Markdown File Formatting (Critical)
+
+### ❌ NEVER Start .md Files with Code Fences
+
+Markdown files should contain raw markdown content, NOT be wrapped in code fences.
+
+```markdown
+❌ WRONG - File starts with code fence:
+````markdown
+# My Document
+Content here...
+````
+
+✅ CORRECT - File starts with markdown content:
+# My Document
+Content here...
+```
+
+**Why this matters:**
+- `.md` files ARE markdown - they don't need to be wrapped
+- Code fences are for embedding code WITHIN markdown, not wrapping entire files
+- Starting with ` ``` ` breaks rendering in most markdown viewers
+- GitHub, VS Code, and documentation tools expect raw markdown
+
+**Rule:** When creating or editing `.md` files, write markdown content directly. Never wrap the entire file in ` ```markdown ... ``` ` fences.
+
+---
+
+## 2. Mermaid Diagram Syntax (Critical)
 
 ### Current Environment
 - **Mermaid Version:** 11.x (latest as of January 2026)
@@ -146,7 +174,7 @@ MyControl --|> ITextControl
 
 ---
 
-## 2. Class Diagram Best Practices
+## 3. Class Diagram Best Practices
 
 ### Design Principles
 1. **Keep it simple** - Too many methods in a class box causes rendering issues
@@ -190,7 +218,7 @@ EditableTextControlBase --|> IEditableTextControl
 
 ---
 
-## 3. Brinell-Specific Guidelines
+## 4. Brinell-Specific Guidelines
 
 ### Control Naming Conventions
 - **Interfaces:** `I<ControlType>` (e.g., `IClickableControl`, `ITextControl`)
@@ -215,7 +243,7 @@ When documenting multi-platform controls:
 
 ---
 
-## 4. Creating New Diagrams
+## 5. Creating New Diagrams
 
 ### Step-by-Step Process
 1. **Start with interface hierarchy** - Define what each interface does
@@ -266,7 +294,7 @@ classDiagram
 
 ---
 
-## 5. Troubleshooting Mermaid Errors
+## 6. Troubleshooting Mermaid Errors
 
 ### Real-World Errors Encountered (January 2026)
 
@@ -377,7 +405,7 @@ classDiagram
 
 ---
 
-## 5. Performance Considerations
+## 7. Performance Considerations
 
 ### Diagram Size Limits
 - **Small (good):** < 15 classes, < 100 methods total
@@ -404,7 +432,7 @@ Instead of one giant diagram:
 
 ---
 
-## 7. Examples from SPEC-002b
+## 8. Examples from SPEC-002b
 
 ### Reference Implementation
 See `specs/SPEC-002b-001-CONTROL-HIERARCHY-DIAGRAMS.md` for working examples of:
@@ -486,7 +514,7 @@ classDiagram
 
 ---
 
-## 8. When to Use Mermaid vs. Other Tools
+## 9. When to Use Mermaid vs. Other Tools
 
 ### Use Mermaid for:
 - ✅ Class hierarchies and inheritance
@@ -510,7 +538,7 @@ classDiagram
 
 ---
 
-## 9. Documentation Standards
+## 10. Documentation Standards
 
 ### Every Mermaid Diagram Should Have
 
@@ -547,7 +575,7 @@ classDiagram
 
 ---
 
-## 10. Future Updates
+## 11. Future Updates
 
 ### Lessons Learned (January 3, 2026)
 

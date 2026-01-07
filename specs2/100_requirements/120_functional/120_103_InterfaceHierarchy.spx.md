@@ -30,22 +30,27 @@ Technology packages (Brinell.Maui, Brinell.Web, Brinell.Wpf, etc.) provide concr
 - **id**: FR-103.2
 - **title**: Interface hierarchy structure
 
-The interface hierarchy must follow this pattern:
+The interface hierarchy must:
 
+1. **Cover all standard controls** in both MAUI and Blazor platforms
+2. **Follow capability-based design** — interfaces represent capabilities (clickable, editable, selectable)
+3. **Use composition over deep inheritance** — controls implement multiple capability interfaces
+4. **Have a single base interface** — IControlObject for common state/assertion methods
+
+**Design Pattern:**
 ```
-IControlObject (base for all controls)
-├── IClickableControl (click actions)
-│   └── IContentControl (clickable with content)
-├── ITextControl (text display)
-│   └── IEditableTextControl (text input)
-├── IToggleControl (binary state)
-├── ISelectorControl (selection from options)
-├── IRangeControl (numeric range)
-├── IItemsControl (collection of items)
-└── IContainerControl (scoped region)
+IControlObject (base for ALL controls)
+├── Capability interfaces (IClickable, IText, IToggle, etc.)
+│   └── Extended capabilities (IEditableText extends IText)
+└── Structural interfaces (IContainer, IItems, IScrollable)
 ```
 
-This is the core hierarchy. Additional interfaces may be defined for platform-specific capabilities.
+**Scope:** The complete interface list is defined in specifications, derived from:
+- All standard MAUI controls (Button, Entry, Label, CheckBox, Picker, Slider, etc.)
+- All standard Blazor/HTML controls (button, input, select, checkbox, etc.)
+- Common capabilities across both platforms
+
+**Note:** The specifications define the complete interface catalog. This requirement defines the pattern.
 
 ### BaseInterface
 - **id**: FR-103.3
@@ -72,43 +77,25 @@ All controls must implement a base interface providing:
 - **id**: FR-103.4
 - **title**: Capability-based interfaces
 
-Interfaces define capabilities that controls may have:
+Interfaces define capabilities that controls may have. Each capability interface:
 
-**IClickableControl:**
-- Click, DoubleClick, RightClick
-- WaitClickable, AssertClickable
+1. **Extends IControlObject** — inherits base state/assertion methods
+2. **Defines capability-specific methods** — actions and assertions for that capability
+3. **Is independently implementable** — controls choose which capabilities they support
 
-**ITextControl:**
-- GetText, GetValue
-- AssertText, AssertValue
+**Capability Categories:**
 
-**IEditableTextControl (extends ITextControl):**
-- Enter, Clear, SetText
-- AssertEditable
+| Category | Purpose | Examples |
+|----------|---------|----------|
+| Interaction | User actions | Click, tap, swipe, scroll |
+| Text | Text content | Read text, enter text, clear |
+| State | Binary/multi state | Toggle, select, expand |
+| Range | Numeric values | Slider value, progress |
+| Structure | Element organization | Container scope, item collection |
+| Navigation | View/page control | Navigate, tab, flyout |
+| Media | Rich content | Image, video, web content |
 
-**IToggleControl:**
-- GetChecked, SetChecked, Toggle
-- AssertChecked, AssertUnchecked
-
-**ISelectorControl:**
-- GetSelectedItem, GetSelectedIndex
-- Select, SelectByIndex, SelectByText
-- GetItems, GetItemCount
-- AssertSelected
-
-**IRangeControl:**
-- GetValue, SetValue, GetMinimum, GetMaximum
-- Increment, Decrement
-- AssertValue, AssertInRange
-
-**IItemsControl:**
-- GetItems, GetItemCount
-- GetItemAt, FindItem
-- AssertItemCount, AssertContainsItem
-
-**IContainerControl:**
-- GetControl, GetContainer
-- FindControl, FindControls
+**Note:** The complete interface catalog with all methods is defined in specifications. This requirement defines the capability pattern.
 
 ### MultipleInterfaces
 - **id**: FR-103.5
