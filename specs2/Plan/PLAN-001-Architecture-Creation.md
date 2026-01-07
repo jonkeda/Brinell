@@ -173,51 +173,23 @@ Dependencies: Technology SDK only (no Brinell dependency)
 
 ---
 
-## 6. Interface Hierarchy (Complete Definition)
+## 6. Interface and Base Class Hierarchies
 
-The interface hierarchy must be **fully defined** before any implementation:
+> **Note:** Complete interface and base class hierarchy definitions are documented in [PLAN-002](PLAN-002-Specification-Levels.md) Level 0 Foundation section. Architecture documents the pattern and structure; specifications define the complete member lists.
 
-```
-IControlObject                     # Base for all controls
-├── IClickableControl              # Click capability
-├── ITextControl                   # Text display
-│   └── IEditableTextControl       # Text input
-├── IToggleControl                 # Toggle state
-├── ISelectorControl               # Selection from list
-│   └── IMultiSelectorControl      # Multi-selection
-├── IRangeControl                  # Numeric range
-├── IContainerControl              # Child scoping
-└── ICollectionControl             # Item enumeration
-```
+Architecture documents (211_Modules) define:
+- **Interface organization** — Capability-based interfaces (211_001_Interfaces)
+- **Base class patterns** — Template method, inheritance structure (211_002_BaseClasses)
+- **Control patterns** — How controls inherit and implement (211_003_Controls)
 
-### Interface Members (Must be Complete)
-
-Each interface's members must be fully defined in architecture, including:
-- State methods: IsExists, IsVisible, IsEnabled
-- Wait methods: WaitExists, WaitVisible, WaitEnabled
-- Assert methods: AssertExists, AssertVisible
-- Capability-specific methods
+Specification documents (PLAN-002 Level 0) define:
+- **Complete interface members** — All methods, properties, signatures
+- **Complete base class members** — All methods, template methods, abstract methods
+- **Behavior specifications** — What each method does, edge cases, assertions
 
 ---
 
-## 7. Base Class Hierarchy (Complete Definition)
-
-Technology packages implement this hierarchy:
-
-```
-ControlBase                        # Implements IControlObject
-├── ClickableControlBase           # Implements IClickableControl
-├── TextControlBase                # Implements ITextControl
-│   └── EditableTextControlBase    # Implements IEditableTextControl
-├── ToggleControlBase              # Implements IToggleControl
-├── SelectorControlBase            # Implements ISelectorControl
-├── RangeControlBase               # Implements IRangeControl
-└── ContainerControlBase           # Implements IContainerControl
-```
-
----
-
-## 8. Execution Steps
+## 7. Execution Steps
 
 ### Phase 1: Core Architecture (Week 1)
 
@@ -230,8 +202,8 @@ ControlBase                        # Implements IControlObject
 
 1. Write module definitions (211_001 through 211_004)
 2. Write pattern definitions (231_001 through 231_004)
-3. Define complete interface hierarchy
-4. Define complete base class hierarchy
+
+> **Note:** Complete interface and base class hierarchy definitions are created as part of PLAN-002 Level 0 Foundation, not Phase 2 of PLAN-001. See [PLAN-002](PLAN-002-Specification-Levels.md) for details.
 
 ### Phase 3: Foundation and External (Week 2)
 
@@ -247,14 +219,14 @@ ControlBase                        # Implements IControlObject
 
 ---
 
-## 9. Validation Checklist
+## 8. Validation Checklist
 
 Before architecture is considered complete:
 
 - [ ] All layers defined with clear boundaries
 - [ ] All ADRs documented with rationale
-- [ ] Complete interface hierarchy documented
-- [ ] Complete base class hierarchy documented
+- [ ] Interface organization patterns documented (complete members in PLAN-002)
+- [ ] Base class organization patterns documented (complete members in PLAN-002)
 - [ ] All patterns documented
 - [ ] All cross-cutting concerns documented
 - [ ] External dependencies documented
@@ -265,7 +237,7 @@ Before architecture is considered complete:
 
 ---
 
-## 10. Success Criteria
+## 9. Success Criteria
 
 Architecture is complete when:
 
