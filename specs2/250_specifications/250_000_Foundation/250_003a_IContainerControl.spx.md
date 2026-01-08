@@ -72,8 +72,22 @@ public interface IContainerControl : IControlObject
     /// </summary>
     /// <param name="locator">Locator relative to this container.</param>
     /// <param name="timeoutMs">Timeout to wait. Null = use default.</param>
-    /// <returns>Number of matching controls.</returns>
-    int GetControlCount(Locator locator, int? timeoutMs = null);
+    /// <returns>Number of matching controls, or null if container not found.</returns>
+    int? GetControlCount(Locator locator, int? timeoutMs = null);
+    
+    /// <summary>
+    /// Wait until control count matches expected value.
+    /// </summary>
+    /// <param name="locator">Locator relative to this container.</param>
+    /// <param name="expected">Expected count. Null = skip.</param>
+    /// <param name="timeoutMs">Timeout in milliseconds. Null = use default.</param>
+    /// <returns>True if matched, false if timeout.</returns>
+    bool WaitControlCount(Locator locator, int? expected, int? timeoutMs = null);
+    
+    /// <summary>
+    /// Assert control count matches expected value.
+    /// </summary>
+    void AssertControlCount(Locator locator, int? expected, string? message = null, int? timeoutMs = null);
 }
 ```
 
@@ -236,10 +250,27 @@ public abstract class ContainerControlBase : ControlBase, IContainerControl
         return WaitHelper.WaitFor(() => ControlExists(locator) == expected.Value, timeout);
     }
     
-    public int GetControlCount(Locator locator, int? timeoutMs = null)
+    public int? GetControlCount(Locator locator, int? timeoutMs = null)
     {
+        if (!IsExists()) return null;
         var scopedLocator = locator.ScopedTo(Locator);
         return FindElementsInScope(scopedLocator, timeoutMs).Count;
+    }
+    
+    public bool WaitControlCount(Locator locator, int? expected, int? timeoutMs = null)
+    {
+        if (expected is null) return true;
+        var timeout = timeoutMs ?? _context.Timeouts.DefaultWait;
+        return WaitHelper.WaitFor(() => GetControlCount(locator) == expected.Value, timeout);
+    }
+    
+    public void AssertControlCount(Locator locator, int? expected, string? message = null, int? timeoutMs = null)
+    {
+        if (expected is null) return;
+        WaitControlCount(locator, expected, timeoutMs);
+        var actual = GetControlCount(locator);
+        if (actual != expected)
+            throw new AssertionException(message ?? $"Expected control count {expected} but was {actual}");
     }
     
     // Abstract - platform-specific element finding

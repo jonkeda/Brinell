@@ -87,16 +87,18 @@ namespace Brinell.Blazor.Base
             catch { return false; }
         }
         
-        public bool IsVisible()
+        public bool? IsVisible()
         {
             var element = TryFindElement();
-            return element?.Displayed ?? false;
+            if (element == null) return null;
+            return element.Displayed;
         }
         
-        public bool IsEnabled()
+        public bool? IsEnabled()
         {
             var element = TryFindElement();
-            return element?.Enabled ?? false;
+            if (element == null) return null;
+            return element.Enabled;
         }
         
         // Wait methods
@@ -180,19 +182,37 @@ namespace Brinell.Blazor.Base
         }
         
         // Text methods
-        public string GetText(int? timeoutMs = null)
+        public string? GetText(int? timeoutMs = null)
         {
-            var element = FindElement(timeoutMs);
+            var element = TryFindElement();
+            if (element is null) return null;
             // For input elements, use value attribute; otherwise use text
             if (element.TagName.ToLower() == "input")
-                return element.GetAttribute("value") ?? string.Empty;
-            return element.Text ?? string.Empty;
+                return element.GetAttribute("value");
+            return element.Text;
+        }
+        
+        public bool WaitText(string? expected, int? timeoutMs = null)
+        {
+            if (expected is null) return true;
+            var timeout = timeoutMs ?? _context.Timeouts.ElementState;
+            var wait = new WebDriverWait(_context.Driver, TimeSpan.FromMilliseconds(timeout));
+            wait.PollingInterval = TimeSpan.FromMilliseconds(_context.Timeouts.PollingInterval);
+            try
+            {
+                return wait.Until(_ => GetText() == expected);
+            }
+            catch (WebDriverTimeoutException)
+            {
+                return false;
+            }
         }
         
         public void AssertText(string? expected, string? message = null, int? timeoutMs = null)
         {
             if (expected is null) return;
-            var actual = GetText(timeoutMs);
+            WaitText(expected, timeoutMs);
+            var actual = GetText();
             if (actual != expected)
                 throw new AssertionException(message ?? $"Expected text '{expected}' but was '{actual}'");
         }
@@ -201,7 +221,7 @@ namespace Brinell.Blazor.Base
         {
             if (expected is null) return;
             var actual = GetText(timeoutMs);
-            if (!actual.Contains(expected))
+            if (actual is null || !actual.Contains(expected))
                 throw new AssertionException(message ?? $"Text '{actual}' does not contain '{expected}'");
         }
         
@@ -362,7 +382,10 @@ public abstract class BlazorTextControlBase : BlazorControlBase, ITextControlObj
         var wait = new WebDriverWait(_context.Driver, TimeSpan.FromMilliseconds(timeout));
         try
         {
-            return wait.Until(_ => GetText().Contains(expected));
+            return wait.Until(_ => {
+                var text = GetText();
+                return text is not null && text.Contains(expected);
+            });
         }
         catch (WebDriverTimeoutException)
         {
@@ -374,21 +397,21 @@ public abstract class BlazorTextControlBase : BlazorControlBase, ITextControlObj
     {
         if (pattern is null) return;
         var actual = GetText(timeoutMs);
-        if (!System.Text.RegularExpressions.Regex.IsMatch(actual, pattern))
+        if (actual is null || !System.Text.RegularExpressions.Regex.IsMatch(actual, pattern))
             throw new AssertionException(message ?? $"Text '{actual}' does not match pattern '{pattern}'");
     }
     
     // Blazor-specific: Inner HTML
-    public string GetInnerHtml(int? timeoutMs = null)
+    public string? GetInnerHtml(int? timeoutMs = null)
     {
-        var element = FindElement(timeoutMs);
-        return element.GetAttribute("innerHTML") ?? string.Empty;
+        var element = TryFindElement();
+        return element?.GetAttribute("innerHTML");
     }
     
-    public string GetOuterHtml(int? timeoutMs = null)
+    public string? GetOuterHtml(int? timeoutMs = null)
     {
-        var element = FindElement(timeoutMs);
-        return element.GetAttribute("outerHTML") ?? string.Empty;
+        var element = TryFindElement();
+        return element?.GetAttribute("outerHTML");
     }
 }
 ```
@@ -432,8 +455,10 @@ public abstract class BlazorEditableTextControlBase : BlazorTextControlBase, IEd
         return GetAttribute("placeholder");
     }
     
-    public virtual bool IsReadOnly()
+    public virtual bool? IsReadOnly()
     {
+        var element = TryFindElement();
+        if (element == null) return null;
         var readOnly = GetAttribute("readonly");
         return readOnly != null;
     }
@@ -484,10 +509,10 @@ public abstract class BlazorToggleControlBase : BlazorControlBase, IToggleContro
     protected BlazorToggleControlBase(IBlazorTestContext context, Locator locator, IPageObject? page = null)
         : base(context, locator, page) { }
     
-    public virtual bool IsChecked()
+    public virtual bool? IsChecked()
     {
         var element = TryFindElement();
-        if (element == null) return false;
+        if (element == null) return null;
         
         // HTML checkbox uses "checked" property
         var checkedAttr = element.GetAttribute("checked");
@@ -542,8 +567,10 @@ public abstract class BlazorToggleControlBase : BlazorControlBase, IToggleContro
     }
     
     // Blazor-specific: Indeterminate state
-    public bool IsIndeterminate()
+    public bool? IsIndeterminate()
     {
+        var element = TryFindElement();
+        if (element == null) return null;
         return GetAttribute("indeterminate") == "true";
     }
 }
@@ -594,38 +621,99 @@ public abstract class BlazorSelectorControlBase : BlazorControlBase, ISelectorCo
         _context.Logger.LogAction("SelectByValue", _locator, value);
     }
     
-    public virtual string GetSelectedText(int? timeoutMs = null)
+    public virtual string? GetSelectedText(int? timeoutMs = null)
     {
-        var element = FindElement(timeoutMs);
+        var element = TryFindElement();
+        if (element is null) return null;
         var selectElement = new SelectElement(element);
-        return selectElement.SelectedOption.Text;
+        return selectElement.SelectedOption?.Text;
     }
     
-    public virtual int GetSelectedIndex(int? timeoutMs = null)
+    public bool WaitSelectedText(string? expected, int? timeoutMs = null)
+    {
+        if (expected is null) return true;
+        var timeout = timeoutMs ?? _context.Timeouts.ElementState;
+        var wait = new WebDriverWait(_context.Driver, TimeSpan.FromMilliseconds(timeout));
+        try
+        {
+            return wait.Until(_ => GetSelectedText() == expected);
+        }
+        catch (WebDriverTimeoutException)
+        {
+            return false;
+        }
+    }
+    
+    public virtual int? GetSelectedIndex(int? timeoutMs = null)
     {
         var selected = GetSelectedText(timeoutMs);
+        if (selected is null) return null;
         var items = GetItemTexts(timeoutMs);
-        return items.ToList().IndexOf(selected);
+        if (items is null) return null;
+        var index = items.ToList().IndexOf(selected);
+        return index >= 0 ? index : null;
     }
     
-    public virtual IReadOnlyList<string> GetItemTexts(int? timeoutMs = null)
+    public bool WaitSelectedIndex(int? expected, int? timeoutMs = null)
     {
-        var element = FindElement(timeoutMs);
+        if (expected is null) return true;
+        var timeout = timeoutMs ?? _context.Timeouts.ElementState;
+        var wait = new WebDriverWait(_context.Driver, TimeSpan.FromMilliseconds(timeout));
+        try
+        {
+            return wait.Until(_ => GetSelectedIndex() == expected);
+        }
+        catch (WebDriverTimeoutException)
+        {
+            return false;
+        }
+    }
+    
+    public virtual IReadOnlyList<string>? GetItemTexts(int? timeoutMs = null)
+    {
+        var element = TryFindElement();
+        if (element is null) return null;
         var selectElement = new SelectElement(element);
         return selectElement.Options.Select(o => o.Text).ToList().AsReadOnly();
     }
     
-    public virtual int GetItemCount(int? timeoutMs = null)
+    public virtual int? GetItemCount(int? timeoutMs = null)
     {
-        var element = FindElement(timeoutMs);
+        var element = TryFindElement();
+        if (element is null) return null;
         var selectElement = new SelectElement(element);
         return selectElement.Options.Count;
+    }
+    
+    public bool WaitItemCount(int? expected, int? timeoutMs = null)
+    {
+        if (expected is null) return true;
+        var timeout = timeoutMs ?? _context.Timeouts.ElementState;
+        var wait = new WebDriverWait(_context.Driver, TimeSpan.FromMilliseconds(timeout));
+        try
+        {
+            return wait.Until(_ => GetItemCount() == expected);
+        }
+        catch (WebDriverTimeoutException)
+        {
+            return false;
+        }
+    }
+    
+    public void AssertItemCount(int? expected, string? message = null, int? timeoutMs = null)
+    {
+        if (expected is null) return;
+        WaitItemCount(expected, timeoutMs);
+        var actual = GetItemCount();
+        if (actual != expected)
+            throw new AssertionException(message ?? $"Expected item count {expected} but was {actual}");
     }
     
     public void AssertSelectedText(string? expected, string? message = null, int? timeoutMs = null)
     {
         if (expected is null) return;
-        var actual = GetSelectedText(timeoutMs);
+        WaitSelectedText(expected, timeoutMs);
+        var actual = GetSelectedText();
         if (actual != expected)
             throw new AssertionException(message ?? $"Expected selected text '{expected}' but was '{actual}'");
     }
@@ -633,7 +721,8 @@ public abstract class BlazorSelectorControlBase : BlazorControlBase, ISelectorCo
     public void AssertSelectedIndex(int? expected, string? message = null, int? timeoutMs = null)
     {
         if (expected is null) return;
-        var actual = GetSelectedIndex(timeoutMs);
+        WaitSelectedIndex(expected, timeoutMs);
+        var actual = GetSelectedIndex();
         if (actual != expected.Value)
             throw new AssertionException(message ?? $"Expected selected index {expected} but was {actual}");
     }
@@ -652,18 +741,78 @@ public abstract class BlazorMultiSelectorControlBase : BlazorSelectorControlBase
     protected BlazorMultiSelectorControlBase(IBlazorTestContext context, Locator locator, IPageObject? page = null)
         : base(context, locator, page) { }
     
-    public virtual IReadOnlyList<string> GetSelectedTexts(int? timeoutMs = null)
+    public virtual IReadOnlyList<string>? GetSelectedTexts(int? timeoutMs = null)
     {
-        var element = FindElement(timeoutMs);
+        var element = TryFindElement();
+        if (element is null) return null;
         var selectElement = new SelectElement(element);
         return selectElement.AllSelectedOptions.Select(o => o.Text).ToList().AsReadOnly();
     }
     
-    public virtual IReadOnlyList<int> GetSelectedIndexes(int? timeoutMs = null)
+    public bool WaitSelectedTexts(IEnumerable<string>? expected, int? timeoutMs = null)
+    {
+        if (expected is null) return true;
+        var expectedList = expected.ToList();
+        var timeout = timeoutMs ?? _context.Timeouts.ElementState;
+        var wait = new WebDriverWait(_context.Driver, TimeSpan.FromMilliseconds(timeout));
+        try
+        {
+            return wait.Until(_ => {
+                var actual = GetSelectedTexts();
+                return actual is not null && actual.SequenceEqual(expectedList);
+            });
+        }
+        catch (WebDriverTimeoutException)
+        {
+            return false;
+        }
+    }
+    
+    public void AssertSelectedTexts(IEnumerable<string>? expected, string? message = null, int? timeoutMs = null)
+    {
+        if (expected is null) return;
+        WaitSelectedTexts(expected, timeoutMs);
+        var actual = GetSelectedTexts();
+        var expectedList = expected.ToList();
+        if (actual is null || !actual.SequenceEqual(expectedList))
+            throw new AssertionException(message ?? $"Expected selected texts do not match actual");
+    }
+    
+    public virtual IReadOnlyList<int>? GetSelectedIndices(int? timeoutMs = null)
     {
         var allItems = GetItemTexts(timeoutMs);
         var selected = GetSelectedTexts(timeoutMs);
+        if (allItems is null || selected is null) return null;
         return selected.Select(s => allItems.ToList().IndexOf(s)).ToList().AsReadOnly();
+    }
+    
+    public bool WaitSelectedIndices(IEnumerable<int>? expected, int? timeoutMs = null)
+    {
+        if (expected is null) return true;
+        var expectedList = expected.ToList();
+        var timeout = timeoutMs ?? _context.Timeouts.ElementState;
+        var wait = new WebDriverWait(_context.Driver, TimeSpan.FromMilliseconds(timeout));
+        try
+        {
+            return wait.Until(_ => {
+                var actual = GetSelectedIndices();
+                return actual is not null && actual.SequenceEqual(expectedList);
+            });
+        }
+        catch (WebDriverTimeoutException)
+        {
+            return false;
+        }
+    }
+    
+    public void AssertSelectedIndices(IEnumerable<int>? expected, string? message = null, int? timeoutMs = null)
+    {
+        if (expected is null) return;
+        WaitSelectedIndices(expected, timeoutMs);
+        var actual = GetSelectedIndices();
+        var expectedList = expected.ToList();
+        if (actual is null || !actual.SequenceEqual(expectedList))
+            throw new AssertionException(message ?? $"Expected selected indices do not match actual");
     }
     
     public virtual void SelectMultiple(IEnumerable<string>? texts, int? timeoutMs = null)
@@ -703,9 +852,33 @@ public abstract class BlazorMultiSelectorControlBase : BlazorSelectorControlBase
         _context.Logger.LogAction("ClearSelection", _locator);
     }
     
-    public int GetSelectedCount(int? timeoutMs = null)
+    public int? GetSelectedCount(int? timeoutMs = null)
     {
-        return GetSelectedTexts(timeoutMs).Count;
+        return GetSelectedTexts(timeoutMs)?.Count;
+    }
+    
+    public bool WaitSelectedCount(int? expected, int? timeoutMs = null)
+    {
+        if (expected is null) return true;
+        var timeout = timeoutMs ?? _context.Timeouts.ElementState;
+        var wait = new WebDriverWait(_context.Driver, TimeSpan.FromMilliseconds(timeout));
+        try
+        {
+            return wait.Until(_ => GetSelectedCount() == expected);
+        }
+        catch (WebDriverTimeoutException)
+        {
+            return false;
+        }
+    }
+    
+    public void AssertSelectedCount(int? expected, string? message = null, int? timeoutMs = null)
+    {
+        if (expected is null) return;
+        WaitSelectedCount(expected, timeoutMs);
+        var actual = GetSelectedCount();
+        if (actual != expected)
+            throw new AssertionException(message ?? $"Expected selected count {expected} but was {actual}");
     }
 }
 ```
@@ -722,52 +895,113 @@ public abstract class BlazorDataGridControlBase : BlazorItemsControlBase, IDataG
     protected BlazorDataGridControlBase(IBlazorTestContext context, Locator locator, IPageObject? page = null)
         : base(context, locator, page) { }
     
-    public virtual int GetRowCount(int? timeoutMs = null)
+    public virtual int? GetRowCount(int? timeoutMs = null)
     {
-        return FindElement(timeoutMs).FindElements(By.CssSelector("tbody tr")).Count;
+        var element = TryFindElement();
+        return element?.FindElements(By.CssSelector("tbody tr")).Count;
     }
     
-    public virtual int GetColumnCount(int? timeoutMs = null)
+    public virtual int? GetColumnCount(int? timeoutMs = null)
     {
-        var headerRow = FindElement(timeoutMs).FindElement(By.CssSelector("thead tr"));
-        return headerRow.FindElements(By.CssSelector("th")).Count;
+        var element = TryFindElement();
+        var headerRow = element?.FindElement(By.CssSelector("thead tr"));
+        return headerRow?.FindElements(By.CssSelector("th")).Count;
     }
     
-    public virtual IReadOnlyList<string> GetColumnHeaders(int? timeoutMs = null)
+    public bool WaitColumnCount(int? expected, int? timeoutMs = null)
     {
-        var element = FindElement(timeoutMs);
+        if (expected is null) return true;
+        var timeout = timeoutMs ?? _context.Timeouts.ElementState;
+        var wait = new WebDriverWait(_context.Driver, TimeSpan.FromMilliseconds(timeout));
+        try
+        {
+            return wait.Until(_ => GetColumnCount() == expected);
+        }
+        catch (WebDriverTimeoutException)
+        {
+            return false;
+        }
+    }
+    
+    public void AssertColumnCount(int? expected, string? message = null, int? timeoutMs = null)
+    {
+        if (expected is null) return;
+        WaitColumnCount(expected, timeoutMs);
+        var actual = GetColumnCount();
+        if (actual != expected)
+            throw new AssertionException(message ?? $"Expected column count {expected} but was {actual}");
+    }
+    
+    public virtual IReadOnlyList<string>? GetColumnHeaders(int? timeoutMs = null)
+    {
+        var element = TryFindElement();
+        if (element is null) return null;
         return element.FindElements(By.CssSelector("thead th"))
             .Select(e => e.Text)
             .ToList()
             .AsReadOnly();
     }
     
-    public virtual string GetCellText(int row, int column, int? timeoutMs = null)
+    public virtual string? GetCellText(int row, int column, int? timeoutMs = null)
     {
-        var element = FindElement(timeoutMs);
+        var element = TryFindElement();
+        if (element is null) return null;
         var rows = element.FindElements(By.CssSelector("tbody tr"));
         if (row >= rows.Count)
-            throw new ArgumentOutOfRangeException(nameof(row));
+            return null;
         
         var cells = rows[row].FindElements(By.CssSelector("td"));
         if (column >= cells.Count)
-            throw new ArgumentOutOfRangeException(nameof(column));
+            return null;
         
         return cells[column].Text;
     }
     
-    public virtual IWebElement GetCell(int row, int column, int? timeoutMs = null)
+    public bool WaitCellText(int row, int column, string? expected, int? timeoutMs = null)
     {
-        var element = FindElement(timeoutMs);
-        return element.FindElement(By.CssSelector($"tbody tr:nth-child({row + 1}) td:nth-child({column + 1})"));
+        if (expected is null) return true;
+        var timeout = timeoutMs ?? _context.Timeouts.ElementState;
+        var wait = new WebDriverWait(_context.Driver, TimeSpan.FromMilliseconds(timeout));
+        try
+        {
+            return wait.Until(_ => GetCellText(row, column) == expected);
+        }
+        catch (WebDriverTimeoutException)
+        {
+            return false;
+        }
     }
     
-    public virtual IReadOnlyList<string> GetRowTexts(int row, int? timeoutMs = null)
+    public void AssertCellText(int row, int column, string? expected, string? message = null, int? timeoutMs = null)
     {
-        var element = FindElement(timeoutMs);
+        if (expected is null) return;
+        WaitCellText(row, column, expected, timeoutMs);
+        var actual = GetCellText(row, column);
+        if (actual != expected)
+            throw new AssertionException(message ?? $"Expected cell text '{expected}' but was '{actual}'");
+    }
+    
+    public virtual IWebElement? GetCell(int row, int column, int? timeoutMs = null)
+    {
+        var element = TryFindElement();
+        if (element is null) return null;
+        try
+        {
+            return element.FindElement(By.CssSelector($"tbody tr:nth-child({row + 1}) td:nth-child({column + 1})"));
+        }
+        catch (NoSuchElementException)
+        {
+            return null;
+        }
+    }
+    
+    public virtual IReadOnlyList<string>? GetRowTexts(int row, int? timeoutMs = null)
+    {
+        var element = TryFindElement();
+        if (element is null) return null;
         var rows = element.FindElements(By.CssSelector("tbody tr"));
         if (row >= rows.Count)
-            throw new ArgumentOutOfRangeException(nameof(row));
+            return null;
         
         return rows[row].FindElements(By.CssSelector("td"))
             .Select(e => e.Text)
@@ -775,9 +1009,10 @@ public abstract class BlazorDataGridControlBase : BlazorItemsControlBase, IDataG
             .AsReadOnly();
     }
     
-    public virtual IReadOnlyList<string> GetColumnTexts(int column, int? timeoutMs = null)
+    public virtual IReadOnlyList<string>? GetColumnTexts(int column, int? timeoutMs = null)
     {
-        var element = FindElement(timeoutMs);
+        var element = TryFindElement();
+        if (element is null) return null;
         return element.FindElements(By.CssSelector($"tbody tr td:nth-child({column + 1})"))
             .Select(e => e.Text)
             .ToList()

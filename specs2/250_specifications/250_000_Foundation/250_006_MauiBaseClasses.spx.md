@@ -86,16 +86,18 @@ namespace Brinell.Maui.Base
             catch { return false; }
         }
         
-        public bool IsVisible()
+        public bool? IsVisible()
         {
             var element = TryFindElement();
-            return element?.Displayed ?? false;
+            if (element == null) return null;
+            return element.Displayed;
         }
         
-        public bool IsEnabled()
+        public bool? IsEnabled()
         {
             var element = TryFindElement();
-            return element?.Enabled ?? false;
+            if (element == null) return null;
+            return element.Enabled;
         }
         
         // Wait methods
@@ -146,16 +148,28 @@ namespace Brinell.Maui.Base
         }
         
         // Text methods
-        public string GetText(int? timeoutMs = null)
+        public string? GetText(int? timeoutMs = null)
         {
-            var element = FindElement(timeoutMs);
-            return element.Text ?? string.Empty;
+            var element = TryFindElement();
+            return element?.Text;
+        }
+        
+        public bool WaitText(string? expected, int? timeoutMs = null)
+        {
+            if (expected is null) return true;
+            var timeout = timeoutMs ?? _context.Timeouts.ElementState;
+            return WaitHelper.WaitFor(
+                () => GetText(),
+                text => text == expected,
+                timeout,
+                _context.Timeouts.PollingInterval);
         }
         
         public void AssertText(string? expected, string? message = null, int? timeoutMs = null)
         {
             if (expected is null) return;
-            var actual = GetText(timeoutMs);
+            WaitText(expected, timeoutMs);
+            var actual = GetText();
             if (actual != expected)
                 throw new AssertionException(message ?? $"Expected text '{expected}' but was '{actual}'");
         }
@@ -164,7 +178,7 @@ namespace Brinell.Maui.Base
         {
             if (expected is null) return;
             var actual = GetText(timeoutMs);
-            if (!actual.Contains(expected))
+            if (actual is null || !actual.Contains(expected))
                 throw new AssertionException(message ?? $"Text '{actual}' does not contain '{expected}'");
         }
         
@@ -352,8 +366,10 @@ public abstract class MauiEditableTextControlBase : MauiTextControlBase, IEditab
         return GetAttribute("hint") ?? GetAttribute("placeholder");
     }
     
-    public virtual bool IsReadOnly()
+    public virtual bool? IsReadOnly()
     {
+        var element = TryFindElement();
+        if (element == null) return null;
         var readOnly = GetAttribute("readonly") ?? GetAttribute("editable");
         return readOnly == "true" || readOnly == "false"; // editable="false" means read-only
     }
@@ -372,10 +388,10 @@ public abstract class MauiToggleControlBase : MauiControlBase, IToggleControlObj
     protected MauiToggleControlBase(IMauiTestContext context, Locator locator, IPageObject? page = null)
         : base(context, locator, page) { }
     
-    public virtual bool IsChecked()
+    public virtual bool? IsChecked()
     {
         var element = TryFindElement();
-        if (element == null) return false;
+        if (element == null) return null;
         
         // MAUI exposes checked state via "checked" attribute or "selected" property
         var checkedAttr = element.GetDomAttribute("checked");
@@ -452,7 +468,7 @@ public abstract class MauiSelectorControlBase : MauiControlBase, ISelectorContro
     {
         if (index is null) return;
         var items = GetItemTexts(timeoutMs);
-        if (index.Value >= 0 && index.Value < items.Count)
+        if (items is not null && index.Value >= 0 && index.Value < items.Count)
             SelectByText(items[index.Value], timeoutMs);
     }
     
@@ -462,29 +478,75 @@ public abstract class MauiSelectorControlBase : MauiControlBase, ISelectorContro
         SelectByText(value, timeoutMs);
     }
     
-    public virtual string GetSelectedText(int? timeoutMs = null)
+    public virtual string? GetSelectedText(int? timeoutMs = null)
     {
         return GetText(timeoutMs);
     }
     
-    public virtual int GetSelectedIndex(int? timeoutMs = null)
+    public bool WaitSelectedText(string? expected, int? timeoutMs = null)
     {
-        var selected = GetSelectedText(timeoutMs);
-        var items = GetItemTexts(timeoutMs);
-        return items.ToList().IndexOf(selected);
+        if (expected is null) return true;
+        var timeout = timeoutMs ?? _context.Timeouts.ElementState;
+        return WaitHelper.WaitFor(
+            () => GetSelectedText(),
+            text => text == expected,
+            timeout,
+            _context.Timeouts.PollingInterval);
     }
     
-    public abstract IReadOnlyList<string> GetItemTexts(int? timeoutMs = null);
-    
-    public virtual int GetItemCount(int? timeoutMs = null)
+    public virtual int? GetSelectedIndex(int? timeoutMs = null)
     {
-        return GetItemTexts(timeoutMs).Count;
+        var selected = GetSelectedText(timeoutMs);
+        if (selected is null) return null;
+        var items = GetItemTexts(timeoutMs);
+        if (items is null) return null;
+        var index = items.ToList().IndexOf(selected);
+        return index >= 0 ? index : null;
+    }
+    
+    public bool WaitSelectedIndex(int? expected, int? timeoutMs = null)
+    {
+        if (expected is null) return true;
+        var timeout = timeoutMs ?? _context.Timeouts.ElementState;
+        return WaitHelper.WaitFor(
+            () => GetSelectedIndex(),
+            index => index == expected,
+            timeout,
+            _context.Timeouts.PollingInterval);
+    }
+    
+    public abstract IReadOnlyList<string>? GetItemTexts(int? timeoutMs = null);
+    
+    public virtual int? GetItemCount(int? timeoutMs = null)
+    {
+        return GetItemTexts(timeoutMs)?.Count;
+    }
+    
+    public bool WaitItemCount(int? expected, int? timeoutMs = null)
+    {
+        if (expected is null) return true;
+        var timeout = timeoutMs ?? _context.Timeouts.ElementState;
+        return WaitHelper.WaitFor(
+            () => GetItemCount(),
+            count => count == expected,
+            timeout,
+            _context.Timeouts.PollingInterval);
+    }
+    
+    public void AssertItemCount(int? expected, string? message = null, int? timeoutMs = null)
+    {
+        if (expected is null) return;
+        WaitItemCount(expected, timeoutMs);
+        var actual = GetItemCount();
+        if (actual != expected)
+            throw new AssertionException(message ?? $"Expected item count {expected} but was {actual}");
     }
     
     public void AssertSelectedText(string? expected, string? message = null, int? timeoutMs = null)
     {
         if (expected is null) return;
-        var actual = GetSelectedText(timeoutMs);
+        WaitSelectedText(expected, timeoutMs);
+        var actual = GetSelectedText();
         if (actual != expected)
             throw new AssertionException(message ?? $"Expected selected text '{expected}' but was '{actual}'");
     }
@@ -492,7 +554,8 @@ public abstract class MauiSelectorControlBase : MauiControlBase, ISelectorContro
     public void AssertSelectedIndex(int? expected, string? message = null, int? timeoutMs = null)
     {
         if (expected is null) return;
-        var actual = GetSelectedIndex(timeoutMs);
+        WaitSelectedIndex(expected, timeoutMs);
+        var actual = GetSelectedIndex();
         if (actual != expected.Value)
             throw new AssertionException(message ?? $"Expected selected index {expected} but was {actual}");
     }
@@ -511,37 +574,42 @@ public abstract class MauiRangeControlBase : MauiControlBase, IRangeControlObjec
     protected MauiRangeControlBase(IMauiTestContext context, Locator locator, IPageObject? page = null)
         : base(context, locator, page) { }
     
-    public virtual double GetValue(int? timeoutMs = null)
+    public virtual double? GetValue(int? timeoutMs = null)
     {
         var text = GetText(timeoutMs);
-        return double.TryParse(text, out var value) ? value : 0;
+        if (text is null) return null;
+        return double.TryParse(text, out var value) ? value : null;
     }
     
     public abstract void SetValue(double? value, int? timeoutMs = null);
     
-    public virtual double GetMinimum(int? timeoutMs = null)
+    public virtual double? GetMinimum(int? timeoutMs = null)
     {
         var attr = GetAttribute("min") ?? GetAttribute("minimum");
-        return double.TryParse(attr, out var min) ? min : 0;
+        if (attr is null) return null;
+        return double.TryParse(attr, out var min) ? min : null;
     }
     
-    public virtual double GetMaximum(int? timeoutMs = null)
+    public virtual double? GetMaximum(int? timeoutMs = null)
     {
         var attr = GetAttribute("max") ?? GetAttribute("maximum");
-        return double.TryParse(attr, out var max) ? max : 100;
+        if (attr is null) return null;
+        return double.TryParse(attr, out var max) ? max : null;
     }
     
-    public virtual double GetStep(int? timeoutMs = null)
+    public virtual double? GetStep(int? timeoutMs = null)
     {
         var attr = GetAttribute("step") ?? GetAttribute("increment");
-        return double.TryParse(attr, out var step) ? step : 1;
+        if (attr is null) return null;
+        return double.TryParse(attr, out var step) ? step : null;
     }
     
     public void AssertValue(double? expected, double tolerance = 0.001, string? message = null, int? timeoutMs = null)
     {
         if (expected is null) return;
+        WaitValue(expected, tolerance, timeoutMs);
         var actual = GetValue(timeoutMs);
-        if (Math.Abs(actual - expected.Value) > tolerance)
+        if (actual is null || Math.Abs(actual.Value - expected.Value) > tolerance)
             throw new AssertionException(message ?? $"Expected value {expected} but was {actual}");
     }
     
@@ -550,19 +618,24 @@ public abstract class MauiRangeControlBase : MauiControlBase, IRangeControlObjec
         if (expected is null) return true;
         var timeout = timeoutMs ?? _context.Timeouts.DefaultWait;
         return WaitHelper.WaitFor(
-            () => Math.Abs(GetValue() - expected.Value) <= tolerance,
+            () => GetValue(),
+            val => val.HasValue && Math.Abs(val.Value - expected.Value) <= tolerance,
             timeout,
             _context.Timeouts.PollingInterval);
     }
     
     public virtual void Increment(int? timeoutMs = null)
     {
-        SetValue(GetValue(timeoutMs) + GetStep(timeoutMs), timeoutMs);
+        var current = GetValue(timeoutMs) ?? 0;
+        var step = GetStep(timeoutMs) ?? 1;
+        SetValue(current + step, timeoutMs);
     }
     
     public virtual void Decrement(int? timeoutMs = null)
     {
-        SetValue(GetValue(timeoutMs) - GetStep(timeoutMs), timeoutMs);
+        var current = GetValue(timeoutMs) ?? 0;
+        var step = GetStep(timeoutMs) ?? 1;
+        SetValue(current - step, timeoutMs);
     }
 }
 ```

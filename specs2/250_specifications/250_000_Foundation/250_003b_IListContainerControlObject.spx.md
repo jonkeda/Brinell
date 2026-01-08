@@ -59,7 +59,8 @@ public interface IListContainerControlObject<T> : IControlObject where T : ICont
     /// <summary>
     /// Gets the count of child elements.
     /// </summary>
-    int Count { get; }
+    /// <returns>Count of children, or null if container not found.</returns>
+    int? Count { get; }
     
     /// <summary>
     /// Find the first child matching a predicate.
@@ -276,18 +277,20 @@ public abstract class ListContainerControlBase<T> : ControlBase, IListContainerC
         get
         {
             var count = Count;
-            if (index < 0 || index >= count)
+            if (count is null)
+                throw new ElementNotFoundException("Container element not found");
+            if (index < 0 || index >= count.Value)
                 throw new IndexOutOfRangeException($"Index {index} is out of range. Count: {count}");
             
-            return Children[index];
+            return Children![index];
         }
     }
     
-    public int Count => Children.Count;
+    public int? Count => IsExists() ? Children?.Count : null;
     
     public T? FirstOrDefault(Func<T, bool> predicate)
     {
-        return Children.FirstOrDefault(predicate);
+        return Children?.FirstOrDefault(predicate);
     }
     
     public bool WaitCount(int? expected, int? timeoutMs = null)

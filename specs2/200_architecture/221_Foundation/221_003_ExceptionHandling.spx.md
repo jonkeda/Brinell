@@ -22,8 +22,7 @@ The Exception Handling foundation defines a hierarchy of exception types that pr
 System.Exception
 ├── ElementNotFoundException     # Element not found in UI tree
 ├── UITestTimeoutException       # Operation timed out
-├── AssertionException           # Assert* method failed
-├── CheckFailedException         # Check* method failed
+├── AssertionException           # Assert* method failed (includes waiting)
 ├── InvalidStateException        # Control in wrong state
 ├── PageNotDisplayedException    # Expected page not visible
 └── PageNotReadyException        # Page not fully loaded
@@ -121,7 +120,7 @@ public class UITestTimeoutException : Exception
 
 ### 2.3 AssertionException
 
-Thrown when an Assert* method fails.
+Thrown when an Assert* method fails (after waiting for the condition).
 
 ```csharp
 public class AssertionException : Exception
@@ -145,43 +144,14 @@ public class AssertionException : Exception
 ```
 
 **Usage Context:**
-- AssertTextEquals finds mismatched text
-- AssertExists finds element missing
-- AssertVisible finds element hidden
-- AssertEnabled finds element disabled
+- AssertTextEquals finds mismatched text after waiting
+- AssertExists finds element still missing after timeout
+- AssertVisible finds element still hidden after timeout
+- AssertEnabled finds element still disabled after timeout
 
-**Assert vs Check:**
-- **Assert***: Immediate check, throws AssertionException if false
-- **Check***: Waits with polling, throws CheckFailedException if timeout
+> **Note:** Assert methods now include waiting (consolidating the previous Wait+Check patterns). They wait for the expected condition and throw `AssertionException` if the timeout is reached without the condition being met.
 
-### 2.4 CheckFailedException
-
-Thrown when a Check* method fails after waiting.
-
-```csharp
-public class CheckFailedException : Exception
-{
-    public string? AutomationId { get; }
-    public string? CheckType { get; }
-    
-    public CheckFailedException(string message) 
-        : base(message) { }
-    
-    public CheckFailedException(string message, string? automationId, string? checkType = null) 
-        : base(message)
-    {
-        AutomationId = automationId;
-        CheckType = checkType;
-    }
-}
-```
-
-**Usage Context:**
-- CheckExists waits but element never appears
-- CheckVisible waits but element stays hidden
-- CheckEnabled waits but element remains disabled
-
-### 2.5 InvalidStateException
+### 2.4 InvalidStateException
 
 Thrown when a control is in an invalid state for the requested operation.
 
@@ -231,7 +201,7 @@ public class InvalidStateException : Exception
 - Enter text in readonly field
 - Select item from empty picker
 
-### 2.6 PageNotDisplayedException
+### 2.5 PageNotDisplayedException
 
 Thrown when an expected page is not visible.
 
@@ -255,7 +225,7 @@ public class PageNotDisplayedException : Exception
 - Navigation expected to reach page but didn't
 - Page verification after action fails
 
-### 2.7 PageNotReadyException
+### 2.6 PageNotReadyException
 
 Thrown when a page is visible but not fully loaded.
 
@@ -288,9 +258,8 @@ public class PageNotReadyException : Exception
 | Category | Exception | Thrown By | Meaning |
 |----------|-----------|-----------|---------|
 | **Element** | ElementNotFoundException | FindElement | Element not in UI tree |
-| **Timeout** | UITestTimeoutException | Wait*, Check* | Operation exceeded time limit |
-| **Assertion** | AssertionException | Assert* | Immediate condition not met |
-| **Check** | CheckFailedException | Check* | Condition not met after waiting |
+| **Timeout** | UITestTimeoutException | Wait*, internal | Operation exceeded time limit |
+| **Assertion** | AssertionException | Assert* | Condition not met after waiting |
 | **State** | InvalidStateException | Click, Enter, etc. | Control in wrong state |
 | **Page** | PageNotDisplayedException | Page verification | Expected page not shown |
 | **Page** | PageNotReadyException | WaitForPage | Page not fully loaded |
@@ -366,8 +335,10 @@ public void Click(int? timeoutMs = null)
 ### 5.2 Wait Method Pattern
 
 ```csharp
-public bool WaitVisible(bool visible, int? timeoutMs = null)
+public bool WaitVisible(bool? visible, int? timeoutMs = null)
 {
+    if (visible == null) return true;  // Nullable skip pattern
+    
     var timeout = timeoutMs ?? DefaultTimeoutMs;
     var stopwatch = Stopwatch.StartNew();
     
@@ -382,14 +353,16 @@ public bool WaitVisible(bool visible, int? timeoutMs = null)
     return false;
 }
 
-public void CheckVisible(bool visible, int? timeoutMs = null, string? message = null)
+public void AssertVisible(bool? visible, string? message = null, int? timeoutMs = null)
 {
+    if (visible == null) return;  // Nullable skip pattern
+    
     if (!WaitVisible(visible, timeoutMs))
     {
-        throw new CheckFailedException(
-            message ?? $"Element '{AutomationId}' visibility did not become {visible}",
-            AutomationId,
-            "CheckVisible");
+        throw new AssertionException(
+            message ?? $"Element '{Locator}' visibility did not become {visible}",
+            Locator.Value,
+            "AssertVisible");
     }
 }
 ```
@@ -397,15 +370,17 @@ public void CheckVisible(bool visible, int? timeoutMs = null, string? message = 
 ### 5.3 Assert Method Pattern
 
 ```csharp
-public void AssertTextEquals(string expected, string? message = null)
+public void AssertTextEquals(string? expected, string? message = null, int? timeoutMs = null)
 {
-    var actual = GetText();
+    if (expected == null) return;  // Nullable skip pattern
     
-    if (actual != expected)
+    // Wait for text to match, then assert
+    if (!WaitText(expected, timeoutMs))
     {
+        var actual = GetText();
         throw new AssertionException(
             message ?? $"Expected text '{expected}' but found '{actual}'",
-            AutomationId,
+            Locator.Value,
             "AssertTextEquals");
     }
 }
@@ -468,10 +443,9 @@ catch (ElementNotFoundException ex)
 The Exception Handling foundation is valid when:
 
 - [ ] All framework exceptions inherit from System.Exception
-- [ ] Exceptions include AutomationId property where applicable
+- [ ] Exceptions include AutomationId/Locator property where applicable
 - [ ] Error messages are actionable (what, context, suggestion)
-- [ ] Assert* methods throw AssertionException
-- [ ] Check* methods throw CheckFailedException
+- [ ] Assert* methods wait then throw AssertionException on timeout
 - [ ] Wait* methods return bool (don't throw on timeout)
 - [ ] Platform exceptions are wrapped in framework exceptions
 - [ ] Inner exceptions are preserved for debugging

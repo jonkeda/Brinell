@@ -71,6 +71,9 @@ Page (root scope)
 ### 3.1 Container Interface
 
 ```csharp
+/// <summary>
+/// Non-generic container interface for basic scoping operations.
+/// </summary>
 public interface IContainerControl : IControlObject
 {
     /// <summary>
@@ -93,6 +96,52 @@ public interface IContainerControl : IControlObject
     /// Find all child elements within this container.
     /// </summary>
     IReadOnlyList<object> FindChildren(Locator locator);
+}
+
+/// <summary>
+/// Generic container interface for single-content containers (ContentControl, Frame, etc.).
+/// </summary>
+/// <typeparam name="TContent">The type of content control contained.</typeparam>
+public interface IContainerControlObject<TContent> : IContainerControl 
+    where TContent : IControlObject
+{
+    /// <summary>
+    /// Get the content of this container.
+    /// </summary>
+    TContent? GetContent(int? timeoutMs = null);
+    
+    /// <summary>
+    /// Find a control of type T within this container.
+    /// </summary>
+    T FindControl<T>(Locator locator) where T : IControlObject;
+}
+
+/// <summary>
+/// Generic list container interface for repeating elements (ListView, ItemsControl, etc.).
+/// </summary>
+/// <typeparam name="TItem">The type of item controls in the list.</typeparam>
+public interface IListContainerControlObject<TItem> : IContainerControl 
+    where TItem : IControlObject
+{
+    /// <summary>
+    /// Get item at specified index.
+    /// </summary>
+    TItem GetItemAt(int index, int? timeoutMs = null);
+    
+    /// <summary>
+    /// Get all items in the container.
+    /// </summary>
+    IReadOnlyList<TItem> GetAllItems(int? timeoutMs = null);
+    
+    /// <summary>
+    /// Get the count of items.
+    /// </summary>
+    int GetItemCount(int? timeoutMs = null);
+    
+    /// <summary>
+    /// Find a control of type T within this container.
+    /// </summary>
+    T FindControl<T>(Locator locator) where T : IControlObject;
 }
 ```
 
@@ -166,7 +215,7 @@ public abstract class ContainerBase : ControlBase, IContainerControl
     {
         var containerElement = FindElement();
         if (containerElement == null)
-            throw new ElementNotFoundException($"Container '{AutomationId}' not found");
+            throw new ElementNotFoundException($"Container '{Locator}' not found");
             
         return _context.FindElement(locator, containerElement);
     }
@@ -178,6 +227,16 @@ public abstract class ContainerBase : ControlBase, IContainerControl
             return Array.Empty<object>();
             
         return _context.FindElements(locator, containerElement);
+    }
+    
+    /// <summary>
+    /// Find a control of specified type within this container.
+    /// </summary>
+    public T FindControl<T>(Locator locator) where T : IControlObject
+    {
+        // Implementation creates control with scoped locator
+        var scopedLocator = ScopedLocator(locator);
+        return _context.CreateControl<T>(scopedLocator, _page);
     }
 }
 ```
@@ -194,6 +253,10 @@ public class FormContainer : ContainerBase
     public EntryControl UsernameEntry => new(_context, ScopedLocator("UsernameEntry"), _page);
     public EntryControl PasswordEntry => new(_context, ScopedLocator("PasswordEntry"), _page);
     public ButtonControl SubmitButton => new(_context, ScopedLocator("SubmitButton"), _page);
+    
+    // Generic control finding
+    public T GetControl<T>(string automationId) where T : IControlObject
+        => FindControl<T>(new Locator(LocatorStrategy.AutomationId, automationId));
 }
 ```
 
@@ -366,8 +429,6 @@ var form = new FormContainer(_context, "LoginForm", page);
 var button = new ButtonControl(_context, form.ScopedLocator("SubmitButton"), page);
 ```
 
----
-
 ## 7. Performance Considerations
 
 ### 7.1 Search Scope Reduction
@@ -437,8 +498,10 @@ public EntryControl Username => new(_context, ScopedLocator("Username"), _page);
 The Container pattern is valid when:
 
 - [ ] Containers implement IContainerControl interface
+- [ ] Generic containers implement IContainerControlObject<T> or IListContainerControlObject<T>
 - [ ] ScopedLocator creates properly scoped locators
 - [ ] FindChild searches within container bounds
+- [ ] FindControl<T> returns properly typed controls
 - [ ] Nested containers scope to parent container
 - [ ] Repeating elements use container for each item
 - [ ] Page reference is passed to scoped controls

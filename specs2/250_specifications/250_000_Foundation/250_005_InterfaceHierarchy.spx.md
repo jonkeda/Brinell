@@ -196,7 +196,8 @@ public interface IEditableTextControlObject : ITextControlObject
     /// <summary>
     /// Check if the control is read-only.
     /// </summary>
-    bool IsReadOnly();
+    /// <returns>True if read-only, false if editable, null if element not found.</returns>
+    bool? IsReadOnly();
 }
 ```
 
@@ -215,7 +216,8 @@ public interface IToggleControlObject : IControlObject
     /// <summary>
     /// Check if the control is in checked/on state.
     /// </summary>
-    bool IsChecked();
+    /// <returns>True if checked, false if unchecked, null if element not found.</returns>
+    bool? IsChecked();
     
     /// <summary>
     /// Toggle the control state.
@@ -283,22 +285,15 @@ public interface ISelectorControlObject : IControlObject
     /// <summary>
     /// Get the currently selected item's text.
     /// </summary>
-    string GetSelectedText(int? timeoutMs = null);
+    /// <returns>Selected text, or null if element not found.</returns>
+    string? GetSelectedText(int? timeoutMs = null);
     
     /// <summary>
-    /// Get the currently selected item's index.
+    /// Wait until selected text matches expected value.
     /// </summary>
-    int GetSelectedIndex(int? timeoutMs = null);
-    
-    /// <summary>
-    /// Get all available item texts.
-    /// </summary>
-    IReadOnlyList<string> GetItemTexts(int? timeoutMs = null);
-    
-    /// <summary>
-    /// Get the count of available items.
-    /// </summary>
-    int GetItemCount(int? timeoutMs = null);
+    /// <param name="expected">Expected text. Null = skip.</param>
+    /// <returns>True if matched, false if timeout.</returns>
+    bool WaitSelectedText(string? expected, int? timeoutMs = null);
     
     /// <summary>
     /// Assert selected text matches expected value.
@@ -306,9 +301,46 @@ public interface ISelectorControlObject : IControlObject
     void AssertSelectedText(string? expected, string? message = null, int? timeoutMs = null);
     
     /// <summary>
+    /// Get the currently selected item's index.
+    /// </summary>
+    /// <returns>Selected index, or null if element not found.</returns>
+    int? GetSelectedIndex(int? timeoutMs = null);
+    
+    /// <summary>
+    /// Wait until selected index matches expected value.
+    /// </summary>
+    /// <param name="expected">Expected index. Null = skip.</param>
+    /// <returns>True if matched, false if timeout.</returns>
+    bool WaitSelectedIndex(int? expected, int? timeoutMs = null);
+    
+    /// <summary>
     /// Assert selected index matches expected value.
     /// </summary>
     void AssertSelectedIndex(int? expected, string? message = null, int? timeoutMs = null);
+    
+    /// <summary>
+    /// Get all available item texts.
+    /// </summary>
+    /// <returns>List of item texts, or null if element not found.</returns>
+    IReadOnlyList<string>? GetItemTexts(int? timeoutMs = null);
+    
+    /// <summary>
+    /// Get the count of available items.
+    /// </summary>
+    /// <returns>Item count, or null if element not found.</returns>
+    int? GetItemCount(int? timeoutMs = null);
+    
+    /// <summary>
+    /// Wait until item count matches expected value.
+    /// </summary>
+    /// <param name="expected">Expected count. Null = skip.</param>
+    /// <returns>True if matched, false if timeout.</returns>
+    bool WaitItemCount(int? expected, int? timeoutMs = null);
+    
+    /// <summary>
+    /// Assert item count matches expected value.
+    /// </summary>
+    void AssertItemCount(int? expected, string? message = null, int? timeoutMs = null);
 }
 ```
 
@@ -354,17 +386,56 @@ public interface IMultiSelectorControlObject : ISelectorControlObject
     /// <summary>
     /// Get all selected item texts.
     /// </summary>
-    IReadOnlyList<string> GetSelectedTexts(int? timeoutMs = null);
+    /// <returns>List of selected texts, or null if element not found.</returns>
+    IReadOnlyList<string>? GetSelectedTexts(int? timeoutMs = null);
+    
+    /// <summary>
+    /// Wait until selected texts match expected values.
+    /// </summary>
+    /// <param name="expected">Expected texts. Null = skip.</param>
+    /// <returns>True if matched, false if timeout.</returns>
+    bool WaitSelectedTexts(IEnumerable<string>? expected, int? timeoutMs = null);
+    
+    /// <summary>
+    /// Assert selected texts match expected values.
+    /// </summary>
+    void AssertSelectedTexts(IEnumerable<string>? expected, string? message = null, int? timeoutMs = null);
     
     /// <summary>
     /// Get all selected item indices.
     /// </summary>
-    IReadOnlyList<int> GetSelectedIndices(int? timeoutMs = null);
+    /// <returns>List of selected indices, or null if element not found.</returns>
+    IReadOnlyList<int>? GetSelectedIndices(int? timeoutMs = null);
+    
+    /// <summary>
+    /// Wait until selected indices match expected values.
+    /// </summary>
+    /// <param name="expected">Expected indices. Null = skip.</param>
+    /// <returns>True if matched, false if timeout.</returns>
+    bool WaitSelectedIndices(IEnumerable<int>? expected, int? timeoutMs = null);
+    
+    /// <summary>
+    /// Assert selected indices match expected values.
+    /// </summary>
+    void AssertSelectedIndices(IEnumerable<int>? expected, string? message = null, int? timeoutMs = null);
     
     /// <summary>
     /// Get count of selected items.
     /// </summary>
-    int GetSelectedCount(int? timeoutMs = null);
+    /// <returns>Selected count, or null if element not found.</returns>
+    int? GetSelectedCount(int? timeoutMs = null);
+    
+    /// <summary>
+    /// Wait until selected count matches expected value.
+    /// </summary>
+    /// <param name="expected">Expected count. Null = skip.</param>
+    /// <returns>True if matched, false if timeout.</returns>
+    bool WaitSelectedCount(int? expected, int? timeoutMs = null);
+    
+    /// <summary>
+    /// Assert selected count matches expected value.
+    /// </summary>
+    void AssertSelectedCount(int? expected, string? message = null, int? timeoutMs = null);
 }
 ```
 
@@ -383,7 +454,8 @@ public interface IRangeControlObject : IControlObject
     /// <summary>
     /// Get the current value.
     /// </summary>
-    double GetValue(int? timeoutMs = null);
+    /// <returns>Current value, or null if element not found.</returns>
+    double? GetValue(int? timeoutMs = null);
     
     /// <summary>
     /// Set the value.
@@ -394,17 +466,20 @@ public interface IRangeControlObject : IControlObject
     /// <summary>
     /// Get the minimum allowed value.
     /// </summary>
-    double GetMinimum(int? timeoutMs = null);
+    /// <returns>Minimum value, or null if element not found.</returns>
+    double? GetMinimum(int? timeoutMs = null);
     
     /// <summary>
     /// Get the maximum allowed value.
     /// </summary>
-    double GetMaximum(int? timeoutMs = null);
+    /// <returns>Maximum value, or null if element not found.</returns>
+    double? GetMaximum(int? timeoutMs = null);
     
     /// <summary>
     /// Get the step/increment value.
     /// </summary>
-    double GetStep(int? timeoutMs = null);
+    /// <returns>Step value, or null if element not found.</returns>
+    double? GetStep(int? timeoutMs = null);
     
     /// <summary>
     /// Assert value equals expected (within tolerance).
@@ -457,7 +532,8 @@ public interface IWindowControlObject : IControlObject
     /// <summary>
     /// Check if the window/dialog is open.
     /// </summary>
-    bool IsOpen(int? timeoutMs = null);
+    /// <returns>True if open, false if closed, null if element not found.</returns>
+    bool? IsOpen(int? timeoutMs = null);
     
     /// <summary>
     /// Wait until window open state matches expected.
@@ -472,7 +548,20 @@ public interface IWindowControlObject : IControlObject
     /// <summary>
     /// Get the window title.
     /// </summary>
-    string GetWindowTitle(int? timeoutMs = null);
+    /// <returns>Window title, or null if element not found.</returns>
+    string? GetWindowTitle(int? timeoutMs = null);
+    
+    /// <summary>
+    /// Wait until window title matches expected value.
+    /// </summary>
+    /// <param name="expected">Expected title. Null = skip.</param>
+    /// <returns>True if matched, false if timeout.</returns>
+    bool WaitWindowTitle(string? expected, int? timeoutMs = null);
+    
+    /// <summary>
+    /// Assert window title matches expected value.
+    /// </summary>
+    void AssertWindowTitle(string? expected, string? message = null, int? timeoutMs = null);
     
     /// <summary>
     /// Assert window is open/closed.
@@ -496,22 +585,52 @@ public interface IDataGridControlObject : IListContainerControlObject
     /// <summary>
     /// Get number of columns.
     /// </summary>
-    int GetColumnCount(int? timeoutMs = null);
+    /// <returns>Column count, or null if element not found.</returns>
+    int? GetColumnCount(int? timeoutMs = null);
+    
+    /// <summary>
+    /// Wait until column count matches expected value.
+    /// </summary>
+    /// <param name="expected">Expected count. Null = skip.</param>
+    /// <returns>True if matched, false if timeout.</returns>
+    bool WaitColumnCount(int? expected, int? timeoutMs = null);
+    
+    /// <summary>
+    /// Assert column count matches expected value.
+    /// </summary>
+    void AssertColumnCount(int? expected, string? message = null, int? timeoutMs = null);
     
     /// <summary>
     /// Get column headers.
     /// </summary>
-    IReadOnlyList<string> GetColumnHeaders(int? timeoutMs = null);
+    /// <returns>List of column headers, or null if element not found.</returns>
+    IReadOnlyList<string>? GetColumnHeaders(int? timeoutMs = null);
     
     /// <summary>
     /// Get cell value by row and column index.
     /// </summary>
-    string GetCellText(int rowIndex, int columnIndex, int? timeoutMs = null);
+    /// <returns>Cell text, or null if element not found.</returns>
+    string? GetCellText(int rowIndex, int columnIndex, int? timeoutMs = null);
     
     /// <summary>
     /// Get cell value by row index and column name.
     /// </summary>
-    string GetCellText(int rowIndex, string columnName, int? timeoutMs = null);
+    /// <returns>Cell text, or null if element not found.</returns>
+    string? GetCellText(int rowIndex, string columnName, int? timeoutMs = null);
+    
+    /// <summary>
+    /// Wait until cell text matches expected value.
+    /// </summary>
+    /// <param name="rowIndex">Row index.</param>
+    /// <param name="columnIndex">Column index.</param>
+    /// <param name="expected">Expected text. Null = skip.</param>
+    /// <returns>True if matched, false if timeout.</returns>
+    bool WaitCellText(int rowIndex, int columnIndex, string? expected, int? timeoutMs = null);
+    
+    /// <summary>
+    /// Assert cell text matches expected value.
+    /// </summary>
+    void AssertCellText(int rowIndex, int columnIndex, string? expected, string? message = null, int? timeoutMs = null);
     
     /// <summary>
     /// Get locator for cell at position.
@@ -521,12 +640,14 @@ public interface IDataGridControlObject : IListContainerControlObject
     /// <summary>
     /// Get all values in a row.
     /// </summary>
-    IReadOnlyList<string> GetRowValues(int rowIndex, int? timeoutMs = null);
+    /// <returns>List of row values, or null if element not found.</returns>
+    IReadOnlyList<string>? GetRowValues(int rowIndex, int? timeoutMs = null);
     
     /// <summary>
     /// Get all values in a column.
     /// </summary>
-    IReadOnlyList<string> GetColumnValues(int columnIndex, int? timeoutMs = null);
+    /// <returns>List of column values, or null if element not found.</returns>
+    IReadOnlyList<string>? GetColumnValues(int columnIndex, int? timeoutMs = null);
     
     /// <summary>
     /// Find row index containing text in specified column.
@@ -578,7 +699,8 @@ public interface IScrollableControlObject : IControlObject
     /// <summary>
     /// Get vertical scroll position (0-100 percent).
     /// </summary>
-    double GetScrollPosition(int? timeoutMs = null);
+    /// <returns>Scroll position, or null if element not found.</returns>
+    double? GetScrollPosition(int? timeoutMs = null);
     
     /// <summary>
     /// Set vertical scroll position (0-100 percent).
@@ -586,14 +708,29 @@ public interface IScrollableControlObject : IControlObject
     void SetScrollPosition(double percent, int? timeoutMs = null);
     
     /// <summary>
+    /// Wait until scroll position matches expected value.
+    /// </summary>
+    /// <param name="expected">Expected position (0-100). Null = skip.</param>
+    /// <param name="tolerance">Acceptable difference. Default 1.0.</param>
+    /// <returns>True if matched, false if timeout.</returns>
+    bool WaitScrollPosition(double? expected, double tolerance = 1.0, int? timeoutMs = null);
+    
+    /// <summary>
+    /// Assert scroll position matches expected value.
+    /// </summary>
+    void AssertScrollPosition(double? expected, double tolerance = 1.0, string? message = null, int? timeoutMs = null);
+    
+    /// <summary>
     /// Check if more content is available to scroll.
     /// </summary>
-    bool CanScrollDown(int? timeoutMs = null);
+    /// <returns>True if can scroll down, false if at bottom, null if element not found.</returns>
+    bool? CanScrollDown(int? timeoutMs = null);
     
     /// <summary>
     /// Check if can scroll up from current position.
     /// </summary>
-    bool CanScrollUp(int? timeoutMs = null);
+    /// <returns>True if can scroll up, false if at top, null if element not found.</returns>
+    bool? CanScrollUp(int? timeoutMs = null);
 }
 ```
 
@@ -621,6 +758,18 @@ public interface IDateTimeControlObject : IControlObject
     void SetDate(DateTime? date, int? timeoutMs = null);
     
     /// <summary>
+    /// Wait until date matches expected value.
+    /// </summary>
+    /// <param name="expected">Expected date. Null = skip.</param>
+    /// <returns>True if matched, false if timeout.</returns>
+    bool WaitDate(DateTime? expected, int? timeoutMs = null);
+    
+    /// <summary>
+    /// Assert date matches expected value.
+    /// </summary>
+    void AssertDate(DateTime? expected, string? message = null, int? timeoutMs = null);
+    
+    /// <summary>
     /// Get the current time value.
     /// </summary>
     TimeSpan? GetTime(int? timeoutMs = null);
@@ -630,6 +779,18 @@ public interface IDateTimeControlObject : IControlObject
     /// </summary>
     /// <param name="time">Time to set. Null = skip.</param>
     void SetTime(TimeSpan? time, int? timeoutMs = null);
+    
+    /// <summary>
+    /// Wait until time matches expected value.
+    /// </summary>
+    /// <param name="expected">Expected time. Null = skip.</param>
+    /// <returns>True if matched, false if timeout.</returns>
+    bool WaitTime(TimeSpan? expected, int? timeoutMs = null);
+    
+    /// <summary>
+    /// Assert time matches expected value.
+    /// </summary>
+    void AssertTime(TimeSpan? expected, string? message = null, int? timeoutMs = null);
     
     /// <summary>
     /// Get combined date and time.
@@ -642,9 +803,16 @@ public interface IDateTimeControlObject : IControlObject
     void SetDateTime(DateTime? dateTime, int? timeoutMs = null);
     
     /// <summary>
-    /// Assert date matches expected value.
+    /// Wait until date and time match expected value.
     /// </summary>
-    void AssertDate(DateTime? expected, string? message = null, int? timeoutMs = null);
+    /// <param name="expected">Expected date and time. Null = skip.</param>
+    /// <returns>True if matched, false if timeout.</returns>
+    bool WaitDateTime(DateTime? expected, int? timeoutMs = null);
+    
+    /// <summary>
+    /// Assert date and time match expected value.
+    /// </summary>
+    void AssertDateTime(DateTime? expected, string? message = null, int? timeoutMs = null);
     
     /// <summary>
     /// Get minimum allowed date.
@@ -673,7 +841,20 @@ public interface IWebViewControlObject : IControlObject
     /// <summary>
     /// Get the current URL.
     /// </summary>
-    string GetUrl(int? timeoutMs = null);
+    /// <returns>Current URL, or null if element not found.</returns>
+    string? GetUrl(int? timeoutMs = null);
+    
+    /// <summary>
+    /// Wait until URL matches expected value.
+    /// </summary>
+    /// <param name="expected">Expected URL. Null = skip.</param>
+    /// <returns>True if matched, false if timeout.</returns>
+    bool WaitUrl(string? expected, int? timeoutMs = null);
+    
+    /// <summary>
+    /// Assert URL matches expected value.
+    /// </summary>
+    void AssertUrl(string? expected, string? message = null, int? timeoutMs = null);
     
     /// <summary>
     /// Navigate to URL.
@@ -695,12 +876,26 @@ public interface IWebViewControlObject : IControlObject
     /// <summary>
     /// Get the page title.
     /// </summary>
-    string GetTitle(int? timeoutMs = null);
+    /// <returns>Page title, or null if element not found.</returns>
+    string? GetTitle(int? timeoutMs = null);
+    
+    /// <summary>
+    /// Wait until page title matches expected value.
+    /// </summary>
+    /// <param name="expected">Expected title. Null = skip.</param>
+    /// <returns>True if matched, false if timeout.</returns>
+    bool WaitTitle(string? expected, int? timeoutMs = null);
+    
+    /// <summary>
+    /// Assert page title matches expected value.
+    /// </summary>
+    void AssertTitle(string? expected, string? message = null, int? timeoutMs = null);
     
     /// <summary>
     /// Check if web content is loaded.
     /// </summary>
-    bool IsLoaded(int? timeoutMs = null);
+    /// <returns>True if loaded, false if not loaded, null if element not found.</returns>
+    bool? IsLoaded(int? timeoutMs = null);
 }
 ```
 
@@ -722,11 +917,9 @@ public interface IBusyPageObject : IPageObject
 {
     /// <summary>
     /// Check if the page is currently showing a busy indicator.
-    /// Returns null if the page state cannot be determined.
     /// </summary>
-    /// <param name="timeoutMs">Timeout in milliseconds. Null = immediate check.</param>
-    /// <returns>True if busy, false if not busy, null if indeterminate.</returns>
-    bool? IsBusy(int? timeoutMs = null);
+    /// <returns>True if busy indicator is visible, false otherwise.</returns>
+    bool IsBusy();
     
     /// <summary>
     /// Wait until the page is no longer busy.
@@ -747,8 +940,8 @@ public interface IBusyPageObject : IPageObject
 **Implementation Notes:**
 - Pages implement this interface when they have identifiable busy indicators
 - Busy indicator locator is page-specific (spinner, overlay, skeleton loader, etc.)
-- Implementation typically checks for presence of busy indicator element
-- `IsBusy` returns null if element cannot be found or state is indeterminate
+- Implementation typically checks for presence/visibility of busy indicator element
+- `IsBusy()` returns false if element cannot be found (no indicator = not busy)
 
 **Platform Coverage:**
 - MAUI: ActivityIndicator, custom loading overlays

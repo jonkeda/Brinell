@@ -58,7 +58,7 @@ The Timeout foundation defines strategies for managing wait times and polling in
 | **Setup** | SetupTimeoutMs | 60000ms | Test fixture initialization |
 | **Teardown** | TeardownTimeoutMs | 30000ms | Test cleanup |
 | **Animation** | AnimationDelayMs | 500ms | UI animation completion |
-| **Polling** | PollingIntervalMs | 250ms | Condition check interval |
+| **Polling** | PollingIntervalMs | 100ms | Condition check interval |
 
 ---
 
@@ -95,9 +95,9 @@ public class TimeoutSettings
     public int Animation { get; set; } = 500;
     
     /// <summary>
-    /// Polling interval for wait operations (250ms).
+    /// Polling interval for wait operations (100ms).
     /// </summary>
-    public int PollingInterval { get; set; } = 250;
+    public int PollingInterval { get; set; } = 100;
     
     /// <summary>
     /// Default timeout settings.
@@ -262,61 +262,39 @@ public bool WaitEnabled(bool enabled, int? timeoutMs = null)
 }
 ```
 
-### 5.2 Check Methods (Throw on Failure)
+### 5.2 Assert Methods (Wait, Then Verify)
 
-Check methods throw CheckFailedException on timeout:
-
-```csharp
-public void CheckExists(bool exists, int? timeoutMs = null, string? message = null)
-{
-    if (!WaitExists(exists, timeoutMs))
-    {
-        throw new CheckFailedException(
-            message ?? $"Element '{AutomationId}' existence did not become {exists}",
-            AutomationId,
-            "CheckExists");
-    }
-}
-
-public void CheckVisible(bool visible, int? timeoutMs = null, string? message = null)
-{
-    if (!WaitVisible(visible, timeoutMs))
-    {
-        throw new CheckFailedException(
-            message ?? $"Element '{AutomationId}' visibility did not become {visible}",
-            AutomationId,
-            "CheckVisible");
-    }
-}
-```
-
-### 5.3 Assert Methods (Immediate, No Wait)
-
-Assert methods check immediately without waiting:
+Assert methods wait for a condition and throw AssertionException if not met within timeout:
 
 ```csharp
-public void AssertExists(string? message = null)
+public void AssertExists(bool? expected, string? message = null, int? timeoutMs = null)
 {
-    if (!IsExists())
+    if (expected == null) return;  // Nullable skip pattern
+    
+    if (!WaitExists(expected, timeoutMs))
     {
         throw new AssertionException(
-            message ?? $"Element '{AutomationId}' does not exist",
-            AutomationId,
+            message ?? $"Element '{Locator}' existence did not become {expected}",
+            Locator.Value,
             "AssertExists");
     }
 }
 
-public void AssertVisible(string? message = null)
+public void AssertVisible(bool? expected, string? message = null, int? timeoutMs = null)
 {
-    if (!IsVisible())
+    if (expected == null) return;  // Nullable skip pattern
+    
+    if (!WaitVisible(expected, timeoutMs))
     {
         throw new AssertionException(
-            message ?? $"Element '{AutomationId}' is not visible",
-            AutomationId,
+            message ?? $"Element '{Locator}' visibility did not become {expected}",
+            Locator.Value,
             "AssertVisible");
     }
 }
 ```
+
+> **Note:** Assert methods include waiting by default (unlike immediate assert patterns in some frameworks). This consolidates Wait+Check patterns into a single Assert pattern that waits before verifying.
 
 ---
 
@@ -422,7 +400,7 @@ Thread.Sleep(2000);
 button.Click();
 
 // ✅ GOOD: Wait for specific condition
-button.CheckVisible(true);
+button.AssertVisible(true);
 button.Click();
 ```
 
@@ -463,8 +441,8 @@ if (!button.WaitVisible(true, 5000))
     }
 }
 
-// ✅ GOOD: Single wait with appropriate timeout
-button.CheckVisible(true, 10000);
+// ✅ GOOD: Single assert with appropriate timeout
+button.AssertVisible(true, timeoutMs: 10000);
 ```
 
 ---
@@ -511,9 +489,8 @@ The Timeout foundation is valid when:
 - [ ] Timeout values follow hierarchy (Test > Page > Element)
 - [ ] Resolution priority is Method > Context > Config > Default
 - [ ] Wait* methods return bool (never throw on timeout)
-- [ ] Check* methods throw CheckFailedException on timeout
-- [ ] Assert* methods check immediately (no polling)
-- [ ] Polling interval is configurable
+- [ ] Assert* methods wait then throw AssertionException on timeout
+- [ ] Polling interval is configurable (default 100ms)
 - [ ] Platform-specific timeouts can override defaults
 - [ ] Test-level timeouts prevent hung tests
 - [ ] Timeout diagnostics are logged

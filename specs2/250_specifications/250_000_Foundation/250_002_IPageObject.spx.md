@@ -87,8 +87,16 @@ void AssertLoaded(bool? expected, string? message = null, int? timeoutMs = null)
 /// Get the page title (for web) or screen title (for native).
 /// </summary>
 /// <param name="timeoutMs">Timeout to wait for title. Null = use default.</param>
-/// <returns>Page title, or empty string if not available.</returns>
-string GetTitle(int? timeoutMs = null);
+/// <returns>Page title, or null if not available.</returns>
+string? GetTitle(int? timeoutMs = null);
+
+/// <summary>
+/// Wait until page title matches expected value.
+/// </summary>
+/// <param name="expected">Expected title. Null = skip operation.</param>
+/// <param name="timeoutMs">Timeout in milliseconds. Null = use default.</param>
+/// <returns>True if condition met, false if timeout.</returns>
+bool WaitTitle(string? expected, int? timeoutMs = null);
 
 /// <summary>
 /// Assert page title matches expected value.
@@ -239,7 +247,8 @@ namespace Brinell.Core.Interfaces
         void AssertLoaded(bool? expected, string? message = null, int? timeoutMs = null);
         
         // Title
-        string GetTitle(int? timeoutMs = null);
+        string? GetTitle(int? timeoutMs = null);
+        bool WaitTitle(string? expected, int? timeoutMs = null);
         void AssertTitle(string? expected, string? message = null, int? timeoutMs = null);
         
         // Page operations

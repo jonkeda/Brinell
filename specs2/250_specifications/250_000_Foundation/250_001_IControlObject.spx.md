@@ -316,6 +316,23 @@ Then it returns null
 
 ---
 
+## 6.1 Implementation Note: Run/RunAssert Patterns
+
+Implementations should use the Run and RunAssert patterns from the Logging foundation for consistent logging. See [221_001_Logging.spx.md](../../200_architecture/221_Foundation/221_001_Logging.spx.md) for pattern details:
+
+```csharp
+// Run pattern wraps actions with logging
+protected void Run(string action, Action operation) { /* ... */ }
+protected void Run<T>(string action, T? value, Action operation) { /* ... */ }
+protected TResult Run<TResult>(string action, Func<TResult> operation) { /* ... */ }
+
+// RunAssert pattern wraps assertions with expected/actual logging
+protected void RunAssert<T>(string assertType, T? expected, Func<T?> getActual, string? message = null) 
+    where T : IComparable? { /* ... */ }
+```
+
+---
+
 ## 7. Complete Interface Definition
 
 ```csharp
@@ -365,3 +382,4 @@ namespace Brinell.Core.Interfaces
 - [Base Classes Module](../../200_architecture/211_Modules/211_002_BaseClasses.spx.md)
 - [IPageObject Specification](250_002_IPageObject.spx.md)
 - [Control Object Pattern](../../200_architecture/231_Patterns/231_001_ControlObjectPattern.spx.md)
+- [Logging Foundation (Run/RunAssert patterns)](../../200_architecture/221_Foundation/221_001_Logging.spx.md)

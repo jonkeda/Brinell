@@ -70,30 +70,27 @@ IControlObject (core: existence, visibility, enabled)
 public interface IControlObject
 {
     // Identity
-    string AutomationId { get; }
+    Locator Locator { get; }
     IPageObject? Page { get; }
     
-    // State queries (null = element not found)
-    bool? IsExists(int? timeoutMs = null);
-    bool? IsVisible(int? timeoutMs = null);
-    bool? IsEnabled(int? timeoutMs = null);
+    // State queries
+    bool IsExists();
+    bool? IsVisible();
+    bool? IsEnabled();
     
-    // Wait methods (return bool, don't throw)
-    bool WaitExists(bool exists, int? timeoutMs = null);
-    bool WaitVisible(bool visible, int? timeoutMs = null);
-    bool WaitEnabled(bool enabled, int? timeoutMs = null);
+    // Wait methods (return bool, don't throw; use nullable skip pattern)
+    bool WaitExists(bool? exists, int? timeoutMs = null);
+    bool WaitVisible(bool? visible, int? timeoutMs = null);
+    bool WaitEnabled(bool? enabled, int? timeoutMs = null);
     
-    // Check methods (throw on failure)
-    void CheckExists(bool exists, int? timeoutMs = null, string? message = null);
-    void CheckVisible(bool visible, int? timeoutMs = null, string? message = null);
-    void CheckEnabled(bool enabled, int? timeoutMs = null, string? message = null);
-    
-    // Assert methods (immediate, throw on failure)
-    void AssertExists(string? message = null);
-    void AssertVisible(string? message = null);
-    void AssertEnabled(string? message = null);
+    // Assert methods (wait then throw on failure; use nullable skip pattern)
+    void AssertExists(bool? exists, string? message = null, int? timeoutMs = null);
+    void AssertVisible(bool? visible, string? message = null, int? timeoutMs = null);
+    void AssertEnabled(bool? enabled, string? message = null, int? timeoutMs = null);
 }
 ```
+
+> **Nullable Skip Pattern:** When `expected` parameter is null, the operation is skipped and returns true (for Wait) or returns immediately (for Assert). This allows test methods to conditionally skip assertions based on test data.
 
 ### 3.2 Capability Interfaces
 
@@ -108,8 +105,8 @@ public interface IClickableControl : IControlObject
 public interface ITextControl : IControlObject
 {
     string? GetText(int? timeoutMs = null);
-    void AssertTextEquals(string? expected, string? message = null);
-    void AssertTextContains(string? expected, string? message = null);
+    void AssertText(string? expected, string? message = null, int? timeoutMs = null);
+    void AssertTextContains(string? expected, string? message = null, int? timeoutMs = null);
 }
 
 public interface IEditableTextControl : ITextControl
@@ -121,10 +118,10 @@ public interface IEditableTextControl : ITextControl
 
 public interface IToggleControl : IControlObject
 {
-    bool? IsChecked(int? timeoutMs = null);
+    bool? IsChecked();
     void SetChecked(bool? isChecked, int? timeoutMs = null);
     void Toggle(int? timeoutMs = null);
-    void AssertChecked(bool? expected, string? message = null);
+    void AssertChecked(bool? expected, string? message = null, int? timeoutMs = null);
 }
 
 public interface ISelectorControl : IControlObject
@@ -134,7 +131,7 @@ public interface ISelectorControl : IControlObject
     string? GetSelectedText(int? timeoutMs = null);
     int? GetSelectedIndex(int? timeoutMs = null);
     IReadOnlyList<string> GetItemTexts(int? timeoutMs = null);
-    void AssertSelectedText(string? expected, string? message = null);
+    void AssertSelectedText(string? expected, string? message = null, int? timeoutMs = null);
 }
 ```
 
@@ -149,7 +146,7 @@ public abstract class ControlBase : IControlObject
     protected readonly ITestLogger? _logger;
     protected readonly string _testName;
     
-    public string AutomationId => _locator.Value;
+    public Locator Locator => _locator;
     public IPageObject? Page => _page;
     
     protected ControlBase(ITestContext context, Locator locator, IPageObject? page = null)
@@ -169,7 +166,7 @@ public abstract class ControlBase : IControlObject
     
     // Abstract methods for platform-specific implementation
     protected abstract object? FindElement();
-    protected abstract bool? ElementExists();
+    protected abstract bool ElementExists();
     protected abstract bool? ElementVisible();
     protected abstract bool? ElementEnabled();
     
@@ -241,15 +238,23 @@ public void Login_WithValidCredentials_ShowsHomePage()
 }
 ```
 
-### 4.3 Nullable Parameter Pattern
+### 4.3 Nullable Parameter Pattern (Skip Pattern)
 
 ```csharp
-// If value is null, no action is performed
-loginPage.UsernameEntry.Enter(optionalUsername);  // Safe with null
+// If expected value is null, the operation is skipped
+loginPage.UsernameEntry.Enter(optionalUsername);  // Skips if null
 loginPage.PasswordEntry.SetText(null);            // No-op
 
-// Assertions with null expected skip verification
-loginPage.ErrorLabel.AssertTextEquals(expectedError);  // Skips if null
+// Wait/Assert methods skip verification when expected is null
+loginPage.ErrorLabel.AssertText(expectedError);   // Skips if null
+loginPage.LoginButton.WaitVisible(null);          // Returns true immediately
+
+// This enables data-driven tests with optional verifications
+public void TestLogin(string? expectedError)
+{
+    loginPage.Login("user", "pass");
+    loginPage.ErrorLabel.AssertText(expectedError);  // Only asserts if expectedError is not null
+}
 ```
 
 ---
@@ -280,18 +285,18 @@ button.Click();           // Finds element again, clicks
 
 This handles dynamic UIs where elements are recreated.
 
-### 5.3 Null Safety
+### 5.3 Return Values
 
-State queries return `null` when element doesn't exist:
+State queries have specific return semantics:
 
 ```csharp
-bool? exists = control.IsExists();
-if (exists == null)
-    // Element not found in UI tree
-else if (exists == true)
-    // Element exists
-else
-    // Element exists but condition false (rare for IsExists)
+bool exists = control.IsExists();  // Always returns true or false
+bool? visible = control.IsVisible();  // null if element doesn't exist
+bool? enabled = control.IsEnabled();  // null if element doesn't exist
+
+// IsVisible and IsEnabled return null when element not found
+// because visibility/enabled state cannot be determined without the element
+// IsExists always returns bool because existence itself is the question
 ```
 
 ---
@@ -337,11 +342,13 @@ The Control Object pattern is valid when:
 
 - [ ] Controls implement appropriate capability interfaces
 - [ ] All public methods use Run/RunAssert for logging
-- [ ] State queries return null when element not found
-- [ ] Actions handle null parameters (no-op)
+- [ ] IsExists() returns bool; IsVisible/IsEnabled return null when element not found
+- [ ] Actions handle null parameters (skip operation)
+- [ ] Wait/Assert methods support nullable skip pattern
 - [ ] Elements are re-found on each operation
 - [ ] Raw automation elements are never exposed
 - [ ] Controls accept optional page reference for scoping
+- [ ] Locator property exposes full locator information
 
 ---
 

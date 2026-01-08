@@ -89,16 +89,18 @@ namespace Brinell.Wpf.Base
             catch { return false; }
         }
         
-        public bool IsVisible()
+        public bool? IsVisible()
         {
             var element = TryFindElement();
-            return element?.IsOffscreen == false;
+            if (element == null) return null;
+            return element.IsOffscreen == false;
         }
         
-        public bool IsEnabled()
+        public bool? IsEnabled()
         {
             var element = TryFindElement();
-            return element?.IsEnabled ?? false;
+            if (element == null) return null;
+            return element.IsEnabled;
         }
         
         // Wait methods
@@ -158,16 +160,27 @@ namespace Brinell.Wpf.Base
         }
         
         // Text methods
-        public string GetText(int? timeoutMs = null)
+        public string? GetText(int? timeoutMs = null)
         {
-            var element = FindElement(timeoutMs);
-            return element.Name ?? string.Empty;
+            var element = TryFindElement();
+            return element?.Name;
+        }
+        
+        public bool WaitText(string? expected, int? timeoutMs = null)
+        {
+            if (expected is null) return true;
+            var timeout = timeoutMs ?? _context.Timeouts.ElementState;
+            return Retry.WhileTrue(
+                () => GetText() != expected,
+                TimeSpan.FromMilliseconds(timeout),
+                TimeSpan.FromMilliseconds(_context.Timeouts.PollingInterval)).Success;
         }
         
         public void AssertText(string? expected, string? message = null, int? timeoutMs = null)
         {
             if (expected is null) return;
-            var actual = GetText(timeoutMs);
+            WaitText(expected, timeoutMs);
+            var actual = GetText();
             if (actual != expected)
                 throw new AssertionException(message ?? $"Expected text '{expected}' but was '{actual}'");
         }
@@ -176,7 +189,7 @@ namespace Brinell.Wpf.Base
         {
             if (expected is null) return;
             var actual = GetText(timeoutMs);
-            if (!actual.Contains(expected))
+            if (actual is null || !actual.Contains(expected))
                 throw new AssertionException(message ?? $"Text '{actual}' does not contain '{expected}'");
         }
         
@@ -304,10 +317,11 @@ public abstract class WpfClickableControlBase : WpfControlBase, IClickableContro
         _context.Logger.LogAction("Focus", _locator);
     }
     
-    public bool IsFocused()
+    public bool? IsFocused()
     {
         var element = TryFindElement();
-        return element?.HasKeyboardFocus ?? false;
+        if (element == null) return null;
+        return element.HasKeyboardFocus;
     }
 }
 ```
@@ -324,9 +338,10 @@ public abstract class WpfTextControlBase : WpfControlBase, ITextControlObject
     protected WpfTextControlBase(IWpfTestContext context, Locator locator, IPageObject? page = null)
         : base(context, locator, page) { }
     
-    public override string GetText(int? timeoutMs = null)
+    public override string? GetText(int? timeoutMs = null)
     {
-        var element = FindElement(timeoutMs);
+        var element = TryFindElement();
+        if (element is null) return null;
         
         // Try TextPattern first
         var textPattern = element.Patterns.Text.TryGetPattern();
@@ -334,7 +349,7 @@ public abstract class WpfTextControlBase : WpfControlBase, ITextControlObject
             return textPattern.DocumentRange.GetText(-1);
         
         // Fall back to Name property
-        return element.Name ?? string.Empty;
+        return element.Name;
     }
     
     public bool WaitTextEquals(string? expected, int? timeoutMs = null)
@@ -352,7 +367,10 @@ public abstract class WpfTextControlBase : WpfControlBase, ITextControlObject
         if (expected is null) return true;
         var timeout = timeoutMs ?? _context.Timeouts.DefaultWait;
         return Retry.WhileFalse(
-            () => GetText().Contains(expected),
+            () => {
+                var text = GetText();
+                return text is not null && text.Contains(expected);
+            },
             TimeSpan.FromMilliseconds(timeout),
             TimeSpan.FromMilliseconds(_context.Timeouts.PollingInterval)).Result;
     }
@@ -361,7 +379,7 @@ public abstract class WpfTextControlBase : WpfControlBase, ITextControlObject
     {
         if (pattern is null) return;
         var actual = GetText(timeoutMs);
-        if (!System.Text.RegularExpressions.Regex.IsMatch(actual, pattern))
+        if (actual is null || !System.Text.RegularExpressions.Regex.IsMatch(actual, pattern))
             throw new AssertionException(message ?? $"Text '{actual}' does not match pattern '{pattern}'");
     }
 }
@@ -379,14 +397,15 @@ public abstract class WpfEditableTextControlBase : WpfTextControlBase, IEditable
     protected WpfEditableTextControlBase(IWpfTestContext context, Locator locator, IPageObject? page = null)
         : base(context, locator, page) { }
     
-    public override string GetText(int? timeoutMs = null)
+    public override string? GetText(int? timeoutMs = null)
     {
-        var element = FindElement(timeoutMs);
+        var element = TryFindElement();
+        if (element is null) return null;
         
         // Try ValuePattern first (for TextBox, etc.)
         var valuePattern = element.Patterns.Value.TryGetPattern();
         if (valuePattern != null)
-            return valuePattern.Value.Value ?? string.Empty;
+            return valuePattern.Value.Value;
         
         // Fall back to TextPattern
         return base.GetText(timeoutMs);
@@ -461,10 +480,11 @@ public abstract class WpfEditableTextControlBase : WpfTextControlBase, IEditable
         return GetAttribute("helptext");
     }
     
-    public virtual bool IsReadOnly()
+    public virtual bool? IsReadOnly()
     {
         var element = TryFindElement();
-        var valuePattern = element?.Patterns.Value.TryGetPattern();
+        if (element == null) return null;
+        var valuePattern = element.Patterns.Value.TryGetPattern();
         return valuePattern?.IsReadOnly.Value ?? true;
     }
 }
@@ -482,10 +502,11 @@ public abstract class WpfToggleControlBase : WpfControlBase, IToggleControlObjec
     protected WpfToggleControlBase(IWpfTestContext context, Locator locator, IPageObject? page = null)
         : base(context, locator, page) { }
     
-    public virtual bool IsChecked()
+    public virtual bool? IsChecked()
     {
         var element = TryFindElement();
-        var togglePattern = element?.Patterns.Toggle.TryGetPattern();
+        if (element == null) return null;
+        var togglePattern = element.Patterns.Toggle.TryGetPattern();
         return togglePattern?.ToggleState.Value == ToggleState.On;
     }
     
@@ -533,8 +554,10 @@ public abstract class WpfToggleControlBase : WpfControlBase, IToggleControlObjec
         return togglePattern?.ToggleState.Value ?? ToggleState.Indeterminate;
     }
     
-    public bool IsIndeterminate()
+    public bool? IsIndeterminate()
     {
+        var element = TryFindElement();
+        if (element == null) return null;
         return GetToggleState() == ToggleState.Indeterminate;
     }
 }
@@ -591,40 +614,86 @@ public abstract class WpfSelectorControlBase : WpfControlBase, ISelectorControlO
         SelectByText(value, timeoutMs);
     }
     
-    public virtual string GetSelectedText(int? timeoutMs = null)
+    public virtual string? GetSelectedText(int? timeoutMs = null)
     {
-        var element = FindElement(timeoutMs);
+        var element = TryFindElement();
+        if (element is null) return null;
         var selectionPattern = element.Patterns.Selection.TryGetPattern();
         
         var selection = selectionPattern?.Selection.Value;
-        return selection?.FirstOrDefault()?.Name ?? string.Empty;
+        return selection?.FirstOrDefault()?.Name;
     }
     
-    public virtual int GetSelectedIndex(int? timeoutMs = null)
+    public bool WaitSelectedText(string? expected, int? timeoutMs = null)
+    {
+        if (expected is null) return true;
+        var timeout = timeoutMs ?? _context.Timeouts.ElementState;
+        return Retry.WhileFalse(
+            () => GetSelectedText() == expected,
+            TimeSpan.FromMilliseconds(timeout),
+            TimeSpan.FromMilliseconds(_context.Timeouts.PollingInterval)).Result;
+    }
+    
+    public virtual int? GetSelectedIndex(int? timeoutMs = null)
     {
         var selected = GetSelectedText(timeoutMs);
+        if (selected is null) return null;
         var items = GetItemTexts(timeoutMs);
-        return items.ToList().IndexOf(selected);
+        if (items is null) return null;
+        var index = items.ToList().IndexOf(selected);
+        return index >= 0 ? index : null;
     }
     
-    public virtual IReadOnlyList<string> GetItemTexts(int? timeoutMs = null)
+    public bool WaitSelectedIndex(int? expected, int? timeoutMs = null)
     {
-        var element = FindElement(timeoutMs);
+        if (expected is null) return true;
+        var timeout = timeoutMs ?? _context.Timeouts.ElementState;
+        return Retry.WhileFalse(
+            () => GetSelectedIndex() == expected,
+            TimeSpan.FromMilliseconds(timeout),
+            TimeSpan.FromMilliseconds(_context.Timeouts.PollingInterval)).Result;
+    }
+    
+    public virtual IReadOnlyList<string>? GetItemTexts(int? timeoutMs = null)
+    {
+        var element = TryFindElement();
+        if (element is null) return null;
         var items = element.FindAllDescendants(cf => cf.ByControlType(ControlType.ListItem));
         return items.Select(i => i.Name).ToList().AsReadOnly();
     }
     
-    public virtual int GetItemCount(int? timeoutMs = null)
+    public virtual int? GetItemCount(int? timeoutMs = null)
     {
-        var element = FindElement(timeoutMs);
+        var element = TryFindElement();
+        if (element is null) return null;
         var items = element.FindAllDescendants(cf => cf.ByControlType(ControlType.ListItem));
         return items.Length;
+    }
+    
+    public bool WaitItemCount(int? expected, int? timeoutMs = null)
+    {
+        if (expected is null) return true;
+        var timeout = timeoutMs ?? _context.Timeouts.ElementState;
+        return Retry.WhileFalse(
+            () => GetItemCount() == expected,
+            TimeSpan.FromMilliseconds(timeout),
+            TimeSpan.FromMilliseconds(_context.Timeouts.PollingInterval)).Result;
+    }
+    
+    public void AssertItemCount(int? expected, string? message = null, int? timeoutMs = null)
+    {
+        if (expected is null) return;
+        WaitItemCount(expected, timeoutMs);
+        var actual = GetItemCount();
+        if (actual != expected)
+            throw new AssertionException(message ?? $"Expected item count {expected} but was {actual}");
     }
     
     public void AssertSelectedText(string? expected, string? message = null, int? timeoutMs = null)
     {
         if (expected is null) return;
-        var actual = GetSelectedText(timeoutMs);
+        WaitSelectedText(expected, timeoutMs);
+        var actual = GetSelectedText();
         if (actual != expected)
             throw new AssertionException(message ?? $"Expected selected text '{expected}' but was '{actual}'");
     }
@@ -632,7 +701,8 @@ public abstract class WpfSelectorControlBase : WpfControlBase, ISelectorControlO
     public void AssertSelectedIndex(int? expected, string? message = null, int? timeoutMs = null)
     {
         if (expected is null) return;
-        var actual = GetSelectedIndex(timeoutMs);
+        WaitSelectedIndex(expected, timeoutMs);
+        var actual = GetSelectedIndex();
         if (actual != expected.Value)
             throw new AssertionException(message ?? $"Expected selected index {expected} but was {actual}");
     }
@@ -651,10 +721,29 @@ public abstract class WpfWindowControlBase : WpfControlBase, IWindowControlObjec
     protected WpfWindowControlBase(IWpfTestContext context, Locator locator, IPageObject? page = null)
         : base(context, locator, page) { }
     
-    public virtual string GetTitle(int? timeoutMs = null)
+    public virtual string? GetTitle(int? timeoutMs = null)
     {
-        var element = FindElement(timeoutMs);
-        return element.Name ?? string.Empty;
+        var element = TryFindElement();
+        return element?.Name;
+    }
+    
+    public bool WaitTitle(string? expected, int? timeoutMs = null)
+    {
+        if (expected is null) return true;
+        var timeout = timeoutMs ?? _context.Timeouts.ElementState;
+        return Retry.WhileFalse(
+            () => GetTitle() == expected,
+            TimeSpan.FromMilliseconds(timeout),
+            TimeSpan.FromMilliseconds(_context.Timeouts.PollingInterval)).Result;
+    }
+    
+    public void AssertTitle(string? expected, string? message = null, int? timeoutMs = null)
+    {
+        if (expected is null) return;
+        WaitTitle(expected, timeoutMs);
+        var actual = GetTitle();
+        if (actual != expected)
+            throw new AssertionException(message ?? $"Expected title '{expected}' but was '{actual}'");
     }
     
     public virtual void Close(int? timeoutMs = null)
@@ -689,33 +778,28 @@ public abstract class WpfWindowControlBase : WpfControlBase, IWindowControlObjec
         _context.Logger.LogAction("Restore", _locator);
     }
     
-    public virtual bool IsMaximized()
+    public virtual bool? IsMaximized()
     {
         var element = TryFindElement();
-        var windowPattern = element?.Patterns.Window.TryGetPattern();
+        if (element == null) return null;
+        var windowPattern = element.Patterns.Window.TryGetPattern();
         return windowPattern?.WindowVisualState.Value == WindowVisualState.Maximized;
     }
     
-    public virtual bool IsMinimized()
+    public virtual bool? IsMinimized()
     {
         var element = TryFindElement();
-        var windowPattern = element?.Patterns.Window.TryGetPattern();
+        if (element == null) return null;
+        var windowPattern = element.Patterns.Window.TryGetPattern();
         return windowPattern?.WindowVisualState.Value == WindowVisualState.Minimized;
     }
     
-    public virtual bool IsModal()
+    public virtual bool? IsModal()
     {
         var element = TryFindElement();
-        var windowPattern = element?.Patterns.Window.TryGetPattern();
-        return windowPattern?.IsModal.Value ?? false;
-    }
-    
-    public void AssertTitle(string? expected, string? message = null, int? timeoutMs = null)
-    {
-        if (expected is null) return;
-        var actual = GetTitle(timeoutMs);
-        if (actual != expected)
-            throw new AssertionException(message ?? $"Expected title '{expected}' but was '{actual}'");
+        if (element == null) return null;
+        var windowPattern = element.Patterns.Window.TryGetPattern();
+        return windowPattern?.IsModal.Value;
     }
 }
 ```
@@ -732,11 +816,12 @@ public abstract class WpfRangeControlBase : WpfControlBase, IRangeControlObject
     protected WpfRangeControlBase(IWpfTestContext context, Locator locator, IPageObject? page = null)
         : base(context, locator, page) { }
     
-    public virtual double GetValue(int? timeoutMs = null)
+    public virtual double? GetValue(int? timeoutMs = null)
     {
-        var element = FindElement(timeoutMs);
-        var rangePattern = element.Patterns.RangeValue.Pattern;
-        return rangePattern.Value.Value;
+        var element = TryFindElement();
+        if (element is null) return null;
+        var rangePattern = element.Patterns.RangeValue.TryGetPattern();
+        return rangePattern?.Value.Value;
     }
     
     public virtual void SetValue(double? value, int? timeoutMs = null)
@@ -753,32 +838,36 @@ public abstract class WpfRangeControlBase : WpfControlBase, IRangeControlObject
         _context.Logger.LogAction("SetValue", _locator, value.ToString());
     }
     
-    public virtual double GetMinimum(int? timeoutMs = null)
+    public virtual double? GetMinimum(int? timeoutMs = null)
     {
-        var element = FindElement(timeoutMs);
-        var rangePattern = element.Patterns.RangeValue.Pattern;
-        return rangePattern.Minimum.Value;
+        var element = TryFindElement();
+        if (element is null) return null;
+        var rangePattern = element.Patterns.RangeValue.TryGetPattern();
+        return rangePattern?.Minimum.Value;
     }
     
-    public virtual double GetMaximum(int? timeoutMs = null)
+    public virtual double? GetMaximum(int? timeoutMs = null)
     {
-        var element = FindElement(timeoutMs);
-        var rangePattern = element.Patterns.RangeValue.Pattern;
-        return rangePattern.Maximum.Value;
+        var element = TryFindElement();
+        if (element is null) return null;
+        var rangePattern = element.Patterns.RangeValue.TryGetPattern();
+        return rangePattern?.Maximum.Value;
     }
     
-    public virtual double GetStep(int? timeoutMs = null)
+    public virtual double? GetStep(int? timeoutMs = null)
     {
-        var element = FindElement(timeoutMs);
-        var rangePattern = element.Patterns.RangeValue.Pattern;
-        return rangePattern.SmallChange.Value;
+        var element = TryFindElement();
+        if (element is null) return null;
+        var rangePattern = element.Patterns.RangeValue.TryGetPattern();
+        return rangePattern?.SmallChange.Value;
     }
     
     public void AssertValue(double? expected, double tolerance = 0.001, string? message = null, int? timeoutMs = null)
     {
         if (expected is null) return;
+        WaitValue(expected, tolerance, timeoutMs);
         var actual = GetValue(timeoutMs);
-        if (Math.Abs(actual - expected.Value) > tolerance)
+        if (actual is null || Math.Abs(actual.Value - expected.Value) > tolerance)
             throw new AssertionException(message ?? $"Expected value {expected} but was {actual}");
     }
     
