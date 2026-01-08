@@ -151,9 +151,52 @@ the modules 211_003 and 211_004 have a lot of mistakes. Have a good look at the 
 
 Brinell.Maui.UITests.ControlObject6
 
-
 ### stop
 
 stop. Except for 211_003 and 211_004 mainly follow the requirements and architecture documents. AN duse the implementation as example.
 
 You know what. First write an Issue document with what you learned and what you are plannign to do.
+
+
+## 250_specifications
+
+from plan-002
+
+write documents one by one
+
+specs2/
+├── 250_specifications/
+│   ├── 250_INDEX.md                    # Specification index
+│   │
+│   ├── 250_000_Foundation/             # Level 0: Foundation specifications
+│   │   ├── 250_000_INDEX.md            # Foundation index
+│   │   ├── 250_001_IControlObject.spx.md      # Base interface specification
+│   │   ├── 250_002_IPageObject.spx.md         # Page object interface
+│   │   ├── 250_003_IContainerScope.spx.md     # Container scoping interface
+│   │   ├── 250_004_TestContext.spx.md         # Test context specification
+│   │   ├── 250_005_InterfaceHierarchy.spx.md  # Complete interface hierarchy (all platforms)
+│   │   ├── 250_006_MauiBaseClasses.spx.md     # MAUI base class hierarchy
+│   │   ├── 250_007_BlazorBaseClasses.spx.md   # Blazor base class hierarchy
+│   │   ├── 250_008_WpfBaseClasses.spx.md      # WPF base class hierarchy
+│   │   └── 250_009_PlatformContexts.spx.md    # Platform-specific contexts
+
+## Review 250_000_Foundation
+
+Review 250_000_Foundation against the 100_Requirements and 200_architecture
+
+
+## Update 250
+
+can you write this to a review document
+
+and add a task list if the requirements should be updated or the specs so i can choose
+
+
+
+## Review 250 versus architecture
+
+create a review document reviewing the documents in 250_000_Foundation against the 200_architecture.
+
+describe each difference once
+
+for each differen add a tasklist with option to change the architecture or the specifications

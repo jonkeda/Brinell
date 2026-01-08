@@ -1,4 +1,4 @@
-# 231b_004 Container Pattern V2
+# 231_004b Container Pattern V2
 
 ## pattern Container
 
@@ -18,11 +18,11 @@ The Container pattern creates hierarchical scopes for UI element access. Contain
 
 Brinell provides three container interfaces, each for a different scenario:
 
-| Interface | Purpose | Example |
-|-----------|---------|---------|
-| `IContainerControlObject<T>` | Single typed child | Card with content panel |
-| `IListContainerControlObject<T>` | Multiple typed children | Product grid with cards |
-| `IContainerControl` | Dynamic scoped finding | Modal with unknown content |
+| Interface                          | Purpose                 | Example                    |
+| ---------------------------------- | ----------------------- | -------------------------- |
+| `IContainerControlObject<T>`     | Single typed child      | Card with content panel    |
+| `IListContainerControlObject<T>` | Multiple typed children | Product grid with cards    |
+| `IContainerControl`              | Dynamic scoped finding  | Modal with unknown content |
 
 ### Decision Flow
 
@@ -41,16 +41,18 @@ Do you know the child type at compile time?
 For containers with one known content type. The `Child` property provides direct typed access.
 
 **When to use:**
+
 - ContentControl, Frame, Border, Panel wrappers
 - Cards with a specific content layout
 - Expandable sections with known content
 
 **Pattern:**
+
 ```csharp
 public class SettingsPanel : ContainerControlBase<SettingsContent>
 {
     public override SettingsContent Child { get; }
-    
+  
     public SettingsPanel(ITestContext context, Locator locator, IPageObject? page)
         : base(context, locator, page)
     {
@@ -64,6 +66,7 @@ content.SaveButton.Click();
 ```
 
 **Key characteristics:**
+
 - Child defined at construction (property-based, like page objects)
 - Compile-time type safety
 - Single content area
@@ -75,12 +78,14 @@ content.SaveButton.Click();
 For containers with multiple homogeneous items. Provides `Children` collection, indexer, and count.
 
 **When to use:**
+
 - ListView, CollectionView, ItemsControl
 - Grids of cards or tiles
 - Repeating form sections
 - Table rows
 
 **Pattern:**
+
 ```csharp
 public class ProductGrid : ListContainerControlBase<ProductCard>
 {
@@ -97,6 +102,7 @@ var widget = page.ProductGrid.FirstOrDefault(
 ```
 
 **Key characteristics:**
+
 - `Children` returns typed collection snapshot
 - Indexer provides direct item access
 - `Count` returns current child count
@@ -110,12 +116,14 @@ var widget = page.ProductGrid.FirstOrDefault(
 For containers where content is unknown at compile time or varies dynamically.
 
 **When to use:**
+
 - Modal dialogs with varying content
 - iframes with external content
 - Dynamically loaded regions
 - Third-party component wrappers
 
 **Pattern:**
+
 ```csharp
 // Find controls dynamically within scope
 var modal = new ModalDialog(context, Locator.ByAutomationId("ConfirmModal"), page);
@@ -125,6 +133,7 @@ var hasSubmit = modal.ControlExists(Locator.ByAutomationId("Submit"));
 ```
 
 **Key characteristics:**
+
 - Runtime type specification
 - Scoped element searching
 - `FindControl<T>` for single element
@@ -145,12 +154,14 @@ Page (global scope)
 ```
 
 **Without scoping (problem):**
+
 ```csharp
 // ❌ Which "AddToCart" button? There are 10 on the page!
 var button = new ButtonControl(context, "AddToCart", page);
 ```
 
 **With scoping (solution):**
+
 ```csharp
 // ✅ The "AddToCart" button inside the first product card
 var button = page.ProductGrid[0].AddToCart;
@@ -170,8 +181,9 @@ IControlObject
 ```
 
 This means containers ARE controls:
+
 - `container.IsExists()` — checks if container element exists
-- `container.IsVisible()` — checks container visibility  
+- `container.IsVisible()` — checks container visibility
 - `container.AssertExists()` — asserts container presence
 
 ---
@@ -204,19 +216,20 @@ firstProduct.AddToCart.Click();             // Scoped button
 
 ## 8. Comparison Summary
 
-| Aspect | Single Child | Multiple Children | Dynamic |
-|--------|-------------|-------------------|---------|
-| Interface | `IContainerControlObject<T>` | `IListContainerControlObject<T>` | `IContainerControl` |
-| Type safety | Compile-time | Compile-time | Runtime |
-| Child access | `Child` property | `Children`, `this[i]` | `FindControl<T>()` |
-| Child count | 1 | 0..n | 0..n |
-| Use case | Frame, Panel | List, Grid | Modal, iframe |
+| Aspect       | Single Child                   | Multiple Children                  | Dynamic               |
+| ------------ | ------------------------------ | ---------------------------------- | --------------------- |
+| Interface    | `IContainerControlObject<T>` | `IListContainerControlObject<T>` | `IContainerControl` |
+| Type safety  | Compile-time                   | Compile-time                       | Runtime               |
+| Child access | `Child` property             | `Children`, `this[i]`          | `FindControl<T>()`  |
+| Child count  | 1                              | 0..n                               | 0..n                  |
+| Use case     | Frame, Panel                   | List, Grid                         | Modal, iframe         |
 
 ---
 
 ## 9. Anti-Patterns to Avoid
 
 **Don't over-nest containers:**
+
 ```csharp
 // ❌ Too much nesting for simple structure
 var button = page.Header.LogoRegion.LogoWrapper.Logo;
@@ -226,6 +239,7 @@ var button = page.Logo;
 ```
 
 **Don't use containers for single elements:**
+
 ```csharp
 // ❌ Container wrapping one element
 public ContainerControl ButtonWrapper { get; }
@@ -236,6 +250,7 @@ public ButtonControl Submit { get; }
 ```
 
 **Don't use dynamic finding when type is known:**
+
 ```csharp
 // ❌ Runtime finding when compile-time is possible
 var products = grid.FindControls<ProductCard>(locator);
@@ -249,16 +264,19 @@ public IListContainerControlObject<ProductCard> Products { get; }
 ## 10. Quick Reference
 
 **Choose `IContainerControlObject<T>` when:**
+
 - Container has exactly one child content area
 - Child type is known at compile time
 - Examples: Card, Panel, Frame, Expander
 
 **Choose `IListContainerControlObject<T>` when:**
+
 - Container has multiple children of same type
 - Need index access, count, or iteration
 - Examples: ListView, Grid, Table, Repeater
 
 **Choose `IContainerControl` when:**
+
 - Content varies or is unknown at compile time
 - Need flexible element finding within scope
 - Examples: Modal dialog, iframe, dynamic region
