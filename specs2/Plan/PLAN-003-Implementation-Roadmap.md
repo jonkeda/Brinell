@@ -67,6 +67,14 @@ Implementation follows specifications exactly. Any deviation from specification 
 **Duration:** 2 weeks  
 **Dependencies:** Phase 2 complete, PLAN-002 Level 1 specs complete
 
+**Specifications:**
+- [250_100_INDEX.md](../250_specifications/250_100_CoreControls/250_100_INDEX.md) — Core Controls Index
+- [250_101_Button.spx.md](../250_specifications/250_100_CoreControls/250_101_Button.spx.md) — Button (IClickableControlObject)
+- [250_102_Label.spx.md](../250_specifications/250_100_CoreControls/250_102_Label.spx.md) — Label (ITextControlObject)
+- [250_103_Entry.spx.md](../250_specifications/250_100_CoreControls/250_103_Entry.spx.md) — Entry (IEditableTextControlObject)
+- [250_104_CheckBox.spx.md](../250_specifications/250_100_CoreControls/250_104_CheckBox.spx.md) — CheckBox (IToggleControlObject)
+- [250_105_Container.spx.md](../250_specifications/250_100_CoreControls/250_105_Container.spx.md) — Container (IContainerControlObject)
+
 | Task | Description | Deliverables |
 |------|-------------|--------------|
 | 3.1 | Implement Button control | Per-platform ButtonControl |
@@ -154,8 +162,10 @@ After completing PLAN-002 specifications:
 
 ### Step 1: Create Project Structure
 
+> **Note:** All source code is written to the `srcnew/` folder to avoid conflicts with existing code.
+
 ```
-src/
+srcnew/
 ├── Brinell.Core/
 │   ├── Interfaces/
 │   ├── Locators/
@@ -234,6 +244,16 @@ Implementation is complete when:
 - [PLAN-001-Architecture-Creation](PLAN-001-Architecture-Creation.md) — Architecture plan
 - [PLAN-002-Specification-Levels](PLAN-002-Specification-Levels.md) — Specification plan
 - [200_000_Overview](../200_architecture/200_000_Overview.spx.md) — Architecture overview
+
+### Level 1 Control Specifications (250_100_CoreControls)
+
+| Spec ID | Control | Interface | Specification |
+|---------|---------|-----------|---------------|
+| SPC-101 | Button | IClickableControlObject | [250_101_Button.spx.md](../250_specifications/250_100_CoreControls/250_101_Button.spx.md) |
+| SPC-102 | Label | ITextControlObject | [250_102_Label.spx.md](../250_specifications/250_100_CoreControls/250_102_Label.spx.md) |
+| SPC-103 | Entry | IEditableTextControlObject | [250_103_Entry.spx.md](../250_specifications/250_100_CoreControls/250_103_Entry.spx.md) |
+| SPC-104 | CheckBox | IToggleControlObject | [250_104_CheckBox.spx.md](../250_specifications/250_100_CoreControls/250_104_CheckBox.spx.md) |
+| SPC-105 | Container | IContainerControlObject | [250_105_Container.spx.md](../250_specifications/250_100_CoreControls/250_105_Container.spx.md) |
 
 ### Testing Infrastructure Requirements
 
