@@ -26,7 +26,12 @@
 
 ### 2.1 Core Interface Definition
 
+The context interface hierarchy provides both non-generic (for backward compatibility) and generic (for type-safe element access) versions.
+
 ```csharp
+/// <summary>
+/// Base test context - manages environment, not element finding.
+/// </summary>
 public interface ITestContext : IDisposable
 {
     /// <summary>
@@ -42,7 +47,6 @@ public interface ITestContext : IDisposable
     /// <summary>
     /// Navigate to a destination (URL for web, route for mobile).
     /// </summary>
-    /// <param name="destination">Target destination.</param>
     void NavigateTo(string destination);
     
     /// <summary>
@@ -58,13 +62,11 @@ public interface ITestContext : IDisposable
     /// <summary>
     /// Capture a screenshot as byte array.
     /// </summary>
-    /// <returns>Screenshot as PNG bytes.</returns>
     byte[] TakeScreenshot();
     
     /// <summary>
     /// Save a screenshot to the specified path.
     /// </summary>
-    /// <param name="path">File path to save screenshot.</param>
     void SaveScreenshot(string path);
     
     /// <summary>
@@ -74,7 +76,66 @@ public interface ITestContext : IDisposable
 }
 ```
 
-### 2.2 TimeoutSettings
+### 2.2 Generic Test Context Interface
+
+The generic version provides typed element finding from the driver root:
+
+```csharp
+/// <summary>
+/// Generic test context providing typed element finding.
+/// TElement is the platform's native element type.
+/// </summary>
+public interface ITestContext<TElement> : ITestContext, IElementScope<TElement>
+{
+    // Inherits from ITestContext:
+    // - Timeouts, Logger, Navigation, Screenshots, ResetAppState
+    
+    // Inherits from IElementScope<TElement>:
+    // - TElement? TryFindElement(Locator locator);
+    // - TElement FindElement(Locator locator);
+    // - IReadOnlyList<TElement> FindElements(Locator locator);
+}
+```
+
+### 2.3 IElementScope Interface
+
+Element scope defines the element finding contract for pages and containers:
+
+```csharp
+/// <summary>
+/// Non-generic element scope (for polymorphic access).
+/// </summary>
+public interface IElementScope
+{
+    /// <summary>
+    /// Default locator strategy for this scope.
+    /// </summary>
+    LocatorStrategy DefaultLocatorStrategy { get; }
+}
+
+/// <summary>
+/// Generic element scope with typed element finding.
+/// </summary>
+public interface IElementScope<TElement> : IElementScope
+{
+    /// <summary>
+    /// Try to find a single element. Returns null if not found.
+    /// </summary>
+    TElement? TryFindElement(Locator locator);
+    
+    /// <summary>
+    /// Find a single element. Throws if not found.
+    /// </summary>
+    TElement FindElement(Locator locator);
+    
+    /// <summary>
+    /// Find all matching elements.
+    /// </summary>
+    IReadOnlyList<TElement> FindElements(Locator locator);
+}
+```
+
+### 2.4 TimeoutSettings
 
 ```csharp
 public class TimeoutSettings
@@ -135,7 +196,7 @@ public class TimeoutSettings
 }
 ```
 
-### 2.3 ITestLogger
+### 2.5 ITestLogger
 
 ```csharp
 public interface ITestLogger
@@ -214,7 +275,7 @@ public interface ITestLogger
 }
 ```
 
-### 2.4 Lifecycle Behavior
+### 2.6 Lifecycle Behavior
 
 **Creation:**
 - Driver is initialized in constructor
@@ -448,29 +509,102 @@ public class ConsoleLogger : ITestLogger
 
 ## 8. Platform Context Interfaces
 
-Each platform extends `ITestContext` with platform-specific capabilities. See [250_009_PlatformContexts](250_009_PlatformContexts.spx.md) for full specifications.
+Each platform extends `ITestContext<TElement>` with platform-specific element types and capabilities. See [250_009_PlatformContexts](250_009_PlatformContexts.spx.md) for full specifications.
+
+### 8.1 Interface Hierarchy
+
+```
+ITestContext (base - no element finding)
+    │
+    └── ITestContext<TElement> : IElementScope<TElement>
+            │
+            ├── IMauiTestContext : ITestContext<AppiumElement>
+            │
+            ├── IBlazorTestContext : ITestContext<IWebElement>
+            │
+            └── IWpfTestContext : ITestContext<AutomationElement>
+```
+
+### 8.2 Platform-Specific Interfaces
 
 ```csharp
-// Platform-specific interfaces preview
-public interface IMauiTestContext : ITestContext
+/// <summary>
+/// MAUI test context with AppiumElement finding.
+/// </summary>
+public interface IMauiTestContext : ITestContext<AppiumElement>, IMauiElementScope
 {
+    /// <summary>
+    /// Access to the underlying Appium driver.
+    /// </summary>
     AppiumDriver Driver { get; }
-    AppiumElement FindElement(Locator locator);
-    // ...
+    
+    // Inherits from ITestContext<AppiumElement>:
+    // - AppiumElement? TryFindElement(Locator locator);
+    // - AppiumElement FindElement(Locator locator);
+    // - IReadOnlyList<AppiumElement> FindElements(Locator locator);
+    
+    // Override default locator strategy
+    LocatorStrategy DefaultLocatorStrategy => LocatorStrategy.AutomationId;
 }
 
-public interface IBlazorTestContext : ITestContext
+/// <summary>
+/// Blazor/Web test context with IWebElement finding.
+/// </summary>
+public interface IBlazorTestContext : ITestContext<IWebElement>, IBlazorElementScope
 {
+    /// <summary>
+    /// Access to the underlying Selenium WebDriver.
+    /// </summary>
     IWebDriver Driver { get; }
+    
+    /// <summary>
+    /// Base URL for the web application.
+    /// </summary>
     string BaseUrl { get; }
-    IWebElement FindElement(Locator locator);
-    // ...
+    
+    // Override default locator strategy
+    LocatorStrategy DefaultLocatorStrategy => LocatorStrategy.DataTestId;
 }
 
-public interface IWpfTestContext : ITestContext
+/// <summary>
+/// WPF test context with AutomationElement finding.
+/// </summary>
+public interface IWpfTestContext : ITestContext<AutomationElement>
 {
-    AutomationElement FindElement(Locator locator);
-    // ...
+    // Inherits from ITestContext<AutomationElement>:
+    // - AutomationElement? TryFindElement(Locator locator);
+    // - AutomationElement FindElement(Locator locator);
+    // - IReadOnlyList<AutomationElement> FindElements(Locator locator);
+    
+    LocatorStrategy DefaultLocatorStrategy => LocatorStrategy.AutomationId;
+}
+```
+
+### 8.3 Platform Element Scope Interfaces
+
+Platform element scope interfaces narrow the generic TElement type:
+
+```csharp
+/// <summary>
+/// MAUI element scope - typed to AppiumElement.
+/// </summary>
+public interface IMauiElementScope : IElementScope<AppiumElement>
+{
+    /// <summary>
+    /// Access to the context for advanced operations.
+    /// </summary>
+    IMauiTestContext Context { get; }
+}
+
+/// <summary>
+/// Blazor element scope - typed to IWebElement.
+/// </summary>
+public interface IBlazorElementScope : IElementScope<IWebElement>
+{
+    /// <summary>
+    /// Access to the context for advanced operations.
+    /// </summary>
+    IBlazorTestContext Context { get; }
 }
 ```
 

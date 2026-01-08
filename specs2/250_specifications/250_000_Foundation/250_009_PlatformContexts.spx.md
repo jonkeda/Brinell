@@ -11,35 +11,68 @@
 
 ## 1. Overview
 
-This specification defines the platform-specific test context interfaces and implementations for MAUI, Blazor, and WPF platforms. Each context extends the base `ITestContext` with platform-specific capabilities.
+This specification defines the platform-specific test context interfaces and implementations for MAUI, Blazor, and WPF platforms. Each context extends the generic `ITestContext<TElement>` with platform-specific element types and capabilities.
 
 ### Context Hierarchy
 
 ```
-ITestContext (Base - Brinell.Core)
+ITestContext (Base - no element finding)
 │
-├── IMauiTestContext (Brinell.Maui)
-│   └── MauiTestContext
-│
-├── IBlazorTestContext (Brinell.Blazor)
-│   └── BlazorTestContext
-│
-└── IWpfTestContext (Brinell.Wpf)
-    └── WpfTestContext
+└── ITestContext<TElement> : IElementScope<TElement> (typed element finding)
+        │
+        ├── IMauiTestContext : ITestContext<AppiumElement>, IMauiElementScope
+        │   └── MauiTestContext
+        │
+        ├── IBlazorTestContext : ITestContext<IWebElement>, IBlazorElementScope
+        │   └── BlazorTestContext
+        │
+        └── IWpfTestContext : ITestContext<AutomationElement>
+            └── WpfTestContext
+```
+
+### Type Parameter Design
+
+The generic type parameter `TElement` flows through the interface hierarchy:
+
+```csharp
+// Generic interfaces
+ITestContext<TElement> : IElementScope<TElement>
+IElementScope<TElement> → TryFindElement() returns TElement?
+
+// Platform narrows TElement via inheritance
+IMauiTestContext : ITestContext<AppiumElement>
+// → TryFindElement() returns AppiumElement? - NO CASTING!
+
+IBlazorTestContext : ITestContext<IWebElement>
+// → TryFindElement() returns IWebElement? - NO CASTING!
 ```
 
 ---
 
 ## 2. IMauiTestContext
 
-Platform context for MAUI applications using Appium.
+Platform context for MAUI applications using Appium. Implements `ITestContext<AppiumElement>` for typed element finding.
 
 ### Interface Definition
 
 ```csharp
 namespace Brinell.Maui
 {
-    public interface IMauiTestContext : ITestContext
+    /// <summary>
+    /// MAUI element scope - provides typed AppiumElement finding.
+    /// </summary>
+    public interface IMauiElementScope : IElementScope<AppiumElement>
+    {
+        /// <summary>
+        /// Access to the context for driver operations.
+        /// </summary>
+        IMauiTestContext Context { get; }
+    }
+    
+    /// <summary>
+    /// MAUI test context with typed AppiumElement finding.
+    /// </summary>
+    public interface IMauiTestContext : ITestContext<AppiumElement>, IMauiElementScope
     {
         // Driver access
         AppiumDriver Driver { get; }
@@ -47,10 +80,13 @@ namespace Brinell.Maui
         // Platform info
         MauiPlatform Platform { get; }
         
-        // Element finding
-        AppiumElement? TryFindElement(Locator locator);
-        AppiumElement FindElement(Locator locator);
-        IReadOnlyList<AppiumElement> FindElements(Locator locator);
+        // Inherits from ITestContext<AppiumElement> / IElementScope<AppiumElement>:
+        // AppiumElement? TryFindElement(Locator locator);
+        // AppiumElement FindElement(Locator locator);
+        // IReadOnlyList<AppiumElement> FindElements(Locator locator);
+        
+        // Override default locator strategy
+        new LocatorStrategy DefaultLocatorStrategy => LocatorStrategy.AutomationId;
         
         // Platform-specific capabilities
         AppiumCapabilities Capabilities { get; }
@@ -67,6 +103,9 @@ namespace Brinell.Maui
         void ResetApp();
         void CloseApp();
         void LaunchApp();
+        
+        // IMauiElementScope - self-reference
+        IMauiTestContext IMauiElementScope.Context => this;
     }
     
     public enum MauiPlatform
@@ -109,29 +148,32 @@ namespace Brinell.Maui
         public AppiumDriver Driver => _driver;
         public MauiPlatform Platform => _platform;
         public AppiumCapabilities Capabilities => _capabilities;
+        public LocatorStrategy DefaultLocatorStrategy => LocatorStrategy.AutomationId;
+        
+        // IMauiElementScope
+        public IMauiTestContext Context => this;
         
         // Navigation
         public void NavigateTo(string destination)
         {
             // MAUI Shell navigation
             var url = destination.StartsWith("//") ? destination : $"//{destination}";
-            // Implementation depends on app structure
-            _logger.LogAction("NavigateTo", null, destination);
+            _logger.LogNavigation("NavigateTo", destination);
         }
         
         public void NavigateBack()
         {
             _driver.Navigate().Back();
-            _logger.LogAction("NavigateBack", null);
+            _logger.LogNavigation("NavigateBack", "back");
         }
         
         public void Refresh()
         {
             // Not directly supported on mobile - app-specific implementation
-            _logger.LogAction("Refresh", null);
+            _logger.LogAction("context", null, "context", "Refresh", null);
         }
         
-        // Element finding
+        // Typed element finding - IElementScope<AppiumElement>
         public AppiumElement? TryFindElement(Locator locator)
         {
             try
@@ -168,7 +210,7 @@ namespace Brinell.Maui
         {
             var screenshot = _driver.GetScreenshot();
             screenshot.SaveAsFile(path);
-            _logger.LogAction("SaveScreenshot", null, path);
+            _logger.LogAction("context", null, "context", "SaveScreenshot", path);
         }
         
         // App state
@@ -181,19 +223,16 @@ namespace Brinell.Maui
         public void RotateDevice(ScreenOrientation orientation)
         {
             _driver.Orientation = orientation;
-            _logger.LogAction("RotateDevice", null, orientation.ToString());
         }
         
         public void SetLocation(double latitude, double longitude)
         {
             _driver.Location = new Location(latitude, longitude, 0);
-            _logger.LogAction("SetLocation", null, $"{latitude}, {longitude}");
         }
         
         public void ShakeDevice()
         {
             // Platform-specific shake gesture
-            _logger.LogAction("ShakeDevice", null);
         }
         
         public void HideKeyboard()
@@ -202,8 +241,6 @@ namespace Brinell.Maui
                 _driver.HideKeyboard();
             else if (_platform == MauiPlatform.iOS)
                 _driver.HideKeyboard("Done");
-                
-            _logger.LogAction("HideKeyboard", null);
         }
         
         public bool IsKeyboardShown()
@@ -215,25 +252,21 @@ namespace Brinell.Maui
         public void BackgroundApp(TimeSpan duration)
         {
             _driver.BackgroundApp(duration);
-            _logger.LogAction("BackgroundApp", null, duration.ToString());
         }
         
         public void ResetApp()
         {
             _driver.ResetApp();
-            _logger.LogAction("ResetApp", null);
         }
         
         public void CloseApp()
         {
             _driver.CloseApp();
-            _logger.LogAction("CloseApp", null);
         }
         
         public void LaunchApp()
         {
             _driver.LaunchApp();
-            _logger.LogAction("LaunchApp", null);
         }
         
         // Locator conversion
@@ -263,14 +296,28 @@ namespace Brinell.Maui
 
 ## 3. IBlazorTestContext
 
-Platform context for Blazor applications using Selenium.
+Platform context for Blazor applications using Selenium. Implements `ITestContext<IWebElement>` for typed element finding.
 
 ### Interface Definition
 
 ```csharp
 namespace Brinell.Blazor
 {
-    public interface IBlazorTestContext : ITestContext
+    /// <summary>
+    /// Blazor element scope - provides typed IWebElement finding.
+    /// </summary>
+    public interface IBlazorElementScope : IElementScope<IWebElement>
+    {
+        /// <summary>
+        /// Access to the context for driver operations.
+        /// </summary>
+        IBlazorTestContext Context { get; }
+    }
+    
+    /// <summary>
+    /// Blazor test context with typed IWebElement finding.
+    /// </summary>
+    public interface IBlazorTestContext : ITestContext<IWebElement>, IBlazorElementScope
     {
         // Driver access
         IWebDriver Driver { get; }
@@ -278,10 +325,16 @@ namespace Brinell.Blazor
         // Browser info
         BrowserType Browser { get; }
         
-        // Element finding
-        IWebElement? TryFindElement(Locator locator);
-        IWebElement FindElement(Locator locator);
-        IReadOnlyList<IWebElement> FindElements(Locator locator);
+        // Base URL
+        string BaseUrl { get; }
+        
+        // Inherits from ITestContext<IWebElement> / IElementScope<IWebElement>:
+        // IWebElement? TryFindElement(Locator locator);
+        // IWebElement FindElement(Locator locator);
+        // IReadOnlyList<IWebElement> FindElements(Locator locator);
+        
+        // Override default locator strategy
+        new LocatorStrategy DefaultLocatorStrategy => LocatorStrategy.DataTestId;
         
         // JavaScript execution
         T ExecuteScript<T>(string script, params object[] args);
@@ -314,6 +367,9 @@ namespace Brinell.Blazor
         void SetSessionStorage(string key, string value);
         string? GetSessionStorage(string key);
         void ClearSessionStorage();
+        
+        // IBlazorElementScope - self-reference
+        IBlazorTestContext IBlazorElementScope.Context => this;
     }
     
     public enum BrowserType
@@ -338,11 +394,13 @@ namespace Brinell.Blazor
         private readonly ITestLogger _logger;
         private readonly TimeoutSettings _timeouts;
         private readonly IJavaScriptExecutor _jsExecutor;
+        private readonly string _baseUrl;
         
-        public BlazorTestContext(IWebDriver driver, BrowserType browser, ITestLogger? logger = null)
+        public BlazorTestContext(IWebDriver driver, BrowserType browser, string baseUrl, ITestLogger? logger = null)
         {
             _driver = driver ?? throw new ArgumentNullException(nameof(driver));
             _browser = browser;
+            _baseUrl = baseUrl;
             _logger = logger ?? new NullLogger();
             _timeouts = new TimeoutSettings();
             _jsExecutor = (IJavaScriptExecutor)driver;
@@ -355,30 +413,36 @@ namespace Brinell.Blazor
         // IBlazorTestContext implementation
         public IWebDriver Driver => _driver;
         public BrowserType Browser => _browser;
+        public string BaseUrl => _baseUrl;
+        public LocatorStrategy DefaultLocatorStrategy => LocatorStrategy.DataTestId;
+        
+        // IBlazorElementScope
+        public IBlazorTestContext Context => this;
         
         // Navigation
         public void NavigateTo(string destination)
         {
-            _driver.Navigate().GoToUrl(destination);
+            var url = destination.StartsWith("http") ? destination : $"{_baseUrl}{destination}";
+            _driver.Navigate().GoToUrl(url);
             WaitForBlazorReady();
-            _logger.LogAction("NavigateTo", null, destination);
+            _logger.LogNavigation("NavigateTo", destination);
         }
         
         public void NavigateBack()
         {
             _driver.Navigate().Back();
             WaitForBlazorReady();
-            _logger.LogAction("NavigateBack", null);
+            _logger.LogNavigation("NavigateBack", "back");
         }
         
         public void Refresh()
         {
             _driver.Navigate().Refresh();
             WaitForBlazorReady();
-            _logger.LogAction("Refresh", null);
+            _logger.LogAction("context", null, "context", "Refresh", null);
         }
         
-        // Element finding
+        // Typed element finding - IElementScope<IWebElement>
         public IWebElement? TryFindElement(Locator locator)
         {
             try
@@ -426,7 +490,6 @@ namespace Brinell.Blazor
         {
             var screenshot = ((ITakesScreenshot)_driver).GetScreenshot();
             screenshot.SaveAsFile(path);
-            _logger.LogAction("SaveScreenshot", null, path);
         }
         
         // App state
@@ -450,7 +513,6 @@ namespace Brinell.Blazor
         {
             try
             {
-                // Check for Blazor SignalR connection or render completion
                 var result = _jsExecutor.ExecuteScript(
                     "return window.Blazor && document.readyState === 'complete';");
                 return result is bool ready && ready;
@@ -465,90 +527,57 @@ namespace Brinell.Blazor
         public void SwitchToFrame(string frameId)
         {
             _driver.SwitchTo().Frame(frameId);
-            _logger.LogAction("SwitchToFrame", null, frameId);
         }
         
         public void SwitchToDefaultContent()
         {
             _driver.SwitchTo().DefaultContent();
-            _logger.LogAction("SwitchToDefaultContent", null);
         }
         
         // Window handling
         public void SwitchToWindow(string windowHandle)
         {
             _driver.SwitchTo().Window(windowHandle);
-            _logger.LogAction("SwitchToWindow", null, windowHandle);
         }
         
-        public string GetCurrentWindowHandle()
-        {
-            return _driver.CurrentWindowHandle;
-        }
+        public string GetCurrentWindowHandle() => _driver.CurrentWindowHandle;
         
         public IReadOnlyList<string> GetWindowHandles()
-        {
-            return _driver.WindowHandles.ToList().AsReadOnly();
-        }
+            => _driver.WindowHandles.ToList().AsReadOnly();
         
-        public void CloseCurrentWindow()
-        {
-            _driver.Close();
-            _logger.LogAction("CloseCurrentWindow", null);
-        }
+        public void CloseCurrentWindow() => _driver.Close();
         
         // Cookies
         public void SetCookie(string name, string value)
-        {
-            _driver.Manage().Cookies.AddCookie(new Cookie(name, value));
-        }
+            => _driver.Manage().Cookies.AddCookie(new Cookie(name, value));
         
         public string? GetCookie(string name)
-        {
-            return _driver.Manage().Cookies.GetCookieNamed(name)?.Value;
-        }
+            => _driver.Manage().Cookies.GetCookieNamed(name)?.Value;
         
         public void DeleteCookie(string name)
-        {
-            _driver.Manage().Cookies.DeleteCookieNamed(name);
-        }
+            => _driver.Manage().Cookies.DeleteCookieNamed(name);
         
         public void DeleteAllCookies()
-        {
-            _driver.Manage().Cookies.DeleteAllCookies();
-        }
+            => _driver.Manage().Cookies.DeleteAllCookies();
         
-        // Local Storage
+        // Storage
         public void SetLocalStorage(string key, string value)
-        {
-            _jsExecutor.ExecuteScript($"localStorage.setItem('{key}', '{value}');");
-        }
+            => _jsExecutor.ExecuteScript($"localStorage.setItem('{key}', '{value}');");
         
         public string? GetLocalStorage(string key)
-        {
-            return _jsExecutor.ExecuteScript($"return localStorage.getItem('{key}');") as string;
-        }
+            => _jsExecutor.ExecuteScript($"return localStorage.getItem('{key}');") as string;
         
         public void ClearLocalStorage()
-        {
-            _jsExecutor.ExecuteScript("localStorage.clear();");
-        }
+            => _jsExecutor.ExecuteScript("localStorage.clear();");
         
-        // Session Storage
         public void SetSessionStorage(string key, string value)
-        {
-            _jsExecutor.ExecuteScript($"sessionStorage.setItem('{key}', '{value}');");
-        }
+            => _jsExecutor.ExecuteScript($"sessionStorage.setItem('{key}', '{value}');");
         
         public string? GetSessionStorage(string key)
-        {
-            return _jsExecutor.ExecuteScript($"return sessionStorage.getItem('{key}');") as string;
-        }
+            => _jsExecutor.ExecuteScript($"return sessionStorage.getItem('{key}');") as string;
         
         public void ClearSessionStorage()
-        {
-            _jsExecutor.ExecuteScript("sessionStorage.clear();");
-        }
+            => _jsExecutor.ExecuteScript("sessionStorage.clear();");
         
         // Locator conversion
         private By ConvertLocatorToBy(Locator locator)
@@ -580,24 +609,30 @@ namespace Brinell.Blazor
 
 ## 4. IWpfTestContext
 
-Platform context for WPF applications using FlaUI.
+Platform context for WPF applications using FlaUI. Implements `ITestContext<AutomationElement>` for typed element finding.
 
 ### Interface Definition
 
 ```csharp
 namespace Brinell.Wpf
 {
-    public interface IWpfTestContext : ITestContext
+    /// <summary>
+    /// WPF test context with typed AutomationElement finding.
+    /// </summary>
+    public interface IWpfTestContext : ITestContext<AutomationElement>
     {
         // Application access
         Application Application { get; }
         AutomationBase Automation { get; }
         Window MainWindow { get; }
         
-        // Element finding
-        AutomationElement? TryFindElement(Locator locator);
-        AutomationElement FindElement(Locator locator);
-        IReadOnlyList<AutomationElement> FindElements(Locator locator);
+        // Inherits from ITestContext<AutomationElement> / IElementScope<AutomationElement>:
+        // AutomationElement? TryFindElement(Locator locator);
+        // AutomationElement FindElement(Locator locator);
+        // IReadOnlyList<AutomationElement> FindElements(Locator locator);
+        
+        // Override default locator strategy
+        new LocatorStrategy DefaultLocatorStrategy => LocatorStrategy.AutomationId;
         
         // Window management
         Window? GetWindow(string title);
@@ -827,9 +862,12 @@ namespace Brinell.Wpf
 
 | Feature | MAUI | Blazor | WPF |
 |---------|------|--------|-----|
+| Generic Interface | `ITestContext<AppiumElement>` | `ITestContext<IWebElement>` | `ITestContext<AutomationElement>` |
+| Element Scope | `IMauiElementScope` | `IBlazorElementScope` | N/A |
 | Driver/App | AppiumDriver | IWebDriver | Application |
 | Element Type | AppiumElement | IWebElement | AutomationElement |
 | Navigation | Shell routes | URLs | Custom |
+| Default Locator | AutomationId | DataTestId | AutomationId |
 | Screenshots | Driver API | ITakesScreenshot | Capture class |
 | Keyboard | HideKeyboard | Keys class | Keyboard class |
 | Storage | N/A | LocalStorage/SessionStorage | N/A |
@@ -918,14 +956,17 @@ Scenario: SaveScreenshot writes to file
 
 ## 8. Validation Checklist
 
-- [ ] All platform contexts implement ITestContext
-- [ ] Driver/Application access provided
-- [ ] Element finding methods implemented
+- [ ] All platform contexts implement `ITestContext<TElement>` with their element type
+- [ ] Platform element scope interfaces defined (`IMauiElementScope`, `IBlazorElementScope`)
+- [ ] Element finding methods return typed elements (no casting)
+- [ ] Driver/Application access provided via typed property
+- [ ] `DefaultLocatorStrategy` overridden for each platform
 - [ ] Screenshot capabilities available
 - [ ] Navigation methods functional
 - [ ] Logging integrated
 - [ ] Timeout settings respected
 - [ ] Dispose properly cleans up resources
+- [ ] Context provides self-reference via element scope interface
 
 ---
 

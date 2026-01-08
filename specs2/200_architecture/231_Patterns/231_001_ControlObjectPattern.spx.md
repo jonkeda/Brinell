@@ -19,12 +19,14 @@ The Control Object pattern wraps UI elements in strongly-typed objects that prov
 ## 1. Intent
 
 **Problem:** Direct interaction with automation elements leads to:
+
 - Repetitive code for waiting, error handling, logging
 - Brittle tests that break when UI implementation changes
 - No type safety for element capabilities
 - Inconsistent interaction patterns across tests
 
 **Solution:** Create control objects that:
+
 - Encapsulate element location and interaction
 - Provide type-safe methods for capabilities
 - Handle waiting and error conditions consistently
@@ -36,17 +38,17 @@ The Control Object pattern wraps UI elements in strongly-typed objects that prov
 
 ### 2.1 Participants
 
-| Participant | Role |
-|-------------|------|
-| IControlObject | Core interface defining common control capabilities |
-| IClickableControl | Interface for clickable elements |
-| ITextControl | Interface for text display/input |
-| IToggleControl | Interface for on/off elements |
-| ISelectorControl | Interface for selection elements |
-| ControlBase | Abstract base implementing common behavior |
-| ButtonControl | Concrete control for buttons |
-| EntryControl | Concrete control for text input |
-| CheckboxControl | Concrete control for checkboxes |
+| Participant       | Role                                                |
+| ----------------- | --------------------------------------------------- |
+| IControlObject    | Core interface defining common control capabilities |
+| IClickableControl | Interface for clickable elements                    |
+| ITextControl      | Interface for text display/input                    |
+| IToggleControl    | Interface for on/off elements                       |
+| ISelectorControl  | Interface for selection elements                    |
+| ControlBase       | Abstract base implementing common behavior          |
+| ButtonControl     | Concrete control for buttons                        |
+| EntryControl      | Concrete control for text input                     |
+| CheckboxControl   | Concrete control for checkboxes                     |
 
 ### 2.2 Interface Hierarchy
 
@@ -71,24 +73,27 @@ public interface IControlObject
 {
     // Identity
     Locator Locator { get; }
-    IPageObject? Page { get; }
-    
+    IElementScope Scope { get; }     // NEW: Owning scope (page or container)
+    IPageObject? Page { get; }       // Derived from scope hierarchy
+  
     // State queries
     bool IsExists();
     bool? IsVisible();
     bool? IsEnabled();
-    
+  
     // Wait methods (return bool, don't throw; use nullable skip pattern)
     bool WaitExists(bool? exists, int? timeoutMs = null);
     bool WaitVisible(bool? visible, int? timeoutMs = null);
     bool WaitEnabled(bool? enabled, int? timeoutMs = null);
-    
+  
     // Assert methods (wait then throw on failure; use nullable skip pattern)
     void AssertExists(bool? exists, string? message = null, int? timeoutMs = null);
     void AssertVisible(bool? visible, string? message = null, int? timeoutMs = null);
     void AssertEnabled(bool? enabled, string? message = null, int? timeoutMs = null);
 }
 ```
+
+> **Note:** Controls now receive an `IElementScope` (page or container) instead of `ITestContext`. The scope handles element finding within its bounds. See [231_007 Scoped Element Finder](231_007_ScopedElementFinder.spx.md) for details.
 
 > **Nullable Skip Pattern:** When `expected` parameter is null, the operation is skipped and returns true (for Wait) or returns immediately (for Assert). This allows test methods to conditionally skip assertions based on test data.
 
@@ -138,67 +143,146 @@ public interface ISelectorControl : IControlObject
 ### 3.3 Abstract Base Class
 
 ```csharp
-public abstract class ControlBase : IControlObject
+/// <summary>
+/// Generic control base - works with any platform element type.
+/// </summary>
+/// <typeparam name="TElement">Platform-specific element type (AppiumElement, IWebElement, etc.).</typeparam>
+/// <typeparam name="TScope">Platform-specific scope type.</typeparam>
+public abstract class ControlBase<TElement, TScope> : IControlObject
+    where TElement : class
+    where TScope : IElementScope<TElement>
 {
-    protected readonly ITestContext _context;
+    protected readonly TScope _scope;
     protected readonly Locator _locator;
-    protected readonly IPageObject? _page;
     protected readonly ITestLogger? _logger;
-    protected readonly string _testName;
-    
+  
     public Locator Locator => _locator;
-    public IPageObject? Page => _page;
-    
-    protected ControlBase(ITestContext context, Locator locator, IPageObject? page = null)
+    public IElementScope Scope => _scope;
+    public IPageObject? Page => FindPage(_scope);
+  
+    protected ControlBase(TScope scope, Locator locator)
     {
-        _context = context;
-        _locator = locator;
-        _page = page;
-        _logger = context.Logger;
-        _testName = context.TestName ?? "UnknownTest";
+        _scope = scope ?? throw new ArgumentNullException(nameof(scope));
+        _locator = locator ?? throw new ArgumentNullException(nameof(locator));
+        _logger = scope.Context.Logger;
     }
-    
+  
     // Convenience constructor with string locator
-    protected ControlBase(ITestContext context, string automationId, IPageObject? page = null)
-        : this(context, new Locator(page?.DefaultLocatorStrategy ?? LocatorStrategy.AutomationId, automationId), page)
+    protected ControlBase(TScope scope, string automationId)
+        : this(scope, Locator.ByAutomationId(automationId))
     {
     }
-    
-    // Abstract methods for platform-specific implementation
-    protected abstract object? FindElement();
-    protected abstract bool ElementExists();
-    protected abstract bool? ElementVisible();
-    protected abstract bool? ElementEnabled();
-    
+  
+    // Typed element access - no casting needed!
+    protected TElement? TryFindElement() => _scope.TryFindElement(_locator);
+    protected TElement FindElement() => _scope.FindElement(_locator);
+  
+    // Typed context access
+    protected ITestContext<TElement> Context => _scope.Context;
+  
+    // State methods
+    public bool IsExists() => TryFindElement() != null;
+    public abstract bool? IsVisible();
+    public abstract bool? IsEnabled();
+  
+    // Walk scope hierarchy to find page
+    private static IPageObject? FindPage(IElementScope scope)
+    {
+        if (scope is IPageObject page) return page;
+        if (scope is IControlObject control) return FindPage(control.Scope);
+        return null;
+    }
+  
     // Run pattern for logging (from 221_001)
     protected void Run(string action, Action operation) { /* ... */ }
     protected void Run<T>(string action, T? value, Action operation) { /* ... */ }
     protected TResult Run<TResult>(string action, Func<TResult> operation) { /* ... */ }
-    
+  
     // RunAssert pattern for assertions (from 221_001)
     protected void RunAssert<T>(string assertType, T? expected, Func<T?> getActual, string? message = null) 
         where T : IComparable? { /* ... */ }
+}
+
+/// <summary>
+/// MAUI control base - typed for AppiumElement.
+/// </summary>
+public abstract class MauiControlBase : ControlBase<AppiumElement, IMauiElementScope>
+{
+    protected MauiControlBase(IMauiElementScope scope, Locator locator) 
+        : base(scope, locator) { }
+  
+    protected MauiControlBase(IMauiElementScope scope, string automationId) 
+        : base(scope, automationId) { }
+  
+    // Typed MAUI context access
+    protected new IMauiTestContext Context => _scope.Context;
+  
+    public override bool? IsVisible() => TryFindElement()?.Displayed;
+    public override bool? IsEnabled() => TryFindElement()?.Enabled;
+}
+
+/// <summary>
+/// Blazor control base - typed for IWebElement.
+/// </summary>
+public abstract class BlazorControlBase : ControlBase<IWebElement, IBlazorElementScope>
+{
+    protected BlazorControlBase(IBlazorElementScope scope, Locator locator) 
+        : base(scope, locator) { }
+  
+    protected BlazorControlBase(IBlazorElementScope scope, string cssSelector) 
+        : base(scope, Locator.ByCssSelector(cssSelector)) { }
+  
+    protected new IBlazorTestContext Context => _scope.Context;
+  
+    public override bool? IsVisible() => TryFindElement()?.Displayed;
+    public override bool? IsEnabled() => TryFindElement()?.Enabled;
 }
 ```
 
 ### 3.4 Concrete Control Example
 
 ```csharp
-public class ButtonControl : ClickableControlBase
+public class MauiButtonControl : MauiControlBase, IClickableControl
 {
-    public ButtonControl(IMauiTestContext context, Locator locator, IPageObject? page = null)
-        : base(context, locator, page) { }
-    
-    public ButtonControl(IMauiTestContext context, string automationId, IPageObject? page = null)
-        : base(context, automationId, page) { }
-    
-    public override void Click(int? timeoutMs = null)
+    public MauiButtonControl(IMauiElementScope scope, Locator locator)
+        : base(scope, locator) { }
+  
+    public MauiButtonControl(IMauiElementScope scope, string automationId)
+        : base(scope, automationId) { }
+  
+    public void Click(int? timeoutMs = null)
     {
         Run("Click", () =>
         {
-            var element = FindElement();
-            WaitClickable(timeoutMs);
-            ClickElement(element);
+            var element = TryFindElement();  // Returns AppiumElement - no casting!
+            CheckClickable(timeoutMs);
+            element.Click();
+  
+            // Platform-specific: hide keyboard if shown
+            if (Context.IsKeyboardShown())
+                Context.HideKeyboard();  // Typed context access!
+        });
+    }
+}
+
+public class BlazorButtonControl : BlazorControlBase, IClickableControl
+{
+    public BlazorButtonControl(IBlazorElementScope scope, Locator locator)
+        : base(scope, locator) { }
+  
+    public BlazorButtonControl(IBlazorElementScope scope, string testId)
+        : base(scope, Locator.ByDataTestId(testId)) { }
+  
+    public void Click(int? timeoutMs = null)
+    {
+        Run("Click", () =>
+        {
+            var element = TryFindElement();  // Returns IWebElement - no casting!
+            CheckClickable(timeoutMs);
+  
+            // Scroll into view (web-specific)
+            Context.ExecuteScript("arguments[0].scrollIntoView(true);", element);
+ // Typed context access!
         });
     }
 }
@@ -211,15 +295,30 @@ public class ButtonControl : ClickableControlBase
 ### 4.1 Creating Controls
 
 ```csharp
-// In page object - controls as properties
-public class LoginPage : PageBase
+// In page object - controls receive 'this' (page) as their scope
+public class LoginPage : MauiPageObjectBase
 {
-    public EntryControl UsernameEntry => new(_context, "UsernameEntry", this);
-    public EntryControl PasswordEntry => new(_context, "PasswordEntry", this);
-    public ButtonControl LoginButton => new(_context, "LoginButton", this);
-    public LabelControl ErrorLabel => new(_context, "ErrorLabel", this);
+    public MauiEntryControl UsernameEntry => new(this, "UsernameEntry");
+    public MauiEntryControl PasswordEntry => new(this, "PasswordEntry");
+    public MauiButtonControl LoginButton => new(this, "LoginButton");
+    public MauiLabelControl ErrorLabel => new(this, "ErrorLabel");
+  
+    public LoginPage(IMauiTestContext context) : base(context, "LoginPage") { }
+}
+
+// In container - controls receive container as their scope
+public class ProductCard : MauiContainerBase
+{
+    public MauiLabelControl Name => new(this, "ProductName");
+    public MauiLabelControl Price => new(this, "ProductPrice");
+    public MauiButtonControl AddToCart => new(this, "AddToCart");
+  
+    public ProductCard(IMauiElementScope parentScope, Locator locator)
+        : base(parentScope, locator) { }
 }
 ```
+
+> **Key Change:** Controls receive a scope (page or container), not a context. The scope handles finding elements within its bounds. This replaces the previous `(context, locator, page)` pattern.
 
 ### 4.2 Using Controls in Tests
 
@@ -228,11 +327,11 @@ public class LoginPage : PageBase
 public void Login_WithValidCredentials_ShowsHomePage()
 {
     var loginPage = new LoginPage(_context);
-    
+  
     loginPage.UsernameEntry.Enter("testuser");
     loginPage.PasswordEntry.Enter("password123");
     loginPage.LoginButton.Click();
-    
+  
     var homePage = new HomePage(_context);
     homePage.WelcomeLabel.AssertTextContains("Welcome");
 }
@@ -347,8 +446,19 @@ The Control Object pattern is valid when:
 - [ ] Wait/Assert methods support nullable skip pattern
 - [ ] Elements are re-found on each operation
 - [ ] Raw automation elements are never exposed
-- [ ] Controls accept optional page reference for scoping
-- [ ] Locator property exposes full locator information
+- [ ] Controls receive `IElementScope` (page or container), not `ITestContext`
+- [ ] Controls use typed platform base classes (`MauiControlBase`, `BlazorControlBase`)
+- [ ] No casting is required to access platform context
+
+---
+
+## 8. Constructor Signature Summary
+
+| Before                                                                            | After                                                            |
+| --------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `ControlBase(ITestContext context, Locator locator, IPageObject? page)`         | `ControlBase<TElement, TScope>(TScope scope, Locator locator)` |
+| `MauiControlBase(IMauiTestContext context, Locator locator, IPageObject? page)` | `MauiControlBase(IMauiElementScope scope, Locator locator)`    |
+| `_context.FindElement(_locator)`                                                | `_scope.TryFindElement(_locator)`                              |
 
 ---
 

@@ -24,7 +24,30 @@
 
 ## 2. Behavior
 
-### 2.1 Identity Properties
+### 2.1 Page as Element Scope
+
+Pages implement `IElementScope<TElement>` to provide scoped element finding for their controls:
+
+```csharp
+/// <summary>
+/// Generic page interface with typed element finding.
+/// Pages are scopes for their controls.
+/// </summary>
+public interface IPageObject<TElement> : IPageObject, IElementScope<TElement>
+{
+    // Inherits from IElementScope<TElement>:
+    // TElement? TryFindElement(Locator locator);
+    // TElement FindElement(Locator locator);
+    // IReadOnlyList<TElement> FindElements(Locator locator);
+}
+```
+
+**Key Design:**
+- Page IS an `IElementScope` — controls receive page as their scope
+- Page delegates element finding to context (searches from driver root)
+- Controls use `scope.TryFindElement()` instead of `context.TryFindElement()`
+
+### 2.2 Identity Properties
 
 ```csharp
 public interface IPageObject
@@ -45,9 +68,9 @@ public interface IPageObject
 **Behavior:**
 - `Name` is set at construction and never changes
 - `Name` is used in logging and exception messages
-- `DefaultLocatorStrategy` defaults to `AutomationId` but can be overridden
+- `DefaultLocatorStrategy` defaults to `AutomationId` (MAUI) or `DataTestId` (Blazor)
 
-### 2.2 Page State Methods
+### 2.3 Page State Methods
 
 ```csharp
 /// <summary>
@@ -80,7 +103,7 @@ void AssertLoaded(bool? expected, string? message = null, int? timeoutMs = null)
 - **Nullable Skip Pattern:** If `expected` is null, return true/void immediately
 - Page considers itself loaded when key identifying controls exist
 
-### 2.3 Title Methods
+### 2.4 Title Methods
 
 ```csharp
 /// <summary>
@@ -112,7 +135,7 @@ void AssertTitle(string? expected, string? message = null, int? timeoutMs = null
 - For MAUI/WPF: Returns navigation title or window title
 - Returns empty string (not null) if title not available
 
-### 2.4 Page Operations
+### 2.5 Page Operations
 
 ```csharp
 /// <summary>
@@ -254,6 +277,38 @@ namespace Brinell.Core.Interfaces
         // Page operations
         void TakeScreenshot(string? filename = null, int? timeoutMs = null);
     }
+    
+    /// <summary>
+    /// Generic page interface with typed element finding.
+    /// TElement is the platform's native element type.
+    /// </summary>
+    public interface IPageObject<TElement> : IPageObject, IElementScope<TElement>
+    {
+        // Inherits from IElementScope<TElement>:
+        // TElement? TryFindElement(Locator locator);
+        // TElement FindElement(Locator locator);
+        // IReadOnlyList<TElement> FindElements(Locator locator);
+    }
+}
+```
+
+### 7.1 Platform Page Interfaces
+
+```csharp
+/// <summary>
+/// MAUI page interface - typed to AppiumElement.
+/// </summary>
+public interface IMauiPageObject : IPageObject<AppiumElement>, IMauiElementScope
+{
+    // IMauiElementScope.Context provides access to IMauiTestContext
+}
+
+/// <summary>
+/// Blazor page interface - typed to IWebElement.
+/// </summary>
+public interface IBlazorPageObject : IPageObject<IWebElement>, IBlazorElementScope
+{
+    // IBlazorElementScope.Context provides access to IBlazorTestContext
 }
 ```
 
@@ -261,29 +316,36 @@ namespace Brinell.Core.Interfaces
 
 ## 8. PageObjectBase Implementation Pattern
 
-Concrete page objects extend a base class that implements `IPageObject`:
+The generic page base class implements `IPageObject<TElement>` and provides element finding:
 
 ```csharp
-public abstract class PageObjectBase : IPageObject
+/// <summary>
+/// Generic page base with typed element finding.
+/// TElement: Platform's native element type
+/// TContext: Platform's test context type (IMauiTestContext, IBlazorTestContext)
+/// </summary>
+public abstract class PageObjectBase<TElement, TContext> : IPageObject<TElement>
+    where TContext : ITestContext<TElement>
 {
-    protected readonly ITestContext _context;
+    protected readonly TContext _context;
     
-    protected PageObjectBase(ITestContext context, string name)
+    protected PageObjectBase(TContext context, string name)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
         Name = name ?? throw new ArgumentNullException(nameof(name));
     }
     
+    // IPageObject
     public string Name { get; }
-    
     public virtual LocatorStrategy DefaultLocatorStrategy => LocatorStrategy.AutomationId;
     
-    // Default implementation checks if page-specific key control exists
-    public virtual bool IsLoaded(int? timeoutMs = null)
-    {
-        // Derived classes override to check their key control
-        return true;
-    }
+    // IElementScope<TElement> - Page delegates to context (driver root)
+    public TElement? TryFindElement(Locator locator) => _context.TryFindElement(locator);
+    public TElement FindElement(Locator locator) => _context.FindElement(locator);
+    public IReadOnlyList<TElement> FindElements(Locator locator) => _context.FindElements(locator);
+    
+    // Page state - override in derived classes
+    public virtual bool IsLoaded(int? timeoutMs = null) => true;
     
     public bool WaitLoaded(bool? expected, int? timeoutMs = null)
     {
@@ -301,7 +363,51 @@ public abstract class PageObjectBase : IPageObject
                 message ?? $"Page '{Name}' loaded={IsLoaded()}, expected={expected.Value}");
     }
     
-    // ... other methods
+    // ... title and screenshot methods
+}
+```
+
+### 8.1 Platform Type Aliases
+
+```csharp
+// MAUI page base
+public abstract class MauiPageObjectBase : PageObjectBase<AppiumElement, IMauiTestContext>, IMauiPageObject
+{
+    protected MauiPageObjectBase(IMauiTestContext context, string name) : base(context, name) { }
+    
+    public override LocatorStrategy DefaultLocatorStrategy => LocatorStrategy.AutomationId;
+    
+    // IMauiElementScope
+    IMauiTestContext IMauiElementScope.Context => _context;
+}
+
+// Blazor page base
+public abstract class BlazorPageObjectBase : PageObjectBase<IWebElement, IBlazorTestContext>, IBlazorPageObject
+{
+    protected BlazorPageObjectBase(IBlazorTestContext context, string name) : base(context, name) { }
+    
+    public override LocatorStrategy DefaultLocatorStrategy => LocatorStrategy.DataTestId;
+    
+    // IBlazorElementScope
+    IBlazorTestContext IBlazorElementScope.Context => _context;
+}
+```
+
+### 8.2 Usage Example
+
+```csharp
+// Page with controls - controls use 'this' (page) as scope
+public class LoginPage : MauiPageObjectBase
+{
+    public MauiEntryControl Username => new(this, "UsernameEntry");
+    public MauiEntryControl Password => new(this, "PasswordEntry");
+    public MauiButtonControl LoginButton => new(this, "LoginButton");
+    //                                          ^^^^ 'this' is IMauiElementScope
+    
+    public LoginPage(IMauiTestContext context) : base(context, "LoginPage") { }
+    
+    public override bool IsLoaded(int? timeoutMs = null)
+        => Username.WaitExists(true, timeoutMs);
 }
 ```
 

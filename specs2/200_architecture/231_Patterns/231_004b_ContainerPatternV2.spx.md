@@ -16,66 +16,84 @@ The Container pattern creates hierarchical scopes for UI element access. Contain
 
 ## 1. The Three Container Types
 
-Brinell provides three container interfaces, each for a different scenario:
+Brinell provides three container interfaces, each for a different scenario. Each has a non-generic and generic variant:
 
-| Interface                          | Purpose                 | Example                    |
-| ---------------------------------- | ----------------------- | -------------------------- |
-| `IContainerControlObject<T>`     | Single typed child      | Card with content panel    |
-| `IListContainerControlObject<T>` | Multiple typed children | Product grid with cards    |
-| `IContainerControl`              | Dynamic scoped finding  | Modal with unknown content |
+| Interface                           | Purpose                     | Example                       |
+| ----------------------------------- | --------------------------- | ----------------------------- |
+| `IContainerControlObject`           | Named child controls        | Settings panel with controls  |
+| `IListContainerControlObject`       | Multiple children by index  | Product grid (dynamic types)  |
+| `IListContainerControlObject<T>`    | Typed multiple children     | Product grid with typed cards |
+| `IContentContainerControlObject`    | Single content region       | Card with dynamic content     |
+| `IContentContainerControlObject<T>` | Single typed content        | Card with known content type  |
 
 ### Decision Flow
 
 ```
-Do you know the child type at compile time?
-├── Yes → Is it a single child or multiple children?
-│   ├── Single child → IContainerControlObject<T>
-│   └── Multiple children → IListContainerControlObject<T>
-└── No → IContainerControl (dynamic finding)
+What kind of container is it?
+├── Panel/Region with known child controls → IContainerControlObject
+│   (Inherits IPageObject - direct properties for each control)
+├── List/Grid of similar items → IListContainerControlObject / IListContainerControlObject<T>
+│   (Non-generic for flexibility, generic for type safety)
+└── Content wrapper with single child → IContentContainerControlObject / IContentContainerControlObject<T>
+    (Non-generic uses GetControl<T>(), generic has typed Content property)
 ```
 
 ---
 
-## 2. IContainerControlObject&lt;T&gt; — Single Typed Child
+## 2. IContainerControlObject — Named Child Controls
 
-For containers with one known content type. The `Child` property provides direct typed access.
+For containers (panels, regions, sections) that group related controls. Child controls are defined as properties directly on the container. **Inherits from `IPageObject`** because it acts as a scoped page-like object with named control properties.
 
 **When to use:**
 
-- ContentControl, Frame, Border, Panel wrappers
-- Cards with a specific content layout
-- Expandable sections with known content
+- Settings panels with multiple input controls
+- Form sections grouping related fields
+- Sidebars, toolbars, or navigation regions
+- Any scoped region with known child controls
 
 **Pattern:**
 
 ```csharp
-public class SettingsPanel : ContainerControlBase<SettingsContent>
+// IContainerControlObject inherits IPageObject
+public class SettingsPanel : ContainerControlBase, IContainerControlObject
 {
-    public override SettingsContent Child { get; }
+    public LabelControl Title { get; }
+    public EntryControl Username { get; }
+    public EntryControl Email { get; }
+    public ToggleControl Notifications { get; }
+    public ButtonControl SaveButton { get; }
   
     public SettingsPanel(ITestContext context, Locator locator, IPageObject? page)
         : base(context, locator, page)
     {
-        Child = new SettingsContent(context, Locator.ScopedTo(locator), page);
+        Title = new LabelControl(context, Locator.ByAutomationId("Title").ScopedTo(locator), this);
+        Username = new EntryControl(context, Locator.ByAutomationId("Username").ScopedTo(locator), this);
+        Email = new EntryControl(context, Locator.ByAutomationId("Email").ScopedTo(locator), this);
+        Notifications = new ToggleControl(context, Locator.ByAutomationId("Notifications").ScopedTo(locator), this);
+        SaveButton = new ButtonControl(context, Locator.ByAutomationId("Save").ScopedTo(locator), this);
     }
 }
 
-// Usage
-var content = page.SettingsPanel.Child;
-content.SaveButton.Click();
+// Usage - direct access to scoped controls
+page.SettingsPanel.Username.Enter("john.doe");
+page.SettingsPanel.Email.Enter("john@example.com");
+page.SettingsPanel.Notifications.Toggle();
+page.SettingsPanel.SaveButton.Click();
 ```
 
 **Key characteristics:**
 
-- Child defined at construction (property-based, like page objects)
+- **Inherits `IPageObject`** — acts as a scoped page for child controls
+- Child controls defined as properties (like page objects)
+- Controls pass `this` as their page reference (scoped to container)
 - Compile-time type safety
-- Single content area
+- Direct property access without intermediary
 
 ---
 
-## 3. IListContainerControlObject&lt;T&gt; — Multiple Typed Children
+## 3. IListContainerControlObject — Multiple Children by Index
 
-For containers with multiple homogeneous items. Provides `Children` collection, indexer, and count.
+For containers with multiple items accessed by index. Available in non-generic and generic variants.
 
 **When to use:**
 
@@ -84,61 +102,128 @@ For containers with multiple homogeneous items. Provides `Children` collection, 
 - Repeating form sections
 - Table rows
 
-**Pattern:**
+### 3.1 Non-Generic: IListContainerControlObject
+
+Returns `IControlObject` that can be cast to specific types. Use when child types may vary or for maximum flexibility.
+
+```csharp
+public class ProductGrid : ListContainerControlBase
+{
+    public ProductGrid(ITestContext context, Locator locator, IPageObject? page)
+        : base(context, locator, Locator.ByClassName("ProductCard"), page) { }
+    
+    // Factory for creating typed children
+    protected override IControlObject CreateChild(int index) 
+        => new ProductCard(Context, GetChildLocator(index), Page);
+}
+
+// Usage - generic return types
+IReadOnlyList<IControlObject> products = page.ProductGrid.Children;
+IControlObject first = page.ProductGrid[0];
+int count = page.ProductGrid.Count;
+
+// Cast to specific type when needed
+var firstCard = (ProductCard)page.ProductGrid[0];
+firstCard.AddToCart.Click();
+
+// Or use GetChild<T> for typed access
+var widget = page.ProductGrid.GetChild<ProductCard>(0);
+widget.Name.AssertTextEquals("Widget");
+```
+
+### 3.2 Generic: IListContainerControlObject&lt;T&gt;
+
+Returns typed `T` directly. Use when all children are the same known type for compile-time safety.
 
 ```csharp
 public class ProductGrid : ListContainerControlBase<ProductCard>
 {
     public ProductGrid(ITestContext context, Locator locator, IPageObject? page)
         : base(context, locator, Locator.ByClassName("ProductCard"), page) { }
+    
+    protected override ProductCard CreateChild(int index) 
+        => new ProductCard(Context, GetChildLocator(index), Page);
 }
 
-// Usage
-var products = page.ProductGrid.Children;     // IReadOnlyList<ProductCard>
-var first = page.ProductGrid[0];              // ProductCard
-page.ProductGrid.AssertCount(5);              // Verify count
-var widget = page.ProductGrid.FirstOrDefault(
-    p => p.Name.GetText() == "Widget");       // Find by predicate
+// Usage - typed return values
+IReadOnlyList<ProductCard> products = page.ProductGrid.Children;  // Typed!
+ProductCard first = page.ProductGrid[0];                          // Typed!
+int count = page.ProductGrid.Count;
+
+// Direct typed access - no casting needed
+page.ProductGrid[0].AddToCart.Click();
+page.ProductGrid[2].Name.AssertTextEquals("Widget");
 ```
 
 **Key characteristics:**
 
-- `Children` returns typed collection snapshot
-- Indexer provides direct item access
-- `Count` returns current child count
-- `FirstOrDefault` finds by predicate
-- LINQ support on `Children`
+| Aspect | Non-Generic | Generic |
+|--------|-------------|----------|
+| `Children` | `IReadOnlyList<IControlObject>` | `IReadOnlyList<T>` |
+| `this[i]` | `IControlObject` | `T` |
+| Type safety | Runtime (cast) | Compile-time |
+| Flexibility | High | Lower |
 
 ---
 
-## 4. IContainerControl — Dynamic Scoped Finding
+## 4. IContentContainerControlObject — Single Typed Content Region
 
-For containers where content is unknown at compile time or varies dynamically.
+For containers that wrap a single content region. Available in non-generic and generic variants.
 
 **When to use:**
 
-- Modal dialogs with varying content
-- iframes with external content
-- Dynamically loaded regions
-- Third-party component wrappers
+- ContentControl, Frame, Border with varying content
+- Cards with different content types
+- Modal dialogs with typed content
+- Expandable sections with specific content
 
-**Pattern:**
+### 4.1 Non-Generic: IContentContainerControlObject
+
+Uses `GetControl<T>()` to retrieve typed content. Use when content type varies or is determined at runtime.
 
 ```csharp
-// Find controls dynamically within scope
-var modal = new ModalDialog(context, Locator.ByAutomationId("ConfirmModal"), page);
-var okButton = modal.FindControl<ButtonControl>(Locator.ByAutomationId("OkBtn"));
-var inputs = modal.FindControls<EntryControl>(Locator.ByClassName("input"));
-var hasSubmit = modal.ControlExists(Locator.ByAutomationId("Submit"));
+public class ContentCard : ContentContainerControlBase
+{
+    public ContentCard(ITestContext context, Locator locator, IPageObject? page)
+        : base(context, locator, page) { }
+}
+
+// Usage - get typed content dynamically
+var profileContent = page.ContentCard.GetControl<ProfileContent>();
+profileContent.Avatar.Click();
+profileContent.EditButton.Click();
+
+// Different content type in same container structure
+var settingsContent = page.AnotherCard.GetControl<SettingsContent>();
+settingsContent.SaveButton.Click();
+```
+
+### 4.2 Generic: IContentContainerControlObject&lt;T&gt;
+
+Provides typed `Content` property directly. Use when content type is known at compile time.
+
+```csharp
+public class ProfileCard : ContentContainerControlBase<ProfileContent>
+{
+    public ProfileCard(ITestContext context, Locator locator, IPageObject? page)
+        : base(context, locator, page) { }
+    
+    protected override ProfileContent CreateContent() 
+        => new ProfileContent(Context, Locator, Page);
+}
+
+// Usage - typed Content property
+page.ProfileCard.Content.Avatar.Click();        // Typed!
+page.ProfileCard.Content.EditButton.Click();    // Typed!
 ```
 
 **Key characteristics:**
 
-- Runtime type specification
-- Scoped element searching
-- `FindControl<T>` for single element
-- `FindControls<T>` for multiple elements
-- `ControlExists` for checking presence
+| Aspect | Non-Generic | Generic |
+|--------|-------------|----------|
+| Content access | `GetControl<T>()` | `Content` property |
+| Type safety | Runtime | Compile-time |
+| Flexibility | High (any type) | Single known type |
 
 ---
 
@@ -171,16 +256,26 @@ var button = page.ProductGrid[0].AddToCart;
 
 ## 6. Container Inheritance
 
-All three interfaces extend `IControlObject`:
+The container interfaces have different inheritance depending on their role:
 
 ```
+IPageObject
+└── IContainerControlObject              (named child controls - IS a scoped page)
+
 IControlObject
-├── IContainerControlObject<T>      (single typed child)
-├── IListContainerControlObject<T>  (multiple typed children)
-└── IContainerControl               (dynamic finding)
+├── IListContainerControlObject          (index-based children)
+│   └── IListContainerControlObject<T>   (typed index-based children)
+├── IContentContainerControlObject       (single content region)
+│   └── IContentContainerControlObject<T>(typed single content)
 ```
 
-This means containers ARE controls:
+**Why IContainerControlObject inherits IPageObject:**
+
+- It acts as a scoped page with named control properties
+- Child controls reference it as their "page" for scoping
+- Follows the same pattern as PageObject (properties for controls)
+
+**All containers are also controls:**
 
 - `container.IsExists()` — checks if container element exists
 - `container.IsVisible()` — checks container visibility
@@ -193,13 +288,13 @@ This means containers ARE controls:
 Containers can be combined for complex hierarchies:
 
 ```csharp
-// Page has a typed list of cards
+// Page has a list container of cards
 public class ProductListPage : PageObjectBase
 {
-    public ProductGrid Products { get; }  // IListContainerControlObject<ProductCard>
+    public ProductGrid Products { get; }  // IListContainerControlObject
 }
 
-// Each card is a typed container with specific content
+// Each card is a container with specific controls
 public class ProductCard : ContainerControlBase
 {
     public LabelControl Name { get; }
@@ -208,21 +303,26 @@ public class ProductCard : ContainerControlBase
 }
 
 // Test navigates the hierarchy
-var firstProduct = page.Products[0];        // ProductCard
-firstProduct.AddToCart.Click();             // Scoped button
+var firstProduct = (ProductCard)page.Products[0];
+firstProduct.AddToCart.Click();  // Scoped button
+
+// Or using typed access
+var widget = page.Products.GetChild<ProductCard>(0);
+widget.Name.AssertTextEquals("Widget");
 ```
 
 ---
 
 ## 8. Comparison Summary
 
-| Aspect       | Single Child                   | Multiple Children                  | Dynamic               |
-| ------------ | ------------------------------ | ---------------------------------- | --------------------- |
-| Interface    | `IContainerControlObject<T>` | `IListContainerControlObject<T>` | `IContainerControl` |
-| Type safety  | Compile-time                   | Compile-time                       | Runtime               |
-| Child access | `Child` property             | `Children`, `this[i]`          | `FindControl<T>()`  |
-| Child count  | 1                              | 0..n                               | 0..n                  |
-| Use case     | Frame, Panel                   | List, Grid                         | Modal, iframe         |
+| Aspect       | Container               | List Container               | Content Container         |
+| ------------ | ----------------------- | ---------------------------- | ------------------------- |
+| Interface    | `IContainerControlObject` | `IListContainerControlObject[<T>]` | `IContentContainerControlObject[<T>]` |
+| Inherits     | `IPageObject`           | `IControlObject`             | `IControlObject`          |
+| Type safety  | Compile-time (properties) | Runtime or Compile-time (generic) | Runtime or Compile-time (generic) |
+| Child access | Named properties        | `Children`, `this[i]`        | `GetControl<T>()` or `Content` |
+| Child count  | Fixed (defined props)   | 0..n                         | 1                         |
+| Use case     | Settings panel, Toolbar | List, Grid, Table            | Card, Frame, Modal        |
 
 ---
 
@@ -241,51 +341,60 @@ var button = page.Logo;
 **Don't use containers for single elements:**
 
 ```csharp
-// ❌ Container wrapping one element
-public ContainerControl ButtonWrapper { get; }
-public ButtonControl Submit => ButtonWrapper.FindControl<ButtonControl>(...);
+// ❌ Container wrapping one element unnecessarily
+public class ButtonWrapper : ContainerControlBase
+{
+    public ButtonControl Submit { get; }
+}
 
-// ✅ Direct control access
+// ✅ Direct control on page
 public ButtonControl Submit { get; }
 ```
 
-**Don't use dynamic finding when type is known:**
+**Don't use list container when children are different types:**
 
 ```csharp
-// ❌ Runtime finding when compile-time is possible
-var products = grid.FindControls<ProductCard>(locator);
+// ❌ Mixed types in list container
+public class MixedGrid : ListContainerControlBase { }  // Has buttons AND labels
 
-// ✅ Use typed list container
-public IListContainerControlObject<ProductCard> Products { get; }
+// ✅ Use regular container with named properties
+public class MixedPanel : ContainerControlBase
+{
+    public ButtonControl Action { get; }
+    public LabelControl Status { get; }
+}
 ```
 
 ---
 
 ## 10. Quick Reference
 
-**Choose `IContainerControlObject<T>` when:**
+**Choose `IContainerControlObject` when:**
 
-- Container has exactly one child content area
-- Child type is known at compile time
-- Examples: Card, Panel, Frame, Expander
+- Container has known child controls defined as properties
+- Children are accessed by name (like a PageObject)
+- Examples: Settings panel, Toolbar, Form section
+- Note: Inherits `IPageObject` — child controls reference it as their page
 
-**Choose `IListContainerControlObject<T>` when:**
+**Choose `IListContainerControlObject` when:**
 
-- Container has multiple children of same type
-- Need index access, count, or iteration
+- Container has multiple children accessed by index
+- Need count, iteration, or index access
+- Use non-generic for flexibility, generic `<T>` for type safety
 - Examples: ListView, Grid, Table, Repeater
 
-**Choose `IContainerControl` when:**
+**Choose `IContentContainerControlObject` when:**
 
-- Content varies or is unknown at compile time
-- Need flexible element finding within scope
-- Examples: Modal dialog, iframe, dynamic region
+- Container wraps a single content region
+- Use non-generic + `GetControl<T>()` when content type varies
+- Use generic `<T>` + `Content` property when type is fixed
+- Examples: Card, Frame, Modal, ContentControl
 
 ---
 
 ## Related Documents
 
 - [250_003 IContainerControlObject](../../250_specifications/250_000_Foundation/250_003_IContainerControlObject.spx.md)
-- [250_003a IContainerControl](../../250_specifications/250_000_Foundation/250_003a_IContainerControl.spx.md)
 - [250_003b IListContainerControlObject](../../250_specifications/250_000_Foundation/250_003b_IListContainerControlObject.spx.md)
+- [250_003c IContentContainerControlObject](../../250_specifications/250_000_Foundation/250_003c_IContentContainerControlObject.spx.md)
 - [231_004 Container Pattern (Original)](231_004_ContainerPattern.spx.md)

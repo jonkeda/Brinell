@@ -37,7 +37,14 @@ public interface IControlObject
     Locator Locator { get; }
     
     /// <summary>
-    /// The page containing this control. May be null for orphan controls.
+    /// The element scope (page or container) for this control.
+    /// Used for element finding within the scope's bounds.
+    /// </summary>
+    IElementScope Scope { get; }
+    
+    /// <summary>
+    /// The page containing this control. Derived from Scope.
+    /// Returns null if Scope is not a page and doesn't have a page ancestor.
     /// </summary>
     IPageObject? Page { get; }
 }
@@ -45,10 +52,28 @@ public interface IControlObject
 
 **Behavior:**
 - `Locator` is set at construction and never changes
-- `Page` may be null if control is created without page association
-- Both properties are read-only after construction
+- `Scope` is the page or container where this control lives (never null)
+- `Page` may be null if control is within a container without page context
+- All properties are read-only after construction
 
-### 2.2 State Methods
+### 2.2 Scope vs Page
+
+The `Scope` property replaces the older pattern where controls received context directly:
+
+```csharp
+// OLD: Controls received context and optional page
+public ButtonControl(ITestContext context, Locator locator, IPageObject? page = null)
+
+// NEW: Controls receive scope (page or container)
+public ButtonControl(IElementScope scope, Locator locator)
+```
+
+**Scope Resolution:**
+- If Scope is `IPageObject`, then `Page = Scope`
+- If Scope is `IContainerControl`, then `Page = Scope.Page` (container's page)
+- Element finding delegates to `Scope.TryFindElement(locator)`
+
+### 2.3 State Methods
 
 State methods query the current control state without waiting:
 
@@ -78,7 +103,7 @@ bool? IsEnabled();
 - `IsEnabled()` returns null if element doesn't exist
 - No exceptions thrown for missing elements
 
-### 2.3 Wait Methods
+### 2.4 Wait Methods
 
 Wait methods poll until condition is met or timeout occurs:
 
@@ -109,7 +134,7 @@ bool WaitEnabled(bool? expected, int? timeoutMs = null);
 - Return true if condition met within timeout
 - Return false if timeout occurs (no exception)
 
-### 2.4 Assert Methods
+### 2.5 Assert Methods
 
 Assert methods verify conditions and throw on failure:
 
@@ -140,7 +165,7 @@ void AssertEnabled(bool? expected, string? message = null, int? timeoutMs = null
 - Throw `AssertionException` with descriptive message if condition not met
 - Include control locator and actual/expected values in exception message
 
-### 2.5 Text Methods
+### 2.6 Text Methods
 
 Text methods retrieve and verify text content:
 
@@ -180,7 +205,7 @@ void AssertTextContains(string? expected, string? message = null, int? timeoutMs
 - **Nullable Skip Pattern:** If `expected` is null, return immediately
 - Text comparison is case-sensitive by default
 
-### 2.6 Attribute Methods
+### 2.7 Attribute Methods
 
 Attribute methods access element attributes:
 
@@ -354,6 +379,7 @@ namespace Brinell.Core.Interfaces
     {
         // Identity
         Locator Locator { get; }
+        IElementScope Scope { get; }
         IPageObject? Page { get; }
         
         // State (immediate, no waiting)
@@ -380,6 +406,104 @@ namespace Brinell.Core.Interfaces
         // Attributes
         string? GetAttribute(string name);
     }
+}
+```
+
+---
+
+## 8. Generic Base Class
+
+The generic base class provides typed element access for implementations:
+
+```csharp
+/// <summary>
+/// Generic control base with typed element and scope.
+/// TElement: Platform's native element type (AppiumElement, IWebElement, AutomationElement)
+/// TScope: Platform's element scope type (IMauiElementScope, IBlazorElementScope)
+/// </summary>
+public abstract class ControlBase<TElement, TScope> : IControlObject
+    where TScope : IElementScope<TElement>
+{
+    protected readonly TScope _scope;
+    protected readonly Locator _locator;
+    
+    protected ControlBase(TScope scope, Locator locator)
+    {
+        _scope = scope ?? throw new ArgumentNullException(nameof(scope));
+        _locator = locator ?? throw new ArgumentNullException(nameof(locator));
+    }
+    
+    protected ControlBase(TScope scope, string automationId)
+        : this(scope, Locator.ByAutomationId(automationId))
+    {
+    }
+    
+    // IControlObject
+    public Locator Locator => _locator;
+    public IElementScope Scope => _scope;
+    public IPageObject? Page => _scope is IPageObject page ? page : (_scope as IControlObject)?.Page;
+    
+    // Typed element finding via scope
+    protected TElement? TryFindElement() => _scope.TryFindElement(_locator);
+    protected TElement FindElement() => _scope.FindElement(_locator);
+    
+    // State methods implementation
+    public virtual bool IsExists() => TryFindElement() != null;
+    
+    public virtual bool? IsVisible()
+    {
+        var element = TryFindElement();
+        return element == null ? null : IsElementVisible(element);
+    }
+    
+    public virtual bool? IsEnabled()
+    {
+        var element = TryFindElement();
+        return element == null ? null : IsElementEnabled(element);
+    }
+    
+    // Platform-specific implementations
+    protected abstract bool IsElementVisible(TElement element);
+    protected abstract bool IsElementEnabled(TElement element);
+    protected abstract string? GetElementText(TElement element);
+    protected abstract string? GetElementAttribute(TElement element, string name);
+    
+    // ... wait and assert methods
+}
+```
+
+### 8.1 Platform Type Aliases
+
+```csharp
+// MAUI
+public abstract class MauiControlBase : ControlBase<AppiumElement, IMauiElementScope>
+{
+    protected MauiControlBase(IMauiElementScope scope, Locator locator) : base(scope, locator) { }
+    protected MauiControlBase(IMauiElementScope scope, string automationId) : base(scope, automationId) { }
+    
+    protected IMauiTestContext Context => _scope.Context;
+    
+    protected override bool IsElementVisible(AppiumElement element) => element.Displayed;
+    protected override bool IsElementEnabled(AppiumElement element) => element.Enabled;
+    protected override string? GetElementText(AppiumElement element) => element.Text;
+    protected override string? GetElementAttribute(AppiumElement element, string name) 
+        => element.GetAttribute(name);
+}
+
+// Blazor
+public abstract class BlazorControlBase : ControlBase<IWebElement, IBlazorElementScope>
+{
+    protected BlazorControlBase(IBlazorElementScope scope, Locator locator) : base(scope, locator) { }
+    protected BlazorControlBase(IBlazorElementScope scope, string testId) 
+        : base(scope, Locator.ByDataTestId(testId)) { }
+    
+    protected IBlazorTestContext Context => _scope.Context;
+    
+    protected override bool IsElementVisible(IWebElement element) => element.Displayed;
+    protected override bool IsElementEnabled(IWebElement element) => element.Enabled;
+    protected override string? GetElementText(IWebElement element) => element.Text;
+    protected override string? GetElementAttribute(IWebElement element, string name) 
+        => element.GetAttribute(name);
 }
 ```
 

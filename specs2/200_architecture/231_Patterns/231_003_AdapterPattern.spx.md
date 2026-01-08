@@ -56,9 +56,13 @@ The Adapter pattern provides a layer of abstraction between the Brinell framewor
 ```
                      ITestContext
                           │
+                ITestContext<TElement>  ← Generic with typed element finding
+                          │
           ┌───────────────┼───────────────┐
           │               │               │
     IMauiTestContext  IBlazorTestContext  IWpfTestContext
+    (TElement=        (TElement=          (TElement=
+     AppiumElement)    IWebElement)        AutomationElement)
           │               │               │
     MauiTestContext   BlazorTestContext   WpfTestContext
           │               │               │
@@ -67,7 +71,21 @@ The Adapter pattern provides a layer of abstraction between the Brinell framewor
                     (or Playwright)
 ```
 
-### 2.3 Element Adapter Hierarchy
+### 2.3 Element Scope Hierarchy
+
+```
+                       IElementScope
+                            │
+                  IElementScope<TElement>  ← Generic with typed element finding
+                            │
+          ┌─────────────────┼─────────────────┐
+          │                 │                 │
+  IMauiElementScope   IBlazorElementScope   IWpfElementScope
+  (TElement=          (TElement=            (TElement=
+   AppiumElement)      IWebElement)          AutomationElement)
+```
+
+### 2.4 Element Adapter Hierarchy
 
 ```
                        IElementAdapter
@@ -144,6 +162,53 @@ public interface IElementAdapter
     /// Check if the element is selected/checked.
     /// </summary>
     bool IsSelected();
+    
+    // --- Wait methods (return bool) ---
+    
+    /// <summary>
+    /// Wait for element to be clickable (visible, enabled, not obscured).
+    /// </summary>
+    /// <param name="timeoutMs">Timeout in milliseconds. Null = use default.</param>
+    /// <returns>True if clickable within timeout, false otherwise.</returns>
+    bool WaitClickable(int? timeoutMs = null);
+    
+    /// <summary>
+    /// Wait for element to be enabled.
+    /// </summary>
+    /// <param name="timeoutMs">Timeout in milliseconds. Null = use default.</param>
+    /// <returns>True if enabled within timeout, false otherwise.</returns>
+    bool WaitEnabled(int? timeoutMs = null);
+    
+    /// <summary>
+    /// Wait for element to be visible.
+    /// </summary>
+    /// <param name="timeoutMs">Timeout in milliseconds. Null = use default.</param>
+    /// <returns>True if visible within timeout, false otherwise.</returns>
+    bool WaitVisible(int? timeoutMs = null);
+    
+    // --- Check methods (throw on failure) ---
+    
+    /// <summary>
+    /// Verify element is clickable. Throws if not clickable within timeout.
+    /// Use before Click() operations.
+    /// </summary>
+    /// <param name="timeoutMs">Timeout in milliseconds. Null = use default.</param>
+    /// <exception cref="ElementNotClickableException">Element not clickable.</exception>
+    void CheckClickable(int? timeoutMs = null);
+    
+    /// <summary>
+    /// Verify element is enabled. Throws if not enabled within timeout.
+    /// </summary>
+    /// <param name="timeoutMs">Timeout in milliseconds. Null = use default.</param>
+    /// <exception cref="ElementNotEnabledException">Element not enabled.</exception>
+    void CheckEnabled(int? timeoutMs = null);
+    
+    /// <summary>
+    /// Verify element is visible. Throws if not visible within timeout.
+    /// </summary>
+    /// <param name="timeoutMs">Timeout in milliseconds. Null = use default.</param>
+    /// <exception cref="ElementNotVisibleException">Element not visible.</exception>
+    void CheckVisible(int? timeoutMs = null);
     
     /// <summary>
     /// Find child element within this element.
@@ -549,9 +614,12 @@ public class FlaUIElementAdapter : IWpfElementAdapter
 }
 ```
 
-### 3.4 Core Context Interface
+### 3.4 Core Context Interfaces
 
 ```csharp
+/// <summary>
+/// Base test context interface - platform-neutral foundation.
+/// </summary>
 public interface ITestContext : IDisposable
 {
     /// <summary>
@@ -575,21 +643,6 @@ public interface ITestContext : IDisposable
     string? TestName { get; set; }
     
     /// <summary>
-    /// Find element by locator. Returns null if not found.
-    /// </summary>
-    IElementAdapter? FindElement(Locator locator);
-    
-    /// <summary>
-    /// Find all elements matching locator.
-    /// </summary>
-    IReadOnlyList<IElementAdapter> FindElements(Locator locator);
-    
-    /// <summary>
-    /// Find element within a container scope.
-    /// </summary>
-    IElementAdapter? FindElement(Locator locator, IElementAdapter container);
-    
-    /// <summary>
     /// Capture screenshot of current state.
     /// </summary>
     byte[] TakeScreenshot();
@@ -599,19 +652,112 @@ public interface ITestContext : IDisposable
     /// </summary>
     bool WaitFor(Func<bool> condition, int timeoutMs, string? description = null);
 }
+
+/// <summary>
+/// Generic test context with typed element finding.
+/// Platform interfaces narrow TElement to specific driver types.
+/// </summary>
+public interface ITestContext<TElement> : ITestContext
+{
+    /// <summary>
+    /// Try to find element by locator. Returns null if not found.
+    /// </summary>
+    TElement? TryFindElement(Locator locator);
+    
+    /// <summary>
+    /// Find element by locator. Throws if not found.
+    /// </summary>
+    TElement FindElement(Locator locator);
+    
+    /// <summary>
+    /// Find all elements matching locator.
+    /// </summary>
+    IReadOnlyList<TElement> FindElements(Locator locator);
+    
+    /// <summary>
+    /// Find element within a scoped context (container element).
+    /// </summary>
+    TElement? TryFindElement(Locator locator, TElement scopeRoot);
+    
+    /// <summary>
+    /// Find element within scope. Throws if not found.
+    /// </summary>
+    TElement FindElement(Locator locator, TElement scopeRoot);
+    
+    /// <summary>
+    /// Find all elements within scope.
+    /// </summary>
+    IReadOnlyList<TElement> FindElements(Locator locator, TElement scopeRoot);
+}
 ```
 
-### 3.4 Platform-Specific Context Interfaces
+### 3.5 Element Scope Interface
+
+```csharp
+/// <summary>
+/// Base element scope interface - provides scoped element finding.
+/// Both pages and containers implement this to provide search scope.
+/// How the scope searches (from driver root or container root) is an implementation detail.
+/// </summary>
+public interface IElementScope
+{
+    /// <summary>
+    /// Try to find element within this scope.
+    /// </summary>
+    object? TryFindElement(Locator locator);
+    
+    /// <summary>
+    /// Find element within this scope. Throws if not found.
+    /// </summary>
+    object FindElement(Locator locator);
+    
+    /// <summary>
+    /// Find all elements within this scope.
+    /// </summary>
+    IReadOnlyList<object> FindElements(Locator locator);
+}
+
+/// <summary>
+/// Generic element scope with typed element finding.
+/// Pages search from driver root.
+/// Containers search within their cached root element.
+/// Implementation details are hidden - interface only exposes finding methods.
+/// </summary>
+public interface IElementScope<TElement> : IElementScope
+{
+    /// <summary>
+    /// Try to find element within this scope.
+    /// </summary>
+    new TElement? TryFindElement(Locator locator);
+    
+    /// <summary>
+    /// Find element within this scope. Throws if not found.
+    /// </summary>
+    new TElement FindElement(Locator locator);
+    
+    /// <summary>
+    /// Find all elements within this scope.
+    /// </summary>
+    new IReadOnlyList<TElement> FindElements(Locator locator);
+}
+```
+
+> **Design Note:** The `ScopeRoot` property and `Context` reference are implementation details
+> in base classes, not part of the interface contract. This avoids the `new` keyword hiding
+> issue and keeps the interface focused on its single responsibility: element finding.
+
+### 3.6 Platform-Specific Context Interfaces
 
 ```csharp
 /// <summary>
 /// MAUI test context - wraps Appium driver.
+/// Narrows TElement to AppiumElement.
 /// </summary>
-public interface IMauiTestContext : ITestContext
+public interface IMauiTestContext : ITestContext<AppiumElement>
 {
     /// <summary>
     /// Access to underlying Appium driver for advanced operations.
-    /// Prefer using IElementAdapter methods over direct driver access.
+    /// Prefer using IElementScope methods over direct driver access.
     /// </summary>
     AppiumDriver Driver { get; }
     
@@ -624,16 +770,27 @@ public interface IMauiTestContext : ITestContext
     /// Navigate back in the app.
     /// </summary>
     void NavigateBack();
+    
+    /// <summary>
+    /// Check if keyboard is currently shown.
+    /// </summary>
+    bool IsKeyboardShown();
+    
+    /// <summary>
+    /// Hide the keyboard if shown.
+    /// </summary>
+    void HideKeyboard();
 }
 
 /// <summary>
 /// Blazor test context - wraps Selenium WebDriver.
+/// Narrows TElement to IWebElement.
 /// </summary>
-public interface IBlazorTestContext : ITestContext
+public interface IBlazorTestContext : ITestContext<IWebElement>
 {
     /// <summary>
     /// Access to underlying WebDriver for advanced operations.
-    /// Prefer using IElementAdapter methods over direct driver access.
+    /// Prefer using IElementScope methods over direct driver access.
     /// </summary>
     IWebDriver Driver { get; }
     
@@ -651,12 +808,18 @@ public interface IBlazorTestContext : ITestContext
     /// Navigate back in the browser.
     /// </summary>
     void NavigateBack();
+    
+    /// <summary>
+    /// Wait for Blazor to finish rendering.
+    /// </summary>
+    void WaitForBlazorReady(int? timeoutMs = null);
 }
 
 /// <summary>
 /// WPF test context - wraps FlaUI automation.
+/// Narrows TElement to AutomationElement.
 /// </summary>
-public interface IWpfTestContext : ITestContext
+public interface IWpfTestContext : ITestContext<AutomationElement>
 {
     /// <summary>
     /// Access to underlying FlaUI application.
@@ -670,6 +833,42 @@ public interface IWpfTestContext : ITestContext
 }
 ```
 
+### 3.7 Platform Element Scope Interfaces
+
+```csharp
+/// <summary>
+/// MAUI element scope - narrows TElement to AppiumElement.
+/// Used by MAUI pages and containers.
+/// </summary>
+public interface IMauiElementScope : IElementScope<AppiumElement>
+{
+    // Inherits typed finding methods from IElementScope<AppiumElement>
+    // Implementation provides access to IMauiTestContext internally
+}
+
+/// <summary>
+/// Blazor element scope - narrows TElement to IWebElement.
+/// </summary>
+public interface IBlazorElementScope : IElementScope<IWebElement>
+{
+    // Inherits typed finding methods from IElementScope<IWebElement>
+    // Implementation provides access to IBlazorTestContext internally
+}
+
+/// <summary>
+/// WPF element scope - narrows TElement to AutomationElement.
+/// </summary>
+public interface IWpfElementScope : IElementScope<AutomationElement>
+{
+    // Inherits typed finding methods from IElementScope<AutomationElement>
+    // Implementation provides access to IWpfTestContext internally
+}
+```
+
+> **Note:** Platform element scope interfaces don't expose `Context` property directly.
+> The context is an implementation detail accessed through the base class, avoiding
+> the `new` keyword hiding pattern.
+
 ---
 
 ## 4. Test Base Classes
@@ -681,6 +880,7 @@ public interface IWpfTestContext : ITestContext
 ```csharp
 /// <summary>
 /// Base class for MAUI UI tests.
+/// Provides typed IMauiTestContext and AppiumElement.
 /// </summary>
 public abstract class MauiTestBase : IDisposable
 {
@@ -704,6 +904,7 @@ public abstract class MauiTestBase : IDisposable
 
 /// <summary>
 /// Base class for Blazor UI tests.
+/// Provides typed IBlazorTestContext and IWebElement.
 /// </summary>
 public abstract class BlazorTestBase : IDisposable
 {
@@ -728,6 +929,7 @@ public abstract class BlazorTestBase : IDisposable
 
 /// <summary>
 /// Base class for WPF UI tests.
+/// Provides typed IWpfTestContext and AutomationElement.
 /// </summary>
 public abstract class WpfTestBase : IDisposable
 {
@@ -768,7 +970,8 @@ public class LoginTests : MauiTestBase
     [Fact]
     public void Login_ValidCredentials_Succeeds()
     {
-        var loginPage = new LoginPage(Context);  // Uses IMauiTestContext directly
+        // LoginPage uses MauiPageObjectBase, controls are MauiEntryControl etc.
+        var loginPage = new LoginPage(Context);  // IMauiTestContext
         loginPage.UsernameEntry.Enter("user");
         loginPage.PasswordEntry.Enter("pass");
         loginPage.LoginButton.Click();
@@ -783,10 +986,23 @@ public class LoginTests : MauiTestBase
         var loginPage = new LoginPage(Context);
         loginPage.LoginButton.Click();
         
-        // Platform-specific navigation is available directly
+        // Platform-specific navigation available directly - no casting!
         Context.NavigateBack();
         
         loginPage.UsernameEntry.AssertExists();
+    }
+    
+    [Fact]
+    public void Login_WithKeyboard_HidesAfterSubmit()
+    {
+        var loginPage = new LoginPage(Context);
+        loginPage.UsernameEntry.Enter("user");
+        
+        // Platform-specific - no casting needed
+        if (Context.IsKeyboardShown())
+            Context.HideKeyboard();
+        
+        loginPage.LoginButton.Click();
     }
 }
 ```
@@ -809,14 +1025,30 @@ public class DashboardTests : BlazorTestBase
         // Platform-specific navigation available directly
         Context.NavigateTo("/dashboard");
         
-        var dashboard = new DashboardPage(Context);  // Uses IBlazorTestContext
+        // DashboardPage uses BlazorPageObjectBase, controls are BlazorButtonControl etc.
+        var dashboard = new DashboardPage(Context);  // IBlazorTestContext
         dashboard.SettingsLink.Click();
         
         var settings = new SettingsPage(Context);
-        settings.WaitForPage();
+        settings.IsLoaded();
         settings.TitleLabel.AssertTextEquals("Settings");
     }
+    
+    [Fact]
+    public void Dashboard_LoadsDataGrid()
+    {
+        Context.NavigateTo("/dashboard");
+        
+        // No explicit wait needed - AssertVisible waits internally
+        var dashboard = new DashboardPage(Context);
+        dashboard.DataGrid.AssertVisible();  // Waits for element before asserting
+    }
 }
+
+// Note: WaitForBlazorReady() is available but should rarely be needed.
+// Framework methods (AssertVisible, GetText, Click) handle waiting internally.
+// Explicit waits after actions are an anti-pattern - waits belong BEFORE the
+// next action, and are built into the assertion/action methods.
 ```
 
 ---
@@ -978,20 +1210,57 @@ public void Click()
 }
 ```
 
+### 7.5 Don't Wait After Actions
+
+```csharp
+// ❌ BAD: Explicit wait after action
+element.Click();
+Context.WaitForBlazorReady();  // Anti-pattern!
+nextElement.GetText();
+
+// ✅ GOOD: No wait after - waits are internal to the next operation
+element.Click();
+nextElement.GetText();  // GetText() waits internally for element
+```
+
+### 7.6 Don't Use Instant Checks in Assertions
+
+```csharp
+// ❌ BAD: Instant check fails during transient states
+public void AssertNotBusy(string? message = null)
+{
+    if (IsBusy())  // Point-in-time check - will fail during async operations
+        throw new PageBusyException(message);
+}
+
+// ✅ GOOD: Wait first, then assert
+public void AssertNotBusy(string? message = null, int? timeoutMs = null)
+{
+    if (!WaitForNotBusy(timeoutMs))  // Wait for busy to clear
+        throw new PageBusyException(
+            message ?? $"Page still busy after {timeoutMs}ms");
+}
+```
+
 ---
 
 ## 8. Validation Rules
 
 The Adapter pattern is valid when:
 
-- [ ] ITestContext defines platform-neutral API
-- [ ] IElementAdapter abstracts all element operations
-- [ ] Platform interfaces extend ITestContext
-- [ ] Concrete adapters wrap specific drivers
-- [ ] Tests use platform-specific base classes (not generic ITestContext)
-- [ ] Driver and element types are not exposed in public APIs
+- [ ] `ITestContext<TElement>` defines generic typed element finding API
+- [ ] `IElementScope<TElement>` provides only element finding methods (no Context/ScopeRoot properties)
+- [ ] Platform interfaces narrow `TElement` to driver types (AppiumElement, IWebElement, etc.)
+- [ ] Platform interfaces extend generic interfaces: `IMauiTestContext : ITestContext<AppiumElement>`
+- [ ] No `new` keyword hiding in interface hierarchies
+- [ ] IElementAdapter provides both `Wait*` (return bool) and `Check*` (throw) methods
+- [ ] Concrete adapters wrap specific driver element types
+- [ ] Tests use platform-specific base classes (not generic `ITestContext`)
+- [ ] No explicit waits after actions (waits are internal to next operation)
+- [ ] Assertions wait first, then check (e.g., `AssertNotBusy` uses `WaitForNotBusy`)
+- [ ] Driver and raw element types are not exposed in control public APIs
 - [ ] Context can be mocked for unit testing
-- [ ] Platform-specific code stays in adapters
+- [ ] Platform-specific code stays in adapters and platform contexts
 
 ---
 

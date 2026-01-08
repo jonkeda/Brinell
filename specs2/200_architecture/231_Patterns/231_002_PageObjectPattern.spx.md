@@ -69,6 +69,9 @@ The Page Object pattern represents application pages/screens as classes that enc
 ### 3.1 Page Interface
 
 ```csharp
+/// <summary>
+/// Base page object - identity and state.
+/// </summary>
 public interface IPageObject
 {
     /// <summary>
@@ -82,68 +85,131 @@ public interface IPageObject
     LocatorStrategy DefaultLocatorStrategy { get; }
     
     /// <summary>
-    /// Capture screenshot of current page state.
+    /// Check if page is loaded and ready.
     /// </summary>
-    byte[] TakeScreenshot();
+    bool IsLoaded(int? timeoutMs = null);
+}
+
+/// <summary>
+/// Generic page object - page is also an element scope.
+/// </summary>
+/// <typeparam name="TElement">Platform-specific element type.</typeparam>
+public interface IPageObject<TElement> : IPageObject, IElementScope<TElement>
+    where TElement : class
+{
+}
+
+/// <summary>
+/// MAUI page object - typed for Appium.
+/// </summary>
+public interface IMauiPageObject : IPageObject<AppiumElement>, IMauiElementScope
+{
+}
+
+/// <summary>
+/// Blazor page object - typed for Selenium.
+/// </summary>
+public interface IBlazorPageObject : IPageObject<IWebElement>, IBlazorElementScope
+{
 }
 ```
+
+> **Key Change:** `IPageObject<TElement>` now extends `IElementScope<TElement>`, making every page a scope that can find elements. Controls receive the page as their scope.
 
 ### 3.2 Page Base Class
 
 ```csharp
-public abstract class PageObjectBase : IPageObject
+/// <summary>
+/// Generic page base - implementation uses TContext for typed access.
+/// </summary>
+/// <typeparam name="TElement">Platform-specific element type.</typeparam>
+/// <typeparam name="TContext">Platform-specific context type.</typeparam>
+public abstract class PageObjectBase<TElement, TContext> : IPageObject<TElement>
+    where TElement : class
+    where TContext : ITestContext<TElement>
 {
-    protected readonly ITestContext _context;
+    protected readonly TContext _context;
+    protected readonly string _name;
     
-    public abstract string Name { get; }
+    public string Name => _name;
     public virtual LocatorStrategy DefaultLocatorStrategy => LocatorStrategy.AutomationId;
     
-    protected PageObjectBase(ITestContext context, string name)
+    protected PageObjectBase(TContext context, string name)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
+        _name = name ?? throw new ArgumentNullException(nameof(name));
     }
     
-    /// <summary>
-    /// Convenience method to create locator using page's default strategy.
-    /// </summary>
-    protected Locator Locate(string value) => new(DefaultLocatorStrategy, value);
+    // Typed context access for subclasses
+    protected TContext Context => _context;
+    
+    // IElementScope<TElement> - page delegates to context (searches from driver root)
+    public TElement? ScopeRoot => null;  // Page uses driver root
+    object? IElementScope.ScopeRoot => null;
+    
+    ITestContext<TElement> IElementScope<TElement>.Context => _context;
+    ITestContext IElementScope.Context => _context;
+    
+    public TElement? TryFindElement(Locator locator) => _context.TryFindElement(locator);
+    public TElement FindElement(Locator locator) => _context.FindElement(locator);
+    public IReadOnlyList<TElement> FindElements(Locator locator) => _context.FindElements(locator);
     
     /// <summary>
     /// Wait for page to be ready. Override in derived classes.
     /// </summary>
-    public virtual void WaitForPage(int? timeoutMs = null)
-    {
-        // Default: no wait. Override to wait for specific element.
-    }
+    public virtual bool IsLoaded(int? timeoutMs = null) => true;
     
     public byte[] TakeScreenshot() => _context.TakeScreenshot();
+}
+
+/// <summary>
+/// MAUI page base - typed alias for common use.
+/// </summary>
+public abstract class MauiPageObjectBase : PageObjectBase<AppiumElement, IMauiTestContext>, IMauiPageObject
+{
+    protected MauiPageObjectBase(IMauiTestContext context, string name) 
+        : base(context, name) { }
+    
+    // IMauiElementScope - narrow Context type
+    IMauiTestContext IMauiElementScope.Context => _context;
+}
+
+/// <summary>
+/// Blazor page base - typed alias for common use.
+/// </summary>
+public abstract class BlazorPageObjectBase : PageObjectBase<IWebElement, IBlazorTestContext>, IBlazorPageObject
+{
+    protected BlazorPageObjectBase(IBlazorTestContext context, string name) 
+        : base(context, name) { }
+    
+    public override LocatorStrategy DefaultLocatorStrategy => LocatorStrategy.DataTestId;
+    
+    IBlazorTestContext IBlazorElementScope.Context => _context;
 }
 ```
 
 ### 3.3 Concrete Page Example
 
 ```csharp
-public class LoginPage : PageObjectBase
+public class LoginPage : MauiPageObjectBase
 {
-    public override string Name => "LoginPage";
+    // Controls defined as properties - 'this' (page) is their scope
+    public MauiEntryControl UsernameEntry => new(this, "UsernameEntry");
+    public MauiEntryControl PasswordEntry => new(this, "PasswordEntry");
+    public MauiButtonControl LoginButton => new(this, "LoginButton");
+    public MauiButtonControl ForgotPasswordLink => new(this, "ForgotPasswordLink");
+    public MauiLabelControl ErrorLabel => new(this, "ErrorLabel");
     
-    // Controls defined as properties using new pattern
-    public EntryControl UsernameEntry => new(_context, "UsernameEntry", this);
-    public EntryControl PasswordEntry => new(_context, "PasswordEntry", this);
-    public ButtonControl LoginButton => new(_context, "LoginButton", this);
-    public ButtonControl ForgotPasswordLink => new(_context, "ForgotPasswordLink", this);
-    public LabelControl ErrorLabel => new(_context, "ErrorLabel", this);
-    
-    public LoginPage(ITestContext context) : base(context, "LoginPage")
+    public LoginPage(IMauiTestContext context) : base(context, "LoginPage")
     {
     }
     
     /// <summary>
-    /// Wait for page to be ready by checking for login button.
+    /// Check if page is loaded by verifying login button exists.
     /// </summary>
-    public override void WaitForPage(int? timeoutMs = null)
+    public override bool IsLoaded(int? timeoutMs = null)
     {
-        LoginButton.WaitExists(true, timeoutMs);
+        return LoginButton.WaitExists(true, timeoutMs);
     }
     
     /// <summary>
@@ -154,8 +220,37 @@ public class LoginPage : PageObjectBase
         UsernameEntry.Enter(username);
         PasswordEntry.Enter(password);
     }
+    
+    /// <summary>
+    /// Platform-specific operation using typed context.
+    /// </summary>
+    public void HideKeyboardIfShown()
+    {
+        if (Context.IsKeyboardShown())
+            Context.HideKeyboard();  // No casting needed!
+    }
+}
+
+public class LoginPageBlazor : BlazorPageObjectBase
+{
+    public BlazorEntryControl UsernameEntry => new(this, "username-input");
+    public BlazorEntryControl PasswordEntry => new(this, "password-input");
+    public BlazorButtonControl LoginButton => new(this, "login-button");
+    public BlazorLabelControl ErrorLabel => new(this, "error-label");
+    
+    public LoginPageBlazor(IBlazorTestContext context) : base(context, "LoginPage")
+    {
+    }
+    
+    public override bool IsLoaded(int? timeoutMs = null)
+    {
+        Context.WaitForBlazorReady(timeoutMs);  // No casting needed!
+        return LoginButton.WaitExists(true, timeoutMs);
+    }
 }
 ```
+
+> **Key Change:** Controls receive `this` (page) as their scope. The page is both an identity object and an element scope. Controls use simple locators - no more `ScopedTo()` chaining.
 
 ---
 
@@ -163,15 +258,18 @@ public class LoginPage : PageObjectBase
 
 ### 4.1 Controls as Properties
 
-Define controls as expression-bodied properties:
+Define controls as expression-bodied properties, passing `this` (page) as scope:
 
 ```csharp
-// ✅ GOOD: Declarative, visible structure
-public EntryControl UsernameEntry => new(_context, "UsernameEntry", this);
-public ButtonControl LoginButton => new(_context, "LoginButton", this);
+// ✅ GOOD: Declarative, visible structure, page is scope
+public MauiEntryControl UsernameEntry => new(this, "UsernameEntry");
+public MauiButtonControl LoginButton => new(this, "LoginButton");
 
 // ❌ BAD: Factory methods hide structure
-public EntryControl GetUsernameEntry() => new(_context, "UsernameEntry", this);
+public MauiEntryControl GetUsernameEntry() => new(this, "UsernameEntry");
+
+// ❌ OBSOLETE: Old pattern with context + page
+public EntryControl UsernameEntry => new(_context, "UsernameEntry", this);
 ```
 
 ### 4.2 No Navigation Returns
@@ -207,74 +305,98 @@ public HomePage ClickLogin()
 Pages define their own load indicators:
 
 ```csharp
-public class HomePage : PageObjectBase
+public class HomePage : MauiPageObjectBase
 {
-    public LabelControl WelcomeLabel => new(_context, "WelcomeLabel", this);
+    public MauiLabelControl WelcomeLabel => new(this, "WelcomeLabel");
     
-    public override void WaitForPage(int? timeoutMs = null)
+    public override bool IsLoaded(int? timeoutMs = null)
     {
-        WelcomeLabel.WaitExists(true, timeoutMs);
+        return WelcomeLabel.WaitExists(true, timeoutMs);
     }
 }
 
-public class DashboardPage : PageObjectBase
+public class DashboardPage : MauiPageObjectBase
 {
-    public ContainerControl DataGrid => new(_context, "DataGrid", this);
+    public MauiContainerControl DataGrid => new(this, "DataGrid");
     
-    public override void WaitForPage(int? timeoutMs = null)
+    public override bool IsLoaded(int? timeoutMs = null)
     {
-        DataGrid.WaitVisible(true, timeoutMs);
+        return DataGrid.WaitVisible(true, timeoutMs);
     }
 }
 ```
 
-### 4.4 Pass Page Reference to Controls
+### 4.4 Page is the Scope for Controls
 
-Controls receive `this` to enable:
-- Scoped logging (page name in logs)
-- Default locator strategy from page
-- Container scoping
+Controls receive `this` (page) as their scope. The page implements `IElementScope<TElement>`:
 
 ```csharp
-// Page reference enables logging context
-public EntryControl Username => new(_context, "Username", this);
-//                                                        ^^^^
+// Page is IElementScope - controls use it for element finding
+public MauiEntryControl Username => new(this, "Username");
+//                                      ^^^^ page IS scope
+
+// Inside the control:
+// _scope.TryFindElement(_locator) → page searches from driver root
 ```
+
+This replaces the previous pattern where controls received both context and page reference.
 
 ---
 
 ## 5. Usage
 
-### 5.1 Basic Test Flow
+### 5.1 Basic Test Flow (MAUI)
 
 ```csharp
 [Fact]
 public void Login_WithValidCredentials_NavigatesToHome()
 {
-    // Arrange
-    var loginPage = new LoginPage(_context);
-    loginPage.WaitForPage();
+    // Arrange - typed page with typed context
+    var loginPage = new LoginPage(_context);  // _context is IMauiTestContext
+    loginPage.IsLoaded();
     
-    // Act
+    // Act - controls are typed (MauiEntryControl, MauiButtonControl)
     loginPage.UsernameEntry.Enter("testuser");
     loginPage.PasswordEntry.Enter("password123");
     loginPage.LoginButton.Click();
     
     // Assert
     var homePage = new HomePage(_context);
-    homePage.WaitForPage();
+    homePage.IsLoaded();
     homePage.WelcomeLabel.AssertTextContains("Welcome");
 }
 ```
 
-### 5.2 Using Page-Level Methods
+### 5.2 Basic Test Flow (Blazor)
+
+```csharp
+[Fact]
+public void Login_WithValidCredentials_NavigatesToHome()
+{
+    // Arrange - typed page with typed context
+    var loginPage = new LoginPageBlazor(_context);  // _context is IBlazorTestContext
+    loginPage.IsLoaded();
+    
+    // Act - controls are typed (BlazorEntryControl, BlazorButtonControl)
+    loginPage.UsernameEntry.Enter("testuser");
+    loginPage.PasswordEntry.Enter("password123");
+    loginPage.LoginButton.Click();
+    
+    // Assert
+    var homePage = new HomePageBlazor(_context);
+    homePage.IsLoaded();
+    homePage.WelcomeLabel.AssertTextContains("Welcome");
+}
+```
+
+### 5.3 Using Page-Level Methods
 
 ```csharp
 [Fact]
 public void Login_WithInvalidCredentials_ShowsError()
 {
     var loginPage = new LoginPage(_context);
-    loginPage.WaitForPage();
+    loginPage.IsLoaded();
     
     // Use page-level convenience method
     loginPage.EnterCredentials("invalid", "wrong");
@@ -284,7 +406,7 @@ public void Login_WithInvalidCredentials_ShowsError()
 }
 ```
 
-### 5.3 Multi-Page Flow
+### 5.4 Multi-Page Flow
 
 ```csharp
 [Fact]
@@ -297,12 +419,12 @@ public void UserJourney_LoginToSettings()
     
     // Home
     var homePage = new HomePage(_context);
-    homePage.WaitForPage();
+    homePage.IsLoaded();
     homePage.SettingsButton.Click();
     
     // Settings
     var settingsPage = new SettingsPage(_context);
-    settingsPage.WaitForPage();
+    settingsPage.IsLoaded();
     settingsPage.ThemeSelector.SelectByText("Dark");
 }
 ```
@@ -414,13 +536,16 @@ public void VerifyLoginError(string message)
 
 The Page Object pattern is valid when:
 
-- [ ] Page implements IPageObject interface
+- [ ] Page implements `IPageObject<TElement>` (or platform interface like `IMauiPageObject`)
+- [ ] Page extends appropriate base class (`MauiPageObjectBase`, `BlazorPageObjectBase`)
 - [ ] Controls defined as expression-bodied properties
-- [ ] Controls receive page reference (`this`)
+- [ ] Controls receive `this` (page) as scope, not context
+- [ ] Controls use typed platform classes (`MauiButtonControl`, not `ButtonControl`)
 - [ ] Navigation methods do NOT return other pages
-- [ ] WaitForPage() uses control existence checks
+- [ ] `IsLoaded()` uses control existence/visibility checks
 - [ ] No page holds references to other pages
 - [ ] Page-level operations are convenience methods only
+- [ ] Platform-specific operations use typed `Context` property (no casting)
 
 ---
 
