@@ -153,6 +153,14 @@ Text methods retrieve and verify text content:
 string? GetText(int? timeoutMs = null);
 
 /// <summary>
+/// Wait until text content matches expected value.
+/// </summary>
+/// <param name="expected">Expected text. Null = skip operation.</param>
+/// <param name="timeoutMs">Timeout in milliseconds. Null = use default.</param>
+/// <returns>True if condition met, false if timeout.</returns>
+bool WaitText(string? expected, int? timeoutMs = null);
+
+/// <summary>
 /// Assert text content matches expected value exactly.
 /// </summary>
 /// <param name="expected">Expected text. Null = skip operation.</param>
@@ -365,6 +373,7 @@ namespace Brinell.Core.Interfaces
         
         // Text
         string? GetText(int? timeoutMs = null);
+        bool WaitText(string? expected, int? timeoutMs = null);
         void AssertText(string? expected, string? message = null, int? timeoutMs = null);
         void AssertTextContains(string? expected, string? message = null, int? timeoutMs = null);
         

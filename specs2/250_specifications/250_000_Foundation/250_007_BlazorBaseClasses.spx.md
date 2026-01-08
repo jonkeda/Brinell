@@ -335,6 +335,15 @@ public abstract class BlazorClickableControlBase : BlazorControlBase, IClickable
         }
     }
     
+    public void AssertClickable(bool? expected, string? message = null, int? timeoutMs = null)
+    {
+        if (expected is null) return;
+        WaitClickable(expected, timeoutMs);
+        var actual = IsVisible() == true && IsEnabled() == true;
+        if (actual != expected.Value)
+            throw new AssertionException(message ?? $"Control '{_locator}' clickable={actual}, expected={expected.Value}");
+    }
+    
     // Blazor-specific: hover before click for UI components
     public virtual void Hover(int? timeoutMs = null)
     {
@@ -408,10 +417,58 @@ public abstract class BlazorTextControlBase : BlazorControlBase, ITextControlObj
         return element?.GetAttribute("innerHTML");
     }
     
+    public bool WaitInnerHtml(string? expected, int? timeoutMs = null)
+    {
+        if (expected is null) return true;
+        var timeout = timeoutMs ?? _context.Timeouts.ElementState;
+        var wait = new WebDriverWait(_context.Driver, TimeSpan.FromMilliseconds(timeout));
+        try
+        {
+            return wait.Until(_ => GetInnerHtml() == expected);
+        }
+        catch (WebDriverTimeoutException)
+        {
+            return false;
+        }
+    }
+    
+    public void AssertInnerHtml(string? expected, string? message = null, int? timeoutMs = null)
+    {
+        if (expected is null) return;
+        WaitInnerHtml(expected, timeoutMs);
+        var actual = GetInnerHtml();
+        if (actual != expected)
+            throw new AssertionException(message ?? $"Expected innerHTML '{expected}' but was '{actual}'");
+    }
+    
     public string? GetOuterHtml(int? timeoutMs = null)
     {
         var element = TryFindElement();
         return element?.GetAttribute("outerHTML");
+    }
+    
+    public bool WaitOuterHtml(string? expected, int? timeoutMs = null)
+    {
+        if (expected is null) return true;
+        var timeout = timeoutMs ?? _context.Timeouts.ElementState;
+        var wait = new WebDriverWait(_context.Driver, TimeSpan.FromMilliseconds(timeout));
+        try
+        {
+            return wait.Until(_ => GetOuterHtml() == expected);
+        }
+        catch (WebDriverTimeoutException)
+        {
+            return false;
+        }
+    }
+    
+    public void AssertOuterHtml(string? expected, string? message = null, int? timeoutMs = null)
+    {
+        if (expected is null) return;
+        WaitOuterHtml(expected, timeoutMs);
+        var actual = GetOuterHtml();
+        if (actual != expected)
+            throw new AssertionException(message ?? $"Expected outerHTML '{expected}' but was '{actual}'");
     }
 }
 ```
@@ -455,12 +512,59 @@ public abstract class BlazorEditableTextControlBase : BlazorTextControlBase, IEd
         return GetAttribute("placeholder");
     }
     
+    public bool WaitPlaceholder(string? expected, int? timeoutMs = null)
+    {
+        if (expected is null) return true;
+        var timeout = timeoutMs ?? _context.Timeouts.ElementState;
+        var wait = new WebDriverWait(_context.Driver, TimeSpan.FromMilliseconds(timeout));
+        try
+        {
+            return wait.Until(_ => GetPlaceholder() == expected);
+        }
+        catch (WebDriverTimeoutException)
+        {
+            return false;
+        }
+    }
+    
+    public void AssertPlaceholder(string? expected, string? message = null, int? timeoutMs = null)
+    {
+        if (expected is null) return;
+        WaitPlaceholder(expected, timeoutMs);
+        var actual = GetPlaceholder();
+        if (actual != expected)
+            throw new AssertionException(message ?? $"Expected placeholder '{expected}' but was '{actual}'");
+    }
+    
     public virtual bool? IsReadOnly()
     {
         var element = TryFindElement();
         if (element == null) return null;
         var readOnly = GetAttribute("readonly");
         return readOnly != null;
+    }
+    
+    public bool WaitReadOnly(bool? expected, int? timeoutMs = null)
+    {
+        if (expected is null) return true;
+        var timeout = timeoutMs ?? _context.Timeouts.ElementState;
+        var wait = new WebDriverWait(_context.Driver, TimeSpan.FromMilliseconds(timeout));
+        try
+        {
+            return wait.Until(_ => IsReadOnly() == expected.Value);
+        }
+        catch (WebDriverTimeoutException)
+        {
+            return false;
+        }
+    }
+    
+    public void AssertReadOnly(bool? expected, string? message = null, int? timeoutMs = null)
+    {
+        if (expected is null) return;
+        WaitReadOnly(expected, timeoutMs);
+        if (IsReadOnly() != expected.Value)
+            throw new AssertionException(message ?? $"Control '{_locator}' readonly={IsReadOnly()}, expected={expected.Value}");
     }
     
     // Blazor-specific: Form validation
@@ -572,6 +676,29 @@ public abstract class BlazorToggleControlBase : BlazorControlBase, IToggleContro
         var element = TryFindElement();
         if (element == null) return null;
         return GetAttribute("indeterminate") == "true";
+    }
+    
+    public bool WaitIndeterminate(bool? expected, int? timeoutMs = null)
+    {
+        if (expected is null) return true;
+        var timeout = timeoutMs ?? _context.Timeouts.DefaultWait;
+        var wait = new WebDriverWait(_context.Driver, TimeSpan.FromMilliseconds(timeout));
+        try
+        {
+            return wait.Until(_ => IsIndeterminate() == expected.Value);
+        }
+        catch (WebDriverTimeoutException)
+        {
+            return false;
+        }
+    }
+    
+    public void AssertIndeterminate(bool? expected, string? message = null, int? timeoutMs = null)
+    {
+        if (expected is null) return;
+        WaitIndeterminate(expected, timeoutMs);
+        if (IsIndeterminate() != expected.Value)
+            throw new AssertionException(message ?? $"Control '{_locator}' indeterminate={IsIndeterminate()}, expected={expected.Value}");
     }
 }
 ```
@@ -899,6 +1026,30 @@ public abstract class BlazorDataGridControlBase : BlazorItemsControlBase, IDataG
     {
         var element = TryFindElement();
         return element?.FindElements(By.CssSelector("tbody tr")).Count;
+    }
+    
+    public bool WaitRowCount(int? expected, int? timeoutMs = null)
+    {
+        if (expected is null) return true;
+        var timeout = timeoutMs ?? _context.Timeouts.ElementState;
+        var wait = new WebDriverWait(_context.Driver, TimeSpan.FromMilliseconds(timeout));
+        try
+        {
+            return wait.Until(_ => GetRowCount() == expected);
+        }
+        catch (WebDriverTimeoutException)
+        {
+            return false;
+        }
+    }
+    
+    public void AssertRowCount(int? expected, string? message = null, int? timeoutMs = null)
+    {
+        if (expected is null) return;
+        WaitRowCount(expected, timeoutMs);
+        var actual = GetRowCount();
+        if (actual != expected)
+            throw new AssertionException(message ?? $"Expected row count {expected} but was {actual}");
     }
     
     public virtual int? GetColumnCount(int? timeoutMs = null)

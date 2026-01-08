@@ -96,6 +96,14 @@ public interface IClickableControlObject : IControlObject
     /// <param name="timeoutMs">Timeout in milliseconds. Null = use default.</param>
     /// <returns>True if condition met, false if timeout.</returns>
     bool WaitClickable(bool? clickable, int? timeoutMs = null);
+    
+    /// <summary>
+    /// Assert control clickable state matches expected value.
+    /// </summary>
+    /// <param name="expected">Expected clickable state. Null = skip.</param>
+    /// <param name="message">Custom failure message. Null = use default.</param>
+    /// <param name="timeoutMs">Timeout in milliseconds. Null = use default.</param>
+    void AssertClickable(bool? expected, string? message = null, int? timeoutMs = null);
 }
 ```
 
@@ -194,10 +202,36 @@ public interface IEditableTextControlObject : ITextControlObject
     string? GetPlaceholder();
     
     /// <summary>
+    /// Wait until placeholder text matches expected value.
+    /// </summary>
+    /// <param name="expected">Expected placeholder. Null = skip.</param>
+    /// <param name="timeoutMs">Timeout in milliseconds. Null = use default.</param>
+    /// <returns>True if condition met, false if timeout.</returns>
+    bool WaitPlaceholder(string? expected, int? timeoutMs = null);
+    
+    /// <summary>
+    /// Assert placeholder text matches expected value.
+    /// </summary>
+    void AssertPlaceholder(string? expected, string? message = null, int? timeoutMs = null);
+    
+    /// <summary>
     /// Check if the control is read-only.
     /// </summary>
     /// <returns>True if read-only, false if editable, null if element not found.</returns>
     bool? IsReadOnly();
+    
+    /// <summary>
+    /// Wait until read-only state matches expected value.
+    /// </summary>
+    /// <param name="expected">Expected read-only state. Null = skip.</param>
+    /// <param name="timeoutMs">Timeout in milliseconds. Null = use default.</param>
+    /// <returns>True if condition met, false if timeout.</returns>
+    bool WaitReadOnly(bool? expected, int? timeoutMs = null);
+    
+    /// <summary>
+    /// Assert read-only state matches expected value.
+    /// </summary>
+    void AssertReadOnly(bool? expected, string? message = null, int? timeoutMs = null);
 }
 ```
 
@@ -727,10 +761,36 @@ public interface IScrollableControlObject : IControlObject
     bool? CanScrollDown(int? timeoutMs = null);
     
     /// <summary>
+    /// Wait until can-scroll-down state matches expected value.
+    /// </summary>
+    /// <param name="expected">Expected state. Null = skip.</param>
+    /// <param name="timeoutMs">Timeout in milliseconds. Null = use default.</param>
+    /// <returns>True if condition met, false if timeout.</returns>
+    bool WaitCanScrollDown(bool? expected, int? timeoutMs = null);
+    
+    /// <summary>
+    /// Assert can-scroll-down state matches expected value.
+    /// </summary>
+    void AssertCanScrollDown(bool? expected, string? message = null, int? timeoutMs = null);
+    
+    /// <summary>
     /// Check if can scroll up from current position.
     /// </summary>
     /// <returns>True if can scroll up, false if at top, null if element not found.</returns>
     bool? CanScrollUp(int? timeoutMs = null);
+    
+    /// <summary>
+    /// Wait until can-scroll-up state matches expected value.
+    /// </summary>
+    /// <param name="expected">Expected state. Null = skip.</param>
+    /// <param name="timeoutMs">Timeout in milliseconds. Null = use default.</param>
+    /// <returns>True if condition met, false if timeout.</returns>
+    bool WaitCanScrollUp(bool? expected, int? timeoutMs = null);
+    
+    /// <summary>
+    /// Assert can-scroll-up state matches expected value.
+    /// </summary>
+    void AssertCanScrollUp(bool? expected, string? message = null, int? timeoutMs = null);
 }
 ```
 
@@ -896,6 +956,19 @@ public interface IWebViewControlObject : IControlObject
     /// </summary>
     /// <returns>True if loaded, false if not loaded, null if element not found.</returns>
     bool? IsLoaded(int? timeoutMs = null);
+    
+    /// <summary>
+    /// Wait until loaded state matches expected value.
+    /// </summary>
+    /// <param name="expected">Expected loaded state. Null = skip.</param>
+    /// <param name="timeoutMs">Timeout in milliseconds. Null = use default.</param>
+    /// <returns>True if condition met, false if timeout.</returns>
+    bool WaitLoaded(bool? expected, int? timeoutMs = null);
+    
+    /// <summary>
+    /// Assert loaded state matches expected value.
+    /// </summary>
+    void AssertLoaded(bool? expected, string? message = null, int? timeoutMs = null);
 }
 ```
 

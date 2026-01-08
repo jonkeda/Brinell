@@ -309,6 +309,15 @@ public abstract class WpfClickableControlBase : WpfControlBase, IClickableContro
             TimeSpan.FromMilliseconds(_context.Timeouts.PollingInterval)).Result;
     }
     
+    public void AssertClickable(bool? expected, string? message = null, int? timeoutMs = null)
+    {
+        if (expected is null) return;
+        WaitClickable(expected, timeoutMs);
+        var actual = IsVisible() == true && IsEnabled() == true;
+        if (actual != expected.Value)
+            throw new AssertionException(message ?? $"Control '{_locator}' clickable={actual}, expected={expected.Value}");
+    }
+    
     // WPF-specific: Focus
     public virtual void Focus(int? timeoutMs = null)
     {
@@ -322,6 +331,24 @@ public abstract class WpfClickableControlBase : WpfControlBase, IClickableContro
         var element = TryFindElement();
         if (element == null) return null;
         return element.HasKeyboardFocus;
+    }
+    
+    public bool WaitFocused(bool? expected, int? timeoutMs = null)
+    {
+        if (expected is null) return true;
+        var timeout = timeoutMs ?? _context.Timeouts.DefaultWait;
+        return Retry.WhileFalse(
+            () => IsFocused() == expected.Value,
+            TimeSpan.FromMilliseconds(timeout),
+            TimeSpan.FromMilliseconds(_context.Timeouts.PollingInterval)).Result;
+    }
+    
+    public void AssertFocused(bool? expected, string? message = null, int? timeoutMs = null)
+    {
+        if (expected is null) return;
+        WaitFocused(expected, timeoutMs);
+        if (IsFocused() != expected.Value)
+            throw new AssertionException(message ?? $"Control '{_locator}' focused={IsFocused()}, expected={expected.Value}");
     }
 }
 ```
@@ -480,12 +507,49 @@ public abstract class WpfEditableTextControlBase : WpfTextControlBase, IEditable
         return GetAttribute("helptext");
     }
     
+    public bool WaitPlaceholder(string? expected, int? timeoutMs = null)
+    {
+        if (expected is null) return true;
+        var timeout = timeoutMs ?? _context.Timeouts.ElementState;
+        return Retry.WhileFalse(
+            () => GetPlaceholder() == expected,
+            TimeSpan.FromMilliseconds(timeout),
+            TimeSpan.FromMilliseconds(_context.Timeouts.PollingInterval)).Result;
+    }
+    
+    public void AssertPlaceholder(string? expected, string? message = null, int? timeoutMs = null)
+    {
+        if (expected is null) return;
+        WaitPlaceholder(expected, timeoutMs);
+        var actual = GetPlaceholder();
+        if (actual != expected)
+            throw new AssertionException(message ?? $"Expected placeholder '{expected}' but was '{actual}'");
+    }
+    
     public virtual bool? IsReadOnly()
     {
         var element = TryFindElement();
         if (element == null) return null;
         var valuePattern = element.Patterns.Value.TryGetPattern();
         return valuePattern?.IsReadOnly.Value ?? true;
+    }
+    
+    public bool WaitReadOnly(bool? expected, int? timeoutMs = null)
+    {
+        if (expected is null) return true;
+        var timeout = timeoutMs ?? _context.Timeouts.ElementState;
+        return Retry.WhileFalse(
+            () => IsReadOnly() == expected.Value,
+            TimeSpan.FromMilliseconds(timeout),
+            TimeSpan.FromMilliseconds(_context.Timeouts.PollingInterval)).Result;
+    }
+    
+    public void AssertReadOnly(bool? expected, string? message = null, int? timeoutMs = null)
+    {
+        if (expected is null) return;
+        WaitReadOnly(expected, timeoutMs);
+        if (IsReadOnly() != expected.Value)
+            throw new AssertionException(message ?? $"Control '{_locator}' readonly={IsReadOnly()}, expected={expected.Value}");
     }
 }
 ```
@@ -559,6 +623,24 @@ public abstract class WpfToggleControlBase : WpfControlBase, IToggleControlObjec
         var element = TryFindElement();
         if (element == null) return null;
         return GetToggleState() == ToggleState.Indeterminate;
+    }
+    
+    public bool WaitIndeterminate(bool? expected, int? timeoutMs = null)
+    {
+        if (expected is null) return true;
+        var timeout = timeoutMs ?? _context.Timeouts.DefaultWait;
+        return Retry.WhileFalse(
+            () => IsIndeterminate() == expected.Value,
+            TimeSpan.FromMilliseconds(timeout),
+            TimeSpan.FromMilliseconds(_context.Timeouts.PollingInterval)).Result;
+    }
+    
+    public void AssertIndeterminate(bool? expected, string? message = null, int? timeoutMs = null)
+    {
+        if (expected is null) return;
+        WaitIndeterminate(expected, timeoutMs);
+        if (IsIndeterminate() != expected.Value)
+            throw new AssertionException(message ?? $"Control '{_locator}' indeterminate={IsIndeterminate()}, expected={expected.Value}");
     }
 }
 ```
@@ -786,6 +868,24 @@ public abstract class WpfWindowControlBase : WpfControlBase, IWindowControlObjec
         return windowPattern?.WindowVisualState.Value == WindowVisualState.Maximized;
     }
     
+    public bool WaitMaximized(bool? expected, int? timeoutMs = null)
+    {
+        if (expected is null) return true;
+        var timeout = timeoutMs ?? _context.Timeouts.DefaultWait;
+        return Retry.WhileFalse(
+            () => IsMaximized() == expected.Value,
+            TimeSpan.FromMilliseconds(timeout),
+            TimeSpan.FromMilliseconds(_context.Timeouts.PollingInterval)).Result;
+    }
+    
+    public void AssertMaximized(bool? expected, string? message = null, int? timeoutMs = null)
+    {
+        if (expected is null) return;
+        WaitMaximized(expected, timeoutMs);
+        if (IsMaximized() != expected.Value)
+            throw new AssertionException(message ?? $"Window maximized={IsMaximized()}, expected={expected.Value}");
+    }
+    
     public virtual bool? IsMinimized()
     {
         var element = TryFindElement();
@@ -794,12 +894,48 @@ public abstract class WpfWindowControlBase : WpfControlBase, IWindowControlObjec
         return windowPattern?.WindowVisualState.Value == WindowVisualState.Minimized;
     }
     
+    public bool WaitMinimized(bool? expected, int? timeoutMs = null)
+    {
+        if (expected is null) return true;
+        var timeout = timeoutMs ?? _context.Timeouts.DefaultWait;
+        return Retry.WhileFalse(
+            () => IsMinimized() == expected.Value,
+            TimeSpan.FromMilliseconds(timeout),
+            TimeSpan.FromMilliseconds(_context.Timeouts.PollingInterval)).Result;
+    }
+    
+    public void AssertMinimized(bool? expected, string? message = null, int? timeoutMs = null)
+    {
+        if (expected is null) return;
+        WaitMinimized(expected, timeoutMs);
+        if (IsMinimized() != expected.Value)
+            throw new AssertionException(message ?? $"Window minimized={IsMinimized()}, expected={expected.Value}");
+    }
+    
     public virtual bool? IsModal()
     {
         var element = TryFindElement();
         if (element == null) return null;
         var windowPattern = element.Patterns.Window.TryGetPattern();
         return windowPattern?.IsModal.Value;
+    }
+    
+    public bool WaitModal(bool? expected, int? timeoutMs = null)
+    {
+        if (expected is null) return true;
+        var timeout = timeoutMs ?? _context.Timeouts.DefaultWait;
+        return Retry.WhileFalse(
+            () => IsModal() == expected.Value,
+            TimeSpan.FromMilliseconds(timeout),
+            TimeSpan.FromMilliseconds(_context.Timeouts.PollingInterval)).Result;
+    }
+    
+    public void AssertModal(bool? expected, string? message = null, int? timeoutMs = null)
+    {
+        if (expected is null) return;
+        WaitModal(expected, timeoutMs);
+        if (IsModal() != expected.Value)
+            throw new AssertionException(message ?? $"Window modal={IsModal()}, expected={expected.Value}");
     }
 }
 ```

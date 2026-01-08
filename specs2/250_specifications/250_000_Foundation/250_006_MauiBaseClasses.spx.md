@@ -254,6 +254,15 @@ public abstract class MauiClickableControlBase : MauiControlBase, IClickableCont
             timeout,
             _context.Timeouts.PollingInterval);
     }
+    
+    public void AssertClickable(bool? expected, string? message = null, int? timeoutMs = null)
+    {
+        if (expected is null) return;
+        WaitClickable(expected, timeoutMs);
+        var actual = IsVisible() == true && IsEnabled() == true;
+        if (actual != expected.Value)
+            throw new AssertionException(message ?? $"Control '{_locator}' clickable={actual}, expected={expected.Value}");
+    }
 }
 ```
 
@@ -366,12 +375,50 @@ public abstract class MauiEditableTextControlBase : MauiTextControlBase, IEditab
         return GetAttribute("hint") ?? GetAttribute("placeholder");
     }
     
+    public bool WaitPlaceholder(string? expected, int? timeoutMs = null)
+    {
+        if (expected is null) return true;
+        var timeout = timeoutMs ?? _context.Timeouts.ElementState;
+        return WaitHelper.WaitFor(
+            () => GetPlaceholder(),
+            p => p == expected,
+            timeout,
+            _context.Timeouts.PollingInterval);
+    }
+    
+    public void AssertPlaceholder(string? expected, string? message = null, int? timeoutMs = null)
+    {
+        if (expected is null) return;
+        WaitPlaceholder(expected, timeoutMs);
+        var actual = GetPlaceholder();
+        if (actual != expected)
+            throw new AssertionException(message ?? $"Expected placeholder '{expected}' but was '{actual}'");
+    }
+    
     public virtual bool? IsReadOnly()
     {
         var element = TryFindElement();
         if (element == null) return null;
         var readOnly = GetAttribute("readonly") ?? GetAttribute("editable");
         return readOnly == "true" || readOnly == "false"; // editable="false" means read-only
+    }
+    
+    public bool WaitReadOnly(bool? expected, int? timeoutMs = null)
+    {
+        if (expected is null) return true;
+        var timeout = timeoutMs ?? _context.Timeouts.ElementState;
+        return WaitHelper.WaitFor(
+            () => IsReadOnly() == expected.Value,
+            timeout,
+            _context.Timeouts.PollingInterval);
+    }
+    
+    public void AssertReadOnly(bool? expected, string? message = null, int? timeoutMs = null)
+    {
+        if (expected is null) return;
+        WaitReadOnly(expected, timeoutMs);
+        if (IsReadOnly() != expected.Value)
+            throw new AssertionException(message ?? $"Control '{_locator}' readonly={IsReadOnly()}, expected={expected.Value}");
     }
 }
 ```
