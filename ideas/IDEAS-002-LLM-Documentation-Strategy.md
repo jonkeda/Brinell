@@ -122,6 +122,7 @@ public interface IControlObject
 - Some duplication within document
 
 ---
+```
 
 ### Solution 2: GitHub Copilot Custom Instructions + File Organization
 
