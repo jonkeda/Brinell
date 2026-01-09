@@ -190,30 +190,39 @@ The interface provides state query methods...
 
 ### Option C: Centralized LLM Config
 
-Create a configuration file that defines which SPX blocks to include:
+Create a configuration file that defines which SPX blocks to include. Use Markdown tables for consistency with SPX format:
 
-```yaml
-# spx-llm-config.yaml
+```markdown
+# SpxLlm Configuration
 
-# Default: include these SPX block types
-include:
-  - specification.interface      # Code blocks
-  - specification.boundary       # Edge cases
-  - specification.acceptance     # Test criteria (condensed)
-  - behavior.rules              # Numbered rules
+- **version**: 1.0
+- **output**: slm.md
 
-# Default: exclude these
-exclude:
-  - behavior.detailed           # Prose explanations
-  - examples                    # Human examples
-  - assumptions                 # Context (usually)
-  - exclusions                  # What's NOT included
+## Include
 
-# Per-file overrides
-overrides:
-  250_001_IControlObject.spx.md:
-    include:
-      - assumptions             # Include for this file
+| Block Type | Section | Relevance | Notes |
+|------------|---------|-----------|-------|
+| specification | interface | full | Complete interface code |
+| specification | boundary | full | Edge cases and errors |
+| behavior | rules | summary | Numbered rules only |
+| acceptance | scenarios | summary | Gherkin Given/When/Then |
+
+## Exclude
+
+| Block Type | Section | Reason |
+|------------|---------|--------|
+| behavior | detailed | Prose explanations |
+| examples | all | Human examples |
+| assumption | all | Context (usually) |
+| exclusion | all | What's NOT included |
+
+## Overrides
+
+### 250_001_IControlObject.spx.md
+
+| Action | Section | Reason |
+|--------|---------|--------|
+| include | assumption | Foundation context needed |
 ```
 
 ### Recommended Approach: Option C (Centralized Config)
@@ -224,6 +233,11 @@ overrides:
 - Single place to manage LLM extraction rules
 - Can evolve without touching specs
 - Parser reads config, applies to all files
+- Markdown format matches SPX documentation style
+
+**Implementation:**
+- See [E10_SpxLlm.md](../SPX/Docs/V7/blocks2/E00_syntax/E10_SpxLlm.md) for format reference
+- See [SpxLlm.cfg.md](../specs2/SpxLlm.cfg.md) for Brinell-specific configuration
 
 ### SPX v7 Extension Proposal
 
