@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Brinell.Maui</RootNamespace>
+    <AssemblyName>Brinell.Maui</AssemblyName>
+    <Description>MAUI platform implementation for Brinell UI Test Automation Framework</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Brinell.Core\Brinell.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Appium.WebDriver" />
+  </ItemGroup>
+
+</Project>

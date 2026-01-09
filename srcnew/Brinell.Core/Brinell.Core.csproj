@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Brinell.Core</RootNamespace>
+    <AssemblyName>Brinell.Core</AssemblyName>
+    <Description>Core interfaces and abstractions for Brinell UI Test Automation Framework</Description>
+  </PropertyGroup>
+
+</Project>
