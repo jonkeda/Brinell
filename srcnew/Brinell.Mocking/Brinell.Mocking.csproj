@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Brinell.Mocking</RootNamespace>
+    <Description>API mocking infrastructure for UI tests. Provides WireMock-based mock servers for simulating backend services during testing.</Description>
+    <PackageId>Brinell.Mocking</PackageId>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <!-- Suppress WireMock transitive dependency vulnerability (System.Linq.Dynamic.Core) -->
+    <NoWarn>$(NoWarn);NU1903</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Brinell.Core\Brinell.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="WireMock.Net" />
+  </ItemGroup>
+
+</Project>

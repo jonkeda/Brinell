@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Brinell.Stride</RootNamespace>
+    <Description>Stride game engine UI testing client. Provides controls and page objects for communicating with Stride applications via Brinell.Automation.</Description>
+    <PackageId>Brinell.Stride</PackageId>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Brinell.Core\Brinell.Core.csproj" />
+  </ItemGroup>
+
+</Project>

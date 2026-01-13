@@ -2,8 +2,13 @@
 
   <PropertyGroup>
     <RootNamespace>Brinell.Core</RootNamespace>
-    <AssemblyName>Brinell.Core</AssemblyName>
-    <Description>Core interfaces and abstractions for Brinell UI Test Automation Framework</Description>
+    <Description>Platform-agnostic UI testing abstractions for .NET applications. Provides interfaces and base classes for building cross-platform UI test automation.</Description>
+    <PackageId>Brinell.Core</PackageId>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.extensibility.core" />
+  </ItemGroup>
 
 </Project>

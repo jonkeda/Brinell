@@ -9,6 +9,76 @@
 
 ---
 
+## LLM Summary
+
+> **For LLM implementation tasks, read this section first.**
+
+### Interface
+
+```csharp
+public interface IControlObject
+{
+    // Identity
+    Locator Locator { get; }
+    IElementScope Scope { get; }
+    IPageObject? Page { get; }
+    
+    // State (immediate, no waiting)
+    bool IsExists();
+    bool? IsVisible();
+    bool? IsEnabled();
+    
+    // Waiting (poll until condition or timeout)
+    bool WaitExists(bool? expected, int? timeoutMs = null);
+    bool WaitVisible(bool? expected, int? timeoutMs = null);
+    bool WaitEnabled(bool? expected, int? timeoutMs = null);
+    
+    // Assertions (throw on failure)
+    void AssertExists(bool? expected, string? message = null, int? timeoutMs = null);
+    void AssertVisible(bool? expected, string? message = null, int? timeoutMs = null);
+    void AssertEnabled(bool? expected, string? message = null, int? timeoutMs = null);
+    
+    // Text
+    string? GetText(int? timeoutMs = null);
+    bool WaitText(string? expected, int? timeoutMs = null);
+    void AssertText(string? expected, string? message = null, int? timeoutMs = null);
+    void AssertTextContains(string? expected, string? message = null, int? timeoutMs = null);
+    
+    // Attributes
+    string? GetAttribute(string name);
+}
+```
+
+### Rules
+
+1. `IsVisible()` and `IsEnabled()` return `null` when element doesn't exist
+2. All `Wait*` methods return `bool` (success/failure), never throw
+3. All `Assert*` methods throw `AssertionException` on failure
+4. **Nullable Skip Pattern:** If `expected` parameter is `null`, skip operation and return immediately
+5. If `timeoutMs` is `null`, use default from `context.Timeouts`
+6. `GetText()` returns `null` if element doesn't exist, empty string if exists with no text
+
+### Boundaries
+
+| Scenario | Behavior |
+|----------|----------|
+| `IsExists()` on missing element | Returns `false` |
+| `IsVisible()` on missing element | Returns `null` |
+| `IsEnabled()` on missing element | Returns `null` |
+| `GetText()` on missing element | Returns `null` |
+| `WaitExists(null, ...)` | Returns `true` immediately (skip) |
+| `AssertVisible(null, ...)` | Returns immediately (skip) |
+| Negative timeout value | Treated as 0 (immediate check) |
+
+### Dependencies
+
+- `Locator` — Element locator type
+- `IElementScope` — Page or container scope
+- `IPageObject` — Page interface (optional)
+- `AssertionException` — Thrown on assertion failure
+
+---
+
 ## 1. Overview
 
 `IControlObject` is the base interface for all controls in the Brinell framework. Every control, regardless of platform or capability, implements this interface. It provides the fundamental operations for control identification, state querying, waiting, and assertions.

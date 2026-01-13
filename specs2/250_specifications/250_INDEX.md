@@ -62,8 +62,22 @@ See [PLAN-002](../Plan/PLAN-002-Specification-Levels.md) for detailed level prog
 
 ---
 
+## Cross-Layer References
+
+Specifications (250_*) answer **WHAT** and **WHEN**. Architecture (200_*) answers **WHY** and **HOW**.
+
+| Topic | Specification (WHAT/WHEN) | Architecture (WHY/HOW) |
+|-------|---------------------------|------------------------|
+| IControlObject | [250_001 IControlObject](250_000_Foundation/250_001_IControlObject.spx.md) | [ADR-002 Interface-First](../200_architecture/202_Decisions/202_002_InterfaceFirst.spx.md) |
+| Interface Hierarchy | [250_005 InterfaceHierarchy](250_000_Foundation/250_005_InterfaceHierarchy.spx.md) | [ADR-004 ControlHierarchy](../200_architecture/202_Decisions/202_004_ControlHierarchy.spx.md) |
+| Platform Contexts | [250_009 PlatformContexts](250_000_Foundation/250_009_PlatformContexts.spx.md) | [220_000 ExternalDependencies](../200_architecture/220_External/220_000_ExternalDependencies.spx.md) |
+| Control Pattern | [250_001 IControlObject](250_000_Foundation/250_001_IControlObject.spx.md) | [231_001 ControlObjectPattern](../200_architecture/231_Patterns/231_001_ControlObjectPattern.spx.md) |
+
+---
+
 ## Related Documents
 
 - [PLAN-002 Specification Levels](../Plan/PLAN-002-Specification-Levels.md)
 - [Architecture Overview](../200_architecture/200_000_Overview.spx.md)
 - [Interfaces Module](../200_architecture/211_Modules/211_001_Interfaces.spx.md)
+- [Questions-to-Blocks.md](../../SPX/Docs/V7/Overview/Questions-to-Blocks.md) — SPX block guide by question type

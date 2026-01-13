@@ -395,6 +395,37 @@ This module defines the namespace organization and design principles.
 
 ---
 
+## 12. Implementation Status
+
+**Implemented January 9, 2026:**
+
+| Action | Status | Files Changed |
+|--------|--------|---------------|
+| Remove interface code from 211_001 | ✅ Done | [211_001_Interfaces.spx.md](../specs2/200_architecture/211_Modules/211_001_Interfaces.spx.md) |
+| Add LLM Summary to 250_001 | ✅ Done | [250_001_IControlObject.spx.md](../specs2/250_specifications/250_000_Foundation/250_001_IControlObject.spx.md) |
+| Consolidate 220_* into overview | ✅ Done | [220_000_ExternalDependencies.spx.md](../specs2/200_architecture/220_External/220_000_ExternalDependencies.spx.md) |
+| Remove duplicated hierarchy from 202_004 | ✅ Done | [202_004_ControlHierarchy.spx.md](../specs2/200_architecture/202_Decisions/202_004_ControlHierarchy.spx.md) |
+| Add cross-references between 200/250 | ✅ Done | [200_INDEX.md](../specs2/200_architecture/200_INDEX.md), [250_INDEX.md](../specs2/250_specifications/250_INDEX.md) |
+
+### Changes Made
+
+1. **211_001_Interfaces.spx.md** — Replaced interface code blocks with references to 250_* specs, keeping only summaries and capability tables
+2. **250_001_IControlObject.spx.md** — Added `## LLM Summary` section at top with interface code, rules, boundaries, and dependencies
+3. **220_000_ExternalDependencies.spx.md** — Created new consolidated overview of all external drivers (Appium, Selenium, Playwright, FlaUI) with locator mappings and version compatibility
+4. **202_004_ControlHierarchy.spx.md** — Replaced interface definitions with summary table and reference to 250_005
+5. **200_INDEX.md** and **250_INDEX.md** — Added cross-layer reference tables linking architecture to specifications
+
+### Remaining Tasks
+
+| Action | Priority | Notes |
+|--------|----------|-------|
+| Add LLM Summary to remaining 250_* specs | Medium | Follow 250_001 template |
+| Downgrade 220_001-004 to 🟢Ⅰ Lite | Low | Keep as detailed reference |
+| Consolidate 221_* Foundation docs | Low | Consider single overview |
+| Update copilot-instructions.md | High | Add guidance for reading LLM Summary sections |
+
+---
+
 ## Related Documents
 
 - [IDEAS-003: SPX LLM Integration](IDEAS-003-SPX-LLM-Integration-QA.md)
@@ -402,9 +433,10 @@ This module defines the namespace organization and design principles.
 - [specs2/200_architecture/](../specs2/200_architecture/)
 - [specs2/250_specifications/](../specs2/250_specifications/)
 - [SPX v7 Editions](../SPX/Docs/V7/blocks2/000_basics/001_Spx.md)
+- [Questions-to-Blocks.md](../SPX/Docs/V7/Overview/Questions-to-Blocks.md) — SPX block guide by question type
 
 ---
 
-**Version:** 2.0  
-**Status:** Draft  
+**Version:** 2.1  
+**Status:** Implemented  
 **Last Review:** January 9, 2026

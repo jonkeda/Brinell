@@ -12,14 +12,19 @@
 
 This section documents the external libraries and frameworks that Brinell depends on for UI automation. Each platform package relies on specific automation drivers.
 
+## Quick Reference
+
+> **📋 Start here:** [220_000_ExternalDependencies.spx.md](220_000_ExternalDependencies.spx.md) — Consolidated overview with locator mappings, element properties, and version compatibility for all drivers.
+
 ## Documents
 
 | ID | Title | Description |
 |----|-------|-------------|
-| [220.001](220_001_Appium.spx.md) | Appium | Mobile automation for MAUI (Android/iOS) |
-| [220.002](220_002_Selenium.spx.md) | Selenium WebDriver | Browser automation for Blazor |
-| [220.003](220_003_Playwright.spx.md) | Playwright | Alternative browser automation for Blazor |
-| [220.004](220_004_FlaUI.spx.md) | FlaUI | Desktop automation for WPF and WinForms |
+| [220.000](220_000_ExternalDependencies.spx.md) | **Overview** | Consolidated quick reference for all drivers |
+| [220.001](220_001_Appium.spx.md) | Appium | Full documentation for MAUI (Android/iOS) |
+| [220.002](220_002_Selenium.spx.md) | Selenium WebDriver | Full documentation for Blazor |
+| [220.003](220_003_Playwright.spx.md) | Playwright | Full documentation (planned) |
+| [220.004](220_004_FlaUI.spx.md) | FlaUI | Full documentation for WPF/WinForms |
 
 ## Platform Mapping
 

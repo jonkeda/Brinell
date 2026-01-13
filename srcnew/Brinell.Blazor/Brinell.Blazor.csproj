@@ -2,8 +2,9 @@
 
   <PropertyGroup>
     <RootNamespace>Brinell.Blazor</RootNamespace>
-    <AssemblyName>Brinell.Blazor</AssemblyName>
-    <Description>Blazor platform implementation for Brinell UI Test Automation Framework</Description>
+    <Description>Blazor UI testing automation using Playwright. Provides controls and page objects for Blazor Server and WebAssembly application testing.</Description>
+    <PackageId>Brinell.Blazor</PackageId>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup>
@@ -11,8 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Selenium.WebDriver" />
-    <PackageReference Include="Selenium.Support" />
+    <PackageReference Include="Microsoft.Playwright" />
   </ItemGroup>
 
 </Project>

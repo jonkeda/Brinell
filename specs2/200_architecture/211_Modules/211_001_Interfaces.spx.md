@@ -40,35 +40,14 @@ The Interfaces module provides:
 
 The foundation for all controls. Every control in the framework implements `IControlObject`, which provides identity, state checking, waiting, assertions, and basic text retrieval.
 
-```csharp
-public interface IControlObject
-{
-    // Identity - how to find and reference the control
-    Locator Locator { get; }      // The locator used to find this control
-    IPageObject? Page { get; }    // The page containing this control (optional)
-  
-    // State - query current control state (immediate, no waiting)
-    bool IsExists();              // Returns true if element is in DOM/visual tree
-    bool IsVisible();             // Returns true if visible
-    bool IsEnabled();             // Returns true if enabled
-  
-    // Waiting - poll until condition or timeout; null expected = skip
-    bool WaitExists(bool? expected, int? timeoutMs = null);   // Wait for existence
-    bool WaitVisible(bool? expected, int? timeoutMs = null);  // Wait for visibility
-    bool WaitEnabled(bool? expected, int? timeoutMs = null);  // Wait for enabled state
-  
-    // Assertions - throw if condition not met; null expected = skip
-    void AssertExists(bool? expected, string? message = null, int? timeoutMs = null);
-    void AssertVisible(bool? expected, string? message = null, int? timeoutMs = null);
-    void AssertEnabled(bool? expected, string? message = null, int? timeoutMs = null);
-  
-    // Text - retrieve and verify content; null expected = skip
-    string GetText(int? timeoutMs = null);
-    void AssertText(string? expected, string? message = null, int? timeoutMs = null);
-    void AssertTextContains(string? expected, string? message = null, int? timeoutMs = null);
-    string? GetAttribute(string name);
-}
-```
+> **📋 Complete interface definition:** See [250_001_IControlObject.spx.md](../../250_specifications/250_000_Foundation/250_001_IControlObject.spx.md)
+
+**Key capabilities:**
+- **Identity** — `Locator`, `Scope`, `Page` properties
+- **State** — `IsExists()`, `IsVisible()`, `IsEnabled()`
+- **Waiting** — `WaitExists()`, `WaitVisible()`, `WaitEnabled()`
+- **Assertions** — `AssertExists()`, `AssertVisible()`, `AssertEnabled()`
+- **Text** — `GetText()`, `AssertText()`, `AssertTextContains()`
 
 ### 3.2 Capability Interfaces
 
@@ -90,99 +69,37 @@ Capability interfaces extend `IControlObject` to add specific functionality. Eac
 
 Structural interfaces organize the test environment. `IPageObject` represents a screen or page containing controls, while `ITestContext` manages the driver lifecycle and provides access to configuration.
 
-```csharp
-/// <summary>
-/// Represents a page or screen in the application under test.
-/// Controls are created via 'new' pattern, not factory methods.
-/// </summary>
-public interface IPageObject
-{
-    string Name { get; }          // Page name for logging and identification
-  
-    // Page state - nullable expected for skip-on-null pattern
-    bool IsLoaded(int? timeoutMs = null);        // Check if page is loaded
-    bool WaitLoaded(bool? expected, int? timeoutMs = null);   // Wait for loaded state
-    void AssertLoaded(bool? expected, string? message = null, int? timeoutMs = null);
-  
-    // Title verification
-    string GetTitle(int? timeoutMs = null);      // Get page title
-    void AssertTitle(string? expected, string? message = null, int? timeoutMs = null);
-  
-    // Control existence helpers (for page-level queries)
-    bool ControlExists(Locator locator, int? timeoutMs = null);
-    bool WaitControlExists(Locator locator, bool? expected, int? timeoutMs = null);
-  
-    // Page operations
-    void TakeScreenshot(string? filename, int? timeoutMs = null);
-    void ScrollToControl(Locator? locator, int? timeoutMs = null);
-}
+> **📋 Complete interface definitions:**
+> - [250_002_IPageObject.spx.md](../../250_specifications/250_000_Foundation/250_002_IPageObject.spx.md)
+> - [250_004_TestContext.spx.md](../../250_specifications/250_000_Foundation/250_004_TestContext.spx.md)
 
-/// <summary>
-/// Manages the test execution context including driver, configuration, and state.
-/// Implements IDisposable for proper cleanup.
-/// Does NOT track current page - controls receive page via constructor.
-/// </summary>
-public interface ITestContext : IDisposable
-{
-    // Configuration - settings for timeouts, logging, etc.
-    TimeoutSettings Timeouts { get; }  // Timeout configuration
-    ITestLogger Logger { get; }        // Test logger for diagnostics
-  
-    // Navigation - move between pages/URLs
-    void NavigateTo(string destination);  // Navigate to destination
-    void NavigateBack();                  // Go back in history
-    void Refresh();                       // Refresh current page
-  
-    // Screenshots - capture visual state
-    byte[] TakeScreenshot();              // Capture as byte array
-    void SaveScreenshot(string path);     // Save to file
-  
-    // App state
-    void ResetAppState();                 // Reset application to initial state
-}
-```
+**IPageObject capabilities:**
+- **Identity** — `Name` property
+- **State** — `IsLoaded()`, `WaitLoaded()`, `AssertLoaded()`
+- **Title** — `GetTitle()`, `AssertTitle()`
+- **Control helpers** — `ControlExists()`, `WaitControlExists()`
+- **Operations** — `TakeScreenshot()`, `ScrollToControl()`
+
+**ITestContext capabilities:**
+- **Configuration** — `Timeouts`, `Logger`
+- **Navigation** — `NavigateTo()`, `NavigateBack()`, `Refresh()`
+- **Screenshots** — `TakeScreenshot()`, `SaveScreenshot()`
+- **App state** — `ResetAppState()`
 
 ### 3.4 Platform-Specific Test Context Interfaces
 
 Each platform extends `ITestContext` with technology-specific capabilities. This allows base classes to use the interface type instead of casting to concrete classes, improving testability and following the Interface Segregation Principle.
 
-```csharp
-// MAUI/Appium - defined in Brinell.Maui
-public interface IMauiTestContext : ITestContext
-{
-    // Driver access for advanced scenarios
-    AppiumDriver Driver { get; }
-    
-    // Appium-specific element finding
-    AppiumElement FindElement(Locator locator);
-    AppiumElement? TryFindElement(Locator locator);
-    IReadOnlyList<AppiumElement> FindElements(Locator locator);
-}
+> **📋 Complete interface definitions:**
+> - [250_009_PlatformContexts.spx.md](../../250_specifications/250_000_Foundation/250_009_PlatformContexts.spx.md)
 
-// Blazor/Selenium - defined in Brinell.Blazor
-public interface IBlazorTestContext : ITestContext
-{
-    // Driver access for advanced scenarios
-    IWebDriver Driver { get; }
-    
-    // Base URL for relative navigation
-    string BaseUrl { get; }
-    
-    // Selenium-specific element finding
-    IWebElement FindElement(Locator locator);
-    IWebElement? TryFindElement(Locator locator);
-    IReadOnlyList<IWebElement> FindElements(Locator locator);
-}
+**Platform contexts:**
 
-// WPF - defined in Brinell.Wpf
-public interface IWpfTestContext : ITestContext
-{
-    // WPF-specific element finding
-    AutomationElement FindElement(Locator locator);
-    AutomationElement? TryFindElement(Locator locator);
-    IReadOnlyList<AutomationElement> FindElements(Locator locator);
-}
-```
+| Interface | Package | Driver Type | Key Methods |
+|-----------|---------|-------------|-------------|
+| `IMauiTestContext` | Brinell.Maui | `AppiumDriver` | `FindElement()`, `TryFindElement()`, `FindElements()` |
+| `IBlazorTestContext` | Brinell.Blazor | `IWebDriver` | `BaseUrl`, `FindElement()`, `TryFindElement()` |
+| `IWpfTestContext` | Brinell.Wpf | `AutomationElement` | `FindElement()`, `TryFindElement()`, `FindElements()` |
 
 **Design Note:** Platform-specific interfaces are defined in their respective platform packages (`Brinell.MAUI`, `Brinell.Blazor`, `Brinell.WPF`), not in `Brinell.Core`. This keeps the Core package free of technology dependencies while still enabling interface-based programming in platform code.
 

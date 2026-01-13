@@ -97,135 +97,22 @@ public class PickerControl : SelectorControlBase, IClickableControl, ITextContro
 
 ## 3. Interface Definitions
 
-### IControlObject (Base)
+> **📋 Complete interface definitions:** See [250_005_InterfaceHierarchy.spx.md](../../250_specifications/250_000_Foundation/250_005_InterfaceHierarchy.spx.md) for the authoritative interface catalog.
 
-```csharp
-public interface IControlObject
-{
-    // Identity
-    string AutomationId { get; }
-    IPageObject? Page { get; }
-    
-    // State
-    bool IsExists();
-    bool IsVisible();
-    bool IsEnabled();
-    
-    // Waiting
-    bool WaitExists(bool exists = true, int? timeout = null);
-    bool WaitVisible(bool visible = true, int? timeout = null);
-    bool WaitEnabled(bool enabled = true, int? timeout = null);
-    
-    // Assertions
-    void AssertExists(string? message = null);
-    void AssertNotExists(string? message = null);
-    void AssertVisible(string? message = null);
-    void AssertNotVisible(string? message = null);
-    void AssertEnabled(string? message = null);
-    void AssertDisabled(string? message = null);
-}
-```
+This ADR defines the **design decision** for capability-based interfaces. For complete method signatures and behavior specifications, refer to the specification documents.
 
-### IClickableControl
+### Interface Summary
 
-```csharp
-public interface IClickableControl : IControlObject
-{
-    void Click();
-    void Tap();
-    void DoubleClick();
-    void LongPress(int durationMs = 1000);
-}
-```
-
-### ITextControl
-
-```csharp
-public interface ITextControl : IControlObject
-{
-    string GetText();
-    
-    void AssertTextEquals(string expected, string? message = null);
-    void AssertTextContains(string substring, string? message = null);
-    void AssertTextMatches(string pattern, string? message = null);
-    void AssertTextEmpty(string? message = null);
-    void AssertTextNotEmpty(string? message = null);
-}
-```
-
-### IEditableTextControl
-
-```csharp
-public interface IEditableTextControl : ITextControl
-{
-    void Enter(string text);
-    void Clear();
-    void SetText(string text); // Clear + Enter
-    
-    string? GetPlaceholder();
-}
-```
-
-### IToggleControl
-
-```csharp
-public interface IToggleControl : IControlObject
-{
-    bool IsOn { get; }
-    
-    void Toggle();
-    void SetState(bool on);
-    
-    void AssertOn(string? message = null);
-    void AssertOff(string? message = null);
-}
-```
-
-### ISelectorControl
-
-```csharp
-public interface ISelectorControl : IControlObject
-{
-    IReadOnlyList<string> GetOptions();
-    string? GetSelectedOption();
-    int GetSelectedIndex();
-    
-    void Select(string option);
-    void SelectByIndex(int index);
-    
-    void AssertSelected(string option, string? message = null);
-    void AssertSelectedIndex(int index, string? message = null);
-}
-```
-
-### IRangeControl
-
-```csharp
-public interface IRangeControl : IControlObject
-{
-    double GetValue();
-    double GetMinimum();
-    double GetMaximum();
-    
-    void SetValue(double value);
-    void Increment(double step = 1);
-    void Decrement(double step = 1);
-    
-    void AssertValue(double expected, double tolerance = 0.001, string? message = null);
-    void AssertInRange(double min, double max, string? message = null);
-}
-```
-
-### IContainerControl
-
-```csharp
-public interface IContainerControl : IControlObject
-{
-    T Find<T>(string automationId) where T : IControlObject;
-    T? TryFind<T>(string automationId) where T : IControlObject;
-    IReadOnlyList<T> FindAll<T>() where T : IControlObject;
-}
-```
+| Interface | Purpose | Key Methods |
+|-----------|---------|-------------|
+| IControlObject | Base for all controls | State, waiting, assertions |
+| IClickableControl | Click/tap actions | `Click()`, `DoubleClick()`, `LongPress()` |
+| ITextControl | Text display | `GetText()`, `AssertText*()` |
+| IEditableTextControl | Text input | `Enter()`, `Clear()`, `SetText()` |
+| IToggleControl | On/off state | `IsOn`, `Toggle()`, `SetState()` |
+| ISelectorControl | Selection | `Select()`, `GetSelectedOption()` |
+| IRangeControl | Numeric range | `GetValue()`, `SetValue()` |
+| IContainerControl | Child scoping | `Find<T>()`, `TryFind<T>()` |
 
 ---
 

@@ -2,8 +2,9 @@
 
   <PropertyGroup>
     <RootNamespace>Brinell.Maui</RootNamespace>
-    <AssemblyName>Brinell.Maui</AssemblyName>
-    <Description>MAUI platform implementation for Brinell UI Test Automation Framework</Description>
+    <Description>MAUI UI testing automation using Appium. Provides controls and page objects for cross-platform MAUI application testing.</Description>
+    <PackageId>Brinell.Maui</PackageId>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup>

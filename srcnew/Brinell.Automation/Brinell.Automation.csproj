@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Stride packages only support net10.0 -->
+    <TargetFrameworks>net10.0</TargetFrameworks>
+    <RootNamespace>Brinell.Automation</RootNamespace>
+    <Description>In-game automation server for Stride applications. Embeds into game to handle UI automation requests from Brinell.Stride test client.</Description>
+    <PackageId>Brinell.Automation</PackageId>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Stride.Engine" />
+    <PackageReference Include="Stride.UI" />
+  </ItemGroup>
+
+</Project>
