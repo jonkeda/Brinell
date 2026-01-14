@@ -1,5 +1,4 @@
 using Brinell.Core.Exceptions;
-using Brinell.Core.Interfaces;
 using Brinell.Core.Locators;
 using Brinell.Maui.Extensions;
 using Brinell.Maui.Interfaces;
@@ -46,9 +45,6 @@ public abstract class MauiContainerBase<TParent, TSelf> : MauiControlBase<TParen
     public TParent Parent => _parent;
     
     #region IContainerControl Implementation
-    
-    /// <inheritdoc />
-    object IContainerControl.ContainerRoot => ContainerRoot;
     
     /// <inheritdoc />
     public IMauiElement ContainerRoot

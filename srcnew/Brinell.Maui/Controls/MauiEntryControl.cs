@@ -3,7 +3,6 @@ using Brinell.Core.Exceptions;
 using Brinell.Core.Interfaces;
 using Brinell.Core.Locators;
 using Brinell.Maui.Interfaces;
-using OpenQA.Selenium;
 
 namespace Brinell.Maui.Controls;
 
@@ -21,6 +20,17 @@ public class MauiEntryControl<TScope> : MauiControlBase<TScope>, IEditableTextCo
     /// <param name="locator">The locator for the entry element.</param>
     public MauiEntryControl(IMauiScope<TScope> scope, Locator locator)
         : base(scope, locator)
+    {
+    }
+
+    /// <summary>
+    /// Creates a new entry control within the specified scope using a string locator value.
+    /// Uses the scope's DefaultLocatorStrategy to create the locator.
+    /// </summary>
+    /// <param name="scope">The scope (page or container) providing element finding.</param>
+    /// <param name="locatorValue">The locator value (e.g., automation ID, name).</param>
+    public MauiEntryControl(IMauiScope<TScope> scope, string locatorValue)
+        : base(scope, locatorValue)
     {
     }
 

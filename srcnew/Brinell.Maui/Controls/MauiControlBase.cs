@@ -12,7 +12,7 @@ namespace Brinell.Maui.Controls;
 /// Controls find elements within their scope (page, container, or list item).
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent method chaining.</typeparam>
-public class MauiControlBase<TScope> : MauiObjectBase, IControlObject
+public class MauiControlBase<TScope> : MauiObjectBase, IControlObject<TScope>
     where TScope : IMauiScope<TScope>
 {
     private readonly IMauiScope<TScope> _scope;
@@ -28,6 +28,20 @@ public class MauiControlBase<TScope> : MauiObjectBase, IControlObject
         _scope = scope ?? throw new ArgumentNullException(nameof(scope));
         _locator = locator ?? throw new ArgumentNullException(nameof(locator));
     }
+
+    /// <summary>
+    /// Creates a new control within the specified scope using a string locator value.
+    /// Uses the scope's DefaultLocatorStrategy to create the locator.
+    /// </summary>
+    /// <param name="scope">The scope (page or container) providing element finding.</param>
+    /// <param name="locatorValue">The locator value (e.g., automation ID, name).</param>
+    public MauiControlBase(IMauiScope<TScope> scope, string locatorValue)
+    {
+        _scope = scope ?? throw new ArgumentNullException(nameof(scope));
+        if (string.IsNullOrEmpty(locatorValue))
+            throw new ArgumentNullException(nameof(locatorValue));
+        _locator = new Locator(scope.DefaultLocatorStrategy, locatorValue);
+    }
     
     /// <summary>
     /// Gets the containing scope for fluent chaining.
@@ -35,7 +49,7 @@ public class MauiControlBase<TScope> : MauiObjectBase, IControlObject
     protected TScope ContainingScope => _scope.Self;
     
     /// <inheritdoc />
-    IPageObject? IControlObject.Page => null; // Page access is through scope hierarchy
+    public IPageObject? Page => null; // Page access is through scope hierarchy
     
     /// <inheritdoc />
     public Locator Locator => _locator;
@@ -159,10 +173,10 @@ public class MauiControlBase<TScope> : MauiObjectBase, IControlObject
     #region Assertions (throw on failure)
     
     /// <inheritdoc />
-    public void AssertExists(bool? expected, string? message = null, int? timeoutMs = null)
+    public TScope AssertExists(bool? expected, string? message = null, int? timeoutMs = null)
     {
         // Nullable skip pattern
-        if (expected == null) return;
+        if (expected == null) return ContainingScope;
         
         if (!WaitExists(expected, timeoutMs))
         {
@@ -170,13 +184,15 @@ public class MauiControlBase<TScope> : MauiObjectBase, IControlObject
             throw new AssertionException(
                 message ?? $"Expected element {(expected.Value ? "to exist" : "not to exist")} but it {(actual ? "exists" : "does not exist")}. Locator: {_locator}");
         }
+        
+        return ContainingScope;
     }
     
     /// <inheritdoc />
-    public void AssertVisible(bool? expected, string? message = null, int? timeoutMs = null)
+    public TScope AssertVisible(bool? expected, string? message = null, int? timeoutMs = null)
     {
         // Nullable skip pattern
-        if (expected == null) return;
+        if (expected == null) return ContainingScope;
         
         if (!WaitVisible(expected, timeoutMs))
         {
@@ -184,13 +200,15 @@ public class MauiControlBase<TScope> : MauiObjectBase, IControlObject
             throw new AssertionException(
                 message ?? $"Expected element {(expected.Value ? "to be visible" : "not to be visible")} but visibility is {actual?.ToString() ?? "unknown (element not found)"}. Locator: {_locator}");
         }
+        
+        return ContainingScope;
     }
     
     /// <inheritdoc />
-    public void AssertEnabled(bool? expected, string? message = null, int? timeoutMs = null)
+    public TScope AssertEnabled(bool? expected, string? message = null, int? timeoutMs = null)
     {
         // Nullable skip pattern
-        if (expected == null) return;
+        if (expected == null) return ContainingScope;
         
         if (!WaitEnabled(expected, timeoutMs))
         {
@@ -198,6 +216,8 @@ public class MauiControlBase<TScope> : MauiObjectBase, IControlObject
             throw new AssertionException(
                 message ?? $"Expected element {(expected.Value ? "to be enabled" : "to be disabled")} but enabled state is {actual?.ToString() ?? "unknown (element not found)"}. Locator: {_locator}");
         }
+        
+        return ContainingScope;
     }
     
     #endregion
@@ -231,10 +251,10 @@ public class MauiControlBase<TScope> : MauiObjectBase, IControlObject
     }
     
     /// <inheritdoc />
-    public void AssertText(string? expected, string? message = null, int? timeoutMs = null)
+    public TScope AssertText(string? expected, string? message = null, int? timeoutMs = null)
     {
         // Nullable skip pattern
-        if (expected == null) return;
+        if (expected == null) return ContainingScope;
         
         if (!WaitText(expected, timeoutMs))
         {
@@ -242,13 +262,15 @@ public class MauiControlBase<TScope> : MauiObjectBase, IControlObject
             throw new AssertionException(
                 message ?? $"Expected text '{expected}' but got '{actual ?? "(null)"}'. Locator: {_locator}");
         }
+        
+        return ContainingScope;
     }
     
     /// <inheritdoc />
-    public void AssertTextContains(string? expected, string? message = null, int? timeoutMs = null)
+    public TScope AssertTextContains(string? expected, string? message = null, int? timeoutMs = null)
     {
         // Nullable skip pattern
-        if (expected == null) return;
+        if (expected == null) return ContainingScope;
         
         var passed = Poll(
             () => GetText()?.Contains(expected) == true,
@@ -260,6 +282,8 @@ public class MauiControlBase<TScope> : MauiObjectBase, IControlObject
             throw new AssertionException(
                 message ?? $"Expected text to contain '{expected}' but got '{actual ?? "(null)"}'. Locator: {_locator}");
         }
+        
+        return ContainingScope;
     }
     
     #endregion

@@ -2,8 +2,10 @@ namespace Brinell.Core.Interfaces;
 
 /// <summary>
 /// Toggle state capability for checkboxes, switches, radio buttons.
+/// Action methods return TScope for fluent method chaining.
 /// </summary>
-public interface IToggleControlObject : IControlObject
+/// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
+public interface IToggleControlObject<TScope> : IControlObject<TScope>
 {
     /// <summary>
     /// Check if the control is in checked/on state.
@@ -14,29 +16,34 @@ public interface IToggleControlObject : IControlObject
     /// <summary>
     /// Toggle the control state.
     /// </summary>
-    void Toggle(int? timeoutMs = null);
+    /// <returns>The containing scope for fluent chaining.</returns>
+    TScope Toggle(int? timeoutMs = null);
     
     /// <summary>
     /// Set the control to checked/unchecked state.
     /// If checked is null, returns immediately (skip).
     /// </summary>
-    void SetChecked(bool? @checked, int? timeoutMs = null);
+    /// <returns>The containing scope for fluent chaining.</returns>
+    TScope SetChecked(bool? @checked, int? timeoutMs = null);
     
     /// <summary>
     /// Set to checked state (convenience method).
     /// </summary>
-    void Check(int? timeoutMs = null);
+    /// <returns>The containing scope for fluent chaining.</returns>
+    TScope Check(int? timeoutMs = null);
     
     /// <summary>
     /// Set to unchecked state (convenience method).
     /// </summary>
-    void Uncheck(int? timeoutMs = null);
+    /// <returns>The containing scope for fluent chaining.</returns>
+    TScope Uncheck(int? timeoutMs = null);
     
     /// <summary>
     /// Assert checked state matches expected value.
     /// If expected is null, returns immediately (skip).
     /// </summary>
-    void AssertChecked(bool? expected, string? message = null, int? timeoutMs = null);
+    /// <returns>The containing scope for fluent chaining.</returns>
+    TScope AssertChecked(bool? expected, string? message = null, int? timeoutMs = null);
     
     /// <summary>
     /// Wait until checked state matches expected value.

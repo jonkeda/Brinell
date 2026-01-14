@@ -2,7 +2,6 @@ using Brinell.Core.Exceptions;
 using Brinell.Core.Interfaces;
 using Brinell.Core.Locators;
 using Brinell.Maui.Interfaces;
-using OpenQA.Selenium;
 
 namespace Brinell.Maui.Controls;
 
@@ -20,6 +19,17 @@ public class MauiButtonControl<TScope> : MauiControlBase<TScope>, IClickableCont
     /// <param name="locator">The locator for the button element.</param>
     public MauiButtonControl(IMauiScope<TScope> scope, Locator locator)
         : base(scope, locator)
+    {
+    }
+
+    /// <summary>
+    /// Creates a new button control within the specified scope using a string locator value.
+    /// Uses the scope's DefaultLocatorStrategy to create the locator.
+    /// </summary>
+    /// <param name="scope">The scope (page or container) providing element finding.</param>
+    /// <param name="locatorValue">The locator value (e.g., automation ID, name).</param>
+    public MauiButtonControl(IMauiScope<TScope> scope, string locatorValue)
+        : base(scope, locatorValue)
     {
     }
     

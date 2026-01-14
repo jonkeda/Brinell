@@ -5,8 +5,10 @@ namespace Brinell.Core.Interfaces;
 /// <summary>
 /// Base interface for all controls in the Brinell framework.
 /// Provides identity, state querying, waiting, and assertion capabilities.
+/// Action methods return TScope for fluent method chaining.
 /// </summary>
-public interface IControlObject
+/// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
+public interface IControlObject<TScope>
 {
     // Identity
     
@@ -71,19 +73,22 @@ public interface IControlObject
     /// Assert element existence matches expected value.
     /// If expected is null, returns immediately (skip).
     /// </summary>
-    void AssertExists(bool? expected, string? message = null, int? timeoutMs = null);
+    /// <returns>The containing scope for fluent chaining.</returns>
+    TScope AssertExists(bool? expected, string? message = null, int? timeoutMs = null);
     
     /// <summary>
     /// Assert element visibility matches expected value.
     /// If expected is null, returns immediately (skip).
     /// </summary>
-    void AssertVisible(bool? expected, string? message = null, int? timeoutMs = null);
+    /// <returns>The containing scope for fluent chaining.</returns>
+    TScope AssertVisible(bool? expected, string? message = null, int? timeoutMs = null);
     
     /// <summary>
     /// Assert element enabled state matches expected value.
     /// If expected is null, returns immediately (skip).
     /// </summary>
-    void AssertEnabled(bool? expected, string? message = null, int? timeoutMs = null);
+    /// <returns>The containing scope for fluent chaining.</returns>
+    TScope AssertEnabled(bool? expected, string? message = null, int? timeoutMs = null);
     
     // Text
     
@@ -103,13 +108,15 @@ public interface IControlObject
     /// Assert text content matches expected value exactly.
     /// If expected is null, returns immediately (skip).
     /// </summary>
-    void AssertText(string? expected, string? message = null, int? timeoutMs = null);
+    /// <returns>The containing scope for fluent chaining.</returns>
+    TScope AssertText(string? expected, string? message = null, int? timeoutMs = null);
     
     /// <summary>
     /// Assert text content contains expected substring.
     /// If expected is null, returns immediately (skip).
     /// </summary>
-    void AssertTextContains(string? expected, string? message = null, int? timeoutMs = null);
+    /// <returns>The containing scope for fluent chaining.</returns>
+    TScope AssertTextContains(string? expected, string? message = null, int? timeoutMs = null);
     
     // Attributes
     

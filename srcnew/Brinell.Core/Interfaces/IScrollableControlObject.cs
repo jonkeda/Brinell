@@ -4,28 +4,34 @@ namespace Brinell.Core.Interfaces;
 
 /// <summary>
 /// Scrolling capability for scroll views, lists, and other scrollable containers.
+/// Action methods return TScope for fluent method chaining.
 /// </summary>
-public interface IScrollableControlObject : IControlObject
+/// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
+public interface IScrollableControlObject<TScope> : IControlObject<TScope>
 {
     /// <summary>
     /// Scroll to top of the scrollable area.
     /// </summary>
-    void ScrollToTop(int? timeoutMs = null);
+    /// <returns>The containing scope for fluent chaining.</returns>
+    TScope ScrollToTop(int? timeoutMs = null);
     
     /// <summary>
     /// Scroll to bottom of the scrollable area.
     /// </summary>
-    void ScrollToEnd(int? timeoutMs = null);
+    /// <returns>The containing scope for fluent chaining.</returns>
+    TScope ScrollToEnd(int? timeoutMs = null);
     
     /// <summary>
     /// Scroll by specified amount (positive = down/right).
     /// </summary>
-    void ScrollBy(int deltaX, int deltaY, int? timeoutMs = null);
+    /// <returns>The containing scope for fluent chaining.</returns>
+    TScope ScrollBy(int deltaX, int deltaY, int? timeoutMs = null);
     
     /// <summary>
     /// Scroll to make element at locator visible.
     /// </summary>
-    void ScrollTo(Locator locator, int? timeoutMs = null);
+    /// <returns>The containing scope for fluent chaining.</returns>
+    TScope ScrollTo(Locator locator, int? timeoutMs = null);
     
     /// <summary>
     /// Get vertical scroll position (0-100 percent).
@@ -36,7 +42,8 @@ public interface IScrollableControlObject : IControlObject
     /// <summary>
     /// Set vertical scroll position (0-100 percent).
     /// </summary>
-    void SetScrollPosition(double percent, int? timeoutMs = null);
+    /// <returns>The containing scope for fluent chaining.</returns>
+    TScope SetScrollPosition(double percent, int? timeoutMs = null);
     
     /// <summary>
     /// Wait until scroll position matches expected value.
@@ -48,7 +55,8 @@ public interface IScrollableControlObject : IControlObject
     /// Assert scroll position matches expected value.
     /// If expected is null, returns immediately (skip).
     /// </summary>
-    void AssertScrollPosition(double? expected, double tolerance = 1.0, string? message = null, int? timeoutMs = null);
+    /// <returns>The containing scope for fluent chaining.</returns>
+    TScope AssertScrollPosition(double? expected, double tolerance = 1.0, string? message = null, int? timeoutMs = null);
     
     /// <summary>
     /// Check if more content is available to scroll down.

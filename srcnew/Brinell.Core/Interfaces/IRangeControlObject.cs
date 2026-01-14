@@ -2,8 +2,10 @@ namespace Brinell.Core.Interfaces;
 
 /// <summary>
 /// Numeric range capability for sliders, steppers, progress bars.
+/// Action methods return TScope for fluent method chaining.
 /// </summary>
-public interface IRangeControlObject : IControlObject
+/// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
+public interface IRangeControlObject<TScope> : IControlObject<TScope>
 {
     /// <summary>
     /// Get the current value.
@@ -15,7 +17,8 @@ public interface IRangeControlObject : IControlObject
     /// Set the value.
     /// If value is null, returns immediately (skip).
     /// </summary>
-    void SetValue(double? value, int? timeoutMs = null);
+    /// <returns>The containing scope for fluent chaining.</returns>
+    TScope SetValue(double? value, int? timeoutMs = null);
     
     /// <summary>
     /// Get the minimum allowed value.
@@ -39,7 +42,8 @@ public interface IRangeControlObject : IControlObject
     /// Assert value equals expected (within tolerance).
     /// If expected is null, returns immediately (skip).
     /// </summary>
-    void AssertValue(double? expected, double tolerance = 0.001, string? message = null, int? timeoutMs = null);
+    /// <returns>The containing scope for fluent chaining.</returns>
+    TScope AssertValue(double? expected, double tolerance = 0.001, string? message = null, int? timeoutMs = null);
     
     /// <summary>
     /// Wait until value equals expected (within tolerance).
@@ -50,10 +54,12 @@ public interface IRangeControlObject : IControlObject
     /// <summary>
     /// Increment value by step amount.
     /// </summary>
-    void Increment(int? timeoutMs = null);
+    /// <returns>The containing scope for fluent chaining.</returns>
+    TScope Increment(int? timeoutMs = null);
     
     /// <summary>
     /// Decrement value by step amount.
     /// </summary>
-    void Decrement(int? timeoutMs = null);
+    /// <returns>The containing scope for fluent chaining.</returns>
+    TScope Decrement(int? timeoutMs = null);
 }

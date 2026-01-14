@@ -3,7 +3,8 @@ namespace Brinell.Core.Interfaces;
 /// <summary>
 /// Text display capability for labels, spans, and other text elements.
 /// </summary>
-public interface ITextControlObject<TScope> : IControlObject
+/// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
+public interface ITextControlObject<TScope> : IControlObject<TScope>
 {
     /// <summary>
     /// Wait until text equals expected value.

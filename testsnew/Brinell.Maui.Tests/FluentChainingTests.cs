@@ -1,12 +1,7 @@
 using Brinell.Core.Configuration;
-using Brinell.Core.Interfaces;
-using Brinell.Core.Locators;
-using Brinell.Maui.Controls;
 using Brinell.Maui.Interfaces;
 using Brinell.Maui.Pages;
-using Moq;
 using OpenQA.Selenium;
-using Xunit;
 
 namespace Brinell.Maui.Tests;
 

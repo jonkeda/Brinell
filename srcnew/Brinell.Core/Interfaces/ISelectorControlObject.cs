@@ -2,26 +2,31 @@ namespace Brinell.Core.Interfaces;
 
 /// <summary>
 /// Single selection capability for pickers, comboboxes, dropdowns.
+/// Action methods return TScope for fluent method chaining.
 /// </summary>
-public interface ISelectorControlObject : IControlObject
+/// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
+public interface ISelectorControlObject<TScope> : IControlObject<TScope>
 {
     /// <summary>
     /// Select item by visible text.
     /// If text is null, returns immediately (skip).
     /// </summary>
-    void SelectByText(string? text, int? timeoutMs = null);
+    /// <returns>The containing scope for fluent chaining.</returns>
+    TScope SelectByText(string? text, int? timeoutMs = null);
     
     /// <summary>
     /// Select item by index (0-based).
     /// If index is null, returns immediately (skip).
     /// </summary>
-    void SelectByIndex(int? index, int? timeoutMs = null);
+    /// <returns>The containing scope for fluent chaining.</returns>
+    TScope SelectByIndex(int? index, int? timeoutMs = null);
     
     /// <summary>
     /// Select item by value attribute.
     /// If value is null, returns immediately (skip).
     /// </summary>
-    void SelectByValue(string? value, int? timeoutMs = null);
+    /// <returns>The containing scope for fluent chaining.</returns>
+    TScope SelectByValue(string? value, int? timeoutMs = null);
     
     /// <summary>
     /// Get the currently selected item's text.
@@ -39,7 +44,8 @@ public interface ISelectorControlObject : IControlObject
     /// Assert selected text matches expected value.
     /// If expected is null, returns immediately (skip).
     /// </summary>
-    void AssertSelectedText(string? expected, string? message = null, int? timeoutMs = null);
+    /// <returns>The containing scope for fluent chaining.</returns>
+    TScope AssertSelectedText(string? expected, string? message = null, int? timeoutMs = null);
     
     /// <summary>
     /// Get the currently selected item's index.
@@ -57,7 +63,8 @@ public interface ISelectorControlObject : IControlObject
     /// Assert selected index matches expected value.
     /// If expected is null, returns immediately (skip).
     /// </summary>
-    void AssertSelectedIndex(int? expected, string? message = null, int? timeoutMs = null);
+    /// <returns>The containing scope for fluent chaining.</returns>
+    TScope AssertSelectedIndex(int? expected, string? message = null, int? timeoutMs = null);
     
     /// <summary>
     /// Get all available item texts.
@@ -81,5 +88,6 @@ public interface ISelectorControlObject : IControlObject
     /// Assert item count matches expected value.
     /// If expected is null, returns immediately (skip).
     /// </summary>
-    void AssertItemCount(int? expected, string? message = null, int? timeoutMs = null);
+    /// <returns>The containing scope for fluent chaining.</returns>
+    TScope AssertItemCount(int? expected, string? message = null, int? timeoutMs = null);
 }

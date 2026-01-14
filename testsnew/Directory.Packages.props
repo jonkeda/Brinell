@@ -1,7 +1,4 @@
 <Project>
   <!-- Import parent Directory.Packages.props -->
   <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Packages.props', '$(MSBuildThisFileDirectory)../'))" />
-  <ItemGroup>
-    <PackageVersion Include="NSubstitute" Version="5.3.0" />
-  </ItemGroup>
 </Project>

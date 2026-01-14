@@ -5,7 +5,7 @@ namespace Brinell.Core.Interfaces;
 /// Action methods return TScope for fluent method chaining.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public interface IClickableControlObject<TScope> : IControlObject
+public interface IClickableControlObject<TScope> : IControlObject<TScope>
 {
     /// <summary>
     /// Check if the control is clickable (visible and enabled).
