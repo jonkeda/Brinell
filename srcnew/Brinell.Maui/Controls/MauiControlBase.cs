@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Brinell.Core.Exceptions;
 using Brinell.Core.Interfaces;
 using Brinell.Core.Locators;
 using Brinell.Maui.Extensions;
@@ -352,13 +353,4 @@ public class MauiControlBase<TPage> : IControlObject
     }
     
     #endregion
-}
-
-/// <summary>
-/// Exception thrown when an assertion fails.
-/// </summary>
-public class AssertionException : Exception
-{
-    public AssertionException(string message) : base(message) { }
-    public AssertionException(string message, Exception innerException) : base(message, innerException) { }
 }

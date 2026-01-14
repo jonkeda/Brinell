@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Brinell.Core.Exceptions;
 using Brinell.Core.Interfaces;
 using Brinell.Core.Locators;
 using Brinell.Maui.Controls;
@@ -231,13 +232,4 @@ public abstract class MauiPageObjectBase<TSelf> : IPageObject<IMauiElement>, IMa
     }
     
     #endregion
-}
-
-/// <summary>
-/// Exception thrown when page load fails.
-/// </summary>
-public class PageLoadException : Exception
-{
-    public PageLoadException(string message) : base(message) { }
-    public PageLoadException(string message, Exception innerException) : base(message, innerException) { }
 }

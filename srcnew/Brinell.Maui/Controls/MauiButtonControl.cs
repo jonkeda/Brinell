@@ -1,6 +1,6 @@
+using Brinell.Core.Exceptions;
 using Brinell.Core.Interfaces;
 using Brinell.Core.Locators;
-using Brinell.Maui.Context;
 using Brinell.Maui.Interfaces;
 using OpenQA.Selenium;
 
@@ -98,10 +98,10 @@ public class MauiButtonControl<TPage> : MauiControlBase<TPage>, IClickableContro
     }
     
     /// <inheritdoc />
-    public void AssertClickable(bool? expected, string? message = null, int? timeoutMs = null)
+    public TPage AssertClickable(bool? expected, string? message = null, int? timeoutMs = null)
     {
         
-        if (expected == null) return;
+        if (expected == null) return Page;
         
         if (!WaitClickable(expected, timeoutMs))
         {
@@ -109,6 +109,8 @@ public class MauiButtonControl<TPage> : MauiControlBase<TPage>, IClickableContro
             throw new AssertionException(
                 message ?? $"Expected element {(expected.Value ? "to be clickable" : "not to be clickable")} but clickable state is {actual?.ToString() ?? "unknown (element not found)"}. Locator: {Locator}");
         }
+        
+        return Page;
     }
     
     #endregion

@@ -1,4 +1,5 @@
 using Brinell.Core.Configuration;
+using Brinell.Core.Exceptions;
 using Brinell.Core.Locators;
 using Brinell.Core.Logging;
 using Brinell.Maui.Extensions;
@@ -217,15 +218,6 @@ public class MauiTestContext : IMauiTestContext
         
         _disposed = true;
     }
-}
-
-/// <summary>
-/// Exception thrown when an element cannot be found.
-/// </summary>
-public class ElementNotFoundException : Exception
-{
-    public ElementNotFoundException(string message) : base(message) { }
-    public ElementNotFoundException(string message, Exception innerException) : base(message, innerException) { }
 }
 
 /// <summary>

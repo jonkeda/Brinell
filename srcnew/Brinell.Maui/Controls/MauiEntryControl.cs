@@ -1,7 +1,7 @@
 using System.Text.RegularExpressions;
+using Brinell.Core.Exceptions;
 using Brinell.Core.Interfaces;
 using Brinell.Core.Locators;
-using Brinell.Maui.Context;
 using Brinell.Maui.Interfaces;
 using OpenQA.Selenium;
 
@@ -165,10 +165,10 @@ public class MauiEntryControl<TPage> : MauiControlBase<TPage>, IEditableTextCont
     }
     
     /// <inheritdoc />
-    public void AssertPlaceholder(string? expected, string? message = null, int? timeoutMs = null)
+    public TPage AssertPlaceholder(string? expected, string? message = null, int? timeoutMs = null)
     {
         
-        if (expected == null) return;
+        if (expected == null) return Page;
         
         if (!WaitPlaceholder(expected, timeoutMs))
         {
@@ -176,6 +176,8 @@ public class MauiEntryControl<TPage> : MauiControlBase<TPage>, IEditableTextCont
             throw new AssertionException(
                 message ?? $"Expected placeholder '{expected}' but got '{actual ?? "(null)"}'. Locator: {Locator}");
         }
+        
+        return Page;
     }
     
     /// <inheritdoc />
@@ -227,10 +229,10 @@ public class MauiEntryControl<TPage> : MauiControlBase<TPage>, IEditableTextCont
     }
     
     /// <inheritdoc />
-    public void AssertReadOnly(bool? expected, string? message = null, int? timeoutMs = null)
+    public TPage AssertReadOnly(bool? expected, string? message = null, int? timeoutMs = null)
     {
         
-        if (expected == null) return;
+        if (expected == null) return Page;
         
         if (!WaitReadOnly(expected, timeoutMs))
         {
@@ -238,6 +240,8 @@ public class MauiEntryControl<TPage> : MauiControlBase<TPage>, IEditableTextCont
             throw new AssertionException(
                 message ?? $"Expected element {(expected.Value ? "to be read-only" : "not to be read-only")} but read-only state is {actual?.ToString() ?? "unknown (element not found)"}. Locator: {Locator}");
         }
+        
+        return Page;
     }
     
     #endregion

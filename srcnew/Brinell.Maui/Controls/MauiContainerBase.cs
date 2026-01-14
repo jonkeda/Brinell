@@ -1,6 +1,6 @@
+using Brinell.Core.Exceptions;
 using Brinell.Core.Interfaces;
 using Brinell.Core.Locators;
-using Brinell.Maui.Context;
 using Brinell.Maui.Extensions;
 using Brinell.Maui.Interfaces;
 using OpenQA.Selenium;
@@ -86,9 +86,7 @@ public class MauiContainerBase<TPage> : MauiControlBase<TPage>, IContainerContro
     IMauiTestContext IMauiElementScope.Context => Context;
     
     /// <inheritdoc />
-    public LocatorStrategy DefaultLocatorStrategy => Context.Timeouts != null 
-        ? LocatorStrategy.AutomationId 
-        : LocatorStrategy.AutomationId;
+    public LocatorStrategy DefaultLocatorStrategy => LocatorStrategy.AutomationId;
     
     /// <summary>
     /// Tries to find an element within the container's root.
