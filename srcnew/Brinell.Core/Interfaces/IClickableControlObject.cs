@@ -2,11 +2,10 @@ namespace Brinell.Core.Interfaces;
 
 /// <summary>
 /// Click capability for buttons, links, images.
-/// Action methods return TPage for fluent method chaining.
+/// Action methods return TScope for fluent method chaining.
 /// </summary>
-/// <typeparam name="TPage">The parent page type for fluent chaining.</typeparam>
-public interface IClickableControlObject<TPage> : IControlObject
-    where TPage : IPageObject
+/// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
+public interface IClickableControlObject<TScope> : IControlObject
 {
     /// <summary>
     /// Check if the control is clickable (visible and enabled).
@@ -17,20 +16,20 @@ public interface IClickableControlObject<TPage> : IControlObject
     /// <summary>
     /// Perform a single click on the control.
     /// </summary>
-    /// <returns>The parent page for fluent chaining.</returns>
-    TPage Click(int? timeoutMs = null);
+    /// <returns>The containing scope for fluent chaining.</returns>
+    TScope Click(int? timeoutMs = null);
     
     /// <summary>
     /// Perform a double-click on the control.
     /// </summary>
-    /// <returns>The parent page for fluent chaining.</returns>
-    TPage DoubleClick(int? timeoutMs = null);
+    /// <returns>The containing scope for fluent chaining.</returns>
+    TScope DoubleClick(int? timeoutMs = null);
     
     /// <summary>
     /// Perform a right-click (context click) on the control.
     /// </summary>
-    /// <returns>The parent page for fluent chaining.</returns>
-    TPage RightClick(int? timeoutMs = null);
+    /// <returns>The containing scope for fluent chaining.</returns>
+    TScope RightClick(int? timeoutMs = null);
     
     /// <summary>
     /// Wait until control is clickable (visible and enabled).
@@ -42,6 +41,6 @@ public interface IClickableControlObject<TPage> : IControlObject
     /// Assert control clickable state matches expected value.
     /// If expected is null, returns immediately (skip).
     /// </summary>
-    /// <returns>The parent page for fluent chaining.</returns>
-    TPage AssertClickable(bool? expected, string? message = null, int? timeoutMs = null);
+    /// <returns>The containing scope for fluent chaining.</returns>
+    TScope AssertClickable(bool? expected, string? message = null, int? timeoutMs = null);
 }

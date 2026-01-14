@@ -65,17 +65,11 @@ This refactor aligns with the **Interface-Based Design** and **Code Reuse** prin
 2. WHEN factory methods are defined in the scope base THEN they SHALL be virtual
 3. WHEN `Poll()` or other helper methods are defined THEN they SHALL be virtual
 
-### Requirement 4: Backward Compatibility
-
-**User Story:** As a test writer, I want my existing page objects and controls to continue working, so that I don't have to rewrite my tests.
-
-#### Acceptance Criteria
-
-1. WHEN a page object extends `MauiPageObjectBase<TSelf>` THEN it SHALL continue to work unchanged
-2. WHEN a control uses `MauiControlBase<TPage>` THEN it SHALL continue to work unchanged  
-3. WHEN existing tests run after the refactor THEN they SHALL pass without modification
-
 ## Non-Functional Requirements
+
+### Backward Compatibility
+
+Per the steering document (tech.md), backward compatibility is **NOT a constraint** during pre-release (0.x.x). Breaking changes are acceptable to achieve better design.
 
 ### Code Architecture and Modularity
 - **Single Responsibility**: Each class should have clear responsibility (scope vs. control vs. page)

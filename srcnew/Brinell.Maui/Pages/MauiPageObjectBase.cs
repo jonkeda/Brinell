@@ -11,10 +11,10 @@ namespace Brinell.Maui.Pages;
 /// Base class for MAUI page objects with fluent method chaining support.
 /// Uses CRTP (Curiously Recurring Template Pattern) for strongly-typed fluent returns.
 /// Pages delegate element finding to the test context (driver root search).
-/// Implements IMauiPagedScope so pages can be passed as scopes to controls.
+/// Implements IMauiPage so pages can be used as scopes for child controls.
 /// </summary>
 /// <typeparam name="TSelf">The concrete page type (CRTP pattern).</typeparam>
-public abstract class MauiPageObjectBase<TSelf> : IPageObject<IMauiElement>, IMauiPagedScope<TSelf>
+public abstract class MauiPageObjectBase<TSelf> : MauiObjectBase, IMauiPage<TSelf>
     where TSelf : MauiPageObjectBase<TSelf>
 {
     private readonly IMauiTestContext _context;
@@ -28,15 +28,13 @@ public abstract class MauiPageObjectBase<TSelf> : IPageObject<IMauiElement>, IMa
         _context = context ?? throw new ArgumentNullException(nameof(context));
     }
     
-    /// <summary>
-    /// Gets the test context.
-    /// </summary>
-    protected IMauiTestContext TestContext => _context;
+    /// <inheritdoc />
+    public override IMauiTestContext Context => _context;
     
     /// <summary>
-    /// Gets this page as the typed page reference (for IMauiPagedScope).
+    /// Gets this page as the typed page reference (for fluent chaining).
     /// </summary>
-    public TSelf Page => (TSelf)this;
+    public TSelf Self => (TSelf)this;
     
     #region IPageObject Implementation
     
@@ -121,9 +119,6 @@ public abstract class MauiPageObjectBase<TSelf> : IPageObject<IMauiElement>, IMa
     #region IMauiElementScope Implementation
     
     /// <inheritdoc />
-    public IMauiTestContext Context => _context;
-    
-    /// <inheritdoc />
     public IMauiElement? TryFindElement(Locator locator)
     {
         // Delegate to context (searches from driver root)
@@ -146,90 +141,31 @@ public abstract class MauiPageObjectBase<TSelf> : IPageObject<IMauiElement>, IMa
     
     #endregion
     
-    #region Fluent Factory Methods
+    #region Factory Methods
     
     /// <summary>
-    /// Creates a button control scoped to this page with fluent chaining.
+    /// Creates a button control within this page scope.
     /// </summary>
-    /// <param name="locator">The button locator.</param>
-    /// <returns>A new button control that returns this page when clicked.</returns>
     protected MauiButtonControl<TSelf> Button(Locator locator)
-    {
-        return new MauiButtonControl<TSelf>(this, locator);
-    }
+        => new MauiButtonControl<TSelf>(this, locator);
     
     /// <summary>
-    /// Creates an entry control scoped to this page with fluent chaining.
+    /// Creates a button control within this page scope using automation ID.
     /// </summary>
-    /// <param name="locator">The entry locator.</param>
-    /// <returns>A new entry control that returns this page for fluent chaining.</returns>
+    protected MauiButtonControl<TSelf> Button(string automationId)
+        => Button(Locator.ById(automationId));
+    
+    /// <summary>
+    /// Creates an entry control within this page scope.
+    /// </summary>
     protected MauiEntryControl<TSelf> Entry(Locator locator)
-    {
-        return new MauiEntryControl<TSelf>(this, locator);
-    }
+        => new MauiEntryControl<TSelf>(this, locator);
     
     /// <summary>
-    /// Creates a container control scoped to this page with fluent chaining.
+    /// Creates an entry control within this page scope using automation ID.
     /// </summary>
-    /// <param name="locator">The container locator.</param>
-    /// <returns>A new container control that returns this page for fluent chaining.</returns>
-    protected MauiContainerBase<TSelf> Container(Locator locator)
-    {
-        return new MauiContainerBase<TSelf>(this, locator);
-    }
-    
-    /// <summary>
-    /// Creates a generic control scoped to this page with fluent chaining.
-    /// </summary>
-    /// <param name="locator">The control locator.</param>
-    /// <returns>A new control.</returns>
-    protected MauiControlBase<TSelf> Control(Locator locator)
-    {
-        return new MauiControlBase<TSelf>(this, locator);
-    }
-    
-    #endregion
-    
-    #region Helper Methods
-    
-    /// <summary>
-    /// Polls a condition until it returns true or timeout is reached.
-    /// </summary>
-    /// <param name="condition">The condition to check.</param>
-    /// <param name="timeoutMs">Maximum time to wait in milliseconds.</param>
-    /// <returns>True if condition was met, false if timeout reached.</returns>
-    protected bool Poll(Func<bool> condition, int timeoutMs)
-    {
-        var stopwatch = Stopwatch.StartNew();
-        var pollingInterval = _context.Timeouts.PollingInterval;
-        
-        while (stopwatch.ElapsedMilliseconds < timeoutMs)
-        {
-            try
-            {
-                if (condition())
-                {
-                    return true;
-                }
-            }
-            catch
-            {
-                // Ignore exceptions during polling, continue trying
-            }
-            
-            Thread.Sleep(pollingInterval);
-        }
-        
-        // Final check after timeout
-        try
-        {
-            return condition();
-        }
-        catch
-        {
-            return false;
-        }
-    }
+    protected MauiEntryControl<TSelf> Entry(string automationId)
+        => Entry(Locator.ById(automationId));
     
     #endregion
 }

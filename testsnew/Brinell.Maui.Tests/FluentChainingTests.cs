@@ -198,34 +198,57 @@ public class FluentChainingTests
     
     #endregion
     
+    
     #region Container Chaining Tests
     
     [Fact]
-    public void ContainerControl_Button_ReturnsPage()
+    public void ContainerControl_Button_ReturnsContainer()
     {
         // Arrange
         var containerMock = SetupMockContainerElement("TestContainer");
         SetupMockChildElement(containerMock, "ContainerButton");
         
-        // Act
-        var result = _testPage.TestContainer.Button(Locator.ByAutomationId("ContainerButton")).Click();
+        // Create button scoped to container using factory method
+        var container = _testPage.TestContainer;
+        var containerButton = container.ContainerButton;
         
-        // Assert - Container's Button returns the page, not the container
-        Assert.Same(_testPage, result);
+        // Act
+        var result = containerButton.Click();
+        
+        // Assert - Container's Button returns the container, not the page (scope-aware)
+        Assert.Same(container, result);
     }
     
     [Fact]
-    public void ContainerControl_Entry_ReturnsPage()
+    public void ContainerControl_Entry_ReturnsContainer()
     {
         // Arrange
         var containerMock = SetupMockContainerElement("TestContainer");
         SetupMockChildElement(containerMock, "ContainerEntry");
         
-        // Act
-        var result = _testPage.TestContainer.Entry(Locator.ByAutomationId("ContainerEntry")).Enter("text");
+        // Create entry scoped to container using factory method
+        var container = _testPage.TestContainer;
+        var containerEntry = container.ContainerEntry;
         
-        // Assert - Container's Entry returns the page, not the container
-        Assert.Same(_testPage, result);
+        // Act
+        var result = containerEntry.Enter("text");
+        
+        // Assert - Container's Entry returns the container, not the page (scope-aware)
+        Assert.Same(container, result);
+    }
+    
+    [Fact]
+    public void ContainerControl_Parent_ReturnsPage()
+    {
+        // Arrange
+        var containerMock = SetupMockContainerElement("TestContainer");
+        
+        // Act
+        var container = _testPage.TestContainer;
+        var parent = container.Parent;
+        
+        // Assert - Container's Parent returns the page
+        Assert.Same(_testPage, parent);
     }
     
     #endregion
@@ -233,25 +256,43 @@ public class FluentChainingTests
     #region Type Safety Tests
     
     [Fact]
-    public void GenericButton_HasCorrectPageType()
+    public void GenericButton_HasCorrectScopeType()
     {
         // Arrange & Act
         var button = _testPage.TestButton;
         
-        // Assert - The button's Page property should be the correct concrete type
-        Assert.IsType<TestPage>(button.Page);
-        Assert.Same(_testPage, button.Page);
+        // Assert - The button's Scope property should be an IElementScope
+        Assert.NotNull(button.Scope);
     }
     
     [Fact]
-    public void GenericEntry_HasCorrectPageType()
+    public void GenericEntry_HasCorrectScopeType()
     {
         // Arrange & Act
         var entry = _testPage.TestEntry;
         
+        // Assert - The entry's Scope property should be an IElementScope
+        Assert.NotNull(entry.Scope);
+    }
+    
+    [Fact]
+    public void PageControl_ReturnsPage_ContainerControl_ReturnsContainer()
+    {
+        // Arrange
+        SetupMockElement("TestButton");
+        var containerMock = SetupMockContainerElement("TestContainer");
+        SetupMockChildElement(containerMock, "ContainerButton");
+        
+        // Act - Page control returns page
+        var pageResult = _testPage.TestButton.Click();
+        
+        // Act - Container control returns container
+        var container = _testPage.TestContainer;
+        var containerResult = container.ContainerButton.Click();
+        
         // Assert
-        Assert.IsType<TestPage>(entry.Page);
-        Assert.Same(_testPage, entry.Page);
+        Assert.Same(_testPage, pageResult);
+        Assert.Same(container, containerResult);
     }
     
     #endregion
@@ -331,14 +372,27 @@ public class FluentChainingTests
         public override bool IsLoaded(int? timeoutMs = null) => true;
         
         // Controls with fluent chaining - return TestPage
-        public MauiButtonControl<TestPage> TestButton => Button(Locator.ByAutomationId("TestButton"));
-        public MauiEntryControl<TestPage> TestEntry => Entry(Locator.ByAutomationId("TestEntry"));
-        public MauiContainerBase<TestPage> TestContainer => Container(Locator.ByAutomationId("TestContainer"));
+        public MauiButtonControl<TestPage> TestButton => new(this, Locator.ByAutomationId("TestButton"));
+        public MauiEntryControl<TestPage> TestEntry => new(this, Locator.ByAutomationId("TestEntry"));
+        public TestContainer TestContainer => new(this, Locator.ByAutomationId("TestContainer"));
         
         // Login form example controls
-        public MauiEntryControl<TestPage> Username => Entry(Locator.ByAutomationId("Username"));
-        public MauiEntryControl<TestPage> Password => Entry(Locator.ByAutomationId("Password"));
-        public MauiButtonControl<TestPage> LoginButton => Button(Locator.ByAutomationId("LoginButton"));
+        public MauiEntryControl<TestPage> Username => new(this, Locator.ByAutomationId("Username"));
+        public MauiEntryControl<TestPage> Password => new(this, Locator.ByAutomationId("Password"));
+        public MauiButtonControl<TestPage> LoginButton => new(this, Locator.ByAutomationId("LoginButton"));
+    }
+    
+    /// <summary>
+    /// Test container using the new scope-aware pattern.
+    /// </summary>
+    private class TestContainer : MauiContainerBase<TestPage, TestContainer>
+    {
+        public TestContainer(IMauiScope<TestPage> parentScope, Locator locator) 
+            : base(parentScope, locator) { }
+        
+        // Controls return TestContainer (the containing scope)
+        public MauiButtonControl<TestContainer> ContainerButton => new (this, Locator.ByAutomationId("ContainerButton"));
+        public MauiEntryControl<TestContainer> ContainerEntry => new (this, Locator.ByAutomationId("ContainerEntry"));
     }
     
     #endregion

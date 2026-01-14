@@ -9,43 +9,43 @@ namespace Brinell.Maui.Controls;
 /// <summary>
 /// MAUI Button control with click capability and fluent method chaining.
 /// </summary>
-/// <typeparam name="TPage">The parent page type for fluent chaining.</typeparam>
-public class MauiButtonControl<TPage> : MauiControlBase<TPage>, IClickableControlObject<TPage>
-    where TPage : IPageObject
+/// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
+public class MauiButtonControl<TScope> : MauiControlBase<TScope>, IClickableControlObject<TScope>
+    where TScope : IMauiScope<TScope>
 {
     /// <summary>
     /// Creates a new button control within the specified scope.
     /// </summary>
-    /// <param name="scope">The paged scope (page or container) providing element finding and page reference.</param>
+    /// <param name="scope">The scope (page or container) providing element finding.</param>
     /// <param name="locator">The locator for the button element.</param>
-    public MauiButtonControl(IMauiPagedScope<TPage> scope, Locator locator)
+    public MauiButtonControl(IMauiScope<TScope> scope, Locator locator)
         : base(scope, locator)
     {
     }
     
-    #region IClickableControlObject<TPage> Implementation
+    #region IClickableControlObject<TScope> Implementation
     
     /// <inheritdoc />
-    public TPage Click(int? timeoutMs = null)
+    public TScope Click(int? timeoutMs = null)
     {
         CheckClickable();
         var element = FindElement();
         element.Click();
-        return Page;
+        return ContainingScope;
     }
     
     /// <inheritdoc />
-    public TPage DoubleClick(int? timeoutMs = null)
+    public TScope DoubleClick(int? timeoutMs = null)
     {
         CheckClickable(timeoutMs);
         var element = FindElement();
         element.Click();
         element.Click();
-        return Page;
+        return ContainingScope;
     }
     
     /// <inheritdoc />
-    public TPage RightClick(int? timeoutMs = null)
+    public TScope RightClick(int? timeoutMs = null)
     {
         CheckClickable(timeoutMs);
         var element = FindElement();
@@ -56,7 +56,7 @@ public class MauiButtonControl<TPage> : MauiControlBase<TPage>, IClickableContro
         
         var actions = new OpenQA.Selenium.Interactions.Actions(unwrappedDriver);
         actions.ContextClick(unwrappedElement).Perform();
-        return Page;
+        return ContainingScope;
     }
     
     /// <inheritdoc />
@@ -98,10 +98,10 @@ public class MauiButtonControl<TPage> : MauiControlBase<TPage>, IClickableContro
     }
     
     /// <inheritdoc />
-    public TPage AssertClickable(bool? expected, string? message = null, int? timeoutMs = null)
+    public TScope AssertClickable(bool? expected, string? message = null, int? timeoutMs = null)
     {
         
-        if (expected == null) return Page;
+        if (expected == null) return ContainingScope;
         
         if (!WaitClickable(expected, timeoutMs))
         {
@@ -110,7 +110,7 @@ public class MauiButtonControl<TPage> : MauiControlBase<TPage>, IClickableContro
                 message ?? $"Expected element {(expected.Value ? "to be clickable" : "not to be clickable")} but clickable state is {actual?.ToString() ?? "unknown (element not found)"}. Locator: {Locator}");
         }
         
-        return Page;
+        return ContainingScope;
     }
     
     #endregion

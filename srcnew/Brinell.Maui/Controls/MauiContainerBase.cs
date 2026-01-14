@@ -10,24 +10,40 @@ namespace Brinell.Maui.Controls;
 /// <summary>
 /// Base class for container controls that scope child element searches with fluent chaining.
 /// Containers find their root element, then all child searches are scoped within it.
-/// Implements IMauiPagedScope so containers can be used as scopes for child controls.
+/// Implements IMauiContainer so containers can be used as scopes for child controls.
+/// TParent can be a page or another container - both are scopes.
 /// </summary>
-/// <typeparam name="TPage">The parent page type for fluent chaining.</typeparam>
-public class MauiContainerBase<TPage> : MauiControlBase<TPage>, IContainerControl<IMauiElement>, IMauiPagedScope<TPage>
-    where TPage : IPageObject
+/// <typeparam name="TParent">The parent scope type (page or container).</typeparam>
+/// <typeparam name="TSelf">The container type itself (self-referencing for fluent returns).</typeparam>
+public abstract class MauiContainerBase<TParent, TSelf> : MauiControlBase<TParent>, IMauiContainer<TParent, TSelf>
+    where TParent : IMauiScope<TParent>
+    where TSelf : MauiContainerBase<TParent, TSelf>
 {
+    private readonly TParent _parent;
     private IMauiElement? _cachedRoot;
     private bool _rootCacheValid;
     
     /// <summary>
     /// Creates a new container within the specified scope.
     /// </summary>
-    /// <param name="scope">The paged scope (page or container) providing element finding and page reference.</param>
+    /// <param name="parentScope">The parent scope (page or container) providing element finding.</param>
     /// <param name="locator">The locator for the container's root element.</param>
-    public MauiContainerBase(IMauiPagedScope<TPage> scope, Locator locator)
-        : base(scope, locator)
+    protected MauiContainerBase(IMauiScope<TParent> parentScope, Locator locator)
+        : base(parentScope, locator)
     {
+        _parent = parentScope.Self;
     }
+    
+    /// <summary>
+    /// Gets this container as the typed container reference (for fluent chaining).
+    /// </summary>
+    public TSelf Self => (TSelf)this;
+    
+    /// <summary>
+    /// Gets the parent scope (page or container).
+    /// Navigate up the scope hierarchy by calling Parent.
+    /// </summary>
+    public TParent Parent => _parent;
     
     #region IContainerControl Implementation
     
@@ -198,50 +214,6 @@ public class MauiContainerBase<TPage> : MauiControlBase<TPage>, IContainerContro
         {
             return Array.Empty<IMauiElement>();
         }
-    }
-    
-    #endregion
-    
-    #region Factory Methods for Child Controls
-    
-    /// <summary>
-    /// Creates a button control scoped to this container.
-    /// </summary>
-    /// <param name="locator">The button locator.</param>
-    /// <returns>A new button control that returns the page when clicked.</returns>
-    public MauiButtonControl<TPage> Button(Locator locator)
-    {
-        return new MauiButtonControl<TPage>(this, locator);
-    }
-    
-    /// <summary>
-    /// Creates an entry control scoped to this container.
-    /// </summary>
-    /// <param name="locator">The entry locator.</param>
-    /// <returns>A new entry control that returns the page for fluent chaining.</returns>
-    public MauiEntryControl<TPage> Entry(Locator locator)
-    {
-        return new MauiEntryControl<TPage>(this, locator);
-    }
-    
-    /// <summary>
-    /// Creates a nested container control scoped to this container.
-    /// </summary>
-    /// <param name="locator">The container locator.</param>
-    /// <returns>A new container control that returns the page for fluent chaining.</returns>
-    public MauiContainerBase<TPage> Container(Locator locator)
-    {
-        return new MauiContainerBase<TPage>(this, locator);
-    }
-    
-    /// <summary>
-    /// Creates a generic control scoped to this container.
-    /// </summary>
-    /// <param name="locator">The control locator.</param>
-    /// <returns>A new control.</returns>
-    public MauiControlBase<TPage> Control(Locator locator)
-    {
-        return new MauiControlBase<TPage>(this, locator);
     }
     
     #endregion

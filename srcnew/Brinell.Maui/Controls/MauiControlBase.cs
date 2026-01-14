@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using Brinell.Core.Exceptions;
 using Brinell.Core.Interfaces;
 using Brinell.Core.Locators;
@@ -12,31 +11,31 @@ namespace Brinell.Maui.Controls;
 /// Base class for all MAUI controls implementing the Is/Wait/Assert pattern with fluent chaining.
 /// Controls find elements within their scope (page, container, or list item).
 /// </summary>
-/// <typeparam name="TPage">The parent page type for fluent method chaining.</typeparam>
-public class MauiControlBase<TPage> : IControlObject
-    where TPage : IPageObject
+/// <typeparam name="TScope">The containing scope type for fluent method chaining.</typeparam>
+public class MauiControlBase<TScope> : MauiObjectBase, IControlObject
+    where TScope : IMauiScope<TScope>
 {
-    private readonly IMauiPagedScope<TPage> _scope;
+    private readonly IMauiScope<TScope> _scope;
     private readonly Locator _locator;
     
     /// <summary>
     /// Creates a new control within the specified scope.
     /// </summary>
-    /// <param name="scope">The paged scope (page or container) providing element finding and page reference.</param>
+    /// <param name="scope">The scope (page or container) providing element finding.</param>
     /// <param name="locator">The locator used to find the control element.</param>
-    public MauiControlBase(IMauiPagedScope<TPage> scope, Locator locator)
+    public MauiControlBase(IMauiScope<TScope> scope, Locator locator)
     {
         _scope = scope ?? throw new ArgumentNullException(nameof(scope));
         _locator = locator ?? throw new ArgumentNullException(nameof(locator));
     }
     
     /// <summary>
-    /// Gets the parent page for fluent chaining.
+    /// Gets the containing scope for fluent chaining.
     /// </summary>
-    public TPage Page => _scope.Page;
+    protected TScope ContainingScope => _scope.Self;
     
     /// <inheritdoc />
-    IPageObject? IControlObject.Page => _scope.Page;
+    IPageObject? IControlObject.Page => null; // Page access is through scope hierarchy
     
     /// <inheritdoc />
     public Locator Locator => _locator;
@@ -44,20 +43,8 @@ public class MauiControlBase<TPage> : IControlObject
     /// <inheritdoc />
     public IElementScope Scope => _scope;
     
-    /// <summary>
-    /// Gets the MAUI test context.
-    /// </summary>
-    protected IMauiTestContext Context => _scope.Context;
-    
-    /// <summary>
-    /// Gets the timeout settings from the context.
-    /// </summary>
-    protected int DefaultTimeoutMs => Context.Timeouts.DefaultWait;
-    
-    /// <summary>
-    /// Gets the polling interval from the context.
-    /// </summary>
-    protected int PollingIntervalMs => Context.Timeouts.PollingInterval;
+    /// <inheritdoc />
+    public override IMauiTestContext Context => _scope.Context;
     
     #region Element Finding
     
@@ -229,18 +216,7 @@ public class MauiControlBase<TPage> : IControlObject
         var element = TryFindElement();
         if (element == null) return null;
         
-        try
-        {
-            return element.Text;
-        }
-        catch (StaleElementReferenceException)
-        {
-            return null;
-        }
-        catch (WebDriverException)
-        {
-            return null;
-        }
+        return element.Text;
     }
     
     /// <inheritdoc />
@@ -307,48 +283,6 @@ public class MauiControlBase<TPage> : IControlObject
         catch (WebDriverException)
         {
             return null;
-        }
-    }
-    
-    #endregion
-    
-    #region Polling Helper
-    
-    /// <summary>
-    /// Polls a condition until it returns true or timeout is reached.
-    /// </summary>
-    /// <param name="condition">The condition to check.</param>
-    /// <param name="timeoutMs">Maximum time to wait in milliseconds.</param>
-    /// <returns>True if condition was met, false if timeout reached.</returns>
-    protected bool Poll(Func<bool> condition, int timeoutMs)
-    {
-        var stopwatch = Stopwatch.StartNew();
-        
-        while (stopwatch.ElapsedMilliseconds < timeoutMs)
-        {
-            try
-            {
-                if (condition())
-                {
-                    return true;
-                }
-            }
-            catch
-            {
-                // Ignore exceptions during polling, continue trying
-            }
-            
-            Thread.Sleep(PollingIntervalMs);
-        }
-        
-        // Final check after timeout
-        try
-        {
-            return condition();
-        }
-        catch
-        {
-            return false;
         }
     }
     

@@ -2,31 +2,30 @@ namespace Brinell.Core.Interfaces;
 
 /// <summary>
 /// Text input capability for entries, editors, and other editable text controls.
-/// Action methods return TPage for fluent method chaining.
+/// Action methods return TScope for fluent method chaining.
 /// </summary>
-/// <typeparam name="TPage">The parent page type for fluent chaining.</typeparam>
-public interface IEditableTextControlObject<TPage> : ITextControlObject
-    where TPage : IPageObject
+/// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
+public interface IEditableTextControlObject<TScope> : ITextControlObject<TScope>
 {
     /// <summary>
     /// Enter text into the control (appends to existing).
     /// If text is null, returns immediately (skip).
     /// </summary>
-    /// <returns>The parent page for fluent chaining.</returns>
-    TPage Enter(string? text, int? timeoutMs = null);
+    /// <returns>The containing scope for fluent chaining.</returns>
+    TScope Enter(string? text, int? timeoutMs = null);
     
     /// <summary>
     /// Clear the control's text content.
     /// </summary>
-    /// <returns>The parent page for fluent chaining.</returns>
-    TPage Clear(int? timeoutMs = null);
+    /// <returns>The containing scope for fluent chaining.</returns>
+    TScope Clear(int? timeoutMs = null);
     
     /// <summary>
     /// Set the control's text (clears first, then enters).
     /// If text is null, returns immediately (skip).
     /// </summary>
-    /// <returns>The parent page for fluent chaining.</returns>
-    TPage SetText(string? text, int? timeoutMs = null);
+    /// <returns>The containing scope for fluent chaining.</returns>
+    TScope SetText(string? text, int? timeoutMs = null);
     
     /// <summary>
     /// Get the placeholder/hint text.
@@ -44,8 +43,8 @@ public interface IEditableTextControlObject<TPage> : ITextControlObject
     /// Assert placeholder text matches expected value.
     /// If expected is null, returns immediately (skip).
     /// </summary>
-    /// <returns>The parent page for fluent chaining.</returns>
-    TPage AssertPlaceholder(string? expected, string? message = null, int? timeoutMs = null);
+    /// <returns>The containing scope for fluent chaining.</returns>
+    TScope AssertPlaceholder(string? expected, string? message = null, int? timeoutMs = null);
     
     /// <summary>
     /// Check if the control is read-only.
@@ -63,6 +62,6 @@ public interface IEditableTextControlObject<TPage> : ITextControlObject
     /// Assert read-only state matches expected value.
     /// If expected is null, returns immediately (skip).
     /// </summary>
-    /// <returns>The parent page for fluent chaining.</returns>
-    TPage AssertReadOnly(bool? expected, string? message = null, int? timeoutMs = null);
+    /// <returns>The containing scope for fluent chaining.</returns>
+    TScope AssertReadOnly(bool? expected, string? message = null, int? timeoutMs = null);
 }

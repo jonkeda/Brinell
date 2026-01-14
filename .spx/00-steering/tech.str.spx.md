@@ -319,6 +319,12 @@ dotnet add package Brinell.Wpf  # or platform-specific package
    - Documentation incomplete
    - Some platforms more mature than others
 
+### Backward Compatibility Policy
+
+**During pre-release (0.x.x):** Backward compatibility is NOT a constraint. Breaking changes are acceptable to achieve better design. The API is evolving and test writers should expect updates when upgrading versions.
+
+**After 1.0 release:** Semantic versioning will apply - breaking changes only in major versions.
+
 ---
 
 **Document Version:** 1.0  

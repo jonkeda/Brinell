@@ -3,7 +3,7 @@ namespace Brinell.Core.Interfaces;
 /// <summary>
 /// Text display capability for labels, spans, and other text elements.
 /// </summary>
-public interface ITextControlObject : IControlObject
+public interface ITextControlObject<TScope> : IControlObject
 {
     /// <summary>
     /// Wait until text equals expected value.
@@ -21,5 +21,5 @@ public interface ITextControlObject : IControlObject
     /// Assert text matches pattern (regex).
     /// If pattern is null, returns immediately (skip).
     /// </summary>
-    void AssertTextMatches(string? pattern, string? message = null, int? timeoutMs = null);
+    TScope AssertTextMatches(string? pattern, string? message = null, int? timeoutMs = null);
 }
