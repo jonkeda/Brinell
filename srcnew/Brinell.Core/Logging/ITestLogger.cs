@@ -1,79 +1,176 @@
 namespace Brinell.Core.Logging;
 
 /// <summary>
-/// Logger interface for test actions and diagnostics.
+/// Logger interface for test actions and diagnostics with entry/exit pattern.
 /// </summary>
-public interface ITestLogger
+public interface ITestLogger : IDisposable
 {
-    /// <summary>
-    /// Log an informational message with test context.
-    /// </summary>
-    /// <param name="testName">Name of the current test.</param>
-    /// <param name="pageName">Name of the current page.</param>
-    /// <param name="message">Informational message.</param>
-    void LogInfo(string testName, string? pageName, string message);
+    #region Core Log Method
     
     /// <summary>
-    /// Log an action performed by a control with full context.
+    /// Core log method - all convenience methods delegate to this.
     /// </summary>
     /// <param name="testName">Name of the current test.</param>
     /// <param name="pageName">Name of the current page.</param>
     /// <param name="controlId">Control AutomationId or locator string.</param>
     /// <param name="action">Action name (Click, Enter, etc.).</param>
-    /// <param name="value">Optional action value.</param>
-    void LogAction(string testName, string? pageName, string controlId, string action, string? value = null);
+    /// <param name="value">Actual/input value.</param>
+    /// <param name="expectedValue">Expected value (for assertions).</param>
+    /// <param name="result">Result category.</param>
+    /// <param name="message">Additional context or error message.</param>
+    void Log(
+        string testName,
+        string pageName,
+        string controlId,
+        string action,
+        string? value,
+        string? expectedValue,
+        LogResult result,
+        string? message);
+    
+    #endregion
+    
+    #region Entry/Exit Pattern
     
     /// <summary>
-    /// Log an assertion result with full context.
+    /// Log entry point before an operation starts.
     /// </summary>
     /// <param name="testName">Name of the current test.</param>
     /// <param name="pageName">Name of the current page.</param>
     /// <param name="controlId">Control AutomationId or locator string.</param>
-    /// <param name="assertion">Assertion type (AssertText, AssertVisible, etc.).</param>
-    /// <param name="expected">Expected value.</param>
-    /// <param name="actual">Actual value.</param>
-    /// <param name="passed">Whether assertion passed.</param>
-    void LogAssert(string testName, string? pageName, string controlId, string assertion, 
-                  object? expected, object? actual, bool passed);
+    /// <param name="action">Action name (Click, Enter, etc.).</param>
+    /// <param name="value">Input value for the operation.</param>
+    void LogEntry(
+        string testName,
+        string pageName,
+        string controlId,
+        string action,
+        string? value);
     
     /// <summary>
-    /// Log a wait operation result with full context.
+    /// Log exit point after an operation completes.
     /// </summary>
     /// <param name="testName">Name of the current test.</param>
     /// <param name="pageName">Name of the current page.</param>
     /// <param name="controlId">Control AutomationId or locator string.</param>
-    /// <param name="waitType">Wait operation type (WaitExists, WaitVisible, etc.).</param>
-    /// <param name="succeeded">Whether wait completed successfully.</param>
-    /// <param name="elapsedMs">Time elapsed waiting.</param>
-    void LogWait(string testName, string? pageName, string controlId, string waitType, 
-                 bool succeeded, int elapsedMs);
+    /// <param name="action">Action name (Click, Enter, etc.).</param>
+    /// <param name="result">Result category (Success, Fail, Error).</param>
+    /// <param name="durationMs">Operation duration in milliseconds.</param>
+    /// <param name="message">Additional context or error message.</param>
+    void LogExit(
+        string testName,
+        string pageName,
+        string controlId,
+        string action,
+        LogResult result,
+        int durationMs,
+        string? message = null);
     
     /// <summary>
-    /// Log an error with full context.
+    /// Log exit point for assertion operations with expected/actual values.
     /// </summary>
     /// <param name="testName">Name of the current test.</param>
     /// <param name="pageName">Name of the current page.</param>
     /// <param name="controlId">Control AutomationId or locator string.</param>
-    /// <param name="action">Action that caused the error.</param>
-    /// <param name="exception">The exception that occurred.</param>
-    void LogError(string testName, string? pageName, string? controlId, string action, Exception exception);
+    /// <param name="assertType">Assertion type (AssertText, AssertVisible, etc.).</param>
+    /// <param name="actualValue">Actual value found.</param>
+    /// <param name="expectedValue">Expected value.</param>
+    /// <param name="result">Result category (Success, Fail).</param>
+    /// <param name="durationMs">Operation duration in milliseconds.</param>
+    /// <param name="message">Additional context or error message.</param>
+    void LogAssertExit(
+        string testName,
+        string pageName,
+        string controlId,
+        string assertType,
+        string? actualValue,
+        string? expectedValue,
+        LogResult result,
+        int durationMs,
+        string? message = null);
+    
+    #endregion
+    
+    #region Convenience Methods
+    
+    /// <summary>
+    /// Log an action performed by a control.
+    /// </summary>
+    void LogAction(
+        string testName,
+        string pageName,
+        string controlId,
+        string action,
+        string? value = null);
+    
+    /// <summary>
+    /// Log a passed assertion.
+    /// </summary>
+    void LogAssertPass(
+        string testName,
+        string pageName,
+        string controlId,
+        string assertType,
+        string? actualValue,
+        string? expectedValue);
+    
+    /// <summary>
+    /// Log a failed assertion.
+    /// </summary>
+    void LogAssertFail(
+        string testName,
+        string pageName,
+        string controlId,
+        string assertType,
+        string? actualValue,
+        string? expectedValue,
+        string? message = null);
+    
+    /// <summary>
+    /// Log a wait operation result.
+    /// </summary>
+    void LogWait(
+        string testName,
+        string pageName,
+        string controlId,
+        string waitType,
+        bool success,
+        int elapsedMs);
     
     /// <summary>
     /// Log a navigation event.
     /// </summary>
-    /// <param name="testName">Name of the current test.</param>
-    /// <param name="destination">Navigation target.</param>
-    void LogNavigation(string testName, string destination);
+    void LogNavigation(
+        string testName,
+        string sourcePage,
+        string targetPage);
     
     /// <summary>
-    /// Log a debug message.
+    /// Log an informational message.
     /// </summary>
-    /// <param name="message">Debug message.</param>
-    void LogDebug(string message);
+    void LogInfo(
+        string testName,
+        string pageName,
+        string message);
     
     /// <summary>
-    /// Log a warning message.
+    /// Log an error with exception details.
     /// </summary>
-    /// <param name="message">Warning message.</param>
-    void LogWarning(string message);
+    void LogError(
+        string testName,
+        string pageName,
+        string controlId,
+        string action,
+        Exception ex);
+    
+    #endregion
+    
+    #region Lifecycle
+    
+    /// <summary>
+    /// Flush pending writes to storage.
+    /// </summary>
+    void Flush();
+    
+    #endregion
 }

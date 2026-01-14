@@ -137,7 +137,7 @@ public class MauiTestContext : IMauiTestContext
     {        
         ArgumentNullException.ThrowIfNull(destination);
         
-        _logger.LogNavigation("", destination);
+        _logger.LogNavigation("", "", destination);
         
         // For mobile apps, navigation might be handled differently
         // This is a basic URL navigation for hybrid apps
@@ -218,23 +218,4 @@ public class MauiTestContext : IMauiTestContext
         
         _disposed = true;
     }
-}
-
-/// <summary>
-/// No-op logger implementation.
-/// </summary>
-internal class NullTestLogger : ITestLogger
-{
-    public static readonly NullTestLogger Instance = new();
-    
-    private NullTestLogger() { }
-    
-    public void LogInfo(string testName, string? pageName, string message) { }
-    public void LogAction(string testName, string? pageName, string controlId, string action, string? value = null) { }
-    public void LogAssert(string testName, string? pageName, string controlId, string assertion, object? expected, object? actual, bool passed) { }
-    public void LogWait(string testName, string? pageName, string controlId, string waitType, bool succeeded, int elapsedMs) { }
-    public void LogError(string testName, string? pageName, string? controlId, string action, Exception exception) { }
-    public void LogNavigation(string testName, string destination) { }
-    public void LogDebug(string message) { }
-    public void LogWarning(string message) { }
 }

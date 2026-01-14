@@ -1,9 +1,11 @@
 using Brinell.Core.Exceptions;
 using Brinell.Core.Interfaces;
 using Brinell.Core.Locators;
+using Brinell.Core.Logging;
 using Brinell.Maui.Extensions;
 using Brinell.Maui.Interfaces;
 using OpenQA.Selenium;
+using System.Diagnostics;
 
 namespace Brinell.Maui.Controls;
 
@@ -42,7 +44,7 @@ public class MauiControlBase<TScope> : MauiObjectBase, IControlObject<TScope>
             throw new ArgumentNullException(nameof(locatorValue));
         _locator = new Locator(scope.DefaultLocatorStrategy, locatorValue);
     }
-    
+
     /// <summary>
     /// Gets the containing scope for fluent chaining.
     /// </summary>
@@ -79,6 +81,118 @@ public class MauiControlBase<TScope> : MauiObjectBase, IControlObject<TScope>
     protected IMauiElement FindElement()
     {
         return _scope.FindElement(_locator);
+    }
+    
+    #endregion
+    
+    #region Logging Helpers
+    
+    /// <summary>
+    /// Gets logging context information.
+    /// </summary>
+    private string TestName => "Test"; // TODO: Get from test context when available
+    private string PageName => Page?.GetType().Name ?? "Unknown";
+    private string ControlId => _locator.Value;
+    private ITestLogger Logger => Context.Logger;
+    
+    /// <summary>
+    /// Run operation without a value parameter.
+    /// </summary>
+    protected void Run(string action, Action operation)
+    {
+        Run<object?>(action, null, operation);
+    }
+    
+    /// <summary>
+    /// Run operation with a typed value parameter.
+    /// </summary>
+    protected void Run<T>(string action, T? value, Action operation)
+    {
+        var stopwatch = Stopwatch.StartNew();
+        Logger.LogEntry(TestName, PageName, ControlId, action, value?.ToString());
+        
+        try
+        {
+            operation();
+            stopwatch.Stop();
+            Logger.LogExit(TestName, PageName, ControlId, action, 
+                LogResult.Success, (int)stopwatch.ElapsedMilliseconds);
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            Logger.LogExit(TestName, PageName, ControlId, action, 
+                LogResult.Error, (int)stopwatch.ElapsedMilliseconds, ex.Message);
+            throw;
+        }
+    }
+    
+    /// <summary>
+    /// Run operation that returns a value.
+    /// </summary>
+    protected TResult Run<TResult>(string action, Func<TResult> operation)
+    {
+        return Run<object?, TResult>(action, null, operation);
+    }
+    
+    /// <summary>
+    /// Run operation with a typed value parameter that returns a result.
+    /// </summary>
+    protected TResult Run<TValue, TResult>(string action, TValue? value, Func<TResult> operation)
+    {
+        var stopwatch = Stopwatch.StartNew();
+        Logger.LogEntry(TestName, PageName, ControlId, action, value?.ToString());
+        
+        try
+        {
+            var result = operation();
+            stopwatch.Stop();
+            Logger.LogExit(TestName, PageName, ControlId, action, 
+                LogResult.Success, (int)stopwatch.ElapsedMilliseconds);
+            return result;
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            Logger.LogExit(TestName, PageName, ControlId, action, 
+                LogResult.Error, (int)stopwatch.ElapsedMilliseconds, ex.Message);
+            throw;
+        }
+    }
+    
+    /// <summary>
+    /// Run assertion with default equality comparison.
+    /// </summary>
+    protected TScope RunAssert<T>(string assertType, T? expected, Func<T?> getActual, string? message = null)
+    {
+        return RunAssert(assertType, expected, getActual, (actual, exp) => Equals(actual, exp), message);
+    }
+    
+    /// <summary>
+    /// Run assertion with custom comparison function.
+    /// </summary>
+    protected TScope RunAssert<T>(string assertType, T? expected, Func<T?> getActual, 
+        Func<T?, T?, bool> compare, string? message = null)
+    {
+        var stopwatch = Stopwatch.StartNew();
+        Logger.LogEntry(TestName, PageName, ControlId, assertType, expected?.ToString());
+        
+        var actual = getActual();
+        stopwatch.Stop();
+        
+        if (compare(actual, expected))
+        {
+            Logger.LogAssertExit(TestName, PageName, ControlId, assertType,
+                actual?.ToString(), expected?.ToString(), LogResult.Success, (int)stopwatch.ElapsedMilliseconds);
+            return ContainingScope;
+        }
+        else
+        {
+            Logger.LogAssertExit(TestName, PageName, ControlId, assertType,
+                actual?.ToString(), expected?.ToString(), LogResult.Fail, (int)stopwatch.ElapsedMilliseconds, message);
+            throw new AssertionException(
+                message ?? $"Expected '{expected}' but got '{actual}'");
+        }
     }
     
     #endregion

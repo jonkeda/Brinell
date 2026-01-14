@@ -38,34 +38,43 @@ public class MauiButtonControl<TScope> : MauiControlBase<TScope>, IClickableCont
     /// <inheritdoc />
     public TScope Click(int? timeoutMs = null)
     {
-        CheckClickable();
-        var element = FindElement();
-        element.Click();
+        Run("Click", () =>
+        {
+            CheckClickable();
+            var element = FindElement();
+            element.Click();
+        });
         return ContainingScope;
     }
     
     /// <inheritdoc />
     public TScope DoubleClick(int? timeoutMs = null)
     {
-        CheckClickable(timeoutMs);
-        var element = FindElement();
-        element.Click();
-        element.Click();
+        Run("DoubleClick", () =>
+        {
+            CheckClickable(timeoutMs);
+            var element = FindElement();
+            element.Click();
+            element.Click();
+        });
         return ContainingScope;
     }
     
     /// <inheritdoc />
     public TScope RightClick(int? timeoutMs = null)
     {
-        CheckClickable(timeoutMs);
-        var element = FindElement();
-        
-        // Unwrap the element and driver for Actions class
-        var unwrappedElement = element.UnwrapElement();
-        var unwrappedDriver = Context.Driver.UnwrapDriver();
-        
-        var actions = new OpenQA.Selenium.Interactions.Actions(unwrappedDriver);
-        actions.ContextClick(unwrappedElement).Perform();
+        Run("RightClick", () =>
+        {
+            CheckClickable(timeoutMs);
+            var element = FindElement();
+            
+            // Unwrap the element and driver for Actions class
+            var unwrappedElement = element.UnwrapElement();
+            var unwrappedDriver = Context.Driver.UnwrapDriver();
+            
+            var actions = new OpenQA.Selenium.Interactions.Actions(unwrappedDriver);
+            actions.ContextClick(unwrappedElement).Perform();
+        });
         return ContainingScope;
     }
     
@@ -110,17 +119,13 @@ public class MauiButtonControl<TScope> : MauiControlBase<TScope>, IClickableCont
     /// <inheritdoc />
     public TScope AssertClickable(bool? expected, string? message = null, int? timeoutMs = null)
     {
-        
         if (expected == null) return ContainingScope;
         
-        if (!WaitClickable(expected, timeoutMs))
+        return RunAssert("AssertClickable", expected, () =>
         {
-            var actual = IsClickable();
-            throw new AssertionException(
-                message ?? $"Expected element {(expected.Value ? "to be clickable" : "not to be clickable")} but clickable state is {actual?.ToString() ?? "unknown (element not found)"}. Locator: {Locator}");
-        }
-        
-        return ContainingScope;
+            WaitClickable(expected, timeoutMs);
+            return IsClickable();
+        }, message ?? $"Expected element {(expected.Value ? "to be clickable" : "not to be clickable")}. Locator: {Locator}");
     }
     
     #endregion
