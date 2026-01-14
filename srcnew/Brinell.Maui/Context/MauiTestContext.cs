@@ -3,6 +3,7 @@ using Brinell.Core.Locators;
 using Brinell.Core.Logging;
 using Brinell.Maui.Extensions;
 using Brinell.Maui.Interfaces;
+using Brinell.Maui.Wrappers;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Appium;
 using OpenQA.Selenium.Appium.Android;
@@ -16,7 +17,8 @@ namespace Brinell.Maui.Context;
 /// </summary>
 public class MauiTestContext : IMauiTestContext
 {
-    private readonly AppiumDriver _driver;
+    private readonly AppiumDriver _rawDriver;
+    private readonly IMauiDriver _driver;
     private readonly TimeoutSettings _timeouts;
     private readonly ITestLogger _logger;
     private bool _disposed;
@@ -35,7 +37,7 @@ public class MauiTestContext : IMauiTestContext
         
         // Create the appropriate driver based on platform capability
         var platformName = options.AppiumOptions.PlatformName?.ToLowerInvariant();
-        _driver = platformName switch
+        _rawDriver = platformName switch
         {
             "android" => new AndroidDriver(options.AppiumServerUri, options.AppiumOptions),
             "ios" => new IOSDriver(options.AppiumServerUri, options.AppiumOptions),
@@ -44,12 +46,15 @@ public class MauiTestContext : IMauiTestContext
                 nameof(options))
         };
         
+        // Wrap the driver in our mockable interface
+        _driver = new MauiDriver(_rawDriver);
+        
         // Configure implicit wait
-        _driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromMilliseconds(_timeouts.ElementFind);
+        _rawDriver.Manage().Timeouts().ImplicitWait = TimeSpan.FromMilliseconds(_timeouts.ElementFind);
     }
     
     /// <inheritdoc />
-    public AppiumDriver Driver => _driver;
+    public IMauiDriver Driver => _driver;
     
     /// <inheritdoc />
     public IMauiTestContext Context => this;
@@ -64,7 +69,7 @@ public class MauiTestContext : IMauiTestContext
     public LocatorStrategy DefaultLocatorStrategy => LocatorStrategy.AutomationId;
     
     /// <inheritdoc />
-    public AppiumElement? TryFindElement(Locator locator)
+    public IMauiElement? TryFindElement(Locator locator)
     {
         
         ArgumentNullException.ThrowIfNull(locator);
@@ -72,17 +77,18 @@ public class MauiTestContext : IMauiTestContext
         try
         {
             // Temporarily disable implicit wait for immediate check
-            var originalTimeout = _driver.Manage().Timeouts().ImplicitWait;
-            _driver.Manage().Timeouts().ImplicitWait = TimeSpan.Zero;
+            var originalTimeout = _rawDriver.Manage().Timeouts().ImplicitWait;
+            _rawDriver.Manage().Timeouts().ImplicitWait = TimeSpan.Zero;
             
             try
             {
                 var by = locator.ToBy();
-                return _driver.FindElement(by);
+                var element = _rawDriver.FindElement(by);
+                return new MauiElement(element);
             }
             finally
             {
-                _driver.Manage().Timeouts().ImplicitWait = originalTimeout;
+                _rawDriver.Manage().Timeouts().ImplicitWait = originalTimeout;
             }
         }
         catch (NoSuchElementException)
@@ -96,7 +102,7 @@ public class MauiTestContext : IMauiTestContext
     }
     
     /// <inheritdoc />
-    public AppiumElement FindElement(Locator locator)
+    public IMauiElement FindElement(Locator locator)
     {        
         ArgumentNullException.ThrowIfNull(locator);
         
@@ -104,7 +110,8 @@ public class MauiTestContext : IMauiTestContext
         
         try
         {
-            return _driver.FindElement(by);
+            var element = _rawDriver.FindElement(by);
+            return new MauiElement(element);
         }
         catch (NoSuchElementException ex)
         {
@@ -114,12 +121,14 @@ public class MauiTestContext : IMauiTestContext
     }
     
     /// <inheritdoc />
-    public IReadOnlyList<AppiumElement> FindElements(Locator locator)
+    public IReadOnlyList<IMauiElement> FindElements(Locator locator)
     {        
         ArgumentNullException.ThrowIfNull(locator);
         
         var by = locator.ToBy();
-        return _driver.FindElements(by).ToList();
+        return _rawDriver.FindElements(by)
+            .Select(e => (IMauiElement)new MauiElement(e))
+            .ToList();
     }
     
     /// <inheritdoc />
@@ -131,25 +140,25 @@ public class MauiTestContext : IMauiTestContext
         
         // For mobile apps, navigation might be handled differently
         // This is a basic URL navigation for hybrid apps
-        _driver.Navigate().GoToUrl(destination);
+        _rawDriver.Navigate().GoToUrl(destination);
     }
     
     /// <inheritdoc />
     public void NavigateBack()
     {        
-        _driver.Navigate().Back();
+        _rawDriver.Navigate().Back();
     }
     
     /// <inheritdoc />
     public void Refresh()
     {        
-        _driver.Navigate().Refresh();
+        _rawDriver.Navigate().Refresh();
     }
     
     /// <inheritdoc />
     public byte[] TakeScreenshot()
     {        
-        var screenshot = _driver.GetScreenshot();
+        var screenshot = _rawDriver.GetScreenshot();
         return screenshot.AsByteArray;
     }
     
@@ -158,7 +167,7 @@ public class MauiTestContext : IMauiTestContext
     {        
         ArgumentNullException.ThrowIfNull(path);
         
-        var screenshot = _driver.GetScreenshot();
+        var screenshot = _rawDriver.GetScreenshot();
         screenshot.SaveAsFile(path);
     }
     
@@ -168,13 +177,13 @@ public class MauiTestContext : IMauiTestContext
         
         // Reset app by terminating and re-launching
         // Note: ResetApp is deprecated in newer Appium versions
-        var bundleId = _driver.Capabilities.GetCapability("appPackage")?.ToString()
-                    ?? _driver.Capabilities.GetCapability("bundleId")?.ToString();
+        var bundleId = _rawDriver.Capabilities.GetCapability("appPackage")?.ToString()
+                    ?? _rawDriver.Capabilities.GetCapability("bundleId")?.ToString();
         
         if (!string.IsNullOrEmpty(bundleId))
         {
-            _driver.TerminateApp(bundleId);
-            _driver.ActivateApp(bundleId);
+            _rawDriver.TerminateApp(bundleId);
+            _rawDriver.ActivateApp(bundleId);
         }
     }
     
@@ -198,7 +207,7 @@ public class MauiTestContext : IMauiTestContext
         {
             try
             {
-                _driver?.Quit();
+                _rawDriver?.Quit();
             }
             catch
             {

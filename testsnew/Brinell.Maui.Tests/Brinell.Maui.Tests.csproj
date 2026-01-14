@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <PackageReference Include="Moq" />
+    <PackageReference Include="NSubstitute" />
   </ItemGroup>
 
   <ItemGroup>

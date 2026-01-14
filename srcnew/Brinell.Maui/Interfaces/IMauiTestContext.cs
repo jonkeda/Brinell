@@ -1,5 +1,4 @@
 using Brinell.Core.Interfaces;
-using OpenQA.Selenium.Appium;
 
 namespace Brinell.Maui.Interfaces;
 
@@ -7,12 +6,12 @@ namespace Brinell.Maui.Interfaces;
 /// MAUI test context interface with Appium driver access.
 /// Combines test context capabilities with MAUI element scope.
 /// </summary>
-public interface IMauiTestContext : ITestContext<AppiumElement>, IMauiElementScope
+public interface IMauiTestContext : ITestContext<IMauiElement>, IMauiElementScope
 {
     /// <summary>
-    /// Gets the Appium driver for direct WebDriver operations.
+    /// Gets the wrapped Appium driver for operations.
     /// </summary>
-    AppiumDriver Driver { get; }
+    IMauiDriver Driver { get; }
     
     /// <summary>
     /// Gets this context as the element scope.
