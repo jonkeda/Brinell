@@ -1,6 +1,3 @@
-using System.Diagnostics;
-using Brinell.Maui.Interfaces;
-
 namespace Brinell.Maui;
 
 /// <summary>

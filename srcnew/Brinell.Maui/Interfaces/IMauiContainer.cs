@@ -1,5 +1,3 @@
-using Brinell.Core.Interfaces;
-
 namespace Brinell.Maui.Interfaces;
 
 /// <summary>

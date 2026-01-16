@@ -1,9 +1,3 @@
-using Brinell.Core.Exceptions;
-using Brinell.Core.Locators;
-using Brinell.Maui.Extensions;
-using Brinell.Maui.Interfaces;
-using OpenQA.Selenium;
-
 namespace Brinell.Maui.Controls;
 
 /// <summary>
@@ -66,11 +60,6 @@ public abstract class MauiContainerBase<TParent, TSelf> : MauiControlBase<TParen
                     _rootCacheValid = false;
                     _cachedRoot = null;
                 }
-                catch (WebDriverException)
-                {
-                    _rootCacheValid = false;
-                    _cachedRoot = null;
-                }
             }
             
             // Find and cache the root element
@@ -96,6 +85,30 @@ public abstract class MauiContainerBase<TParent, TSelf> : MauiControlBase<TParen
     
     /// <inheritdoc />
     IMauiTestContext IMauiElementScope.Context => Context;
+    
+    /// <inheritdoc />
+    public new IPageObject? Page => ((IElementScope)_parent).Page;
+    
+    /// <inheritdoc />
+    public bool IsReady(int? timeoutMs = null)
+    {
+        // Container is ready when parent is ready AND container root exists
+        var parentReady = ((IElementScope)_parent).IsReady(timeoutMs);
+        if (!parentReady) return false;
+        
+        return TryGetContainerRoot() != null;
+    }
+    
+    /// <inheritdoc />
+    public bool WaitReady(int? timeoutMs = null)
+    {
+        // First wait for parent to be ready
+        var parentReady = ((IElementScope)_parent).WaitReady(timeoutMs);
+        if (!parentReady) return false;
+        
+        // Then wait for container root to exist
+        return WaitExists(true, timeoutMs);
+    }
     
     /// <inheritdoc />
     public LocatorStrategy DefaultLocatorStrategy => LocatorStrategy.AutomationId;
@@ -142,10 +155,6 @@ public abstract class MauiContainerBase<TParent, TSelf> : MauiControlBase<TParen
             {
                 return null;
             }
-        }
-        catch (WebDriverException)
-        {
-            return null;
         }
     }
     
@@ -206,10 +215,6 @@ public abstract class MauiContainerBase<TParent, TSelf> : MauiControlBase<TParen
                 return Array.Empty<IMauiElement>();
             }
         }
-        catch (WebDriverException)
-        {
-            return Array.Empty<IMauiElement>();
-        }
     }
     
     #endregion
@@ -230,6 +235,46 @@ public abstract class MauiContainerBase<TParent, TSelf> : MauiControlBase<TParen
             return null;
         }
     }
-    
+
+    #endregion
+
+    #region Factory Methods
+
+    /// <summary>
+    /// Creates a generic control within this page scope.
+    /// </summary>
+    private MauiControlBase<TSelf> Control(Locator locator)
+        => new(this, locator);
+
+    /// <summary>
+    /// Creates a generic control within this page scope.
+    /// </summary>
+    private MauiControlBase<TSelf> Control(string locator)
+        => new(this, locator);
+
+    /// <summary>
+    /// Creates a button control within this page scope.
+    /// </summary>
+    protected MauiButtonControl<TSelf> Button(Locator locator)
+        => new(this, locator);
+
+    /// <summary>
+    /// Creates a button control within this page scope using the scope default locator.
+    /// </summary>
+    protected MauiButtonControl<TSelf> Button(string locator)
+        => new(this, locator);
+
+    /// <summary>
+    /// Creates an entry control within this page scope.
+    /// </summary>
+    protected MauiEntryControl<TSelf> Entry(Locator locator)
+        => new(this, locator);
+
+    /// <summary>
+    /// Creates an entry control within this page scope using automation ID.
+    /// </summary>
+    protected MauiEntryControl<TSelf> Entry(string locator)
+        => new(this, locator);
+
     #endregion
 }

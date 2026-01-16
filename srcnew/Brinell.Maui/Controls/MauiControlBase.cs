@@ -1,11 +1,4 @@
-using Brinell.Core.Exceptions;
-using Brinell.Core.Interfaces;
-using Brinell.Core.Locators;
-using Brinell.Core.Logging;
-using Brinell.Maui.Extensions;
-using Brinell.Maui.Interfaces;
-using OpenQA.Selenium;
-using System.Diagnostics;
+using Brinell.Core.Abstractions.Controls;
 
 namespace Brinell.Maui.Controls;
 
@@ -14,11 +7,10 @@ namespace Brinell.Maui.Controls;
 /// Controls find elements within their scope (page, container, or list item).
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent method chaining.</typeparam>
-public class MauiControlBase<TScope> : MauiObjectBase, IControlObject<TScope>
+public class MauiControlBase<TScope> : ControlObjectBase<TScope>, IControlObject<TScope>
     where TScope : IMauiScope<TScope>
 {
-    private readonly IMauiScope<TScope> _scope;
-    private readonly Locator _locator;
+    private readonly IMauiScope<TScope> _mauiScope;
     
     /// <summary>
     /// Creates a new control within the specified scope.
@@ -26,9 +18,9 @@ public class MauiControlBase<TScope> : MauiObjectBase, IControlObject<TScope>
     /// <param name="scope">The scope (page or container) providing element finding.</param>
     /// <param name="locator">The locator used to find the control element.</param>
     public MauiControlBase(IMauiScope<TScope> scope, Locator locator)
+        : base(locator, scope)
     {
-        _scope = scope ?? throw new ArgumentNullException(nameof(scope));
-        _locator = locator ?? throw new ArgumentNullException(nameof(locator));
+        _mauiScope = scope ?? throw new ArgumentNullException(nameof(scope));
     }
 
     /// <summary>
@@ -38,29 +30,75 @@ public class MauiControlBase<TScope> : MauiObjectBase, IControlObject<TScope>
     /// <param name="scope">The scope (page or container) providing element finding.</param>
     /// <param name="locatorValue">The locator value (e.g., automation ID, name).</param>
     public MauiControlBase(IMauiScope<TScope> scope, string locatorValue)
+        : base(new Locator(scope?.DefaultLocatorStrategy ?? LocatorStrategy.AutomationId, locatorValue), 
+               scope!)
     {
-        _scope = scope ?? throw new ArgumentNullException(nameof(scope));
+        _mauiScope = scope ?? throw new ArgumentNullException(nameof(scope));
         if (string.IsNullOrEmpty(locatorValue))
             throw new ArgumentNullException(nameof(locatorValue));
-        _locator = new Locator(scope.DefaultLocatorStrategy, locatorValue);
     }
 
     /// <summary>
     /// Gets the containing scope for fluent chaining.
     /// </summary>
-    protected TScope ContainingScope => _scope.Self;
+    protected TScope ContainingScope => _mauiScope.Self;
     
-    /// <inheritdoc />
-    public IPageObject? Page => null; // Page access is through scope hierarchy
+    /// <summary>
+    /// Gets the MAUI test context.
+    /// </summary>
+    protected IMauiTestContext Context => _mauiScope.Context;
     
-    /// <inheritdoc />
-    public Locator Locator => _locator;
+    /// <summary>
+    /// Gets the default timeout in milliseconds.
+    /// </summary>
+    protected int DefaultTimeoutMs => Context.Timeouts.DefaultWait;
     
-    /// <inheritdoc />
-    public IElementScope Scope => _scope;
+    /// <summary>
+    /// Gets the polling interval in milliseconds.
+    /// </summary>
+    protected int PollingIntervalMs => Context.Timeouts.PollingInterval;
     
-    /// <inheritdoc />
-    public override IMauiTestContext Context => _scope.Context;
+    #region Polling
+    
+    /// <summary>
+    /// Polls a condition until it returns true or timeout is reached.
+    /// </summary>
+    /// <param name="condition">The condition to check.</param>
+    /// <param name="timeoutMs">Maximum time to wait in milliseconds.</param>
+    /// <returns>True if condition was met, false if timeout reached.</returns>
+    protected bool Poll(Func<bool> condition, int timeoutMs)
+    {
+        var stopwatch = Stopwatch.StartNew();
+        
+        while (stopwatch.ElapsedMilliseconds < timeoutMs)
+        {
+            try
+            {
+                if (condition())
+                {
+                    return true;
+                }
+            }
+            catch
+            {
+                // Ignore exceptions during polling, continue trying
+            }
+            
+            Thread.Sleep(PollingIntervalMs);
+        }
+        
+        // Final check after timeout
+        try
+        {
+            return condition();
+        }
+        catch
+        {
+            return false;
+        }
+    }
+    
+    #endregion
     
     #region Element Finding
     
@@ -70,7 +108,7 @@ public class MauiControlBase<TScope> : MauiObjectBase, IControlObject<TScope>
     /// <returns>The element if found, null otherwise.</returns>
     protected IMauiElement? TryFindElement()
     {
-        return _scope.TryFindElement(_locator);
+        return _mauiScope.TryFindElement(Locator);
     }
     
     /// <summary>
@@ -80,7 +118,7 @@ public class MauiControlBase<TScope> : MauiObjectBase, IControlObject<TScope>
     /// <exception cref="ElementNotFoundException">Thrown when element is not found.</exception>
     protected IMauiElement FindElement()
     {
-        return _scope.FindElement(_locator);
+        return _mauiScope.FindElement(Locator);
     }
     
     #endregion
@@ -92,8 +130,8 @@ public class MauiControlBase<TScope> : MauiObjectBase, IControlObject<TScope>
     /// </summary>
     private string TestName => "Test"; // TODO: Get from test context when available
     private string PageName => Page?.GetType().Name ?? "Unknown";
-    private string ControlId => _locator.Value;
-    private ITestLogger Logger => Context.Logger;
+    private string ControlId => Locator.Value;
+    private ITestLogger? Logger => Context.Logger;
     
     /// <summary>
     /// Run operation without a value parameter.
@@ -109,19 +147,19 @@ public class MauiControlBase<TScope> : MauiObjectBase, IControlObject<TScope>
     protected void Run<T>(string action, T? value, Action operation)
     {
         var stopwatch = Stopwatch.StartNew();
-        Logger.LogEntry(TestName, PageName, ControlId, action, value?.ToString());
+        Logger?.LogEntry(TestName, PageName, ControlId, action, value?.ToString());
         
         try
         {
             operation();
             stopwatch.Stop();
-            Logger.LogExit(TestName, PageName, ControlId, action, 
+            Logger?.LogExit(TestName, PageName, ControlId, action, 
                 LogResult.Success, (int)stopwatch.ElapsedMilliseconds);
         }
         catch (Exception ex)
         {
             stopwatch.Stop();
-            Logger.LogExit(TestName, PageName, ControlId, action, 
+            Logger?.LogExit(TestName, PageName, ControlId, action, 
                 LogResult.Error, (int)stopwatch.ElapsedMilliseconds, ex.Message);
             throw;
         }
@@ -141,20 +179,20 @@ public class MauiControlBase<TScope> : MauiObjectBase, IControlObject<TScope>
     protected TResult Run<TValue, TResult>(string action, TValue? value, Func<TResult> operation)
     {
         var stopwatch = Stopwatch.StartNew();
-        Logger.LogEntry(TestName, PageName, ControlId, action, value?.ToString());
+        Logger?.LogEntry(TestName, PageName, ControlId, action, value?.ToString());
         
         try
         {
             var result = operation();
             stopwatch.Stop();
-            Logger.LogExit(TestName, PageName, ControlId, action, 
+            Logger?.LogExit(TestName, PageName, ControlId, action, 
                 LogResult.Success, (int)stopwatch.ElapsedMilliseconds);
             return result;
         }
         catch (Exception ex)
         {
             stopwatch.Stop();
-            Logger.LogExit(TestName, PageName, ControlId, action, 
+            Logger?.LogExit(TestName, PageName, ControlId, action, 
                 LogResult.Error, (int)stopwatch.ElapsedMilliseconds, ex.Message);
             throw;
         }
@@ -175,20 +213,20 @@ public class MauiControlBase<TScope> : MauiObjectBase, IControlObject<TScope>
         Func<T?, T?, bool> compare, string? message = null)
     {
         var stopwatch = Stopwatch.StartNew();
-        Logger.LogEntry(TestName, PageName, ControlId, assertType, expected?.ToString());
+        Logger?.LogEntry(TestName, PageName, ControlId, assertType, expected?.ToString());
         
         var actual = getActual();
         stopwatch.Stop();
         
         if (compare(actual, expected))
         {
-            Logger.LogAssertExit(TestName, PageName, ControlId, assertType,
+            Logger?.LogAssertExit(TestName, PageName, ControlId, assertType,
                 actual?.ToString(), expected?.ToString(), LogResult.Success, (int)stopwatch.ElapsedMilliseconds);
             return ContainingScope;
         }
         else
         {
-            Logger.LogAssertExit(TestName, PageName, ControlId, assertType,
+            Logger?.LogAssertExit(TestName, PageName, ControlId, assertType,
                 actual?.ToString(), expected?.ToString(), LogResult.Fail, (int)stopwatch.ElapsedMilliseconds, message);
             throw new AssertionException(
                 message ?? $"Expected '{expected}' but got '{actual}'");
@@ -219,10 +257,6 @@ public class MauiControlBase<TScope> : MauiObjectBase, IControlObject<TScope>
         {
             return null;
         }
-        catch (WebDriverException)
-        {
-            return null;
-        }
     }
     
     /// <inheritdoc />
@@ -236,10 +270,6 @@ public class MauiControlBase<TScope> : MauiObjectBase, IControlObject<TScope>
             return element.Enabled;
         }
         catch (StaleElementReferenceException)
-        {
-            return null;
-        }
-        catch (WebDriverException)
         {
             return null;
         }
@@ -296,7 +326,7 @@ public class MauiControlBase<TScope> : MauiObjectBase, IControlObject<TScope>
         {
             var actual = IsExists();
             throw new AssertionException(
-                message ?? $"Expected element {(expected.Value ? "to exist" : "not to exist")} but it {(actual ? "exists" : "does not exist")}. Locator: {_locator}");
+                message ?? $"Expected element {(expected.Value ? "to exist" : "not to exist")} but it {(actual ? "exists" : "does not exist")}. Locator: {Locator}");
         }
         
         return ContainingScope;
@@ -312,7 +342,7 @@ public class MauiControlBase<TScope> : MauiObjectBase, IControlObject<TScope>
         {
             var actual = IsVisible();
             throw new AssertionException(
-                message ?? $"Expected element {(expected.Value ? "to be visible" : "not to be visible")} but visibility is {actual?.ToString() ?? "unknown (element not found)"}. Locator: {_locator}");
+                message ?? $"Expected element {(expected.Value ? "to be visible" : "not to be visible")} but visibility is {actual?.ToString() ?? "unknown (element not found)"}. Locator: {Locator}");
         }
         
         return ContainingScope;
@@ -328,7 +358,7 @@ public class MauiControlBase<TScope> : MauiObjectBase, IControlObject<TScope>
         {
             var actual = IsEnabled();
             throw new AssertionException(
-                message ?? $"Expected element {(expected.Value ? "to be enabled" : "to be disabled")} but enabled state is {actual?.ToString() ?? "unknown (element not found)"}. Locator: {_locator}");
+                message ?? $"Expected element {(expected.Value ? "to be enabled" : "to be disabled")} but enabled state is {actual?.ToString() ?? "unknown (element not found)"}. Locator: {Locator}");
         }
         
         return ContainingScope;
@@ -374,7 +404,7 @@ public class MauiControlBase<TScope> : MauiObjectBase, IControlObject<TScope>
         {
             var actual = GetText();
             throw new AssertionException(
-                message ?? $"Expected text '{expected}' but got '{actual ?? "(null)"}'. Locator: {_locator}");
+                message ?? $"Expected text '{expected}' but got '{actual ?? "(null)"}'. Locator: {Locator}");
         }
         
         return ContainingScope;
@@ -394,7 +424,7 @@ public class MauiControlBase<TScope> : MauiObjectBase, IControlObject<TScope>
         {
             var actual = GetText();
             throw new AssertionException(
-                message ?? $"Expected text to contain '{expected}' but got '{actual ?? "(null)"}'. Locator: {_locator}");
+                message ?? $"Expected text to contain '{expected}' but got '{actual ?? "(null)"}'. Locator: {Locator}");
         }
         
         return ContainingScope;
@@ -415,10 +445,6 @@ public class MauiControlBase<TScope> : MauiObjectBase, IControlObject<TScope>
             return element.GetAttribute(name);
         }
         catch (StaleElementReferenceException)
-        {
-            return null;
-        }
-        catch (WebDriverException)
         {
             return null;
         }

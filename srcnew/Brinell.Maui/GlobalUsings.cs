@@ -1,0 +1,10 @@
+global using System.Diagnostics;
+global using Brinell.Core.Configuration;
+global using Brinell.Core.Exceptions;
+global using Brinell.Core.Interfaces;
+global using Brinell.Core.Locators;
+global using Brinell.Core.Logging;
+global using Brinell.Maui.Extensions;
+global using Brinell.Maui.Interfaces;
+global using OpenQA.Selenium;
+global using OpenQA.Selenium.Appium;

@@ -1,6 +1,3 @@
-using OpenQA.Selenium;
-using OpenQA.Selenium.Appium;
-
 namespace Brinell.Maui.Interfaces;
 
 /// <summary>

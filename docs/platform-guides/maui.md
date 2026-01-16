@@ -803,6 +803,51 @@ public void Login(string username, string password)
 
 ## Troubleshooting
 
+### Windows Driver Limitations
+
+The Windows Application Driver has some W3C WebDriver API limitations that differ from Android/iOS drivers:
+
+| Limitation | Impact | Solution |
+|------------|--------|----------|
+| `GET /timeouts` not supported | `driver.Manage().Timeouts().ImplicitWait` getter throws `UnknownMethodException` | Store timeout values locally instead of reading from driver |
+| Limited gesture support | Some touch gestures may not work | Use Windows-specific input methods |
+| No `GET /window/rect` in some versions | Cannot read window position | Store window state locally |
+
+#### Timeout Getter Exception
+
+```csharp
+// ❌ WRONG - Throws UnknownMethodException on Windows Driver
+var currentTimeout = driver.Manage().Timeouts().ImplicitWait;
+
+// ✅ CORRECT - Store timeout value when setting it
+private TimeSpan _implicitWait;
+
+public void SetImplicitWait(TimeSpan timeout)
+{
+    _implicitWait = timeout;
+    driver.Manage().Timeouts().ImplicitWait = timeout;
+}
+
+public TimeSpan GetImplicitWait() => _implicitWait;
+```
+
+#### Debugging with Appium Logs
+
+When element finding silently fails, enable Appium debug logging:
+
+```bash
+# Start Appium with debug logging
+appium --address 127.0.0.1 --port 4723 --log-level debug
+```
+
+Look for:
+- `POST /session` - Session creation
+- `POST /element` - Element find requests (if missing, exception is being swallowed)
+- `POST /timeouts` - Timeout configuration
+- `UnknownMethodException` in error responses
+
+> **Warning:** Avoid silent exception catching like `catch (WebDriverException) { return null; }` - it hides root causes and makes debugging extremely difficult.
+
 ### Common Issues
 
 #### Element Not Found

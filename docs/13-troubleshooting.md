@@ -378,6 +378,28 @@ dotnet test --filter "FullyQualifiedName~NavigationTests"
 | `StaleElementReferenceException` | Element reference invalid | Re-find element |
 | `SessionNotCreatedException` | Driver session failed | Check Appium server, app path |
 | `InvalidSelectorException` | Bad locator strategy | Use correct locator type |
+| `UnknownMethodException` | Driver doesn't support API | See platform-specific limitations below |
+
+### Windows Driver Limitations
+
+The Windows Application Driver doesn't implement all W3C WebDriver APIs:
+
+| API | Status | Workaround |
+|-----|--------|------------|
+| `GET /timeouts` | ❌ Not supported | Store timeout values locally instead of reading `Timeouts.ImplicitWait` |
+| `SET /timeouts` | ✅ Supported | Setting timeouts works normally |
+
+**Common symptom:** Element finding silently fails because exception is caught:
+
+```csharp
+// This throws UnknownMethodException on Windows:
+var timeout = driver.Manage().Timeouts().ImplicitWait;  // ❌ Fails!
+
+// Use stored value instead:
+var timeout = _storedTimeoutValue;  // ✅ Works
+```
+
+**Debugging tip:** Run Appium with `--log-level debug` to see actual HTTP requests. If no `/element` requests appear, an exception is being silently swallowed.
 
 ### Selenium Errors
 

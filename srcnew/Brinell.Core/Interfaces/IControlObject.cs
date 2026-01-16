@@ -1,5 +1,3 @@
-using Brinell.Core.Locators;
-
 namespace Brinell.Core.Interfaces;
 
 /// <summary>
@@ -10,24 +8,6 @@ namespace Brinell.Core.Interfaces;
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
 public interface IControlObject<TScope>
 {
-    // Identity
-    
-    /// <summary>
-    /// The locator used to find this control in the UI tree.
-    /// </summary>
-    Locator Locator { get; }
-    
-    /// <summary>
-    /// The element scope (page or container) for this control.
-    /// </summary>
-    IElementScope Scope { get; }
-    
-    /// <summary>
-    /// The page containing this control.
-    /// Returns null if Scope is not a page and doesn't have a page ancestor.
-    /// </summary>
-    IPageObject? Page { get; }
-    
     // State (immediate, no waiting)
     
     /// <summary>

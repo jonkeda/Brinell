@@ -1,14 +1,7 @@
-using Brinell.Core.Configuration;
-using Brinell.Core.Exceptions;
-using Brinell.Core.Locators;
-using Brinell.Core.Logging;
-using Brinell.Maui.Extensions;
-using Brinell.Maui.Interfaces;
 using Brinell.Maui.Wrappers;
-using OpenQA.Selenium;
-using OpenQA.Selenium.Appium;
 using OpenQA.Selenium.Appium.Android;
 using OpenQA.Selenium.Appium.iOS;
+using OpenQA.Selenium.Appium.Windows;
 
 namespace Brinell.Maui.Context;
 
@@ -42,8 +35,9 @@ public class MauiTestContext : IMauiTestContext
         {
             "android" => new AndroidDriver(options.AppiumServerUri, options.AppiumOptions),
             "ios" => new IOSDriver(options.AppiumServerUri, options.AppiumOptions),
+            "windows" => new WindowsDriver(options.AppiumServerUri, options.AppiumOptions),
             _ => throw new ArgumentException(
-                $"Unsupported platform: {platformName}. Use 'android' or 'ios'.",
+                $"Unsupported platform: {platformName}. Use 'android', 'ios', or 'windows'.",
                 nameof(options))
         };
         
@@ -70,35 +64,42 @@ public class MauiTestContext : IMauiTestContext
     public LocatorStrategy DefaultLocatorStrategy => LocatorStrategy.AutomationId;
     
     /// <inheritdoc />
+    /// <remarks>
+    /// Test context root scope has no associated page.
+    /// </remarks>
+    public IPageObject? Page => null;
+    
+    /// <inheritdoc />
+    /// <remarks>
+    /// Test context root is always ready (driver is connected).
+    /// </remarks>
+    public bool IsReady(int? timeoutMs = null) => !_disposed;
+    
+    /// <inheritdoc />
+    /// <remarks>
+    /// Test context root is always ready (driver is connected).
+    /// </remarks>
+    public bool WaitReady(int? timeoutMs = null) => !_disposed;
+    
+    /// <inheritdoc />
     public IMauiElement? TryFindElement(Locator locator)
     {
-        
         ArgumentNullException.ThrowIfNull(locator);
+        // Temporarily disable implicit wait for immediate check
+        // Note: Windows Driver doesn't support GET timeouts, only SET
+        // So we use our stored timeout value instead of reading from driver
+        var originalTimeoutMs = _timeouts.ElementFind;
+        _rawDriver.Manage().Timeouts().ImplicitWait = TimeSpan.Zero;
         
         try
         {
-            // Temporarily disable implicit wait for immediate check
-            var originalTimeout = _rawDriver.Manage().Timeouts().ImplicitWait;
-            _rawDriver.Manage().Timeouts().ImplicitWait = TimeSpan.Zero;
-            
-            try
-            {
-                var by = locator.ToBy();
-                var element = _rawDriver.FindElement(by);
-                return new MauiElement(element);
-            }
-            finally
-            {
-                _rawDriver.Manage().Timeouts().ImplicitWait = originalTimeout;
-            }
+            var by = locator.ToBy();
+            var element = _rawDriver.FindElement(by);
+            return new MauiElement(element);
         }
-        catch (NoSuchElementException)
+        finally
         {
-            return null;
-        }
-        catch (WebDriverException)
-        {
-            return null;
+            _rawDriver.Manage().Timeouts().ImplicitWait = TimeSpan.FromMilliseconds(originalTimeoutMs);
         }
     }
     
@@ -106,11 +107,10 @@ public class MauiTestContext : IMauiTestContext
     public IMauiElement FindElement(Locator locator)
     {        
         ArgumentNullException.ThrowIfNull(locator);
-        
-        var by = locator.ToBy();
-        
+       
         try
         {
+            var by = locator.ToBy();
             var element = _rawDriver.FindElement(by);
             return new MauiElement(element);
         }

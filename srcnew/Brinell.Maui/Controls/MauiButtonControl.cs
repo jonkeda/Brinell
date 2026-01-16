@@ -1,8 +1,3 @@
-using Brinell.Core.Exceptions;
-using Brinell.Core.Interfaces;
-using Brinell.Core.Locators;
-using Brinell.Maui.Interfaces;
-
 namespace Brinell.Maui.Controls;
 
 /// <summary>
@@ -38,7 +33,7 @@ public class MauiButtonControl<TScope> : MauiControlBase<TScope>, IClickableCont
     /// <inheritdoc />
     public TScope Click(int? timeoutMs = null)
     {
-        Run("Click", () =>
+        Run(nameof(Click), () =>
         {
             CheckClickable();
             var element = FindElement();
@@ -50,7 +45,7 @@ public class MauiButtonControl<TScope> : MauiControlBase<TScope>, IClickableCont
     /// <inheritdoc />
     public TScope DoubleClick(int? timeoutMs = null)
     {
-        Run("DoubleClick", () =>
+        Run(nameof(DoubleClick), () =>
         {
             CheckClickable(timeoutMs);
             var element = FindElement();
@@ -63,7 +58,7 @@ public class MauiButtonControl<TScope> : MauiControlBase<TScope>, IClickableCont
     /// <inheritdoc />
     public TScope RightClick(int? timeoutMs = null)
     {
-        Run("RightClick", () =>
+        Run(nameof(RightClick), () =>
         {
             CheckClickable(timeoutMs);
             var element = FindElement();
@@ -97,8 +92,33 @@ public class MauiButtonControl<TScope> : MauiControlBase<TScope>, IClickableCont
     {
         var timeout = timeoutMs ?? DefaultTimeoutMs;
         
-        // Wait for element to be clickable
-        if (!WaitClickable(true, timeout))
+        // First, wait for element to exist
+        if (!WaitExists(true, timeout))
+        {
+            throw new TimeoutException(
+                $"Element not found within {timeout}ms. Locator: {Locator}");
+        }
+        
+        // Wait for element to be enabled
+        if (!WaitEnabled(true, timeout))
+        {
+            throw new TimeoutException(
+                $"Element was not enabled within {timeout}ms. Locator: {Locator}");
+        }
+        
+        // If element is not visible (off-screen), try to scroll it into view
+        var element = TryFindElement();
+        if (element != null && IsVisible() != true)
+        {
+                element.ScrollIntoView(Context.Driver);
+            // Give the UI a moment to settle after scrolling
+            Thread.Sleep(200);
+        }
+        
+        // Final check - element should now be clickable
+        // If still not visible after scroll attempt, we'll try clicking anyway
+        // as some drivers allow clicking non-visible elements
+        if (!WaitEnabled(true, timeout / 2))
         {
             throw new TimeoutException(
                 $"Element was not clickable within {timeout}ms. Locator: {Locator}");
@@ -121,7 +141,7 @@ public class MauiButtonControl<TScope> : MauiControlBase<TScope>, IClickableCont
     {
         if (expected == null) return ContainingScope;
         
-        return RunAssert("AssertClickable", expected, () =>
+        return RunAssert(nameof(AssertClickable), expected, () =>
         {
             WaitClickable(expected, timeoutMs);
             return IsClickable();

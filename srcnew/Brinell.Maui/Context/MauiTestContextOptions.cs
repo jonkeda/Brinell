@@ -1,7 +1,3 @@
-using Brinell.Core.Configuration;
-using Brinell.Core.Logging;
-using OpenQA.Selenium.Appium;
-
 namespace Brinell.Maui.Context;
 
 /// <summary>

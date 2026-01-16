@@ -1,8 +1,4 @@
 using System.Text.RegularExpressions;
-using Brinell.Core.Exceptions;
-using Brinell.Core.Interfaces;
-using Brinell.Core.Locators;
-using Brinell.Maui.Interfaces;
 
 namespace Brinell.Maui.Controls;
 
@@ -42,7 +38,7 @@ public class MauiEntryControl<TScope> : MauiControlBase<TScope>, IEditableTextCo
         if (pattern == null) return ContainingScope;
 
         var regex = new Regex(pattern);
-        return RunAssert("AssertTextMatches", pattern, () =>
+        return RunAssert(nameof(AssertTextMatches), pattern, () =>
         {
             Poll(() =>
             {
@@ -62,7 +58,7 @@ public class MauiEntryControl<TScope> : MauiControlBase<TScope>, IEditableTextCo
     {
         if (text == null) return ContainingScope;
 
-        Run<string>("Enter", text, () =>
+        Run<string>(nameof(Enter), text, () =>
         {
             CheckEnabled(timeoutMs);
             var element = FindElement();
@@ -73,7 +69,7 @@ public class MauiEntryControl<TScope> : MauiControlBase<TScope>, IEditableTextCo
 
     public TScope Clear(int? timeoutMs = null)
     {
-        Run("Clear", () =>
+        Run(nameof(Clear), () =>
         {
             CheckEnabled(timeoutMs);
             var element = FindElement();
@@ -95,7 +91,7 @@ public class MauiEntryControl<TScope> : MauiControlBase<TScope>, IEditableTextCo
     {
         if (text == null) return ContainingScope;
 
-        Run<string>("SetText", text, () =>
+        Run<string>(nameof(SetText), text, () =>
         {
             CheckEnabled(timeoutMs);
             var element = FindElement();
@@ -109,7 +105,11 @@ public class MauiEntryControl<TScope> : MauiControlBase<TScope>, IEditableTextCo
     {
         var element = TryFindElement();
         if (element == null) return null;
-        var placeholder = element.GetAttribute("hint")
+        // Windows MAUI uses "Name" for placeholder when entry is empty
+        // Android uses hint, iOS uses placeholder
+        var placeholder = element.GetAttribute("Name")
+                       ?? element.GetAttribute("HelpText")
+                       ?? element.GetAttribute("hint")
                        ?? element.GetAttribute("placeholderValue")
                        ?? element.GetAttribute("placeholder");
         return placeholder;
@@ -125,7 +125,7 @@ public class MauiEntryControl<TScope> : MauiControlBase<TScope>, IEditableTextCo
     {
         if (expected == null) return ContainingScope;
         
-        return RunAssert("AssertPlaceholder", expected, () =>
+        return RunAssert(nameof(AssertPlaceholder), expected, () =>
         {
             WaitPlaceholder(expected, timeoutMs);
             return GetPlaceholder();
@@ -153,7 +153,7 @@ public class MauiEntryControl<TScope> : MauiControlBase<TScope>, IEditableTextCo
     {
         if (expected == null) return ContainingScope;
         
-        return RunAssert("AssertReadOnly", expected, () =>
+        return RunAssert(nameof(AssertReadOnly), expected, () =>
         {
             WaitReadOnly(expected, timeoutMs);
             return IsReadOnly();

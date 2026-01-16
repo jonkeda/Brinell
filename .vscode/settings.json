@@ -15,6 +15,12 @@
         "/^Start-Sleep -Seconds 3; \\(Invoke-WebRequest -Uri \"http://127\\.0\\.0\\.1:4723/status\" -UseBasicParsing\\)\\.Content$/": {
             "approve": true,
             "matchCommandLine": true
-        }
-    }
+        },
+        "Out-File": true,
+        "Get-Item": true,
+        "Join-Path": true
+    },
+    "cSpell.words": [
+        "Brinell"
+    ]
 }

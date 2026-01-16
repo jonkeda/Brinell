@@ -1,6 +1,4 @@
 using System.Drawing;
-using OpenQA.Selenium;
-using OpenQA.Selenium.Appium;
 
 namespace Brinell.Maui.Interfaces;
 
@@ -71,6 +69,13 @@ public interface IMauiElement
     /// Submits a form.
     /// </summary>
     void Submit();
+    
+    /// <summary>
+    /// Scrolls the element into the visible area of the viewport.
+    /// Uses Selenium 4 ScrollToElement action.
+    /// </summary>
+    /// <param name="driver">The driver to use for creating the scroll action.</param>
+    void ScrollIntoView(IMauiDriver driver);
     
     #endregion
     

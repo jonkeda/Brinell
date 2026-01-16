@@ -1,7 +1,3 @@
-using Brinell.Core.Locators;
-using OpenQA.Selenium;
-using OpenQA.Selenium.Appium;
-
 namespace Brinell.Maui.Extensions;
 
 /// <summary>
@@ -22,7 +18,8 @@ public static class LocatorExtensions
         
         return locator.Strategy switch
         {
-            LocatorStrategy.AutomationId => MobileBy.Id(locator.Value),
+            // MAUI AutomationId maps to AccessibilityId in Windows automation tree
+            LocatorStrategy.AutomationId => MobileBy.AccessibilityId(locator.Value),
             LocatorStrategy.AccessibilityId => MobileBy.AccessibilityId(locator.Value),
             LocatorStrategy.Id => By.Id(locator.Value),
             LocatorStrategy.Name => By.Name(locator.Value),

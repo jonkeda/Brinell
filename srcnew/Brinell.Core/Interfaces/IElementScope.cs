@@ -1,9 +1,8 @@
-using Brinell.Core.Locators;
-
 namespace Brinell.Core.Interfaces;
 
 /// <summary>
 /// Non-generic element scope interface for polymorphic access.
+/// Provides page context and ready-state checking.
 /// </summary>
 public interface IElementScope
 {
@@ -11,6 +10,24 @@ public interface IElementScope
     /// Default locator strategy for this scope.
     /// </summary>
     LocatorStrategy DefaultLocatorStrategy { get; }
+    
+    /// <summary>
+    /// The page containing this scope.
+    /// For pages, returns self. For containers, returns parent's page.
+    /// </summary>
+    IPageObject? Page { get; }
+    
+    /// <summary>
+    /// Check if the scope is ready for element finding.
+    /// For pages, this checks if the page is loaded.
+    /// For containers, this checks if the parent is ready and the container root exists.
+    /// </summary>
+    bool IsReady(int? timeoutMs = null);
+    
+    /// <summary>
+    /// Wait until the scope is ready for element finding.
+    /// </summary>
+    bool WaitReady(int? timeoutMs = null);
 }
 
 /// <summary>

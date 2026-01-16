@@ -1,8 +1,3 @@
-using Brinell.Core.Configuration;
-using Brinell.Maui.Interfaces;
-using Brinell.Maui.Pages;
-using OpenQA.Selenium;
-
 namespace Brinell.Maui.Tests;
 
 /// <summary>
@@ -249,26 +244,6 @@ public class FluentChainingTests
     #endregion
     
     #region Type Safety Tests
-    
-    [Fact]
-    public void GenericButton_HasCorrectScopeType()
-    {
-        // Arrange & Act
-        var button = _testPage.TestButton;
-        
-        // Assert - The button's Scope property should be an IElementScope
-        Assert.NotNull(button.Scope);
-    }
-    
-    [Fact]
-    public void GenericEntry_HasCorrectScopeType()
-    {
-        // Arrange & Act
-        var entry = _testPage.TestEntry;
-        
-        // Assert - The entry's Scope property should be an IElementScope
-        Assert.NotNull(entry.Scope);
-    }
     
     [Fact]
     public void PageControl_ReturnsPage_ContainerControl_ReturnsContainer()

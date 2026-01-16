@@ -1,7 +1,4 @@
-using Brinell.Core.Exceptions;
-using Brinell.Core.Locators;
 using Brinell.Maui.Controls;
-using Brinell.Maui.Interfaces;
 
 namespace Brinell.Maui.Pages;
 
@@ -117,6 +114,23 @@ public abstract class MauiPageObjectBase<TSelf> : MauiObjectBase, IMauiPage<TSel
     #region IMauiElementScope Implementation
     
     /// <inheritdoc />
+    public IPageObject? Page => this;
+    
+    /// <inheritdoc />
+    public bool IsReady(int? timeoutMs = null)
+    {
+        // For pages, ready means loaded
+        return IsLoaded(timeoutMs);
+    }
+    
+    /// <inheritdoc />
+    public bool WaitReady(int? timeoutMs = null)
+    {
+        // For pages, wait ready means wait loaded
+        return WaitLoaded(true, timeoutMs);
+    }
+    
+    /// <inheritdoc />
     public IMauiElement? TryFindElement(Locator locator)
     {
         // Delegate to context (searches from driver root)
@@ -136,34 +150,46 @@ public abstract class MauiPageObjectBase<TSelf> : MauiObjectBase, IMauiPage<TSel
         // Delegate to context (searches from driver root)
         return _context.FindElements(locator);
     }
-    
+
     #endregion
-    
+
     #region Factory Methods
-    
+
+    /// <summary>
+    /// Creates a generic control within this page scope.
+    /// </summary>
+    protected MauiControlBase<TSelf> Control(Locator locator)
+        => new(this, locator);
+
+    /// <summary>
+    /// Creates a generic control within this page scope.
+    /// </summary>
+    protected MauiControlBase<TSelf> Control(string locator)
+        => new (this, locator);
+
     /// <summary>
     /// Creates a button control within this page scope.
     /// </summary>
     protected MauiButtonControl<TSelf> Button(Locator locator)
-        => new MauiButtonControl<TSelf>(this, locator);
+        => new(this, locator);
     
     /// <summary>
-    /// Creates a button control within this page scope using automation ID.
+    /// Creates a button control within this page scope using the scope default locator.
     /// </summary>
-    protected MauiButtonControl<TSelf> Button(string automationId)
-        => Button(Locator.ById(automationId));
-    
+    protected MauiButtonControl<TSelf> Button(string locator)
+        => new(this, locator);
+
     /// <summary>
     /// Creates an entry control within this page scope.
     /// </summary>
     protected MauiEntryControl<TSelf> Entry(Locator locator)
-        => new MauiEntryControl<TSelf>(this, locator);
+        => new(this, locator);
     
     /// <summary>
     /// Creates an entry control within this page scope using automation ID.
     /// </summary>
-    protected MauiEntryControl<TSelf> Entry(string automationId)
-        => Entry(Locator.ById(automationId));
+    protected MauiEntryControl<TSelf> Entry(string locator)
+        => new (this, locator);
     
     #endregion
 }

@@ -10,9 +10,10 @@ public interface IPagedScope<TPage, TElement> : IElementScope<TElement>
     where TPage : IPageObject
 {
     /// <summary>
-    /// Gets the page that owns this scope.
+    /// Gets the strongly-typed page that owns this scope.
     /// For pages: returns 'this' (the page itself).
     /// For containers: returns the parent page, not the container.
+    /// Hides <see cref="IElementScope.Page"/> to provide compile-time type safety.
     /// </summary>
-    TPage Page { get; }
+    new TPage Page { get; }
 }

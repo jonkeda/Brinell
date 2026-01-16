@@ -1,7 +1,4 @@
 using System.Drawing;
-using Brinell.Maui.Interfaces;
-using OpenQA.Selenium;
-using OpenQA.Selenium.Appium;
 
 namespace Brinell.Maui.Wrappers;
 
@@ -61,6 +58,17 @@ public sealed class MauiElement : IMauiElement
     
     /// <inheritdoc />
     public void Submit() => _element.Submit();
+    
+    /// <inheritdoc />
+    public void ScrollIntoView(IMauiDriver driver)
+    {
+        var unwrappedDriver = driver.UnwrapDriver();
+        var actions = new OpenQA.Selenium.Interactions.Actions(unwrappedDriver);
+        
+        // MoveToElement scrolls the element into view on most drivers
+        // ScrollToElement uses wheel actions which Windows driver doesn't support
+        actions.MoveToElement(_element).Perform();
+    }
     
     #endregion
     
