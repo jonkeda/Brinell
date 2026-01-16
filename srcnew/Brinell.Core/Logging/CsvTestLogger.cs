@@ -89,6 +89,9 @@ public class CsvTestLogger : ITestLogger
     public void LogError(string testName, string pageName, string controlId, string action, Exception ex)
         => Log(testName, pageName, controlId, action, null, null, LogResult.Error, ex.Message);
 
+    public void LogScreenshot(string testName, string pageName, string screenshotPath, ScreenshotReason reason)
+        => Log(testName, pageName, "", "Screenshot", screenshotPath, null, LogResult.Info, reason.ToString());
+
     public void Flush()
     {
         lock (_lock)

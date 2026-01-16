@@ -39,6 +39,8 @@ public class NullTestLogger : ITestLogger
 
     public void LogError(string testName, string pageName, string controlId, string action, Exception ex) { }
 
+    public void LogScreenshot(string testName, string pageName, string screenshotPath, ScreenshotReason reason) { }
+
     public void Flush() { }
 
     public void Dispose() { }

@@ -1,3 +1,7 @@
+using Brinell.Core.Configuration;
+using Brinell.Core.Interfaces;
+using Brinell.Core.Services;
+using Brinell.Core.Testing;
 using Brinell.Maui.UITests.Pages;
 using OpenQA.Selenium.Appium;
 
@@ -18,6 +22,7 @@ public class AppiumFixture : IDisposable
 {
     private readonly MauiTestContext _context;
     private readonly MainPage _mainPage;
+    private readonly IScreenshotService _screenshotService;
     private bool _disposed;
 
     public AppiumFixture()
@@ -25,6 +30,17 @@ public class AppiumFixture : IDisposable
         var options = CreateTestContextOptions();
         _context = new MauiTestContext(options);
         _mainPage = new MainPage(_context);
+        
+        // Initialize screenshot service
+        var screenshotSettings = new ScreenshotSettings
+        {
+            OutputDirectory = GetScreenshotDirectory(),
+            CaptureOnFailure = true,
+            IncludeTimestamp = true,
+            Format = ScreenshotFormat.Png
+        };
+        _screenshotService = new ScreenshotService(_context, _context.Logger, screenshotSettings);
+        ScreenshotTestAttribute.SetService(_screenshotService);
     }
 
     /// <summary>
@@ -36,6 +52,23 @@ public class AppiumFixture : IDisposable
     /// Gets the MainPage page object.
     /// </summary>
     public MainPage MainPage => _mainPage;
+    
+    /// <summary>
+    /// Gets the screenshot service.
+    /// </summary>
+    public IScreenshotService ScreenshotService => _screenshotService;
+    
+    /// <summary>
+    /// Gets the screenshot output directory path.
+    /// </summary>
+    private static string GetScreenshotDirectory()
+    {
+        var solutionDir = FindSolutionDirectory();
+        var path = Path.Combine(solutionDir, "TestResults", "Screenshots");
+        if (!Directory.Exists(path))
+            Directory.CreateDirectory(path);
+        return path;
+    }
 
     /// <summary>
     /// Creates test context options with platform-specific capabilities.

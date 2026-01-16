@@ -110,9 +110,16 @@ public class MauiButtonControl<TScope> : MauiControlBase<TScope>, IClickableCont
         var element = TryFindElement();
         if (element != null && IsVisible() != true)
         {
+            try
+            {
                 element.ScrollIntoView(Context.Driver);
-            // Give the UI a moment to settle after scrolling
-            Thread.Sleep(200);
+                // Give the UI a moment to settle after scrolling
+                Thread.Sleep(200);
+            }
+            catch
+            {
+                // Ignore scroll errors - Windows driver has limited support for scroll actions
+            }
         }
         
         // Final check - element should now be clickable

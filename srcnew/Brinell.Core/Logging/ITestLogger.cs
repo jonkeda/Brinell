@@ -163,6 +163,19 @@ public interface ITestLogger : IDisposable
         string action,
         Exception ex);
     
+    /// <summary>
+    /// Log a screenshot capture event.
+    /// </summary>
+    /// <param name="testName">Name of the current test.</param>
+    /// <param name="pageName">Name of the current page.</param>
+    /// <param name="screenshotPath">Path where the screenshot was saved.</param>
+    /// <param name="reason">Reason for capturing the screenshot.</param>
+    void LogScreenshot(
+        string testName,
+        string pageName,
+        string screenshotPath,
+        ScreenshotReason reason);
+    
     #endregion
     
     #region Lifecycle
