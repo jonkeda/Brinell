@@ -18,7 +18,16 @@
         },
         "Out-File": true,
         "Get-Item": true,
-        "Join-Path": true
+        "Join-Path": true,
+        "/^Start-Sleep -Seconds 4; \\(Invoke-WebRequest -Uri \"http://127\\.0\\.0\\.1:4723/status\" -UseBasicParsing\\)\\.Content$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^Stop-Process -Name \"Brinell\\*\" -Force -ErrorAction SilentlyContinue; taskkill /f /im \"Brinell\\.Samples\\.Maui\\.App\\.exe\" 2>\\$null; \"Cleaned up\"$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "taskkill": true
     },
     "cSpell.words": [
         "Brinell"

@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:Brinell.Samples.Maui.App.ViewModels"
+             x:Class="Brinell.Samples.Maui.App.Pages.ContainerDemoPage"
+             AutomationId="ContainerDemoPage"
+             Title="Container Demo">
+
+    <ContentPage.BindingContext>
+        <viewmodels:ContainerDemoViewModel />
+    </ContentPage.BindingContext>
+
+    <ScrollView AutomationId="ContainerScrollView">
+        <VerticalStackLayout Padding="20" Spacing="20">
+            
+            <!-- Page Title -->
+            <Label AutomationId="PageTitle" 
+                   Text="Container Demo" 
+                   FontSize="28" 
+                   FontAttributes="Bold" />
+            
+            <!-- Section 1: Single Container (UserProfile) -->
+            <Frame AutomationId="UserProfileFrame" Padding="15" CornerRadius="10">
+                <VerticalStackLayout Spacing="10">
+                    <Label AutomationId="ProfileTitle" Text="User Profile" FontSize="18" FontAttributes="Bold" />
+                    <Entry AutomationId="ProfileNameEntry" Placeholder="Name" Text="{Binding ProfileName}" />
+                    <Entry AutomationId="ProfileEmailEntry" Placeholder="Email" Keyboard="Email" Text="{Binding ProfileEmail}" />
+                    <Button AutomationId="ProfileSaveButton" Text="Save Profile" Command="{Binding SaveProfileCommand}" />
+                    <Label AutomationId="ProfileStatusLabel" Text="{Binding ProfileStatus}" />
+                </VerticalStackLayout>
+            </Frame>
+            
+            <!-- Section 2: Nested Containers -->
+            <Frame AutomationId="OuterFrame" Padding="15" CornerRadius="10">
+                <VerticalStackLayout Spacing="10">
+                    <Label AutomationId="OuterTitle" Text="Outer Container" FontSize="16" FontAttributes="Bold" />
+                    
+                    <Frame AutomationId="InnerFrame" Padding="10" CornerRadius="5" BackgroundColor="#F0F0F0">
+                        <VerticalStackLayout Spacing="5">
+                            <Label AutomationId="InnerTitle" Text="Inner Container" FontSize="14" />
+                            <Entry AutomationId="InnerEntry" Placeholder="Nested input" Text="{Binding InnerText}" />
+                            <Button AutomationId="InnerButton" Text="Inner Action" Command="{Binding InnerActionCommand}" />
+                        </VerticalStackLayout>
+                    </Frame>
+                    
+                    <Button AutomationId="OuterButton" Text="Outer Action" Command="{Binding OuterActionCommand}" />
+                </VerticalStackLayout>
+            </Frame>
+            
+            <!-- Section 3: Task List (CollectionView) -->
+            <Frame AutomationId="TaskListFrame" Padding="15" CornerRadius="10">
+                <VerticalStackLayout Spacing="10">
+                    <Label AutomationId="TaskListTitle" Text="Tasks" FontSize="18" FontAttributes="Bold" />
+                    
+                    <CollectionView AutomationId="TaskList" 
+                                    ItemsSource="{Binding Tasks}"
+                                    SelectionMode="Single"
+                                    SelectedItem="{Binding SelectedTask}">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Frame AutomationId="TaskItem" Padding="10" Margin="0,5" CornerRadius="5">
+                                    <HorizontalStackLayout Spacing="10">
+                                        <CheckBox AutomationId="TaskCheckBox" IsChecked="{Binding IsCompleted}" />
+                                        <Label AutomationId="TaskNameLabel" Text="{Binding Name}" VerticalOptions="Center" HorizontalOptions="FillAndExpand" />
+                                        <Button AutomationId="TaskDeleteButton" Text="X" WidthRequest="40" Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:ContainerDemoViewModel}}, Path=DeleteTaskCommand}" CommandParameter="{Binding}" />
+                                    </HorizontalStackLayout>
+                                </Frame>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                    
+                    <HorizontalStackLayout Spacing="10">
+                        <Entry AutomationId="NewTaskEntry" Placeholder="New task" HorizontalOptions="FillAndExpand" Text="{Binding NewTaskName}" />
+                        <Button AutomationId="AddTaskButton" Text="Add" Command="{Binding AddTaskCommand}" />
+                    </HorizontalStackLayout>
+                    
+                    <Label AutomationId="TaskCountLabel" Text="{Binding TaskCount, StringFormat='Total: {0} tasks'}" />
+                </VerticalStackLayout>
+            </Frame>
+            
+            <!-- Section 4: Contact Cards (Static list with indexed IDs) -->
+            <Frame AutomationId="ContactsFrame" Padding="15" CornerRadius="10">
+                <VerticalStackLayout Spacing="10">
+                    <Label AutomationId="ContactsTitle" Text="Contacts" FontSize="18" FontAttributes="Bold" />
+                    
+                    <Frame AutomationId="Contact_0" Padding="10" Margin="0,5" CornerRadius="5">
+                        <VerticalStackLayout>
+                            <Label AutomationId="ContactName" Text="Alice Johnson" FontAttributes="Bold" />
+                            <Label AutomationId="ContactEmail" Text="alice@example.com" />
+                            <Button AutomationId="ContactCallButton" Text="Call" />
+                        </VerticalStackLayout>
+                    </Frame>
+                    
+                    <Frame AutomationId="Contact_1" Padding="10" Margin="0,5" CornerRadius="5">
+                        <VerticalStackLayout>
+                            <Label AutomationId="ContactName" Text="Bob Smith" FontAttributes="Bold" />
+                            <Label AutomationId="ContactEmail" Text="bob@example.com" />
+                            <Button AutomationId="ContactCallButton" Text="Call" />
+                        </VerticalStackLayout>
+                    </Frame>
+                    
+                    <Frame AutomationId="Contact_2" Padding="10" Margin="0,5" CornerRadius="5">
+                        <VerticalStackLayout>
+                            <Label AutomationId="ContactName" Text="Carol White" FontAttributes="Bold" />
+                            <Label AutomationId="ContactEmail" Text="carol@example.com" />
+                            <Button AutomationId="ContactCallButton" Text="Call" />
+                        </VerticalStackLayout>
+                    </Frame>
+                </VerticalStackLayout>
+            </Frame>
+            
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

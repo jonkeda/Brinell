@@ -1,8 +1,41 @@
 # Copilot Instructions for Brinell Framework
 
-**Last Updated:** January 3, 2026
+**Last Updated:** January 18, 2026
 
 This document provides guidance for GitHub Copilot and other AI assistants working on the Brinell UI test automation framework.
+
+---
+
+## 0. Test Code Anti-Patterns (Critical)
+
+### ❌ NEVER Use Thread.Sleep or Arbitrary Waits
+
+**NEVER** use `Thread.Sleep()`, `Task.Delay()`, or any arbitrary time-based waits in test code.
+
+```csharp
+❌ WRONG - Arbitrary sleep:
+element.Click();
+Thread.Sleep(500);  // NEVER DO THIS
+Assert.True(nextElement.IsVisible());
+
+✅ CORRECT - Wait for a condition:
+element.Click();
+nextElement.WaitVisible(true, timeoutMs: 5000);
+Assert.True(nextElement.IsVisible());
+
+✅ CORRECT - Use polling:
+element.Click();
+// Framework polls until condition is met or timeout
+nextElement.AssertVisible("Element should appear after click");
+```
+
+**Why this matters:**
+- Sleeps are flaky - they either wait too long or not long enough
+- They make tests slow and unreliable
+- The Brinell framework has built-in `Wait*` and `Assert*` methods that poll for conditions
+- Always wait FOR something specific, never wait arbitrarily
+
+**Rule:** If you need to wait, use the framework's `Wait*` methods or `Assert*` methods which poll until a condition is met or timeout.
 
 ---
 

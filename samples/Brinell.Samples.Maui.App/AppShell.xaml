@@ -99,6 +99,15 @@
                       AutomationId="ShellAdvanced" />
     </FlyoutItem>
 
+    <!-- Container Demo -->
+    <FlyoutItem Title="Container Demo" 
+                AutomationId="FlyoutContainerDemo">
+        <ShellContent Title="Container Demo"
+                      ContentTemplate="{DataTemplate pages:ContainerDemoPage}"
+                      Route="containerdemo"
+                      AutomationId="ShellContainerDemo" />
+    </FlyoutItem>
+
     <Shell.FlyoutFooter>
         <VerticalStackLayout Padding="10" 
                              BackgroundColor="#F0F0F0"

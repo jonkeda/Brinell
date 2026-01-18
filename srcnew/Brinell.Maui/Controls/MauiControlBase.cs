@@ -121,6 +121,60 @@ public class MauiControlBase<TScope> : ControlObjectBase<TScope>, IControlObject
         return _mauiScope.FindElement(Locator);
     }
     
+    /// <summary>
+    /// Finds element, waiting for it to exist if timeout is specified.
+    /// Single entry point for element retrieval with optional wait.
+    /// </summary>
+    /// <param name="timeoutMs">Optional timeout to wait for element to exist.</param>
+    /// <returns>The element.</returns>
+    /// <exception cref="ElementNotFoundException">Thrown when element is not found within timeout.</exception>
+    protected IMauiElement FindElementWithWait(int? timeoutMs = null)
+    {
+        if (timeoutMs.HasValue)
+        {
+            var timeout = timeoutMs.Value;
+            var stopwatch = Stopwatch.StartNew();
+            
+            while (stopwatch.ElapsedMilliseconds < timeout)
+            {
+                var element = TryFindElement();
+                if (element != null)
+                    return element;
+                    
+                Thread.Sleep(PollingIntervalMs);
+            }
+        }
+        
+        return FindElement(); // Throws if not found
+    }
+    
+    /// <summary>
+    /// Polls with pre-found element reference.
+    /// Element is found once at operation start, no re-finding needed.
+    /// </summary>
+    /// <param name="element">The pre-found element.</param>
+    /// <param name="condition">The condition to check.</param>
+    /// <param name="timeoutMs">Maximum time to wait in milliseconds.</param>
+    /// <returns>True if condition was met, false if timeout reached.</returns>
+    protected bool PollWithElement(
+        IMauiElement element,
+        Func<IMauiElement, bool> condition,
+        int timeoutMs)
+    {
+        var stopwatch = Stopwatch.StartNew();
+        
+        while (stopwatch.ElapsedMilliseconds < timeoutMs)
+        {
+            if (condition(element))
+                return true;
+            
+            Thread.Sleep(PollingIntervalMs);
+        }
+        
+        // Final check
+        return condition(element);
+    }
+    
     #endregion
     
     #region Logging Helpers
@@ -233,6 +287,82 @@ public class MauiControlBase<TScope> : ControlObjectBase<TScope>, IControlObject
         }
     }
     
+    /// <summary>
+    /// Run operation that finds element first, then executes core logic.
+    /// Logging wraps the entire operation including element finding.
+    /// </summary>
+    /// <param name="action">The action name for logging.</param>
+    /// <param name="timeoutMs">Optional timeout for element finding.</param>
+    /// <param name="coreOperation">The core operation to execute with the found element.</param>
+    /// <returns>The containing scope for fluent chaining.</returns>
+    protected TScope RunWithElement(string action, int? timeoutMs, Action<IMauiElement> coreOperation)
+    {
+        Run(action, () =>
+        {
+            var element = FindElementWithWait(timeoutMs ?? DefaultTimeoutMs);
+            coreOperation(element);
+        });
+        return ContainingScope;
+    }
+    
+    /// <summary>
+    /// Run operation with value that finds element first, then executes core logic.
+    /// </summary>
+    /// <typeparam name="TValue">The type of the value parameter.</typeparam>
+    /// <param name="action">The action name for logging.</param>
+    /// <param name="value">The value to log.</param>
+    /// <param name="timeoutMs">Optional timeout for element finding.</param>
+    /// <param name="coreOperation">The core operation to execute with the found element.</param>
+    /// <returns>The containing scope for fluent chaining.</returns>
+    protected TScope RunWithElement<TValue>(string action, TValue? value, int? timeoutMs, 
+        Action<IMauiElement> coreOperation)
+    {
+        Run(action, value, () =>
+        {
+            var element = FindElementWithWait(timeoutMs ?? DefaultTimeoutMs);
+            coreOperation(element);
+        });
+        return ContainingScope;
+    }
+    
+    /// <summary>
+    /// Run operation that finds element first, then executes core logic returning a result.
+    /// </summary>
+    /// <typeparam name="TResult">The return type.</typeparam>
+    /// <param name="action">The action name for logging.</param>
+    /// <param name="timeoutMs">Optional timeout for element finding.</param>
+    /// <param name="coreOperation">The core operation to execute with the found element.</param>
+    /// <returns>The result of the operation.</returns>
+    protected TResult RunWithElement<TResult>(string action, int? timeoutMs, 
+        Func<IMauiElement, TResult> coreOperation)
+    {
+        return Run(action, () =>
+        {
+            var element = FindElementWithWait(timeoutMs ?? DefaultTimeoutMs);
+            return coreOperation(element);
+        });
+    }
+    
+    #endregion
+    
+    #region Basic Interactions
+    
+    /// <summary>
+    /// Sends keyboard keys to the control. Uses framework's Run for logging.
+    /// </summary>
+    /// <param name="keys">The keys to send.</param>
+    /// <returns>The containing scope for fluent chaining.</returns>
+    public virtual TScope SendKeys(string keys)
+    {
+        Run(nameof(SendKeys), keys, () =>
+        {
+            var element = FindElement();
+            element.Click(); // Focus the element first
+            element.SendKeys(keys);
+        });
+        return ContainingScope;
+    }
+    
     #endregion
     
     #region State (Is methods - immediate, no waiting)
@@ -243,36 +373,74 @@ public class MauiControlBase<TScope> : ControlObjectBase<TScope>, IControlObject
         return TryFindElement() != null;
     }
     
+    /// <summary>
+    /// Checks if element is visible using pre-found element.
+    /// No stale element handling - element is found once at operation start.
+    /// </summary>
+    /// <param name="element">The pre-found element.</param>
+    /// <returns>True if visible, false otherwise.</returns>
+    protected bool? IsVisibleCore(IMauiElement? element)
+    {
+        if (element == null) return null;
+        return element.Displayed;
+    }
+    
     /// <inheritdoc />
     public bool? IsVisible()
     {
-        var element = TryFindElement();
+        return IsVisibleCore(TryFindElement());
+    }
+    
+    /// <summary>
+    /// Checks if element is enabled using pre-found element.
+    /// No stale element handling - element is found once at operation start.
+    /// </summary>
+    /// <param name="element">The pre-found element.</param>
+    /// <returns>True if enabled, false otherwise.</returns>
+    protected bool? IsEnabledCore(IMauiElement? element)
+    {
         if (element == null) return null;
-        
-        try
-        {
-            return element.Displayed;
-        }
-        catch (StaleElementReferenceException)
-        {
-            return null;
-        }
+        return element.Enabled;
     }
     
     /// <inheritdoc />
     public bool? IsEnabled()
     {
-        var element = TryFindElement();
-        if (element == null) return null;
-        
-        try
-        {
-            return element.Enabled;
-        }
-        catch (StaleElementReferenceException)
-        {
-            return null;
-        }
+        return IsEnabledCore(TryFindElement());
+    }
+    
+    #endregion
+    
+    #region Waiting - Core Methods (Element-Aware)
+    
+    /// <summary>
+    /// Polls enabled state using pre-found element.
+    /// </summary>
+    /// <param name="element">The pre-found element.</param>
+    /// <param name="expected">The expected enabled state.</param>
+    /// <param name="timeoutMs">Maximum time to wait in milliseconds.</param>
+    /// <returns>True if condition was met, false if timeout reached.</returns>
+    protected bool WaitEnabledCore(IMauiElement element, bool expected, int timeoutMs)
+    {
+        return PollWithElement(
+            element,
+            e => IsEnabledCore(e) == expected,
+            timeoutMs);
+    }
+    
+    /// <summary>
+    /// Polls visible state using pre-found element.
+    /// </summary>
+    /// <param name="element">The pre-found element.</param>
+    /// <param name="expected">The expected visible state.</param>
+    /// <param name="timeoutMs">Maximum time to wait in milliseconds.</param>
+    /// <returns>True if condition was met, false if timeout reached.</returns>
+    protected bool WaitVisibleCore(IMauiElement element, bool expected, int timeoutMs)
+    {
+        return PollWithElement(
+            element,
+            e => IsVisibleCore(e) == expected,
+            timeoutMs);
     }
     
     #endregion
@@ -316,6 +484,15 @@ public class MauiControlBase<TScope> : ControlObjectBase<TScope>, IControlObject
     
     #region Assertions (throw on failure)
     
+    /// <summary>
+    /// Asserts the element exists. Throws if it doesn't.
+    /// </summary>
+    /// <param name="message">Optional custom message for the assertion failure.</param>
+    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
+    /// <returns>The containing scope for fluent chaining.</returns>
+    public TScope AssertExists(string? message = null, int? timeoutMs = null)
+        => AssertExists(true, message, timeoutMs);
+    
     /// <inheritdoc />
     public TScope AssertExists(bool? expected, string? message = null, int? timeoutMs = null)
     {
@@ -332,6 +509,15 @@ public class MauiControlBase<TScope> : ControlObjectBase<TScope>, IControlObject
         return ContainingScope;
     }
     
+    /// <summary>
+    /// Asserts the element is visible. Throws if it isn't.
+    /// </summary>
+    /// <param name="message">Optional custom message for the assertion failure.</param>
+    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
+    /// <returns>The containing scope for fluent chaining.</returns>
+    public TScope AssertVisible(string? message = null, int? timeoutMs = null)
+        => AssertVisible(true, message, timeoutMs);
+    
     /// <inheritdoc />
     public TScope AssertVisible(bool? expected, string? message = null, int? timeoutMs = null)
     {
@@ -347,6 +533,15 @@ public class MauiControlBase<TScope> : ControlObjectBase<TScope>, IControlObject
         
         return ContainingScope;
     }
+    
+    /// <summary>
+    /// Asserts the element is enabled. Throws if it isn't.
+    /// </summary>
+    /// <param name="message">Optional custom message for the assertion failure.</param>
+    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
+    /// <returns>The containing scope for fluent chaining.</returns>
+    public TScope AssertEnabled(string? message = null, int? timeoutMs = null)
+        => AssertEnabled(true, message, timeoutMs);
     
     /// <inheritdoc />
     public TScope AssertEnabled(bool? expected, string? message = null, int? timeoutMs = null)
@@ -440,14 +635,7 @@ public class MauiControlBase<TScope> : ControlObjectBase<TScope>, IControlObject
         var element = TryFindElement();
         if (element == null) return null;
         
-        try
-        {
-            return element.GetAttribute(name);
-        }
-        catch (StaleElementReferenceException)
-        {
-            return null;
-        }
+        return element.GetAttribute(name);
     }
     
     #endregion

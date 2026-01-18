@@ -33,115 +33,181 @@ public class MauiButtonControl<TScope> : MauiControlBase<TScope>, IClickableCont
     /// <inheritdoc />
     public TScope Click(int? timeoutMs = null)
     {
-        Run(nameof(Click), () =>
+        return RunWithElement(nameof(Click), timeoutMs, element =>
         {
-            CheckClickable();
-            var element = FindElement();
-            element.Click();
+            ClickCore(element, timeoutMs);
         });
-        return ContainingScope;
     }
     
     /// <inheritdoc />
     public TScope DoubleClick(int? timeoutMs = null)
     {
-        Run(nameof(DoubleClick), () =>
+        return RunWithElement(nameof(DoubleClick), timeoutMs, element =>
         {
-            CheckClickable(timeoutMs);
-            var element = FindElement();
-            element.Click();
-            element.Click();
+            DoubleClickCore(element, timeoutMs);
         });
-        return ContainingScope;
     }
     
     /// <inheritdoc />
     public TScope RightClick(int? timeoutMs = null)
     {
-        Run(nameof(RightClick), () =>
+        return RunWithElement(nameof(RightClick), timeoutMs, element =>
         {
-            CheckClickable(timeoutMs);
-            var element = FindElement();
-            
-            // Unwrap the element and driver for Actions class
-            var unwrappedElement = element.UnwrapElement();
-            var unwrappedDriver = Context.Driver.UnwrapDriver();
-            
-            var actions = new OpenQA.Selenium.Interactions.Actions(unwrappedDriver);
-            actions.ContextClick(unwrappedElement).Perform();
+            RightClickCore(element, timeoutMs);
         });
-        return ContainingScope;
+    }
+    
+    #endregion
+    
+    #region Click - Core Methods (Element-Aware, No Logging)
+    
+    /// <summary>
+    /// Performs click on pre-found element. No logging - caller handles logging.
+    /// </summary>
+    /// <param name="element">The pre-found element.</param>
+    /// <param name="timeoutMs">Optional timeout for clickable check.</param>
+    protected void ClickCore(IMauiElement element, int? timeoutMs = null)
+    {
+        CheckClickableCore(element, timeoutMs);
+        element.Click();
+    }
+    
+    /// <summary>
+    /// Performs double-click on pre-found element. No logging - caller handles logging.
+    /// </summary>
+    /// <param name="element">The pre-found element.</param>
+    /// <param name="timeoutMs">Optional timeout for clickable check.</param>
+    protected void DoubleClickCore(IMauiElement element, int? timeoutMs = null)
+    {
+        CheckClickableCore(element, timeoutMs);
+        element.Click();
+        element.Click();
+    }
+    
+    /// <summary>
+    /// Performs right-click on pre-found element. No logging - caller handles logging.
+    /// </summary>
+    /// <param name="element">The pre-found element.</param>
+    /// <param name="timeoutMs">Optional timeout for clickable check.</param>
+    protected void RightClickCore(IMauiElement element, int? timeoutMs = null)
+    {
+        CheckClickableCore(element, timeoutMs);
+        
+        var unwrappedElement = element.UnwrapElement();
+        var unwrappedDriver = Context.Driver.UnwrapDriver();
+        
+        var actions = new OpenQA.Selenium.Interactions.Actions(unwrappedDriver);
+        actions.ContextClick(unwrappedElement).Perform();
+    }
+    
+    /// <summary>
+    /// Verifies element is clickable using pre-found element. No logging.
+    /// </summary>
+    /// <param name="element">The pre-found element.</param>
+    /// <param name="timeoutMs">Optional timeout for enabled check.</param>
+    protected void CheckClickableCore(IMauiElement element, int? timeoutMs = null)
+    {
+        var timeout = timeoutMs ?? DefaultTimeoutMs;
+        
+        // Check enabled state (element already exists, so skip WaitExists)
+        if (IsEnabledCore(element) != true)
+        {
+            if (!WaitEnabledCore(element, true, timeout))
+            {
+                throw new TimeoutException(
+                    $"Element was not enabled within {timeout}ms. Locator: {Locator}");
+            }
+        }
+        
+        // Check visibility, scroll if needed
+        if (IsVisibleCore(element) != true)
+        {
+            element.ScrollIntoView(Context.Driver);
+        }
+    }
+    
+    #endregion
+    
+    #region IsClickable - Core Methods
+    
+    /// <summary>
+    /// Checks clickable state using pre-found element.
+    /// </summary>
+    /// <param name="element">The pre-found element.</param>
+    /// <returns>True if clickable (visible and enabled), null if element is null.</returns>
+    protected bool? IsClickableCore(IMauiElement? element)
+    {
+        var isVisible = IsVisibleCore(element);
+        var isEnabled = IsEnabledCore(element);
+        
+        if (isVisible == null || isEnabled == null)
+            return null;
+        
+        return isVisible.Value && isEnabled.Value;
     }
     
     /// <inheritdoc />
     public bool? IsClickable()
     {
-        var isVisible = IsVisible();
-        var isEnabled = IsEnabled();
-        
-        // If element doesn't exist, return null
-        if (isVisible == null || isEnabled == null)
-        {
-            return null;
-        }
-        
-        return isVisible.Value && isEnabled.Value;
+        return IsClickableCore(TryFindElement());
     }
     
+    /// <summary>
+    /// Public CheckClickable - finds element and delegates to Core.
+    /// </summary>
+    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
     public void CheckClickable(int? timeoutMs = null)
     {
-        var timeout = timeoutMs ?? DefaultTimeoutMs;
-        
-        // First, wait for element to exist
-        if (!WaitExists(true, timeout))
-        {
-            throw new TimeoutException(
-                $"Element not found within {timeout}ms. Locator: {Locator}");
-        }
-        
-        // Wait for element to be enabled
-        if (!WaitEnabled(true, timeout))
-        {
-            throw new TimeoutException(
-                $"Element was not enabled within {timeout}ms. Locator: {Locator}");
-        }
-        
-        // If element is not visible (off-screen), try to scroll it into view
-        var element = TryFindElement();
-        if (element != null && IsVisible() != true)
-        {
-            try
-            {
-                element.ScrollIntoView(Context.Driver);
-                // Give the UI a moment to settle after scrolling
-                Thread.Sleep(200);
-            }
-            catch
-            {
-                // Ignore scroll errors - Windows driver has limited support for scroll actions
-            }
-        }
-        
-        // Final check - element should now be clickable
-        // If still not visible after scroll attempt, we'll try clicking anyway
-        // as some drivers allow clicking non-visible elements
-        if (!WaitEnabled(true, timeout / 2))
-        {
-            throw new TimeoutException(
-                $"Element was not clickable within {timeout}ms. Locator: {Locator}");
-        }
+        var element = FindElementWithWait(timeoutMs ?? DefaultTimeoutMs);
+        CheckClickableCore(element, timeoutMs);
+    }
+
+    #endregion
+    
+    #region WaitClickable - Core Methods
+    
+    /// <summary>
+    /// Waits for clickable state using pre-found element.
+    /// </summary>
+    /// <param name="element">The pre-found element.</param>
+    /// <param name="expected">The expected clickable state.</param>
+    /// <param name="timeoutMs">Maximum time to wait in milliseconds.</param>
+    /// <returns>True if condition was met, false if timeout reached.</returns>
+    protected bool WaitClickableCore(IMauiElement element, bool expected, int timeoutMs)
+    {
+        return PollWithElement(
+            element,
+            e => IsClickableCore(e) == expected,
+            timeoutMs);
     }
 
     /// <inheritdoc />
     public bool WaitClickable(bool? expected, int? timeoutMs = null)
     {
-        
         if (expected == null) return true;
         
-        return Poll(
-            () => IsClickable() == expected.Value,
-            timeoutMs ?? DefaultTimeoutMs);
+        var element = TryFindElement();
+        if (element == null)
+        {
+            // If element doesn't exist and we expect clickable=false, that's a match
+            return expected.Value == false;
+        }
+        
+        return WaitClickableCore(element, expected.Value, timeoutMs ?? DefaultTimeoutMs);
     }
+    
+    #endregion
+    
+    #region AssertClickable
+    
+    /// <summary>
+    /// Asserts the element is clickable (visible and enabled). Throws if it isn't.
+    /// </summary>
+    /// <param name="message">Optional custom message for the assertion failure.</param>
+    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
+    /// <returns>The containing scope for fluent chaining.</returns>
+    public TScope AssertClickable(string? message = null, int? timeoutMs = null)
+        => AssertClickable(true, message, timeoutMs);
     
     /// <inheritdoc />
     public TScope AssertClickable(bool? expected, string? message = null, int? timeoutMs = null)

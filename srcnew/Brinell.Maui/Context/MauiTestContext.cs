@@ -44,8 +44,9 @@ public class MauiTestContext : IMauiTestContext
         // Wrap the driver in our mockable interface
         _driver = new MauiDriver(_rawDriver);
         
-        // Configure implicit wait
-        _rawDriver.Manage().Timeouts().ImplicitWait = TimeSpan.FromMilliseconds(_timeouts.ElementFind);
+        // Set implicit wait to 0 - framework handles all waiting explicitly
+        // This prevents FindElements from blocking for the full timeout
+        _rawDriver.Manage().Timeouts().ImplicitWait = TimeSpan.Zero;
     }
     
     /// <inheritdoc />
@@ -85,21 +86,19 @@ public class MauiTestContext : IMauiTestContext
     public IMauiElement? TryFindElement(Locator locator)
     {
         ArgumentNullException.ThrowIfNull(locator);
-        // Temporarily disable implicit wait for immediate check
-        // Note: Windows Driver doesn't support GET timeouts, only SET
-        // So we use our stored timeout value instead of reading from driver
-        var originalTimeoutMs = _timeouts.ElementFind;
-        _rawDriver.Manage().Timeouts().ImplicitWait = TimeSpan.Zero;
+        // Use FindElements with a very short timeout to check existence
+        // Note: We don't manipulate ImplicitWait here as it can hang Windows Driver
+        var by = locator.ToBy();
         
         try
         {
-            var by = locator.ToBy();
-            var element = _rawDriver.FindElement(by);
-            return new MauiElement(element);
+            // FindElements returns empty list (not exception) when nothing found
+            var elements = _rawDriver.FindElements(by);
+            return elements.Count > 0 ? new MauiElement(elements[0]) : null;
         }
-        finally
+        catch (Exception)
         {
-            _rawDriver.Manage().Timeouts().ImplicitWait = TimeSpan.FromMilliseconds(originalTimeoutMs);
+            return null;
         }
     }
     
@@ -107,18 +106,24 @@ public class MauiTestContext : IMauiTestContext
     public IMauiElement FindElement(Locator locator)
     {        
         ArgumentNullException.ThrowIfNull(locator);
-       
-        try
+        
+        var by = locator.ToBy();
+        var timeout = TimeSpan.FromMilliseconds(_timeouts.ElementFind);
+        var pollInterval = TimeSpan.FromMilliseconds(100);
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        
+        while (stopwatch.Elapsed < timeout)
         {
-            var by = locator.ToBy();
-            var element = _rawDriver.FindElement(by);
-            return new MauiElement(element);
+            var elements = _rawDriver.FindElements(by);
+            if (elements.Count > 0)
+            {
+                return new MauiElement(elements[0]);
+            }
+            Thread.Sleep(pollInterval);
         }
-        catch (NoSuchElementException ex)
-        {
-            throw new ElementNotFoundException(
-                $"Element not found with locator: {locator}", ex);
-        }
+        
+        throw new ElementNotFoundException(
+            $"Element not found with locator: {locator} after {_timeouts.ElementFind}ms");
     }
     
     /// <inheritdoc />
