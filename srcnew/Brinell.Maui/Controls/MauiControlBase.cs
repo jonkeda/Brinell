@@ -349,18 +349,27 @@ public class MauiControlBase<TScope> : ControlObjectBase<TScope>, IControlObject
     
     /// <summary>
     /// Sends keyboard keys to the control. Uses framework's Run for logging.
+    /// Optimized to find element once and reuse.
     /// </summary>
     /// <param name="keys">The keys to send.</param>
     /// <returns>The containing scope for fluent chaining.</returns>
     public virtual TScope SendKeys(string keys)
     {
-        Run(nameof(SendKeys), keys, () =>
+        return RunWithElement(nameof(SendKeys), keys, null, element =>
         {
-            var element = FindElement();
-            element.Click(); // Focus the element first
-            element.SendKeys(keys);
+            SendKeysCore(element, keys);
         });
-        return ContainingScope;
+    }
+    
+    /// <summary>
+    /// Core implementation of SendKeys using pre-found element.
+    /// </summary>
+    /// <param name="element">The pre-found element.</param>
+    /// <param name="keys">The keys to send.</param>
+    protected virtual void SendKeysCore(IMauiElement element, string keys)
+    {
+        element.Click(); // Focus the element first
+        element.SendKeys(keys);
     }
     
     #endregion
@@ -563,6 +572,17 @@ public class MauiControlBase<TScope> : ControlObjectBase<TScope>, IControlObject
     
     #region Text
     
+    /// <summary>
+    /// Gets the text of the element using pre-found element.
+    /// </summary>
+    /// <param name="element">The pre-found element (may be null).</param>
+    /// <returns>The element text, or null if element is null.</returns>
+    protected string? GetTextCore(IMauiElement? element)
+    {
+        if (element == null) return null;
+        return element.Text;
+    }
+    
     /// <inheritdoc />
     public string? GetText(int? timeoutMs = null)
     {
@@ -572,10 +592,7 @@ public class MauiControlBase<TScope> : ControlObjectBase<TScope>, IControlObject
             WaitExists(true, timeoutMs);
         }
         
-        var element = TryFindElement();
-        if (element == null) return null;
-        
-        return element.Text;
+        return GetTextCore(TryFindElement());
     }
     
     /// <inheritdoc />

@@ -159,7 +159,8 @@ public class FluentChainingTests
         // Assert
         Assert.Same(_testPage, result);
         // Verify the chained calls worked (element was found for each action)
-        _mockContext.Verify(c => c.FindElement(It.IsAny<Locator>()), Times.AtLeast(3));
+        // Note: After SPEC-015b optimization, we use TryFindElement via FindElementWithWait pattern
+        _mockContext.Verify(c => c.TryFindElement(It.IsAny<Locator>()), Times.AtLeast(3));
     }
     
     [Fact]

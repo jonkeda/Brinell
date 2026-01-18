@@ -27,68 +27,51 @@ public class MauiFlyoutItemControl<TScope> : MauiControlBase<TScope>, IClickable
     /// </summary>
     public string Title => _title;
 
-    #region IClickableControlObject<TScope> Implementation
+    #region IClickableControlObject<TScope> Implementation - Public API
 
     /// <inheritdoc />
     public TScope Click(int? timeoutMs = null)
     {
-        Run(nameof(Click), () =>
+        return RunWithElement(nameof(Click), timeoutMs, element =>
         {
-            var element = FindElement();
-            element.Click();
+            ClickCore(element);
         });
-        return ContainingScope;
     }
 
     /// <inheritdoc />
     public TScope DoubleClick(int? timeoutMs = null)
     {
-        Run(nameof(DoubleClick), () =>
+        return RunWithElement(nameof(DoubleClick), timeoutMs, element =>
         {
-            var element = FindElement();
-            element.Click();
-            element.Click();
+            DoubleClickCore(element);
         });
-        return ContainingScope;
     }
 
     /// <inheritdoc />
     public TScope RightClick(int? timeoutMs = null)
     {
-        Run(nameof(RightClick), () =>
+        return RunWithElement(nameof(RightClick), timeoutMs, element =>
         {
-            var element = FindElement();
-            var unwrappedElement = element.UnwrapElement();
-            var unwrappedDriver = Context.Driver.UnwrapDriver();
-            
-            var actions = new OpenQA.Selenium.Interactions.Actions(unwrappedDriver);
-            actions.ContextClick(unwrappedElement).Perform();
+            RightClickCore(element);
         });
-        return ContainingScope;
     }
 
     /// <inheritdoc />
     public bool? IsClickable()
     {
-        var isVisible = IsVisible();
-        var isEnabled = IsEnabled();
-        
-        if (isVisible == null || isEnabled == null)
-        {
-            return null;
-        }
-        
-        return isVisible.Value && isEnabled.Value;
+        return IsClickableCore(TryFindElement());
     }
 
     /// <inheritdoc />
     public bool WaitClickable(bool? expected, int? timeoutMs = null)
     {
         if (expected == null) return true;
-        
-        return Poll(
-            () => IsClickable() == expected.Value,
-            timeoutMs ?? DefaultTimeoutMs);
+
+        var element = TryFindElement();
+        if (element == null)
+            return expected.Value == false;
+
+        return WaitClickableCore(element, expected.Value, timeoutMs ?? DefaultTimeoutMs);
     }
 
     /// <summary>
@@ -107,6 +90,70 @@ public class MauiFlyoutItemControl<TScope> : MauiControlBase<TScope>, IClickable
             WaitClickable(expected, timeoutMs);
             return IsClickable();
         }, message ?? $"Expected flyout item '{_title}' {(expected.Value ? "to be clickable" : "not to be clickable")}.");
+    }
+
+    #endregion
+
+    #region Core Methods (Element-Aware) - Internal Implementation
+
+    /// <summary>
+    /// Core implementation of Click using pre-found element.
+    /// </summary>
+    /// <param name="element">The pre-found element.</param>
+    protected void ClickCore(IMauiElement element)
+    {
+        element.Click();
+    }
+
+    /// <summary>
+    /// Core implementation of DoubleClick using pre-found element.
+    /// </summary>
+    /// <param name="element">The pre-found element.</param>
+    protected void DoubleClickCore(IMauiElement element)
+    {
+        element.Click();
+        element.Click();
+    }
+
+    /// <summary>
+    /// Core implementation of RightClick using pre-found element.
+    /// </summary>
+    /// <param name="element">The pre-found element.</param>
+    protected void RightClickCore(IMauiElement element)
+    {
+        var unwrappedElement = element.UnwrapElement();
+        var unwrappedDriver = Context.Driver.UnwrapDriver();
+
+        var actions = new OpenQA.Selenium.Interactions.Actions(unwrappedDriver);
+        actions.ContextClick(unwrappedElement).Perform();
+    }
+
+    /// <summary>
+    /// Checks if element is clickable (visible and enabled) using pre-found element.
+    /// </summary>
+    /// <param name="element">The pre-found element (may be null).</param>
+    /// <returns>True if clickable, false if not, null if element not found.</returns>
+    protected bool? IsClickableCore(IMauiElement? element)
+    {
+        var isVisible = IsVisibleCore(element);
+        var isEnabled = IsEnabledCore(element);
+
+        if (isVisible == null || isEnabled == null)
+            return null;
+
+        return isVisible.Value && isEnabled.Value;
+    }
+
+    /// <summary>
+    /// Polls clickable state using pre-found element.
+    /// </summary>
+    /// <param name="element">The pre-found element.</param>
+    /// <param name="expected">The expected clickable state.</param>
+    /// <param name="timeoutMs">Maximum time to wait in milliseconds.</param>
+    /// <returns>True if condition was met, false if timeout reached.</returns>
+    protected bool WaitClickableCore(IMauiElement element, bool expected, int timeoutMs)
+    {
+        return PollWithElement(element, e => IsClickableCore(e) == expected, timeoutMs);
     }
 
     #endregion
