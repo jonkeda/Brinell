@@ -6,204 +6,305 @@ using Brinell.Samples.Shared.ViewModels;
 namespace Brinell.Samples.Maui.App.ViewModels;
 
 /// <summary>
-/// ViewModel for the Forms tab - form validation, TableView, and settings demos.
+/// ViewModel for the Forms tab - comprehensive form controls demo for UI testing.
 /// </summary>
 public class FormsViewModel : ViewModelBase
 {
-    private string _username = "";
+    // Personal Info
+    private string _firstName = "";
+    private string _lastName = "";
     private string _email = "";
     private string _phone = "";
-    private string _usernameError = "";
-    private string _emailError = "";
-    private string _phoneError = "";
-    private string _formStatus = "";
-    private bool _isDarkMode;
-    private bool _notificationsEnabled = true;
-    private bool _autoSaveEnabled = true;
-    private string _displayName = "";
-    private string _selectedLanguage = "English";
+    private string _bio = "";
+    private string _searchText = "";
+
+    // Preferences (toggles)
+    private bool _newsletterSubscribed;
+    private bool _agreeToTerms;
+    private bool _agreeToPrivacy;
+    private bool _indeterminateOption;
+
+    // Subscription Tier (radio buttons)
+    private bool _isBasicSelected = true;
+    private bool _isProfessionalSelected;
+    private bool _isEnterpriseSelected;
+
+    // Selection (pickers)
+    private string _selectedCountry = "";
+    private string _selectedDepartment = "";
+
+    // DateTime
+    private DateTime _birthDate = DateTime.Today.AddYears(-25);
+    private TimeSpan _preferredTime = new(9, 0, 0);
+
+    // Range controls
+    private double _fontSize = 14;
+    private double _volume = 50;
+    private double _quantity = 1;
+
+    // Result
+    private string _resultMessage = "";
 
     public FormsViewModel()
     {
-        Languages = new ObservableCollection<string> { "English", "Spanish", "French", "German", "Japanese" };
-        SaveFormCommand = new RelayCommand(SaveForm);
-        ClearFormCommand = new RelayCommand(ClearForm);
-    }
+        Countries = new ObservableCollection<string> 
+        { 
+            "United States", "Canada", "United Kingdom", "Germany", "France", 
+            "Japan", "Australia", "Brazil", "India", "China" 
+        };
 
-    #region User Form
-
-    public string Username
-    {
-        get => _username;
-        set
+        Departments = new ObservableCollection<string>
         {
-            if (SetProperty(ref _username, value))
-            {
-                ValidateUsername();
-            }
-        }
+            "Engineering", "Sales", "Marketing", "Finance", "HR", 
+            "Operations", "Support", "Legal", "R&D"
+        };
+
+        SubmitCommand = new RelayCommand(Submit);
+        SaveDraftCommand = new RelayCommand(SaveDraft);
+        ClearCommand = new RelayCommand(Clear);
+        SearchCommand = new RelayCommand(Search);
     }
 
-    public string UsernameError
+    #region Personal Info Properties
+
+    public string FirstName
     {
-        get => _usernameError;
-        set => SetProperty(ref _usernameError, value);
+        get => _firstName;
+        set => SetProperty(ref _firstName, value);
+    }
+
+    public string LastName
+    {
+        get => _lastName;
+        set => SetProperty(ref _lastName, value);
     }
 
     public string Email
     {
         get => _email;
-        set
-        {
-            if (SetProperty(ref _email, value))
-            {
-                ValidateEmail();
-            }
-        }
-    }
-
-    public string EmailError
-    {
-        get => _emailError;
-        set => SetProperty(ref _emailError, value);
+        set => SetProperty(ref _email, value);
     }
 
     public string Phone
     {
         get => _phone;
-        set
-        {
-            if (SetProperty(ref _phone, value))
-            {
-                ValidatePhone();
-            }
-        }
+        set => SetProperty(ref _phone, value);
     }
 
-    public string PhoneError
+    public string Bio
     {
-        get => _phoneError;
-        set => SetProperty(ref _phoneError, value);
+        get => _bio;
+        set => SetProperty(ref _bio, value);
     }
 
-    public string FormStatus
+    public string SearchText
     {
-        get => _formStatus;
-        set => SetProperty(ref _formStatus, value);
-    }
-
-    public ICommand SaveFormCommand { get; }
-    public ICommand ClearFormCommand { get; }
-
-    private void ValidateUsername()
-    {
-        if (string.IsNullOrWhiteSpace(_username))
-        {
-            UsernameError = "Username is required";
-        }
-        else if (_username.Length < 3)
-        {
-            UsernameError = "Username must be at least 3 characters";
-        }
-        else
-        {
-            UsernameError = "";
-        }
-    }
-
-    private void ValidateEmail()
-    {
-        if (string.IsNullOrWhiteSpace(_email))
-        {
-            EmailError = "Email is required";
-        }
-        else if (!_email.Contains('@') || !_email.Contains('.'))
-        {
-            EmailError = "Invalid email format";
-        }
-        else
-        {
-            EmailError = "";
-        }
-    }
-
-    private void ValidatePhone()
-    {
-        if (string.IsNullOrWhiteSpace(_phone))
-        {
-            PhoneError = "";
-        }
-        else if (_phone.Length < 10)
-        {
-            PhoneError = "Phone must be at least 10 digits";
-        }
-        else
-        {
-            PhoneError = "";
-        }
-    }
-
-    private void SaveForm()
-    {
-        ValidateUsername();
-        ValidateEmail();
-        ValidatePhone();
-
-        if (string.IsNullOrEmpty(UsernameError) && string.IsNullOrEmpty(EmailError) && string.IsNullOrEmpty(PhoneError))
-        {
-            FormStatus = $"Form saved for {Username}!";
-        }
-        else
-        {
-            FormStatus = "Please fix validation errors";
-        }
-    }
-
-    private void ClearForm()
-    {
-        Username = "";
-        Email = "";
-        Phone = "";
-        UsernameError = "";
-        EmailError = "";
-        PhoneError = "";
-        FormStatus = "";
+        get => _searchText;
+        set => SetProperty(ref _searchText, value);
     }
 
     #endregion
 
-    #region TableView Settings
+    #region Preferences (Toggle Controls)
 
-    public string DisplayName
+    public bool NewsletterSubscribed
     {
-        get => _displayName;
-        set => SetProperty(ref _displayName, value);
+        get => _newsletterSubscribed;
+        set => SetProperty(ref _newsletterSubscribed, value);
     }
 
-    public bool IsDarkMode
+    public bool AgreeToTerms
     {
-        get => _isDarkMode;
-        set => SetProperty(ref _isDarkMode, value);
+        get => _agreeToTerms;
+        set => SetProperty(ref _agreeToTerms, value);
     }
 
-    public bool NotificationsEnabled
+    public bool AgreeToPrivacy
     {
-        get => _notificationsEnabled;
-        set => SetProperty(ref _notificationsEnabled, value);
+        get => _agreeToPrivacy;
+        set => SetProperty(ref _agreeToPrivacy, value);
     }
 
-    public bool AutoSaveEnabled
+    public bool IndeterminateOption
     {
-        get => _autoSaveEnabled;
-        set => SetProperty(ref _autoSaveEnabled, value);
+        get => _indeterminateOption;
+        set => SetProperty(ref _indeterminateOption, value);
     }
 
-    public ObservableCollection<string> Languages { get; }
+    #endregion
 
-    public string SelectedLanguage
+    #region Subscription Tier (Radio Buttons)
+
+    public bool IsBasicSelected
     {
-        get => _selectedLanguage;
-        set => SetProperty(ref _selectedLanguage, value);
+        get => _isBasicSelected;
+        set => SetProperty(ref _isBasicSelected, value);
+    }
+
+    public bool IsProfessionalSelected
+    {
+        get => _isProfessionalSelected;
+        set => SetProperty(ref _isProfessionalSelected, value);
+    }
+
+    public bool IsEnterpriseSelected
+    {
+        get => _isEnterpriseSelected;
+        set => SetProperty(ref _isEnterpriseSelected, value);
+    }
+
+    #endregion
+
+    #region Selection (Pickers)
+
+    public ObservableCollection<string> Countries { get; }
+    public ObservableCollection<string> Departments { get; }
+
+    public string SelectedCountry
+    {
+        get => _selectedCountry;
+        set => SetProperty(ref _selectedCountry, value);
+    }
+
+    public string SelectedDepartment
+    {
+        get => _selectedDepartment;
+        set => SetProperty(ref _selectedDepartment, value);
+    }
+
+    #endregion
+
+    #region DateTime Properties
+
+    public DateTime BirthDate
+    {
+        get => _birthDate;
+        set => SetProperty(ref _birthDate, value);
+    }
+
+    public TimeSpan PreferredTime
+    {
+        get => _preferredTime;
+        set => SetProperty(ref _preferredTime, value);
+    }
+
+    #endregion
+
+    #region Range Controls
+
+    public double FontSize
+    {
+        get => _fontSize;
+        set
+        {
+            if (SetProperty(ref _fontSize, value))
+            {
+                OnPropertyChanged(nameof(FontSizeText));
+            }
+        }
+    }
+
+    public string FontSizeText => $"Size: {FontSize:F0}pt";
+
+    public double Volume
+    {
+        get => _volume;
+        set
+        {
+            if (SetProperty(ref _volume, value))
+            {
+                OnPropertyChanged(nameof(VolumeText));
+            }
+        }
+    }
+
+    public string VolumeText => $"Volume: {Volume:F0}%";
+
+    public double Quantity
+    {
+        get => _quantity;
+        set
+        {
+            if (SetProperty(ref _quantity, value))
+            {
+                OnPropertyChanged(nameof(QuantityText));
+            }
+        }
+    }
+
+    public string QuantityText => $"Quantity: {Quantity:F0}";
+
+    #endregion
+
+    #region Result
+
+    public string ResultMessage
+    {
+        get => _resultMessage;
+        set => SetProperty(ref _resultMessage, value);
+    }
+
+    #endregion
+
+    #region Commands
+
+    public ICommand SubmitCommand { get; }
+    public ICommand SaveDraftCommand { get; }
+    public ICommand ClearCommand { get; }
+    public ICommand SearchCommand { get; }
+
+    private void Submit()
+    {
+        if (string.IsNullOrWhiteSpace(FirstName) || string.IsNullOrWhiteSpace(LastName))
+        {
+            ResultMessage = "Please enter first and last name";
+            return;
+        }
+
+        if (!AgreeToTerms || !AgreeToPrivacy)
+        {
+            ResultMessage = "Please accept terms and privacy policy";
+            return;
+        }
+
+        ResultMessage = $"Form submitted for {FirstName} {LastName}!";
+    }
+
+    private void SaveDraft()
+    {
+        ResultMessage = "Draft saved!";
+    }
+
+    private void Clear()
+    {
+        FirstName = "";
+        LastName = "";
+        Email = "";
+        Phone = "";
+        Bio = "";
+        SearchText = "";
+        NewsletterSubscribed = false;
+        AgreeToTerms = false;
+        AgreeToPrivacy = false;
+        IndeterminateOption = false;
+        IsBasicSelected = true;
+        IsProfessionalSelected = false;
+        IsEnterpriseSelected = false;
+        SelectedCountry = "";
+        SelectedDepartment = "";
+        BirthDate = DateTime.Today.AddYears(-25);
+        PreferredTime = new TimeSpan(9, 0, 0);
+        FontSize = 14;
+        Volume = 50;
+        Quantity = 1;
+        ResultMessage = "Form cleared";
+    }
+
+    private void Search()
+    {
+        ResultMessage = string.IsNullOrEmpty(SearchText) 
+            ? "Enter search text" 
+            : $"Searching for: {SearchText}";
     }
 
     #endregion

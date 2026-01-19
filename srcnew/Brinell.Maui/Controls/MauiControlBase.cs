@@ -44,6 +44,11 @@ public class MauiControlBase<TScope> : ControlObjectBase<TScope>, IControlObject
     protected TScope ContainingScope => _mauiScope.Self;
     
     /// <summary>
+    /// Gets the MAUI-typed scope for element finding operations.
+    /// </summary>
+    protected IMauiScope<TScope> MauiScope => _mauiScope;
+    
+    /// <summary>
     /// Gets the MAUI test context.
     /// </summary>
     protected IMauiTestContext Context => _mauiScope.Context;
@@ -106,7 +111,7 @@ public class MauiControlBase<TScope> : ControlObjectBase<TScope>, IControlObject
     /// Tries to find the element within the scope.
     /// </summary>
     /// <returns>The element if found, null otherwise.</returns>
-    protected IMauiElement? TryFindElement()
+    protected virtual IMauiElement? TryFindElement()
     {
         return _mauiScope.TryFindElement(Locator);
     }

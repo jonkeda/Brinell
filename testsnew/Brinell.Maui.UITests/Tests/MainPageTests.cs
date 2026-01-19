@@ -31,7 +31,8 @@ public class MainPageTests
     public MainPageTests(AppiumFixture fixture)
     {
         _fixture = fixture;
-        // No navigation needed - MainPage is the default landing page
+        // Navigate to Basics tab to ensure we're on the right page even when running as part of suite
+        _fixture.NavigateToMain();
     }
 
     #region Basic Control Existence Tests

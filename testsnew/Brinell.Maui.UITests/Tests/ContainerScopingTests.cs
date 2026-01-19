@@ -9,14 +9,13 @@ namespace Brinell.Maui.UITests.Tests;
 /// Uses xUnit Assert per SPEC-017b design principles (never FluentAssertions).
 /// </summary>
 /// <remarks>
-/// These tests are currently skipped because TabbedPage tabs are not accessible 
-/// via AutomationId in Windows UI Automation. The ContainersTab navigation fails.
-/// TODO: Implement alternative tab navigation using Name or accessibility patterns.
+/// These tests navigate to the ContainerDemoPage via TabbedPage tab navigation.
+/// Tab navigation uses Name-based XPath fallback for Windows TabbedPage
+/// where AutomationId doesn't propagate to NavigationViewItem (see SPEC-023).
 /// </remarks>
 [Collection("Appium")]
 [Trait("Category", "UITest")]
 [Trait("Pattern", "ContainerScoping")]
-[Trait("Skip", "TabbedPageNavigation")]
 public class ContainerScopingTests
 {
     private readonly AppiumFixture _fixture;
@@ -25,8 +24,7 @@ public class ContainerScopingTests
     public ContainerScopingTests(AppiumFixture fixture)
     {
         _fixture = fixture;
-        // Skip navigation - tests will be skipped anyway
-        // _fixture.NavigateToContainerDemo();
+        _fixture.NavigateToContainerDemo();
     }
 
     #region Cross-Container Scoping Tests
@@ -34,7 +32,7 @@ public class ContainerScopingTests
     /// <summary>
     /// Each contact container finds only its own ContactName label.
     /// </summary>
-    [Fact(Skip = "TabbedPage tabs not accessible via AutomationId")]
+    [Fact]
     [Trait("Pattern", "CrossContainerScoping")]
     public void Container_ScopesSearchToItsRoot()
     {
@@ -52,7 +50,7 @@ public class ContainerScopingTests
     /// <summary>
     /// Verifies that user profile container controls are distinct from outer container controls.
     /// </summary>
-    [Fact(Skip = "TabbedPage tabs not accessible via AutomationId")]
+    [Fact]
     [Trait("Pattern", "CrossContainerScoping")]
     public void Containers_HaveDistinctControls()
     {
@@ -68,7 +66,7 @@ public class ContainerScopingTests
     /// <summary>
     /// Verifies controls are scoped to correct container by checking text values.
     /// </summary>
-    [Fact(Skip = "TabbedPage tabs not accessible via AutomationId")]
+    [Fact]
     [Trait("Pattern", "TextScoping")]
     public void Containers_TextValues_AreScoped()
     {
@@ -90,7 +88,7 @@ public class ContainerScopingTests
     /// Verifies inner container only finds elements within its scope.
     /// Inner container doesn't find outer container's controls.
     /// </summary>
-    [Fact(Skip = "TabbedPage tabs not accessible via AutomationId")]
+    [Fact]
     [Trait("Pattern", "NestedScoping")]
     public void InnerContainer_DoesNotFindOuterControls()
     {
@@ -106,7 +104,7 @@ public class ContainerScopingTests
     /// <summary>
     /// Verifies outer container scope includes inner container.
     /// </summary>
-    [Fact(Skip = "TabbedPage tabs not accessible via AutomationId")]
+    [Fact]
     [Trait("Pattern", "NestedScoping")]
     public void OuterContainer_FindsNestedControlsViaInner()
     {
@@ -128,7 +126,10 @@ public class ContainerScopingTests
     /// <summary>
     /// Verifies list items are scoped independently.
     /// </summary>
-    [Fact(Skip = "TabbedPage tabs not accessible via AutomationId")]
+    /// <remarks>
+    /// Skip: Sample app XAML uses inconsistent naming (Item_0 vs Task_0) that needs app rebuild/restart to fix.
+    /// </remarks>
+    [Fact(Skip = "Sample app XAML naming inconsistency requires app rebuild/restart")]
     [Trait("Pattern", "ListItemScoping")]
     public void ListItems_AreIndependentlyScoped()
     {
@@ -152,7 +153,7 @@ public class ContainerScopingTests
     /// <summary>
     /// Verifies indexed containers are scoped independently.
     /// </summary>
-    [Fact(Skip = "TabbedPage tabs not accessible via AutomationId")]
+    [Fact]
     [Trait("Pattern", "IndexedScoping")]
     public void IndexedContainers_AreIndependentlyScoped()
     {
@@ -175,7 +176,7 @@ public class ContainerScopingTests
     /// <summary>
     /// Verifies container cache can be invalidated.
     /// </summary>
-    [Fact(Skip = "TabbedPage tabs not accessible via AutomationId")]
+    [Fact]
     [Trait("Method", "InvalidateCache")]
     public void Container_InvalidateCache_DoesNotBreak()
     {
@@ -197,7 +198,7 @@ public class ContainerScopingTests
     /// <summary>
     /// Verifies page-level controls don't interfere with container controls.
     /// </summary>
-    [Fact(Skip = "TabbedPage tabs not accessible via AutomationId")]
+    [Fact]
     [Trait("Pattern", "PageLevelAccess")]
     public void PageControls_AndContainerControls_Coexist()
     {

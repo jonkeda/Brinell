@@ -13,12 +13,16 @@ public class AppiumFixture : MauiTestFixtureBase
     private readonly AppShellPage _appShell;
     private readonly MainPage _mainPage;
     private readonly ContainerDemoPage _containerDemoPage;
+    private readonly UserFormPage _userFormPage;
+    private readonly MediaGalleryPage _mediaGalleryPage;
 
     public AppiumFixture()
     {
         _appShell = new AppShellPage(Context);
         _mainPage = new MainPage(Context);
         _containerDemoPage = new ContainerDemoPage(Context);
+        _userFormPage = new UserFormPage(Context);
+        _mediaGalleryPage = new MediaGalleryPage(Context);
     }
 
     /// <summary>
@@ -35,6 +39,16 @@ public class AppiumFixture : MauiTestFixtureBase
     /// Gets the ContainerDemoPage page object.
     /// </summary>
     public ContainerDemoPage ContainerDemoPage => _containerDemoPage;
+
+    /// <summary>
+    /// Gets the UserFormPage page object.
+    /// </summary>
+    public UserFormPage UserFormPage => _userFormPage;
+
+    /// <summary>
+    /// Gets the MediaGalleryPage page object.
+    /// </summary>
+    public MediaGalleryPage MediaGalleryPage => _mediaGalleryPage;
 
     /// <summary>
     /// Navigates to the Basics tab (first/main tab).
@@ -55,6 +69,32 @@ public class AppiumFixture : MauiTestFixtureBase
         if (!_containerDemoPage.WaitReady(5000))
         {
             throw new InvalidOperationException("ContainerDemoPage did not become ready after clicking ContainersTab. PageTitle may not be visible.");
+        }
+    }
+
+    /// <summary>
+    /// Navigates to the User Form page via tab.
+    /// </summary>
+    public void NavigateToUserForm()
+    {
+        _appShell.FormsTab.Click();
+        // Wait for page to be ready
+        if (!_userFormPage.WaitReady(5000))
+        {
+            throw new InvalidOperationException("UserFormPage did not become ready after clicking FormsTab. UserFormTitle may not be visible.");
+        }
+    }
+
+    /// <summary>
+    /// Navigates to the Media Gallery page via tab.
+    /// </summary>
+    public void NavigateToMediaGallery()
+    {
+        _appShell.MediaTab.Click();
+        // Wait for page to be ready
+        if (!_mediaGalleryPage.WaitReady(5000))
+        {
+            throw new InvalidOperationException("MediaGalleryPage did not become ready after clicking MediaTab. MediaGalleryTitle may not be visible.");
         }
     }
 

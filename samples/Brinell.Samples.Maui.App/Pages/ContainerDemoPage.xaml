@@ -52,13 +52,13 @@
                 <VerticalStackLayout Spacing="10">
                     <Label AutomationId="TaskListTitle" Text="Tasks" FontSize="18" FontAttributes="Bold" />
                     
-                    <!-- Task items as direct children - TEST: Renamed to Item_0 to avoid naming conflict -->
-                    <Frame AutomationId="Item_0" Padding="10" Margin="0,5" CornerRadius="5">
-                        <VerticalStackLayout Spacing="5">
-                            <Label AutomationId="TaskNameLabel" Text="Buy groceries" />
+                    <!-- Task items as direct children -->
+                    <Frame AutomationId="Task_0" Padding="10" Margin="0,5" CornerRadius="5">
+                        <HorizontalStackLayout Spacing="10">
                             <CheckBox AutomationId="TaskCheckBox" IsChecked="False" />
-                            <Button AutomationId="TaskDeleteButton" Text="Delete" />
-                        </VerticalStackLayout>
+                            <Label AutomationId="TaskNameLabel" Text="Buy groceries" VerticalOptions="Center" HorizontalOptions="FillAndExpand" />
+                            <Button AutomationId="TaskDeleteButton" Text="X" WidthRequest="40" />
+                        </HorizontalStackLayout>
                     </Frame>
                     
                     <Frame AutomationId="Task_1" Padding="10" Margin="0,5" CornerRadius="5">

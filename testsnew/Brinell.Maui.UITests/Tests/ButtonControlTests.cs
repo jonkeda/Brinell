@@ -23,6 +23,8 @@ public class ButtonControlTests
     public ButtonControlTests(AppiumFixture fixture)
     {
         _fixture = fixture;
+        // Navigate to the Basics tab where button controls are located
+        _fixture.NavigateToMain();
     }
 
     #region Button State Tests

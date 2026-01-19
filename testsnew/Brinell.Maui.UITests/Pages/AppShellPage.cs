@@ -9,21 +9,25 @@ namespace Brinell.Maui.UITests.Pages;
 /// Uses TabViewControl for tab items with AutomationId locators.
 /// Matches the 8-tab structure in MainPage.xaml TabbedPage.
 /// </summary>
+/// <remarks>
+/// Uses fallback locators (tab Title) for Windows TabbedPage where AutomationId
+/// may not propagate to NavigationViewItem elements (see dotnet/maui#3996).
+/// </remarks>
 public class AppShellPage : MauiPageObjectBase<AppShellPage>
 {
     public AppShellPage(IMauiTestContext context)
         : base(context)
     {
-        // TabViewControl uses AutomationId - fast and reliable
-        // Tab AutomationIds match MainPage.xaml TabbedPage children
-        BasicsTab = new TabViewControl<AppShellPage>(this, "BasicsTab");
-        ContainersTab = new TabViewControl<AppShellPage>(this, "ContainersTab");
-        FormsTab = new TabViewControl<AppShellPage>(this, "FormsTab");
-        ListsTab = new TabViewControl<AppShellPage>(this, "ListsTab");
-        GesturesTab = new TabViewControl<AppShellPage>(this, "GesturesTab");
-        NavigationTab = new TabViewControl<AppShellPage>(this, "NavigationTab");
-        ToolkitTab = new TabViewControl<AppShellPage>(this, "ToolkitTab");
-        MediaTab = new TabViewControl<AppShellPage>(this, "MediaTab");
+        // TabViewControl uses AutomationId as primary, Title as fallback for Windows
+        // AutomationIds match MainPage.xaml TabbedPage children, Titles match ContentPage.Title
+        BasicsTab = new TabViewControl<AppShellPage>(this, "BasicsTab", "Basics");
+        ContainersTab = new TabViewControl<AppShellPage>(this, "ContainersTab", "Containers");
+        FormsTab = new TabViewControl<AppShellPage>(this, "FormsTab", "Forms");
+        ListsTab = new TabViewControl<AppShellPage>(this, "ListsTab", "Lists");
+        GesturesTab = new TabViewControl<AppShellPage>(this, "GesturesTab", "Gestures");
+        NavigationTab = new TabViewControl<AppShellPage>(this, "NavigationTab", "Navigation");
+        ToolkitTab = new TabViewControl<AppShellPage>(this, "ToolkitTab", "Toolkit");
+        MediaTab = new TabViewControl<AppShellPage>(this, "MediaTab", "Media");
     }
 
     /// <inheritdoc />

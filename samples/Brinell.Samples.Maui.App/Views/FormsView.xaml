@@ -12,118 +12,233 @@
     <ScrollView AutomationId="FormsScrollView">
         <VerticalStackLayout Spacing="15" Padding="20">
 
-            <!-- Page Header -->
-            <Label Text="Forms &amp; TableView" 
-                   AutomationId="FormsTitle"
+            <!-- Page Header - UserFormTitle for test compatibility -->
+            <Label Text="User Registration" 
+                   AutomationId="UserFormTitle"
                    FontSize="28" 
                    FontAttributes="Bold" />
 
-            <!-- User Form Section -->
-            <Frame AutomationId="UserFormSection" 
+            <!-- Personal Info Section -->
+            <Frame AutomationId="PersonalInfoSection" 
                    CornerRadius="10" 
                    Padding="15">
                 <VerticalStackLayout Spacing="10">
-                    <Label Text="User Registration Form" 
+                    <Label Text="Personal Information" 
                            FontSize="18" 
                            FontAttributes="Bold"
-                           AutomationId="UserFormLabel" />
+                           AutomationId="PersonalInfoLabel" />
 
-                    <!-- Username -->
-                    <Label Text="Username" FontAttributes="Bold" AutomationId="UsernameLabel" />
-                    <Entry AutomationId="UsernameEntry" 
-                           Placeholder="Enter username"
-                           Text="{Binding Username}" />
-                    <Label AutomationId="UsernameError" 
-                           Text="{Binding UsernameError}" 
-                           TextColor="Red" 
-                           FontSize="12" />
+                    <!-- First Name -->
+                    <Label Text="First Name" FontAttributes="Bold" />
+                    <Entry AutomationId="FirstNameEntry" 
+                           Placeholder="Enter first name"
+                           Text="{Binding FirstName}" />
+
+                    <!-- Last Name -->
+                    <Label Text="Last Name" FontAttributes="Bold" />
+                    <Entry AutomationId="LastNameEntry" 
+                           Placeholder="Enter last name"
+                           Text="{Binding LastName}" />
 
                     <!-- Email -->
-                    <Label Text="Email" FontAttributes="Bold" AutomationId="EmailLabel" />
-                    <Entry AutomationId="FormEmailEntry" 
+                    <Label Text="Email" FontAttributes="Bold" />
+                    <Entry AutomationId="EmailEntry" 
                            Placeholder="Enter email"
                            Keyboard="Email"
                            Text="{Binding Email}" />
-                    <Label AutomationId="EmailError" 
-                           Text="{Binding EmailError}" 
-                           TextColor="Red" 
-                           FontSize="12" />
 
                     <!-- Phone -->
-                    <Label Text="Phone (optional)" FontAttributes="Bold" AutomationId="PhoneLabel" />
+                    <Label Text="Phone" FontAttributes="Bold" />
                     <Entry AutomationId="PhoneEntry" 
                            Placeholder="Enter phone"
                            Keyboard="Telephone"
                            Text="{Binding Phone}" />
-                    <Label AutomationId="PhoneError" 
-                           Text="{Binding PhoneError}" 
-                           TextColor="Red" 
-                           FontSize="12" />
 
-                    <!-- Buttons -->
-                    <HorizontalStackLayout Spacing="10" HorizontalOptions="Center">
-                        <Button AutomationId="SaveFormButton" 
-                                Text="Save" 
-                                Command="{Binding SaveFormCommand}" />
-                        <Button AutomationId="ClearFormButton" 
-                                Text="Clear" 
-                                Command="{Binding ClearFormCommand}" />
-                    </HorizontalStackLayout>
+                    <!-- Bio Editor (multi-line) -->
+                    <Label Text="Bio" FontAttributes="Bold" />
+                    <Editor AutomationId="BioEditor" 
+                            Placeholder="Tell us about yourself..."
+                            HeightRequest="100"
+                            Text="{Binding Bio}" />
 
-                    <!-- Status -->
-                    <Label AutomationId="FormStatusLabel" 
-                           Text="{Binding FormStatus}" 
-                           TextColor="Blue"
-                           HorizontalOptions="Center" />
+                    <!-- Search Bar -->
+                    <Label Text="Search Users" FontAttributes="Bold" />
+                    <SearchBar AutomationId="UserSearchBar" 
+                               Placeholder="Search..."
+                               Text="{Binding SearchText}"
+                               SearchCommand="{Binding SearchCommand}" />
                 </VerticalStackLayout>
             </Frame>
 
-            <!-- TableView Settings Section -->
-            <Frame AutomationId="SettingsSection" 
+            <!-- Preferences Section -->
+            <Frame AutomationId="PreferencesSection" 
                    CornerRadius="10" 
                    Padding="15">
                 <VerticalStackLayout Spacing="10">
-                    <Label Text="Settings (TableView Style)" 
+                    <Label Text="Preferences" 
                            FontSize="18" 
                            FontAttributes="Bold"
-                           AutomationId="SettingsLabel" />
+                           AutomationId="PreferencesLabel" />
 
-                    <TableView Intent="Settings" AutomationId="SettingsTableView">
-                        <TableRoot>
-                            <!-- Account Section -->
-                            <TableSection Title="Account">
-                                <EntryCell Label="Display Name" 
-                                           Placeholder="Your name"
-                                           Text="{Binding DisplayName}" />
-                                <TextCell Text="Email" 
-                                          Detail="user@example.com" />
-                                <TextCell Text="Change Password" />
-                            </TableSection>
+                    <!-- Newsletter Switch -->
+                    <HorizontalStackLayout Spacing="10">
+                        <Switch AutomationId="NewsletterSwitch" 
+                                IsToggled="{Binding NewsletterSubscribed}" />
+                        <Label Text="Subscribe to newsletter" VerticalOptions="Center" />
+                    </HorizontalStackLayout>
 
-                            <!-- Preferences Section -->
-                            <TableSection Title="Preferences">
-                                <SwitchCell Text="Dark Mode" 
-                                            On="{Binding IsDarkMode}" />
-                                <SwitchCell Text="Notifications" 
-                                            On="{Binding NotificationsEnabled}" />
-                                <SwitchCell Text="Auto-Save" 
-                                            On="{Binding AutoSaveEnabled}" />
-                            </TableSection>
+                    <!-- Terms CheckBox -->
+                    <HorizontalStackLayout Spacing="10">
+                        <CheckBox AutomationId="TermsCheckBox" 
+                                  IsChecked="{Binding AgreeToTerms}" />
+                        <Label Text="I agree to Terms of Service" VerticalOptions="Center" />
+                    </HorizontalStackLayout>
 
-                            <!-- Language Section -->
-                            <TableSection Title="Language">
-                                <ViewCell>
-                                    <HorizontalStackLayout Padding="10" Spacing="10">
-                                        <Label Text="Language" VerticalOptions="Center" />
-                                        <Picker AutomationId="LanguagePicker"
-                                                ItemsSource="{Binding Languages}"
-                                                SelectedItem="{Binding SelectedLanguage}"
-                                                HorizontalOptions="EndAndExpand" />
-                                    </HorizontalStackLayout>
-                                </ViewCell>
-                            </TableSection>
-                        </TableRoot>
-                    </TableView>
+                    <!-- Privacy CheckBox -->
+                    <HorizontalStackLayout Spacing="10">
+                        <CheckBox AutomationId="PrivacyCheckBox" 
+                                  IsChecked="{Binding AgreeToPrivacy}" />
+                        <Label Text="I agree to Privacy Policy" VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+
+                    <!-- Indeterminate CheckBox -->
+                    <HorizontalStackLayout Spacing="10">
+                        <CheckBox AutomationId="IndeterminateCheckBox" 
+                                  IsChecked="{Binding IndeterminateOption}" />
+                        <Label Text="Optional feature (indeterminate demo)" VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Selection Section -->
+            <Frame AutomationId="SelectionSection" 
+                   CornerRadius="10" 
+                   Padding="15">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Subscription Tier" 
+                           FontSize="18" 
+                           FontAttributes="Bold"
+                           AutomationId="SelectionLabel" />
+
+                    <!-- Radio Buttons -->
+                    <RadioButton AutomationId="BasicRadio" 
+                                 Content="Basic - Free"
+                                 GroupName="SubscriptionTier"
+                                 IsChecked="{Binding IsBasicSelected}" />
+                    <RadioButton AutomationId="ProfessionalRadio" 
+                                 Content="Professional - $9.99/mo"
+                                 GroupName="SubscriptionTier"
+                                 IsChecked="{Binding IsProfessionalSelected}" />
+                    <RadioButton AutomationId="EnterpriseRadio" 
+                                 Content="Enterprise - $29.99/mo"
+                                 GroupName="SubscriptionTier"
+                                 IsChecked="{Binding IsEnterpriseSelected}" />
+
+                    <!-- Pickers -->
+                    <Label Text="Country" FontAttributes="Bold" />
+                    <Picker AutomationId="CountryPicker"
+                            Title="Select country"
+                            ItemsSource="{Binding Countries}"
+                            SelectedItem="{Binding SelectedCountry}" />
+
+                    <Label Text="Department" FontAttributes="Bold" />
+                    <Picker AutomationId="DepartmentPicker"
+                            Title="Select department"
+                            ItemsSource="{Binding Departments}"
+                            SelectedItem="{Binding SelectedDepartment}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- DateTime Section -->
+            <Frame AutomationId="DateTimeSection" 
+                   CornerRadius="10" 
+                   Padding="15">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Date &amp; Time" 
+                           FontSize="18" 
+                           FontAttributes="Bold" />
+
+                    <!-- Birth Date -->
+                    <Label Text="Birth Date" FontAttributes="Bold" />
+                    <DatePicker AutomationId="BirthDatePicker" 
+                                MinimumDate="1900-01-01" 
+                                MaximumDate="2025-12-31" 
+                                Date="{Binding BirthDate}" />
+
+                    <!-- Preferred Contact Time -->
+                    <Label Text="Preferred Contact Time" FontAttributes="Bold" />
+                    <TimePicker AutomationId="PreferredTimePicker" 
+                                Time="{Binding PreferredTime}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Range Section -->
+            <Frame AutomationId="RangeSection" 
+                   CornerRadius="10" 
+                   Padding="15">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Range Controls" 
+                           FontSize="18" 
+                           FontAttributes="Bold"
+                           AutomationId="RangeLabel" />
+
+                    <!-- Font Size Slider -->
+                    <Label Text="Font Size" FontAttributes="Bold" />
+                    <Slider AutomationId="FontSizeSlider" 
+                            Minimum="8" 
+                            Maximum="72" 
+                            Value="{Binding FontSize}" />
+                    <Label AutomationId="FontSizeLabel" 
+                           Text="{Binding FontSizeText}" 
+                           HorizontalOptions="Center" />
+
+                    <!-- Volume Slider -->
+                    <Label Text="Volume" FontAttributes="Bold" />
+                    <Slider AutomationId="VolumeSlider" 
+                            Minimum="0" 
+                            Maximum="100" 
+                            Value="{Binding Volume}" />
+                    <Label AutomationId="VolumeLabel" 
+                           Text="{Binding VolumeText}" 
+                           HorizontalOptions="Center" />
+
+                    <!-- Quantity Stepper -->
+                    <Label Text="Quantity" FontAttributes="Bold" />
+                    <HorizontalStackLayout Spacing="10">
+                        <Stepper AutomationId="QuantityStepper" 
+                                 Minimum="1" 
+                                 Maximum="99" 
+                                 Increment="1"
+                                 Value="{Binding Quantity}" />
+                        <Label AutomationId="QuantityLabel" 
+                               Text="{Binding QuantityText}" 
+                               VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Form Actions -->
+            <Frame AutomationId="ActionsSection" 
+                   CornerRadius="10" 
+                   Padding="15">
+                <VerticalStackLayout Spacing="10">
+                    <HorizontalStackLayout Spacing="10" HorizontalOptions="Center">
+                        <Button AutomationId="SubmitButton" 
+                                Text="Submit" 
+                                Command="{Binding SubmitCommand}" />
+                        <Button AutomationId="SaveDraftButton" 
+                                Text="Save Draft" 
+                                Command="{Binding SaveDraftCommand}" />
+                        <Button AutomationId="ClearButton" 
+                                Text="Clear" 
+                                Command="{Binding ClearCommand}" />
+                    </HorizontalStackLayout>
+
+                    <!-- Result Message -->
+                    <Label AutomationId="ResultMessage" 
+                           Text="{Binding ResultMessage}" 
+                           TextColor="Blue"
+                           HorizontalOptions="Center" />
                 </VerticalStackLayout>
             </Frame>
 

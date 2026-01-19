@@ -23,6 +23,8 @@ public class EntryControlTests
     public EntryControlTests(AppiumFixture fixture)
     {
         _fixture = fixture;
+        // Navigate to the Basics tab where entry controls are located
+        _fixture.NavigateToMain();
     }
 
     #region Entry State Tests
