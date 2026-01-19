@@ -19,6 +19,9 @@ public class ListContainerTests
     {
         _fixture = fixture;
         _fixture.NavigateToContainerDemo();
+        
+        // Don't wait for items - just navigate and let tests run directly
+        // Page.TaskList.WaitForItems(minimumCount: 1, timeoutMs: 5000);
     }
 
     #region List Count Tests

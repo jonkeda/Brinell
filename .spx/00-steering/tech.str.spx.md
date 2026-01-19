@@ -39,10 +39,9 @@ Brinell is a multi-package .NET library distributed via NuGet that provides UI t
 |---------|---------|----------|---------|
 | FlaUI.Core | 5.0.0 | WPF, WinForms | Windows UI Automation |
 | FlaUI.UIA3 | 5.0.0 | WPF, WinForms | UIA3 pattern provider |
-| Selenium.WebDriver | 4.29.0 | HTML/Web | Browser automation |
-| Microsoft.Playwright | 1.50.0 | Blazor | Modern web automation |
+| Microsoft.Playwright | 1.50.0 | HTML, Blazor | Modern web automation |
 | Appium.WebDriver | 8.0.1 | MAUI | Mobile/cross-platform |
-| Stride.Engine | 4.3.0 | Stride | 3D game engine integration |
+| Stride.Engine | 4.3.0.2507 | Stride | 3D game engine integration |
 
 #### API Mocking
 | Package | Version | Purpose |
@@ -58,32 +57,34 @@ Brinell is a multi-package .NET library distributed via NuGet that provides UI t
 
 ### Application Architecture
 
-**Four-Layer Architecture**
+**Four-Layer Architecture with Scope-Based Design**
 
 ```
 Layer 4: Application Tests (Consumer test projects)
     ↓ depends on
 Layer 3: Platform Implementations (Self-contained packages)
-    - Brinell.Wpf, Brinell.Maui, Brinell.Html, etc.
-    - Each contains: TestContext, Base classes, Controls
+    - Brinell.Maui, Brinell.Wpf, Brinell.Html, Brinell.Blazor, etc.
+    - Each contains: TestContext, Pages, Controls, Containers
     - Uses native automation library directly
     ↓ depends on
 Layer 2: Core (Interfaces only)
     - Brinell.Core
-    - Interface contracts (IControlObject, IPageObject, ITestContext)
-    - Platform enum, logging, exceptions, attributes
+    - Interface contracts with TScope generic (IControlObject<TScope>, IPageObject)
+    - IElementScope abstraction for hierarchical element finding
+    - Locator types, logging, exceptions, attributes
     ↓ depends on
 Layer 1: External Libraries
-    - FlaUI, Appium, Selenium, Playwright
+    - Appium, FlaUI, Playwright
 ```
 
 **Key Architectural Patterns**:
 
-1. **Interface-Based Design**: Core defines contracts, platforms implement
-2. **Page Object Pattern**: Built-in base classes for test organization
-3. **Control Object Pattern**: Typed abstractions for UI controls
-4. **Is/Wait/Check/Assert Pattern**: Consistent state verification API
-5. **Self-Contained Platforms**: No cross-platform dependencies
+1. **Scope-Based Element Finding**: IElementScope provides hierarchical search (page → container → child)
+2. **Generic Fluent Chaining**: Controls use TScope generic to return containing scope for fluent chains
+3. **Page Object Pattern**: Built-in base classes (MauiPageObjectBase<TSelf>) with factory methods
+4. **Container Scoping**: MauiContainerBase<TParent, TSelf> for scoped element searches
+5. **Is/Wait/Assert Pattern**: Consistent state verification with nullable skip pattern
+6. **Self-Contained Platforms**: No cross-platform dependencies
 
 ### Data Storage
 
@@ -266,19 +267,52 @@ dotnet add package Brinell.Wpf  # or platform-specific package
 - Clear contract definition
 - No runtime dependencies in Core
 
-#### 4. Is/Wait/Check/Assert Pattern
+#### 4. Is/Wait/Assert Pattern (Replaces Is/Wait/Check/Assert)
 
-**Decision**: Standardize on four method types for state verification.
+**Decision**: Standardize on three method types for state verification with fluent chaining.
 
 **Rationale**:
-- `Is*` - Immediate check, no waiting
-- `Wait*` - Poll with timeout, returns success
-- `Check*` - Wait and throw on failure
-- `Assert*` - Test framework assertion
+- `Is*` - Immediate check, no waiting, returns `bool` or `bool?`
+- `Wait*` - Poll with timeout, returns `bool` indicating success
+- `Assert*` - Wait and throw on failure, returns `TScope` for fluent chaining
 
-**Trade-offs**: More methods per capability, but clearer intent.
+**Nullable Skip Pattern**: All Wait/Assert methods accept nullable expected values. When null, the operation skips.
 
-#### 5. xUnit as Test Framework
+**Trade-offs**: Simpler API (3 method types vs 4), fluent chaining enables readable test code.
+
+#### 5. Generic TScope for Fluent Chaining
+
+**Decision**: All control interfaces and classes use `TScope` generic parameter for fluent returns.
+
+**Rationale**:
+- Action methods (Click, Enter, Clear) return `TScope` enabling fluent chains
+- `TScope` is the containing scope (page or container) not the control itself
+- CRTP pattern (`MauiPageObjectBase<TSelf>`) for strongly-typed fluent returns
+- Containers return parent scope via `Parent` property for navigation up hierarchy
+
+**Example**:
+```csharp
+Page.NameEntry.Clear()       // Returns MainPage
+    .NameEntry.Enter("Bob")  // Returns MainPage
+    .GreetButton.Click()     // Returns MainPage
+    .GreetingLabel.AssertText("Hello, Bob!");
+```
+
+**Trade-offs**: More complex type signatures, but IDE IntelliSense handles it well.
+
+#### 6. Container Scoping Architecture
+
+**Decision**: Containers (MauiContainerBase<TParent, TSelf>) provide scoped element finding with cached roots.
+
+**Rationale**:
+- Child element searches are scoped within container's root element
+- Prevents finding wrong elements with same ID in different containers
+- Root element caching with stale detection/invalidation
+- Parent navigation for fluent chains up the hierarchy
+
+**Trade-offs**: More complex container setup, but enables precise element targeting.
+
+#### 7. xUnit as Test Framework
 
 **Decision**: Build on xUnit, not NUnit or MSTest.
 
@@ -294,30 +328,30 @@ dotnet add package Brinell.Wpf  # or platform-specific package
 
 ### Current Limitations
 
-1. **No Cross-Platform Code Sharing for Tests**
+1. **Platform Development Status**
+   - MAUI platform is actively developed with full implementation
+   - Other platforms (WPF, WinForms, Html, Blazor, Stride) have placeholder controls
+   - *Focus*: Complete MAUI implementation as reference, then expand
+
+2. **No Cross-Platform Code Sharing for Tests**
    - Tests are written per platform
    - Page object patterns are similar but not identical
    - *Future*: Consider code generation or shared test patterns
 
-2. **Stride Support Limited to Windows**
+3. **Stride Support Limited to Windows**
    - Named pipe communication requires Windows
    - Stride itself is primarily Windows-focused
    - *Future*: Evaluate cross-platform game testing
 
-3. **WebDriver Management**
-   - Selenium requires browser driver executables
-   - WebDriverManager helps but adds complexity
-   - *Future*: Consider Playwright as default for web
-
-4. **No Built-in Parallel Test Orchestration**
-   - Framework is thread-safe but doesn't manage parallelism
-   - Left to test runner configuration
-   - *Future*: Consider parallel execution helpers
+4. **Selenium Removed in Favor of Playwright**
+   - HTML platform now uses Playwright exclusively
+   - Playwright provides better modern web support
+   - *Future*: Selenium adapter may be added if needed
 
 5. **Pre-Release Status (0.1.0)**
    - API may change before 1.0
    - Documentation incomplete
-   - Some platforms more mature than others
+   - MAUI platform most mature
 
 ### Backward Compatibility Policy
 
@@ -327,6 +361,7 @@ dotnet add package Brinell.Wpf  # or platform-specific package
 
 ---
 
-**Document Version:** 1.0  
+**Document Version:** 2.0  
 **Created:** January 13, 2026  
+**Updated:** January 19, 2026  
 **Workflow:** steering_workflow/tech

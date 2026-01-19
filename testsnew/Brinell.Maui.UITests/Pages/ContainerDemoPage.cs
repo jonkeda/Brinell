@@ -16,10 +16,12 @@ public class ContainerDemoPage : MauiPageObjectBase<ContainerDemoPage>
         PageTitle = new MauiControlBase<ContainerDemoPage>(this, "PageTitle");
         UserProfile = new UserProfileContainer(this, "UserProfileFrame");
         Outer = new OuterContainer(this, "OuterFrame");
+        // TaskList uses TaskListFrame as container with static items (Task_0, Task_1, Task_2)
+        // Item count is determined by iterating Task_0, Task_1, ... until not found
         TaskList = new MauiListControl<ContainerDemoPage, TaskItemContainer>(
             this,
-            "TaskList",
-            ".//Frame[@AutomationId='TaskItem']",
+            "TaskListFrame",  // Use TaskListFrame as the list container
+            "Task_",  // Prefix for Task_0, Task_1, Task_2
             (scope, index) => new TaskItemContainer(this, index));
     }
 

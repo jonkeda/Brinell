@@ -139,9 +139,9 @@ public abstract class MauiContainerBase<TParent, TSelf> : MauiControlBase<TParen
         }
         catch (NoSuchElementException)
         {
-            // Container root has no children (e.g., Label marker on Windows)
-            // Fall back to parent scope search
-            return _parent.TryFindElement(locator);
+            // Element not found in container - do NOT fall back to parent
+            // Container scoping means elements must be within the container
+            return null;
         }
         catch (StaleElementReferenceException)
         {
@@ -158,8 +158,8 @@ public abstract class MauiContainerBase<TParent, TSelf> : MauiControlBase<TParen
             }
             catch (NoSuchElementException)
             {
-                // Fall back to parent scope search
-                return _parent.TryFindElement(locator);
+                // Element not found in container - do NOT fall back to parent
+                return null;
             }
             catch
             {

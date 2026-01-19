@@ -6,12 +6,18 @@
 Brinell/
 ├── .github/                    # GitHub-specific files
 │   └── copilot-instructions.md # Copilot AI guidance
+├── .spx/                       # SPX workflow documents
+│   └── 00-steering/            # Steering documents
 ├── samples/                    # Example applications
+│   ├── Brinell.Samples.Maui.App/          # MAUI sample app
+│   ├── Brinell.Samples.Maui.UITests/      # MAUI UI tests
+│   ├── Brinell.Samples.Blazor.App/        # Blazor sample app
+│   └── ...                                 # Other platform samples
 ├── srcnew/                     # Source code (see details below)
-├── tests/                      # Test projects (see details below)
+├── testsnew/                   # Test projects (see details below)
 ├── Directory.Build.props       # Shared MSBuild properties
 ├── Directory.Packages.props    # Central package management
-├── BrinellNew.sln                 # Solution file
+├── Brinell.sln                 # Solution file
 ├── global.json                 # SDK version pinning
 ├── nuget.config                # NuGet configuration
 ├── README.md                   # Project readme
@@ -21,14 +27,118 @@ Brinell/
 └── VERSIONING.md               # Versioning policy
 ```
 
-### Source Code Structure (`src/`)
+### Source Code Structure (`srcnew/`)
 
 ```Markdown
+srcnew/
+├── .spx/                           # SPX specifications for srcnew
+│   ├── 01-specs/                   # Feature specifications
+│   ├── 02-issues/                  # Issue tracking
+│   └── 03-fixes/                   # Bug fix documentation
+├── Brinell.Core/                   # Core interfaces (no dependencies)
+│   ├── Abstractions/               # Base abstractions
+│   │   └── Controls/               # Control base classes
+│   ├── Attributes/                 # Test attributes
+│   ├── Configuration/              # TimeoutSettings, etc.
+│   ├── Exceptions/                 # Exception types
+│   ├── Interfaces/                 # All core interfaces
+│   │   ├── IControlObject.cs       # Base control with TScope
+│   │   ├── IClickableControlObject.cs
+│   │   ├── IEditableTextControlObject.cs
+│   │   ├── IToggleControlObject.cs
+│   │   ├── ISelectorControlObject.cs
+│   │   ├── IRangeControlObject.cs
+│   │   ├── IScrollableControlObject.cs
+│   │   ├── IContainerControl.cs
+│   │   ├── IElementScope.cs        # Hierarchical scope
+│   │   ├── IPageObject.cs
+│   │   └── ITestContext.cs
+│   ├── Locators/                   # Locator, LocatorStrategy
+│   ├── Logging/                    # ITestLogger, LogResult
+│   ├── Models/                     # Shared models
+│   ├── Services/                   # Service interfaces
+│   ├── Testing/                    # Test base classes
+│   └── Utilities/                  # Common utilities
+├── Brinell.Maui/                   # MAUI platform (active)
+│   ├── Context/                    # IMauiTestContext, MauiTestContext
+│   ├── Controls/                   # MAUI control implementations
+│   │   ├── MauiControlBase.cs      # Base with Is/Wait/Assert
+│   │   ├── MauiButtonControl.cs    # IClickableControlObject
+│   │   ├── MauiEntryControl.cs     # IEditableTextControlObject
+│   │   ├── MauiContainerBase.cs    # Container scoping
+│   │   ├── MauiListControl.cs      # List container
+│   │   ├── MauiTabControl.cs       # Tab control
+│   │   └── MauiFlyoutItemControl.cs
+│   ├── Extensions/                 # Extension methods
+│   ├── Gestures/                   # Mobile gesture support
+│   ├── Interfaces/                 # MAUI-specific interfaces
+│   │   ├── IMauiScope.cs           # Scope abstraction
+│   │   ├── IMauiPage.cs
+│   │   ├── IMauiContainer.cs
+│   │   └── IMauiElement.cs
+│   ├── Pages/                      # MauiPageObjectBase<TSelf>
+│   ├── Testing/                    # Test fixtures
+│   └── Wrappers/                   # Element wrappers
+├── Brinell.Wpf/                    # WPF platform (placeholder)
+├── Brinell.WinForms/               # WinForms platform (placeholder)
+├── Brinell.Html/                   # HTML/Playwright platform (placeholder)
+├── Brinell.Blazor/                 # Blazor platform (placeholder)
+├── Brinell.Stride/                 # Stride game engine (placeholder)
+│   └── Communication/              # Named pipe communication
+├── Brinell.Mocking/                # API mocking (WireMock)
+│   ├── MockApiServer.cs
+│   └── ApiStubBuilder.cs
+├── Brinell.Automation/             # Stride automation host
+│   ├── AutomationServer.cs
+│   ├── AutomationGameSystem.cs
+│   └── StrideUIHandler.cs
+├── Directory.Build.props           # Shared build properties
+└── Directory.Packages.props        # Central package versions
 ```
 
-### Test Structure (`tests/`)
+### Test Structure (`testsnew/`)
 
 ```Markdown
+testsnew/
+├── Brinell.Core.Tests/             # Core interface unit tests
+├── Brinell.Maui.Tests/             # MAUI unit tests
+│   └── FluentChainingTests.cs      # Fluent API tests
+├── Brinell.Maui.UITests/           # MAUI UI integration tests
+│   ├── AppiumFixture.cs            # Test fixture with Appium
+│   ├── AppiumCollection.cs         # xUnit collection
+│   ├── TestConstants.cs            # Test configuration
+│   ├── Pages/                      # Page objects for sample app
+│   │   ├── MainPage.cs
+│   │   ├── AppShellPage.cs
+│   │   └── ContainerDemoPage.cs
+│   ├── Containers/                 # Container definitions
+│   │   ├── ContactContainer.cs
+│   │   ├── TaskItemContainer.cs
+│   │   ├── UserProfileContainer.cs
+│   │   ├── OuterContainer.cs
+│   │   └── InnerContainer.cs
+│   └── Tests/                      # Test classes
+│       ├── MainPageTests.cs
+│       ├── ButtonControlTests.cs
+│       ├── EntryControlTests.cs
+│       ├── ContainerScopingTests.cs
+│       ├── NestedContainerTests.cs
+│       ├── IndexedContainerTests.cs
+│       └── ListContainerTests.cs
+├── Brinell.Blazor.Tests/           # Blazor unit tests
+├── Brinell.Blazor.UITests/         # Blazor UI tests (placeholder)
+├── Brinell.Html.Tests/             # HTML unit tests
+├── Brinell.Html.UITests/           # HTML UI tests (placeholder)
+├── Brinell.Wpf.Tests/              # WPF unit tests
+├── Brinell.Wpf.UITests/            # WPF UI tests (placeholder)
+├── Brinell.WinForms.Tests/         # WinForms unit tests
+├── Brinell.WinForms.UITests/       # WinForms UI tests (placeholder)
+├── Brinell.Stride.Tests/           # Stride unit tests
+├── Brinell.Stride.UITests/         # Stride UI tests (placeholder)
+├── Brinell.Mocking.Tests/          # Mocking tests
+├── Brinell.Automation.Tests/       # Automation tests
+├── Directory.Build.props           # Test-specific build props
+└── Directory.Packages.props        # Test package versions
 ```
 
 ## Naming Conventions
@@ -61,29 +171,40 @@ Brinell/
 ### Interface Naming Patterns
 
 ```csharp
-// Base control interface
-IControlObject              // Foundation for all control objects
+// Base control interface with generic scope for fluent chaining
+IControlObject<TScope>              // Foundation for all control objects
 
-// naming (noun-style with ControlObject suffix)
-IClickableControlObject     // clickable control
-ITextControlObject          // text control
-IToggleControlObject        // toggle control
+// Capability interfaces (noun-style with ControlObject suffix)
+IClickableControlObject<TScope>     // Click capability
+ITextControlObject<TScope>          // Text display capability
+IEditableTextControlObject<TScope>  // Text input capability
+IToggleControlObject<TScope>        // Toggle capability
+ISelectorControlObject<TScope>      // Selection capability
+IRangeControlObject<TScope>         // Range value capability
+IScrollableControlObject<TScope>    // Scrolling capability
+
+// Scoping interfaces
+IElementScope<TElement>             // Element finding abstraction
+IContainerControl<TElement>         // Container with scoped search
+IPageObject<TElement>               // Page-level scope
 ```
 
 ### Control Class Naming Patterns
 
 ```csharp
-// Platform-specific controls
-ButtonControl               // MAUI button
-EntryControl                // MAUI text entry
-PickerControl               // MAUI dropdown picker
+// Platform prefix + control name
+MauiControlBase<TScope>             // MAUI base control
+MauiButtonControl<TScope>           // MAUI button (IClickableControlObject)
+MauiEntryControl<TScope>            // MAUI text entry (IEditableTextControlObject)
+MauiContainerBase<TParent, TSelf>   // MAUI container base
 
-// Base classes
-ControlObjectBase           // All controls inherit
-TextControlObjectBase       // Text-related controls
-ToggleControlObjectBase     // Toggle-related controls
-SelectorControlObjectBase   // Selection controls
-ContainerControlObjectBase  // Container controls
+// Page object base with CRTP
+MauiPageObjectBase<TSelf>           // MAUI page (TSelf for fluent)
+
+// Similar patterns for other platforms
+WpfControlBase<TScope>              // WPF controls
+BlazorControlBase<TScope>           // Blazor controls
+HtmlControlBase<TScope>             // HTML/Playwright controls
 ```
 
 ## Import Patterns
@@ -113,23 +234,28 @@ using Brinell.Maui.Infrastructure;
 
 ```
 Brinell.Core
-├── Brinell.Core.Abstractions           # Core interfaces
-├── Brinell.Core.Abstractions.ControlObjects  # Control interfaces
+├── Brinell.Core.Abstractions.Controls  # Base control abstractions
 ├── Brinell.Core.Attributes             # Test attributes
-├── Brinell.Core.Configuration          # Configuration
+├── Brinell.Core.Configuration          # TimeoutSettings, etc.
 ├── Brinell.Core.Exceptions             # Exception types
-├── Brinell.Core.Locators               # Locator types
-└── Brinell.Core.Logging                # Logging
+├── Brinell.Core.Interfaces             # All core interfaces
+├── Brinell.Core.Locators               # Locator, LocatorStrategy
+├── Brinell.Core.Logging                # ITestLogger, LogResult
+├── Brinell.Core.Models                 # Shared models
+├── Brinell.Core.Services               # Service interfaces
+├── Brinell.Core.Testing                # Test base classes
+└── Brinell.Core.Utilities              # Common utilities
 
 Brinell.Maui
-├── Brinell.Maui.Abstractions           # Platform abstractions
-├── Brinell.Maui.ControlsObject         # Control implementations
-├── Brinell.Maui.Context                # v6 Test context
-├── Brinell.Maui.Pages                  # v6 Page objects
+├── Brinell.Maui                        # Root namespace
+├── Brinell.Maui.Context                # MauiTestContext
+├── Brinell.Maui.Controls               # Control implementations
+├── Brinell.Maui.Extensions             # Extension methods
 ├── Brinell.Maui.Gestures               # Mobile gestures
-├── Brinell.Maui.Infrastructure         # Platform setup
-├── Brinell.Maui.Services               # Services
-└── Brinell.Maui.Testing                # Test bases
+├── Brinell.Maui.Interfaces             # MAUI-specific interfaces
+├── Brinell.Maui.Pages                  # Page object base classes
+├── Brinell.Maui.Testing                # Test fixtures
+└── Brinell.Maui.Wrappers               # Element wrappers
 ```
 
 ## Code Structure Patterns
@@ -137,158 +263,235 @@ Brinell.Maui
 ### Interface Definition Pattern
 
 ```csharp
-namespace Brinell.Core.Abstractions.Controls;
+namespace Brinell.Core.Interfaces;
 
 /// <summary>
 /// [XML documentation describing purpose]
 /// </summary>
-public interface IControlName
+/// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
+public interface IControlName<TScope>
 {
-    #region Properties
-    
-    /// <summary>Property documentation</summary>
-    Locator PropertyName { get; }
-    
-    #endregion
-
-    #region State Methods (Is/Wait/Check/Assert)
-    
+    // State methods (immediate, no waiting)
     bool IsState();
-    bool WaitState(bool? expected = true, int? timeoutMs = null);
-    void CheckState(bool? expected = true, int? timeoutMs = null);
-    void AssertState(string? message = null);
     
-    #endregion
-
-    #region Action Methods
+    // Wait methods (poll until condition or timeout)
+    // Nullable skip pattern: null expected means skip
+    bool WaitState(bool? expected, int? timeoutMs = null);
     
-    void DoAction();
+    // Assert methods (wait, throw on failure, return scope)
+    TScope AssertState(bool? expected, string? message = null, int? timeoutMs = null);
     
-    #endregion
+    // Action methods (return scope for chaining)
+    TScope DoAction(int? timeoutMs = null);
 }
 ```
 
 ### Control Implementation Pattern
 
 ```csharp
-namespace Brinell.Platform.Controls;
+namespace Brinell.Maui.Controls;
 
 /// <summary>
-/// Platform-specific control implementation.
+/// Platform-specific control implementation with fluent chaining.
 /// </summary>
-public class ControlName : ControlBase, IControlInterface
+/// <typeparam name="TScope">The containing scope type (page or container).</typeparam>
+public class MauiControlName<TScope> : MauiControlBase<TScope>, IControlInterface<TScope>
+    where TScope : IMauiScope<TScope>
 {
-    #region Constructors
+    public MauiControlName(IMauiScope<TScope> scope, Locator locator) 
+        : base(scope, locator) { }
     
-    public ControlName(TestContext context, string automationId) 
-        : base(context, automationId) { }
+    public MauiControlName(IMauiScope<TScope> scope, string locatorValue) 
+        : base(scope, locatorValue) { }
     
-    public ControlName(TestContext context, string automationId, IContainerControl? container) 
-        : base(context, automationId, container) { }
-    
-    #endregion
+    // IControlInterface Implementation
+    // Uses RunWithElement for logging and element finding
+    public TScope DoAction(int? timeoutMs = null)
+    {
+        return RunWithElement(nameof(DoAction), timeoutMs, element =>
+        {
+            // Core operation with pre-found element
+            element.Click();
+        });
+    }
+}
+```
 
-    #region IControlInterface Implementation
-    
-    // Implement interface methods
-    
-    #endregion
+### Page Object Pattern
 
-    #region Protected Methods
+```csharp
+namespace Brinell.Maui.UITests.Pages;
+
+/// <summary>
+/// Page object with factory methods for creating controls.
+/// Uses CRTP (MauiPageObjectBase<TSelf>) for fluent returns.
+/// </summary>
+public class MainPage : MauiPageObjectBase<MainPage>
+{
+    public MainPage(IMauiTestContext context) : base(context) { }
+
+    public override string Name => "MainPage";
+
+    public override bool IsLoaded(int? timeoutMs = null)
+        => TitleLabel.IsExists();
+
+    // Control factory methods return controls scoped to this page
+    public MauiControlBase<MainPage> TitleLabel => Control("TitleLabel");
+    public MauiButtonControl<MainPage> GreetButton => Button("GreetButton");
+    public MauiEntryControl<MainPage> NameEntry => Entry("NameEntry");
+}
+```
+
+### Container Pattern
+
+```csharp
+namespace Brinell.Maui.UITests.Containers;
+
+/// <summary>
+/// Container that scopes child element searches.
+/// TParent is the parent scope (page or container).
+/// TSelf is this container type (for fluent returns within container).
+/// </summary>
+public class ContactContainer : MauiContainerBase<ContainerDemoPage, ContactContainer>
+{
+    private readonly int _index;
+
+    public ContactContainer(IMauiScope<ContainerDemoPage> parentScope, int index)
+        : base(parentScope, new Locator(LocatorStrategy.AutomationId, $"Contact_{index}"))
+    {
+        _index = index;
+    }
+
+    public int Index => _index;
     
-    // Platform-specific helpers
-    
-    #endregion
+    // Controls scoped within this container
+    public MauiControlBase<ContactContainer> NameLabel => new(this, "ContactName");
+    public MauiButtonControl<ContactContainer> CallButton => Button("ContactCallButton");
 }
 ```
 
 ### Test Class Pattern
 
 ```csharp
-namespace Brinell.Platform.Tests;
+namespace Brinell.Maui.UITests.Tests;
 
-public class ControlNameTests : PlatformTestBase
+[Collection("Appium")]
+[Trait("Category", "UITest")]
+[Trait("Page", "MainPage")]
+public class MainPageTests
 {
-    #region Setup
-    
-    // Test setup if needed
-    
-    #endregion
+    private readonly AppiumFixture _fixture;
+    private MainPage Page => _fixture.MainPage;
 
-    #region Existence Tests
+    public MainPageTests(AppiumFixture fixture)
+    {
+        _fixture = fixture;
+    }
+
+    [Fact]
+    [Trait("Feature", "Greeting")]
+    public void MainPage_EnterNameAndGreet_ShowsGreetingMessage()
+    {
+        // Arrange
+        Page.NameEntry.Clear();
+
+        // Act - fluent chain
+        Page.NameEntry.Enter("Alice")
+            .GreetButton.Click();
+
+        // Assert
+        Page.GreetingLabel.AssertText("Hello, Alice!");
+    }
     
     [Fact]
-    public void IsExists_WhenElementExists_ReturnsTrue() { }
-    
-    #endregion
-
-    #region State Tests
-    
-    [Fact]
-    public void IsEnabled_WhenEnabled_ReturnsTrue() { }
-    
-    #endregion
-
-    #region Action Tests
-    
-    [Fact]
-    public void Click_WhenEnabled_PerformsClick() { }
-    
-    #endregion
+    [Trait("Pattern", "FluentChaining")]
+    public void MainPage_FluentChaining_WorksCorrectly()
+    {
+        // Full fluent chain from arrange through assert
+        Page.NameEntry.Clear()
+            .NameEntry.Enter("Bob")
+            .NameEntry.AssertText("Bob")
+            .GreetButton.Click()
+            .GreetingLabel.AssertText("Hello, Bob!");
+    }
 }
 ```
 
 ## Code Organization Principles
 
-### 1. Interface Segregation
+### 1. Scope-Based Element Finding
+
+Element finding uses hierarchical scopes with IElementScope abstraction:
+
+```
+IElementScope<TElement>           # Base element finding
+├── IPageObject<TElement>         # Page scope (root search)
+└── IContainerControl<TElement>   # Container scope (scoped search)
+```
+
+Scopes provide:
+- `TryFindElement(Locator)` - Returns null if not found
+- `FindElement(Locator)` - Throws if not found
+- `FindElements(Locator)` - Returns all matches
+- `IsReady(timeout)` / `WaitReady(timeout)` - Scope availability
+
+### 2. Interface Segregation
 
 Interfaces are organized by capability, not by control type:
 
 ```
-IControlObject                # All controls (base)
-├── IClickableControlObject   # Click capability
-├── ITextControlObject        # Text display capability
-├── IToggleControlObject      # Toggle capability
-├── ISelectorControlObject    # Selection capability
-└── IContainerControlObject   # Contains children
+IControlObject<TScope>                # All controls (base)
+├── IClickableControlObject<TScope>   # Click capability
+├── ITextControlObject<TScope>        # Text display capability
+│   └── IEditableTextControlObject<TScope>  # Text input
+├── IToggleControlObject<TScope>      # Toggle capability
+├── ISelectorControlObject<TScope>    # Selection capability
+├── IRangeControlObject<TScope>       # Range value capability
+└── IScrollableControlObject<TScope>  # Scrolling capability
 ```
 
 A single control can implement multiple capability interfaces:
 
 ```csharp
-public class ButtonControl : ControlBase, IClickableControlObject, ITextControlObject
+public class MauiButtonControl<TScope> : MauiControlBase<TScope>, 
+    IClickableControlObject<TScope>
 ```
 
-### 2. Self-Contained Platforms
+### 3. Self-Contained Platforms
 
 Each platform package is self-contained:
-- Has its own TestContext implementation
-- Has its own control base classes
+- Has its own TestContext implementation (IMauiTestContext, IWpfTestContext)
+- Has its own control base classes (MauiControlBase<TScope>, WpfControlBase<TScope>)
 - Uses native automation library directly
 - No dependencies on other platform packages
 
-### 3. Is/Wait/Check/Assert Pattern
+### 4. Is/Wait/Assert Pattern
 
 Every state-based capability follows this pattern:
 
-| Method | Behavior | Returns |
-|--------|----------|---------|
-| `Is*()` | Immediate check, no waiting | `bool` |
-| `Wait*(expected, timeout)` | Polls until condition or timeout | `bool` |
-| `Check*(expected, timeout)` | Waits, throws if not met | `void` |
-| `Assert*(message)` | Immediate assertion | `void` |
+| Method | Behavior | Returns | Nullable Skip |
+|--------|----------|---------|---------------|
+| `Is*()` | Immediate check, no waiting | `bool` or `bool?` | N/A |
+| `Wait*(expected, timeout)` | Polls until condition or timeout | `bool` | Yes (null = skip) |
+| `Assert*(expected, message, timeout)` | Waits, throws if not met | `TScope` | Yes (null = skip) |
 
-### 4. Container Scoping
+### 5. Container Scoping
 
-Controls support scoped element search:
+Containers provide hierarchical element scoping with parent navigation:
 
 ```csharp
-// Global search
-var button = new ButtonControl(this, "SaveButton");
+// Navigate down into container, then back up to page
+Page.GetContact(0).NameLabel.AssertText("Alice")
+    .CallButton.Click()
+    .Parent               // Navigate back to ContainerDemoPage
+    .StatusLabel.AssertText("Calling...");
 
-// Scoped to container
-var container = new FrameControl(this, "DialogFrame");
-var button = new ButtonControl(this, "SaveButton");
+// Container defines scoped controls
+public class ContactContainer : MauiContainerBase<ContainerDemoPage, ContactContainer>
+{
+    // Controls search within container root, not global page
+    public MauiButtonControl<ContactContainer> CallButton => Button("CallButton");
+}
 ```
 
 ## Module Boundaries
@@ -298,24 +501,27 @@ var button = new ButtonControl(this, "SaveButton");
 ```
 Application Tests
        ↓
-Platform Packages (Brinell.Maui, Brinell.Wpf, etc.)
+Platform Packages (Brinell.Maui, Brinell.Wpf, Brinell.Html, Brinell.Blazor, etc.)
        ↓
 Brinell.Core (interfaces only)
        ↓
-External Libraries (FlaUI, Appium, Selenium, Playwright)
+External Libraries (Appium, FlaUI, Playwright)
 ```
 
 ### Allowed Dependencies
 
 | Package | May Depend On |
 |---------|--------------|
-| `Brinell.Core` | System libraries |
-| `Brinell.Wpf` | Brinell.Core, FlaUI |
-| `Brinell.Maui` | Brinell.Core, Appium |
-| `Brinell.Html` | Brinell.Core, Playwright |
-| `Brinell.Testing` | Brinell.Core, test utilities |
-| `Brinell.Mocking` | Brinell.Core, WireMock |
-| Test Projects | Any Brinell package, test frameworks |
+| `Brinell.Core` | System libraries, no external dependencies |
+| `Brinell.Maui` | Brinell.Core, Appium.WebDriver |
+| `Brinell.Wpf` | Brinell.Core, FlaUI.Core, FlaUI.UIA3 |
+| `Brinell.WinForms` | Brinell.Core, FlaUI.Core, FlaUI.UIA3 |
+| `Brinell.Html` | Brinell.Core, Microsoft.Playwright |
+| `Brinell.Blazor` | Brinell.Core, Microsoft.Playwright |
+| `Brinell.Stride` | Brinell.Core, Stride.Engine |
+| `Brinell.Mocking` | WireMock.Net |
+| `Brinell.Automation` | Stride.Engine (for in-game automation) |
+| Test Projects | Any Brinell package, xUnit, FluentAssertions |
 
 ### Forbidden Dependencies
 
@@ -372,12 +578,16 @@ External Libraries (FlaUI, Appium, Selenium, Playwright)
 /// </remarks>
 /// <example>
 /// <code>
-/// // Example usage
-/// var control = new ButtonControl(context, "myButton");
+/// // Example usage - fluent chaining
+/// Page.NameEntry.Clear()
+///     .NameEntry.Enter("Alice")
+///     .GreetButton.Click()
+///     .GreetingLabel.AssertText("Hello, Alice!");
 /// </code>
 /// </example>
 ```
 
-**Document Version:** 1.0  
+**Document Version:** 2.0  
 **Created:** January 13, 2026  
+**Updated:** January 19, 2026  
 **Workflow:** steering_workflow/structure

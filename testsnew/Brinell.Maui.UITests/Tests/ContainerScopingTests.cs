@@ -125,7 +125,9 @@ public class ContainerScopingTests
     [Trait("Pattern", "ListItemScoping")]
     public void ListItems_AreIndependentlyScoped()
     {
-        // Arrange
+        // Arrange - wait for items to be rendered (CollectionView virtualization)
+        Page.TaskList.WaitForItems(minimumCount: 2, timeoutMs: 5000);
+        
         var item0 = Page.TaskList.Item(0);
         var item1 = Page.TaskList.Item(1);
 

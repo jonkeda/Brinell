@@ -5,14 +5,14 @@ namespace Brinell.Maui.UITests.Containers;
 
 /// <summary>
 /// Container for a task item in the TaskList.
-/// Demonstrates indexed container patterns.
+/// Uses unique AutomationId per task (Task_0, Task_1, Task_2, etc.).
 /// </summary>
 public class TaskItemContainer : MauiContainerBase<ContainerDemoPage, TaskItemContainer>
 {
     private readonly int _index;
 
     public TaskItemContainer(IMauiScope<ContainerDemoPage> parentScope, int index)
-        : base(parentScope, new Locator(LocatorStrategy.XPath, $"(//Frame[@AutomationId='TaskItem'])[{index + 1}]"))
+        : base(parentScope, new Locator(LocatorStrategy.AutomationId, $"Task_{index}"))
     {
         _index = index;
     }

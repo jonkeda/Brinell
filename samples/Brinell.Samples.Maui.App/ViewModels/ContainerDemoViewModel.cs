@@ -136,8 +136,30 @@ public class ContainerDemoViewModel : ViewModelBase
 /// </summary>
 public class TaskItem : INotifyPropertyChanged
 {
+    private static int _nextId = 0;
+    
+    private int _id;
     private string _name = "";
     private bool _isCompleted;
+
+    public TaskItem()
+    {
+        _id = _nextId++;
+    }
+
+    /// <summary>
+    /// Unique identifier for this task, used for AutomationId.
+    /// </summary>
+    public int Id
+    {
+        get => _id;
+        set { _id = value; OnPropertyChanged(); OnPropertyChanged(nameof(AutomationId)); }
+    }
+
+    /// <summary>
+    /// AutomationId for UI testing: Task_0, Task_1, etc.
+    /// </summary>
+    public string AutomationId => $"Task_{_id}";
 
     public string Name
     {

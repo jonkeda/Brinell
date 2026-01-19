@@ -55,19 +55,22 @@ Brinell solves these problems by providing:
 
 ### 1. Unified Control Interface Hierarchy
 
-A single interface hierarchy that all platforms implement:
+A single interface hierarchy that all platforms implement, with generic `TScope` parameter for fluent method chaining:
 
 ```
-IControlObject (base - all controls)
-├── IClickableControl (buttons, links)
-│   └── IContentControl (elements with content)
-├── ITextControl (text display)
-│   └── IEditableTextControl (text input)
-├── IToggleControl (checkboxes, switches)
-├── ISelectorControl (dropdowns, lists)
-├── IRangeControl (sliders, progress bars)
-├── IItemsControl (lists, collections)
-└── IContainerControl (panels, groups)
+IControlObject<TScope> (base - all controls)
+├── IClickableControlObject<TScope> (buttons, links)
+├── ITextControlObject<TScope> (text display)
+│   └── IEditableTextControlObject<TScope> (text input)
+├── IToggleControlObject<TScope> (checkboxes, switches)
+├── ISelectorControlObject<TScope> (dropdowns, lists)
+├── IRangeControlObject<TScope> (sliders, progress bars)
+├── IScrollableControlObject<TScope> (scrollable content)
+└── IContainerControl<TElement> (panels, groups - scoped search)
+
+IElementScope<TElement> (element finding abstraction)
+├── IPageObject<TElement> (page-level scope)
+└── IContainerControl<TElement> (container-level scope)
 ```
 
 ### 2. Page Object Pattern Support
@@ -78,36 +81,70 @@ Built-in base classes and patterns for organizing test code:
 - Page lifecycle management (displayed, ready states)
 - Container-scoped element searching
 
-### 3. Is/Wait/Check/Assert Pattern
+### 3. Is/Wait/Assert Pattern with Fluent Chaining
 
-Consistent state verification across all controls:
+Consistent state verification across all controls with fluent method chaining:
 
-| Method Type | Example | Behavior |
-|-------------|---------|----------|
-| **Is** | `IsExists()` | Immediate check, returns bool |
-| **Wait** | `WaitExists(true, 5000)` | Polls until condition or timeout |
-| **Check** | `CheckExists()` | Waits and throws if not met |
-| **Assert** | `AssertExists("message")` | Immediate test assertion |
+| Method Type | Example | Behavior | Returns |
+|-------------|---------|----------|---------|
+| **Is** | `IsExists()` | Immediate check, returns bool | `bool` or `bool?` |
+| **Wait** | `WaitExists(true, 5000)` | Polls until condition or timeout | `bool` |
+| **Assert** | `AssertExists(true, "msg")` | Waits, throws on failure | `TScope` (fluent) |
+
+**Nullable Skip Pattern**: All Wait/Assert methods accept nullable expected values. When `expected` is null, the operation is skipped (returns true for Wait, returns scope for Assert). This enables conditional assertions in test code.
+
+**Fluent Chaining**: Action and assertion methods return `TScope` (the containing scope), enabling fluent chains:
+```csharp
+Page.NameEntry.Clear()
+    .NameEntry.Enter("Bob")
+    .NameEntry.AssertText("Bob")
+    .GreetButton.Click()
+    .GreetingLabel.AssertText("Hello, Bob!");
+```
 
 ### 4. Multi-Platform Support
 
-| Platform | Automation Library | Use Case |
-|----------|-------------------|----------|
-| **WPF** | FlaUI/UIA3 | Windows desktop apps |
-| **WinForms** | FlaUI/UIA3 | Legacy Windows apps |
-| **MAUI** | Appium | Cross-platform desktop/mobile |
-| **HTML** | Selenium | Traditional web apps |
-| **Blazor** | Playwright | Modern web/SPA apps |
-| **Stride** | Named Pipes | 3D game engine UI |
+| Platform | Automation Library | Package | Status |
+|----------|-------------------|---------|--------|
+| **MAUI** | Appium 8.x | Brinell.Maui | Active development |
+| **WPF** | FlaUI/UIA3 | Brinell.Wpf | Placeholder |
+| **WinForms** | FlaUI/UIA3 | Brinell.WinForms | Placeholder |
+| **HTML** | Playwright | Brinell.Html | Placeholder |
+| **Blazor** | Playwright | Brinell.Blazor | Placeholder |
+| **Stride** | Named Pipes | Brinell.Stride | Placeholder |
 
-### 5. API Mocking Integration
+### 5. Container Scoping
+
+Containers provide hierarchical element scoping with fluent navigation:
+
+```csharp
+// Define a container that scopes child searches
+public class ContactContainer : MauiContainerBase<ContainerDemoPage, ContactContainer>
+{
+    public ContactContainer(IMauiScope<ContainerDemoPage> parentScope, int index)
+        : base(parentScope, new Locator(LocatorStrategy.AutomationId, $"Contact_{index}"))
+    {
+    }
+    
+    public MauiControlBase<ContactContainer> NameLabel => new(this, "ContactName");
+    public MauiButtonControl<ContactContainer> CallButton => Button("ContactCallButton");
+}
+
+// Usage in tests - child searches are scoped to container
+Page.GetContact(0).NameLabel.AssertText("Alice")
+    .CallButton.Click()
+    .Parent  // Navigate back to page
+    .GreetingLabel.AssertText("Calling Alice...");
+```
+
+### 6. API Mocking Integration
 
 Built-in WireMock support for isolated UI testing:
 - Mock backend APIs during UI tests
 - Configure endpoint stubs programmatically
 - Verify API calls made during tests
 
-### 6. Test Utilities
+### 7. Test Utilities
 
 Supporting infrastructure for test development:
 - Database fixtures for integration tests
@@ -242,6 +279,7 @@ Supporting infrastructure for test development:
 
 ---
 
-**Document Version:** 1.0  
+**Document Version:** 2.0  
 **Created:** January 13, 2026  
+**Updated:** January 19, 2026  
 **Workflow:** steering_workflow/product
