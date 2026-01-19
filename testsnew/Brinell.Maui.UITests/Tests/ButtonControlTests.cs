@@ -35,10 +35,10 @@ public class ButtonControlTests
     public Task Button_IsExists_ReturnsTrue()
     {
         // Assert
-        Page.IncrementButton.IsExists().Should().BeTrue();
-        Page.DecrementButton.IsExists().Should().BeTrue();
-        Page.ResetButton.IsExists().Should().BeTrue();
-        Page.GreetButton.IsExists().Should().BeTrue();
+        Assert.True(Page.IncrementButton.IsExists());
+        Assert.True(Page.DecrementButton.IsExists());
+        Assert.True(Page.ResetButton.IsExists());
+        Assert.True(Page.GreetButton.IsExists());
         return Task.CompletedTask;
     }
 
@@ -50,8 +50,8 @@ public class ButtonControlTests
     public Task Button_IsVisible_ReturnsTrue()
     {
         // Assert
-        Page.IncrementButton.IsVisible().Should().BeTrue();
-        Page.DecrementButton.IsVisible().Should().BeTrue();
+        Assert.True(Page.IncrementButton.IsVisible());
+        Assert.True(Page.DecrementButton.IsVisible());
         return Task.CompletedTask;
     }
 
@@ -63,8 +63,8 @@ public class ButtonControlTests
     public Task Button_IsEnabled_ReturnsTrue()
     {
         // Assert
-        Page.IncrementButton.IsEnabled().Should().BeTrue();
-        Page.ResetButton.IsEnabled().Should().BeTrue();
+        Assert.True(Page.IncrementButton.IsEnabled());
+        Assert.True(Page.ResetButton.IsEnabled());
         return Task.CompletedTask;
     }
 
@@ -76,8 +76,8 @@ public class ButtonControlTests
     public Task Button_IsClickable_ReturnsTrue()
     {
         // Assert
-        Page.IncrementButton.IsClickable().Should().BeTrue();
-        Page.DecrementButton.IsClickable().Should().BeTrue();
+        Assert.True(Page.IncrementButton.IsClickable());
+        Assert.True(Page.DecrementButton.IsClickable());
         return Task.CompletedTask;
     }
 
@@ -215,7 +215,7 @@ public class ButtonControlTests
     {
         // Assert
         var result = Page.IncrementButton.WaitExists(true, timeoutMs: 5000);
-        result.Should().BeTrue();
+        Assert.True(result);
         return Task.CompletedTask;
     }
 
@@ -228,7 +228,7 @@ public class ButtonControlTests
     {
         // Assert
         var result = Page.IncrementButton.WaitClickable(true, timeoutMs: 5000);
-        result.Should().BeTrue();
+        Assert.True(result);
         return Task.CompletedTask;
     }
 

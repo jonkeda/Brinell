@@ -35,8 +35,8 @@ public class EntryControlTests
     public void Entry_IsExists_ReturnsTrue()
     {
         // Assert
-        Page.NameEntry.IsExists().Should().BeTrue();
-        Page.EmailEntry.IsExists().Should().BeTrue();
+        Assert.True(Page.NameEntry.IsExists());
+        Assert.True(Page.EmailEntry.IsExists());
     }
 
     /// <summary>
@@ -47,8 +47,8 @@ public class EntryControlTests
     public void Entry_IsVisible_ReturnsTrue()
     {
         // Assert
-        Page.NameEntry.IsVisible().Should().BeTrue();
-        Page.EmailEntry.IsVisible().Should().BeTrue();
+        Assert.True(Page.NameEntry.IsVisible());
+        Assert.True(Page.EmailEntry.IsVisible());
     }
 
     /// <summary>
@@ -59,8 +59,8 @@ public class EntryControlTests
     public void Entry_IsEnabled_ReturnsTrue()
     {
         // Assert
-        Page.NameEntry.IsEnabled().Should().BeTrue();
-        Page.EmailEntry.IsEnabled().Should().BeTrue();
+        Assert.True(Page.NameEntry.IsEnabled());
+        Assert.True(Page.EmailEntry.IsEnabled());
     }
 
     #endregion
@@ -81,7 +81,7 @@ public class EntryControlTests
         Page.NameEntry.Enter("John Doe");
 
         // Assert
-        Page.NameEntry.GetText().Should().Be("John Doe");
+        Assert.Equal("John Doe", Page.NameEntry.GetText());
     }
 
     /// <summary>
@@ -98,7 +98,7 @@ public class EntryControlTests
         Page.NameEntry.SetText("Replaced Text");
 
         // Assert
-        Page.NameEntry.GetText().Should().Be("Replaced Text");
+        Assert.Equal("Replaced Text", Page.NameEntry.GetText());
     }
 
     /// <summary>
@@ -115,7 +115,7 @@ public class EntryControlTests
         Page.NameEntry.Clear();
 
         // Assert
-        Page.NameEntry.GetText().Should().BeNullOrEmpty();
+        Assert.True(string.IsNullOrEmpty(Page.NameEntry.GetText()));
     }
 
     /// <summary>
@@ -133,7 +133,7 @@ public class EntryControlTests
         var actualText = Page.NameEntry.GetText();
 
         // Assert
-        actualText.Should().Be(expectedText);
+        Assert.Equal(expectedText, actualText);
     }
 
     #endregion
@@ -151,7 +151,7 @@ public class EntryControlTests
         var placeholder = Page.NameEntry.GetPlaceholder();
 
         // Assert
-        placeholder.Should().Be("Enter your name");
+        Assert.Equal("Enter your name", placeholder);
     }
 
     /// <summary>
@@ -285,7 +285,7 @@ public class EntryControlTests
     {
         // Assert
         var result = Page.NameEntry.WaitExists(true, timeoutMs: 5000);
-        result.Should().BeTrue();
+        Assert.True(result);
     }
 
     /// <summary>
@@ -300,7 +300,7 @@ public class EntryControlTests
 
         // Assert
         var result = Page.NameEntry.WaitText("WaitTest", timeoutMs: 5000);
-        result.Should().BeTrue();
+        Assert.True(result);
     }
 
     #endregion

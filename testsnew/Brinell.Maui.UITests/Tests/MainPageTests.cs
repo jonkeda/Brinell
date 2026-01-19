@@ -165,7 +165,7 @@ public class MainPageTests
         var placeholder = Page.EmailEntry.GetPlaceholder();
 
         // Assert
-        placeholder.Should().NotBeNullOrEmpty();
+        Assert.False(string.IsNullOrEmpty(placeholder));
     }
 
     #endregion
@@ -188,7 +188,7 @@ public class MainPageTests
 
         // Assert - counter increments
         // Text format: "Counter: N"
-        firstLabel.Should().NotBe(secondLabel);
+        Assert.NotEqual(firstLabel, secondLabel);
     }
 
     /// <summary>
@@ -224,7 +224,7 @@ public class MainPageTests
         var placeholder = Page.NameEntry.GetPlaceholder();
 
         // Assert
-        placeholder.Should().Be("Enter your name");
+        Assert.Equal("Enter your name", placeholder);
     }
 
     /// <summary>
@@ -285,7 +285,7 @@ public class MainPageTests
     {
         // Assert
         var result = Page.NameEntry.WaitExists(true, timeoutMs: 5000);
-        result.Should().BeTrue();
+        Assert.True(result);
     }
 
     /// <summary>
@@ -302,7 +302,7 @@ public class MainPageTests
 
         // Act & Assert - wait for greeting to appear
         var result = Page.GreetingLabel.WaitText("Hello, WaitTest!", timeoutMs: 5000);
-        result.Should().BeTrue();
+        Assert.True(result);
     }
 
     #endregion

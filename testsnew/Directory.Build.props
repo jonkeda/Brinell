@@ -17,8 +17,13 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
-    <PackageReference Include="FluentAssertions" />
     <PackageReference Include="coverlet.collector" />
     <!-- Moq is added per-project where needed to avoid duplicates -->
   </ItemGroup>
+  
+  <!-- Banned packages - Mandates xUnit Assert, not FluentAssertions ( FluentAssertions has the wrong License. Forbidden to use ever. ) -->
+  <Target Name="CheckBannedPackages" BeforeTargets="ResolvePackageAssets">
+    <Error Condition="@(PackageReference->AnyHaveMetadataValue('Identity', 'FluentAssertions'))"
+           Text="FluentAssertions is banned. Use xUnit Assert per SPEC-017b design principles." />
+  </Target>
 </Project>

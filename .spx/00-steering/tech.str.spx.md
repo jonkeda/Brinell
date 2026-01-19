@@ -28,7 +28,6 @@ Brinell is a multi-package .NET library distributed via NuGet that provides UI t
 | xunit | 2.9.3 | Test framework (core dependency) |
 | xunit.extensibility.core | 2.9.3 | Custom test attributes |
 | Microsoft.NET.Test.Sdk | 17.14.0 | Test SDK integration |
-| FluentAssertions | 6.12.0 | Assertion library |
 | Moq | 4.20.70 | Mocking framework |
 | AutoFixture | 4.18.1 | Test data generation |
 | Bogus | 35.5.1 | Fake data generation |
@@ -138,7 +137,7 @@ Layer 1: External Libraries
   - Consistent naming conventions
 - **Testing Framework**:
   - xUnit for unit/integration tests
-  - FluentAssertions for readable assertions
+  - xUnit Assert for assertions (never FluentAssertions - see SPEC-017b)
   - Moq/AutoFixture for test isolation
 - **Documentation**:
   - XML documentation comments
