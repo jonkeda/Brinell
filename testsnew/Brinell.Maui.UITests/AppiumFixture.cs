@@ -22,12 +22,12 @@ public class AppiumFixture : MauiTestFixtureBase
     }
 
     /// <summary>
-    /// Gets the AppShell page object for TabBar navigation.
+    /// Gets the AppShell page object for TabbedPage navigation.
     /// </summary>
     public AppShellPage AppShell => _appShell;
 
     /// <summary>
-    /// Gets the MainPage page object.
+    /// Gets the MainPage page object (Basics tab content).
     /// </summary>
     public MainPage MainPage => _mainPage;
 
@@ -37,11 +37,11 @@ public class AppiumFixture : MauiTestFixtureBase
     public ContainerDemoPage ContainerDemoPage => _containerDemoPage;
 
     /// <summary>
-    /// Navigates to the Main page via tab.
+    /// Navigates to the Basics tab (first/main tab).
     /// </summary>
     public void NavigateToMain()
     {
-        _appShell.MainTab.Click();
+        _appShell.BasicsTab.Click();
         _mainPage.WaitReady(5000);
     }
 

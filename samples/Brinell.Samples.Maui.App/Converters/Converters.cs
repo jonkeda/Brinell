@@ -90,3 +90,23 @@ public class InverseBoolConverter : IValueConverter
         return false;
     }
 }
+
+/// <summary>
+/// Converts bool (HasChildren) to folder/file icon.
+/// </summary>
+public class BoolToFolderIconConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is bool hasChildren)
+        {
+            return hasChildren ? "📁" : "📄";
+        }
+        return "📄";
+    }
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}

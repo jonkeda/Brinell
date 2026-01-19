@@ -1,121 +1,53 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:views="clr-namespace:Brinell.Samples.Maui.App.Views"
-             x:Class="Brinell.Samples.Maui.App.MainPage"
-             AutomationId="MainPage"
-             Title="Brinell MAUI Sample">
+<TabbedPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+            xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+            xmlns:views="clr-namespace:Brinell.Samples.Maui.App.Views"
+            x:Class="Brinell.Samples.Maui.App.MainPage"
+            AutomationId="MainPage"
+            Title="Brinell MAUI Sample"
+            BarBackgroundColor="{StaticResource Primary}"
+            BarTextColor="White"
+            SelectedTabColor="White"
+            UnselectedTabColor="LightGray">
 
-    <Grid RowDefinitions="Auto,*">
-        <!-- Tab Bar -->
-        <HorizontalStackLayout Grid.Row="0" Spacing="5" Padding="10" BackgroundColor="{StaticResource Primary}">
-            <Button x:Name="MainTab" AutomationId="MainTab" Text="Main" Clicked="OnTabClicked" />
-            <Button x:Name="ContainersTab" AutomationId="ContainersTab" Text="Containers" Clicked="OnTabClicked" />
-            <Button x:Name="TabbedPageTab" AutomationId="TabbedPageTab" Text="TabbedPage Demo" Clicked="OnTabbedPageDemoClicked" />
-        </HorizontalStackLayout>
+    <!-- Basics Tab -->
+    <ContentPage Title="Basics" AutomationId="BasicsTab">
+        <views:BasicsView />
+    </ContentPage>
 
-        <!-- Tab Content Area -->
-        <Grid Grid.Row="1">
-            <!-- Main Tab Content (visible by default) -->
-            <ScrollView x:Name="MainTabContent" AutomationId="MainScrollView" IsVisible="True">
-                <VerticalStackLayout Padding="30,0" Spacing="25">
+    <!-- Containers Tab -->
+    <ContentPage Title="Containers" AutomationId="ContainersTab">
+        <views:ContainerDemoView />
+    </ContentPage>
 
-                    <Label AutomationId="TitleLabel" Text="Brinell MAUI Sample"
-                           Style="{StaticResource Headline}"
-                           SemanticProperties.HeadingLevel="Level1"
-                           HorizontalOptions="Center" />
+    <!-- Forms Tab -->
+    <ContentPage Title="Forms" AutomationId="FormsTab">
+        <views:FormsView />
+    </ContentPage>
 
-                    <Label AutomationId="SubtitleLabel" Text="UI Test Framework Demo"
-                           Style="{StaticResource SubHeadline}"
-                           SemanticProperties.HeadingLevel="Level2"
-                           HorizontalOptions="Center" />
+    <!-- Lists Tab -->
+    <ContentPage Title="Lists" AutomationId="ListsTab">
+        <views:ListsView />
+    </ContentPage>
 
-                    <!-- Counter Section -->
-                    <Frame AutomationId="CounterFrame" Padding="20" CornerRadius="10">
-                        <VerticalStackLayout Spacing="10">
-                            <Label x:Name="CounterLabel" AutomationId="CounterLabel"
-                                   Text="Counter: 0" FontSize="18" HorizontalOptions="Center" />
-                            <HorizontalStackLayout HorizontalOptions="Center" Spacing="10">
-                                <Button AutomationId="DecrementButton" Text="-" WidthRequest="60" Clicked="OnDecrementClicked" />
-                                <Button AutomationId="IncrementButton" Text="+" WidthRequest="60" Clicked="OnIncrementClicked" />
-                            </HorizontalStackLayout>
-                            <Button AutomationId="ResetButton" Text="Reset" Clicked="OnResetClicked" HorizontalOptions="Center" />
-                        </VerticalStackLayout>
-                    </Frame>
+    <!-- Gestures Tab -->
+    <ContentPage Title="Gestures" AutomationId="GesturesTab">
+        <views:GesturesView />
+    </ContentPage>
 
-                    <!-- Text Input Section -->
-                    <Frame AutomationId="TextInputFrame" Padding="20" CornerRadius="10">
-                        <VerticalStackLayout Spacing="10">
-                            <Label Text="Text Input" FontSize="16" FontAttributes="Bold" />
-                            <Entry x:Name="NameEntry" AutomationId="NameEntry" Placeholder="Enter your name" MaxLength="50" />
-                            <Entry AutomationId="EmailEntry" Placeholder="Enter your email" Keyboard="Email" />
-                            <Editor AutomationId="MessageEditor" Placeholder="Enter a message..." HeightRequest="100" AutoSize="TextChanges" />
-                            <Label x:Name="GreetingLabel" AutomationId="GreetingLabel" Text="" FontSize="14" TextColor="{StaticResource Primary}" />
-                            <Button AutomationId="GreetButton" Text="Greet" Clicked="OnGreetClicked" />
-                        </VerticalStackLayout>
-                    </Frame>
+    <!-- Navigation Tab -->
+    <ContentPage Title="Navigation" AutomationId="NavigationTab">
+        <views:NavigationDemoView />
+    </ContentPage>
 
-                    <!-- Toggle Controls Section -->
-                    <Frame AutomationId="ToggleFrame" Padding="20" CornerRadius="10">
-                        <VerticalStackLayout Spacing="10">
-                            <Label Text="Toggle Controls" FontSize="16" FontAttributes="Bold" />
-                            <HorizontalStackLayout Spacing="10">
-                                <Switch AutomationId="NotificationSwitch" IsToggled="true" />
-                                <Label AutomationId="NotificationLabel" Text="Notifications enabled" VerticalOptions="Center" />
-                            </HorizontalStackLayout>
-                            <HorizontalStackLayout Spacing="10">
-                                <CheckBox AutomationId="AgreeCheckBox" IsChecked="false" />
-                                <Label Text="I agree to terms" VerticalOptions="Center" />
-                            </HorizontalStackLayout>
-                        </VerticalStackLayout>
-                    </Frame>
+    <!-- Toolkit Tab -->
+    <ContentPage Title="Toolkit" AutomationId="ToolkitTab">
+        <views:ToolkitView />
+    </ContentPage>
 
-                    <!-- Slider Section -->
-                    <Frame AutomationId="SliderFrame" Padding="20" CornerRadius="10">
-                        <VerticalStackLayout Spacing="10">
-                            <Label Text="Volume Control" FontSize="16" FontAttributes="Bold" />
-                            <Slider AutomationId="VolumeSlider" Minimum="0" Maximum="100" Value="50" ValueChanged="OnVolumeChanged" />
-                            <Label x:Name="VolumeLabel" AutomationId="VolumeLabel" Text="Volume: 50%" HorizontalOptions="Center" />
-                            <ProgressBar x:Name="VolumeProgress" AutomationId="VolumeProgress" Progress="0.5" />
-                        </VerticalStackLayout>
-                    </Frame>
+    <!-- Media Tab -->
+    <ContentPage Title="Media" AutomationId="MediaTab">
+        <views:MediaGalleryView />
+    </ContentPage>
 
-                    <!-- Picker Section -->
-                    <Frame AutomationId="PickerFrame" Padding="20" CornerRadius="10">
-                        <VerticalStackLayout Spacing="10">
-                            <Label Text="Selection Controls" FontSize="16" FontAttributes="Bold" />
-                            <Picker x:Name="ColorPicker" AutomationId="ColorPicker" Title="Select a color" SelectedIndexChanged="OnColorSelected">
-                                <Picker.ItemsSource>
-                                    <x:Array Type="{x:Type x:String}">
-                                        <x:String>Red</x:String>
-                                        <x:String>Green</x:String>
-                                        <x:String>Blue</x:String>
-                                        <x:String>Yellow</x:String>
-                                        <x:String>Purple</x:String>
-                                    </x:Array>
-                                </Picker.ItemsSource>
-                            </Picker>
-                            <Label x:Name="SelectedColorLabel" AutomationId="SelectedColorLabel" Text="No color selected" HorizontalOptions="Center" />
-                            <DatePicker AutomationId="BirthDatePicker" MinimumDate="1900-01-01" MaximumDate="2025-12-31" />
-                            <TimePicker AutomationId="ReminderTimePicker" Time="09:00:00" />
-                        </VerticalStackLayout>
-                    </Frame>
-
-                    <!-- Activity Indicator -->
-                    <Frame AutomationId="ActivityFrame" Padding="20" CornerRadius="10">
-                        <VerticalStackLayout Spacing="10">
-                            <Label Text="Activity Indicator" FontSize="16" FontAttributes="Bold" />
-                            <ActivityIndicator x:Name="LoadingIndicator" AutomationId="LoadingIndicator" IsRunning="false" Color="{StaticResource Primary}" />
-                            <Button AutomationId="ToggleLoadingButton" Text="Toggle Loading" Clicked="OnToggleLoadingClicked" />
-                        </VerticalStackLayout>
-                    </Frame>
-
-                </VerticalStackLayout>
-            </ScrollView>
-
-            <!-- Containers Tab Content (hidden by default) -->
-            <views:ContainerDemoView x:Name="ContainersTabContent" IsVisible="False" />
-        </Grid>
-    </Grid>
-
-</ContentPage>
+</TabbedPage>

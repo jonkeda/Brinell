@@ -1,91 +1,9 @@
-using Brinell.Samples.Maui.App.Pages;
-
 namespace Brinell.Samples.Maui.App;
 
-public partial class MainPage : ContentPage
+public partial class MainPage : TabbedPage
 {
-    private int _counter = 0;
-
     public MainPage()
     {
         InitializeComponent();
-    }
-
-    private void OnTabClicked(object? sender, EventArgs e)
-    {
-        System.Diagnostics.Debug.WriteLine($"OnTabClicked called with sender: {sender?.GetType().Name}");
-        if (sender is Button button)
-        {
-            System.Diagnostics.Debug.WriteLine($"Button clicked: AutomationId={button.AutomationId}");
-            switch (button.AutomationId)
-            {
-                case "MainTab":
-                    System.Diagnostics.Debug.WriteLine("Switching to Main tab");
-                    MainTabContent.IsVisible = true;
-                    ContainersTabContent.IsVisible = false;
-                    break;
-                case "ContainersTab":
-                    System.Diagnostics.Debug.WriteLine("Switching to Containers tab");
-                    MainTabContent.IsVisible = false;
-                    ContainersTabContent.IsVisible = true;
-                    break;
-            }
-        }
-    }
-
-    private void OnIncrementClicked(object? sender, EventArgs e)
-    {
-        _counter++;
-        CounterLabel.Text = $"Counter: {_counter}";
-    }
-
-    private void OnDecrementClicked(object? sender, EventArgs e)
-    {
-        _counter--;
-        CounterLabel.Text = $"Counter: {_counter}";
-    }
-
-    private void OnResetClicked(object? sender, EventArgs e)
-    {
-        _counter = 0;
-        CounterLabel.Text = $"Counter: {_counter}";
-    }
-
-    private void OnGreetClicked(object? sender, EventArgs e)
-    {
-        var name = NameEntry.Text;
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            GreetingLabel.Text = "Please enter your name";
-        }
-        else
-        {
-            GreetingLabel.Text = $"Hello, {name}!";
-        }
-    }
-
-    private void OnVolumeChanged(object? sender, ValueChangedEventArgs e)
-    {
-        var volume = (int)e.NewValue;
-        VolumeLabel.Text = $"Volume: {volume}%";
-        VolumeProgress.Progress = volume / 100.0;
-    }
-
-    private void OnColorSelected(object? sender, EventArgs e)
-    {
-        if (ColorPicker.SelectedItem is string color)
-        {
-            SelectedColorLabel.Text = $"Selected: {color}";
-        }
-    }
-
-    private void OnToggleLoadingClicked(object? sender, EventArgs e)
-    {
-        LoadingIndicator.IsRunning = !LoadingIndicator.IsRunning;
-    }
-
-    private async void OnTabbedPageDemoClicked(object? sender, EventArgs e)
-    {
-        await Navigation.PushAsync(new TabbedPageDemoPage());
     }
 }

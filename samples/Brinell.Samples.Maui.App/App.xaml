@@ -15,6 +15,7 @@
             <converters:IntToBoolConverter x:Key="IntToBoolConverter" />
             <converters:PlayPauseConverter x:Key="PlayPauseConverter" />
             <converters:InverseBoolConverter x:Key="InverseBoolConverter" />
+            <converters:BoolToFolderIconConverter x:Key="BoolToFolderIconConverter" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

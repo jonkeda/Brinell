@@ -9,7 +9,7 @@ public partial class App : Application
 
     protected override Window CreateWindow(IActivationState? activationState)
     {
-        // Wrap MainPage in NavigationPage to enable navigation to TabbedPageDemoPage
-        return new Window(new NavigationPage(new MainPage()));
+        // TabbedPage should not be wrapped in NavigationPage
+        return new Window(new MainPage());
     }
 }

@@ -3,7 +3,7 @@ using Brinell.Maui.UITests.Pages;
 namespace Brinell.Maui.UITests.Tests;
 
 /// <summary>
-/// UI tests for MainPage demonstrating tab navigation and greeting functionality.
+/// UI tests for MainPage (BasicsView content) demonstrating tab navigation and greeting functionality.
 /// Tests run against the Brinell.Samples.Maui.App sample application.
 /// </summary>
 /// <remarks>
@@ -12,13 +12,13 @@ namespace Brinell.Maui.UITests.Tests;
 /// - Sample app deployed to device/emulator
 /// - Correct capabilities configured in test setup
 /// 
-/// MainPage is the default landing page (Main tab), containing:
+/// MainPage tests BasicsView content (first tab in TabbedPage), containing:
 /// - Name entry for user input
 /// - Email entry for email input
 /// - Greet button to trigger greeting
 /// - Greeting label showing the result
-/// - Counter button demonstrating state
-/// - Toggle/slider/picker controls (future tests)
+/// - Counter buttons demonstrating state
+/// - Toggle/slider/picker controls
 /// </remarks>
 [Collection("Appium")]
 [Trait("Category", "UITest")]
@@ -303,26 +303,6 @@ public class MainPageTests
         // Act & Assert - wait for greeting to appear
         var result = Page.GreetingLabel.WaitText("Hello, WaitTest!", timeoutMs: 5000);
         Assert.True(result);
-    }
-
-    #endregion
-
-    #region Tab Navigation Tests
-
-    /// <summary>
-    /// Verifies that navigating to Main tab shows MainPage controls.
-    /// </summary>
-    [Fact]
-    [Trait("Feature", "Navigation")]
-    public void MainPage_NavigateToMainTab_ShowsControls()
-    {
-        // Act - explicitly click Main tab
-        _fixture.AppShell.MainTab.Click();
-        Page.WaitReady(5000);
-
-        // Assert
-        Page.NameEntry.AssertExists();
-        Page.GreetButton.AssertExists();
     }
 
     #endregion

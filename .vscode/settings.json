@@ -31,7 +31,10 @@
         "Get-WinEvent": true,
         "Get-Date": true,
         "Format-List": true,
-        "dotnet publish": true
+        "dotnet publish": true,
+        "dotnet list": true,
+        "findstr": true,
+        "dotnet nuget": true
     },
     "cSpell.words": [
         "Brinell"

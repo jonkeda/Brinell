@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:Brinell.Samples.Maui.App.ViewModels"
+             x:Class="Brinell.Samples.Maui.App.Views.FormsView"
+             AutomationId="FormsContent">
+
+    <ContentView.BindingContext>
+        <viewmodels:FormsViewModel />
+    </ContentView.BindingContext>
+
+    <ScrollView AutomationId="FormsScrollView">
+        <VerticalStackLayout Spacing="15" Padding="20">
+
+            <!-- Page Header -->
+            <Label Text="Forms &amp; TableView" 
+                   AutomationId="FormsTitle"
+                   FontSize="28" 
+                   FontAttributes="Bold" />
+
+            <!-- User Form Section -->
+            <Frame AutomationId="UserFormSection" 
+                   CornerRadius="10" 
+                   Padding="15">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="User Registration Form" 
+                           FontSize="18" 
+                           FontAttributes="Bold"
+                           AutomationId="UserFormLabel" />
+
+                    <!-- Username -->
+                    <Label Text="Username" FontAttributes="Bold" AutomationId="UsernameLabel" />
+                    <Entry AutomationId="UsernameEntry" 
+                           Placeholder="Enter username"
+                           Text="{Binding Username}" />
+                    <Label AutomationId="UsernameError" 
+                           Text="{Binding UsernameError}" 
+                           TextColor="Red" 
+                           FontSize="12" />
+
+                    <!-- Email -->
+                    <Label Text="Email" FontAttributes="Bold" AutomationId="EmailLabel" />
+                    <Entry AutomationId="FormEmailEntry" 
+                           Placeholder="Enter email"
+                           Keyboard="Email"
+                           Text="{Binding Email}" />
+                    <Label AutomationId="EmailError" 
+                           Text="{Binding EmailError}" 
+                           TextColor="Red" 
+                           FontSize="12" />
+
+                    <!-- Phone -->
+                    <Label Text="Phone (optional)" FontAttributes="Bold" AutomationId="PhoneLabel" />
+                    <Entry AutomationId="PhoneEntry" 
+                           Placeholder="Enter phone"
+                           Keyboard="Telephone"
+                           Text="{Binding Phone}" />
+                    <Label AutomationId="PhoneError" 
+                           Text="{Binding PhoneError}" 
+                           TextColor="Red" 
+                           FontSize="12" />
+
+                    <!-- Buttons -->
+                    <HorizontalStackLayout Spacing="10" HorizontalOptions="Center">
+                        <Button AutomationId="SaveFormButton" 
+                                Text="Save" 
+                                Command="{Binding SaveFormCommand}" />
+                        <Button AutomationId="ClearFormButton" 
+                                Text="Clear" 
+                                Command="{Binding ClearFormCommand}" />
+                    </HorizontalStackLayout>
+
+                    <!-- Status -->
+                    <Label AutomationId="FormStatusLabel" 
+                           Text="{Binding FormStatus}" 
+                           TextColor="Blue"
+                           HorizontalOptions="Center" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- TableView Settings Section -->
+            <Frame AutomationId="SettingsSection" 
+                   CornerRadius="10" 
+                   Padding="15">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Settings (TableView Style)" 
+                           FontSize="18" 
+                           FontAttributes="Bold"
+                           AutomationId="SettingsLabel" />
+
+                    <TableView Intent="Settings" AutomationId="SettingsTableView">
+                        <TableRoot>
+                            <!-- Account Section -->
+                            <TableSection Title="Account">
+                                <EntryCell Label="Display Name" 
+                                           Placeholder="Your name"
+                                           Text="{Binding DisplayName}" />
+                                <TextCell Text="Email" 
+                                          Detail="user@example.com" />
+                                <TextCell Text="Change Password" />
+                            </TableSection>
+
+                            <!-- Preferences Section -->
+                            <TableSection Title="Preferences">
+                                <SwitchCell Text="Dark Mode" 
+                                            On="{Binding IsDarkMode}" />
+                                <SwitchCell Text="Notifications" 
+                                            On="{Binding NotificationsEnabled}" />
+                                <SwitchCell Text="Auto-Save" 
+                                            On="{Binding AutoSaveEnabled}" />
+                            </TableSection>
+
+                            <!-- Language Section -->
+                            <TableSection Title="Language">
+                                <ViewCell>
+                                    <HorizontalStackLayout Padding="10" Spacing="10">
+                                        <Label Text="Language" VerticalOptions="Center" />
+                                        <Picker AutomationId="LanguagePicker"
+                                                ItemsSource="{Binding Languages}"
+                                                SelectedItem="{Binding SelectedLanguage}"
+                                                HorizontalOptions="EndAndExpand" />
+                                    </HorizontalStackLayout>
+                                </ViewCell>
+                            </TableSection>
+                        </TableRoot>
+                    </TableView>
+                </VerticalStackLayout>
+            </Frame>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentView>

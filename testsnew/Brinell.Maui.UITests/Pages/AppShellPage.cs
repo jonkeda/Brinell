@@ -5,8 +5,9 @@ using Brinell.Maui.Pages;
 namespace Brinell.Maui.UITests.Pages;
 
 /// <summary>
-/// Page object for MAUI TabView navigation (migrated from Shell TabBar).
-/// Uses TabViewControl for CommunityToolkit TabView with AutomationId locators.
+/// Page object for MAUI TabbedPage navigation.
+/// Uses TabViewControl for tab items with AutomationId locators.
+/// Matches the 8-tab structure in MainPage.xaml TabbedPage.
 /// </summary>
 public class AppShellPage : MauiPageObjectBase<AppShellPage>
 {
@@ -14,15 +15,15 @@ public class AppShellPage : MauiPageObjectBase<AppShellPage>
         : base(context)
     {
         // TabViewControl uses AutomationId - fast and reliable
-        MainTab = new TabViewControl<AppShellPage>(this, "MainTab");
-        DashboardTab = new TabViewControl<AppShellPage>(this, "DashboardTab");
-        FormsTab = new TabViewControl<AppShellPage>(this, "FormsTab");
-        DataTab = new TabViewControl<AppShellPage>(this, "DataTab");
-        MediaTab = new TabViewControl<AppShellPage>(this, "MediaTab");
-        NavigationTab = new TabViewControl<AppShellPage>(this, "NavigationTab");
-        ValidationTab = new TabViewControl<AppShellPage>(this, "ValidationTab");
-        AdvancedTab = new TabViewControl<AppShellPage>(this, "AdvancedTab");
+        // Tab AutomationIds match MainPage.xaml TabbedPage children
+        BasicsTab = new TabViewControl<AppShellPage>(this, "BasicsTab");
         ContainersTab = new TabViewControl<AppShellPage>(this, "ContainersTab");
+        FormsTab = new TabViewControl<AppShellPage>(this, "FormsTab");
+        ListsTab = new TabViewControl<AppShellPage>(this, "ListsTab");
+        GesturesTab = new TabViewControl<AppShellPage>(this, "GesturesTab");
+        NavigationTab = new TabViewControl<AppShellPage>(this, "NavigationTab");
+        ToolkitTab = new TabViewControl<AppShellPage>(this, "ToolkitTab");
+        MediaTab = new TabViewControl<AppShellPage>(this, "MediaTab");
     }
 
     /// <inheritdoc />
@@ -31,37 +32,34 @@ public class AppShellPage : MauiPageObjectBase<AppShellPage>
     /// <inheritdoc />
     public override bool IsLoaded(int? timeoutMs = null)
     {
-        return MainTab.IsExists();
+        return BasicsTab.IsExists();
     }
 
     #region Tab Controls
 
-    /// <summary>Main page tab.</summary>
-    public ITabControlObject<AppShellPage> MainTab { get; }
+    /// <summary>Basics page tab (default/first tab).</summary>
+    public ITabControlObject<AppShellPage> BasicsTab { get; }
 
-    /// <summary>Dashboard page tab.</summary>
-    public ITabControlObject<AppShellPage> DashboardTab { get; }
+    /// <summary>Container Demo page tab.</summary>
+    public ITabControlObject<AppShellPage> ContainersTab { get; }
 
-    /// <summary>User Form page tab.</summary>
+    /// <summary>Forms page tab.</summary>
     public ITabControlObject<AppShellPage> FormsTab { get; }
 
-    /// <summary>Data Grid page tab.</summary>
-    public ITabControlObject<AppShellPage> DataTab { get; }
+    /// <summary>Lists page tab.</summary>
+    public ITabControlObject<AppShellPage> ListsTab { get; }
 
-    /// <summary>Media Gallery page tab.</summary>
-    public ITabControlObject<AppShellPage> MediaTab { get; }
+    /// <summary>Gestures page tab.</summary>
+    public ITabControlObject<AppShellPage> GesturesTab { get; }
 
     /// <summary>Navigation Demo page tab.</summary>
     public ITabControlObject<AppShellPage> NavigationTab { get; }
 
-    /// <summary>Validation page tab.</summary>
-    public ITabControlObject<AppShellPage> ValidationTab { get; }
+    /// <summary>Toolkit page tab.</summary>
+    public ITabControlObject<AppShellPage> ToolkitTab { get; }
 
-    /// <summary>Advanced page tab.</summary>
-    public ITabControlObject<AppShellPage> AdvancedTab { get; }
-
-    /// <summary>Container Demo page tab.</summary>
-    public ITabControlObject<AppShellPage> ContainersTab { get; }
+    /// <summary>Media Gallery page tab.</summary>
+    public ITabControlObject<AppShellPage> MediaTab { get; }
 
     #endregion
 }
