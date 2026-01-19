@@ -10,16 +10,21 @@ namespace Brinell.Maui.UITests;
 /// </summary>
 public class AppiumFixture : MauiTestFixtureBase
 {
+    private readonly AppShellPage _appShell;
     private readonly MainPage _mainPage;
     private readonly ContainerDemoPage _containerDemoPage;
-    private readonly AppShellPage _appShell;
 
     public AppiumFixture()
     {
+        _appShell = new AppShellPage(Context);
         _mainPage = new MainPage(Context);
         _containerDemoPage = new ContainerDemoPage(Context);
-        _appShell = new AppShellPage(Context);
     }
+
+    /// <summary>
+    /// Gets the AppShell page object for TabBar navigation.
+    /// </summary>
+    public AppShellPage AppShell => _appShell;
 
     /// <summary>
     /// Gets the MainPage page object.
@@ -32,26 +37,25 @@ public class AppiumFixture : MauiTestFixtureBase
     public ContainerDemoPage ContainerDemoPage => _containerDemoPage;
 
     /// <summary>
-    /// Gets the AppShell page object for flyout navigation.
+    /// Navigates to the Main page via tab.
     /// </summary>
-    public AppShellPage AppShell => _appShell;
+    public void NavigateToMain()
+    {
+        _appShell.MainTab.Click();
+        _mainPage.WaitReady(5000);
+    }
 
     /// <summary>
-    /// Navigates to the Container Demo page via the flyout menu.
-    /// Uses MauiFlyoutItemControl with XPath @Name strategy.
+    /// Navigates to the Container Demo page via tab.
     /// </summary>
     public void NavigateToContainerDemo()
     {
-        // Check if we're already on the Container Demo page using framework's element finding
-        var userProfileLocator = new Locator(LocatorStrategy.XPath, "//*[@Name='User Profile']");
-        if (Context.TryFindElement(userProfileLocator) != null)
+        _appShell.ContainersTab.Click();
+        // Wait for page to be ready
+        if (!_containerDemoPage.WaitReady(5000))
         {
-            return; // Already on the Container Demo page
+            throw new InvalidOperationException("ContainerDemoPage did not become ready after clicking ContainersTab. PageTitle may not be visible.");
         }
-        
-        // Use AppShellPage for navigation
-        _appShell.ScrollFlyoutToBottom();
-        _appShell.ContainerDemoFlyout.Click();
     }
 
     #region MauiTestFixtureBase Overrides
@@ -74,6 +78,15 @@ public class AppiumFixture : MauiTestFixtureBase
                 "net10.0-ios", "iossimulator-x64", "Brinell.Samples.Maui.App.app"),
             _ => ""
         };
+    }
+
+    /// <inheritdoc />
+    protected override void ConfigureWindowsOptions(AppiumOptions options, string appPath)
+    {
+        base.ConfigureWindowsOptions(options, appPath);
+        // Increase timeout for app window discovery (TabView takes longer to initialize)
+        options.AddAdditionalAppiumOption("appWaitDuration", 30000); // 30 seconds
+        options.AddAdditionalAppiumOption("newCommandTimeout", 300); // 5 minutes for command execution
     }
 
     /// <inheritdoc />

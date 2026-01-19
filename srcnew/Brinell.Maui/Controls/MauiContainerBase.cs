@@ -115,6 +115,9 @@ public abstract class MauiContainerBase<TParent, TSelf> : MauiControlBase<TParen
     
     /// <summary>
     /// Tries to find an element within the container's root.
+    /// On Windows, layout containers (Grid, StackLayout, Frame, etc.) don't expose AutomationId,
+    /// so we use marker elements (like Labels) as container roots. Since markers have no children,
+    /// we fall back to parent scope search when direct search fails.
     /// </summary>
     /// <param name="locator">The locator for the child element.</param>
     /// <returns>The element if found, null otherwise.</returns>
@@ -136,7 +139,9 @@ public abstract class MauiContainerBase<TParent, TSelf> : MauiControlBase<TParen
         }
         catch (NoSuchElementException)
         {
-            return null;
+            // Container root has no children (e.g., Label marker on Windows)
+            // Fall back to parent scope search
+            return _parent.TryFindElement(locator);
         }
         catch (StaleElementReferenceException)
         {
@@ -150,6 +155,11 @@ public abstract class MauiContainerBase<TParent, TSelf> : MauiControlBase<TParen
             {
                 var by = locator.ToBy();
                 return rootElement.FindElement(by);
+            }
+            catch (NoSuchElementException)
+            {
+                // Fall back to parent scope search
+                return _parent.TryFindElement(locator);
             }
             catch
             {

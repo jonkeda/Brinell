@@ -27,7 +27,11 @@
             "approve": true,
             "matchCommandLine": true
         },
-        "taskkill": true
+        "taskkill": true,
+        "Get-WinEvent": true,
+        "Get-Date": true,
+        "Format-List": true,
+        "dotnet publish": true
     },
     "cSpell.words": [
         "Brinell"

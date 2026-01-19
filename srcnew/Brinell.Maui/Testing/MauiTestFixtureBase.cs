@@ -114,7 +114,16 @@ public abstract class MauiTestFixtureBase : IDisposable
         return new MauiTestContextOptions
         {
             AppiumServerUri = new Uri(serverUri),
-            AppiumOptions = appiumOptions
+            AppiumOptions = appiumOptions,
+            Timeouts = new TimeoutSettings
+            {
+                DefaultWait = 1000,
+                PageLoad = 5000,
+                ElementFind = 1000,
+                ElementState = 1000,
+                Animation = 100,
+                PollingInterval = 50
+            }
         };
     }
     

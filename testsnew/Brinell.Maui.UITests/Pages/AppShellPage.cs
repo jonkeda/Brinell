@@ -1,38 +1,28 @@
-using Brinell.Maui.Controls;
+using Brinell.Core.Abstractions.Controls;
+using Brinell.Maui.CommunityToolkit.Controls;
 using Brinell.Maui.Pages;
-using OpenQA.Selenium;
 
 namespace Brinell.Maui.UITests.Pages;
 
 /// <summary>
-/// Page object for MAUI Shell (AppShell) providing flyout navigation.
-/// FlyoutItems are located by Title using XPath @Name strategy.
+/// Page object for MAUI TabView navigation (migrated from Shell TabBar).
+/// Uses TabViewControl for CommunityToolkit TabView with AutomationId locators.
 /// </summary>
 public class AppShellPage : MauiPageObjectBase<AppShellPage>
 {
-    // Locators for shell elements
-    private static readonly Locator FlyoutTitleLocator = new(LocatorStrategy.AccessibilityId, "FlyoutTitle");
-    private static readonly Locator MenuScrollViewerLocator = new(LocatorStrategy.AccessibilityId, "MenuItemsScrollViewer");
-    
-    // Scroll viewer control for flyout menu
-    private readonly MauiControlBase<AppShellPage> _menuScrollViewer;
-
     public AppShellPage(IMauiTestContext context)
         : base(context)
     {
-        // Initialize scroll viewer control
-        _menuScrollViewer = new MauiControlBase<AppShellPage>(this, MenuScrollViewerLocator);
-        
-        // Initialize flyout items - use Title property (becomes @Name in UI tree)
-        MainFlyout = new MauiFlyoutItemControl<AppShellPage>(this, "Main");
-        DashboardFlyout = new MauiFlyoutItemControl<AppShellPage>(this, "Dashboard");
-        UserFormFlyout = new MauiFlyoutItemControl<AppShellPage>(this, "User Form");
-        DataGridFlyout = new MauiFlyoutItemControl<AppShellPage>(this, "Data Grid");
-        MediaGalleryFlyout = new MauiFlyoutItemControl<AppShellPage>(this, "Media Gallery");
-        NavigationFlyout = new MauiFlyoutItemControl<AppShellPage>(this, "Navigation");
-        ValidationFlyout = new MauiFlyoutItemControl<AppShellPage>(this, "Validation");
-        AdvancedFlyout = new MauiFlyoutItemControl<AppShellPage>(this, "Advanced");
-        ContainerDemoFlyout = new MauiFlyoutItemControl<AppShellPage>(this, "Container Demo");
+        // TabViewControl uses AutomationId - fast and reliable
+        MainTab = new TabViewControl<AppShellPage>(this, "MainTab");
+        DashboardTab = new TabViewControl<AppShellPage>(this, "DashboardTab");
+        FormsTab = new TabViewControl<AppShellPage>(this, "FormsTab");
+        DataTab = new TabViewControl<AppShellPage>(this, "DataTab");
+        MediaTab = new TabViewControl<AppShellPage>(this, "MediaTab");
+        NavigationTab = new TabViewControl<AppShellPage>(this, "NavigationTab");
+        ValidationTab = new TabViewControl<AppShellPage>(this, "ValidationTab");
+        AdvancedTab = new TabViewControl<AppShellPage>(this, "AdvancedTab");
+        ContainersTab = new TabViewControl<AppShellPage>(this, "ContainersTab");
     }
 
     /// <inheritdoc />
@@ -41,70 +31,37 @@ public class AppShellPage : MauiPageObjectBase<AppShellPage>
     /// <inheritdoc />
     public override bool IsLoaded(int? timeoutMs = null)
     {
-        // Shell is loaded if we can find the flyout title - uses framework's TryFindElement
-        return TryFindElement(FlyoutTitleLocator) != null;
+        return MainTab.IsExists();
     }
 
-    #region Flyout Items
+    #region Tab Controls
 
-    /// <summary>Main page flyout item.</summary>
-    public MauiFlyoutItemControl<AppShellPage> MainFlyout { get; }
+    /// <summary>Main page tab.</summary>
+    public ITabControlObject<AppShellPage> MainTab { get; }
 
-    /// <summary>Dashboard page flyout item.</summary>
-    public MauiFlyoutItemControl<AppShellPage> DashboardFlyout { get; }
+    /// <summary>Dashboard page tab.</summary>
+    public ITabControlObject<AppShellPage> DashboardTab { get; }
 
-    /// <summary>User Form page flyout item.</summary>
-    public MauiFlyoutItemControl<AppShellPage> UserFormFlyout { get; }
+    /// <summary>User Form page tab.</summary>
+    public ITabControlObject<AppShellPage> FormsTab { get; }
 
-    /// <summary>Data Grid page flyout item.</summary>
-    public MauiFlyoutItemControl<AppShellPage> DataGridFlyout { get; }
+    /// <summary>Data Grid page tab.</summary>
+    public ITabControlObject<AppShellPage> DataTab { get; }
 
-    /// <summary>Media Gallery page flyout item.</summary>
-    public MauiFlyoutItemControl<AppShellPage> MediaGalleryFlyout { get; }
+    /// <summary>Media Gallery page tab.</summary>
+    public ITabControlObject<AppShellPage> MediaTab { get; }
 
-    /// <summary>Navigation Demo page flyout item.</summary>
-    public MauiFlyoutItemControl<AppShellPage> NavigationFlyout { get; }
+    /// <summary>Navigation Demo page tab.</summary>
+    public ITabControlObject<AppShellPage> NavigationTab { get; }
 
-    /// <summary>Validation page flyout item.</summary>
-    public MauiFlyoutItemControl<AppShellPage> ValidationFlyout { get; }
+    /// <summary>Validation page tab.</summary>
+    public ITabControlObject<AppShellPage> ValidationTab { get; }
 
-    /// <summary>Advanced page flyout item.</summary>
-    public MauiFlyoutItemControl<AppShellPage> AdvancedFlyout { get; }
+    /// <summary>Advanced page tab.</summary>
+    public ITabControlObject<AppShellPage> AdvancedTab { get; }
 
-    /// <summary>Container Demo page flyout item.</summary>
-    public MauiFlyoutItemControl<AppShellPage> ContainerDemoFlyout { get; }
-
-    #endregion
-
-    #region Scroll Helpers
-
-    /// <summary>
-    /// Scrolls the flyout menu to the bottom to reveal items like Container Demo.
-    /// Uses framework control for element access.
-    /// </summary>
-    public AppShellPage ScrollFlyoutToBottom()
-    {
-        if (_menuScrollViewer.IsExists())
-        {
-            _menuScrollViewer.SendKeys(Keys.End);
-        }
-        
-        return this;
-    }
-
-    /// <summary>
-    /// Scrolls the flyout menu to the top.
-    /// Uses framework control for element access.
-    /// </summary>
-    public AppShellPage ScrollFlyoutToTop()
-    {
-        if (_menuScrollViewer.IsExists())
-        {
-            _menuScrollViewer.SendKeys(Keys.Home);
-        }
-        
-        return this;
-    }
+    /// <summary>Container Demo page tab.</summary>
+    public ITabControlObject<AppShellPage> ContainersTab { get; }
 
     #endregion
 }

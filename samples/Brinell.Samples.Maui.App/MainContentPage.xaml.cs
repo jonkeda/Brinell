@@ -1,36 +1,12 @@
-using Brinell.Samples.Maui.App.Pages;
-
 namespace Brinell.Samples.Maui.App;
 
-public partial class MainPage : ContentPage
+public partial class MainContentPage : ContentPage
 {
     private int _counter = 0;
 
-    public MainPage()
+    public MainContentPage()
     {
         InitializeComponent();
-    }
-
-    private void OnTabClicked(object? sender, EventArgs e)
-    {
-        System.Diagnostics.Debug.WriteLine($"OnTabClicked called with sender: {sender?.GetType().Name}");
-        if (sender is Button button)
-        {
-            System.Diagnostics.Debug.WriteLine($"Button clicked: AutomationId={button.AutomationId}");
-            switch (button.AutomationId)
-            {
-                case "MainTab":
-                    System.Diagnostics.Debug.WriteLine("Switching to Main tab");
-                    MainTabContent.IsVisible = true;
-                    ContainersTabContent.IsVisible = false;
-                    break;
-                case "ContainersTab":
-                    System.Diagnostics.Debug.WriteLine("Switching to Containers tab");
-                    MainTabContent.IsVisible = false;
-                    ContainersTabContent.IsVisible = true;
-                    break;
-            }
-        }
     }
 
     private void OnIncrementClicked(object? sender, EventArgs e)
@@ -82,10 +58,5 @@ public partial class MainPage : ContentPage
     private void OnToggleLoadingClicked(object? sender, EventArgs e)
     {
         LoadingIndicator.IsRunning = !LoadingIndicator.IsRunning;
-    }
-
-    private async void OnTabbedPageDemoClicked(object? sender, EventArgs e)
-    {
-        await Navigation.PushAsync(new TabbedPageDemoPage());
     }
 }
