@@ -43,4 +43,20 @@ public interface IClickableControlObject<TScope> : IControlObject<TScope>
     /// </summary>
     /// <returns>The containing scope for fluent chaining.</returns>
     TScope AssertClickable(bool? expected, string? message = null, int? timeoutMs = null);
+    
+    /// <summary>
+    /// Hover the mouse over the control.
+    /// </summary>
+    /// <param name="timeoutMs">Optional timeout for element to be visible.</param>
+    /// <returns>The containing scope for fluent chaining.</returns>
+    TScope Hover(int? timeoutMs = null);
+    
+    /// <summary>
+    /// Perform a long press (touch and hold) on the control.
+    /// Primarily used for mobile platforms.
+    /// </summary>
+    /// <param name="durationMs">Duration of the press in milliseconds. Default is platform-specific.</param>
+    /// <param name="timeoutMs">Optional timeout for element to be ready.</param>
+    /// <returns>The containing scope for fluent chaining.</returns>
+    TScope LongPress(int? durationMs = null, int? timeoutMs = null);
 }

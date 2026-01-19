@@ -1,0 +1,331 @@
+namespace Brinell.Maui.Controls;
+
+/// <summary>
+/// Base class for MAUI controls with range/numeric capability.
+/// Implements IRangeControlObject with GetValue, SetValue, Increment, Decrement.
+/// </summary>
+/// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
+public class MauiRangeControlBase<TScope> : MauiControlBase<TScope>, IRangeControlObject<TScope>
+    where TScope : IMauiScope<TScope>
+{
+    /// <summary>
+    /// Creates a new range control within the specified scope.
+    /// </summary>
+    /// <param name="scope">The scope (page or container) providing element finding.</param>
+    /// <param name="locator">The locator for the element.</param>
+    public MauiRangeControlBase(IMauiScope<TScope> scope, Locator locator)
+        : base(scope, locator)
+    {
+    }
+
+    /// <summary>
+    /// Creates a new range control within the specified scope using a string locator value.
+    /// Uses the scope's DefaultLocatorStrategy to create the locator.
+    /// </summary>
+    /// <param name="scope">The scope (page or container) providing element finding.</param>
+    /// <param name="locatorValue">The locator value (e.g., automation ID, name).</param>
+    public MauiRangeControlBase(IMauiScope<TScope> scope, string locatorValue)
+        : base(scope, locatorValue)
+    {
+    }
+    
+    #region IRangeControlObject<TScope> Implementation
+    
+    /// <inheritdoc />
+    public double? GetValue(int? timeoutMs = null)
+    {
+        if (timeoutMs.HasValue)
+        {
+            WaitExists(true, timeoutMs);
+        }
+        
+        return GetValueCore(TryFindElement());
+    }
+    
+    /// <inheritdoc />
+    public TScope SetValue(double? value, int? timeoutMs = null)
+    {
+        if (value == null) return ContainingScope;
+        
+        return RunWithElement(nameof(SetValue), value, timeoutMs, element =>
+        {
+            SetValueCore(element, value.Value);
+        });
+    }
+    
+    /// <inheritdoc />
+    public double? GetMinimum(int? timeoutMs = null)
+    {
+        if (timeoutMs.HasValue)
+        {
+            WaitExists(true, timeoutMs);
+        }
+        
+        return GetMinimumCore(TryFindElement());
+    }
+    
+    /// <inheritdoc />
+    public double? GetMaximum(int? timeoutMs = null)
+    {
+        if (timeoutMs.HasValue)
+        {
+            WaitExists(true, timeoutMs);
+        }
+        
+        return GetMaximumCore(TryFindElement());
+    }
+    
+    /// <inheritdoc />
+    public double? GetStep(int? timeoutMs = null)
+    {
+        if (timeoutMs.HasValue)
+        {
+            WaitExists(true, timeoutMs);
+        }
+        
+        return GetStepCore(TryFindElement());
+    }
+    
+    /// <inheritdoc />
+    public TScope Increment(int? timeoutMs = null)
+    {
+        return RunWithElement(nameof(Increment), timeoutMs, element =>
+        {
+            IncrementCore(element);
+        });
+    }
+    
+    /// <inheritdoc />
+    public TScope Decrement(int? timeoutMs = null)
+    {
+        return RunWithElement(nameof(Decrement), timeoutMs, element =>
+        {
+            DecrementCore(element);
+        });
+    }
+    
+    #endregion
+    
+    #region Core Methods (Element-Aware, No Logging)
+    
+    /// <summary>
+    /// Gets value from pre-found element.
+    /// Reads from RangeValue.Value or Value attribute.
+    /// </summary>
+    /// <param name="element">The pre-found element.</param>
+    /// <returns>The current value, or null if element is null.</returns>
+    protected virtual double? GetValueCore(IMauiElement? element)
+    {
+        if (element == null) return null;
+        
+        // Try RangeValue.Value attribute first (Windows/MAUI)
+        var rangeValue = element.GetAttribute("RangeValue.Value");
+        if (!string.IsNullOrEmpty(rangeValue) && double.TryParse(rangeValue, out var rv))
+        {
+            return rv;
+        }
+        
+        // Try Value attribute
+        var valueAttr = element.GetAttribute("Value");
+        if (!string.IsNullOrEmpty(valueAttr) && double.TryParse(valueAttr, out var v))
+        {
+            return v;
+        }
+        
+        // Try text content as fallback
+        var text = element.Text;
+        if (!string.IsNullOrEmpty(text) && double.TryParse(text, out var t))
+        {
+            return t;
+        }
+        
+        return null;
+    }
+    
+    /// <summary>
+    /// Sets value on pre-found element.
+    /// Override in derived classes for platform-specific implementation.
+    /// </summary>
+    /// <param name="element">The pre-found element.</param>
+    /// <param name="value">The value to set.</param>
+    protected virtual void SetValueCore(IMauiElement element, double value)
+    {
+        // Default implementation: try to use SendKeys
+        // Override in derived classes for slider-specific drag behavior
+        element.Clear();
+        element.SendKeys(value.ToString());
+    }
+    
+    /// <summary>
+    /// Gets minimum value from pre-found element.
+    /// </summary>
+    /// <param name="element">The pre-found element.</param>
+    /// <returns>The minimum value, or null if not available.</returns>
+    protected virtual double? GetMinimumCore(IMauiElement? element)
+    {
+        if (element == null) return null;
+        
+        var minAttr = element.GetAttribute("RangeValue.Minimum");
+        if (!string.IsNullOrEmpty(minAttr) && double.TryParse(minAttr, out var min))
+        {
+            return min;
+        }
+        
+        var minAttr2 = element.GetAttribute("Minimum");
+        if (!string.IsNullOrEmpty(minAttr2) && double.TryParse(minAttr2, out var min2))
+        {
+            return min2;
+        }
+        
+        return null;
+    }
+    
+    /// <summary>
+    /// Gets maximum value from pre-found element.
+    /// </summary>
+    /// <param name="element">The pre-found element.</param>
+    /// <returns>The maximum value, or null if not available.</returns>
+    protected virtual double? GetMaximumCore(IMauiElement? element)
+    {
+        if (element == null) return null;
+        
+        var maxAttr = element.GetAttribute("RangeValue.Maximum");
+        if (!string.IsNullOrEmpty(maxAttr) && double.TryParse(maxAttr, out var max))
+        {
+            return max;
+        }
+        
+        var maxAttr2 = element.GetAttribute("Maximum");
+        if (!string.IsNullOrEmpty(maxAttr2) && double.TryParse(maxAttr2, out var max2))
+        {
+            return max2;
+        }
+        
+        return null;
+    }
+    
+    /// <summary>
+    /// Gets step value from pre-found element.
+    /// </summary>
+    /// <param name="element">The pre-found element.</param>
+    /// <returns>The step value, or null if not available.</returns>
+    protected virtual double? GetStepCore(IMauiElement? element)
+    {
+        if (element == null) return null;
+        
+        var stepAttr = element.GetAttribute("RangeValue.SmallChange");
+        if (!string.IsNullOrEmpty(stepAttr) && double.TryParse(stepAttr, out var step))
+        {
+            return step;
+        }
+        
+        var stepAttr2 = element.GetAttribute("Step");
+        if (!string.IsNullOrEmpty(stepAttr2) && double.TryParse(stepAttr2, out var step2))
+        {
+            return step2;
+        }
+        
+        return 1.0; // Default step
+    }
+    
+    /// <summary>
+    /// Increments value by step amount.
+    /// </summary>
+    /// <param name="element">The pre-found element.</param>
+    protected virtual void IncrementCore(IMauiElement element)
+    {
+        var current = GetValueCore(element) ?? 0;
+        var step = GetStepCore(element) ?? 1;
+        var max = GetMaximumCore(element);
+        
+        var newValue = current + step;
+        if (max.HasValue && newValue > max.Value)
+        {
+            newValue = max.Value;
+        }
+        
+        SetValueCore(element, newValue);
+    }
+    
+    /// <summary>
+    /// Decrements value by step amount.
+    /// </summary>
+    /// <param name="element">The pre-found element.</param>
+    protected virtual void DecrementCore(IMauiElement element)
+    {
+        var current = GetValueCore(element) ?? 0;
+        var step = GetStepCore(element) ?? 1;
+        var min = GetMinimumCore(element);
+        
+        var newValue = current - step;
+        if (min.HasValue && newValue < min.Value)
+        {
+            newValue = min.Value;
+        }
+        
+        SetValueCore(element, newValue);
+    }
+    
+    #endregion
+    
+    #region WaitValue
+    
+    /// <summary>
+    /// Waits for value using pre-found element with tolerance comparison.
+    /// </summary>
+    /// <param name="element">The pre-found element.</param>
+    /// <param name="expected">The expected value.</param>
+    /// <param name="tolerance">The tolerance for comparison.</param>
+    /// <param name="timeoutMs">Maximum time to wait in milliseconds.</param>
+    /// <returns>True if condition was met, false if timeout reached.</returns>
+    protected bool WaitValueCore(IMauiElement element, double expected, double tolerance, int timeoutMs)
+    {
+        return PollWithElement(
+            element,
+            e =>
+            {
+                var actual = GetValueCore(e);
+                if (actual == null) return false;
+                return Math.Abs(actual.Value - expected) <= tolerance;
+            },
+            timeoutMs);
+    }
+
+    /// <inheritdoc />
+    public bool WaitValue(double? expected, double tolerance = 0.001, int? timeoutMs = null)
+    {
+        if (expected == null) return true;
+        
+        var element = TryFindElement();
+        if (element == null)
+        {
+            return false;
+        }
+        
+        return WaitValueCore(element, expected.Value, tolerance, timeoutMs ?? DefaultTimeoutMs);
+    }
+    
+    #endregion
+    
+    #region AssertValue
+    
+    /// <inheritdoc />
+    public TScope AssertValue(double? expected, double tolerance = 0.001, string? message = null, int? timeoutMs = null)
+    {
+        if (expected == null) return ContainingScope;
+        
+        return RunAssert(nameof(AssertValue), expected, () =>
+        {
+            WaitValue(expected, tolerance, timeoutMs);
+            return GetValue();
+        }, 
+        (actual, exp) => 
+        {
+            if (actual == null || exp == null) return actual == exp;
+            return Math.Abs(actual.Value - exp.Value) <= tolerance;
+        },
+        message ?? $"Expected value '{expected}' (±{tolerance}) but got different value. Locator: {Locator}");
+    }
+    
+    #endregion
+}

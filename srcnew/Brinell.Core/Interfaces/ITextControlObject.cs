@@ -23,4 +23,26 @@ public interface ITextControlObject<TScope> : IControlObject<TScope>
     /// If pattern is null, returns immediately (skip).
     /// </summary>
     TScope AssertTextMatches(string? pattern, string? message = null, int? timeoutMs = null);
+    
+    /// <summary>
+    /// Assert text starts with expected prefix.
+    /// If expected is null, returns immediately (skip).
+    /// </summary>
+    /// <returns>The containing scope for fluent chaining.</returns>
+    TScope AssertTextStartsWith(string? expected, string? message = null, int? timeoutMs = null);
+    
+    /// <summary>
+    /// Assert text ends with expected suffix.
+    /// If expected is null, returns immediately (skip).
+    /// </summary>
+    /// <returns>The containing scope for fluent chaining.</returns>
+    TScope AssertTextEndsWith(string? expected, string? message = null, int? timeoutMs = null);
+    
+    /// <summary>
+    /// Assert text is empty or not empty.
+    /// If expected is null, returns immediately (skip).
+    /// </summary>
+    /// <param name="expected">True to assert empty, false to assert not empty, null to skip.</param>
+    /// <returns>The containing scope for fluent chaining.</returns>
+    TScope AssertTextEmpty(bool? expected, string? message = null, int? timeoutMs = null);
 }

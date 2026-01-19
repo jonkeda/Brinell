@@ -110,6 +110,23 @@ public class MauiEntryControl<TScope> : MauiControlBase<TScope>, IEditableTextCo
             SetTextCore(element, text, timeoutMs);
         });
     }
+    
+    /// <summary>
+    /// Appends text to existing content without clearing.
+    /// If text is null, returns immediately (skip).
+    /// </summary>
+    /// <param name="text">The text to append.</param>
+    /// <param name="timeoutMs">Optional timeout for waiting.</param>
+    /// <returns>The containing scope for fluent chaining.</returns>
+    public TScope Append(string? text, int? timeoutMs = null)
+    {
+        if (text == null) return ContainingScope;
+
+        return RunWithElement(nameof(Append), text, timeoutMs, element =>
+        {
+            AppendCore(element, text, timeoutMs);
+        });
+    }
 
     #endregion
 
@@ -148,6 +165,19 @@ public class MauiEntryControl<TScope> : MauiControlBase<TScope>, IEditableTextCo
     {
         CheckEnabledCore(element, timeoutMs);
         element.Clear();
+        element.SendKeys(text);
+    }
+    
+    /// <summary>
+    /// Core implementation of Append using pre-found element.
+    /// Appends text without clearing existing content.
+    /// </summary>
+    /// <param name="element">The pre-found element.</param>
+    /// <param name="text">The text to append.</param>
+    /// <param name="timeoutMs">Optional timeout for enabled check.</param>
+    protected void AppendCore(IMauiElement element, string text, int? timeoutMs = null)
+    {
+        CheckEnabledCore(element, timeoutMs);
         element.SendKeys(text);
     }
 

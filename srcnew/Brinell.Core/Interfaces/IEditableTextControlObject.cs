@@ -28,6 +28,13 @@ public interface IEditableTextControlObject<TScope> : ITextControlObject<TScope>
     TScope SetText(string? text, int? timeoutMs = null);
     
     /// <summary>
+    /// Append text to existing content without clearing.
+    /// If text is null, returns immediately (skip).
+    /// </summary>
+    /// <returns>The containing scope for fluent chaining.</returns>
+    TScope Append(string? text, int? timeoutMs = null);
+    
+    /// <summary>
     /// Get the placeholder/hint text.
     /// Returns null if not available.
     /// </summary>

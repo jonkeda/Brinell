@@ -642,6 +642,71 @@ public class MauiControlBase<TScope> : ControlObjectBase<TScope>, IControlObject
         return ContainingScope;
     }
     
+    /// <inheritdoc />
+    public TScope AssertTextStartsWith(string? expected, string? message = null, int? timeoutMs = null)
+    {
+        // Nullable skip pattern
+        if (expected == null) return ContainingScope;
+        
+        var passed = Poll(
+            () => GetText()?.StartsWith(expected) == true,
+            timeoutMs ?? DefaultTimeoutMs);
+        
+        if (!passed)
+        {
+            var actual = GetText();
+            throw new AssertionException(
+                message ?? $"Expected text to start with '{expected}' but got '{actual ?? "(null)"}'. Locator: {Locator}");
+        }
+        
+        return ContainingScope;
+    }
+    
+    /// <inheritdoc />
+    public TScope AssertTextEndsWith(string? expected, string? message = null, int? timeoutMs = null)
+    {
+        // Nullable skip pattern
+        if (expected == null) return ContainingScope;
+        
+        var passed = Poll(
+            () => GetText()?.EndsWith(expected) == true,
+            timeoutMs ?? DefaultTimeoutMs);
+        
+        if (!passed)
+        {
+            var actual = GetText();
+            throw new AssertionException(
+                message ?? $"Expected text to end with '{expected}' but got '{actual ?? "(null)"}'. Locator: {Locator}");
+        }
+        
+        return ContainingScope;
+    }
+    
+    /// <inheritdoc />
+    public TScope AssertTextEmpty(bool? expected, string? message = null, int? timeoutMs = null)
+    {
+        // Nullable skip pattern
+        if (expected == null) return ContainingScope;
+        
+        var passed = Poll(
+            () => 
+            {
+                var text = GetText();
+                var isEmpty = string.IsNullOrEmpty(text);
+                return isEmpty == expected.Value;
+            },
+            timeoutMs ?? DefaultTimeoutMs);
+        
+        if (!passed)
+        {
+            var actual = GetText();
+            throw new AssertionException(
+                message ?? $"Expected text {(expected.Value ? "to be empty" : "not to be empty")} but got '{actual ?? "(null)"}'. Locator: {Locator}");
+        }
+        
+        return ContainingScope;
+    }
+    
     #endregion
     
     #region Attributes

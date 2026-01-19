@@ -1,4 +1,4 @@
-namespace Brinell.Core.Abstractions.Controls;
+namespace Brinell.Core.Interfaces;
 
 /// <summary>
 /// Interface for tab controls allowing tab selection.
