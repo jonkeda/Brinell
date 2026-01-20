@@ -91,6 +91,8 @@ public abstract class TextControlBase : ClickableControlBase, ITextControlObject
     public virtual void Focus(int? timeoutMs = null)
     {
         Log("Focus()");
+        CheckExists(true, timeoutMs);
+        ScrollIntoView(timeoutMs);
         CheckVisible(true, timeoutMs);
         CheckEnabled(true, timeoutMs);
 
@@ -119,6 +121,8 @@ public abstract class TextControlBase : ClickableControlBase, ITextControlObject
         if (text is null) return;
 
         Log($"Enter(\"{text}\")");
+        CheckExists(true, timeoutMs);
+        ScrollIntoView(timeoutMs);
         CheckVisible(true, timeoutMs);
         CheckEnabled(true, timeoutMs);
 
@@ -131,6 +135,8 @@ public abstract class TextControlBase : ClickableControlBase, ITextControlObject
     public virtual void Clear(int? timeoutMs = null)
     {
         Log("Clear()");
+        CheckExists(true, timeoutMs);
+        ScrollIntoView(timeoutMs);
         CheckVisible(true, timeoutMs);
         CheckEnabled(true, timeoutMs);
 
@@ -157,6 +163,8 @@ public abstract class TextControlBase : ClickableControlBase, ITextControlObject
         if (text is null) return;
 
         Log($"Append(\"{text}\")");
+        CheckExists(true, timeoutMs);
+        ScrollIntoView(timeoutMs);
         CheckVisible(true, timeoutMs);
         CheckEnabled(true, timeoutMs);
 

@@ -225,6 +225,95 @@ public abstract class ControlObjectBase : IInteractiveControlObject
 
     #endregion
 
+    #region Scroll Into View
+
+    /// <summary>
+    /// Scrolls the element into view if it exists but is not visible.
+    /// This is useful for elements in ScrollView containers that report Displayed=false when off-screen.
+    /// </summary>
+    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
+    public virtual void ScrollIntoView(int? timeoutMs = null)
+    {
+        var element = FindElement();
+        if (element is null) return;
+        if (element.Displayed) return;
+
+        Log("ScrollIntoView()");
+        PerformScrollIntoView(element, timeoutMs);
+    }
+
+    /// <summary>
+    /// Performs the actual scroll into view operation.
+    /// Override this method to provide control-specific scrolling behavior.
+    /// </summary>
+    /// <param name="element">The element to scroll into view.</param>
+    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
+    protected virtual void PerformScrollIntoView(AppiumElement element, int? timeoutMs = null)
+    {
+        // Use mobile:scroll command if available, otherwise use coordinate-based scrolling
+        try
+        {
+            // Get element location
+            var location = element.Location;
+            var size = element.Size;
+            var centerX = location.X + size.Width / 2;
+            var centerY = location.Y + size.Height / 2;
+
+            // Get window size
+            var windowSize = Driver.Manage().Window.Size;
+
+            // If element is above visible area, scroll up
+            // If element is below visible area, scroll down
+            if (centerY < 0 || centerY > windowSize.Height)
+            {
+                // Calculate scroll target - aim to put element in center of screen
+                var targetY = windowSize.Height / 2;
+                var scrollAmount = centerY - targetY;
+
+                // Perform scroll using touch action
+                var finger = new OpenQA.Selenium.Interactions.PointerInputDevice(OpenQA.Selenium.Interactions.PointerKind.Touch, "finger");
+                var sequence = new OpenQA.Selenium.Interactions.ActionSequence(finger, 0);
+
+                var startX = windowSize.Width / 2;
+                var startY = windowSize.Height / 2;
+                var endY = startY - (int)(scrollAmount * 0.8); // Scroll proportionally
+
+                // Clamp endY to valid range
+                endY = Math.Max(100, Math.Min(windowSize.Height - 100, endY));
+
+                sequence.AddAction(finger.CreatePointerMove(OpenQA.Selenium.Interactions.CoordinateOrigin.Viewport, startX, startY, TimeSpan.Zero));
+                sequence.AddAction(finger.CreatePointerDown(OpenQA.Selenium.Interactions.MouseButton.Left));
+                sequence.AddAction(finger.CreatePointerMove(OpenQA.Selenium.Interactions.CoordinateOrigin.Viewport, startX, endY, TimeSpan.FromMilliseconds(300)));
+                sequence.AddAction(finger.CreatePointerUp(OpenQA.Selenium.Interactions.MouseButton.Left));
+
+                Driver.PerformActions(new List<OpenQA.Selenium.Interactions.ActionSequence> { sequence });
+
+                // Wait briefly for scroll animation
+                Thread.Sleep(200);
+            }
+        }
+        catch (Exception ex)
+        {
+            Log($"ScrollIntoView failed: {ex.Message}");
+            // Swallow exception - element may still become visible
+        }
+    }
+
+    /// <summary>
+    /// Ensures the element is ready for interaction by checking existence, scrolling into view if needed,
+    /// verifying visibility, and checking enabled state.
+    /// </summary>
+    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
+    public virtual void EnsureInteractable(int? timeoutMs = null)
+    {
+        CheckExists(true, timeoutMs);
+        ScrollIntoView(timeoutMs);
+        CheckVisible(true, timeoutMs);
+        CheckEnabled(true, timeoutMs);
+    }
+
+    #endregion
+
     #region Visibility
 
     /// <inheritdoc />

@@ -31,6 +31,8 @@ public abstract class ClickableControlBase : ControlObjectBase, IClickableContro
     public virtual void Click(int? timeoutMs = null)
     {
         Log("Click()");
+        CheckExists(true, timeoutMs);
+        ScrollIntoView(timeoutMs);
         CheckVisible(true, timeoutMs);
         CheckEnabled(true, timeoutMs);
 
@@ -42,6 +44,8 @@ public abstract class ClickableControlBase : ControlObjectBase, IClickableContro
     public virtual void DoubleClick(int? timeoutMs = null)
     {
         Log("DoubleClick()");
+        CheckExists(true, timeoutMs);
+        ScrollIntoView(timeoutMs);
         CheckVisible(true, timeoutMs);
         CheckEnabled(true, timeoutMs);
 
@@ -54,6 +58,8 @@ public abstract class ClickableControlBase : ControlObjectBase, IClickableContro
     public virtual void RightClick(int? timeoutMs = null)
     {
         Log("RightClick()");
+        CheckExists(true, timeoutMs);
+        ScrollIntoView(timeoutMs);
         CheckVisible(true, timeoutMs);
         CheckEnabled(true, timeoutMs);
 
@@ -66,6 +72,8 @@ public abstract class ClickableControlBase : ControlObjectBase, IClickableContro
     public virtual void Hover(int? timeoutMs = null)
     {
         Log("Hover()");
+        CheckExists(true, timeoutMs);
+        ScrollIntoView(timeoutMs);
         CheckVisible(true, timeoutMs);
 
         var element = FindElementRequired(timeoutMs);
@@ -78,6 +86,8 @@ public abstract class ClickableControlBase : ControlObjectBase, IClickableContro
     {
         var duration = durationMs ?? 1000;
         Log($"LongPress(duration={duration}ms)");
+        CheckExists(true, timeoutMs);
+        ScrollIntoView(timeoutMs);
         CheckVisible(true, timeoutMs);
         CheckEnabled(true, timeoutMs);
 

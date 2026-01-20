@@ -68,12 +68,66 @@ public class MauiToggleControlBase<TScope> : MauiControlBase<TScope>, IToggleCon
     #region Core Methods (Element-Aware, No Logging)
     
     /// <summary>
-    /// Performs toggle on pre-found element. No logging - caller handles logging.
+    /// Performs toggle on pre-found element with state verification and retry.
     /// </summary>
     /// <param name="element">The pre-found element.</param>
     protected virtual void ToggleCore(IMauiElement element)
     {
+        var beforeState = IsCheckedCore(element);
+        
+        // Attempt click
         element.Click();
+        
+        // Wait briefly for state change
+        Thread.Sleep(100);
+        
+        // Verify state changed
+        var afterState = IsCheckedCore(element);
+        if (afterState == beforeState)
+        {
+            // Retry with Actions-based click (more reliable)
+            RetryToggleWithActions(element);
+        }
+    }
+    
+    /// <summary>
+    /// Retry toggle using Selenium Actions API.
+    /// </summary>
+    /// <param name="element">The element to toggle.</param>
+    private void RetryToggleWithActions(IMauiElement element)
+    {
+        try
+        {
+            var driver = Context.Driver.UnwrapDriver();
+            var webElement = element.UnwrapElement();
+            var actions = new OpenQA.Selenium.Interactions.Actions(driver);
+            actions.MoveToElement(webElement);
+            actions.Click();
+            actions.Perform();
+            
+            Thread.Sleep(100);
+        }
+        catch (Exception)
+        {
+            // Last resort: try clicking at element center
+            try
+            {
+                var location = element.Location;
+                var size = element.Size;
+                var centerX = location.X + (size.Width / 2);
+                var centerY = location.Y + (size.Height / 2);
+                
+                var driver = Context.Driver.UnwrapDriver();
+                var actions = new OpenQA.Selenium.Interactions.Actions(driver);
+                actions.MoveToLocation(centerX, centerY);
+                actions.Click();
+                actions.Perform();
+            }
+            catch
+            {
+                // Swallow - let assertion catch the failure
+            }
+        }
     }
     
     /// <summary>

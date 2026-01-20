@@ -119,6 +119,8 @@ public abstract class SelectorControlBase : ClickableControlBase, ISelectorContr
         if (index is null) return;
 
         Log($"SelectByIndex({index})");
+        CheckExists(true, timeoutMs);
+        ScrollIntoView(timeoutMs);
         CheckVisible(true, timeoutMs);
         CheckEnabled(true, timeoutMs);
 
@@ -144,6 +146,8 @@ public abstract class SelectorControlBase : ClickableControlBase, ISelectorContr
         if (text is null) return;
 
         Log($"SelectByText(\"{text}\")");
+        CheckExists(true, timeoutMs);
+        ScrollIntoView(timeoutMs);
         CheckVisible(true, timeoutMs);
         CheckEnabled(true, timeoutMs);
 

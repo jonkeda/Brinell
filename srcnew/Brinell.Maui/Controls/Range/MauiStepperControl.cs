@@ -4,6 +4,7 @@ namespace Brinell.Maui.Controls.Range;
 /// MAUI Stepper control with +/- buttons for discrete value changes.
 /// Inherits GetValue, SetValue, GetMinimum, GetMaximum, Increment, Decrement from MauiRangeControlBase.
 /// Provides additional stepper-specific methods like IncrementBy and DecrementBy.
+/// Overrides Increment/Decrement to use child button clicks instead of SendKeys.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
 public class MauiStepperControl<TScope> : MauiRangeControlBase<TScope>
@@ -29,6 +30,129 @@ public class MauiStepperControl<TScope> : MauiRangeControlBase<TScope>
         : base(scope, locatorValue)
     {
     }
+    
+    #region Core Method Overrides
+    
+    /// <summary>
+    /// Increments the stepper by clicking the increment button.
+    /// Falls back to base implementation if buttons not found.
+    /// </summary>
+    /// <param name="element">The pre-found stepper element.</param>
+    protected override void IncrementCore(IMauiElement element)
+    {
+        // Try to find increment button child
+        // MAUI Stepper on Windows has two RepeatButton children
+        try
+        {
+            var incrementButton = FindChildButton(element, isIncrement: true);
+            if (incrementButton != null)
+            {
+                incrementButton.Click();
+                Thread.Sleep(20); // Brief pause between clicks
+                return;
+            }
+        }
+        catch
+        {
+            // Fall through to base implementation
+        }
+        
+        base.IncrementCore(element);
+    }
+    
+    /// <summary>
+    /// Decrements the stepper by clicking the decrement button.
+    /// Falls back to base implementation if buttons not found.
+    /// </summary>
+    /// <param name="element">The pre-found stepper element.</param>
+    protected override void DecrementCore(IMauiElement element)
+    {
+        try
+        {
+            var decrementButton = FindChildButton(element, isIncrement: false);
+            if (decrementButton != null)
+            {
+                decrementButton.Click();
+                Thread.Sleep(20); // Brief pause between clicks
+                return;
+            }
+        }
+        catch
+        {
+            // Fall through to base implementation
+        }
+        
+        base.DecrementCore(element);
+    }
+    
+    /// <summary>
+    /// Sets value by repeatedly clicking increment/decrement buttons.
+    /// </summary>
+    /// <param name="element">The pre-found stepper element.</param>
+    /// <param name="value">The target value.</param>
+    protected override void SetValueCore(IMauiElement element, double value)
+    {
+        var current = GetValueCore(element) ?? 0;
+        var step = GetStepCore(element) ?? 1;
+        var diff = value - current;
+        var clicks = (int)Math.Abs(diff / step);
+        
+        // Limit to reasonable number of clicks
+        clicks = Math.Min(clicks, 100);
+        
+        var increment = diff > 0;
+        for (int i = 0; i < clicks; i++)
+        {
+            if (increment)
+                IncrementCore(element);
+            else
+                DecrementCore(element);
+        }
+    }
+    
+    /// <summary>
+    /// Finds increment or decrement button child element.
+    /// </summary>
+    /// <param name="parent">The parent stepper element.</param>
+    /// <param name="isIncrement">True for increment button, false for decrement.</param>
+    /// <returns>The button element, or null if not found.</returns>
+    private IMauiElement? FindChildButton(IMauiElement parent, bool isIncrement)
+    {
+        // MAUI Stepper structure:
+        // - RepeatButton (decrement, typically first or has "-" text)
+        // - TextBlock (value display)
+        // - RepeatButton (increment, typically last or has "+" text)
+        
+        try
+        {
+            // Use element's FindElements to search within the stepper
+            var buttons = parent.FindElements(
+                OpenQA.Selenium.By.ClassName("RepeatButton"));
+            
+            if (buttons.Count >= 2)
+            {
+                // Assume first is decrement, last is increment
+                return isIncrement ? buttons[^1] : buttons[0];
+            }
+            
+            // Try Button class name as alternative
+            var altButtons = parent.FindElements(
+                OpenQA.Selenium.By.ClassName("Button"));
+            
+            if (altButtons.Count >= 2)
+            {
+                return isIncrement ? altButtons[^1] : altButtons[0];
+            }
+        }
+        catch
+        {
+            // Swallow - will fall back to base implementation
+        }
+        
+        return null;
+    }
+    
+    #endregion
 
     #region Stepper-Specific Methods
 

@@ -53,6 +53,8 @@ public abstract class RangeControlBase : ControlObjectBase, IRangeControlObject
         if (value is null) return;
 
         Log($"SetValue({value})");
+        CheckExists(true, timeoutMs);
+        ScrollIntoView(timeoutMs);
         CheckVisible(true, timeoutMs);
         CheckEnabled(true, timeoutMs);
 
@@ -176,6 +178,10 @@ public abstract class RangeControlBase : ControlObjectBase, IRangeControlObject
     public virtual void Increase(int? timeoutMs = null)
     {
         Log("Increase()");
+        CheckExists(true, timeoutMs);
+        ScrollIntoView(timeoutMs);
+        CheckVisible(true, timeoutMs);
+        CheckEnabled(true, timeoutMs);
         PerformIncrease(timeoutMs);
     }
 
@@ -195,6 +201,10 @@ public abstract class RangeControlBase : ControlObjectBase, IRangeControlObject
     public virtual void Decrease(int? timeoutMs = null)
     {
         Log("Decrease()");
+        CheckExists(true, timeoutMs);
+        ScrollIntoView(timeoutMs);
+        CheckVisible(true, timeoutMs);
+        CheckEnabled(true, timeoutMs);
         PerformDecrease(timeoutMs);
     }
 

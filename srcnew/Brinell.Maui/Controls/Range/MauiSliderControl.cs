@@ -4,6 +4,7 @@ namespace Brinell.Maui.Controls.Range;
 /// MAUI Slider control for continuous value selection.
 /// Inherits GetValue, SetValue, GetMinimum, GetMaximum, Increment, Decrement from MauiRangeControlBase.
 /// Provides additional slider-specific methods like SlideToPercentage.
+/// Overrides SetValueCore to use click-based positioning instead of SendKeys.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
 public class MauiSliderControl<TScope> : MauiRangeControlBase<TScope>
@@ -29,6 +30,55 @@ public class MauiSliderControl<TScope> : MauiRangeControlBase<TScope>
         : base(scope, locatorValue)
     {
     }
+    
+    #region SetValue Override
+    
+    /// <summary>
+    /// Sets slider value by clicking at the calculated position on the slider track.
+    /// Overrides base SendKeys approach which doesn't work for native sliders.
+    /// </summary>
+    /// <param name="element">The slider element.</param>
+    /// <param name="value">The target value.</param>
+    protected override void SetValueCore(IMauiElement element, double value)
+    {
+        var min = GetMinimumCore(element) ?? 0;
+        var max = GetMaximumCore(element) ?? 100;
+        var range = max - min;
+        
+        if (range <= 0)
+        {
+            throw new InvalidOperationException($"Invalid slider range: min={min}, max={max}");
+        }
+        
+        // Clamp value to valid range
+        value = Math.Clamp(value, min, max);
+        
+        // Calculate target position as percentage of range
+        var percentage = (value - min) / range;
+        
+        // Get element bounds
+        var location = element.Location;
+        var size = element.Size;
+        
+        // Calculate click position
+        // Use 5% padding on each side to avoid edge issues
+        var padding = (int)(size.Width * 0.05);
+        var usableWidth = size.Width - (2 * padding);
+        var targetX = location.X + padding + (int)(usableWidth * percentage);
+        var centerY = location.Y + (size.Height / 2);
+        
+        // Perform click at target position using Selenium Actions
+        var driver = Context.Driver.UnwrapDriver();
+        var actions = new OpenQA.Selenium.Interactions.Actions(driver);
+        actions.MoveToLocation(targetX, centerY);
+        actions.Click();
+        actions.Perform();
+        
+        // Brief pause for value to update
+        Thread.Sleep(50);
+    }
+    
+    #endregion
 
     #region Slider-Specific Methods
 

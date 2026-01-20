@@ -105,6 +105,62 @@ public class MauiControlBase<TScope> : ControlObjectBase<TScope>, IControlObject
     
     #endregion
     
+    #region ScrollIntoView
+    
+    /// <summary>
+    /// Scrolls the element into the visible viewport if not already visible.
+    /// </summary>
+    /// <param name="timeoutMs">Optional timeout for finding the element.</param>
+    /// <returns>The containing scope for fluent chaining.</returns>
+    public TScope ScrollIntoView(int? timeoutMs = null)
+    {
+        return RunWithElement(nameof(ScrollIntoView), timeoutMs, element =>
+        {
+            ScrollIntoViewCore(element);
+        }, skipEnsureVisible: true);
+    }
+    
+    /// <summary>
+    /// Core scroll implementation. Uses element's ScrollIntoView method.
+    /// </summary>
+    /// <param name="element">The element to scroll into view.</param>
+    protected virtual void ScrollIntoViewCore(IMauiElement element)
+    {
+        // Skip if already visible
+        if (IsVisibleCore(element) == true)
+        {
+            return;
+        }
+        
+        try
+        {
+            // Use the element's built-in ScrollIntoView which uses Selenium 4 API
+            element.ScrollIntoView(Context.Driver);
+            
+            // Brief pause for scroll animation
+            Thread.Sleep(100);
+        }
+        catch (Exception)
+        {
+            // Best effort - swallow scroll failures
+        }
+    }
+    
+    /// <summary>
+    /// Ensures element is scrolled into view before performing an action.
+    /// Called automatically by interaction methods.
+    /// </summary>
+    /// <param name="element">The element to ensure visibility for.</param>
+    protected void EnsureVisible(IMauiElement element)
+    {
+        if (IsVisibleCore(element) != true)
+        {
+            ScrollIntoViewCore(element);
+        }
+    }
+    
+    #endregion
+    
     #region Element Finding
     
     /// <summary>
@@ -295,16 +351,22 @@ public class MauiControlBase<TScope> : ControlObjectBase<TScope>, IControlObject
     /// <summary>
     /// Run operation that finds element first, then executes core logic.
     /// Logging wraps the entire operation including element finding.
+    /// Automatically scrolls element into view before action.
     /// </summary>
     /// <param name="action">The action name for logging.</param>
     /// <param name="timeoutMs">Optional timeout for element finding.</param>
     /// <param name="coreOperation">The core operation to execute with the found element.</param>
+    /// <param name="skipEnsureVisible">If true, skips automatic scroll into view (used by ScrollIntoView itself).</param>
     /// <returns>The containing scope for fluent chaining.</returns>
-    protected TScope RunWithElement(string action, int? timeoutMs, Action<IMauiElement> coreOperation)
+    protected TScope RunWithElement(string action, int? timeoutMs, Action<IMauiElement> coreOperation, bool skipEnsureVisible = false)
     {
         Run(action, () =>
         {
             var element = FindElementWithWait(timeoutMs ?? DefaultTimeoutMs);
+            if (!skipEnsureVisible)
+            {
+                EnsureVisible(element);
+            }
             coreOperation(element);
         });
         return ContainingScope;
@@ -312,6 +374,7 @@ public class MauiControlBase<TScope> : ControlObjectBase<TScope>, IControlObject
     
     /// <summary>
     /// Run operation with value that finds element first, then executes core logic.
+    /// Automatically scrolls element into view before action.
     /// </summary>
     /// <typeparam name="TValue">The type of the value parameter.</typeparam>
     /// <param name="action">The action name for logging.</param>
@@ -325,6 +388,7 @@ public class MauiControlBase<TScope> : ControlObjectBase<TScope>, IControlObject
         Run(action, value, () =>
         {
             var element = FindElementWithWait(timeoutMs ?? DefaultTimeoutMs);
+            EnsureVisible(element);
             coreOperation(element);
         });
         return ContainingScope;
@@ -332,6 +396,7 @@ public class MauiControlBase<TScope> : ControlObjectBase<TScope>, IControlObject
     
     /// <summary>
     /// Run operation that finds element first, then executes core logic returning a result.
+    /// Automatically scrolls element into view before action.
     /// </summary>
     /// <typeparam name="TResult">The return type.</typeparam>
     /// <param name="action">The action name for logging.</param>
@@ -344,6 +409,7 @@ public class MauiControlBase<TScope> : ControlObjectBase<TScope>, IControlObject
         return Run(action, () =>
         {
             var element = FindElementWithWait(timeoutMs ?? DefaultTimeoutMs);
+            EnsureVisible(element);
             return coreOperation(element);
         });
     }
