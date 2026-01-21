@@ -119,7 +119,7 @@ public class MauiRangeControlBase<TScope> : MauiControlBase<TScope>, IRangeContr
         if (element == null) return null;
         
         // Try RangeValue pattern first (Windows/FlaUI)
-        if (element is Interfaces.IRangePatternElement rangeElement && rangeElement.SupportsRangeValue)
+        if (element is IRangePatternElement rangeElement && rangeElement.SupportsRangeValue)
         {
             var value = rangeElement.GetRangeValue();
             if (value.HasValue)
@@ -159,7 +159,7 @@ public class MauiRangeControlBase<TScope> : MauiControlBase<TScope>, IRangeContr
     protected virtual void SetValueCore(IMauiElement element, double value)
     {
         // Try RangeValue pattern first (Windows/FlaUI)
-        if (element is Interfaces.IRangePatternElement rangeElement && rangeElement.SupportsRangeValue)
+        if (element is IRangePatternElement rangeElement && rangeElement.SupportsRangeValue)
         {
             if (rangeElement.SetRangeValue(value))
                 return;
@@ -182,7 +182,7 @@ public class MauiRangeControlBase<TScope> : MauiControlBase<TScope>, IRangeContr
         if (element == null) return null;
         
         // Try RangeValue pattern first (Windows/FlaUI)
-        if (element is Interfaces.IRangePatternElement rangeElement && rangeElement.SupportsRangeValue)
+        if (element is IRangePatternElement rangeElement && rangeElement.SupportsRangeValue)
         {
             var min = rangeElement.GetRangeMinimum();
             if (min.HasValue)
@@ -215,7 +215,7 @@ public class MauiRangeControlBase<TScope> : MauiControlBase<TScope>, IRangeContr
         if (element == null) return null;
         
         // Try RangeValue pattern first (Windows/FlaUI)
-        if (element is Interfaces.IRangePatternElement rangeElement && rangeElement.SupportsRangeValue)
+        if (element is IRangePatternElement rangeElement && rangeElement.SupportsRangeValue)
         {
             var max = rangeElement.GetRangeMaximum();
             if (max.HasValue)
@@ -248,7 +248,7 @@ public class MauiRangeControlBase<TScope> : MauiControlBase<TScope>, IRangeContr
         if (element == null) return null;
         
         // Try RangeValue pattern first (Windows/FlaUI)
-        if (element is Interfaces.IRangePatternElement rangeElement && rangeElement.SupportsRangeValue)
+        if (element is IRangePatternElement rangeElement && rangeElement.SupportsRangeValue)
         {
             var step = rangeElement.GetRangeSmallChange();
             if (step.HasValue)

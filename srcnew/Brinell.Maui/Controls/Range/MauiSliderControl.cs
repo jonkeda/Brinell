@@ -55,7 +55,7 @@ public class MauiSliderControl<TScope> : MauiRangeControlBase<TScope>
         value = Math.Clamp(value, min, max);
         
         // Try RangeValue pattern first (Windows/FlaUI) - most reliable
-        if (element is Interfaces.IRangePatternElement rangeElement && rangeElement.SupportsRangeValue)
+        if (element is IRangePatternElement rangeElement && rangeElement.SupportsRangeValue)
         {
             if (rangeElement.SetRangeValue(value))
                 return;

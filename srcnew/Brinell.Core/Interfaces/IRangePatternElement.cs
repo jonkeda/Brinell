@@ -1,4 +1,4 @@
-namespace Brinell.Maui.Interfaces;
+namespace Brinell.Core.Interfaces;
 
 /// <summary>
 /// Interface for elements supporting RangeValue pattern (Windows UI Automation).

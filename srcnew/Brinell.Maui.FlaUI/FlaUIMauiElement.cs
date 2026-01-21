@@ -1,6 +1,7 @@
 using System.Drawing;
 using Brinell.Core;
 using Brinell.Core.Exceptions;
+using Brinell.Core.Interfaces;
 using Brinell.Maui.Enums;
 using Brinell.Maui.Interfaces;
 using FlaUI.Core.Input;
