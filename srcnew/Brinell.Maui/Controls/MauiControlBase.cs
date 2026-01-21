@@ -645,10 +645,11 @@ public class MauiControlBase<TScope> : ControlObjectBase<TScope>, IControlObject
     
     /// <summary>
     /// Gets the text of the element using pre-found element.
+    /// Override in derived classes for platform-specific text retrieval.
     /// </summary>
     /// <param name="element">The pre-found element (may be null).</param>
     /// <returns>The element text, or null if element is null.</returns>
-    protected string? GetTextCore(IMauiElement? element)
+    protected virtual string? GetTextCore(IMauiElement? element)
     {
         if (element == null) return null;
         return element.Text;

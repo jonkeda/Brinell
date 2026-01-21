@@ -114,23 +114,42 @@ public class MauiSelectorControlBase<TScope> : MauiControlBase<TScope>, ISelecto
     
     /// <summary>
     /// Selects item by text on pre-found element.
-    /// Override in derived classes for picker-specific implementation.
+    /// Uses FlaUI ExpandCollapse pattern when available for Windows ComboBox support.
     /// </summary>
     /// <param name="element">The pre-found element.</param>
     /// <param name="text">The text to select.</param>
     protected virtual void SelectByTextCore(IMauiElement element, string text)
     {
+        // For ComboBox with ExpandCollapse pattern, expand first then find and click item
+        if (element is Interfaces.IExpandCollapsePatternElement comboBox && comboBox.SupportsExpandCollapse)
+        {
+            comboBox.Expand();
+            try
+            {
+                var items = comboBox.GetExpandedItems();
+                var item = items?.FirstOrDefault(i => i.Text == text);
+                if (item != null)
+                {
+                    item.Click();
+                    return;
+                }
+            }
+            catch
+            {
+                comboBox.Collapse();
+            }
+            throw new InvalidOperationException($"Item with text '{text}' not found. Locator: {Locator}");
+        }
+        
         // Default implementation: open picker and find item
-        // This is a basic implementation - override for specific controls
         element.Click();
         
         // Find and click item with matching text
-        // This would need to be customized for specific picker types
-        var items = GetItemElementsCore(element);
-        var item = items?.FirstOrDefault(i => i.Text == text);
-        if (item != null)
+        var defaultItems = GetItemElementsCore(element);
+        var defaultItem = defaultItems?.FirstOrDefault(i => i.Text == text);
+        if (defaultItem != null)
         {
-            item.Click();
+            defaultItem.Click();
         }
         else
         {
@@ -140,22 +159,49 @@ public class MauiSelectorControlBase<TScope> : MauiControlBase<TScope>, ISelecto
     
     /// <summary>
     /// Selects item by index on pre-found element.
-    /// Override in derived classes for picker-specific implementation.
+    /// Uses FlaUI ExpandCollapse pattern when available for Windows ComboBox support.
     /// </summary>
     /// <param name="element">The pre-found element.</param>
     /// <param name="index">The 0-based index to select.</param>
     protected virtual void SelectByIndexCore(IMauiElement element, int index)
     {
-        element.Click();
-        
-        var items = GetItemElementsCore(element);
-        if (items == null || index >= items.Count)
+        // For ComboBox with ExpandCollapse pattern, expand first then find and click item by index
+        if (element is Interfaces.IExpandCollapsePatternElement comboBox && comboBox.SupportsExpandCollapse)
         {
-            throw new ArgumentOutOfRangeException(nameof(index), 
-                $"Index {index} is out of range. Available items: {items?.Count ?? 0}. Locator: {Locator}");
+            comboBox.Expand();
+            try
+            {
+                var items = comboBox.GetExpandedItems();
+                if (items == null || index >= items.Count)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(index), 
+                        $"Index {index} is out of range. Available items: {items?.Count ?? 0}. Locator: {Locator}");
+                }
+                items[index].Click();
+                return;
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                throw;
+            }
+            catch
+            {
+                comboBox.Collapse();
+                throw;
+            }
         }
         
-        items[index].Click();
+        // Default implementation
+        element.Click();
+        
+        var defaultItems = GetItemElementsCore(element);
+        if (defaultItems == null || index >= defaultItems.Count)
+        {
+            throw new ArgumentOutOfRangeException(nameof(index), 
+                $"Index {index} is out of range. Available items: {defaultItems?.Count ?? 0}. Locator: {Locator}");
+        }
+        
+        defaultItems[index].Click();
     }
     
     /// <summary>
@@ -246,14 +292,21 @@ public class MauiSelectorControlBase<TScope> : MauiControlBase<TScope>, ISelecto
     
     /// <summary>
     /// Gets child item elements from the selector.
-    /// Override in derived classes for specific item finding logic.
+    /// Uses FlaUI ExpandCollapse pattern when available for Windows ComboBox support.
     /// </summary>
     /// <param name="element">The parent selector element.</param>
     /// <returns>List of item elements, or null if not available.</returns>
     protected virtual IReadOnlyList<IMauiElement>? GetItemElementsCore(IMauiElement? element)
     {
+        if (element == null) return null;
+        
+        // For ComboBox with ExpandCollapse pattern, use GetExpandedItems which handles expand/collapse
+        if (element is Interfaces.IExpandCollapsePatternElement comboBox && comboBox.SupportsExpandCollapse)
+        {
+            return comboBox.GetExpandedItems();
+        }
+        
         // Default implementation - override for specific controls
-        // This would need to find child elements based on control type
         return null;
     }
     

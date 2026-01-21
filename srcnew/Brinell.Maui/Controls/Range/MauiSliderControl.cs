@@ -35,10 +35,8 @@ public class MauiSliderControl<TScope> : MauiRangeControlBase<TScope>
     #region SetValue Override
     
     /// <summary>
-    /// Sets slider value using keyboard-based approach.
-    /// Windows Appium driver doesn't support mouse-based W3C Actions API 
-    /// (error: "Currently only pen and touch pointer input source types are supported").
-    /// This implementation uses keyboard arrow keys which work reliably on Windows.
+    /// Sets slider value using the best available approach.
+    /// Priority: 1) RangeValue pattern (FlaUI), 2) windows: click, 3) keyboard navigation.
     /// </summary>
     /// <param name="element">The slider element.</param>
     /// <param name="value">The target value.</param>
@@ -56,7 +54,14 @@ public class MauiSliderControl<TScope> : MauiRangeControlBase<TScope>
         // Clamp value to valid range
         value = Math.Clamp(value, min, max);
         
-        // Try using windows: click extension first (bypasses W3C Actions)
+        // Try RangeValue pattern first (Windows/FlaUI) - most reliable
+        if (element is Interfaces.IRangePatternElement rangeElement && rangeElement.SupportsRangeValue)
+        {
+            if (rangeElement.SetRangeValue(value))
+                return;
+        }
+        
+        // Try using windows: click extension (bypasses W3C Actions)
         if (TrySetValueWithWindowsClick(element, value, min, max))
         {
             return;

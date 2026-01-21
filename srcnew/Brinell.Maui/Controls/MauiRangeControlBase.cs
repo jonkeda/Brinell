@@ -110,13 +110,21 @@ public class MauiRangeControlBase<TScope> : MauiControlBase<TScope>, IRangeContr
     
     /// <summary>
     /// Gets value from pre-found element.
-    /// Reads from RangeValue.Value or Value attribute.
+    /// Uses RangeValue pattern when available, otherwise reads from attributes.
     /// </summary>
     /// <param name="element">The pre-found element.</param>
     /// <returns>The current value, or null if element is null.</returns>
     protected virtual double? GetValueCore(IMauiElement? element)
     {
         if (element == null) return null;
+        
+        // Try RangeValue pattern first (Windows/FlaUI)
+        if (element is Interfaces.IRangePatternElement rangeElement && rangeElement.SupportsRangeValue)
+        {
+            var value = rangeElement.GetRangeValue();
+            if (value.HasValue)
+                return value.Value;
+        }
         
         // Try RangeValue.Value attribute first (Windows/MAUI)
         var rangeValue = element.GetAttribute("RangeValue.Value");
@@ -144,12 +152,19 @@ public class MauiRangeControlBase<TScope> : MauiControlBase<TScope>, IRangeContr
     
     /// <summary>
     /// Sets value on pre-found element.
-    /// Override in derived classes for platform-specific implementation.
+    /// Uses FlaUI RangeValue.SetValue pattern when available, otherwise falls back to SendKeys.
     /// </summary>
     /// <param name="element">The pre-found element.</param>
     /// <param name="value">The value to set.</param>
     protected virtual void SetValueCore(IMauiElement element, double value)
     {
+        // Try RangeValue pattern first (Windows/FlaUI)
+        if (element is Interfaces.IRangePatternElement rangeElement && rangeElement.SupportsRangeValue)
+        {
+            if (rangeElement.SetRangeValue(value))
+                return;
+        }
+        
         // Default implementation: try to use SendKeys
         // Override in derived classes for slider-specific drag behavior
         element.Clear();
@@ -158,6 +173,7 @@ public class MauiRangeControlBase<TScope> : MauiControlBase<TScope>, IRangeContr
     
     /// <summary>
     /// Gets minimum value from pre-found element.
+    /// Uses FlaUI RangeValue pattern when available.
     /// </summary>
     /// <param name="element">The pre-found element.</param>
     /// <returns>The minimum value, or null if not available.</returns>
@@ -165,16 +181,24 @@ public class MauiRangeControlBase<TScope> : MauiControlBase<TScope>, IRangeContr
     {
         if (element == null) return null;
         
-        var minAttr = element.GetAttribute("RangeValue.Minimum");
-        if (!string.IsNullOrEmpty(minAttr) && double.TryParse(minAttr, out var min))
+        // Try RangeValue pattern first (Windows/FlaUI)
+        if (element is Interfaces.IRangePatternElement rangeElement && rangeElement.SupportsRangeValue)
         {
-            return min;
+            var min = rangeElement.GetRangeMinimum();
+            if (min.HasValue)
+                return min.Value;
+        }
+        
+        var minAttr = element.GetAttribute("RangeValue.Minimum");
+        if (!string.IsNullOrEmpty(minAttr) && double.TryParse(minAttr, out var min2))
+        {
+            return min2;
         }
         
         var minAttr2 = element.GetAttribute("Minimum");
-        if (!string.IsNullOrEmpty(minAttr2) && double.TryParse(minAttr2, out var min2))
+        if (!string.IsNullOrEmpty(minAttr2) && double.TryParse(minAttr2, out var min3))
         {
-            return min2;
+            return min3;
         }
         
         return null;
@@ -182,6 +206,7 @@ public class MauiRangeControlBase<TScope> : MauiControlBase<TScope>, IRangeContr
     
     /// <summary>
     /// Gets maximum value from pre-found element.
+    /// Uses FlaUI RangeValue pattern when available.
     /// </summary>
     /// <param name="element">The pre-found element.</param>
     /// <returns>The maximum value, or null if not available.</returns>
@@ -189,16 +214,24 @@ public class MauiRangeControlBase<TScope> : MauiControlBase<TScope>, IRangeContr
     {
         if (element == null) return null;
         
-        var maxAttr = element.GetAttribute("RangeValue.Maximum");
-        if (!string.IsNullOrEmpty(maxAttr) && double.TryParse(maxAttr, out var max))
+        // Try RangeValue pattern first (Windows/FlaUI)
+        if (element is Interfaces.IRangePatternElement rangeElement && rangeElement.SupportsRangeValue)
         {
-            return max;
+            var max = rangeElement.GetRangeMaximum();
+            if (max.HasValue)
+                return max.Value;
+        }
+        
+        var maxAttr = element.GetAttribute("RangeValue.Maximum");
+        if (!string.IsNullOrEmpty(maxAttr) && double.TryParse(maxAttr, out var max2))
+        {
+            return max2;
         }
         
         var maxAttr2 = element.GetAttribute("Maximum");
-        if (!string.IsNullOrEmpty(maxAttr2) && double.TryParse(maxAttr2, out var max2))
+        if (!string.IsNullOrEmpty(maxAttr2) && double.TryParse(maxAttr2, out var max3))
         {
-            return max2;
+            return max3;
         }
         
         return null;
@@ -206,6 +239,7 @@ public class MauiRangeControlBase<TScope> : MauiControlBase<TScope>, IRangeContr
     
     /// <summary>
     /// Gets step value from pre-found element.
+    /// Uses RangeValue pattern when available.
     /// </summary>
     /// <param name="element">The pre-found element.</param>
     /// <returns>The step value, or null if not available.</returns>
@@ -213,16 +247,24 @@ public class MauiRangeControlBase<TScope> : MauiControlBase<TScope>, IRangeContr
     {
         if (element == null) return null;
         
-        var stepAttr = element.GetAttribute("RangeValue.SmallChange");
-        if (!string.IsNullOrEmpty(stepAttr) && double.TryParse(stepAttr, out var step))
+        // Try RangeValue pattern first (Windows/FlaUI)
+        if (element is Interfaces.IRangePatternElement rangeElement && rangeElement.SupportsRangeValue)
         {
-            return step;
+            var step = rangeElement.GetRangeSmallChange();
+            if (step.HasValue)
+                return step.Value;
+        }
+        
+        var stepAttr = element.GetAttribute("RangeValue.SmallChange");
+        if (!string.IsNullOrEmpty(stepAttr) && double.TryParse(stepAttr, out var step2))
+        {
+            return step2;
         }
         
         var stepAttr2 = element.GetAttribute("Step");
-        if (!string.IsNullOrEmpty(stepAttr2) && double.TryParse(stepAttr2, out var step2))
+        if (!string.IsNullOrEmpty(stepAttr2) && double.TryParse(stepAttr2, out var step3))
         {
-            return step2;
+            return step3;
         }
         
         return 1.0; // Default step

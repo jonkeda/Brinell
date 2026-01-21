@@ -45,7 +45,7 @@ public class MauiSearchBarControl<TScope> : MauiEntryControl<TScope>
         return RunWithElement(nameof(Search), searchText, timeoutMs, element =>
         {
             // Clear and enter search text
-            element.Clear();
+            ClearElementCore(element);
             element.SendKeys(searchText);
             // Submit search
             SubmitSearchCore(element);
@@ -75,6 +75,47 @@ public class MauiSearchBarControl<TScope> : MauiEntryControl<TScope>
         // Submit the form/search by sending Enter key
         element.SendKeys(OpenQA.Selenium.Keys.Enter);
     }
+    
+    /// <summary>
+    /// Clears the element with fallback for complex controls.
+    /// </summary>
+    /// <param name="element">The element to clear.</param>
+    protected virtual void ClearElementCore(IMauiElement element)
+    {
+        // For Windows/FlaUI, use ClearWithFallback for robust clearing
+        if (element is Interfaces.INestedTextElement textElement)
+        {
+            textElement.ClearWithFallback();
+            return;
+        }
+        
+        element.Clear();
+    }
 
+    #endregion
+    
+    #region Text Override for Nested TextBox
+    
+    /// <summary>
+    /// Gets the text using nested TextBox discovery for Windows SearchBar.
+    /// </summary>
+    /// <param name="element">The pre-found element (may be null).</param>
+    /// <returns>The text content, or null if not found.</returns>
+    protected override string? GetTextCore(IMauiElement? element)
+    {
+        if (element == null) return null;
+        
+        // For Windows/FlaUI, use GetNestedText which handles AutoSuggestBox structure
+        if (element is Interfaces.INestedTextElement textElement)
+        {
+            var text = textElement.GetNestedText();
+            if (!string.IsNullOrEmpty(text))
+                return text;
+        }
+        
+        // Fall back to base implementation
+        return base.GetTextCore(element);
+    }
+    
     #endregion
 }

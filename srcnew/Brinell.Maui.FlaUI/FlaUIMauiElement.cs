@@ -2,6 +2,7 @@ using System.Drawing;
 using Brinell.Core;
 using Brinell.Core.Exceptions;
 using Brinell.Maui.Enums;
+using Brinell.Maui.Interfaces;
 using FlaUI.Core.Input;
 using FlaUI.Core.WindowsAPI;
 
@@ -10,8 +11,9 @@ namespace Brinell.Maui.FlaUI;
 /// <summary>
 /// FlaUI-based implementation of <see cref="IMauiElement"/> for Windows platform.
 /// Provides native Windows UI Automation support for MAUI desktop apps.
+/// Also implements pattern-based interfaces for enhanced Windows Automation support.
 /// </summary>
-public sealed class FlaUIMauiElement : IMauiElement
+public sealed class FlaUIMauiElement : IMauiElement, IRangePatternElement, IExpandCollapsePatternElement, INestedTextElement
 {
     private readonly AutomationElement _element;
     private readonly FlaUIMauiDriver _driver;
@@ -443,6 +445,317 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// Gets the underlying FlaUI AutomationElement for internal use.
     /// </summary>
     internal AutomationElement Element => _element;
+    
+    #endregion
+    
+    #region IRangePatternElement Implementation
+    
+    /// <inheritdoc />
+    public bool SupportsRangeValue
+    {
+        get
+        {
+            try
+            {
+                return _element.Patterns.RangeValue.IsSupported;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+    }
+    
+    /// <inheritdoc />
+    public bool SetRangeValue(double value)
+    {
+        try
+        {
+            if (!_element.Patterns.RangeValue.IsSupported)
+                return false;
+                
+            var pattern = _element.Patterns.RangeValue.Pattern;
+            
+            // Clamp value to valid range
+            var min = pattern.Minimum.Value;
+            var max = pattern.Maximum.Value;
+            var clampedValue = Math.Max(min, Math.Min(max, value));
+            
+            pattern.SetValue(clampedValue);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+    
+    /// <inheritdoc />
+    public double? GetRangeValue()
+    {
+        try
+        {
+            if (!_element.Patterns.RangeValue.IsSupported)
+                return null;
+            return _element.Patterns.RangeValue.Pattern.Value.Value;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+    
+    /// <inheritdoc />
+    public double? GetRangeMinimum()
+    {
+        try
+        {
+            if (!_element.Patterns.RangeValue.IsSupported)
+                return null;
+            return _element.Patterns.RangeValue.Pattern.Minimum.Value;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+    
+    /// <inheritdoc />
+    public double? GetRangeMaximum()
+    {
+        try
+        {
+            if (!_element.Patterns.RangeValue.IsSupported)
+                return null;
+            return _element.Patterns.RangeValue.Pattern.Maximum.Value;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+    
+    /// <inheritdoc />
+    public double? GetRangeSmallChange()
+    {
+        try
+        {
+            if (!_element.Patterns.RangeValue.IsSupported)
+                return null;
+            return _element.Patterns.RangeValue.Pattern.SmallChange.Value;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+    
+    #endregion
+    
+    #region IExpandCollapsePatternElement Implementation
+    
+    /// <inheritdoc />
+    public bool SupportsExpandCollapse
+    {
+        get
+        {
+            try
+            {
+                return _element.Patterns.ExpandCollapse.IsSupported;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+    }
+    
+    /// <inheritdoc />
+    public bool IsExpanded
+    {
+        get
+        {
+            try
+            {
+                if (!_element.Patterns.ExpandCollapse.IsSupported)
+                    return false;
+                return _element.Patterns.ExpandCollapse.Pattern.ExpandCollapseState.Value == 
+                       global::FlaUI.Core.Definitions.ExpandCollapseState.Expanded;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+    }
+    
+    /// <inheritdoc />
+    public bool Expand()
+    {
+        try
+        {
+            if (!_element.Patterns.ExpandCollapse.IsSupported)
+                return false;
+                
+            _element.Patterns.ExpandCollapse.Pattern.Expand();
+            // Allow time for dropdown items to render
+            Thread.Sleep(100);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+    
+    /// <inheritdoc />
+    public bool Collapse()
+    {
+        try
+        {
+            if (!_element.Patterns.ExpandCollapse.IsSupported)
+                return false;
+                
+            _element.Patterns.ExpandCollapse.Pattern.Collapse();
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+    
+    /// <inheritdoc />
+    public IReadOnlyList<IMauiElement>? GetExpandedItems()
+    {
+        try
+        {
+            if (!_element.Patterns.ExpandCollapse.IsSupported)
+                return null;
+            
+            var wasExpanded = IsExpanded;
+            
+            // Expand if not already expanded
+            if (!wasExpanded)
+            {
+                if (!Expand())
+                    return null;
+            }
+            
+            try
+            {
+                // Find ListItem descendants
+                var items = _element.FindAllDescendants(cf => 
+                    cf.ByControlType(global::FlaUI.Core.Definitions.ControlType.ListItem));
+                
+                var result = items.Select(e => new FlaUIMauiElement(e, _driver) as IMauiElement).ToList();
+                return result;
+            }
+            finally
+            {
+                // Restore original state
+                if (!wasExpanded)
+                {
+                    Collapse();
+                }
+            }
+        }
+        catch
+        {
+            return null;
+        }
+    }
+    
+    #endregion
+    
+    #region INestedTextElement Implementation
+    
+    /// <inheritdoc />
+    public IMauiElement? FindNestedTextBox()
+    {
+        try
+        {
+            // Look for Edit (TextBox) control type in descendants
+            var textBox = _element.FindFirstDescendant(cf => 
+                cf.ByControlType(global::FlaUI.Core.Definitions.ControlType.Edit));
+            
+            if (textBox != null)
+                return new FlaUIMauiElement(textBox, _driver);
+                
+            return null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+    
+    /// <inheritdoc />
+    public string? GetNestedText()
+    {
+        try
+        {
+            // First try direct Value pattern
+            if (_element.Patterns.Value.IsSupported)
+            {
+                var value = _element.Patterns.Value.Pattern.Value.Value;
+                if (!string.IsNullOrEmpty(value))
+                    return value;
+            }
+            
+            // Fall back to nested TextBox
+            var nestedTextBox = FindNestedTextBox();
+            if (nestedTextBox != null)
+            {
+                return nestedTextBox.Text;
+            }
+            
+            // Last resort: Name property
+            return _element.Properties.Name.ValueOrDefault;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+    
+    /// <inheritdoc />
+    public bool ClearWithFallback()
+    {
+        try
+        {
+            // Try Value pattern first
+            if (_element.Patterns.Value.IsSupported && !_element.Patterns.Value.Pattern.IsReadOnly.Value)
+            {
+                _element.Patterns.Value.Pattern.SetValue(string.Empty);
+                return true;
+            }
+            
+            // Try nested TextBox
+            var nestedTextBox = FindNestedTextBox();
+            if (nestedTextBox is FlaUIMauiElement flaUiNested)
+            {
+                if (flaUiNested._element.Patterns.Value.IsSupported && 
+                    !flaUiNested._element.Patterns.Value.Pattern.IsReadOnly.Value)
+                {
+                    flaUiNested._element.Patterns.Value.Pattern.SetValue(string.Empty);
+                    return true;
+                }
+            }
+            
+            // Fallback to keyboard: Focus + Ctrl+A + Delete
+            _element.Focus();
+            Thread.Sleep(50);
+            Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_A);
+            Thread.Sleep(50);
+            Keyboard.Type(VirtualKeyShort.DELETE);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
     
     #endregion
 }
