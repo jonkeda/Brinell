@@ -49,7 +49,7 @@ public class MauiActivityIndicatorControl<TScope> : MauiControlBase<TScope>
         }
 
         // Fallback: check if visible (running indicators are typically visible)
-        return element.Displayed;
+        return element.Visible;
     }
 
     /// <summary>

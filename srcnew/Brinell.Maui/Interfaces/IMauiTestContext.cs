@@ -1,3 +1,5 @@
+using Brinell.Maui.Enums;
+
 namespace Brinell.Maui.Interfaces;
 
 /// <summary>
@@ -16,4 +18,9 @@ public interface IMauiTestContext : ITestContext<IMauiElement>, IMauiElementScop
     /// Implementation should return 'this'.
     /// </summary>
     new IMauiTestContext Context { get; }
+    
+    /// <summary>
+    /// Gets the target platform for this test context.
+    /// </summary>
+    MauiPlatform Platform { get; }
 }

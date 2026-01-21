@@ -3,7 +3,7 @@ using Brinell.Core.Interfaces;
 using Brinell.Core.Services;
 using Brinell.Core.Testing;
 using Brinell.Maui.Context;
-using OpenQA.Selenium.Appium;
+using Brinell.Maui.Enums;
 
 namespace Brinell.Maui.Testing;
 
@@ -82,93 +82,88 @@ public abstract class MauiTestFixtureBase : IDisposable
 
     /// <summary>
     /// Creates test context options with platform-specific capabilities.
-    /// Override to customize Appium configuration.
+    /// Override to customize driver configuration.
     /// </summary>
     protected virtual MauiTestContextOptions CreateTestContextOptions()
     {
-        var serverUri = Environment.GetEnvironmentVariable("APPIUM_SERVER_URI")
-            ?? "http://127.0.0.1:4723";
-
         var platform = Platform;
 
         var appPath = Environment.GetEnvironmentVariable("APPIUM_APP_PATH")
             ?? GetDefaultAppPath(platform);
 
-        var appiumOptions = new AppiumOptions();
-        
-        switch (platform.ToLowerInvariant())
+        var mauiPlatform = platform.ToLowerInvariant() switch
         {
-            case "windows":
-                ConfigureWindowsOptions(appiumOptions, appPath);
+            "android" => MauiPlatform.Android,
+            "ios" => MauiPlatform.iOS,
+            "windows" => MauiPlatform.Windows,
+            _ => throw new InvalidOperationException($"Unsupported platform: {platform}")
+        };
+
+        var driverOptions = new MauiDriverOptions
+        {
+            Platform = mauiPlatform,
+            AppPath = appPath,
+            Timeouts = new TimeoutSettings
+            {
+                DefaultWait = 10000,
+                PageLoad = 30000,
+                ElementFind = 10000,
+                ElementState = 10000,
+                Animation = 500,
+                PollingInterval = 100
+            }
+        };
+        
+        // Configure platform-specific options
+        switch (mauiPlatform)
+        {
+            case MauiPlatform.Android:
+                ConfigureAndroidOptions(driverOptions);
                 break;
-            case "android":
-                ConfigureAndroidOptions(appiumOptions, appPath);
+            case MauiPlatform.iOS:
+                ConfigureiOSOptions(driverOptions);
                 break;
-            case "ios":
-                ConfigureiOSOptions(appiumOptions, appPath);
-                break;
-            default:
-                throw new InvalidOperationException($"Unsupported platform: {platform}");
+            // Windows uses FlaUI - no additional options needed
         }
 
         return new MauiTestContextOptions
         {
-            AppiumServerUri = new Uri(serverUri),
-            AppiumOptions = appiumOptions,
-            Timeouts = new TimeoutSettings
-            {
-                DefaultWait = 1000,
-                PageLoad = 5000,
-                ElementFind = 1000,
-                ElementState = 1000,
-                Animation = 100,
-                PollingInterval = 50
-            }
+            DriverOptions = driverOptions,
+            Timeouts = driverOptions.Timeouts
         };
     }
     
     /// <summary>
-    /// Configures AppiumOptions for Windows MAUI app testing.
-    /// Override to add custom Windows capabilities.
+    /// Configures driver options for Android MAUI app testing.
+    /// Override to customize Android capabilities.
     /// </summary>
-    protected virtual void ConfigureWindowsOptions(AppiumOptions options, string appPath)
+    protected virtual void ConfigureAndroidOptions(MauiDriverOptions options)
     {
-        options.PlatformName = "Windows";
-        options.AutomationName = "Windows";
-        options.App = appPath;
-    }
-    
-    /// <summary>
-    /// Configures AppiumOptions for Android MAUI app testing.
-    /// Override to customize Android capabilities like appPackage/appActivity.
-    /// </summary>
-    protected virtual void ConfigureAndroidOptions(AppiumOptions options, string appPath)
-    {
+        var serverUri = Environment.GetEnvironmentVariable("APPIUM_SERVER_URI")
+            ?? "http://127.0.0.1:4723";
         var deviceName = Environment.GetEnvironmentVariable("APPIUM_DEVICE_NAME")
             ?? "emulator-5554";
         
-        options.PlatformName = "Android";
-        options.AutomationName = "UiAutomator2";
+        options.AppiumServerUri = new Uri(serverUri);
         options.DeviceName = deviceName;
-        options.App = appPath;
     }
     
     /// <summary>
-    /// Configures AppiumOptions for iOS MAUI app testing.
-    /// Override to customize iOS capabilities like bundleId.
+    /// Configures driver options for iOS MAUI app testing.
+    /// Override to customize iOS capabilities.
     /// </summary>
-    protected virtual void ConfigureiOSOptions(AppiumOptions options, string appPath)
+    protected virtual void ConfigureiOSOptions(MauiDriverOptions options)
     {
+        var serverUri = Environment.GetEnvironmentVariable("APPIUM_SERVER_URI")
+            ?? "http://127.0.0.1:4723";
         var deviceName = Environment.GetEnvironmentVariable("APPIUM_DEVICE_NAME")
             ?? "iPhone 15";
         var platformVersion = Environment.GetEnvironmentVariable("APPIUM_PLATFORM_VERSION")
             ?? "17.0";
         
-        options.PlatformName = "iOS";
-        options.AutomationName = "XCUITest";
+        options.AppiumServerUri = new Uri(serverUri);
         options.DeviceName = deviceName;
         options.PlatformVersion = platformVersion;
-        options.App = appPath;
     }
 
     #endregion

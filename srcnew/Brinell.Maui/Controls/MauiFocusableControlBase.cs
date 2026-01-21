@@ -69,9 +69,7 @@ public class MauiFocusableControlBase<TScope> : MauiControlBase<TScope>, IFocusa
     protected virtual void BlurCore(IMauiElement element)
     {
         // Send Tab key to move focus away
-        var unwrappedDriver = Context.Driver.UnwrapDriver();
-        var actions = new OpenQA.Selenium.Interactions.Actions(unwrappedDriver);
-        actions.SendKeys(OpenQA.Selenium.Keys.Tab).Perform();
+        element.SendKeys(OpenQA.Selenium.Keys.Tab);
     }
     
     /// <summary>

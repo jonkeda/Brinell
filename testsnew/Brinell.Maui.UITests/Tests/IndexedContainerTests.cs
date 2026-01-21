@@ -58,7 +58,7 @@ public class IndexedContainerTests
     public void Task_0_Control_Exists()
     {
         // DEBUG: Dump the page source to see what's in the automation tree
-        var pageSource = _fixture.Context.Driver.PageSource;
+        var pageSource = _fixture.Context.Driver.GetPageSource();
         
         // Save page source to file for analysis
         System.IO.File.WriteAllText(@"E:\repos\Private\Iosk\Oravey\Brinell\TestResults\pagesource.xml", pageSource);

@@ -35,7 +35,6 @@ public class TabViewControl<TScope> : MauiClickableControlBase<TScope>, ITabCont
 {
     private readonly string _automationId;
     private readonly string? _tabTitle;
-    private readonly Locator? _fallbackLocator;
 
     /// <summary>
     /// Creates a new TabView control.
@@ -55,9 +54,15 @@ public class TabViewControl<TScope> : MauiClickableControlBase<TScope>, ITabCont
     /// <param name="automationId">The AutomationId of the TabViewItem element (primary locator).</param>
     /// <param name="tabTitle">The tab title text for Name-based fallback (used when AutomationId unavailable).</param>
     /// <remarks>
+    /// <para>
     /// On Windows, MAUI TabbedPage renders NavigationViewItems as TabItem elements where AutomationId 
     /// doesn't propagate properly (see dotnet/maui#3996). The tabTitle fallback uses the Name property 
     /// which contains the tab's Title text.
+    /// </para>
+    /// <para>
+    /// On Android, MAUI TabbedPage renders tabs with content-desc (accessibility description) containing 
+    /// the tab's Title text. The fallback uses AccessibilityId strategy which maps to content-desc.
+    /// </para>
     /// </remarks>
     /// <exception cref="ArgumentNullException">If automationId is null.</exception>
     public TabViewControl(IMauiScope<TScope> scope, string automationId, string? tabTitle)
@@ -66,19 +71,17 @@ public class TabViewControl<TScope> : MauiClickableControlBase<TScope>, ITabCont
         _automationId = automationId ?? throw new ArgumentNullException(nameof(automationId));
         _tabTitle = tabTitle;
         
-        // Create fallback locator using Name property (contains tab title on Windows)
-        // Note: MAUI TabbedPage renders as TabItem elements (not NavigationViewItem) in automation tree
-        if (!string.IsNullOrEmpty(tabTitle))
-        {
-            _fallbackLocator = Locator.ByXPath($"//TabItem[@Name='{tabTitle}']");
-        }
+        // Platform-specific fallback locators:
+        // - Windows: MAUI TabbedPage renders tabs with Name property = tab title (AutomationId doesn't propagate)
+        // - Android: MAUI TabbedPage renders tabs with content-desc = tab title (use AccessibilityId)
+        // We'll try Name first (Windows), then AccessibilityId (Android) in TryFindElement()
     }
 
     /// <inheritdoc />
     public string Title => _tabTitle ?? _automationId;
 
     /// <summary>
-    /// Finds the tab element, trying primary locator first then fallback.
+    /// Finds the tab element, trying primary locator first then platform-specific fallbacks.
     /// </summary>
     /// <returns>The element if found, null otherwise.</returns>
     protected override IMauiElement? TryFindElement()
@@ -88,18 +91,34 @@ public class TabViewControl<TScope> : MauiClickableControlBase<TScope>, ITabCont
         if (element != null)
             return element;
 
-        // Fallback: Use Name-based XPath for Windows TabbedPage NavigationViewItem
-        if (_fallbackLocator != null)
+        // Fallbacks require a tab title
+        if (string.IsNullOrEmpty(_tabTitle))
+            return null;
+
+        // Fallback 1: Try by Name property (Windows TabbedPage uses Name = tab title)
+        try
         {
-            try
-            {
-                return MauiScope.TryFindElement(_fallbackLocator);
-            }
-            catch
-            {
-                // Gracefully degrade if fallback also fails
-                return null;
-            }
+            var nameLocator = Locator.ByName(_tabTitle);
+            var found = MauiScope.TryFindElement(nameLocator);
+            if (found != null)
+                return found;
+        }
+        catch
+        {
+            // Fallback failed, try next
+        }
+        
+        // Fallback 2: Try by AccessibilityId (Android uses content-desc = tab title)
+        try
+        {
+            var accessibilityLocator = Locator.ByAccessibilityId(_tabTitle);
+            var found = MauiScope.TryFindElement(accessibilityLocator);
+            if (found != null)
+                return found;
+        }
+        catch
+        {
+            // All fallbacks failed
         }
 
         return null;

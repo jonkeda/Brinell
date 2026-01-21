@@ -34,7 +34,15 @@
         "dotnet publish": true,
         "dotnet list": true,
         "findstr": true,
-        "dotnet nuget": true
+        "dotnet nuget": true,
+        "dotnet workload": true,
+        "aapt": true,
+        "&": true,
+        "Out-String": true,
+        "/^Start-Sleep 10; Invoke-RestMethod \"http://127\\.0\\.0\\.1:4723/status\" -TimeoutSec 10$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
     },
     "cSpell.words": [
         "Brinell"

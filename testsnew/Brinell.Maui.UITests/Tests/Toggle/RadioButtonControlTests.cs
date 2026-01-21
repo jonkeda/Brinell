@@ -157,4 +157,73 @@ public class RadioButtonControlTests
     }
 
     #endregion
+    
+    #region Diagnostic Tests
+    
+    /// <summary>
+    /// Diagnostic test to understand RadioButton attributes.
+    /// </summary>
+    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [Trait("Category", "Diagnostic")]
+    public Task RadioButton_Diagnostic_DumpAttributes()
+    {
+        var driver = _fixture.Context.Driver;
+        
+        // Dump page source around BasicRadio
+        var pageSource = driver.GetPageSource();
+        var basicIndex = pageSource.IndexOf("BasicRadio");
+        if (basicIndex >= 0)
+        {
+            var start = Math.Max(0, basicIndex - 50);
+            var end = Math.Min(pageSource.Length, basicIndex + 500);
+            Console.WriteLine($"=== RadioButton XML Context ===");
+            Console.WriteLine(pageSource.Substring(start, end - start));
+        }
+        
+        // Try to find the element by AutomationId
+        try
+        {
+            var element = driver.FindElement(Brinell.Core.Locators.Locator.ByAutomationId("BasicRadio"));
+            Console.WriteLine($"=== Found by AutomationId ===");
+            Console.WriteLine($"TagName: {element.TagName}");
+            Console.WriteLine($"Text: {element.Text}");
+            Console.WriteLine($"Enabled: {element.Enabled}");
+            Console.WriteLine($"Selected: {element.Selected}");
+            Console.WriteLine($"Visible: {element.Visible}");
+            Console.WriteLine($"Location: {element.Location}");
+            Console.WriteLine($"Size: {element.Size}");
+            
+            // Try each attribute we care about
+            var attrs = new[] { "IsSelected", "SelectionItem.IsSelected", "ToggleState", 
+                              "Toggle.ToggleState", "IsOffscreen", "IsAvailable", "Value.Value",
+                              "BoundingRectangle", "x", "y", "width", "height" };
+            foreach (var attr in attrs)
+            {
+                try
+                {
+                    var value = element.GetAttribute(attr);
+                    Console.WriteLine($"Attr[{attr}]: {value ?? "(null)"}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Attr[{attr}]: ERROR - {ex.Message}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Find by AutomationId failed: {ex.Message}");
+        }
+        
+        // Test our wrapper's IsSelected
+        Console.WriteLine($"\n=== Brinell Wrapper Results ===");
+        Console.WriteLine($"Page.BasicRadio.IsSelected(): {Page.BasicRadio.IsSelected()}");
+        Console.WriteLine($"Page.BasicRadio.IsChecked(): {Page.BasicRadio.IsChecked()}");
+        Console.WriteLine($"Page.BasicRadio.IsExists(): {Page.BasicRadio.IsExists()}");
+        Console.WriteLine($"Page.BasicRadio.IsVisible(): {Page.BasicRadio.IsVisible()}");
+        
+        return Task.CompletedTask;
+    }
+    
+    #endregion
 }

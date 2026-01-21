@@ -50,21 +50,13 @@ public class MauiRefreshableControlBase<TScope> : MauiControlBase<TScope>, IRefr
     /// <param name="element">The pre-found element.</param>
     protected virtual void PullToRefreshCore(IMauiElement element)
     {
-        var unwrappedElement = element.UnwrapElement();
-        var unwrappedDriver = Context.Driver.UnwrapDriver();
-        
-        var rect = unwrappedElement.Rect;
+        var rect = element.Rect;
         var centerX = rect.X + rect.Width / 2;
         var startY = rect.Y + (int)(rect.Height * 0.2);
         var endY = rect.Y + (int)(rect.Height * 0.8);
         
         // Perform swipe down gesture
-        var actions = new OpenQA.Selenium.Interactions.Actions(unwrappedDriver);
-        actions.MoveToLocation(centerX, startY)
-               .ClickAndHold()
-               .MoveToLocation(centerX, endY)
-               .Release()
-               .Perform();
+        element.Swipe(centerX, startY, centerX, endY);
     }
     
     /// <summary>

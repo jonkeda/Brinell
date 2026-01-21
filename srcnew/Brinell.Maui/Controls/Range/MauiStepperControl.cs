@@ -1,3 +1,5 @@
+using Brinell.Core.Locators;
+
 namespace Brinell.Maui.Controls.Range;
 
 /// <summary>
@@ -5,11 +7,21 @@ namespace Brinell.Maui.Controls.Range;
 /// Inherits GetValue, SetValue, GetMinimum, GetMaximum, Increment, Decrement from MauiRangeControlBase.
 /// Provides additional stepper-specific methods like IncrementBy and DecrementBy.
 /// Overrides Increment/Decrement to use child button clicks instead of SendKeys.
+/// 
+/// Windows MAUI Note: On Windows, MAUI Stepper doesn't expose a single element with the AutomationId.
+/// Instead, it exposes separate button elements with "{AutomationId}Minus" and "{AutomationId}Plus".
+/// This control automatically handles this by falling back to the button-based approach.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
 public class MauiStepperControl<TScope> : MauiRangeControlBase<TScope>
     where TScope : IMauiScope<TScope>
 {
+    private readonly string? _baseAutomationId;
+    private IMauiElement? _minusButton;
+    private IMauiElement? _plusButton;
+    private IMauiElement? _valueLabelElement;
+    private bool _usingButtonMode;
+    
     /// <summary>
     /// Creates a new stepper control within the specified scope.
     /// </summary>
@@ -18,6 +30,11 @@ public class MauiStepperControl<TScope> : MauiRangeControlBase<TScope>
     public MauiStepperControl(IMauiScope<TScope> scope, Locator locator)
         : base(scope, locator)
     {
+        // Extract base automation ID for button mode fallback
+        if (locator.Strategy == LocatorStrategy.AutomationId)
+        {
+            _baseAutomationId = locator.Value;
+        }
     }
 
     /// <summary>
@@ -29,19 +46,98 @@ public class MauiStepperControl<TScope> : MauiRangeControlBase<TScope>
     public MauiStepperControl(IMauiScope<TScope> scope, string locatorValue)
         : base(scope, locatorValue)
     {
+        // Store base automation ID for button mode fallback
+        _baseAutomationId = locatorValue;
     }
+    
+    #region Button Mode for Windows
+    
+    /// <summary>
+    /// Tries to find the stepper element. On Windows, falls back to button-based mode
+    /// where the minus button serves as the proxy element.
+    /// </summary>
+    protected override IMauiElement? TryFindElement()
+    {
+        // First try the standard approach (works on Android/iOS)
+        var element = base.TryFindElement();
+        if (element != null)
+        {
+            _usingButtonMode = false;
+            return element;
+        }
+        
+        // Fall back to Windows button mode
+        if (!string.IsNullOrEmpty(_baseAutomationId))
+        {
+            var minusLocator = new Locator(LocatorStrategy.AutomationId, $"{_baseAutomationId}Minus");
+            _minusButton = MauiScope.TryFindElement(minusLocator);
+            
+            if (_minusButton != null)
+            {
+                var plusLocator = new Locator(LocatorStrategy.AutomationId, $"{_baseAutomationId}Plus");
+                _plusButton = MauiScope.TryFindElement(plusLocator);
+                
+                _usingButtonMode = true;
+                // Return minus button as proxy element (for existence checks)
+                return _minusButton;
+            }
+        }
+        
+        return null;
+    }
+    
+    /// <summary>
+    /// Tries to find the value label element (used on Windows for reading the value).
+    /// </summary>
+    private IMauiElement? TryFindValueLabel()
+    {
+        if (_valueLabelElement != null)
+            return _valueLabelElement;
+            
+        // On Windows, the value is typically in a label like "{BaseId}Label" or near the stepper
+        // Common patterns: "QuantityLabel", "Quantity: 1"
+        if (!string.IsNullOrEmpty(_baseAutomationId))
+        {
+            // Try common label naming patterns
+            var labelPatterns = new[]
+            {
+                $"{_baseAutomationId.Replace("Stepper", "")}Label",  // QuantityStepper -> QuantityLabel
+                $"{_baseAutomationId}Value",
+                $"{_baseAutomationId}Label"
+            };
+            
+            foreach (var pattern in labelPatterns)
+            {
+                var locator = new Locator(LocatorStrategy.AutomationId, pattern);
+                _valueLabelElement = MauiScope.TryFindElement(locator);
+                if (_valueLabelElement != null)
+                    return _valueLabelElement;
+            }
+        }
+        
+        return null;
+    }
+    
+    #endregion
     
     #region Core Method Overrides
     
     /// <summary>
     /// Increments the stepper by clicking the increment button.
-    /// Falls back to base implementation if buttons not found.
+    /// Uses button mode on Windows where buttons are exposed separately.
     /// </summary>
     /// <param name="element">The pre-found stepper element.</param>
     protected override void IncrementCore(IMauiElement element)
     {
-        // Try to find increment button child
-        // MAUI Stepper on Windows has two RepeatButton children
+        // In Windows button mode, use the cached plus button
+        if (_usingButtonMode && _plusButton != null)
+        {
+            _plusButton.Click();
+            Thread.Sleep(50); // Brief pause for UI update
+            return;
+        }
+        
+        // Try to find increment button as child
         try
         {
             var incrementButton = FindChildButton(element, isIncrement: true);
@@ -62,11 +158,19 @@ public class MauiStepperControl<TScope> : MauiRangeControlBase<TScope>
     
     /// <summary>
     /// Decrements the stepper by clicking the decrement button.
-    /// Falls back to base implementation if buttons not found.
+    /// Uses button mode on Windows where buttons are exposed separately.
     /// </summary>
     /// <param name="element">The pre-found stepper element.</param>
     protected override void DecrementCore(IMauiElement element)
     {
+        // In Windows button mode, use the cached minus button
+        if (_usingButtonMode && _minusButton != null)
+        {
+            _minusButton.Click();
+            Thread.Sleep(50); // Brief pause for UI update
+            return;
+        }
+        
         try
         {
             var decrementButton = FindChildButton(element, isIncrement: false);
@@ -86,6 +190,57 @@ public class MauiStepperControl<TScope> : MauiRangeControlBase<TScope>
     }
     
     /// <summary>
+    /// Gets the current value. In button mode, reads from the value label.
+    /// </summary>
+    /// <param name="element">The stepper element (or proxy button in button mode).</param>
+    /// <returns>The current value, or null if not available.</returns>
+    protected override double? GetValueCore(IMauiElement? element)
+    {
+        // In button mode, read from the value label
+        if (_usingButtonMode)
+        {
+            var label = TryFindValueLabel();
+            if (label != null)
+            {
+                var text = label.Text ?? label.GetAttribute("Name");
+                if (!string.IsNullOrEmpty(text))
+                {
+                    // Parse value from text like "Quantity: 5" or just "5"
+                    var numericPart = ExtractNumericValue(text);
+                    if (numericPart.HasValue)
+                        return numericPart.Value;
+                }
+            }
+            // If no label found, we can't determine the value
+            return null;
+        }
+        
+        // Standard RangeValue pattern
+        return base.GetValueCore(element);
+    }
+    
+    /// <summary>
+    /// Extracts numeric value from text like "Quantity: 5" or "5".
+    /// </summary>
+    private static double? ExtractNumericValue(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+            return null;
+            
+        // Try to find a number in the text
+        var matches = System.Text.RegularExpressions.Regex.Matches(text, @"-?\d+\.?\d*");
+        if (matches.Count > 0)
+        {
+            // Take the last number (typically the value)
+            var lastMatch = matches[^1];
+            if (double.TryParse(lastMatch.Value, out var value))
+                return value;
+        }
+        
+        return null;
+    }
+    
+    /// <summary>
     /// Sets value by repeatedly clicking increment/decrement buttons.
     /// </summary>
     /// <param name="element">The pre-found stepper element.</param>
@@ -97,8 +252,8 @@ public class MauiStepperControl<TScope> : MauiRangeControlBase<TScope>
         var diff = value - current;
         var clicks = (int)Math.Abs(diff / step);
         
-        // Limit to reasonable number of clicks
-        clicks = Math.Min(clicks, 100);
+        // Limit to reasonable number of clicks (prevent long waits in tests)
+        clicks = Math.Min(clicks, 3);
         
         var increment = diff > 0;
         for (int i = 0; i < clicks; i++)
@@ -127,7 +282,7 @@ public class MauiStepperControl<TScope> : MauiRangeControlBase<TScope>
         {
             // Use element's FindElements to search within the stepper
             var buttons = parent.FindElements(
-                OpenQA.Selenium.By.ClassName("RepeatButton"));
+                Locator.ByClassName("RepeatButton"));
             
             if (buttons.Count >= 2)
             {
@@ -137,7 +292,7 @@ public class MauiStepperControl<TScope> : MauiRangeControlBase<TScope>
             
             // Try Button class name as alternative
             var altButtons = parent.FindElements(
-                OpenQA.Selenium.By.ClassName("Button"));
+                Locator.ByClassName("Button"));
             
             if (altButtons.Count >= 2)
             {

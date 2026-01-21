@@ -1,3 +1,6 @@
+using Brinell.Core.Locators;
+using Brinell.Maui.Enums;
+
 namespace Brinell.Maui.Controls;
 
 /// <summary>
@@ -134,10 +137,9 @@ public abstract class MauiContainerBase<TParent, TSelf> : MauiControlBase<TParen
         
         try
         {
-            var by = locator.ToBy();
-            return rootElement.FindElement(by);
+            return rootElement.FindElement(locator, timeoutMs: 0);
         }
-        catch (NoSuchElementException)
+        catch (ElementNotFoundException)
         {
             // Element not found in container - do NOT fall back to parent
             // Container scoping means elements must be within the container
@@ -153,10 +155,9 @@ public abstract class MauiContainerBase<TParent, TSelf> : MauiControlBase<TParen
             
             try
             {
-                var by = locator.ToBy();
-                return rootElement.FindElement(by);
+                return rootElement.FindElement(locator, timeoutMs: 0);
             }
-            catch (NoSuchElementException)
+            catch (ElementNotFoundException)
             {
                 // Element not found in container - do NOT fall back to parent
                 return null;
@@ -205,8 +206,7 @@ public abstract class MauiContainerBase<TParent, TSelf> : MauiControlBase<TParen
         
         try
         {
-            var by = locator.ToBy();
-            return rootElement.FindElements(by).ToList();
+            return rootElement.FindElements(locator, timeoutMs: 0);
         }
         catch (StaleElementReferenceException)
         {
@@ -217,8 +217,7 @@ public abstract class MauiContainerBase<TParent, TSelf> : MauiControlBase<TParen
             
             try
             {
-                var by = locator.ToBy();
-                return rootElement.FindElements(by).ToList();
+                return rootElement.FindElements(locator, timeoutMs: 0);
             }
             catch
             {

@@ -147,7 +147,7 @@ public class TabbedPageTests
     public void TabbedPage_DumpPageSource_ForDebugging()
     {
         // Get page source
-        var pageSource = _fixture.Context.Driver.PageSource;
+        var pageSource = _fixture.Context.Driver.GetPageSource();
         
         // Write to output (will be in test results)
         _output.WriteLine("=== Page Source (first 10000 chars) ===");

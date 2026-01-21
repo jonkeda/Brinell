@@ -75,6 +75,17 @@ public class MauiToggleControlBase<TScope> : MauiControlBase<TScope>, IToggleCon
     {
         var beforeState = IsCheckedCore(element);
         
+        // Scroll into view first to ensure element is visible
+        try
+        {
+            element.ScrollIntoView();
+            Thread.Sleep(50);
+        }
+        catch
+        {
+            // Ignore scroll failures - element may still be clickable
+        }
+        
         // Attempt click
         element.Click();
         
@@ -85,43 +96,52 @@ public class MauiToggleControlBase<TScope> : MauiControlBase<TScope>, IToggleCon
         var afterState = IsCheckedCore(element);
         if (afterState == beforeState)
         {
-            // Retry with Actions-based click (more reliable)
-            RetryToggleWithActions(element);
+            // Retry with windows: click extension (bypasses W3C Actions that fail on Windows)
+            RetryToggleWithWindowsClick(element, beforeState);
         }
     }
     
     /// <summary>
-    /// Retry toggle using Selenium Actions API.
+    /// Retry toggle using windows: click extension which bypasses W3C Actions API.
+    /// The standard Selenium Actions API fails on Windows with:
+    /// "Currently only pen and touch pointer input source types are supported"
     /// </summary>
     /// <param name="element">The element to toggle.</param>
-    private void RetryToggleWithActions(IMauiElement element)
+    /// <param name="beforeState">The state before the first toggle attempt.</param>
+    private void RetryToggleWithWindowsClick(IMauiElement element, bool? beforeState)
     {
         try
         {
-            var driver = Context.Driver.UnwrapDriver();
-            var webElement = element.UnwrapElement();
-            var actions = new OpenQA.Selenium.Interactions.Actions(driver);
-            actions.MoveToElement(webElement);
-            actions.Click();
-            actions.Perform();
+            // Try using windows: click extension first
+            var location = element.Location;
+            var size = element.Size;
+            var centerX = location.X + (size.Width / 2);
+            var centerY = location.Y + (size.Height / 2);
+            
+            Context.Driver.ExecuteScript("windows: click", new Dictionary<string, object>
+            {
+                { "x", centerX },
+                { "y", centerY }
+            });
             
             Thread.Sleep(100);
+            
+            // Check if state changed
+            var afterState = IsCheckedCore(element);
+            if (afterState == beforeState)
+            {
+                // Last resort: try SendKeys with Space (toggle key)
+                element.SendKeys(OpenQA.Selenium.Keys.Space);
+                Thread.Sleep(100);
+            }
         }
         catch (Exception)
         {
-            // Last resort: try clicking at element center
+            // windows: click not supported, try keyboard fallback
             try
             {
-                var location = element.Location;
-                var size = element.Size;
-                var centerX = location.X + (size.Width / 2);
-                var centerY = location.Y + (size.Height / 2);
-                
-                var driver = Context.Driver.UnwrapDriver();
-                var actions = new OpenQA.Selenium.Interactions.Actions(driver);
-                actions.MoveToLocation(centerX, centerY);
-                actions.Click();
-                actions.Perform();
+                element.SendKeys(OpenQA.Selenium.Keys.Space);
+                Thread.Sleep(100);
             }
             catch
             {
@@ -146,7 +166,7 @@ public class MauiToggleControlBase<TScope> : MauiControlBase<TScope>, IToggleCon
     
     /// <summary>
     /// Gets checked state from pre-found element.
-    /// Reads from ToggleState or checked attribute.
+    /// Reads from various toggle state attributes used by different platforms.
     /// </summary>
     /// <param name="element">The pre-found element.</param>
     /// <returns>True if checked, false if unchecked, null if element is null.</returns>
@@ -154,31 +174,59 @@ public class MauiToggleControlBase<TScope> : MauiControlBase<TScope>, IToggleCon
     {
         if (element == null) return null;
         
-        // Try ToggleState attribute first (Windows/MAUI)
-        var toggleState = element.GetAttribute("ToggleState");
-        if (!string.IsNullOrEmpty(toggleState))
+        // Windows UIA patterns - try multiple attribute name formats
+        // Different Appium Windows driver versions may expose these differently
+        string[] toggleStateAttributes = { 
+            "ToggleState",           // Standard Windows UIA
+            "Toggle.ToggleState",    // Namespaced format
+            "toggle",                // Lowercase variant
+        };
+        
+        foreach (var attrName in toggleStateAttributes)
         {
-            return toggleState.Equals("1", StringComparison.OrdinalIgnoreCase) ||
-                   toggleState.Equals("On", StringComparison.OrdinalIgnoreCase) ||
-                   toggleState.Equals("True", StringComparison.OrdinalIgnoreCase);
+            var toggleState = element.GetAttribute(attrName);
+            if (!string.IsNullOrEmpty(toggleState))
+            {
+                // Windows UIA ToggleState: 0=Off, 1=On, 2=Indeterminate
+                return toggleState.Equals("1", StringComparison.OrdinalIgnoreCase) ||
+                       toggleState.Equals("On", StringComparison.OrdinalIgnoreCase) ||
+                       toggleState.Equals("True", StringComparison.OrdinalIgnoreCase) ||
+                       toggleState.Equals("ToggleState_On", StringComparison.OrdinalIgnoreCase);
+            }
         }
         
-        // Try checked attribute (Android/iOS)
-        var checkedAttr = element.GetAttribute("checked");
-        if (!string.IsNullOrEmpty(checkedAttr))
+        // Windows UIA SelectionItem pattern (used by RadioButton)
+        string[] selectionAttributes = { 
+            "SelectionItem.IsSelected",  // Windows UIA SelectionItem pattern
+            "IsSelected",                 // Shorthand
+        };
+        
+        foreach (var attrName in selectionAttributes)
         {
-            return checkedAttr.Equals("true", StringComparison.OrdinalIgnoreCase);
+            var selectedAttr = element.GetAttribute(attrName);
+            if (!string.IsNullOrEmpty(selectedAttr))
+            {
+                return selectedAttr.Equals("True", StringComparison.OrdinalIgnoreCase) ||
+                       selectedAttr.Equals("1", StringComparison.OrdinalIgnoreCase);
+            }
         }
         
-        // Try IsChecked attribute
-        var isCheckedAttr = element.GetAttribute("IsChecked");
-        if (!string.IsNullOrEmpty(isCheckedAttr))
+        // Try checked/selected attributes (Android/iOS/Web)
+        string[] checkedAttributes = { "checked", "IsChecked", "Selected", "selected", "IsOn" };
+        
+        foreach (var attrName in checkedAttributes)
         {
-            return isCheckedAttr.Equals("true", StringComparison.OrdinalIgnoreCase);
+            var checkedAttr = element.GetAttribute(attrName);
+            if (!string.IsNullOrEmpty(checkedAttr))
+            {
+                return checkedAttr.Equals("true", StringComparison.OrdinalIgnoreCase) ||
+                       checkedAttr.Equals("1", StringComparison.OrdinalIgnoreCase);
+            }
         }
         
-        // Default to false if no attribute found
-        return false;
+        // Try the Selenium Selected property as fallback
+        // This often works for toggle controls in Windows
+        return element.Selected;
     }
     
     #endregion

@@ -1,5 +1,3 @@
-using OpenQA.Selenium.Interactions;
-
 namespace Brinell.Maui.Controls;
 
 /// <summary>
@@ -132,38 +130,22 @@ public class MauiListControl<TScope, TItem> : MauiControlBase<TScope>
         var listElement = TryFindElement();
         if (listElement == null) return ContainingScope;
         
-        var unwrappedElement = listElement.UnwrapElement();
-        var driver = Context.Driver.UnwrapDriver();
-        
         try
         {
             // Get element bounds for scroll calculations
-            var location = unwrappedElement.Location;
-            var size = unwrappedElement.Size;
-            var centerX = location.X + size.Width / 2;
-            var startY = location.Y + size.Height - 20; // Near bottom
-            var endY = location.Y + 20; // Near top
-            
-            // Create actions for scrolling
-            var actions = new Actions(driver);
+            var rect = listElement.Rect;
+            var centerX = rect.X + rect.Width / 2;
+            var startY = rect.Y + rect.Height - 20; // Near bottom
+            var endY = rect.Y + 20; // Near top
             
             // Scroll down first (swipe up gesture)
-            actions.MoveToLocation(centerX, startY)
-                   .ClickAndHold()
-                   .MoveToLocation(centerX, endY)
-                   .Release()
-                   .Perform();
+            listElement.Swipe(centerX, startY, centerX, endY);
             
             // Small pause to allow UI to update
             Thread.Sleep(100);
             
             // Scroll back to top (swipe down gesture)
-            actions = new Actions(driver);
-            actions.MoveToLocation(centerX, endY)
-                   .ClickAndHold()
-                   .MoveToLocation(centerX, startY)
-                   .Release()
-                   .Perform();
+            listElement.Swipe(centerX, endY, centerX, startY);
             
             // Small pause to allow UI to stabilize
             Thread.Sleep(100);
@@ -186,24 +168,15 @@ public class MauiListControl<TScope, TItem> : MauiControlBase<TScope>
         var listElement = TryFindElement();
         if (listElement == null) return ContainingScope;
         
-        var unwrappedElement = listElement.UnwrapElement();
-        var driver = Context.Driver.UnwrapDriver();
-        
         try
         {
-            var location = unwrappedElement.Location;
-            var size = unwrappedElement.Size;
-            var centerX = location.X + size.Width / 2;
-            var startY = location.Y + 20; // Near top
-            var endY = location.Y + size.Height - 20; // Near bottom
+            var rect = listElement.Rect;
+            var centerX = rect.X + rect.Width / 2;
+            var startY = rect.Y + 20; // Near top
+            var endY = rect.Y + rect.Height - 20; // Near bottom
             
             // Swipe down to scroll to top
-            var actions = new Actions(driver);
-            actions.MoveToLocation(centerX, startY)
-                   .ClickAndHold()
-                   .MoveToLocation(centerX, endY)
-                   .Release()
-                   .Perform();
+            listElement.Swipe(centerX, startY, centerX, endY);
             
             Thread.Sleep(100);
         }
@@ -224,24 +197,15 @@ public class MauiListControl<TScope, TItem> : MauiControlBase<TScope>
         var listElement = TryFindElement();
         if (listElement == null) return ContainingScope;
         
-        var unwrappedElement = listElement.UnwrapElement();
-        var driver = Context.Driver.UnwrapDriver();
-        
         try
         {
-            var location = unwrappedElement.Location;
-            var size = unwrappedElement.Size;
-            var centerX = location.X + size.Width / 2;
-            var startY = location.Y + size.Height - 20; // Near bottom
-            var endY = location.Y + 20; // Near top
+            var rect = listElement.Rect;
+            var centerX = rect.X + rect.Width / 2;
+            var startY = rect.Y + rect.Height - 20; // Near bottom
+            var endY = rect.Y + 20; // Near top
             
             // Swipe up to scroll to end
-            var actions = new Actions(driver);
-            actions.MoveToLocation(centerX, startY)
-                   .ClickAndHold()
-                   .MoveToLocation(centerX, endY)
-                   .Release()
-                   .Perform();
+            listElement.Swipe(centerX, startY, centerX, endY);
             
             Thread.Sleep(100);
         }

@@ -9,10 +9,10 @@
     <PackageVersion Include="xunit" Version="2.9.3" />
     <PackageVersion Include="xunit.extensibility.core" Version="2.9.3" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
     <PackageVersion Include="coverlet.collector" Version="6.0.4" />
-    <PackageVersion Include="FluentAssertions" Version="6.12.0" />
-    <PackageVersion Include="Moq" Version="4.20.70" />
+    <PackageVersion Include="FluentAssertions" Version="8.8.0" />
+    <PackageVersion Include="Moq" Version="4.20.72" />
     <PackageVersion Include="AutoFixture" Version="4.18.1" />
     <PackageVersion Include="AutoFixture.Xunit2" Version="4.18.1" />
     <PackageVersion Include="Bogus" Version="35.5.1" />
@@ -22,26 +22,27 @@
     <PackageVersion Include="FlaUI.UIA3" Version="5.0.0" />
     
     <!-- Selenium for HTML/Web -->
-    <PackageVersion Include="Selenium.WebDriver" Version="4.29.0" />
-    <PackageVersion Include="Selenium.Support" Version="4.29.0" />
-    <PackageVersion Include="WebDriverManager" Version="2.17.5" />
+    <PackageVersion Include="Selenium.WebDriver" Version="4.40.0" />
+    <PackageVersion Include="Selenium.Support" Version="4.40.0" />
+    <PackageVersion Include="WebDriverManager" Version="2.17.6" />
     
     <!-- Playwright for HTML/Web (alternative to Selenium) -->
-    <PackageVersion Include="Microsoft.Playwright" Version="1.50.0" />
+    <PackageVersion Include="Microsoft.Playwright" Version="1.57.0" />
     
     <!-- Appium for MAUI/Mobile -->
     <PackageVersion Include="Appium.WebDriver" Version="8.0.1" />
     
     <!-- MAUI -->
-    <PackageVersion Include="Microsoft.Maui.Controls" Version="10.0.1" />
-    <PackageVersion Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
+    <PackageVersion Include="Microsoft.Maui.Controls" Version="10.0.30" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Debug" Version="10.0.2" />
+    <!-- Note: CommunityToolkit.Maui 13.x has breaking popup API changes; pinned to 9.x for compatibility -->
     <PackageVersion Include="CommunityToolkit.Maui" Version="9.0.0" />
     
     <!-- WireMock for API mocking -->
-    <PackageVersion Include="WireMock.Net" Version="1.6.10" />
+    <PackageVersion Include="WireMock.Net" Version="1.24.0" />
     
     <!-- Source Link -->
-    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="8.0.0" />
+    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.102" />
     
     <!-- Stride 3D Engine -->
     <PackageVersion Include="Stride.Engine" Version="4.3.0.2507" />

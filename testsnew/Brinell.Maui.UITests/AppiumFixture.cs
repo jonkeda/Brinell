@@ -1,6 +1,6 @@
+using Brinell.Maui;
 using Brinell.Maui.Testing;
 using Brinell.Maui.UITests.Pages;
-using OpenQA.Selenium.Appium;
 
 namespace Brinell.Maui.UITests;
 
@@ -121,27 +121,24 @@ public class AppiumFixture : MauiTestFixtureBase
     }
 
     /// <inheritdoc />
-    protected override void ConfigureWindowsOptions(AppiumOptions options, string appPath)
+    protected override void ConfigureAndroidOptions(MauiDriverOptions options)
     {
-        base.ConfigureWindowsOptions(options, appPath);
-        // Increase timeout for app window discovery (TabView takes longer to initialize)
-        options.AddAdditionalAppiumOption("appWaitDuration", 30000); // 30 seconds
-        options.AddAdditionalAppiumOption("newCommandTimeout", 300); // 5 minutes for command execution
+        base.ConfigureAndroidOptions(options);
+        // MAUI generates hashed activity names (e.g., crc643b83d6491f48953d.MainActivity)
+        // Don't specify appPackage/appActivity - let Appium extract from the APK
+        options.AdditionalCapabilities["autoGrantPermissions"] = true;
+        options.AdditionalCapabilities["newCommandTimeout"] = 300; // 5 minutes
+        // MAUI apps take longer to initialize - increase wait times
+        options.AdditionalCapabilities["appWaitDuration"] = 60000; // 60 seconds to wait for app
+        options.AdditionalCapabilities["appWaitActivity"] = "*"; // Wait for any activity
+        options.AdditionalCapabilities["adbExecTimeout"] = 60000; // 60 seconds for ADB commands
     }
 
     /// <inheritdoc />
-    protected override void ConfigureAndroidOptions(AppiumOptions options, string appPath)
+    protected override void ConfigureiOSOptions(MauiDriverOptions options)
     {
-        base.ConfigureAndroidOptions(options, appPath);
-        options.AddAdditionalAppiumOption("appPackage", "com.brinell.samples.maui");
-        options.AddAdditionalAppiumOption("appActivity", "crc64hash.MainActivity");
-    }
-
-    /// <inheritdoc />
-    protected override void ConfigureiOSOptions(AppiumOptions options, string appPath)
-    {
-        base.ConfigureiOSOptions(options, appPath);
-        options.AddAdditionalAppiumOption("bundleId", "com.brinell.samples.maui");
+        base.ConfigureiOSOptions(options);
+        options.AdditionalCapabilities["bundleId"] = "com.brinell.samples.maui";
     }
 
     #endregion

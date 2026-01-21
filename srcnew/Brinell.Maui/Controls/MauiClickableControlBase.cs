@@ -111,12 +111,7 @@ public class MauiClickableControlBase<TScope> : MauiControlBase<TScope>, IClicka
     protected virtual void RightClickCore(IMauiElement element, int? timeoutMs = null)
     {
         CheckClickableCore(element, timeoutMs);
-        
-        var unwrappedElement = element.UnwrapElement();
-        var unwrappedDriver = Context.Driver.UnwrapDriver();
-        
-        var actions = new OpenQA.Selenium.Interactions.Actions(unwrappedDriver);
-        actions.ContextClick(unwrappedElement).Perform();
+        element.RightClick();
     }
     
     /// <summary>
@@ -125,11 +120,7 @@ public class MauiClickableControlBase<TScope> : MauiControlBase<TScope>, IClicka
     /// <param name="element">The pre-found element.</param>
     protected virtual void HoverCore(IMauiElement element)
     {
-        var unwrappedElement = element.UnwrapElement();
-        var unwrappedDriver = Context.Driver.UnwrapDriver();
-        
-        var actions = new OpenQA.Selenium.Interactions.Actions(unwrappedDriver);
-        actions.MoveToElement(unwrappedElement).Perform();
+        element.Hover();
     }
     
     /// <summary>
@@ -140,14 +131,7 @@ public class MauiClickableControlBase<TScope> : MauiControlBase<TScope>, IClicka
     protected virtual void LongPressCore(IMauiElement element, int? durationMs = null)
     {
         var duration = durationMs ?? 1000; // Default 1 second
-        var unwrappedElement = element.UnwrapElement();
-        var unwrappedDriver = Context.Driver.UnwrapDriver();
-        
-        var actions = new OpenQA.Selenium.Interactions.Actions(unwrappedDriver);
-        actions.ClickAndHold(unwrappedElement)
-               .Pause(TimeSpan.FromMilliseconds(duration))
-               .Release()
-               .Perform();
+        element.LongPress(duration);
     }
     
     /// <summary>
@@ -172,7 +156,7 @@ public class MauiClickableControlBase<TScope> : MauiControlBase<TScope>, IClicka
         // Check visibility, scroll if needed
         if (IsVisibleCore(element) != true)
         {
-            element.ScrollIntoView(Context.Driver);
+            element.ScrollIntoView();
         }
     }
     

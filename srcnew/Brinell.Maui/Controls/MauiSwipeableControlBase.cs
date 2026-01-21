@@ -86,12 +86,12 @@ public class MauiSwipeableControlBase<TScope> : MauiControlBase<TScope>, ISwipea
     /// <param name="element">The pre-found element.</param>
     protected virtual void SwipeLeftCore(IMauiElement element)
     {
-        var rect = element.UnwrapElement().Rect;
+        var rect = element.Rect;
         var centerY = rect.Y + rect.Height / 2;
         var startX = rect.X + (int)(rect.Width * 0.8);
         var endX = rect.X + (int)(rect.Width * 0.2);
         
-        PerformSwipe(startX, centerY, endX, centerY);
+        PerformSwipe(element, startX, centerY, endX, centerY);
     }
     
     /// <summary>
@@ -100,12 +100,12 @@ public class MauiSwipeableControlBase<TScope> : MauiControlBase<TScope>, ISwipea
     /// <param name="element">The pre-found element.</param>
     protected virtual void SwipeRightCore(IMauiElement element)
     {
-        var rect = element.UnwrapElement().Rect;
+        var rect = element.Rect;
         var centerY = rect.Y + rect.Height / 2;
         var startX = rect.X + (int)(rect.Width * 0.2);
         var endX = rect.X + (int)(rect.Width * 0.8);
         
-        PerformSwipe(startX, centerY, endX, centerY);
+        PerformSwipe(element, startX, centerY, endX, centerY);
     }
     
     /// <summary>
@@ -114,12 +114,12 @@ public class MauiSwipeableControlBase<TScope> : MauiControlBase<TScope>, ISwipea
     /// <param name="element">The pre-found element.</param>
     protected virtual void SwipeUpCore(IMauiElement element)
     {
-        var rect = element.UnwrapElement().Rect;
+        var rect = element.Rect;
         var centerX = rect.X + rect.Width / 2;
         var startY = rect.Y + (int)(rect.Height * 0.8);
         var endY = rect.Y + (int)(rect.Height * 0.2);
         
-        PerformSwipe(centerX, startY, centerX, endY);
+        PerformSwipe(element, centerX, startY, centerX, endY);
     }
     
     /// <summary>
@@ -128,12 +128,12 @@ public class MauiSwipeableControlBase<TScope> : MauiControlBase<TScope>, ISwipea
     /// <param name="element">The pre-found element.</param>
     protected virtual void SwipeDownCore(IMauiElement element)
     {
-        var rect = element.UnwrapElement().Rect;
+        var rect = element.Rect;
         var centerX = rect.X + rect.Width / 2;
         var startY = rect.Y + (int)(rect.Height * 0.2);
         var endY = rect.Y + (int)(rect.Height * 0.8);
         
-        PerformSwipe(centerX, startY, centerX, endY);
+        PerformSwipe(element, centerX, startY, centerX, endY);
     }
     
     /// <summary>
@@ -146,7 +146,7 @@ public class MauiSwipeableControlBase<TScope> : MauiControlBase<TScope>, ISwipea
     /// <param name="endY">Ending Y coordinate (relative to element).</param>
     protected virtual void SwipeCore(IMauiElement element, int startX, int startY, int endX, int endY)
     {
-        var rect = element.UnwrapElement().Rect;
+        var rect = element.Rect;
         
         // Convert relative to absolute coordinates
         var absStartX = rect.X + startX;
@@ -154,26 +154,20 @@ public class MauiSwipeableControlBase<TScope> : MauiControlBase<TScope>, ISwipea
         var absEndX = rect.X + endX;
         var absEndY = rect.Y + endY;
         
-        PerformSwipe(absStartX, absStartY, absEndX, absEndY);
+        PerformSwipe(element, absStartX, absStartY, absEndX, absEndY);
     }
     
     /// <summary>
-    /// Performs the actual swipe action using Appium Actions.
+    /// Performs the actual swipe action using element's Swipe method.
     /// </summary>
+    /// <param name="element">The element to swipe on.</param>
     /// <param name="startX">Absolute starting X coordinate.</param>
     /// <param name="startY">Absolute starting Y coordinate.</param>
     /// <param name="endX">Absolute ending X coordinate.</param>
     /// <param name="endY">Absolute ending Y coordinate.</param>
-    protected virtual void PerformSwipe(int startX, int startY, int endX, int endY)
+    protected virtual void PerformSwipe(IMauiElement element, int startX, int startY, int endX, int endY)
     {
-        var unwrappedDriver = Context.Driver.UnwrapDriver();
-        
-        var actions = new OpenQA.Selenium.Interactions.Actions(unwrappedDriver);
-        actions.MoveToLocation(startX, startY)
-               .ClickAndHold()
-               .MoveToLocation(endX, endY)
-               .Release()
-               .Perform();
+        element.Swipe(startX, startY, endX, endY);
     }
     
     #endregion

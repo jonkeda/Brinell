@@ -1,4 +1,4 @@
-using Brinell.Maui.Wrappers;
+using Brinell.Maui.Enums;
 
 namespace Brinell.Maui.Controls;
 
@@ -157,19 +157,12 @@ public class MauiScrollableControlBase<TScope> : MauiControlBase<TScope>, IScrol
     /// <param name="deltaY">Vertical scroll amount (positive = down).</param>
     protected virtual void ScrollByCore(IMauiElement element, int deltaX, int deltaY)
     {
-        var unwrappedElement = element.UnwrapElement();
-        var unwrappedDriver = Context.Driver.UnwrapDriver();
-        
-        var rect = unwrappedElement.Rect;
+        var rect = element.Rect;
         var centerX = rect.X + rect.Width / 2;
         var centerY = rect.Y + rect.Height / 2;
         
-        var actions = new OpenQA.Selenium.Interactions.Actions(unwrappedDriver);
-        actions.MoveToLocation(centerX, centerY)
-               .ClickAndHold()
-               .MoveByOffset(-deltaX, -deltaY) // Negative because scroll direction is opposite to swipe
-               .Release()
-               .Perform();
+        // Swipe in opposite direction to scroll (negative because scroll direction is opposite to swipe)
+        element.Swipe(centerX, centerY, centerX - deltaX, centerY - deltaY);
     }
     
     /// <summary>
@@ -187,7 +180,7 @@ public class MauiScrollableControlBase<TScope> : MauiControlBase<TScope>, IScrol
         {
             // Try to find the target element
             var target = TryFindElementInContainer(locator);
-            if (target != null && target.Displayed)
+            if (target != null && target.Visible)
             {
                 return; // Found and visible
             }
@@ -209,7 +202,7 @@ public class MauiScrollableControlBase<TScope> : MauiControlBase<TScope>, IScrol
         
         // Final check
         var finalTarget = TryFindElementInContainer(locator);
-        if (finalTarget == null || !finalTarget.Displayed)
+        if (finalTarget == null || !finalTarget.Visible)
         {
             throw new ElementNotFoundException(
                 $"Could not scroll to element with locator: {locator}");
@@ -249,9 +242,8 @@ public class MauiScrollableControlBase<TScope> : MauiControlBase<TScope>, IScrol
         if (Math.Abs(diff) < 1) return; // Already at target
         
         // Estimate scroll amount needed
-        var unwrappedElement = element.UnwrapElement();
-        var height = unwrappedElement.Rect.Height;
-        var scrollAmount = (int)(height * (diff / 100.0));
+        var rect = element.Rect;
+        var scrollAmount = (int)(rect.Height * (diff / 100.0));
         
         ScrollByCore(element, 0, scrollAmount);
     }
@@ -305,20 +297,12 @@ public class MauiScrollableControlBase<TScope> : MauiControlBase<TScope>, IScrol
     /// <param name="element">The element to swipe on.</param>
     protected virtual void SwipeUpCore(IMauiElement element)
     {
-        var unwrappedElement = element.UnwrapElement();
-        var unwrappedDriver = Context.Driver.UnwrapDriver();
-        
-        var rect = unwrappedElement.Rect;
+        var rect = element.Rect;
         var centerX = rect.X + rect.Width / 2;
         var startY = rect.Y + (int)(rect.Height * 0.8);
         var endY = rect.Y + (int)(rect.Height * 0.2);
         
-        var actions = new OpenQA.Selenium.Interactions.Actions(unwrappedDriver);
-        actions.MoveToLocation(centerX, startY)
-               .ClickAndHold()
-               .MoveToLocation(centerX, endY)
-               .Release()
-               .Perform();
+        element.Swipe(centerX, startY, centerX, endY);
     }
     
     /// <summary>
@@ -327,20 +311,12 @@ public class MauiScrollableControlBase<TScope> : MauiControlBase<TScope>, IScrol
     /// <param name="element">The element to swipe on.</param>
     protected virtual void SwipeDownCore(IMauiElement element)
     {
-        var unwrappedElement = element.UnwrapElement();
-        var unwrappedDriver = Context.Driver.UnwrapDriver();
-        
-        var rect = unwrappedElement.Rect;
+        var rect = element.Rect;
         var centerX = rect.X + rect.Width / 2;
         var startY = rect.Y + (int)(rect.Height * 0.2);
         var endY = rect.Y + (int)(rect.Height * 0.8);
         
-        var actions = new OpenQA.Selenium.Interactions.Actions(unwrappedDriver);
-        actions.MoveToLocation(centerX, startY)
-               .ClickAndHold()
-               .MoveToLocation(centerX, endY)
-               .Release()
-               .Perform();
+        element.Swipe(centerX, startY, centerX, endY);
     }
     
     /// <summary>
@@ -351,13 +327,10 @@ public class MauiScrollableControlBase<TScope> : MauiControlBase<TScope>, IScrol
     /// <returns>The element if found, null otherwise.</returns>
     protected virtual IMauiElement? TryFindElementInContainer(Locator locator)
     {
-        // Default: use driver to find element directly
+        // Default: use scope to find element
         try
         {
-            var driver = Context.Driver.UnwrapDriver();
-            var by = locator.ToBy();
-            var element = driver.FindElement(by);
-            return element != null ? new MauiElement(element) : null;
+            return MauiScope.TryFindElement(locator);
         }
         catch
         {

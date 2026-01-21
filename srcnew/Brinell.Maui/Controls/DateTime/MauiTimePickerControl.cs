@@ -1,3 +1,5 @@
+using Brinell.Core.Locators;
+
 namespace Brinell.Maui.Controls.DateTime;
 
 /// <summary>
@@ -39,10 +41,11 @@ public class MauiTimePickerControl<TScope> : MauiControlBase<TScope>
     {
         if (element == null) return null;
 
-        // Try Time attribute first
+        // Try Time attribute first (MAUI mobile)
         var timeAttr = element.GetAttribute("Time")
             ?? element.GetAttribute("SelectedTime")
-            ?? element.GetAttribute("Value");
+            ?? element.GetAttribute("Value")
+            ?? element.GetAttribute("value.value");
 
         if (!string.IsNullOrEmpty(timeAttr) && TimeSpan.TryParse(timeAttr, out var timeValue))
         {
@@ -55,21 +58,123 @@ public class MauiTimePickerControl<TScope> : MauiControlBase<TScope>
             return dateTimeValue.TimeOfDay;
         }
 
+        // Windows MAUI: TimePicker has child Button with AutomationId="FlyoutButton"
+        // whose Name contains the formatted time like " 9:00 AM time picker"
+        try
+        {
+            // Try finding the FlyoutButton child
+            var flyoutButton = element.FindElements(Locator.ByAutomationId("FlyoutButton"));
+            if (flyoutButton.Count > 0)
+            {
+                var buttonName = flyoutButton[0].GetAttribute("Name");
+                if (!string.IsNullOrEmpty(buttonName) && TryParseTimeString(buttonName, out var buttonTime))
+                {
+                    return buttonTime;
+                }
+            }
+            
+            // Fallback: search all descendants for parseable time
+            var children = element.FindElements(Locator.ByXPath(".//*"));
+            foreach (var child in children)
+            {
+                var childName = child.GetAttribute("Name");
+                if (!string.IsNullOrEmpty(childName) && TryParseTimeString(childName, out var childNameTime))
+                {
+                    return childNameTime;
+                }
+                
+                var childText = child.Text;
+                if (!string.IsNullOrEmpty(childText) && TryParseTimeString(childText, out var childTextTime))
+                {
+                    return childTextTime;
+                }
+            }
+        }
+        catch
+        {
+            // Ignore XPath errors - not all drivers support it
+        }
+
+        // Try element's own Name attribute (fallback)
+        var nameAttr = element.GetAttribute("Name");
+        if (!string.IsNullOrEmpty(nameAttr) && TryParseTimeString(nameAttr, out var nameTimeValue))
+        {
+            return nameTimeValue;
+        }
+
         // Try text content
         var text = element.Text;
-        if (!string.IsNullOrEmpty(text))
+        if (!string.IsNullOrEmpty(text) && TryParseTimeString(text, out var textTimeValue))
         {
-            if (TimeSpan.TryParse(text, out var textTimeValue))
-            {
-                return textTimeValue;
-            }
-            if (System.DateTime.TryParse(text, out var textDateTimeValue))
-            {
-                return textDateTimeValue.TimeOfDay;
-            }
+            return textTimeValue;
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Attempts to parse a time string in various formats.
+    /// </summary>
+    /// <param name="text">The text to parse.</param>
+    /// <param name="result">The parsed TimeSpan if successful.</param>
+    /// <returns>True if parsing succeeded.</returns>
+    private static bool TryParseTimeString(string text, out TimeSpan result)
+    {
+        result = default;
+        if (string.IsNullOrEmpty(text)) return false;
+
+        // Clean up text: strip Unicode control characters (like LTR marks U+200E)
+        // Windows MAUI embeds these in time strings like " ‎9‎:‎00‎ ‎AM time picker"
+        var cleaned = System.Text.RegularExpressions.Regex.Replace(text, @"\p{Cf}", "");
+        
+        // Remove "time picker" suffix if present (Windows MAUI adds this)
+        cleaned = System.Text.RegularExpressions.Regex.Replace(cleaned, @"\s*time\s*picker\s*$", "", 
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        cleaned = cleaned.Trim();
+        
+        if (string.IsNullOrEmpty(cleaned)) return false;
+
+        // Try standard TimeSpan parsing
+        if (TimeSpan.TryParse(cleaned, out result))
+            return true;
+
+        // Try DateTime parsing and extract TimeOfDay
+        if (System.DateTime.TryParse(cleaned, out var dateTime))
+        {
+            result = dateTime.TimeOfDay;
+            return true;
+        }
+
+        // Try common Windows time formats (e.g., "10:30 AM", "2:45 PM")
+        var formats = new[]
+        {
+            "h:mm tt",      // 2:30 PM
+            "hh:mm tt",     // 02:30 PM
+            "H:mm",         // 14:30
+            "HH:mm",        // 14:30
+            "h:mm:ss tt",   // 2:30:00 PM
+            "HH:mm:ss"      // 14:30:00
+        };
+
+        foreach (var format in formats)
+        {
+            if (System.DateTime.TryParseExact(cleaned, format, 
+                System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.None, out var parsed))
+            {
+                result = parsed.TimeOfDay;
+                return true;
+            }
+        }
+
+        // Try current culture
+        if (System.DateTime.TryParse(cleaned, System.Globalization.CultureInfo.CurrentCulture, out var cultureParsed))
+        {
+            result = cultureParsed.TimeOfDay;
+            return true;
+        }
+
+        return false;
     }
 
     /// <summary>

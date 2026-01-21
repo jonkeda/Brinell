@@ -1,3 +1,6 @@
+using Brinell.Maui.Enums;
+using Brinell.Maui.Interfaces;
+
 namespace Brinell.Maui.Context;
 
 /// <summary>
@@ -6,16 +9,16 @@ namespace Brinell.Maui.Context;
 public class MauiTestContextOptions
 {
     /// <summary>
-    /// Gets or sets the Appium server URI.
-    /// Default: http://localhost:4723
+    /// Pre-created driver instance (for testing or custom drivers).
+    /// If set, factory is not used and DriverOptions are ignored.
     /// </summary>
-    public Uri AppiumServerUri { get; init; } = new("http://localhost:4723");
+    public IMauiDriver? Driver { get; init; }
     
     /// <summary>
-    /// Gets or sets the Appium driver options.
-    /// Must be configured with appropriate capabilities for the target platform.
+    /// Gets or sets the driver options for the factory.
+    /// Required when Driver is not set.
     /// </summary>
-    public required AppiumOptions AppiumOptions { get; init; }
+    public MauiDriverOptions? DriverOptions { get; init; }
     
     /// <summary>
     /// Gets or sets the timeout configuration.

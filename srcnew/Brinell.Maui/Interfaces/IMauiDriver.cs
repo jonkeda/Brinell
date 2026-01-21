@@ -1,35 +1,39 @@
+using Brinell.Core.Interfaces;
+using Brinell.Maui.Enums;
+
 namespace Brinell.Maui.Interfaces;
 
 /// <summary>
-/// Abstraction over AppiumDriver to enable unit testing with Moq.
-/// This interface can be mocked because it doesn't require an Appium connection.
+/// MAUI-specific driver interface extending <see cref="IDriver{TElement}"/> and <see cref="IDiagnosticDriver"/>.
+/// Adds platform detection, context switching for hybrid apps, and window management.
+/// This interface can be mocked for unit testing without requiring an Appium connection.
 /// </summary>
-public interface IMauiDriver
+public interface IMauiDriver : IDriver<IMauiElement>, IDiagnosticDriver
 {
-    #region Element Finding
+    #region Platform
     
     /// <summary>
-    /// Finds an element at the driver level.
+    /// Gets the target platform (Windows, Android, iOS, macOS).
     /// </summary>
-    /// <param name="by">The locator to use.</param>
-    /// <returns>The matching element.</returns>
-    IMauiElement FindElement(By by);
-    
-    /// <summary>
-    /// Finds all elements matching the locator.
-    /// </summary>
-    /// <param name="by">The locator to use.</param>
-    /// <returns>A list of matching elements.</returns>
-    IReadOnlyList<IMauiElement> FindElements(By by);
+    MauiPlatform Platform { get; }
     
     #endregion
     
-    #region Driver State
+    #region Context Switching (Hybrid Apps)
     
     /// <summary>
-    /// Gets the page source of the current page.
+    /// Gets or sets the current context (NATIVE_APP, WEBVIEW_*, etc.).
     /// </summary>
-    string PageSource { get; }
+    string Context { get; set; }
+    
+    /// <summary>
+    /// Gets all available contexts.
+    /// </summary>
+    IReadOnlyCollection<string> Contexts { get; }
+    
+    #endregion
+    
+    #region Window Management
     
     /// <summary>
     /// Gets the current window handle.
@@ -43,52 +47,56 @@ public interface IMauiDriver
     
     #endregion
     
-    #region Session Management
+    #region Navigation
     
     /// <summary>
-    /// Quits the driver and closes all associated windows.
+    /// Navigates to the specified URL or destination.
     /// </summary>
-    void Quit();
+    void NavigateTo(string destination);
     
     /// <summary>
-    /// Closes the current window.
+    /// Navigates back in the navigation history.
     /// </summary>
-    void Close();
+    void NavigateBack();
+    
+    /// <summary>
+    /// Refreshes the current page/view.
+    /// </summary>
+    void Refresh();
+    
+    /// <summary>
+    /// Takes a screenshot of the current state.
+    /// </summary>
+    byte[] TakeScreenshot();
+    
+    /// <summary>
+    /// Resets the application state (terminates and relaunches).
+    /// </summary>
+    void ResetAppState();
     
     #endregion
     
-    #region Screenshots
+    #region Script Execution
     
     /// <summary>
-    /// Takes a screenshot of the current screen.
+    /// Executes a script command (e.g., mobile gestures, platform-specific actions).
     /// </summary>
-    /// <returns>The screenshot.</returns>
-    Screenshot GetScreenshot();
+    /// <param name="script">The script name (e.g., "mobile: longClickGesture", "windows: click").</param>
+    /// <param name="args">Arguments to pass to the script.</param>
+    /// <returns>The script result, or null.</returns>
+    object? ExecuteScript(string script, params object[] args);
     
     #endregion
     
-    #region Context Switching
+    #region Platform-Specific
     
     /// <summary>
-    /// Gets or sets the current context (native/webview).
+    /// Finds elements using Android UIAutomator query.
+    /// Returns empty list if not on Android platform.
     /// </summary>
-    string Context { get; set; }
-    
-    /// <summary>
-    /// Gets all available contexts.
-    /// </summary>
-    IReadOnlyCollection<string> Contexts { get; }
-    
-    #endregion
-    
-    #region Escape Hatch
-    
-    /// <summary>
-    /// Gets the underlying AppiumDriver for advanced scenarios.
-    /// Use sparingly - prefer interface methods for testability.
-    /// </summary>
-    /// <returns>The wrapped AppiumDriver.</returns>
-    AppiumDriver UnwrapDriver();
+    /// <param name="uiAutomatorQuery">The UIAutomator query string.</param>
+    /// <returns>List of matching elements.</returns>
+    IReadOnlyList<IMauiElement> FindByAndroidUIAutomator(string uiAutomatorQuery);
     
     #endregion
 }

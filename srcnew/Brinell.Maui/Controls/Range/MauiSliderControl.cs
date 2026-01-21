@@ -4,7 +4,8 @@ namespace Brinell.Maui.Controls.Range;
 /// MAUI Slider control for continuous value selection.
 /// Inherits GetValue, SetValue, GetMinimum, GetMaximum, Increment, Decrement from MauiRangeControlBase.
 /// Provides additional slider-specific methods like SlideToPercentage.
-/// Overrides SetValueCore to use click-based positioning instead of SendKeys.
+/// Overrides SetValueCore to use keyboard-based approach since Windows Appium driver 
+/// doesn't support mouse Actions API (only pen/touch pointer input supported).
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
 public class MauiSliderControl<TScope> : MauiRangeControlBase<TScope>
@@ -34,8 +35,10 @@ public class MauiSliderControl<TScope> : MauiRangeControlBase<TScope>
     #region SetValue Override
     
     /// <summary>
-    /// Sets slider value by clicking at the calculated position on the slider track.
-    /// Overrides base SendKeys approach which doesn't work for native sliders.
+    /// Sets slider value using keyboard-based approach.
+    /// Windows Appium driver doesn't support mouse-based W3C Actions API 
+    /// (error: "Currently only pen and touch pointer input source types are supported").
+    /// This implementation uses keyboard arrow keys which work reliably on Windows.
     /// </summary>
     /// <param name="element">The slider element.</param>
     /// <param name="value">The target value.</param>
@@ -53,28 +56,117 @@ public class MauiSliderControl<TScope> : MauiRangeControlBase<TScope>
         // Clamp value to valid range
         value = Math.Clamp(value, min, max);
         
-        // Calculate target position as percentage of range
-        var percentage = (value - min) / range;
+        // Try using windows: click extension first (bypasses W3C Actions)
+        if (TrySetValueWithWindowsClick(element, value, min, max))
+        {
+            return;
+        }
         
-        // Get element bounds
-        var location = element.Location;
-        var size = element.Size;
+        // Fallback: Use keyboard-based approach
+        SetValueWithKeyboard(element, value, min, max);
+    }
+    
+    /// <summary>
+    /// Attempts to set slider value using the windows: click extension.
+    /// This bypasses the W3C Actions API that doesn't work on Windows.
+    /// </summary>
+    private bool TrySetValueWithWindowsClick(IMauiElement element, double value, double min, double max)
+    {
+        try
+        {
+            var range = max - min;
+            var percentage = (value - min) / range;
+            
+            // Get element bounds
+            var location = element.Location;
+            var size = element.Size;
+            
+            // Calculate click position with padding
+            var padding = (int)(size.Width * 0.05);
+            var usableWidth = size.Width - (2 * padding);
+            var targetX = location.X + padding + (int)(usableWidth * percentage);
+            var centerY = location.Y + (size.Height / 2);
+            
+            // Execute windows: click extension
+            Context.Driver.ExecuteScript("windows: click", new Dictionary<string, object>
+            {
+                { "x", targetX },
+                { "y", centerY }
+            });
+            
+            // Brief pause for value to update
+            Thread.Sleep(50);
+            return true;
+        }
+        catch (Exception)
+        {
+            // windows: click not supported or failed
+            return false;
+        }
+    }
+    
+    /// <summary>
+    /// Sets slider value using keyboard arrow keys.
+    /// This is a reliable fallback when mouse-based approaches don't work.
+    /// </summary>
+    private void SetValueWithKeyboard(IMauiElement element, double value, double min, double max)
+    {
+        var step = GetStepCore(element) ?? 1;
+        var range = max - min;
         
-        // Calculate click position
-        // Use 5% padding on each side to avoid edge issues
-        var padding = (int)(size.Width * 0.05);
-        var usableWidth = size.Width - (2 * padding);
-        var targetX = location.X + padding + (int)(usableWidth * percentage);
-        var centerY = location.Y + (size.Height / 2);
+        // Calculate how many steps from min to target
+        var stepsToTarget = (int)Math.Round((value - min) / step);
+        var totalSteps = (int)Math.Round(range / step);
         
-        // Perform click at target position using Selenium Actions
-        var driver = Context.Driver.UnwrapDriver();
-        var actions = new OpenQA.Selenium.Interactions.Actions(driver);
-        actions.MoveToLocation(targetX, centerY);
-        actions.Click();
-        actions.Perform();
+        // Click on the element to focus it
+        element.Click();
+        Thread.Sleep(50);
         
-        // Brief pause for value to update
+        // Get current value
+        var currentValue = GetValueCore(element) ?? min;
+        
+        // If we need to go to minimum first (more reliable)
+        if (Math.Abs(value - min) < Math.Abs(value - currentValue))
+        {
+            // Send Home key to go to minimum
+            element.SendKeys(OpenQA.Selenium.Keys.Home);
+            Thread.Sleep(50);
+            
+            // Send right arrow keys to reach target
+            for (int i = 0; i < stepsToTarget; i++)
+            {
+                element.SendKeys(OpenQA.Selenium.Keys.ArrowRight);
+                Thread.Sleep(10);
+            }
+        }
+        else if (Math.Abs(value - max) < Math.Abs(value - currentValue))
+        {
+            // Send End key to go to maximum
+            element.SendKeys(OpenQA.Selenium.Keys.End);
+            Thread.Sleep(50);
+            
+            // Calculate steps back from max
+            var stepsFromMax = (int)Math.Round((max - value) / step);
+            for (int i = 0; i < stepsFromMax; i++)
+            {
+                element.SendKeys(OpenQA.Selenium.Keys.ArrowLeft);
+                Thread.Sleep(10);
+            }
+        }
+        else
+        {
+            // Move from current position
+            var stepsNeeded = (int)Math.Round((value - currentValue) / step);
+            var key = stepsNeeded > 0 ? OpenQA.Selenium.Keys.ArrowRight : OpenQA.Selenium.Keys.ArrowLeft;
+            
+            for (int i = 0; i < Math.Abs(stepsNeeded); i++)
+            {
+                element.SendKeys(key);
+                Thread.Sleep(10);
+            }
+        }
+        
+        // Final pause for value to update
         Thread.Sleep(50);
     }
     

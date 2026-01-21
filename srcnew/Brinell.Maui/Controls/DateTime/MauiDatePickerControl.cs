@@ -1,3 +1,5 @@
+using Brinell.Core.Locators;
+
 namespace Brinell.Maui.Controls.DateTime;
 
 /// <summary>
@@ -39,24 +41,132 @@ public class MauiDatePickerControl<TScope> : MauiControlBase<TScope>
     {
         if (element == null) return null;
 
-        // Try Date attribute first
+        // Try Date attribute first (MAUI mobile)
         var dateAttr = element.GetAttribute("Date")
             ?? element.GetAttribute("SelectedDate")
-            ?? element.GetAttribute("Value");
+            ?? element.GetAttribute("Value")
+            ?? element.GetAttribute("value.value");
 
         if (!string.IsNullOrEmpty(dateAttr) && System.DateTime.TryParse(dateAttr, out var dateValue))
         {
             return dateValue;
         }
 
+        // Windows MAUI: DatePicker (CalendarDatePicker) has child Text with AutomationId="DateText"
+        // whose Name contains the formatted date like "‎20‎-‎Jan‎-‎01" (with Unicode LTR marks)
+        try
+        {
+            // Try finding the DateText child first (most reliable)
+            var dateTextElements = element.FindElements(Locator.ByAutomationId("DateText"));
+            if (dateTextElements.Count > 0)
+            {
+                var dateTextName = dateTextElements[0].GetAttribute("Name");
+                if (!string.IsNullOrEmpty(dateTextName) && TryParseDateString(dateTextName, out var dateTextValue))
+                {
+                    return dateTextValue;
+                }
+            }
+            
+            // Fallback: search all descendants for parseable date
+            var children = element.FindElements(Locator.ByXPath(".//*"));
+            foreach (var child in children)
+            {
+                // Try child's Name attribute first (most reliable on Windows)
+                var childName = child.GetAttribute("Name");
+                if (!string.IsNullOrEmpty(childName) && TryParseDateString(childName, out var childNameDate))
+                {
+                    return childNameDate;
+                }
+                
+                // Try child's Text property
+                var childText = child.Text;
+                if (!string.IsNullOrEmpty(childText) && TryParseDateString(childText, out var childTextDate))
+                {
+                    return childTextDate;
+                }
+            }
+        }
+        catch
+        {
+            // Ignore XPath errors - not all drivers support it
+        }
+
+        // Try element's own Name attribute (fallback)
+        var nameAttr = element.GetAttribute("Name");
+        if (!string.IsNullOrEmpty(nameAttr) && TryParseDateString(nameAttr, out var nameValue))
+        {
+            return nameValue;
+        }
+
         // Try text content
         var text = element.Text;
-        if (!string.IsNullOrEmpty(text) && System.DateTime.TryParse(text, out var textValue))
+        if (!string.IsNullOrEmpty(text) && TryParseDateString(text, out var textValue))
         {
             return textValue;
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Attempts to parse a date string in various formats.
+    /// </summary>
+    /// <param name="text">The text to parse.</param>
+    /// <param name="result">The parsed DateTime if successful.</param>
+    /// <returns>True if parsing succeeded.</returns>
+    private static bool TryParseDateString(string text, out System.DateTime result)
+    {
+        result = default;
+        if (string.IsNullOrEmpty(text)) return false;
+
+        // Clean up text: strip Unicode control characters (like LTR marks U+200E)
+        // Windows MAUI embeds these in date strings like "‎20‎-‎Jan‎-‎01"
+        var cleaned = System.Text.RegularExpressions.Regex.Replace(text, @"\p{Cf}", "");
+        cleaned = cleaned.Trim();
+        
+        if (string.IsNullOrEmpty(cleaned)) return false;
+
+        // Try standard DateTime parsing
+        if (System.DateTime.TryParse(cleaned, out result))
+            return true;
+
+        // Try common date formats
+        var formats = new[]
+        {
+            "yyyy-MM-dd",           // ISO format
+            "MM/dd/yyyy",           // US format
+            "dd/MM/yyyy",           // UK/EU format  
+            "dd-MMM-yy",            // 20-Jan-01 (Windows MAUI format)
+            "d-MMM-yy",             // 1-Jan-01
+            "dd-MMM-yyyy",          // 20-Jan-2001
+            "d-MMM-yyyy",           // 1-Jan-2001
+            "MMMM d, yyyy",         // March 20, 1985
+            "MMMM dd, yyyy",        // March 20, 1985
+            "d MMMM yyyy",          // 20 March 1985
+            "dd MMMM yyyy",         // 20 March 1985
+            "M/d/yyyy",             // 3/20/1985
+            "d/M/yyyy"              // 20/3/1985
+        };
+
+        foreach (var format in formats)
+        {
+            if (System.DateTime.TryParseExact(cleaned, format, 
+                System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.None, out var parsed))
+            {
+                result = parsed;
+                return true;
+            }
+        }
+
+        // Try current culture
+        if (System.DateTime.TryParse(cleaned, System.Globalization.CultureInfo.CurrentCulture, out var cultureParsed))
+        {
+            result = cultureParsed;
+            return true;
+        }
+
+        return false;
     }
 
     /// <summary>

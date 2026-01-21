@@ -2,16 +2,19 @@
 
   <PropertyGroup>
     <RootNamespace>Brinell.Maui</RootNamespace>
-    <Description>MAUI UI testing automation using Appium. Provides controls and page objects for cross-platform MAUI application testing.</Description>
+    <Description>MAUI UI testing automation. Provides controls, page objects, and driver factory for cross-platform MAUI application testing.</Description>
     <PackageId>Brinell.Maui</PackageId>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Brinell.Core\Brinell.Core.csproj" />
+    <!-- Driver implementations are loaded dynamically by MauiDriverFactory -->
+    <!-- Test projects should reference Brinell.Maui.Appium and/or Brinell.Maui.FlaUI -->
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Still needed for control implementations that catch StaleElementReferenceException, etc. -->
     <PackageReference Include="Appium.WebDriver" />
   </ItemGroup>
 

@@ -135,7 +135,7 @@ public class MauiControlBase<TScope> : ControlObjectBase<TScope>, IControlObject
         try
         {
             // Use the element's built-in ScrollIntoView which uses Selenium 4 API
-            element.ScrollIntoView(Context.Driver);
+            element.ScrollIntoView();
             
             // Brief pause for scroll animation
             Thread.Sleep(100);
@@ -462,7 +462,7 @@ public class MauiControlBase<TScope> : ControlObjectBase<TScope>, IControlObject
     protected bool? IsVisibleCore(IMauiElement? element)
     {
         if (element == null) return null;
-        return element.Displayed;
+        return element.Visible;
     }
     
     /// <inheritdoc />

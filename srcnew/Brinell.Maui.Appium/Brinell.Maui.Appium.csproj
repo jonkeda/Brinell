@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Brinell.Maui.Appium</RootNamespace>
+    <Description>Appium-based driver implementation for MAUI UI testing on iOS and Android platforms.</Description>
+    <PackageId>Brinell.Maui.Appium</PackageId>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Brinell.Maui\Brinell.Maui.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Appium.WebDriver" />
+  </ItemGroup>
+
+</Project>
