@@ -81,3 +81,19 @@
 **Rationale:** Easy to parse, diff, and aggregate. No dependency on logging frameworks.
 
 **Consequence:** `ITestLogger` writes CSV rows with timestamp, level, control, action, and outcome.
+
+## AD-011: Container Scoping Architecture
+
+**Decision:** Containers (`MauiContainerBase<TParent, TSelf>`) provide scoped element finding with cached roots and parent navigation.
+
+**Rationale:** Child element searches must be scoped within a container's root element to prevent finding wrong elements with the same ID in different containers. Root element caching (with stale detection/invalidation) avoids redundant lookups. Parent navigation enables fluent chains up the hierarchy (e.g., `container.Control.Click().Parent.StatusLabel.AssertText(...)`).
+
+**Consequence:** Two generic type parameters: `TParent` for navigating back to the parent scope, `TSelf` for fluent returns within the container. Adds complexity to container setup but enables precise element targeting.
+
+## AD-012: Self-Contained Platform Packages
+
+**Decision:** Each platform package contains its complete implementation without shared abstract base classes across platforms.
+
+**Rationale:** Platforms differ fundamentally (sync vs async, Appium vs Playwright, element models). Shared base classes would leak abstractions. Self-contained packages eliminate diamond dependency problems and enable platform-specific optimizations.
+
+**Consequence:** Some code patterns are duplicated across platforms, but each can evolve independently.

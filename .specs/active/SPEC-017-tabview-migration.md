@@ -1,6 +1,8 @@
 # TabView Migration
 
-**Status:** Draft | **Priority:** High | **Supersedes:** SPEC-016 (TabBar)
+**Status:** Superseded | **Priority:** Low | **Supersedes:** SPEC-016 (TabBar)
+
+> **Note:** This spec is superseded by SPEC-023 (TabbedPage Automation). The sample app adopted TabbedPage instead of CommunityToolkit TabView. The TabbedPage approach with XPath-by-Name is working and all tab/container tests pass. The TabView approach remains a viable fallback if TabbedPage issues resurface.
 
 ## Problem
 

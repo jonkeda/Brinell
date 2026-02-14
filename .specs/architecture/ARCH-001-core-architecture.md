@@ -70,3 +70,44 @@ Each platform is fully self-contained:
 - Own `Pages/` for page object base classes
 - Own `Testing/` for test fixture helpers
 - No cross-platform references at the platform layer
+
+## Technology Stack
+
+### Core
+
+- **Language:** C# 13 (latest) with nullable reference types, implicit usings
+- **Runtime:** .NET 8.0 (LTS), .NET 9.0 (current), .NET 10.0 (preview) — multi-targeting
+- **Compilation:** Treat warnings as errors
+
+### Key Dependencies
+
+| Package | Version | Layer | Purpose |
+|---------|---------|-------|---------|
+| xunit | 2.9.3 | Testing | Test framework |
+| Microsoft.NET.Test.Sdk | 17.14.0 | Testing | Test SDK |
+| Moq | 4.20.70 | Testing | Mocking |
+| AutoFixture | 4.18.1 | Testing | Test data generation |
+| Bogus | 35.5.1 | Testing | Fake data |
+| FlaUI.Core / FlaUI.UIA3 | 5.0.0 | Technology | Windows UI Automation |
+| Appium.WebDriver | 8.0.1 | Technology | Mobile/cross-platform automation |
+| Microsoft.Playwright | 1.50.0 | Technology | Web automation |
+| Stride.Engine | 4.3.0.2507 | Technology | 3D game engine |
+| WireMock.Net | 1.6.10 | Testing | API mocking |
+| Microsoft.EntityFrameworkCore | 10.0.0 | Testing | Database fixtures |
+| Serilog | 4.1.0 | Infrastructure | Structured logging |
+
+### Automation Protocols
+
+| Protocol | Library | Platform |
+|----------|---------|----------|
+| UIA3 (UI Automation 3) | FlaUI | Windows desktop (WPF, WinForms, MAUI) |
+| Appium Protocol | Appium.WebDriver | Mobile + cross-platform MAUI |
+| CDP (Chrome DevTools Protocol) | Playwright | Web (HTML, Blazor) |
+| Named Pipes | Custom | Stride game engine |
+
+### Distribution
+
+- **Method:** NuGet.org package registry
+- **Package IDs:** `Brinell.Core`, `Brinell.Maui`, `Brinell.Wpf`, etc.
+- **Versioning:** Semantic versioning (currently 0.1.0 pre-release)
+- **Pre-release policy:** Breaking changes acceptable before 1.0

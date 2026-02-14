@@ -2,6 +2,18 @@
 
 **Source of truth:** `srcnew/Brinell.Core/Interfaces/`
 
+## Consolidation History (SPEC-003)
+
+The interface hierarchy was consolidated from 29 legacy interfaces to the current 25. Key changes:
+
+- **Merged:** Separate `ICheckable`/`ISwitchable` → unified `IToggleControlObject`
+- **Added:** `IExpandableControlObject`, `IFocusableControlObject`, `IProgressControlObject`, `IDateControlObject`, `ITimeControlObject`, `ISwipeableControlObject`, `IRefreshableControlObject`
+- **Enhanced:** `IClickableControlObject` gained `Hover()`, `LongPress()`, `DoubleClick()`, `RightClick()`
+- **Enhanced:** `ITextControlObject` gained `AssertTextMatches()`, `AssertTextStartsWith()`, `AssertTextEndsWith()`, `AssertTextEmpty()`
+- **Enhanced:** `IEditableTextControlObject` gained `Append()`, `SetText()`, placeholder support, read-only queries
+
+**Status:** 16/18 implementation tasks complete (Phases 1-4 done, Phase 5 testing partially remaining).
+
 This document lists all interface signatures. For full documentation, see the source code.
 
 ## Inheritance Hierarchy
