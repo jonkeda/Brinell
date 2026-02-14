@@ -179,6 +179,12 @@ Brinell follows a layered architecture:
 [Priority(1)]               // Sets test priority (1 = highest)
 ```
 
+## Documentation
+
+- **[Specifications](.specs/README.md)** — Architecture, requirements, control interfaces, and active work-in-progress specs
+- **[Quick Start](docs/01-quick-start.md)** — Getting started guide
+- **[Framework Overview](docs/02-framework-overview.md)** — How Brinell works
+
 ## Contributing
 
 Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
