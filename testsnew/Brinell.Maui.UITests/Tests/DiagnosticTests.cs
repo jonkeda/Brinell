@@ -6,7 +6,8 @@ namespace Brinell.Maui.UITests.Tests;
 /// <summary>
 /// Diagnostic tests for debugging platform-specific UI structures.
 /// </summary>
-public class DiagnosticTests : IClassFixture<AppiumFixture>
+[Collection("Appium")]
+public class DiagnosticTests
 {
     private readonly MauiTestContext _context;
 
@@ -18,6 +19,12 @@ public class DiagnosticTests : IClassFixture<AppiumFixture>
     [Fact]
     public void Diagnostic_DumpPageSource_Android()
     {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.True(true, "Android diagnostic test skipped on Windows");
+            return;
+        }
+
         // Get raw driver to access page source
         var driverProperty = typeof(MauiTestContext).GetProperty("Driver");
         var driver = driverProperty?.GetValue(_context);
@@ -96,6 +103,12 @@ public class DiagnosticTests : IClassFixture<AppiumFixture>
     [Fact]
     public void Diagnostic_TestLocatorStrategies()
     {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.True(true, "Android diagnostic test skipped on Windows");
+            return;
+        }
+
         // Access raw driver
         var contextType = typeof(MauiTestContext);
         var rawDriverFieldContext = contextType.GetField("_rawDriver", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
@@ -194,6 +207,12 @@ public class DiagnosticTests : IClassFixture<AppiumFixture>
     [Fact]
     public void Diagnostic_TestButtonFind()
     {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.True(true, "Android diagnostic test skipped on Windows");
+            return;
+        }
+
         // Directly test the framework's button finding
         var mainPage = new Pages.MainPage(_context);
         

@@ -4,7 +4,7 @@ using Xunit;
 namespace Brinell.Maui.UITests.Tests;
 
 /// <summary>
-/// Tests for MauiFlyoutItemControl.
+/// Tests for FlyoutItem.
 /// NOTE: These tests are skipped as the app has been converted from Flyout to TabBar navigation (SPEC-016).
 /// Flyout navigation tests are now obsolete. See TabControlTests for tab navigation tests.
 /// </summary>

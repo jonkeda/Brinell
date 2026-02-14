@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="xunit.extensibility.core" />
+    <PackageReference Include="xunit.extensibility.core" PrivateAssets="all" />
   </ItemGroup>
 
 </Project>

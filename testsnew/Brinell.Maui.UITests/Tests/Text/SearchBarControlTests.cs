@@ -3,7 +3,7 @@ using Brinell.Maui.UITests.Pages;
 namespace Brinell.Maui.UITests.Tests.Text;
 
 /// <summary>
-/// UI tests for MauiSearchBarControl verifying search text operations.
+/// UI tests for SearchBar verifying search text operations.
 /// </summary>
 [Collection("Appium")]
 [Trait("Category", "UITest")]

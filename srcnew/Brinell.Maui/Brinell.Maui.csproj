@@ -16,6 +16,8 @@
   <ItemGroup>
     <!-- Still needed for control implementations that catch StaleElementReferenceException, etc. -->
     <PackageReference Include="Appium.WebDriver" />
+    <!-- Required for BeforeAfterTestAttribute base class used by ScreenshotTestAttribute -->
+    <PackageReference Include="xunit.extensibility.core" />
   </ItemGroup>
 
 </Project>

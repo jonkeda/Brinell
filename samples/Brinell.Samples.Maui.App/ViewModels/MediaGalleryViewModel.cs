@@ -13,7 +13,7 @@ public class MediaGalleryViewModel : ViewModelBase
     private MediaItem? _selectedMedia;
     private string _currentUrl = "https://dotnet.microsoft.com";
     private string _webViewTitle = "Microsoft .NET";
-    private bool _isWebLoading;
+    private bool _isWebLoading = true;
     private bool _isPlaying;
     private bool _isMuted;
     private double _volume = 80;

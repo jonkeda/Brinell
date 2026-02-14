@@ -11,7 +11,7 @@ namespace Brinell.Maui.UITests.Pages;
 /// Page object for the MediaGalleryPage of the Brinell sample MAUI app.
 /// Exposes controls from MediaGalleryPage.xaml with their AutomationIds.
 /// </summary>
-public class MediaGalleryPage : MauiPageObjectBase<MediaGalleryPage>
+public class MediaGalleryPage : PageObjectBase<MediaGalleryPage>
 {
     public MediaGalleryPage(IMauiTestContext context)
         : base(context)
@@ -33,32 +33,32 @@ public class MediaGalleryPage : MauiPageObjectBase<MediaGalleryPage>
     /// <summary>
     /// The main title label "Media Gallery".
     /// </summary>
-    public MauiControlBase<MediaGalleryPage> MediaGalleryTitle => Control("MediaGalleryTitle");
+    public ControlBase<MediaGalleryPage> MediaGalleryTitle => Control("MediaGalleryTitle");
 
     /// <summary>
     /// The image section label.
     /// </summary>
-    public MauiControlBase<MediaGalleryPage> ImageSectionLabel => Control("ImageSectionLabel");
+    public ControlBase<MediaGalleryPage> ImageSectionLabel => Control("ImageSectionLabel");
 
     /// <summary>
     /// The media player section label.
     /// </summary>
-    public MauiControlBase<MediaGalleryPage> MediaPlayerLabel => Control("MediaPlayerLabel");
+    public ControlBase<MediaGalleryPage> MediaPlayerLabel => Control("MediaPlayerLabel");
 
     /// <summary>
     /// The web view section label.
     /// </summary>
-    public MauiControlBase<MediaGalleryPage> WebViewLabel => Control("WebViewLabel");
+    public ControlBase<MediaGalleryPage> WebViewLabel => Control("WebViewLabel");
 
     /// <summary>
     /// The media position label.
     /// </summary>
-    public MauiControlBase<MediaGalleryPage> PositionLabel => Control("PositionLabel");
+    public ControlBase<MediaGalleryPage> PositionLabel => Control("PositionLabel");
 
     /// <summary>
     /// The media duration label.
     /// </summary>
-    public MauiControlBase<MediaGalleryPage> DurationLabel => Control("DurationLabel");
+    public ControlBase<MediaGalleryPage> DurationLabel => Control("DurationLabel");
 
     #endregion
 
@@ -67,7 +67,7 @@ public class MediaGalleryPage : MauiPageObjectBase<MediaGalleryPage>
     /// <summary>
     /// The main image display.
     /// </summary>
-    public MauiImageControl<MediaGalleryPage> MainImage => Image("MainImage");
+    public Image<MediaGalleryPage> MainImage => Image("MainImage");
 
     #endregion
 
@@ -76,7 +76,7 @@ public class MediaGalleryPage : MauiPageObjectBase<MediaGalleryPage>
     /// <summary>
     /// The web loading indicator.
     /// </summary>
-    public MauiActivityIndicatorControl<MediaGalleryPage> WebLoadingIndicator => ActivityIndicator("WebLoadingIndicator");
+    public ActivityIndicator<MediaGalleryPage> WebLoadingIndicator => ActivityIndicator("WebLoadingIndicator");
 
     #endregion
 
@@ -84,9 +84,9 @@ public class MediaGalleryPage : MauiPageObjectBase<MediaGalleryPage>
 
     /// <summary>
     /// The thumbnail collection view - accessed as generic control.
-    /// Note: For typed item access, use MauiCollectionViewControl directly with item factory.
+    /// Note: For typed item access, use CollectionView directly with item factory.
     /// </summary>
-    public MauiControlBase<MediaGalleryPage> ThumbnailCollection => Control("ThumbnailCollection");
+    public ControlBase<MediaGalleryPage> ThumbnailCollection => Control("ThumbnailCollection");
 
     #endregion
 
@@ -95,7 +95,7 @@ public class MediaGalleryPage : MauiPageObjectBase<MediaGalleryPage>
     /// <summary>
     /// The content web view.
     /// </summary>
-    public MauiWebViewControl<MediaGalleryPage> ContentWebView => WebView("ContentWebView");
+    public WebView<MediaGalleryPage> ContentWebView => WebView("ContentWebView");
 
     #endregion
 
@@ -104,7 +104,7 @@ public class MediaGalleryPage : MauiPageObjectBase<MediaGalleryPage>
     /// <summary>
     /// The URL entry field.
     /// </summary>
-    public MauiEntryControl<MediaGalleryPage> UrlEntry => Entry("UrlEntry");
+    public Entry<MediaGalleryPage> UrlEntry => Entry("UrlEntry");
 
     #endregion
 
@@ -113,12 +113,12 @@ public class MediaGalleryPage : MauiPageObjectBase<MediaGalleryPage>
     /// <summary>
     /// The media progress slider.
     /// </summary>
-    public MauiSliderControl<MediaGalleryPage> MediaProgressSlider => Slider("MediaProgressSlider");
+    public Slider<MediaGalleryPage> MediaProgressSlider => Slider("MediaProgressSlider");
 
     /// <summary>
     /// The volume slider.
     /// </summary>
-    public MauiSliderControl<MediaGalleryPage> VolumeSlider => Slider("VolumeSlider");
+    public Slider<MediaGalleryPage> VolumeSlider => Slider("VolumeSlider");
 
     #endregion
 
@@ -127,7 +127,7 @@ public class MediaGalleryPage : MauiPageObjectBase<MediaGalleryPage>
     /// <summary>
     /// The mute switch.
     /// </summary>
-    public MauiSwitchControl<MediaGalleryPage> MuteSwitch => Switch("MuteSwitch");
+    public Switch<MediaGalleryPage> MuteSwitch => Switch("MuteSwitch");
 
     #endregion
 
@@ -136,37 +136,37 @@ public class MediaGalleryPage : MauiPageObjectBase<MediaGalleryPage>
     /// <summary>
     /// The navigate button for web view.
     /// </summary>
-    public MauiButtonControl<MediaGalleryPage> NavigateButton => Button("NavigateButton");
+    public Button<MediaGalleryPage> NavigateButton => Button("NavigateButton");
 
     /// <summary>
     /// The web back button.
     /// </summary>
-    public MauiButtonControl<MediaGalleryPage> WebBackButton => Button("WebBackButton");
+    public Button<MediaGalleryPage> WebBackButton => Button("WebBackButton");
 
     /// <summary>
     /// The web forward button.
     /// </summary>
-    public MauiButtonControl<MediaGalleryPage> WebForwardButton => Button("WebForwardButton");
+    public Button<MediaGalleryPage> WebForwardButton => Button("WebForwardButton");
 
     /// <summary>
     /// The web reload button.
     /// </summary>
-    public MauiButtonControl<MediaGalleryPage> WebReloadButton => Button("WebReloadButton");
+    public Button<MediaGalleryPage> WebReloadButton => Button("WebReloadButton");
 
     /// <summary>
     /// The stop playback button.
     /// </summary>
-    public MauiButtonControl<MediaGalleryPage> StopButton => Button("StopButton");
+    public Button<MediaGalleryPage> StopButton => Button("StopButton");
 
     /// <summary>
     /// The play/pause toggle button.
     /// </summary>
-    public MauiButtonControl<MediaGalleryPage> PlayPauseButton => Button("PlayPauseButton");
+    public Button<MediaGalleryPage> PlayPauseButton => Button("PlayPauseButton");
 
     /// <summary>
     /// The pause button.
     /// </summary>
-    public MauiButtonControl<MediaGalleryPage> PauseButton => Button("PauseButton");
+    public Button<MediaGalleryPage> PauseButton => Button("PauseButton");
 
     #endregion
 }

@@ -5,7 +5,7 @@ using Brinell.Maui.UITests.Pages;
 namespace Brinell.Maui.UITests.Tests;
 
 /// <summary>
-/// Tests for indexed container patterns without MauiListControl wrapper.
+/// Tests for indexed container patterns without List wrapper.
 /// Demonstrates direct indexed container access.
 /// Uses xUnit Assert per SPEC-017b design principles (never FluentAssertions).
 /// </summary>

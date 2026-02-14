@@ -5,9 +5,9 @@ namespace Brinell.Maui.UITests.Containers;
 
 /// <summary>
 /// Container for a contact card.
-/// Demonstrates indexed container without MauiListControl wrapper.
+/// Demonstrates indexed container without List wrapper.
 /// </summary>
-public class ContactContainer : MauiContainerBase<ContainerDemoPage, ContactContainer>
+public class ContactContainer : ContainerBase<ContainerDemoPage, ContactContainer>
 {
     private readonly int _index;
 
@@ -25,15 +25,15 @@ public class ContactContainer : MauiContainerBase<ContainerDemoPage, ContactCont
     /// <summary>
     /// The contact name label.
     /// </summary>
-    public MauiControlBase<ContactContainer> NameLabel => new(this, "ContactName");
+    public ControlBase<ContactContainer> NameLabel => new Control<ContactContainer>(this, "ContactName");
 
     /// <summary>
     /// The contact email label.
     /// </summary>
-    public MauiControlBase<ContactContainer> EmailLabel => new(this, "ContactEmail");
+    public ControlBase<ContactContainer> EmailLabel => new Control<ContactContainer>(this, "ContactEmail");
 
     /// <summary>
     /// The call button.
     /// </summary>
-    public MauiButtonControl<ContactContainer> CallButton => Button("ContactCallButton");
+    public Button<ContactContainer> CallButton => Button("ContactCallButton");
 }

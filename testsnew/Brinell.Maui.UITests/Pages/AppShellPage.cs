@@ -13,7 +13,7 @@ namespace Brinell.Maui.UITests.Pages;
 /// Uses fallback locators (tab Title) for Windows TabbedPage where AutomationId
 /// may not propagate to NavigationViewItem elements (see dotnet/maui#3996).
 /// </remarks>
-public class AppShellPage : MauiPageObjectBase<AppShellPage>
+public class AppShellPage : PageObjectBase<AppShellPage>
 {
     public AppShellPage(IMauiTestContext context)
         : base(context)

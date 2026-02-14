@@ -3,7 +3,7 @@ using Brinell.Maui.UITests.Pages;
 namespace Brinell.Maui.UITests.Tests.Range;
 
 /// <summary>
-/// UI tests for MauiSliderControl verifying slider value operations.
+/// UI tests for Slider verifying slider value operations.
 /// </summary>
 [Collection("Appium")]
 [Trait("Category", "UITest")]

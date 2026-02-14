@@ -35,4 +35,27 @@ public interface IExpandCollapsePatternElement
     /// </summary>
     /// <returns>List of item elements, or null if pattern not supported.</returns>
     IReadOnlyList<IMauiElement>? GetExpandedItems();
+    
+    /// <summary>
+    /// Selects an item by text. Expands, finds the item, selects it using the appropriate 
+    /// UIA pattern (SelectionItem), then collapses.
+    /// </summary>
+    /// <param name="text">The text of the item to select.</param>
+    /// <returns>True if item was found and selected, false otherwise.</returns>
+    bool SelectItemByText(string text);
+    
+    /// <summary>
+    /// Selects an item by index. Expands, finds the item at the given index, selects it 
+    /// using the appropriate UIA pattern (SelectionItem), then collapses.
+    /// </summary>
+    /// <param name="index">The 0-based index of the item to select.</param>
+    /// <returns>True if item was found and selected, false otherwise.</returns>
+    bool SelectItemByIndex(int index);
+    
+    /// <summary>
+    /// Gets the text of the currently selected item using the SelectionPattern.
+    /// For ComboBox controls, this returns the Name of the selected item (not the ComboBox header/title).
+    /// </summary>
+    /// <returns>The selected item text, or null if nothing is selected or pattern not supported.</returns>
+    string? GetSelectedItemText();
 }

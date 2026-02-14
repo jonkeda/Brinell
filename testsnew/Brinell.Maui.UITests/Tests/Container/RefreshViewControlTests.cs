@@ -3,7 +3,7 @@ using Brinell.Maui.UITests.Pages;
 namespace Brinell.Maui.UITests.Tests.Container;
 
 /// <summary>
-/// UI tests for MauiRefreshViewControl verifying pull-to-refresh operations.
+/// UI tests for RefreshView verifying pull-to-refresh operations.
 /// Note: RefreshView may need sample app update.
 /// </summary>
 [Collection("Appium")]

@@ -30,7 +30,7 @@ namespace Brinell.Maui.CommunityToolkit.Controls;
 /// </example>
 /// </summary>
 /// <typeparam name="TScope">The scope type (typically a page object)</typeparam>
-public class TabViewControl<TScope> : MauiClickableControlBase<TScope>, ITabControlObject<TScope>
+public class TabViewControl<TScope> : ClickableControlBase<TScope>, ITabControlObject<TScope>
     where TScope : IMauiScope<TScope>
 {
     private readonly string _automationId;

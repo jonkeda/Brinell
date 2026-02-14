@@ -3,7 +3,7 @@ using Brinell.Maui.UITests.Pages;
 namespace Brinell.Maui.UITests.Tests.Container;
 
 /// <summary>
-/// UI tests for MauiScrollViewControl verifying scroll operations.
+/// UI tests for ScrollView verifying scroll operations.
 /// </summary>
 [Collection("Appium")]
 [Trait("Category", "UITest")]

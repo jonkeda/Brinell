@@ -3,7 +3,7 @@ using Brinell.Maui.UITests.Pages;
 namespace Brinell.Maui.UITests.Tests.Range;
 
 /// <summary>
-/// UI tests for MauiStepperControl verifying increment/decrement operations.
+/// UI tests for Stepper verifying increment/decrement operations.
 /// </summary>
 [Collection("Appium")]
 [Trait("Category", "UITest")]

@@ -3,7 +3,7 @@ using Brinell.Maui.UITests.Pages;
 namespace Brinell.Maui.UITests.Tests.Navigation;
 
 /// <summary>
-/// UI tests for MauiMenuControl verifying menu operations.
+/// UI tests for Menu verifying menu operations.
 /// Note: Menu control may need sample app update.
 /// </summary>
 [Collection("Appium")]

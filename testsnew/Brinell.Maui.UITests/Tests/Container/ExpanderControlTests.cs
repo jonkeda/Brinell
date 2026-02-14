@@ -3,7 +3,7 @@ using Brinell.Maui.UITests.Pages;
 namespace Brinell.Maui.UITests.Tests.Container;
 
 /// <summary>
-/// UI tests for MauiExpanderControl verifying expand/collapse operations.
+/// UI tests for Expander verifying expand/collapse operations.
 /// Note: Expander is a Toolkit control, may need sample app update.
 /// </summary>
 [Collection("Appium")]

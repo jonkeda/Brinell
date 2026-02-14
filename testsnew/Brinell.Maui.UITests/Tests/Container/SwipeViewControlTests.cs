@@ -3,7 +3,7 @@ using Brinell.Maui.UITests.Pages;
 namespace Brinell.Maui.UITests.Tests.Container;
 
 /// <summary>
-/// UI tests for MauiSwipeViewControl verifying swipe operations.
+/// UI tests for SwipeView verifying swipe operations.
 /// Note: SwipeView may need sample app update.
 /// </summary>
 [Collection("Appium")]

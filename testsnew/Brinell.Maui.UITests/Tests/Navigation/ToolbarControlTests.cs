@@ -3,7 +3,7 @@ using Brinell.Maui.UITests.Pages;
 namespace Brinell.Maui.UITests.Tests.Navigation;
 
 /// <summary>
-/// UI tests for MauiToolbarControl verifying toolbar operations.
+/// UI tests for Toolbar verifying toolbar operations.
 /// </summary>
 [Collection("Appium")]
 [Trait("Category", "UITest")]

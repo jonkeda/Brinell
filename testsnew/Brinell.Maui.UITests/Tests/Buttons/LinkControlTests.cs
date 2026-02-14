@@ -3,7 +3,7 @@ using Brinell.Maui.UITests.Pages;
 namespace Brinell.Maui.UITests.Tests.Buttons;
 
 /// <summary>
-/// UI tests for MauiLinkControl verifying link/hyperlink operations.
+/// UI tests for Link verifying link/hyperlink operations.
 /// Note: Link control may need sample app update.
 /// </summary>
 [Collection("Appium")]

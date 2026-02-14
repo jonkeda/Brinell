@@ -1,5 +1,6 @@
 using Brinell.Maui.Enums;
 using Brinell.Maui.Interfaces;
+using Brinell.Core.Utilities;
 
 namespace Brinell.Maui.Context;
 
@@ -117,7 +118,7 @@ public class MauiTestContext : IMauiTestContext
             {
                 return elements[0];
             }
-            Thread.Sleep(pollInterval);
+            WaitHelper.Pause((int)pollInterval.TotalMilliseconds);
         }
         
         // For Android, try UiScrollable to scroll and find element

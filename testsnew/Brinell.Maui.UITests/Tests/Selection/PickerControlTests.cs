@@ -3,7 +3,7 @@ using Brinell.Maui.UITests.Pages;
 namespace Brinell.Maui.UITests.Tests.Selection;
 
 /// <summary>
-/// UI tests for MauiPickerControl verifying selection operations.
+/// UI tests for Picker verifying selection operations.
 /// </summary>
 [Collection("Appium")]
 [Trait("Category", "UITest")]
@@ -73,12 +73,12 @@ public class PickerControlTests
     [Trait("Method", "SelectByText")]
     public Task Picker_SelectByText_SelectsItem()
     {
-        // Act - select by text (assumes "USA" is in the list)
-        Page.CountryPicker.SelectByText("USA");
+        // Act - select by text
+        Page.CountryPicker.SelectByText("United States");
 
         // Assert
         var selectedText = Page.CountryPicker.GetSelectedText();
-        Assert.Equal("USA", selectedText);
+        Assert.Equal("United States", selectedText);
         return Task.CompletedTask;
     }
 

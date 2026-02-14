@@ -6,7 +6,7 @@ namespace Brinell.Maui.UITests.Containers;
 /// Inner container nested inside OuterContainer.
 /// Demonstrates nested container patterns.
 /// </summary>
-public class InnerContainer : MauiContainerBase<OuterContainer, InnerContainer>
+public class InnerContainer : ContainerBase<OuterContainer, InnerContainer>
 {
     public InnerContainer(IMauiScope<OuterContainer> parentScope, string automationId)
         : base(parentScope, new Locator(LocatorStrategy.AutomationId, automationId))
@@ -16,15 +16,15 @@ public class InnerContainer : MauiContainerBase<OuterContainer, InnerContainer>
     /// <summary>
     /// Title label in the inner container.
     /// </summary>
-    public MauiControlBase<InnerContainer> InnerTitle => new(this, "InnerTitle");
+    public ControlBase<InnerContainer> InnerTitle => new Control<InnerContainer>(this, "InnerTitle");
 
     /// <summary>
     /// The entry field in the inner container.
     /// </summary>
-    public MauiEntryControl<InnerContainer> InnerEntry => Entry("InnerEntry");
+    public Entry<InnerContainer> InnerEntry => Entry("InnerEntry");
 
     /// <summary>
     /// The action button in the inner container.
     /// </summary>
-    public MauiButtonControl<InnerContainer> InnerButton => Button("InnerButton");
+    public Button<InnerContainer> InnerButton => Button("InnerButton");
 }

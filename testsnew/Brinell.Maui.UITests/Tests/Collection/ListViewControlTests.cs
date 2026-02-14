@@ -3,7 +3,7 @@ using Brinell.Maui.UITests.Pages;
 namespace Brinell.Maui.UITests.Tests.Collection;
 
 /// <summary>
-/// UI tests for MauiListViewControl verifying list item operations.
+/// UI tests for ListView verifying list item operations.
 /// </summary>
 [Collection("Appium")]
 [Trait("Category", "UITest")]

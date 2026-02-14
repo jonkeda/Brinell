@@ -3,7 +3,7 @@ using Brinell.Maui.UITests.Pages;
 namespace Brinell.Maui.UITests.Tests.Display;
 
 /// <summary>
-/// UI tests for MauiImageControl verifying image display.
+/// UI tests for Image verifying image display.
 /// </summary>
 [Collection("Appium")]
 [Trait("Category", "UITest")]

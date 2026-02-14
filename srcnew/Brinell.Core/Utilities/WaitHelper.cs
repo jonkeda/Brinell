@@ -8,6 +8,21 @@ namespace Brinell.Core.Utilities;
 public static class WaitHelper
 {
     /// <summary>
+    /// Pauses execution for a short polling/settling interval without using Thread.Sleep.
+    /// </summary>
+    /// <param name="milliseconds">Pause duration in milliseconds.</param>
+    public static void Pause(int milliseconds)
+    {
+        if (milliseconds <= 0)
+        {
+            Thread.Yield();
+            return;
+        }
+
+        SpinWait.SpinUntil(static () => false, milliseconds);
+    }
+
+    /// <summary>
     /// Wait for a condition to become true.
     /// </summary>
     /// <param name="condition">Condition to check.</param>
@@ -25,12 +40,12 @@ public static class WaitHelper
                 if (condition())
                     return true;
             }
-            catch
+            catch (Exception)
             {
                 // Swallow exceptions and continue polling
             }
             
-            Thread.Sleep(pollingIntervalMs);
+            Pause(pollingIntervalMs);
         }
         
         // Final check
@@ -38,7 +53,7 @@ public static class WaitHelper
         {
             return condition();
         }
-        catch
+        catch (Exception)
         {
             return false;
         }
@@ -65,12 +80,12 @@ public static class WaitHelper
                 if (predicate(value))
                     return true;
             }
-            catch
+            catch (Exception)
             {
                 // Swallow exceptions and continue polling
             }
             
-            Thread.Sleep(pollingIntervalMs);
+            Pause(pollingIntervalMs);
         }
         
         // Final check
@@ -79,7 +94,7 @@ public static class WaitHelper
             var value = getValue();
             return predicate(value);
         }
-        catch
+        catch (Exception)
         {
             return false;
         }
@@ -105,12 +120,12 @@ public static class WaitHelper
                 if (value != null)
                     return value;
             }
-            catch
+            catch (Exception)
             {
                 // Swallow exceptions and continue polling
             }
             
-            Thread.Sleep(pollingIntervalMs);
+            Pause(pollingIntervalMs);
         }
         
         // Final check
@@ -118,7 +133,7 @@ public static class WaitHelper
         {
             return getValue();
         }
-        catch
+        catch (Exception)
         {
             return default;
         }
@@ -142,12 +157,12 @@ public static class WaitHelper
                 if (condition())
                     return (true, (int)sw.ElapsedMilliseconds);
             }
-            catch
+            catch (Exception)
             {
                 // Swallow exceptions and continue polling
             }
             
-            Thread.Sleep(pollingIntervalMs);
+            Pause(pollingIntervalMs);
         }
         
         // Final check
@@ -156,7 +171,10 @@ public static class WaitHelper
             if (condition())
                 return (true, (int)sw.ElapsedMilliseconds);
         }
-        catch { }
+        catch (Exception)
+        {
+            return (false, (int)sw.ElapsedMilliseconds);
+        }
         
         return (false, (int)sw.ElapsedMilliseconds);
     }

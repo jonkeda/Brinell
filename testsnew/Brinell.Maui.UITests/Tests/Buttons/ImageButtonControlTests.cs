@@ -3,7 +3,7 @@ using Brinell.Maui.UITests.Pages;
 namespace Brinell.Maui.UITests.Tests.Buttons;
 
 /// <summary>
-/// UI tests for MauiImageButtonControl verifying image button operations.
+/// UI tests for ImageButton verifying image button operations.
 /// Note: ImageButton may need sample app update.
 /// </summary>
 [Collection("Appium")]

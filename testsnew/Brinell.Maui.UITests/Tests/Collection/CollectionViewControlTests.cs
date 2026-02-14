@@ -3,7 +3,7 @@ using Brinell.Maui.UITests.Pages;
 namespace Brinell.Maui.UITests.Tests.Collection;
 
 /// <summary>
-/// UI tests for MauiCollectionViewControl verifying collection operations.
+/// UI tests for CollectionView verifying collection operations.
 /// </summary>
 [Collection("Appium")]
 [Trait("Category", "UITest")]
@@ -56,7 +56,7 @@ public class CollectionViewControlTests
     [Trait("Method", "GetItemCount")]
     public Task CollectionView_GetItemCount_RequiresTypedControl()
     {
-        // Note: GetItemCount requires MauiCollectionViewControl<TScope, TItem>
+        // Note: GetItemCount requires CollectionView<TScope, TItem>
         // with a proper item factory. For now, verify the control exists.
         Assert.True(Page.ThumbnailCollection.IsExists());
         return Task.CompletedTask;
@@ -73,7 +73,7 @@ public class CollectionViewControlTests
     [Trait("Method", "GetSelectionMode")]
     public Task CollectionView_GetSelectionMode_RequiresTypedControl()
     {
-        // Note: GetSelectionMode requires MauiCollectionViewControl<TScope, TItem>
+        // Note: GetSelectionMode requires CollectionView<TScope, TItem>
         // For now, verify the control exists and is visible.
         Assert.True(Page.ThumbnailCollection.IsExists());
         Assert.True(Page.ThumbnailCollection.IsVisible());

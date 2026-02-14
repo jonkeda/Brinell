@@ -1,27 +1,36 @@
 # Copilot Instructions for Brinell Framework
 
-**Last Updated:** January 18, 2026
+**Last Updated:** February 14, 2026
 
 This document provides guidance for GitHub Copilot and other AI assistants working on the Brinell UI test automation framework.
 
 ---
 
-## 0. Test Code Anti-Patterns (Critical)
+## 0. Code Anti-Patterns (Critical)
 
-### ❌ NEVER Use Thread.Sleep or Arbitrary Waits
+### ❌ NEVER Use Thread.Sleep or Arbitrary Waits — Anywhere
 
-**NEVER** use `Thread.Sleep()`, `Task.Delay()`, or any arbitrary time-based waits in test code.
+**NEVER** use `Thread.Sleep()`, `Task.Delay()`, or any arbitrary time-based waits — not in test code, not in framework code, not anywhere. This applies to **ALL** code: tests, controls, drivers, helpers.
 
 ```csharp
-❌ WRONG - Arbitrary sleep:
+❌ WRONG - Arbitrary sleep in test:
 element.Click();
 Thread.Sleep(500);  // NEVER DO THIS
 Assert.True(nextElement.IsVisible());
+
+❌ WRONG - Arbitrary sleep in framework/control code:
+_plusButton.Click();
+Thread.Sleep(50);  // NEVER DO THIS EITHER
+var value = GetValue();
 
 ✅ CORRECT - Wait for a condition:
 element.Click();
 nextElement.WaitVisible(true, timeoutMs: 5000);
 Assert.True(nextElement.IsVisible());
+
+✅ CORRECT - Poll until state changes:
+_plusButton.Click();
+WaitForValueChange(previousValue, timeoutMs: 1000);
 
 ✅ CORRECT - Use polling:
 element.Click();
@@ -30,12 +39,76 @@ nextElement.AssertVisible("Element should appear after click");
 ```
 
 **Why this matters:**
-- Sleeps are flaky - they either wait too long or not long enough
+- Sleeps are flaky — they either wait too long or not long enough
 - They make tests slow and unreliable
+- They hide real timing bugs instead of solving them
 - The Brinell framework has built-in `Wait*` and `Assert*` methods that poll for conditions
 - Always wait FOR something specific, never wait arbitrarily
 
-**Rule:** If you need to wait, use the framework's `Wait*` methods or `Assert*` methods which poll until a condition is met or timeout.
+**Rule:** If you need to wait, wait **for a condition** — a value change, an element appearing, a property becoming true. Never wait for time.
+
+### ❌ NEVER Increase Wait Times to Fix Failures
+
+If a fix involves increasing `Thread.Sleep` durations or adding longer arbitrary waits, **the approach is wrong**. There is a deeper root cause.
+
+```csharp
+❌ WRONG - Escalating waits:
+Thread.Sleep(50);   // didn't work
+Thread.Sleep(200);  // still didn't work
+Thread.Sleep(500);  // "fixed" it... for now
+
+✅ CORRECT - Find the real problem:
+// Why is the value stale? Because we're reading a cached element.
+// Fix: re-find the element, or poll for the expected value.
+```
+
+**Rule:** If you find yourself raising wait times, stop and find the actual root cause. The real fix is almost never "wait longer."
+
+### ❌ NEVER Use Empty Catch Blocks
+
+**NEVER** swallow exceptions silently. Empty catches hide bugs and make debugging impossible.
+
+```csharp
+❌ WRONG - Empty catch:
+try
+{
+    var button = FindChildButton(element, isIncrement: true);
+    button.Click();
+}
+catch
+{
+    // Swallow - will fall back to base implementation
+}
+
+✅ CORRECT - Log or rethrow with context:
+try
+{
+    var button = FindChildButton(element, isIncrement: true);
+    button?.Click();
+}
+catch (Exception ex)
+{
+    throw new InvalidOperationException(
+        $"Failed to find/click increment button for '{AutomationId}'", ex);
+}
+
+✅ CORRECT - Use conditional logic instead of exceptions for control flow:
+var button = FindChildButton(element, isIncrement: true);
+if (button != null)
+{
+    button.Click();
+    return;
+}
+// Fall through to base implementation
+base.IncrementCore(element);
+```
+
+**Why this matters:**
+- Empty catches make failures invisible — you get wrong results with no clue why
+- Debugging becomes guesswork instead of following a clear error trail
+- If something CAN fail, handle it explicitly or let it propagate
+
+**Rule:** Never use exceptions for control flow. Use null checks and conditionals instead. If you catch an exception, log it or wrap it with context.
 
 ---
 

@@ -3,7 +3,7 @@ using Brinell.Maui.UITests.Pages;
 namespace Brinell.Maui.UITests.Tests.Toggle;
 
 /// <summary>
-/// UI tests for MauiRadioButtonControl verifying selection operations.
+/// UI tests for RadioButton verifying selection operations.
 /// </summary>
 [Collection("Appium")]
 [Trait("Category", "UITest")]

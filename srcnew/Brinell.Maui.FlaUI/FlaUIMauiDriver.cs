@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Drawing;
 using Brinell.Core;
 using Brinell.Core.Exceptions;
+using Brinell.Core.Utilities;
 using Brinell.Maui.Enums;
 using FlaUI.Core.Capturing;
 using FlaUI.Core.Definitions;
@@ -107,7 +108,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
             }
             
             if (timeoutMs <= 0) break;
-            Thread.Sleep(100);
+            WaitHelper.Pause(100);
         }
         
         throw new ElementNotFoundException(locator);
@@ -130,7 +131,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
                 {
                     return found.Select(e => new FlaUIMauiElement(e, this)).ToList();
                 }
-                Thread.Sleep(100);
+                WaitHelper.Pause(100);
             }
         }
         

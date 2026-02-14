@@ -40,6 +40,9 @@ public class ProgressBarControlTests
     [Trait("Method", "IsVisible")]
     public Task ProgressBar_IsVisible_ReturnsTrue()
     {
+        // Ensure control is in viewport for visibility checks on scrollable page
+        Page.VolumeProgress.ScrollIntoView();
+
         // Assert
         Assert.True(Page.VolumeProgress.IsVisible());
         return Task.CompletedTask;

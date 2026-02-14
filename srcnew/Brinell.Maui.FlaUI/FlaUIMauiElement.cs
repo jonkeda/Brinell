@@ -2,6 +2,7 @@ using System.Drawing;
 using Brinell.Core;
 using Brinell.Core.Exceptions;
 using Brinell.Core.Interfaces;
+using Brinell.Core.Utilities;
 using Brinell.Maui.Enums;
 using Brinell.Maui.Interfaces;
 using FlaUI.Core.Input;
@@ -248,7 +249,7 @@ public sealed class FlaUIMauiElement : IMauiElement, IRangePatternElement, IExpa
         var center = new System.Drawing.Point(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
         Mouse.MoveTo(center);
         Mouse.Down(MouseButton.Left);
-        Thread.Sleep(durationMs);
+        WaitHelper.Pause(durationMs);
         Mouse.Up(MouseButton.Left);
     }
     
@@ -308,7 +309,7 @@ public sealed class FlaUIMauiElement : IMauiElement, IRangePatternElement, IExpa
             var x = (int)(startX + deltaX * i);
             var y = (int)(startY + deltaY * i);
             Mouse.MoveTo(new Point(x, y));
-            Thread.Sleep(stepDelay);
+            WaitHelper.Pause(stepDelay);
         }
         
         Mouse.Up(MouseButton.Left);
@@ -326,7 +327,7 @@ public sealed class FlaUIMauiElement : IMauiElement, IRangePatternElement, IExpa
         var startTime = DateTime.UtcNow;
         var timeout = TimeSpan.FromMilliseconds(timeoutMs);
         
-        while (DateTime.UtcNow - startTime < timeout)
+        do
         {
             var found = _element.FindFirstDescendant(condition);
             if (found != null)
@@ -335,8 +336,9 @@ public sealed class FlaUIMauiElement : IMauiElement, IRangePatternElement, IExpa
             }
             
             if (timeoutMs <= 0) break;
-            Thread.Sleep(100);
+            WaitHelper.Pause(100);
         }
+        while (DateTime.UtcNow - startTime < timeout);
         
         throw new ElementNotFoundException(locator);
     }
@@ -358,7 +360,7 @@ public sealed class FlaUIMauiElement : IMauiElement, IRangePatternElement, IExpa
                 {
                     return found.Select(e => new FlaUIMauiElement(e, _driver)).ToList();
                 }
-                Thread.Sleep(100);
+                WaitHelper.Pause(100);
             }
         }
         
@@ -560,14 +562,9 @@ public sealed class FlaUIMauiElement : IMauiElement, IRangePatternElement, IExpa
     {
         get
         {
-            try
-            {
-                return _element.Patterns.ExpandCollapse.IsSupported;
-            }
-            catch
-            {
+            if (!_element.Patterns.ExpandCollapse.IsSupported)
                 return false;
-            }
+            return true;
         }
     }
     
@@ -576,95 +573,187 @@ public sealed class FlaUIMauiElement : IMauiElement, IRangePatternElement, IExpa
     {
         get
         {
-            try
-            {
-                if (!_element.Patterns.ExpandCollapse.IsSupported)
-                    return false;
-                return _element.Patterns.ExpandCollapse.Pattern.ExpandCollapseState.Value == 
-                       global::FlaUI.Core.Definitions.ExpandCollapseState.Expanded;
-            }
-            catch
-            {
+            if (!_element.Patterns.ExpandCollapse.IsSupported)
                 return false;
-            }
+            return _element.Patterns.ExpandCollapse.Pattern.ExpandCollapseState.Value == 
+                   global::FlaUI.Core.Definitions.ExpandCollapseState.Expanded;
         }
     }
     
     /// <inheritdoc />
     public bool Expand()
     {
-        try
-        {
-            if (!_element.Patterns.ExpandCollapse.IsSupported)
-                return false;
-                
-            _element.Patterns.ExpandCollapse.Pattern.Expand();
-            // Allow time for dropdown items to render
-            Thread.Sleep(100);
-            return true;
-        }
-        catch
-        {
+        if (!_element.Patterns.ExpandCollapse.IsSupported)
             return false;
-        }
+            
+        _element.Patterns.ExpandCollapse.Pattern.Expand();
+        
+        // Poll until expanded state is confirmed
+        WaitHelper.WaitFor(
+            () => _element.Patterns.ExpandCollapse.Pattern.ExpandCollapseState.Value == 
+                  global::FlaUI.Core.Definitions.ExpandCollapseState.Expanded,
+            timeoutMs: 2000,
+            pollingIntervalMs: 50);
+        
+        return IsExpanded;
     }
     
     /// <inheritdoc />
     public bool Collapse()
     {
-        try
-        {
-            if (!_element.Patterns.ExpandCollapse.IsSupported)
-                return false;
-                
-            _element.Patterns.ExpandCollapse.Pattern.Collapse();
-            return true;
-        }
-        catch
-        {
+        if (!_element.Patterns.ExpandCollapse.IsSupported)
             return false;
-        }
+            
+        _element.Patterns.ExpandCollapse.Pattern.Collapse();
+        return true;
     }
     
     /// <inheritdoc />
     public IReadOnlyList<IMauiElement>? GetExpandedItems()
     {
+        if (!_element.Patterns.ExpandCollapse.IsSupported)
+            return null;
+        
+        var wasExpanded = IsExpanded;
+        
+        // Expand if not already expanded
+        if (!wasExpanded)
+        {
+            if (!Expand())
+                return null;
+        }
+        
         try
         {
-            if (!_element.Patterns.ExpandCollapse.IsSupported)
-                return null;
+            global::FlaUI.Core.AutomationElements.AutomationElement[] items = [];
             
-            var wasExpanded = IsExpanded;
+            // Poll for ListItem elements to appear after expansion
+            WaitHelper.WaitFor(() =>
+            {
+                // Try descendants of this element
+                items = _element.FindAllDescendants(cf => 
+                    cf.ByControlType(global::FlaUI.Core.Definitions.ControlType.ListItem));
+                if (items.Length > 0) return true;
+                
+                // Try direct/logical children (FlaUI ComboBox pattern)
+                items = _element.FindAllChildren(cf => 
+                    cf.ByControlType(global::FlaUI.Core.Definitions.ControlType.ListItem));
+                return items.Length > 0;
+            }, timeoutMs: 2000, pollingIntervalMs: 50);
             
-            // Expand if not already expanded
+            return items.Select(e => new FlaUIMauiElement(e, _driver) as IMauiElement).ToList();
+        }
+        finally
+        {
+            // Restore original state
             if (!wasExpanded)
             {
-                if (!Expand())
-                    return null;
-            }
-            
-            try
-            {
-                // Find ListItem descendants
-                var items = _element.FindAllDescendants(cf => 
-                    cf.ByControlType(global::FlaUI.Core.Definitions.ControlType.ListItem));
-                
-                var result = items.Select(e => new FlaUIMauiElement(e, _driver) as IMauiElement).ToList();
-                return result;
-            }
-            finally
-            {
-                // Restore original state
-                if (!wasExpanded)
-                {
-                    Collapse();
-                }
+                Collapse();
             }
         }
-        catch
+    }
+    
+    /// <inheritdoc />
+    public bool SelectItemByText(string text)
+    {
+        if (!_element.Patterns.ExpandCollapse.IsSupported)
+            return false;
+        
+        _element.Patterns.ExpandCollapse.Pattern.Expand();
+        WaitHelper.WaitFor(() => IsExpanded, timeoutMs: 2000, pollingIntervalMs: 50);
+        
+        // Find ListItem descendants
+        global::FlaUI.Core.AutomationElements.AutomationElement[] items = [];
+        WaitHelper.WaitFor(() =>
         {
-            return null;
+            items = _element.FindAllDescendants(cf => 
+                cf.ByControlType(global::FlaUI.Core.Definitions.ControlType.ListItem));
+            return items.Length > 0;
+        }, timeoutMs: 2000, pollingIntervalMs: 50);
+        
+        var target = items.FirstOrDefault(i => i.Name == text);
+        if (target == null)
+        {
+            Collapse();
+            return false;
         }
+        
+        // Use SelectionItemPattern — the standard UIA way to select items
+        if (target.Patterns.SelectionItem.IsSupported)
+        {
+            target.Patterns.SelectionItem.Pattern.Select();
+        }
+        else
+        {
+            target.Click();
+        }
+        
+        // Wait for the dropdown to collapse (selection should auto-close)
+        WaitHelper.WaitFor(() => !IsExpanded, timeoutMs: 2000, pollingIntervalMs: 50);
+        
+        if (IsExpanded)
+            Collapse();
+        
+        return true;
+    }
+    
+    /// <inheritdoc />
+    public bool SelectItemByIndex(int index)
+    {
+        if (!_element.Patterns.ExpandCollapse.IsSupported)
+            return false;
+        
+        _element.Patterns.ExpandCollapse.Pattern.Expand();
+        WaitHelper.WaitFor(() => IsExpanded, timeoutMs: 2000, pollingIntervalMs: 50);
+        
+        // Find ListItem descendants
+        global::FlaUI.Core.AutomationElements.AutomationElement[] items = [];
+        WaitHelper.WaitFor(() =>
+        {
+            items = _element.FindAllDescendants(cf => 
+                cf.ByControlType(global::FlaUI.Core.Definitions.ControlType.ListItem));
+            return items.Length > 0;
+        }, timeoutMs: 2000, pollingIntervalMs: 50);
+        
+        if (index >= items.Length)
+        {
+            Collapse();
+            return false;
+        }
+        
+        var item = items[index];
+        
+        // Use SelectionItemPattern — the standard UIA way to select items
+        if (item.Patterns.SelectionItem.IsSupported)
+        {
+            item.Patterns.SelectionItem.Pattern.Select();
+        }
+        else
+        {
+            item.Click();
+        }
+        
+        // Wait for the dropdown to collapse (selection should auto-close)
+        WaitHelper.WaitFor(() => !IsExpanded, timeoutMs: 2000, pollingIntervalMs: 50);
+        
+        if (IsExpanded)
+            Collapse();
+        
+        return true;
+    }
+    
+    /// <inheritdoc />
+    public string? GetSelectedItemText()
+    {
+        // Use SelectionPattern to get the currently selected item
+        if (!_element.Patterns.Selection.IsSupported)
+            return null;
+        
+        var selection = _element.Patterns.Selection.Pattern.Selection.Value;
+        if (selection == null || selection.Length == 0)
+            return null;
+        
+        return selection[0].Name;
     }
     
     #endregion
@@ -700,7 +789,7 @@ public sealed class FlaUIMauiElement : IMauiElement, IRangePatternElement, IExpa
             if (_element.Patterns.Value.IsSupported)
             {
                 var value = _element.Patterns.Value.Pattern.Value.Value;
-                if (!string.IsNullOrEmpty(value))
+                if (value != null)
                     return value;
             }
             
@@ -725,32 +814,64 @@ public sealed class FlaUIMauiElement : IMauiElement, IRangePatternElement, IExpa
     {
         try
         {
-            // Try Value pattern first
-            if (_element.Patterns.Value.IsSupported && !_element.Patterns.Value.Pattern.IsReadOnly.Value)
-            {
-                _element.Patterns.Value.Pattern.SetValue(string.Empty);
-                return true;
-            }
-            
-            // Try nested TextBox
+            bool IsEmpty(string? value) => string.IsNullOrEmpty(value);
+
             var nestedTextBox = FindNestedTextBox();
-            if (nestedTextBox is FlaUIMauiElement flaUiNested)
+            var nestedAutomationElement = nestedTextBox is FlaUIMauiElement nested ? nested._element : null;
+
+            var focusTargets = new List<AutomationElement>();
+            if (nestedAutomationElement != null)
             {
-                if (flaUiNested._element.Patterns.Value.IsSupported && 
-                    !flaUiNested._element.Patterns.Value.Pattern.IsReadOnly.Value)
-                {
-                    flaUiNested._element.Patterns.Value.Pattern.SetValue(string.Empty);
+                focusTargets.Add(nestedAutomationElement);
+            }
+            focusTargets.Add(_element);
+
+            for (var attempt = 0; attempt < 3; attempt++)
+            {
+                if (IsEmpty(GetNestedText()))
                     return true;
+
+                // ValuePattern attempt on wrapper and nested targets.
+                foreach (var target in focusTargets)
+                {
+                    if (target.Patterns.Value.IsSupported && !target.Patterns.Value.Pattern.IsReadOnly.Value)
+                    {
+                        target.Patterns.Value.Pattern.SetValue(string.Empty);
+                        if (IsEmpty(GetNestedText()))
+                            return true;
+                    }
+                }
+
+                // Keyboard attempt: Ctrl+A then Delete on each possible focus target.
+                foreach (var target in focusTargets)
+                {
+                    target.Focus();
+                    Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_A);
+                    Keyboard.Type(VirtualKeyShort.DELETE);
+                    if (IsEmpty(GetNestedText()))
+                        return true;
+                }
+
+                // Keyboard attempt: force end and backspace remaining characters.
+                var remainingText = GetNestedText() ?? string.Empty;
+                if (remainingText.Length > 0)
+                {
+                    var target = focusTargets[0];
+                    target.Focus();
+                    Keyboard.Type(VirtualKeyShort.END);
+
+                    var backspaceCount = Math.Max(remainingText.Length + 10, 20);
+                    for (var i = 0; i < backspaceCount; i++)
+                    {
+                        Keyboard.Type(VirtualKeyShort.BACK);
+                    }
+
+                    if (IsEmpty(GetNestedText()))
+                        return true;
                 }
             }
-            
-            // Fallback to keyboard: Focus + Ctrl+A + Delete
-            _element.Focus();
-            Thread.Sleep(50);
-            Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_A);
-            Thread.Sleep(50);
-            Keyboard.Type(VirtualKeyShort.DELETE);
-            return true;
+
+            return IsEmpty(GetNestedText());
         }
         catch
         {

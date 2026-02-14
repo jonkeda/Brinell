@@ -6,7 +6,7 @@ namespace Brinell.Maui.UITests.Pages;
 /// Page object for the MainPage of the Brinell sample MAUI app.
 /// Demonstrates the page object pattern with control factory methods.
 /// </summary>
-public class MainPage : MauiPageObjectBase<MainPage>
+public class MainPage : PageObjectBase<MainPage>
 {
     public MainPage(IMauiTestContext context)
         : base(context)
@@ -45,27 +45,27 @@ public class MainPage : MauiPageObjectBase<MainPage>
     /// <summary>
     /// The main title label "Brinell MAUI Sample".
     /// </summary>
-    public MauiControlBase<MainPage> TitleLabel { get; }
+    public ControlBase<MainPage> TitleLabel { get; }
 
     /// <summary>
     /// The subtitle label "UI Test Framework Demo".
     /// </summary>
-    public MauiControlBase<MainPage> SubtitleLabel { get; }
+    public ControlBase<MainPage> SubtitleLabel { get; }
 
     /// <summary>
     /// The counter display label showing "Counter: X".
     /// </summary>
-    public MauiControlBase<MainPage> CounterLabel { get; }
+    public ControlBase<MainPage> CounterLabel { get; }
 
     /// <summary>
     /// The greeting label that shows the greeting message.
     /// </summary>
-    public MauiControlBase<MainPage> GreetingLabel { get; }
+    public ControlBase<MainPage> GreetingLabel { get; }
 
     /// <summary>
     /// The volume percentage label.
     /// </summary>
-    public MauiControlBase<MainPage> VolumeLabel { get; }
+    public ControlBase<MainPage> VolumeLabel { get; }
 
     #endregion
 
@@ -74,27 +74,27 @@ public class MainPage : MauiPageObjectBase<MainPage>
     /// <summary>
     /// The increment (+) button for the counter.
     /// </summary>
-    public MauiButtonControl<MainPage> IncrementButton { get; }
+    public Button<MainPage> IncrementButton { get; }
 
     /// <summary>
     /// The decrement (-) button for the counter.
     /// </summary>
-    public MauiButtonControl<MainPage> DecrementButton { get; }
+    public Button<MainPage> DecrementButton { get; }
 
     /// <summary>
     /// The reset button for the counter.
     /// </summary>
-    public MauiButtonControl<MainPage> ResetButton { get; }
+    public Button<MainPage> ResetButton { get; }
 
     /// <summary>
     /// The greet button that generates a greeting from the name entry.
     /// </summary>
-    public MauiButtonControl<MainPage> GreetButton { get; }
+    public Button<MainPage> GreetButton { get; }
 
     /// <summary>
     /// The toggle loading button for the activity indicator.
     /// </summary>
-    public MauiButtonControl<MainPage> ToggleLoadingButton { get; }
+    public Button<MainPage> ToggleLoadingButton { get; }
 
     #endregion
 
@@ -103,12 +103,12 @@ public class MainPage : MauiPageObjectBase<MainPage>
     /// <summary>
     /// The name entry field.
     /// </summary>
-    public MauiEntryControl<MainPage> NameEntry { get; }
+    public Entry<MainPage> NameEntry { get; }
 
     /// <summary>
     /// The email entry field.
     /// </summary>
-    public MauiEntryControl<MainPage> EmailEntry { get; }
+    public Entry<MainPage> EmailEntry { get; }
 
     #endregion
 }

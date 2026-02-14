@@ -3,7 +3,7 @@ using Brinell.Maui.UITests.Pages;
 namespace Brinell.Maui.UITests.Tests.Toggle;
 
 /// <summary>
-/// UI tests for MauiCheckBoxControl verifying check/uncheck operations.
+/// UI tests for CheckBox verifying check/uncheck operations.
 /// </summary>
 [Collection("Appium")]
 [Trait("Category", "UITest")]

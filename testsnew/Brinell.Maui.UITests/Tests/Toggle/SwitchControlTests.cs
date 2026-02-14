@@ -3,7 +3,7 @@ using Brinell.Maui.UITests.Pages;
 namespace Brinell.Maui.UITests.Tests.Toggle;
 
 /// <summary>
-/// UI tests for MauiSwitchControl verifying on/off operations.
+/// UI tests for Switch verifying on/off operations.
 /// </summary>
 [Collection("Appium")]
 [Trait("Category", "UITest")]

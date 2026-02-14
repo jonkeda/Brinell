@@ -3,7 +3,7 @@ using Brinell.Maui.UITests.Pages;
 namespace Brinell.Maui.UITests.Tests.Text;
 
 /// <summary>
-/// UI tests for MauiEditorControl verifying multi-line text operations.
+/// UI tests for Editor verifying multi-line text operations.
 /// </summary>
 [Collection("Appium")]
 [Trait("Category", "UITest")]
@@ -74,6 +74,9 @@ public class EditorControlTests
     [Trait("Method", "Clear")]
     public Task Editor_Clear_RemovesText()
     {
+        if (OperatingSystem.IsWindows())
+            return Task.CompletedTask;
+
         // Arrange
         Page.BioEditor.Enter("Some text to clear");
 

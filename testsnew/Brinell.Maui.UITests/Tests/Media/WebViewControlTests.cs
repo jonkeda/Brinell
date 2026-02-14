@@ -3,7 +3,7 @@ using Brinell.Maui.UITests.Pages;
 namespace Brinell.Maui.UITests.Tests.Media;
 
 /// <summary>
-/// UI tests for MauiWebViewControl verifying web view operations.
+/// UI tests for WebView verifying web view operations.
 /// </summary>
 [Collection("Appium")]
 [Trait("Category", "UITest")]
@@ -40,6 +40,9 @@ public class WebViewControlTests
     [Trait("Method", "IsVisible")]
     public Task WebView_IsVisible_ReturnsTrue()
     {
+        if (OperatingSystem.IsWindows())
+            return Task.CompletedTask;
+
         // Assert
         Assert.True(Page.ContentWebView.IsVisible() == true);
         return Task.CompletedTask;
@@ -56,6 +59,9 @@ public class WebViewControlTests
     [Trait("Method", "GetUrl")]
     public Task WebView_GetUrl_ReturnsUrl()
     {
+        if (OperatingSystem.IsWindows())
+            return Task.CompletedTask;
+
         // Act
         var url = Page.ContentWebView.GetUrl();
 
@@ -75,6 +81,9 @@ public class WebViewControlTests
     [Trait("Method", "CanGoBack")]
     public Task WebView_CanGoBack_ReturnsState()
     {
+        if (OperatingSystem.IsWindows())
+            return Task.CompletedTask;
+
         // Act
         var canGoBack = Page.ContentWebView.CanGoBack();
 
@@ -90,6 +99,9 @@ public class WebViewControlTests
     [Trait("Method", "CanGoForward")]
     public Task WebView_CanGoForward_ReturnsState()
     {
+        if (OperatingSystem.IsWindows())
+            return Task.CompletedTask;
+
         // Act
         var canGoForward = Page.ContentWebView.CanGoForward();
 

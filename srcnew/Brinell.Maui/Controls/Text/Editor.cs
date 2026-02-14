@@ -1,0 +1,109 @@
+namespace Brinell.Maui.Controls.Text;
+
+/// <summary>
+/// MAUI Editor control for multi-line text input.
+/// Inherits all text manipulation from Entry.
+/// Includes FlaUI-specific clear handling for Windows.
+/// </summary>
+/// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
+public class Editor<TScope> : Entry<TScope>
+    where TScope : IMauiScope<TScope>
+{
+    /// <summary>
+    /// Creates a new editor control within the specified scope.
+    /// </summary>
+    /// <param name="scope">The scope (page or container) providing element finding.</param>
+    /// <param name="locator">The locator for the editor element.</param>
+    public Editor(IMauiScope<TScope> scope, Locator locator)
+        : base(scope, locator)
+    {
+    }
+
+    /// <summary>
+    /// Creates a new editor control within the specified scope using a string locator value.
+    /// Uses the scope's DefaultLocatorStrategy to create the locator.
+    /// </summary>
+    /// <param name="scope">The scope (page or container) providing element finding.</param>
+    /// <param name="locatorValue">The locator value (e.g., automation ID, name).</param>
+    public Editor(IMauiScope<TScope> scope, string locatorValue)
+        : base(scope, locatorValue)
+    {
+    }
+    
+    #region Clear Override for FlaUI
+
+    /// <summary>
+    /// Clears editor text using editor-specific clear behavior.
+    /// </summary>
+    /// <param name="timeoutMs">Optional timeout for waiting.</param>
+    /// <returns>The containing scope for fluent chaining.</returns>
+    public new TScope Clear(int? timeoutMs = null)
+    {
+        return RunWithElement(nameof(Clear), timeoutMs, element =>
+        {
+            ClearCore(element, timeoutMs);
+        });
+    }
+
+    /// <summary>
+    /// Sets editor text using editor-specific clear behavior before entry.
+    /// </summary>
+    /// <param name="text">The text to set.</param>
+    /// <param name="timeoutMs">Optional timeout for waiting.</param>
+    /// <returns>The containing scope for fluent chaining.</returns>
+    public new TScope SetText(string? text, int? timeoutMs = null)
+    {
+        if (text == null) return ContainingScope;
+
+        return RunWithElement(nameof(SetText), text, timeoutMs, element =>
+        {
+            SetTextCore(element, text, timeoutMs);
+        });
+    }
+    
+    /// <summary>
+    /// Core implementation of Clear using pre-found element.
+    /// Uses FlaUI ClearWithFallback for robust clearing on Windows.
+    /// </summary>
+    /// <param name="element">The pre-found element.</param>
+    /// <param name="timeoutMs">Optional timeout for enabled check.</param>
+    protected new void ClearCore(IMauiElement element, int? timeoutMs = null)
+    {
+        CheckEnabledCore(element, timeoutMs);
+        
+        // For Windows/FlaUI, use ClearWithFallback for robust clearing
+        if (element is Interfaces.INestedTextElement textElement)
+        {
+            textElement.ClearWithFallback();
+            return;
+        }
+        
+        element.Clear();
+    }
+    
+    /// <summary>
+    /// Core implementation of SetText using pre-found element.
+    /// Uses FlaUI ClearWithFallback for robust clearing on Windows.
+    /// </summary>
+    /// <param name="element">The pre-found element.</param>
+    /// <param name="text">The text to set.</param>
+    /// <param name="timeoutMs">Optional timeout for enabled check.</param>
+    protected new void SetTextCore(IMauiElement element, string text, int? timeoutMs = null)
+    {
+        CheckEnabledCore(element, timeoutMs);
+        
+        // For Windows/FlaUI, use ClearWithFallback for robust clearing
+        if (element is Interfaces.INestedTextElement textElement)
+        {
+            textElement.ClearWithFallback();
+        }
+        else
+        {
+            element.Clear();
+        }
+        
+        element.SendKeys(text);
+    }
+    
+    #endregion
+}

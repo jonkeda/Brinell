@@ -16,21 +16,24 @@ public static class LocatorExtensions
     /// </summary>
     /// <param name="locator">The locator to convert.</param>
     /// <param name="conditionFactory">The FlaUI condition factory.</param>
-    /// <returns>A PropertyCondition that can be used with FlaUI.</returns>
+    /// <returns>A condition that can be used with FlaUI.</returns>
     /// <exception cref="ArgumentNullException">Thrown when locator is null.</exception>
     /// <exception cref="LocatorNotSupportedException">Thrown when locator strategy is not supported by FlaUI.</exception>
-    public static PropertyCondition ToCondition(this Locator locator, ConditionFactory conditionFactory)
+    public static ConditionBase ToCondition(this Locator locator, ConditionFactory conditionFactory)
     {
         ArgumentNullException.ThrowIfNull(locator);
         ArgumentNullException.ThrowIfNull(conditionFactory);
         
         return locator.Strategy switch
         {
-            // AutomationId is the primary locator for MAUI/WPF
-            LocatorStrategy.AutomationId => conditionFactory.ByAutomationId(locator.Value),
+            // AutomationId is the primary locator for MAUI/WPF.
+            // Some MAUI/WinUI elements expose test identifiers via Name instead of AutomationId,
+            // so include Name as a fallback for better cross-platform compatibility.
+            LocatorStrategy.AutomationId => conditionFactory.ByAutomationId(locator.Value).Or(conditionFactory.ByName(locator.Value)),
             
-            // AccessibilityId maps to AutomationId in Windows UI Automation
-            LocatorStrategy.AccessibilityId => conditionFactory.ByAutomationId(locator.Value),
+            // AccessibilityId maps to AutomationId in Windows UI Automation,
+            // with Name as a compatibility fallback.
+            LocatorStrategy.AccessibilityId => conditionFactory.ByAutomationId(locator.Value).Or(conditionFactory.ByName(locator.Value)),
             
             // Name property
             LocatorStrategy.Name => conditionFactory.ByName(locator.Value),
@@ -44,8 +47,8 @@ public static class LocatorExtensions
             // Text - search by Name (FlaUI uses Name for visible text)
             LocatorStrategy.Text => conditionFactory.ByName(locator.Value),
             
-            // ID - map to AutomationId for WPF/MAUI
-            LocatorStrategy.Id => conditionFactory.ByAutomationId(locator.Value),
+            // ID - map to AutomationId for WPF/MAUI, with Name fallback.
+            LocatorStrategy.Id => conditionFactory.ByAutomationId(locator.Value).Or(conditionFactory.ByName(locator.Value)),
             
             // XPath, CSS, LinkText etc. are not supported by Windows UI Automation
             LocatorStrategy.XPath or

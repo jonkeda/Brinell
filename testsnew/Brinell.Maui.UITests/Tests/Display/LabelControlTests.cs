@@ -41,6 +41,8 @@ public class LabelControlTests
     [Trait("Method", "IsVisible")]
     public Task Label_IsVisible_ReturnsTrue()
     {
+        Page.TitleLabel.ScrollIntoView();
+
         // Assert
         Assert.True(Page.TitleLabel.IsVisible());
         return Task.CompletedTask;

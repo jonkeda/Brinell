@@ -1,6 +1,7 @@
 using System.Drawing;
 using Brinell.Core;
 using Brinell.Core.Exceptions;
+using Brinell.Core.Utilities;
 using Brinell.Maui.Enums;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Interactions;
@@ -209,7 +210,7 @@ public sealed class AppiumMauiElement : IMauiElement
                 try
                 {
                     var canScrollMore = _driver.Driver.ExecuteScript("mobile: scrollGesture", scrollParams);
-                    Thread.Sleep(150);
+                    WaitHelper.Pause(150);
                     
                     if (canScrollMore is bool canScroll && !canScroll)
                     {
