@@ -114,11 +114,11 @@ public abstract class MauiTestFixtureBase : IDisposable
             WindowHandle = attachToRunning ? windowHandle : null,
             Timeouts = new TimeoutSettings
             {
-                DefaultWait = 10000,
-                PageLoad = 30000,
-                ElementFind = 10000,
-                ElementState = 10000,
-                Animation = 500,
+                DefaultWait = 5000,
+                PageLoad = 10000,
+                ElementFind = 3000,
+                ElementState = 3000,
+                Animation = 300,
                 PollingInterval = 100
             }
         };

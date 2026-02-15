@@ -90,6 +90,35 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     internal UIA3Automation Automation => _automation;
 
     /// <summary>
+    /// Checks whether a screen point falls within the root window bounds.
+    /// </summary>
+    /// <param name="point">Screen point to validate.</param>
+    /// <param name="padding">Optional inset padding in pixels.</param>
+    /// <returns>True when point is within the root window rectangle.</returns>
+    internal bool IsPointInsideRootWindow(Point point, int padding = 0)
+    {
+        try
+        {
+            var rect = _rootElement.BoundingRectangle;
+            if (rect.Width <= 0 || rect.Height <= 0)
+            {
+                return false;
+            }
+
+            var left = rect.Left + padding;
+            var right = rect.Right - padding;
+            var top = rect.Top + padding;
+            var bottom = rect.Bottom - padding;
+
+            return point.X >= left && point.X <= right && point.Y >= top && point.Y <= bottom;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
     /// Ensures the root window is focused and activated before interaction.
     /// </summary>
     internal void EnsureRootWindowFocused()
@@ -112,30 +141,20 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
 
         try
         {
-            _rootElement.Focus();
+            _rootElement.SetForeground();
         }
         catch
         {
-            // Ignore focus failures and continue with activation click fallback.
-        }
-
-        try
-        {
-            var rect = _rootElement.BoundingRectangle;
-            if (rect.Width > 0 && rect.Height > 0)
+            // SetForeground can fail if the window is not top-level; fall back to Focus.
+            try
             {
-                var center = new Point(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
-                Mouse.MoveTo(center);
-                WaitHelper.Pause(25);
-                Mouse.Click(MouseButton.Left);
+                _rootElement.Focus();
+            }
+            catch
+            {
+                // Ignore focus failures; interaction will proceed regardless.
             }
         }
-        catch
-        {
-            // Ignore activation click failures.
-        }
-
-        WaitHelper.Pause(50);
     }
     
     #endregion

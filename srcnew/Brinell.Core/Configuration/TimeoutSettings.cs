@@ -8,27 +8,27 @@ public class TimeoutSettings
     /// <summary>
     /// Default timeout for wait operations (milliseconds).
     /// </summary>
-    public int DefaultWait { get; set; } = 10000;
+    public int DefaultWait { get; set; } = 5000;
     
     /// <summary>
     /// Timeout for page load operations (milliseconds).
     /// </summary>
-    public int PageLoad { get; set; } = 30000;
+    public int PageLoad { get; set; } = 10000;
     
     /// <summary>
     /// Timeout for element finding (milliseconds).
     /// </summary>
-    public int ElementFind { get; set; } = 5000;
+    public int ElementFind { get; set; } = 3000;
     
     /// <summary>
     /// Timeout for element state changes (milliseconds).
     /// </summary>
-    public int ElementState { get; set; } = 5000;
+    public int ElementState { get; set; } = 3000;
     
     /// <summary>
     /// Delay for animation settling (milliseconds).
     /// </summary>
-    public int Animation { get; set; } = 500;
+    public int Animation { get; set; } = 300;
     
     /// <summary>
     /// Polling interval for wait operations (milliseconds).
@@ -45,11 +45,11 @@ public class TimeoutSettings
     /// </summary>
     public static TimeoutSettings Fast => new()
     {
-        DefaultWait = 5000,
-        PageLoad = 15000,
-        ElementFind = 2000,
-        ElementState = 2000,
-        Animation = 250,
+        DefaultWait = 2000,
+        PageLoad = 5000,
+        ElementFind = 1000,
+        ElementState = 1000,
+        Animation = 150,
         PollingInterval = 50
     };
     
@@ -58,11 +58,11 @@ public class TimeoutSettings
     /// </summary>
     public static TimeoutSettings Slow => new()
     {
-        DefaultWait = 30000,
-        PageLoad = 60000,
-        ElementFind = 15000,
-        ElementState = 15000,
-        Animation = 1000,
+        DefaultWait = 15000,
+        PageLoad = 30000,
+        ElementFind = 10000,
+        ElementState = 10000,
+        Animation = 500,
         PollingInterval = 200
     };
     

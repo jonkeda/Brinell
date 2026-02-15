@@ -39,6 +39,25 @@ public abstract class ClickableControlBase<TScope> : ControlBase<TScope>, IClick
             ClickCore(element, timeoutMs);
         });
     }
+
+    /// <summary>
+    /// Attempts to click the element if it exists.
+    /// Returns false when the element is not found.
+    /// </summary>
+    /// <param name="timeoutMs">Timeout in milliseconds used for enabled-state checking after the element is found.</param>
+    /// <returns>True if the element was found and clicked; otherwise false.</returns>
+    public bool TryClick(int? timeoutMs = null)
+    {
+        var element = TryFindElement();
+        if (element == null)
+        {
+            return false;
+        }
+
+        EnsureVisible(element);
+        Run(nameof(TryClick), () => ClickCore(element, timeoutMs));
+        return true;
+    }
     
     /// <inheritdoc />
     public TScope DoubleClick(int? timeoutMs = null)
