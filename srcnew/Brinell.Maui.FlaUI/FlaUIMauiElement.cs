@@ -166,15 +166,52 @@ public sealed class FlaUIMauiElement : IMauiElement, IRangePatternElement, IExpa
     /// <inheritdoc />
     public void Click()
     {
-        // Try Invoke pattern first (for buttons)
-        if (_element.Patterns.Invoke.IsSupported)
+        Exception? lastException = null;
+
+        for (var attempt = 0; attempt < 3; attempt++)
         {
-            _element.Patterns.Invoke.Pattern.Invoke();
-            return;
+            try
+            {
+                _driver.EnsureRootWindowFocused();
+
+                try
+                {
+                    _element.Focus();
+                }
+                catch
+                {
+                    // Continue with click fallbacks when focus fails.
+                }
+
+                // Try Invoke pattern first (for buttons and command controls)
+                if (_element.Patterns.Invoke.IsSupported)
+                {
+                    _element.Patterns.Invoke.Pattern.Invoke();
+                    return;
+                }
+
+                var rect = _element.BoundingRectangle;
+                if (rect.Width > 0 && rect.Height > 0)
+                {
+                    var center = new Point(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
+                    Mouse.MoveTo(center);
+                    WaitHelper.Pause(25);
+                    Mouse.Click(MouseButton.Left);
+                    return;
+                }
+
+                // Fallback to built-in click
+                _element.Click();
+                return;
+            }
+            catch (Exception ex)
+            {
+                lastException = ex;
+                WaitHelper.Pause(100);
+            }
         }
-        
-        // Fallback to mouse click
-        _element.Click();
+
+        throw new InvalidOperationException("Failed to click UI element after multiple attempts.", lastException);
     }
     
     /// <inheritdoc />

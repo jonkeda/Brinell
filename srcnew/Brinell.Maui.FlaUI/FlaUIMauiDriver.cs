@@ -6,6 +6,8 @@ using Brinell.Core.Utilities;
 using Brinell.Maui.Enums;
 using FlaUI.Core.Capturing;
 using FlaUI.Core.Definitions;
+using FlaUI.Core.Input;
+using FlaUI.Core.WindowsAPI;
 
 namespace Brinell.Maui.FlaUI;
 
@@ -86,6 +88,55 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// Gets the underlying automation instance.
     /// </summary>
     internal UIA3Automation Automation => _automation;
+
+    /// <summary>
+    /// Ensures the root window is focused and activated before interaction.
+    /// </summary>
+    internal void EnsureRootWindowFocused()
+    {
+        try
+        {
+            if (_rootElement.Patterns.Window.IsSupported)
+            {
+                var windowPattern = _rootElement.Patterns.Window.Pattern;
+                if (windowPattern.WindowVisualState.Value == WindowVisualState.Minimized)
+                {
+                    windowPattern.SetWindowVisualState(WindowVisualState.Normal);
+                }
+            }
+        }
+        catch
+        {
+            // Ignore window visual state failures and continue with focus fallback.
+        }
+
+        try
+        {
+            _rootElement.Focus();
+        }
+        catch
+        {
+            // Ignore focus failures and continue with activation click fallback.
+        }
+
+        try
+        {
+            var rect = _rootElement.BoundingRectangle;
+            if (rect.Width > 0 && rect.Height > 0)
+            {
+                var center = new Point(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
+                Mouse.MoveTo(center);
+                WaitHelper.Pause(25);
+                Mouse.Click(MouseButton.Left);
+            }
+        }
+        catch
+        {
+            // Ignore activation click failures.
+        }
+
+        WaitHelper.Pause(50);
+    }
     
     #endregion
     

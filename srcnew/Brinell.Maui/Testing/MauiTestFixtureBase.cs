@@ -88,8 +88,15 @@ public abstract class MauiTestFixtureBase : IDisposable
     {
         var platform = Platform;
 
-        var appPath = Environment.GetEnvironmentVariable("APPIUM_APP_PATH")
-            ?? GetDefaultAppPath(platform);
+        var attachToRunning = ParseBool(Environment.GetEnvironmentVariable("APPIUM_ATTACH_TO_RUNNING"));
+        var processName = Environment.GetEnvironmentVariable("APPIUM_PROCESS_NAME");
+        var windowHandle = ParseWindowHandle(Environment.GetEnvironmentVariable("APPIUM_WINDOW_HANDLE"));
+
+        var appPath = Environment.GetEnvironmentVariable("APPIUM_APP_PATH");
+        if (string.IsNullOrWhiteSpace(appPath) && !attachToRunning)
+        {
+            appPath = GetDefaultAppPath(platform);
+        }
 
         var mauiPlatform = platform.ToLowerInvariant() switch
         {
@@ -103,6 +110,8 @@ public abstract class MauiTestFixtureBase : IDisposable
         {
             Platform = mauiPlatform,
             AppPath = appPath,
+            ProcessName = attachToRunning ? processName : null,
+            WindowHandle = attachToRunning ? windowHandle : null,
             Timeouts = new TimeoutSettings
             {
                 DefaultWait = 10000,
@@ -225,6 +234,39 @@ public abstract class MauiTestFixtureBase : IDisposable
 
         Console.WriteLine($"[FIXTURE] {GetType().Name} #{_instanceId} DISPOSED");
         _disposed = true;
+    }
+
+    private static bool ParseBool(string? value)
+    {
+        return string.Equals(value, "1", StringComparison.OrdinalIgnoreCase)
+               || string.Equals(value, "true", StringComparison.OrdinalIgnoreCase)
+               || string.Equals(value, "yes", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static IntPtr? ParseWindowHandle(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        var normalized = value.Trim();
+        if (normalized.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+        {
+            normalized = normalized[2..];
+        }
+
+        if (long.TryParse(normalized, System.Globalization.NumberStyles.HexNumber, null, out var hexResult))
+        {
+            return new IntPtr(hexResult);
+        }
+
+        if (long.TryParse(normalized, out var decimalResult))
+        {
+            return new IntPtr(decimalResult);
+        }
+
+        return null;
     }
 
     #endregion
