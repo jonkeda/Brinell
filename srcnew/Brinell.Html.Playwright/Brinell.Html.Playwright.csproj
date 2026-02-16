@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Brinell.Html.Playwright</RootNamespace>
+    <Description>Playwright-based implementation for Brinell.Html. Provides PlaywrightHtmlElement and PlaywrightTestContext for browser automation.</Description>
+    <PackageId>Brinell.Html.Playwright</PackageId>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Brinell.Html\Brinell.Html.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Playwright" />
+  </ItemGroup>
+
+</Project>

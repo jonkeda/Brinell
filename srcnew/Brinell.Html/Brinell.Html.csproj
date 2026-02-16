@@ -2,17 +2,13 @@
 
   <PropertyGroup>
     <RootNamespace>Brinell.Html</RootNamespace>
-    <Description>HTML/Web UI testing automation using Playwright. Provides controls and page objects for general web application testing.</Description>
+    <Description>HTML/Web UI testing automation abstractions. Provides controls and page objects for general web application testing.</Description>
     <PackageId>Brinell.Html</PackageId>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Brinell.Core\Brinell.Core.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Microsoft.Playwright" />
   </ItemGroup>
 
 </Project>

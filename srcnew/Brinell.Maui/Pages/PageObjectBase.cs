@@ -51,7 +51,38 @@ public abstract class PageObjectBase<TSelf> : ObjectBase, IMauiPage<TSelf>
     public LocatorStrategy DefaultLocatorStrategy => _context.DefaultLocatorStrategy;
     
     /// <inheritdoc />
-    public abstract bool IsLoaded(int? timeoutMs = null);
+    public Label<TSelf> BusySentinel => Label("UITest_IsBusy");
+
+    /// <inheritdoc />
+    public virtual bool IsLoaded(int? timeoutMs = null)
+        => BusySentinel.IsExists();
+
+    /// <summary>
+    /// Waits for the page to finish loading.
+    /// </summary>
+    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
+    /// <returns>True when page becomes idle; otherwise false.</returns>
+    public bool WaitIdle(int? timeoutMs = null)
+    {
+        var timeout = timeoutMs ?? _context.Timeouts.PageLoad;
+        return Poll(() => BusySentinel.GetText() == "False", timeout);
+    }
+
+    /// <summary>
+    /// Asserts that the page is idle.
+    /// </summary>
+    /// <param name="message">Optional custom failure message.</param>
+    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
+    /// <exception cref="PageLoadException">Thrown when page does not become idle within timeout.</exception>
+    public void AssertIdle(string? message = null, int? timeoutMs = null)
+    {
+        if (!WaitIdle(timeoutMs))
+        {
+            var actual = BusySentinel.GetText();
+            throw new PageLoadException(
+                message ?? $"Page '{Name}' did not become idle within timeout. UITest_IsBusy text: '{actual ?? "(not found)"}'.");
+        }
+    }
     
     /// <inheritdoc />
     public bool WaitLoaded(bool? expected, int? timeoutMs = null)
