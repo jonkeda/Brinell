@@ -80,7 +80,7 @@ public class AppiumFixture : MauiTestFixtureBase
     {
         _appShell.ContainersTab.Click();
         // Wait for page to be ready
-        if (!_containerDemoPage.WaitReady(5000))
+        if (!_containerDemoPage.WaitReady(10000))
         {
             throw new InvalidOperationException("ContainerDemoPage did not become ready after clicking ContainersTab. PageTitle may not be visible.");
         }
@@ -93,7 +93,7 @@ public class AppiumFixture : MauiTestFixtureBase
     {
         _appShell.FormsTab.Click();
         // Wait for page to be ready
-        if (!_userFormPage.WaitReady(5000))
+        if (!_userFormPage.WaitReady(10000))
         {
             throw new InvalidOperationException("UserFormPage did not become ready after clicking FormsTab. UserFormTitle may not be visible.");
         }

@@ -27,15 +27,19 @@ public class Toolbar<TScope> : ControlBase<TScope>
     #region Toolbar Methods
 
     /// <summary>
-    /// Clicks a toolbar item by its locator.
+    /// Clicks a toolbar item by finding it within the toolbar and clicking.
+    /// The item is searched within the toolbar's own element, not the page root.
     /// </summary>
     /// <param name="itemLocator">The locator for the toolbar item.</param>
     /// <param name="timeoutMs">Optional timeout.</param>
     /// <returns>The containing scope for fluent chaining.</returns>
     public TScope ClickToolbarItem(Locator itemLocator, int? timeoutMs = null)
     {
-        var toolbarItem = new Button<TScope>(MauiScope, itemLocator);
-        return toolbarItem.Click(timeoutMs);
+        return RunWithElement(nameof(ClickToolbarItem), timeoutMs, toolbarElement =>
+        {
+            var toolbarItem = toolbarElement.FindElement(itemLocator, timeoutMs ?? DefaultTimeoutMs);
+            toolbarItem.Click();
+        });
     }
 
     /// <summary>

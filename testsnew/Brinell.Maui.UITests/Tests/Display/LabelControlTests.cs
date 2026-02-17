@@ -41,7 +41,8 @@ public class LabelControlTests
     [Trait("Method", "IsVisible")]
     public Task Label_IsVisible_ReturnsTrue()
     {
-        Page.TitleLabel.ScrollIntoView();
+        // Wait for element to exist before checking visibility
+        Page.TitleLabel.WaitExists(true);
 
         // Assert
         Assert.True(Page.TitleLabel.IsVisible());

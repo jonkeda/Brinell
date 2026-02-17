@@ -49,15 +49,19 @@ public class Menu<TScope> : ControlBase<TScope>
     }
 
     /// <summary>
-    /// Clicks a menu item by finding it and clicking.
+    /// Clicks a menu item by finding it within the menu and clicking.
+    /// The item is searched within the menu's own element, not the page root.
     /// </summary>
     /// <param name="itemLocator">The locator for the menu item.</param>
     /// <param name="timeoutMs">Optional timeout.</param>
     /// <returns>The containing scope for fluent chaining.</returns>
     public TScope ClickMenuItem(Locator itemLocator, int? timeoutMs = null)
     {
-        var menuItem = new Button<TScope>(MauiScope, itemLocator);
-        return menuItem.Click(timeoutMs);
+        return RunWithElement(nameof(ClickMenuItem), timeoutMs, menuElement =>
+        {
+            var menuItem = menuElement.FindElement(itemLocator, timeoutMs ?? DefaultTimeoutMs);
+            menuItem.Click();
+        });
     }
 
     #endregion

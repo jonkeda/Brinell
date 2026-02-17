@@ -44,20 +44,13 @@ public abstract class ObjectBase
             }
             catch
             {
-                // Ignore exceptions during polling, continue trying
+                // Polling expects transient failures (stale elements, not-yet-rendered)
             }
-            
+
             WaitHelper.Pause(PollingIntervalMs);
         }
-        
-        // Final check after timeout
-        try
-        {
-            return condition();
-        }
-        catch
-        {
-            return false;
-        }
+
+        // Final check - let exceptions propagate so callers see the real failure
+        return condition();
     }
 }

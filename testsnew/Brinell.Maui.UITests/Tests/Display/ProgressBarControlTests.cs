@@ -60,7 +60,8 @@ public class ProgressBarControlTests
     public Task ProgressBar_GetValue_ReturnsProgress()
     {
         // Progress bar is bound to slider, so we can read its state
-        // The value may be represented in the element's text or attributes
+        // Wait for the element to exist on the page before asserting
+        Page.VolumeProgress.WaitExists(true);
         Assert.True(Page.VolumeProgress.IsExists());
         return Task.CompletedTask;
     }

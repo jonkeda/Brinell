@@ -150,7 +150,7 @@ public class Entry<TScope> : ControlBase<TScope>, IEditableTextControlObject<TSc
     /// </summary>
     /// <param name="element">The pre-found element.</param>
     /// <param name="timeoutMs">Optional timeout for enabled check.</param>
-    protected void ClearCore(IMauiElement element, int? timeoutMs = null)
+    protected virtual void ClearCore(IMauiElement element, int? timeoutMs = null)
     {
         CheckEnabledCore(element, timeoutMs);
         element.Clear();
@@ -162,7 +162,7 @@ public class Entry<TScope> : ControlBase<TScope>, IEditableTextControlObject<TSc
     /// <param name="element">The pre-found element.</param>
     /// <param name="text">The text to set.</param>
     /// <param name="timeoutMs">Optional timeout for enabled check.</param>
-    protected void SetTextCore(IMauiElement element, string text, int? timeoutMs = null)
+    protected virtual void SetTextCore(IMauiElement element, string text, int? timeoutMs = null)
     {
         CheckEnabledCore(element, timeoutMs);
         element.Clear();

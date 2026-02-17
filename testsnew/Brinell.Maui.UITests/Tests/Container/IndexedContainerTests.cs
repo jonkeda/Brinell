@@ -175,6 +175,9 @@ public class IndexedContainerTests
         // Arrange
         var contact = Page.Contact(0);
 
+        // Scroll into view - contacts are near the bottom of a scrollable page
+        contact.CallButton.ScrollIntoView();
+
         // Assert
         contact.CallButton.AssertClickable();
     }

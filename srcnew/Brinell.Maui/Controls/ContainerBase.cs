@@ -1,5 +1,9 @@
 using Brinell.Core.Locators;
+using Brinell.Maui.Controls.DateTime;
 using Brinell.Maui.Controls.Display;
+using Brinell.Maui.Controls.Range;
+using Brinell.Maui.Controls.Selection;
+using Brinell.Maui.Controls.Text;
 using Brinell.Maui.Controls.Toggle;
 using Brinell.Maui.Enums;
 
@@ -164,10 +168,6 @@ public abstract class ContainerBase<TParent, TSelf> : ControlBase<TParent>, IMau
                 // Element not found in container - do NOT fall back to parent
                 return null;
             }
-            catch
-            {
-                return null;
-            }
         }
     }
     
@@ -217,14 +217,7 @@ public abstract class ContainerBase<TParent, TSelf> : ControlBase<TParent>, IMau
             rootElement = TryGetContainerRoot();
             if (rootElement == null) return Array.Empty<IMauiElement>();
             
-            try
-            {
-                return rootElement.FindElements(locator, timeoutMs: 0);
-            }
-            catch
-            {
-                return Array.Empty<IMauiElement>();
-            }
+            return rootElement.FindElements(locator, timeoutMs: 0);
         }
     }
     
@@ -241,7 +234,7 @@ public abstract class ContainerBase<TParent, TSelf> : ControlBase<TParent>, IMau
         {
             return ContainerRoot;
         }
-        catch
+        catch (ElementNotFoundException)
         {
             return null;
         }
@@ -298,6 +291,174 @@ public abstract class ContainerBase<TParent, TSelf> : ControlBase<TParent>, IMau
     /// </summary>
     protected Entry<TSelf> Entry(string locator)
         => new(this, locator);
+
+    #region Display Controls
+
+    /// <summary>
+    /// Creates an image control within this container scope.
+    /// </summary>
+    protected Image<TSelf> Image(Locator locator)
+        => new(this, locator);
+
+    /// <summary>
+    /// Creates an image control within this container scope using the scope default locator.
+    /// </summary>
+    protected Image<TSelf> Image(string locator)
+        => new(this, locator);
+
+    /// <summary>
+    /// Creates a progress bar control within this container scope.
+    /// </summary>
+    protected ProgressBar<TSelf> ProgressBar(Locator locator)
+        => new(this, locator);
+
+    /// <summary>
+    /// Creates a progress bar control within this container scope using the scope default locator.
+    /// </summary>
+    protected ProgressBar<TSelf> ProgressBar(string locator)
+        => new(this, locator);
+
+    /// <summary>
+    /// Creates an activity indicator control within this container scope.
+    /// </summary>
+    protected ActivityIndicator<TSelf> ActivityIndicator(Locator locator)
+        => new(this, locator);
+
+    /// <summary>
+    /// Creates an activity indicator control within this container scope using the scope default locator.
+    /// </summary>
+    protected ActivityIndicator<TSelf> ActivityIndicator(string locator)
+        => new(this, locator);
+
+    #endregion
+
+    #region Toggle Controls
+
+    /// <summary>
+    /// Creates a switch control within this container scope.
+    /// </summary>
+    protected Switch<TSelf> Switch(Locator locator)
+        => new(this, locator);
+
+    /// <summary>
+    /// Creates a switch control within this container scope using the scope default locator.
+    /// </summary>
+    protected Switch<TSelf> Switch(string locator)
+        => new(this, locator);
+
+    /// <summary>
+    /// Creates a radio button control within this container scope.
+    /// </summary>
+    protected RadioButton<TSelf> RadioButton(Locator locator)
+        => new(this, locator);
+
+    /// <summary>
+    /// Creates a radio button control within this container scope using the scope default locator.
+    /// </summary>
+    protected RadioButton<TSelf> RadioButton(string locator)
+        => new(this, locator);
+
+    #endregion
+
+    #region Text Controls
+
+    /// <summary>
+    /// Creates an editor control within this container scope.
+    /// </summary>
+    protected Editor<TSelf> Editor(Locator locator)
+        => new(this, locator);
+
+    /// <summary>
+    /// Creates an editor control within this container scope using the scope default locator.
+    /// </summary>
+    protected Editor<TSelf> Editor(string locator)
+        => new(this, locator);
+
+    /// <summary>
+    /// Creates a search bar control within this container scope.
+    /// </summary>
+    protected SearchBar<TSelf> SearchBar(Locator locator)
+        => new(this, locator);
+
+    /// <summary>
+    /// Creates a search bar control within this container scope using the scope default locator.
+    /// </summary>
+    protected SearchBar<TSelf> SearchBar(string locator)
+        => new(this, locator);
+
+    #endregion
+
+    #region Selection Controls
+
+    /// <summary>
+    /// Creates a picker control within this container scope.
+    /// </summary>
+    protected Picker<TSelf> Picker(Locator locator)
+        => new(this, locator);
+
+    /// <summary>
+    /// Creates a picker control within this container scope using the scope default locator.
+    /// </summary>
+    protected Picker<TSelf> Picker(string locator)
+        => new(this, locator);
+
+    #endregion
+
+    #region Range Controls
+
+    /// <summary>
+    /// Creates a slider control within this container scope.
+    /// </summary>
+    protected Slider<TSelf> Slider(Locator locator)
+        => new(this, locator);
+
+    /// <summary>
+    /// Creates a slider control within this container scope using the scope default locator.
+    /// </summary>
+    protected Slider<TSelf> Slider(string locator)
+        => new(this, locator);
+
+    /// <summary>
+    /// Creates a stepper control within this container scope.
+    /// </summary>
+    protected Stepper<TSelf> Stepper(Locator locator)
+        => new(this, locator);
+
+    /// <summary>
+    /// Creates a stepper control within this container scope using the scope default locator.
+    /// </summary>
+    protected Stepper<TSelf> Stepper(string locator)
+        => new(this, locator);
+
+    #endregion
+
+    #region DateTime Controls
+
+    /// <summary>
+    /// Creates a date picker control within this container scope.
+    /// </summary>
+    protected DatePicker<TSelf> DatePicker(Locator locator)
+        => new(this, locator);
+
+    /// <summary>
+    /// Creates a date picker control within this container scope using the scope default locator.
+    /// </summary>
+    protected DatePicker<TSelf> DatePicker(string locator)
+        => new(this, locator);
+
+    /// <summary>
+    /// Creates a time picker control within this container scope.
+    /// </summary>
+    protected TimePicker<TSelf> TimePicker(Locator locator)
+        => new(this, locator);
+
+    /// <summary>
+    /// Creates a time picker control within this container scope using the scope default locator.
+    /// </summary>
+    protected TimePicker<TSelf> TimePicker(string locator)
+        => new(this, locator);
+
+    #endregion
 
     #endregion
 }

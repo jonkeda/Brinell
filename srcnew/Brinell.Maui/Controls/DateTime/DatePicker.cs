@@ -54,20 +54,21 @@ public class DatePicker<TScope> : ControlBase<TScope>
 
         // Windows MAUI: DatePicker (CalendarDatePicker) has child Text with AutomationId="DateText"
         // whose Name contains the formatted date like "‎20‎-‎Jan‎-‎01" (with Unicode LTR marks)
+        // Try finding the DateText child first (most reliable)
+        var dateTextElements = element.FindElements(Locator.ByAutomationId("DateText"));
+        if (dateTextElements.Count > 0)
+        {
+            var dateTextName = dateTextElements[0].GetAttribute("Name");
+            if (!string.IsNullOrEmpty(dateTextName) && TryParseDateString(dateTextName, out var dateTextValue))
+            {
+                return dateTextValue;
+            }
+        }
+
+        // Fallback: search all descendants for parseable date
+        // XPath may not be supported by all drivers, so catch only WebDriverException
         try
         {
-            // Try finding the DateText child first (most reliable)
-            var dateTextElements = element.FindElements(Locator.ByAutomationId("DateText"));
-            if (dateTextElements.Count > 0)
-            {
-                var dateTextName = dateTextElements[0].GetAttribute("Name");
-                if (!string.IsNullOrEmpty(dateTextName) && TryParseDateString(dateTextName, out var dateTextValue))
-                {
-                    return dateTextValue;
-                }
-            }
-            
-            // Fallback: search all descendants for parseable date
             var children = element.FindElements(Locator.ByXPath(".//*"));
             foreach (var child in children)
             {
@@ -77,7 +78,7 @@ public class DatePicker<TScope> : ControlBase<TScope>
                 {
                     return childNameDate;
                 }
-                
+
                 // Try child's Text property
                 var childText = child.Text;
                 if (!string.IsNullOrEmpty(childText) && TryParseDateString(childText, out var childTextDate))
@@ -86,9 +87,9 @@ public class DatePicker<TScope> : ControlBase<TScope>
                 }
             }
         }
-        catch
+        catch (WebDriverException)
         {
-            // Ignore XPath errors - not all drivers support it
+            // XPath not supported by this driver - fall through to Name/Text fallbacks
         }
 
         // Try element's own Name attribute (fallback)

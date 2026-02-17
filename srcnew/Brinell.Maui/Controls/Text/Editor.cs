@@ -33,41 +33,12 @@ public class Editor<TScope> : Entry<TScope>
     #region Clear Override for FlaUI
 
     /// <summary>
-    /// Clears editor text using editor-specific clear behavior.
-    /// </summary>
-    /// <param name="timeoutMs">Optional timeout for waiting.</param>
-    /// <returns>The containing scope for fluent chaining.</returns>
-    public new TScope Clear(int? timeoutMs = null)
-    {
-        return RunWithElement(nameof(Clear), timeoutMs, element =>
-        {
-            ClearCore(element, timeoutMs);
-        });
-    }
-
-    /// <summary>
-    /// Sets editor text using editor-specific clear behavior before entry.
-    /// </summary>
-    /// <param name="text">The text to set.</param>
-    /// <param name="timeoutMs">Optional timeout for waiting.</param>
-    /// <returns>The containing scope for fluent chaining.</returns>
-    public new TScope SetText(string? text, int? timeoutMs = null)
-    {
-        if (text == null) return ContainingScope;
-
-        return RunWithElement(nameof(SetText), text, timeoutMs, element =>
-        {
-            SetTextCore(element, text, timeoutMs);
-        });
-    }
-    
-    /// <summary>
     /// Core implementation of Clear using pre-found element.
     /// Uses FlaUI ClearWithFallback for robust clearing on Windows.
     /// </summary>
     /// <param name="element">The pre-found element.</param>
     /// <param name="timeoutMs">Optional timeout for enabled check.</param>
-    protected new void ClearCore(IMauiElement element, int? timeoutMs = null)
+    protected override void ClearCore(IMauiElement element, int? timeoutMs = null)
     {
         CheckEnabledCore(element, timeoutMs);
         
@@ -88,7 +59,7 @@ public class Editor<TScope> : Entry<TScope>
     /// <param name="element">The pre-found element.</param>
     /// <param name="text">The text to set.</param>
     /// <param name="timeoutMs">Optional timeout for enabled check.</param>
-    protected new void SetTextCore(IMauiElement element, string text, int? timeoutMs = null)
+    protected override void SetTextCore(IMauiElement element, string text, int? timeoutMs = null)
     {
         CheckEnabledCore(element, timeoutMs);
         

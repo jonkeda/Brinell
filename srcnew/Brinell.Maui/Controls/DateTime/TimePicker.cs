@@ -60,20 +60,21 @@ public class TimePicker<TScope> : ControlBase<TScope>
 
         // Windows MAUI: TimePicker has child Button with AutomationId="FlyoutButton"
         // whose Name contains the formatted time like " 9:00 AM time picker"
+        // Try finding the FlyoutButton child
+        var flyoutButton = element.FindElements(Locator.ByAutomationId("FlyoutButton"));
+        if (flyoutButton.Count > 0)
+        {
+            var buttonName = flyoutButton[0].GetAttribute("Name");
+            if (!string.IsNullOrEmpty(buttonName) && TryParseTimeString(buttonName, out var buttonTime))
+            {
+                return buttonTime;
+            }
+        }
+
+        // Fallback: search all descendants for parseable time
+        // XPath may not be supported by all drivers, so catch only WebDriverException
         try
         {
-            // Try finding the FlyoutButton child
-            var flyoutButton = element.FindElements(Locator.ByAutomationId("FlyoutButton"));
-            if (flyoutButton.Count > 0)
-            {
-                var buttonName = flyoutButton[0].GetAttribute("Name");
-                if (!string.IsNullOrEmpty(buttonName) && TryParseTimeString(buttonName, out var buttonTime))
-                {
-                    return buttonTime;
-                }
-            }
-            
-            // Fallback: search all descendants for parseable time
             var children = element.FindElements(Locator.ByXPath(".//*"));
             foreach (var child in children)
             {
@@ -82,7 +83,7 @@ public class TimePicker<TScope> : ControlBase<TScope>
                 {
                     return childNameTime;
                 }
-                
+
                 var childText = child.Text;
                 if (!string.IsNullOrEmpty(childText) && TryParseTimeString(childText, out var childTextTime))
                 {
@@ -90,9 +91,9 @@ public class TimePicker<TScope> : ControlBase<TScope>
                 }
             }
         }
-        catch
+        catch (WebDriverException)
         {
-            // Ignore XPath errors - not all drivers support it
+            // XPath not supported by this driver - fall through to Name/Text fallbacks
         }
 
         // Try element's own Name attribute (fallback)

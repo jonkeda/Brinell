@@ -2,9 +2,10 @@ namespace Brinell.Maui.Controls.Collection;
 
 /// <summary>
 /// MAUI CarouselView control wrapper for root-level carousel interactions.
+/// Inherits scroll capability since CarouselView is inherently scrollable.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public class CarouselView<TScope> : ControlBase<TScope>
+public class CarouselView<TScope> : ScrollableControlBase<TScope>
     where TScope : IMauiScope<TScope>
 {
     /// <summary>
