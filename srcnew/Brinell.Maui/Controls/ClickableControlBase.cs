@@ -176,6 +176,12 @@ public abstract class ClickableControlBase<TScope> : ControlBase<TScope>, IClick
         if (IsVisibleCore(element) != true)
         {
             element.ScrollIntoView();
+
+            if (!WaitVisibleCore(element, true, timeout))
+            {
+                throw new TimeoutException(
+                    $"Element was not visible within {timeout}ms after scrolling into view. Locator: {Locator}");
+            }
         }
     }
     

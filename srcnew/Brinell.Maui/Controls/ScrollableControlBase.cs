@@ -176,17 +176,47 @@ public abstract class ScrollableControlBase<TScope> : ControlBase<TScope>, IScro
     {
         var stopwatch = Stopwatch.StartNew();
         var maxAttempts = 20;
-        
+
         for (int i = 0; i < maxAttempts && stopwatch.ElapsedMilliseconds < timeoutMs; i++)
         {
             // Try to find the target element
             var target = TryFindElementInContainer(locator);
-            if (target != null && target.Visible)
+            if (target != null)
             {
-                return; // Found and visible
+                if (target.Visible)
+                {
+                    return; // Already visible — done
+                }
+
+                // Element exists in the tree but is off-screen.
+                // Use the element's own ScrollIntoView (e.g. UIA ScrollItemPattern).
+                target.ScrollIntoView(timeoutMs - (int)stopwatch.ElapsedMilliseconds);
+
+                // Poll until the element becomes visible
+                var remaining = timeoutMs - (int)stopwatch.ElapsedMilliseconds;
+                if (remaining > 0)
+                {
+                    var sw = Stopwatch.StartNew();
+                    while (sw.ElapsedMilliseconds < remaining)
+                    {
+                        var refreshed = TryFindElementInContainer(locator);
+                        if (refreshed != null && refreshed.Visible)
+                        {
+                            return;
+                        }
+                        WaitHelper.Pause(100);
+                    }
+                }
+
+                // Re-check after ScrollIntoView + polling
+                var final = TryFindElementInContainer(locator);
+                if (final != null && final.Visible)
+                {
+                    return;
+                }
             }
-            
-            // Scroll down to reveal more content
+
+            // Element not in tree at all — scroll down to reveal more content
             if (CanScrollDownCore(element) == true)
             {
                 SwipeUpCore(element);
@@ -197,10 +227,10 @@ public abstract class ScrollableControlBase<TScope> : ControlBase<TScope>, IScro
                 ScrollToTopCore(element);
                 break;
             }
-            
+
             WaitHelper.Pause(100); // Brief pause for scroll to settle
         }
-        
+
         // Final check
         var finalTarget = TryFindElementInContainer(locator);
         if (finalTarget == null || !finalTarget.Visible)

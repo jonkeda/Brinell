@@ -15,6 +15,8 @@ public class AppiumFixture : MauiTestFixtureBase
     private readonly ContainerDemoPage _containerDemoPage;
     private readonly UserFormPage _userFormPage;
     private readonly MediaGalleryPage _mediaGalleryPage;
+    private readonly ListsPage _listsPage;
+    private readonly CollectionDemoPage _collectionDemoPage;
 
     public AppiumFixture()
     {
@@ -23,6 +25,8 @@ public class AppiumFixture : MauiTestFixtureBase
         _containerDemoPage = new ContainerDemoPage(Context);
         _userFormPage = new UserFormPage(Context);
         _mediaGalleryPage = new MediaGalleryPage(Context);
+        _listsPage = new ListsPage(Context);
+        _collectionDemoPage = new CollectionDemoPage(Context);
     }
 
     /// <summary>
@@ -49,6 +53,16 @@ public class AppiumFixture : MauiTestFixtureBase
     /// Gets the MediaGalleryPage page object.
     /// </summary>
     public MediaGalleryPage MediaGalleryPage => _mediaGalleryPage;
+
+    /// <summary>
+    /// Gets the ListsPage page object.
+    /// </summary>
+    public ListsPage ListsPage => _listsPage;
+
+    /// <summary>
+    /// Gets the CollectionDemoPage page object (CarouselView, TableView, PaginatedList).
+    /// </summary>
+    public CollectionDemoPage CollectionDemoPage => _collectionDemoPage;
 
     /// <summary>
     /// Navigates to the Basics tab (first/main tab).
@@ -96,6 +110,30 @@ public class AppiumFixture : MauiTestFixtureBase
         {
             throw new InvalidOperationException("MediaGalleryPage did not become ready after clicking MediaTab. MediaGalleryTitle may not be visible.");
         }
+    }
+
+    /// <summary>
+    /// Navigates to the Lists page via tab.
+    /// Now hosts Collections demo (CarouselView, TableView, PaginatedList).
+    /// </summary>
+    public void NavigateToLists()
+    {
+        // If already on the Collections page, skip navigation
+        if (_collectionDemoPage.IsLoaded())
+            return;
+
+        _appShell.ListsTab.Click();
+        // Best-effort wait for page to be ready
+        _collectionDemoPage.WaitReady(5000);
+    }
+
+    /// <summary>
+    /// Navigates to the Collections (Lists tab) page.
+    /// Alias for NavigateToLists() since the Lists tab now hosts collection controls.
+    /// </summary>
+    public void NavigateToCollections()
+    {
+        NavigateToLists();
     }
 
     #region MauiTestFixtureBase Overrides

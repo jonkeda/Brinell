@@ -488,10 +488,34 @@ public abstract class PageObjectBase<TSelf> : ObjectBase, IMauiPage<TSelf>
 
     #endregion
 
-    // Note: ListView and CollectionView factory methods are not provided here
+    /// <summary>
+    /// Creates a carousel view control within this page scope.
+    /// </summary>
+    protected CarouselView<TSelf> CarouselView(Locator locator)
+        => new(this, locator);
+
+    /// <summary>
+    /// Creates a carousel view control within this page scope using automation ID.
+    /// </summary>
+    protected CarouselView<TSelf> CarouselView(string locator)
+        => new(this, locator);
+
+    /// <summary>
+    /// Creates a table view control within this page scope.
+    /// </summary>
+    protected TableView<TSelf> TableView(Locator locator)
+        => new(this, locator);
+
+    /// <summary>
+    /// Creates a table view control within this page scope using automation ID.
+    /// </summary>
+    protected TableView<TSelf> TableView(string locator)
+        => new(this, locator);
+
+    // Note: ListView, CollectionView<TScope,TItem>, and CarouselView<TScope,TItem>
+    // factory methods with item containers are not provided here
     // because they require TItem type parameter and item factory function.
-    // Use ListView<TScope, TItem> and CollectionView<TScope, TItem>
-    // directly in page objects for type-safe list control access.
+    // Use them directly in page objects for type-safe list control access.
 
     #region Navigation Controls
 

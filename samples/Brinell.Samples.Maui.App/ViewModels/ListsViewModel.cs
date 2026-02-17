@@ -26,6 +26,14 @@ public class ListsViewModel : ViewModelBase
             new() { Id = "5", Name = "Elderberry", Description = "A dark purple berry" },
         };
 
+        CarouselItems = new ObservableCollection<CarouselItem>
+        {
+            new() { Id = "0", Title = "Welcome", Subtitle = "Swipe to explore", Color = "#6200EE" },
+            new() { Id = "1", Title = "Features", Subtitle = "Discover what's new", Color = "#03DAC5" },
+            new() { Id = "2", Title = "Getting Started", Subtitle = "Quick start guide", Color = "#FF6D00" },
+            new() { Id = "3", Title = "Settings", Subtitle = "Customize your experience", Color = "#B00020" },
+        };
+
         TreeNodes = new ObservableCollection<TreeNode>
         {
             new()
@@ -88,6 +96,20 @@ public class ListsViewModel : ViewModelBase
 
         RefreshCommand = new AsyncRelayCommand(this, RefreshAsync);
         DeleteItemCommand = new RelayCommand<ListItem>(DeleteItem);
+
+        // Initialize paginated list
+        _allPagedItems = Enumerable.Range(1, 20)
+            .Select(i => new PagedItem
+            {
+                Id = i.ToString(),
+                Title = $"Record {i}",
+                Detail = $"Detail for record {i}"
+            })
+            .ToList();
+        PagedItems = new ObservableCollection<PagedItem>();
+        PreviousPageCommand = new RelayCommand(GoToPreviousPage, () => CurrentPage > 1);
+        NextPageCommand = new RelayCommand(GoToNextPage, () => CurrentPage < TotalPages);
+        LoadPage(1);
     }
 
     #region ListView
@@ -139,6 +161,104 @@ public class ListsViewModel : ViewModelBase
     #region TreeView
 
     public ObservableCollection<TreeNode> TreeNodes { get; }
+
+    #endregion
+
+    #region CarouselView
+
+    public ObservableCollection<CarouselItem> CarouselItems { get; }
+
+    private int _carouselPosition;
+    public int CarouselPosition
+    {
+        get => _carouselPosition;
+        set => SetProperty(ref _carouselPosition, value);
+    }
+
+    #endregion
+
+    #region TableView Settings
+
+    private bool _notificationsEnabled = true;
+    public bool NotificationsEnabled
+    {
+        get => _notificationsEnabled;
+        set => SetProperty(ref _notificationsEnabled, value);
+    }
+
+    private bool _darkModeEnabled;
+    public bool DarkModeEnabled
+    {
+        get => _darkModeEnabled;
+        set => SetProperty(ref _darkModeEnabled, value);
+    }
+
+    private string _username = "JohnDoe";
+    public string Username
+    {
+        get => _username;
+        set => SetProperty(ref _username, value);
+    }
+
+    #endregion
+
+    #region PaginatedList
+
+    private const int PageSize = 5;
+    private readonly List<PagedItem> _allPagedItems;
+
+    public ObservableCollection<PagedItem> PagedItems { get; }
+
+    private int _currentPage = 1;
+    public int CurrentPage
+    {
+        get => _currentPage;
+        private set
+        {
+            if (SetProperty(ref _currentPage, value))
+            {
+                OnPropertyChanged(nameof(PageInfoText));
+                PreviousPageCommand.NotifyCanExecuteChanged();
+                NextPageCommand.NotifyCanExecuteChanged();
+            }
+        }
+    }
+
+    public int TotalPages => (int)Math.Ceiling(_allPagedItems.Count / (double)PageSize);
+
+    public string PageInfoText => $"Page {CurrentPage} of {TotalPages}";
+
+    public IRelayCommand PreviousPageCommand { get; }
+    public IRelayCommand NextPageCommand { get; }
+
+    private void LoadPage(int page)
+    {
+        CurrentPage = page;
+        PagedItems.Clear();
+        var items = _allPagedItems
+            .Skip((page - 1) * PageSize)
+            .Take(PageSize);
+        foreach (var item in items)
+        {
+            PagedItems.Add(item);
+        }
+    }
+
+    private void GoToNextPage()
+    {
+        if (CurrentPage < TotalPages)
+        {
+            LoadPage(CurrentPage + 1);
+        }
+    }
+
+    private void GoToPreviousPage()
+    {
+        if (CurrentPage > 1)
+        {
+            LoadPage(CurrentPage - 1);
+        }
+    }
 
     #endregion
 }
@@ -214,6 +334,81 @@ public class TreeNode : INotifyPropertyChanged
     }
 
     public bool HasChildren => Children != null && Children.Count > 0;
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+    protected void OnPropertyChanged([CallerMemberName] string? name = null)
+        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+}
+
+/// <summary>
+/// Represents an item in the CarouselView.
+/// </summary>
+public class CarouselItem : INotifyPropertyChanged
+{
+    private string _id = "";
+    private string _title = "";
+    private string _subtitle = "";
+    private string _color = "#6200EE";
+
+    public string Id
+    {
+        get => _id;
+        set { _id = value; OnPropertyChanged(); OnPropertyChanged(nameof(AutomationId)); }
+    }
+
+    public string AutomationId => $"CarouselItem_{_id}";
+
+    public string Title
+    {
+        get => _title;
+        set { _title = value; OnPropertyChanged(); }
+    }
+
+    public string Subtitle
+    {
+        get => _subtitle;
+        set { _subtitle = value; OnPropertyChanged(); }
+    }
+
+    public string Color
+    {
+        get => _color;
+        set { _color = value; OnPropertyChanged(); }
+    }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+    protected void OnPropertyChanged([CallerMemberName] string? name = null)
+        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+}
+
+/// <summary>
+/// Represents an item in the PaginatedList.
+/// </summary>
+public class PagedItem : INotifyPropertyChanged
+{
+    private string _id = "";
+    private string _title = "";
+    private string _detail = "";
+
+    public string Id
+    {
+        get => _id;
+        set { _id = value; OnPropertyChanged(); OnPropertyChanged(nameof(AutomationId)); }
+    }
+
+    public string AutomationId => $"PagedItem_{_id}";
+
+    public string Title
+    {
+        get => _title;
+        set { _title = value; OnPropertyChanged(); }
+    }
+
+    public string Detail
+    {
+        get => _detail;
+        set { _detail = value; OnPropertyChanged(); }
+    }
 
     public event PropertyChangedEventHandler? PropertyChanged;
     protected void OnPropertyChanged([CallerMemberName] string? name = null)

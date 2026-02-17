@@ -306,24 +306,46 @@ public sealed class FlaUIMauiElement : IMauiElement, IRangePatternElement, IExpa
     /// <inheritdoc />
     public void Swipe(int startX, int startY, int endX, int endY, int durationMs = 500)
     {
-        // FlaUI doesn't have native swipe support, simulate with mouse drag
+        // On Windows desktop, vertical swipes should use mouse wheel
+        // since mouse drag doesn't scroll MAUI ScrollView controls.
+        var deltaY = endY - startY;
+        var deltaX = endX - startX;
+
+        // Detect vertical-only scroll gesture (typical swipe to scroll)
+        if (Math.Abs(deltaX) < 20 && Math.Abs(deltaY) > 20)
+        {
+            _driver.EnsureRootWindowFocused();
+
+            // Use mouse wheel at the element center — most reliable for MAUI ScrollView on WinUI3
+            var center = new Point(
+                _element.BoundingRectangle.X + _element.BoundingRectangle.Width / 2,
+                _element.BoundingRectangle.Y + _element.BoundingRectangle.Height / 2);
+            Mouse.MoveTo(center);
+            // deltaY < 0 means swipe up → scroll down → negative wheel
+            var wheelClicks = deltaY < 0 ? -5 : 5;
+            Mouse.Scroll(wheelClicks);
+            WaitHelper.Pause(200); // Wait for scroll to settle
+            return;
+        }
+
+        // Non-scroll gestures: simulate with mouse drag
         Mouse.MoveTo(new Point(startX, startY));
         Mouse.Down(MouseButton.Left);
-        
+
         // Interpolate movement for smooth swipe
         var steps = Math.Max(10, durationMs / 50);
-        var deltaX = (endX - startX) / (double)steps;
-        var deltaY = (endY - startY) / (double)steps;
+        var dx = (endX - startX) / (double)steps;
+        var dy = (endY - startY) / (double)steps;
         var stepDelay = durationMs / steps;
-        
+
         for (int i = 1; i <= steps; i++)
         {
-            var x = (int)(startX + deltaX * i);
-            var y = (int)(startY + deltaY * i);
+            var x = (int)(startX + dx * i);
+            var y = (int)(startY + dy * i);
             Mouse.MoveTo(new Point(x, y));
             WaitHelper.Pause(stepDelay);
         }
-        
+
         Mouse.Up(MouseButton.Left);
     }
     
@@ -415,6 +437,10 @@ public sealed class FlaUIMauiElement : IMauiElement, IRangePatternElement, IExpa
                 "enabled" => _element.IsEnabled.ToString(),
                 "visible" => (!_element.IsOffscreen).ToString(),
                 "helptext" => _element.Properties.HelpText.ValueOrDefault,
+                "scroll.verticalscrollpercent" => GetScrollPatternValue(p => p.VerticalScrollPercent.Value),
+                "scroll.horizontalscrollpercent" => GetScrollPatternValue(p => p.HorizontalScrollPercent.Value),
+                "scroll.verticallyscrollable" => GetScrollPatternBool(p => p.VerticallyScrollable.Value),
+                "scroll.horizontallyscrollable" => GetScrollPatternBool(p => p.HorizontallyScrollable.Value),
                 _ => null
             };
         }
@@ -422,6 +448,27 @@ public sealed class FlaUIMauiElement : IMauiElement, IRangePatternElement, IExpa
         {
             return null;
         }
+    }
+
+    /// <summary>
+    /// Gets a numeric value from the Scroll pattern, or null if not supported.
+    /// </summary>
+    private string? GetScrollPatternValue(Func<global::FlaUI.Core.Patterns.IScrollPattern, double> accessor)
+    {
+        if (!_element.Patterns.Scroll.IsSupported)
+            return null;
+        var value = accessor(_element.Patterns.Scroll.Pattern);
+        return value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>
+    /// Gets a boolean value from the Scroll pattern, or null if not supported.
+    /// </summary>
+    private string? GetScrollPatternBool(Func<global::FlaUI.Core.Patterns.IScrollPattern, bool> accessor)
+    {
+        if (!_element.Patterns.Scroll.IsSupported)
+            return null;
+        return accessor(_element.Patterns.Scroll.Pattern).ToString();
     }
     
     /// <inheritdoc />

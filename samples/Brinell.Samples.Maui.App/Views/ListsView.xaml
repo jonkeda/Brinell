@@ -145,6 +145,6 @@
                 </VerticalStackLayout>
             </Frame>
 
-        </VerticalStackLayout>
-    </ScrollView>
-</ContentView>
+                    </VerticalStackLayout>
+                </ScrollView>
+            </ContentView>

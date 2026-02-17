@@ -75,15 +75,8 @@ public abstract class ToggleControlBase<TScope> : ClickableControlBase<TScope>, 
     {
         var beforeState = IsCheckedCore(element);
         
-        // Scroll into view first to ensure element is visible
-        try
-        {
-            element.ScrollIntoView();
-        }
-        catch
-        {
-            // Ignore scroll failures - element may still be clickable
-        }
+        // Ensure element is visible before toggling
+        EnsureVisible(element);
         
         // Attempt click
         element.Click();

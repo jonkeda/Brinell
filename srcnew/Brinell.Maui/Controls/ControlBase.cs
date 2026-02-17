@@ -132,19 +132,12 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
         {
             return;
         }
-        
-        try
-        {
-            // Use the element's built-in ScrollIntoView which uses Selenium 4 API
-            element.ScrollIntoView();
-            
-            // Brief pause for scroll animation to settle
-            WaitHelper.Pause(100);
-        }
-        catch (Exception)
-        {
-            // Best effort - swallow scroll failures
-        }
+
+        // Use the element's built-in ScrollIntoView which uses Selenium 4 API
+        element.ScrollIntoView();
+
+        // Poll until the element is actually visible
+        WaitVisibleCore(element, true, DefaultTimeoutMs);
     }
     
     /// <summary>
@@ -157,6 +150,12 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
         if (IsVisibleCore(element) != true)
         {
             ScrollIntoViewCore(element);
+
+            if (IsVisibleCore(element) != true)
+            {
+                throw new TimeoutException(
+                    $"Element was not visible after scrolling into view. Locator: {Locator}");
+            }
         }
     }
     

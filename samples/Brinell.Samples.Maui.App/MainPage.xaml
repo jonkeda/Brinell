@@ -25,12 +25,10 @@
         <views:FormsView />
     </ContentPage>
 
-    <!-- Lists Tab -->
+    <!-- Lists Tab: CarouselView, TableView, PaginatedList -->
     <ContentPage Title="Lists" AutomationId="ListsTab">
-        <views:ListsView />
+        <views:CollectionDemoView />
     </ContentPage>
-
-    <!-- Gestures Tab -->
     <ContentPage Title="Gestures" AutomationId="GesturesTab">
         <views:GesturesView />
     </ContentPage>
