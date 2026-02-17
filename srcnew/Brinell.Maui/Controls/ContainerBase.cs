@@ -1,4 +1,6 @@
 using Brinell.Core.Locators;
+using Brinell.Maui.Controls.Display;
+using Brinell.Maui.Controls.Toggle;
 using Brinell.Maui.Enums;
 
 namespace Brinell.Maui.Controls;
@@ -250,7 +252,31 @@ public abstract class ContainerBase<TParent, TSelf> : ControlBase<TParent>, IMau
     #region Factory Methods
 
     /// <summary>
-    /// Creates a button control within this page scope.
+    /// Creates a label control within this container scope.
+    /// </summary>
+    protected Label<TSelf> Label(Locator locator)
+        => new(this, locator);
+
+    /// <summary>
+    /// Creates a label control within this container scope using the scope default locator.
+    /// </summary>
+    protected Label<TSelf> Label(string locator)
+        => new(this, locator);
+
+    /// <summary>
+    /// Creates a checkbox control within this container scope.
+    /// </summary>
+    protected CheckBox<TSelf> CheckBox(Locator locator)
+        => new(this, locator);
+
+    /// <summary>
+    /// Creates a checkbox control within this container scope using the scope default locator.
+    /// </summary>
+    protected CheckBox<TSelf> CheckBox(string locator)
+        => new(this, locator);
+
+    /// <summary>
+    /// Creates a button control within this container scope.
     /// </summary>
     protected Button<TSelf> Button(Locator locator)
         => new(this, locator);

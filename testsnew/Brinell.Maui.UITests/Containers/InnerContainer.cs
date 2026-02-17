@@ -16,7 +16,7 @@ public class InnerContainer : ContainerBase<OuterContainer, InnerContainer>
     /// <summary>
     /// Title label in the inner container.
     /// </summary>
-    public ControlBase<InnerContainer> InnerTitle => new Control<InnerContainer>(this, "InnerTitle");
+    public Label<InnerContainer> InnerTitle => Label("InnerTitle");
 
     /// <summary>
     /// The entry field in the inner container.

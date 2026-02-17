@@ -34,47 +34,47 @@ public class UserFormPage : PageObjectBase<UserFormPage>
     /// <summary>
     /// The main title label "User Registration".
     /// </summary>
-    public ControlBase<UserFormPage> UserFormTitle => Control("UserFormTitle");
+    public Label<UserFormPage> UserFormTitle => Label("UserFormTitle");
 
     /// <summary>
     /// The personal info section label.
     /// </summary>
-    public ControlBase<UserFormPage> PersonalInfoLabel => Control("PersonalInfoLabel");
+    public Label<UserFormPage> PersonalInfoLabel => Label("PersonalInfoLabel");
 
     /// <summary>
     /// The preferences section label.
     /// </summary>
-    public ControlBase<UserFormPage> PreferencesLabel => Control("PreferencesLabel");
+    public Label<UserFormPage> PreferencesLabel => Label("PreferencesLabel");
 
     /// <summary>
     /// The selection section label.
     /// </summary>
-    public ControlBase<UserFormPage> SelectionLabel => Control("SelectionLabel");
+    public Label<UserFormPage> SelectionLabel => Label("SelectionLabel");
 
     /// <summary>
     /// The range section label.
     /// </summary>
-    public ControlBase<UserFormPage> RangeLabel => Control("RangeLabel");
+    public Label<UserFormPage> RangeLabel => Label("RangeLabel");
 
     /// <summary>
     /// The result message label.
     /// </summary>
-    public ControlBase<UserFormPage> ResultMessage => Control("ResultMessage");
+    public Label<UserFormPage> ResultMessage => Label("ResultMessage");
 
     /// <summary>
     /// The font size display label.
     /// </summary>
-    public ControlBase<UserFormPage> FontSizeLabel => Control("FontSizeLabel");
+    public Label<UserFormPage> FontSizeLabel => Label("FontSizeLabel");
 
     /// <summary>
     /// The volume display label.
     /// </summary>
-    public ControlBase<UserFormPage> VolumeLabel => Control("VolumeLabel");
+    public Label<UserFormPage> VolumeLabel => Label("VolumeLabel");
 
     /// <summary>
     /// The quantity display label.
     /// </summary>
-    public ControlBase<UserFormPage> QuantityLabel => Control("QuantityLabel");
+    public Label<UserFormPage> QuantityLabel => Label("QuantityLabel");
 
     #endregion
 

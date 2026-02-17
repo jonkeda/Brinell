@@ -29,37 +29,37 @@ public class MainPage : PageObjectBase<MainPage>
     /// <summary>
     /// The main title label "Brinell MAUI Sample".
     /// </summary>
-    public ControlBase<MainPage> TitleLabel => Control("TitleLabel");
+    public Label<MainPage> TitleLabel => Label("TitleLabel");
 
     /// <summary>
     /// The subtitle label "UI Test Framework Demo".
     /// </summary>
-    public ControlBase<MainPage> SubtitleLabel => Control("SubtitleLabel");
+    public Label<MainPage> SubtitleLabel => Label("SubtitleLabel");
 
     /// <summary>
     /// The counter display label showing "Counter: X".
     /// </summary>
-    public ControlBase<MainPage> CounterLabel => Control("CounterLabel");
+    public Label<MainPage> CounterLabel => Label("CounterLabel");
 
     /// <summary>
     /// The greeting label that shows the greeting message.
     /// </summary>
-    public ControlBase<MainPage> GreetingLabel => Control("GreetingLabel");
+    public Label<MainPage> GreetingLabel => Label("GreetingLabel");
 
     /// <summary>
     /// The volume percentage label.
     /// </summary>
-    public ControlBase<MainPage> VolumeLabel => Control("VolumeLabel");
+    public Label<MainPage> VolumeLabel => Label("VolumeLabel");
 
     /// <summary>
     /// The notification status label.
     /// </summary>
-    public ControlBase<MainPage> NotificationLabel => Control("NotificationLabel");
+    public Label<MainPage> NotificationLabel => Label("NotificationLabel");
 
     /// <summary>
     /// The selected color label.
     /// </summary>
-    public ControlBase<MainPage> SelectedColorLabel => Control("SelectedColorLabel");
+    public Label<MainPage> SelectedColorLabel => Label("SelectedColorLabel");
 
     #endregion
 
@@ -107,7 +107,7 @@ public class MainPage : PageObjectBase<MainPage>
     /// <summary>
     /// The message editor (multi-line text).
     /// </summary>
-    public ControlBase<MainPage> MessageEditor => Control("MessageEditor");
+    public Editor<MainPage> MessageEditor => Editor("MessageEditor");
 
     #endregion
 
@@ -116,12 +116,12 @@ public class MainPage : PageObjectBase<MainPage>
     /// <summary>
     /// The notification switch.
     /// </summary>
-    public ControlBase<MainPage> NotificationSwitch => Control("NotificationSwitch");
+    public Switch<MainPage> NotificationSwitch => Switch("NotificationSwitch");
 
     /// <summary>
     /// The agree to terms checkbox.
     /// </summary>
-    public ControlBase<MainPage> AgreeCheckBox => Control("AgreeCheckBox");
+    public CheckBox<MainPage> AgreeCheckBox => CheckBox("AgreeCheckBox");
 
     #endregion
 
@@ -130,12 +130,12 @@ public class MainPage : PageObjectBase<MainPage>
     /// <summary>
     /// The volume slider control.
     /// </summary>
-    public ControlBase<MainPage> VolumeSlider => Control("VolumeSlider");
+    public Slider<MainPage> VolumeSlider => Slider("VolumeSlider");
 
     /// <summary>
     /// The volume progress bar.
     /// </summary>
-    public ControlBase<MainPage> VolumeProgress => Control("VolumeProgress");
+    public ProgressBar<MainPage> VolumeProgress => ProgressBar("VolumeProgress");
 
     #endregion
 
@@ -144,17 +144,17 @@ public class MainPage : PageObjectBase<MainPage>
     /// <summary>
     /// The color picker.
     /// </summary>
-    public ControlBase<MainPage> ColorPicker => Control("ColorPicker");
+    public Picker<MainPage> ColorPicker => Picker("ColorPicker");
 
     /// <summary>
     /// The birth date picker.
     /// </summary>
-    public ControlBase<MainPage> BirthDatePicker => Control("BirthDatePicker");
+    public DatePicker<MainPage> BirthDatePicker => DatePicker("BirthDatePicker");
 
     /// <summary>
     /// The reminder time picker.
     /// </summary>
-    public ControlBase<MainPage> ReminderTimePicker => Control("ReminderTimePicker");
+    public TimePicker<MainPage> ReminderTimePicker => TimePicker("ReminderTimePicker");
 
     #endregion
 
@@ -163,7 +163,7 @@ public class MainPage : PageObjectBase<MainPage>
     /// <summary>
     /// The loading activity indicator.
     /// </summary>
-    public ControlBase<MainPage> LoadingIndicator => Control("LoadingIndicator");
+    public ActivityIndicator<MainPage> LoadingIndicator => ActivityIndicator("LoadingIndicator");
 
     #endregion
 }

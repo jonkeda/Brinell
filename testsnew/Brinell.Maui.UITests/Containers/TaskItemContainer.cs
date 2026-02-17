@@ -25,12 +25,12 @@ public class TaskItemContainer : ContainerBase<ContainerDemoPage, TaskItemContai
     /// <summary>
     /// The task checkbox.
     /// </summary>
-    public ControlBase<TaskItemContainer> CheckBox => new Control<TaskItemContainer>(this, "TaskCheckBox");
+    public CheckBox<TaskItemContainer> TaskCheckBox => CheckBox("TaskCheckBox");
 
     /// <summary>
     /// The task name label.
     /// </summary>
-    public ControlBase<TaskItemContainer> NameLabel => new Control<TaskItemContainer>(this, "TaskNameLabel");
+    public Label<TaskItemContainer> NameLabel => Label("TaskNameLabel");
 
     /// <summary>
     /// The delete task button.

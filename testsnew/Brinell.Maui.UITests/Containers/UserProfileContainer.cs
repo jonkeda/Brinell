@@ -19,12 +19,12 @@ public class UserProfileContainer : ContainerBase<ContainerDemoPage, UserProfile
     /// <summary>
     /// The profile title label.
     /// </summary>
-    public ControlBase<UserProfileContainer> TitleLabel => new Control<UserProfileContainer>(this, "ProfileTitle");
+    public Label<UserProfileContainer> TitleLabel => Label("ProfileTitle");
 
     /// <summary>
     /// The profile status label.
     /// </summary>
-    public ControlBase<UserProfileContainer> StatusLabel => new Control<UserProfileContainer>(this, "ProfileStatusLabel");
+    public Label<UserProfileContainer> StatusLabel => Label("ProfileStatusLabel");
 
     #endregion
 

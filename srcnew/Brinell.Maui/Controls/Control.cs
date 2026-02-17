@@ -1,7 +1,8 @@
 namespace Brinell.Maui.Controls;
 
 /// <summary>
-/// Generic concrete MAUI control used when no specialized control type is required.
+/// Abstract base for MAUI controls that don't need specialized behavior.
+/// Use <see cref="GenericControl{TScope}"/> for concrete instantiation.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent method chaining.</typeparam>
 public abstract class Control<TScope> : ControlBase<TScope>

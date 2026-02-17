@@ -94,7 +94,7 @@ public class ContainerScopingTests
     {
         // Arrange - create a control looking for OuterButton within InnerContainer scope
         var innerScope = Page.Outer.InnerFrame;
-        var outerButtonInInner = new Control<InnerContainer>(innerScope, "OuterButton");
+        var outerButtonInInner = new Button<InnerContainer>(innerScope, "OuterButton");
 
         // Act & Assert - inner container finds its own title but not outer's button
         innerScope.InnerTitle.AssertExists();

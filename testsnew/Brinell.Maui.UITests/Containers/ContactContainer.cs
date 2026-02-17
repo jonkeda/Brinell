@@ -25,12 +25,12 @@ public class ContactContainer : ContainerBase<ContainerDemoPage, ContactContaine
     /// <summary>
     /// The contact name label.
     /// </summary>
-    public ControlBase<ContactContainer> NameLabel => new Control<ContactContainer>(this, "ContactName");
+    public Label<ContactContainer> NameLabel => Label("ContactName");
 
     /// <summary>
     /// The contact email label.
     /// </summary>
-    public ControlBase<ContactContainer> EmailLabel => new Control<ContactContainer>(this, "ContactEmail");
+    public Label<ContactContainer> EmailLabel => Label("ContactEmail");
 
     /// <summary>
     /// The call button.

@@ -16,7 +16,7 @@ public class OuterContainer : ContainerBase<ContainerDemoPage, OuterContainer>
     /// <summary>
     /// Title label in the outer container.
     /// </summary>
-    public ControlBase<OuterContainer> OuterTitle => new Control<OuterContainer>(this, "OuterTitle");
+    public Label<OuterContainer> OuterTitle => Label("OuterTitle");
 
     /// <summary>
     /// Outer action button.

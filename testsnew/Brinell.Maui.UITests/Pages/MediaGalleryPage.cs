@@ -33,32 +33,32 @@ public class MediaGalleryPage : PageObjectBase<MediaGalleryPage>
     /// <summary>
     /// The main title label "Media Gallery".
     /// </summary>
-    public ControlBase<MediaGalleryPage> MediaGalleryTitle => Control("MediaGalleryTitle");
+    public Label<MediaGalleryPage> MediaGalleryTitle => Label("MediaGalleryTitle");
 
     /// <summary>
     /// The image section label.
     /// </summary>
-    public ControlBase<MediaGalleryPage> ImageSectionLabel => Control("ImageSectionLabel");
+    public Label<MediaGalleryPage> ImageSectionLabel => Label("ImageSectionLabel");
 
     /// <summary>
     /// The media player section label.
     /// </summary>
-    public ControlBase<MediaGalleryPage> MediaPlayerLabel => Control("MediaPlayerLabel");
+    public Label<MediaGalleryPage> MediaPlayerLabel => Label("MediaPlayerLabel");
 
     /// <summary>
     /// The web view section label.
     /// </summary>
-    public ControlBase<MediaGalleryPage> WebViewLabel => Control("WebViewLabel");
+    public Label<MediaGalleryPage> WebViewLabel => Label("WebViewLabel");
 
     /// <summary>
     /// The media position label.
     /// </summary>
-    public ControlBase<MediaGalleryPage> PositionLabel => Control("PositionLabel");
+    public Label<MediaGalleryPage> PositionLabel => Label("PositionLabel");
 
     /// <summary>
     /// The media duration label.
     /// </summary>
-    public ControlBase<MediaGalleryPage> DurationLabel => Control("DurationLabel");
+    public Label<MediaGalleryPage> DurationLabel => Label("DurationLabel");
 
     #endregion
 
@@ -86,7 +86,7 @@ public class MediaGalleryPage : PageObjectBase<MediaGalleryPage>
     /// The thumbnail collection view - accessed as generic control.
     /// Note: For typed item access, use CollectionView directly with item factory.
     /// </summary>
-    public ControlBase<MediaGalleryPage> ThumbnailCollection => Control("ThumbnailCollection");
+    public CollectionView<MediaGalleryPage> ThumbnailCollection => CollectionView("ThumbnailCollection");
 
     #endregion
 

@@ -13,7 +13,7 @@ public class ContainerDemoPage : PageObjectBase<ContainerDemoPage>
         : base(context)
     {
         // Containers initialized in constructor, NOT as lazy properties with => new()
-        PageTitle = new Control<ContainerDemoPage>(this, "PageTitle");
+        PageTitle = new Label<ContainerDemoPage>(this, "PageTitle");
         UserProfile = new UserProfileContainer(this, "UserProfileFrame");
         Outer = new OuterContainer(this, "OuterFrame");
         // TaskList uses TaskListFrame as container with static items (Task_0, Task_1, Task_2)
@@ -55,7 +55,7 @@ public class ContainerDemoPage : PageObjectBase<ContainerDemoPage>
     /// <summary>
     /// The task count label.
     /// </summary>
-    public ControlBase<ContainerDemoPage> TaskCountLabel => Control("TaskCountLabel");
+    public Label<ContainerDemoPage> TaskCountLabel => Label("TaskCountLabel");
     
     #endregion
 

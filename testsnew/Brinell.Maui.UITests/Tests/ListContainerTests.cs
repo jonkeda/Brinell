@@ -84,7 +84,7 @@ public class ListContainerTests
         // Assert
         Assert.NotNull(firstTask);
         firstTask.NameLabel.AssertExists();
-        firstTask.CheckBox.AssertExists();
+        firstTask.TaskCheckBox.AssertExists();
     }
 
     /// <summary>
@@ -99,7 +99,7 @@ public class ListContainerTests
 
         // Assert - all expected controls exist
         task.NameLabel.AssertExists();
-        task.CheckBox.AssertExists();
+        task.TaskCheckBox.AssertExists();
         task.DeleteButton.AssertExists();
     }
 
