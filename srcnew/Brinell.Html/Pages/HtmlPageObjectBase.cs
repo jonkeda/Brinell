@@ -103,17 +103,17 @@ public abstract class HtmlPageObjectBase<TSelf> : ObjectBase, IHtmlPage<TSelf>
         return WaitLoaded(true, timeoutMs);
     }
 
-    public IHtmlElement? TryFindElement(Locator locator)
+    IHtmlElement? IElementScope<IHtmlElement>.TryFindElement(Locator locator)
     {
         return _context.TryFindElement(locator);
     }
 
-    public IHtmlElement FindElement(Locator locator)
+    IHtmlElement IElementScope<IHtmlElement>.FindElement(Locator locator)
     {
         return _context.FindElement(locator);
     }
 
-    public IReadOnlyList<IHtmlElement> FindElements(Locator locator)
+    IReadOnlyList<IHtmlElement> IElementScope<IHtmlElement>.FindElements(Locator locator)
     {
         return _context.FindElements(locator);
     }

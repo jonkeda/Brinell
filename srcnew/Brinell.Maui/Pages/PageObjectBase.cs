@@ -45,7 +45,7 @@ public abstract class PageObjectBase<TSelf> : ObjectBase, IMauiPage<TSelf>
     #region IPageObject Implementation
     
     /// <inheritdoc />
-    public abstract string Name { get; }
+    public virtual string Name => GetType().Name;
     
     /// <inheritdoc />
     public LocatorStrategy DefaultLocatorStrategy => _context.DefaultLocatorStrategy;
@@ -53,9 +53,37 @@ public abstract class PageObjectBase<TSelf> : ObjectBase, IMauiPage<TSelf>
     /// <inheritdoc />
     public Label<TSelf> BusySentinel => Label("UITest_IsBusy");
 
+    /// <summary>
+    /// Gets the AutomationId of the sentinel label whose text indicates the current page.
+    /// Defaults to "UITest_CurrentPage". Override to null to disable sentinel-based detection.
+    /// </summary>
+    protected virtual string? PageSentinelId => "UITest_CurrentPage";
+
+    /// <summary>
+    /// Gets the expected sentinel text value when this page is active.
+    /// Defaults to the page Name with "Page" replaced by "ViewModel".
+    /// </summary>
+    protected virtual string ExpectedSentinelValue
+        => Name.EndsWith("Page", StringComparison.Ordinal)
+            ? string.Concat(Name.AsSpan(0, Name.Length - 4), "ViewModel")
+            : Name;
+
     /// <inheritdoc />
     public virtual bool IsLoaded(int? timeoutMs = null)
-        => BusySentinel.IsExists();
+    {
+        // Primary: check for page root element by AutomationId (works on Appium/Android/iOS)
+        if (_context.TryFindElement(Locator.ByAutomationId(Name)) != null)
+            return true;
+
+        // Fallback: check page sentinel label (works on WinUI/FlaUI where layout containers
+        // don't expose AutomationId in the UIA tree)
+        if (PageSentinelId == null)
+            return false;
+
+        var sentinel = _context.TryFindElement(Locator.ByAutomationId(PageSentinelId));
+        return sentinel != null
+            && string.Equals(sentinel.Text, ExpectedSentinelValue, StringComparison.Ordinal);
+    }
 
     /// <summary>
     /// Waits for the page to finish loading.
@@ -173,23 +201,20 @@ public abstract class PageObjectBase<TSelf> : ObjectBase, IMauiPage<TSelf>
     }
     
     /// <inheritdoc />
-    public IMauiElement? TryFindElement(Locator locator)
+    IMauiElement? IElementScope<IMauiElement>.TryFindElement(Locator locator)
     {
-        // Delegate to context (searches from driver root)
         return _context.TryFindElement(locator);
     }
     
     /// <inheritdoc />
-    public IMauiElement FindElement(Locator locator)
+    IMauiElement IElementScope<IMauiElement>.FindElement(Locator locator)
     {
-        // Delegate to context (searches from driver root)
         return _context.FindElement(locator);
     }
     
     /// <inheritdoc />
-    public IReadOnlyList<IMauiElement> FindElements(Locator locator)
+    IReadOnlyList<IMauiElement> IElementScope<IMauiElement>.FindElements(Locator locator)
     {
-        // Delegate to context (searches from driver root)
         return _context.FindElements(locator);
     }
 
