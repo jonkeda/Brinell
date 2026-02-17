@@ -1,6 +1,6 @@
 using Brinell.Maui.UITests.Pages;
 
-namespace Brinell.Maui.UITests.Tests;
+namespace Brinell.Maui.UITests.Tests.Text;
 
 /// <summary>
 /// Example UI tests demonstrating Entry control testing patterns.

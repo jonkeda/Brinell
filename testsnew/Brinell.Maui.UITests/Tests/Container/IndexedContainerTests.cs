@@ -2,7 +2,7 @@ using Brinell.Maui.Controls;
 using Brinell.Maui.UITests.Containers;
 using Brinell.Maui.UITests.Pages;
 
-namespace Brinell.Maui.UITests.Tests;
+namespace Brinell.Maui.UITests.Tests.Container;
 
 /// <summary>
 /// Tests for indexed container patterns without List wrapper.

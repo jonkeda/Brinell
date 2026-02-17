@@ -1,7 +1,7 @@
 using Brinell.Maui.UITests.Pages;
 using Xunit;
 
-namespace Brinell.Maui.UITests.Tests;
+namespace Brinell.Maui.UITests.Tests.Navigation;
 
 /// <summary>
 /// Tests for FlyoutItem.

@@ -1,6 +1,6 @@
 using Brinell.Maui.UITests.Pages;
 
-namespace Brinell.Maui.UITests.Tests;
+namespace Brinell.Maui.UITests.Tests.Container;
 
 /// <summary>
 /// Tests for list container patterns using List.
