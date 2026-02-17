@@ -53,36 +53,10 @@ public abstract class PageObjectBase<TSelf> : ObjectBase, IMauiPage<TSelf>
     /// <inheritdoc />
     public Label<TSelf> BusySentinel => Label("UITest_IsBusy");
 
-    /// <summary>
-    /// Gets the AutomationId of the sentinel label whose text indicates the current page.
-    /// Defaults to "UITest_CurrentPage". Override to null to disable sentinel-based detection.
-    /// </summary>
-    protected virtual string? PageSentinelId => "UITest_CurrentPage";
-
-    /// <summary>
-    /// Gets the expected sentinel text value when this page is active.
-    /// Defaults to the page Name with "Page" replaced by "ViewModel".
-    /// </summary>
-    protected virtual string ExpectedSentinelValue
-        => Name.EndsWith("Page", StringComparison.Ordinal)
-            ? string.Concat(Name.AsSpan(0, Name.Length - 4), "ViewModel")
-            : Name;
-
     /// <inheritdoc />
     public virtual bool IsLoaded(int? timeoutMs = null)
     {
-        // Primary: check for page root element by AutomationId (works on Appium/Android/iOS)
-        if (_context.TryFindElement(Locator.ByAutomationId(Name)) != null)
-            return true;
-
-        // Fallback: check page sentinel label (works on WinUI/FlaUI where layout containers
-        // don't expose AutomationId in the UIA tree)
-        if (PageSentinelId == null)
-            return false;
-
-        var sentinel = _context.TryFindElement(Locator.ByAutomationId(PageSentinelId));
-        return sentinel != null
-            && string.Equals(sentinel.Text, ExpectedSentinelValue, StringComparison.Ordinal);
+        return _context.TryFindElement(Locator.ByAutomationId(Name)) != null;
     }
 
     /// <summary>
