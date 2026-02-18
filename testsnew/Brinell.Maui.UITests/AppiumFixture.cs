@@ -79,8 +79,8 @@ public class AppiumFixture : MauiTestFixtureBase
     public void NavigateToContainerDemo()
     {
         _appShell.ContainersTab.Click();
-        // Wait for page to be ready
-        if (!_containerDemoPage.WaitReady(10000))
+        // Wait for page to be ready (15s for slower tab transitions)
+        if (!_containerDemoPage.WaitReady(15000))
         {
             throw new InvalidOperationException("ContainerDemoPage did not become ready after clicking ContainersTab. PageTitle may not be visible.");
         }
