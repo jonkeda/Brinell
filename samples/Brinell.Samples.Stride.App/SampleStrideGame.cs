@@ -10,7 +10,7 @@ using Stride.UI.Panels;
 using Stride.CommunityToolkit.Bepu;
 
 #if AUTOMATION_ENABLED
-using Brinell.Stride.Automation;
+using Brinell.Automation;
 #endif
 
 namespace Brinell.Samples.Stride.App;
@@ -591,7 +591,7 @@ public class SampleStrideGame : Game
         // Reset button
         _resetButton = new Button
         {
-            Name = "ResetButton",
+            Name = "SettingsResetButton",
             Content = new TextBlock { Text = "Reset to Defaults", Font = _font },
             Padding = new Thickness(20, 10, 20, 10),
             Margin = new Thickness(0, 0, 10, 0)

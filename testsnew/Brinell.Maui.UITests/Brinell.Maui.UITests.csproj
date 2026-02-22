@@ -2,15 +2,12 @@
 
   <PropertyGroup>
     <RootNamespace>Brinell.Maui.UITests</RootNamespace>
-    <!-- Override to target Windows for FlaUI support -->
-    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\srcnew\Brinell.Core\Brinell.Core.csproj" />
     <ProjectReference Include="..\..\srcnew\Brinell.Maui\Brinell.Maui.csproj" />
     <ProjectReference Include="..\..\srcnew\Brinell.Maui.CommunityToolkit\Brinell.Maui.CommunityToolkit.csproj" />
-    <ProjectReference Include="..\..\srcnew\Brinell.Maui.FlaUI\Brinell.Maui.FlaUI.csproj" />
   </ItemGroup>
 
 </Project>

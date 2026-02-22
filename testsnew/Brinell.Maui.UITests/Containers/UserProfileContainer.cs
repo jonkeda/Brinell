@@ -7,7 +7,7 @@ namespace Brinell.Maui.UITests.Containers;
 /// Container for the user profile section.
 /// Demonstrates single container with controls and child container.
 /// </summary>
-public class UserProfileContainer : ContainerBase<ContainerDemoPage, UserProfileContainer>
+public class UserProfileContainer : MauiContainerBase<ContainerDemoPage, UserProfileContainer>
 {
     public UserProfileContainer(IMauiScope<ContainerDemoPage> parentScope, string automationId)
         : base(parentScope, new Locator(LocatorStrategy.AutomationId, automationId))
@@ -19,12 +19,12 @@ public class UserProfileContainer : ContainerBase<ContainerDemoPage, UserProfile
     /// <summary>
     /// The profile title label.
     /// </summary>
-    public Label<UserProfileContainer> TitleLabel => Label("ProfileTitle");
+    public MauiControlBase<UserProfileContainer> TitleLabel => new(this, "ProfileTitle");
 
     /// <summary>
     /// The profile status label.
     /// </summary>
-    public Label<UserProfileContainer> StatusLabel => Label("ProfileStatusLabel");
+    public MauiControlBase<UserProfileContainer> StatusLabel => new(this, "ProfileStatusLabel");
 
     #endregion
 
@@ -33,12 +33,12 @@ public class UserProfileContainer : ContainerBase<ContainerDemoPage, UserProfile
     /// <summary>
     /// The profile name entry.
     /// </summary>
-    public Entry<UserProfileContainer> NameEntry => Entry("ProfileNameEntry");
+    public MauiEntryControl<UserProfileContainer> NameEntry => Entry("ProfileNameEntry");
 
     /// <summary>
     /// The profile email entry.
     /// </summary>
-    public Entry<UserProfileContainer> EmailEntry => Entry("ProfileEmailEntry");
+    public MauiEntryControl<UserProfileContainer> EmailEntry => Entry("ProfileEmailEntry");
 
     #endregion
 
@@ -47,7 +47,7 @@ public class UserProfileContainer : ContainerBase<ContainerDemoPage, UserProfile
     /// <summary>
     /// The save profile button.
     /// </summary>
-    public Button<UserProfileContainer> SaveButton => Button("ProfileSaveButton");
+    public MauiButtonControl<UserProfileContainer> SaveButton => Button("ProfileSaveButton");
 
     #endregion
 }

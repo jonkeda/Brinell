@@ -66,15 +66,13 @@
                                         SelectedItem="{Binding SelectedTask}">
                             <CollectionView.ItemTemplate>
                                 <DataTemplate>
-                                    <controls:AutomationContainer AutomationId="{Binding AutomationId}">
-                                        <Border StrokeShape="RoundRectangle 5" Padding="10" Margin="0,5">
-                                            <HorizontalStackLayout Spacing="10">
-                                                <CheckBox AutomationId="TaskCheckBox" IsChecked="{Binding IsCompleted}" />
-                                                <Label AutomationId="TaskNameLabel" Text="{Binding Name}" VerticalOptions="Center" HorizontalOptions="FillAndExpand" />
-                                                <Button AutomationId="TaskDeleteButton" Text="X" WidthRequest="40" Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:ContainerDemoViewModel}}, Path=DeleteTaskCommand}" CommandParameter="{Binding}" />
-                                            </HorizontalStackLayout>
-                                        </Border>
-                                    </controls:AutomationContainer>
+                                    <Border StrokeShape="RoundRectangle 5" Padding="10" Margin="0,5">
+                                        <HorizontalStackLayout Spacing="10">
+                                            <CheckBox AutomationId="TaskCheckBox" IsChecked="{Binding IsCompleted}" />
+                                            <Label AutomationId="TaskNameLabel" Text="{Binding Name}" VerticalOptions="Center" HorizontalOptions="FillAndExpand" />
+                                            <Button AutomationId="TaskDeleteButton" Text="X" WidthRequest="40" Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:ContainerDemoViewModel}}, Path=DeleteTaskCommand}" CommandParameter="{Binding}" />
+                                        </HorizontalStackLayout>
+                                    </Border>
                                 </DataTemplate>
                             </CollectionView.ItemTemplate>
                         </CollectionView>

@@ -7,7 +7,7 @@ namespace Brinell.Maui.UITests.Containers;
 /// Container for a task item in the TaskList.
 /// Uses unique AutomationId per task (Task_0, Task_1, Task_2, etc.).
 /// </summary>
-public class TaskItemContainer : ContainerBase<ContainerDemoPage, TaskItemContainer>
+public class TaskItemContainer : MauiContainerBase<ContainerDemoPage, TaskItemContainer>
 {
     private readonly int _index;
 
@@ -25,15 +25,15 @@ public class TaskItemContainer : ContainerBase<ContainerDemoPage, TaskItemContai
     /// <summary>
     /// The task checkbox.
     /// </summary>
-    public CheckBox<TaskItemContainer> TaskCheckBox => CheckBox("TaskCheckBox");
+    public MauiControlBase<TaskItemContainer> CheckBox => new(this, "TaskCheckBox");
 
     /// <summary>
     /// The task name label.
     /// </summary>
-    public Label<TaskItemContainer> NameLabel => Label("TaskNameLabel");
+    public MauiControlBase<TaskItemContainer> NameLabel => new(this, "TaskNameLabel");
 
     /// <summary>
     /// The delete task button.
     /// </summary>
-    public Button<TaskItemContainer> DeleteButton => Button("TaskDeleteButton");
+    public MauiButtonControl<TaskItemContainer> DeleteButton => Button("TaskDeleteButton");
 }

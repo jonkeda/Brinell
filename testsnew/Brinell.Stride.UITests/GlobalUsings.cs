@@ -1,9 +1,9 @@
 global using Xunit;
-global using Brinell.Core.Abstractions;
+global using Xunit.Abstractions;
 global using Brinell.Core.Interfaces;
-global using Brinell.Core.Locators;
-// Platform-specific usings will be added when types are created:
-// global using Brinell.Stride.Context;
-// global using Brinell.Stride.Controls;
-// global using Brinell.Stride.Testing;
-// global using Brinell.Automation;
+global using Brinell.Stride.Context;
+global using Brinell.Stride.Controls;
+global using Brinell.Stride.Infrastructure;
+global using Brinell.Stride.Interfaces;
+global using Brinell.Stride.Pages;
+global using Brinell.Stride.Testing;
