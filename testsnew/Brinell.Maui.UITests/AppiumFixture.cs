@@ -78,11 +78,20 @@ public class AppiumFixture : MauiTestFixtureBase
     /// </summary>
     public void NavigateToContainerDemo()
     {
+        // If already loaded, skip navigation
+        if (_containerDemoPage.IsLoaded())
+            return;
+
         _appShell.ContainersTab.Click();
         // Wait for page to be ready (15s for slower tab transitions)
         if (!_containerDemoPage.WaitReady(15000))
         {
-            throw new InvalidOperationException("ContainerDemoPage did not become ready after clicking ContainersTab. PageTitle may not be visible.");
+            // Retry once — WinUI tab clicks can be flaky
+            _appShell.ContainersTab.Click();
+            if (!_containerDemoPage.WaitReady(15000))
+            {
+                throw new InvalidOperationException("ContainerDemoPage did not become ready after clicking ContainersTab. PageTitle may not be visible.");
+            }
         }
     }
 
