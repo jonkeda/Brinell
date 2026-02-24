@@ -193,6 +193,12 @@ public sealed class PlaywrightHtmlElement : IHtmlElement
 
     public void Blur() => _locator.BlurAsync().GetAwaiter().GetResult();
 
+    public T? Evaluate<T>(string expression)
+        => _locator.EvaluateAsync<T>(expression).GetAwaiter().GetResult();
+
+    public void Evaluate(string expression)
+        => _locator.EvaluateAsync(expression).GetAwaiter().GetResult();
+
     private TResult EvaluateRect<TResult>(Func<LocatorBoundingBoxResult, TResult> selector)
     {
         var box = _locator.BoundingBoxAsync().GetAwaiter().GetResult();

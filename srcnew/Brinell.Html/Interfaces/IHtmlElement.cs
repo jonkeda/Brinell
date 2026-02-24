@@ -22,4 +22,6 @@ public interface IHtmlElement : IElement<IHtmlElement>
     void Uncheck();
     void Focus();
     void Blur();
+    T? Evaluate<T>(string expression);
+    void Evaluate(string expression);
 }

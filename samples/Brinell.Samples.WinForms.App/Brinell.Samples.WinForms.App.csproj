@@ -9,7 +9,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="../../src/Brinell.Core/Brinell.Core.csproj" />
+        <ProjectReference Include="../../srcnew/Brinell.Core/Brinell.Core.csproj" />
     </ItemGroup>
 
 </Project>

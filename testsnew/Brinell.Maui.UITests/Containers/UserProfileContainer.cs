@@ -7,7 +7,7 @@ namespace Brinell.Maui.UITests.Containers;
 /// Container for the user profile section.
 /// Demonstrates single container with controls and child container.
 /// </summary>
-public class UserProfileContainer : MauiContainerBase<ContainerDemoPage, UserProfileContainer>
+public class UserProfileContainer : ContainerBase<ContainerDemoPage, UserProfileContainer>
 {
     public UserProfileContainer(IMauiScope<ContainerDemoPage> parentScope, string automationId)
         : base(parentScope, new Locator(LocatorStrategy.AutomationId, automationId))
@@ -19,12 +19,12 @@ public class UserProfileContainer : MauiContainerBase<ContainerDemoPage, UserPro
     /// <summary>
     /// The profile title label.
     /// </summary>
-    public MauiControlBase<UserProfileContainer> TitleLabel => new(this, "ProfileTitle");
+    public Label<UserProfileContainer> TitleLabel => Label("ProfileTitle");
 
     /// <summary>
     /// The profile status label.
     /// </summary>
-    public MauiControlBase<UserProfileContainer> StatusLabel => new(this, "ProfileStatusLabel");
+    public Label<UserProfileContainer> StatusLabel => Label("ProfileStatusLabel");
 
     #endregion
 
@@ -33,12 +33,12 @@ public class UserProfileContainer : MauiContainerBase<ContainerDemoPage, UserPro
     /// <summary>
     /// The profile name entry.
     /// </summary>
-    public MauiEntryControl<UserProfileContainer> NameEntry => Entry("ProfileNameEntry");
+    public Entry<UserProfileContainer> NameEntry => Entry("ProfileNameEntry");
 
     /// <summary>
     /// The profile email entry.
     /// </summary>
-    public MauiEntryControl<UserProfileContainer> EmailEntry => Entry("ProfileEmailEntry");
+    public Entry<UserProfileContainer> EmailEntry => Entry("ProfileEmailEntry");
 
     #endregion
 
@@ -47,7 +47,7 @@ public class UserProfileContainer : MauiContainerBase<ContainerDemoPage, UserPro
     /// <summary>
     /// The save profile button.
     /// </summary>
-    public MauiButtonControl<UserProfileContainer> SaveButton => Button("ProfileSaveButton");
+    public Button<UserProfileContainer> SaveButton => Button("ProfileSaveButton");
 
     #endregion
 }

@@ -7,18 +7,18 @@ namespace Brinell.Maui.UITests.Pages;
 /// Page object for the ContainerDemoPage demonstrating container testing patterns.
 /// Containers are initialized in constructor per SPEC-017b design principles.
 /// </summary>
-public class ContainerDemoPage : MauiPageObjectBase<ContainerDemoPage>
+public class ContainerDemoPage : PageObjectBase<ContainerDemoPage>
 {
     public ContainerDemoPage(IMauiTestContext context)
         : base(context)
     {
         // Containers initialized in constructor, NOT as lazy properties with => new()
-        PageTitle = new MauiControlBase<ContainerDemoPage>(this, "PageTitle");
+        PageTitle = new Label<ContainerDemoPage>(this, "PageTitle");
         UserProfile = new UserProfileContainer(this, "UserProfileFrame");
         Outer = new OuterContainer(this, "OuterFrame");
         // TaskList uses TaskListFrame as container with static items (Task_0, Task_1, Task_2)
         // Item count is determined by iterating Task_0, Task_1, ... until not found
-        TaskList = new MauiListControl<ContainerDemoPage, TaskItemContainer>(
+        TaskList = new List<ContainerDemoPage, TaskItemContainer>(
             this,
             "TaskListFrame",  // Use TaskListFrame as the list container
             "Task_",  // Prefix for Task_0, Task_1, Task_2
@@ -40,22 +40,22 @@ public class ContainerDemoPage : MauiPageObjectBase<ContainerDemoPage>
     /// <summary>
     /// The page title label.
     /// </summary>
-    public MauiControlBase<ContainerDemoPage> PageTitle { get; }
+    public Label<ContainerDemoPage> PageTitle { get; }
     
     /// <summary>
     /// The new task entry field.
     /// </summary>
-    public MauiEntryControl<ContainerDemoPage> NewTaskEntry => Entry("NewTaskEntry");
+    public Entry<ContainerDemoPage> NewTaskEntry => Entry("NewTaskEntry");
     
     /// <summary>
     /// The add task button.
     /// </summary>
-    public MauiButtonControl<ContainerDemoPage> AddTaskButton => Button("AddTaskButton");
+    public Button<ContainerDemoPage> AddTaskButton => Button("AddTaskButton");
     
     /// <summary>
     /// The task count label.
     /// </summary>
-    public MauiControlBase<ContainerDemoPage> TaskCountLabel => Control("TaskCountLabel");
+    public Label<ContainerDemoPage> TaskCountLabel => Label("TaskCountLabel");
     
     #endregion
 
@@ -78,7 +78,7 @@ public class ContainerDemoPage : MauiPageObjectBase<ContainerDemoPage>
     /// <summary>
     /// The task list containing task items.
     /// </summary>
-    public MauiListControl<ContainerDemoPage, TaskItemContainer> TaskList { get; }
+    public List<ContainerDemoPage, TaskItemContainer> TaskList { get; }
     
     /// <summary>
     /// Gets a task item by index (convenience method).

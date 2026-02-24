@@ -2,11 +2,13 @@
 
   <PropertyGroup>
     <RootNamespace>Brinell.Maui.UITests</RootNamespace>
+    <TargetFramework>net10.0-windows7.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\srcnew\Brinell.Core\Brinell.Core.csproj" />
     <ProjectReference Include="..\..\srcnew\Brinell.Maui\Brinell.Maui.csproj" />
+    <ProjectReference Include="..\..\srcnew\Brinell.Maui.FlaUI\Brinell.Maui.FlaUI.csproj" />
     <ProjectReference Include="..\..\srcnew\Brinell.Maui.CommunityToolkit\Brinell.Maui.CommunityToolkit.csproj" />
   </ItemGroup>
 

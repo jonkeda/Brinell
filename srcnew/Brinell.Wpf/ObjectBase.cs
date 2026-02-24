@@ -1,0 +1,56 @@
+namespace Brinell.Wpf;
+
+using Brinell.Core.Utilities;
+
+/// <summary>
+/// Base class for all WPF objects providing shared utilities.
+/// Both page objects and controls inherit from this class.
+/// </summary>
+public abstract class ObjectBase
+{
+    /// <summary>
+    /// Gets the WPF test context.
+    /// </summary>
+    public abstract IWpfTestContext Context { get; }
+
+    /// <summary>
+    /// Gets the default timeout in milliseconds.
+    /// </summary>
+    protected int DefaultTimeoutMs => Context.Timeouts.DefaultWait;
+
+    /// <summary>
+    /// Gets the polling interval in milliseconds.
+    /// </summary>
+    protected int PollingIntervalMs => Context.Timeouts.PollingInterval;
+
+    /// <summary>
+    /// Polls a condition until it returns true or timeout is reached.
+    /// </summary>
+    /// <param name="condition">The condition to check.</param>
+    /// <param name="timeoutMs">Maximum time to wait in milliseconds.</param>
+    /// <returns>True if condition was met, false if timeout reached.</returns>
+    protected bool Poll(Func<bool> condition, int timeoutMs)
+    {
+        var stopwatch = Stopwatch.StartNew();
+
+        while (stopwatch.ElapsedMilliseconds < timeoutMs)
+        {
+            try
+            {
+                if (condition())
+                {
+                    return true;
+                }
+            }
+            catch
+            {
+                // Polling expects transient failures (stale elements, not-yet-rendered)
+            }
+
+            WaitHelper.Pause(PollingIntervalMs);
+        }
+
+        // Final check - let exceptions propagate so callers see the real failure
+        return condition();
+    }
+}

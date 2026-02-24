@@ -5,3 +5,5 @@ global using Brinell.Core.Interfaces;
 global using Brinell.Core.Locators;
 global using Brinell.Wpf.Context;
 global using Brinell.Wpf.Controls;
+global using Brinell.Wpf.Interfaces;
+global using Brinell.Wpf.Pages;
