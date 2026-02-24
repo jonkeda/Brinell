@@ -1,3 +1,4 @@
+using Brinell.Html;
 using Brinell.Html.UITests.PageObjects;
 using Brinell.Html.UITests.TestBase;
 
@@ -35,6 +36,40 @@ public sealed class SelectControlTests : BlazorSampleTestBase
 
         page.CountrySelect.SelectByValue("jp");
         var selected = page.CountrySelect.GetSelectedValue();
+
+        Assert.Equal("jp", selected);
+    }
+
+    [Fact]
+    public async Task Select_SelectByValue_UpdatesSelectedValue_Async()
+    {
+        await NavigateToPageAsync("/form-controls");
+        var page = new FormControlsPage(Context);
+
+        await page.CountrySelect.SelectByValueAsync("de");
+
+        Assert.Equal("de", await page.CountrySelect.GetSelectedValueAsync());
+    }
+
+    [Fact]
+    public async Task Select_SelectByText_UpdatesSelectedValue_Async()
+    {
+        await NavigateToPageAsync("/form-controls");
+        var page = new FormControlsPage(Context);
+
+        await page.ColorsSelect.SelectByTextAsync("Blue");
+
+        Assert.Equal("blue", await page.ColorsSelect.GetSelectedValueAsync());
+    }
+
+    [Fact]
+    public async Task Select_GetSelectedValue_ReturnsCurrentValue_Async()
+    {
+        await NavigateToPageAsync("/form-controls");
+        var page = new FormControlsPage(Context);
+
+        await page.CountrySelect.SelectByValueAsync("jp");
+        var selected = await page.CountrySelect.GetSelectedValueAsync();
 
         Assert.Equal("jp", selected);
     }

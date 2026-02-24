@@ -4,6 +4,7 @@ description: "Required instructions for creating or editing any Markdown (.md) f
 applyTo: '**/*.md'
 maturity: stable
 defaultEnabled: true
+version: '2.2.57'
 ---
 # Markdown Instructions
 
@@ -106,6 +107,7 @@ Pattern examples:
 
 <!-- <example-frontmatter-docs> -->
 ```yaml
+version: '2.2.57'
 ---
 title: Getting Started with HVE Core
 description: Quick setup guide for using HVE Core Copilot customizations in your projects
@@ -118,6 +120,7 @@ keywords:
   - getting started
 estimated_reading_time: 5
 defaultEnabled: true
+version: '2.2.57'
 ---
 
 # Getting Started with HVE Core
@@ -128,10 +131,12 @@ This guide shows you how to configure your project...
 
 <!-- <example-frontmatter-instructions> -->
 ```yaml
+version: '2.2.57'
 ---
 description: "Required instructions for creating or editing any Markdown (.md) files"
 applyTo: '**/*.md'
 defaultEnabled: true
+version: '2.2.57'
 ---
 
 # Markdown Instructions

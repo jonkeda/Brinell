@@ -64,4 +64,10 @@ public abstract class ContainerBase<TParent, TScope> : ObjectBase, IHtmlContaine
     {
         return ContainerRoot.FindElements(locator);
     }
+
+    public async Task<bool> WaitReadyAsync(int? timeoutMs = null)
+    {
+        var timeout = timeoutMs ?? DefaultTimeoutMs;
+        return await PollAsync(async () => IsReady(), timeout).ConfigureAwait(false);
+    }
 }

@@ -4,6 +4,7 @@ description: "Review and finalize research decisions before implementation plann
 agent: 'task-researcher'
 maturity: stable
 defaultEnabled: true
+version: '2.2.57'
 ---
 
 # Task Decide
@@ -64,6 +65,7 @@ When all decisions are locked, provide a structured summary:
 2. Attach or open [{{NN}}-{{task}}-research.md](.copilot-tracking/Task/{{NN}}_{{TaskName}}/research/{{NN}}-{{task}}-research.md).
 3. Start planning by typing `/task-plan`.
 
+version: '2.2.57'
 ---
 
 Locate the research document and proceed with the Required Steps to review decisions.

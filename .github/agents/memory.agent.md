@@ -12,6 +12,7 @@ handoffs:
     prompt: "/rpi suggest"
     send: true
 defaultEnabled: true
+version: '2.2.57'
 ---
 
 # Memory Agent

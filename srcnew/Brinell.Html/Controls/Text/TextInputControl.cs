@@ -1,13 +1,14 @@
 using Brinell.Core.Exceptions;
 using Brinell.Core.Locators;
 using Brinell.Html.Interfaces;
+using Brinell.Html.Interfaces.Async;
 
 namespace Brinell.Html.Controls.Text;
 
 /// <summary>
 /// HTML text input control. Wraps &lt;input type="text|email|password|search|tel|url"&gt;.
 /// </summary>
-public class TextInputControl<TScope> : FocusableControlBase<TScope>
+public class TextInputControl<TScope> : FocusableControlBase<TScope>, IHtmlAsyncEditable<TScope>
     where TScope : IHtmlScope<TScope>
 {
     public TextInputControl(IHtmlScope<TScope> scope, Locator locator)
@@ -78,4 +79,68 @@ public class TextInputControl<TScope> : FocusableControlBase<TScope>
 
         return ContainingScope;
     }
+
+    #region IHtmlAsyncEditable<TScope> explicit implementation
+
+    async Task<TScope> IHtmlAsyncEditable<TScope>.SetText(string text)
+        => await RunWithElementAsync(async e =>
+        {
+            await e.Clear().ConfigureAwait(false);
+            await e.Fill(text).ConfigureAwait(false);
+        }).ConfigureAwait(false);
+
+    async Task<string> IHtmlAsyncEditable<TScope>.GetValue()
+        => await RunWithElementAsync<string>(async e =>
+            await e.GetInputValue().ConfigureAwait(false)).ConfigureAwait(false);
+
+    async Task<TScope> IHtmlAsyncEditable<TScope>.TypeText(string text)
+        => await RunWithElementAsync(async e =>
+            await e.SendKeys(text).ConfigureAwait(false)).ConfigureAwait(false);
+
+    async Task<TScope> IHtmlAsyncEditable<TScope>.AssertValue(string? expected)
+    {
+        if (expected == null) return ContainingScope;
+        var self = (IHtmlAsyncEditable<TScope>)this;
+        var timeout = DefaultTimeoutMs;
+        var matched = await PollAsync(async () =>
+        {
+            var value = await self.GetValue().ConfigureAwait(false);
+            return string.Equals(value, expected, StringComparison.Ordinal);
+        }, timeout).ConfigureAwait(false);
+
+        if (!matched)
+        {
+            var actual = await self.GetValue().ConfigureAwait(false);
+            throw new AssertionException(
+                $"Input value mismatch. Expected: '{expected}', Actual: '{actual}'");
+        }
+        return ContainingScope;
+    }
+
+    async Task<TScope> IHtmlAsyncEditable<TScope>.WaitValue(string? expected, int? timeoutMs)
+    {
+        if (expected == null) return ContainingScope;
+        var timeout = timeoutMs ?? DefaultTimeoutMs;
+        var self = (IHtmlAsyncEditable<TScope>)this;
+        var matched = await PollAsync(async () =>
+        {
+            var value = await self.GetValue().ConfigureAwait(false);
+            return string.Equals(value, expected, StringComparison.Ordinal);
+        }, timeout).ConfigureAwait(false);
+
+        if (!matched)
+        {
+            throw new TimeoutException($"Input value did not match '{expected}' within timeout");
+        }
+        return ContainingScope;
+    }
+
+    async Task<TScope> IHtmlAsyncEditable<TScope>.AppendText(string text)
+        => await RunWithElementAsync(async e =>
+        {
+            await e.Focus().ConfigureAwait(false);
+            await e.SendKeys(text).ConfigureAwait(false);
+        }).ConfigureAwait(false);
+
+    #endregion
 }

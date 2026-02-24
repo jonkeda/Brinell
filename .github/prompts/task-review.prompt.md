@@ -4,6 +4,7 @@ description: "Initiates implementation review based on user context or automatic
 agent: 'task-reviewer'
 maturity: stable
 defaultEnabled: true
+version: '2.2.57'
 ---
 
 # Task Review
@@ -86,6 +87,7 @@ Summarize the review outcome:
 * Provide the review log file path.
 * Recommend next steps based on overall status.
 
+version: '2.2.57'
 ---
 
 Invoke task-reviewer mode and proceed with the Required Steps.

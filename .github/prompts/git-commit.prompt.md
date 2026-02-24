@@ -4,6 +4,7 @@ agent: 'agent'
 description: 'Stages all changes, generates a conventional commit message, shows it to the user, and commits using only git add/commit'
 maturity: stable
 defaultEnabled: true
+version: '2.2.57'
 ---
 
 # Stage, Generate, and Commit
@@ -126,6 +127,7 @@ Example Undo Without New Message:
 User: "Undo that commit" (no further message guidance)
 Action: soft reset only; leave all changes staged; output undo confirmation line; no commit message block shown.
 
+version: '2.2.57'
 ---
 
 Proceed now following the protocol.

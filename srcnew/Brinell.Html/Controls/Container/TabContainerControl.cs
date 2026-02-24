@@ -1,5 +1,6 @@
 using Brinell.Core.Locators;
 using Brinell.Html.Interfaces;
+using Brinell.Html.Interfaces.Async;
 
 namespace Brinell.Html.Controls.Container;
 
@@ -48,4 +49,48 @@ public class TabContainerControl<TParent, TScope> : ContainerBase<TParent, TScop
     }
 
     public int TabCount => ContainerRoot.FindElements(Locator.ByCss(_tabSelector)).Count;
+
+    public async Task<TScope> SelectTabAsync(int index)
+    {
+        if (index < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(index));
+        }
+
+        var tabs = ContainerRoot.FindElements(Locator.ByCss(_tabSelector));
+        if (index >= tabs.Count)
+        {
+            throw new ArgumentOutOfRangeException(nameof(index), $"Tab index {index} is out of range.");
+        }
+
+        if (tabs[index] is IAsyncHtmlElement asyncTab)
+        {
+            await asyncTab.Click().ConfigureAwait(false);
+        }
+        else
+        {
+            tabs[index].Click();
+        }
+        return Self;
+    }
+
+    public async Task<TScope> SelectTabAsync(string text)
+    {
+        var tabs = ContainerRoot.FindElements(Locator.ByCss(_tabSelector));
+        var tab = tabs.FirstOrDefault(t => string.Equals(t.Text?.Trim(), text.Trim(), StringComparison.OrdinalIgnoreCase));
+        if (tab == null)
+        {
+            throw new InvalidOperationException($"Tab with text '{text}' was not found.");
+        }
+
+        if (tab is IAsyncHtmlElement asyncTab)
+        {
+            await asyncTab.Click().ConfigureAwait(false);
+        }
+        else
+        {
+            tab.Click();
+        }
+        return Self;
+    }
 }

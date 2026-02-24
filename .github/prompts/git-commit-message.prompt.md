@@ -4,6 +4,7 @@ agent: 'agent'
 description: 'Generates a commit message following the commit-message.instructions.md rules based on all changes in the branch'
 maturity: stable
 defaultEnabled: true
+version: '2.2.57'
 ---
 
 # Generate Commit Message
@@ -21,6 +22,7 @@ ${input:useTerminal:true} - When `true` use the `run_in_terminal` tool with `git
 * Output to the user this commit message inside a markdown code block.
 * Inform the user that they should copy it as-is or modify it and use it for their commit message.
 
+version: '2.2.57'
 ---
 
 Proceed to generate the commit message

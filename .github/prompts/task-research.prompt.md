@@ -4,6 +4,7 @@ description: "Initiates research for implementation planning based on user requi
 agent: 'task-researcher'
 maturity: stable
 defaultEnabled: true
+version: '2.2.57'
 ---
 
 # Task Research
@@ -107,6 +108,7 @@ Summarize research outcomes:
 * When the research document contains a Decisions section with open alternatives, offer the user a choice: `/task-decide` to review decisions, or `/task-plan` to accept pre-selected defaults and proceed.
 * When no open decisions exist, provide the research document path for direct handoff to `/task-plan`.
 
+version: '2.2.57'
 ---
 
 Invoke task-researcher mode and proceed with the Required Steps.

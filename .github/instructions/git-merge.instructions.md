@@ -3,6 +3,7 @@ category: 'Git'
 description: "Required protocol for Git merge, rebase, and rebase --onto workflows with conflict handling and stop controls."
 maturity: stable
 defaultEnabled: true
+version: '2.2.57'
 ---
 
 # Git Merge & Rebase Instructions

@@ -1,9 +1,10 @@
 using Brinell.Core.Locators;
 using Brinell.Html.Interfaces;
+using Brinell.Html.Interfaces.Async;
 
 namespace Brinell.Html.Controls;
 
-public abstract class ScrollableControlBase<TScope> : ClickableControlBase<TScope>
+public abstract class ScrollableControlBase<TScope> : ClickableControlBase<TScope>, IHtmlAsyncScrollable<TScope>
     where TScope : IHtmlScope<TScope>
 {
     protected ScrollableControlBase(IHtmlScope<TScope> scope, Locator locator)
@@ -42,4 +43,16 @@ public abstract class ScrollableControlBase<TScope> : ClickableControlBase<TScop
     {
         return RunWithElement(element => element.ScrollIntoView());
     }
+
+    #region IHtmlAsyncScrollable<TScope> explicit implementation
+
+    async Task<TScope> IHtmlAsyncScrollable<TScope>.ScrollTo(int x, int y)
+        => await RunWithElementAsync(async e =>
+            await e.Evaluate($"e => e.scrollTo({x}, {y})").ConfigureAwait(false)).ConfigureAwait(false);
+
+    async Task<TScope> IHtmlAsyncScrollable<TScope>.ScrollToTop()
+        => await RunWithElementAsync(async e =>
+            await e.Evaluate("e => e.scrollTo(0, 0)").ConfigureAwait(false)).ConfigureAwait(false);
+
+    #endregion
 }

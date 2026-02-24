@@ -1,5 +1,6 @@
 using Brinell.Core.Locators;
 using Brinell.Html.Interfaces;
+using Brinell.Html.Interfaces.Async;
 
 namespace Brinell.Html.Controls.Buttons;
 
@@ -26,4 +27,7 @@ public class ButtonControl<TScope> : ClickableControlBase<TScope>
     {
         return RunWithElement(element => element.Submit());
     }
+
+    public async Task<TScope> SubmitAsync()
+        => await RunWithElementAsync(async e => await e.Submit().ConfigureAwait(false)).ConfigureAwait(false);
 }

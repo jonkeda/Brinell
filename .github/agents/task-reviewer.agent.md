@@ -12,6 +12,7 @@ handoffs:
     prompt: /task-plan
     send: true
 defaultEnabled: true
+version: '2.2.57'
 ---
 
 # Implementation Reviewer

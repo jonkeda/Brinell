@@ -5,6 +5,7 @@ description: 'Authoring standards for prompt engineering artifacts including fil
 applyTo: '**/*.prompt.md, **/*.agent.md, **/*.instructions.md, **/SKILL.md'
 maturity: stable
 defaultEnabled: true
+version: '2.2.57'
 ---
 
 # Prompt Builder Instructions
@@ -282,6 +283,7 @@ Activation line: End the prompt file with a horizontal rule (`---`) followed by 
 * Update the target file based on research findings.
 * Return to Step 1 if additional context is needed.
 
+version: '2.2.57'
 ---
 
 Proceed with the user's request following the Required Steps.

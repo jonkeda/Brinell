@@ -9,6 +9,7 @@ handoffs:
     prompt: "Continue to implement phase for the fix documented above"
     send: true
 defaultEnabled: true
+version: '2.2.57'
 ---
 
 # Fix Workflow

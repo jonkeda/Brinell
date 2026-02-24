@@ -119,4 +119,44 @@ public abstract class HtmlPageObjectBase<TSelf> : ObjectBase, IHtmlPage<TSelf>
     }
 
     protected HtmlTestContextOptions DefaultOptions() => new();
+
+    #region Async Methods
+
+    public async Task<bool> WaitLoadedAsync(bool? expected, int? timeoutMs = null)
+    {
+        if (expected == null) return true;
+        var timeout = timeoutMs ?? _context.Timeouts.PageLoad;
+        return await PollAsync(async () => IsLoaded() == expected.Value, timeout).ConfigureAwait(false);
+    }
+
+    public async Task AssertLoadedAsync(bool? expected, string? message = null, int? timeoutMs = null)
+    {
+        if (expected == null) return;
+        if (!await WaitLoadedAsync(expected, timeoutMs).ConfigureAwait(false))
+        {
+            var actual = IsLoaded();
+            throw new PageLoadException(
+                message ?? $"Expected page '{Name}' {(expected.Value ? "to be loaded" : "not to be loaded")} but loaded state is {actual}.");
+        }
+    }
+
+    public async Task<bool> WaitTitleAsync(string? expected, int? timeoutMs = null)
+    {
+        if (expected == null) return true;
+        var timeout = timeoutMs ?? _context.Timeouts.DefaultWait;
+        return await PollAsync(async () => GetTitle() == expected, timeout).ConfigureAwait(false);
+    }
+
+    public async Task AssertTitleAsync(string? expected, string? message = null, int? timeoutMs = null)
+    {
+        if (expected == null) return;
+        if (!await WaitTitleAsync(expected, timeoutMs).ConfigureAwait(false))
+        {
+            var actual = GetTitle();
+            throw new PageLoadException(
+                message ?? $"Expected page title '{expected}' but got '{actual ?? "(null)"}'.");
+        }
+    }
+
+    #endregion
 }

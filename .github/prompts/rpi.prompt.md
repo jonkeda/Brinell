@@ -5,6 +5,7 @@ agent: 'rpi-agent'
 maturity: stable
 argument-hint: "task=... [auto={true|partial|false}] [continue={1|2|3|all}] [suggest]"
 defaultEnabled: true
+version: '2.2.57'
 ---
 
 # RPI
@@ -49,6 +50,7 @@ Summarize completion:
 * Artifacts created in `.copilot-tracking/`
 * Final validation status
 
+version: '2.2.57'
 ---
 
 Invoke rpi-agent mode and proceed with the user's task.

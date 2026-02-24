@@ -4,6 +4,7 @@ agent: 'agent'
 description: 'Coordinate Git merge, rebase, and rebase --onto workflows with consistent conflict handling.'
 maturity: stable
 defaultEnabled: true
+version: '2.2.57'
 ---
 
 # Git Merge & Rebase Orchestrator
@@ -24,6 +25,7 @@ Manage Git merge, rebase, and rebase --onto sequences with standardized stop con
 
 No pushes occur automatically.
 
+version: '2.2.57'
 ---
 
 Proceed with git operation following the outlined steps above and the Required Protocol for Git Merge & Rebase.

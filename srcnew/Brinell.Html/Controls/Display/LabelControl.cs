@@ -1,6 +1,7 @@
 using Brinell.Core.Exceptions;
 using Brinell.Core.Locators;
 using Brinell.Html.Interfaces;
+using Brinell.Html.Interfaces.Async;
 
 namespace Brinell.Html.Controls.Display;
 
@@ -56,6 +57,38 @@ public class LabelControl<TScope> : ControlBase<TScope>
                 $"Text does not contain '{substring}'. Actual: '{text}'");
         }
 
+        return ContainingScope;
+    }
+
+    public async Task<bool> IsTextContainingAsync(string substring, int? timeoutMs = null)
+    {
+        return await PollAsync(async () =>
+        {
+            var element = TryFindAsyncElement();
+            if (element == null) return false;
+            var text = await element.GetText().ConfigureAwait(false);
+            return text?.Contains(substring, StringComparison.OrdinalIgnoreCase) == true;
+        }, timeoutMs ?? 0).ConfigureAwait(false);
+    }
+
+    public async Task<TScope> WaitTextContainingAsync(string substring, int? timeoutMs = null)
+    {
+        if (!await IsTextContainingAsync(substring, timeoutMs ?? DefaultTimeoutMs).ConfigureAwait(false))
+        {
+            throw new TimeoutException($"Text did not contain '{substring}' within timeout");
+        }
+        return ContainingScope;
+    }
+
+    public async Task<TScope> AssertTextContainingAsync(string substring)
+    {
+        var self = (IHtmlAsyncControlObject<TScope>)this;
+        var text = await self.GetText().ConfigureAwait(false);
+        if (text?.Contains(substring, StringComparison.OrdinalIgnoreCase) != true)
+        {
+            throw new AssertionException(
+                $"Text does not contain '{substring}'. Actual: '{text}'");
+        }
         return ContainingScope;
     }
 }

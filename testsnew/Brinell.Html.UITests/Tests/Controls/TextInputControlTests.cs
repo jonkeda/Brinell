@@ -1,3 +1,4 @@
+using Brinell.Html;
 using Brinell.Html.UITests.PageObjects;
 using Brinell.Html.UITests.TestBase;
 
@@ -38,5 +39,40 @@ public sealed class TextInputControlTests : BlazorSampleTestBase
         page.UsernameInput.TypeText("sample-user");
 
         Assert.Equal("sample-user", page.UsernameInput.GetValue());
+    }
+
+    [Fact]
+    public async Task TextInput_SetTextAndGetValue_RoundTripsValue_Async()
+    {
+        await NavigateToPageAsync("/login");
+        var page = new LoginPage(Context);
+
+        await page.EmailInput.SetTextAsync("hello@example.com");
+
+        Assert.Equal("hello@example.com", await page.EmailInput.GetValueAsync());
+    }
+
+    [Fact]
+    public async Task TextInput_Clear_RemovesText_Async()
+    {
+        await NavigateToPageAsync("/login");
+        var page = new LoginPage(Context);
+
+        await page.EmailInput.SetTextAsync("temp@example.com");
+        await page.EmailInput.ClearAsync();
+
+        Assert.Equal(string.Empty, await page.EmailInput.GetValueAsync());
+    }
+
+    [Fact]
+    public async Task TextInput_TypeText_AppendsTypedCharacters_Async()
+    {
+        await NavigateToPageAsync("/login");
+        var page = new LoginPage(Context);
+
+        await page.UsernameInput.SetTextAsync(string.Empty);
+        await page.UsernameInput.TypeTextAsync("sample-user");
+
+        Assert.Equal("sample-user", await page.UsernameInput.GetValueAsync());
     }
 }

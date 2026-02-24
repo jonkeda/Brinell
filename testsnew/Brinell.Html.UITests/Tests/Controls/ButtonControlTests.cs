@@ -1,3 +1,4 @@
+using Brinell.Html;
 using Brinell.Html.UITests.PageObjects;
 using Brinell.Html.UITests.TestBase;
 
@@ -32,5 +33,34 @@ public sealed class ButtonControlTests : BlazorSampleTestBase
         var page = new CounterPage(Context);
 
         page.IncrementButton.AssertEnabled(true);
+    }
+
+    [Fact]
+    public async Task Button_Click_IncrementsCounter_Async()
+    {
+        await NavigateToPageAsync("/counter");
+        var page = new CounterPage(Context);
+
+        await page.CountDisplay.AssertTextAsync("Current count: 0");
+        await page.IncrementButton.ClickAsync();
+        await page.CountDisplay.AssertTextAsync("Current count: 1");
+    }
+
+    [Fact]
+    public async Task Button_IsVisible_ReturnsTrueForVisibleButton_Async()
+    {
+        await NavigateToPageAsync("/counter");
+        var page = new CounterPage(Context);
+
+        Assert.True(await page.IncrementButton.IsVisibleAsync());
+    }
+
+    [Fact]
+    public async Task Button_AssertEnabled_PassesForEnabledButton_Async()
+    {
+        await NavigateToPageAsync("/counter");
+        var page = new CounterPage(Context);
+
+        await page.IncrementButton.AssertEnabledAsync(true);
     }
 }

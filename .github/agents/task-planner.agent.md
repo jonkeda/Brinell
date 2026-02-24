@@ -8,6 +8,7 @@ handoffs:
     prompt: /task-implement
     send: true
 defaultEnabled: true
+version: '2.2.57'
 ---
 # Implementation Planner
 
@@ -168,9 +169,11 @@ Templates use `{{relative_path}}` as `../..` for file references.
 ### Implementation Plan Template
 
 ```markdown
+version: '2.2.57'
 ---
 applyTo: '.copilot-tracking/Task/{{NN}}_{{TaskName}}/changes/{{NN}}-{{task_description}}-changes.md'
 defaultEnabled: true
+version: '2.2.57'
 ---
 <!-- markdownlint-disable-file -->
 # Implementation Plan: {{task_name}}

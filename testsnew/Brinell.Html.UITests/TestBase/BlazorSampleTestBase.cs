@@ -32,6 +32,47 @@ public abstract class BlazorSampleTestBase : IAsyncLifetime
     {
         var destination = $"{BaseUrl.TrimEnd('/')}/{path.TrimStart('/')}";
         Context.NavigateTo(destination);
+        WaitForBlazorCircuit();
+    }
+
+    protected async Task NavigateToPageAsync(string path)
+    {
+        var destination = $"{BaseUrl.TrimEnd('/')}/{path.TrimStart('/')}";
+        if (_context is PlaywrightTestContext pwContext)
+        {
+            await pwContext.NavigateToAsync(destination).ConfigureAwait(false);
+        }
+        else
+        {
+            Context.NavigateTo(destination);
+        }
+        await WaitForBlazorCircuitAsync().ConfigureAwait(false);
+    }
+
+    private void WaitForBlazorCircuit()
+    {
+        var body = Context.FindElement(new Locator(LocatorStrategy.Css, "body"));
+        var deadline = DateTime.UtcNow.AddMilliseconds(10_000);
+        while (DateTime.UtcNow < deadline)
+        {
+            var ready = body.Evaluate<bool>("() => typeof window.Blazor !== 'undefined' || typeof window._blazor !== 'undefined'");
+            if (ready) return;
+            Thread.Yield();
+        }
+        throw new TimeoutException("Blazor circuit was not ready within 10 s.");
+    }
+
+    private async Task WaitForBlazorCircuitAsync()
+    {
+        var body = Context.FindElement(new Locator(LocatorStrategy.Css, "body"));
+        var deadline = DateTime.UtcNow.AddMilliseconds(10_000);
+        while (DateTime.UtcNow < deadline)
+        {
+            var ready = body.Evaluate<bool>("() => typeof window.Blazor !== 'undefined' || typeof window._blazor !== 'undefined'");
+            if (ready) return;
+            await Task.Delay(50).ConfigureAwait(false);
+        }
+        throw new TimeoutException("Blazor circuit was not ready within 10 s.");
     }
 
     private static bool ParseBool(string? value, bool defaultValue)

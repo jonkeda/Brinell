@@ -5,6 +5,7 @@ agent: 'prompt-builder'
 argument-hint: "file=... [requirements=...]"
 maturity: stable
 defaultEnabled: true
+version: '2.2.57'
 ---
 
 # Prompt Build
@@ -66,6 +67,7 @@ After protocol completion, summarize the session:
 
 * Follow the prompt-builder agent Required Phases in order. Use the agent to manage phase transitions and validation criteria.
 
+version: '2.2.57'
 ---
 
 Proceed with the user's request following the Required Steps.

@@ -4,6 +4,7 @@ description: "Locates and executes implementation plans using task-implementor m
 agent: 'task-implementor'
 maturity: stable
 defaultEnabled: true
+version: '2.2.57'
 ---
 
 # Task Implementation
@@ -60,6 +61,7 @@ Summarize implementation progress, without leaving off important details:
 * Note any blockers or clarification requests.
 * Provide the next resumption point when pausing.
 
+version: '2.2.57'
 ---
 
 Invoke task-implementor mode and proceed with the Required Steps.

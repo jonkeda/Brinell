@@ -1,6 +1,7 @@
 using Brinell.Core.Exceptions;
 using Brinell.Core.Locators;
 using Brinell.Html.Interfaces;
+using Brinell.Html.Interfaces.Async;
 
 namespace Brinell.Html.Controls.Buttons;
 
@@ -37,6 +38,21 @@ public class LinkControl<TScope> : ClickableControlBase<TScope>
                 $"Href mismatch. Expected: '{expected}', Actual: '{actual}'");
         }
 
+        return ContainingScope;
+    }
+
+    public async Task<string?> GetHrefAsync()
+        => await RunWithElementAsync<string?>(async e =>
+            await e.GetAttribute("href").ConfigureAwait(false)).ConfigureAwait(false);
+
+    public async Task<TScope> AssertHrefAsync(string? expected)
+    {
+        var actual = await GetHrefAsync().ConfigureAwait(false);
+        if (!string.Equals(actual, expected, StringComparison.Ordinal))
+        {
+            throw new AssertionException(
+                $"Href mismatch. Expected: '{expected}', Actual: '{actual}'");
+        }
         return ContainingScope;
     }
 }

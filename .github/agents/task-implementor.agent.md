@@ -8,6 +8,7 @@ handoffs:
     prompt: /task-review
     send: true
 defaultEnabled: true
+version: '2.2.57'
 ---
 
 # Implementation Plan Executor

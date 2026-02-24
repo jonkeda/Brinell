@@ -4,6 +4,7 @@ description: 'Shared naming and folder conventions for all .copilot-tracking/ ca
 applyTo: '**/.copilot-tracking/**'
 maturity: stable
 defaultEnabled: true
+version: '2.2.57'
 ---
 
 # Copilot Tracking Conventions

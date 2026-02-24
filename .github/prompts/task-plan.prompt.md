@@ -4,6 +4,7 @@ description: "Initiates implementation planning based on user context or researc
 agent: 'task-planner'
 maturity: stable
 defaultEnabled: true
+version: '2.2.57'
 ---
 
 # Implementation Plan
@@ -55,6 +56,7 @@ Summarize planning outcomes:
 * List implementation plan files created and their locations.
 * Note any scope items deferred for future planning.
 
+version: '2.2.57'
 ---
 
 Build the task implementation plan following the Required Steps.

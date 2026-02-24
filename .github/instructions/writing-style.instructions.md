@@ -4,6 +4,7 @@ description: "Required writing style conventions for voice, tone, and language i
 applyTo: '**/*.md'
 maturity: stable
 defaultEnabled: true
+version: '2.2.57'
 ---
 
 # Writing Style Instructions

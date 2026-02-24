@@ -20,6 +20,7 @@ handoffs:
     prompt: "Clear the sandbox for this conversation"
     send: true
 defaultEnabled: true
+version: '2.2.57'
 ---
 
 # Prompt Builder

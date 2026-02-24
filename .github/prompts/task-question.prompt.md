@@ -4,6 +4,7 @@ description: "Defines research questions through interactive task-list documents
 agent: 'task-question'
 maturity: stable
 defaultEnabled: true
+version: '2.2.57'
 ---
 
 # Task Question
@@ -41,6 +42,7 @@ Refine questions based on user answers:
 * Repeat until either party declares questioning sufficient.
 * Generate the research brief and hand off to task-researcher.
 
+version: '2.2.57'
 ---
 
 Invoke task-question mode and proceed with the Required Steps.

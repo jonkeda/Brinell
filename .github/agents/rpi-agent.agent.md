@@ -45,6 +45,7 @@ handoffs:
     prompt: "/rpi steer"
     send: false
 defaultEnabled: true
+version: '2.2.57'
 ---
 
 # RPI Agent

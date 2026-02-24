@@ -4,6 +4,7 @@ description: "Quick todo capture and tracking - Brought to you by microsoft/hve-
 maturity: stable
 argument-hint: 'Todo item description'
 defaultEnabled: true
+version: '2.2.57'
 ---
 
 # Todo Capture
@@ -35,6 +36,7 @@ Write the todo item to the workspace location specified by the user. When no loc
 
 Report what was created with the file path and a brief confirmation.
 
+version: '2.2.57'
 ---
 
 Proceed with the todo capture following the Required Steps.

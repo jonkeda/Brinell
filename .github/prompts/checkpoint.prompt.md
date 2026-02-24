@@ -5,6 +5,7 @@ agent: 'memory'
 maturity: stable
 argument-hint: "[mode={save|continue|incremental}] [description=...]"
 defaultEnabled: true
+version: '2.2.57'
 ---
 
 # Checkpoint
@@ -43,6 +44,7 @@ Invoke the memory agent with determined mode:
   * Search memory directory when no active memory is found
   * Present matches for selection when multiple files match
 
+version: '2.2.57'
 ---
 
 Proceed with the determined mode using the memory agent.

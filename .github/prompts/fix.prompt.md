@@ -5,6 +5,7 @@ agent: 'fix-workflow'
 maturity: stable
 argument-hint: 'Describe the bug or issue to fix'
 defaultEnabled: true
+version: '2.2.57'
 ---
 
 # Fix Workflow
@@ -28,6 +29,7 @@ Collect context from the topic input, conversation history, and any attached fil
 
 Begin the fix workflow following the agent's Required Phases.
 
+version: '2.2.57'
 ---
 
 Proceed with the fix workflow following the Required Steps.
