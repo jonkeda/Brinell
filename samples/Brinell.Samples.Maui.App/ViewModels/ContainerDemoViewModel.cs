@@ -28,6 +28,8 @@ public class ContainerDemoViewModel : ViewModelBase
             new() { Name = "Finish report", IsCompleted = false }
         };
 
+        ReindexTasks();
+
         SaveProfileCommand = new AsyncRelayCommand(this, SaveProfileAsync);
         InnerActionCommand = new AsyncRelayCommand(this, InnerActionAsync);
         OuterActionCommand = new AsyncRelayCommand(this, OuterActionAsync);
@@ -117,6 +119,7 @@ public class ContainerDemoViewModel : ViewModelBase
         
         await Task.Delay(50);
         Tasks.Add(new TaskItem { Name = NewTaskName, IsCompleted = false });
+        ReindexTasks();
         NewTaskName = "";
         OnPropertyChanged(nameof(TaskCount));
     }
@@ -125,7 +128,16 @@ public class ContainerDemoViewModel : ViewModelBase
     {
         if (task == null) return;
         Tasks.Remove(task);
+        ReindexTasks();
         OnPropertyChanged(nameof(TaskCount));
+    }
+
+    private void ReindexTasks()
+    {
+        for (var index = 0; index < Tasks.Count; index++)
+        {
+            Tasks[index].Id = index;
+        }
     }
 
     #endregion
@@ -136,16 +148,9 @@ public class ContainerDemoViewModel : ViewModelBase
 /// </summary>
 public class TaskItem : INotifyPropertyChanged
 {
-    private static int _nextId = 0;
-    
     private int _id;
     private string _name = "";
     private bool _isCompleted;
-
-    public TaskItem()
-    {
-        _id = _nextId++;
-    }
 
     /// <summary>
     /// Unique identifier for this task, used for AutomationId.

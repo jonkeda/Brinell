@@ -755,3 +755,1842 @@ For questions about Mermaid syntax, consult:
 - [Official Mermaid Docs](https://mermaid.js.org/)
 - [Class Diagram Reference](https://mermaid.js.org/syntax/classDiagram.html)
 - `SPEC-002b-001-CONTROL-HIERARCHY-DIAGRAMS.md` (reference implementation)
+
+<!-- GSD:BEGIN -->
+# GSD Project Conventions
+
+## Project Detection
+If a `.planning/` directory exists in the workspace root, this is a GSD-managed project. All GSD rules below apply.
+
+## STATE.md First Rule  
+**Before performing ANY GSD operation, ALWAYS read `.planning/STATE.md` first.** This file contains:
+- Current milestone, phase, and plan position
+- Active blockers and decisions
+- Session context and progress
+
+## File Conventions
+- `.planning/STATE.md` — Current project position and context
+- `.planning/PROJECT.md` — Project definition and vision
+- `.planning/REQUIREMENTS.md` — Requirement specifications with REQ-IDs
+- `.planning/ROADMAP.md` — Phase-based execution roadmap
+- `.planning/config.json` — Workflow configuration
+- `.planning/phases/{NN}-{name}/` — Phase working directories
+  - `{NN}-CONTEXT.md` — User decisions for this phase
+  - `{NN}-RESEARCH.md` — Research findings
+  - `{NN}-{MM}-PLAN.md` — Execution plans
+  - `{NN}-{MM}-SUMMARY.md` — Execution results
+  - `{NN}-VALIDATION.md` — Plan verification results
+  - `{NN}-VERIFICATION.md` — Post-execution verification
+  - `{NN}-UAT.md` — User acceptance testing
+- `.planning/quick/` — Quick task directory
+- `.planning/codebase/` — Codebase analysis docs
+- `.planning/milestones/` — Archived milestones
+
+## Commit Conventions
+Use conventional commits: `{type}({scope}): {description}`
+
+Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `style`, `perf`, `ci`
+Scope: derived from the component being changed
+
+For planning docs: `docs(planning): {description}`
+
+## Context Fidelity
+- **Never invent requirements.** Work only from ROADMAP.md phase goals and PLAN.md tasks.
+- **Never assume technology choices.** Check CONTEXT.md and PROJECT.md first.
+- **Never skip verification.** Every claim in SUMMARY.md must be verifiable against actual code.
+
+## Planning Doc Format
+All `.planning/` markdown files use YAML frontmatter:
+```yaml
+---
+key: value
+---
+```
+Do not modify frontmatter manually — use `gsd_frontmatter_set` MCP tool.
+
+## MCP Tools
+GSD provides MCP tools prefixed with `gsd_`. Use these for all state management, config, roadmap, and phase operations instead of manual file editing. Key tools:
+- `gsd_state_load` / `gsd_state_update` — State management
+- `gsd_config_load` / `gsd_config_set` — Configuration
+- `gsd_roadmap_analyze` / `gsd_roadmap_get_phase` — Roadmap queries
+- `gsd_commit` — Atomic commits with planning doc tracking
+- `gsd_find_phase` — Phase directory discovery
+
+## GSD Commands
+Use `/gsd-{command}` to invoke GSD prompts:
+
+### Project Lifecycle
+- `/gsd-project-new` — Initialize a new GSD project
+- `/gsd-codebase-map` — Analyze existing codebase into structured docs
+- `/gsd-progress` — Check project status and route to next action
+- `/gsd-milestone-new` — Start a new milestone
+
+### Phase Workflow
+- `/gsd-phase-discuss N` — Gather preferences and decisions for phase N
+- `/gsd-phase-plan N` — Research and plan phase N
+- `/gsd-phase-execute N` — Execute phase N plans with atomic commits
+- `/gsd-phase-verify N` — Interactive UAT verification for phase N
+- `/gsd-phase-research N` — Deep standalone research for phase N
+
+### Phase Management
+- `/gsd-phase-add "description"` — Append phase to roadmap
+- `/gsd-phase-remove N` — Remove a future phase
+- `/gsd-phase-insert N "description"` — Insert urgent work
+- `/gsd-phase-list-assumptions N` — List assumptions for phase N
+
+### Quick Operations
+- `/gsd-quick "description"` — Execute a quick task with GSD guarantees
+- `/gsd-debug "description"` — Scientific debugging with persistent sessions
+- `/gsd-todo-add "description"` — Capture task for later
+- `/gsd-todo-check` — List pending todos
+
+### Milestone Completion
+- `/gsd-milestone-audit` — Audit milestone completeness and integration
+- `/gsd-milestone-complete` — Archive and complete current milestone
+- `/gsd-milestone-plan-gaps` — Plan fixes for audit gaps
+
+### Session & Config
+- `/gsd-work-pause` — Save context for later
+- `/gsd-work-resume` — Resume from previous session
+- `/gsd-settings` — Configure GSD workflow
+- `/gsd-profile-set [quality|balanced|budget]` — Switch model profile
+- `/gsd-health` — Check project health and consistency
+- `/gsd-cleanup` — Clean stale planning files
+- `/gsd-update` — Check for updates
+- `/gsd-help` — Show all commands
+
+## Context Management
+If the conversation is getting long, consider using `/gsd-work-pause` to save state and start a fresh session with `/gsd-work-resume`.
+
+<!-- GSD:BEGIN -->
+# GSD Project Conventions
+
+## Project Detection
+If a `.planning/` directory exists in the workspace root, this is a GSD-managed project. All GSD rules below apply.
+
+## STATE.md First Rule  
+**Before performing ANY GSD operation, ALWAYS read `.planning/STATE.md` first.** This file contains:
+- Current milestone, phase, and plan position
+- Active blockers and decisions
+- Session context and progress
+
+## File Conventions
+- `.planning/STATE.md` — Current project position and context
+- `.planning/PROJECT.md` — Project definition and vision
+- `.planning/REQUIREMENTS.md` — Requirement specifications with REQ-IDs
+- `.planning/ROADMAP.md` — Phase-based execution roadmap
+- `.planning/config.json` — Workflow configuration
+- `.planning/phases/{NN}-{name}/` — Phase working directories
+  - `{NN}-CONTEXT.md` — User decisions for this phase
+  - `{NN}-RESEARCH.md` — Research findings
+  - `{NN}-{MM}-PLAN.md` — Execution plans
+  - `{NN}-{MM}-SUMMARY.md` — Execution results
+  - `{NN}-VALIDATION.md` — Plan verification results
+  - `{NN}-VERIFICATION.md` — Post-execution verification
+  - `{NN}-UAT.md` — User acceptance testing
+- `.planning/quick/` — Quick task directory
+- `.planning/codebase/` — Codebase analysis docs
+- `.planning/milestones/` — Archived milestones
+
+## Commit Conventions
+Use conventional commits: `{type}({scope}): {description}`
+
+Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `style`, `perf`, `ci`
+Scope: derived from the component being changed
+
+For planning docs: `docs(planning): {description}`
+
+## Context Fidelity
+- **Never invent requirements.** Work only from ROADMAP.md phase goals and PLAN.md tasks.
+- **Never assume technology choices.** Check CONTEXT.md and PROJECT.md first.
+- **Never skip verification.** Every claim in SUMMARY.md must be verifiable against actual code.
+
+## Planning Doc Format
+All `.planning/` markdown files use YAML frontmatter:
+```yaml
+---
+key: value
+---
+```
+Do not modify frontmatter manually — use `gsd_frontmatter_set` MCP tool.
+
+## MCP Tools
+GSD provides MCP tools prefixed with `gsd_`. Use these for all state management, config, roadmap, and phase operations instead of manual file editing. Key tools:
+- `gsd_state_load` / `gsd_state_update` — State management
+- `gsd_config_load` / `gsd_config_set` — Configuration
+- `gsd_roadmap_analyze` / `gsd_roadmap_get_phase` — Roadmap queries
+- `gsd_commit` — Atomic commits with planning doc tracking
+- `gsd_find_phase` — Phase directory discovery
+
+## GSD Commands
+Use `/gsd-{command}` to invoke GSD prompts:
+
+### Project Lifecycle
+- `/gsd-project-new` — Initialize a new GSD project
+- `/gsd-codebase-map` — Analyze existing codebase into structured docs
+- `/gsd-progress` — Check project status and route to next action
+- `/gsd-milestone-new` — Start a new milestone
+
+### Phase Workflow
+- `/gsd-phase-discuss N` — Gather preferences and decisions for phase N
+- `/gsd-phase-plan N` — Research and plan phase N
+- `/gsd-phase-execute N` — Execute phase N plans with atomic commits
+- `/gsd-phase-verify N` — Interactive UAT verification for phase N
+- `/gsd-phase-research N` — Deep standalone research for phase N
+
+### Phase Management
+- `/gsd-phase-add "description"` — Append phase to roadmap
+- `/gsd-phase-remove N` — Remove a future phase
+- `/gsd-phase-insert N "description"` — Insert urgent work
+- `/gsd-phase-list-assumptions N` — List assumptions for phase N
+
+### Quick Operations
+- `/gsd-quick "description"` — Execute a quick task with GSD guarantees
+- `/gsd-debug "description"` — Scientific debugging with persistent sessions
+- `/gsd-todo-add "description"` — Capture task for later
+- `/gsd-todo-check` — List pending todos
+
+### Milestone Completion
+- `/gsd-milestone-audit` — Audit milestone completeness and integration
+- `/gsd-milestone-complete` — Archive and complete current milestone
+- `/gsd-milestone-plan-gaps` — Plan fixes for audit gaps
+
+### Session & Config
+- `/gsd-work-pause` — Save context for later
+- `/gsd-work-resume` — Resume from previous session
+- `/gsd-settings` — Configure GSD workflow
+- `/gsd-profile-set [quality|balanced|budget]` — Switch model profile
+- `/gsd-health` — Check project health and consistency
+- `/gsd-cleanup` — Clean stale planning files
+- `/gsd-update` — Check for updates
+- `/gsd-help` — Show all commands
+
+## Context Management
+If the conversation is getting long, consider using `/gsd-work-pause` to save state and start a fresh session with `/gsd-work-resume`.
+
+<!-- GSD:BEGIN -->
+# GSD Project Conventions
+
+## Project Detection
+If a `.planning/` directory exists in the workspace root, this is a GSD-managed project. All GSD rules below apply.
+
+## STATE.md First Rule  
+**Before performing ANY GSD operation, ALWAYS read `.planning/STATE.md` first.** This file contains:
+- Current milestone, phase, and plan position
+- Active blockers and decisions
+- Session context and progress
+
+## File Conventions
+- `.planning/STATE.md` — Current project position and context
+- `.planning/PROJECT.md` — Project definition and vision
+- `.planning/REQUIREMENTS.md` — Requirement specifications with REQ-IDs
+- `.planning/ROADMAP.md` — Phase-based execution roadmap
+- `.planning/config.json` — Workflow configuration
+- `.planning/phases/{NN}-{name}/` — Phase working directories
+  - `{NN}-CONTEXT.md` — User decisions for this phase
+  - `{NN}-RESEARCH.md` — Research findings
+  - `{NN}-{MM}-PLAN.md` — Execution plans
+  - `{NN}-{MM}-SUMMARY.md` — Execution results
+  - `{NN}-VALIDATION.md` — Plan verification results
+  - `{NN}-VERIFICATION.md` — Post-execution verification
+  - `{NN}-UAT.md` — User acceptance testing
+- `.planning/quick/` — Quick task directory
+- `.planning/codebase/` — Codebase analysis docs
+- `.planning/milestones/` — Archived milestones
+
+## Commit Conventions
+Use conventional commits: `{type}({scope}): {description}`
+
+Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `style`, `perf`, `ci`
+Scope: derived from the component being changed
+
+For planning docs: `docs(planning): {description}`
+
+## Context Fidelity
+- **Never invent requirements.** Work only from ROADMAP.md phase goals and PLAN.md tasks.
+- **Never assume technology choices.** Check CONTEXT.md and PROJECT.md first.
+- **Never skip verification.** Every claim in SUMMARY.md must be verifiable against actual code.
+
+## Planning Doc Format
+All `.planning/` markdown files use YAML frontmatter:
+```yaml
+---
+key: value
+---
+```
+Do not modify frontmatter manually — use `gsd_frontmatter_set` MCP tool.
+
+## MCP Tools
+GSD provides MCP tools prefixed with `gsd_`. Use these for all state management, config, roadmap, and phase operations instead of manual file editing. Key tools:
+- `gsd_state_load` / `gsd_state_update` — State management
+- `gsd_config_load` / `gsd_config_set` — Configuration
+- `gsd_roadmap_analyze` / `gsd_roadmap_get_phase` — Roadmap queries
+- `gsd_commit` — Atomic commits with planning doc tracking
+- `gsd_find_phase` — Phase directory discovery
+
+## GSD Commands
+Use `/gsd-{command}` to invoke GSD prompts:
+
+### Project Lifecycle
+- `/gsd-project-new` — Initialize a new GSD project
+- `/gsd-codebase-map` — Analyze existing codebase into structured docs
+- `/gsd-progress` — Check project status and route to next action
+- `/gsd-milestone-new` — Start a new milestone
+
+### Phase Workflow
+- `/gsd-phase-discuss N` — Gather preferences and decisions for phase N
+- `/gsd-phase-plan N` — Research and plan phase N
+- `/gsd-phase-execute N` — Execute phase N plans with atomic commits
+- `/gsd-phase-verify N` — Interactive UAT verification for phase N
+- `/gsd-phase-research N` — Deep standalone research for phase N
+
+### Phase Management
+- `/gsd-phase-add "description"` — Append phase to roadmap
+- `/gsd-phase-remove N` — Remove a future phase
+- `/gsd-phase-insert N "description"` — Insert urgent work
+- `/gsd-phase-list-assumptions N` — List assumptions for phase N
+
+### Quick Operations
+- `/gsd-quick "description"` — Execute a quick task with GSD guarantees
+- `/gsd-debug "description"` — Scientific debugging with persistent sessions
+- `/gsd-todo-add "description"` — Capture task for later
+- `/gsd-todo-check` — List pending todos
+
+### Milestone Completion
+- `/gsd-milestone-audit` — Audit milestone completeness and integration
+- `/gsd-milestone-complete` — Archive and complete current milestone
+- `/gsd-milestone-plan-gaps` — Plan fixes for audit gaps
+
+### Session & Config
+- `/gsd-work-pause` — Save context for later
+- `/gsd-work-resume` — Resume from previous session
+- `/gsd-settings` — Configure GSD workflow
+- `/gsd-profile-set [quality|balanced|budget]` — Switch model profile
+- `/gsd-health` — Check project health and consistency
+- `/gsd-cleanup` — Clean stale planning files
+- `/gsd-update` — Check for updates
+- `/gsd-help` — Show all commands
+
+## Context Management
+If the conversation is getting long, consider using `/gsd-work-pause` to save state and start a fresh session with `/gsd-work-resume`.
+
+<!-- GSD:BEGIN -->
+# GSD Project Conventions
+
+## Project Detection
+If a `.planning/` directory exists in the workspace root, this is a GSD-managed project. All GSD rules below apply.
+
+## STATE.md First Rule  
+**Before performing ANY GSD operation, ALWAYS read `.planning/STATE.md` first.** This file contains:
+- Current milestone, phase, and plan position
+- Active blockers and decisions
+- Session context and progress
+
+## File Conventions
+- `.planning/STATE.md` — Current project position and context
+- `.planning/PROJECT.md` — Project definition and vision
+- `.planning/REQUIREMENTS.md` — Requirement specifications with REQ-IDs
+- `.planning/ROADMAP.md` — Phase-based execution roadmap
+- `.planning/config.json` — Workflow configuration
+- `.planning/phases/{NN}-{name}/` — Phase working directories
+  - `{NN}-CONTEXT.md` — User decisions for this phase
+  - `{NN}-RESEARCH.md` — Research findings
+  - `{NN}-{MM}-PLAN.md` — Execution plans
+  - `{NN}-{MM}-SUMMARY.md` — Execution results
+  - `{NN}-VALIDATION.md` — Plan verification results
+  - `{NN}-VERIFICATION.md` — Post-execution verification
+  - `{NN}-UAT.md` — User acceptance testing
+- `.planning/quick/` — Quick task directory
+- `.planning/codebase/` — Codebase analysis docs
+- `.planning/milestones/` — Archived milestones
+
+## Commit Conventions
+Use conventional commits: `{type}({scope}): {description}`
+
+Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `style`, `perf`, `ci`
+Scope: derived from the component being changed
+
+For planning docs: `docs(planning): {description}`
+
+## Context Fidelity
+- **Never invent requirements.** Work only from ROADMAP.md phase goals and PLAN.md tasks.
+- **Never assume technology choices.** Check CONTEXT.md and PROJECT.md first.
+- **Never skip verification.** Every claim in SUMMARY.md must be verifiable against actual code.
+
+## Planning Doc Format
+All `.planning/` markdown files use YAML frontmatter:
+```yaml
+---
+key: value
+---
+```
+Do not modify frontmatter manually — use `gsd_frontmatter_set` MCP tool.
+
+## MCP Tools
+GSD provides MCP tools prefixed with `gsd_`. Use these for all state management, config, roadmap, and phase operations instead of manual file editing. Key tools:
+- `gsd_state_load` / `gsd_state_update` — State management
+- `gsd_config_load` / `gsd_config_set` — Configuration
+- `gsd_roadmap_analyze` / `gsd_roadmap_get_phase` — Roadmap queries
+- `gsd_commit` — Atomic commits with planning doc tracking
+- `gsd_find_phase` — Phase directory discovery
+
+## GSD Commands
+Use `/gsd-{command}` to invoke GSD prompts:
+
+### Project Lifecycle
+- `/gsd-project-new` — Initialize a new GSD project
+- `/gsd-codebase-map` — Analyze existing codebase into structured docs
+- `/gsd-progress` — Check project status and route to next action
+- `/gsd-milestone-new` — Start a new milestone
+
+### Phase Workflow
+- `/gsd-phase-discuss N` — Gather preferences and decisions for phase N
+- `/gsd-phase-plan N` — Research and plan phase N
+- `/gsd-phase-execute N` — Execute phase N plans with atomic commits
+- `/gsd-phase-verify N` — Interactive UAT verification for phase N
+- `/gsd-phase-research N` — Deep standalone research for phase N
+
+### Phase Management
+- `/gsd-phase-add "description"` — Append phase to roadmap
+- `/gsd-phase-remove N` — Remove a future phase
+- `/gsd-phase-insert N "description"` — Insert urgent work
+- `/gsd-phase-list-assumptions N` — List assumptions for phase N
+
+### Quick Operations
+- `/gsd-quick "description"` — Execute a quick task with GSD guarantees
+- `/gsd-debug "description"` — Scientific debugging with persistent sessions
+- `/gsd-todo-add "description"` — Capture task for later
+- `/gsd-todo-check` — List pending todos
+
+### Milestone Completion
+- `/gsd-milestone-audit` — Audit milestone completeness and integration
+- `/gsd-milestone-complete` — Archive and complete current milestone
+- `/gsd-milestone-plan-gaps` — Plan fixes for audit gaps
+
+### Session & Config
+- `/gsd-work-pause` — Save context for later
+- `/gsd-work-resume` — Resume from previous session
+- `/gsd-settings` — Configure GSD workflow
+- `/gsd-profile-set [quality|balanced|budget]` — Switch model profile
+- `/gsd-health` — Check project health and consistency
+- `/gsd-cleanup` — Clean stale planning files
+- `/gsd-update` — Check for updates
+- `/gsd-help` — Show all commands
+
+## Context Management
+If the conversation is getting long, consider using `/gsd-work-pause` to save state and start a fresh session with `/gsd-work-resume`.
+
+<!-- GSD:BEGIN -->
+# GSD Project Conventions
+
+## Project Detection
+If a `.planning/` directory exists in the workspace root, this is a GSD-managed project. All GSD rules below apply.
+
+## STATE.md First Rule  
+**Before performing ANY GSD operation, ALWAYS read `.planning/STATE.md` first.** This file contains:
+- Current milestone, phase, and plan position
+- Active blockers and decisions
+- Session context and progress
+
+## File Conventions
+- `.planning/STATE.md` — Current project position and context
+- `.planning/PROJECT.md` — Project definition and vision
+- `.planning/REQUIREMENTS.md` — Requirement specifications with REQ-IDs
+- `.planning/ROADMAP.md` — Phase-based execution roadmap
+- `.planning/config.json` — Workflow configuration
+- `.planning/phases/{NN}-{name}/` — Phase working directories
+  - `{NN}-CONTEXT.md` — User decisions for this phase
+  - `{NN}-RESEARCH.md` — Research findings
+  - `{NN}-{MM}-PLAN.md` — Execution plans
+  - `{NN}-{MM}-SUMMARY.md` — Execution results
+  - `{NN}-VALIDATION.md` — Plan verification results
+  - `{NN}-VERIFICATION.md` — Post-execution verification
+  - `{NN}-UAT.md` — User acceptance testing
+- `.planning/quick/` — Quick task directory
+- `.planning/codebase/` — Codebase analysis docs
+- `.planning/milestones/` — Archived milestones
+
+## Commit Conventions
+Use conventional commits: `{type}({scope}): {description}`
+
+Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `style`, `perf`, `ci`
+Scope: derived from the component being changed
+
+For planning docs: `docs(planning): {description}`
+
+## Context Fidelity
+- **Never invent requirements.** Work only from ROADMAP.md phase goals and PLAN.md tasks.
+- **Never assume technology choices.** Check CONTEXT.md and PROJECT.md first.
+- **Never skip verification.** Every claim in SUMMARY.md must be verifiable against actual code.
+
+## Planning Doc Format
+All `.planning/` markdown files use YAML frontmatter:
+```yaml
+---
+key: value
+---
+```
+Do not modify frontmatter manually — use `gsd_frontmatter_set` MCP tool.
+
+## MCP Tools
+GSD provides MCP tools prefixed with `gsd_`. Use these for all state management, config, roadmap, and phase operations instead of manual file editing. Key tools:
+- `gsd_state_load` / `gsd_state_update` — State management
+- `gsd_config_load` / `gsd_config_set` — Configuration
+- `gsd_roadmap_analyze` / `gsd_roadmap_get_phase` — Roadmap queries
+- `gsd_commit` — Atomic commits with planning doc tracking
+- `gsd_find_phase` — Phase directory discovery
+
+## GSD Commands
+Use `/gsd-{command}` to invoke GSD prompts:
+
+### Project Lifecycle
+- `/gsd-project-new` — Initialize a new GSD project
+- `/gsd-codebase-map` — Analyze existing codebase into structured docs
+- `/gsd-progress` — Check project status and route to next action
+- `/gsd-milestone-new` — Start a new milestone
+
+### Phase Workflow
+- `/gsd-phase-discuss N` — Gather preferences and decisions for phase N
+- `/gsd-phase-plan N` — Research and plan phase N
+- `/gsd-phase-execute N` — Execute phase N plans with atomic commits
+- `/gsd-phase-verify N` — Interactive UAT verification for phase N
+- `/gsd-phase-research N` — Deep standalone research for phase N
+
+### Phase Management
+- `/gsd-phase-add "description"` — Append phase to roadmap
+- `/gsd-phase-remove N` — Remove a future phase
+- `/gsd-phase-insert N "description"` — Insert urgent work
+- `/gsd-phase-list-assumptions N` — List assumptions for phase N
+
+### Quick Operations
+- `/gsd-quick "description"` — Execute a quick task with GSD guarantees
+- `/gsd-debug "description"` — Scientific debugging with persistent sessions
+- `/gsd-todo-add "description"` — Capture task for later
+- `/gsd-todo-check` — List pending todos
+
+### Milestone Completion
+- `/gsd-milestone-audit` — Audit milestone completeness and integration
+- `/gsd-milestone-complete` — Archive and complete current milestone
+- `/gsd-milestone-plan-gaps` — Plan fixes for audit gaps
+
+### Session & Config
+- `/gsd-work-pause` — Save context for later
+- `/gsd-work-resume` — Resume from previous session
+- `/gsd-settings` — Configure GSD workflow
+- `/gsd-profile-set [quality|balanced|budget]` — Switch model profile
+- `/gsd-health` — Check project health and consistency
+- `/gsd-cleanup` — Clean stale planning files
+- `/gsd-update` — Check for updates
+- `/gsd-help` — Show all commands
+
+## Context Management
+If the conversation is getting long, consider using `/gsd-work-pause` to save state and start a fresh session with `/gsd-work-resume`.
+
+<!-- GSD:BEGIN -->
+# GSD Project Conventions
+
+## Project Detection
+If a `.planning/` directory exists in the workspace root, this is a GSD-managed project. All GSD rules below apply.
+
+## STATE.md First Rule  
+**Before performing ANY GSD operation, ALWAYS read `.planning/STATE.md` first.** This file contains:
+- Current milestone, phase, and plan position
+- Active blockers and decisions
+- Session context and progress
+
+## File Conventions
+- `.planning/STATE.md` — Current project position and context
+- `.planning/PROJECT.md` — Project definition and vision
+- `.planning/REQUIREMENTS.md` — Requirement specifications with REQ-IDs
+- `.planning/ROADMAP.md` — Phase-based execution roadmap
+- `.planning/config.json` — Workflow configuration
+- `.planning/phases/{NN}-{name}/` — Phase working directories
+  - `{NN}-CONTEXT.md` — User decisions for this phase
+  - `{NN}-RESEARCH.md` — Research findings
+  - `{NN}-{MM}-PLAN.md` — Execution plans
+  - `{NN}-{MM}-SUMMARY.md` — Execution results
+  - `{NN}-VALIDATION.md` — Plan verification results
+  - `{NN}-VERIFICATION.md` — Post-execution verification
+  - `{NN}-UAT.md` — User acceptance testing
+- `.planning/quick/` — Quick task directory
+- `.planning/codebase/` — Codebase analysis docs
+- `.planning/milestones/` — Archived milestones
+
+## Commit Conventions
+Use conventional commits: `{type}({scope}): {description}`
+
+Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `style`, `perf`, `ci`
+Scope: derived from the component being changed
+
+For planning docs: `docs(planning): {description}`
+
+## Context Fidelity
+- **Never invent requirements.** Work only from ROADMAP.md phase goals and PLAN.md tasks.
+- **Never assume technology choices.** Check CONTEXT.md and PROJECT.md first.
+- **Never skip verification.** Every claim in SUMMARY.md must be verifiable against actual code.
+
+## Planning Doc Format
+All `.planning/` markdown files use YAML frontmatter:
+```yaml
+---
+key: value
+---
+```
+Do not modify frontmatter manually — use `gsd_frontmatter_set` MCP tool.
+
+## MCP Tools
+GSD provides MCP tools prefixed with `gsd_`. Use these for all state management, config, roadmap, and phase operations instead of manual file editing. Key tools:
+- `gsd_state_load` / `gsd_state_update` — State management
+- `gsd_config_load` / `gsd_config_set` — Configuration
+- `gsd_roadmap_analyze` / `gsd_roadmap_get_phase` — Roadmap queries
+- `gsd_commit` — Atomic commits with planning doc tracking
+- `gsd_find_phase` — Phase directory discovery
+
+## GSD Commands
+Use `/gsd-{command}` to invoke GSD prompts:
+
+### Project Lifecycle
+- `/gsd-project-new` — Initialize a new GSD project
+- `/gsd-codebase-map` — Analyze existing codebase into structured docs
+- `/gsd-progress` — Check project status and route to next action
+- `/gsd-milestone-new` — Start a new milestone
+
+### Phase Workflow
+- `/gsd-phase-discuss N` — Gather preferences and decisions for phase N
+- `/gsd-phase-plan N` — Research and plan phase N
+- `/gsd-phase-execute N` — Execute phase N plans with atomic commits
+- `/gsd-phase-verify N` — Interactive UAT verification for phase N
+- `/gsd-phase-research N` — Deep standalone research for phase N
+
+### Phase Management
+- `/gsd-phase-add "description"` — Append phase to roadmap
+- `/gsd-phase-remove N` — Remove a future phase
+- `/gsd-phase-insert N "description"` — Insert urgent work
+- `/gsd-phase-list-assumptions N` — List assumptions for phase N
+
+### Quick Operations
+- `/gsd-quick "description"` — Execute a quick task with GSD guarantees
+- `/gsd-debug "description"` — Scientific debugging with persistent sessions
+- `/gsd-todo-add "description"` — Capture task for later
+- `/gsd-todo-check` — List pending todos
+
+### Milestone Completion
+- `/gsd-milestone-audit` — Audit milestone completeness and integration
+- `/gsd-milestone-complete` — Archive and complete current milestone
+- `/gsd-milestone-plan-gaps` — Plan fixes for audit gaps
+
+### Session & Config
+- `/gsd-work-pause` — Save context for later
+- `/gsd-work-resume` — Resume from previous session
+- `/gsd-settings` — Configure GSD workflow
+- `/gsd-profile-set [quality|balanced|budget]` — Switch model profile
+- `/gsd-health` — Check project health and consistency
+- `/gsd-cleanup` — Clean stale planning files
+- `/gsd-update` — Check for updates
+- `/gsd-help` — Show all commands
+
+## Context Management
+If the conversation is getting long, consider using `/gsd-work-pause` to save state and start a fresh session with `/gsd-work-resume`.
+
+<!-- GSD:BEGIN -->
+# GSD Project Conventions
+
+## Project Detection
+If a `.planning/` directory exists in the workspace root, this is a GSD-managed project. All GSD rules below apply.
+
+## STATE.md First Rule  
+**Before performing ANY GSD operation, ALWAYS read `.planning/STATE.md` first.** This file contains:
+- Current milestone, phase, and plan position
+- Active blockers and decisions
+- Session context and progress
+
+## File Conventions
+- `.planning/STATE.md` — Current project position and context
+- `.planning/PROJECT.md` — Project definition and vision
+- `.planning/REQUIREMENTS.md` — Requirement specifications with REQ-IDs
+- `.planning/ROADMAP.md` — Phase-based execution roadmap
+- `.planning/config.json` — Workflow configuration
+- `.planning/phases/{NN}-{name}/` — Phase working directories
+  - `{NN}-CONTEXT.md` — User decisions for this phase
+  - `{NN}-RESEARCH.md` — Research findings
+  - `{NN}-{MM}-PLAN.md` — Execution plans
+  - `{NN}-{MM}-SUMMARY.md` — Execution results
+  - `{NN}-VALIDATION.md` — Plan verification results
+  - `{NN}-VERIFICATION.md` — Post-execution verification
+  - `{NN}-UAT.md` — User acceptance testing
+- `.planning/quick/` — Quick task directory
+- `.planning/codebase/` — Codebase analysis docs
+- `.planning/milestones/` — Archived milestones
+
+## Commit Conventions
+Use conventional commits: `{type}({scope}): {description}`
+
+Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `style`, `perf`, `ci`
+Scope: derived from the component being changed
+
+For planning docs: `docs(planning): {description}`
+
+## Context Fidelity
+- **Never invent requirements.** Work only from ROADMAP.md phase goals and PLAN.md tasks.
+- **Never assume technology choices.** Check CONTEXT.md and PROJECT.md first.
+- **Never skip verification.** Every claim in SUMMARY.md must be verifiable against actual code.
+
+## Planning Doc Format
+All `.planning/` markdown files use YAML frontmatter:
+```yaml
+---
+key: value
+---
+```
+Do not modify frontmatter manually — use `gsd_frontmatter_set` MCP tool.
+
+## MCP Tools
+GSD provides MCP tools prefixed with `gsd_`. Use these for all state management, config, roadmap, and phase operations instead of manual file editing. Key tools:
+- `gsd_state_load` / `gsd_state_update` — State management
+- `gsd_config_load` / `gsd_config_set` — Configuration
+- `gsd_roadmap_analyze` / `gsd_roadmap_get_phase` — Roadmap queries
+- `gsd_commit` — Atomic commits with planning doc tracking
+- `gsd_find_phase` — Phase directory discovery
+
+## GSD Commands
+Use `/gsd-{command}` to invoke GSD prompts:
+
+### Project Lifecycle
+- `/gsd-project-new` — Initialize a new GSD project
+- `/gsd-codebase-map` — Analyze existing codebase into structured docs
+- `/gsd-progress` — Check project status and route to next action
+- `/gsd-milestone-new` — Start a new milestone
+
+### Phase Workflow
+- `/gsd-phase-discuss N` — Gather preferences and decisions for phase N
+- `/gsd-phase-plan N` — Research and plan phase N
+- `/gsd-phase-execute N` — Execute phase N plans with atomic commits
+- `/gsd-phase-verify N` — Interactive UAT verification for phase N
+- `/gsd-phase-research N` — Deep standalone research for phase N
+
+### Phase Management
+- `/gsd-phase-add "description"` — Append phase to roadmap
+- `/gsd-phase-remove N` — Remove a future phase
+- `/gsd-phase-insert N "description"` — Insert urgent work
+- `/gsd-phase-list-assumptions N` — List assumptions for phase N
+
+### Quick Operations
+- `/gsd-quick "description"` — Execute a quick task with GSD guarantees
+- `/gsd-debug "description"` — Scientific debugging with persistent sessions
+- `/gsd-todo-add "description"` — Capture task for later
+- `/gsd-todo-check` — List pending todos
+
+### Milestone Completion
+- `/gsd-milestone-audit` — Audit milestone completeness and integration
+- `/gsd-milestone-complete` — Archive and complete current milestone
+- `/gsd-milestone-plan-gaps` — Plan fixes for audit gaps
+
+### Session & Config
+- `/gsd-work-pause` — Save context for later
+- `/gsd-work-resume` — Resume from previous session
+- `/gsd-settings` — Configure GSD workflow
+- `/gsd-profile-set [quality|balanced|budget]` — Switch model profile
+- `/gsd-health` — Check project health and consistency
+- `/gsd-cleanup` — Clean stale planning files
+- `/gsd-update` — Check for updates
+- `/gsd-help` — Show all commands
+
+## Context Management
+If the conversation is getting long, consider using `/gsd-work-pause` to save state and start a fresh session with `/gsd-work-resume`.
+
+<!-- GSD:BEGIN -->
+# GSD Project Conventions
+
+## Project Detection
+If a `.planning/` directory exists in the workspace root, this is a GSD-managed project. All GSD rules below apply.
+
+## STATE.md First Rule  
+**Before performing ANY GSD operation, ALWAYS read `.planning/STATE.md` first.** This file contains:
+- Current milestone, phase, and plan position
+- Active blockers and decisions
+- Session context and progress
+
+## File Conventions
+- `.planning/STATE.md` — Current project position and context
+- `.planning/PROJECT.md` — Project definition and vision
+- `.planning/REQUIREMENTS.md` — Requirement specifications with REQ-IDs
+- `.planning/ROADMAP.md` — Phase-based execution roadmap
+- `.planning/config.json` — Workflow configuration
+- `.planning/phases/{NN}-{name}/` — Phase working directories
+  - `{NN}-CONTEXT.md` — User decisions for this phase
+  - `{NN}-RESEARCH.md` — Research findings
+  - `{NN}-{MM}-PLAN.md` — Execution plans
+  - `{NN}-{MM}-SUMMARY.md` — Execution results
+  - `{NN}-VALIDATION.md` — Plan verification results
+  - `{NN}-VERIFICATION.md` — Post-execution verification
+  - `{NN}-UAT.md` — User acceptance testing
+- `.planning/quick/` — Quick task directory
+- `.planning/codebase/` — Codebase analysis docs
+- `.planning/milestones/` — Archived milestones
+
+## Commit Conventions
+Use conventional commits: `{type}({scope}): {description}`
+
+Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `style`, `perf`, `ci`
+Scope: derived from the component being changed
+
+For planning docs: `docs(planning): {description}`
+
+## Context Fidelity
+- **Never invent requirements.** Work only from ROADMAP.md phase goals and PLAN.md tasks.
+- **Never assume technology choices.** Check CONTEXT.md and PROJECT.md first.
+- **Never skip verification.** Every claim in SUMMARY.md must be verifiable against actual code.
+
+## Planning Doc Format
+All `.planning/` markdown files use YAML frontmatter:
+```yaml
+---
+key: value
+---
+```
+Do not modify frontmatter manually — use `gsd_frontmatter_set` MCP tool.
+
+## MCP Tools
+GSD provides MCP tools prefixed with `gsd_`. Use these for all state management, config, roadmap, and phase operations instead of manual file editing. Key tools:
+- `gsd_state_load` / `gsd_state_update` — State management
+- `gsd_config_load` / `gsd_config_set` — Configuration
+- `gsd_roadmap_analyze` / `gsd_roadmap_get_phase` — Roadmap queries
+- `gsd_commit` — Atomic commits with planning doc tracking
+- `gsd_find_phase` — Phase directory discovery
+
+## GSD Commands
+Use `/gsd-{command}` to invoke GSD prompts:
+
+### Project Lifecycle
+- `/gsd-project-new` — Initialize a new GSD project
+- `/gsd-codebase-map` — Analyze existing codebase into structured docs
+- `/gsd-progress` — Check project status and route to next action
+- `/gsd-milestone-new` — Start a new milestone
+
+### Phase Workflow
+- `/gsd-phase-discuss N` — Gather preferences and decisions for phase N
+- `/gsd-phase-plan N` — Research and plan phase N
+- `/gsd-phase-execute N` — Execute phase N plans with atomic commits
+- `/gsd-phase-verify N` — Interactive UAT verification for phase N
+- `/gsd-phase-research N` — Deep standalone research for phase N
+
+### Phase Management
+- `/gsd-phase-add "description"` — Append phase to roadmap
+- `/gsd-phase-remove N` — Remove a future phase
+- `/gsd-phase-insert N "description"` — Insert urgent work
+- `/gsd-phase-list-assumptions N` — List assumptions for phase N
+
+### Quick Operations
+- `/gsd-quick "description"` — Execute a quick task with GSD guarantees
+- `/gsd-debug "description"` — Scientific debugging with persistent sessions
+- `/gsd-todo-add "description"` — Capture task for later
+- `/gsd-todo-check` — List pending todos
+
+### Milestone Completion
+- `/gsd-milestone-audit` — Audit milestone completeness and integration
+- `/gsd-milestone-complete` — Archive and complete current milestone
+- `/gsd-milestone-plan-gaps` — Plan fixes for audit gaps
+
+### Session & Config
+- `/gsd-work-pause` — Save context for later
+- `/gsd-work-resume` — Resume from previous session
+- `/gsd-settings` — Configure GSD workflow
+- `/gsd-profile-set [quality|balanced|budget]` — Switch model profile
+- `/gsd-health` — Check project health and consistency
+- `/gsd-cleanup` — Clean stale planning files
+- `/gsd-update` — Check for updates
+- `/gsd-help` — Show all commands
+
+## Context Management
+If the conversation is getting long, consider using `/gsd-work-pause` to save state and start a fresh session with `/gsd-work-resume`.
+
+<!-- GSD:BEGIN -->
+# GSD Project Conventions
+
+## Project Detection
+If a `.planning/` directory exists in the workspace root, this is a GSD-managed project. All GSD rules below apply.
+
+## STATE.md First Rule  
+**Before performing ANY GSD operation, ALWAYS read `.planning/STATE.md` first.** This file contains:
+- Current milestone, phase, and plan position
+- Active blockers and decisions
+- Session context and progress
+
+## File Conventions
+- `.planning/STATE.md` — Current project position and context
+- `.planning/PROJECT.md` — Project definition and vision
+- `.planning/REQUIREMENTS.md` — Requirement specifications with REQ-IDs
+- `.planning/ROADMAP.md` — Phase-based execution roadmap
+- `.planning/config.json` — Workflow configuration
+- `.planning/phases/{NN}-{name}/` — Phase working directories
+  - `{NN}-CONTEXT.md` — User decisions for this phase
+  - `{NN}-RESEARCH.md` — Research findings
+  - `{NN}-{MM}-PLAN.md` — Execution plans
+  - `{NN}-{MM}-SUMMARY.md` — Execution results
+  - `{NN}-VALIDATION.md` — Plan verification results
+  - `{NN}-VERIFICATION.md` — Post-execution verification
+  - `{NN}-UAT.md` — User acceptance testing
+- `.planning/quick/` — Quick task directory
+- `.planning/codebase/` — Codebase analysis docs
+- `.planning/milestones/` — Archived milestones
+
+## Commit Conventions
+Use conventional commits: `{type}({scope}): {description}`
+
+Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `style`, `perf`, `ci`
+Scope: derived from the component being changed
+
+For planning docs: `docs(planning): {description}`
+
+## Context Fidelity
+- **Never invent requirements.** Work only from ROADMAP.md phase goals and PLAN.md tasks.
+- **Never assume technology choices.** Check CONTEXT.md and PROJECT.md first.
+- **Never skip verification.** Every claim in SUMMARY.md must be verifiable against actual code.
+
+## Planning Doc Format
+All `.planning/` markdown files use YAML frontmatter:
+```yaml
+---
+key: value
+---
+```
+Do not modify frontmatter manually — use `gsd_frontmatter_set` MCP tool.
+
+## MCP Tools
+GSD provides MCP tools prefixed with `gsd_`. Use these for all state management, config, roadmap, and phase operations instead of manual file editing. Key tools:
+- `gsd_state_load` / `gsd_state_update` — State management
+- `gsd_config_load` / `gsd_config_set` — Configuration
+- `gsd_roadmap_analyze` / `gsd_roadmap_get_phase` — Roadmap queries
+- `gsd_commit` — Atomic commits with planning doc tracking
+- `gsd_find_phase` — Phase directory discovery
+
+## GSD Commands
+Use `/gsd-{command}` to invoke GSD prompts:
+
+### Project Lifecycle
+- `/gsd-project-new` — Initialize a new GSD project
+- `/gsd-codebase-map` — Analyze existing codebase into structured docs
+- `/gsd-progress` — Check project status and route to next action
+- `/gsd-milestone-new` — Start a new milestone
+
+### Phase Workflow
+- `/gsd-phase-discuss N` — Gather preferences and decisions for phase N
+- `/gsd-phase-plan N` — Research and plan phase N
+- `/gsd-phase-execute N` — Execute phase N plans with atomic commits
+- `/gsd-phase-verify N` — Interactive UAT verification for phase N
+- `/gsd-phase-research N` — Deep standalone research for phase N
+
+### Phase Management
+- `/gsd-phase-add "description"` — Append phase to roadmap
+- `/gsd-phase-remove N` — Remove a future phase
+- `/gsd-phase-insert N "description"` — Insert urgent work
+- `/gsd-phase-list-assumptions N` — List assumptions for phase N
+
+### Quick Operations
+- `/gsd-quick "description"` — Execute a quick task with GSD guarantees
+- `/gsd-debug "description"` — Scientific debugging with persistent sessions
+- `/gsd-todo-add "description"` — Capture task for later
+- `/gsd-todo-check` — List pending todos
+
+### Milestone Completion
+- `/gsd-milestone-audit` — Audit milestone completeness and integration
+- `/gsd-milestone-complete` — Archive and complete current milestone
+- `/gsd-milestone-plan-gaps` — Plan fixes for audit gaps
+
+### Session & Config
+- `/gsd-work-pause` — Save context for later
+- `/gsd-work-resume` — Resume from previous session
+- `/gsd-settings` — Configure GSD workflow
+- `/gsd-profile-set [quality|balanced|budget]` — Switch model profile
+- `/gsd-health` — Check project health and consistency
+- `/gsd-cleanup` — Clean stale planning files
+- `/gsd-update` — Check for updates
+- `/gsd-help` — Show all commands
+
+## Context Management
+If the conversation is getting long, consider using `/gsd-work-pause` to save state and start a fresh session with `/gsd-work-resume`.
+
+<!-- GSD:BEGIN -->
+# GSD Project Conventions
+
+## Project Detection
+If a `.planning/` directory exists in the workspace root, this is a GSD-managed project. All GSD rules below apply.
+
+## STATE.md First Rule  
+**Before performing ANY GSD operation, ALWAYS read `.planning/STATE.md` first.** This file contains:
+- Current milestone, phase, and plan position
+- Active blockers and decisions
+- Session context and progress
+
+## File Conventions
+- `.planning/STATE.md` — Current project position and context
+- `.planning/PROJECT.md` — Project definition and vision
+- `.planning/REQUIREMENTS.md` — Requirement specifications with REQ-IDs
+- `.planning/ROADMAP.md` — Phase-based execution roadmap
+- `.planning/config.json` — Workflow configuration
+- `.planning/phases/{NN}-{name}/` — Phase working directories
+  - `{NN}-CONTEXT.md` — User decisions for this phase
+  - `{NN}-RESEARCH.md` — Research findings
+  - `{NN}-{MM}-PLAN.md` — Execution plans
+  - `{NN}-{MM}-SUMMARY.md` — Execution results
+  - `{NN}-VALIDATION.md` — Plan verification results
+  - `{NN}-VERIFICATION.md` — Post-execution verification
+  - `{NN}-UAT.md` — User acceptance testing
+- `.planning/quick/` — Quick task directory
+- `.planning/codebase/` — Codebase analysis docs
+- `.planning/milestones/` — Archived milestones
+
+## Commit Conventions
+Use conventional commits: `{type}({scope}): {description}`
+
+Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `style`, `perf`, `ci`
+Scope: derived from the component being changed
+
+For planning docs: `docs(planning): {description}`
+
+## Context Fidelity
+- **Never invent requirements.** Work only from ROADMAP.md phase goals and PLAN.md tasks.
+- **Never assume technology choices.** Check CONTEXT.md and PROJECT.md first.
+- **Never skip verification.** Every claim in SUMMARY.md must be verifiable against actual code.
+
+## Planning Doc Format
+All `.planning/` markdown files use YAML frontmatter:
+```yaml
+---
+key: value
+---
+```
+Do not modify frontmatter manually — use `gsd_frontmatter_set` MCP tool.
+
+## MCP Tools
+GSD provides MCP tools prefixed with `gsd_`. Use these for all state management, config, roadmap, and phase operations instead of manual file editing. Key tools:
+- `gsd_state_load` / `gsd_state_update` — State management
+- `gsd_config_load` / `gsd_config_set` — Configuration
+- `gsd_roadmap_analyze` / `gsd_roadmap_get_phase` — Roadmap queries
+- `gsd_commit` — Atomic commits with planning doc tracking
+- `gsd_find_phase` — Phase directory discovery
+
+## GSD Commands
+Use `/gsd-{command}` to invoke GSD prompts:
+
+### Project Lifecycle
+- `/gsd-project-new` — Initialize a new GSD project
+- `/gsd-codebase-map` — Analyze existing codebase into structured docs
+- `/gsd-progress` — Check project status and route to next action
+- `/gsd-milestone-new` — Start a new milestone
+
+### Phase Workflow
+- `/gsd-phase-discuss N` — Gather preferences and decisions for phase N
+- `/gsd-phase-plan N` — Research and plan phase N
+- `/gsd-phase-execute N` — Execute phase N plans with atomic commits
+- `/gsd-phase-verify N` — Interactive UAT verification for phase N
+- `/gsd-phase-research N` — Deep standalone research for phase N
+
+### Phase Management
+- `/gsd-phase-add "description"` — Append phase to roadmap
+- `/gsd-phase-remove N` — Remove a future phase
+- `/gsd-phase-insert N "description"` — Insert urgent work
+- `/gsd-phase-list-assumptions N` — List assumptions for phase N
+
+### Quick Operations
+- `/gsd-quick "description"` — Execute a quick task with GSD guarantees
+- `/gsd-debug "description"` — Scientific debugging with persistent sessions
+- `/gsd-todo-add "description"` — Capture task for later
+- `/gsd-todo-check` — List pending todos
+
+### Milestone Completion
+- `/gsd-milestone-audit` — Audit milestone completeness and integration
+- `/gsd-milestone-complete` — Archive and complete current milestone
+- `/gsd-milestone-plan-gaps` — Plan fixes for audit gaps
+
+### Session & Config
+- `/gsd-work-pause` — Save context for later
+- `/gsd-work-resume` — Resume from previous session
+- `/gsd-settings` — Configure GSD workflow
+- `/gsd-profile-set [quality|balanced|budget]` — Switch model profile
+- `/gsd-health` — Check project health and consistency
+- `/gsd-cleanup` — Clean stale planning files
+- `/gsd-update` — Check for updates
+- `/gsd-help` — Show all commands
+
+## Context Management
+If the conversation is getting long, consider using `/gsd-work-pause` to save state and start a fresh session with `/gsd-work-resume`.
+
+<!-- GSD:BEGIN -->
+# GSD Project Conventions
+
+## Project Detection
+If a `.planning/` directory exists in the workspace root, this is a GSD-managed project. All GSD rules below apply.
+
+## STATE.md First Rule  
+**Before performing ANY GSD operation, ALWAYS read `.planning/STATE.md` first.** This file contains:
+- Current milestone, phase, and plan position
+- Active blockers and decisions
+- Session context and progress
+
+## File Conventions
+- `.planning/STATE.md` — Current project position and context
+- `.planning/PROJECT.md` — Project definition and vision
+- `.planning/REQUIREMENTS.md` — Requirement specifications with REQ-IDs
+- `.planning/ROADMAP.md` — Phase-based execution roadmap
+- `.planning/config.json` — Workflow configuration
+- `.planning/phases/{NN}-{name}/` — Phase working directories
+  - `{NN}-CONTEXT.md` — User decisions for this phase
+  - `{NN}-RESEARCH.md` — Research findings
+  - `{NN}-{MM}-PLAN.md` — Execution plans
+  - `{NN}-{MM}-SUMMARY.md` — Execution results
+  - `{NN}-VALIDATION.md` — Plan verification results
+  - `{NN}-VERIFICATION.md` — Post-execution verification
+  - `{NN}-UAT.md` — User acceptance testing
+- `.planning/quick/` — Quick task directory
+- `.planning/codebase/` — Codebase analysis docs
+- `.planning/milestones/` — Archived milestones
+
+## Commit Conventions
+Use conventional commits: `{type}({scope}): {description}`
+
+Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `style`, `perf`, `ci`
+Scope: derived from the component being changed
+
+For planning docs: `docs(planning): {description}`
+
+## Context Fidelity
+- **Never invent requirements.** Work only from ROADMAP.md phase goals and PLAN.md tasks.
+- **Never assume technology choices.** Check CONTEXT.md and PROJECT.md first.
+- **Never skip verification.** Every claim in SUMMARY.md must be verifiable against actual code.
+
+## Planning Doc Format
+All `.planning/` markdown files use YAML frontmatter:
+```yaml
+---
+key: value
+---
+```
+Do not modify frontmatter manually — use `gsd_frontmatter_set` MCP tool.
+
+## MCP Tools
+GSD provides MCP tools prefixed with `gsd_`. Use these for all state management, config, roadmap, and phase operations instead of manual file editing. Key tools:
+- `gsd_state_load` / `gsd_state_update` — State management
+- `gsd_config_load` / `gsd_config_set` — Configuration
+- `gsd_roadmap_analyze` / `gsd_roadmap_get_phase` — Roadmap queries
+- `gsd_commit` — Atomic commits with planning doc tracking
+- `gsd_find_phase` — Phase directory discovery
+
+## GSD Commands
+Use `/gsd-{command}` to invoke GSD prompts:
+
+### Project Lifecycle
+- `/gsd-project-new` — Initialize a new GSD project
+- `/gsd-codebase-map` — Analyze existing codebase into structured docs
+- `/gsd-progress` — Check project status and route to next action
+- `/gsd-milestone-new` — Start a new milestone
+
+### Phase Workflow
+- `/gsd-phase-discuss N` — Gather preferences and decisions for phase N
+- `/gsd-phase-plan N` — Research and plan phase N
+- `/gsd-phase-execute N` — Execute phase N plans with atomic commits
+- `/gsd-phase-verify N` — Interactive UAT verification for phase N
+- `/gsd-phase-research N` — Deep standalone research for phase N
+
+### Phase Management
+- `/gsd-phase-add "description"` — Append phase to roadmap
+- `/gsd-phase-remove N` — Remove a future phase
+- `/gsd-phase-insert N "description"` — Insert urgent work
+- `/gsd-phase-list-assumptions N` — List assumptions for phase N
+
+### Quick Operations
+- `/gsd-quick "description"` — Execute a quick task with GSD guarantees
+- `/gsd-debug "description"` — Scientific debugging with persistent sessions
+- `/gsd-todo-add "description"` — Capture task for later
+- `/gsd-todo-check` — List pending todos
+
+### Milestone Completion
+- `/gsd-milestone-audit` — Audit milestone completeness and integration
+- `/gsd-milestone-complete` — Archive and complete current milestone
+- `/gsd-milestone-plan-gaps` — Plan fixes for audit gaps
+
+### Session & Config
+- `/gsd-work-pause` — Save context for later
+- `/gsd-work-resume` — Resume from previous session
+- `/gsd-settings` — Configure GSD workflow
+- `/gsd-profile-set [quality|balanced|budget]` — Switch model profile
+- `/gsd-health` — Check project health and consistency
+- `/gsd-cleanup` — Clean stale planning files
+- `/gsd-update` — Check for updates
+- `/gsd-help` — Show all commands
+
+## Context Management
+If the conversation is getting long, consider using `/gsd-work-pause` to save state and start a fresh session with `/gsd-work-resume`.
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->
+<!-- GSD:END -->

@@ -1,7 +1,3 @@
-using Brinell.Core;
-using Brinell.Maui.Controls.Buttons;
-using Brinell.Maui.Controls.Text;
-
 namespace Brinell.Maui.Tests;
 
 /// <summary>
@@ -284,8 +280,7 @@ public class FluentChainingTests
         {
             mockElement.Setup(e => e.Click()).Callback(onInteraction);
             mockElement.Setup(e => e.Clear()).Callback(onInteraction);
-            mockElement.Setup(e => e.SendKeys(It.IsAny<string>(), It.IsAny<TextInputMethod>()))
-                .Callback<string, TextInputMethod>((_, _) => onInteraction());
+            mockElement.Setup(e => e.SendKeys(It.IsAny<string>())).Callback<string>(_ => onInteraction());
         }
         
         _mockContext.Setup(c => c.TryFindElement(It.Is<Locator>(l => l.Value == automationId)))
@@ -339,7 +334,7 @@ public class FluentChainingTests
     /// <summary>
     /// Test page object using the fluent CRTP pattern.
     /// </summary>
-    private class TestPage : PageObjectBase<TestPage>
+    private class TestPage : MauiPageObjectBase<TestPage>
     {
         public TestPage(IMauiTestContext context) : base(context) { }
         
@@ -348,27 +343,27 @@ public class FluentChainingTests
         public override bool IsLoaded(int? timeoutMs = null) => true;
         
         // Controls with fluent chaining - return TestPage
-        public Button<TestPage> TestButton => new(this, Locator.ByAutomationId("TestButton"));
-        public Entry<TestPage> TestEntry => new(this, Locator.ByAutomationId("TestEntry"));
+        public MauiButtonControl<TestPage> TestButton => new(this, Locator.ByAutomationId("TestButton"));
+        public MauiEntryControl<TestPage> TestEntry => new(this, Locator.ByAutomationId("TestEntry"));
         public TestContainer TestContainer => new(this, Locator.ByAutomationId("TestContainer"));
         
         // Login form example controls
-        public Entry<TestPage> Username => new(this, Locator.ByAutomationId("Username"));
-        public Entry<TestPage> Password => new(this, Locator.ByAutomationId("Password"));
-        public Button<TestPage> LoginButton => new(this, Locator.ByAutomationId("LoginButton"));
+        public MauiEntryControl<TestPage> Username => new(this, Locator.ByAutomationId("Username"));
+        public MauiEntryControl<TestPage> Password => new(this, Locator.ByAutomationId("Password"));
+        public MauiButtonControl<TestPage> LoginButton => new(this, Locator.ByAutomationId("LoginButton"));
     }
     
     /// <summary>
     /// Test container using the new scope-aware pattern.
     /// </summary>
-    private class TestContainer : ContainerBase<TestPage, TestContainer>
+    private class TestContainer : MauiContainerBase<TestPage, TestContainer>
     {
         public TestContainer(IMauiScope<TestPage> parentScope, Locator locator) 
             : base(parentScope, locator) { }
         
         // Controls return TestContainer (the containing scope)
-        public Button<TestContainer> ContainerButton => new (this, Locator.ByAutomationId("ContainerButton"));
-        public Entry<TestContainer> ContainerEntry => new (this, Locator.ByAutomationId("ContainerEntry"));
+        public MauiButtonControl<TestContainer> ContainerButton => new (this, Locator.ByAutomationId("ContainerButton"));
+        public MauiEntryControl<TestContainer> ContainerEntry => new (this, Locator.ByAutomationId("ContainerEntry"));
     }
     
     #endregion
