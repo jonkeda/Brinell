@@ -3,7 +3,6 @@ using Brinell.Core.Exceptions;
 using Brinell.Core.Interfaces;
 using Brinell.Core.Locators;
 using Brinell.Core.Logging;
-using Brinell.Core.Utilities;
 using Brinell.Html.Context;
 using Brinell.Html.Interfaces;
 using Microsoft.Playwright;
@@ -167,7 +166,7 @@ public sealed class PlaywrightTestContext : IHtmlTestContext, IAsyncDisposable
                 return true;
             }
 
-            WaitHelper.Pause(100);
+            Thread.Sleep(100);
         }
 
         return IsReady();
@@ -204,7 +203,7 @@ public sealed class PlaywrightTestContext : IHtmlTestContext, IAsyncDisposable
                 return element;
             }
 
-            WaitHelper.Pause(100);
+            Thread.Sleep(100);
         }
 
         throw new ElementNotFoundException(locator, timeout);
@@ -329,54 +328,4 @@ public sealed class PlaywrightTestContext : IHtmlTestContext, IAsyncDisposable
         _logger.Flush();
         _logger.Dispose();
     }
-
-    #region Async Methods
-
-    public async Task NavigateToAsync(string destination)
-    {
-        var page = InternalFrame is not null
-            ? throw new InvalidOperationException("Cannot navigate within a frame context.")
-            : InternalPage;
-        await page.GotoAsync(destination).ConfigureAwait(false);
-    }
-
-    public async Task NavigateBackAsync()
-        => await InternalPage.GoBackAsync().ConfigureAwait(false);
-
-    public async Task GoForwardAsync()
-        => await InternalPage.GoForwardAsync().ConfigureAwait(false);
-
-    public async Task RefreshAsync()
-        => await InternalPage.ReloadAsync().ConfigureAwait(false);
-
-    public async Task<byte[]> TakeScreenshotAsync()
-        => await InternalPage.ScreenshotAsync().ConfigureAwait(false);
-
-    public async Task SaveScreenshotAsync(string path)
-        => await InternalPage.ScreenshotAsync(new() { Path = path }).ConfigureAwait(false);
-
-    public async Task ResetAppStateAsync()
-    {
-        var browserContext = InternalPage.Context;
-        await browserContext.ClearCookiesAsync().ConfigureAwait(false);
-        await InternalPage.EvaluateAsync("() => localStorage.clear()").ConfigureAwait(false);
-        await InternalPage.EvaluateAsync("() => sessionStorage.clear()").ConfigureAwait(false);
-    }
-
-    public async Task<bool> WaitReadyAsync(int? timeoutMs = null)
-    {
-        var timeout = timeoutMs ?? Timeouts.PageLoad;
-        try
-        {
-            await InternalPage.WaitForLoadStateAsync(LoadState.DOMContentLoaded,
-                new() { Timeout = timeout }).ConfigureAwait(false);
-            return true;
-        }
-        catch (TimeoutException)
-        {
-            return false;
-        }
-    }
-
-    #endregion
 }

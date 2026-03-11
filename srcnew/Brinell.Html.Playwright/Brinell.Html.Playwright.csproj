@@ -8,10 +8,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="Brinell.Blazor" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\Brinell.Html\Brinell.Html.csproj" />
   </ItemGroup>
 

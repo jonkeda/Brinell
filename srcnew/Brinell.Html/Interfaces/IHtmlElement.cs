@@ -18,11 +18,8 @@ public interface IHtmlElement : IElement<IHtmlElement>
     void Fill(string value);
     void SelectOption(string value);
     void SelectOption(string[] values);
-    void SelectOptionByLabel(string label);
     void Check();
     void Uncheck();
     void Focus();
     void Blur();
-    T? Evaluate<T>(string expression);
-    void Evaluate(string expression);
 }
