@@ -2,7 +2,7 @@ namespace Brinell.Samples.Shared.ViewModels;
 
 /// <summary>
 /// Interface for ViewModels that track view visibility and busy state.
-/// Required for SingleClickAsyncRelayCommand support.
+/// Required for TargetAsyncCommand support.
 /// </summary>
 public interface IViewVisible
 {
