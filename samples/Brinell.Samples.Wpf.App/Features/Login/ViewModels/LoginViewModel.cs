@@ -9,7 +9,7 @@ namespace Brinell.Samples.Wpf.App.Features.Login.ViewModels;
 /// <summary>
 /// ViewModel for the Login page with validation and async login support.
 /// </summary>
-public class LoginViewModel : ViewModelBase
+public class LoginViewModel : ParentViewModel
 {
     private readonly INavigationService _navigationService;
     private string _username = string.Empty;

@@ -7,7 +7,7 @@ namespace Brinell.Samples.Shared.ViewModels;
 /// Base class for all ViewModels providing INotifyPropertyChanged and IViewVisible implementation.
 /// Supports busy state tracking and view visibility for command protection.
 /// </summary>
-public class ViewModelBase : INotifyPropertyChanged, INotifyPropertyChanging, IViewVisible
+public class ParentViewModel : INotifyPropertyChanged, INotifyPropertyChanging, IViewVisible
 {
     private bool _viewVisible = true;
     private int _busyCount;

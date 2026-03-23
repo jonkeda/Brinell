@@ -31,7 +31,7 @@ public interface INavigationService
     /// <summary>
     /// Navigate to a specific ViewModel directly.
     /// </summary>
-    Task NavigateToAsync(ViewModelBase viewModel);
+    Task NavigateToAsync(ParentViewModel viewModel);
 
     /// <summary>
     /// Navigate back to the previous route.

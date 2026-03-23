@@ -10,7 +10,7 @@ namespace Brinell.Samples.Maui.App.ViewModels;
 /// <summary>
 /// ViewModel for the Container Demo page.
 /// </summary>
-public class ContainerDemoViewModel : ViewModelBase
+public class ContainerDemoViewModel : ParentViewModel
 {
     private string _profileName = "";
     private string _profileEmail = "";

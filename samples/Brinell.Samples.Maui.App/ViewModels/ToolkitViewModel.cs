@@ -7,7 +7,7 @@ namespace Brinell.Samples.Maui.App.ViewModels;
 /// <summary>
 /// ViewModel for the Toolkit tab - Expander, nested TabView, Popup demos.
 /// </summary>
-public class ToolkitViewModel : ViewModelBase
+public class ToolkitViewModel : ParentViewModel
 {
     private bool _expander1Expanded;
     private bool _expander2Expanded;

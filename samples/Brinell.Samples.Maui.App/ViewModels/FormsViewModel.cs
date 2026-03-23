@@ -8,7 +8,7 @@ namespace Brinell.Samples.Maui.App.ViewModels;
 /// <summary>
 /// ViewModel for the Forms tab - comprehensive form controls demo for UI testing.
 /// </summary>
-public class FormsViewModel : ViewModelBase
+public class FormsViewModel : ParentViewModel
 {
     // Personal Info
     private string _firstName = "";

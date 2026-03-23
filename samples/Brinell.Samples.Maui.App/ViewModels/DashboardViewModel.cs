@@ -8,7 +8,7 @@ namespace Brinell.Samples.Maui.App.ViewModels;
 /// <summary>
 /// ViewModel for the Dashboard page demonstrating tabs, progress, and status controls.
 /// </summary>
-public class DashboardViewModel : ViewModelBase
+public class DashboardViewModel : ParentViewModel
 {
     private int _selectedTabIndex;
     private double _loadProgress;

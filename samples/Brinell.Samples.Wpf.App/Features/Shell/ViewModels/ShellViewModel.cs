@@ -8,10 +8,10 @@ namespace Brinell.Samples.Wpf.App.Features.Shell.ViewModels;
 /// <summary>
 /// ViewModel for the main shell/window.
 /// </summary>
-public class ShellViewModel : ViewModelBase, ICurrentViewModelContainer
+public class ShellViewModel : ParentViewModel, ICurrentViewModelContainer
 {
     private readonly INavigationService _navigationService;
-    private ViewModelBase? _currentViewModel;
+    private ParentViewModel? _currentViewModel;
     private string _title = "Brinell Sample Application";
 
     public ShellViewModel(INavigationService navigationService)
@@ -39,7 +39,7 @@ public class ShellViewModel : ViewModelBase, ICurrentViewModelContainer
     }
 
     /// <inheritdoc/>
-    public ViewModelBase? CurrentViewModel
+    public ParentViewModel? CurrentViewModel
     {
         get => _currentViewModel;
         set => SetProperty(ref _currentViewModel, value);

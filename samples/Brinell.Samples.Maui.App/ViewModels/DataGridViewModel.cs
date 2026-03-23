@@ -8,7 +8,7 @@ namespace Brinell.Samples.Maui.App.ViewModels;
 /// <summary>
 /// ViewModel for the DataGrid page demonstrating collection, selection, and grouping controls.
 /// </summary>
-public class DataGridViewModel : ViewModelBase
+public class DataGridViewModel : ParentViewModel
 {
     private string _searchText = string.Empty;
     private SampleDataItem? _selectedItem;

@@ -10,7 +10,7 @@ namespace Brinell.Samples.Maui.App.ViewModels;
 /// <summary>
 /// ViewModel for the Lists tab - ListView and TreeView-like hierarchy demos.
 /// </summary>
-public class ListsViewModel : ViewModelBase
+public class ListsViewModel : ParentViewModel
 {
     private ListItem? _selectedItem;
     private bool _isRefreshing;

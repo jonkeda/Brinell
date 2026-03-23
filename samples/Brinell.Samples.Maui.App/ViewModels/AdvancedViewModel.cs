@@ -6,7 +6,7 @@ namespace Brinell.Samples.Maui.App.ViewModels;
 /// <summary>
 /// ViewModel for the Advanced page demonstrating gestures, swipe views, and containers.
 /// </summary>
-public class AdvancedViewModel : ViewModelBase
+public class AdvancedViewModel : ParentViewModel
 {
     private int _tapCount;
     private string _panStatus = "Not panning";

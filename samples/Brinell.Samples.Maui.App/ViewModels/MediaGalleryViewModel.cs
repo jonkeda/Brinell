@@ -8,7 +8,7 @@ namespace Brinell.Samples.Maui.App.ViewModels;
 /// <summary>
 /// ViewModel for the MediaGallery page demonstrating image, media, and web view controls.
 /// </summary>
-public class MediaGalleryViewModel : ViewModelBase
+public class MediaGalleryViewModel : ParentViewModel
 {
     private MediaItem? _selectedMedia;
     private string _currentUrl = "https://dotnet.microsoft.com";

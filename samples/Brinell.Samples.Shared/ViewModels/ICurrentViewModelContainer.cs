@@ -8,5 +8,5 @@ public interface ICurrentViewModelContainer
     /// <summary>
     /// Gets or sets the current ViewModel being displayed.
     /// </summary>
-    ViewModelBase? CurrentViewModel { get; set; }
+    ParentViewModel? CurrentViewModel { get; set; }
 }

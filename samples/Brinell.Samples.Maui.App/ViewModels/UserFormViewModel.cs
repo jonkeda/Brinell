@@ -7,7 +7,7 @@ namespace Brinell.Samples.Maui.App.ViewModels;
 /// <summary>
 /// ViewModel for the UserForm page demonstrating all input, toggle, selection, and range controls.
 /// </summary>
-public class UserFormViewModel : ViewModelBase
+public class UserFormViewModel : ParentViewModel
 {
     private UserProfile _profile = new();
     private string _searchText = string.Empty;

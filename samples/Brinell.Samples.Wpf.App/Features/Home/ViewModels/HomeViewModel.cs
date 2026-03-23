@@ -6,7 +6,7 @@ namespace Brinell.Samples.Wpf.App.Features.Home.ViewModels;
 /// <summary>
 /// ViewModel for the Home/Dashboard page.
 /// </summary>
-public class HomeViewModel : ViewModelBase
+public class HomeViewModel : ParentViewModel
 {
     private readonly INavigationService _navigationService;
     private string _welcomeMessage = "Welcome to Brinell Sample Application";

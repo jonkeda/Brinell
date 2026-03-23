@@ -7,7 +7,7 @@ namespace Brinell.Samples.Maui.App.ViewModels;
 /// <summary>
 /// ViewModel for the NavigationDemo page demonstrating expander, flyout, toolbar, and menu controls.
 /// </summary>
-public class NavigationDemoViewModel : ViewModelBase
+public class NavigationDemoViewModel : ParentViewModel
 {
     private bool _expander1Expanded = true;
     private bool _expander2Expanded;

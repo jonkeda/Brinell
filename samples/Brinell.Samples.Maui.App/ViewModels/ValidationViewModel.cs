@@ -8,7 +8,7 @@ namespace Brinell.Samples.Maui.App.ViewModels;
 /// <summary>
 /// ViewModel for the Validation page demonstrating form validation controls.
 /// </summary>
-public partial class ValidationViewModel : ViewModelBase
+public partial class ValidationViewModel : ParentViewModel
 {
     private string _requiredValue = string.Empty;
     private string _emailValue = string.Empty;

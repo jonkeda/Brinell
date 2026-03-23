@@ -7,7 +7,7 @@ namespace Brinell.Samples.Maui.App.ViewModels;
 /// <summary>
 /// ViewModel for the Basics tab - counter, text input, toggles, sliders, pickers.
 /// </summary>
-public class BasicsViewModel : ViewModelBase
+public class BasicsViewModel : ParentViewModel
 {
     private int _counter;
     private string _name = "";

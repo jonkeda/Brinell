@@ -10,7 +10,7 @@ namespace Brinell.Samples.Wpf.App.Infrastructure.Navigation;
 /// </summary>
 public class NavigationService : INavigationService
 {
-    private readonly Stack<ViewModelBase> _navigationStack = new();
+    private readonly Stack<ParentViewModel> _navigationStack = new();
     private ICurrentViewModelContainer _container = null!;
 
     /// <inheritdoc/>
@@ -40,7 +40,7 @@ public class NavigationService : INavigationService
     }
 
     /// <inheritdoc/>
-    public Task NavigateToAsync(ViewModelBase viewModel)
+    public Task NavigateToAsync(ParentViewModel viewModel)
     {
         NavigateToViewModel(viewModel);
         return Task.CompletedTask;
@@ -64,7 +64,7 @@ public class NavigationService : INavigationService
         return Task.CompletedTask;
     }
 
-    private void NavigateToViewModel(ViewModelBase viewModel)
+    private void NavigateToViewModel(ParentViewModel viewModel)
     {
         // Notify current view it's disappearing
         if (_navigationStack.Count > 0)
@@ -79,7 +79,7 @@ public class NavigationService : INavigationService
         Container.CurrentViewModel = viewModel;
     }
 
-    private ViewModelBase? CreateViewModelForRoute(string route)
+    private ParentViewModel? CreateViewModelForRoute(string route)
     {
         return route switch
         {
