@@ -64,6 +64,10 @@ public class StrideUIHandler : IAutomationHandler
             "Exists" => CheckExists(target),
             "IsVisible" => CheckVisible(target),
             "IsEnabled" => CheckEnabled(target),
+            // The Brinell.Stride client sends these as Query type
+            "IsGameReady" or "IsReady" => AutomationResponse.Ok(_isReadyProvider?.Invoke() ?? true),
+            "IsBusy" => AutomationResponse.Ok(_isBusyProvider?.Invoke() ?? false),
+            "GetWindowInfo" => GetWindowInfo(),
             _ => AutomationResponse.Fail($"Unknown query method: {command.Method}")
         };
     }

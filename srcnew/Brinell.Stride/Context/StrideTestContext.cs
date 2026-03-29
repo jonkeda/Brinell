@@ -162,7 +162,7 @@ public class StrideTestContext : IStrideTestContext
         try
         {
             var response = SendCommand(AutomationCommand.Query("IsGameReady"));
-            return response.Success && response.Result is bool ready && ready;
+            return response.Success && IsResultTrue(response.Result);
         }
         catch
         {
@@ -175,12 +175,19 @@ public class StrideTestContext : IStrideTestContext
         try
         {
             var response = SendCommand(AutomationCommand.Query("IsBusy"));
-            return response.Success && response.Result is bool busy && busy;
+            return response.Success && IsResultTrue(response.Result);
         }
         catch
         {
             return false;
         }
+    }
+
+    private static bool IsResultTrue(object? result)
+    {
+        if (result is bool b) return b;
+        if (result is System.Text.Json.JsonElement je && je.ValueKind == System.Text.Json.JsonValueKind.True) return true;
+        return false;
     }
 
     public bool WaitForGameReady(int? timeoutMs = null)
