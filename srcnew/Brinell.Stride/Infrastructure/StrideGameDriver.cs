@@ -63,8 +63,12 @@ public class StrideGameDriver : IDisposable
 
         if (_gameProcess is { HasExited: false })
         {
-            var exited = _gameProcess.WaitForExit(5000);
-            if (!exited)
+            using var cts = new CancellationTokenSource(2000);
+            try
+            {
+                await _gameProcess.WaitForExitAsync(cts.Token);
+            }
+            catch (OperationCanceledException)
             {
                 try { _gameProcess.Kill(); }
                 catch { /* Process may have exited */ }

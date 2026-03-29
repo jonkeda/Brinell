@@ -58,5 +58,9 @@ public enum VirtualKey : ushort
     NumPad0 = 0x60, NumPad1 = 0x61, NumPad2 = 0x62, NumPad3 = 0x63,
     NumPad4 = 0x64, NumPad5 = 0x65, NumPad6 = 0x66, NumPad7 = 0x67,
     NumPad8 = 0x68, NumPad9 = 0x69,
-    Multiply = 0x6A, Add = 0x6B, Subtract = 0x6D, Decimal = 0x6E, Divide = 0x6F
+    Multiply = 0x6A, Add = 0x6B, Subtract = 0x6D, Decimal = 0x6E, Divide = 0x6F,
+
+    // OEM keys
+    OemPlus = 0xBB,
+    OemMinus = 0xBD
 }
