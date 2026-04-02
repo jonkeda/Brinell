@@ -70,7 +70,7 @@ public class StrideGameDriver : IDisposable
             }
             catch (OperationCanceledException)
             {
-                try { _gameProcess.Kill(); }
+                try { _gameProcess.Kill(entireProcessTree: true); }
                 catch { /* Process may have exited */ }
             }
         }

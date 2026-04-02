@@ -77,6 +77,19 @@ public abstract class StrideTestFixtureBase : IDisposable
     {
         var options = CreateOptions();
 
+        // Generate a unique pipe name if the fixture hasn't set a custom one,
+        // preventing orphaned game processes from blocking new test runs.
+        if (options.PipeName == Communication.NamedPipeChannel.DefaultPipeName)
+        {
+            var uniquePipe = $"Brinell.Stride.{Guid.NewGuid():N}";
+            options.PipeName = uniquePipe;
+
+            // Inject --pipe arg so the game-side automation server uses the same name
+            var args = new List<string>(options.GameArguments);
+            args.AddRange(["--pipe", uniquePipe]);
+            options.GameArguments = args.ToArray();
+        }
+
         _driver = new StrideGameDriver(options);
         await _driver.StartAsync();
 
