@@ -45,10 +45,17 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
         
         var processStartInfo = new ProcessStartInfo(executablePath)
         {
-            Arguments = arguments ?? string.Empty
+            Arguments = arguments ?? string.Empty,
+            UseShellExecute = true
         };
         
-        _application = Application.Launch(processStartInfo);
+        var process = Process.Start(processStartInfo)
+            ?? throw new InvalidOperationException($"Failed to start process: {executablePath}");
+        
+        // Give the process time to initialize before attaching
+        process.WaitForInputIdle();
+        
+        _application = Application.Attach(process);
         
         // Wait for main window
         var window = _application.GetMainWindow(_automation, TimeSpan.FromSeconds(30));
