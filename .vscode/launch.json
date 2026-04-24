@@ -1,0 +1,16 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Brinell Scraper",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build-scraper",
+            "program": "${workspaceFolder}/tools/Brinell.Scraper/bin/Debug/net10.0-windows/Brinell.Scraper.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/tools/Brinell.Scraper",
+            "stopAtEntry": false,
+            "console": "internalConsole"
+        }
+    ]
+}

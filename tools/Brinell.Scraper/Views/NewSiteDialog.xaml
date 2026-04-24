@@ -1,0 +1,56 @@
+<Window x:Class="Brinell.Scraper.Views.NewSiteDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="{Binding Title, RelativeSource={RelativeSource Self}}" Width="500" Height="380"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="100"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <TextBlock Grid.Row="0" Grid.Column="0" Text="Site name:" VerticalAlignment="Center" Margin="0,0,0,8"/>
+        <TextBox Grid.Row="0" Grid.Column="1" x:Name="NameBox" Margin="0,0,0,8"/>
+
+        <TextBlock Grid.Row="1" Grid.Column="0" Text="Start URL:" VerticalAlignment="Center" Margin="0,0,0,8"/>
+        <TextBox Grid.Row="1" Grid.Column="1" x:Name="UrlBox" Margin="0,0,0,8"/>
+
+        <TextBlock Grid.Row="2" Grid.Column="0" Text="Namespace:" VerticalAlignment="Center" Margin="0,0,0,8"/>
+        <TextBox Grid.Row="2" Grid.Column="1" x:Name="NamespaceBox" Margin="0,0,0,8"/>
+
+        <TextBlock Grid.Row="3" Grid.Column="0" Text="Output path:" VerticalAlignment="Center" Margin="0,0,0,8"/>
+        <Grid Grid.Row="3" Grid.Column="1" Margin="0,0,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBox Grid.Column="0" x:Name="OutputPathBox"/>
+            <Button Grid.Column="1" Content="Browse..." Margin="4,0,0,0" Padding="8,2"
+                    Click="OnBrowseOutputPath"/>
+        </Grid>
+
+        <TextBlock Grid.Row="4" Grid.Column="0" Text="URL aliases:" VerticalAlignment="Top" Margin="0,0,0,8"/>
+        <TextBox Grid.Row="4" Grid.Column="1" x:Name="AliasesBox" Height="60"
+                 AcceptsReturn="True" VerticalScrollBarVisibility="Auto"
+                 Margin="0,0,0,8" ToolTip="One URL per line"/>
+
+        <TextBlock Grid.Row="5" Grid.Column="1" Text="One URL alias per line (optional)"
+                   Foreground="Gray" FontSize="11" VerticalAlignment="Top"/>
+
+        <StackPanel Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="2"
+                    Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button Content="Cancel" Padding="16,6" Margin="0,0,8,0" IsCancel="True"/>
+            <Button x:Name="SubmitButton" Content="Create" Padding="16,6" Click="OnCreateClick" IsDefault="True"/>
+        </StackPanel>
+    </Grid>
+</Window>

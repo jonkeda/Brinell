@@ -1,102 +1,77 @@
-# UI Test Framework Documentation
+# Brinell — Documentation
 
-**Version:** 3.0  
-**Last Updated:** December 2025  
-**Framework Stack:** FlaUI (WPF) + Appium (MAUI/Mobile) + Selenium/Playwright (Web) + xUnit
+Multi-platform UI test automation framework: WPF, MAUI, Blazor, Stride, and Web (Playwright).
 
 ---
 
-## Overview
+## Getting Started
 
-The UI Test Framework provides a multi-platform test automation solution with consistent patterns across Windows (WPF), MAUI (cross-platform), and Web (HTML) applications.
+- [Quick Start](getting-started/quick-start.md)
+- [Framework Overview](getting-started/framework-overview.md)
 
-### Key Features
+## Architecture
 
-- **Multi-platform support** - Single test framework for WPF, MAUI, and Web
-- **Interface-based architecture** - Core defines contracts, platforms implement
-- **Native driver access** - Direct FlaUI/Appium/Selenium access (no adapters)
-- **Wait/Check/Is/Assert pattern** - Four-tier state verification
-- **Page Object pattern** - Encapsulated page structure and behavior
-- **IsBusy tracking** - Automatic page readiness detection
-- **Structured CSV logging** - Machine-parseable test logs
+- [Core Architecture](architecture/core-architecture.md)
+- [Architectural Decisions](architecture/decisions.md)
+- [Project Structure](architecture/project-structure.md)
+- [Stack](architecture/stack.md)
+- [Conventions](architecture/conventions.md)
+- [Concerns](architecture/concerns.md)
+- [Integrations](architecture/integrations.md)
+- [Testing](architecture/testing.md)
 
----
+## Controls
 
-## Documentation Index
+- [Control Index](controls/index.md)
+- [Interfaces](controls/interfaces.md)
+- [Testing Guide](controls/testing-guide.md)
+- **Classes:** [Collection](controls/classes/collection.md) · [Container](controls/classes/container.md) · [Context](controls/classes/context.md) · [DateTime](controls/classes/datetime.md) · [Display](controls/classes/display.md) · [Exceptions](controls/classes/exceptions.md) · [Foundation](controls/classes/foundation.md) · [Input](controls/classes/input.md) · [Locator](controls/classes/locator.md) · [Media](controls/classes/media.md) · [Navigation](controls/classes/navigation.md) · [Range](controls/classes/range.md) · [Selection](controls/classes/selection.md) · [Toggle](controls/classes/toggle.md)
 
-### Getting Started
-1. **[Quick Start Guide](01-quick-start.md)** - Get running in 5 minutes
-2. **[Framework Overview](02-framework-overview.md)** - Architecture and design principles
+## Requirements
 
-### Core Concepts
-3. **[Architecture](03-architecture.md)** - Component relationships and layers
-4. **[Control Objects](04-control-objects.md)** - Control hierarchy and patterns
-5. **[Page Objects](05-page-objects.md)** - Page encapsulation and navigation
-6. **[Wait/Check/Is/Assert Pattern](06-wait-check-assert.md)** - State verification methods
+- [Functional Requirements](requirements/functional.md)
+- [Non-Functional Requirements](requirements/non-functional.md)
+- [Changes](requirements/changes.md)
 
-### Platform-Specific
-7. **[WPF Platform (FlaUI)](07-wpf-platform.md)** - Windows desktop automation
-8. **[MAUI Platform (Appium)](08-maui-platform.md)** - Cross-platform and mobile
-9. **[Web Platform (Selenium)](09-web-platform.md)** - Browser automation (WebDriver-based)
-10. **[Web Platform (Playwright)](platform-guides/playwright.md)** - Browser automation (modern alternative)
+## Design
 
-### Advanced Topics
-11. **[IsBusy State Tracking](10-isbusy-tracking.md)** - Page readiness detection
-12. **[Multi-Platform Testing](11-multi-platform.md)** - Write once, run anywhere
-13. **[Best Practices](12-best-practices.md)** - Guidelines for maintainable tests
-14. **[Troubleshooting](13-troubleshooting.md)** - Common issues and solutions
+- [Blazor Sample App](design/blazor-sample-app.md)
+- [MAUI Sample App](design/maui-sample-app.md)
 
-### Reference
-15. **[API Reference](14-api-reference.md)** - Complete interface documentation
-16. **[Test Writing Guide](15-test-writing-guide.md)** - Quick reference for writing tests
+## Platform Guides
 
----
+- [MAUI](platform-guides/maui.md)
+- [Playwright](platform-guides/playwright.md)
+- [Stride](platform-guides/stride.md)
+- [WinForms](platform-guides/winforms.md)
 
-## Version History
+## Run Guides
 
-### Version 3.0 (December 2025)
-- **Core = interfaces only** - No base classes or adapters in Core
-- **Platform-specific base classes** - Each platform fully self-contained
-- **Navigation returns void** - Tests manage page object lifecycle
-- **Direct driver access** - No adapter layer, native performance
+- [HTML](run/Html.md) · [MAUI](run/MAUI.md) · [MAUI Android](run/MauiAndroid.md) · [Playwright](run/Playwright.md) · [Windows](run/RunWindowsTests.md) · [WinForms](run/WinForms.md) · [WPF](run/WPF.md)
+- [Windows Test Results](run/WINDOWS-TEST-RESULTS.md)
 
-### Version 2.0 (December 2025)
-- Assert pattern with full logging
-- IsBusy state tracking
-- CSV structured logging
-- WireMock API mocking
-- Selenium web support
+## Guides
 
-### Version 1.0 (November 2025)
-- Initial framework with FlaUI and Appium
-- Page Object and Control Object patterns
-- Basic multi-platform support
+- [Best Practices](guides/best-practices.md)
+- [Test Writing Guide](guides/test-writing-guide.md)
+- [Interface Usage Guide](guides/interface-usage-guide.md)
+- [Platform Implementation Guides](guides/platform-implementation-guides.md)
+- [Migration Guide](guides/migration-guide.md)
+- [Troubleshooting](guides/troubleshooting.md)
+- [VS Code Install Guide](guides/vscode-install-guide.md)
 
----
+## Specs (Active)
 
-## Quick Links
-
-- **[Installation](01-quick-start.md#installation)**
-- **[Writing Your First Test](01-quick-start.md#first-test)**
-- **[Common Patterns](15-test-writing-guide.md)**
-- **[Troubleshooting](13-troubleshooting.md)**
-
----
-
-## Framework Stack
-
-| Component | Version | Purpose |
-|-----------|---------|---------|
-| FlaUI | 4.0.0 | WPF automation via UI Automation |
-| Appium.WebDriver | 8.0.0 | MAUI/Mobile automation |
-| Selenium.WebDriver | 4.27.0 | Web browser automation (WebDriver) |
-| Playwright | 1.50.0 | Web browser automation (modern) |
-| xUnit | 2.9.x | Test framework |
-| FluentAssertions | 6.x | Assertion library |
-
----
-
-## Support
+- [SPEC-015 Element Lookup Optimization](specs/spec-015-element-lookup-optimization.md)
+- [SPEC-017 TabView Migration](specs/spec-017-tabview-migration.md)
+- [SPEC-017b Container Testing](specs/spec-017b-container-testing.md)
+- [SPEC-023 TabbedPage Automation](specs/spec-023-tabbedpage-automation.md)
+- [SPEC-025 MAUI Control UITests](specs/spec-025-maui-control-uitests.md)
+- [SPEC-026 UI Test Fixes](specs/spec-026-ui-test-fixes.md)
+- [SPEC-029 FlaUI Windows Fixes](specs/spec-029-flaui-windows-fixes.md)
+- [SPEC ScrollIntoView Android](specs/spec-scrollintoview-android.md)
+- [DES-026 UI Test Fixes Design](specs/des-026-ui-test-fixes-design.md)
+- [PLAN Android Testing](specs/plan-android-testing.md)
 
 For issues, questions, or contributions, please refer to:
 - **Issues:** Report problems or request features

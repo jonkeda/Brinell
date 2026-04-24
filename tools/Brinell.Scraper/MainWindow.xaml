@@ -1,0 +1,261 @@
+<Window x:Class="Brinell.Scraper.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:Brinell.Scraper.Views"
+        Title="{Binding WindowTitle}"
+        Icon="pack://application:,,,/scraper.ico"
+        Width="1280" Height="800"
+        WindowStartupLocation="CenterScreen">
+    <DockPanel>
+        <!-- Menu bar -->
+        <Menu DockPanel.Dock="Top">
+            <MenuItem Header="_Site">
+                <MenuItem Header="_Manage Controls" Command="{Binding ManageControlsCommand}"/>
+                <MenuItem Header="_Browse Corpus" Command="{Binding BrowseCorpusCommand}"/>
+                <Separator/>
+                <MenuItem Header="_Switch Site..." Command="{Binding SwitchSiteCommand}"/>
+            </MenuItem>
+            <MenuItem Header="_View">
+                <MenuItem Header="_Logs" IsCheckable="True" IsChecked="{Binding IsLogViewerVisible}" />
+            </MenuItem>
+        </Menu>
+
+        <!-- Toolbar -->
+        <ToolBar DockPanel.Dock="Top"
+                 Visibility="{Binding HasActiveSite, Converter={StaticResource BoolToVisibility}}">
+            <Button Command="{Binding Browser.GoBackCommand}" Content="◀" ToolTip="Back" Padding="6,2"/>
+            <Button Command="{Binding Browser.GoForwardCommand}" Content="▶" ToolTip="Forward" Padding="6,2"/>
+            <Button Command="{Binding Browser.RefreshCommand}" Content="↻" ToolTip="Refresh" Padding="6,2"/>
+            <TextBox Text="{Binding Browser.AddressUrl, UpdateSourceTrigger=PropertyChanged}"
+                     KeyDown="AddressBar_KeyDown" MinWidth="500" Margin="4,0"/>
+            <Button Command="{Binding Browser.NavigateCommand}" Content="Go" Padding="8,2"/>
+            <Separator/>
+            <ToggleButton Command="{Binding InspectCommand}" Content="🔍" ToolTip="Inspect" Padding="6,2"
+                          IsChecked="{Binding Inspector.IsInspecting, Mode=OneWay}"/>
+            <!-- Record: visible when NOT recording -->
+            <Button Command="{Binding Recording.StartRecordingCommand}"
+                    Content="⏺" ToolTip="Start Recording" Padding="6,2"
+                    Visibility="{Binding Recording.IsRecording, Converter={StaticResource InverseBoolToVisibility}}"/>
+            <!-- Stop: visible when recording -->
+            <Button Command="{Binding Recording.StopRecordingCommand}"
+                    Content="⏹" ToolTip="Stop Recording" Padding="6,2"
+                    Visibility="{Binding Recording.IsRecording, Converter={StaticResource BoolToVisibility}}"/>
+            <!-- Pause/Resume: visible when recording -->
+            <StackPanel Orientation="Horizontal"
+                        Visibility="{Binding Recording.IsRecording, Converter={StaticResource BoolToVisibility}}">
+                <Button Command="{Binding Recording.PauseRecordingCommand}"
+                        Content="⏸" ToolTip="Pause" Padding="6,2"
+                        Visibility="{Binding Recording.IsPaused, Converter={StaticResource InverseBoolToVisibility}}"/>
+                <Button Command="{Binding Recording.ResumeRecordingCommand}"
+                        Content="▶" ToolTip="Resume" Padding="6,2"
+                        Visibility="{Binding Recording.IsPaused, Converter={StaticResource BoolToVisibility}}"/>
+            </StackPanel>
+            <Button Command="{Binding AnalyzeCommand}" Content="🔬" ToolTip="Analyze" Padding="6,2"/>
+            <Separator/>
+            <Button Command="{Binding Browser.OpenDevToolsCommand}" Content="F12" ToolTip="Developer Tools" Padding="6,2"/>
+        </ToolBar>
+
+        <!-- Status bar -->
+        <StatusBar DockPanel.Dock="Bottom">
+            <StatusBarItem>
+                <TextBlock Text="{Binding SiteName}" FontWeight="Bold"/>
+            </StatusBarItem>
+            <Separator/>
+            <StatusBarItem>
+                <TextBlock Text="{Binding Browser.StatusText}"/>
+            </StatusBarItem>
+            <StatusBarItem>
+                <TextBlock Text="{Binding Sidebar.CorpusStats}"/>
+            </StatusBarItem>
+            <Separator Visibility="{Binding Inspector.IsInspecting, Converter={StaticResource BoolToVisibility}}"/>
+            <StatusBarItem Visibility="{Binding Inspector.IsInspecting, Converter={StaticResource BoolToVisibility}}">
+                <TextBlock>
+                    <Run Text="{Binding Inspector.SelectedCount, Mode=OneWay}"/>
+                    <Run Text=" selected &#x2502; DOM: "/>
+                    <Run Text="{Binding Inspector.TotalElementCount, Mode=OneWay}"/>
+                    <Run Text=" elements"/>
+                </TextBlock>
+            </StatusBarItem>
+            <Separator Visibility="{Binding Recording.IsRecording, Converter={StaticResource BoolToVisibility}}"/>
+            <StatusBarItem Visibility="{Binding Recording.IsRecording, Converter={StaticResource BoolToVisibility}}">
+                <TextBlock Text="{Binding Recording.RecordingStatus}" Foreground="Red"/>
+            </StatusBarItem>
+            <StatusBarItem HorizontalAlignment="Right">
+                <ProgressBar IsIndeterminate="{Binding Browser.IsLoading}" Width="100" Height="14"
+                             Visibility="{Binding Browser.IsLoading, Converter={StaticResource BoolToVisibility}}"/>
+            </StatusBarItem>
+        </StatusBar>
+
+        <!-- Main body + log viewer in a Grid for resizable splitter -->
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition x:Name="LogViewerRow" Height="180" MinHeight="60"/>
+            </Grid.RowDefinitions>
+
+            <!-- Main body: sidebar + content -->
+            <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="180"
+                                  x:Name="SidebarColumn"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Sidebar -->
+            <DockPanel Grid.Column="0"
+                       Visibility="{Binding HasActiveSite, Converter={StaticResource BoolToVisibility}}">
+
+                <!-- Site header -->
+                <StackPanel DockPanel.Dock="Top" Margin="4">
+                    <TextBlock Text="{Binding Sidebar.SiteHeader}" FontWeight="Bold" FontSize="13"/>
+                    <TextBlock Text="{Binding Sidebar.CorpusStats}" Foreground="Gray" FontSize="11" Margin="0,2,0,0"/>
+                </StackPanel>
+
+                <!-- Recording indicator -->
+                <TextBlock DockPanel.Dock="Top" Margin="4,4,4,0"
+                           Foreground="Red" FontWeight="Bold" FontSize="11"
+                           Text="{Binding Recording.RecordingStatus}"
+                           Visibility="{Binding Recording.IsRecording, Converter={StaticResource BoolToVisibility}}"/>
+
+                <!-- Scrollable content -->
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+
+                        <!-- This Session section (only when recording) -->
+                        <StackPanel Visibility="{Binding Sidebar.IsRecording, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock Text="This Session" FontWeight="SemiBold" FontSize="11"
+                                       Margin="4,8,4,2" Foreground="#555"/>
+                            <Separator Margin="4,0"/>
+                            <ItemsControl ItemsSource="{Binding Sidebar.SessionPages}" Margin="2,0">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Command="{Binding DataContext.Sidebar.NavigateToPageCommand,
+                                                          RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding}"
+                                                Cursor="Hand" Margin="4,1" Padding="0"
+                                                Background="Transparent" BorderThickness="0">
+                                            <TextBlock FontSize="11">
+                                                <Run Text="{Binding StatusIcon, Mode=OneWay}"/>
+                                                <Run Text=" "/>
+                                                <Run Text="{Binding Name, Mode=OneWay}"/>
+                                            </TextBlock>
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+
+                        <!-- Corpus Pages section -->
+                        <TextBlock Text="Corpus Pages" FontWeight="SemiBold" FontSize="11"
+                                   Margin="4,8,4,2" Foreground="#555"/>
+                        <Separator Margin="4,0"/>
+                        <ItemsControl ItemsSource="{Binding Sidebar.CorpusPages}" Margin="2,0">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Command="{Binding DataContext.Sidebar.NavigateToPageCommand,
+                                                      RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="{Binding}"
+                                            Cursor="Hand" Margin="4,1" Padding="0"
+                                            Background="Transparent" BorderThickness="0">
+                                        <TextBlock FontSize="11">
+                                            <Run Text="{Binding StatusIcon, Mode=OneWay}"/>
+                                            <Run Text=" "/>
+                                            <Run Text="{Binding Name, Mode=OneWay}"/>
+                                        </TextBlock>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <!-- Controls section -->
+                        <TextBlock Text="Controls" FontWeight="SemiBold" FontSize="11"
+                                   Margin="4,8,4,2" Foreground="#555"/>
+                        <Separator Margin="4,0"/>
+                        <ItemsControl ItemsSource="{Binding Sidebar.Controls}" Margin="2,0">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding}" Margin="4,1" FontSize="11"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </DockPanel>
+
+            <!-- Splitter -->
+            <GridSplitter Grid.Column="1" Width="4" ResizeBehavior="PreviousAndNext"
+                          Visibility="{Binding HasActiveSite, Converter={StaticResource BoolToVisibility}}"/>
+
+            <!-- Content area -->
+            <Grid Grid.Column="2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="300"/>
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Setter Property="BorderBrush" Value="Transparent"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding DataContext.Recording.IsRecording,
+                                             RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                    <Setter Property="BorderThickness" Value="3"/>
+                                    <Setter Property="BorderBrush" Value="Red"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <ContentControl x:Name="ContentArea"/>
+                </Border>
+
+                <!-- Inspector splitter -->
+                <GridSplitter Grid.Column="1" Width="4" ResizeBehavior="PreviousAndNext"
+                              Visibility="{Binding Inspector.IsInspecting, Converter={StaticResource BoolToVisibility}}"/>
+
+                <!-- Inspector panel -->
+                <DockPanel Grid.Column="2"
+                           Visibility="{Binding DataContext.Inspector.IsInspecting,
+                                        RelativeSource={RelativeSource AncestorType=Window},
+                                        Converter={StaticResource BoolToVisibility}}">
+                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="4">
+                        <Button Content="Select Forms" 
+                                Command="{Binding DataContext.Inspector.SelectAllFormsCommand,
+                                          RelativeSource={RelativeSource AncestorType=Window}}"
+                                Padding="4,2" Margin="0,0,4,0" FontSize="11"/>
+                        <Button Content="Select Inputs" 
+                                Command="{Binding DataContext.Inspector.SelectAllInputsCommand,
+                                          RelativeSource={RelativeSource AncestorType=Window}}"
+                                Padding="4,2" Margin="0,0,4,0" FontSize="11"/>
+                        <Button Content="Clear" 
+                                Command="{Binding DataContext.Inspector.ClearSelectionCommand,
+                                          RelativeSource={RelativeSource AncestorType=Window}}"
+                                Padding="4,2" FontSize="11"/>
+                    </StackPanel>
+                    <views:DomTreePanel DataContext="{Binding DataContext.Inspector.DomTree,
+                                        RelativeSource={RelativeSource AncestorType=Window}}"/>
+                </DockPanel>
+            </Grid>
+        </Grid>
+
+            <!-- Log viewer splitter -->
+            <GridSplitter Grid.Row="1" Height="4" ResizeDirection="Rows"
+                          ResizeBehavior="PreviousAndNext"
+                          HorizontalAlignment="Stretch"
+                          Visibility="{Binding DataContext.IsLogViewerVisible,
+                                       RelativeSource={RelativeSource AncestorType=Window},
+                                       Converter={StaticResource BoolToVisibility}}"/>
+
+            <!-- Log viewer panel -->
+            <views:LogViewerPanel Grid.Row="2" x:Name="LogViewerPanel"
+                                  Visibility="{Binding DataContext.IsLogViewerVisible,
+                                               RelativeSource={RelativeSource AncestorType=Window},
+                                               Converter={StaticResource BoolToVisibility}}"/>
+        </Grid>
+    </DockPanel>
+</Window>
