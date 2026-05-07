@@ -11,6 +11,10 @@ public sealed class DomTreeViewModel : ViewModelBase
 
     public ObservableCollection<DomElement> RootElements { get; } = [];
 
+    public event Action<DomElement>? ElementHovered;
+    public event Action? ElementUnhovered;
+    public event Action<DomElement>? ElementClicked;
+
     public bool IsFilterActive
     {
         get => _isFilterActive;
@@ -133,6 +137,10 @@ public sealed class DomTreeViewModel : ViewModelBase
             Children = filteredChildren
         };
     }
+
+    public void OnElementHover(DomElement element) => ElementHovered?.Invoke(element);
+    public void OnElementUnhover() => ElementUnhovered?.Invoke();
+    public void OnElementClick(DomElement element) => ElementClicked?.Invoke(element);
 
     private static bool MatchesFilter(DomElement element, string filter)
     {

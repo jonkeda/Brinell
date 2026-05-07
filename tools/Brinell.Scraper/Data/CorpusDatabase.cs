@@ -1,23 +1,26 @@
 using System.IO;
 using Brinell.Scraper.Models;
 using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.Logging;
 
 namespace Brinell.Scraper.Data;
 
 public sealed class CorpusDatabase
 {
     private readonly string _dbPath;
+    private readonly ILogger<CorpusDatabase> _logger;
 
-    public CorpusDatabase()
+    public CorpusDatabase(ILogger<CorpusDatabase> logger)
         : this(Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "Brinell.Scraper", "scraper.db"))
+            "Brinell.Scraper", "scraper.db"), logger)
     {
     }
 
-    public CorpusDatabase(string dbPath)
+    public CorpusDatabase(string dbPath, ILogger<CorpusDatabase> logger)
     {
         _dbPath = dbPath;
+        _logger = logger;
         var dir = Path.GetDirectoryName(_dbPath);
         if (dir is not null) Directory.CreateDirectory(dir);
         EnsureCreated();
@@ -43,6 +46,18 @@ public sealed class CorpusDatabase
                 LastOpenedAt TEXT NOT NULL DEFAULT (datetime('now')),
                 PageCount INTEGER NOT NULL DEFAULT 0,
                 ControlCount INTEGER NOT NULL DEFAULT 0
+            );
+
+            CREATE TABLE IF NOT EXISTS Pages (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                SiteId INTEGER NOT NULL,
+                Name TEXT NOT NULL,
+                Url TEXT NOT NULL,
+                Title TEXT NOT NULL DEFAULT '',
+                CapturedAt TEXT NOT NULL DEFAULT (datetime('now')),
+                ElementCount INTEGER NOT NULL DEFAULT 0,
+                SnapshotJson TEXT NOT NULL,
+                FOREIGN KEY (SiteId) REFERENCES Sites(Id)
             );
             """;
         cmd.ExecuteNonQuery();
@@ -137,5 +152,91 @@ public sealed class CorpusDatabase
             PageCount = reader.GetInt32(reader.GetOrdinal("PageCount")),
             ControlCount = reader.GetInt32(reader.GetOrdinal("ControlCount")),
         };
+    }
+
+    // ── Pages CRUD (RCA-022) ──────────────────────────────────────────
+
+    public long SavePage(long siteId, string name, string url, string title, int elementCount, string snapshotJson)
+    {
+        using var connection = new SqliteConnection(ConnectionString);
+        connection.Open();
+
+        using var cmd = connection.CreateCommand();
+        cmd.CommandText = """
+            INSERT INTO Pages (SiteId, Name, Url, Title, ElementCount, SnapshotJson)
+            VALUES (@siteId, @name, @url, @title, @elementCount, @json);
+            SELECT last_insert_rowid();
+            """;
+        cmd.Parameters.AddWithValue("@siteId", siteId);
+        cmd.Parameters.AddWithValue("@name", name);
+        cmd.Parameters.AddWithValue("@url", url);
+        cmd.Parameters.AddWithValue("@title", title);
+        cmd.Parameters.AddWithValue("@elementCount", elementCount);
+        cmd.Parameters.AddWithValue("@json", snapshotJson);
+
+        var id = (long)cmd.ExecuteScalar()!;
+        _logger.LogInformation("Corpus store — Site: {SiteId}, Page: {Name}, Elements: {ElementCount}, Size: {Size} bytes",
+            siteId, name, elementCount, snapshotJson.Length);
+        return id;
+    }
+
+    public List<PageRecord> GetPages(long siteId)
+    {
+        using var connection = new SqliteConnection(ConnectionString);
+        connection.Open();
+
+        using var cmd = connection.CreateCommand();
+        cmd.CommandText = "SELECT Id, SiteId, Name, Url, Title, CapturedAt, ElementCount FROM Pages WHERE SiteId = @siteId ORDER BY CapturedAt DESC";
+        cmd.Parameters.AddWithValue("@siteId", siteId);
+
+        using var reader = cmd.ExecuteReader();
+        var pages = new List<PageRecord>();
+        while (reader.Read())
+        {
+            pages.Add(new PageRecord
+            {
+                Id = reader.GetInt64(reader.GetOrdinal("Id")),
+                SiteId = reader.GetInt64(reader.GetOrdinal("SiteId")),
+                Name = reader.GetString(reader.GetOrdinal("Name")),
+                Url = reader.GetString(reader.GetOrdinal("Url")),
+                Title = reader.GetString(reader.GetOrdinal("Title")),
+                CapturedAt = DateTime.Parse(reader.GetString(reader.GetOrdinal("CapturedAt"))),
+                ElementCount = reader.GetInt32(reader.GetOrdinal("ElementCount")),
+            });
+        }
+        return pages;
+    }
+
+    public string? GetPageSnapshot(long pageId)
+    {
+        using var connection = new SqliteConnection(ConnectionString);
+        connection.Open();
+
+        using var cmd = connection.CreateCommand();
+        cmd.CommandText = "SELECT SnapshotJson FROM Pages WHERE Id = @id";
+        cmd.Parameters.AddWithValue("@id", pageId);
+        return cmd.ExecuteScalar() as string;
+    }
+
+    public void DeletePage(long pageId)
+    {
+        using var connection = new SqliteConnection(ConnectionString);
+        connection.Open();
+
+        using var cmd = connection.CreateCommand();
+        cmd.CommandText = "DELETE FROM Pages WHERE Id = @id";
+        cmd.Parameters.AddWithValue("@id", pageId);
+        cmd.ExecuteNonQuery();
+    }
+
+    public void UpdateSitePageCount(long siteId)
+    {
+        using var connection = new SqliteConnection(ConnectionString);
+        connection.Open();
+
+        using var cmd = connection.CreateCommand();
+        cmd.CommandText = "UPDATE Sites SET PageCount = (SELECT COUNT(*) FROM Pages WHERE SiteId = @siteId) WHERE Id = @siteId";
+        cmd.Parameters.AddWithValue("@siteId", siteId);
+        cmd.ExecuteNonQuery();
     }
 }

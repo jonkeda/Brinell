@@ -1,6 +1,7 @@
 using System.IO;
 using Brinell.Scraper.Data;
 using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace Brinell.Scraper.Tests.Data;
@@ -12,7 +13,7 @@ public class CorpusDatabaseTests : IDisposable
     private CorpusDatabase CreateDb()
     {
         _dbPath = Path.Combine(Path.GetTempPath(), $"scraper-test-{Guid.NewGuid()}.db");
-        return new CorpusDatabase(_dbPath);
+        return new CorpusDatabase(_dbPath, NullLogger<CorpusDatabase>.Instance);
     }
 
     public void Dispose()

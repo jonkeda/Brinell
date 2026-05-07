@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Windows.Input;
 using Brinell.Scraper.Models;
 
@@ -16,6 +17,11 @@ public sealed class SidebarViewModel : ViewModelBase
     public SidebarViewModel()
     {
         NavigateToPageCommand = new RelayCommand<SidebarPageItem>(NavigateToPage);
+        SessionPages.CollectionChanged += (_, _) =>
+        {
+            OnPropertyChanged(nameof(HasSessionPages));
+            OnPropertyChanged(nameof(ShowAnalyzeButton));
+        };
     }
 
     public ObservableCollection<SidebarPageItem> CorpusPages { get; } = [];
@@ -37,8 +43,16 @@ public sealed class SidebarViewModel : ViewModelBase
     public bool IsRecording
     {
         get => _isRecording;
-        set => SetProperty(ref _isRecording, value);
+        set
+        {
+            if (SetProperty(ref _isRecording, value))
+                OnPropertyChanged(nameof(ShowAnalyzeButton));
+        }
     }
+
+    public bool HasSessionPages => SessionPages.Count > 0;
+
+    public bool ShowAnalyzeButton => HasSessionPages && !IsRecording;
 
     public void LoadCorpusPages(IEnumerable<SidebarPageItem> pages)
     {

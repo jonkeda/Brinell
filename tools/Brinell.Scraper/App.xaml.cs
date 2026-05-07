@@ -52,6 +52,11 @@ public partial class App : Application
         // Data
         services.AddSingleton<CorpusDatabase>();
 
+        var dbPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "Brinell.Scraper", "scraper.db");
+        var connectionString = $"Data Source={dbPath}";
+
         // Services (Phase 4)
         services.AddSingleton<DomCaptureService>();
         services.AddSingleton<ElementHighlightService>();
@@ -59,6 +64,26 @@ public partial class App : Application
         services.AddSingleton<ControlGroupDetector>();
         services.AddSingleton<DomDiffService>();
         services.AddSingleton<SnapshotExportService>();
+
+        // Services (Phase 5 — LLM Code Generation)
+        services.AddSingleton<ICopilotService, CopilotService>();
+        services.AddSingleton<IControlRegistry>(sp =>
+            new ControlRegistry(connectionString, sp.GetRequiredService<ILogger<ControlRegistry>>()));
+        services.AddSingleton<CorpusService>(sp =>
+            new CorpusService(connectionString, sp.GetRequiredService<ILogger<CorpusService>>()));
+        services.AddSingleton<CorpusTools>();
+        services.AddSingleton<SkillService>(sp =>
+        {
+            var skillsDir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "Brinell.Scraper", "skills");
+            return new SkillService(skillsDir, sp.GetRequiredService<ILogger<SkillService>>());
+        });
+        services.AddSingleton<RetryService>();
+        services.AddSingleton<PromptBuilder>();
+        services.AddSingleton<AnalysisService>();
+        services.AddSingleton<ControlGenerationService>();
+        services.AddSingleton<PageGenerationService>();
 
         // ViewModels
         services.AddSingleton<MainViewModel>();

@@ -59,6 +59,7 @@ public sealed class CorpusBrowserViewModel : ViewModelBase
     public event Action<SnapshotSummary>? ViewSnapshotRequested;
     public event Action<SnapshotSummary>? ViewDiffRequested;
     public event Action<SnapshotSummary>? ReRecordRequested;
+    public event Action<long>? PageDeleted;
 
     public void Load(CorpusService corpusService, long siteId)
     {
@@ -94,7 +95,25 @@ public sealed class CorpusBrowserViewModel : ViewModelBase
     private void OnViewSnapshot() => ViewSnapshotRequested?.Invoke(SelectedSnapshot!);
     private void OnViewDiff() => ViewDiffRequested?.Invoke(SelectedSnapshot!);
     private void OnReRecord() => ReRecordRequested?.Invoke(SelectedSnapshot!);
-    private void OnDeletePage() { /* placeholder */ }
+    private void OnDeletePage()
+    {
+        if (SelectedSnapshot is null || _corpusService is null) return;
+
+        var result = System.Windows.MessageBox.Show(
+            $"Delete page \"{SelectedSnapshot.PageName}\"?",
+            "Confirm Delete",
+            System.Windows.MessageBoxButton.YesNo,
+            System.Windows.MessageBoxImage.Question);
+
+        if (result != System.Windows.MessageBoxResult.Yes) return;
+
+        _corpusService.DeleteSnapshot(SelectedSnapshot.Id);
+        var deletedId = SelectedSnapshot.Id;
+        Snapshots.Remove(SelectedSnapshot);
+        SelectedSnapshot = null;
+        PageDeleted?.Invoke(deletedId);
+        _logger.LogInformation("Page deleted from corpus: {PageId}", deletedId);
+    }
 
     private void RaiseCommandStates()
     {

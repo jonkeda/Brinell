@@ -147,7 +147,7 @@ Verify that the highlight overlay works inside iframes.
 Verify the tooltip shows the correct locator strategy based on the element’s attributes.
 
 - [ ] Hover over an element with a `data-testid` attribute. The locator suggestion reads `Locator.ByDataTestId("...")` (highest priority).
-- [ ] Hover over an element with a stable `id` (no GUIDs, long numbers, or dynamic suffixes). The locator suggestion reads `Locator.ById("...")`. Hover over an element with a dynamic-looking `id` (e.g. containing a GUID or `_123`). The locator does NOT suggest `ById` — it falls through to a lower-priority strategy.
+- [X] Hover over an element with a stable `id` (no GUIDs, long numbers, or dynamic suffixes). The locator suggestion reads `Locator.ById("...")`. Hover over an element with a dynamic-looking `id` (e.g. containing a GUID or `_123`). The locator does NOT suggest `ById` — it falls through to a lower-priority strategy.
 - [ ] Hover over an `<input>` that has an associated `<label>` element. The locator suggestion reads `Locator.ByLabel("...")` with the label text.
 - [ ] Hover over an element with an `aria-label` attribute. The locator suggestion reads `Locator.ByAriaLabel("...")`.
 - [ ] Hover over an element with none of the above. The locator falls back to a minimal CSS selector.
@@ -165,9 +165,9 @@ Verify that the DOM tree panel renders the captured element hierarchy and suppor
 
 Verify that inspect mode survives page navigation without requiring the user to toggle it off and on again.
 
-- [ ] Enable inspect mode on a page. Navigate to a different URL. After the new page loads, the overlay is re-injected automatically — hovering over elements still shows the blue highlight and tooltip.
-- [ ] The DOM tree panel refreshes to show the new page’s element hierarchy. The inspector status bar still shows the element count.
-- [ ] The 🔍 Inspect toggle button remains in the checked/active state throughout.
+- [X] Enable inspect mode on a page. Navigate to a different URL. After the new page loads, the overlay is re-injected automatically — hovering over elements still shows the blue highlight and tooltip.
+- [X] The DOM tree panel refreshes to show the new page’s element hierarchy. The inspector status bar still shows the element count.
+- [X] The 🔍 Inspect toggle button remains in the checked/active state throughout.
 
 ### UAT-4.4 — Multi-Select Mode
 
@@ -201,32 +201,32 @@ Start a recording session, navigate through multiple pages, and verify capture, 
 **Start recording:**
 
 - [X] Click ⏺ Record. The ⏺ button is replaced by ⏹ (Stop) and ⏸ (Pause) buttons. A red 3px border appears around the browser area. The status bar shows "Recording..." in red text.
-- [ ] The sidebar shows a "This Session" section header above the "Corpus Pages" section.
+- [X] The sidebar shows a "This Session" section header above the "Corpus Pages" section.
 
 **Capture pages:**
 
-- [ ] Navigate to 3 different pages. Each page transition triggers an automatic DOM capture. The "This Session" sidebar section lists each newly captured page with a 🆕 icon.
-- [ ] Navigate to the same URL twice within 2 seconds. Only one capture is recorded (deduplication).
-- [ ] Click a page in the "This Session" sidebar list. The browser navigates to that page's URL.
+- [X] Navigate to 3 different pages. Each page transition triggers an automatic DOM capture. The "This Session" sidebar section lists each newly captured page with a 🆕 icon.
+- [X] Navigate to the same URL twice within 2 seconds. Only one capture is recorded (deduplication).
+- [X] Click a page in the "This Session" sidebar list. The browser navigates to that page's URL.
 
 **Pause and resume:**
 
-- [ ] Click ⏸ Pause. The ⏸ button changes to ▶ (Resume). The status bar shows "Paused". Navigate to a new page — no capture occurs and the "This Session" list does not grow.
-- [ ] Click ▶ Resume. The next navigation triggers capture again and the status bar returns to showing the session count.
+- [X] Click ⏸ Pause. The ⏸ button changes to ▶ (Resume). The status bar shows "Paused". Navigate to a new page — no capture occurs and the "This Session" list does not grow.
+- [X] Click ▶ Resume. The next navigation triggers capture again and the status bar returns to showing the session count.
 
 **Stop recording:**
 
-- [ ] Click ⏹ Stop. Recording stops: the red border disappears, the toolbar returns to showing the ⏺ button, and the "This Session" section disappears from the sidebar.
-- [ ] A prompt appears: "{N} pages captured. Analyze corpus now?" with Yes/No buttons.
-- [ ] If no pages were captured during the session (e.g. recording was started and immediately stopped), no prompt appears.
+- [X] Click ⏹ Stop. Recording stops: the red border disappears, the toolbar returns to showing the ⏺ button, and the "This Session" section disappears from the sidebar.
+- [X] A prompt appears: "{N} pages captured. Analyze corpus now?" with Yes/No buttons.
+- [X] If no pages were captured during the session (e.g. recording was started and immediately stopped), no prompt appears.
 
 **Log verification:**
 
-- [ ] Check the log viewer for entries: "Recording started", "Page captured: {name} ({url})" for each page, and "Recording stopped. N pages captured".
+- [X] Check the log viewer for entries: "Recording started", "Page captured: {name} ({url})" for each page, and "Recording stopped. N pages captured".
 
 **Fresh session:**
 
-- [ ] Start a new recording after having stopped a previous one. The "This Session" list is empty — no stale pages from the previous session appear.
+- [X] Start a new recording after having stopped a previous one. The "This Session" list is empty — no stale pages from the previous session appear.
 
 ---
 
@@ -236,8 +236,8 @@ Start a recording session, navigate through multiple pages, and verify capture, 
 
 Verify that recorded snapshots persist in the SQLite database across application restarts.
 
-- [ ] Record several pages to the corpus and verify the recording completes without error.
-- [ ] Close the application, relaunch it, and select the same site. The previously recorded pages are still present.
+- [X] Record several pages to the corpus and verify the recording completes without error.
+- [X] Close the application, relaunch it, and select the same site. The previously recorded pages are still present.
 - [ ] Check the log viewer for a corpus store entry: "Corpus store — Site: {id}, Page: {name}, Elements: {count}, Size: {bytes} bytes".
 
 ### UAT-4.9 — Corpus Browser

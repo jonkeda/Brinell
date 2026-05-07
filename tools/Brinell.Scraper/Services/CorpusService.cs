@@ -184,6 +184,29 @@ public sealed class CorpusService
         return results;
     }
 
+    public void DeleteSnapshot(long snapshotId)
+    {
+        using var conn = Open();
+        using var tx = conn.BeginTransaction();
+
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = "DELETE FROM Elements WHERE SnapshotId = @id";
+            cmd.Parameters.AddWithValue("@id", snapshotId);
+            cmd.ExecuteNonQuery();
+        }
+
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = "DELETE FROM Snapshots WHERE Id = @id";
+            cmd.Parameters.AddWithValue("@id", snapshotId);
+            cmd.ExecuteNonQuery();
+        }
+
+        tx.Commit();
+        _logger.LogInformation("Deleted snapshot {SnapshotId}", snapshotId);
+    }
+
     private SqliteConnection Open()
     {
         var conn = new SqliteConnection(_connectionString);

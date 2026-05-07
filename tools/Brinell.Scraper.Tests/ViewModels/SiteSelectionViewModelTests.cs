@@ -15,7 +15,7 @@ public sealed class SiteSelectionViewModelTests : IDisposable
     public SiteSelectionViewModelTests()
     {
         _dbPath = Path.Combine(Path.GetTempPath(), $"test-{Guid.NewGuid()}.db");
-        _db = new CorpusDatabase(_dbPath);
+        _db = new CorpusDatabase(_dbPath, NullLogger<CorpusDatabase>.Instance);
     }
 
     public void Dispose()

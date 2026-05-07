@@ -20,6 +20,9 @@ public partial class MainWindow : Window
 
         _vm.SiteSelectorRequested += ShowSiteSelector;
         _vm.BrowserViewRequested += ShowBrowserView;
+        _vm.CorpusBrowserRequested += ShowCorpusBrowser;
+        _vm.ControlsManagerRequested += ShowControlsManager;
+        _vm.AnalysisViewRequested += ShowAnalysisView;
         _vm.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(MainViewModel.IsLogViewerVisible))
@@ -66,5 +69,23 @@ public partial class MainWindow : Window
             _vm.Browser.NavigateCommand.Execute(null);
             e.Handled = true;
         }
+    }
+
+    private void ShowCorpusBrowser(CorpusBrowserViewModel vm)
+    {
+        var view = new CorpusBrowserView { DataContext = vm };
+        ContentArea.Content = view;
+    }
+
+    private void ShowControlsManager(ControlsManagerViewModel vm)
+    {
+        var view = new ControlsManagerView { DataContext = vm };
+        ContentArea.Content = view;
+    }
+
+    private void ShowAnalysisView(AnalysisViewModel vm)
+    {
+        var view = new AnalysisView { DataContext = vm };
+        ContentArea.Content = view;
     }
 }

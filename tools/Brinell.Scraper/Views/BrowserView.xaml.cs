@@ -13,6 +13,7 @@ public partial class BrowserView : UserControl
 {
     private BrowserViewModel? _vm;
     private bool _initialized;
+    private string? _lastKnownUrl;
 
     public BrowserView()
     {
@@ -50,6 +51,11 @@ public partial class BrowserView : UserControl
             // Enable iframe frame tracking for highlight service
             var highlight = App.Services.GetRequiredService<ElementHighlightService>();
             highlight.TrackFrames(WebView.CoreWebView2);
+
+            // Track iframe navigations for recording
+            WebView.CoreWebView2.FrameCreated += OnFrameCreated;
+
+            _lastKnownUrl = WebView.CoreWebView2.Source;
         }
 
         // Wire ViewModel → WebView2 actions
@@ -88,6 +94,11 @@ public partial class BrowserView : UserControl
 
     private void OnNavigationCompleted(object? sender, CoreWebView2NavigationCompletedEventArgs e)
     {
+        var currentUrl = WebView.CoreWebView2.Source;
+        if (string.Equals(currentUrl, _lastKnownUrl, StringComparison.Ordinal))
+            return;
+
+        _lastKnownUrl = currentUrl;
         _vm?.OnNavigationCompleted(e.IsSuccess, e.IsSuccess ? null : e.WebErrorStatus.ToString());
     }
 
@@ -106,6 +117,16 @@ public partial class BrowserView : UserControl
         // Navigate the current WebView to the requested URL instead of opening a new window
         e.Handled = true;
         WebView.CoreWebView2.Navigate(e.Uri);
+    }
+
+    private void OnFrameCreated(object? sender, CoreWebView2FrameCreatedEventArgs e)
+    {
+        var frame = e.Frame;
+        frame.NavigationCompleted += (_, args) =>
+        {
+            if (args.IsSuccess)
+                _vm?.OnIFrameNavigationCompleted();
+        };
     }
 
     private void OnWebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)

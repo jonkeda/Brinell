@@ -16,7 +16,7 @@ public class MainViewModelTests : IDisposable
     {
         var dbPath = Path.Combine(Path.GetTempPath(), $"test-{Guid.NewGuid()}.db");
         _dbPaths.Add(dbPath);
-        var db = new CorpusDatabase(dbPath);
+        var db = new CorpusDatabase(dbPath, NullLogger<CorpusDatabase>.Instance);
         var browser = new BrowserViewModel(NullLogger<BrowserViewModel>.Instance);
         var sidebar = new SidebarViewModel();
         var siteSelection = new SiteSelectionViewModel(db, NullLogger<SiteSelectionViewModel>.Instance);
@@ -24,8 +24,11 @@ public class MainViewModelTests : IDisposable
         var recording = new RecordingViewModel(NullLogger<RecordingViewModel>.Instance);
         var domCapture = new DomCaptureService(NullLogger<DomCaptureService>.Instance);
         var highlight = new ElementHighlightService(NullLogger<ElementHighlightService>.Instance);
+        var pageTransition = new PageTransitionDetector(NullLogger<PageTransitionDetector>.Instance);
+        var exportService = new SnapshotExportService();
+        var controlGroupDetector = new ControlGroupDetector();
         var logger = NullLogger<MainViewModel>.Instance;
-        var vm = new MainViewModel(db, browser, sidebar, siteSelection, inspector, recording, domCapture, highlight, logger);
+        var vm = new MainViewModel(db, browser, sidebar, siteSelection, inspector, recording, domCapture, highlight, pageTransition, exportService, controlGroupDetector, logger);
         return (vm, db, siteSelection);
     }
 

@@ -13,12 +13,15 @@
         <!-- DOM Tree -->
         <TreeView ItemsSource="{Binding RootElements}"
                   VirtualizingPanel.IsVirtualizing="True"
-                  VirtualizingPanel.VirtualizationMode="Recycling">
+                  VirtualizingPanel.VirtualizationMode="Recycling"
+                  MouseLeftButtonUp="TreeView_MouseLeftButtonUp">
             <TreeView.ItemContainerStyle>
                 <Style TargetType="TreeViewItem">
                     <Setter Property="IsExpanded" 
                             Value="{Binding DataContext.IsFilterActive, 
                                     RelativeSource={RelativeSource AncestorType=TreeView}}"/>
+                    <EventSetter Event="MouseEnter" Handler="TreeItem_MouseEnter"/>
+                    <EventSetter Event="MouseLeave" Handler="TreeItem_MouseLeave"/>
                 </Style>
             </TreeView.ItemContainerStyle>
             <TreeView.ItemTemplate>

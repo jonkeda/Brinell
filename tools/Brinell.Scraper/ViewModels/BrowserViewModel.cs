@@ -97,6 +97,9 @@ public sealed class BrowserViewModel : ViewModelBase
 
     public event Action? NavigationSucceeded;
 
+    /// <summary>Fired when a child iframe completes a navigation.</summary>
+    public event Action? IFrameNavigationSucceeded;
+
     public void OnNavigationCompleted(bool isSuccess, string? errorStatus)
     {
         if (isSuccess)
@@ -131,6 +134,8 @@ public sealed class BrowserViewModel : ViewModelBase
     private void OnOpenDevTools() => OpenDevToolsRequested?.Invoke();
 
     public void OnElementSelected(WebViewMessage msg) => ElementSelected?.Invoke(msg);
+
+    public void OnIFrameNavigationCompleted() => IFrameNavigationSucceeded?.Invoke();
 }
 
 public sealed class SiteSelectionViewModel : ViewModelBase

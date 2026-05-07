@@ -13,6 +13,9 @@
                 <MenuItem Header="_Manage Controls" Command="{Binding ManageControlsCommand}"/>
                 <MenuItem Header="_Browse Corpus" Command="{Binding BrowseCorpusCommand}"/>
                 <Separator/>
+                <MenuItem Header="_Export Corpus..." Command="{Binding ExportCorpusCommand}"/>
+                <MenuItem Header="_Import Snapshot..." Command="{Binding ImportSnapshotCommand}"/>
+                <Separator/>
                 <MenuItem Header="_Switch Site..." Command="{Binding SwitchSiteCommand}"/>
             </MenuItem>
             <MenuItem Header="_View">
@@ -50,6 +53,7 @@
                         Content="▶" ToolTip="Resume" Padding="6,2"
                         Visibility="{Binding Recording.IsPaused, Converter={StaticResource BoolToVisibility}}"/>
             </StackPanel>
+            <Button Command="{Binding RecordPageCommand}" Content="📷" ToolTip="Record this page (capture DOM snapshot)" Padding="6,2"/>
             <Button Command="{Binding AnalyzeCommand}" Content="🔬" ToolTip="Analyze" Padding="6,2"/>
             <Separator/>
             <Button Command="{Binding Browser.OpenDevToolsCommand}" Content="F12" ToolTip="Developer Tools" Padding="6,2"/>
@@ -123,8 +127,8 @@
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel>
 
-                        <!-- This Session section (only when recording) -->
-                        <StackPanel Visibility="{Binding Sidebar.IsRecording, Converter={StaticResource BoolToVisibility}}">
+                        <!-- This Session section (visible when session pages exist) -->
+                        <StackPanel Visibility="{Binding Sidebar.HasSessionPages, Converter={StaticResource BoolToVisibility}}">
                             <TextBlock Text="This Session" FontWeight="SemiBold" FontSize="11"
                                        Margin="4,8,4,2" Foreground="#555"/>
                             <Separator Margin="4,0"/>
@@ -145,6 +149,11 @@
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
+                            <!-- Analyze Session button (when not recording) -->
+                            <Button Command="{Binding AnalyzeSessionCommand}"
+                                    Content="▶ Analyze Session"
+                                    Margin="4,4" Padding="8,4"
+                                    Visibility="{Binding Sidebar.ShowAnalyzeButton, Converter={StaticResource BoolToVisibility}}"/>
                         </StackPanel>
 
                         <!-- Corpus Pages section -->
@@ -237,6 +246,11 @@
                                           RelativeSource={RelativeSource AncestorType=Window}}"
                                 Padding="4,2" FontSize="11"/>
                     </StackPanel>
+                    <!-- Control group suggestions -->
+                    <TextBlock DockPanel.Dock="Top" Margin="4,2"
+                               Text="{Binding DataContext.Inspector.ControlGroupSummary,
+                                      RelativeSource={RelativeSource AncestorType=Window}}"
+                               FontSize="11" Foreground="#666"/>
                     <views:DomTreePanel DataContext="{Binding DataContext.Inspector.DomTree,
                                         RelativeSource={RelativeSource AncestorType=Window}}"/>
                 </DockPanel>

@@ -11,6 +11,7 @@ public sealed class InspectorViewModel : ViewModelBase
     private int _selectedCount;
     private int _totalElementCount;
     private bool _isInspecting;
+    private string _controlGroupSummary = "";
 
     public InspectorViewModel()
     {
@@ -49,6 +50,14 @@ public sealed class InspectorViewModel : ViewModelBase
 
     public DomSnapshot? Snapshot => _snapshot;
 
+    public string ControlGroupSummary
+    {
+        get => _controlGroupSummary;
+        set => SetProperty(ref _controlGroupSummary, value);
+    }
+
+    public ObservableCollection<ControlGroupSuggestion> ControlGroups { get; } = [];
+
     public ICommand SelectAllFormsCommand { get; }
     public ICommand SelectAllInputsCommand { get; }
     public ICommand ClearSelectionCommand { get; }
@@ -68,6 +77,24 @@ public sealed class InspectorViewModel : ViewModelBase
         TotalElementCount = CountElements(snapshot.RootElement);
         ((RelayCommand)SelectAllFormsCommand).RaiseCanExecuteChanged();
         ((RelayCommand)SelectAllInputsCommand).RaiseCanExecuteChanged();
+    }
+
+    public void LoadControlGroups(List<ControlGroupSuggestion> groups)
+    {
+        ControlGroups.Clear();
+        foreach (var g in groups)
+            ControlGroups.Add(g);
+
+        if (groups.Count > 0)
+        {
+            var parts = groups.GroupBy(g => g.ContainerType)
+                .Select(g => $"{g.Count()} {g.Key.Replace("Container", "").ToLower()}(s)");
+            ControlGroupSummary = $"Found {string.Join(", ", parts)}";
+        }
+        else
+        {
+            ControlGroupSummary = "";
+        }
     }
 
     public void ToggleElement(DomElement element)

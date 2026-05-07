@@ -1,3 +1,4 @@
+using Brinell.Scraper.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Web.WebView2.Core;
 
@@ -18,6 +19,11 @@ public sealed class ElementHighlightService
     public bool IsActive => _isActive;
 
     /// <summary>
+    /// Returns a snapshot of the currently tracked iframe frames.
+    /// </summary>
+    public IReadOnlyList<CoreWebView2Frame> TrackedFrames => _trackedFrames.ToArray();
+
+    /// <summary>
     /// Start tracking iframe frames so overlay can be injected into them.
     /// Call once after WebView2 is initialized.
     /// </summary>
@@ -32,12 +38,14 @@ public sealed class ElementHighlightService
             _trackedFrames.Add(frame);
             frame.Destroyed += (_, _) => _trackedFrames.Remove(frame);
 
-            // If overlay is already active, inject into the new frame
-            if (_isActive)
+            // Inject overlay once the frame's DOM is ready (handles initial load
+            // and subsequent navigations within the iframe).
+            frame.DOMContentLoaded += async (_, _) =>
             {
-                try { frame.ExecuteScriptAsync(IFrameOverlayScript).ConfigureAwait(false); }
-                catch { /* frame may not support script execution */ }
-            }
+                if (!_isActive) return;
+                try { await frame.ExecuteScriptAsync(IFrameOverlayScript); }
+                catch { /* frame may have been destroyed or doesn't support scripts */ }
+            };
         };
     }
 
@@ -83,6 +91,50 @@ public sealed class ElementHighlightService
             await DisableAsync(webView);
         else
             await EnableAsync(webView);
+    }
+
+    public async Task HighlightElementByBoundsAsync(CoreWebView2 webView, BoundingBox box)
+    {
+        var script = $$"""
+            (function() {
+                let el = document.getElementById('__brinell-tree-highlight');
+                if (!el) {
+                    el = document.createElement('div');
+                    el.id = '__brinell-tree-highlight';
+                    el.style.cssText = 'position:fixed;pointer-events:none;z-index:2147483646;border:2px solid #FF9800;background:rgba(255,152,0,0.12);transition:all 0.15s;';
+                    document.body.appendChild(el);
+                }
+                el.style.left = '{{box.X}}px';
+                el.style.top = '{{box.Y}}px';
+                el.style.width = '{{box.Width}}px';
+                el.style.height = '{{box.Height}}px';
+                el.style.display = 'block';
+            })();
+            """;
+        await webView.ExecuteScriptAsync(script);
+    }
+
+    public async Task ClearTreeHighlightAsync(CoreWebView2 webView)
+    {
+        await webView.ExecuteScriptAsync("""
+            (function() {
+                const el = document.getElementById('__brinell-tree-highlight');
+                if (el) el.style.display = 'none';
+            })();
+            """);
+    }
+
+    public async Task ScrollToElementAsync(CoreWebView2 webView, BoundingBox box)
+    {
+        var script = $$"""
+            (function() {
+                const x = {{box.X}} + {{box.Width}} / 2;
+                const y = {{box.Y}} + {{box.Height}} / 2;
+                const el = document.elementFromPoint(x, y);
+                if (el) el.scrollIntoView({behavior:'smooth',block:'center'});
+            })();
+            """;
+        await webView.ExecuteScriptAsync(script);
     }
 
     private const string OverlayScript = """

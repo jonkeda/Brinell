@@ -10,6 +10,7 @@ public sealed class RecordingViewModel : ViewModelBase
     private readonly ILogger<RecordingViewModel> _logger;
     private bool _isRecording;
     private bool _isPaused;
+    private bool _isStopped;
     private string _recordingStatus = string.Empty;
     private DateTime _lastCaptureTime;
     private string? _lastCapturedUrl;
@@ -21,7 +22,7 @@ public sealed class RecordingViewModel : ViewModelBase
         StartRecordingCommand = new RelayCommand(StartRecording, () => !IsRecording);
         StopRecordingCommand = new RelayCommand(StopRecording, () => IsRecording);
         PauseRecordingCommand = new RelayCommand(PauseRecording, () => IsRecording && !IsPaused);
-        ResumeRecordingCommand = new RelayCommand(ResumeRecording, () => IsRecording && IsPaused);
+        ResumeRecordingCommand = new RelayCommand(ResumeRecording, () => (IsRecording && IsPaused) || IsStopped);
     }
 
     public ObservableCollection<DomSnapshot> SessionSnapshots { get; } = [];
@@ -46,6 +47,16 @@ public sealed class RecordingViewModel : ViewModelBase
         }
     }
 
+    public bool IsStopped
+    {
+        get => _isStopped;
+        private set
+        {
+            if (SetProperty(ref _isStopped, value))
+                RaiseCommandStates();
+        }
+    }
+
     public string RecordingStatus
     {
         get => _recordingStatus;
@@ -66,12 +77,17 @@ public sealed class RecordingViewModel : ViewModelBase
     /// <summary>Fired when recording stops, so the view can detach transition detection.</summary>
     public event Action? RecordingStopped;
 
-    public void StartRecording()
+    public void ClearSnapshots()
     {
         SessionSnapshots.Clear();
         _lastCapturedUrl = null;
+    }
+
+    public void StartRecording()
+    {
         IsRecording = true;
         IsPaused = false;
+        IsStopped = false;
         RecordingStatus = "Recording...";
         _logger.LogInformation("Recording started");
         RecordingStarted?.Invoke();
@@ -81,6 +97,7 @@ public sealed class RecordingViewModel : ViewModelBase
     {
         IsRecording = false;
         IsPaused = false;
+        IsStopped = true;
         RecordingStatus = $"Stopped — {SessionSnapshots.Count} pages captured";
         _logger.LogInformation("Recording stopped. {PageCount} pages captured", SessionSnapshots.Count);
         RecordingStopped?.Invoke();
@@ -96,6 +113,12 @@ public sealed class RecordingViewModel : ViewModelBase
 
     public void ResumeRecording()
     {
+        if (IsStopped)
+        {
+            IsRecording = true;
+            IsStopped = false;
+            RecordingStarted?.Invoke();
+        }
         IsPaused = false;
         RecordingStatus = "Recording...";
         _logger.LogDebug("Recording resumed");
