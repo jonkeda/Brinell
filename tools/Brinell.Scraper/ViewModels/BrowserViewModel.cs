@@ -127,10 +127,31 @@ public sealed class BrowserViewModel : ViewModelBase
         CanGoForward = canGoForward;
     }
 
+    /// <summary>
+    /// URL queued before the WebView2 was ready. Consumed by BrowserView after initialization.
+    /// </summary>
+    public string? PendingNavigateUrl { get; private set; }
+
+    public void ConsumePendingNavigation()
+    {
+        if (PendingNavigateUrl is null) return;
+        var url = PendingNavigateUrl;
+        PendingNavigateUrl = null;
+        NavigateRequested?.Invoke(url);
+    }
+
     private void OnGoBack() => GoBackRequested?.Invoke();
     private void OnGoForward() => GoForwardRequested?.Invoke();
     private void OnRefresh() => RefreshRequested?.Invoke();
-    private void OnNavigate() => NavigateRequested?.Invoke(AddressUrl);
+
+    private void OnNavigate()
+    {
+        if (NavigateRequested is not null)
+            NavigateRequested.Invoke(AddressUrl);
+        else
+            PendingNavigateUrl = AddressUrl;
+    }
+
     private void OnOpenDevTools() => OpenDevToolsRequested?.Invoke();
 
     public void OnElementSelected(WebViewMessage msg) => ElementSelected?.Invoke(msg);

@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using System.Windows;
 using Brinell.Scraper.Data;
 using Brinell.Scraper.Models;
@@ -26,6 +27,12 @@ public partial class NewSiteDialog : Window
         NamespaceBox.Text = site.Namespace;
         OutputPathBox.Text = site.OutputPath;
         AliasesBox.Text = string.Join(Environment.NewLine, site.UrlAliases);
+    }
+
+    private void NameBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+    {
+        if (_editingSite is null && string.IsNullOrEmpty(NamespaceBox.Text))
+            NamespaceBox.Text = Regex.Replace(NameBox.Text.Trim(), @"[^A-Za-z0-9_]", "");
     }
 
     private void OnBrowseOutputPath(object sender, RoutedEventArgs e)

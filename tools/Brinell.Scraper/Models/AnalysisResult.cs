@@ -15,6 +15,8 @@ public sealed class ControlProposal
     public string ExampleSnippet { get; init; } = "";
     public List<string> SuggestedProperties { get; init; } = [];
     public bool IsApproved { get; set; }
+    public ControlObjectStatus Status { get; set; } = ControlObjectStatus.Pending;
+    public ControlGenerationStatus GenerationStatus { get; set; } = ControlGenerationStatus.Pending;
 }
 
 public sealed class LocatorReport

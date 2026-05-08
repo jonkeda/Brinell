@@ -152,13 +152,14 @@ public sealed class LogViewerViewModelTests
     }
 
     [Fact]
-    public void SelectedLogLevel_DefaultsToDebug()
+    public void SelectedLogLevel_DefaultsToTrace()
     {
         RunOnSta(() =>
         {
             var (vm, _) = CreateVm();
 
-            Assert.Equal(LogLevel.Debug, vm.SelectedLogLevel);
+            // Step 12.7: default is Trace (= "All" in the Log tab UI).
+            Assert.Equal(LogLevel.Trace, vm.SelectedLogLevel);
         });
     }
 
@@ -168,12 +169,13 @@ public sealed class LogViewerViewModelTests
         RunOnSta(() =>
         {
             var (vm, _) = CreateVm();
-            string? raised = null;
-            vm.PropertyChanged += (_, e) => raised = e.PropertyName;
+            var raised = new List<string?>();
+            vm.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
 
             vm.SelectedLogLevel = LogLevel.Warning;
 
-            Assert.Equal(nameof(vm.SelectedLogLevel), raised);
+            // Step 12.7 also notifies FilteredCount when the filter changes; verify both fire.
+            Assert.Contains(nameof(vm.SelectedLogLevel), raised);
         });
     }
 

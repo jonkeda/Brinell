@@ -9,15 +9,18 @@ public sealed class AnalysisService
 {
     private readonly ICopilotService _copilotService;
     private readonly CorpusService _corpusService;
+    private readonly ISessionContext _sessionContext;
     private readonly ILogger<AnalysisService> _logger;
 
     public AnalysisService(
         ICopilotService copilotService,
         CorpusService corpusService,
+        ISessionContext sessionContext,
         ILogger<AnalysisService> logger)
     {
         _copilotService = copilotService;
         _corpusService = corpusService;
+        _sessionContext = sessionContext;
         _logger = logger;
     }
 
@@ -29,7 +32,7 @@ public sealed class AnalysisService
 
         _logger.LogInformation("Analysis started — Pages: {PageCount}", pages.Count);
 
-        _copilotService.CurrentSiteId = siteId;
+        _sessionContext.CurrentSiteId = siteId;
         var prompt = BuildAnalysisPrompt(pages);
         var response = await _copilotService.AnalyzeAsync(prompt, ct);
         var result = AnalysisResultParser.Parse(response);

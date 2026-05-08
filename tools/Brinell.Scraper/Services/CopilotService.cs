@@ -1,5 +1,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
+using System.Runtime.InteropServices;
 using GitHub.Copilot.SDK;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
@@ -10,85 +12,190 @@ public sealed class CopilotService : ICopilotService, IAsyncDisposable
 {
     private readonly ILogger<CopilotService> _logger;
     private readonly CorpusTools _corpusTools;
+    private readonly ISessionContext _sessionContext;
+    private readonly AppSettings _settings;
+
     private CopilotClient? _client;
     private CopilotSession? _analyzerSession;
     private CopilotSession? _generatorSession;
+    private bool _stubMode;
 
     public CopilotService(
         ILogger<CopilotService> logger,
-        CorpusTools corpusTools)
+        CorpusTools corpusTools,
+        ISessionContext sessionContext,
+        AppSettings settings)
     {
         _logger = logger;
         _corpusTools = corpusTools;
+        _sessionContext = sessionContext;
+        _settings = settings;
     }
 
-    public bool IsAuthenticated => _client?.State == ConnectionState.Connected;
+    public bool IsAuthenticated =>
+        !_stubMode && _client?.State == ConnectionState.Connected;
 
-    public long CurrentSiteId { get; set; }
+    public string? LastInitError { get; private set; }
 
-    public async Task InitializeAsync(CancellationToken ct = default)
+    public async Task InitializeAsync(long siteId, string siteSlug, CancellationToken ct = default)
     {
-        _client = new CopilotClient(new CopilotClientOptions
+        // Tear down any existing session before reinitializing.
+        await DisposeSessionAsync();
+        LastInitError = null;
+
+        _sessionContext.CurrentSiteId = siteId;
+        _sessionContext.CurrentSiteSlug = siteSlug;
+
+        try
         {
-            UseLoggedInUser = true,
-            Logger = _logger,
-        });
-
-        await _client.StartAsync();
-
-        var tools = BuildTools();
-
-        _analyzerSession = await _client.CreateSessionAsync(new SessionConfig
-        {
-            Model = "gpt-4o-mini",
-            Tools = tools,
-            OnPermissionRequest = PermissionHandler.ApproveAll,
-            SystemMessage = new SystemMessageConfig
+            _client = new CopilotClient(new CopilotClientOptions
             {
-                Mode = SystemMessageMode.Append,
-                Content = """
-                    You analyze DOM snapshots to identify reusable UI patterns for the Brinell test automation framework.
-                    When analyzing, output a JSON object with `proposedControls` and optional `locatorReport`.
-                    Each proposed control should have: name, domSignature, frequency, confidence, exampleSnippet, suggestedProperties.
-                    The locatorReport should have: stableAttributes, unstableAttributes, recommendations.
-                    Use the available corpus tools to explore recorded pages when needed.
-                    """
-            },
-        });
+                UseLoggedInUser = true,
+                Logger = _logger,
+            });
 
-        _generatorSession = await _client.CreateSessionAsync(new SessionConfig
+            await _client.StartAsync();
+        }
+        catch (Exception ex)
         {
-            Model = "gpt-4o",
-            Tools = tools,
-            OnPermissionRequest = PermissionHandler.ApproveAll,
-            SystemMessage = new SystemMessageConfig
-            {
-                Mode = SystemMessageMode.Append,
-                Content = """
-                    You generate C# PageObject and ContainerBase classes for the Brinell test automation framework.
-                    Always output complete, compilable C# classes in ```csharp fenced code blocks.
-                    Follow Brinell conventions: sealed classes, expression-bodied properties, file-scoped namespaces.
-                    Locator preference order: ByText > ByDataTestId > ByAriaLabel > ById > ByCss.
-                    Use the available corpus tools to inspect page structures when needed.
-                    """
-            },
-        });
+            _stubMode = true;
+            LastInitError = "Copilot CLI not authenticated";
+            _logger.LogWarning(ex,
+                "Copilot SDK connection failed — running in stub mode. Site: {Site} ({Slug})",
+                siteId, siteSlug);
+            return;
+        }
 
-        _logger.LogInformation(
-            "Copilot SDK initialized — analyzer: {AnalyzerId}, generator: {GeneratorId}",
-            _analyzerSession.SessionId, _generatorSession.SessionId);
+        // Try configured models first, fall back to defaults if they fail.
+        const string defaultAnalyzer = "gpt-4.1-mini";
+        const string defaultGenerator = "gpt-4.1";
+
+        var analyzerModel = _settings.AnalyzerModel;
+        var generatorModel = _settings.GeneratorModel;
+
+        if (!await TryCreateSessionsAsync(siteId, siteSlug, analyzerModel, generatorModel))
+        {
+            if (analyzerModel != defaultAnalyzer || generatorModel != defaultGenerator)
+            {
+                _logger.LogInformation(
+                    "Retrying session creation with default models ({Analyzer}, {Generator})",
+                    defaultAnalyzer, defaultGenerator);
+
+                if (await TryCreateSessionsAsync(siteId, siteSlug, defaultAnalyzer, defaultGenerator))
+                {
+                    // Persist the working defaults so the stale values don't recur.
+                    _settings.AnalyzerModel = defaultAnalyzer;
+                    _settings.GeneratorModel = defaultGenerator;
+                    _settings.Save();
+                }
+            }
+        }
+    }
+
+    private async Task<bool> TryCreateSessionsAsync(
+        long siteId, string siteSlug, string analyzerModel, string generatorModel)
+    {
+        try
+        {
+            var tools = BuildTools();
+            var generatorSkillName = $"{siteSlug}-controls";
+
+            _analyzerSession = await _client!.CreateSessionAsync(new SessionConfig
+            {
+                Model = analyzerModel,
+                Tools = tools,
+                OnPermissionRequest = PermissionHandler.ApproveAll,
+                SystemMessage = new SystemMessageConfig
+                {
+                    Mode = SystemMessageMode.Append,
+                    Content = """
+                        You analyze DOM snapshots to identify reusable UI patterns for the Brinell test automation framework.
+                        When analyzing, output a JSON object with `proposedControls` and optional `locatorReport`.
+                        Each proposed control should have: name, domSignature, frequency, confidence, exampleSnippet, suggestedProperties.
+                        The locatorReport should have: stableAttributes, unstableAttributes, recommendations.
+                        Use the available corpus tools to explore recorded pages when needed.
+                        """
+                },
+            });
+
+            _generatorSession = await _client.CreateSessionAsync(new SessionConfig
+            {
+                Model = generatorModel,
+                Tools = tools,
+                OnPermissionRequest = PermissionHandler.ApproveAll,
+                SystemMessage = new SystemMessageConfig
+                {
+                    Mode = SystemMessageMode.Append,
+                    Content = $$"""
+                        You generate C# PageObject and ContainerBase classes for the Brinell test automation framework.
+                        Always output complete, compilable C# classes in ```csharp fenced code blocks.
+                        Follow Brinell conventions: sealed classes, expression-bodied properties, file-scoped namespaces.
+                        Locator preference order: ByText > ByDataTestId > ByAriaLabel > ById > ByCss.
+                        Use the per-site control library skill ({{generatorSkillName}}) and the available corpus tools to inspect page structures when needed.
+                        """
+                },
+            });
+
+            _stubMode = false;
+            LastInitError = null;
+            _logger.LogInformation(
+                "Copilot SDK initialized — Site: {Site} ({Slug}), AnalyzerModel: {Analyzer}, " +
+                "GeneratorModel: {Generator}, GeneratorSkill: {Skill}, " +
+                "AnalyzerSession: {AnalyzerId}, GeneratorSession: {GeneratorId}",
+                siteId, siteSlug, analyzerModel, generatorModel,
+                generatorSkillName, _analyzerSession.SessionId, _generatorSession.SessionId);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _stubMode = true;
+            LastInitError = $"Model '{analyzerModel}' / '{generatorModel}': {ex.Message}";
+            _logger.LogWarning(ex,
+                "Copilot session creation failed — " +
+                "Site: {Site} ({Slug}), AnalyzerModel: {Analyzer}, GeneratorModel: {Generator}",
+                siteId, siteSlug, analyzerModel, generatorModel);
+            return false;
+        }
+    }
+
+    public async Task DisposeSessionAsync()
+    {
+        if (_analyzerSession is not null)
+        {
+            await _analyzerSession.DisposeAsync();
+            _analyzerSession = null;
+        }
+        if (_generatorSession is not null)
+        {
+            await _generatorSession.DisposeAsync();
+            _generatorSession = null;
+        }
+        if (_client is not null)
+        {
+            await _client.DisposeAsync();
+            _client = null;
+        }
+        _stubMode = false;
     }
 
     public async Task<string> AnalyzeAsync(string prompt, CancellationToken ct = default)
     {
-        EnsureInitialized();
-        return await SendAndWaitAsync(_analyzerSession!, "analyzer", prompt, ct);
+        if (_stubMode || _analyzerSession is null)
+        {
+            _logger.LogWarning("AnalyzeAsync called while Copilot is not configured — returning empty response.");
+            return string.Empty;
+        }
+        return await SendAndWaitAsync(_analyzerSession, "analyzer", prompt, ct);
     }
 
     public async Task<string> GenerateAsync(string prompt, CancellationToken ct = default)
     {
-        EnsureInitialized();
-        return await SendAndWaitAsync(_generatorSession!, "generator", prompt, ct);
+        if (_stubMode || _generatorSession is null)
+        {
+            _logger.LogWarning("GenerateAsync called while Copilot is not configured — returning empty response.");
+            return string.Empty;
+        }
+        return await SendAndWaitAsync(_generatorSession, "generator", prompt, ct);
     }
 
     private async Task<string> SendAndWaitAsync(
@@ -138,44 +245,78 @@ public sealed class CopilotService : ICopilotService, IAsyncDisposable
         return
         [
             AIFunctionFactory.Create(
-                ([Description("Search query for element text, tag, or attribute")] string query,
-                 [Description("Optional tag filter (e.g. 'input', 'button')")] string? tag) =>
-                    _corpusTools.SearchCorpus(CurrentSiteId, query, tag),
-                "search_corpus",
-                "Search DOM elements across all recorded pages in the corpus"),
+                () => _corpusTools.ListRecordedPages(),
+                "list_recorded_pages",
+                "List all pages recorded for the current site, with element counts."),
 
             AIFunctionFactory.Create(
-                ([Description("Name of the page to retrieve")] string pageName) =>
-                    _corpusTools.GetPageSnapshot(CurrentSiteId, pageName),
+                ([Description("Page id (numeric) or page name to retrieve")] string pageIdOrName) =>
+                    _corpusTools.GetPageSnapshot(pageIdOrName),
                 "get_page_snapshot",
-                "Get the full DOM snapshot for a recorded page"),
+                "Get the full DOM snapshot for a recorded page (by id or name)."),
+
+            AIFunctionFactory.Create(
+                ([Description("CSS-like selector (tag, .class, #id, or substring)")] string selector) =>
+                    _corpusTools.FindSimilarElements(selector),
+                "find_similar_elements",
+                "Find elements matching a selector across all recorded pages of the current site."),
 
             AIFunctionFactory.Create(
                 () => _corpusTools.GetGeneratedControls(),
                 "get_generated_controls",
-                "List all custom controls that have been generated"),
+                "List all custom controls that have been generated, with their DOM signatures and properties."),
 
             AIFunctionFactory.Create(
-                () => _corpusTools.ListRecordedPages(CurrentSiteId),
-                "list_recorded_pages",
-                "List all pages recorded in the corpus with element counts"),
+                ([Description("Free-text query against element tags, ids, attributes, and text")] string query) =>
+                    _corpusTools.SearchCorpus(query),
+                "search_corpus",
+                "Full-text search across DOM elements of all recorded pages of the current site."),
         ];
     }
 
-    private void EnsureInitialized()
+    public async Task<IReadOnlyList<string>> ListModelsAsync(CancellationToken ct = default)
     {
-        if (_client is null || _analyzerSession is null || _generatorSession is null)
-            throw new InvalidOperationException(
-                "CopilotService not initialized. Call InitializeAsync first.");
+        if (_stubMode || _client is null)
+            return [];
+
+        try
+        {
+            var models = await _client.ListModelsAsync(ct);
+            return models.Select(m => m.Id).Order().ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "ListModelsAsync failed — returning empty list");
+            return [];
+        }
     }
 
-    public async ValueTask DisposeAsync()
+    public string? GetCliPath()
     {
-        if (_analyzerSession is not null)
-            await _analyzerSession.DisposeAsync();
-        if (_generatorSession is not null)
-            await _generatorSession.DisposeAsync();
-        if (_client is not null)
-            await _client.DisposeAsync();
+        var envPath = Environment.GetEnvironmentVariable("COPILOT_CLI_PATH");
+        if (!string.IsNullOrWhiteSpace(envPath) && File.Exists(envPath))
+            return envPath;
+
+        // The SDK's MSBuild targets place the CLI at runtimes/{rid}/native/copilot.exe.
+        var appDir = AppContext.BaseDirectory;
+        var rid = RuntimeInformation.RuntimeIdentifier;
+
+        var runtimePath = Path.Combine(appDir, "runtimes", rid, "native", "copilot.exe");
+        if (File.Exists(runtimePath))
+            return runtimePath;
+
+        // Fallback: portable RID (e.g. win-x64 when full RID is win10-x64).
+        var parts = rid.Split('-');
+        if (parts.Length >= 2)
+        {
+            var portableRid = $"{parts[0]}-{parts[^1]}";
+            var portablePath = Path.Combine(appDir, "runtimes", portableRid, "native", "copilot.exe");
+            if (File.Exists(portablePath))
+                return portablePath;
+        }
+
+        return null;
     }
+
+    public async ValueTask DisposeAsync() => await DisposeSessionAsync();
 }

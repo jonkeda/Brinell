@@ -33,6 +33,13 @@ public static class AnalysisResultParser
         }
     }
 
+    public static (List<ControlProposal> Proposals, LocatorReport? LocatorReport)
+        ParseControlObjectAnalysis(string llmResponse)
+    {
+        var result = Parse(llmResponse);
+        return (result.ProposedControls, result.LocatorReport);
+    }
+
     private static string? ExtractJson(string response)
     {
         var match = Regex.Match(response, @"```json\s*\n(.*?)```",

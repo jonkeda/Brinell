@@ -60,6 +60,37 @@ public sealed class CorpusService
             CREATE INDEX IF NOT EXISTS IX_Elements_DataTestId ON Elements(DataTestId);
             CREATE INDEX IF NOT EXISTS IX_Snapshots_SiteId ON Snapshots(SiteId);
             CREATE INDEX IF NOT EXISTS IX_Snapshots_PageName ON Snapshots(SiteId, PageName);
+
+            CREATE TABLE IF NOT EXISTS AnalysisResults (
+                Id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                SiteId      INTEGER NOT NULL,
+                AnalyzedAt  TEXT    NOT NULL,
+                IsCurrent   INTEGER NOT NULL DEFAULT 1,
+                Snapshots   INTEGER NOT NULL,
+                LocalGroups INTEGER NOT NULL,
+                ProposalsJson TEXT  NOT NULL,
+                LocatorReportJson TEXT,
+                FOREIGN KEY (SiteId) REFERENCES Sites(Id) ON DELETE CASCADE
+            );
+            CREATE INDEX IF NOT EXISTS IX_AnalysisResults_Site ON AnalysisResults(SiteId, IsCurrent);
+
+            CREATE TABLE IF NOT EXISTS PageObjects (
+                Id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                SiteId        INTEGER NOT NULL,
+                SnapshotId    INTEGER NOT NULL,
+                ClassName     TEXT    NOT NULL,
+                Namespace     TEXT    NOT NULL,
+                MainCode      TEXT    NOT NULL,
+                ContainerCodesJson TEXT NOT NULL DEFAULT '[]',
+                UsedControlsJson   TEXT NOT NULL DEFAULT '[]',
+                Status        TEXT    NOT NULL,
+                ValidationJson TEXT,
+                GeneratedAt   TEXT    NOT NULL,
+                FOREIGN KEY (SiteId) REFERENCES Sites(Id) ON DELETE CASCADE,
+                FOREIGN KEY (SnapshotId) REFERENCES Snapshots(Id) ON DELETE CASCADE,
+                UNIQUE(SnapshotId)
+            );
+            CREATE INDEX IF NOT EXISTS IX_PageObjects_Site ON PageObjects(SiteId);
             """;
         cmd.ExecuteNonQuery();
     }
@@ -123,6 +154,21 @@ public sealed class CorpusService
         if (!reader.Read()) return null;
 
         return ReadSnapshot(reader);
+    }
+
+    public DomSnapshot? GetSnapshotById(long snapshotId)
+    {
+        using var conn = Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT * FROM Snapshots WHERE Id = @id";
+        cmd.Parameters.AddWithValue("@id", snapshotId);
+
+        using var reader = cmd.ExecuteReader();
+        if (!reader.Read()) return null;
+
+        var snapshot = ReadSnapshot(reader);
+        snapshot.PageName = reader.GetString(reader.GetOrdinal("PageName"));
+        return snapshot;
     }
 
     public List<SnapshotSummary> ListSnapshots(long siteId)
@@ -257,5 +303,224 @@ public sealed class CorpusService
         foreach (var child in element.Children)
             count += CountElements(child);
         return count;
+    }
+
+    // --- AnalysisResults ---------------------------------------------------
+
+    public long StoreAnalysisResult(long siteId, ControlObjectAnalysisResult result)
+    {
+        var proposalsJson = JsonSerializer.Serialize(result.Proposals, JsonOptions);
+        var locatorJson = result.LocatorReport is null
+            ? null
+            : JsonSerializer.Serialize(result.LocatorReport, JsonOptions);
+
+        using var conn = Open();
+        using var tx = conn.BeginTransaction();
+
+        using (var markCmd = conn.CreateCommand())
+        {
+            markCmd.CommandText = "UPDATE AnalysisResults SET IsCurrent = 0 WHERE SiteId = @siteId";
+            markCmd.Parameters.AddWithValue("@siteId", siteId);
+            markCmd.ExecuteNonQuery();
+        }
+
+        long id;
+        using (var insertCmd = conn.CreateCommand())
+        {
+            insertCmd.CommandText = """
+                INSERT INTO AnalysisResults (SiteId, AnalyzedAt, IsCurrent, Snapshots, LocalGroups, ProposalsJson, LocatorReportJson)
+                VALUES (@siteId, @analyzedAt, 1, @snapshots, @localGroups, @proposalsJson, @locatorJson);
+                SELECT last_insert_rowid();
+                """;
+            insertCmd.Parameters.AddWithValue("@siteId", siteId);
+            insertCmd.Parameters.AddWithValue("@analyzedAt", result.AnalyzedAt.ToString("o"));
+            insertCmd.Parameters.AddWithValue("@snapshots", result.SnapshotsAnalyzed);
+            insertCmd.Parameters.AddWithValue("@localGroups", result.LocalGroupCount);
+            insertCmd.Parameters.AddWithValue("@proposalsJson", proposalsJson);
+            insertCmd.Parameters.AddWithValue("@locatorJson", (object?)locatorJson ?? DBNull.Value);
+            id = (long)insertCmd.ExecuteScalar()!;
+        }
+
+        tx.Commit();
+
+        _logger.LogInformation(
+            "AnalysisResult stored — Site: {SiteId}, Id: {Id}, Proposals: {Count}",
+            siteId, id, result.Proposals.Count);
+
+        return id;
+    }
+
+    public ControlObjectAnalysisResult? GetCurrentAnalysisResult(long siteId)
+    {
+        using var conn = Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = """
+            SELECT AnalyzedAt, Snapshots, LocalGroups, ProposalsJson, LocatorReportJson
+            FROM AnalysisResults
+            WHERE SiteId = @siteId AND IsCurrent = 1
+            LIMIT 1
+            """;
+        cmd.Parameters.AddWithValue("@siteId", siteId);
+
+        using var reader = cmd.ExecuteReader();
+        if (!reader.Read()) return null;
+
+        var proposalsJson = reader.GetString(3);
+        var locatorJson = reader.IsDBNull(4) ? null : reader.GetString(4);
+
+        return new ControlObjectAnalysisResult
+        {
+            AnalyzedAt = DateTimeOffset.Parse(reader.GetString(0)),
+            SnapshotsAnalyzed = reader.GetInt32(1),
+            LocalGroupCount = reader.GetInt32(2),
+            Proposals = JsonSerializer.Deserialize<List<ControlProposal>>(proposalsJson, JsonOptions) ?? [],
+            LocatorReport = locatorJson is null
+                ? null
+                : JsonSerializer.Deserialize<LocatorReport>(locatorJson, JsonOptions)
+        };
+    }
+
+    public void UpdateProposalApproval(long siteId, string proposalName, ControlObjectStatus status)
+    {
+        var current = GetCurrentAnalysisResult(siteId);
+        if (current is null)
+        {
+            _logger.LogWarning("UpdateProposalApproval — no current AnalysisResult for site {SiteId}", siteId);
+            return;
+        }
+
+        var proposal = current.Proposals.FirstOrDefault(p => p.Name == proposalName);
+        if (proposal is null)
+        {
+            _logger.LogWarning(
+                "UpdateProposalApproval — proposal {Name} not found for site {SiteId}",
+                proposalName, siteId);
+            return;
+        }
+
+        proposal.Status = status;
+        var proposalsJson = JsonSerializer.Serialize(current.Proposals, JsonOptions);
+
+        using var conn = Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = """
+            UPDATE AnalysisResults
+            SET ProposalsJson = @proposalsJson
+            WHERE SiteId = @siteId AND IsCurrent = 1
+            """;
+        cmd.Parameters.AddWithValue("@siteId", siteId);
+        cmd.Parameters.AddWithValue("@proposalsJson", proposalsJson);
+        cmd.ExecuteNonQuery();
+
+        _logger.LogInformation(
+            "Proposal status updated — Site: {SiteId}, Name: {Name}, Status: {Status}",
+            siteId, proposalName, status);
+    }
+
+    // --- PageObjects -------------------------------------------------------
+
+    public void StorePageObject(PageGenerationResult result)
+    {
+        var containerCodesJson = JsonSerializer.Serialize(result.ContainerCodes, JsonOptions);
+        var usedControlsJson = JsonSerializer.Serialize(result.CustomControlsUsed, JsonOptions);
+        var validationJson = JsonSerializer.Serialize(result.Validation, JsonOptions);
+
+        using var conn = Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = """
+            INSERT OR REPLACE INTO PageObjects
+                (SiteId, SnapshotId, ClassName, Namespace, MainCode, ContainerCodesJson, UsedControlsJson, Status, ValidationJson, GeneratedAt)
+            VALUES
+                (@siteId, @snapshotId, @className, @namespace, @mainCode, @containerCodesJson, @usedControlsJson, @status, @validationJson, @generatedAt)
+            """;
+        cmd.Parameters.AddWithValue("@siteId", result.SiteId);
+        cmd.Parameters.AddWithValue("@snapshotId", result.SnapshotId);
+        cmd.Parameters.AddWithValue("@className", result.ClassName);
+        cmd.Parameters.AddWithValue("@namespace", result.Namespace);
+        cmd.Parameters.AddWithValue("@mainCode", result.MainCode);
+        cmd.Parameters.AddWithValue("@containerCodesJson", containerCodesJson);
+        cmd.Parameters.AddWithValue("@usedControlsJson", usedControlsJson);
+        cmd.Parameters.AddWithValue("@status", result.Status.ToString());
+        cmd.Parameters.AddWithValue("@validationJson", (object?)validationJson ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@generatedAt", result.GeneratedAt.ToString("o"));
+        cmd.ExecuteNonQuery();
+
+        _logger.LogInformation(
+            "PageObject stored — Site: {SiteId}, Snapshot: {SnapshotId}, Class: {ClassName}",
+            result.SiteId, result.SnapshotId, result.ClassName);
+    }
+
+    public List<PageGenerationResult> GetPageObjects(long siteId)
+    {
+        using var conn = Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = """
+            SELECT SiteId, SnapshotId, ClassName, Namespace, MainCode, ContainerCodesJson, UsedControlsJson, Status, ValidationJson, GeneratedAt
+            FROM PageObjects
+            WHERE SiteId = @siteId
+            ORDER BY GeneratedAt DESC
+            """;
+        cmd.Parameters.AddWithValue("@siteId", siteId);
+
+        using var reader = cmd.ExecuteReader();
+        var results = new List<PageGenerationResult>();
+        while (reader.Read())
+        {
+            results.Add(ReadPageObject(reader));
+        }
+        return results;
+    }
+
+    public PageGenerationResult? GetPageObjectBySnapshot(long snapshotId)
+    {
+        using var conn = Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = """
+            SELECT SiteId, SnapshotId, ClassName, Namespace, MainCode, ContainerCodesJson, UsedControlsJson, Status, ValidationJson, GeneratedAt
+            FROM PageObjects
+            WHERE SnapshotId = @snapshotId
+            LIMIT 1
+            """;
+        cmd.Parameters.AddWithValue("@snapshotId", snapshotId);
+
+        using var reader = cmd.ExecuteReader();
+        if (!reader.Read()) return null;
+
+        return ReadPageObject(reader);
+    }
+
+    public void DeletePageObject(long snapshotId)
+    {
+        using var conn = Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "DELETE FROM PageObjects WHERE SnapshotId = @snapshotId";
+        cmd.Parameters.AddWithValue("@snapshotId", snapshotId);
+        cmd.ExecuteNonQuery();
+
+        _logger.LogInformation("PageObject deleted — Snapshot: {SnapshotId}", snapshotId);
+    }
+
+    private static PageGenerationResult ReadPageObject(SqliteDataReader reader)
+    {
+        var containerCodesJson = reader.GetString(5);
+        var usedControlsJson = reader.GetString(6);
+        var statusText = reader.GetString(7);
+        var validationJson = reader.IsDBNull(8) ? null : reader.GetString(8);
+
+        return new PageGenerationResult
+        {
+            SiteId = reader.GetInt64(0),
+            SnapshotId = reader.GetInt64(1),
+            ClassName = reader.GetString(2),
+            Namespace = reader.GetString(3),
+            MainCode = reader.GetString(4),
+            ContainerCodes = JsonSerializer.Deserialize<List<string>>(containerCodesJson, JsonOptions) ?? [],
+            CustomControlsUsed = JsonSerializer.Deserialize<List<string>>(usedControlsJson, JsonOptions) ?? [],
+            Status = Enum.TryParse<PageObjectStatus>(statusText, out var s) ? s : PageObjectStatus.NotGenerated,
+            Validation = validationJson is null
+                ? new ValidationResult()
+                : JsonSerializer.Deserialize<ValidationResult>(validationJson, JsonOptions) ?? new ValidationResult(),
+            GeneratedAt = DateTimeOffset.Parse(reader.GetString(9))
+        };
     }
 }

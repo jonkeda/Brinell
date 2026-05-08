@@ -52,6 +52,9 @@ public partial class App : Application
         // Data
         services.AddSingleton<CorpusDatabase>();
 
+        // App-wide settings (Step 12.8)
+        services.AddSingleton<AppSettings>();
+
         var dbPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "Brinell.Scraper", "scraper.db");
@@ -66,24 +69,25 @@ public partial class App : Application
         services.AddSingleton<SnapshotExportService>();
 
         // Services (Phase 5 — LLM Code Generation)
+        services.AddSingleton<ISessionContext, SessionContext>();
         services.AddSingleton<ICopilotService, CopilotService>();
         services.AddSingleton<IControlRegistry>(sp =>
             new ControlRegistry(connectionString, sp.GetRequiredService<ILogger<ControlRegistry>>()));
         services.AddSingleton<CorpusService>(sp =>
             new CorpusService(connectionString, sp.GetRequiredService<ILogger<CorpusService>>()));
         services.AddSingleton<CorpusTools>();
-        services.AddSingleton<SkillService>(sp =>
-        {
-            var skillsDir = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "Brinell.Scraper", "skills");
-            return new SkillService(skillsDir, sp.GetRequiredService<ILogger<SkillService>>());
-        });
+        services.AddSingleton<SkillService>();
         services.AddSingleton<RetryService>();
+        services.AddSingleton<LlmRetryHelper>();
         services.AddSingleton<PromptBuilder>();
         services.AddSingleton<AnalysisService>();
         services.AddSingleton<ControlGenerationService>();
         services.AddSingleton<PageGenerationService>();
+        services.AddSingleton<CodeOutputService>();
+        services.AddSingleton<CssSignatureParser>();
+        services.AddSingleton<ControlObjectMatcher>();
+        services.AddSingleton<ControlObjectAnalyzer>();
+        services.AddSingleton<PipelineOrchestrator>();
 
         // ViewModels
         services.AddSingleton<MainViewModel>();
@@ -99,8 +103,20 @@ public partial class App : Application
         services.AddTransient<CorpusBrowserViewModel>();
         services.AddSingleton<LogViewerViewModel>();
 
+        // Workspace shell (Step 12.2)
+        services.AddTransient<ViewModels.Tabs.SessionPanelViewModel>();
+        services.AddTransient<ViewModels.Tabs.ScrapingTabViewModel>();
+        services.AddTransient<ViewModels.Tabs.ControlObjectsTabViewModel>();
+        services.AddTransient<ViewModels.Tabs.PageObjectsTabViewModel>();
+        services.AddTransient<ViewModels.Tabs.CorpusTabViewModel>();
+        services.AddTransient<ViewModels.Tabs.SettingsTabViewModel>();
+        services.AddTransient<WorkspaceViewModel>();
+        services.AddTransient<Views.WorkspacePage>();
+
         // Views
         services.AddTransient<MainWindow>();
+        services.AddTransient<Views.StartPage>();
+        services.AddTransient<StartPageViewModel>();
 
         Services = services.BuildServiceProvider();
 

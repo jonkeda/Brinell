@@ -1,24 +1,28 @@
 using System.IO;
 using System.Text;
-using Brinell.Scraper.Models;
 using Microsoft.Extensions.Logging;
 
 namespace Brinell.Scraper.Services;
 
 public sealed class SkillService
 {
-    private readonly string _skillsDirectory;
+    private readonly IControlRegistry _registry;
+    private readonly AppSettings _settings;
     private readonly ILogger<SkillService> _logger;
 
-    public SkillService(string skillsDirectory, ILogger<SkillService> logger)
+    public SkillService(
+        IControlRegistry registry,
+        AppSettings settings,
+        ILogger<SkillService> logger)
     {
-        _skillsDirectory = skillsDirectory;
+        _registry = registry;
+        _settings = settings;
         _logger = logger;
     }
 
     public void EnsureBrinellConventionsSkill()
     {
-        var dir = Path.Combine(_skillsDirectory, "brinell-conventions");
+        var dir = Path.Combine(_settings.SkillsRoot, "brinell-conventions");
         Directory.CreateDirectory(dir);
 
         var skillPath = Path.Combine(dir, "SKILL.md");
@@ -29,42 +33,47 @@ public sealed class SkillService
         }
     }
 
-    public void GenerateSiteControlsSkill(string siteName, IReadOnlyList<GeneratedControl> controls)
+    public async Task GenerateSiteControlsSkillAsync(
+        long siteId, string siteSlug, CancellationToken ct = default)
     {
-        var dir = Path.Combine(_skillsDirectory, $"{siteName}-controls");
-        Directory.CreateDirectory(dir);
+        // TODO: filter by siteId once IControlRegistry exposes per-site queries.
+        _ = siteId;
+        var controls = _registry.GetAllControls();
 
-        var content = BuildSiteControlsSkillContent(siteName, controls);
-        File.WriteAllText(Path.Combine(dir, "SKILL.md"), content);
+        var skillDir = Path.Combine(_settings.SkillsRoot, $"{siteSlug}-controls");
+        Directory.CreateDirectory(skillDir);
+        var skillPath = Path.Combine(skillDir, "SKILL.md");
 
-        _logger.LogInformation(
-            "Generated {SiteName}-controls skill with {ControlCount} controls",
-            siteName, controls.Count);
-    }
-
-    private static string BuildSiteControlsSkillContent(
-        string siteName, IReadOnlyList<GeneratedControl> controls)
-    {
         var sb = new StringBuilder();
-        sb.AppendLine($"# {siteName} — Custom Controls");
+        sb.AppendLine($"# {siteSlug} — Custom Control Objects");
         sb.AppendLine();
-        sb.AppendLine("Use these site-specific controls when their DOM patterns are detected.");
+        sb.AppendLine("These ControlObjects are available to use as typed properties in PageObject classes for this site.");
         sb.AppendLine();
 
-        foreach (var ctrl in controls)
+        foreach (var c in controls)
         {
-            sb.AppendLine($"## {ctrl.Name}");
+            sb.AppendLine($"## {c.Name}");
+            sb.AppendLine($"- DOM signature: `{c.DomSignature}`");
             sb.AppendLine();
-            sb.AppendLine($"**DOM signature:** `{ctrl.DomSignature}`");
-            sb.AppendLine();
+            sb.AppendLine("Usage:");
             sb.AppendLine("```csharp");
-            sb.AppendLine(ctrl.Code);
+            sb.AppendLine($"public {c.Name}<MyPage> {SuggestPropertyName(c.Name)} =>");
+            sb.AppendLine($"    Control<{c.Name}<MyPage>>(Locator.ByCss(\"{c.DomSignature}\"));");
             sb.AppendLine("```");
             sb.AppendLine();
         }
 
-        return sb.ToString();
+        await File.WriteAllTextAsync(skillPath, sb.ToString(), ct);
+
+        _logger.LogInformation(
+            "Generated skill {Path} with {Count} controls",
+            skillPath, controls.Count);
     }
+
+    private static string SuggestPropertyName(string controlName) =>
+        controlName.EndsWith("Container", StringComparison.Ordinal)
+            ? controlName[..^"Container".Length]
+            : controlName;
 
     private const string BrinellConventionsContent = """
         # Brinell Framework Conventions

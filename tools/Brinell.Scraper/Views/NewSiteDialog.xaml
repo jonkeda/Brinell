@@ -20,7 +20,8 @@
         </Grid.ColumnDefinitions>
 
         <TextBlock Grid.Row="0" Grid.Column="0" Text="Site name:" VerticalAlignment="Center" Margin="0,0,0,8"/>
-        <TextBox Grid.Row="0" Grid.Column="1" x:Name="NameBox" Margin="0,0,0,8"/>
+        <TextBox Grid.Row="0" Grid.Column="1" x:Name="NameBox" Margin="0,0,0,8"
+                 TextChanged="NameBox_TextChanged"/>
 
         <TextBlock Grid.Row="1" Grid.Column="0" Text="Start URL:" VerticalAlignment="Center" Margin="0,0,0,8"/>
         <TextBox Grid.Row="1" Grid.Column="1" x:Name="UrlBox" Margin="0,0,0,8"/>

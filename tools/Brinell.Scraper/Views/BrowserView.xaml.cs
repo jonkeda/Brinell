@@ -67,6 +67,9 @@ public partial class BrowserView : UserControl
 
         // Expose CoreWebView2 to the ViewModel layer
         _vm.GetCoreWebView2 = () => WebView.CoreWebView2;
+
+        // Replay any navigation that was requested before WebView2 was ready
+        _vm.ConsumePendingNavigation();
     }
 
     private void OnNavigateRequested(string url)

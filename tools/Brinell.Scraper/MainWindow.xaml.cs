@@ -1,5 +1,5 @@
 using System.Windows;
-using System.Windows.Input;
+using Brinell.Scraper.Models;
 using Brinell.Scraper.ViewModels;
 using Brinell.Scraper.Views;
 using Microsoft.Extensions.DependencyInjection;
@@ -8,84 +8,106 @@ namespace Brinell.Scraper;
 
 public partial class MainWindow : Window
 {
-    private readonly MainViewModel _vm;
-    private BrowserView? _browserView;
-    private SiteSelectionView? _siteSelectionView;
+    private readonly IServiceProvider _services;
 
-    public MainWindow(MainViewModel vm)
+    private StartPageViewModel? _startVm;
+    private WorkspaceViewModel? _workspaceVm;
+    private Action? _workspaceBackHandler;
+
+    public MainWindow(IServiceProvider services)
     {
         InitializeComponent();
-        _vm = vm;
-        DataContext = vm;
+        _services = services;
+        Loaded += (_, _) => ShowStartPage();
+        Closed += (_, _) => DisposeWorkspace();
+    }
 
-        _vm.SiteSelectorRequested += ShowSiteSelector;
-        _vm.BrowserViewRequested += ShowBrowserView;
-        _vm.CorpusBrowserRequested += ShowCorpusBrowser;
-        _vm.ControlsManagerRequested += ShowControlsManager;
-        _vm.AnalysisViewRequested += ShowAnalysisView;
-        _vm.PropertyChanged += (_, e) =>
+    private void ShowStartPage()
+    {
+        DisposeWorkspace();
+        DisposeStart();
+
+        var vm = _services.GetRequiredService<StartPageViewModel>();
+        vm.SiteSelected += OnSiteSelected;
+        vm.SiteOpenWithUrlRequested += OnSiteOpenWithUrl;
+        vm.SettingsRequested += OnSettingsRequested;
+        _startVm = vm;
+
+        _ = vm.LoadAsync();
+
+        RootContent.Content = new StartPage { DataContext = vm };
+    }
+
+    private void OnSiteSelected(SiteCardItem card)
+    {
+        DisposeStart();
+
+        var vm = _services.GetRequiredService<WorkspaceViewModel>();
+        _workspaceVm = vm;
+        _workspaceBackHandler = ShowStartPage;
+        vm.BackRequested += _workspaceBackHandler;
+
+        _ = vm.LoadAsync(card.Id);
+
+        RootContent.Content = new WorkspacePage { DataContext = vm };
+    }
+
+    private void OnSiteOpenWithUrl(long siteId, string url)
+    {
+        DisposeStart();
+
+        var vm = _services.GetRequiredService<WorkspaceViewModel>();
+        _workspaceVm = vm;
+        _workspaceBackHandler = ShowStartPage;
+        vm.BackRequested += _workspaceBackHandler;
+
+        _ = vm.LoadAsync(siteId, navigateUrl: url);
+
+        RootContent.Content = new WorkspacePage { DataContext = vm };
+    }
+
+    private void OnSettingsRequested()
+    {
+        DisposeStart();
+
+        var vm = _services.GetRequiredService<WorkspaceViewModel>();
+        _workspaceVm = vm;
+        _workspaceBackHandler = ShowStartPage;
+        vm.BackRequested += _workspaceBackHandler;
+
+        vm.LoadStandaloneSettings();
+        vm.SelectedTabIndex = 5;
+
+        RootContent.Content = new WorkspacePage { DataContext = vm };
+    }
+
+    private void DisposeStart()
+    {
+        if (_startVm is null) return;
+
+        _startVm.SiteSelected -= OnSiteSelected;
+        _startVm.SiteOpenWithUrlRequested -= OnSiteOpenWithUrl;
+        _startVm.SettingsRequested -= OnSettingsRequested;
+        _startVm = null;
+    }
+
+    private void DisposeWorkspace()
+    {
+        if (_workspaceVm is null) return;
+
+        if (_workspaceBackHandler is not null)
+            _workspaceVm.BackRequested -= _workspaceBackHandler;
+        _workspaceBackHandler = null;
+
+        // Detach UI before disposing so WebView2 hosted in the previous page
+        // is torn down via WorkspacePage.Unloaded.
+        if (RootContent.Content is WorkspacePage page)
         {
-            if (e.PropertyName == nameof(MainViewModel.IsLogViewerVisible))
-                LogViewerRow.Height = _vm.IsLogViewerVisible
-                    ? new GridLength(180)
-                    : new GridLength(0);
-        };
-
-        Loaded += OnLoaded;
-    }
-
-    private void OnLoaded(object sender, RoutedEventArgs e)
-    {
-        var logViewerVm = App.Services.GetRequiredService<LogViewerViewModel>();
-        LogViewerPanel.Initialize(logViewerVm);
-
-        ShowSiteSelector();
-    }
-
-    private void ShowSiteSelector()
-    {
-        _siteSelectionView ??= new SiteSelectionView { DataContext = _vm.SiteSelection };
-        ContentArea.Content = _siteSelectionView;
-    }
-
-    private void ShowBrowserView()
-    {
-        if (_browserView is null)
-        {
-            _browserView = new BrowserView();
-            _browserView.Initialize(_vm.Browser);
+            page.DataContext = null;
+            RootContent.Content = null;
         }
-        ContentArea.Content = _browserView;
 
-        // Trigger initial navigation if address is set
-        if (!string.IsNullOrWhiteSpace(_vm.Browser.AddressUrl))
-            _vm.Browser.NavigateCommand.Execute(null);
-    }
-
-    private void AddressBar_KeyDown(object sender, KeyEventArgs e)
-    {
-        if (e.Key == Key.Enter && _vm.Browser.NavigateCommand.CanExecute(null))
-        {
-            _vm.Browser.NavigateCommand.Execute(null);
-            e.Handled = true;
-        }
-    }
-
-    private void ShowCorpusBrowser(CorpusBrowserViewModel vm)
-    {
-        var view = new CorpusBrowserView { DataContext = vm };
-        ContentArea.Content = view;
-    }
-
-    private void ShowControlsManager(ControlsManagerViewModel vm)
-    {
-        var view = new ControlsManagerView { DataContext = vm };
-        ContentArea.Content = view;
-    }
-
-    private void ShowAnalysisView(AnalysisViewModel vm)
-    {
-        var view = new AnalysisView { DataContext = vm };
-        ContentArea.Content = view;
+        _workspaceVm.Dispose();
+        _workspaceVm = null;
     }
 }

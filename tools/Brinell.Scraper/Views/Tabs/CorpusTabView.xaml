@@ -1,0 +1,248 @@
+<UserControl x:Class="Brinell.Scraper.Views.Tabs.CorpusTabView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:models="clr-namespace:Brinell.Scraper.Models"
+             xmlns:views="clr-namespace:Brinell.Scraper.Views">
+    <DockPanel LastChildFill="True">
+        <!-- Toolbar -->
+        <Border DockPanel.Dock="Top"
+                Background="#FAFBFD"
+                BorderBrush="#E2E2E6"
+                BorderThickness="0,0,0,1">
+            <StackPanel Orientation="Horizontal" Margin="8,6">
+                <Button Content="📷 Re-Record All"
+                        Command="{Binding ReRecordAllCommand}"
+                        Padding="10,4" Margin="0,0,4,0"/>
+                <Button Content="🔄 Refresh"
+                        Command="{Binding RefreshCommand}"
+                        Padding="10,4" Margin="0,0,12,0"/>
+                <Button Content="📤 Export"
+                        Command="{Binding ExportCommand}"
+                        Padding="10,4" Margin="0,0,4,0"/>
+                <Button Content="📥 Import"
+                        Command="{Binding ImportCommand}"
+                        Padding="10,4" Margin="0,0,12,0"/>
+                <Button Content="🗑 Delete Selected"
+                        Command="{Binding DeleteSelectedCommand}"
+                        Padding="10,4"/>
+            </StackPanel>
+        </Border>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="300"/>
+                <ColumnDefinition Width="4"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Left panel: filter + page list + totals -->
+            <DockPanel Grid.Column="0" Margin="6">
+                <TextBox DockPanel.Dock="Top"
+                         Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}"
+                         Padding="6,4" Margin="0,0,0,6"
+                         ToolTip="Filter by page name or URL"/>
+
+                <Border DockPanel.Dock="Bottom"
+                        BorderBrush="#E2E2E6" BorderThickness="0,1,0,0"
+                        Padding="4,6" Margin="0,6,0,0">
+                    <StackPanel>
+                        <TextBlock>
+                            <Run Text="Pages: "/>
+                            <Run Text="{Binding TotalPages, Mode=OneWay}" FontWeight="SemiBold"/>
+                        </TextBlock>
+                        <TextBlock>
+                            <Run Text="Snapshots: "/>
+                            <Run Text="{Binding TotalSnapshots, Mode=OneWay}" FontWeight="SemiBold"/>
+                        </TextBlock>
+                        <TextBlock>
+                            <Run Text="Elements: "/>
+                            <Run Text="{Binding TotalElements, Mode=OneWay}" FontWeight="SemiBold"/>
+                        </TextBlock>
+                        <TextBlock>
+                            <Run Text="Size: "/>
+                            <Run Text="{Binding TotalSizeLabel, Mode=OneWay}" FontWeight="SemiBold"/>
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+
+                <ListBox x:Name="PagesList"
+                         ItemsSource="{Binding FilteredPages}"
+                         SelectedItem="{Binding SelectedPage}"
+                         HorizontalContentAlignment="Stretch">
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                            <Setter Property="Tag"
+                                    Value="{Binding DataContext, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                            <Setter Property="ContextMenu">
+                                <Setter.Value>
+                                    <ContextMenu>
+                                        <MenuItem Header="Re-Record"
+                                                  Command="{Binding PlacementTarget.Tag.ReRecordPageCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                        <MenuItem Header="Open in Browser"
+                                                  Command="{Binding PlacementTarget.Tag.OpenInBrowserCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                  CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                        <MenuItem Header="Export Page"
+                                                  Command="{Binding PlacementTarget.Tag.ExportPageCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                        <Separator/>
+                                        <MenuItem Header="Delete All Versions"
+                                                  Command="{Binding PlacementTarget.Tag.DeleteAllVersionsCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                    </ContextMenu>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate DataType="{x:Type models:CorpusPageGroup}">
+                            <Grid Margin="2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Margin="0,0,6,0">
+                                    <TextBlock Text="{Binding PageName}"
+                                               FontWeight="SemiBold"
+                                               TextTrimming="CharacterEllipsis"/>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding TotalElements, StringFormat='{}{0} elem'}"
+                                                   Foreground="#888" FontSize="11"/>
+                                        <TextBlock Text=" • " Foreground="#888" FontSize="11"/>
+                                        <TextBlock Text="{Binding VersionsLabel}"
+                                                   Foreground="#888" FontSize="11"/>
+                                    </StackPanel>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding ControlObjectIcon}"
+                                               ToolTip="Control objects"
+                                               Margin="0,0,4,0" FontSize="13"/>
+                                    <TextBlock Text="{Binding PageObjectIcon}"
+                                               ToolTip="Page object"
+                                               FontSize="13"/>
+                                </StackPanel>
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+
+            <GridSplitter Grid.Column="1" Width="4"
+                          ResizeBehavior="PreviousAndNext"
+                          HorizontalAlignment="Stretch"
+                          Background="#E2E2E6"/>
+
+            <!-- Detail -->
+            <ScrollViewer Grid.Column="2"
+                          VerticalScrollBarVisibility="Auto"
+                          Margin="6">
+                <StackPanel>
+                    <!-- 1. Page header -->
+                    <Border BorderBrush="#E2E2E6" BorderThickness="1"
+                            CornerRadius="4" Padding="10" Margin="0,0,0,8"
+                            Background="#FAFBFD"
+                            DataContext="{Binding SelectedPage}">
+                        <StackPanel>
+                            <TextBlock Text="{Binding PageName, FallbackValue='(no selection)'}"
+                                       FontSize="18" FontWeight="Bold"/>
+                            <TextBlock Text="{Binding PageUrl}"
+                                       Foreground="#666" Margin="0,2,0,0"
+                                       TextTrimming="CharacterEllipsis"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                <TextBlock Text="Versions:" Foreground="#666" Margin="0,0,4,0"/>
+                                <TextBlock Text="{Binding Versions.Count, Mode=OneWay}" Margin="0,0,16,0"/>
+                                <TextBlock Text="Latest:" Foreground="#666" Margin="0,0,4,0"/>
+                                <TextBlock Text="{Binding LatestSnapshot.CapturedAt, StringFormat='{}{0:yyyy-MM-dd HH:mm}', FallbackValue='—'}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 2. Version history -->
+                    <DockPanel Margin="0,0,0,8" DataContext="{Binding SelectedPage}">
+                        <TextBlock DockPanel.Dock="Top"
+                                   Text="Version History"
+                                   FontWeight="SemiBold" Margin="0,0,0,4"/>
+                        <DataGrid ItemsSource="{Binding Versions}"
+                                  SelectedItem="{Binding DataContext.SelectedVersion, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                  AutoGenerateColumns="False"
+                                  IsReadOnly="True"
+                                  CanUserAddRows="False"
+                                  CanUserDeleteRows="False"
+                                  HeadersVisibility="Column"
+                                  GridLinesVisibility="Horizontal"
+                                  BorderBrush="#E2E2E6"
+                                  MinHeight="100"
+                                  MaxHeight="240">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Version"
+                                                    Binding="{Binding VersionLabel}"
+                                                    Width="110"/>
+                                <DataGridTextColumn Header="Captured"
+                                                    Binding="{Binding CapturedAt, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}"
+                                                    Width="150"/>
+                                <DataGridTextColumn Header="Elems"
+                                                    Binding="{Binding ElementCount}"
+                                                    Width="70"/>
+                                <DataGridTextColumn Header="Size"
+                                                    Binding="{Binding SizeLabel}"
+                                                    Width="90"/>
+                                <DataGridTemplateColumn Header="Page Object" Width="130">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" Margin="4,0">
+                                                <TextBlock Text="{Binding PageObjectIcon}" Margin="0,0,4,0"/>
+                                                <TextBlock Text="{Binding PageObjectLabel}" Foreground="#666"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="Actions" Width="*">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" Margin="2,0">
+                                                <Button Content="View"
+                                                        Padding="6,2" Margin="0,0,4,0"
+                                                        Command="{Binding DataContext.ViewVersionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                        CommandParameter="{Binding}"/>
+                                                <Button Content="Compare ↔ latest"
+                                                        Padding="6,2" Margin="0,0,4,0"
+                                                        Command="{Binding DataContext.CompareCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                        CommandParameter="{Binding}"/>
+                                                <Button Content="Generate"
+                                                        Padding="6,2"
+                                                        Command="{Binding DataContext.GeneratePageObjectCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                        CommandParameter="{Binding}"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </DockPanel>
+
+                    <!-- 3. DOM preview -->
+                    <DockPanel Margin="0,0,0,8">
+                        <TextBlock DockPanel.Dock="Top"
+                                   Text="DOM Preview"
+                                   FontWeight="SemiBold" Margin="0,0,0,4"/>
+                        <Border BorderBrush="#E2E2E6" BorderThickness="1"
+                                MinHeight="220" MaxHeight="360">
+                            <views:DomTreePanel DataContext="{Binding DomTree}"/>
+                        </Border>
+                    </DockPanel>
+
+                    <!-- 4. Element stats -->
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Top"
+                                   Text="Element Stats"
+                                   FontWeight="SemiBold" Margin="0,0,0,4"/>
+                        <Border BorderBrush="#E2E2E6" BorderThickness="1"
+                                Padding="10" Background="#FAFBFD">
+                            <TextBlock Text="{Binding ElementStatsText}"
+                                       FontFamily="Consolas" FontSize="12"
+                                       TextWrapping="Wrap"/>
+                        </Border>
+                    </DockPanel>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+    </DockPanel>
+</UserControl>

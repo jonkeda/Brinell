@@ -239,4 +239,30 @@ public sealed class CorpusDatabase
         cmd.Parameters.AddWithValue("@siteId", siteId);
         cmd.ExecuteNonQuery();
     }
+
+    public void DeleteSite(long siteId)
+    {
+        using var connection = new SqliteConnection(ConnectionString);
+        connection.Open();
+
+        using var tx = connection.BeginTransaction();
+
+        using (var cmd = connection.CreateCommand())
+        {
+            cmd.CommandText = "DELETE FROM Pages WHERE SiteId = @id";
+            cmd.Parameters.AddWithValue("@id", siteId);
+            cmd.ExecuteNonQuery();
+        }
+
+        using (var cmd = connection.CreateCommand())
+        {
+            cmd.CommandText = "DELETE FROM Sites WHERE Id = @id";
+            cmd.Parameters.AddWithValue("@id", siteId);
+            cmd.ExecuteNonQuery();
+        }
+
+        tx.Commit();
+
+        _logger.LogInformation("Site deleted — Id: {SiteId}", siteId);
+    }
 }

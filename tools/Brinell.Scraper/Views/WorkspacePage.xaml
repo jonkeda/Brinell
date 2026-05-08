@@ -1,0 +1,109 @@
+<UserControl x:Class="Brinell.Scraper.Views.WorkspacePage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:tabs="clr-namespace:Brinell.Scraper.Views.Tabs"
+             mc:Ignorable="d"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006">
+    <UserControl.Resources>
+        <Style x:Key="FlatTabItemStyle" TargetType="TabItem">
+            <Setter Property="Foreground" Value="#444"/>
+            <Setter Property="Padding" Value="14,8"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Grid>
+                            <Border x:Name="Bd"
+                                    Background="{TemplateBinding Background}"
+                                    Padding="{TemplateBinding Padding}">
+                                <ContentPresenter x:Name="ContentSite"
+                                                  ContentSource="Header"
+                                                  HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"/>
+                            </Border>
+                            <Border x:Name="Underline"
+                                    Height="2"
+                                    VerticalAlignment="Bottom"
+                                    Background="Transparent"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#F0F2F7"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Foreground" Value="#1F4FD1"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                <Setter TargetName="Underline" Property="Background" Value="#1F4FD1"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="FlatTabControlStyle" TargetType="TabControl">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+        </Style>
+        <Style x:Key="BackButtonStyle" TargetType="Button">
+            <Setter Property="Padding" Value="10,4"/>
+            <Setter Property="Background" Value="#F4F4F6"/>
+            <Setter Property="BorderBrush" Value="#DADADD"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+    </UserControl.Resources>
+
+    <DockPanel LastChildFill="True">
+        <Border DockPanel.Dock="Top"
+                Height="40"
+                Background="#FAFBFD"
+                BorderBrush="#E2E2E6"
+                BorderThickness="0,0,0,1">
+            <DockPanel LastChildFill="True" Margin="8,0">
+                <Button DockPanel.Dock="Left"
+                        Content="🔙 Back"
+                        Style="{StaticResource BackButtonStyle}"
+                        Command="{Binding BackCommand}"
+                        VerticalAlignment="Center"
+                        Margin="0,0,12,0"/>
+                <TextBlock DockPanel.Dock="Right"
+                           Text="{Binding ActiveSite.StartUrl}"
+                           Foreground="#888"
+                           VerticalAlignment="Center"
+                           Margin="12,0,4,0"
+                           TextTrimming="CharacterEllipsis"/>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Site:" Foreground="#666" Margin="0,0,6,0"/>
+                    <TextBlock Text="{Binding ActiveSite.Name}" FontWeight="Bold"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <TabControl Style="{StaticResource FlatTabControlStyle}"
+                    TabStripPlacement="Top"
+                    SelectedIndex="{Binding SelectedTabIndex}">
+            <TabItem Header="Scraping" Style="{StaticResource FlatTabItemStyle}">
+                <tabs:ScrapingTabView DataContext="{Binding Scraping}"/>
+            </TabItem>
+            <TabItem Header="Control Objects" Style="{StaticResource FlatTabItemStyle}">
+                <tabs:ControlObjectsTabView DataContext="{Binding ControlObjects}"/>
+            </TabItem>
+            <TabItem Header="Page Objects" Style="{StaticResource FlatTabItemStyle}">
+                <tabs:PageObjectsTabView DataContext="{Binding PageObjects}"/>
+            </TabItem>
+            <TabItem Header="Corpus" Style="{StaticResource FlatTabItemStyle}">
+                <tabs:CorpusTabView DataContext="{Binding Corpus}"/>
+            </TabItem>
+            <TabItem Header="Log" Style="{StaticResource FlatTabItemStyle}">
+                <tabs:LogTabView DataContext="{Binding Log}"/>
+            </TabItem>
+            <TabItem Header="Settings" Style="{StaticResource FlatTabItemStyle}">
+                <tabs:SettingsTabView DataContext="{Binding Settings}"/>
+            </TabItem>
+        </TabControl>
+    </DockPanel>
+</UserControl>

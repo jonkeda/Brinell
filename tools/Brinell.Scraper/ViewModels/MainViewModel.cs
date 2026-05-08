@@ -256,14 +256,27 @@ public sealed class MainViewModel : ViewModelBase
         await vm.RunAnalysisAsync(ActiveSite.Id, ct);
     }
 
-    // Step 2: Lazy CopilotService init
+    // Step 13.8: Copilot session is owned by WorkspaceViewModel (initialized when a site is opened).
+    // MainViewModel just verifies a session exists before triggering analysis.
     private async Task EnsureCopilotInitializedAsync()
     {
         if (_copilotInitialized) return;
         var copilot = App.Services.GetRequiredService<ICopilotService>();
-        await copilot.InitializeAsync();
+        if (ActiveSite is not null)
+        {
+            await copilot.InitializeAsync(ActiveSite.Id, SlugifySiteName(ActiveSite.Name));
+        }
         _copilotInitialized = true;
         _logger.LogInformation("CopilotService initialized (lazy)");
+    }
+
+    private static string SlugifySiteName(string s)
+    {
+        if (string.IsNullOrWhiteSpace(s)) return "site";
+        var slug = new string(s.ToLowerInvariant()
+            .Select(c => char.IsLetterOrDigit(c) ? c : '-').ToArray()).Trim('-');
+        while (slug.Contains("--")) slug = slug.Replace("--", "-");
+        return string.IsNullOrEmpty(slug) ? "site" : slug;
     }
 
     // Step 5: Export / Import
