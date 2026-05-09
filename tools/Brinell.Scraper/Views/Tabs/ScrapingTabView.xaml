@@ -6,6 +6,15 @@
              mc:Ignorable="d"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006">
+    <UserControl.Resources>
+        <Style x:Key="SidebarActionButton" TargetType="Button">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Padding" Value="8,2"/>
+            <Setter Property="Margin" Value="0,0,6,0"/>
+            <Setter Property="MinWidth" Value="72"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+    </UserControl.Resources>
     <DockPanel>
         <!-- Top toolbar -->
         <ToolBar DockPanel.Dock="Top">
@@ -39,7 +48,7 @@
                           Padding="6,2"
                           IsEnabled="False"/>
             <Button Command="{Binding Inspector.CaptureSnapshotCommand}"
-                    Content="📷" ToolTip="Capture DOM Snapshot" Padding="6,2"/>
+                    Content="📷" ToolTip="Capture DOM Snapshot (adds to session when recording, corpus otherwise)" Padding="6,2"/>
             <Separator/>
             <ToggleButton Content="📂" ToolTip="Toggle Session Panel"
                           IsChecked="{Binding IsSessionPanelVisible, Mode=OneWay}"
@@ -84,7 +93,7 @@
                 <ColumnDefinition x:Name="SessionSplitterColumn" Width="4"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition x:Name="InspectorSplitterColumn" Width="4"/>
-                <ColumnDefinition x:Name="InspectorColumn" Width="300" MinWidth="0"/>
+                <ColumnDefinition x:Name="InspectorColumn" Width="320" MinWidth="220"/>
             </Grid.ColumnDefinitions>
 
             <!-- Session panel -->
@@ -99,53 +108,76 @@
                                    FontSize="11"
                                    Margin="6,0,4,2" Foreground="#666"/>
 
-                        <TextBlock Text="This Session" FontWeight="SemiBold" FontSize="11"
-                                   Margin="6,8,4,2" Foreground="#555"/>
-                        <Separator Margin="4,0"/>
-                        <ListView ItemsSource="{Binding Session.RecordedPages}"
-                                  BorderThickness="0" Margin="2,0">
-                            <ListView.ItemTemplate>
-                                <DataTemplate>
-                                    <Button Command="{Binding DataContext.Session.NavigateToPageCommand, RelativeSource={RelativeSource AncestorType=ListView}}"
-                                            CommandParameter="{Binding}"
-                                            Padding="2,1"
-                                            HorizontalContentAlignment="Left"
-                                            Background="Transparent"
-                                            BorderThickness="0"
-                                            Cursor="Hand">
-                                        <TextBlock FontSize="11">
-                                            <Run Text="{Binding StatusIcon, Mode=OneWay}"/>
-                                            <Run Text=" "/>
-                                            <Run Text="{Binding Name, Mode=OneWay}"/>
-                                        </TextBlock>
-                                    </Button>
-                                </DataTemplate>
-                            </ListView.ItemTemplate>
-                        </ListView>
+                        <TextBlock Text="🔴 Recording"
+                                   FontWeight="SemiBold" FontSize="11"
+                                   Margin="6,8,4,0" Foreground="#b30000"
+                                   Visibility="{Binding Session.IsRecording, Converter={StaticResource BoolToVisibility}}"/>
+                        <TextBlock Text="{Binding Session.SessionSummary, Mode=OneWay}"
+                                   FontSize="11"
+                                   Margin="6,0,4,2" Foreground="#666"/>
 
-                        <TextBlock Text="Corpus" FontWeight="SemiBold" FontSize="11"
-                                   Margin="6,12,4,2" Foreground="#555"/>
-                        <Separator Margin="4,0"/>
-                        <ListView ItemsSource="{Binding Session.CorpusPages}"
-                                  BorderThickness="0" Margin="2,0">
-                            <ListView.ItemTemplate>
-                                <DataTemplate>
-                                    <Button Command="{Binding DataContext.Session.NavigateToPageCommand, RelativeSource={RelativeSource AncestorType=ListView}}"
-                                            CommandParameter="{Binding}"
-                                            Padding="2,1"
-                                            HorizontalContentAlignment="Left"
-                                            Background="Transparent"
-                                            BorderThickness="0"
-                                            Cursor="Hand">
-                                        <TextBlock FontSize="11">
-                                            <Run Text="{Binding StatusIcon, Mode=OneWay}"/>
-                                            <Run Text=" "/>
-                                            <Run Text="{Binding Name, Mode=OneWay}"/>
-                                        </TextBlock>
-                                    </Button>
-                                </DataTemplate>
-                            </ListView.ItemTemplate>
-                        </ListView>
+                        <Border Margin="6,8,6,0" Padding="6" BorderBrush="#D8D8D8" BorderThickness="1" CornerRadius="4" Background="#FAFAFA">
+                            <StackPanel>
+                                <TextBlock Text="This Session" FontWeight="SemiBold" FontSize="11" Foreground="#555"/>
+                                <Separator Margin="0,2,0,4"/>
+                                <ListView ItemsSource="{Binding Session.RecordedPages}"
+                                          SelectedItem="{Binding Session.SelectedRecordingPage, Mode=TwoWay}"
+                                          SelectionMode="Single"
+                                          BorderThickness="0" Margin="0">
+                                    <ListView.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock FontSize="11" Margin="2,1">
+                                                <Run Text="{Binding StatusIcon, Mode=OneWay}"/>
+                                                <Run Text=" "/>
+                                                <Run Text="{Binding Name, Mode=OneWay}"/>
+                                            </TextBlock>
+                                        </DataTemplate>
+                                    </ListView.ItemTemplate>
+                                </ListView>
+                                <WrapPanel Margin="0,6,0,0">
+                                    <Button Style="{StaticResource SidebarActionButton}" Content="Navigate"
+                                            Command="{Binding Session.NavigateSelectedRecordingCommand}"/>
+                                    <Button Style="{StaticResource SidebarActionButton}" Content="Remove"
+                                            Command="{Binding Session.RemoveSelectedRecordingCommand}"/>
+                                    <Button Style="{StaticResource SidebarActionButton}" Content="Clear All"
+                                            Margin="0"
+                                            Command="{Binding Session.ClearRecordingsCommand}"/>
+                                </WrapPanel>
+                                <Button Margin="0,6,0,0"
+                                    Padding="8,2"
+                                    FontSize="11"
+                                    Content="Transfer to Corpus"
+                                    Command="{Binding Session.TransferSessionToCorpusCommand}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Margin="6,8,6,8" Padding="6" BorderBrush="#D8D8D8" BorderThickness="1" CornerRadius="4" Background="#FAFAFA">
+                            <StackPanel>
+                                <TextBlock Text="Corpus" FontWeight="SemiBold" FontSize="11" Foreground="#555"/>
+                                <Separator Margin="0,2,0,4"/>
+                                <ListView ItemsSource="{Binding Session.CorpusPages}"
+                                          SelectedItem="{Binding Session.SelectedCorpusPage, Mode=TwoWay}"
+                                          SelectionMode="Single"
+                                          BorderThickness="0" Margin="0">
+                                    <ListView.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock FontSize="11" Margin="2,1">
+                                                <Run Text="{Binding StatusIcon, Mode=OneWay}"/>
+                                                <Run Text=" "/>
+                                                <Run Text="{Binding Name, Mode=OneWay}"/>
+                                            </TextBlock>
+                                        </DataTemplate>
+                                    </ListView.ItemTemplate>
+                                </ListView>
+                                <WrapPanel Margin="0,6,0,0">
+                                    <Button Style="{StaticResource SidebarActionButton}" Content="Navigate"
+                                            Command="{Binding Session.NavigateSelectedCorpusCommand}"/>
+                                    <Button Style="{StaticResource SidebarActionButton}" Content="Remove"
+                                            Margin="0"
+                                            Command="{Binding Session.RemoveSelectedCorpusCommand}"/>
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
                 </ScrollViewer>
             </DockPanel>
@@ -171,42 +203,47 @@
             </Border>
 
             <GridSplitter Grid.Column="3" Width="4" HorizontalAlignment="Stretch"
-                          ResizeBehavior="PreviousAndNext"
-                          Visibility="{Binding IsInspectorVisible, Converter={StaticResource BoolToVisibility}}"/>
+                          ResizeBehavior="PreviousAndNext"/>
 
-            <DockPanel Grid.Column="4"
-                       Visibility="{Binding IsInspectorVisible, Converter={StaticResource BoolToVisibility}}">
-                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="4">
-                    <Button Content="Select Forms"
-                            Command="{Binding Inspector.SelectAllFormsCommand}"
-                            Padding="4,2" Margin="0,0,4,0" FontSize="11"/>
-                    <Button Content="Select Inputs"
-                            Command="{Binding Inspector.SelectAllInputsCommand}"
-                            Padding="4,2" Margin="0,0,4,0" FontSize="11"/>
-                    <Button Content="Clear"
-                            Command="{Binding Inspector.ClearSelectionCommand}"
-                            Padding="4,2" FontSize="11"/>
-                </StackPanel>
-                <TextBlock DockPanel.Dock="Top" Margin="4,2"
-                           Text="{Binding Inspector.ControlGroupSummary}"
-                           FontSize="11" Foreground="#666"/>
-                <ItemsControl DockPanel.Dock="Top"
-                              ItemsSource="{Binding Inspector.ControlGroups}"
-                              MaxHeight="120" Margin="4,2">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock FontSize="11" Margin="2,1"
-                                       Text="{Binding ContainerType, Mode=OneWay}"/>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-                <TextBlock DockPanel.Dock="Bottom" Margin="4,2"
-                           FontSize="11" Foreground="#888">
-                    <Run Text="Selected: "/>
-                    <Run Text="{Binding Inspector.SelectedCount, Mode=OneWay}"/>
-                </TextBlock>
-                <views:DomTreePanel DataContext="{Binding Inspector.DomTree}"/>
-            </DockPanel>
+            <Grid Grid.Column="4">
+                <DockPanel Visibility="{Binding IsInspectorVisible, Converter={StaticResource BoolToVisibility}}">
+                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="4">
+                        <Button Content="Select Forms"
+                                Command="{Binding Inspector.SelectAllFormsCommand}"
+                                Padding="4,2" Margin="0,0,4,0" FontSize="11"/>
+                        <Button Content="Select Inputs"
+                                Command="{Binding Inspector.SelectAllInputsCommand}"
+                                Padding="4,2" Margin="0,0,4,0" FontSize="11"/>
+                        <Button Content="Clear"
+                                Command="{Binding Inspector.ClearSelectionCommand}"
+                                Padding="4,2" FontSize="11"/>
+                    </StackPanel>
+                    <TextBlock DockPanel.Dock="Top" Margin="4,2"
+                               Text="{Binding Inspector.ControlGroupSummary}"
+                               FontSize="11" Foreground="#666"/>
+                    <ItemsControl DockPanel.Dock="Top"
+                                  ItemsSource="{Binding Inspector.ControlGroups}"
+                                  MaxHeight="120" Margin="4,2">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock FontSize="11" Margin="2,1"
+                                           Text="{Binding ContainerType, Mode=OneWay}"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock DockPanel.Dock="Bottom" Margin="4,2"
+                               FontSize="11" Foreground="#888">
+                        <Run Text="Selected: "/>
+                        <Run Text="{Binding Inspector.SelectedCount, Mode=OneWay}"/>
+                    </TextBlock>
+                    <views:DomTreePanel DataContext="{Binding Inspector.DomTree}"/>
+                </DockPanel>
+
+                <TextBlock Visibility="{Binding IsInspectorVisible, Converter={StaticResource InverseBoolToVisibility}}"
+                           Text="Start inspecting to see element details."
+                           FontSize="11" Foreground="#999" Margin="8"
+                           TextWrapping="Wrap" VerticalAlignment="Top"/>
+            </Grid>
         </Grid>
     </DockPanel>
 </UserControl>

@@ -88,6 +88,7 @@ public partial class App : Application
         services.AddSingleton<ControlObjectMatcher>();
         services.AddSingleton<ControlObjectAnalyzer>();
         services.AddSingleton<PipelineOrchestrator>();
+        services.AddSingleton<IMessageDialogService, WpfMessageDialogService>();
 
         // ViewModels
         services.AddSingleton<MainViewModel>();
