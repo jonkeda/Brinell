@@ -54,6 +54,31 @@ public sealed class CorpusTabViewModel : ViewModelBase
         OpenInBrowserCommand = new RelayCommand<CorpusPageGroup>(
             OpenInBrowser,
             p => p is not null && !string.IsNullOrEmpty(p.PageUrl));
+
+        // Phase 12.W.4d: Visibility reconciliation & CRUD commands
+        RefreshPageCommand = new AsyncRelayCommand(
+            async (ct) => 
+            {
+                if (SelectedPage is not null)
+                    await RefreshPageAsync(SelectedPage, ct);
+            },
+            () => SelectedPage is not null);
+
+        DeleteSnapshotCommand = new AsyncRelayCommand<SnapshotVersionRow>(
+            async (snapshot, ct) =>
+            {
+                if (SelectedPage is not null && snapshot is not null)
+                    await DeleteSnapshotAsync(SelectedPage, snapshot, ct);
+            },
+            (snapshot) => SelectedPage is not null && snapshot is not null);
+
+        DeletePageCommand = new AsyncRelayCommand(
+            async (ct) =>
+            {
+                if (SelectedPage is not null)
+                    await DeletePageAsync(SelectedPage, ct);
+            },
+            () => SelectedPage is not null);
     }
 
     public ObservableCollection<CorpusPageGroup> Pages { get; } = [];
@@ -127,6 +152,11 @@ public sealed class CorpusTabViewModel : ViewModelBase
     public ICommand ExportPageCommand { get; }
     public ICommand DeleteAllVersionsCommand { get; }
     public ICommand OpenInBrowserCommand { get; }
+
+    // Phase 12.W.4d: Visibility reconciliation & CRUD commands
+    public ICommand RefreshPageCommand { get; }
+    public ICommand DeleteSnapshotCommand { get; }
+    public ICommand DeletePageCommand { get; }
 
     public event Action<string>? OpenInBrowserRequested;
     public event Action<CorpusPageGroup>? ReRecordRequested;
@@ -303,11 +333,20 @@ public sealed class CorpusTabViewModel : ViewModelBase
         return Task.CompletedTask;
     }
 
-    private Task RefreshAsync(CancellationToken ct)
+    private async Task RefreshAsync(CancellationToken ct)
     {
         if (_siteId > 0)
-            Load(_siteId);
-        return Task.CompletedTask;
+        {
+            try
+            {
+                await LoadPagesWithReconciliationAsync(ct);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Reconciliation failed, falling back to standard load");
+                Load(_siteId);
+            }
+        }
     }
 
     private void Export()
@@ -351,6 +390,236 @@ public sealed class CorpusTabViewModel : ViewModelBase
         SelectedPage = null;
         SelectedVersion = null;
         RaiseTotalsChanged();
+    }
+
+    // --- Visibility Reconciliation (Phase 12.W.4d) --------------------------
+
+    /// <summary>
+    /// Load pages with orphan detection: removes UI pages not in DB, adds missing DB pages.
+    /// Call this to sync UI state with database state.
+    /// </summary>
+    public async Task LoadPagesWithReconciliationAsync(CancellationToken ct)
+    {
+        try
+        {
+            var dbPages = _corpusService.ListPagesBySiteId(_siteId);
+            var dbPageNames = new HashSet<string>(dbPages.Select(p => p.PageName), StringComparer.OrdinalIgnoreCase);
+
+            // Remove orphaned UI pages (in UI but not in DB)
+            var orphaned = Pages
+                .Where(p => !dbPageNames.Contains(p.PageName))
+                .ToList();
+
+            foreach (var orphan in orphaned)
+            {
+                Pages.Remove(orphan);
+                _logger.LogWarning("Removed orphaned page '{Page}' from UI.", orphan.PageName);
+            }
+
+            // Add/update pages from DB
+            foreach (var dbPage in dbPages)
+            {
+                var existing = Pages.FirstOrDefault(p => 
+                    p.PageName.Equals(dbPage.PageName, StringComparison.OrdinalIgnoreCase));
+
+                if (existing != null)
+                {
+                    // Refresh snapshots for existing page
+                    await RefreshPageAsync(existing, ct);
+                }
+                else
+                {
+                    // Add new page from DB
+                    await AddPageFromDatabaseAsync(dbPage, ct);
+                }
+            }
+
+            _logger.LogInformation("Loaded {Count} pages with reconciliation — orphans removed: {Orphans}",
+                dbPages.Count, orphaned.Count);
+
+            RaiseTotalsChanged();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load pages with reconciliation.");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Refresh snapshots for a single page from the database.
+    /// </summary>
+    public async Task RefreshPageAsync(CorpusPageGroup page, CancellationToken ct)
+    {
+        try
+        {
+            var snapshots = _corpusService.GetSnapshotsByPageName(_siteId, page.PageName);
+            UpdatePageSnapshots(page, snapshots);
+            _logger.LogInformation("Refreshed snapshots for page '{Page}' — Count: {Count}",
+                page.PageName, snapshots.Count);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to refresh snapshots for page '{Page}'.", page.PageName);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Delete a single snapshot with confirmation.
+    /// </summary>
+    public async Task DeleteSnapshotAsync(CorpusPageGroup page, SnapshotVersionRow snapshot, CancellationToken ct)
+    {
+        var result = MessageBox.Show(
+            $"Delete snapshot \"{snapshot.VersionLabel}\" permanently?",
+            "Confirm Delete",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+
+        if (result != MessageBoxResult.Yes) return;
+
+        try
+        {
+            _corpusService.DeleteSnapshot(snapshot.SnapshotId);
+            page.Versions.Remove(snapshot);
+            
+            // Reset selected version if deleted
+            if (SelectedVersion == snapshot)
+                SelectedVersion = page.LatestSnapshot;
+
+            _logger.LogInformation("Deleted snapshot {SnapshotId} from page '{Page}'.",
+                snapshot.SnapshotId, page.PageName);
+
+            RaiseTotalsChanged();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to delete snapshot {SnapshotId}.", snapshot.SnapshotId);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Delete an entire page and all its snapshots with confirmation.
+    /// </summary>
+    public async Task DeletePageAsync(CorpusPageGroup page, CancellationToken ct)
+    {
+        var result = MessageBox.Show(
+            $"Delete page '{page.PageName}' and all {page.Versions.Count} snapshot(s) permanently?",
+            "Confirm Delete",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+
+        if (result != MessageBoxResult.Yes) return;
+
+        try
+        {
+            _corpusService.DeletePageByName(_siteId, page.PageName);
+            Pages.Remove(page);
+
+            if (SelectedPage == page)
+                SelectedPage = null;
+
+            _logger.LogInformation("Deleted page '{Page}' and all snapshots.", page.PageName);
+            RaiseTotalsChanged();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to delete page '{Page}'.", page.PageName);
+            throw;
+        }
+    }
+
+    // --- Private Helpers (Phase 12.W.4d) -----------------------------------
+
+    private async Task AddPageFromDatabaseAsync(PageMetadata dbPage, CancellationToken ct)
+    {
+        var snapshots = _corpusService.GetSnapshotsByPageName(_siteId, dbPage.PageName);
+        if (snapshots.Count == 0)
+        {
+            _logger.LogWarning("Page '{Page}' has no snapshots, skipping.", dbPage.PageName);
+            return;
+        }
+
+        var ordered = snapshots.OrderByDescending(s => s.CapturedAt).ToList();
+        var page = new CorpusPageGroup
+        {
+            PageName = dbPage.PageName,
+            PageUrl = dbPage.PageUrl,
+            HasControlObjects = false,
+            ControlObjectsPending = false,
+            PageObjectStatus = PageObjectStatus.NotGenerated,
+        };
+
+        var total = ordered.Count;
+        for (var i = 0; i < total; i++)
+        {
+            var s = ordered[i];
+            page.Versions.Add(new SnapshotVersionRow
+            {
+                SnapshotId = s.Id,
+                VersionNumber = total - i,
+                IsLatest = s.IsLatest,
+                CapturedAt = s.CapturedAt.LocalDateTime,
+                ElementCount = s.ElementCount,
+                SnapshotSizeBytes = s.SnapshotSizeBytes,
+                HasPageObject = false,
+                PageObjectStatus = PageObjectStatus.NotGenerated,
+            });
+        }
+
+        Pages.Add(page);
+        _logger.LogInformation("Added page '{Page}' from database with {Count} snapshot(s).",
+            dbPage.PageName, snapshots.Count);
+    }
+
+    private void UpdatePageSnapshots(CorpusPageGroup page, List<SnapshotSummary> newSnapshots)
+    {
+        var newIds = new HashSet<long>(newSnapshots.Select(s => s.Id));
+        var existingDict = page.Versions.ToDictionary(v => v.SnapshotId);
+
+        // Remove stale versions
+        foreach (var stale in page.Versions.Where(v => !newIds.Contains(v.SnapshotId)).ToList())
+            page.Versions.Remove(stale);
+
+        // Add/update versions
+        var ordered = newSnapshots.OrderByDescending(s => s.CapturedAt).ToList();
+        var total = ordered.Count;
+
+        for (var i = 0; i < total; i++)
+        {
+            var s = ordered[i];
+            var versionNum = total - i;
+
+            if (existingDict.TryGetValue(s.Id, out var existing))
+            {
+                // Update existing version
+                existing.VersionNumber = versionNum;
+                existing.IsLatest = s.IsLatest;
+                existing.CapturedAt = s.CapturedAt.LocalDateTime;
+                existing.ElementCount = s.ElementCount;
+                existing.SnapshotSizeBytes = s.SnapshotSizeBytes;
+            }
+            else
+            {
+                // Add new version
+                page.Versions.Add(new SnapshotVersionRow
+                {
+                    SnapshotId = s.Id,
+                    VersionNumber = versionNum,
+                    IsLatest = s.IsLatest,
+                    CapturedAt = s.CapturedAt.LocalDateTime,
+                    ElementCount = s.ElementCount,
+                    SnapshotSizeBytes = s.SnapshotSizeBytes,
+                    HasPageObject = false,
+                    PageObjectStatus = PageObjectStatus.NotGenerated,
+                });
+            }
+        }
+
+        // Update page URL if changed
+        if (ordered.Count > 0 && page.PageUrl != ordered[0].PageUrl)
+            page.PageUrl = ordered[0].PageUrl;
     }
 
     private void ViewVersion(SnapshotVersionRow? version)

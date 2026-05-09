@@ -101,6 +101,7 @@ public sealed class WorkspaceViewModel : ViewModelBase, IDisposable
 
         ControlObjects.LoadControlObjects(siteId);
         PageObjects.LoadPageObjects(siteId);
+        Scraping.Session.Load(siteId, site.Name);
         Corpus.Load(siteId);
         Settings.Load(siteId);
 
@@ -140,6 +141,8 @@ public sealed class WorkspaceViewModel : ViewModelBase, IDisposable
         PageObjects.OpenSourcePageRequested -= OnOpenSourcePageRequested;
         PageObjects.NavigateToControlObjectRequested -= OnNavigateToControlObjectRequested;
         Corpus.OpenInBrowserRequested -= OnOpenSourcePageRequested;
+
+        Scraping.Dispose();
 
         BackRequested = null;
 

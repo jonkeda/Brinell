@@ -253,6 +253,191 @@ public sealed class CorpusService
         _logger.LogInformation("Deleted snapshot {SnapshotId}", snapshotId);
     }
 
+    // --- CRUD Operations (Phase 12.W.4d) -----------------------------------
+
+    /// <summary>
+    /// List all pages (distinct page names) for a site with metadata from their latest snapshot.
+    /// </summary>
+    public List<PageMetadata> ListPagesBySiteId(long siteId)
+    {
+        using var conn = Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = """
+            SELECT s.Id, s.PageName, s.PageUrl, s.CapturedAt
+            FROM Snapshots s
+            WHERE s.SiteId = @siteId
+              AND s.Id IN (
+                  SELECT s2.Id
+                  FROM Snapshots s2
+                  WHERE s2.SiteId = @siteId
+                    AND s2.PageName = s.PageName
+                  ORDER BY s2.CapturedAt DESC
+                  LIMIT 1
+              )
+            ORDER BY s.PageName
+            """;
+        cmd.Parameters.AddWithValue("@siteId", siteId);
+
+        using var reader = cmd.ExecuteReader();
+        var results = new List<PageMetadata>();
+        while (reader.Read())
+        {
+            results.Add(new PageMetadata
+            {
+                LatestSnapshotId = reader.GetInt64(0),
+                PageName = reader.GetString(1),
+                PageUrl = reader.GetString(2),
+                LatestCapturedAt = DateTimeOffset.Parse(reader.GetString(3))
+            });
+        }
+        return results;
+    }
+
+    public int GetDistinctPageCount(long siteId)
+    {
+        using var conn = Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT COUNT(DISTINCT PageName) FROM Snapshots WHERE SiteId = @siteId";
+        cmd.Parameters.AddWithValue("@siteId", siteId);
+
+        return Convert.ToInt32(cmd.ExecuteScalar());
+    }
+
+    /// <summary>
+    /// Get all snapshots for a specific page name within a site.
+    /// </summary>
+    public List<SnapshotSummary> GetSnapshotsByPageName(long siteId, string pageName)
+    {
+        using var conn = Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = """
+            SELECT Id, SiteId, PageName, PageUrl, PageTitle, CapturedAt, ElementCount, SnapshotSizeBytes, IsLatest
+            FROM Snapshots
+            WHERE SiteId = @siteId AND PageName = @pageName
+            ORDER BY CapturedAt DESC
+            """;
+        cmd.Parameters.AddWithValue("@siteId", siteId);
+        cmd.Parameters.AddWithValue("@pageName", pageName);
+
+        using var reader = cmd.ExecuteReader();
+        var results = new List<SnapshotSummary>();
+        while (reader.Read())
+        {
+            results.Add(new SnapshotSummary
+            {
+                Id = reader.GetInt64(0),
+                SiteId = reader.GetInt64(1),
+                PageName = reader.GetString(2),
+                PageUrl = reader.GetString(3),
+                PageTitle = reader.IsDBNull(4) ? null : reader.GetString(4),
+                CapturedAt = DateTimeOffset.Parse(reader.GetString(5)),
+                ElementCount = reader.GetInt32(6),
+                SnapshotSizeBytes = reader.GetInt64(7),
+                IsLatest = reader.GetInt32(8) == 1
+            });
+        }
+        return results;
+    }
+
+    /// <summary>
+    /// Delete all snapshots for a specific page name within a site (cascade delete).
+    /// </summary>
+    public void DeletePageByName(long siteId, string pageName)
+    {
+        using var conn = Open();
+        using var tx = conn.BeginTransaction();
+
+        // Get all snapshot IDs for this page first
+        List<long> snapshotIds;
+        using (var selectCmd = conn.CreateCommand())
+        {
+            selectCmd.CommandText = "SELECT Id FROM Snapshots WHERE SiteId = @siteId AND PageName = @pageName";
+            selectCmd.Parameters.AddWithValue("@siteId", siteId);
+            selectCmd.Parameters.AddWithValue("@pageName", pageName);
+
+            using var reader = selectCmd.ExecuteReader();
+            snapshotIds = new List<long>();
+            while (reader.Read())
+                snapshotIds.Add(reader.GetInt64(0));
+        }
+
+        // Delete elements for all snapshots
+        if (snapshotIds.Count > 0)
+        {
+            var ids = string.Join(",", snapshotIds);
+            using (var deleteCmd = conn.CreateCommand())
+            {
+                deleteCmd.CommandText = $"DELETE FROM Elements WHERE SnapshotId IN ({ids})";
+                deleteCmd.ExecuteNonQuery();
+            }
+        }
+
+        // Delete snapshots
+        using (var deleteCmd = conn.CreateCommand())
+        {
+            deleteCmd.CommandText = "DELETE FROM Snapshots WHERE SiteId = @siteId AND PageName = @pageName";
+            deleteCmd.Parameters.AddWithValue("@siteId", siteId);
+            deleteCmd.Parameters.AddWithValue("@pageName", pageName);
+            deleteCmd.ExecuteNonQuery();
+        }
+
+        tx.Commit();
+        _logger.LogInformation("Deleted page — Site: {SiteId}, Page: {PageName}, SnapshotCount: {Count}", 
+            siteId, pageName, snapshotIds.Count);
+    }
+
+    /// <summary>
+    /// Delete snapshots older than a specified number of days.
+    /// </summary>
+    public int DeleteStaleSnapshots(long siteId, int olderThanDays)
+    {
+        var cutoffDate = DateTimeOffset.UtcNow.AddDays(-olderThanDays);
+
+        using var conn = Open();
+        using var tx = conn.BeginTransaction();
+
+        // Get IDs of stale snapshots
+        List<long> staleIds;
+        using (var selectCmd = conn.CreateCommand())
+        {
+            selectCmd.CommandText = "SELECT Id FROM Snapshots WHERE SiteId = @siteId AND CapturedAt < @cutoff";
+            selectCmd.Parameters.AddWithValue("@siteId", siteId);
+            selectCmd.Parameters.AddWithValue("@cutoff", cutoffDate.ToString("o"));
+
+            using var reader = selectCmd.ExecuteReader();
+            staleIds = new List<long>();
+            while (reader.Read())
+                staleIds.Add(reader.GetInt64(0));
+        }
+
+        // Delete elements for stale snapshots
+        if (staleIds.Count > 0)
+        {
+            var ids = string.Join(",", staleIds);
+            using (var deleteCmd = conn.CreateCommand())
+            {
+                deleteCmd.CommandText = $"DELETE FROM Elements WHERE SnapshotId IN ({ids})";
+                deleteCmd.ExecuteNonQuery();
+            }
+        }
+
+        // Delete stale snapshots
+        int deletedCount;
+        using (var deleteCmd = conn.CreateCommand())
+        {
+            deleteCmd.CommandText = "DELETE FROM Snapshots WHERE SiteId = @siteId AND CapturedAt < @cutoff";
+            deleteCmd.Parameters.AddWithValue("@siteId", siteId);
+            deleteCmd.Parameters.AddWithValue("@cutoff", cutoffDate.ToString("o"));
+            deletedCount = deleteCmd.ExecuteNonQuery();
+        }
+
+        tx.Commit();
+        _logger.LogInformation("Deleted stale snapshots — Site: {SiteId}, OlderThanDays: {Days}, Count: {Count}",
+            siteId, olderThanDays, deletedCount);
+
+        return deletedCount;
+    }
+
     private SqliteConnection Open()
     {
         var conn = new SqliteConnection(_connectionString);

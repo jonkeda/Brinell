@@ -45,32 +45,32 @@ Manual test scenarios for the Settings tab: **Site settings**, **Model selection
 
 ### UAT-W5.2.1 — Analyzer and Generator Dropdowns (Fallback List)
 
-- [ ] The "Models" group box contains two editable combo boxes: Analyzer model and Generator model.
-- [ ] When Copilot is **not authenticated**, each dropdown lists the fallback models: `gpt-4.1`, `gpt-4.1-mini`, `gpt-4.1-nano`, `o3-mini`, `claude-sonnet-4`, `claude-opus-4`.
-- [ ] The default selections are `gpt-4.1-mini` (Analyzer) and `gpt-4.1` (Generator).
-- [ ] The current selections match `AppSettings.AnalyzerModel` and `AppSettings.GeneratorModel`.
+- [X] The "Models" group box contains two editable combo boxes: Analyzer model and Generator model.
+- [X] When Copilot is **not authenticated**, each dropdown lists the fallback models: `gpt-4.1`, `gpt-4.1-mini`, `gpt-4.1-nano`, `o3-mini`, `claude-sonnet-4`, `claude-opus-4`.
+- [X] The default selections are `gpt-4.1-mini` (Analyzer) and `gpt-4.1` (Generator).
+- [X] The current selections match `AppSettings.AnalyzerModel` and `AppSettings.GeneratorModel`.
 
 ### UAT-W5.2.2 — Dynamic Model List (Authenticated)
 
-- [ ] Authenticate with `copilot auth login`. Open a site and navigate to Settings.
-- [ ] The model dropdowns are populated with the live model list returned by `ListModelsAsync()` — not the static fallback.
-- [ ] The previously selected model is preserved if it exists in the live list.
+- [X] Authenticate with `copilot auth login`. Open a site and navigate to Settings.
+- [X] The model dropdowns are populated with the live model list returned by `ListModelsAsync()` — not the static fallback.
+- [X] The previously selected model is preserved if it exists in the live list.
 
 ### UAT-W5.2.3 — Refresh Models Button
 
-- [ ] A "↻" refresh button is visible next to the Models group header.
-- [ ] Click the refresh button. The dropdown lists update to the latest models from the SDK.
-- [ ] If the SDK is not authenticated, the refresh is a no-op (fallback list remains).
+- [X] A "↻" refresh button is visible next to the Models group header.
+- [X] Click the refresh button. The dropdown lists update to the latest models from the SDK.
+- [X] If the SDK is not authenticated, the refresh is a no-op (fallback list remains).
 
 ### UAT-W5.2.4 — Custom Model Entry
 
-- [ ] Type a custom model name (e.g. "gpt-5") directly into the Analyzer combo box. The field accepts the freeform text.
-- [ ] Click **Save**. Close and relaunch. The custom model name persists.
+- [X] Type a custom model name (e.g. "gpt-5") directly into the Analyzer combo box. The field accepts the freeform text.
+- [X] Click **Save**. Close and relaunch. The custom model name persists.
 
 ### UAT-W5.2.5 — Model Change Saved
 
-- [ ] Change the Generator model from `gpt-4.1` to `gpt-4.1-mini`. Click **Save**.
-- [ ] Close and relaunch. Navigate to Settings. The Generator model reads `gpt-4.1-mini`.
+- [X] Change the Generator model from `gpt-4.1` to `gpt-4.1-mini`. Click **Save**.
+- [X] Close and relaunch. Navigate to Settings. The Generator model reads `gpt-4.1-mini`.
 
 ---
 
@@ -93,9 +93,9 @@ Manual test scenarios for the Settings tab: **Site settings**, **Model selection
 
 ### UAT-W5.4.1 — Corpus and Skills Root Displayed
 
-- [ ] The "Paths" group box shows Corpus root and Skills root as read-only text fields.
-- [ ] Both display the values from `AppSettings.CorpusRoot` and `AppSettings.SkillsRoot`.
-- [ ] The fields are not editable (typing has no effect).
+- [X] The "Paths" group box shows Corpus root and Skills root as read-only text fields.
+- [X] Both display the values from `AppSettings.CorpusRoot` and `AppSettings.SkillsRoot`.
+- [X] The fields are not editable (typing has no effect).
 
 ---
 
@@ -108,31 +108,31 @@ Manual test scenarios for the Settings tab: **Site settings**, **Model selection
 
 ### UAT-W5.5.2 — Sign In — Launches CLI Auth Login
 
-- [ ] With the Copilot CLI not authenticated, click **Sign in to GitHub**.
-- [ ] Status shows "Connecting..." then "Waiting for browser login...".
-- [ ] A console window opens running `copilot auth login`.
-- [ ] The browser OAuth flow is triggered automatically.
+- [X] With the Copilot CLI not authenticated, click **Sign in to GitHub**.
+- [X] Status shows "Connecting..." then "Waiting for browser login...".
+- [X] A console window opens running `copilot auth login`.
+- [X] The browser OAuth flow is triggered automatically.
 
 ### UAT-W5.5.3 — Sign In — Complete OAuth Flow
 
-- [ ] Complete the browser OAuth flow from UAT-W5.5.2.
-- [ ] The console window closes after authentication succeeds.
-- [ ] The app automatically retries SDK initialization.
-- [ ] Status changes to "Authenticated". `IsCopilotAuthenticated` is `true`.
-- [ ] The Copilot SDK sessions (analyzer + generator) are initialized — verify via log output.
-- [ ] The model dropdowns are refreshed with the live model list.
+- [X] Complete the browser OAuth flow from UAT-W5.5.2.
+- [X] The console window closes after authentication succeeds.
+- [X] The app automatically retries SDK initialization.
+- [X] Status changes to "Authenticated". `IsCopilotAuthenticated` is `true`.
+- [X] The Copilot SDK sessions (analyzer + generator) are initialized — verify via log output.
+- [X] The model dropdowns are refreshed with the live model list.
 
 ### UAT-W5.5.4 — Sign In — OAuth Cancelled
 
-- [ ] Click **Sign in to GitHub**. The console window opens.
-- [ ] Close the console window without completing the OAuth flow.
-- [ ] Status changes to "Authentication failed — check browser login".
-- [ ] `IsCopilotAuthenticated` remains `false`. The app does not crash.
+- [X] Click **Sign in to GitHub**. The console window opens.
+- [X] Close the console window without completing the OAuth flow.
+- [X] Status changes to "Authentication failed — check browser login".
+- [X] `IsCopilotAuthenticated` remains `false`. The app does not crash.
 
 ### UAT-W5.5.5 — Sign In — No Active Site
 
-- [ ] If `CurrentSiteId` is 0 or null (no site selected), clicking **Sign in to GitHub** does not attempt `InitializeAsync`.
-- [ ] Status reflects current `IsAuthenticated` state without error.
+- [X] If `CurrentSiteId` is 0 or null (no site selected), clicking **Sign in to GitHub** does not attempt `InitializeAsync`.
+- [X] Status reflects current `IsAuthenticated` state without error.
 
 ### UAT-W5.5.6 — Sign In Re-Attempts After Failure
 
@@ -192,16 +192,16 @@ Manual test scenarios for the Settings tab: **Site settings**, **Model selection
 
 ### UAT-W5.7.2 — DI Container Clean
 
-- [ ] `App.xaml.cs` does not register `ICopilotAuthService`. No runtime DI resolution errors on startup.
+- [X] `App.xaml.cs` does not register `ICopilotAuthService`. No runtime DI resolution errors on startup.
 
 ### UAT-W5.7.3 — CopilotService Has No Auth Dependency
 
-- [ ] `CopilotService` constructor takes `ILogger`, `CorpusTools`, `ISessionContext`, `AppSettings` — no `ICopilotAuthService`.
-- [ ] `InitializeAsync` does not call `GetTokenAsync` — it directly starts the SDK.
+- [X] `CopilotService` constructor takes `ILogger`, `CorpusTools`, `ISessionContext`, `AppSettings` — no `ICopilotAuthService`.
+- [X] `InitializeAsync` does not call `GetTokenAsync` — it directly starts the SDK.
 
 ### UAT-W5.7.4 — Build Succeeds
 
-- [ ] `dotnet build Brinell.Scraper.csproj` completes with 0 errors.
+- [X] `dotnet build Brinell.Scraper.csproj` completes with 0 errors.
 
 ---
 

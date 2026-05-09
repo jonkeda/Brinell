@@ -1,11 +1,13 @@
 using System.ComponentModel;
+using System.Collections.Specialized;
 using System.Windows.Input;
 
 namespace Brinell.Scraper.ViewModels.Tabs;
 
-public sealed class ScrapingTabViewModel : ViewModelBase
+public sealed class ScrapingTabViewModel : ViewModelBase, IDisposable
 {
     private bool _isSessionPanelVisible = true;
+    private bool _disposed;
 
     public ScrapingTabViewModel(
         BrowserViewModel browser,
@@ -19,6 +21,15 @@ public sealed class ScrapingTabViewModel : ViewModelBase
         Session = session;
 
         Inspector.PropertyChanged += OnInspectorPropertyChanged;
+        Recording.SessionSnapshots.CollectionChanged += OnSessionSnapshotsChanged;
+
+        Session.SetNavigateCallback(url =>
+        {
+            Browser.AddressUrl = url;
+            Browser.NavigateCommand.Execute(null);
+        });
+
+        Session.SyncRecordedPages(Recording.SessionSnapshots);
 
         ToggleSessionPanelCommand = new RelayCommand(
             () => IsSessionPanelVisible = !IsSessionPanelVisible);
@@ -43,5 +54,19 @@ public sealed class ScrapingTabViewModel : ViewModelBase
     {
         if (e.PropertyName == nameof(InspectorViewModel.IsInspecting))
             OnPropertyChanged(nameof(IsInspectorVisible));
+    }
+
+    private void OnSessionSnapshotsChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        Session.SyncRecordedPages(Recording.SessionSnapshots);
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+
+        Inspector.PropertyChanged -= OnInspectorPropertyChanged;
+        Recording.SessionSnapshots.CollectionChanged -= OnSessionSnapshotsChanged;
     }
 }

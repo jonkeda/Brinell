@@ -56,10 +56,7 @@
             </StatusBarItem>
             <Separator/>
             <StatusBarItem>
-                <TextBlock>
-                    <Run Text="Pages: "/>
-                    <Run Text="{Binding Session.CorpusPages.Count, Mode=OneWay}"/>
-                </TextBlock>
+                <TextBlock Text="{Binding Session.CorpusStats, Mode=OneWay}"/>
             </StatusBarItem>
             <Separator Visibility="{Binding Inspector.IsInspecting, Converter={StaticResource BoolToVisibility}}"/>
             <StatusBarItem Visibility="{Binding Inspector.IsInspecting, Converter={StaticResource BoolToVisibility}}">
@@ -95,6 +92,13 @@
                        Visibility="{Binding IsSessionPanelVisible, Converter={StaticResource BoolToVisibility}}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel>
+                        <TextBlock Text="{Binding Session.SiteHeader, Mode=OneWay}"
+                                   FontWeight="Bold" FontSize="12"
+                                   Margin="6,8,4,2" Foreground="#333"/>
+                        <TextBlock Text="{Binding Session.CorpusStats, Mode=OneWay}"
+                                   FontSize="11"
+                                   Margin="6,0,4,2" Foreground="#666"/>
+
                         <TextBlock Text="This Session" FontWeight="SemiBold" FontSize="11"
                                    Margin="6,8,4,2" Foreground="#555"/>
                         <Separator Margin="4,0"/>
@@ -102,11 +106,19 @@
                                   BorderThickness="0" Margin="2,0">
                             <ListView.ItemTemplate>
                                 <DataTemplate>
-                                    <TextBlock FontSize="11" Margin="2,1">
-                                        <Run Text="{Binding StatusIcon, Mode=OneWay}"/>
-                                        <Run Text=" "/>
-                                        <Run Text="{Binding Name, Mode=OneWay}"/>
-                                    </TextBlock>
+                                    <Button Command="{Binding DataContext.Session.NavigateToPageCommand, RelativeSource={RelativeSource AncestorType=ListView}}"
+                                            CommandParameter="{Binding}"
+                                            Padding="2,1"
+                                            HorizontalContentAlignment="Left"
+                                            Background="Transparent"
+                                            BorderThickness="0"
+                                            Cursor="Hand">
+                                        <TextBlock FontSize="11">
+                                            <Run Text="{Binding StatusIcon, Mode=OneWay}"/>
+                                            <Run Text=" "/>
+                                            <Run Text="{Binding Name, Mode=OneWay}"/>
+                                        </TextBlock>
+                                    </Button>
                                 </DataTemplate>
                             </ListView.ItemTemplate>
                         </ListView>
@@ -118,11 +130,19 @@
                                   BorderThickness="0" Margin="2,0">
                             <ListView.ItemTemplate>
                                 <DataTemplate>
-                                    <TextBlock FontSize="11" Margin="2,1">
-                                        <Run Text="{Binding StatusIcon, Mode=OneWay}"/>
-                                        <Run Text=" "/>
-                                        <Run Text="{Binding Name, Mode=OneWay}"/>
-                                    </TextBlock>
+                                    <Button Command="{Binding DataContext.Session.NavigateToPageCommand, RelativeSource={RelativeSource AncestorType=ListView}}"
+                                            CommandParameter="{Binding}"
+                                            Padding="2,1"
+                                            HorizontalContentAlignment="Left"
+                                            Background="Transparent"
+                                            BorderThickness="0"
+                                            Cursor="Hand">
+                                        <TextBlock FontSize="11">
+                                            <Run Text="{Binding StatusIcon, Mode=OneWay}"/>
+                                            <Run Text=" "/>
+                                            <Run Text="{Binding Name, Mode=OneWay}"/>
+                                        </TextBlock>
+                                    </Button>
                                 </DataTemplate>
                             </ListView.ItemTemplate>
                         </ListView>

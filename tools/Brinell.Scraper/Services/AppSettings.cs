@@ -31,8 +31,8 @@ public sealed class AppSettings
         Load();
     }
 
-    public string AnalyzerModel { get; set; } = "gpt-4.1-mini";
-    public string GeneratorModel { get; set; } = "gpt-4.1";
+    public string AnalyzerModel { get; set; } = "claude-haiku-4.5";
+    public string GeneratorModel { get; set; } = "claude-haiku-4.5";
     public bool LogLlmPrompts { get; set; }
     public bool LogLlmResponses { get; set; }
     public string CorpusRoot { get; set; }

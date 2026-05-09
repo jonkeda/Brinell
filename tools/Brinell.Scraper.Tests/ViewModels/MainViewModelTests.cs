@@ -17,6 +17,7 @@ public class MainViewModelTests : IDisposable
         var dbPath = Path.Combine(Path.GetTempPath(), $"test-{Guid.NewGuid()}.db");
         _dbPaths.Add(dbPath);
         var db = new CorpusDatabase(dbPath, NullLogger<CorpusDatabase>.Instance);
+        var corpusService = new CorpusService($"Data Source={dbPath}", NullLogger<CorpusService>.Instance);
         var browser = new BrowserViewModel(NullLogger<BrowserViewModel>.Instance);
         var sidebar = new SidebarViewModel();
         var siteSelection = new SiteSelectionViewModel(db, NullLogger<SiteSelectionViewModel>.Instance);
@@ -28,7 +29,7 @@ public class MainViewModelTests : IDisposable
         var exportService = new SnapshotExportService();
         var controlGroupDetector = new ControlGroupDetector();
         var logger = NullLogger<MainViewModel>.Instance;
-        var vm = new MainViewModel(db, browser, sidebar, siteSelection, inspector, recording, domCapture, highlight, pageTransition, exportService, controlGroupDetector, logger);
+        var vm = new MainViewModel(db, corpusService, browser, sidebar, siteSelection, inspector, recording, domCapture, highlight, pageTransition, exportService, controlGroupDetector, logger);
         return (vm, db, siteSelection);
     }
 
@@ -93,7 +94,7 @@ public class MainViewModelTests : IDisposable
         var (vm, _, siteSelection) = CreateViewModel();
         var site = CreateTestSite();
         siteSelection.AddSite(site);
-        Assert.Contains("5 pages", vm.Sidebar.CorpusStats);
+        Assert.Contains("0 pages", vm.Sidebar.CorpusStats);
         Assert.Contains("3 controls", vm.Sidebar.CorpusStats);
     }
 

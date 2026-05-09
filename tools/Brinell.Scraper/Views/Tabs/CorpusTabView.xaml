@@ -15,7 +15,11 @@
                         Padding="10,4" Margin="0,0,4,0"/>
                 <Button Content="🔄 Refresh"
                         Command="{Binding RefreshCommand}"
-                        Padding="10,4" Margin="0,0,12,0"/>
+                        Padding="10,4" Margin="0,0,4,0"/>
+                <Button Content="🔄 Refresh Page"
+                        Command="{Binding RefreshPageCommand}"
+                        Padding="10,4" Margin="0,0,12,0"
+                        ToolTip="Refresh selected page snapshots from database"/>
                 <Button Content="📤 Export"
                         Command="{Binding ExportCommand}"
                         Padding="10,4" Margin="0,0,4,0"/>
@@ -24,7 +28,11 @@
                         Padding="10,4" Margin="0,0,12,0"/>
                 <Button Content="🗑 Delete Selected"
                         Command="{Binding DeleteSelectedCommand}"
-                        Padding="10,4"/>
+                        Padding="10,4" Margin="0,0,4,0"/>
+                <Button Content="🗑 Delete Page"
+                        Command="{Binding DeletePageCommand}"
+                        Padding="10,4"
+                        ToolTip="Delete selected page and all snapshots"/>
             </StackPanel>
         </Border>
 
@@ -79,6 +87,8 @@
                                     <ContextMenu>
                                         <MenuItem Header="Re-Record"
                                                   Command="{Binding PlacementTarget.Tag.ReRecordPageCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                        <MenuItem Header="Refresh Page"
+                                                  Command="{Binding PlacementTarget.Tag.RefreshPageCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
                                         <MenuItem Header="Open in Browser"
                                                   Command="{Binding PlacementTarget.Tag.OpenInBrowserCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                   CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
@@ -87,6 +97,8 @@
                                         <Separator/>
                                         <MenuItem Header="Delete All Versions"
                                                   Command="{Binding PlacementTarget.Tag.DeleteAllVersionsCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                        <MenuItem Header="Delete Page"
+                                                  Command="{Binding PlacementTarget.Tag.DeletePageCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
                                     </ContextMenu>
                                 </Setter.Value>
                             </Setter>
@@ -207,9 +219,14 @@
                                                         Command="{Binding DataContext.CompareCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                         CommandParameter="{Binding}"/>
                                                 <Button Content="Generate"
-                                                        Padding="6,2"
+                                                        Padding="6,2" Margin="0,0,4,0"
                                                         Command="{Binding DataContext.GeneratePageObjectCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                         CommandParameter="{Binding}"/>
+                                                <Button Content="🗑 Delete"
+                                                        Padding="6,2"
+                                                        Command="{Binding DataContext.DeleteSnapshotCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                        CommandParameter="{Binding}"
+                                                        ToolTip="Delete this snapshot"/>
                                             </StackPanel>
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>

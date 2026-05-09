@@ -4,6 +4,7 @@ using System.Windows.Data;
 using System.Windows.Input;
 using Brinell.Scraper.Data;
 using Brinell.Scraper.Models;
+using Brinell.Scraper.Services;
 using Microsoft.Extensions.Logging;
 
 namespace Brinell.Scraper.ViewModels;
@@ -11,13 +12,18 @@ namespace Brinell.Scraper.ViewModels;
 public sealed class StartPageViewModel : ViewModelBase
 {
     private readonly CorpusDatabase _db;
+    private readonly CorpusService _corpusService;
     private readonly ILogger<StartPageViewModel> _logger;
 
     private string _searchText = string.Empty;
 
-    public StartPageViewModel(CorpusDatabase db, ILogger<StartPageViewModel> logger)
+    public StartPageViewModel(
+        CorpusDatabase db,
+        CorpusService corpusService,
+        ILogger<StartPageViewModel> logger)
     {
         _db = db;
+        _corpusService = corpusService;
         _logger = logger;
 
         FilteredSites = CollectionViewSource.GetDefaultView(Sites);
@@ -64,7 +70,10 @@ public sealed class StartPageViewModel : ViewModelBase
 
         Sites.Clear();
         foreach (var s in sites)
-            Sites.Add(ToCardItem(s));
+        {
+            var pageCount = _corpusService.GetDistinctPageCount(s.Id);
+            Sites.Add(ToCardItem(s, pageCount));
+        }
 
         _logger.LogInformation("Start page loaded — Sites: {Count}", Sites.Count);
     }
@@ -72,7 +81,7 @@ public sealed class StartPageViewModel : ViewModelBase
     public void AddOrUpdateSite(SiteInfo site)
     {
         var existing = Sites.FirstOrDefault(c => c.Id == site.Id);
-        var card = ToCardItem(site);
+        var card = ToCardItem(site, _corpusService.GetDistinctPageCount(site.Id));
         if (existing is null)
         {
             Sites.Insert(0, card);
@@ -92,13 +101,13 @@ public sealed class StartPageViewModel : ViewModelBase
             SiteOpenWithUrlRequested?.Invoke(siteId, pageUrl);
     }
 
-    private static SiteCardItem ToCardItem(SiteInfo site) => new()
+    private static SiteCardItem ToCardItem(SiteInfo site, int pageCount) => new()
     {
         Id = site.Id,
         Name = site.Name,
         StartUrl = site.StartUrl,
         DomainShort = ExtractHost(site.StartUrl),
-        PageCount = site.PageCount,
+        PageCount = pageCount,
         ControlCount = site.ControlCount,
         LastOpenedAt = site.LastOpenedAt == default ? null : site.LastOpenedAt,
         LastOpenedRelative = FormatRelative(site.LastOpenedAt)

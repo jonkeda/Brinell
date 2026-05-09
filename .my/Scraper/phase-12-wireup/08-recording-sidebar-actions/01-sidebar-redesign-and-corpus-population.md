@@ -114,10 +114,21 @@ Sidebar.NavigateRequested += url =>
 };
 ```
 
+## Validated Notes (Current Implementation)
+
+- Sidebar population is currently orchestrated from `MainViewModel.RefreshSnapshotBackedCorpusUi(...)`, not from a `Sidebar.LoadFromCorpus(siteId)` method.
+- `SidebarViewModel` remains a lightweight UI state holder with:
+  - `LoadCorpusPages(IEnumerable<SidebarPageItem>)`
+  - `AddSessionPage(DomSnapshot)`
+  - `SetNavigateCallback(Action<string>)`
+- `SidebarPageItem` includes `PageId`, which is used later for duplicate/overwrite and iframe-diff checks when manually recording pages.
+- Corpus status icon in the implemented flow is currently `📄` for loaded corpus pages; generated/pending icon differentiation is not wired in this step.
+- Navigation wiring is callback-based (`Sidebar.SetNavigateCallback(...)`) and updates `Browser.AddressUrl` + executes `Browser.NavigateCommand`.
+
 ## Checklist
 
-- [ ] `SidebarViewModel` owns typed `CorpusPages` and `Controls` collections
-- [ ] Sidebar populated from corpus when site is selected
-- [ ] Each page shows status icon (✅ generated, ⏳ recorded, "" empty)
-- [ ] Clicking a page navigates the browser to its URL
-- [ ] Corpus stats line shows page and control count
+- [x] `SidebarViewModel` owns typed `CorpusPages` and `Controls` collections
+- [x] Sidebar populated from corpus when site is selected
+- [x] Clicking a page navigates the browser to its URL
+- [x] Corpus stats line shows page and control count
+- [ ] Per-page generated/pending icons surfaced in this panel (future enhancement)

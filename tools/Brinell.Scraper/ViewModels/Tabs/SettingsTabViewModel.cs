@@ -24,18 +24,18 @@ public sealed class SettingsTabViewModel : ViewModelBase
     private List<string> _aliases = [];
     private static readonly string[] FallbackModels =
     [
-        "gpt-4.1",
-        "gpt-4.1-mini",
-        "gpt-4.1-nano",
-        "o4-mini",
-        "o3-mini",
+        "auto",
         "claude-haiku-4.5",
-        "claude-sonnet-4.6",
         "claude-opus-4.6",
+        "claude-sonnet-4.6",
+        "gpt-4.1",
+        "gpt-5.3-codex",
+        "gpt-5.4",
+        "gpt-5.4-mini",
     ];
 
-    private string _analyzerModel = "gpt-4.1-mini";
-    private string _generatorModel = "gpt-4.1";
+    private string _analyzerModel = "claude-haiku-4.5";
+    private string _generatorModel = "claude-haiku-4.5";
     private bool _logLlmPrompts;
     private bool _logLlmResponses;
     private string _corpusRoot = "";

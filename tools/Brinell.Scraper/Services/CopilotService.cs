@@ -67,8 +67,8 @@ public sealed class CopilotService : ICopilotService, IAsyncDisposable
         }
 
         // Try configured models first, fall back to defaults if they fail.
-        const string defaultAnalyzer = "gpt-4.1-mini";
-        const string defaultGenerator = "gpt-4.1";
+        const string defaultAnalyzer = "claude-haiku-4.5";
+        const string defaultGenerator = "claude-haiku-4.5";
 
         var analyzerModel = _settings.AnalyzerModel;
         var generatorModel = _settings.GeneratorModel;

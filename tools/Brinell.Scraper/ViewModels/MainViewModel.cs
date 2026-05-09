@@ -18,6 +18,7 @@ public sealed class MainViewModel : ViewModelBase
     };
 
     private readonly CorpusDatabase _db;
+    private readonly CorpusService _corpusService;
     private readonly DomCaptureService _domCapture;
     private readonly ElementHighlightService _highlight;
     private readonly PageTransitionDetector _pageTransition;
@@ -31,9 +32,23 @@ public sealed class MainViewModel : ViewModelBase
     private string _windowTitle = "Brinell Scraper";
     private bool _isLogViewerVisible;
 
-    public MainViewModel(CorpusDatabase db, BrowserViewModel browser, SidebarViewModel sidebar, SiteSelectionViewModel siteSelection, InspectorViewModel inspector, RecordingViewModel recording, DomCaptureService domCapture, ElementHighlightService highlight, PageTransitionDetector pageTransition, SnapshotExportService exportService, ControlGroupDetector controlGroupDetector, ILogger<MainViewModel> logger)
+    public MainViewModel(
+        CorpusDatabase db,
+        CorpusService corpusService,
+        BrowserViewModel browser,
+        SidebarViewModel sidebar,
+        SiteSelectionViewModel siteSelection,
+        InspectorViewModel inspector,
+        RecordingViewModel recording,
+        DomCaptureService domCapture,
+        ElementHighlightService highlight,
+        PageTransitionDetector pageTransition,
+        SnapshotExportService exportService,
+        ControlGroupDetector controlGroupDetector,
+        ILogger<MainViewModel> logger)
     {
         _db = db;
+        _corpusService = corpusService;
         _domCapture = domCapture;
         _highlight = highlight;
         _pageTransition = pageTransition;
@@ -154,18 +169,8 @@ public sealed class MainViewModel : ViewModelBase
         Browser.AddressUrl = site.StartUrl;
 
         Sidebar.SiteHeader = site.Name;
-        Sidebar.CorpusStats = $"{site.PageCount} pages \u00b7 {site.ControlCount} controls";
         Sidebar.ClearSession();
-
-        // RCA-022: Load persisted pages from DB
-        var pages = _db.GetPages(site.Id);
-        Sidebar.LoadCorpusPages(pages.Select(p => new SidebarPageItem
-        {
-            PageId = p.Id,
-            Name = p.Name,
-            Url = p.Url,
-            StatusIcon = "\ud83d\udcc4"
-        }));
+        RefreshSnapshotBackedCorpusUi(site.Id, site.ControlCount);
 
         BrowserViewRequested?.Invoke();
     }
@@ -293,17 +298,16 @@ public sealed class MainViewModel : ViewModelBase
 
         if (dlg.ShowDialog() != true) return;
 
-        var pages = _db.GetPages(ActiveSite.Id);
+        var summaries = _corpusService.ListSnapshots(ActiveSite.Id)
+            .Where(s => s.IsLatest)
+            .ToList();
+
         var snapshots = new List<DomSnapshot>();
-        foreach (var page in pages)
+        foreach (var summary in summaries)
         {
-            var json = _db.GetPageSnapshot(page.Id);
-            if (json is not null)
-            {
-                var snapshot = JsonSerializer.Deserialize<DomSnapshot>(json, JsonOptions);
-                if (snapshot is not null)
-                    snapshots.Add(snapshot);
-            }
+            var snapshot = _corpusService.GetSnapshotById(summary.Id);
+            if (snapshot is not null)
+                snapshots.Add(snapshot);
         }
 
         var exportJson = JsonSerializer.Serialize(snapshots, new JsonSerializerOptions
@@ -355,24 +359,11 @@ public sealed class MainViewModel : ViewModelBase
 
         foreach (var snapshot in snapshots)
         {
-            var json = JsonSerializer.Serialize(snapshot, JsonOptions);
-            var elementCount = DomCaptureService.CountElements(snapshot.RootElement);
-            var pageId = _db.SavePage(ActiveSite.Id, snapshot.PageName, snapshot.PageUrl,
-                snapshot.PageTitle, elementCount, json);
-
-            Sidebar.CorpusPages.Add(new SidebarPageItem
-            {
-                PageId = pageId,
-                Name = snapshot.PageName,
-                Url = snapshot.PageUrl,
-                StatusIcon = "\ud83d\udcc4"
-            });
+            _corpusService.StoreSnapshot(ActiveSite.Id, snapshot);
             importedCount++;
         }
 
-        _db.UpdateSitePageCount(ActiveSite.Id);
-        ActiveSite.PageCount = Sidebar.CorpusPages.Count;
-        Sidebar.CorpusStats = $"{ActiveSite.PageCount} pages \u00b7 {ActiveSite.ControlCount} controls";
+        RefreshSnapshotBackedCorpusUi(ActiveSite.Id, ActiveSite.ControlCount);
 
         Browser.StatusText = $"Imported {importedCount} pages from {Path.GetFileName(dlg.FileName)}";
         _logger.LogInformation("Corpus imported — {PageCount} pages from {Path}", importedCount, dlg.FileName);
@@ -495,26 +486,22 @@ public sealed class MainViewModel : ViewModelBase
 
                 if (newIframeSources.Count > 0 && existing.PageId > 0)
                 {
-                    var existingJson = _db.GetPageSnapshot(existing.PageId);
-                    if (existingJson is not null)
+                    var existingSnapshot = _corpusService.GetSnapshotById(existing.PageId);
+                    if (existingSnapshot is not null)
                     {
-                        var existingSnapshot = JsonSerializer.Deserialize<DomSnapshot>(existingJson, JsonOptions);
-                        if (existingSnapshot is not null)
+                        var existingIframeSources = CollectIFrameSources(existingSnapshot.RootElement);
+                        if (!newIframeSources.SequenceEqual(existingIframeSources))
                         {
-                            var existingIframeSources = CollectIFrameSources(existingSnapshot.RootElement);
-                            if (!newIframeSources.SequenceEqual(existingIframeSources))
+                            iframeContentDiffers = true;
+                            var iframeContext = newIframeSources[0];
+                            if (Uri.TryCreate(iframeContext, UriKind.Absolute, out var iframeUri))
                             {
-                                iframeContentDiffers = true;
-                                var iframeContext = newIframeSources[0];
-                                if (Uri.TryCreate(iframeContext, UriKind.Absolute, out var iframeUri))
-                                {
-                                    var lastSegment = iframeUri.Segments.LastOrDefault()?.TrimEnd('/');
-                                    if (!string.IsNullOrEmpty(lastSegment))
-                                        iframeContext = Uri.UnescapeDataString(lastSegment);
-                                }
-                                snapshot.PageName = $"{snapshot.PageTitle} \u2014 [iframe: {iframeContext}]";
-                                snapshotJson = JsonSerializer.Serialize(snapshot, JsonOptions);
+                                var lastSegment = iframeUri.Segments.LastOrDefault()?.TrimEnd('/');
+                                if (!string.IsNullOrEmpty(lastSegment))
+                                    iframeContext = Uri.UnescapeDataString(lastSegment);
                             }
+                            snapshot.PageName = $"{snapshot.PageTitle} \u2014 [iframe: {iframeContext}]";
+                            snapshotJson = JsonSerializer.Serialize(snapshot, JsonOptions);
                         }
                     }
                 }
@@ -531,28 +518,13 @@ public sealed class MainViewModel : ViewModelBase
                         return;
 
                     if (existing.PageId > 0)
-                        _db.DeletePage(existing.PageId);
+                        _corpusService.DeleteSnapshot(existing.PageId);
                     Sidebar.CorpusPages.Remove(existing);
                 }
             }
 
-            // RCA-022: Persist to SQLite
-            var elementCount = DomCaptureService.CountElements(snapshot.RootElement);
-            var pageId = _db.SavePage(ActiveSite.Id, snapshot.PageName, snapshot.PageUrl,
-                snapshot.PageTitle, elementCount, snapshotJson);
-
-            Sidebar.CorpusPages.Add(new SidebarPageItem
-            {
-                PageId = pageId,
-                Name = snapshot.PageName,
-                Url = snapshot.PageUrl,
-                StatusIcon = "\ud83d\udcc4"
-            });
-
-            // RCA-020: Update corpus page count and stats
-            _db.UpdateSitePageCount(ActiveSite.Id);
-            ActiveSite.PageCount = Sidebar.CorpusPages.Count;
-            Sidebar.CorpusStats = $"{ActiveSite.PageCount} pages \u00b7 {ActiveSite.ControlCount} controls";
+            _corpusService.StoreSnapshot(ActiveSite.Id, snapshot);
+            RefreshSnapshotBackedCorpusUi(ActiveSite.Id, ActiveSite.ControlCount);
         }
 
         Browser.StatusText = $"Page captured: {snapshot.PageName}";
@@ -593,23 +565,10 @@ public sealed class MainViewModel : ViewModelBase
         var count = Recording.SessionSnapshots.Count;
         foreach (var snapshot in Recording.SessionSnapshots)
         {
-            var json = JsonSerializer.Serialize(snapshot, JsonOptions);
-            var elementCount = DomCaptureService.CountElements(snapshot.RootElement);
-            var pageId = _db.SavePage(ActiveSite.Id, snapshot.PageName, snapshot.PageUrl,
-                snapshot.PageTitle, elementCount, json);
-
-            Sidebar.CorpusPages.Add(new SidebarPageItem
-            {
-                PageId = pageId,
-                Name = snapshot.PageName,
-                Url = snapshot.PageUrl,
-                StatusIcon = "\ud83d\udcc4"
-            });
+            _corpusService.StoreSnapshot(ActiveSite.Id, snapshot);
         }
 
-        _db.UpdateSitePageCount(ActiveSite.Id);
-        ActiveSite.PageCount = Sidebar.CorpusPages.Count;
-        Sidebar.CorpusStats = $"{ActiveSite.PageCount} pages \u00b7 {ActiveSite.ControlCount} controls";
+        RefreshSnapshotBackedCorpusUi(ActiveSite.Id, ActiveSite.ControlCount);
 
         Recording.ClearSnapshots();
         Sidebar.ClearSession();
@@ -689,5 +648,22 @@ public sealed class MainViewModel : ViewModelBase
         foreach (var child in element.Children)
             sources.AddRange(CollectIFrameSources(child));
         return sources;
+    }
+
+    private void RefreshSnapshotBackedCorpusUi(long siteId, int controlCount)
+    {
+        var latestPages = _corpusService.ListPagesBySiteId(siteId);
+        Sidebar.LoadCorpusPages(latestPages.Select(p => new SidebarPageItem
+        {
+            PageId = p.LatestSnapshotId,
+            Name = p.PageName,
+            Url = p.PageUrl,
+            StatusIcon = "\ud83d\udcc4"
+        }));
+
+        if (ActiveSite is not null)
+            ActiveSite.PageCount = latestPages.Count;
+
+        Sidebar.CorpusStats = $"{latestPages.Count} pages \u00b7 {controlCount} controls";
     }
 }
