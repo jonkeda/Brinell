@@ -44,25 +44,20 @@ public abstract class RangeControlBase<TScope> : FocusableControlBase<TScope>, I
 
     #region IHtmlAsyncRange<TScope> explicit implementation
 
-    async Task<string?> IHtmlAsyncRange<TScope>.GetMin()
-        => await RunWithElementAsync<string?>(async e =>
-            await e.GetAttribute("min").ConfigureAwait(false)).ConfigureAwait(false);
+    Task<string?> IHtmlAsyncRange<TScope>.GetMin()
+        => Task.FromResult(GetMin());
 
-    async Task<string?> IHtmlAsyncRange<TScope>.GetMax()
-        => await RunWithElementAsync<string?>(async e =>
-            await e.GetAttribute("max").ConfigureAwait(false)).ConfigureAwait(false);
+    Task<string?> IHtmlAsyncRange<TScope>.GetMax()
+        => Task.FromResult(GetMax());
 
-    async Task<string?> IHtmlAsyncRange<TScope>.GetStep()
-        => await RunWithElementAsync<string?>(async e =>
-            await e.GetAttribute("step").ConfigureAwait(false)).ConfigureAwait(false);
+    Task<string?> IHtmlAsyncRange<TScope>.GetStep()
+        => Task.FromResult(GetStep());
 
-    async Task<string> IHtmlAsyncRange<TScope>.GetValue()
-        => await RunWithElementAsync<string>(async e =>
-            await e.GetInputValue().ConfigureAwait(false)).ConfigureAwait(false);
+    Task<string> IHtmlAsyncRange<TScope>.GetValue()
+        => Task.FromResult(GetValue());
 
-    async Task<TScope> IHtmlAsyncRange<TScope>.SetValue(string value)
-        => await RunWithElementAsync(async e =>
-            await e.Fill(value).ConfigureAwait(false)).ConfigureAwait(false);
+    Task<TScope> IHtmlAsyncRange<TScope>.SetValue(string value)
+        => Task.FromResult(SetValue(value));
 
     #endregion
 }

@@ -45,4 +45,35 @@ public abstract class ObjectBase
             return false;
         }
     }
+
+    protected async Task<bool> PollAsync(Func<Task<bool>> condition, int timeoutMs)
+    {
+        var stopwatch = Stopwatch.StartNew();
+
+        while (stopwatch.ElapsedMilliseconds < timeoutMs)
+        {
+            try
+            {
+                if (await condition().ConfigureAwait(false))
+                {
+                    return true;
+                }
+            }
+            catch
+            {
+                // Ignore exceptions while polling.
+            }
+
+            await Task.Delay(PollingIntervalMs).ConfigureAwait(false);
+        }
+
+        try
+        {
+            return await condition().ConfigureAwait(false);
+        }
+        catch
+        {
+            return false;
+        }
+    }
 }

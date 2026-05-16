@@ -2,10 +2,11 @@ using Brinell.Core.Exceptions;
 using Brinell.Core.Interfaces;
 using Brinell.Core.Locators;
 using Brinell.Html.Interfaces;
+using Brinell.Html.Interfaces.Async;
 
 namespace Brinell.Html.Controls;
 
-public abstract class ControlBase<TScope> : ObjectBase, IControlObject<TScope>
+public abstract class ControlBase<TScope> : ObjectBase, IControlObject<TScope>, IHtmlAsyncControlObject<TScope>
     where TScope : IHtmlScope<TScope>
 {
     private readonly IHtmlScope<TScope> _scope;
@@ -237,4 +238,69 @@ public abstract class ControlBase<TScope> : ObjectBase, IControlObject<TScope>
                value.Contains('>') ||
                value.Contains(' ');
     }
+
+    #region Async helpers
+
+    protected async Task<TScope> RunWithElementAsync(Func<IHtmlElement, Task> action)
+    {
+        var element = FindElement();
+        await action(element).ConfigureAwait(false);
+        return ContainingScope;
+    }
+
+    protected async Task<TResult> RunWithElementAsync<TResult>(Func<IHtmlElement, Task<TResult>> action)
+    {
+        var element = FindElement();
+        return await action(element).ConfigureAwait(false);
+    }
+
+    protected IHtmlElement? TryFindAsyncElement() => TryFindElement();
+
+    #endregion
+
+    #region IHtmlAsyncControlObject<TScope> explicit implementation
+
+    Task<bool> IHtmlAsyncControlObject<TScope>.IsExists()
+        => Task.FromResult(IsExists());
+
+    Task<bool?> IHtmlAsyncControlObject<TScope>.IsVisible()
+        => Task.FromResult(IsVisible());
+
+    Task<bool?> IHtmlAsyncControlObject<TScope>.IsEnabled()
+        => Task.FromResult(IsEnabled());
+
+    Task<bool> IHtmlAsyncControlObject<TScope>.WaitExists(bool? expected, int? timeoutMs)
+        => Task.FromResult(WaitExists(expected, timeoutMs));
+
+    Task<bool> IHtmlAsyncControlObject<TScope>.WaitVisible(bool? expected, int? timeoutMs)
+        => Task.FromResult(WaitVisible(expected, timeoutMs));
+
+    Task<bool> IHtmlAsyncControlObject<TScope>.WaitEnabled(bool? expected, int? timeoutMs)
+        => Task.FromResult(WaitEnabled(expected, timeoutMs));
+
+    Task<TScope> IHtmlAsyncControlObject<TScope>.AssertExists(bool? expected, string? message, int? timeoutMs)
+        => Task.FromResult(AssertExists(expected, message, timeoutMs));
+
+    Task<TScope> IHtmlAsyncControlObject<TScope>.AssertVisible(bool? expected, string? message, int? timeoutMs)
+        => Task.FromResult(AssertVisible(expected, message, timeoutMs));
+
+    Task<TScope> IHtmlAsyncControlObject<TScope>.AssertEnabled(bool? expected, string? message, int? timeoutMs)
+        => Task.FromResult(AssertEnabled(expected, message, timeoutMs));
+
+    Task<string?> IHtmlAsyncControlObject<TScope>.GetText(int? timeoutMs)
+        => Task.FromResult(GetText(timeoutMs));
+
+    Task<bool> IHtmlAsyncControlObject<TScope>.WaitText(string? expected, int? timeoutMs)
+        => Task.FromResult(WaitText(expected, timeoutMs));
+
+    Task<TScope> IHtmlAsyncControlObject<TScope>.AssertText(string? expected, string? message, int? timeoutMs)
+        => Task.FromResult(AssertText(expected, message, timeoutMs));
+
+    Task<TScope> IHtmlAsyncControlObject<TScope>.AssertTextContains(string? expected, string? message, int? timeoutMs)
+        => Task.FromResult(AssertTextContains(expected, message, timeoutMs));
+
+    Task<string?> IHtmlAsyncControlObject<TScope>.GetAttribute(string name)
+        => Task.FromResult(GetAttribute(name));
+
+    #endregion
 }

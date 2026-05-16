@@ -1,9 +1,10 @@
 using Brinell.Core.Locators;
 using Brinell.Html.Interfaces;
+using Brinell.Html.Interfaces.Async;
 
 namespace Brinell.Html.Controls;
 
-public abstract class FocusableControlBase<TScope> : ClickableControlBase<TScope>
+public abstract class FocusableControlBase<TScope> : ClickableControlBase<TScope>, IHtmlAsyncFocusable<TScope>
     where TScope : IHtmlScope<TScope>
 {
     protected FocusableControlBase(IHtmlScope<TScope> scope, Locator locator)
@@ -34,4 +35,17 @@ public abstract class FocusableControlBase<TScope> : ClickableControlBase<TScope
             return string.Equals(focused, "true", StringComparison.OrdinalIgnoreCase);
         });
     }
+
+    #region IHtmlAsyncFocusable<TScope> explicit implementation
+
+    Task<TScope> IHtmlAsyncFocusable<TScope>.Focus()
+        => Task.FromResult(Focus());
+
+    Task<TScope> IHtmlAsyncFocusable<TScope>.Blur()
+        => Task.FromResult(Blur());
+
+    Task<bool> IHtmlAsyncFocusable<TScope>.HasFocus()
+        => Task.FromResult(HasFocus());
+
+    #endregion
 }
