@@ -405,6 +405,90 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     
     #endregion
     
+    #region Popup Windows
+    
+    /// <inheritdoc />
+    public IMauiElement FindPopupElement(Locator locator, int timeoutMs = 5000)
+    {
+        var condition = locator.ToCondition(_conditionFactory);
+        
+        var startTime = DateTime.UtcNow;
+        var timeout = TimeSpan.FromMilliseconds(timeoutMs);
+        
+        while (DateTime.UtcNow - startTime < timeout)
+        {
+            var found = FindInPopupWindows(condition);
+            if (found != null)
+            {
+                return found;
+            }
+            
+            if (timeoutMs <= 0) break;
+            WaitHelper.Pause(100);
+        }
+        
+        throw new ElementNotFoundException(locator);
+    }
+    
+    /// <inheritdoc />
+    public bool TryFindPopupElement(Locator locator, out IMauiElement? element, int timeoutMs = 0)
+    {
+        try
+        {
+            element = FindPopupElement(locator, timeoutMs);
+            return true;
+        }
+        catch (ElementNotFoundException)
+        {
+            element = null;
+            return false;
+        }
+    }
+    
+    /// <summary>
+    /// Searches all top-level windows of the process (excluding the main window)
+    /// for a descendant matching the condition.
+    /// </summary>
+    private IMauiElement? FindInPopupWindows(ConditionBase condition)
+    {
+        if (_application == null) return null;
+        
+        var allWindows = _application.GetAllTopLevelWindows(_automation);
+        var mainHandle = _rootElement.Properties.NativeWindowHandle.ValueOrDefault;
+        
+        foreach (var window in allWindows)
+        {
+            // Skip the main window — that's what normal FindElement searches
+            if (window.Properties.NativeWindowHandle.ValueOrDefault == mainHandle)
+                continue;
+            
+            // Search descendants of the popup window
+            var found = window.FindFirstDescendant(condition);
+            if (found != null)
+            {
+                return new FlaUIMauiElement(found, this);
+            }
+            
+            // Also check the popup window element itself
+            try
+            {
+                var selfMatch = window.FindFirst(TreeScope.Element, condition);
+                if (selfMatch != null)
+                {
+                    return new FlaUIMauiElement(selfMatch, this);
+                }
+            }
+            catch
+            {
+                // Ignore — some windows may not support all property queries
+            }
+        }
+        
+        return null;
+    }
+    
+    #endregion
+    
     #region Platform-Specific
     
     /// <inheritdoc />

@@ -72,10 +72,22 @@ public abstract class ContainerBase<TParent, TSelf> : ControlBase<TParent>, IMau
             }
             
             // Find and cache the root element
-            _cachedRoot = FindElement();
+            _cachedRoot = FindContainerRootElement();
             _rootCacheValid = true;
             return _cachedRoot;
         }
+    }
+    
+    /// <summary>
+    /// Finds the container root element. Override to customize root-finding behavior,
+    /// for example to search popup windows for dialogs that exist outside the normal
+    /// scope chain (e.g., WinUI3 <c>ContentDialog</c>).
+    /// </summary>
+    /// <returns>The container root element.</returns>
+    /// <exception cref="ElementNotFoundException">Thrown when the root element is not found.</exception>
+    protected virtual IMauiElement FindContainerRootElement()
+    {
+        return FindElement();
     }
     
     /// <summary>
