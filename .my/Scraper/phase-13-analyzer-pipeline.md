@@ -28,7 +28,7 @@ The pipeline has **two analyzers** and **two generators**, with user approval ga
 │  │ Corpus   │───→│ ControlObject     │───→│ ControlObject        │  │
 │  │ (all     │    │ Analyzer          │    │ Proposals            │  │
 │  │  pages)  │    │ (cross-page       │    │ (name, signature,    │  │
-│  │          │    │  pattern detect)   │    │  confidence, props)  │  │
+│  │          │    │  pattern detect)  │    │  confidence, props)  │  │
 │  └──────────┘    └───────────────────┘    └──────────┬───────────┘  │
 │                                                      │              │
 │                                             ┌────────▼────────┐     │
@@ -41,7 +41,7 @@ The pipeline has **two analyzers** and **two generators**, with user approval ga
 │  │ ControlObject     │───→│ Generated            │◄──┘              │
 │  │ Generator         │    │ ControlObjects       │                  │
 │  │ (LLM code gen +   │    │ (C# ContainerBase    │                  │
-│  │  Roslyn validate)  │    │  classes in registry)│                  │
+│  │  Roslyn validate) │    │  classes in registry)│                  │
 │  └───────────────────┘    └──────────┬───────────┘                  │
 │                                      │                              │
 │  ┌───────────────────────────────────▼──────────────────────────┐   │
@@ -54,7 +54,7 @@ The pipeline has **two analyzers** and **two generators**, with user approval ga
 │  │ Corpus   │───→│ PageObject        │───→│ PageObject           │  │
 │  │ (per     │    │ Analyzer +        │    │ Results              │  │
 │  │  page)   │    │ Generator         │    │ (C# PageObjectBase   │  │
-│  │          │    │ (LLM with control │    │  classes + containers)│  │
+│  │          │    │ (LLM with control │    │ classes + containers)│  │
 │  │ +Control │    │  object awareness)│    │                      │  │
 │  │  Objects │    │                   │    │                      │  │
 │  └──────────┘    └───────────────────┘    └──────────┬───────────┘  │
@@ -82,15 +82,15 @@ The ControlObject Analyzer examines the **entire corpus** (all pages for a site)
 
 ### What It Detects
 
-| Pattern | Example | ControlObject |
-|---------|---------|---------------|
-| Repeating form layout | Login form on `/login`, registration form on `/register` — same `<form>` structure | `LoginFormContainer` |
-| Shared navigation | `<nav class="main-nav">` present on every page | `MainNavContainer` |
-| Data table pattern | `<table>` with `<thead>`/`<tbody>` on `/users`, `/orders`, `/products` | `DataTableContainer` |
-| Custom widget | `<div class="date-picker">` with input + calendar button on 5 pages | `DatePickerContainer` |
-| Card/tile layout | `<div class="card">` with image + title + body + actions, repeated in lists | `CardContainer` |
-| Dialog/modal | `<div role="dialog">` with header, body, footer buttons | `DialogContainer` |
-| Toolbar | `<div class="toolbar">` with grouped buttons/actions | `ToolbarContainer` |
+| Pattern               | Example                                                                                   | ControlObject           |
+| --------------------- | ----------------------------------------------------------------------------------------- | ----------------------- |
+| Repeating form layout | Login form on `/login`, registration form on `/register` — same `<form>` structure | `LoginFormContainer`  |
+| Shared navigation     | `<nav class="main-nav">` present on every page                                          | `MainNavContainer`    |
+| Data table pattern    | `<table>` with `<thead>`/`<tbody>` on `/users`, `/orders`, `/products`        | `DataTableContainer`  |
+| Custom widget         | `<div class="date-picker">` with input + calendar button on 5 pages                     | `DatePickerContainer` |
+| Card/tile layout      | `<div class="card">` with image + title + body + actions, repeated in lists             | `CardContainer`       |
+| Dialog/modal          | `<div role="dialog">` with header, body, footer buttons                                 | `DialogContainer`     |
+| Toolbar               | `<div class="toolbar">` with grouped buttons/actions                                    | `ToolbarContainer`    |
 
 ### Analysis Process
 
@@ -344,12 +344,14 @@ After control objects are generated, `SkillService` creates/updates the `{site}-
   ```csharp
   public LoginFormContainer<MyPage> LoginForm =>
       Control<LoginFormContainer<MyPage>>(Locator.ByCss("form.login-form"));
-  ```
+```
 
 ## DataTableContainer
+
 - DOM signature: `table.data-grid`
 - Found on: /users, /orders, /products
 - Properties: Headers (Row), Rows (RowCollection), Pagination (PaginationContainer)
+
 ```
 
 This skill is loaded into the LLM generator agent context during PageObject generation, so the LLM knows which custom ControlObjects are available and when to use them.
@@ -363,52 +365,51 @@ The PageObject stage is a **combined analyze-and-generate** step. Unlike Control
 ### Generation Process (Per Page)
 
 ```
-1. Load DomSnapshot from corpus (latest version for the page)
 
+1. Load DomSnapshot from corpus (latest version for the page)
 2. Gather actionable elements:
+
    - If user selected specific elements during inspection → use those
    - Otherwise → filter to actionable tags:
      input, button, select, textarea, a, img, label, form, nav, table
-
 3. Run ControlGroupDetector on the page's DOM
    → identifies forms, tables, lists, etc. that should become
-     inline ContainerBase classes (page-specific containers)
-
+   inline ContainerBase classes (page-specific containers)
 4. Match against existing ControlObjects:
+
    - Compare DOM patterns against registered control objects
    - If a form on this page matches LoginFormContainer's signature → use it
    - If a pattern doesn't match any control object → generate inline container
-
 5. PromptBuilder.BuildPageObjectPrompt():
+
    - Page metadata (URL, title, element count)
    - Actionable elements (formatted DOM snippet)
    - Available ControlObjects from registry (with signatures + usage examples)
    - Locator preferences from LocatorReport
    - Container group suggestions (for inline containers)
    - Brinell conventions (from SKILL.md)
-
 6. ICopilotService.GenerateAsync(prompt) → generator model (gpt-4o)
    LLM generates:
-   - Main PageObject class: HtmlPageObjectBase<ClassName>
+
+   - Main PageObject class: HtmlPageObjectBase`<ClassName>`
    - Optional inline ContainerBase classes for page-specific groups
    - Properties typed as:
      a) Built-in types (TextInputControl, ButtonControl, etc.)
      b) Custom ControlObjects (LoginFormContainer, DataTableContainer, etc.)
      c) Inline containers (only for patterns unique to this page)
-
 7. CodeBlockParser — extracts multiple C# blocks:
+
    - First block = main PageObject
    - Subsequent blocks = inline container classes
-
 8. CodeValidator.ValidateWithRegistry(code, registry):
+
    - Syntax check (Roslyn)
    - Control type resolution (built-in + custom from registry)
    - Locator method validation
    - ByCss warning
-
 9. If errors → auto-retry once with feedback
-
 10. Return PageGenerationResult
+
 ```
 
 ### Generated PageObject Example
@@ -692,15 +693,15 @@ DomSnapshot                          (Input: scraped page DOM)
 
 ### Persistence Points
 
-| Stage | What's Persisted | Where |
-|-------|-----------------|-------|
-| Scraping | DomSnapshot (DOM tree JSON) | SQLite: Snapshots + Elements tables |
-| ControlObject Analysis | ControlProposal[] (with approval status) | SQLite: AnalysisResults table (new) |
-| ControlObject Analysis | LocatorReport | SQLite: AnalysisResults table (new) |
-| ControlObject Generation | GeneratedControl (C# code + metadata) | SQLite: Controls table (via IControlRegistry) |
-| Skill Generation | SKILL.md files | Disk: `./corpus/skills/{site}-controls/` |
-| PageObject Generation | PageGenerationResult (C# code + validation) | SQLite: PageObjects table (new) |
-| Code Output | .cs files | Disk: configured output path |
+| Stage                    | What's Persisted                            | Where                                         |
+| ------------------------ | ------------------------------------------- | --------------------------------------------- |
+| Scraping                 | DomSnapshot (DOM tree JSON)                 | SQLite: Snapshots + Elements tables           |
+| ControlObject Analysis   | ControlProposal[] (with approval status)    | SQLite: AnalysisResults table (new)           |
+| ControlObject Analysis   | LocatorReport                               | SQLite: AnalysisResults table (new)           |
+| ControlObject Generation | GeneratedControl (C# code + metadata)       | SQLite: Controls table (via IControlRegistry) |
+| Skill Generation         | SKILL.md files                              | Disk:`./corpus/skills/{site}-controls/`     |
+| PageObject Generation    | PageGenerationResult (C# code + validation) | SQLite: PageObjects table (new)               |
+| Code Output              | .cs files                                   | Disk: configured output path                  |
 
 ### New Database Tables
 
@@ -742,24 +743,25 @@ The pipeline requires the `ICopilotService` implementation (GitHub Copilot SDK).
 
 ### Custom Tools (Registered with Copilot SDK Agent)
 
-| Tool | Purpose | Used By |
-|------|---------|---------|
-| `list_recorded_pages()` | List all pages in the corpus with metadata | ControlObject Analyzer |
-| `get_page_snapshot(pageId)` | Get full DOM tree for a specific page | ControlObject Analyzer |
-| `find_similar_elements(selector)` | Search elements across all pages by CSS selector | ControlObject Analyzer |
-| `get_generated_controls()` | List existing ControlObjects with signatures | ControlObject Analyzer, PageObject Generator |
-| `search_corpus(query)` | Full-text search across page elements | Both analyzers |
+| Tool                                | Purpose                                          | Used By                                      |
+| ----------------------------------- | ------------------------------------------------ | -------------------------------------------- |
+| `list_recorded_pages()`           | List all pages in the corpus with metadata       | ControlObject Analyzer                       |
+| `get_page_snapshot(pageId)`       | Get full DOM tree for a specific page            | ControlObject Analyzer                       |
+| `find_similar_elements(selector)` | Search elements across all pages by CSS selector | ControlObject Analyzer                       |
+| `get_generated_controls()`        | List existing ControlObjects with signatures     | ControlObject Analyzer, PageObject Generator |
+| `search_corpus(query)`            | Full-text search across page elements            | Both analyzers                               |
 
 ### Agent Sessions
 
-| Agent | Model | Purpose | Skills Loaded |
-|-------|-------|---------|---------------|
-| Analyzer Agent | gpt-4o-mini (cheaper) | Cross-page pattern analysis | `brinell-conventions` |
-| Generator Agent | gpt-4o (smarter) | C# code generation | `brinell-conventions` + `{site}-controls` |
+| Agent           | Model                 | Purpose                     | Skills Loaded                                 |
+| --------------- | --------------------- | --------------------------- | --------------------------------------------- |
+| Analyzer Agent  | gpt-4o-mini (cheaper) | Cross-page pattern analysis | `brinell-conventions`                       |
+| Generator Agent | gpt-4o (smarter)      | C# code generation          | `brinell-conventions` + `{site}-controls` |
 
 ### Prompt Templates
 
 **ControlObject Analysis Prompt:**
+
 ```
 Analyze the following corpus of {pageCount} web pages for the site "{siteName}".
 
@@ -783,6 +785,7 @@ Respond with a JSON block: { "proposedControls": [...], "locatorReport": {...} }
 ```
 
 **PageObject Generation Prompt:**
+
 ```
 Generate a Brinell HtmlPageObjectBase<{ClassName}> for the page at {pageUrl}.
 
@@ -812,60 +815,60 @@ Generate inline ContainerBase classes for page-specific groups not covered by ex
 
 ### Retry Strategy
 
-| Stage | On Failure | Max Retries | Fallback |
-|-------|-----------|-------------|----------|
-| ControlObject Analysis (LLM) | Append error feedback to prompt, retry | 1 | Return partial results (local groups only) |
-| ControlObject Generation (LLM) | Append Roslyn errors to prompt, retry | 1 | Mark as failed, skip to next proposal |
-| PageObject Generation (LLM) | Append validation errors to prompt, retry | 1 | Mark as failed, show errors in Page Objects tab |
-| Roslyn Validation | — | — | Show errors in UI, allow manual edit |
-| Corpus Query (tools) | Log and skip | 2 | Return empty, LLM works with reduced context |
+| Stage                          | On Failure                                | Max Retries | Fallback                                        |
+| ------------------------------ | ----------------------------------------- | ----------- | ----------------------------------------------- |
+| ControlObject Analysis (LLM)   | Append error feedback to prompt, retry    | 1           | Return partial results (local groups only)      |
+| ControlObject Generation (LLM) | Append Roslyn errors to prompt, retry     | 1           | Mark as failed, skip to next proposal           |
+| PageObject Generation (LLM)    | Append validation errors to prompt, retry | 1           | Mark as failed, show errors in Page Objects tab |
+| Roslyn Validation              | —                                        | —          | Show errors in UI, allow manual edit            |
+| Corpus Query (tools)           | Log and skip                              | 2           | Return empty, LLM works with reduced context    |
 
 ### Common Failure Modes
 
-| Failure | Cause | Recovery |
-|---------|-------|----------|
-| LLM returns no JSON | Malformed response | Parser falls back to regex extraction |
-| Unknown control type in generated code | LLM invented a type | Validator catches, retry prompt includes "Only use these types: ..." |
-| ByCss overuse | LLM lazy locator choice | Warning in validation, user can regenerate with stricter prompt |
-| Duplicate ControlObject names | Two proposals named the same | Suffix with number, log warning |
-| Token limit exceeded | Too many elements in prompt | Truncate DOM to actionable elements only, paginate if needed |
+| Failure                                | Cause                        | Recovery                                                             |
+| -------------------------------------- | ---------------------------- | -------------------------------------------------------------------- |
+| LLM returns no JSON                    | Malformed response           | Parser falls back to regex extraction                                |
+| Unknown control type in generated code | LLM invented a type          | Validator catches, retry prompt includes "Only use these types: ..." |
+| ByCss overuse                          | LLM lazy locator choice      | Warning in validation, user can regenerate with stricter prompt      |
+| Duplicate ControlObject names          | Two proposals named the same | Suffix with number, log warning                                      |
+| Token limit exceeded                   | Too many elements in prompt  | Truncate DOM to actionable elements only, paginate if needed         |
 
 ---
 
 ## Implementation Steps
 
-| Step | Task | Files |
-|------|------|-------|
-| 13.1a | Create `ControlObjectAnalyzer` service | `Services/ControlObjectAnalyzer.cs` |
-| 13.1b | Create `ControlObjectAnalysisResult` model | `Models/ControlObjectAnalysisResult.cs` |
-| 13.1c | Create `ControlObjectMatcher` service | `Services/ControlObjectMatcher.cs` |
-| 13.2a | Create `PipelineOrchestrator` service | `Services/PipelineOrchestrator.cs` |
-| 13.2b | Add `AnalysisResults` table to database | `Services/CorpusService.cs` or migration |
-| 13.2c | Add `PageObjects` table to database | `Services/CorpusService.cs` or migration |
-| 13.3a | Update `PromptBuilder` with `BuildControlObjectAnalysisPrompt` | `Services/PromptBuilder.cs` |
-| 13.3b | Update `PromptBuilder` with improved `BuildPageObjectPrompt` | `Services/PromptBuilder.cs` |
-| 13.4a | Register pipeline services in DI | `App.xaml.cs` |
-| 13.4b | Wire `ControlObjectsTabViewModel` to pipeline | `ViewModels/ControlObjectsTabViewModel.cs` |
-| 13.4c | Wire `PageObjectsTabViewModel` to pipeline | `ViewModels/PageObjectsTabViewModel.cs` |
-| 13.5 | Implement `ICopilotService` (Copilot SDK integration) | `Services/CopilotService.cs` |
-| 13.6 | Implement custom tools for corpus queries | `Services/CorpusTools.cs` |
-| 13.7 | Implement `CodeOutputService` (.cs file writing) | `Services/CodeOutputService.cs` |
-| 13.8 | Update tests | `Brinell.Scraper.Tests/` |
-| 13.9 | Build + end-to-end test | — |
+| Step  | Task                                                               | Files                                        |
+| ----- | ------------------------------------------------------------------ | -------------------------------------------- |
+| 13.1a | Create `ControlObjectAnalyzer` service                           | `Services/ControlObjectAnalyzer.cs`        |
+| 13.1b | Create `ControlObjectAnalysisResult` model                       | `Models/ControlObjectAnalysisResult.cs`    |
+| 13.1c | Create `ControlObjectMatcher` service                            | `Services/ControlObjectMatcher.cs`         |
+| 13.2a | Create `PipelineOrchestrator` service                            | `Services/PipelineOrchestrator.cs`         |
+| 13.2b | Add `AnalysisResults` table to database                          | `Services/CorpusService.cs` or migration   |
+| 13.2c | Add `PageObjects` table to database                              | `Services/CorpusService.cs` or migration   |
+| 13.3a | Update `PromptBuilder` with `BuildControlObjectAnalysisPrompt` | `Services/PromptBuilder.cs`                |
+| 13.3b | Update `PromptBuilder` with improved `BuildPageObjectPrompt`   | `Services/PromptBuilder.cs`                |
+| 13.4a | Register pipeline services in DI                                   | `App.xaml.cs`                              |
+| 13.4b | Wire `ControlObjectsTabViewModel` to pipeline                    | `ViewModels/ControlObjectsTabViewModel.cs` |
+| 13.4c | Wire `PageObjectsTabViewModel` to pipeline                       | `ViewModels/PageObjectsTabViewModel.cs`    |
+| 13.5  | Implement `ICopilotService` (Copilot SDK integration)            | `Services/CopilotService.cs`               |
+| 13.6  | Implement custom tools for corpus queries                          | `Services/CorpusTools.cs`                  |
+| 13.7  | Implement `CodeOutputService` (.cs file writing)                 | `Services/CodeOutputService.cs`            |
+| 13.8  | Update tests                                                       | `Brinell.Scraper.Tests/`                   |
+| 13.9  | Build + end-to-end test                                            | —                                           |
 
 ---
 
 ## Dependencies
 
-| This Phase | Depends On |
-|------------|-----------|
-| 13.1 (ControlObject Analyzer) | Phase 4 (DOM capture), Phase 5 (existing AnalysisService, ControlGroupDetector) |
-| 13.2 (ControlObject Generator) | Phase 5 (existing ControlGenerationService) |
-| 13.3 (PageObject Generator) | Phase 5 (existing PageGenerationService), 13.2 (generated ControlObjects) |
-| 13.4 (Pipeline Orchestrator) | 13.1 + 13.2 + 13.3 |
-| 13.5 (Copilot SDK) | GitHub Copilot SDK package |
-| 13.7 (Code Output) | Phase 7 design (existing spec) |
-| UI integration | Phase 12 (Control Objects tab, Page Objects tab, Corpus tab) |
+| This Phase                     | Depends On                                                                      |
+| ------------------------------ | ------------------------------------------------------------------------------- |
+| 13.1 (ControlObject Analyzer)  | Phase 4 (DOM capture), Phase 5 (existing AnalysisService, ControlGroupDetector) |
+| 13.2 (ControlObject Generator) | Phase 5 (existing ControlGenerationService)                                     |
+| 13.3 (PageObject Generator)    | Phase 5 (existing PageGenerationService), 13.2 (generated ControlObjects)       |
+| 13.4 (Pipeline Orchestrator)   | 13.1 + 13.2 + 13.3                                                              |
+| 13.5 (Copilot SDK)             | GitHub Copilot SDK package                                                      |
+| 13.7 (Code Output)             | Phase 7 design (existing spec)                                                  |
+| UI integration                 | Phase 12 (Control Objects tab, Page Objects tab, Corpus tab)                    |
 
 ## Notes
 

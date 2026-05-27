@@ -251,6 +251,7 @@ public sealed class ScrapingTabViewModelTests : IDisposable
             new DomCaptureService(NullLogger<DomCaptureService>.Instance),
             new ElementHighlightService(NullLogger<ElementHighlightService>.Instance),
             new PageTransitionDetector(NullLogger<PageTransitionDetector>.Instance),
+            new ControlGroupDetector(),
             NullLogger<ScrapingTabViewModel>.Instance);
 
         return (browser, session, vm, corpusService);

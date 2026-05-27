@@ -43,9 +43,15 @@ private void ToggleSelection(DomElementNode node)
     _ = UpdateBrowserSelectionHighlights();
 }
 
-public void OnBrowserElementSelected(string selectorPath)
-{
-    var node = FindNodeByPath(TreeRoot, selectorPath);
+public void OnBrowserElementSelected(string selectorPath, bool inIframe)
+    {
+        // inIframe=true means the click originated inside a tracked CoreWebView2Frame.
+        // FindNodeByPath must restrict its search to nodes whose FrameIndex matches:
+        //   inIframe=false → FrameIndex == -1 (top frame)
+        //   inIframe=true  → FrameIndex >= 0 (any tracked iframe)
+        // This avoids ambiguity when the same CSS selector exists in both the top
+        // frame and an embedded iframe document.
+        var node = FindNodeByPath(TreeRoot, selectorPath, inIframe);
     if (node is not null)
         ToggleSelection(node);
 }
@@ -86,7 +92,7 @@ private void OnWebMessageReceived(object? sender, CoreWebView2WebMessageReceived
 }
 ```
 
-**inspect-overlay.js** — Ctrl+click handler:
+**inspect-overlay.js** — Ctrl+click handler (main frame):
 
 ```javascript
 document.addEventListener('click', (e) => {
@@ -94,9 +100,27 @@ document.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
     const path = generateSelectorPath(e.target);
-    window.chrome.webview.postMessage({ type: 'elementSelected', selectorPath: path });
+    window.chrome.webview.postMessage({ type: 'elementSelected', selectorPath: path, inIframe: false });
 }, true);
 ```
+
+**IFrameOverlayScript** — Ctrl+click handler injected into each tracked iframe (already in `ElementHighlightService.IFrameOverlayScript`):
+
+```javascript
+document.addEventListener('click', (e) => {
+    if (!e.ctrlKey || !window.__brinellInspectActive) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const path = generateSelectorPath(e.target);
+    // inIframe: true lets the receiver know to look up the element in the
+    // correct CoreWebView2Frame rather than the top-level document.
+    window.chrome.webview.postMessage({ type: 'elementSelected', selectorPath: path, inIframe: true });
+}, true);
+```
+
+> The existing `WebViewMessage` model already has `InIframe: bool` (`[JsonPropertyName("inIframe")]`).
+> `ScrapingTabViewModel.OnWebMessageReceived` must forward both `SelectorPath` **and** `InIframe`
+> to `Inspector.OnBrowserElementSelected`.
 
 ### UI elements
 
@@ -107,7 +131,9 @@ document.addEventListener('click', (e) => {
 ## Checklist
 
 - [ ] TreeView checkboxes toggle selection
-- [ ] Ctrl+click in browser toggles element selection (green highlight)
+- [ ] Ctrl+click in browser (main frame) toggles element selection (green highlight)
+- [ ] Ctrl+click inside an iframe toggles the correct tree node (uses `inIframe` flag)
+- [ ] `OnBrowserElementSelected(selectorPath, inIframe)` filters by `FrameIndex` to avoid ambiguity
 - [ ] Browser selection syncs with TreeView checkboxes bidirectionally
 - [ ] Status bar shows selected count and total element count
 - [ ] "Select All Forms" / "Select All Inputs" bulk actions work

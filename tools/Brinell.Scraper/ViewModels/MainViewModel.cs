@@ -76,7 +76,7 @@ public sealed class MainViewModel : ViewModelBase
         SiteSelection.SiteSelected += OnSiteSelected;
         Browser.ElementSelected += OnElementSelected;
         Browser.NavigationSucceeded += OnNavigationSucceeded;
-        Browser.IFrameNavigationSucceeded += OnIFrameNavigationSucceeded;
+        Browser.IFrameNavigationSucceededWithUrl += OnIFrameNavigationSucceeded;
         Recording.AnalyzePromptRequested += OnAnalyzePromptRequested;
         Recording.RecordingStarted += OnRecordingStarted;
         Recording.RecordingStopped += OnRecordingStopped;
@@ -432,7 +432,7 @@ public sealed class MainViewModel : ViewModelBase
         }
     }
 
-    private async void OnIFrameNavigationSucceeded()
+    private async void OnIFrameNavigationSucceeded(string? frameUrl)
     {
         if (!Recording.IsRecording) return;
 
@@ -441,12 +441,15 @@ public sealed class MainViewModel : ViewModelBase
 
         var snapshot = await _domCapture.CaptureAsync(webView, _highlight.TrackedFrames);
         snapshot.SiteName = ActiveSite?.Name ?? "";
-        snapshot.PageName = $"[iframe] {snapshot.PageTitle}";
+        var hasFrameUrl = !string.IsNullOrWhiteSpace(frameUrl);
+        snapshot.PageName = hasFrameUrl ? $"[iframe] {snapshot.PageTitle}" : snapshot.PageTitle;
 
-        if (Recording.OnPageTransition(snapshot.PageUrl, snapshot))
+        var transitionUrl = hasFrameUrl ? frameUrl! : snapshot.PageUrl;
+        var sourceType = hasFrameUrl ? "iframe" : "top-level";
+        if (Recording.OnPageTransition(transitionUrl, snapshot, sourceType))
         {
             Sidebar.AddSessionPage(snapshot);
-            _logger.LogInformation("IFrame page captured: {PageName} ({Url})", snapshot.PageName, snapshot.PageUrl);
+            _logger.LogInformation("IFrame page captured: {PageName} ({Url})", snapshot.PageName, transitionUrl);
         }
     }
 

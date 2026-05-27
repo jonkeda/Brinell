@@ -13,7 +13,7 @@ public sealed class RecordingViewModel : ViewModelBase
     private bool _isStopped;
     private string _recordingStatus = string.Empty;
     private DateTime _lastCaptureTime;
-    private string? _lastCapturedUrl;
+    private string? _lastCapturedTransitionKey;
 
     public RecordingViewModel(ILogger<RecordingViewModel> logger)
     {
@@ -80,7 +80,7 @@ public sealed class RecordingViewModel : ViewModelBase
     public void ClearSnapshots()
     {
         SessionSnapshots.Clear();
-        _lastCapturedUrl = null;
+        _lastCapturedTransitionKey = null;
     }
 
     public void StartRecording()
@@ -128,20 +128,25 @@ public sealed class RecordingViewModel : ViewModelBase
     /// Called when a page transition is detected during recording.
     /// Handles deduplication (same URL within 2 seconds) and paused state.
     /// </summary>
-    public bool OnPageTransition(string url, DomSnapshot snapshot)
+    public bool OnPageTransition(string url, DomSnapshot snapshot, string sourceType = "top-level")
     {
         if (!IsRecording || IsPaused)
             return false;
 
-        // Dedup: skip if same URL within 2 seconds
+        // Dedup: skip if same transition key within 2 seconds.
+        // Key includes source type to prevent iframe captures from suppressing top-level captures.
+        var transitionKey = $"{sourceType}|{url}";
         var now = DateTime.UtcNow;
-        if (_lastCapturedUrl == url && (now - _lastCaptureTime).TotalSeconds < 2)
+        if (_lastCapturedTransitionKey == transitionKey && (now - _lastCaptureTime).TotalSeconds < 2)
         {
-            _logger.LogDebug("Skipping duplicate transition to {Url} (within 2s window)", url);
+            _logger.LogDebug(
+                "Skipping duplicate transition to {Url} ({SourceType}) within 2s window",
+                url,
+                sourceType);
             return false;
         }
 
-        _lastCapturedUrl = url;
+        _lastCapturedTransitionKey = transitionKey;
         _lastCaptureTime = now;
 
         SessionSnapshots.Add(snapshot);

@@ -125,10 +125,17 @@ public partial class BrowserView : UserControl
     private void OnFrameCreated(object? sender, CoreWebView2FrameCreatedEventArgs e)
     {
         var frame = e.Frame;
+        string? lastFrameUrl = null;
+
+        frame.NavigationStarting += (_, args) =>
+        {
+            lastFrameUrl = args.Uri;
+        };
+
         frame.NavigationCompleted += (_, args) =>
         {
             if (args.IsSuccess)
-                _vm?.OnIFrameNavigationCompleted();
+                _vm?.OnIFrameNavigationCompleted(lastFrameUrl);
         };
     }
 

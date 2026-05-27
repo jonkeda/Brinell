@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Announcements Frame</title>
+  <style>
+    body { font-family: "Segoe UI", Tahoma, sans-serif; margin: 0; padding: 12px; color: #1f2937; }
+    h3 { margin: 0 0 8px; }
+    ul { margin: 0; padding-left: 18px; }
+    .time { margin-top: 10px; color: #6b7280; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <h3 data-testid="frame-title">Latest Announcements</h3>
+  <ul data-testid="announcement-list">
+    <li>Warehouse maintenance on Friday.</li>
+    <li>New chair stock arriving next week.</li>
+    <li>Coupon DAY10 active this month.</li>
+  </ul>
+  <div class="time" id="timestamp"></div>
+
+  <script>
+    document.getElementById("timestamp").textContent = "Loaded at " + new Date().toLocaleTimeString();
+  </script>
+</body>
+</html>

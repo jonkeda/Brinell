@@ -14,6 +14,8 @@ public sealed class ControlObjectListItem : ViewModelBase
     private string _code = "";
     private string _exampleSnippet = "";
     private int _usedByPageCount;
+    private bool _isGenerated;
+    private ControlProposal? _proposal;
 
     public string Name
     {
@@ -80,6 +82,19 @@ public sealed class ControlObjectListItem : ViewModelBase
         set => SetProperty(ref _usedByPageCount, value);
     }
 
+    public bool IsGenerated
+    {
+        get => _isGenerated;
+        set => SetProperty(ref _isGenerated, value);
+    }
+
+    /// <summary>The originating proposal, or null for registry-only controls with no analysis proposal.</summary>
+    public ControlProposal? Proposal
+    {
+        get => _proposal;
+        set => SetProperty(ref _proposal, value);
+    }
+
     public ObservableCollection<ControlPropertyItem> Properties { get; } = [];
 
     public string ConfidenceLabel => $"{_confidence}%";
@@ -88,6 +103,7 @@ public sealed class ControlObjectListItem : ViewModelBase
     {
         ControlObjectStatus.Approved => "✓",
         ControlObjectStatus.Rejected => "✗",
+        ControlObjectStatus.Generated => "⚡",
         _ => "⏳",
     };
 

@@ -5,4 +5,5 @@ public enum ControlObjectStatus
     Pending,
     Approved,
     Rejected,
+    Generated,
 }

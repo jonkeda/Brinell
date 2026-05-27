@@ -12,19 +12,28 @@ namespace Brinell.Scraper.ViewModels.Tabs;
 public sealed class ControlObjectsTabViewModel : ViewModelBase
 {
     private readonly IControlRegistry _controlRegistry;
+    private readonly CorpusService _corpusService;
+    private readonly ControlGenerationService? _controlGenerationService;
     private readonly ILogger<ControlObjectsTabViewModel> _logger;
     private readonly PipelineOrchestrator? _pipelineOrchestrator;
 
     private long _siteId;
+    private string _siteNamespace = "Brinell.Generated";
     private string _filterText = "";
     private ControlObjectListItem? _selectedControlObject;
+    private bool _isBusy;
+    private string? _statusMessage;
 
     public ControlObjectsTabViewModel(
         IControlRegistry controlRegistry,
+        CorpusService corpusService,
         ILogger<ControlObjectsTabViewModel> logger,
-        PipelineOrchestrator? pipelineOrchestrator = null)
+        PipelineOrchestrator? pipelineOrchestrator = null,
+        ControlGenerationService? controlGenerationService = null)
     {
         _controlRegistry = controlRegistry;
+        _corpusService = corpusService;
+        _controlGenerationService = controlGenerationService;
         _logger = logger;
         _pipelineOrchestrator = pipelineOrchestrator;
 
@@ -39,21 +48,25 @@ public sealed class ControlObjectsTabViewModel : ViewModelBase
 
         AnalyzeCorpusCommand = new AsyncRelayCommand(
             AnalyzeCorpusAsync,
-            () => _pipelineOrchestrator is not null);
+            () => _pipelineOrchestrator is not null && !IsBusy);
 
         GenerateAllPendingCommand = new AsyncRelayCommand(
             GenerateAllPendingAsync,
-            () => _pipelineOrchestrator is not null && PendingCount > 0);
+            () => _pipelineOrchestrator is not null && !IsBusy && ApprovedCount > 0);
 
         ImportCommand = new RelayCommand(Import);
         ExportCommand = new RelayCommand(Export);
 
         ApproveCommand = new RelayCommand<ControlObjectListItem>(
-            Approve, c => c is not null && c.Status != ControlObjectStatus.Approved);
+            Approve, c => c is not null
+                && c.Status != ControlObjectStatus.Approved
+                && c.Status != ControlObjectStatus.Generated);
         RejectCommand = new RelayCommand<ControlObjectListItem>(
-            Reject, c => c is not null && c.Status != ControlObjectStatus.Rejected);
+            Reject, c => c is not null
+                && c.Status != ControlObjectStatus.Rejected
+                && c.Status != ControlObjectStatus.Generated);
         RegenerateCommand = new AsyncRelayCommand<ControlObjectListItem>(
-            RegenerateAsync, c => c is not null && _pipelineOrchestrator is not null);
+            RegenerateAsync, c => c is not null && _controlGenerationService is not null && !IsBusy);
         DeleteCommand = new RelayCommand<ControlObjectListItem>(
             Delete, c => c is not null);
         CopyCodeCommand = new RelayCommand<ControlObjectListItem>(
@@ -89,6 +102,26 @@ public sealed class ControlObjectsTabViewModel : ViewModelBase
         }
     }
 
+    public bool IsBusy
+    {
+        get => _isBusy;
+        private set
+        {
+            if (SetProperty(ref _isBusy, value))
+            {
+                ((AsyncRelayCommand)AnalyzeCorpusCommand).RaiseCanExecuteChanged();
+                ((AsyncRelayCommand)GenerateAllPendingCommand).RaiseCanExecuteChanged();
+                ((AsyncRelayCommand<ControlObjectListItem>)RegenerateCommand).RaiseCanExecuteChanged();
+            }
+        }
+    }
+
+    public string? StatusMessage
+    {
+        get => _statusMessage;
+        private set => SetProperty(ref _statusMessage, value);
+    }
+
     public int TotalCount => ControlObjects.Count;
     public int ApprovedCount => ControlObjects.Count(c => c.Status == ControlObjectStatus.Approved);
     public int PendingCount => ControlObjects.Count(c => c.Status == ControlObjectStatus.Pending);
@@ -108,18 +141,60 @@ public sealed class ControlObjectsTabViewModel : ViewModelBase
     public ICommand AddPropertyCommand { get; }
     public ICommand RemovePropertyCommand { get; }
 
-    public void LoadControlObjects(long siteId)
+    public void LoadControlObjects(long siteId, string? siteNamespace = null)
     {
         _siteId = siteId;
+        if (!string.IsNullOrWhiteSpace(siteNamespace))
+            _siteNamespace = siteNamespace;
         ControlObjects.Clear();
 
-        foreach (var ctrl in _controlRegistry.GetAllControls())
-            ControlObjects.Add(MapFromGenerated(ctrl));
+        var generated = _controlRegistry.GetAllControls();
+        var analysisResult = _corpusService.GetCurrentAnalysisResult(siteId);
 
-        // Phase 13.1 will populate pending proposals from the analysis-result store; no store yet.
+        // Index generated controls by name for O(1) lookup.
+        var generatedByName = generated.ToDictionary(
+            g => g.Name, g => g, StringComparer.OrdinalIgnoreCase);
+
+        // Process proposals first.
+        if (analysisResult is not null)
+        {
+            foreach (var proposal in analysisResult.Proposals)
+            {
+                generatedByName.TryGetValue(proposal.Name, out var matchingControl);
+
+                var status = matchingControl is not null
+                    ? ControlObjectStatus.Generated
+                    : proposal.Status;
+
+                ControlObjects.Add(new ControlObjectListItem
+                {
+                    Name = proposal.Name,
+                    DomSignature = proposal.DomSignature,
+                    Confidence = proposal.Confidence,
+                    ExampleSnippet = proposal.ExampleSnippet,
+                    Status = status,
+                    IsGenerated = matchingControl is not null,
+                    Proposal = proposal,
+                    Code = matchingControl?.Code ?? "",
+                    Namespace = matchingControl?.Namespace ?? "",
+                    CreatedAt = matchingControl?.CreatedAt.UtcDateTime ?? default,
+                });
+            }
+        }
+
+        // Append any generated controls that have no matching proposal.
+        foreach (var ctrl in generated)
+        {
+            if (ControlObjects.Any(i =>
+                    string.Equals(i.Name, ctrl.Name, StringComparison.OrdinalIgnoreCase)))
+                continue;
+
+            ControlObjects.Add(MapFromGenerated(ctrl));
+        }
+
         _logger.LogInformation(
-            "Control Objects loaded — SiteId: {SiteId}, Count: {Count}, PipelineAvailable: {PipelineAvailable}",
-            siteId, ControlObjects.Count, _pipelineOrchestrator is not null);
+            "Control Objects loaded — SiteId: {SiteId}, Count: {Count}, Proposals: {Proposals}, PipelineAvailable: {PipelineAvailable}",
+            siteId, ControlObjects.Count, analysisResult?.Proposals.Count ?? 0, _pipelineOrchestrator is not null);
 
         RaiseSummaryChanged();
     }
@@ -129,7 +204,8 @@ public sealed class ControlObjectsTabViewModel : ViewModelBase
         Name = c.Name,
         Namespace = c.Namespace,
         Confidence = (int)Math.Round(c.Confidence),
-        Status = ControlObjectStatus.Approved,
+        Status = ControlObjectStatus.Generated,
+        IsGenerated = true,
         DomSignature = c.DomSignature,
         CreatedAt = c.CreatedAt.UtcDateTime,
         Code = c.Code,
@@ -153,19 +229,85 @@ public sealed class ControlObjectsTabViewModel : ViewModelBase
         ((AsyncRelayCommand)GenerateAllPendingCommand).RaiseCanExecuteChanged();
     }
 
-    private Task AnalyzeCorpusAsync(CancellationToken ct)
+    private async Task AnalyzeCorpusAsync(CancellationToken ct)
     {
-        _logger.LogInformation(
-            "AnalyzeCorpus requested — SiteId: {SiteId} (Phase 13.4 PipelineOrchestrator not yet wired)",
-            _siteId);
-        return Task.CompletedTask;
+        if (IsBusy || _pipelineOrchestrator is null) return;
+
+        try
+        {
+            IsBusy = true;
+            StatusMessage = "Analyzing corpus for control objects\u2026";
+
+            var result = await _pipelineOrchestrator.AnalyzeForControlObjectsAsync(_siteId, ct);
+
+            _logger.LogInformation(
+                "Analysis complete — SiteId: {SiteId}, Proposals: {Count}",
+                _siteId, result.Proposals.Count);
+
+            StatusMessage = $"Analysis complete \u2014 {result.Proposals.Count} proposals found.";
+
+            LoadControlObjects(_siteId);
+        }
+        catch (OperationCanceledException)
+        {
+            StatusMessage = "Analysis cancelled.";
+            _logger.LogInformation("Corpus analysis cancelled — SiteId: {SiteId}", _siteId);
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Analysis failed: {ex.Message}";
+            _logger.LogError(ex, "Corpus analysis failed — SiteId: {SiteId}", _siteId);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
 
-    private Task GenerateAllPendingAsync(CancellationToken ct)
+    private async Task GenerateAllPendingAsync(CancellationToken ct)
     {
-        _logger.LogInformation(
-            "GenerateAllPending requested (Phase 13.4 PipelineOrchestrator not yet wired)");
-        return Task.CompletedTask;
+        if (IsBusy || _pipelineOrchestrator is null) return;
+
+        try
+        {
+            IsBusy = true;
+
+            var approved = ControlObjects
+                .Where(x => x.Status == ControlObjectStatus.Approved && x.Proposal is not null)
+                .Select(x => x.Proposal!)
+                .ToList();
+
+            StatusMessage = $"Generating {approved.Count} approved control(s)\u2026";
+
+            var locator = _corpusService.GetCurrentAnalysisResult(_siteId)?.LocatorReport;
+            await _pipelineOrchestrator.GenerateControlObjectsAsync(
+                _siteId, approved, _siteNamespace, locator, ct);
+
+            _logger.LogInformation(
+                "Batch generation complete — SiteId: {SiteId}, Count: {Count}",
+                _siteId, approved.Count);
+            StatusMessage = "Generation complete.";
+
+            LoadControlObjects(_siteId, _siteNamespace);
+        }
+        catch (Exceptions.LlmAuthRequiredException ex)
+        {
+            StatusMessage = "Authentication required — check your API key configuration.";
+            _logger.LogWarning(ex, "LLM auth required during control generation — SiteId: {SiteId}", _siteId);
+        }
+        catch (OperationCanceledException)
+        {
+            StatusMessage = "Generation cancelled.";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Generation failed: {ex.Message}";
+            _logger.LogError(ex, "Batch generation failed — SiteId: {SiteId}", _siteId);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
 
     private void Import()
@@ -178,6 +320,8 @@ public sealed class ControlObjectsTabViewModel : ViewModelBase
     {
         if (item is null) return;
         item.Status = ControlObjectStatus.Approved;
+        if (item.Proposal is not null)
+            _corpusService.UpdateProposalApproval(_siteId, item.Name, ControlObjectStatus.Approved);
         _logger.LogInformation("Control approved — Name: {Name}", item.Name);
         RaiseSummaryChanged();
         FilteredControlObjects.Refresh();
@@ -187,17 +331,71 @@ public sealed class ControlObjectsTabViewModel : ViewModelBase
     {
         if (item is null) return;
         item.Status = ControlObjectStatus.Rejected;
+        if (item.Proposal is not null)
+            _corpusService.UpdateProposalApproval(_siteId, item.Name, ControlObjectStatus.Rejected);
         _logger.LogInformation("Control rejected — Name: {Name}", item.Name);
         RaiseSummaryChanged();
         FilteredControlObjects.Refresh();
     }
 
-    private Task RegenerateAsync(ControlObjectListItem? item, CancellationToken ct)
+    private async Task RegenerateAsync(ControlObjectListItem? item, CancellationToken ct)
     {
-        if (item is null) return Task.CompletedTask;
-        _logger.LogInformation(
-            "Regenerate requested — Name: {Name} (Phase 13.4 not yet wired)", item.Name);
-        return Task.CompletedTask;
+        if (item is null || IsBusy || _controlGenerationService is null) return;
+
+        if (item.Proposal is null)
+        {
+            _logger.LogWarning(
+                "Cannot regenerate {Name}: no proposal data", item.Name);
+            return;
+        }
+
+        try
+        {
+            IsBusy = true;
+            StatusMessage = $"Regenerating {item.Name}\u2026";
+            item.Status = ControlObjectStatus.Approved;
+
+            if (item.IsGenerated)
+            {
+                try { _controlRegistry.DeleteControl(item.Name); }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex,
+                        "Delete before regenerate failed — Name: {Name}", item.Name);
+                }
+            }
+
+            var generated = await _controlGenerationService.GenerateControlAsync(
+                item.Proposal, _siteNamespace, ct);
+
+            item.Code = generated.Code;
+            item.Namespace = generated.Namespace;
+            item.CreatedAt = generated.CreatedAt.UtcDateTime;
+            item.Status = ControlObjectStatus.Generated;
+            item.IsGenerated = true;
+
+            _logger.LogInformation("Regenerated control — Name: {Name}", item.Name);
+            StatusMessage = $"Regenerated {item.Name}.";
+        }
+        catch (Exceptions.LlmAuthRequiredException ex)
+        {
+            StatusMessage = "Authentication required — check your API key configuration.";
+            _logger.LogWarning(ex,
+                "LLM auth required during regeneration — Name: {Name}", item.Name);
+        }
+        catch (OperationCanceledException)
+        {
+            StatusMessage = $"Regeneration of {item.Name} cancelled.";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Regeneration failed: {ex.Message}";
+            _logger.LogError(ex, "Regeneration failed — Name: {Name}", item.Name);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
 
     private void Delete(ControlObjectListItem? item)
@@ -205,7 +403,7 @@ public sealed class ControlObjectsTabViewModel : ViewModelBase
         if (item is null) return;
         ControlObjects.Remove(item);
 
-        if (item.Status == ControlObjectStatus.Approved && !string.IsNullOrEmpty(item.Name))
+        if (item.Status == ControlObjectStatus.Generated && !string.IsNullOrEmpty(item.Name))
         {
             try
             {

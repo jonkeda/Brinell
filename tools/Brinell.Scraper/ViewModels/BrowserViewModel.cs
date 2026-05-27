@@ -97,8 +97,18 @@ public sealed class BrowserViewModel : ViewModelBase
 
     public event Action? NavigationSucceeded;
 
+    /// <summary>
+    /// Fired for every top-level navigation completion, whether success or failure.
+    /// </summary>
+    public event Action<bool>? NavigationFinished;
+
     /// <summary>Fired when a child iframe completes a navigation.</summary>
     public event Action? IFrameNavigationSucceeded;
+
+    /// <summary>
+    /// Fired when a child iframe completes a navigation, including the best-known frame URL.
+    /// </summary>
+    public event Action<string?>? IFrameNavigationSucceededWithUrl;
 
     public void OnNavigationCompleted(bool isSuccess, string? errorStatus)
     {
@@ -111,6 +121,8 @@ public sealed class BrowserViewModel : ViewModelBase
         {
             _logger.LogWarning("Navigation failed: {Url}, Error: {ErrorStatus}", AddressUrl, errorStatus);
         }
+
+        NavigationFinished?.Invoke(isSuccess);
         IsLoading = false;
         StatusText = isSuccess ? AddressUrl : $"Navigation failed: {errorStatus}";
     }
@@ -156,7 +168,11 @@ public sealed class BrowserViewModel : ViewModelBase
 
     public void OnElementSelected(WebViewMessage msg) => ElementSelected?.Invoke(msg);
 
-    public void OnIFrameNavigationCompleted() => IFrameNavigationSucceeded?.Invoke();
+    public void OnIFrameNavigationCompleted(string? frameUrl = null)
+    {
+        IFrameNavigationSucceeded?.Invoke();
+        IFrameNavigationSucceededWithUrl?.Invoke(frameUrl);
+    }
 }
 
 public sealed class SiteSelectionViewModel : ViewModelBase

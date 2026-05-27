@@ -53,7 +53,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -61,7 +61,7 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <StackPanel Grid.Column="1" Margin="40,48,40,40" Width="900">
+                <StackPanel Grid.Column="1" Margin="40,48,40,40" MaxWidth="900">
                     <!-- Title -->
                     <TextBlock Text="🔍 Brinell Scraper"
                                FontSize="36" FontWeight="Bold"
@@ -100,7 +100,7 @@
                                    VerticalAlignment="Center"/>
                         <Button Grid.Column="1" Content="+ New Site"
                                 Command="{Binding NewSiteCommand}"
-                                Padding="14,6" Background="#3B6BF0" Foreground="White"
+                            Padding="14,6" MinWidth="100" Background="#3B6BF0" Foreground="White"
                                 BorderThickness="0" FontWeight="SemiBold" Cursor="Hand"/>
                     </Grid>
 
