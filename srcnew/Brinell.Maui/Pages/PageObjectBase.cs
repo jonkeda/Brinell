@@ -4,6 +4,7 @@ using Brinell.Maui.Controls.Collection;
 using Brinell.Maui.Controls.Container;
 using Brinell.Maui.Controls.DateTime;
 using Brinell.Maui.Controls.Display;
+using Brinell.Maui.Controls.Generated;
 using Brinell.Maui.Controls.Media;
 using Brinell.Maui.Controls.Navigation;
 using Brinell.Maui.Controls.Range;
@@ -209,6 +210,30 @@ public abstract class PageObjectBase<TSelf> : ObjectBase, IMauiPage<TSelf>
         => new(this, locator);
 
     /// <summary>
+    /// Creates an icon command button control within this page scope.
+    /// </summary>
+    protected IconCommandButton<TSelf> IconCommandButton(Locator locator)
+        => new(this, locator);
+
+    /// <summary>
+    /// Creates an icon command button control within this page scope using automation ID.
+    /// </summary>
+    protected IconCommandButton<TSelf> IconCommandButton(string locator)
+        => new(this, locator);
+
+    /// <summary>
+    /// Creates a round button control within this page scope.
+    /// </summary>
+    protected RoundButton<TSelf> RoundButton(Locator locator)
+        => new(this, locator);
+
+    /// <summary>
+    /// Creates a round button control within this page scope using automation ID.
+    /// </summary>
+    protected RoundButton<TSelf> RoundButton(string locator)
+        => new(this, locator);
+
+    /// <summary>
     /// Creates an entry control within this page scope.
     /// </summary>
     protected Entry<TSelf> Entry(Locator locator)
@@ -219,6 +244,18 @@ public abstract class PageObjectBase<TSelf> : ObjectBase, IMauiPage<TSelf>
     /// </summary>
     protected Entry<TSelf> Entry(string locator)
         => new (this, locator);
+
+    /// <summary>
+    /// Creates a generated editable field control within this page scope.
+    /// </summary>
+    protected EditableField<TSelf> EditableField(Locator locator)
+        => new(this, locator);
+
+    /// <summary>
+    /// Creates a generated editable field control within this page scope using automation ID.
+    /// </summary>
+    protected EditableField<TSelf> EditableField(string locator)
+        => new(this, locator);
 
     #region Display Controls
 
@@ -353,6 +390,18 @@ public abstract class PageObjectBase<TSelf> : ObjectBase, IMauiPage<TSelf>
     /// </summary>
     protected Picker<TSelf> Picker(string locator)
         => new(this, locator);
+
+    /// <summary>
+    /// Creates a GenericBrowser control within this page scope.
+    /// </summary>
+    protected GenericBrowser<TSelf> GenericBrowser()
+        => new(this);
+
+    /// <summary>
+    /// Creates a selection list control within this page scope.
+    /// </summary>
+    protected SelectionList<TSelf> SelectionList()
+        => new(this);
 
     #endregion
 
@@ -542,6 +591,12 @@ public abstract class PageObjectBase<TSelf> : ObjectBase, IMauiPage<TSelf>
     /// </summary>
     protected Toolbar<TSelf> Toolbar(string locator)
         => new(this, locator);
+
+    /// <summary>
+    /// Creates a shared MAUI tab menu control within this page scope.
+    /// </summary>
+    protected TabMenu<TSelf> TabMenu()
+        => new(this);
 
     #endregion
 

@@ -10,7 +10,7 @@ Windows MAUI tests use **FlaUI** for native UI Automation. No external server re
 ## Build the Sample App
 
 ```powershell
-cd e:\repos\Clay\ClayBouwMobile\Brinell
+cd e:\repos\Clay\ClaiConstructionMobile\Brinell
 
 dotnet build samples/Brinell.Samples.Maui.App/Brinell.Samples.Maui.App.csproj `
     -f net10.0-windows10.0.19041.0 -r win-x64
@@ -19,7 +19,7 @@ dotnet build samples/Brinell.Samples.Maui.App/Brinell.Samples.Maui.App.csproj `
 ## Run the UI Tests
 
 ```powershell
-cd e:\repos\Clay\ClayBouwMobile\Brinell
+cd e:\repos\Clay\ClaiConstructionMobile\Brinell
 
 dotnet test testsnew/Brinell.Maui.UITests/Brinell.Maui.UITests.csproj
 ```

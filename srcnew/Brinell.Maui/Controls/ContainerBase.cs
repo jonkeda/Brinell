@@ -1,6 +1,8 @@
 using Brinell.Core.Locators;
 using Brinell.Maui.Controls.DateTime;
 using Brinell.Maui.Controls.Display;
+using Brinell.Maui.Controls.Generated;
+using Brinell.Maui.Controls.Navigation;
 using Brinell.Maui.Controls.Range;
 using Brinell.Maui.Controls.Selection;
 using Brinell.Maui.Controls.Text;
@@ -293,6 +295,30 @@ public abstract class ContainerBase<TParent, TSelf> : ControlBase<TParent>, IMau
         => new(this, locator);
 
     /// <summary>
+    /// Creates an icon command button control within this container scope.
+    /// </summary>
+    protected IconCommandButton<TSelf> IconCommandButton(Locator locator)
+        => new(this, locator);
+
+    /// <summary>
+    /// Creates an icon command button control within this container scope using automation ID.
+    /// </summary>
+    protected IconCommandButton<TSelf> IconCommandButton(string locator)
+        => new(this, locator);
+
+    /// <summary>
+    /// Creates a round button control within this container scope.
+    /// </summary>
+    protected RoundButton<TSelf> RoundButton(Locator locator)
+        => new(this, locator);
+
+    /// <summary>
+    /// Creates a round button control within this container scope using automation ID.
+    /// </summary>
+    protected RoundButton<TSelf> RoundButton(string locator)
+        => new(this, locator);
+
+    /// <summary>
     /// Creates an entry control within this page scope.
     /// </summary>
     protected Entry<TSelf> Entry(Locator locator)
@@ -302,6 +328,18 @@ public abstract class ContainerBase<TParent, TSelf> : ControlBase<TParent>, IMau
     /// Creates an entry control within this page scope using automation ID.
     /// </summary>
     protected Entry<TSelf> Entry(string locator)
+        => new(this, locator);
+
+    /// <summary>
+    /// Creates a generated editable field control within this container scope.
+    /// </summary>
+    protected EditableField<TSelf> EditableField(Locator locator)
+        => new(this, locator);
+
+    /// <summary>
+    /// Creates a generated editable field control within this container scope using automation ID.
+    /// </summary>
+    protected EditableField<TSelf> EditableField(string locator)
         => new(this, locator);
 
     #region Display Controls
@@ -413,6 +451,24 @@ public abstract class ContainerBase<TParent, TSelf> : ControlBase<TParent>, IMau
     /// </summary>
     protected Picker<TSelf> Picker(string locator)
         => new(this, locator);
+
+    /// <summary>
+    /// Creates a GenericBrowser control within this container scope.
+    /// </summary>
+    protected GenericBrowser<TSelf> GenericBrowser()
+        => new(this);
+
+    /// <summary>
+    /// Creates a selection list control within this container scope.
+    /// </summary>
+    protected SelectionList<TSelf> SelectionList()
+        => new(this);
+
+    /// <summary>
+    /// Creates a shared MAUI tab menu control within this container scope.
+    /// </summary>
+    protected TabMenu<TSelf> TabMenu()
+        => new(this);
 
     #endregion
 

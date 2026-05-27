@@ -219,7 +219,7 @@ appium --base-path /
 
 # Terminal 3: Run tests
 $env:APPIUM_PLATFORM = "android"
-cd e:\repos\Clay\ClayBouwMobile\Brinell\testsnew\Brinell.Maui.UITests
+cd e:\repos\Clay\ClaiConstructionMobile\Brinell\testsnew\Brinell.Maui.UITests
 dotnet build
 dotnet test --filter "ButtonControlTests" -v n
 ```
