@@ -15,7 +15,7 @@ namespace Brinell.Maui.FlaUI;
 /// Provides native Windows UI Automation support for MAUI desktop apps.
 /// Also implements pattern-based interfaces for enhanced Windows Automation support.
 /// </summary>
-public sealed class FlaUIMauiElement : IMauiElement, IRangePatternElement, IExpandCollapsePatternElement, INestedTextElement
+public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISelectionItemPatternElement, ILegacyIAccessiblePatternElement, IRangePatternElement, IExpandCollapsePatternElement, INestedTextElement, ITogglePatternElement
 {
     private readonly AutomationElement _element;
     private readonly FlaUIMauiDriver _driver;
@@ -168,25 +168,41 @@ public sealed class FlaUIMauiElement : IMauiElement, IRangePatternElement, IExpa
     {
         _driver.EnsureRootWindowFocused();
 
-        // Invoke pattern is instant and reliable for buttons/command controls.
-        if (_element.Patterns.Invoke.IsSupported)
-        {
-            _element.Patterns.Invoke.Pattern.Invoke();
+        if (InvokePattern())
             return;
-        }
 
-        // Direct click at element center.
+        if (SelectItemPattern())
+            return;
+
+        if (DoDefaultActionPattern())
+            return;
+
+        ClickWithPointerFallback();
+    }
+
+    private void ClickWithPointerFallback()
+    {
+        _driver.EnsureRootWindowFocused();
+
         var rect = _element.BoundingRectangle;
-        if (rect.Width > 0 && rect.Height > 0)
+        if (rect.Width <= 0 || rect.Height <= 0)
         {
-            var center = new Point(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
-            Mouse.Position = center;
-            Mouse.Click(MouseButton.Left);
-            return;
+            throw new InvalidOperationException(
+                $"Element is not gesture-clickable because bounds are empty ({rect}).");
         }
 
-        throw new InvalidOperationException(
-            $"Element is not clickable: Invoke pattern not supported and bounds are empty ({rect}).");
+        if (!PointerGesturesEnabled())
+        {
+            throw new InvalidOperationException(
+                "Pointer gestures are disabled. Brinell will not move the system mouse unless " +
+                "BRINELL_ALLOW_POINTER_INPUT=true is set for this test run.");
+        }
+
+        var center = new Point(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
+        Mouse.MoveTo(center);
+        Mouse.Down(MouseButton.Left);
+        WaitHelper.Pause(120);
+        Mouse.Up(MouseButton.Left);
     }
     
     /// <inheritdoc />
@@ -204,16 +220,11 @@ public sealed class FlaUIMauiElement : IMauiElement, IRangePatternElement, IExpa
                 Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_V);
                 break;
             case TextInputMethod.SetValue:
-                if (_element.Patterns.Value.IsSupported)
-                {
-                    _element.Patterns.Value.Pattern.SetValue(text);
-                }
-                else
-                {
-                    // Fallback to keyboard
-                    _element.Focus();
-                    Keyboard.Type(text);
-                }
+                if (TrySetTextValue(text))
+                    return;
+
+                _element.Focus();
+                Keyboard.Type(text);
                 break;
         }
     }
@@ -221,17 +232,13 @@ public sealed class FlaUIMauiElement : IMauiElement, IRangePatternElement, IExpa
     /// <inheritdoc />
     public void Clear()
     {
-        if (_element.Patterns.Value.IsSupported)
-        {
-            _element.Patterns.Value.Pattern.SetValue(string.Empty);
-        }
-        else
-        {
-            // Select all and delete
-            _element.Focus();
-            Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_A);
-            Keyboard.Type(VirtualKeyShort.DELETE);
-        }
+        if (TrySetTextValue(string.Empty))
+            return;
+
+        // Select all and delete
+        _element.Focus();
+        Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_A);
+        Keyboard.Type(VirtualKeyShort.DELETE);
     }
     
     /// <inheritdoc />
@@ -507,7 +514,197 @@ public sealed class FlaUIMauiElement : IMauiElement, IRangePatternElement, IExpa
     /// Gets the underlying FlaUI AutomationElement for internal use.
     /// </summary>
     internal AutomationElement Element => _element;
+
+    private static bool PointerGesturesEnabled()
+    {
+        var value = Environment.GetEnvironmentVariable("BRINELL_ALLOW_POINTER_INPUT");
+        return string.Equals(value, "true", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(value, "1", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(value, "yes", StringComparison.OrdinalIgnoreCase);
+    }
     
+    #endregion
+
+    #region ITogglePatternElement Implementation
+
+    /// <inheritdoc />
+    public bool SupportsTogglePattern
+    {
+        get
+        {
+            try
+            {
+                return _element.Patterns.Toggle.IsSupported;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+    }
+
+    /// <inheritdoc />
+    public bool? IsTogglePatternChecked()
+    {
+        try
+        {
+            if (!_element.Patterns.Toggle.IsSupported)
+                return null;
+
+            return _element.Patterns.Toggle.Pattern.ToggleState.Value ==
+                   global::FlaUI.Core.Definitions.ToggleState.On;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    /// <inheritdoc />
+    public bool TogglePattern()
+    {
+        try
+        {
+            if (!_element.Patterns.Toggle.IsSupported)
+                return false;
+
+            _driver.EnsureRootWindowFocused();
+            _element.Patterns.Toggle.Pattern.Toggle();
+            return true;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
+    /// <inheritdoc />
+    public bool SetToggleStatePattern(bool isChecked)
+    {
+        var current = IsTogglePatternChecked();
+        if (current == null)
+            return false;
+
+        if (current == isChecked)
+            return true;
+
+        return TogglePattern();
+    }
+
+    #endregion
+
+    #region IInvokePatternElement Implementation
+
+    /// <inheritdoc />
+    public bool SupportsInvokePattern
+    {
+        get
+        {
+            try
+            {
+                return _element.Patterns.Invoke.IsSupported;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+    }
+
+    /// <inheritdoc />
+    public bool InvokePattern()
+    {
+        try
+        {
+            if (!_element.Patterns.Invoke.IsSupported)
+                return false;
+
+            _driver.EnsureRootWindowFocused();
+            _element.Patterns.Invoke.Pattern.Invoke();
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    #endregion
+
+    #region ILegacyIAccessiblePatternElement Implementation
+
+    /// <inheritdoc />
+    public bool SupportsLegacyIAccessiblePattern
+    {
+        get
+        {
+            try
+            {
+                return _element.Patterns.LegacyIAccessible.IsSupported;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+    }
+
+    /// <inheritdoc />
+    public bool DoDefaultActionPattern()
+    {
+        try
+        {
+            if (!_element.Patterns.LegacyIAccessible.IsSupported)
+                return false;
+
+            _driver.EnsureRootWindowFocused();
+            _element.Patterns.LegacyIAccessible.Pattern.DoDefaultAction();
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    #endregion
+
+    #region ISelectionItemPatternElement Implementation
+
+    /// <inheritdoc />
+    public bool SupportsSelectionItemPattern
+    {
+        get
+        {
+            try
+            {
+                return _element.Patterns.SelectionItem.IsSupported;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+    }
+
+    /// <inheritdoc />
+    public bool SelectItemPattern()
+    {
+        try
+        {
+            if (!_element.Patterns.SelectionItem.IsSupported)
+                return false;
+
+            _driver.EnsureRootWindowFocused();
+            _element.Patterns.SelectionItem.Pattern.Select();
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     #endregion
     
     #region IRangePatternElement Implementation
@@ -824,9 +1021,7 @@ public sealed class FlaUIMauiElement : IMauiElement, IRangePatternElement, IExpa
     {
         try
         {
-            // Look for Edit (TextBox) control type in descendants
-            var textBox = _element.FindFirstDescendant(cf => 
-                cf.ByControlType(global::FlaUI.Core.Definitions.ControlType.Edit));
+            var textBox = FindNestedTextBoxElement();
             
             if (textBox != null)
                 return new FlaUIMauiElement(textBox, _driver);
@@ -875,15 +1070,10 @@ public sealed class FlaUIMauiElement : IMauiElement, IRangePatternElement, IExpa
         {
             bool IsEmpty(string? value) => string.IsNullOrEmpty(value);
 
-            var nestedTextBox = FindNestedTextBox();
-            var nestedAutomationElement = nestedTextBox is FlaUIMauiElement nested ? nested._element : null;
+            if (TrySetTextValue(string.Empty) && IsEmpty(GetNestedText()))
+                return true;
 
-            var focusTargets = new List<AutomationElement>();
-            if (nestedAutomationElement != null)
-            {
-                focusTargets.Add(nestedAutomationElement);
-            }
-            focusTargets.Add(_element);
+            var focusTargets = GetTextValueTargets();
 
             for (var attempt = 0; attempt < 3; attempt++)
             {
@@ -936,6 +1126,61 @@ public sealed class FlaUIMauiElement : IMauiElement, IRangePatternElement, IExpa
         {
             return false;
         }
+    }
+
+    /// <inheritdoc />
+    public bool SetTextWithFallback(string text)
+        => TrySetTextValue(text);
+
+    private AutomationElement? FindNestedTextBoxElement()
+    {
+        try
+        {
+            return _element.FindFirstDescendant(cf =>
+                cf.ByControlType(global::FlaUI.Core.Definitions.ControlType.Edit));
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private List<AutomationElement> GetTextValueTargets()
+    {
+        var targets = new List<AutomationElement>();
+        var nestedTextBox = FindNestedTextBoxElement();
+        if (nestedTextBox != null)
+            targets.Add(nestedTextBox);
+
+        if (!targets.Contains(_element))
+            targets.Add(_element);
+
+        return targets;
+    }
+
+    private bool TrySetTextValue(string text)
+    {
+        foreach (var target in GetTextValueTargets())
+        {
+            try
+            {
+                if (!target.Patterns.Value.IsSupported)
+                    continue;
+
+                var pattern = target.Patterns.Value.Pattern;
+                if (pattern.IsReadOnly.Value)
+                    continue;
+
+                pattern.SetValue(text);
+                return true;
+            }
+            catch
+            {
+                // Try the next candidate target.
+            }
+        }
+
+        return false;
     }
     
     #endregion

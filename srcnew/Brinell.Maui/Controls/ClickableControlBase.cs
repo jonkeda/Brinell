@@ -109,7 +109,7 @@ public abstract class ClickableControlBase<TScope> : ControlBase<TScope>, IClick
         CheckClickableCore(element, timeoutMs);
         element.Click();
     }
-    
+
     /// <summary>
     /// Performs double-click on pre-found element. No logging - caller handles logging.
     /// </summary>

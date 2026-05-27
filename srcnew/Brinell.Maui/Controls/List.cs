@@ -96,6 +96,43 @@ public class List<TScope, TItem> : ControlBase<TScope>, IScrollableControlObject
         }
         return items;
     }
+
+    /// <summary>
+    /// Selects an indexed item through the best available platform selection surface.
+    /// </summary>
+    public TScope SelectItem(int index, int? timeoutMs = null)
+    {
+        if (!TrySelectItem(index, timeoutMs))
+        {
+            throw new ElementNotFoundException($"Could not select item at index {index}. Locator: {Locator}");
+        }
+
+        return ContainingScope;
+    }
+
+    /// <summary>
+    /// Attempts to select an indexed item through the best available platform selection surface.
+    /// </summary>
+    public bool TrySelectItem(int index, int? timeoutMs = null)
+    {
+        if (index < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(index), index, "Index must be zero or greater.");
+        }
+
+        return Run(nameof(TrySelectItem), index, () =>
+        {
+            var item = Item(index);
+            if (item is not IContainerControl<IMauiElement> itemContainer)
+            {
+                return false;
+            }
+
+            return ElementActivator.TryActivateContainingListItemOrElement(
+                MauiScope,
+                itemContainer.ContainerRoot);
+        });
+    }
     
     /// <summary>
     /// Waits for a specific item count.

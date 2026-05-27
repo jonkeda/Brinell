@@ -46,13 +46,11 @@ public abstract class ScrollableControlBase<TScope> : ClickableControlBase<TScop
 
     #region IHtmlAsyncScrollable<TScope> explicit implementation
 
-    async Task<TScope> IHtmlAsyncScrollable<TScope>.ScrollTo(int x, int y)
-        => await RunWithElementAsync(async e =>
-            await e.Evaluate($"e => e.scrollTo({x}, {y})").ConfigureAwait(false)).ConfigureAwait(false);
+    Task<TScope> IHtmlAsyncScrollable<TScope>.ScrollTo(int x, int y)
+        => Task.FromResult(ScrollTo(x, y));
 
-    async Task<TScope> IHtmlAsyncScrollable<TScope>.ScrollToTop()
-        => await RunWithElementAsync(async e =>
-            await e.Evaluate("e => e.scrollTo(0, 0)").ConfigureAwait(false)).ConfigureAwait(false);
+    Task<TScope> IHtmlAsyncScrollable<TScope>.ScrollToTop()
+        => Task.FromResult(ScrollToTop());
 
     #endregion
 }

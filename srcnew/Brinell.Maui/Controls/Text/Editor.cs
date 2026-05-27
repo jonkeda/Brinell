@@ -1,3 +1,5 @@
+using Brinell.Core;
+
 namespace Brinell.Maui.Controls.Text;
 
 /// <summary>
@@ -67,13 +69,17 @@ public class Editor<TScope> : Entry<TScope>
         if (element is Interfaces.INestedTextElement textElement)
         {
             textElement.ClearWithFallback();
+            if (textElement.SetTextWithFallback(text))
+            {
+                return;
+            }
         }
         else
         {
             element.Clear();
         }
         
-        element.SendKeys(text);
+        element.SendKeys(text, TextInputMethod.SetValue);
     }
     
     #endregion

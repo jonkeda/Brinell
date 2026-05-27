@@ -68,6 +68,6 @@ public abstract class ContainerBase<TParent, TScope> : ObjectBase, IHtmlContaine
     public async Task<bool> WaitReadyAsync(int? timeoutMs = null)
     {
         var timeout = timeoutMs ?? DefaultTimeoutMs;
-        return await PollAsync(async () => IsReady(), timeout).ConfigureAwait(false);
+        return await PollAsync(() => Task.FromResult(IsReady()), timeout).ConfigureAwait(false);
     }
 }

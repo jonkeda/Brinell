@@ -56,52 +56,28 @@ public abstract class ToggleControlBase<TScope> : ClickableControlBase<TScope>, 
 
     #region IHtmlAsyncToggle<TScope> explicit implementation
 
-    async Task<bool> IHtmlAsyncToggle<TScope>.IsChecked()
-        => await RunWithElementAsync<bool>(async e =>
-            await e.GetIsChecked().ConfigureAwait(false)).ConfigureAwait(false);
+    Task<bool> IHtmlAsyncToggle<TScope>.IsChecked()
+        => Task.FromResult(IsChecked());
 
-    async Task<TScope> IHtmlAsyncToggle<TScope>.SetChecked(bool value)
-    {
-        if (value)
-            return await RunWithElementAsync(async e => await e.Check().ConfigureAwait(false)).ConfigureAwait(false);
-        else
-            return await RunWithElementAsync(async e => await e.Uncheck().ConfigureAwait(false)).ConfigureAwait(false);
-    }
+    Task<TScope> IHtmlAsyncToggle<TScope>.SetChecked(bool value)
+        => Task.FromResult(SetChecked(value));
 
-    async Task<bool> IHtmlAsyncToggle<TScope>.WaitChecked(bool expected, int? timeoutMs)
-    {
-        var timeout = timeoutMs ?? DefaultTimeoutMs;
-        return await PollAsync(async () =>
-        {
-            var element = TryFindAsyncElement();
-            if (element == null) return false;
-            return await element.GetIsChecked().ConfigureAwait(false) == expected;
-        }, timeout).ConfigureAwait(false);
-    }
+    Task<bool> IHtmlAsyncToggle<TScope>.WaitChecked(bool expected, int? timeoutMs)
+        => Task.FromResult(WaitChecked(expected, timeoutMs));
 
-    async Task<TScope> IHtmlAsyncToggle<TScope>.AssertChecked(bool expected)
-    {
-        var self = (IHtmlAsyncToggle<TScope>)this;
-        if (!await self.WaitChecked(expected).ConfigureAwait(false))
-        {
-            var actual = await self.IsChecked().ConfigureAwait(false);
-            throw new AssertionException(
-                $"Checked state mismatch. Expected: {expected}, Actual: {actual}");
-        }
-        return ContainingScope;
-    }
+    Task<TScope> IHtmlAsyncToggle<TScope>.AssertChecked(bool expected)
+        => Task.FromResult(AssertChecked(expected));
 
-    async Task<TScope> IHtmlAsyncToggle<TScope>.Check()
-        => await RunWithElementAsync(async e => await e.Check().ConfigureAwait(false)).ConfigureAwait(false);
+    Task<TScope> IHtmlAsyncToggle<TScope>.Check()
+        => Task.FromResult(SetChecked(true));
 
-    async Task<TScope> IHtmlAsyncToggle<TScope>.Uncheck()
-        => await RunWithElementAsync(async e => await e.Uncheck().ConfigureAwait(false)).ConfigureAwait(false);
+    Task<TScope> IHtmlAsyncToggle<TScope>.Uncheck()
+        => Task.FromResult(SetChecked(false));
 
     async Task<TScope> IHtmlAsyncToggle<TScope>.Toggle()
     {
-        var self = (IHtmlAsyncToggle<TScope>)this;
-        var current = await self.IsChecked().ConfigureAwait(false);
-        return await self.SetChecked(!current).ConfigureAwait(false);
+        var current = IsChecked();
+        return SetChecked(!current);
     }
 
     #endregion

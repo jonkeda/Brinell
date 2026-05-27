@@ -197,6 +197,22 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable
     
     #endregion
     
+    #region Popup Windows
+    
+    /// <inheritdoc />
+    /// <remarks>
+    /// On Appium (Android/iOS), dialogs are part of the normal element tree,
+    /// so this delegates to <see cref="FindElement"/>.
+    /// </remarks>
+    public IMauiElement FindPopupElement(Locator locator, int timeoutMs = 5000)
+        => FindElement(locator, timeoutMs);
+    
+    /// <inheritdoc />
+    public bool TryFindPopupElement(Locator locator, out IMauiElement? element, int timeoutMs = 0)
+        => TryFindElement(locator, out element, timeoutMs);
+    
+    #endregion
+    
     #region Platform-Specific
     
     /// <inheritdoc />

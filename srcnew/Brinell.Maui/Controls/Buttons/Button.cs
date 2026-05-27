@@ -28,4 +28,61 @@ public class Button<TScope> : ClickableControlBase<TScope>
         : base(scope, locatorValue)
     {
     }
+
+    /// <inheritdoc />
+    protected override void ClickCore(IMauiElement element, int? timeoutMs = null)
+    {
+        CheckClickableCore(element, timeoutMs);
+
+        var target = FindActivationTarget(element);
+
+        if (!ElementActivator.TryActivate(target))
+        {
+            throw new InvalidOperationException($"Could not activate button. Locator: {Locator}");
+        }
+    }
+
+    /// <summary>
+    /// Activates the button through keyboard input after focusing it.
+    /// Useful for MAUI/WinUI button surfaces where UIA Invoke reports success
+    /// without dispatching the app command.
+    /// </summary>
+    public TScope Press(int? timeoutMs = null)
+    {
+        return RunWithElement(nameof(Press), timeoutMs, element =>
+        {
+            PressCore(element, timeoutMs);
+        });
+    }
+
+    /// <summary>
+    /// Attempts to activate the button through keyboard input if it exists.
+    /// </summary>
+    public bool TryPress(int? timeoutMs = null)
+    {
+        var element = TryFindElement();
+        if (element == null)
+        {
+            return false;
+        }
+
+        EnsureVisible(element);
+        return Run(nameof(TryPress), () =>
+        {
+            PressCore(element, timeoutMs);
+            return true;
+        });
+    }
+
+    private void PressCore(IMauiElement element, int? timeoutMs = null)
+    {
+        CheckClickableCore(element, timeoutMs);
+        FindActivationTarget(element).SendKeys(Keys.Space);
+    }
+
+    private IMauiElement FindActivationTarget(IMauiElement element)
+        => ElementSearch.IsControlType(element, "Button")
+            ? element
+            : ElementSearch.FindChildByControlType(MauiScope, element, "Button")
+              ?? element;
 }

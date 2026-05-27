@@ -25,21 +25,24 @@ public abstract class SelectorControlBase<TScope> : FocusableControlBase<TScope>
 
     #region IHtmlAsyncSelector<TScope> explicit implementation
 
-    async Task<TScope> IHtmlAsyncSelector<TScope>.SelectByValue(string value)
-        => await RunWithElementAsync(async e =>
-            await e.SelectOption(value).ConfigureAwait(false)).ConfigureAwait(false);
+    Task<TScope> IHtmlAsyncSelector<TScope>.SelectByValue(string value)
+        => Task.FromResult(SelectByValue(value));
 
-    async Task<TScope> IHtmlAsyncSelector<TScope>.SelectByText(string text)
-        => await RunWithElementAsync(async e =>
-            await e.SelectOptionByLabel(text).ConfigureAwait(false)).ConfigureAwait(false);
+    Task<TScope> IHtmlAsyncSelector<TScope>.SelectByText(string text)
+        => Task.FromResult(SelectByText(text));
 
-    async Task<string?> IHtmlAsyncSelector<TScope>.GetSelectedValue()
-        => await RunWithElementAsync<string?>(async e =>
-            await e.Evaluate<string>("e => e.value").ConfigureAwait(false)).ConfigureAwait(false);
+    Task<string?> IHtmlAsyncSelector<TScope>.GetSelectedValue()
+        => Task.FromResult(GetSelectedValue());
 
-    async Task<TScope> IHtmlAsyncSelector<TScope>.SelectMultiple(params string[] values)
-        => await RunWithElementAsync(async e =>
-            await e.SelectOption(values).ConfigureAwait(false)).ConfigureAwait(false);
+    Task<TScope> IHtmlAsyncSelector<TScope>.SelectMultiple(params string[] values)
+    {
+        foreach (var value in values)
+        {
+            SelectByValue(value);
+        }
+
+        return Task.FromResult(ContainingScope);
+    }
 
     #endregion
 }
