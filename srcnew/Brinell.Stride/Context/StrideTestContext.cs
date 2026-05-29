@@ -50,7 +50,23 @@ public class StrideTestContext : IStrideTestContext
     {
         var response = SendCommand(AutomationCommand.Action("TakeScreenshot"));
         if (response.Success && response.Result is string base64)
+        {
+            if (File.Exists(base64))
+                return File.ReadAllBytes(base64);
+
             return Convert.FromBase64String(base64);
+        }
+
+        if (response.Success && response.Result is JsonElement json && json.ValueKind == JsonValueKind.String)
+        {
+            var value = json.GetString();
+            if (!string.IsNullOrWhiteSpace(value) && File.Exists(value))
+                return File.ReadAllBytes(value);
+
+            if (!string.IsNullOrWhiteSpace(value))
+                return Convert.FromBase64String(value);
+        }
+
         return [];
     }
 

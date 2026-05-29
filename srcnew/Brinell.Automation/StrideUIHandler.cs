@@ -475,32 +475,39 @@ public class StrideUIHandler : IAutomationHandler
     [SupportedOSPlatform("windows")]
     private void CaptureWindowScreenshot(IntPtr hwnd, string filePath)
     {
-        if (!GetWindowRect(hwnd, out var rect))
-            throw new InvalidOperationException("Failed to get window rect");
+        BringWindowToCaptureSurface(hwnd);
 
-        var width = rect.Right - rect.Left;
-        var height = rect.Bottom - rect.Top;
+        if (!GetClientRect(hwnd, out var clientRect))
+            throw new InvalidOperationException("Failed to get client rect");
 
-        var hdcWindow = GetDC(hwnd);
-        if (hdcWindow == IntPtr.Zero)
-            throw new InvalidOperationException("Failed to get device context");
+        var width = clientRect.Right - clientRect.Left;
+        var height = clientRect.Bottom - clientRect.Top;
+        if (width <= 0 || height <= 0)
+            throw new InvalidOperationException("Window client area is empty");
+
+        var clientPoint = new POINT { X = 0, Y = 0 };
+        ClientToScreen(hwnd, ref clientPoint);
+
+        var hdcScreen = GetDC(IntPtr.Zero);
+        if (hdcScreen == IntPtr.Zero)
+            throw new InvalidOperationException("Failed to get screen device context");
 
         try
         {
-            var hdcMemDC = CreateCompatibleDC(hdcWindow);
+            var hdcMemDC = CreateCompatibleDC(hdcScreen);
             if (hdcMemDC == IntPtr.Zero)
                 throw new InvalidOperationException("Failed to create compatible DC");
 
             try
             {
-                var hBitmap = CreateCompatibleBitmap(hdcWindow, width, height);
+                var hBitmap = CreateCompatibleBitmap(hdcScreen, width, height);
                 if (hBitmap == IntPtr.Zero)
                     throw new InvalidOperationException("Failed to create compatible bitmap");
 
                 try
                 {
                     var hOldBitmap = SelectObject(hdcMemDC, hBitmap);
-                    if (!BitBlt(hdcMemDC, 0, 0, width, height, hdcWindow, 0, 0, 0x00CC0020))
+                    if (!BitBlt(hdcMemDC, 0, 0, width, height, hdcScreen, clientPoint.X, clientPoint.Y, 0x00CC0020))
                         throw new InvalidOperationException("BitBlt failed");
                     SelectObject(hdcMemDC, hOldBitmap);
 
@@ -519,8 +526,18 @@ public class StrideUIHandler : IAutomationHandler
         }
         finally
         {
-            ReleaseDC(hwnd, hdcWindow);
+            ReleaseDC(IntPtr.Zero, hdcScreen);
+            SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
         }
+    }
+
+    [SupportedOSPlatform("windows")]
+    private static void BringWindowToCaptureSurface(IntPtr hwnd)
+    {
+        ShowWindow(hwnd, SW_RESTORE);
+        SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+        SetForegroundWindow(hwnd);
+        Thread.Sleep(200);
     }
 
     #endregion
@@ -533,7 +550,23 @@ public class StrideUIHandler : IAutomationHandler
 
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetClientRect(IntPtr hWnd, out RECT lpRect);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool ClientToScreen(IntPtr hWnd, ref POINT lpPoint);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
 
     [DllImport("user32.dll")]
     private static extern IntPtr GetDC(IntPtr hWnd);
@@ -559,6 +592,14 @@ public class StrideUIHandler : IAutomationHandler
 
     [DllImport("gdi32.dll")]
     private static extern bool DeleteObject(IntPtr hObject);
+
+    private static readonly IntPtr HWND_TOPMOST = new(-1);
+    private static readonly IntPtr HWND_NOTOPMOST = new(-2);
+    private const int SW_RESTORE = 9;
+    private const uint SWP_NOSIZE = 0x0001;
+    private const uint SWP_NOMOVE = 0x0002;
+    private const uint SWP_NOACTIVATE = 0x0010;
+    private const uint SWP_SHOWWINDOW = 0x0040;
 
     [StructLayout(LayoutKind.Sequential)]
     private struct RECT { public int Left, Top, Right, Bottom; }
