@@ -53,23 +53,28 @@ public sealed partial class InspectorViewModel : ViewModelBase
         ApplyFilter(TreeRoot, value);
     }
 
+    // Frame index: -1 = top frame, >=0 = index into TrackedFrames
+    public event Func<string, int, Task>? ExecuteJsRequested;
+
     [RelayCommand]
     private async Task HoverNode(DomElementNode node)
     {
         HoveredElement = node.Element;
-        // Highlight in browser via JS
+        // Highlight in browser via JS — route to correct frame for iframe elements.
         var script = $"window.__brinellHighlight('{node.Element.SelectorPath}');";
+        var frameIndex = node.FrameIndex; // -1 for top frame, >=0 for an iframe
         if (ExecuteJsRequested is not null)
-            await ExecuteJsRequested(script);
+            await ExecuteJsRequested(script, frameIndex);
     }
 
     [RelayCommand]
     private async Task SelectNode(DomElementNode node)
     {
-        // Scroll browser to element
+        // Scroll browser to element — must target the correct frame.
         var script = $"document.querySelector('{node.Element.SelectorPath}')?.scrollIntoView({{block:'center'}});";
+        var frameIndex = node.FrameIndex;
         if (ExecuteJsRequested is not null)
-            await ExecuteJsRequested(script);
+            await ExecuteJsRequested(script, frameIndex);
     }
 }
 ```
@@ -94,17 +99,26 @@ public sealed partial class InspectorViewModel : ViewModelBase
 
 ### Interaction flow
 
-1. User enables Inspect mode → `DomCaptureService.CaptureAsync` is called
+1. User enables Inspect mode → `DomCaptureService.CaptureAsync(webView, _highlight.TrackedFrames)` is called
+   - Pass `TrackedFrames` so cross-origin iframe DOM is merged into the snapshot
 2. Snapshot loaded into `InspectorViewModel.LoadSnapshot`
-3. Tree view appears in right panel
+   - Assign `FrameIndex` to each `DomElementNode` during tree construction:
+     - Top-frame elements: `FrameIndex = -1`
+     - Elements inside the Nth cross-origin iframe (merged by `CaptureFramesAsync`): `FrameIndex = N`
+3. Tree view appears in right panel (iframe subtrees shown as children of their `<iframe>` node)
 4. Hovering tree node → highlight element in browser (blue)
-5. Clicking tree node → scroll browser to that element
+   - `ExecuteJsRequested(script, frameIndex)` is routed by `ScrapingTabViewModel`:
+     - `frameIndex == -1` → `webView.ExecuteScriptAsync(script)`
+     - `frameIndex >= 0` → `_highlight.TrackedFrames[frameIndex].ExecuteScriptAsync(script)`
+5. Clicking tree node → scroll browser to that element (same frame routing as above)
 
 ## Checklist
 
 - [ ] Inspector panel appears when inspect mode enabled
-- [ ] DOM tree renders full hierarchy
+- [ ] `DomCaptureService.CaptureAsync` called with `_highlight.TrackedFrames`
+- [ ] DOM tree renders full hierarchy, including merged cross-origin iframe subtrees
+- [ ] `DomElementNode.FrameIndex` set correctly during tree construction (-1 = top, N = iframe)
 - [ ] Filter text box narrows visible nodes
-- [ ] Hovering tree node highlights element in browser
-- [ ] Clicking tree node scrolls browser to element
+- [ ] Hovering tree node highlights element in correct frame (main or iframe)
+- [ ] Clicking tree node scrolls browser to element in correct frame
 - [ ] Element count shown in status area

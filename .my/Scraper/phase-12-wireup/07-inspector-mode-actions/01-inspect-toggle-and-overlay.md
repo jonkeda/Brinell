@@ -51,16 +51,19 @@ Browser.InspectModeChanged += async (enabled) =>
     var webView = Browser.GetCoreWebView2?.Invoke();
     if (webView is null) return;
 
+    // Delegate to ElementHighlightService — it injects the overlay into the
+    // main frame AND all tracked iframes (via IFrameOverlayScript).
     if (enabled)
-    {
-        await webView.ExecuteScriptAsync(InspectOverlayScript.Inject);
-    }
+        await _highlight.EnableAsync(webView);
     else
-    {
-        await webView.ExecuteScriptAsync(InspectOverlayScript.Remove);
-    }
+        await _highlight.DisableAsync(webView);
 };
 ```
+
+> ⚠️ **Do NOT call `webView.ExecuteScriptAsync(...)` directly here.**
+> `ElementHighlightService.EnableAsync/DisableAsync` already handles both the top-level
+> frame and every tracked `CoreWebView2Frame` (populated via `TrackFrames()` wired up in
+> `BrowserView.xaml.cs`). Bypassing the service leaves iframe content without an overlay.
 
 ### Overlay behavior
 
@@ -69,10 +72,20 @@ Browser.InspectModeChanged += async (enabled) =>
 - Green border for selected elements (from multi-select, step 07c)
 - Overlay div is MutationObserver-safe (does not trigger app MutationObservers)
 
+## IFrame coverage (existing — must be preserved)
+
+The existing `ElementHighlightService` already handles iframes:
+- `TrackFrames(webView)` subscribes to `CoreWebView2.FrameCreated`; each new frame is added to `_trackedFrames` and removed on `frame.Destroyed`.
+- `frame.DOMContentLoaded` auto-injects `IFrameOverlayScript` whenever an iframe re-navigates (so the overlay survives SPA navigation inside iframes).
+- `EnableAsync` / `DisableAsync` inject/remove the overlay in every tracked frame.
+
+No new code is needed for iframe overlay support — wiring through `ElementHighlightService` is sufficient.
+
 ## Checklist
 
 - [ ] 🔍 Inspect button toggles `IsInspectMode`
-- [ ] Overlay JS injected on enable, removed on disable
-- [ ] Hovering elements shows blue highlight
+- [ ] `ElementHighlightService.EnableAsync/DisableAsync` called (not raw `ExecuteScriptAsync`)
+- [ ] Overlay injected into main frame AND all tracked iframes
+- [ ] Hovering elements in main frame and inside iframes shows blue highlight
 - [ ] Tooltip shows tag, id, aria-label, suggested locator
 - [ ] Overlay does not interfere with page functionality

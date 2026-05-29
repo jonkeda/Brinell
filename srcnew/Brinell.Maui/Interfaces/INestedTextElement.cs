@@ -28,4 +28,11 @@ public interface INestedTextElement
     /// </summary>
     /// <returns>True if successful, false if operation failed.</returns>
     bool ClearWithFallback();
+
+    /// <summary>
+    /// Sets text through direct or nested UI Automation value patterns for complex controls.
+    /// </summary>
+    /// <param name="text">The text to set.</param>
+    /// <returns>True if successful, false if operation failed.</returns>
+    bool SetTextWithFallback(string text);
 }

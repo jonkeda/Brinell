@@ -6,4 +6,5 @@ public sealed class ControlGroupSuggestion
     public required string DisplayName { get; init; }
     public required DomElement Element { get; init; }
     public List<DomElement> ChildElements { get; init; } = [];
+    public bool? IsAccepted { get; set; }
 }

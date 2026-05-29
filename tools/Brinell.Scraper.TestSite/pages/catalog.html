@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Phase 14 Demo Site - Catalog</title>
+  <link rel="stylesheet" href="../assets/site.css">
+  <script defer src="../assets/components.js"></script>
+  <script defer src="../assets/site.js"></script>
+</head>
+<body>
+  <header>
+    <h1 data-testid="catalog-title">Catalog</h1>
+    <nav>
+      <a href="../index.html">Home</a>
+      <a href="catalog.html">Catalog</a>
+      <a href="checkout.html">Checkout</a>
+      <a href="support.html">Support</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="grid">
+      <article class="card" data-testid="product-table-card">
+        <h2>Products</h2>
+        <table data-testid="product-table">
+          <thead>
+            <tr>
+              <th>SKU</th>
+              <th>Name</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>P-100</td>
+              <td>Desk Lamp</td>
+              <td><span class="badge">In Stock</span></td>
+              <td><button type="button" data-testid="add-p100" data-toast="Added Desk Lamp">Add</button></td>
+            </tr>
+            <tr>
+              <td>P-200</td>
+              <td>Office Chair</td>
+              <td><span class="badge">Low Stock</span></td>
+              <td><button type="button" data-testid="add-p200" data-toast="Added Office Chair">Add</button></td>
+            </tr>
+            <tr>
+              <td>P-300</td>
+              <td>USB Hub</td>
+              <td><span class="badge">Backorder</span></td>
+              <td><button type="button" data-testid="add-p300" data-toast="Added USB Hub">Add</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </article>
+
+      <article class="card" data-testid="catalog-filter-card">
+        <h2>Filter</h2>
+        <label>Category
+          <select data-testid="category-filter">
+            <option>All</option>
+            <option>Lighting</option>
+            <option>Furniture</option>
+            <option>Accessories</option>
+          </select>
+        </label>
+        <label>Price Range
+          <select data-testid="price-filter">
+            <option>Any</option>
+            <option>0-50</option>
+            <option>50-200</option>
+            <option>200+</option>
+          </select>
+        </label>
+        <demo-counter start="1" data-testid="results-page-counter"></demo-counter>
+      </article>
+    </section>
+
+    <section class="card" style="margin-top:1rem" data-testid="profile-frame-section">
+      <h2>Customer Profile Widget (IFrame)</h2>
+      <iframe src="../frames/profile-widget.html" title="Profile frame" data-testid="catalog-profile-frame"></iframe>
+    </section>
+
+    <div id="toastHost" aria-live="polite"></div>
+  </main>
+</body>
+</html>

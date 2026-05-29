@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Phase 14 Demo Site - Home</title>
+  <link rel="stylesheet" href="assets/site.css">
+  <script defer src="assets/components.js"></script>
+  <script defer src="assets/site.js"></script>
+</head>
+<body>
+  <header>
+    <h1 data-testid="site-title">Demo Shop Portal</h1>
+    <nav>
+      <a href="index.html" data-testid="nav-home">Home</a>
+      <a href="pages/catalog.html" data-testid="nav-catalog">Catalog</a>
+      <a href="pages/checkout.html" data-testid="nav-checkout">Checkout</a>
+      <a href="pages/support.html" data-testid="nav-support">Support</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="grid">
+      <article class="card" data-testid="welcome-panel">
+        <h2>Welcome</h2>
+        <p>Use this multi-page site to test scraping of forms, tables, custom controls, and iframes.</p>
+        <demo-pill label="Static Pages" tone="ok"></demo-pill>
+        <demo-pill label="IFrame Included" tone="warn"></demo-pill>
+        <div style="margin-top:10px">
+          <button data-testid="welcome-action" data-toast="Welcome action clicked">Trigger Action</button>
+        </div>
+      </article>
+
+      <article class="card" data-testid="quick-login-card">
+        <h2>Quick Login Form</h2>
+        <form>
+          <label>Email
+            <input type="email" data-testid="home-email" placeholder="tester@example.com">
+          </label>
+          <label>Password
+            <input type="password" data-testid="home-password" placeholder="Password">
+          </label>
+          <button type="button" class="secondary" data-testid="home-login" data-toast="Login attempt submitted">Sign In</button>
+        </form>
+      </article>
+    </section>
+
+    <section class="card" style="margin-top:1rem" data-testid="announcements-wrapper">
+      <h2>Announcements (IFrame)</h2>
+      <iframe src="frames/announcements.html" title="Announcements frame" data-testid="home-announcements-frame"></iframe>
+    </section>
+
+    <div id="toastHost" aria-live="polite"></div>
+  </main>
+
+  <footer>
+    Demo site for scraper validation. No SPA routing.
+  </footer>
+</body>
+</html>

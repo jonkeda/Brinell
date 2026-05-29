@@ -14,6 +14,8 @@ public sealed class WorkspaceViewModel : ViewModelBase, IDisposable
     private readonly ILogger<WorkspaceViewModel> _logger;
 
     private SiteInfo? _activeSite;
+    private string _displayUrl = string.Empty;
+    private bool _isOpeningSite;
     private int _selectedTabIndex;
     private bool _disposed;
 
@@ -42,6 +44,7 @@ public sealed class WorkspaceViewModel : ViewModelBase, IDisposable
         PageObjects.OpenSourcePageRequested += OnOpenSourcePageRequested;
         PageObjects.NavigateToControlObjectRequested += OnNavigateToControlObjectRequested;
         Corpus.OpenInBrowserRequested += OnOpenSourcePageRequested;
+        Scraping.Browser.NavigationFinished += OnBrowserNavigationFinished;
 
         BackCommand = new RelayCommand(() => BackRequested?.Invoke());
     }
@@ -49,9 +52,20 @@ public sealed class WorkspaceViewModel : ViewModelBase, IDisposable
     private void OnOpenSourcePageRequested(string url)
     {
         if (string.IsNullOrWhiteSpace(url)) return;
+        DisplayUrl = url;
+        IsOpeningSite = true;
+        Scraping.Browser.IsLoading = true;
         Scraping.Browser.AddressUrl = url;
         Scraping.Browser.NavigateCommand.Execute(null);
         SelectedTabIndex = 0;
+    }
+
+    private void OnBrowserNavigationFinished(bool _)
+    {
+        if (!string.IsNullOrWhiteSpace(Scraping.Browser.AddressUrl))
+            DisplayUrl = Scraping.Browser.AddressUrl;
+
+        IsOpeningSite = false;
     }
 
     private void OnNavigateToControlObjectRequested(string controlName)
@@ -68,6 +82,18 @@ public sealed class WorkspaceViewModel : ViewModelBase, IDisposable
     {
         get => _activeSite;
         private set => SetProperty(ref _activeSite, value);
+    }
+
+    public string DisplayUrl
+    {
+        get => _displayUrl;
+        private set => SetProperty(ref _displayUrl, value);
+    }
+
+    public bool IsOpeningSite
+    {
+        get => _isOpeningSite;
+        private set => SetProperty(ref _isOpeningSite, value);
     }
 
     public ScrapingTabViewModel Scraping { get; }
@@ -89,17 +115,26 @@ public sealed class WorkspaceViewModel : ViewModelBase, IDisposable
 
     public async Task LoadAsync(long siteId, string? navigateUrl = null)
     {
+        IsOpeningSite = true;
+        Scraping.Browser.IsLoading = true;
+        DisplayUrl = navigateUrl ?? string.Empty;
+
         var site = await Task.Run(() => _db.GetAllSites().FirstOrDefault(s => s.Id == siteId));
         if (site is null)
         {
             _logger.LogWarning("Workspace load failed — site not found. SiteId: {SiteId}", siteId);
+            IsOpeningSite = false;
+            Scraping.Browser.IsLoading = false;
             return;
         }
 
         ActiveSite = site;
         _db.TouchSite(siteId);
 
-        ControlObjects.LoadControlObjects(siteId);
+        if (string.IsNullOrWhiteSpace(DisplayUrl))
+            DisplayUrl = site.StartUrl;
+
+        ControlObjects.LoadControlObjects(siteId, site.Namespace);
         PageObjects.LoadPageObjects(siteId);
         Scraping.Session.Load(siteId, site.Name);
         Corpus.Load(siteId);
@@ -118,9 +153,15 @@ public sealed class WorkspaceViewModel : ViewModelBase, IDisposable
         var urlToLoad = !string.IsNullOrWhiteSpace(navigateUrl) ? navigateUrl : site.StartUrl;
         if (!string.IsNullOrWhiteSpace(urlToLoad))
         {
+            DisplayUrl = urlToLoad;
             Scraping.Browser.AddressUrl = urlToLoad;
             Scraping.Browser.NavigateCommand.Execute(null);
             SelectedTabIndex = 0;
+        }
+        else
+        {
+            IsOpeningSite = false;
+            Scraping.Browser.IsLoading = false;
         }
 
         _logger.LogInformation("Workspace loaded — Site: {Site} ({Id})", site.Name, site.Id);
@@ -141,6 +182,7 @@ public sealed class WorkspaceViewModel : ViewModelBase, IDisposable
         PageObjects.OpenSourcePageRequested -= OnOpenSourcePageRequested;
         PageObjects.NavigateToControlObjectRequested -= OnNavigateToControlObjectRequested;
         Corpus.OpenInBrowserRequested -= OnOpenSourcePageRequested;
+        Scraping.Browser.NavigationFinished -= OnBrowserNavigationFinished;
 
         Scraping.Dispose();
 

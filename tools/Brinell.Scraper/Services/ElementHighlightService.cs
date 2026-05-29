@@ -137,6 +137,47 @@ public sealed class ElementHighlightService
         await webView.ExecuteScriptAsync(script);
     }
 
+    /// <summary>
+    /// Adds or removes the green selection highlight on the element at the given bounding box.
+    /// Used to sync TreeView checkbox state back to the browser overlay.
+    /// </summary>
+    public async Task SetElementSelectionHighlightAsync(CoreWebView2 webView, BoundingBox box, bool selected)
+    {
+        var selectedJs = selected ? "true" : "false";
+        var script = $$"""
+            (function() {
+                const x = {{box.X}} + {{box.Width}} / 2;
+                const y = {{box.Y}} + {{box.Height}} / 2;
+                const el = document.elementFromPoint(x, y);
+                if (!el) return;
+                if ({{selectedJs}}) {
+                    el.setAttribute('data-brinell-selected', 'true');
+                    el.style.outline = '2px solid #34a853';
+                    el.style.outlineOffset = '-2px';
+                } else {
+                    el.removeAttribute('data-brinell-selected');
+                    el.style.outline = '';
+                    el.style.outlineOffset = '';
+                }
+            })();
+            """;
+        await webView.ExecuteScriptAsync(script);
+    }
+
+    /// <summary>
+    /// Clears all green selection highlights in the browser (e.g. after ClearSelection).
+    /// </summary>
+    public async Task ClearAllSelectionHighlightsAsync(CoreWebView2 webView)
+    {
+        await webView.ExecuteScriptAsync("""
+            document.querySelectorAll('[data-brinell-selected]').forEach(el => {
+                el.removeAttribute('data-brinell-selected');
+                el.style.outline = '';
+                el.style.outlineOffset = '';
+            });
+            """);
+    }
+
     private const string OverlayScript = """
         (function() {
             if (window.__brinellOverlay) return;

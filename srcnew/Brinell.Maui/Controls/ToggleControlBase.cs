@@ -1,3 +1,5 @@
+using Brinell.Maui.Interfaces;
+
 namespace Brinell.Maui.Controls;
 
 /// <summary>
@@ -74,80 +76,53 @@ public abstract class ToggleControlBase<TScope> : ClickableControlBase<TScope>, 
     protected virtual void ToggleCore(IMauiElement element)
     {
         var beforeState = IsCheckedCore(element);
-        
-        // Ensure element is visible before toggling
         EnsureVisible(element);
-        
-        // Attempt click
-        element.Click();
-        
-        // Wait for state change; retry if no change
-        var changed = PollWithElement(
-            element,
-            e => IsCheckedCore(e) != beforeState,
-            500);
 
-        if (!changed)
-        {
-            // Retry with windows: click extension (bypasses W3C Actions that fail on Windows)
-            RetryToggleWithWindowsClick(element, beforeState);
-        }
+        if (TryToggleByPattern(element, beforeState)
+            || TryToggleByActivation(element, beforeState)
+            || TryToggleByKeyboard(element, beforeState))
+            return;
+
+        throw new InvalidOperationException(
+            $"Could not toggle element without pointer input. Locator: {Locator}");
     }
-    
-    /// <summary>
-    /// Retry toggle using windows: click extension which bypasses W3C Actions API.
-    /// The standard Selenium Actions API fails on Windows with:
-    /// "Currently only pen and touch pointer input source types are supported"
-    /// </summary>
-    /// <param name="element">The element to toggle.</param>
-    /// <param name="beforeState">The state before the first toggle attempt.</param>
-    private void RetryToggleWithWindowsClick(IMauiElement element, bool? beforeState)
+
+    private bool TryToggleByPattern(IMauiElement element, bool? beforeState)
+    {
+        return element is ITogglePatternElement toggle
+               && toggle.SupportsTogglePattern
+               && toggle.TogglePattern()
+               && WaitForStateChange(element, beforeState);
+    }
+
+    private bool TryToggleByActivation(IMauiElement element, bool? beforeState)
+    {
+        return ElementActivator.TryActivate(element)
+               && WaitForStateChange(element, beforeState);
+    }
+
+    private bool TryToggleByKeyboard(IMauiElement element, bool? beforeState)
     {
         try
         {
-            // Try using windows: click extension first
-            var location = element.Location;
-            var size = element.Size;
-            var centerX = location.X + (size.Width / 2);
-            var centerY = location.Y + (size.Height / 2);
-            
-            Context.Driver.ExecuteScript("windows: click", new Dictionary<string, object>
-            {
-                { "x", centerX },
-                { "y", centerY }
-            });
-
-            var changed = PollWithElement(
-                element,
-                e => IsCheckedCore(e) != beforeState,
-                500);
-
-            if (!changed)
-            {
-                // Last resort: try SendKeys with Space (toggle key)
-                element.SendKeys(OpenQA.Selenium.Keys.Space);
-                _ = PollWithElement(
-                    element,
-                    e => IsCheckedCore(e) != beforeState,
-                    500);
-            }
+            element.SendKeys(OpenQA.Selenium.Keys.Space);
+            return WaitForStateChange(element, beforeState);
         }
         catch (Exception)
         {
-            // windows: click not supported, try keyboard fallback
-            try
-            {
-                element.SendKeys(OpenQA.Selenium.Keys.Space);
-                _ = PollWithElement(
-                    element,
-                    e => IsCheckedCore(e) != beforeState,
-                    500);
-            }
-            catch
-            {
-                // Swallow - let assertion catch the failure
-            }
+            return false;
         }
+    }
+
+    private bool WaitForStateChange(IMauiElement element, bool? beforeState)
+    {
+        if (beforeState == null)
+            return true;
+
+        return PollWithElement(
+            element,
+            e => IsCheckedCore(e) != beforeState,
+            500);
     }
     
     /// <summary>
@@ -158,10 +133,19 @@ public abstract class ToggleControlBase<TScope> : ClickableControlBase<TScope>, 
     protected virtual void SetCheckedCore(IMauiElement element, bool @checked)
     {
         var current = IsCheckedCore(element);
+        if (current == @checked)
+            return;
+
+        EnsureVisible(element);
+
+        if (element is ITogglePatternElement toggle
+            && toggle.SupportsTogglePattern
+            && toggle.SetToggleStatePattern(@checked)
+            && WaitCheckedCore(element, @checked, 500))
+            return;
+
         if (current != @checked)
-        {
             ToggleCore(element);
-        }
     }
     
     /// <summary>
@@ -173,6 +157,13 @@ public abstract class ToggleControlBase<TScope> : ClickableControlBase<TScope>, 
     protected virtual bool? IsCheckedCore(IMauiElement? element)
     {
         if (element == null) return null;
+
+        if (element is ITogglePatternElement toggle && toggle.SupportsTogglePattern)
+        {
+            var checkedViaPattern = toggle.IsTogglePatternChecked();
+            if (checkedViaPattern != null)
+                return checkedViaPattern;
+        }
         
         // Windows UIA patterns - try multiple attribute name formats
         // Different Appium Windows driver versions may expose these differently

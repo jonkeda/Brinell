@@ -21,10 +21,16 @@
             <Button Command="{Binding Browser.GoBackCommand}" Content="◀" ToolTip="Back" Padding="6,2"/>
             <Button Command="{Binding Browser.GoForwardCommand}" Content="▶" ToolTip="Forward" Padding="6,2"/>
             <Button Command="{Binding Browser.RefreshCommand}" Content="↻" ToolTip="Refresh" Padding="6,2"/>
+            <ProgressBar IsIndeterminate="True"
+                         Width="44"
+                         Height="10"
+                         Margin="6,0,6,0"
+                         VerticalAlignment="Center"
+                         Visibility="{Binding Browser.IsLoading, Converter={StaticResource BoolToVisibility}}"/>
             <TextBox x:Name="AddressBox"
                      Text="{Binding Browser.AddressUrl, UpdateSourceTrigger=PropertyChanged}"
                      KeyDown="AddressBar_KeyDown"
-                     MinWidth="500" Margin="4,0"/>
+                     Width="560" MinWidth="260" MaxWidth="760" Margin="4,0"/>
             <Button Command="{Binding Browser.NavigateCommand}" Content="Go" Padding="8,2"/>
             <Separator/>
             <Button Command="{Binding Recording.StartRecordingCommand}"
@@ -45,8 +51,8 @@
             <Separator/>
             <ToggleButton Content="🔍" ToolTip="Inspect"
                           IsChecked="{Binding Inspector.IsInspecting, Mode=OneWay}"
-                          Padding="6,2"
-                          IsEnabled="False"/>
+                          Command="{Binding Inspector.ToggleInspectCommand}"
+                          Padding="6,2"/>
             <Button Command="{Binding Inspector.CaptureSnapshotCommand}"
                     Content="📷" ToolTip="Capture DOM Snapshot (adds to session when recording, corpus otherwise)" Padding="6,2"/>
             <Separator/>
@@ -221,16 +227,38 @@
                     <TextBlock DockPanel.Dock="Top" Margin="4,2"
                                Text="{Binding Inspector.ControlGroupSummary}"
                                FontSize="11" Foreground="#666"/>
-                    <ItemsControl DockPanel.Dock="Top"
-                                  ItemsSource="{Binding Inspector.ControlGroups}"
-                                  MaxHeight="120" Margin="4,2">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <TextBlock FontSize="11" Margin="2,1"
-                                           Text="{Binding ContainerType, Mode=OneWay}"/>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="4,2">
+                        <Button Content="Accept All"
+                            Command="{Binding Inspector.AcceptAllGroupsCommand}"
+                            Padding="4,2" Margin="0,0,4,0" FontSize="11"/>
+                        <Button Content="Dismiss"
+                            Command="{Binding Inspector.DismissGroupsCommand}"
+                            Padding="4,2" FontSize="11"/>
+                        </StackPanel>
+                    <ScrollViewer DockPanel.Dock="Top"
+                                  MaxHeight="120"
+                                  Margin="4,2"
+                                  VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled">
+                        <ItemsControl ItemsSource="{Binding Inspector.ControlGroups}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" Margin="2,1">
+                                        <TextBlock FontSize="11" Width="140"
+                                                   Text="{Binding DisplayName, Mode=OneWay}"/>
+                                        <Button Content="Accept" Padding="4,1" Margin="0,0,4,0" FontSize="10"
+                                                Command="{Binding DataContext.Inspector.AcceptGroupCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}"/>
+                                        <Button Content="Reject" Padding="4,1" Margin="0,0,4,0" FontSize="10"
+                                                Command="{Binding DataContext.Inspector.RejectGroupCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}"/>
+                                        <TextBlock FontSize="10" Foreground="#888" VerticalAlignment="Center"
+                                                   Text="{Binding ContainerType, Mode=OneWay}"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
                     <TextBlock DockPanel.Dock="Bottom" Margin="4,2"
                                FontSize="11" Foreground="#888">
                         <Run Text="Selected: "/>

@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using Brinell.Core;
 
 namespace Brinell.Maui.Controls.Text;
 
@@ -110,6 +111,67 @@ public class Entry<TScope> : ControlBase<TScope>, IEditableTextControlObject<TSc
             SetTextCore(element, text, timeoutMs);
         });
     }
+
+    /// <summary>
+    /// Submits the entry by sending Enter to the existing edit element.
+    /// This is useful for MAUI Entry.Completed command paths, such as search boxes.
+    /// </summary>
+    public TScope Submit(int? timeoutMs = null)
+    {
+        if (!TrySubmit(timeoutMs))
+        {
+            throw new InvalidOperationException($"Could not submit entry. Locator: {Locator}");
+        }
+
+        return ContainingScope;
+    }
+
+    /// <summary>
+    /// Attempts to submit the entry by sending Enter without using pointer focus.
+    /// </summary>
+    public bool TrySubmit(int? timeoutMs = null)
+    {
+        return Run(nameof(TrySubmit), () =>
+        {
+            var timeout = timeoutMs ?? DefaultTimeoutMs;
+            IMauiElement element;
+            try
+            {
+                element = FindElementWithWait(timeout);
+            }
+            catch (Exception ex) when (ex is ElementNotFoundException or TimeoutException)
+            {
+                return false;
+            }
+
+            if (IsEnabledCore(element) != true && !WaitEnabledCore(element, true, timeout))
+            {
+                return false;
+            }
+
+            if (IsVisibleCore(element) != true)
+            {
+                try
+                {
+                    ScrollIntoViewCore(element);
+                }
+                catch (Exception ex) when (ex is InvalidOperationException or TimeoutException)
+                {
+                    return false;
+                }
+            }
+
+            try
+            {
+                element.SendKeys(Keys.Enter, TextInputMethod.Keys);
+                return true;
+            }
+            catch (InvalidOperationException)
+            {
+                return false;
+            }
+        });
+    }
     
     /// <summary>
     /// Appends text to existing content without clearing.
@@ -165,8 +227,13 @@ public class Entry<TScope> : ControlBase<TScope>, IEditableTextControlObject<TSc
     protected virtual void SetTextCore(IMauiElement element, string text, int? timeoutMs = null)
     {
         CheckEnabledCore(element, timeoutMs);
+        if (element is Interfaces.INestedTextElement textElement && textElement.SetTextWithFallback(text))
+        {
+            return;
+        }
+
         element.Clear();
-        element.SendKeys(text);
+        element.SendKeys(text, TextInputMethod.SetValue);
     }
     
     /// <summary>
