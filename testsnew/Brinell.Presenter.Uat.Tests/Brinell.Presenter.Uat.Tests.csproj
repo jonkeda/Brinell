@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Brinell.Presenter.Uat.Tests</RootNamespace>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\srcnew\Brinell.Uat\Brinell.Uat.csproj" />
+    <ProjectReference Include="..\..\srcnew\Brinell.Maui\Brinell.Maui.csproj" />
+    <ProjectReference Include="..\..\srcnew\Brinell.Maui.FlaUI\Brinell.Maui.FlaUI.csproj" />
+    <ProjectReference Include="..\..\srcnew\Brinell.Presenter\Brinell.Presenter.csproj" />
+    <ProjectReference Include="..\Brinell.Maui.UITests\Brinell.Maui.UITests.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="uat.config.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Scenarios\**\*.uat.md" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <Target Name="BuildPresenterSampleAut" BeforeTargets="Build">
+    <MSBuild Projects="..\..\samples\Brinell.Samples.Maui.App\Brinell.Samples.Maui.App.csproj"
+             Targets="Build"
+             Properties="Configuration=$(Configuration);TargetFramework=net10.0-windows10.0.19041.0" />
+  </Target>
+
+</Project>

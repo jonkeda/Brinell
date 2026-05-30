@@ -2,15 +2,16 @@
 
 This document sketches a first MAUI UI for the Markdown-driven Brinell UAT runner.
 
-The design assumes the app is a practical test workbench: load Markdown UATs, inspect the parsed scenarios, run them against Brinell MAUI page objects, and control execution speed or step manually.
+The runner is designed to sit side-by-side with the application under test. It is used to give demos to stakeholders and to step through UAT scenarios interactively. The layout must stay narrow and compact so it does not compete with the app window for screen space.
 
 ## Design Goals
 
-- Keep UAT files, scenario steps, and run state visible at the same time.
+- Stay as narrow and compact as possible so the runner can sit beside the app under test.
+- The scenario step list is the primary view; everything else is secondary.
+- Run controls are a compact toolbar, not a panel.
+- Diagnostics and loaded UAT files are in expanders, collapsed by default.
 - Make automatic execution and manual step execution equally easy.
-- Prefer explicit run status over hidden logs.
 - Make failures actionable by showing the failing step, page object binding, and available diagnostics.
-- Keep the first version MAUI-focused while leaving room for later adapters.
 
 ## Icon Legend
 
@@ -26,101 +27,101 @@ The design assumes the app is a practical test workbench: load Markdown UATs, in
 ## Main Runner Screen
 
 ```markui
-# Brinell UAT Runner - MAUI
+# Brinell UAT Runner
 
-[#1 File] [#2 Folder] [#7 Reparse]    Target: <MAUI v>    Adapter: <FlaUI v>
-Suite: <Checkout smoke suite________________>    Tags: (smoke x) (maui x)
+[#1] [#2] [#7]  Suite: <Checkout smoke suite____>  Tags: (smoke x)
 
-+--- Loaded UAT Files ----------------+
-| - checkout.md                       |
-|   - Create basket                   |
-|   - Apply discount                  |
-|   - Place order                     |
-| - login.md                          |
-|   - Valid login                     |
-|   - Locked account                  |
-| Filter: <smoke__________>           |
-| [x] Selected only                   |
-+-------------------------------------+
+[#3 Run] [#4 Pause] [#5 Stop] [#6 Next]  [- 500ms +]  [====......]
+2 passed, 1 running, 0 failed, 4 waiting
 
-+--- Scenario Steps ---------------------------------------------+
-| # Checkout can place an order                                  |
-| pass  Given I am on Login            LoginPage                 |
-| pass  When I enter credentials       LoginPage.SetCredentials  |
-| run   And I tap Sign in              SignInButton.Tap          |
-| wait  Then I should see Dashboard    DashboardPage.AssertOpen  |
-|                                                                |
-| Bound page: LoginPage                                          |
-| Bound action: SignInButton.Tap                                 |
-+----------------------------------------------------------------+
++--- Scenario Steps -------------------------------------------+
+| # Checkout can place an order                                |
+| pass  Given I am on Login            LoginPage               |
+| pass  When I enter credentials       LoginPage.SetCredentials|
+| run   And I tap Sign in              SignInButton.Tap        |
+| wait  Then I should see Dashboard    DashboardPage.AssertOpen|
+|                                                              |
+| Bound page: LoginPage                                        |
+| Bound action: SignInButton.Tap                               |
++--------------------------------------------------------------+
 
-+--- Run Control ---------------------+  +--- Diagnostics ----------------------+
-| Mode                                |  | Current result: running              |
-| (*) Auto run                        |  | Last event: Invoked SignInButton     |
-| ( ) Step run                        |  | Screenshot: available                |
-| Speed: [=====.....] 1.0x            |  | Trace: available                     |
-| Delay: [- 500 +] ms                 |  | [#8 Export Report]                   |
-| [#3 Run All] [#4 Pause]             |  | 10:14:21 Loaded 3 files              |
-| [#5 Stop]    [#6 Next]              |  | 10:14:25 Waiting for Dashboard       |
-| Progress: [====......]              |  |                                      |
-+-------------------------------------+  +--------------------------------------+
+v Loaded UAT Files (collapsed)
+  | - checkout.md                     |
+  |   - Create basket                 |
+  |   - Apply discount                |
+  |   - Place order                   |
+  | - login.md                        |
+  |   - Valid login                   |
+  |   - Locked account                |
+  | Filter: <smoke__________>         |
+  | [x] Selected only                 |
 
-Status: 2 passed, 1 running, 0 failed, 4 waiting
+v Diagnostics (collapsed)
+  | Current result: running            |
+  | Last event: Invoked SignInButton    |
+  | Screenshot: available              |
+  | Trace: available                   |
+  | [#8 Export Report]                 |
+  | 10:14:21 Loaded 3 files            |
+  | 10:14:25 Waiting for Dashboard     |
 ```
 
 ## Failure State
 
 ```markui
-# Brinell UAT Runner - Failure Detail
+# Brinell UAT Runner
 
-[#1 File] [#2 Folder] [#7 Reparse]    Target: <MAUI v>    Adapter: <FlaUI v>
+[#1] [#2] [#7]  Suite: <Login suite_____________>
 
-+--- Scenario Steps ---------------------------------------------+
-| # Locked account cannot sign in                                |
-| pass  Given I am on Login            LoginPage                 |
-| pass  When I enter locked user       LoginPage.SetCredentials  |
-| pass  And I tap Sign in              SignInButton.Tap          |
-| fail  Then I should see Locked out   ErrorBanner.AssertText    |
-|                                                                |
-| Expected: Locked out                                           |
-| Actual: Invalid credentials                                    |
-+----------------------------------------------------------------+
+[#3 Run] [#4 Pause] [#5 Stop] [#6 Next]  [- 500ms +]  stopped after failure
 
-+--- Failure --------------------------+  +--- Diagnostics --------------------+
-| Result: failed                       |  | Screenshot: captured               |
-| File: login.md                       |  | Automation tree: captured          |
-| Scenario: Locked account             |  | Runtime log: captured              |
-| Step: Then I should see Locked out   |  | Page object trace: captured        |
-| Page: LoginPage                      |  |                                    |
-| Control: ErrorBanner                 |  | [#8 Export Report]                 |
-| Action: AssertText                   |  |                                    |
-| [#6 Next] [#3 Retry Step]            |  |                                    |
-+--------------------------------------+  +------------------------------------+
++--- Scenario Steps -------------------------------------------+
+| # Locked account cannot sign in                              |
+| pass  Given I am on Login            LoginPage               |
+| pass  When I enter locked user       LoginPage.SetCredentials|
+| pass  And I tap Sign in              SignInButton.Tap        |
+| fail  Then I should see Locked out   ErrorBanner.AssertText  |
+|                                                              |
+| Expected: Locked out                                         |
+| Actual: Invalid credentials                                  |
++--------------------------------------------------------------+
 
-Status: stopped after failure
+v Failure Detail (auto-expanded on failure)
+  | File: login.md                     |
+  | Scenario: Locked account           |
+  | Step: Then I should see Locked out |
+  | Page: LoginPage                    |
+  | Control: ErrorBanner               |
+  | Action: AssertText                 |
+  | [#6 Next] [#3 Retry Step]          |
+
+v Diagnostics (auto-expanded on failure)
+  | Screenshot: captured               |
+  | Automation tree: captured          |
+  | Runtime log: captured              |
+  | Page object trace: captured        |
+  | [#8 Export Report]                 |
 ```
 
 ## Interaction Notes
 
-The main screen keeps the workflow in one place. A user can load one Markdown file or a folder, select scenarios, and immediately see how the Markdown was parsed into executable steps.
+The runner is a narrow companion window. The toolbar wraps if the window is very narrow; buttons and delay stepper flow onto a second line. The progress bar and status counts sit directly below the toolbar to keep run state visible without taking vertical space.
 
-The run controls are always visible. In automatic mode, the speed slider and delay stepper control pacing. In step mode, the `Next` button advances one executable step at a time.
+The center step list is the main trust surface. Each row moves through clear statuses: waiting, running, pass, fail, and skipped. When a step is selected, the bound page object and action appear inline below the step list.
 
-The center step list is the main trust surface. Each row should move through clear statuses such as waiting, running, pass, fail, and skipped. When a step is selected, the app should show the page object and action that the runner resolved.
+The Loaded UAT Files and Diagnostics sections are expanders, collapsed by default. During a demo, only the step list and toolbar need to be visible. The expanders open on demand or auto-expand on failure so diagnostics are immediately available without hunting through logs.
 
-Failure detail should not require hunting through logs. The failure view should show the Markdown step, the bound page object/control/action, expected and actual values, plus screenshot and trace links when available.
+Failure detail auto-expands both the Failure Detail and Diagnostics expanders so the presenter or tester can see the failing step, expected vs actual values, screenshot, and trace links without any clicks.
 
 ## First Version Scope
 
-For the first MAUI version, this design can be reduced to:
+For the first MAUI version:
 
 - File and folder loading.
-- Scenario list.
-- Step list with status.
-- Run all.
-- Stop.
-- Auto speed control.
-- Manual Next mode.
-- Failure detail with screenshot and page-object binding.
-
-The layout intentionally leaves space for later technology targets, but the only selectable target in the first build should be MAUI.
+- Scenario list in expander.
+- Step list with status (primary view).
+- Compact toolbar: Run, Pause, Stop, Next, delay stepper, progress bar.
+- Status summary line.
+- Auto and step execution modes.
+- Diagnostics expander.
+- Failure detail expander with screenshot and page-object binding.

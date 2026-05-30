@@ -6,14 +6,16 @@
 | --- | --- |
 | Target | MAUI |
 | Fixture | Appium |
+| AppPath | ../../samples/Brinell.Samples.Maui.App/bin/Debug/net10.0-windows10.0.19041.0/win-x64/Brinell.Samples.Maui.App.exe |
+| WorkingDirectory | ../.. |
 
 ## Assemblies
 
 | Kind | Assembly |
 | --- | --- |
-| Pages | Brinell.Maui.UITests.dll |
-| Controls | Brinell.Maui.dll |
-| Commands | Brinell.Uat.dll |
+| Pages | ../Brinell.Maui.UITests/bin/Debug/net10.0-windows7.0/Brinell.Maui.UITests.dll |
+| Controls | ../../srcnew/Brinell.Maui/bin/Debug/net10.0/Brinell.Maui.dll |
+| Commands | ../../srcnew/Brinell.Uat/bin/Debug/net10.0/Brinell.Uat.dll |
 
 ## Discovery
 
