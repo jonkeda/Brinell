@@ -50,10 +50,8 @@ public sealed class UatExecutionService : IUatExecutionService
         {
             var appPath = UatWorkspaceConfigInspector.ResolveRequiredAppPath(workspacePath, config);
             environment = new DisposableGroup(
-                new EnvironmentVariableScope("APPIUM_APP_PATH", appPath),
-                new EnvironmentVariableScope("BRINELL_AUT_PLACE_RIGHT", "1"),
-                new EnvironmentVariableScope("BRINELL_AUT_PLACEMENT_RESULT_FILE", placementReportPath),
-                workingDirectory is null ? null : new CurrentDirectoryScope(workingDirectory));
+                [.. CreateTargetEnvironment(config, appPath, placementReportPath),
+                 workingDirectory is null ? null : new CurrentDirectoryScope(workingDirectory)]);
 
             var pagesAssembly = resolver.LoadRequired(GetRegisteredAssembly(config, "Pages"));
             fixture = CreateFixture(config, pagesAssembly);
@@ -138,10 +136,10 @@ public sealed class UatExecutionService : IUatExecutionService
     private static void ValidateConfig(UatConfig config, string configPath)
     {
         if (!config.Runtime.TryGetValue("Target", out var target) ||
-            !target.Equals("MAUI", StringComparison.OrdinalIgnoreCase))
+            !IsSupportedTarget(target))
         {
             throw new InvalidOperationException(
-                $"UAT config '{configPath}' must set Runtime Target to MAUI.");
+                $"UAT config '{configPath}' must set Runtime Target to MAUI or STRIDE.");
         }
 
         if (!config.Runtime.TryGetValue("Fixture", out var fixture) ||
@@ -155,6 +153,34 @@ public sealed class UatExecutionService : IUatExecutionService
         {
             throw new InvalidOperationException(
                 $"UAT config '{configPath}' must register at least one assembly.");
+        }
+    }
+
+    private static bool IsSupportedTarget(string target)
+    {
+        return target.Equals("MAUI", StringComparison.OrdinalIgnoreCase)
+               || target.Equals("STRIDE", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string GetAppPathEnvironmentVariable(UatConfig config)
+    {
+        var target = config.Runtime["Target"].Trim();
+        return target.Equals("STRIDE", StringComparison.OrdinalIgnoreCase)
+            ? "STRIDE_APP_PATH"
+            : "APPIUM_APP_PATH";
+    }
+
+    private static IEnumerable<IDisposable?> CreateTargetEnvironment(
+        UatConfig config,
+        string appPath,
+        string placementReportPath)
+    {
+        yield return new EnvironmentVariableScope(GetAppPathEnvironmentVariable(config), appPath);
+
+        if (config.Runtime["Target"].Equals("MAUI", StringComparison.OrdinalIgnoreCase))
+        {
+            yield return new EnvironmentVariableScope("BRINELL_AUT_PLACE_RIGHT", "1");
+            yield return new EnvironmentVariableScope("BRINELL_AUT_PLACEMENT_RESULT_FILE", placementReportPath);
         }
     }
 

@@ -35,7 +35,7 @@ internal static class UatWorkspaceConfigInspector
         {
             diagnostics.Add("Error: Runtime Target is required.");
         }
-        else if (!target.Equals("MAUI", StringComparison.OrdinalIgnoreCase))
+        else if (!IsSupportedTarget(target))
         {
             diagnostics.Add($"Error: Runtime Target '{target}' is not supported by Presenter yet.");
         }
@@ -51,7 +51,7 @@ internal static class UatWorkspaceConfigInspector
         var appPathExists = !string.IsNullOrWhiteSpace(resolvedAppPath) && File.Exists(resolvedAppPath);
         if (string.IsNullOrWhiteSpace(appPath))
         {
-            diagnostics.Add("Error: Runtime AppPath is required for local MAUI execution.");
+            diagnostics.Add("Error: Runtime AppPath is required for local execution.");
         }
         else if (!appPathExists)
         {
@@ -109,7 +109,7 @@ internal static class UatWorkspaceConfigInspector
         var configuredPath = ReadRuntime(config, "AppPath");
         if (string.IsNullOrWhiteSpace(configuredPath))
         {
-            throw new InvalidOperationException("Runtime AppPath is required for local MAUI execution.");
+            throw new InvalidOperationException("Runtime AppPath is required for local execution.");
         }
 
         var resolvedPath = ResolveOptionalPath(workspacePath, configuredPath);
@@ -185,7 +185,8 @@ internal static class UatWorkspaceConfigInspector
         while (directory is not null)
         {
             if (File.Exists(Path.Combine(directory.FullName, "Brinell.sln")) ||
-                directory.GetFiles("*.sln").Length > 0)
+                directory.GetFiles("*.sln").Length > 0 ||
+                directory.GetFiles("*.slnx").Length > 0)
             {
                 return directory.FullName;
             }
@@ -199,5 +200,11 @@ internal static class UatWorkspaceConfigInspector
     private static string ReadRuntime(UatConfig config, string field)
     {
         return config.Runtime.TryGetValue(field, out var value) ? value.Trim() : string.Empty;
+    }
+
+    private static bool IsSupportedTarget(string target)
+    {
+        return target.Equals("MAUI", StringComparison.OrdinalIgnoreCase)
+               || target.Equals("STRIDE", StringComparison.OrdinalIgnoreCase);
     }
 }

@@ -113,6 +113,26 @@ public sealed class UatReflectionRuntimeTests
         Assert.Contains("Greet", step.Message);
     }
 
+    [Fact]
+    public async Task CreatedCatalog_RunsCustomRootPhrases()
+    {
+        var fixture = new Fixture();
+        var runtime = UatReflectionRuntime.FromRoot(fixture);
+        var scenario = BindScenario(runtime, """
+            # UAT: Custom Root Phrase
+
+            ## Scenario: Root phrase can store scenario state
+
+            Given I remember "Rush Alpha" as a trained player
+            Then remembered trained player should be "Rush Alpha"
+            """);
+
+        var result = await new UatScenarioRunner().RunAsync(scenario);
+
+        Assert.True(result.Passed, FormatResults(result));
+        Assert.Equal("Rush Alpha", fixture.RememberedTrainedPlayer);
+    }
+
     private static UatBoundScenario BindScenario(UatReflectionRuntime runtime, string markdown)
     {
         var parse = UatMarkdownParser.Parse(markdown);
@@ -148,6 +168,8 @@ public sealed class UatReflectionRuntimeTests
 
         public UserFormPage UserFormPage { get; } = new();
 
+        public string RememberedTrainedPlayer { get; private set; } = string.Empty;
+
         public void NavigateToMain()
         {
             MainPage.Navigated = true;
@@ -156,6 +178,18 @@ public sealed class UatReflectionRuntimeTests
         public void NavigateToUserForm()
         {
             UserFormPage.Navigated = true;
+        }
+
+        [UatPhrase(UatEffectiveStepKeyword.Given, "I remember {name} as a trained player")]
+        public void RememberTrainedPlayer(string name)
+        {
+            RememberedTrainedPlayer = name;
+        }
+
+        [UatPhrase(UatEffectiveStepKeyword.Then, "remembered trained player should be {name}")]
+        public void AssertRememberedTrainedPlayer(string name)
+        {
+            Assert.Equal(name, RememberedTrainedPlayer);
         }
     }
 

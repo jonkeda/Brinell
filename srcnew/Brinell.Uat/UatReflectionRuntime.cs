@@ -6,9 +6,11 @@ public sealed class UatReflectionRuntime
 {
     private const string CurrentPageItemKey = "Uat.Reflection.CurrentPage";
     private readonly Dictionary<string, UatRuntimePage> _pages;
+    private readonly object _root;
 
-    private UatReflectionRuntime(IEnumerable<UatRuntimePage> pages)
+    private UatReflectionRuntime(object root, IEnumerable<UatRuntimePage> pages)
     {
+        _root = root;
         _pages = new Dictionary<string, UatRuntimePage>(StringComparer.OrdinalIgnoreCase);
         foreach (var page in pages)
         {
@@ -63,7 +65,7 @@ public sealed class UatReflectionRuntime
                 navigation is null ? null : () => Invoke(root, navigation)));
         }
 
-        return new UatReflectionRuntime(pages);
+        return new UatReflectionRuntime(root, pages);
     }
 
     public UatCommandCatalog CreateCommandCatalog()
@@ -170,7 +172,155 @@ public sealed class UatReflectionRuntime
             allowsTable: false,
             handler: AssertAnyControlTextContainsAsync);
 
+        RegisterRootPhrases(catalog);
         return catalog;
+    }
+
+    private void RegisterRootPhrases(UatCommandCatalog catalog)
+    {
+        foreach (var method in _root.GetType()
+                     .GetMethods(BindingFlags.Instance | BindingFlags.Public)
+                     .Where(method => method.GetCustomAttribute<UatIgnoreAttribute>() is null))
+        {
+            foreach (var phrase in method.GetCustomAttributes<UatPhraseAttribute>())
+            {
+                foreach (var keyword in ExpandKeywords(phrase.Keyword))
+                {
+                    catalog.Register(
+                        keyword,
+                        phrase.Phrase,
+                        $"{method.DeclaringType!.FullName}.{method.Name}",
+                        handler: (context, invocation, cancellationToken) =>
+                            InvokeRootPhraseAsync(method, context, invocation, cancellationToken));
+                }
+            }
+        }
+    }
+
+    private async Task<UatStepResult> InvokeRootPhraseAsync(
+        MethodInfo method,
+        UatExecutionContext context,
+        UatStepInvocation invocation,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        try
+        {
+            var result = Invoke(_root, method, BuildRootPhraseArguments(method, context, invocation, cancellationToken));
+            if (result is Task<UatStepResult> resultTask)
+            {
+                return await resultTask.ConfigureAwait(false);
+            }
+
+            if (result is Task task)
+            {
+                await task.ConfigureAwait(false);
+                context.Diagnostics.Add($"custom:{method.Name}");
+                return UatStepResult.Passed(invocation);
+            }
+
+            if (result is UatStepResult stepResult)
+            {
+                return stepResult;
+            }
+
+            if (result is bool boolean && !boolean)
+            {
+                return UatStepResult.Failed(invocation, $"Custom UAT step '{method.Name}' returned false.");
+            }
+
+            context.Diagnostics.Add($"custom:{method.Name}");
+            return UatStepResult.Passed(invocation, result as string);
+        }
+        catch (Exception ex)
+        {
+            return UatStepResult.Failed(invocation, $"Custom UAT step '{method.Name}' failed: {ex.Message}", ex);
+        }
+    }
+
+    private static object?[] BuildRootPhraseArguments(
+        MethodInfo method,
+        UatExecutionContext context,
+        UatStepInvocation invocation,
+        CancellationToken cancellationToken)
+    {
+        var parameters = method.GetParameters();
+        var arguments = new object?[parameters.Length];
+        for (var i = 0; i < parameters.Length; i++)
+        {
+            var parameter = parameters[i];
+            if (parameter.ParameterType == typeof(UatExecutionContext))
+            {
+                arguments[i] = context;
+                continue;
+            }
+
+            if (parameter.ParameterType == typeof(UatStepInvocation))
+            {
+                arguments[i] = invocation;
+                continue;
+            }
+
+            if (parameter.ParameterType == typeof(CancellationToken))
+            {
+                arguments[i] = cancellationToken;
+                continue;
+            }
+
+            if (parameter.Name is not null &&
+                invocation.Arguments.TryGetValue(parameter.Name, out var value))
+            {
+                arguments[i] = ConvertArgument(value, parameter.ParameterType);
+                continue;
+            }
+
+            arguments[i] = parameter.IsOptional
+                ? Type.Missing
+                : throw new InvalidOperationException(
+                    $"Custom UAT step '{method.Name}' requires parameter '{parameter.Name}' but no matching phrase argument was found.");
+        }
+
+        return arguments;
+    }
+
+    private static object? ConvertArgument(string value, Type targetType)
+    {
+        var nullableInnerType = Nullable.GetUnderlyingType(targetType);
+        var effectiveType = nullableInnerType ?? targetType;
+        if (effectiveType == typeof(string))
+        {
+            return value;
+        }
+
+        if (effectiveType == typeof(int))
+        {
+            return int.Parse(value, System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        if (effectiveType == typeof(double))
+        {
+            return double.Parse(value, System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        if (effectiveType == typeof(bool))
+        {
+            return bool.Parse(value);
+        }
+
+        if (effectiveType.IsEnum)
+        {
+            return Enum.Parse(effectiveType, value, ignoreCase: true);
+        }
+
+        return Convert.ChangeType(value, effectiveType, System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    private static IEnumerable<UatEffectiveStepKeyword> ExpandKeywords(UatEffectiveStepKeyword? keyword)
+    {
+        return keyword.HasValue
+            ? [keyword.Value]
+            : Enum.GetValues<UatEffectiveStepKeyword>();
     }
 
     private static IReadOnlyList<UatRuntimeControl> DiscoverControls(object page)
