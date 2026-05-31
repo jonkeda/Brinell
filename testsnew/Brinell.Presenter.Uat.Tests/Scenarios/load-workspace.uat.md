@@ -13,7 +13,10 @@
 ## Scenario: Presenter shows the sample MAUI UAT workspace
 
 Given I am on the Presenter page
-Then Scenario List should contain "Greeting appears when a name is entered"
-And Scenario List should contain "User can enter basic profile information"
+When I tap Reload
+Then Status Summary should contain "Ready"
+Then Workspace Tree should contain "uat.config.md"
+And Workspace Tree should contain "Scenarios"
+And All Workspace Tree should contain "main-page-greeting.uat.md"
+And All Workspace Tree should contain "user-form-basic-input.uat.md"
 And Workspace Summary should contain "App ok"
-And Status Summary should contain "Ready"

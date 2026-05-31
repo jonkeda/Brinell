@@ -9,12 +9,15 @@ public sealed class UatScenarioViewModel : ViewModelBase
     public UatScenarioViewModel(UatScenarioLoadResult source)
     {
         Name = source.Name;
+        SuiteName = source.SuiteName;
         FilePath = source.FilePath;
         Tags = string.Join(", ", source.Tags);
         Steps = source.Steps.Select(step => new UatStepViewModel(step)).ToArray();
     }
 
     public string Name { get; }
+
+    public string SuiteName { get; }
 
     public string FilePath { get; }
 

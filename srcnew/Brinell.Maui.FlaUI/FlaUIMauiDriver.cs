@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Drawing;
+using System.Runtime.InteropServices;
 using Brinell.Core;
 using Brinell.Core.Exceptions;
 using Brinell.Core.Utilities;
@@ -61,6 +62,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
         var window = _application.GetMainWindow(_automation, TimeSpan.FromSeconds(30));
         _rootElement = window ?? throw new InvalidOperationException("Failed to get main window");
         _conditionFactory = new ConditionFactory(_automation.PropertyLibrary);
+        TryApplyRequestedWindowPlacement();
     }
     
     /// <summary>
@@ -162,6 +164,144 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
                 // Ignore focus failures; interaction will proceed regardless.
             }
         }
+    }
+
+    private void TryApplyRequestedWindowPlacement()
+    {
+        if (!string.Equals(
+                Environment.GetEnvironmentVariable("BRINELL_AUT_PLACE_RIGHT"),
+                "1",
+                StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        var workArea = GetPrimaryWorkArea();
+        var presenterWidth = Math.Max(320, workArea.Width / 4);
+        var gap = 20;
+        var requestedLeft = Math.Min(workArea.Right - 320, workArea.Left + presenterWidth + gap);
+        var requestedWidth = Math.Max(320, workArea.Right - requestedLeft);
+        var requested = new Rectangle(requestedLeft, workArea.Top, requestedWidth, workArea.Height);
+        var presenter = new Rectangle(workArea.Left, workArea.Top, presenterWidth, workArea.Height);
+
+        try
+        {
+            if (!_rootElement.Patterns.Transform.IsSupported)
+            {
+                WriteAutPlacementReport(presenter, requested, "not supported", "Transform pattern is not supported.");
+                return;
+            }
+
+            var transform = _rootElement.Patterns.Transform.Pattern;
+            if (!transform.CanMove.Value)
+            {
+                WriteAutPlacementReport(presenter, requested, "not supported", "Window cannot be moved.");
+                return;
+            }
+
+            if (transform.CanResize.Value)
+            {
+                transform.Resize(requested.Width, requested.Height);
+            }
+
+            transform.Move(requested.Left, requested.Top);
+            WriteAutPlacementReport(presenter, requested, "moved", actual: _rootElement.BoundingRectangle);
+        }
+        catch (Exception ex)
+        {
+            WriteAutPlacementReport(presenter, requested, $"failed: {ex.Message}");
+        }
+    }
+
+    private static Rectangle GetPrimaryWorkArea()
+    {
+        if (TryGetPrimaryWorkArea(out var workArea))
+        {
+            return workArea;
+        }
+
+        return new Rectangle(0, 0, GetSystemMetrics(0), GetSystemMetrics(1));
+    }
+
+    private static bool TryGetPrimaryWorkArea(out Rectangle workArea)
+    {
+        if (SystemParametersInfo(0x0030, 0, out var nativeRect, 0))
+        {
+            workArea = Rectangle.FromLTRB(
+                nativeRect.Left,
+                nativeRect.Top,
+                nativeRect.Right,
+                nativeRect.Bottom);
+            return true;
+        }
+
+        workArea = Rectangle.Empty;
+        return false;
+    }
+
+    private static void WriteAutPlacementReport(
+        Rectangle presenter,
+        Rectangle requested,
+        string result,
+        string? reason = null,
+        Rectangle? actual = null)
+    {
+        var path = Environment.GetEnvironmentVariable("BRINELL_AUT_PLACEMENT_RESULT_FILE");
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return;
+        }
+
+        try
+        {
+            List<string> lines =
+            [
+                "AUT placement:",
+                $"Presenter bounds: {FormatRectangle(presenter)}",
+                $"Requested AUT bounds: {FormatRectangle(requested)}",
+                $"Result: {result}"
+            ];
+
+            if (actual is not null)
+            {
+                lines.Add($"Actual AUT bounds: {FormatRectangle(actual.Value)}");
+            }
+
+            if (!string.IsNullOrWhiteSpace(reason))
+            {
+                lines.Add($"Reason: {reason}");
+            }
+
+            File.WriteAllText(path, string.Join(Environment.NewLine, lines));
+        }
+        catch
+        {
+            // Placement diagnostics should never make a test session fail.
+        }
+    }
+
+    private static string FormatRectangle(Rectangle rectangle)
+    {
+        return $"x={rectangle.X} y={rectangle.Y} w={rectangle.Width} h={rectangle.Height}";
+    }
+
+    [DllImport("user32.dll")]
+    private static extern int GetSystemMetrics(int nIndex);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool SystemParametersInfo(
+        uint uiAction,
+        uint uiParam,
+        out NativeRect pvParam,
+        uint fWinIni);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativeRect
+    {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
     }
     
     #endregion

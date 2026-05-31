@@ -25,6 +25,7 @@ public sealed class PresenterUatExecutionSession : IDisposable
         UatCommandCatalog catalog,
         string discoveryReport,
         string commandCatalogReport,
+        string autPlacementReport,
         IDisposable? fixture,
         IDisposable? resolver,
         IDisposable? environment)
@@ -35,6 +36,7 @@ public sealed class PresenterUatExecutionSession : IDisposable
         Catalog = catalog;
         DiscoveryReport = discoveryReport;
         CommandCatalogReport = commandCatalogReport;
+        AutPlacementReport = autPlacementReport;
         _fixture = fixture;
         _resolver = resolver;
         _environment = environment;
@@ -51,6 +53,8 @@ public sealed class PresenterUatExecutionSession : IDisposable
     public string DiscoveryReport { get; }
 
     public string CommandCatalogReport { get; }
+
+    public string AutPlacementReport { get; }
 
     public int CompletedStepCount => StepSession.Results.Count;
 

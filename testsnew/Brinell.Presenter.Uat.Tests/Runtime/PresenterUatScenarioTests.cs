@@ -31,10 +31,24 @@ public sealed class PresenterUatScenarioTests
 
         foreach (var scenario in bind.Document.Scenarios)
         {
+            ResetPresenter();
             var runner = new UatScenarioRunner();
             var result = await runner.RunAsync(scenario);
             Assert.True(result.Passed, FormatResults(result, runner.Context, runtime));
         }
+    }
+
+    private void ResetPresenter()
+    {
+        if (!_fixture.PresenterPage.IsLoaded(timeoutMs: 30000))
+        {
+            return;
+        }
+
+        _fixture.PresenterPage.StopButton.Click();
+        _fixture.PresenterPage.ReloadButton.Click();
+        _fixture.PresenterPage.StatusSummary.AssertTextContains("Ready", timeoutMs: 30000);
+        _fixture.PresenterPage.RunButton.AssertClickable(timeoutMs: 30000);
     }
 
     private static string FormatDiagnostics(IEnumerable<UatDiagnostic> diagnostics)

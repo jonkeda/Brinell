@@ -1,3 +1,4 @@
+using Brinell.Maui.Context;
 using Brinell.Maui.Testing;
 using Brinell.Presenter.Uat.Tests.PageObjects;
 
@@ -11,6 +12,20 @@ public sealed class PresenterFixture : MauiTestFixtureBase
     }
 
     public PresenterPage PresenterPage { get; }
+
+    protected override MauiTestContextOptions CreateTestContextOptions()
+    {
+        var settingsDirectory = Path.Combine(
+            Path.GetTempPath(),
+            "BrinellPresenterUat",
+            Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(settingsDirectory);
+        Environment.SetEnvironmentVariable(
+            "BRINELL_PRESENTER_SETTINGS_PATH",
+            Path.Combine(settingsDirectory, "presenter-settings.json"));
+
+        return base.CreateTestContextOptions();
+    }
 
     protected override string GetDefaultAppPath(string platform)
     {

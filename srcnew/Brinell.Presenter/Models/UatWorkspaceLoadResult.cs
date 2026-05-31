@@ -61,6 +61,7 @@ public sealed record UatFileLoadResult(
 
 public sealed record UatScenarioLoadResult(
     string Name,
+    string SuiteName,
     string FilePath,
     IReadOnlyList<string> Tags,
     IReadOnlyList<UatStepLoadResult> Steps);

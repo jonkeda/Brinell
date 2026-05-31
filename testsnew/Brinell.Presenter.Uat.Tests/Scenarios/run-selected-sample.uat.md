@@ -13,6 +13,5 @@
 ## Scenario: Presenter runs the selected sample scenario
 
 Given I am on the Presenter page
-When I select "Auto" from Execution Mode
-And I tap Run Selected
+When I tap Run
 Then Status Summary should contain "Passed"

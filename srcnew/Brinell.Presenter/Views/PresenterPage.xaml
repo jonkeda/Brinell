@@ -7,240 +7,294 @@
 
     <Grid AutomationId="PresenterRoot"
           Padding="12"
-          HorizontalOptions="Start"
-          WidthRequest="540">
-        <ScrollView>
-            <VerticalStackLayout Spacing="8">
-                <Label Text="Brinell Presenter"
-                       FontSize="20"
-                       FontAttributes="Bold"
-                       AutomationId="PresenterTitleLabel" />
+          RowDefinitions="Auto,Auto,Auto,Auto,*"
+          RowSpacing="8"
+          HorizontalOptions="Fill"
+          VerticalOptions="Fill">
+        <HorizontalStackLayout Grid.Row="0"
+                               Spacing="6">
+            <Button Text="Open"
+                    AutomationId="OpenFolderButton"
+                    Command="{Binding OpenFolderCommand}" />
+            <Button Text="{Binding RecentFoldersButtonText}"
+                    AutomationId="OpenRecentButton"
+                    WidthRequest="38"
+                    Command="{Binding ToggleRecentFoldersCommand}" />
+            <Button Text="Reload"
+                    AutomationId="ReloadButton"
+                    Command="{Binding ReloadCommand}" />
+            <Button Text="Validate"
+                    AutomationId="ValidateButton"
+                    Command="{Binding ValidateCommand}" />
+        </HorizontalStackLayout>
 
-                <Label Text="{Binding WorkspaceName}"
-                       FontSize="13"
-                       TextColor="{StaticResource PresenterMuted}"
-                       AutomationId="WorkspaceNameLabel" />
-
-                <Label Text="{Binding WorkspaceSummaryText}"
-                       FontSize="12"
-                       TextColor="{StaticResource PresenterMuted}"
-                       AutomationId="WorkspaceSummaryLabel" />
-
-                <HorizontalStackLayout Spacing="6">
-                    <Button Text="Open Folder"
-                            AutomationId="OpenFolderButton"
-                            Command="{Binding OpenFolderCommand}" />
-                    <Button Text="Reload"
-                            AutomationId="ReloadButton"
-                            Command="{Binding ReloadCommand}" />
-                    <Button Text="Validate"
-                            AutomationId="ValidateButton"
-                            Command="{Binding ValidateCommand}" />
-                </HorizontalStackLayout>
-
-                <Border Stroke="{StaticResource PresenterBorder}"
-                        StrokeThickness="1"
-                        BackgroundColor="{StaticResource PresenterPanel}"
-                        Padding="10">
-                    <Border.StrokeShape>
-                        <RoundRectangle CornerRadius="6" />
-                    </Border.StrokeShape>
-                    <VerticalStackLayout Spacing="8">
-                        <Label Text="{Binding StatusSummary}"
-                               FontAttributes="Bold"
-                               AutomationId="StatusSummaryLabel" />
-
-                        <HorizontalStackLayout Spacing="6">
-                            <Button Text="Run Selected"
-                                    AutomationId="RunSelectedButton"
-                                    Command="{Binding RunSelectedCommand}" />
-                            <Button Text="Run All"
-                                    AutomationId="RunAllButton"
-                                    Command="{Binding RunAllCommand}" />
-                            <Button Text="Stop"
-                                    AutomationId="StopButton"
-                                    Command="{Binding StopCommand}" />
-                            <Button Text="Next"
-                                    AutomationId="NextStepButton"
-                                    Command="{Binding NextStepCommand}" />
-                        </HorizontalStackLayout>
-
-                        <Grid ColumnDefinitions="Auto,100,Auto,120"
-                              ColumnSpacing="8"
-                              VerticalOptions="Center">
-                            <Label Text="Mode:"
-                                   VerticalTextAlignment="Center" />
-                            <Picker Grid.Column="1"
-                                    AutomationId="ExecutionModePicker"
-                                    ItemsSource="{Binding ExecutionModes}"
-                                    SelectedItem="{Binding SelectedExecutionMode}" />
-                            <Label Grid.Column="2"
-                                   Text="Delay:"
-                                   VerticalTextAlignment="Center" />
-                            <Entry Grid.Column="3"
-                                   AutomationId="ExecutionDelayEntry"
-                                   Keyboard="Numeric"
-                                   Text="{Binding ExecutionDelayMilliseconds}" />
-                        </Grid>
-
-                        <ProgressBar Progress="{Binding RunProgress}"
-                                     AutomationId="RunProgressBar" />
-                    </VerticalStackLayout>
-                </Border>
-
-                <Border Stroke="{StaticResource PresenterBorder}"
-                        StrokeThickness="1"
-                        BackgroundColor="{StaticResource PresenterPanel}"
-                        Padding="10">
-                    <Border.StrokeShape>
-                        <RoundRectangle CornerRadius="6" />
-                    </Border.StrokeShape>
-                    <VerticalStackLayout Spacing="3">
-                        <Label Text="Scenario"
-                               FontSize="11"
-                               TextColor="{StaticResource PresenterMuted}" />
-                        <Label Text="{Binding SelectedScenarioName}"
-                               AutomationId="SelectedScenarioNameLabel"
-                               FontAttributes="Bold" />
-                        <Label Text="{Binding SelectedScenarioTags}"
-                               AutomationId="SelectedScenarioTagsLabel"
-                               FontSize="11"
-                               TextColor="{StaticResource PresenterMuted}" />
-                    </VerticalStackLayout>
-                </Border>
-
-                <Button Text="{Binding ScenariosExpanderText}"
-                        AutomationId="ScenariosExpander"
-                        Command="{Binding ToggleScenariosCommand}" />
-                <VerticalStackLayout Spacing="6"
-                                     IsVisible="{Binding IsScenariosExpanded}">
-                        <Label Text="{Binding ScenarioListText}"
-                               AutomationId="ScenarioListText"
-                               TextColor="{StaticResource PresenterMuted}" />
-                        <CollectionView AutomationId="ScenarioList"
-                                        HeightRequest="150"
-                                        ItemsSource="{Binding Scenarios}"
-                                        SelectedItem="{Binding SelectedScenario}"
-                                        SelectionMode="Single">
-                            <CollectionView.ItemTemplate>
-                                <DataTemplate>
-                                    <Grid Padding="4,6">
-                                        <VerticalStackLayout Spacing="2">
-                                            <Grid ColumnDefinitions="28,*">
-                                                <Label Text="{Binding StatusIcon}"
-                                                       TextColor="{Binding StatusColor}"
-                                                       FontAttributes="Bold"
-                                                       FontSize="15"
-                                                       HorizontalTextAlignment="Center"
-                                                       SemanticProperties.Description="{Binding StatusDescription}" />
-                                                <Label Grid.Column="1"
-                                                       Text="{Binding Name}"
-                                                       FontAttributes="Bold" />
-                                            </Grid>
-                                            <Label Text="{Binding Tags}"
-                                                   FontSize="11"
-                                                   TextColor="{StaticResource PresenterMuted}" />
-                                        </VerticalStackLayout>
-                                    </Grid>
-                                </DataTemplate>
-                            </CollectionView.ItemTemplate>
-                        </CollectionView>
-                </VerticalStackLayout>
-
-                <Button Text="{Binding StepsExpanderText}"
-                        AutomationId="StepsExpander"
-                        Command="{Binding ToggleStepsCommand}" />
-                <VerticalStackLayout Spacing="6"
-                                     IsVisible="{Binding IsStepsExpanded}">
-                        <Label Text="{Binding StepListText}"
-                               AutomationId="StepListText"
-                               TextColor="{StaticResource PresenterMuted}" />
-                        <CollectionView AutomationId="StepList"
-                                        HeightRequest="180"
-                                        ItemsSource="{Binding Steps}">
-                            <CollectionView.ItemTemplate>
-                                <DataTemplate>
-                                    <Grid Padding="4,5"
-                                          ColumnDefinitions="28,*">
-                                        <Label Text="{Binding StatusIcon}"
-                                               TextColor="{Binding StatusColor}"
-                                               FontAttributes="Bold"
-                                               FontSize="15"
-                                               HorizontalTextAlignment="Center"
-                                               SemanticProperties.Description="{Binding StatusDescription}" />
-                                        <VerticalStackLayout Grid.Column="1"
-                                                             Spacing="1">
-                                            <Label Text="{Binding Text}" />
-                                            <Label Text="{Binding CommandId}"
-                                                   FontSize="11"
-                                                   TextColor="{StaticResource PresenterMuted}" />
-                                        </VerticalStackLayout>
-                                    </Grid>
-                                </DataTemplate>
-                            </CollectionView.ItemTemplate>
-                        </CollectionView>
-                </VerticalStackLayout>
-
-                <Button Text="{Binding WorkspaceConfigExpanderText}"
-                        AutomationId="WorkspaceConfigExpander"
-                        Command="{Binding ToggleWorkspaceConfigCommand}" />
-                <VerticalStackLayout IsVisible="{Binding IsWorkspaceConfigExpanded}">
-                    <Label Text="{Binding WorkspaceConfigText}"
-                           AutomationId="WorkspaceConfigText"
-                           FontSize="11"
+        <Border Grid.Row="1"
+                Stroke="{StaticResource PresenterBorder}"
+                StrokeThickness="1"
+                BackgroundColor="{StaticResource PresenterPanel}"
+                Padding="6"
+                IsVisible="{Binding IsRecentFoldersExpanded}">
+            <Border.StrokeShape>
+                <RoundRectangle CornerRadius="6" />
+            </Border.StrokeShape>
+            <CollectionView AutomationId="RecentFoldersList"
+                            ItemsSource="{Binding RecentFolders}"
+                            HeightRequest="160">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Button Text="{Binding DisplayText}"
+                                AutomationId="{Binding AutomationId}"
+                                Command="{Binding OpenCommand}"
+                                HorizontalOptions="Fill"
+                                SemanticProperties.Description="{Binding AutomationText}" />
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+                <CollectionView.EmptyView>
+                    <Label Text="No recent folders"
                            TextColor="{StaticResource PresenterMuted}" />
+                </CollectionView.EmptyView>
+            </CollectionView>
+        </Border>
+
+        <Border Grid.Row="2"
+                Stroke="{StaticResource PresenterBorder}"
+                StrokeThickness="1"
+                BackgroundColor="{StaticResource PresenterPanel}"
+                Padding="10">
+            <Border.StrokeShape>
+                <RoundRectangle CornerRadius="6" />
+            </Border.StrokeShape>
+            <HorizontalStackLayout Spacing="6"
+                                   VerticalOptions="Center">
+                <Button Text="Run"
+                        AutomationId="RunButton"
+                        Command="{Binding RunCommand}" />
+                <Button Text="Stop"
+                        AutomationId="StopButton"
+                        Command="{Binding StopCommand}" />
+                <Button Text="Next"
+                        AutomationId="NextButton"
+                        Command="{Binding NextStepCommand}" />
+                <Label Text="Delay"
+                       Margin="10,0,0,0"
+                       VerticalTextAlignment="Center" />
+                <Entry AutomationId="DelayMillisecondsInput"
+                       Keyboard="Numeric"
+                       MaxLength="5"
+                       WidthRequest="58"
+                       Text="{Binding ExecutionDelayText}" />
+                <Label Text="ms"
+                       AutomationId="DelayMillisecondsLabel"
+                       VerticalTextAlignment="Center" />
+            </HorizontalStackLayout>
+        </Border>
+
+        <HorizontalStackLayout Grid.Row="3"
+                               Spacing="4">
+            <Button Text="{Binding TreeTabText}"
+                    AutomationId="TreeTabButton"
+                    Command="{Binding ShowTreeTabCommand}" />
+            <Button Text="{Binding ConfigTabText}"
+                    AutomationId="ConfigTabButton"
+                    Command="{Binding ShowConfigTabCommand}" />
+            <Button Text="{Binding DiagnosticsTabText}"
+                    AutomationId="DiagnosticsTabButton"
+                    Command="{Binding ShowDiagnosticsTabCommand}" />
+            <Button Text="{Binding DiscoveryTabText}"
+                    AutomationId="DiscoveryTabButton"
+                    Command="{Binding ShowDiscoveryTabCommand}" />
+            <Button Text="{Binding CommandCatalogTabText}"
+                    AutomationId="CommandCatalogTabButton"
+                    Command="{Binding ShowCommandCatalogTabCommand}" />
+        </HorizontalStackLayout>
+
+        <Grid Grid.Row="4"
+              VerticalOptions="Fill">
+            <Grid RowDefinitions="Auto,*,Auto,Auto,Auto"
+                  RowSpacing="8"
+                  IsVisible="{Binding IsTreeTabSelected}">
+                <VerticalStackLayout Grid.Row="0"
+                                     Spacing="2">
+                    <Label Text="{Binding WorkspaceSummaryText}"
+                           FontSize="12"
+                           TextColor="{StaticResource PresenterMuted}"
+                           AutomationId="WorkspaceSummaryLabel" />
                 </VerticalStackLayout>
 
-                <Button Text="{Binding FilesExpanderText}"
-                        AutomationId="FilesExpander"
-                        Command="{Binding ToggleFilesCommand}" />
-                <VerticalStackLayout IsVisible="{Binding IsFilesExpanded}">
-                    <CollectionView AutomationId="FileList"
-                                    HeightRequest="120"
-                                    ItemsSource="{Binding Files}">
+                <Border Grid.Row="1"
+                        Stroke="{StaticResource PresenterBorder}"
+                        StrokeThickness="1"
+                        BackgroundColor="{StaticResource PresenterPanel}"
+                        Padding="8"
+                        VerticalOptions="Fill">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="6" />
+                    </Border.StrokeShape>
+                    <CollectionView AutomationId="WorkspaceTree"
+                                    ItemsSource="{Binding WorkspaceTreeNodes}"
+                                    SelectedItem="{Binding SelectedWorkspaceNode, Mode=TwoWay}"
+                                    SelectionMode="Single"
+                                    VerticalOptions="Fill">
                         <CollectionView.ItemTemplate>
                             <DataTemplate>
-                                <Grid Padding="4,4"
-                                      ColumnDefinitions="70,*">
-                                    <Label Text="{Binding Status}" />
-                                    <Label Grid.Column="1"
-                                           Text="{Binding Name}" />
+                                <Grid Padding="0,4"
+                                      ColumnDefinitions="Auto,28,42,*"
+                                      AutomationId="{Binding AutomationId}">
+                                    <BoxView WidthRequest="{Binding IndentWidth}"
+                                             Color="Transparent" />
+                                    <Button Grid.Column="1"
+                                            Text="{Binding ExpansionText}"
+                                            AutomationId="{Binding ToggleAutomationId}"
+                                            Command="{Binding ToggleExpansionCommand}"
+                                            IsEnabled="{Binding CanExpand}"
+                                            WidthRequest="26"
+                                            HeightRequest="26"
+                                            Padding="0" />
+                                    <Label Grid.Column="2"
+                                           Text="{Binding Icon}"
+                                           TextColor="{Binding IconColor}"
+                                           FontAttributes="Bold"
+                                           FontSize="12"
+                                           HorizontalTextAlignment="Center"
+                                           VerticalTextAlignment="Center"
+                                           SemanticProperties.Description="{Binding StatusDescription}" />
+                                    <Label Grid.Column="3"
+                                           Text="{Binding Name}"
+                                           LineBreakMode="TailTruncation"
+                                           VerticalTextAlignment="Center" />
                                 </Grid>
                             </DataTemplate>
                         </CollectionView.ItemTemplate>
                     </CollectionView>
+                </Border>
+
+                <VerticalStackLayout Grid.Row="2"
+                                     Spacing="2">
+                    <Label Text="{Binding StatusSummary}"
+                           FontAttributes="Bold"
+                           AutomationId="StatusSummaryLabel" />
+                    <Label Text="{Binding WorkspaceTreeText}"
+                           AutomationId="WorkspaceTreeText"
+                           FontSize="1"
+                           HeightRequest="1"
+                           Opacity="0.01" />
+                    <Label Text="{Binding AllWorkspaceTreeText}"
+                           AutomationId="AllWorkspaceTreeText"
+                           FontSize="1"
+                           HeightRequest="1"
+                           Opacity="0.01" />
+                    <Label Text="{Binding StepListText}"
+                           AutomationId="StepListText"
+                           FontSize="1"
+                           HeightRequest="1"
+                           Opacity="0.01" />
+                    <Label Text="{Binding ExecutionTimingText}"
+                           AutomationId="ExecutionTimingText"
+                           FontSize="1"
+                           HeightRequest="1"
+                           Opacity="0.01" />
+                    <Label Text="{Binding RunScopeText}"
+                           AutomationId="RunScopeText"
+                           FontSize="1"
+                           HeightRequest="1"
+                           Opacity="0.01" />
+                    <Label Text="{Binding RecentFoldersText}"
+                           AutomationId="RecentFoldersText"
+                           FontSize="1"
+                           HeightRequest="1"
+                           Opacity="0.01" />
+                    <Label Text="{Binding AutPlacementText}"
+                           AutomationId="AutPlacementText"
+                           FontSize="1"
+                           HeightRequest="1"
+                           Opacity="0.01" />
                 </VerticalStackLayout>
 
-                <Button Text="{Binding DiagnosticsExpanderText}"
-                        AutomationId="DiagnosticsExpander"
-                        Command="{Binding ToggleDiagnosticsCommand}" />
-                <VerticalStackLayout IsVisible="{Binding IsDiagnosticsExpanded}">
+                <Button Grid.Row="3"
+                        Text="{Binding SelectionExpanderText}"
+                        AutomationId="SelectionExpander"
+                        Command="{Binding ToggleSelectionCommand}" />
+                <Border Grid.Row="4"
+                        Stroke="{StaticResource PresenterBorder}"
+                        StrokeThickness="1"
+                        BackgroundColor="{StaticResource PresenterPanel}"
+                        Padding="10"
+                        IsVisible="{Binding IsSelectionExpanded}">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="6" />
+                    </Border.StrokeShape>
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="{Binding SelectedWorkspaceNodeDetailsText}"
+                               AutomationId="SelectionDetailsText"
+                               FontSize="11"
+                               TextColor="{StaticResource PresenterMuted}" />
+                    </VerticalStackLayout>
+                </Border>
+            </Grid>
+
+            <Border Stroke="{StaticResource PresenterBorder}"
+                    StrokeThickness="1"
+                    BackgroundColor="{StaticResource PresenterPanel}"
+                    Padding="10"
+                    IsVisible="{Binding IsConfigTabSelected}">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="6" />
+                </Border.StrokeShape>
+                <ScrollView>
+                    <Label Text="{Binding WorkspaceConfigText}"
+                           AutomationId="WorkspaceConfigText"
+                           FontSize="11"
+                           TextColor="{StaticResource PresenterMuted}" />
+                </ScrollView>
+            </Border>
+
+            <Border Stroke="{StaticResource PresenterBorder}"
+                    StrokeThickness="1"
+                    BackgroundColor="{StaticResource PresenterPanel}"
+                    Padding="10"
+                    IsVisible="{Binding IsDiagnosticsTabSelected}">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="6" />
+                </Border.StrokeShape>
+                <ScrollView>
                     <Label Text="{Binding DiagnosticsText}"
                            AutomationId="DiagnosticsText"
                            FontSize="11"
                            TextColor="{StaticResource PresenterMuted}" />
-                </VerticalStackLayout>
+                </ScrollView>
+            </Border>
 
-                <Button Text="{Binding DiscoveryExpanderText}"
-                        AutomationId="DiscoveryExpander"
-                        Command="{Binding ToggleDiscoveryCommand}" />
-                <VerticalStackLayout IsVisible="{Binding IsDiscoveryExpanded}">
+            <Border Stroke="{StaticResource PresenterBorder}"
+                    StrokeThickness="1"
+                    BackgroundColor="{StaticResource PresenterPanel}"
+                    Padding="10"
+                    IsVisible="{Binding IsDiscoveryTabSelected}">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="6" />
+                </Border.StrokeShape>
+                <ScrollView>
                     <Label Text="{Binding DiscoveryText}"
                            AutomationId="DiscoveryText"
                            FontSize="11"
                            TextColor="{StaticResource PresenterMuted}" />
-                </VerticalStackLayout>
+                </ScrollView>
+            </Border>
 
-                <Button Text="{Binding CommandCatalogExpanderText}"
-                        AutomationId="CommandCatalogExpander"
-                        Command="{Binding ToggleCommandCatalogCommand}" />
-                <VerticalStackLayout IsVisible="{Binding IsCommandCatalogExpanded}">
+            <Border Stroke="{StaticResource PresenterBorder}"
+                    StrokeThickness="1"
+                    BackgroundColor="{StaticResource PresenterPanel}"
+                    Padding="10"
+                    IsVisible="{Binding IsCommandCatalogTabSelected}">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="6" />
+                </Border.StrokeShape>
+                <ScrollView>
                     <Label Text="{Binding CommandCatalogText}"
                            AutomationId="CommandCatalogText"
                            FontSize="11"
                            TextColor="{StaticResource PresenterMuted}" />
-                </VerticalStackLayout>
-            </VerticalStackLayout>
-        </ScrollView>
+                </ScrollView>
+            </Border>
+        </Grid>
     </Grid>
 </ContentPage>

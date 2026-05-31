@@ -40,6 +40,9 @@ public sealed class UatExecutionService : IUatExecutionService
 
         var workingDirectory = UatWorkspaceConfigInspector.ResolveWorkingDirectory(workspacePath, config);
         var resolver = new UatRuntimeAssemblyResolver(workspacePath, config, workingDirectory);
+        var placementReportPath = Path.Combine(
+            Path.GetTempPath(),
+            $"BrinellPresenterAutPlacement_{Guid.NewGuid():N}.txt");
         DisposableGroup? environment = null;
         object? fixture = null;
 
@@ -48,10 +51,13 @@ public sealed class UatExecutionService : IUatExecutionService
             var appPath = UatWorkspaceConfigInspector.ResolveRequiredAppPath(workspacePath, config);
             environment = new DisposableGroup(
                 new EnvironmentVariableScope("APPIUM_APP_PATH", appPath),
+                new EnvironmentVariableScope("BRINELL_AUT_PLACE_RIGHT", "1"),
+                new EnvironmentVariableScope("BRINELL_AUT_PLACEMENT_RESULT_FILE", placementReportPath),
                 workingDirectory is null ? null : new CurrentDirectoryScope(workingDirectory));
 
             var pagesAssembly = resolver.LoadRequired(GetRegisteredAssembly(config, "Pages"));
             fixture = CreateFixture(config, pagesAssembly);
+            var autPlacementReport = TryReadPlacementReport(placementReportPath);
 
             var runtime = UatReflectionRuntime.FromRoot(fixture);
             var catalog = runtime.CreateCommandCatalog();
@@ -87,6 +93,7 @@ public sealed class UatExecutionService : IUatExecutionService
                 catalog,
                 string.Join(Environment.NewLine, runtime.DescribeDiscovery()),
                 FormatCatalog(catalog),
+                autPlacementReport,
                 fixture as IDisposable,
                 resolver,
                 environment);
@@ -97,6 +104,34 @@ public sealed class UatExecutionService : IUatExecutionService
             environment?.Dispose();
             resolver.Dispose();
             throw;
+        }
+    }
+
+    private static string TryReadPlacementReport(string path)
+    {
+        try
+        {
+            return File.Exists(path)
+                ? File.ReadAllText(path)
+                : "AUT placement:" + Environment.NewLine + "Result: not supported";
+        }
+        catch (Exception ex)
+        {
+            return "AUT placement:" + Environment.NewLine + $"Result: failed: {ex.Message}";
+        }
+        finally
+        {
+            try
+            {
+                if (File.Exists(path))
+                {
+                    File.Delete(path);
+                }
+            }
+            catch
+            {
+                // Placement diagnostics are best effort only.
+            }
         }
     }
 

@@ -68,6 +68,7 @@ public sealed class UatWorkspaceService : IUatWorkspaceService
                 scenarios.AddRange(bind.Document.Scenarios.Select(scenario =>
                     new UatScenarioLoadResult(
                         scenario.Source.Name,
+                        bind.Document.Source.Title,
                         filePath,
                         scenario.Source.Tags,
                         scenario.Invocations.Select(invocation => new UatStepLoadResult(
@@ -81,6 +82,7 @@ public sealed class UatWorkspaceService : IUatWorkspaceService
                 scenarios.AddRange(parse.Document.Scenarios.Select(scenario =>
                     new UatScenarioLoadResult(
                         scenario.Name,
+                        parse.Document.Title,
                         filePath,
                         scenario.Tags,
                         scenario.Steps.Select(step => new UatStepLoadResult(
