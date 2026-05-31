@@ -11,6 +11,8 @@ public sealed class LoginPage : BlazorPageObjectBase<LoginPage>
 
     public TextInputControl<LoginPage> UsernameInput => new(this, "[data-testid='username-input']");
 
+    public TextInputControl<LoginPage> EmailInput => new(this, "[data-testid='email-input']");
+
     public TextInputControl<LoginPage> PasswordInput => new(this, "[data-testid='password-input']");
 
     public ButtonControl<LoginPage> LoginButton => new(this, "[data-testid='login-btn']");

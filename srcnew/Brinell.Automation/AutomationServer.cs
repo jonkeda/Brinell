@@ -12,6 +12,31 @@ public class AutomationServerOptions
     public string PipeName { get; set; } = "Brinell.Stride.Automation";
     public int MaxConnections { get; set; } = 4;
     public bool VerboseLogging { get; set; } = false;
+
+    public static AutomationServerOptions FromCommandLine(string[]? args = null)
+    {
+        args ??= Environment.GetCommandLineArgs();
+        var options = new AutomationServerOptions();
+
+        for (var i = 0; i < args.Length; i++)
+        {
+            var arg = args[i];
+            if (arg.Equals("--pipe", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+            {
+                options.PipeName = args[i + 1];
+                break;
+            }
+
+            const string pipePrefix = "--pipe=";
+            if (arg.StartsWith(pipePrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                options.PipeName = arg[pipePrefix.Length..];
+                break;
+            }
+        }
+
+        return options;
+    }
 }
 
 /// <summary>

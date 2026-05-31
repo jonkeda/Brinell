@@ -15,6 +15,8 @@ public interface IHtmlElement : IElement<IHtmlElement>
     string OuterHtml { get; }
     bool IsChecked { get; }
     string InputValue { get; }
+    void Evaluate(string expression);
+    T Evaluate<T>(string expression);
     void Fill(string value);
     void SelectOption(string value);
     void SelectOption(string[] values);

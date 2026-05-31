@@ -137,9 +137,9 @@ public sealed class PlaywrightTestContext : IHtmlTestContext, IAsyncDisposable
 
     public string PageTitle => _page.TitleAsync().GetAwaiter().GetResult();
 
-    internal IPage InternalPage => _page;
+    public IPage InternalPage => _page;
 
-    internal IFrame? InternalFrame => _frame;
+    public IFrame? InternalFrame => _frame;
 
     public bool IsReady(int? timeoutMs = null)
     {
@@ -235,6 +235,12 @@ public sealed class PlaywrightTestContext : IHtmlTestContext, IAsyncDisposable
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(destination);
         _page.GotoAsync(destination).GetAwaiter().GetResult();
+    }
+
+    public async Task NavigateToAsync(string destination)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(destination);
+        await _page.GotoAsync(destination).ConfigureAwait(false);
     }
 
     public void NavigateBack()

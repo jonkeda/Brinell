@@ -35,9 +35,10 @@ internal static class UatWorkspaceConfigInspector
         {
             diagnostics.Add("Error: Runtime Target is required.");
         }
-        else if (!IsSupportedTarget(target))
+        else if (!UatTargetRegistry.TryGet(target, out _))
         {
-            diagnostics.Add($"Error: Runtime Target '{target}' is not supported by Presenter yet.");
+            diagnostics.Add(
+                $"Error: Runtime Target '{target}' is not supported by Presenter yet. Supported targets: {UatTargetRegistry.SupportedTargetList}.");
         }
 
         var fixture = ReadRuntime(config, "Fixture");
@@ -202,9 +203,4 @@ internal static class UatWorkspaceConfigInspector
         return config.Runtime.TryGetValue(field, out var value) ? value.Trim() : string.Empty;
     }
 
-    private static bool IsSupportedTarget(string target)
-    {
-        return target.Equals("MAUI", StringComparison.OrdinalIgnoreCase)
-               || target.Equals("STRIDE", StringComparison.OrdinalIgnoreCase);
-    }
 }

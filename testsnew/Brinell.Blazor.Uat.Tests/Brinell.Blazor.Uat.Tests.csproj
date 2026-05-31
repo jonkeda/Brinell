@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Brinell.Blazor.Uat.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\srcnew\Brinell.Uat\Brinell.Uat.csproj" />
+    <ProjectReference Include="..\..\srcnew\Brinell.Html\Brinell.Html.csproj" />
+    <ProjectReference Include="..\..\srcnew\Brinell.Html.Playwright\Brinell.Html.Playwright.csproj" />
+    <ProjectReference Include="..\..\srcnew\Brinell.Blazor\Brinell.Blazor.csproj" />
+    <ProjectReference Include="..\Brinell.Blazor.UITests\Brinell.Blazor.UITests.csproj" />
+    <ProjectReference Include="..\..\samples\Brinell.Samples.Blazor.App\Brinell.Samples.Blazor.App.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="uat.config.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Scenarios\**\*.uat.md" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

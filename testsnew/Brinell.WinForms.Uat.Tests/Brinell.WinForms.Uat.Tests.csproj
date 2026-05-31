@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Brinell.WinForms.Uat.Tests</RootNamespace>
+    <TargetFramework>net10.0-windows7.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\srcnew\Brinell.Uat\Brinell.Uat.csproj" />
+    <ProjectReference Include="..\Brinell.WinForms.UITests\Brinell.WinForms.UITests.csproj" />
+    <ProjectReference Include="..\..\samples\Brinell.Samples.WinForms.App\Brinell.Samples.WinForms.App.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="uat.config.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Scenarios\**\*.uat.md" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <Target Name="BuildWinFormsSampleApp" BeforeTargets="Build">
+    <MSBuild Projects="..\..\samples\Brinell.Samples.WinForms.App\Brinell.Samples.WinForms.App.csproj"
+             Targets="Build"
+             Properties="Configuration=$(Configuration)" />
+  </Target>
+
+</Project>

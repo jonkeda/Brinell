@@ -22,6 +22,8 @@ public static class UatNameInference
         "List",
         "Grid",
         "Label",
+        "Display",
+        "Message",
         "Text",
         "Control"
     ];
@@ -50,7 +52,8 @@ public static class UatNameInference
 
     public static bool HasKnownSuffix(string identifier)
     {
-        return Suffixes.Any(suffix => identifier.EndsWith(suffix, StringComparison.Ordinal));
+        var withoutGeneric = identifier.Split('`')[0];
+        return Suffixes.Any(suffix => withoutGeneric.EndsWith(suffix, StringComparison.Ordinal));
     }
 
     private static string StripSuffix(string value)

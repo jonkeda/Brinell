@@ -59,7 +59,7 @@ public sealed class BlazorTestContext : IHtmlTestContext, IAsyncDisposable
         while (DateTime.UtcNow < deadline)
         {
             var ready = _inner.InternalPage
-                .EvaluateAsync<bool>("() => typeof window._blazor !== 'undefined'")
+                .EvaluateAsync<bool>("() => typeof window.Blazor !== 'undefined' || typeof window._blazor !== 'undefined'")
                 .GetAwaiter().GetResult();
             if (ready) return;
             Thread.Sleep(100);

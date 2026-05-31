@@ -175,6 +175,12 @@ public sealed class PlaywrightHtmlElement : IHtmlElement
 
     public string InputValue => _locator.InputValueAsync().GetAwaiter().GetResult();
 
+    public void Evaluate(string expression)
+        => _locator.EvaluateAsync(expression).GetAwaiter().GetResult();
+
+    public T Evaluate<T>(string expression)
+        => _locator.EvaluateAsync<T>(expression).GetAwaiter().GetResult();
+
     public void Fill(string value) => _locator.FillAsync(value).GetAwaiter().GetResult();
 
     public void SelectOption(string value) => _locator.SelectOptionAsync(new SelectOptionValue { Value = value }).GetAwaiter().GetResult();

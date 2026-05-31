@@ -7,8 +7,8 @@
     <Nullable>enable</Nullable>
     <RootNamespace>Brinell.Samples.Stride.App</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!-- Suppress transitive vulnerability warning from Stride.CommunityToolkit -->
-    <NoWarn>$(NoWarn);NU1903</NoWarn>
+    <!-- Suppress transitive vulnerability warnings from Stride.CommunityToolkit packages. -->
+    <NoWarn>$(NoWarn);NU1901;NU1903</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">

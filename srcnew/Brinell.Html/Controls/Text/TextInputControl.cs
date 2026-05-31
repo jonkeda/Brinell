@@ -1,13 +1,14 @@
 using Brinell.Core.Exceptions;
 using Brinell.Core.Locators;
 using Brinell.Html.Interfaces;
+using Brinell.Html.Interfaces.Async;
 
 namespace Brinell.Html.Controls.Text;
 
 /// <summary>
 /// HTML text input control. Wraps &lt;input type="text|email|password|search|tel|url"&gt;.
 /// </summary>
-public class TextInputControl<TScope> : FocusableControlBase<TScope>
+public class TextInputControl<TScope> : FocusableControlBase<TScope>, IHtmlAsyncEditable<TScope>
     where TScope : IHtmlScope<TScope>
 {
     public TextInputControl(IHtmlScope<TScope> scope, Locator locator)
@@ -78,4 +79,22 @@ public class TextInputControl<TScope> : FocusableControlBase<TScope>
 
         return ContainingScope;
     }
+
+    Task<TScope> IHtmlAsyncEditable<TScope>.SetText(string text)
+        => Task.FromResult(SetText(text));
+
+    Task<string> IHtmlAsyncEditable<TScope>.GetValue()
+        => Task.FromResult(GetValue());
+
+    Task<TScope> IHtmlAsyncEditable<TScope>.TypeText(string text)
+        => Task.FromResult(TypeText(text));
+
+    Task<TScope> IHtmlAsyncEditable<TScope>.AssertValue(string? expected)
+        => Task.FromResult(AssertValue(expected));
+
+    Task<TScope> IHtmlAsyncEditable<TScope>.WaitValue(string? expected, int? timeoutMs)
+        => Task.FromResult(WaitValue(expected, timeoutMs));
+
+    Task<TScope> IHtmlAsyncEditable<TScope>.AppendText(string text)
+        => Task.FromResult(TypeText(text));
 }

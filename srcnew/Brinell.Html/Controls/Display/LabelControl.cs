@@ -44,6 +44,9 @@ public class LabelControl<TScope> : ControlBase<TScope>
         return ContainingScope;
     }
 
+    public Task<TScope> WaitTextContainingAsync(string substring, int? timeoutMs = null)
+        => Task.FromResult(WaitTextContaining(substring, timeoutMs));
+
     /// <summary>
     /// Assert text contains the specified substring.
     /// </summary>
@@ -58,4 +61,7 @@ public class LabelControl<TScope> : ControlBase<TScope>
 
         return ContainingScope;
     }
+
+    public Task<TScope> AssertTextContainingAsync(string substring)
+        => Task.FromResult(AssertTextContaining(substring));
 }

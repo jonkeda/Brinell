@@ -136,10 +136,10 @@ public sealed class UatExecutionService : IUatExecutionService
     private static void ValidateConfig(UatConfig config, string configPath)
     {
         if (!config.Runtime.TryGetValue("Target", out var target) ||
-            !IsSupportedTarget(target))
+            !UatTargetRegistry.TryGet(target, out _))
         {
             throw new InvalidOperationException(
-                $"UAT config '{configPath}' must set Runtime Target to MAUI or STRIDE.");
+                $"UAT config '{configPath}' must set Runtime Target to one of: {UatTargetRegistry.SupportedTargetList}.");
         }
 
         if (!config.Runtime.TryGetValue("Fixture", out var fixture) ||
@@ -156,28 +156,15 @@ public sealed class UatExecutionService : IUatExecutionService
         }
     }
 
-    private static bool IsSupportedTarget(string target)
-    {
-        return target.Equals("MAUI", StringComparison.OrdinalIgnoreCase)
-               || target.Equals("STRIDE", StringComparison.OrdinalIgnoreCase);
-    }
-
-    private static string GetAppPathEnvironmentVariable(UatConfig config)
-    {
-        var target = config.Runtime["Target"].Trim();
-        return target.Equals("STRIDE", StringComparison.OrdinalIgnoreCase)
-            ? "STRIDE_APP_PATH"
-            : "APPIUM_APP_PATH";
-    }
-
     private static IEnumerable<IDisposable?> CreateTargetEnvironment(
         UatConfig config,
         string appPath,
         string placementReportPath)
     {
-        yield return new EnvironmentVariableScope(GetAppPathEnvironmentVariable(config), appPath);
+        var target = UatTargetRegistry.GetRequired(config);
+        yield return new EnvironmentVariableScope(target.AppPathEnvironmentVariable, appPath);
 
-        if (config.Runtime["Target"].Equals("MAUI", StringComparison.OrdinalIgnoreCase))
+        if (target.SupportsPresenterAutPlacement)
         {
             yield return new EnvironmentVariableScope("BRINELL_AUT_PLACE_RIGHT", "1");
             yield return new EnvironmentVariableScope("BRINELL_AUT_PLACEMENT_RESULT_FILE", placementReportPath);

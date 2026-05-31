@@ -41,7 +41,7 @@ public class AutomationGameSystem : GameSystemBase
         : base(registry)
     {
         _uiRootProvider = uiRootProvider ?? throw new ArgumentNullException(nameof(uiRootProvider));
-        _options = options ?? new AutomationServerOptions();
+        _options = options ?? AutomationServerOptions.FromCommandLine();
         _game = game;
     }
 
@@ -52,7 +52,7 @@ public class AutomationGameSystem : GameSystemBase
         : base(registry)
     {
         _customHandler = handler ?? throw new ArgumentNullException(nameof(handler));
-        _options = options ?? new AutomationServerOptions();
+        _options = options ?? AutomationServerOptions.FromCommandLine();
     }
 
     public override void Initialize()
