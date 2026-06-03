@@ -83,22 +83,28 @@
    - All property access uses `ValueOrDefault`
    - Exception handling for unsupported properties
 
+4. **Windows interaction policy** - Background-safe local runs:
+   - `BRINELL_WINDOWS_INTERACTION_MODE=semantic` is the default for MAUI/FlaUI
+   - UIA patterns no longer foreground the AUT before `Invoke`, `SelectionItem`, `Toggle`, `LegacyIAccessible`, value, range, or screenshot operations
+   - Pointer, global keyboard, foreground activation, and clipboard fallbacks are guarded by explicit policy flags
+   - `BRINELL_WINDOWS_INTERACTION_MODE=interactive` preserves compatibility for tests that intentionally drive the active desktop
+
 ## Recommendations
 
 ### Short-term (Critical)
-1. Investigate Slider RangeValue pattern for proper value setting
-2. Add ComboBox expansion for Picker item enumeration
-3. Fix SearchBar text retrieval by checking nested controls
+1. Prefer `SetText()`/`ValuePattern` over keystroke entry for Windows text controls
+2. Use native invokable controls or accessible child buttons for test-critical tap/card surfaces
+3. Investigate Slider RangeValue pattern gaps before falling back to keyboard input
 
 ### Medium-term
-1. Add platform-specific Clear implementations
-2. Improve DatePicker/TimePicker automation handling
+1. Add ComboBox expansion for Picker item enumeration
+2. Improve DatePicker/TimePicker automation handling without global keyboard input where possible
 3. Add comprehensive Windows automation tree diagnostics
 
 ### Long-term
-1. Consider using WinAppDriver alongside FlaUI for specific controls
+1. Run physical gesture suites in VM/CI/isolated desktop sessions
 2. Add control-specific FlaUI implementations for complex controls
-3. Document MAUI → WinUI control mapping
+3. Document MAUI -> WinUI control mapping
 
 ## Running Tests
 

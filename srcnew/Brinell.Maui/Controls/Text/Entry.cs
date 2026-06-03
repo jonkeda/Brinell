@@ -166,6 +166,10 @@ public class Entry<TScope> : ControlBase<TScope>, IEditableTextControlObject<TSc
                 element.SendKeys(Keys.Enter, TextInputMethod.Keys);
                 return true;
             }
+            catch (WindowsInteractionPolicyException)
+            {
+                throw;
+            }
             catch (InvalidOperationException)
             {
                 return false;
@@ -202,9 +206,7 @@ public class Entry<TScope> : ControlBase<TScope>, IEditableTextControlObject<TSc
     /// <param name="timeoutMs">Optional timeout for enabled check.</param>
     protected void EnterCore(IMauiElement element, string text, int? timeoutMs = null)
     {
-        CheckEnabledCore(element, timeoutMs);
-        element.Clear();
-        element.SendKeys(text);
+        SetTextCore(element, text, timeoutMs);
     }
 
     /// <summary>

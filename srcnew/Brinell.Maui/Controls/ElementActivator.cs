@@ -32,38 +32,18 @@ internal static class ElementActivator
                 return true;
             }
 
-            try
-            {
-                element!.Click();
-                return true;
-            }
-            catch (InvalidOperationException ex) when (IsPointerDisabledFailure(ex))
-            {
-                return TryKeyboardActivate(element!, Keys.Space)
-                       || TryKeyboardActivate(element!, Keys.Enter);
-            }
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    private static bool TryKeyboardActivate(IMauiElement element, string key)
-    {
-        try
-        {
-            element.SendKeys(key);
+            element!.Click();
             return true;
         }
+        catch (WindowsInteractionPolicyException)
+        {
+            throw;
+        }
         catch
         {
             return false;
         }
     }
-
-    private static bool IsPointerDisabledFailure(InvalidOperationException exception)
-        => exception.Message.Contains("Pointer gestures are disabled", StringComparison.Ordinal);
 
     public static bool TryActivateContainingListItemOrElement(
         IMauiElementScope scope,

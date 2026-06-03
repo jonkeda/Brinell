@@ -22,6 +22,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     private readonly Application? _application;
     private readonly AutomationElement _rootElement;
     private readonly ConditionFactory _conditionFactory;
+    private readonly WindowsInteractionOptions _windowsInteraction;
     private bool _disposed;
     
     /// <summary>
@@ -29,7 +30,18 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// </summary>
     /// <param name="windowHandle">The window handle to attach to.</param>
     public FlaUIMauiDriver(IntPtr windowHandle)
+        : this(windowHandle, WindowsInteractionOptions.Semantic)
     {
+    }
+
+    /// <summary>
+    /// Creates a new FlaUIMauiDriver for an existing window.
+    /// </summary>
+    /// <param name="windowHandle">The window handle to attach to.</param>
+    /// <param name="windowsInteraction">Windows interaction policy.</param>
+    public FlaUIMauiDriver(IntPtr windowHandle, WindowsInteractionOptions windowsInteraction)
+    {
+        _windowsInteraction = (windowsInteraction ?? WindowsInteractionOptions.Semantic).Clone();
         _automation = new UIA3Automation();
         _rootElement = _automation.FromHandle(windowHandle);
         _conditionFactory = new ConditionFactory(_automation.PropertyLibrary);
@@ -41,7 +53,22 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// <param name="executablePath">Path to the application executable.</param>
     /// <param name="arguments">Optional command line arguments.</param>
     public FlaUIMauiDriver(string executablePath, string? arguments = null)
+        : this(executablePath, arguments, WindowsInteractionOptions.Semantic)
     {
+    }
+
+    /// <summary>
+    /// Creates a new FlaUIMauiDriver by launching an application.
+    /// </summary>
+    /// <param name="executablePath">Path to the application executable.</param>
+    /// <param name="arguments">Optional command line arguments.</param>
+    /// <param name="windowsInteraction">Windows interaction policy.</param>
+    public FlaUIMauiDriver(
+        string executablePath,
+        string? arguments,
+        WindowsInteractionOptions windowsInteraction)
+    {
+        _windowsInteraction = (windowsInteraction ?? WindowsInteractionOptions.Semantic).Clone();
         _automation = new UIA3Automation();
         
         var processStartInfo = new ProcessStartInfo(executablePath)
@@ -70,7 +97,18 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// </summary>
     /// <param name="process">The process to attach to.</param>
     public FlaUIMauiDriver(Process process)
+        : this(process, WindowsInteractionOptions.Semantic)
     {
+    }
+
+    /// <summary>
+    /// Creates a new FlaUIMauiDriver by attaching to a running process.
+    /// </summary>
+    /// <param name="process">The process to attach to.</param>
+    /// <param name="windowsInteraction">Windows interaction policy.</param>
+    public FlaUIMauiDriver(Process process, WindowsInteractionOptions windowsInteraction)
+    {
+        _windowsInteraction = (windowsInteraction ?? WindowsInteractionOptions.Semantic).Clone();
         _automation = new UIA3Automation();
         _application = Application.Attach(process);
         
@@ -97,6 +135,11 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// Gets the underlying automation instance.
     /// </summary>
     internal UIA3Automation Automation => _automation;
+
+    /// <summary>
+    /// Gets the Windows interaction policy for this driver session.
+    /// </summary>
+    internal WindowsInteractionOptions WindowsInteraction => _windowsInteraction;
 
     /// <summary>
     /// Checks whether a screen point falls within the root window bounds.
@@ -128,9 +171,196 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     }
 
     /// <summary>
-    /// Ensures the root window is focused and activated before interaction.
+    /// Ensures the root window is focused and activated before physical input.
     /// </summary>
-    internal void EnsureRootWindowFocused()
+    internal void EnsureRootWindowFocused(string action = "physical input")
+    {
+        RequireForegroundActivation(action);
+        BringRootWindowToForeground();
+    }
+
+    internal void RequirePointerInput(string action)
+    {
+        if (!_windowsInteraction.AllowPointerInput)
+        {
+            throw CreatePolicyException(
+                action,
+                "pointer input",
+                WindowsInteractionOptions.AllowPointerInputEnvironmentVariable,
+                "Prefer UI Automation patterns, or run with BRINELL_WINDOWS_INTERACTION_MODE=interactive.");
+        }
+    }
+
+    internal void RequireGlobalKeyboardInput(string action)
+    {
+        if (!_windowsInteraction.AllowGlobalKeyboardInput)
+        {
+            throw CreatePolicyException(
+                action,
+                "global keyboard input",
+                WindowsInteractionOptions.AllowGlobalKeyboardInputEnvironmentVariable,
+                "Prefer SetText()/ValuePattern or run with BRINELL_WINDOWS_INTERACTION_MODE=interactive.");
+        }
+    }
+
+    internal void RequireClipboardInput(string action)
+    {
+        if (!_windowsInteraction.AllowClipboardInput)
+        {
+            throw CreatePolicyException(
+                action,
+                "clipboard input",
+                WindowsInteractionOptions.AllowClipboardInputEnvironmentVariable,
+                "Prefer SetText()/ValuePattern or run with BRINELL_WINDOWS_INTERACTION_MODE=interactive.");
+        }
+    }
+
+    internal void PointerClick(Point point, string action)
+    {
+        RequirePointerInput(action);
+        EnsureRootWindowFocused(action);
+        Mouse.MoveTo(point);
+        Mouse.Down(MouseButton.Left);
+        try
+        {
+            WaitHelper.Pause(120);
+        }
+        finally
+        {
+            Mouse.Up(MouseButton.Left);
+        }
+    }
+
+    internal void PointerDoubleClick(AutomationElement element, string action)
+    {
+        RequirePointerInput(action);
+        EnsureRootWindowFocused(action);
+        element.DoubleClick();
+    }
+
+    internal void PointerRightClick(AutomationElement element, string action)
+    {
+        RequirePointerInput(action);
+        EnsureRootWindowFocused(action);
+        element.RightClick();
+    }
+
+    internal void PointerHover(Point point, string action)
+    {
+        RequirePointerInput(action);
+        EnsureRootWindowFocused(action);
+        Mouse.MoveTo(point);
+    }
+
+    internal void PointerLongPress(Point point, int durationMs, string action)
+    {
+        RequirePointerInput(action);
+        EnsureRootWindowFocused(action);
+        Mouse.Position = point;
+        Mouse.Down(MouseButton.Left);
+        try
+        {
+            WaitHelper.Pause(durationMs);
+        }
+        finally
+        {
+            Mouse.Up(MouseButton.Left);
+        }
+    }
+
+    internal void PointerScroll(Point point, int wheelClicks, string action)
+    {
+        RequirePointerInput(action);
+        EnsureRootWindowFocused(action);
+        Mouse.MoveTo(point);
+        Mouse.Scroll(wheelClicks);
+    }
+
+    internal void PointerDrag(
+        Point start,
+        Point end,
+        int durationMs,
+        string action)
+    {
+        RequirePointerInput(action);
+        EnsureRootWindowFocused(action);
+        Mouse.MoveTo(start);
+        Mouse.Down(MouseButton.Left);
+        try
+        {
+            var steps = Math.Max(10, durationMs / 50);
+            var dx = (end.X - start.X) / (double)steps;
+            var dy = (end.Y - start.Y) / (double)steps;
+            var stepDelay = durationMs / steps;
+
+            for (var i = 1; i <= steps; i++)
+            {
+                var x = (int)(start.X + dx * i);
+                var y = (int)(start.Y + dy * i);
+                Mouse.MoveTo(new Point(x, y));
+                WaitHelper.Pause(stepDelay);
+            }
+        }
+        finally
+        {
+            Mouse.Up(MouseButton.Left);
+        }
+    }
+
+    internal void FocusForGlobalKeyboardInput(AutomationElement element, string action)
+    {
+        RequireGlobalKeyboardInput(action);
+        EnsureRootWindowFocused(action);
+        element.Focus();
+    }
+
+    internal void GlobalType(string text, string action)
+    {
+        RequireGlobalKeyboardInput(action);
+        Keyboard.Type(text);
+    }
+
+    internal void GlobalType(VirtualKeyShort key, string action)
+    {
+        RequireGlobalKeyboardInput(action);
+        Keyboard.Type(key);
+    }
+
+    internal void GlobalTypeSimultaneously(
+        string action,
+        params VirtualKeyShort[] keys)
+    {
+        RequireGlobalKeyboardInput(action);
+        Keyboard.TypeSimultaneously(keys);
+    }
+
+    internal void SetClipboardTextForInput(string text, string action)
+    {
+        RequireClipboardInput(action);
+        System.Windows.Forms.Clipboard.SetText(text);
+    }
+
+    private void RequireForegroundActivation(string action)
+    {
+        if (!_windowsInteraction.AllowForegroundActivation)
+        {
+            throw CreatePolicyException(
+                action,
+                "foreground activation",
+                WindowsInteractionOptions.AllowForegroundActivationEnvironmentVariable,
+                "Prefer UI Automation patterns, or run with BRINELL_WINDOWS_INTERACTION_MODE=interactive.");
+        }
+    }
+
+    private static WindowsInteractionPolicyException CreatePolicyException(
+        string action,
+        string capability,
+        string variableName,
+        string guidance)
+        => new(
+            $"The '{action}' action requires {capability}, but {variableName} is not enabled. {guidance}");
+
+    private void BringRootWindowToForeground()
     {
         try
         {
@@ -419,8 +649,6 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// <inheritdoc />
     public byte[] GetScreenshot()
     {
-        EnsureRootWindowFocused();
-
         var capture = Capture.Element(_rootElement);
         using var ms = new MemoryStream();
         capture.Bitmap.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
@@ -517,16 +745,16 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// <inheritdoc />
     public void NavigateBack()
     {
-        EnsureRootWindowFocused();
-
         if (TryInvokeBackButton())
             return;
 
         try
         {
-            global::FlaUI.Core.Input.Keyboard.TypeSimultaneously(
-                global::FlaUI.Core.WindowsAPI.VirtualKeyShort.ALT,
-                global::FlaUI.Core.WindowsAPI.VirtualKeyShort.LEFT);
+            FocusForGlobalKeyboardInput(_rootElement, nameof(NavigateBack));
+            GlobalTypeSimultaneously(
+                nameof(NavigateBack),
+                VirtualKeyShort.ALT,
+                VirtualKeyShort.LEFT);
         }
         catch (System.ComponentModel.Win32Exception)
         {
@@ -539,7 +767,8 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     public void Refresh()
     {
         // Try F5 refresh for desktop apps
-        global::FlaUI.Core.Input.Keyboard.Type(global::FlaUI.Core.WindowsAPI.VirtualKeyShort.F5);
+        FocusForGlobalKeyboardInput(_rootElement, nameof(Refresh));
+        GlobalType(VirtualKeyShort.F5, nameof(Refresh));
     }
     
     /// <inheritdoc />

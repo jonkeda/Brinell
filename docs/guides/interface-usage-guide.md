@@ -79,7 +79,7 @@ void WaitEnabled(bool enabled, int timeoutMs);  // Wait for enabled state
 ```
 
 **Platform Implementation:**
-- **MAUI:** Uses element.SendKeys(Key.Tab) for blur, tap for focus
+- **MAUI:** Uses platform element focus/input APIs; Windows FlaUI blocks global keyboard focus paths unless interactive mode is enabled
 - **WPF/WinForms:** Uses element.Focus() and SendKeys(Key.Tab)
 - **Html/Selenium:** Uses IJavaScriptExecutor to call blur() and focus()
 - **Html.Playwright:** Uses FocusAsync() and EvaluateAsync for blur
@@ -106,7 +106,7 @@ void WaitClickable(bool clickable, int timeoutMs);  // Wait for clickable state
 ```
 
 **Platform Implementation:**
-- **MAUI:** Uses element.Click(), multi-tap for double-click
+- **MAUI:** Click is semantic-first on Windows FlaUI (`Invoke`, `SelectionItem`, `LegacyIAccessible`, then guarded pointer fallback); double-click/right-click are physical pointer actions unless the platform exposes a semantic equivalent
 - **WPF/WinForms:** Uses FlaUI click operations and DoubleClick()
 - **Html/Selenium:** Uses Actions for clicks and double-clicks
 - **Html.Playwright:** Uses ClickAsync() with mouse button parameter
@@ -119,6 +119,27 @@ var submitButton = page.GetControl<IClickable>("submit");
 submitButton.WaitClickable(true, 3000);
 submitButton.Click();
 ```
+
+### Windows MAUI Interaction Modes
+
+The Windows MAUI/FlaUI adapter defaults to semantic mode. Semantic mode allows UI Automation patterns and blocks foreground activation, pointer input, global keyboard input, and clipboard input.
+
+Use semantic APIs when possible:
+
+```csharp
+entry.SetText("value");
+button.Click();
+toggle.Check();
+slider.SetValue(50);
+```
+
+Use interactive mode only for tests that intentionally drive the active desktop:
+
+```powershell
+$env:BRINELL_WINDOWS_INTERACTION_MODE = "interactive"
+```
+
+Interactive-only actions include raw `SendKeys`, `Press`, Enter-based `Submit`, hover, long-press, swipe gestures, double-click, right-click, and clipboard paste when no UIA pattern satisfies the action.
 
 ---
 

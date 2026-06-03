@@ -44,9 +44,7 @@ public class SearchBar<TScope> : Entry<TScope>
 
         return RunWithElement(nameof(Search), searchText, timeoutMs, element =>
         {
-            // Clear and enter search text
-            ClearElementCore(element);
-            element.SendKeys(searchText);
+            SetTextCore(element, searchText, timeoutMs);
             // Submit search
             SubmitSearchCore(element);
         });

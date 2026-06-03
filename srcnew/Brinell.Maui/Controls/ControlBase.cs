@@ -432,7 +432,6 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
     /// <param name="keys">The keys to send.</param>
     protected virtual void SendKeysCore(IMauiElement element, string keys)
     {
-        element.Click(); // Focus the element first
         element.SendKeys(keys);
     }
     

@@ -166,8 +166,6 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
     /// <inheritdoc />
     public void Click()
     {
-        _driver.EnsureRootWindowFocused();
-
         if (InvokePattern())
             return;
 
@@ -182,8 +180,6 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
 
     private void ClickWithPointerFallback()
     {
-        _driver.EnsureRootWindowFocused();
-
         var rect = _element.BoundingRectangle;
         if (rect.Width <= 0 || rect.Height <= 0)
         {
@@ -191,18 +187,8 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
                 $"Element is not gesture-clickable because bounds are empty ({rect}).");
         }
 
-        if (!PointerGesturesEnabled())
-        {
-            throw new InvalidOperationException(
-                "Pointer gestures are disabled. Brinell will not move the system mouse unless " +
-                "BRINELL_ALLOW_POINTER_INPUT=true is set for this test run.");
-        }
-
         var center = new Point(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
-        Mouse.MoveTo(center);
-        Mouse.Down(MouseButton.Left);
-        WaitHelper.Pause(120);
-        Mouse.Up(MouseButton.Left);
+        _driver.PointerClick(center, nameof(Click));
     }
     
     /// <inheritdoc />
@@ -211,20 +197,23 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
         switch (method)
         {
             case TextInputMethod.Keys:
-                _element.Focus();
-                Keyboard.Type(text);
+                _driver.FocusForGlobalKeyboardInput(_element, nameof(SendKeys));
+                _driver.GlobalType(text, nameof(SendKeys));
                 break;
             case TextInputMethod.Paste:
-                _element.Focus();
-                System.Windows.Forms.Clipboard.SetText(text);
-                Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_V);
+                _driver.FocusForGlobalKeyboardInput(_element, nameof(SendKeys));
+                _driver.SetClipboardTextForInput(text, nameof(SendKeys));
+                _driver.GlobalTypeSimultaneously(
+                    nameof(SendKeys),
+                    VirtualKeyShort.CONTROL,
+                    VirtualKeyShort.KEY_V);
                 break;
             case TextInputMethod.SetValue:
                 if (TrySetTextValue(text))
                     return;
 
-                _element.Focus();
-                Keyboard.Type(text);
+                _driver.FocusForGlobalKeyboardInput(_element, nameof(SendKeys));
+                _driver.GlobalType(text, nameof(SendKeys));
                 break;
         }
     }
@@ -236,21 +225,24 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
             return;
 
         // Select all and delete
-        _element.Focus();
-        Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_A);
-        Keyboard.Type(VirtualKeyShort.DELETE);
+        _driver.FocusForGlobalKeyboardInput(_element, nameof(Clear));
+        _driver.GlobalTypeSimultaneously(
+            nameof(Clear),
+            VirtualKeyShort.CONTROL,
+            VirtualKeyShort.KEY_A);
+        _driver.GlobalType(VirtualKeyShort.DELETE, nameof(Clear));
     }
     
     /// <inheritdoc />
     public void DoubleClick()
     {
-        _element.DoubleClick();
+        _driver.PointerDoubleClick(_element, nameof(DoubleClick));
     }
     
     /// <inheritdoc />
     public void RightClick()
     {
-        _element.RightClick();
+        _driver.PointerRightClick(_element, nameof(RightClick));
     }
     
     /// <inheritdoc />
@@ -258,7 +250,7 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
     {
         var rect = _element.BoundingRectangle;
         var center = new System.Drawing.Point(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
-        Mouse.MoveTo(center);
+        _driver.PointerHover(center, nameof(Hover));
     }
     
     /// <inheritdoc />
@@ -266,10 +258,7 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
     {
         var rect = _element.BoundingRectangle;
         var center = new System.Drawing.Point(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
-        Mouse.Position = center;
-        Mouse.Down(MouseButton.Left);
-        WaitHelper.Pause(durationMs);
-        Mouse.Up(MouseButton.Left);
+        _driver.PointerLongPress(center, durationMs, nameof(LongPress));
     }
     
     /// <inheritdoc />
@@ -321,39 +310,23 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
         // Detect vertical-only scroll gesture (typical swipe to scroll)
         if (Math.Abs(deltaX) < 20 && Math.Abs(deltaY) > 20)
         {
-            _driver.EnsureRootWindowFocused();
-
             // Use mouse wheel at the element center — most reliable for MAUI ScrollView on WinUI3
             var center = new Point(
                 _element.BoundingRectangle.X + _element.BoundingRectangle.Width / 2,
                 _element.BoundingRectangle.Y + _element.BoundingRectangle.Height / 2);
-            Mouse.MoveTo(center);
             // deltaY < 0 means swipe up → scroll down → negative wheel
             var wheelClicks = deltaY < 0 ? -5 : 5;
-            Mouse.Scroll(wheelClicks);
+            _driver.PointerScroll(center, wheelClicks, nameof(Swipe));
             WaitHelper.Pause(200); // Wait for scroll to settle
             return;
         }
 
         // Non-scroll gestures: simulate with mouse drag
-        Mouse.MoveTo(new Point(startX, startY));
-        Mouse.Down(MouseButton.Left);
-
-        // Interpolate movement for smooth swipe
-        var steps = Math.Max(10, durationMs / 50);
-        var dx = (endX - startX) / (double)steps;
-        var dy = (endY - startY) / (double)steps;
-        var stepDelay = durationMs / steps;
-
-        for (int i = 1; i <= steps; i++)
-        {
-            var x = (int)(startX + dx * i);
-            var y = (int)(startY + dy * i);
-            Mouse.MoveTo(new Point(x, y));
-            WaitHelper.Pause(stepDelay);
-        }
-
-        Mouse.Up(MouseButton.Left);
+        _driver.PointerDrag(
+            new Point(startX, startY),
+            new Point(endX, endY),
+            durationMs,
+            nameof(Swipe));
     }
     
     #endregion
@@ -503,7 +476,8 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
     public void Submit()
     {
         // Try to find and click a submit button, or press Enter
-        Keyboard.Type(VirtualKeyShort.ENTER);
+        _driver.FocusForGlobalKeyboardInput(_element, nameof(Submit));
+        _driver.GlobalType(VirtualKeyShort.ENTER, nameof(Submit));
     }
     
     #endregion
@@ -514,14 +488,6 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
     /// Gets the underlying FlaUI AutomationElement for internal use.
     /// </summary>
     internal AutomationElement Element => _element;
-
-    private static bool PointerGesturesEnabled()
-    {
-        var value = Environment.GetEnvironmentVariable("BRINELL_ALLOW_POINTER_INPUT");
-        return string.Equals(value, "true", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(value, "1", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(value, "yes", StringComparison.OrdinalIgnoreCase);
-    }
     
     #endregion
 
@@ -568,7 +534,6 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
             if (!_element.Patterns.Toggle.IsSupported)
                 return false;
 
-            _driver.EnsureRootWindowFocused();
             _element.Patterns.Toggle.Pattern.Toggle();
             return true;
         }
@@ -619,7 +584,6 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
             if (!_element.Patterns.Invoke.IsSupported)
                 return false;
 
-            _driver.EnsureRootWindowFocused();
             _element.Patterns.Invoke.Pattern.Invoke();
             return true;
         }
@@ -657,7 +621,6 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
             if (!_element.Patterns.LegacyIAccessible.IsSupported)
                 return false;
 
-            _driver.EnsureRootWindowFocused();
             _element.Patterns.LegacyIAccessible.Pattern.DoDefaultAction();
             return true;
         }
@@ -695,7 +658,6 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
             if (!_element.Patterns.SelectionItem.IsSupported)
                 return false;
 
-            _driver.EnsureRootWindowFocused();
             _element.Patterns.SelectionItem.Pattern.Select();
             return true;
         }
@@ -941,7 +903,7 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
         }
         else
         {
-            target.Click();
+            new FlaUIMauiElement(target, _driver).Click();
         }
         
         // Wait for the dropdown to collapse (selection should auto-close)
@@ -986,7 +948,7 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
         }
         else
         {
-            item.Click();
+            new FlaUIMauiElement(item, _driver).Click();
         }
         
         // Wait for the dropdown to collapse (selection should auto-close)
@@ -1094,9 +1056,12 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
                 // Keyboard attempt: Ctrl+A then Delete on each possible focus target.
                 foreach (var target in focusTargets)
                 {
-                    target.Focus();
-                    Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_A);
-                    Keyboard.Type(VirtualKeyShort.DELETE);
+                    _driver.FocusForGlobalKeyboardInput(target, nameof(ClearWithFallback));
+                    _driver.GlobalTypeSimultaneously(
+                        nameof(ClearWithFallback),
+                        VirtualKeyShort.CONTROL,
+                        VirtualKeyShort.KEY_A);
+                    _driver.GlobalType(VirtualKeyShort.DELETE, nameof(ClearWithFallback));
                     if (IsEmpty(GetNestedText()))
                         return true;
                 }
@@ -1106,13 +1071,13 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
                 if (remainingText.Length > 0)
                 {
                     var target = focusTargets[0];
-                    target.Focus();
-                    Keyboard.Type(VirtualKeyShort.END);
+                    _driver.FocusForGlobalKeyboardInput(target, nameof(ClearWithFallback));
+                    _driver.GlobalType(VirtualKeyShort.END, nameof(ClearWithFallback));
 
                     var backspaceCount = Math.Max(remainingText.Length + 10, 20);
                     for (var i = 0; i < backspaceCount; i++)
                     {
-                        Keyboard.Type(VirtualKeyShort.BACK);
+                        _driver.GlobalType(VirtualKeyShort.BACK, nameof(ClearWithFallback));
                     }
 
                     if (IsEmpty(GetNestedText()))
@@ -1121,6 +1086,10 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
             }
 
             return IsEmpty(GetNestedText());
+        }
+        catch (WindowsInteractionPolicyException)
+        {
+            throw;
         }
         catch
         {

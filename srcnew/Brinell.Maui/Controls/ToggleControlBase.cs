@@ -108,6 +108,10 @@ public abstract class ToggleControlBase<TScope> : ClickableControlBase<TScope>, 
             element.SendKeys(OpenQA.Selenium.Keys.Space);
             return WaitForStateChange(element, beforeState);
         }
+        catch (WindowsInteractionPolicyException)
+        {
+            throw;
+        }
         catch (Exception)
         {
             return false;

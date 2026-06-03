@@ -151,7 +151,7 @@ public class SemanticControlTests
     }
 
     [Fact]
-    public void EditableField_SetText_ConfirmsTextEditorWithKeyboardWhenPointerFallbackIsDisabled()
+    public void EditableField_SetText_ThrowsPolicyExceptionWhenConfirmRequiresPointerFallback()
     {
         var drawerOpen = false;
         var drawerClosed = false;
@@ -163,8 +163,8 @@ public class SemanticControlTests
         var okButton = CreateElement("IconButton_btnIcon", 360, 0, 48, 48);
         okButton
             .Setup(e => e.Click())
-            .Throws(new InvalidOperationException(
-                "Pointer gestures are disabled. Brinell will not move the system mouse unless BRINELL_ALLOW_POINTER_INPUT=true is set for this test run."));
+            .Throws(new WindowsInteractionPolicyException(
+                "The 'Click' action requires pointer input, but BRINELL_ALLOW_POINTER_INPUT is not enabled."));
         okButton
             .Setup(e => e.SendKeys(Keys.Space, TextInputMethod.Keys))
             .Callback(() => drawerClosed = true);
@@ -180,23 +180,24 @@ public class SemanticControlTests
             .Setup(c => c.FindElements(It.Is<Locator>(l => l.Value == "IconButton_btnIcon")))
             .Returns(() => drawerOpen && !drawerClosed ? new[] { okButton.Object } : Array.Empty<IMauiElement>());
 
-        var result = _page.TestField.TrySetText("Keyboard confirmed note");
+        var ex = Assert.Throws<WindowsInteractionPolicyException>(
+            () => _page.TestField.TrySetText("Keyboard confirmed note"));
 
-        Assert.True(result);
+        Assert.Contains("pointer input", ex.Message);
         editor.Verify(e => e.SendKeys("Keyboard confirmed note", TextInputMethod.SetValue), Times.Once);
-        okButton.Verify(e => e.SendKeys(Keys.Space, TextInputMethod.Keys), Times.Once);
+        okButton.Verify(e => e.SendKeys(It.IsAny<string>(), It.IsAny<TextInputMethod>()), Times.Never);
     }
 
     [Fact]
-    public void EditableField_SetText_UsesKeyboardActivationForTextEditorDrawerBeforePointerFallback()
+    public void EditableField_SetText_ThrowsPolicyExceptionWhenOpeningRequiresPointerFallback()
     {
         var drawerOpen = false;
         var drawerClosed = false;
         var fieldRoot = CreateElement("FieldRoot", 0, 0, 200, 120);
         fieldRoot
             .Setup(e => e.Click())
-            .Throws(new InvalidOperationException(
-                "Pointer gestures are disabled. Brinell will not move the system mouse unless BRINELL_ALLOW_POINTER_INPUT=true is set for this test run."));
+            .Throws(new WindowsInteractionPolicyException(
+                "The 'Click' action requires pointer input, but BRINELL_ALLOW_POINTER_INPUT is not enabled."));
         fieldRoot
             .Setup(e => e.SendKeys(Keys.Enter, TextInputMethod.Keys))
             .Callback(() => drawerOpen = true);
@@ -218,12 +219,13 @@ public class SemanticControlTests
             .Setup(c => c.FindElements(It.Is<Locator>(l => l.Value == "IconButton_btnIcon")))
             .Returns(() => drawerOpen && !drawerClosed ? new[] { okButton.Object } : Array.Empty<IMauiElement>());
 
-        var result = _page.TestField.TrySetText("Keyboard note");
+        var ex = Assert.Throws<WindowsInteractionPolicyException>(
+            () => _page.TestField.TrySetText("Keyboard note"));
 
-        Assert.True(result);
-        fieldRoot.Verify(e => e.SendKeys(Keys.Enter, TextInputMethod.Keys), Times.Once);
-        editor.Verify(e => e.SendKeys("Keyboard note", TextInputMethod.SetValue), Times.Once);
-        okButton.As<IInvokePatternElement>().Verify(e => e.InvokePattern(), Times.Once);
+        Assert.Contains("pointer input", ex.Message);
+        fieldRoot.Verify(e => e.SendKeys(It.IsAny<string>(), It.IsAny<TextInputMethod>()), Times.Never);
+        editor.Verify(e => e.SendKeys(It.IsAny<string>(), It.IsAny<TextInputMethod>()), Times.Never);
+        okButton.As<IInvokePatternElement>().Verify(e => e.InvokePattern(), Times.Never);
     }
 
     [Fact]
@@ -383,21 +385,22 @@ public class SemanticControlTests
     }
 
     [Fact]
-    public void Button_Click_UsesKeyboardActivationWhenPointerFallbackIsDisabled()
+    public void Button_Click_ThrowsPolicyExceptionWhenPointerFallbackIsDisabled()
     {
         var buttonRoot = CreateElement("NativeDialog_Delete", 0, 0, 120, 48);
         buttonRoot
             .Setup(e => e.Click())
-            .Throws(new InvalidOperationException(
-                "Pointer gestures are disabled. Brinell will not move the system mouse unless BRINELL_ALLOW_POINTER_INPUT=true is set for this test run."));
+            .Throws(new WindowsInteractionPolicyException(
+                "The 'Click' action requires pointer input, but BRINELL_ALLOW_POINTER_INPUT is not enabled."));
         _context
             .Setup(c => c.TryFindElement(It.Is<Locator>(l => l.Value == "NativeDialog_Delete")))
             .Returns(buttonRoot.Object);
 
-        var result = _page.NativeDialogDelete.TryClick();
+        var ex = Assert.Throws<WindowsInteractionPolicyException>(
+            () => _page.NativeDialogDelete.TryClick());
 
-        Assert.True(result);
-        buttonRoot.Verify(e => e.SendKeys(Keys.Space, TextInputMethod.Keys), Times.Once);
+        Assert.Contains("pointer input", ex.Message);
+        buttonRoot.Verify(e => e.SendKeys(It.IsAny<string>(), It.IsAny<TextInputMethod>()), Times.Never);
     }
 
     [Fact]
@@ -417,15 +420,15 @@ public class SemanticControlTests
     }
 
     [Fact]
-    public void CheckBox_Toggle_UsesKeyboardFallbackWhenSemanticActivationCannotChangeState()
+    public void CheckBox_Toggle_ThrowsPolicyExceptionWhenPointerFallbackIsDisabled()
     {
         var isChecked = false;
         var checkBox = CreateElement("IncludeProblemReports", 0, 0, 32, 32);
         checkBox.Setup(e => e.Selected).Returns(() => isChecked);
         checkBox
             .Setup(e => e.Click())
-            .Throws(new InvalidOperationException(
-                "Pointer gestures are disabled. Brinell will not move the system mouse unless BRINELL_ALLOW_POINTER_INPUT=true is set for this test run."));
+            .Throws(new WindowsInteractionPolicyException(
+                "The 'Click' action requires pointer input, but BRINELL_ALLOW_POINTER_INPUT is not enabled."));
         checkBox
             .Setup(e => e.SendKeys(Keys.Space, TextInputMethod.Keys))
             .Callback(() => isChecked = !isChecked);
@@ -433,10 +436,12 @@ public class SemanticControlTests
             .Setup(c => c.TryFindElement(It.Is<Locator>(l => l.Value == "IncludeProblemReports")))
             .Returns(checkBox.Object);
 
-        _page.IncludeProblemReports.Toggle();
+        var ex = Assert.Throws<WindowsInteractionPolicyException>(
+            () => _page.IncludeProblemReports.Toggle());
 
-        checkBox.Verify(e => e.SendKeys(Keys.Space, TextInputMethod.Keys), Times.Once);
-        Assert.True(_page.IncludeProblemReports.IsChecked());
+        Assert.Contains("pointer input", ex.Message);
+        checkBox.Verify(e => e.SendKeys(It.IsAny<string>(), It.IsAny<TextInputMethod>()), Times.Never);
+        Assert.False(_page.IncludeProblemReports.IsChecked());
     }
 
     [Fact]

@@ -114,14 +114,11 @@ page.SaveButton.Click();  // Fresh element reference
 - Click goes to wrong window
 - Keyboard input doesn't work
 - Actions fail with "element not interactable"
+- Actions fail with `WindowsInteractionPolicyException`
 
 ### Solutions
 
 ```csharp
-// ✅ Ensure window has focus before interaction
-Context.MainWindow.Focus();
-element.Click();
-
 // ✅ Handle modal dialogs blocking main window
 if (Context.HasModalWindow())
 {
@@ -134,6 +131,32 @@ var windows = App.GetAllTopLevelWindows();
 var settingsWindow = windows.First(w => w.Name == "Settings");
 settingsWindow.Focus();
 ```
+
+For MAUI/FlaUI on Windows, the default is semantic mode. Semantic mode intentionally does not bring the app to the foreground or use the real mouse, keyboard, or clipboard.
+
+Prefer semantic operations:
+
+```csharp
+page.NameEntry.SetText("Alice");   // ValuePattern when available
+page.SaveButton.Click();           // Invoke/SelectionItem/LegacyIAccessible first
+```
+
+If an action reports that pointer, keyboard, clipboard, or foreground activation is disabled, either expose a semantic UI Automation surface in the app or run that specific suite in interactive mode:
+
+```powershell
+$env:BRINELL_WINDOWS_INTERACTION_MODE = "interactive"
+```
+
+Granular overrides are also available:
+
+```powershell
+$env:BRINELL_ALLOW_FOREGROUND_ACTIVATION = "true"
+$env:BRINELL_ALLOW_POINTER_INPUT = "true"
+$env:BRINELL_ALLOW_GLOBAL_KEYBOARD_INPUT = "true"
+$env:BRINELL_ALLOW_CLIPBOARD_INPUT = "true"
+```
+
+Do not use raw Win32 `SendMessage` as the default workaround for MAUI/WinUI click issues. Many MAUI/WinUI controls are not individual HWND-backed controls, so UI Automation patterns or improved app accessibility surfaces are more reliable.
 
 ---
 

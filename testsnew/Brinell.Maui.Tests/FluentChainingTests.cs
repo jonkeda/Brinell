@@ -305,6 +305,7 @@ public class FluentChainingTests
         var mockElement = new Mock<IMauiElement>();
         mockElement.Setup(e => e.Visible).Returns(true);
         mockElement.Setup(e => e.Enabled).Returns(true);
+        mockElement.Setup(e => e.Rect).Returns(new System.Drawing.Rectangle(0, 0, 100, 40));
         
         if (onInteraction != null)
         {
@@ -328,6 +329,7 @@ public class FluentChainingTests
         var mockElement = new Mock<IMauiElement>();
         mockElement.Setup(e => e.Visible).Returns(true);
         mockElement.Setup(e => e.Enabled).Returns(true);
+        mockElement.Setup(e => e.Rect).Returns(new System.Drawing.Rectangle(0, 0, 200, 120));
         
         _mockContext.Setup(c => c.TryFindElement(It.Is<Locator>(l => l.Value == automationId)))
             .Returns(mockElement.Object);
@@ -342,6 +344,7 @@ public class FluentChainingTests
         var childMockElement = new Mock<IMauiElement>();
         childMockElement.Setup(e => e.Visible).Returns(true);
         childMockElement.Setup(e => e.Enabled).Returns(true);
+        childMockElement.Setup(e => e.Rect).Returns(new System.Drawing.Rectangle(10, 10, 80, 32));
         
         // Set up the container element to find the child element
         containerMock.Setup(e => e.FindElement(It.Is<Locator>(l => l.Value.Contains(childAutomationId)), It.IsAny<int>()))

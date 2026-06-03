@@ -160,6 +160,32 @@ public SettingsPage(ITestContext context)
 
 ## Control Usage
 
+### Prefer Background-Safe Windows Actions
+
+On Windows MAUI/FlaUI, Brinell defaults to semantic interaction mode. Routine actions should use UI Automation patterns instead of the real desktop mouse, keyboard, foreground window, or clipboard.
+
+```csharp
+// Good - uses ValuePattern/semantic text setting where available
+page.ApiKeyEntry.SetText("test-key");
+
+// Good - Click first tries Invoke/SelectionItem/LegacyIAccessible patterns
+page.SaveButton.Click();
+
+// Use only when you intentionally need keystrokes
+page.SaveButton.Press();
+page.SearchBox.Submit();
+```
+
+Prefer native invokable controls (`Button`, `MenuItem`, `ToolbarItem`, `Switch`, `CheckBox`, `Entry`) for surfaces that tests need to activate. If a visual card uses a gesture recognizer, expose an invokable child button or automation peer so semantic mode can operate it without pointer input.
+
+Interactive desktop input is opt-in:
+
+```powershell
+$env:BRINELL_WINDOWS_INTERACTION_MODE = "interactive"
+```
+
+Use interactive mode in a VM, CI desktop session, Windows Sandbox, or separate RDP/user session when a test truly needs pointer gestures, keyboard shortcuts, hover, long-press, right-click, double-click, clipboard paste, or raw typing.
+
 ### Let Controls Handle Waits
 
 ```csharp

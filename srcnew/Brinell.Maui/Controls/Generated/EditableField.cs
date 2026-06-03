@@ -158,6 +158,10 @@ public class EditableField<TScope> : ControlBase<TScope>
             element.SendKeys(key);
             return true;
         }
+        catch (WindowsInteractionPolicyException)
+        {
+            throw;
+        }
         catch
         {
             return false;

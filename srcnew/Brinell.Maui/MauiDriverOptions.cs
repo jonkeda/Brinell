@@ -66,6 +66,12 @@ public class MauiDriverOptions
     /// Logger for driver operations.
     /// </summary>
     public ITestLogger? Logger { get; set; }
+
+    /// <summary>
+    /// Windows-only interaction policy used by the FlaUI MAUI driver.
+    /// Defaults to semantic, background-safe automation.
+    /// </summary>
+    public WindowsInteractionOptions WindowsInteraction { get; set; } = WindowsInteractionOptions.Semantic.Clone();
     
     /// <summary>
     /// Creates options from environment variables.
@@ -99,7 +105,8 @@ public class MauiDriverOptions
             WindowHandle = windowHandle,
             DeviceName = Environment.GetEnvironmentVariable("APPIUM_DEVICE_NAME"),
             PlatformVersion = Environment.GetEnvironmentVariable("APPIUM_PLATFORM_VERSION"),
-            AppiumServerUri = new Uri(Environment.GetEnvironmentVariable("APPIUM_SERVER_URI") ?? "http://127.0.0.1:4723")
+            AppiumServerUri = new Uri(Environment.GetEnvironmentVariable("APPIUM_SERVER_URI") ?? "http://127.0.0.1:4723"),
+            WindowsInteraction = WindowsInteractionOptions.FromEnvironment()
         };
     }
 
