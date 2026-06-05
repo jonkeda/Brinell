@@ -16,6 +16,7 @@
   <ItemGroup>
     <None Update="uat.config.md" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Scenarios\**\*.uat.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="TestSettings\**\*.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <Target Name="BuildPresenterSampleAut" BeforeTargets="Build">

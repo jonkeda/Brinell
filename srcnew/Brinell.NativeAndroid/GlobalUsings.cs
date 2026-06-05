@@ -1,0 +1,16 @@
+global using System.Drawing;
+global using System.Text.RegularExpressions;
+global using Brinell.Core.Abstractions.Controls;
+global using Brinell.Core;
+global using Brinell.Core.Configuration;
+global using Brinell.Core.Exceptions;
+global using Brinell.Core.Interfaces;
+global using Brinell.Core.Locators;
+global using Brinell.Core.Logging;
+global using Brinell.NativeAndroid;
+global using Brinell.NativeAndroid.Controls;
+global using OpenQA.Selenium;
+global using OpenQA.Selenium.Appium;
+global using OpenQA.Selenium.Appium.Android;
+global using OpenQA.Selenium.Interactions;
+global using OpenQA.Selenium.Support.UI;

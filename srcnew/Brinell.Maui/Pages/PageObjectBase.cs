@@ -57,8 +57,16 @@ public abstract class PageObjectBase<TSelf> : ObjectBase, IMauiPage<TSelf>
     /// <inheritdoc />
     public virtual bool IsLoaded(int? timeoutMs = null)
     {
-        return _context.TryFindElement(Locator.ByAutomationId(Name)) != null;
+        var timeout = timeoutMs ?? 0;
+        return timeout > 0
+            ? Poll(IsVisiblePageRootLoaded, timeout)
+            : IsVisiblePageRootLoaded();
     }
+
+    private bool IsVisiblePageRootLoaded()
+        => _context
+            .FindElements(Locator.ByAutomationId(Name))
+            .Any(ElementSearch.HasUsableBounds);
 
     /// <summary>
     /// Waits for the page to finish loading.
