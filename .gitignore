@@ -84,6 +84,8 @@ BenchmarkDotNet.Artifacts/
 project.lock.json
 project.fragment.lock.json
 artifacts/
+!srcnew/Brinell.Core/Artifacts/
+!srcnew/Brinell.Core/Artifacts/**
 
 # ASP.NET Scaffolding
 ScaffoldingReadMe.txt
