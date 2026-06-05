@@ -91,21 +91,17 @@ dotnet test Brinell/testsnew/Brinell.NativeAndroid.Tests/Brinell.NativeAndroid.T
 
 Observed result: `17/17` passed.
 
-## Recommended Remediation
+## Implemented Remediation
 
-Consolidate the artifact implementation into one folder and one API surface.
+The artifact implementation was consolidated into one folder and one API surface.
 
-Recommended direction:
+Implemented direction:
 
 1. Keep a single canonical namespace: `Brinell.Core.Artifacts`.
 2. Keep only one physical implementation folder, preferably `Artifacts`.
-3. Merge required compatibility from `ArtifactSupport` into the canonical implementation:
-   - legacy env var constants,
-   - `RunId` and `SuiteName` on `ITestArtifactPathProvider`,
-   - current tests' expected path behavior,
-   - `RecordArtifact` overloads used by both screenshot and UAT code.
-4. Ensure manifest models support existing tests and newer metadata/status needs.
-5. Delete or exclude the superseded folder after the merge.
+3. Remove the superseded `ArtifactSupport` implementation.
+4. Drop legacy `BRINELL_ARTIFACT_*` environment variable support.
+5. Keep the current `BRINELL_TEST_*` environment variables and newer manifest/status metadata behavior.
 6. Run:
 
 ```powershell
@@ -122,4 +118,14 @@ dotnet test Brinell/testsnew/Brinell.NativeAndroid.Tests/Brinell.NativeAndroid.T
 
 ## Current Status
 
-NativeAndroid changes can be compile-tested with `BuildProjectReferences=false`, but clean full builds remain blocked until `Brinell.Core.Artifacts` is consolidated.
+Resolved. Clean full builds are no longer blocked by duplicate `Brinell.Core.Artifacts` types.
+
+Verified:
+
+```powershell
+dotnet build Brinell/srcnew/Brinell.Core/Brinell.Core.csproj
+dotnet test Brinell/testsnew/Brinell.Core.Tests/Brinell.Core.Tests.csproj
+dotnet build Brinell/srcnew/Brinell.NativeAndroid/Brinell.NativeAndroid.csproj
+dotnet test Brinell/testsnew/Brinell.NativeAndroid.Tests/Brinell.NativeAndroid.Tests.csproj
+dotnet test Brinell/testsnew/Brinell.Uat.Tests/Brinell.Uat.Tests.csproj --filter UatConfigParserTests
+```
