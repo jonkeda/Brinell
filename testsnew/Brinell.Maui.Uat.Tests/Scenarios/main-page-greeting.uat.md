@@ -8,8 +8,12 @@
 | Area | Main Page |
 | Target | MAUI |
 | Tags | smoke, maui, greeting |
+| Mode | Automated |
+| Requires | Deterministic |
+| Priority | Smoke |
+| Evidence | none |
 
-@smoke @maui @greeting
+@smoke @maui @greeting @automated @deterministic
 ## Scenario: Greeting appears when a name is entered
 
 Given I am on the Main page

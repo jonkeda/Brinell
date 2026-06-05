@@ -43,8 +43,11 @@ public sealed record UatStepResult(
 
 public sealed record UatScenarioRunResult(
     UatBoundScenario Scenario,
-    IReadOnlyList<UatStepResult> Steps)
+    IReadOnlyList<UatStepResult> Steps,
+    UatSkipDecision? SkipDecision = null)
 {
+    public bool Skipped => SkipDecision?.ShouldSkip == true;
+
     public bool Passed => Steps.Count > 0 && Steps.All(x => x.Status == UatStepResultStatus.Passed);
 }
 
@@ -80,6 +83,21 @@ public sealed class UatScenarioRunner
         }
 
         return session.ToResult();
+    }
+
+    public Task<UatScenarioRunResult> RunAsync(
+        UatBoundScenario scenario,
+        UatConfig config,
+        Func<string, string?>? getEnvironmentVariable = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(scenario);
+        ArgumentNullException.ThrowIfNull(config);
+
+        var skipDecision = config.EvaluateSkip(scenario.Source.Tags, getEnvironmentVariable);
+        return skipDecision.ShouldSkip
+            ? Task.FromResult(new UatScenarioRunResult(scenario, [], skipDecision))
+            : RunAsync(scenario, cancellationToken);
     }
 }
 

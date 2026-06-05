@@ -54,6 +54,7 @@ Multi-platform UI test automation framework: WPF, MAUI, Blazor, Stride, and Web 
 
 - [Best Practices](guides/best-practices.md)
 - [Test Writing Guide](guides/test-writing-guide.md)
+- [UAT Template Guide](guides/uat-template-guide.md)
 - [Interface Usage Guide](guides/interface-usage-guide.md)
 - [Platform Implementation Guides](guides/platform-implementation-guides.md)
 - [Migration Guide](guides/migration-guide.md)

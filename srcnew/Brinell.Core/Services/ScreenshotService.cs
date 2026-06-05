@@ -1,3 +1,4 @@
+using Brinell.Core.Artifacts;
 using Brinell.Core.Configuration;
 using Brinell.Core.Exceptions;
 using Brinell.Core.Interfaces;
@@ -82,6 +83,17 @@ public class ScreenshotService : IScreenshotService
             var path = Path.Combine(_settings.OutputDirectory, filename);
             _context.SaveScreenshot(path);
             _logger.LogScreenshot(testMethod, testClass, path, reason);
+            TestArtifactManifestWriter.RecordArtifact(
+                path,
+                "screenshot",
+                $"{testClass}.{testMethod}",
+                reason.ToString(),
+                new Dictionary<string, string?>
+                {
+                    ["testClass"] = testClass,
+                    ["testMethod"] = testMethod,
+                    ["reason"] = reason.ToString()
+                });
             return path;
         }
         catch (Exception ex)

@@ -2,6 +2,7 @@ using Brinell.Stride.Communication;
 using Brinell.Stride.Context;
 using Brinell.Stride.Infrastructure;
 using Brinell.Stride.Interfaces;
+using Brinell.Core.Artifacts;
 
 namespace Brinell.Stride.Testing;
 
@@ -50,7 +51,9 @@ public abstract class StrideTestFixtureBase : IDisposable
             DefaultTimeoutMs = 10000,
             StartupTimeoutMs = 15000,
             PollingIntervalMs = 100,
-            ConnectionTimeoutMs = 10000
+            ConnectionTimeoutMs = 10000,
+            ScreenshotDirectory = GetScreenshotDirectory(),
+            LogDirectory = GetArtifactPathProvider().LogsDirectory
         };
     }
 
@@ -59,11 +62,14 @@ public abstract class StrideTestFixtureBase : IDisposable
     /// </summary>
     protected virtual string GetScreenshotDirectory()
     {
-        var solutionDir = FindSolutionDirectory();
-        var path = Path.Combine(solutionDir, "TestResults", "Screenshots");
-        if (!Directory.Exists(path))
-            Directory.CreateDirectory(path);
+        var path = GetArtifactPathProvider().ScreenshotsDirectory;
+        Directory.CreateDirectory(path);
         return path;
+    }
+
+    protected virtual ITestArtifactPathProvider GetArtifactPathProvider()
+    {
+        return DefaultTestArtifactPathProvider.Create(GetType().Assembly.GetName().Name);
     }
 
     #endregion
