@@ -45,6 +45,15 @@ public sealed class UatConfigParserTests
                 | ScreenshotOnFailure | true |
                 | IncludeRuntimeTrace | true |
 
+                ## Settings
+
+                | Field | Value |
+                | --- | --- |
+                | Root | TestSettings |
+                | DefaultFile | testsettings.json |
+                | LocalFile | testsettings.local.json |
+                | ScenarioConvention | scenarios/{ScenarioId}.json |
+
                 ## Skip Rules
 
                 | Tag | EnvironmentVariable |
@@ -66,6 +75,10 @@ public sealed class UatConfigParserTests
                 config.Reporting.OutputDirectory);
             Assert.True(config.Reporting.ScreenshotOnFailure);
             Assert.True(config.Reporting.IncludeRuntimeTrace);
+            Assert.Equal("TestSettings", config.Settings.Root);
+            Assert.Equal("testsettings.json", config.Settings.DefaultFile);
+            Assert.Equal("testsettings.local.json", config.Settings.LocalFile);
+            Assert.Equal("scenarios/{ScenarioId}.json", config.Settings.ScenarioConvention);
             Assert.Equal(2, config.SkipRules.Count);
             Assert.Contains(config.SkipRules, x => x.Tag == "hardware" && x.EnvironmentVariable == "EXAMPLE_UAT_HARDWARE");
             Assert.Contains(config.SkipRules, x => x.Tag == "live-api" && x.EnvironmentVariable == "EXAMPLE_UAT_LIVE_API");

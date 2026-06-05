@@ -1,5 +1,6 @@
 using Brinell.Core.Configuration;
 using Brinell.Core.Interfaces;
+using Brinell.Core.Settings;
 using Xunit;
 
 namespace Brinell.Uat.Tests;
@@ -126,6 +127,64 @@ public sealed class UatTestBaseTests
             harness.AssertConfigParses();
 
             Assert.True(harness.ConfigAsserted);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task ScenarioTestBase_RunUatFileAsync_LoadsScenarioSettings()
+    {
+        var directory = CreateTempDirectory();
+        try
+        {
+            var settingsDirectory = Path.Combine(directory, "TestSettings");
+            Directory.CreateDirectory(Path.Combine(settingsDirectory, "scenarios"));
+            File.WriteAllText(Path.Combine(settingsDirectory, "testsettings.json"), """
+                {
+                  "settings": {
+                    "harness": {
+                      "mode": "default"
+                    }
+                  }
+                }
+                """);
+            File.WriteAllText(Path.Combine(settingsDirectory, "scenarios", "uat-900-1.json"), """
+                {
+                  "settings": {
+                    "harness": {
+                      "mode": "scenario"
+                    }
+                  }
+                }
+                """);
+            var configFilePath = WriteConfig(directory);
+            var scenarioFilePath = WriteScenario(directory, """
+                # UAT: Settings Harness
+
+                @uat-900-1
+                ## Scenario: Scenario settings flow
+
+                Then the scenario setting should be available
+                """);
+            var fixture = new HarnessFixture();
+            var catalog = new UatCommandCatalog();
+            catalog.Register(
+                UatEffectiveStepKeyword.Then,
+                "the scenario setting should be available",
+                "Harness.AssertSettings",
+                handler: (context, invocation, _) =>
+                {
+                    return Task.FromResult(
+                        context.GetSettings().GetRequired<string>("harness.mode") == "scenario"
+                            ? UatStepResult.Passed(invocation)
+                            : UatStepResult.Failed(invocation, "Scenario settings were not loaded."));
+                });
+            var harness = new ScenarioHarness(fixture, configFilePath, catalog);
+
+            await harness.RunFileAsync(scenarioFilePath);
         }
         finally
         {

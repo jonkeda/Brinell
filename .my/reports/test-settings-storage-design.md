@@ -464,6 +464,22 @@ Example local secret overlay:
 
 ## Implementation Plan
 
+Status after the first implementation slice:
+
+| Item | Status |
+| --- | --- |
+| JSON `TestSettings` tree with dot-path lookup | Implemented |
+| JSON file loading with `include`, local file, and scenario convention | Implemented |
+| Typed root binding with properties | Implemented |
+| Typed section binding with `[TestSettingsSection("path")]` | Implemented |
+| UAT scenario context settings injection | Implemented |
+| UAT phrase injection for `TestSettings` and typed settings parameters | Implemented |
+| BodyCam UAT default `TestSettings/testsettings.json` | Implemented |
+| Gitignore protection for local/secrets settings overlays | Implemented |
+| YAML support | Not implemented |
+| Settings-based skip rules replacing environment-variable skip rules | Not implemented |
+| `### Settings` scenario-level Markdown directive | Not implemented |
+
 1. Add Brinell test settings primitives in `Brinell.Core`.
 2. Add JSON loading, include expansion, path normalization, and object merge.
 3. Add gitignore patterns and `*.example.json` guidance.
