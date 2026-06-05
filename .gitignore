@@ -11,6 +11,17 @@
 *.sln.docstates
 *.env
 
+# Brinell test settings overlays and secrets
+**/TestSettings/testsettings.local.json
+**/TestSettings/**/*.local.json
+**/TestSettings/**/*.local.yaml
+**/TestSettings/**/*.local.yml
+**/TestSettings/**/*.secrets.json
+**/TestSettings/**/*.secrets.yaml
+**/TestSettings/**/*.secrets.yml
+**/TestSettings/secrets/*
+!**/TestSettings/secrets/*.example.json
+
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 

@@ -7,13 +7,14 @@ public sealed record UatConfig(
     IReadOnlyList<UatAssemblyRegistration> Assemblies,
     UatDiscoverySettings Discovery,
     UatReportingSettings Reporting,
+    UatSettingsConfig Settings,
     IReadOnlyList<UatSkipRule> SkipRules)
 {
     public UatConfig(
         IReadOnlyDictionary<string, string> Runtime,
         IReadOnlyList<UatAssemblyRegistration> Assemblies,
         UatDiscoverySettings Discovery)
-        : this(Runtime, Assemblies, Discovery, UatReportingSettings.CreateDefault(), [])
+        : this(Runtime, Assemblies, Discovery, UatReportingSettings.CreateDefault(), UatSettingsConfig.Default, [])
     {
     }
 
@@ -76,6 +77,15 @@ public sealed record UatReportingSettings(
         return new UatReportingSettings(
             DefaultTestArtifactPathProvider.Create(suiteName).UatDirectory);
     }
+}
+
+public sealed record UatSettingsConfig(
+    string Root = "TestSettings",
+    string DefaultFile = "testsettings.json",
+    string? LocalFile = "testsettings.local.json",
+    string? ScenarioConvention = "scenarios/{ScenarioId}.json")
+{
+    public static UatSettingsConfig Default { get; } = new();
 }
 
 public sealed record UatSkipRule
@@ -145,6 +155,7 @@ public static class UatConfigParser
         List<UatAssemblyRegistration> assemblies = [];
         Dictionary<string, string> discovery = new(StringComparer.OrdinalIgnoreCase);
         Dictionary<string, string> reporting = new(StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, string> settings = new(StringComparer.OrdinalIgnoreCase);
         List<UatSkipRule> skipRules = [];
 
         var sections = ParseSections(markdown);
@@ -177,6 +188,11 @@ public static class UatConfigParser
             reporting = ToFieldValueDictionary(reportingTable);
         }
 
+        if (sections.TryGetValue("Settings", out var settingsTable))
+        {
+            settings = ToFieldValueDictionary(settingsTable);
+        }
+
         if (sections.TryGetValue("Skip Rules", out var skipRulesTable))
         {
             foreach (var row in skipRulesTable.Rows)
@@ -203,6 +219,11 @@ public static class UatConfigParser
                     suiteName),
                 ReadBool(reporting, "ScreenshotOnFailure", defaultValue: false),
                 ReadBool(reporting, "IncludeRuntimeTrace", defaultValue: false)),
+            new UatSettingsConfig(
+                ReadString(settings, "Root", UatSettingsConfig.Default.Root),
+                ReadString(settings, "DefaultFile", UatSettingsConfig.Default.DefaultFile),
+                ReadNullableString(settings, "LocalFile", UatSettingsConfig.Default.LocalFile),
+                ReadNullableString(settings, "ScenarioConvention", UatSettingsConfig.Default.ScenarioConvention)),
             skipRules);
     }
 
@@ -293,6 +314,13 @@ public static class UatConfigParser
     {
         return values.TryGetValue(key, out var value) && value.Length > 0
             ? value
+            : defaultValue;
+    }
+
+    private static string? ReadNullableString(IReadOnlyDictionary<string, string> values, string key, string? defaultValue)
+    {
+        return values.TryGetValue(key, out var value)
+            ? string.IsNullOrWhiteSpace(value) ? null : value
             : defaultValue;
     }
 

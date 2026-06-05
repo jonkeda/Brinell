@@ -11,6 +11,7 @@ public static class UatScenarioExecutor
         UatBoundScenario scenario,
         UatConfig? config = null,
         Action<UatBoundScenario>? beforeScenario = null,
+        Action<UatExecutionContext>? configureContext = null,
         Func<UatBoundScenario, string?>? captureEvidenceOnFailure = null,
         CancellationToken cancellationToken = default)
     {
@@ -19,6 +20,7 @@ public static class UatScenarioExecutor
         beforeScenario?.Invoke(scenario);
 
         var runner = new UatScenarioRunner();
+        configureContext?.Invoke(runner.Context);
         var result = config is null
             ? await runner.RunAsync(scenario, cancellationToken).ConfigureAwait(false)
             : await runner.RunAsync(scenario, config, cancellationToken: cancellationToken).ConfigureAwait(false);

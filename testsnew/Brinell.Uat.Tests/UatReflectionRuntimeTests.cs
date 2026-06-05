@@ -1,4 +1,5 @@
 using Xunit;
+using Brinell.Core.Settings;
 
 namespace Brinell.Uat.Tests;
 
@@ -133,6 +134,30 @@ public sealed class UatReflectionRuntimeTests
         Assert.Equal("Rush Alpha", fixture.RememberedTrainedPlayer);
     }
 
+    [Fact]
+    public async Task CreatedCatalog_InjectsRawAndTypedTestSettingsIntoRootPhrases()
+    {
+        var fixture = new SettingsFixture();
+        var runtime = UatReflectionRuntime.FromRoot(fixture);
+        var scenario = BindScenario(runtime, """
+            # UAT: Settings Injection
+
+            ## Scenario: Settings are available to phrases
+
+            Given the A9 camera settings are available
+            Then the raw A9 host setting should match
+            """);
+        var runner = new UatScenarioRunner();
+        runner.Context.SetSettings(new TestSettingsProviderStub().Resolve(new TestSettingsRequest(
+            ProjectDirectory: Directory.GetCurrentDirectory())));
+
+        var result = await runner.RunAsync(scenario);
+
+        Assert.True(result.Passed, FormatResults(result));
+        Assert.Equal("192.168.168.1", fixture.TypedHost);
+        Assert.Equal("192.168.168.1", fixture.RawHost);
+    }
+
     private static UatBoundScenario BindScenario(UatReflectionRuntime runtime, string markdown)
     {
         var parse = UatMarkdownParser.Parse(markdown);
@@ -190,6 +215,72 @@ public sealed class UatReflectionRuntimeTests
         public void AssertRememberedTrainedPlayer(string name)
         {
             Assert.Equal(name, RememberedTrainedPlayer);
+        }
+    }
+
+    private sealed class SettingsFixture
+    {
+        public string TypedHost { get; private set; } = string.Empty;
+
+        public string RawHost { get; private set; } = string.Empty;
+
+        [UatPhrase(UatEffectiveStepKeyword.Given, "the A9 camera settings are available")]
+        public void UseTypedSettings(ExampleA9CameraSettings camera)
+        {
+            TypedHost = camera.Host;
+            Assert.Equal("admin", camera.Username);
+            Assert.Equal("secret", camera.Password);
+        }
+
+        [UatPhrase(UatEffectiveStepKeyword.Then, "the raw A9 host setting should match")]
+        public void UseRawSettings(TestSettings settings)
+        {
+            RawHost = settings.GetRequired<string>("hardware.a9Camera.host");
+        }
+    }
+
+    [TestSettingsSection("hardware.a9Camera")]
+    private sealed class ExampleA9CameraSettings
+    {
+        public string Host { get; init; } = string.Empty;
+
+        public string Username { get; init; } = string.Empty;
+
+        public string Password { get; init; } = string.Empty;
+    }
+
+    private sealed class TestSettingsProviderStub : ITestSettingsProvider
+    {
+        public TestSettings Resolve(TestSettingsRequest request)
+        {
+            var directory = Path.Combine(Path.GetTempPath(), $"brinell-settings-injection-{Guid.NewGuid():N}");
+            try
+            {
+                var settingsDirectory = Path.Combine(directory, "TestSettings");
+                Directory.CreateDirectory(settingsDirectory);
+                File.WriteAllText(Path.Combine(settingsDirectory, "testsettings.json"), """
+                    {
+                      "settings": {
+                        "hardware": {
+                          "a9Camera": {
+                            "host": "192.168.168.1",
+                            "username": "admin",
+                            "password": "secret"
+                          }
+                        }
+                      }
+                    }
+                    """);
+
+                return new JsonTestSettingsProvider().Resolve(request with { ProjectDirectory = directory });
+            }
+            finally
+            {
+                if (Directory.Exists(directory))
+                {
+                    Directory.Delete(directory, recursive: true);
+                }
+            }
         }
     }
 

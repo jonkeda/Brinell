@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Text.Json;
 using Brinell.Core.Artifacts;
 using Brinell.Core.Interfaces;
+using Brinell.Core.Settings;
 
 namespace Brinell.Uat;
 
@@ -25,6 +26,31 @@ public abstract class UatScenarioTestBase<TFixture>
     protected virtual UatRuntimeValidationOptions RuntimeValidation => UatRuntimeValidationOptions.Default;
 
     protected virtual UatConfig? GetRunConfig(UatRuntime runtime) => runtime.Config;
+
+    protected virtual ITestSettingsProvider CreateSettingsProvider() => new JsonTestSettingsProvider();
+
+    protected virtual TestSettings ResolveScenarioSettings(UatBoundScenario scenario, UatRuntime runtime)
+    {
+        ArgumentNullException.ThrowIfNull(scenario);
+        ArgumentNullException.ThrowIfNull(runtime);
+
+        var settings = runtime.Config.Settings;
+        return CreateSettingsProvider().Resolve(new TestSettingsRequest(
+            runtime.ConfigDirectory,
+            settings.Root,
+            settings.DefaultFile,
+            settings.LocalFile,
+            GetScenarioId(scenario),
+            settings.ScenarioConvention));
+    }
+
+    protected virtual void ConfigureScenarioContext(
+        UatExecutionContext context,
+        UatBoundScenario scenario,
+        UatRuntime runtime)
+    {
+        context.SetSettings(ResolveScenarioSettings(scenario, runtime));
+    }
 
     protected virtual void BeforeScenario(UatBoundScenario scenario)
     {
@@ -143,6 +169,7 @@ public abstract class UatScenarioTestBase<TFixture>
             scenario,
             GetRunConfig(runtime),
             BeforeScenario,
+            context => ConfigureScenarioContext(context, scenario, runtime),
             CaptureEvidenceOnFailure,
             cancellationToken);
     }
@@ -263,6 +290,13 @@ public abstract class UatScenarioTestBase<TFixture>
         return result.Steps.Any(step => step.Status == UatStepResultStatus.Canceled)
             ? "canceled"
             : "failed";
+    }
+
+    private static string? GetScenarioId(UatBoundScenario scenario)
+    {
+        return scenario.Source.Tags
+            .Select(UatTagConventions.NormalizeTag)
+            .FirstOrDefault(tag => tag.StartsWith("uat-", StringComparison.OrdinalIgnoreCase));
     }
 
     private UatBoundFileContext BindUatFile(string filePath)

@@ -12,10 +12,16 @@ public sealed class UatRuntime
         ArgumentNullException.ThrowIfNull(root);
         ArgumentException.ThrowIfNullOrWhiteSpace(configFilePath);
 
-        Config = UatConfigParser.ParseFile(configFilePath, root.GetType().Assembly.GetName().Name);
-        ValidateConfig(Config, configFilePath, validationOptions ?? UatRuntimeValidationOptions.Default);
+        ConfigFilePath = Path.GetFullPath(configFilePath);
+        ConfigDirectory = Path.GetDirectoryName(ConfigFilePath) ?? Directory.GetCurrentDirectory();
+        Config = UatConfigParser.ParseFile(ConfigFilePath, root.GetType().Assembly.GetName().Name);
+        ValidateConfig(Config, ConfigFilePath, validationOptions ?? UatRuntimeValidationOptions.Default);
         _reflectionRuntime = UatReflectionRuntime.FromRoot(root);
     }
+
+    public string ConfigFilePath { get; }
+
+    public string ConfigDirectory { get; }
 
     public UatConfig Config { get; }
 

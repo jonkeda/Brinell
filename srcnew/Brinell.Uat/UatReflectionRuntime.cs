@@ -1,4 +1,5 @@
 using System.Reflection;
+using Brinell.Core.Settings;
 
 namespace Brinell.Uat;
 
@@ -293,6 +294,12 @@ public sealed class UatReflectionRuntime
                 continue;
             }
 
+            if (IsSettingsParameterType(parameter.ParameterType, method.DeclaringType?.Assembly))
+            {
+                arguments[i] = context.GetSettings(parameter.ParameterType);
+                continue;
+            }
+
             if (parameter.Name is not null &&
                 invocation.Arguments.TryGetValue(parameter.Name, out var value))
             {
@@ -307,6 +314,21 @@ public sealed class UatReflectionRuntime
         }
 
         return arguments;
+    }
+
+    private static bool IsSettingsParameterType(Type parameterType, Assembly? phraseAssembly)
+    {
+        if (parameterType == typeof(TestSettings) ||
+            parameterType.GetCustomAttribute<TestSettingsRootAttribute>() is not null ||
+            parameterType.GetCustomAttribute<TestSettingsSectionAttribute>() is not null)
+        {
+            return true;
+        }
+
+        return phraseAssembly is not null &&
+               parameterType.Assembly == phraseAssembly &&
+               parameterType.IsClass &&
+               parameterType.Name.EndsWith("Settings", StringComparison.Ordinal);
     }
 
     private static object? ConvertArgument(string value, Type targetType)
