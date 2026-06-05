@@ -1,4 +1,5 @@
 using Brinell.Wpf.Context;
+using Brinell.Core.Artifacts;
 
 namespace Brinell.Wpf.Testing;
 
@@ -114,11 +115,14 @@ public abstract class WpfTestFixtureBase : IDisposable
     /// </summary>
     protected virtual string GetScreenshotDirectory()
     {
-        var solutionDir = FindSolutionDirectory();
-        var path = Path.Combine(solutionDir, "TestResults", "Screenshots");
-        if (!Directory.Exists(path))
-            Directory.CreateDirectory(path);
+        var path = GetArtifactPathProvider().ScreenshotsDirectory;
+        Directory.CreateDirectory(path);
         return path;
+    }
+
+    protected virtual ITestArtifactPathProvider GetArtifactPathProvider()
+    {
+        return DefaultTestArtifactPathProvider.Create(GetType().Assembly.GetName().Name);
     }
 
     /// <summary>

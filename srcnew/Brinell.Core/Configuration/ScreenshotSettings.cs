@@ -1,3 +1,5 @@
+using Brinell.Core.Artifacts;
+
 namespace Brinell.Core.Configuration;
 
 /// <summary>
@@ -8,7 +10,8 @@ public class ScreenshotSettings
     /// <summary>
     /// Output directory for screenshots.
     /// </summary>
-    public string OutputDirectory { get; set; } = "./TestResults/Screenshots";
+    public string OutputDirectory { get; set; } =
+        DefaultTestArtifactPathProvider.Create().ScreenshotsDirectory;
     
     /// <summary>
     /// Screenshot image format.

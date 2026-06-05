@@ -68,6 +68,11 @@ public sealed class UatReflectionRuntime
         return new UatReflectionRuntime(root, pages);
     }
 
+    public static void RegisterRootPhrases(UatCommandCatalog catalog, Type rootType)
+    {
+        RegisterRootPhrases(catalog, rootType, handlerFactory: null);
+    }
+
     public UatCommandCatalog CreateCommandCatalog()
     {
         var catalog = new UatCommandCatalog();
@@ -143,6 +148,12 @@ public sealed class UatReflectionRuntime
             handler: (context, invocation, _) => InvokeControlMethodAsync(context, invocation, "control", "AssertVisible", literalArgument: true));
         catalog.Register(
             UatEffectiveStepKeyword.Then,
+            "{control} should not be visible",
+            "Builtin.Control.AssertVisible.False",
+            allowsTable: false,
+            handler: (context, invocation, _) => InvokeControlMethodAsync(context, invocation, "control", "AssertVisible", literalArgument: false));
+        catalog.Register(
+            UatEffectiveStepKeyword.Then,
             "{control} should be enabled",
             "Builtin.Control.AssertEnabled",
             allowsTable: false,
@@ -178,7 +189,22 @@ public sealed class UatReflectionRuntime
 
     private void RegisterRootPhrases(UatCommandCatalog catalog)
     {
-        foreach (var method in _root.GetType()
+        RegisterRootPhrases(
+            catalog,
+            _root.GetType(),
+            method => (context, invocation, cancellationToken) =>
+                InvokeRootPhraseAsync(method, context, invocation, cancellationToken));
+    }
+
+    private static void RegisterRootPhrases(
+        UatCommandCatalog catalog,
+        Type rootType,
+        Func<MethodInfo, UatCommandHandler?>? handlerFactory)
+    {
+        ArgumentNullException.ThrowIfNull(catalog);
+        ArgumentNullException.ThrowIfNull(rootType);
+
+        foreach (var method in rootType
                      .GetMethods(BindingFlags.Instance | BindingFlags.Public)
                      .Where(method => method.GetCustomAttribute<UatIgnoreAttribute>() is null))
         {
@@ -190,8 +216,7 @@ public sealed class UatReflectionRuntime
                         keyword,
                         phrase.Phrase,
                         $"{method.DeclaringType!.FullName}.{method.Name}",
-                        handler: (context, invocation, cancellationToken) =>
-                            InvokeRootPhraseAsync(method, context, invocation, cancellationToken));
+                        handler: handlerFactory?.Invoke(method));
                 }
             }
         }

@@ -2,6 +2,7 @@ using Brinell.Core.Configuration;
 using Brinell.Core.Interfaces;
 using Brinell.Core.Services;
 using Brinell.Core.Testing;
+using Brinell.Core.Artifacts;
 using Brinell.Maui.Context;
 using Brinell.Maui.Enums;
 
@@ -185,11 +186,14 @@ public abstract class MauiTestFixtureBase : IDisposable
     /// </summary>
     protected virtual string GetScreenshotDirectory()
     {
-        var solutionDir = FindSolutionDirectory();
-        var path = Path.Combine(solutionDir, "TestResults", "Screenshots");
-        if (!Directory.Exists(path))
-            Directory.CreateDirectory(path);
+        var path = GetArtifactPathProvider().ScreenshotsDirectory;
+        Directory.CreateDirectory(path);
         return path;
+    }
+
+    protected virtual ITestArtifactPathProvider GetArtifactPathProvider()
+    {
+        return DefaultTestArtifactPathProvider.Create(GetType().Assembly.GetName().Name);
     }
     
     /// <summary>

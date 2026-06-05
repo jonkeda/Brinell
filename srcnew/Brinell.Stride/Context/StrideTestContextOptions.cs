@@ -68,14 +68,16 @@ public class StrideTestContextOptions
 
     #region Screenshots
 
-    public string ScreenshotDirectory { get; set; } = "TestResults/Screenshots";
+    public string ScreenshotDirectory { get; set; } =
+        Brinell.Core.Artifacts.DefaultTestArtifactPathProvider.Create().ScreenshotsDirectory;
     public bool CaptureScreenshotOnFailure { get; set; } = true;
 
     #endregion
 
     #region Logging
 
-    public string LogDirectory { get; set; } = "TestResults/Logs";
+    public string LogDirectory { get; set; } =
+        Brinell.Core.Artifacts.DefaultTestArtifactPathProvider.Create().LogsDirectory;
     public bool EnableCsvLogging { get; set; } = true;
 
     #endregion

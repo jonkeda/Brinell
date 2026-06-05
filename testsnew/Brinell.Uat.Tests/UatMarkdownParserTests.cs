@@ -148,6 +148,47 @@ public sealed class UatMarkdownParserTests
     }
 
     [Fact]
+    public void Parse_StandardTemplateMetadataAndTags_ReturnsDocument()
+    {
+        var markdown = """
+            # UAT: Camera Actions
+
+            ## Metadata
+
+            | Field | Value |
+            | --- | --- |
+            | App | Example.Maui |
+            | Area | Camera Actions |
+            | Target | MAUI |
+            | Tags | smoke, maui, camera |
+            | Mode | Automated |
+            | Requires | Deterministic |
+            | Owner | QA |
+            | Priority | Smoke |
+            | Evidence | screenshot, transcript |
+
+            @smoke @maui @camera @deterministic @uat-003-6
+            ## Scenario: UAT-003.6 Sub-button hides action rows during capture
+
+            Given I am on the Main page
+            When I tap Look
+            Then Overview should be visible
+            """;
+
+        var result = UatMarkdownParser.Parse(markdown);
+
+        Assert.True(result.Success, FormatDiagnostics(result));
+        Assert.NotNull(result.Document);
+        Assert.Equal("Automated", result.Document.Metadata[UatMetadataFields.Mode]);
+        Assert.Equal("Deterministic", result.Document.Metadata[UatMetadataFields.Requires]);
+        Assert.Equal("screenshot, transcript", result.Document.Metadata[UatMetadataFields.Evidence]);
+        var scenario = Assert.Single(result.Document.Scenarios);
+        Assert.Equal(
+            ["smoke", "maui", "camera", "deterministic", "uat-003-6"],
+            scenario.Tags);
+    }
+
+    [Fact]
     public void Parse_MissingUatHeading_ReturnsDiagnostic()
     {
         var markdown = """

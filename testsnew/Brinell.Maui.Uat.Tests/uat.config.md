@@ -23,3 +23,17 @@
 | --- | --- |
 | RequireExplicitUatAttributes | false |
 | AllowNameInference | true |
+
+## Reporting
+
+| Field | Value |
+| --- | --- |
+| ScreenshotOnFailure | true |
+| IncludeRuntimeTrace | true |
+
+## Skip Rules
+
+| Tag | EnvironmentVariable |
+| --- | --- |
+| hardware | BRINELL_UAT_HARDWARE |
+| live-api | BRINELL_UAT_LIVE_API |

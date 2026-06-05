@@ -101,6 +101,42 @@ public sealed class UatExecutionTests
         Assert.Equal(UatStepResultStatus.Canceled, step.Status);
     }
 
+    [Fact]
+    public async Task RunAsync_ConfiguredSkipRule_ReturnsSkippedScenarioWithoutExecutingSteps()
+    {
+        var scenario = CreateBoundScenario("""
+            # UAT: Hardware
+
+            @hardware
+            ## Scenario: Hardware camera can capture
+
+            Given I am on the Settings page
+            When I tap Save
+            """);
+        var config = UatConfigParser.Parse("""
+            # UAT Config
+
+            ## Skip Rules
+
+            | Tag | EnvironmentVariable |
+            | --- | --- |
+            | hardware | EXAMPLE_UAT_HARDWARE |
+            """);
+        var runner = new UatScenarioRunner();
+
+        var result = await runner.RunAsync(
+            scenario,
+            config,
+            name => name == "EXAMPLE_UAT_HARDWARE" ? null : "1");
+
+        Assert.True(result.Skipped);
+        Assert.False(result.Passed);
+        Assert.Empty(result.Steps);
+        Assert.Empty(runner.Context.Diagnostics);
+        Assert.NotNull(result.SkipDecision);
+        Assert.Contains("EXAMPLE_UAT_HARDWARE", result.SkipDecision.Reason);
+    }
+
     private static UatBoundScenario CreateBoundScenario(string markdown)
     {
         var document = ParseValid(markdown);
