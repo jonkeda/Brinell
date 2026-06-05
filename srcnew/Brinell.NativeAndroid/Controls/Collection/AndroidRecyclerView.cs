@@ -1,6 +1,6 @@
 namespace Brinell.NativeAndroid.Controls;
 
-public class AndroidRecyclerView<TScope> : NativeAndroidControl<TScope>
+public class AndroidRecyclerView<TScope> : AndroidScrollableControlBase<TScope>
     where TScope : INativeAndroidScope<TScope>
 {
     public AndroidRecyclerView(Locator locator, INativeAndroidScope<TScope> scope)

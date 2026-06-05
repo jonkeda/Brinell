@@ -115,19 +115,187 @@ public abstract class NativeAndroidPageObjectBase<TSelf> :
 
     public AndroidButton<TSelf> Button(Locator locator) => new(locator, Self);
 
+    public AndroidButton<TSelf> Button(string locator) => new(locator, Self);
+
+    public AndroidIconCommandButton<TSelf> IconCommandButton(Locator locator) => new(locator, Self);
+
+    public AndroidIconCommandButton<TSelf> IconCommandButton(string locator) => new(locator, Self);
+
+    public AndroidImageButton<TSelf> ImageButton(Locator locator) => new(locator, Self);
+
+    public AndroidImageButton<TSelf> ImageButton(string locator) => new(locator, Self);
+
+    public AndroidRoundButton<TSelf> RoundButton(Locator locator) => new(locator, Self);
+
+    public AndroidRoundButton<TSelf> RoundButton(string locator) => new(locator, Self);
+
+    public AndroidLink<TSelf> Link(Locator locator) => new(locator, Self);
+
+    public AndroidLink<TSelf> Link(string locator) => new(locator, Self);
+
     public AndroidText<TSelf> Text(Locator locator) => new(locator, Self);
+
+    public AndroidText<TSelf> Text(string locator) => new(locator, Self);
+
+    public AndroidLabel<TSelf> Label(Locator locator) => new(locator, Self);
+
+    public AndroidLabel<TSelf> Label(string locator) => new(locator, Self);
+
+    public AndroidImage<TSelf> Image(Locator locator) => new(locator, Self);
+
+    public AndroidImage<TSelf> Image(string locator) => new(locator, Self);
+
+    public AndroidProgressBar<TSelf> ProgressBar(Locator locator) => new(locator, Self);
+
+    public AndroidProgressBar<TSelf> ProgressBar(string locator) => new(locator, Self);
+
+    public AndroidActivityIndicator<TSelf> ActivityIndicator(Locator locator) => new(locator, Self);
+
+    public AndroidActivityIndicator<TSelf> ActivityIndicator(string locator) => new(locator, Self);
 
     public AndroidEditText<TSelf> EditText(Locator locator) => new(locator, Self);
 
+    public AndroidEditText<TSelf> EditText(string locator) => new(locator, Self);
+
+    public AndroidEntry<TSelf> Entry(Locator locator) => new(locator, Self);
+
+    public AndroidEntry<TSelf> Entry(string locator) => new(locator, Self);
+
+    public AndroidEditor<TSelf> Editor(Locator locator) => new(locator, Self);
+
+    public AndroidEditor<TSelf> Editor(string locator) => new(locator, Self);
+
+    public AndroidSearchBar<TSelf> SearchBar(Locator locator) => new(locator, Self);
+
+    public AndroidSearchBar<TSelf> SearchBar(string locator) => new(locator, Self);
+
+    public AndroidCheckBox<TSelf> CheckBox(Locator locator) => new(locator, Self);
+
+    public AndroidCheckBox<TSelf> CheckBox(string locator) => new(locator, Self);
+
+    public AndroidSwitch<TSelf> Switch(Locator locator) => new(locator, Self);
+
+    public AndroidSwitch<TSelf> Switch(string locator) => new(locator, Self);
+
+    public AndroidRadioButton<TSelf> RadioButton(Locator locator) => new(locator, Self);
+
+    public AndroidRadioButton<TSelf> RadioButton(string locator) => new(locator, Self);
+
+    public AndroidSlider<TSelf> Slider(Locator locator) => new(locator, Self);
+
+    public AndroidSlider<TSelf> Slider(string locator) => new(locator, Self);
+
+    public AndroidSeekBar<TSelf> SeekBar(Locator locator) => new(locator, Self);
+
+    public AndroidSeekBar<TSelf> SeekBar(string locator) => new(locator, Self);
+
+    public AndroidStepper<TSelf> Stepper(Locator locator) => new(locator, Self);
+
+    public AndroidStepper<TSelf> Stepper(string locator) => new(locator, Self);
+
+    public AndroidDatePicker<TSelf> DatePicker(Locator locator) => new(locator, Self);
+
+    public AndroidDatePicker<TSelf> DatePicker(string locator) => new(locator, Self);
+
+    public AndroidTimePicker<TSelf> TimePicker(Locator locator) => new(locator, Self);
+
+    public AndroidTimePicker<TSelf> TimePicker(string locator) => new(locator, Self);
+
+    public AndroidPicker<TSelf> Picker(Locator locator) => new(locator, Self);
+
+    public AndroidPicker<TSelf> Picker(string locator) => new(locator, Self);
+
+    public AndroidSpinner<TSelf> Spinner(Locator locator) => new(locator, Self);
+
+    public AndroidSpinner<TSelf> Spinner(string locator) => new(locator, Self);
+
+    public AndroidSelectionList<TSelf> SelectionList(Locator locator) => new(locator, Self);
+
+    public AndroidSelectionList<TSelf> SelectionList(string locator) => new(locator, Self);
+
+    public AndroidSelectionList<TSelf> SelectionList() => new(Self);
+
     public AndroidRecyclerView<TSelf> RecyclerView(Locator locator) => new(locator, Self);
+
+    public AndroidRecyclerView<TSelf> RecyclerView(string locator) => new(locator, Self);
+
+    public AndroidListView<TSelf> ListView(Locator locator) => new(locator, Self);
+
+    public AndroidListView<TSelf> ListView(string locator) => new(locator, Self);
+
+    public AndroidCollectionView<TSelf> CollectionView(Locator locator) => new(locator, Self);
+
+    public AndroidCollectionView<TSelf> CollectionView(string locator) => new(locator, Self);
+
+    public AndroidCarouselView<TSelf> CarouselView(Locator locator) => new(locator, Self);
+
+    public AndroidCarouselView<TSelf> CarouselView(string locator) => new(locator, Self);
+
+    public AndroidTableView<TSelf> TableView(Locator locator) => new(locator, Self);
+
+    public AndroidTableView<TSelf> TableView(string locator) => new(locator, Self);
+
+    public AndroidViewGroup<TSelf> ViewGroup(Locator locator) => new(locator, Self);
+
+    public AndroidViewGroup<TSelf> ViewGroup(string locator) => new(locator, Self);
+
+    public AndroidGrid<TSelf> Grid(Locator locator) => new(locator, Self);
+
+    public AndroidGrid<TSelf> Grid(string locator) => new(locator, Self);
+
+    public AndroidScrollView<TSelf> ScrollView(Locator locator) => new(locator, Self);
+
+    public AndroidScrollView<TSelf> ScrollView(string locator) => new(locator, Self);
+
+    public AndroidRefreshView<TSelf> RefreshView(Locator locator) => new(locator, Self);
+
+    public AndroidRefreshView<TSelf> RefreshView(string locator) => new(locator, Self);
+
+    public AndroidSwipeView<TSelf> SwipeView(Locator locator) => new(locator, Self);
+
+    public AndroidSwipeView<TSelf> SwipeView(string locator) => new(locator, Self);
+
+    public AndroidExpander<TSelf> Expander(Locator locator) => new(locator, Self);
+
+    public AndroidExpander<TSelf> Expander(string locator) => new(locator, Self);
 
     public AndroidToolbar<TSelf> Toolbar(Locator locator) => new(locator, Self);
 
-    public AndroidDialog<TSelf> Dialog(Locator locator) => new(locator, Self);
+    public AndroidToolbar<TSelf> Toolbar(string locator) => new(locator, Self);
 
-    public AndroidPermissionDialog<TSelf> PermissionDialog() => new(Self);
+    public AndroidMenu<TSelf> Menu(Locator locator) => new(locator, Self);
+
+    public AndroidMenu<TSelf> Menu(string locator) => new(locator, Self);
+
+    public AndroidTabMenu<TSelf> TabMenu(Locator locator) => new(locator, Self);
+
+    public AndroidTabMenu<TSelf> TabMenu(string locator) => new(locator, Self);
 
     public AndroidTab<TSelf> Tab(Locator locator) => new(locator, Self);
+
+    public AndroidTab<TSelf> Tab(string locator) => new(locator, Self);
+
+    public AndroidFlyoutItem<TSelf> FlyoutItem(Locator locator) => new(locator, Self);
+
+    public AndroidFlyoutItem<TSelf> FlyoutItem(string locator) => new(locator, Self);
+
+    public AndroidWebView<TSelf> WebView(Locator locator) => new(locator, Self);
+
+    public AndroidWebView<TSelf> WebView(string locator) => new(locator, Self);
+
+    public AndroidMediaElement<TSelf> MediaElement(Locator locator) => new(locator, Self);
+
+    public AndroidMediaElement<TSelf> MediaElement(string locator) => new(locator, Self);
+
+    public AndroidDialog<TSelf> Dialog(Locator locator) => new(locator, Self);
+
+    public AndroidDialog<TSelf> Dialog(string locator) => new(locator, Self);
+
+    public AndroidContentDialog<TSelf> ContentDialog(Locator locator) => new(locator, Self);
+
+    public AndroidContentDialog<TSelf> ContentDialog(string locator) => new(locator, Self);
+
+    public AndroidPermissionDialog<TSelf> PermissionDialog() => new(Self);
 
     protected bool Poll(Func<bool> condition, int timeoutMs)
     {
