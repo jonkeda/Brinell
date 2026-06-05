@@ -124,6 +124,11 @@ CI coordination:
 
 Do not use these variables for application or scenario settings.
 
+Compatibility note: older local scripts may still set `BRINELL_ARTIFACT_ROOT`,
+`BRINELL_ARTIFACT_RUN_ID`, or `BRINELL_ARTIFACT_SUITE`. Brinell currently honors
+those names as fallback aliases, but new scripts and docs should use the
+`BRINELL_TEST_*` names.
+
 ## Settings Upgrade
 
 ### Current Anti-Patterns
