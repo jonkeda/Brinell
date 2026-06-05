@@ -3,6 +3,7 @@ using Brinell.Html.Controls.Display;
 
 namespace Brinell.Html.Uat.Tests.Pages;
 
+[TestPage("Counter")]
 public sealed class CounterPage : HtmlPageObjectBase<CounterPage>
 {
     public CounterPage(IHtmlTestContext context)

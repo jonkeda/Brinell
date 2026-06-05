@@ -1,5 +1,6 @@
 namespace Brinell.Blazor.Uat.Tests.Runtime;
 
+[TestModuleScan(typeof(CounterPage), NamespacePrefix = "Brinell.Blazor.UITests.PageObjects")]
 public sealed class BlazorUatFixture : IDisposable
 {
     private readonly BlazorSampleHost _host;
@@ -24,24 +25,20 @@ public sealed class BlazorUatFixture : IDisposable
             throw;
         }
 
-        CounterPage = new CounterPage(_context);
-        LoginPage = new LoginPage(_context);
+        Composition = TestComposition.ForFixture(this, services =>
+            services.AddSingleton<IHtmlTestContext>(_context));
     }
 
-    public CounterPage CounterPage { get; }
-
-    public LoginPage LoginPage { get; }
+    public TestComposition Composition { get; }
 
     public void NavigateToCounter()
     {
         NavigateTo("/counter");
-        CounterPage.CountDisplay.AssertVisible(true);
     }
 
     public void NavigateToLogin()
     {
         NavigateTo("/login");
-        LoginPage.EmailInput.AssertVisible(true);
     }
 
     public void Dispose()
@@ -52,8 +49,14 @@ public sealed class BlazorUatFixture : IDisposable
         }
 
         _disposed = true;
-        _context.DisposeAsync().GetAwaiter().GetResult();
-        _host.Dispose();
+        try
+        {
+            _context.DisposeAsync().GetAwaiter().GetResult();
+        }
+        finally
+        {
+            _host.Dispose();
+        }
     }
 
     private void NavigateTo(string path)

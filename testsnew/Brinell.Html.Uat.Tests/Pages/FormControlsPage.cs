@@ -4,6 +4,7 @@ using Brinell.Html.Controls.Toggle;
 
 namespace Brinell.Html.Uat.Tests.Pages;
 
+[TestPage("Form Controls")]
 public sealed class FormControlsPage : HtmlPageObjectBase<FormControlsPage>
 {
     public FormControlsPage(IHtmlTestContext context)

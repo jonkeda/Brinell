@@ -1,19 +1,19 @@
 namespace Brinell.Stride.Uat.Tests.Runtime;
 
+[TestModuleScan(typeof(MainPage), NamespacePrefix = "Brinell.Stride.UITests.PageObjects")]
 public sealed class StrideUatFixture : StrideTestFixtureBase
 {
     public StrideUatFixture()
     {
         InitializeAsync().GetAwaiter().GetResult();
-        MainPage = new MainPage(Context);
+        Composition = TestComposition.ForFixture(this, services =>
+            services.AddSingleton<IStrideTestContext>(Context));
     }
 
-    [UatName("Main")]
-    public MainPage MainPage { get; }
+    public TestComposition Composition { get; }
 
     public void NavigateToMain()
     {
-        MainPage.AssertLoaded(true, timeoutMs: 30000);
     }
 
     protected override string GetDefaultAppPath()

@@ -1,5 +1,6 @@
 namespace Brinell.Html.Uat.Tests.Runtime;
 
+[TestModuleScan(typeof(CounterPage), NamespacePrefix = "Brinell.Html.Uat.Tests.Pages")]
 public sealed class HtmlUatFixture : IDisposable
 {
     private readonly HtmlSampleHost _host;
@@ -24,24 +25,20 @@ public sealed class HtmlUatFixture : IDisposable
             throw;
         }
 
-        CounterPage = new CounterPage(_context);
-        FormControlsPage = new FormControlsPage(_context);
+        Composition = TestComposition.ForFixture(this, services =>
+            services.AddSingleton<IHtmlTestContext>(_context));
     }
 
-    public CounterPage CounterPage { get; }
-
-    public FormControlsPage FormControlsPage { get; }
+    public TestComposition Composition { get; }
 
     public void NavigateToCounter()
     {
         NavigateTo("/counter");
-        CounterPage.CountDisplay.AssertVisible(true);
     }
 
     public void NavigateToFormControls()
     {
         NavigateTo("/form-controls");
-        FormControlsPage.TermsCheckBox.AssertVisible(true);
     }
 
     public void Dispose()

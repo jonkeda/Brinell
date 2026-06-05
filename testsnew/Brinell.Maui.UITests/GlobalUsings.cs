@@ -1,5 +1,6 @@
 global using Xunit;
 global using Brinell.Core.Abstractions;
+global using Brinell.Core.Composition;
 global using Brinell.Core.Interfaces;
 global using Brinell.Core.Locators;
 global using Brinell.Maui.Context;
@@ -17,3 +18,4 @@ global using Brinell.Maui.Controls.Text;
 global using Brinell.Maui.Controls.Toggle;
 global using Brinell.Maui.Interfaces;
 global using Brinell.Maui.Pages;
+global using Microsoft.Extensions.DependencyInjection;

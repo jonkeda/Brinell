@@ -1,3 +1,5 @@
+using Brinell.Core.Composition;
+
 namespace Brinell.Uat;
 
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Property | AttributeTargets.Method)]
@@ -46,5 +48,14 @@ public sealed class UatActionAttribute : Attribute
 
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Property | AttributeTargets.Method)]
 public sealed class UatIgnoreAttribute : Attribute
+{
+}
+
+[AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
+public sealed class UatPhraseClassAttribute : TestScenarioServiceAttribute
+{
+}
+
+public abstract class UatPhraseClassBase : TestScenarioServiceBase
 {
 }

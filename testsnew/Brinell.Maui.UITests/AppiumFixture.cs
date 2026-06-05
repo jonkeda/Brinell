@@ -8,6 +8,7 @@ namespace Brinell.Maui.UITests;
 /// Test fixture for Brinell.Samples.Maui.App UI tests.
 /// Inherits infrastructure from <see cref="MauiTestFixtureBase"/> and adds app-specific pages.
 /// </summary>
+[TestModuleScan(typeof(MainPage), NamespacePrefix = "Brinell.Maui.UITests.Pages")]
 public class AppiumFixture : MauiTestFixtureBase
 {
     private readonly AppShellPage _appShell;
@@ -27,7 +28,11 @@ public class AppiumFixture : MauiTestFixtureBase
         _mediaGalleryPage = new MediaGalleryPage(Context);
         _listsPage = new ListsPage(Context);
         _collectionDemoPage = new CollectionDemoPage(Context);
+        Composition = TestComposition.ForFixture(this, services =>
+            services.AddSingleton<IMauiTestContext>(Context));
     }
+
+    public TestComposition Composition { get; }
 
     /// <summary>
     /// Gets the AppShell page object for TabbedPage navigation.

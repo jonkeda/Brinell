@@ -14,6 +14,7 @@ public interface IUatExecutionService
 public sealed class PresenterUatExecutionSession : IDisposable
 {
     private readonly IDisposable? _environment;
+    private readonly IDisposable? _executionScope;
     private readonly IDisposable? _fixture;
     private readonly IDisposable? _resolver;
     private bool _disposed;
@@ -26,6 +27,7 @@ public sealed class PresenterUatExecutionSession : IDisposable
         string discoveryReport,
         string commandCatalogReport,
         string autPlacementReport,
+        IDisposable? executionScope,
         IDisposable? fixture,
         IDisposable? resolver,
         IDisposable? environment)
@@ -37,6 +39,7 @@ public sealed class PresenterUatExecutionSession : IDisposable
         DiscoveryReport = discoveryReport;
         CommandCatalogReport = commandCatalogReport;
         AutPlacementReport = autPlacementReport;
+        _executionScope = executionScope;
         _fixture = fixture;
         _resolver = resolver;
         _environment = environment;
@@ -77,6 +80,7 @@ public sealed class PresenterUatExecutionSession : IDisposable
             return;
         }
 
+        _executionScope?.Dispose();
         _fixture?.Dispose();
         _environment?.Dispose();
         _resolver?.Dispose();

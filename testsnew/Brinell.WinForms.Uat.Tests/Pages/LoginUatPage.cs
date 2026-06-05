@@ -1,5 +1,6 @@
 namespace Brinell.WinForms.Uat.Tests.Pages;
 
+[TestPage("Login")]
 [UatName("Login")]
 public sealed class LoginUatPage : PageObjectBase<LoginUatPage>
 {

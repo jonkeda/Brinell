@@ -139,7 +139,6 @@ Use `## Data:` for named deterministic inputs:
 
 | Field | Value |
 | --- | --- |
-| OutputDirectory | artifacts/uat |
 | ScreenshotOnFailure | true |
 | IncludeRuntimeTrace | true |
 
@@ -151,8 +150,69 @@ Use `## Data:` for named deterministic inputs:
 | live-api | BRINELL_UAT_LIVE_API |
 ```
 
-`Reporting` and `Skip Rules` are optional. When a scenario has a tag listed in
-`Skip Rules`, call `UatScenarioRunner.RunAsync(scenario, config)` to return a
-skipped scenario result unless the mapped environment variable is enabled with
-`1`, `true`, `yes`, or `on`. Bridges can also call `UatConfig.EvaluateSkip`
-directly when they need to map the decision to framework-specific skip output.
+`Reporting` and `Skip Rules` are optional. `UatScenarioTestBase<TFixture>`
+passes the parsed config into execution, so tag-based skip rules return skipped
+scenario results unless the mapped environment variable is enabled with `1`,
+`true`, `yes`, or `on`.
+
+## Runtime Composition Template
+
+```csharp
+[TestModuleScan(typeof(AppUatFixture), NamespacePrefix = "App.UAT")]
+public sealed class AppUatFixture : IDisposable
+{
+    public AppUatFixture()
+    {
+        Context = CreateContext();
+
+        Composition = TestComposition.ForFixture(this, services =>
+            services.AddSingleton<IMauiTestContext>(Context));
+    }
+
+    public IMauiTestContext Context { get; }
+
+    public TestComposition Composition { get; }
+
+    public void NavigateToMain()
+    {
+        Context.NavigateToRoot();
+    }
+
+    public void Dispose()
+    {
+        Context.Dispose();
+    }
+}
+
+[TestPage("Main")]
+public sealed class MainPage : PageObjectBase<MainPage>
+{
+    public MainPage(IMauiTestContext context)
+        : base(context)
+    {
+    }
+
+    public Entry<MainPage> NameEntry => new(this, "NameEntry");
+
+    public Button<MainPage> GreetButton => new(this, "GreetButton");
+
+    public Label<MainPage> GreetingLabel => new(this, "GreetingLabel");
+}
+
+public sealed class AppUatScenarioTests(AppUatFixture fixture)
+    : UatScenarioTestBase<AppUatFixture>(fixture),
+        IClassFixture<AppUatFixture>
+{
+    public static IEnumerable<object[]> ScenarioFiles => GetScenarioFiles();
+
+    protected override UatRuntimeValidationOptions RuntimeValidation { get; } =
+        new(Target: "MAUI", Fixture: "Appium");
+
+    [Theory(Timeout = 120000)]
+    [MemberData(nameof(ScenarioFiles))]
+    public Task UatFile_Passes(string filePath)
+    {
+        return RunUatFileAsync(filePath);
+    }
+}
+```

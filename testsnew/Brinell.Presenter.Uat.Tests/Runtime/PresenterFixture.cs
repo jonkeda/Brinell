@@ -4,14 +4,16 @@ using Brinell.Presenter.Uat.Tests.PageObjects;
 
 namespace Brinell.Presenter.Uat.Tests.Runtime;
 
+[TestModuleScan(typeof(PresenterPage), NamespacePrefix = "Brinell.Presenter.Uat.Tests.PageObjects")]
 public sealed class PresenterFixture : MauiTestFixtureBase
 {
     public PresenterFixture()
     {
-        PresenterPage = new PresenterPage(Context);
+        Composition = TestComposition.ForFixture(this, services =>
+            services.AddSingleton<IMauiTestContext>(Context));
     }
 
-    public PresenterPage PresenterPage { get; }
+    public TestComposition Composition { get; }
 
     protected override MauiTestContextOptions CreateTestContextOptions()
     {

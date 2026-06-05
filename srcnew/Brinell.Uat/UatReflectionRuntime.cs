@@ -1,17 +1,25 @@
 using System.Reflection;
+using Brinell.Core.Composition;
 using Brinell.Core.Settings;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Brinell.Uat;
 
 public sealed class UatReflectionRuntime
 {
     private const string CurrentPageItemKey = "Uat.Reflection.CurrentPage";
+    private const string ServiceProviderItemKey = "Uat.Reflection.ServiceProvider";
     private readonly Dictionary<string, UatRuntimePage> _pages;
+    private readonly IReadOnlyList<UatPhraseClassBinding> _phraseClasses;
     private readonly object _root;
 
-    private UatReflectionRuntime(object root, IEnumerable<UatRuntimePage> pages)
+    private UatReflectionRuntime(
+        object root,
+        IEnumerable<UatRuntimePage> pages,
+        IEnumerable<UatPhraseClassBinding>? phraseClasses = null)
     {
         _root = root;
+        _phraseClasses = phraseClasses?.ToArray() ?? [];
         _pages = new Dictionary<string, UatRuntimePage>(StringComparer.OrdinalIgnoreCase);
         foreach (var page in pages)
         {
@@ -20,6 +28,8 @@ public sealed class UatReflectionRuntime
     }
 
     public IReadOnlyCollection<UatRuntimePage> Pages => _pages.Values;
+
+    public IReadOnlyList<UatPhraseClassBinding> PhraseClasses => _phraseClasses;
 
     public IReadOnlyList<string> DescribeDiscovery()
     {
@@ -61,6 +71,7 @@ public sealed class UatReflectionRuntime
             var navigation = FindNavigationMethod(rootType, name);
             pages.Add(new UatRuntimePage(
                 name,
+                page.GetType(),
                 page,
                 DiscoverControls(page),
                 navigation is null ? null : () => Invoke(root, navigation)));
@@ -69,9 +80,53 @@ public sealed class UatReflectionRuntime
         return new UatReflectionRuntime(root, pages);
     }
 
+    public static UatReflectionRuntime FromComposition(object root, TestComposition composition)
+    {
+        ArgumentNullException.ThrowIfNull(root);
+        ArgumentNullException.ThrowIfNull(composition);
+
+        var rootType = root.GetType();
+        var pages = composition.Catalog.Pages
+            .Select(page =>
+            {
+                var navigation = FindNavigationMethod(rootType, page.Name);
+                return new UatRuntimePage(
+                    page.Name,
+                    page.PageType,
+                    Instance: null,
+                    DiscoverControls(page.PageType),
+                    navigation is null ? null : () => Invoke(root, navigation));
+            })
+            .ToArray();
+        var phraseClasses = DiscoverPhraseClasses(composition.Catalog.ScannedTypes);
+
+        return new UatReflectionRuntime(root, pages, phraseClasses);
+    }
+
+    public static void SetServiceProvider(UatExecutionContext context, IServiceProvider serviceProvider)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(serviceProvider);
+
+        context.Items[ServiceProviderItemKey] = serviceProvider;
+    }
+
     public static void RegisterRootPhrases(UatCommandCatalog catalog, Type rootType)
     {
         RegisterRootPhrases(catalog, rootType, handlerFactory: null);
+    }
+
+    public static void RegisterCompositionPhrases(UatCommandCatalog catalog, Type rootType)
+    {
+        ArgumentNullException.ThrowIfNull(catalog);
+        ArgumentNullException.ThrowIfNull(rootType);
+
+        var options = TestCompositionDiscoveryOptions.FromFixture(rootType);
+        var compositionCatalog = TestCompositionCatalog.Discover(options);
+        RegisterPhraseClassPhrases(
+            catalog,
+            DiscoverPhraseClasses(compositionCatalog.ScannedTypes),
+            handlerFactory: null);
     }
 
     public UatCommandCatalog CreateCommandCatalog()
@@ -184,8 +239,42 @@ public sealed class UatReflectionRuntime
             allowsTable: false,
             handler: AssertAnyControlTextContainsAsync);
 
+        RegisterPhraseClassPhrases(
+            catalog,
+            _phraseClasses,
+            (phraseClassType, method) => (context, invocation, cancellationToken) =>
+                InvokePhraseClassMethodAsync(
+                    phraseClassType,
+                    method,
+                    context,
+                    invocation,
+                    cancellationToken));
         RegisterRootPhrases(catalog);
         return catalog;
+    }
+
+    private static void RegisterPhraseClassPhrases(
+        UatCommandCatalog catalog,
+        IEnumerable<UatPhraseClassBinding> phraseClasses,
+        Func<Type, MethodInfo, UatCommandHandler?>? handlerFactory)
+    {
+        foreach (var phraseClass in phraseClasses)
+        {
+            foreach (var method in phraseClass.Methods)
+            {
+                foreach (var phrase in method.Phrases)
+                {
+                    foreach (var keyword in ExpandKeywords(phrase.Keyword))
+                    {
+                        catalog.Register(
+                            keyword,
+                            phrase.Phrase,
+                            $"{method.Method.DeclaringType!.FullName}.{method.Method.Name}",
+                            handler: handlerFactory?.Invoke(phraseClass.Type, method.Method));
+                    }
+                }
+            }
+        }
     }
 
     private void RegisterRootPhrases(UatCommandCatalog catalog)
@@ -213,6 +302,13 @@ public sealed class UatReflectionRuntime
             {
                 foreach (var keyword in ExpandKeywords(phrase.Keyword))
                 {
+                    if (catalog.Patterns.Any(pattern =>
+                            pattern.Keyword == keyword &&
+                            pattern.Phrase.Equals(phrase.Phrase, StringComparison.Ordinal)))
+                    {
+                        continue;
+                    }
+
                     catalog.Register(
                         keyword,
                         phrase.Phrase,
@@ -262,6 +358,58 @@ public sealed class UatReflectionRuntime
         catch (Exception ex)
         {
             return UatStepResult.Failed(invocation, $"Custom UAT step '{method.Name}' failed: {ex.Message}", ex);
+        }
+    }
+
+    private async Task<UatStepResult> InvokePhraseClassMethodAsync(
+        Type phraseClassType,
+        MethodInfo method,
+        UatExecutionContext context,
+        UatStepInvocation invocation,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (!TryGetServiceProvider(context, out var serviceProvider))
+        {
+            return UatStepResult.Failed(
+                invocation,
+                $"UAT phrase class '{phraseClassType.FullName}' requires an active DI scope.");
+        }
+
+        try
+        {
+            var instance = serviceProvider.GetService(phraseClassType) ??
+                           ActivatorUtilities.CreateInstance(serviceProvider, phraseClassType);
+            var result = Invoke(instance, method, BuildRootPhraseArguments(method, context, invocation, cancellationToken));
+            if (result is Task<UatStepResult> resultTask)
+            {
+                return await resultTask.ConfigureAwait(false);
+            }
+
+            if (result is Task task)
+            {
+                await task.ConfigureAwait(false);
+                context.Diagnostics.Add($"phrase:{method.Name}");
+                return UatStepResult.Passed(invocation);
+            }
+
+            if (result is UatStepResult stepResult)
+            {
+                return stepResult;
+            }
+
+            if (result is bool boolean && !boolean)
+            {
+                return UatStepResult.Failed(invocation, $"UAT phrase '{method.Name}' returned false.");
+            }
+
+            context.Diagnostics.Add($"phrase:{method.Name}");
+            return UatStepResult.Passed(invocation, result as string);
+        }
+        catch (Exception ex)
+        {
+            return UatStepResult.Failed(invocation, $"UAT phrase '{method.Name}' failed: {ex.Message}", ex);
         }
     }
 
@@ -372,8 +520,13 @@ public sealed class UatReflectionRuntime
 
     private static IReadOnlyList<UatRuntimeControl> DiscoverControls(object page)
     {
+        return DiscoverControls(page.GetType());
+    }
+
+    private static IReadOnlyList<UatRuntimeControl> DiscoverControls(Type pageType)
+    {
         List<UatRuntimeControl> controls = [];
-        foreach (var property in page.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public))
+        foreach (var property in pageType.GetProperties(BindingFlags.Instance | BindingFlags.Public))
         {
             if (property.GetIndexParameters().Length > 0 ||
                 property.GetCustomAttribute<UatIgnoreAttribute>() is not null ||
@@ -389,6 +542,136 @@ public sealed class UatReflectionRuntime
         }
 
         return controls;
+    }
+
+    private static IReadOnlyList<UatPhraseClassBinding> DiscoverPhraseClasses(IReadOnlyList<Type> types)
+    {
+        List<UatPhraseClassBinding> phraseClasses = [];
+
+        foreach (var type in types.Where(IsPhraseClassType))
+        {
+            List<UatPhraseClassMethodBinding> methods = [];
+            foreach (var method in type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly))
+            {
+                if (method.IsSpecialName ||
+                    method.GetCustomAttribute<UatIgnoreAttribute>() is not null)
+                {
+                    continue;
+                }
+
+                var phrases = ResolvePhraseClassMethodPhrases(method);
+                if (phrases.Count == 0)
+                {
+                    continue;
+                }
+
+                methods.Add(new UatPhraseClassMethodBinding(method, phrases));
+            }
+
+            if (methods.Count > 0)
+            {
+                phraseClasses.Add(new UatPhraseClassBinding(type, methods));
+            }
+        }
+
+        return phraseClasses;
+    }
+
+    private static bool IsPhraseClassType(Type type)
+    {
+        return type.GetCustomAttribute<UatPhraseClassAttribute>() is not null ||
+               typeof(UatPhraseClassBase).IsAssignableFrom(type);
+    }
+
+    private static IReadOnlyList<UatPhraseMethodPhrase> ResolvePhraseClassMethodPhrases(MethodInfo method)
+    {
+        var attributes = method
+            .GetCustomAttributes<UatPhraseAttribute>()
+            .Select(attribute => new UatPhraseMethodPhrase(attribute.Phrase, attribute.Keyword))
+            .ToArray();
+        if (attributes.Length > 0)
+        {
+            return attributes;
+        }
+
+        return TryInferPhraseFromMethodName(method.Name, out var keyword, out var phrase)
+            ? [new UatPhraseMethodPhrase(phrase, keyword)]
+            : [];
+    }
+
+    private static bool TryInferPhraseFromMethodName(
+        string methodName,
+        out UatEffectiveStepKeyword keyword,
+        out string phrase)
+    {
+        foreach (var candidate in Enum.GetValues<UatEffectiveStepKeyword>())
+        {
+            var prefix = candidate.ToString();
+            if (!methodName.StartsWith(prefix, StringComparison.Ordinal) ||
+                methodName.Length == prefix.Length)
+            {
+                continue;
+            }
+
+            keyword = candidate;
+            phrase = ToPhrase(methodName[prefix.Length..]);
+            return true;
+        }
+
+        keyword = default;
+        phrase = string.Empty;
+        return false;
+    }
+
+    private static string ToPhrase(string identifier)
+    {
+        var words = SplitWords(identifier);
+        for (var i = 0; i < words.Count; i++)
+        {
+            if (!words[i].Equals("I", StringComparison.Ordinal))
+            {
+                words[i] = words[i].ToLowerInvariant();
+            }
+        }
+
+        return string.Join(' ', words);
+    }
+
+    private static List<string> SplitWords(string value)
+    {
+        List<string> words = [];
+        var current = string.Empty;
+
+        foreach (var character in value)
+        {
+            if (current.Length > 0 && char.IsUpper(character))
+            {
+                words.Add(current);
+                current = string.Empty;
+            }
+
+            current += character;
+        }
+
+        if (current.Length > 0)
+        {
+            words.Add(current);
+        }
+
+        return words;
+    }
+
+    private static bool TryGetServiceProvider(UatExecutionContext context, out IServiceProvider serviceProvider)
+    {
+        if (context.Items.TryGetValue(ServiceProviderItemKey, out var value) &&
+            value is IServiceProvider found)
+        {
+            serviceProvider = found;
+            return true;
+        }
+
+        serviceProvider = null!;
+        return false;
     }
 
     private static bool IsRuntimePageProperty(PropertyInfo property)
@@ -440,7 +723,15 @@ public sealed class UatReflectionRuntime
         }
 
         page.Navigate?.Invoke();
-        if (!WaitPageReady(page.Instance))
+        var instance = GetPageInstance(context, page);
+        if (instance is null)
+        {
+            return Task.FromResult(UatStepResult.Failed(
+                invocation,
+                $"UAT page '{page.Name}' requires an active DI scope."));
+        }
+
+        if (!WaitPageReady(instance))
         {
             return Task.FromResult(UatStepResult.Failed(
                 invocation,
@@ -468,7 +759,15 @@ public sealed class UatReflectionRuntime
                 $"UAT page '{pageName}' was not found. Available pages: {FormatPageNames()}."));
         }
 
-        if (!WaitPageReady(page.Instance))
+        var instance = GetPageInstance(context, page);
+        if (instance is null)
+        {
+            return Task.FromResult(UatStepResult.Failed(
+                invocation,
+                $"UAT page '{page.Name}' requires an active DI scope."));
+        }
+
+        if (!WaitPageReady(instance))
         {
             return Task.FromResult(UatStepResult.Failed(
                 invocation,
@@ -531,9 +830,17 @@ public sealed class UatReflectionRuntime
         }
 
         var expected = invocation.Arguments["text"];
+        var pageInstance = GetPageInstance(context, pageResult.Page!);
+        if (pageInstance is null)
+        {
+            return Task.FromResult(UatStepResult.Failed(
+                invocation,
+                $"UAT page '{pageResult.Page!.Name}' requires an active DI scope."));
+        }
+
         foreach (var controlBinding in pageResult.Page!.Controls)
         {
-            var control = controlBinding.Get(pageResult.Page.Instance);
+            var control = controlBinding.Get(pageInstance);
             if (control is null)
             {
                 continue;
@@ -580,7 +887,19 @@ public sealed class UatReflectionRuntime
             return false;
         }
 
-        var control = controlBinding.Get(pageResult.Page.Instance);
+        var pageInstance = GetPageInstance(context, pageResult.Page);
+        if (pageInstance is null)
+        {
+            result = new UatControlResolution(
+                null,
+                controlName,
+                UatStepResult.Failed(
+                    invocation,
+                    $"UAT page '{pageResult.Page.Name}' requires an active DI scope."));
+            return false;
+        }
+
+        var control = controlBinding.Get(pageInstance);
         if (control is null)
         {
             result = new UatControlResolution(
@@ -649,6 +968,18 @@ public sealed class UatReflectionRuntime
             .ToArray();
 
         return methods.Length == 0 ? "(none)" : string.Join(", ", methods);
+    }
+
+    private static object? GetPageInstance(UatExecutionContext context, UatRuntimePage page)
+    {
+        if (page.Instance is not null)
+        {
+            return page.Instance;
+        }
+
+        return TryGetServiceProvider(context, out var serviceProvider)
+            ? serviceProvider.GetService(page.PageType)
+            : null;
     }
 
     private static bool WaitPageReady(object page)
@@ -787,7 +1118,8 @@ public sealed class UatReflectionRuntime
 
 public sealed record UatRuntimePage(
     string Name,
-    object Instance,
+    Type PageType,
+    object? Instance,
     IReadOnlyList<UatRuntimeControl> Controls,
     Action? Navigate);
 
@@ -801,3 +1133,15 @@ public sealed record UatRuntimeControl(
         return Property.GetValue(page);
     }
 }
+
+public sealed record UatPhraseClassBinding(
+    Type Type,
+    IReadOnlyList<UatPhraseClassMethodBinding> Methods);
+
+public sealed record UatPhraseClassMethodBinding(
+    MethodInfo Method,
+    IReadOnlyList<UatPhraseMethodPhrase> Phrases);
+
+public sealed record UatPhraseMethodPhrase(
+    string Phrase,
+    UatEffectiveStepKeyword? Keyword);

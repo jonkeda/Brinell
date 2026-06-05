@@ -46,14 +46,28 @@ internal sealed class BlazorSampleHost : IDisposable
         var process = Process.Start(startInfo)
             ?? throw new InvalidOperationException("Failed to start Blazor sample app.");
 
-        var host = new BlazorSampleHost(process, baseUrl);
-        process.OutputDataReceived += (_, args) => host.Capture(args.Data);
-        process.ErrorDataReceived += (_, args) => host.Capture(args.Data);
-        process.BeginOutputReadLine();
-        process.BeginErrorReadLine();
+        try
+        {
+            var host = new BlazorSampleHost(process, baseUrl);
+            process.OutputDataReceived += (_, args) => host.Capture(args.Data);
+            process.ErrorDataReceived += (_, args) => host.Capture(args.Data);
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
 
-        host.WaitUntilReadyAsync().GetAwaiter().GetResult();
-        return host;
+            host.WaitUntilReadyAsync().GetAwaiter().GetResult();
+            return host;
+        }
+        catch
+        {
+            if (!process.HasExited)
+            {
+                process.Kill(entireProcessTree: true);
+                process.WaitForExit(5000);
+            }
+
+            process.Dispose();
+            throw;
+        }
     }
 
     public void Dispose()
@@ -76,7 +90,7 @@ internal sealed class BlazorSampleHost : IDisposable
     private async Task WaitUntilReadyAsync()
     {
         using var client = new HttpClient { Timeout = TimeSpan.FromMilliseconds(500) };
-        var deadline = DateTime.UtcNow.AddSeconds(30);
+        var deadline = DateTime.UtcNow.AddSeconds(GetReadyTimeoutSeconds());
 
         while (DateTime.UtcNow < deadline)
         {
@@ -126,6 +140,14 @@ internal sealed class BlazorSampleHost : IDisposable
         var port = ((IPEndPoint)listener.LocalEndpoint).Port;
         listener.Stop();
         return port;
+    }
+
+    private static int GetReadyTimeoutSeconds()
+    {
+        var configured = Environment.GetEnvironmentVariable("BLAZOR_APP_READY_TIMEOUT_SECONDS");
+        return int.TryParse(configured, out var seconds) && seconds > 0
+            ? seconds
+            : 90;
     }
 
     private static string ResolveAppProjectPath()

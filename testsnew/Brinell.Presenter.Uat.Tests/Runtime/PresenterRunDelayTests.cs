@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Microsoft.Extensions.DependencyInjection;
 using Brinell.Presenter.ViewModels;
 using Brinell.Presenter.Uat.Tests.PageObjects;
 
@@ -7,14 +8,16 @@ namespace Brinell.Presenter.Uat.Tests.Runtime;
 [Collection(PresenterUatCollection.CollectionName)]
 [Trait("Category", "UAT")]
 [Trait("Target", "Presenter")]
-public sealed class PresenterRunDelayTests
+public sealed class PresenterRunDelayTests : IDisposable
 {
     private const string GreetingScenarioName = "Greeting appears when a name is entered";
+    private readonly IServiceScope _scope;
     private readonly PresenterPage _page;
 
     public PresenterRunDelayTests(PresenterFixture fixture)
     {
-        _page = fixture.PresenterPage;
+        _scope = fixture.Composition.CreateScope();
+        _page = _scope.ServiceProvider.GetRequiredService<PresenterPage>();
     }
 
     [Fact]
@@ -103,5 +106,10 @@ public sealed class PresenterRunDelayTests
         }
 
         return count;
+    }
+
+    public void Dispose()
+    {
+        _scope.Dispose();
     }
 }

@@ -8,13 +8,14 @@ a different repository.
 
 ## What Changed
 
-Brinell now has two shared conventions that UAT projects should use instead of
+Brinell now has three shared conventions that UAT projects should use instead of
 project-specific runtime code:
 
 | Area | New owner | Main types |
 | --- | --- | --- |
 | Test artifacts and reports | `Brinell.Core.Artifacts` | `DefaultTestArtifactPathProvider`, `ITestArtifactPathProvider`, `TestArtifactManifestWriter` |
 | UAT settings | `Brinell.Core.Settings` and `Brinell.Uat` | `TestSettings`, `JsonTestSettingsProvider`, `TestSettingsRequest`, `TestSettingsRootAttribute`, `TestSettingsSectionAttribute` |
+| Test composition | `Brinell.Core.Composition` and `Brinell.Uat` | `TestComposition`, `TestModuleScanAttribute`, `TestPageAttribute`, `TestScenarioServiceAttribute`, `UatPhraseClassAttribute` |
 
 The target shape is:
 
@@ -25,6 +26,8 @@ The target shape is:
 - Local usernames, passwords, API keys, and device addresses live in gitignored
   `*.local.json` or `*.secrets.json` files.
 - UAT phrase methods can receive typed settings objects as parameters.
+- Fixtures expose `TestComposition Composition`; pages, flows, scenario services,
+  and UAT phrase classes are discovered and constructed by DI.
 
 ## Reporting Upgrade
 
@@ -383,6 +386,30 @@ implemented settings-based skip evaluation.
 Use file settings for phrase behavior now. Treat skip-rule migration as a later
 slice.
 
+## Composition Upgrade
+
+Add `[TestModuleScan]` to the fixture and expose one composition handle:
+
+```csharp
+[TestModuleScan(typeof(ProjectUatFixture), NamespacePrefix = "Project.UAT")]
+public sealed class ProjectUatFixture : IDisposable
+{
+    public ProjectUatFixture()
+    {
+        Composition = TestComposition.ForFixture(this, services =>
+            services.AddSingleton<IMauiTestContext>(Context));
+    }
+
+    public IMauiTestContext Context { get; }
+
+    public TestComposition Composition { get; }
+}
+```
+
+Mark page objects with `[TestPage]`, flows with `[TestScenarioService]`, and UAT
+phrase adapters with `[UatPhraseClass]`. Do not add new page catalog classes,
+fixture-owned page properties, or custom page factories.
+
 ## Tests To Add Or Update
 
 At minimum, add or update tests that prove:
@@ -396,6 +423,8 @@ At minimum, add or update tests that prove:
   override default settings.
 - Failure screenshots and UAT result JSON are written under the Brinell artifact
   provider layout.
+- `TestComposition` discovers pages and phrase classes, and UAT scenarios execute
+  with a fresh DI scope.
 
 Useful commands:
 
@@ -424,8 +453,12 @@ runtime are available.
 9. Add typed settings classes in the UAT project.
 10. Replace phrase code that reads environment variables with typed settings
     parameters.
-11. Keep legacy environment-variable skip rules for now.
-12. Run framework tests, UAT spec-format tests, and a build of the UAT project.
+11. Add `[TestModuleScan]`, `TestComposition`, `[TestPage]`,
+    `[TestScenarioService]`, and `[UatPhraseClass]` where needed.
+12. Remove page catalog classes, fixture-owned page properties, and custom page
+    factories from new code.
+13. Keep legacy environment-variable skip rules for now.
+14. Run framework tests, UAT spec-format tests, and a build of the UAT project.
 
 ## Common Failure Symptoms
 

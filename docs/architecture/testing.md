@@ -91,52 +91,64 @@ public class ButtonFluentChainingTests
 
 ## UITest Fixture Pattern
 
-UITests share a single driver session for performance:
+UITests share the driver session in the fixture and resolve pages from
+`TestComposition` scopes:
 
 ```csharp
-// Fixture (created once per collection):
-public class AppiumFixture : MauiTestFixtureBase, IDisposable
+[TestModuleScan(typeof(AppiumFixture), NamespacePrefix = "MyApp.UITests.Pages")]
+public sealed class AppiumFixture : MauiTestFixtureBase, IDisposable
 {
-    public MainPage MainPage { get; }
-
     public AppiumFixture()
     {
-        MainPage = new MainPage(Context);
+        Composition = TestComposition.ForFixture(this, services =>
+            services.AddSingleton<IMauiTestContext>(Context));
     }
+
+    public TestComposition Composition { get; }
 
     public void NavigateToMain()
     {
-        // navigate to main tab
         Context.Shell.MainTab.Click();
-        MainPage.WaitLoaded(true);
     }
 }
 
-// Collection marker:
-[CollectionDefinition("Appium")]
-public class AppiumCollection : ICollectionFixture<AppiumFixture> { }
+[TestPage("Main")]
+public sealed class MainPage : PageObjectBase<MainPage>
+{
+    public MainPage(IMauiTestContext context)
+        : base(context)
+    {
+    }
 
-// Test class:
+    public Entry<MainPage> NameEntry => new(this, "NameEntry");
+    public Button<MainPage> SaveButton => new(this, "SaveButton");
+    public Switch<MainPage> StatusToggle => new(this, "StatusToggle");
+}
+
 [Collection("Appium")]
 [Trait("Category", "UITest")]
 [Trait("Page", "MainPage")]
-public class MainPageTests
+public sealed class MainPageTests
 {
     private readonly AppiumFixture _fixture;
-    private MainPage Page => _fixture.MainPage;
 
     public MainPageTests(AppiumFixture fixture)
     {
         _fixture = fixture;
-        _fixture.NavigateToMain(); // reset navigation in constructor
     }
 
     [Fact]
     public void MainPage_KeyControls_Exist()
     {
-        Page.NameEntry.AssertExists();
-        Page.SaveButton.AssertExists();
-        Page.StatusToggle.AssertExists();
+        using var scope = _fixture.Composition.CreateScope();
+        var page = scope.ServiceProvider.GetRequiredService<MainPage>();
+
+        _fixture.NavigateToMain();
+        page.WaitLoaded(true);
+
+        page.NameEntry.AssertExists();
+        page.SaveButton.AssertExists();
+        page.StatusToggle.AssertExists();
     }
 }
 ```

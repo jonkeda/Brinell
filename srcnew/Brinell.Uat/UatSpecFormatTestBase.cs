@@ -101,6 +101,7 @@ public abstract class UatSpecFormatTestBase
         var catalog = UatSpecCommandCatalog.CreateDefault();
         if (RuntimeRootType is { } runtimeRootType)
         {
+            UatReflectionRuntime.RegisterCompositionPhrases(catalog, runtimeRootType);
             UatReflectionRuntime.RegisterRootPhrases(catalog, runtimeRootType);
         }
 

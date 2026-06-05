@@ -70,6 +70,40 @@ var path = "C:\\MyPath\\file.txt";  // Use configuration instead
 
 ## Page Object Design
 
+### Composition
+
+New tests should let DI construct pages, flows, and scenario services:
+
+```csharp
+[TestModuleScan(typeof(AppFixture), NamespacePrefix = "MyApp.UITests")]
+public sealed class AppFixture
+{
+    public AppFixture()
+    {
+        Composition = TestComposition.ForFixture(this, services =>
+            services.AddSingleton<IMauiTestContext>(Context));
+    }
+
+    public IMauiTestContext Context { get; }
+
+    public TestComposition Composition { get; }
+}
+
+[TestPage("Settings")]
+public sealed class SettingsPage : PageObjectBase<SettingsPage>
+{
+    public SettingsPage(IMauiTestContext context)
+        : base(context)
+    {
+    }
+
+    public Button<SettingsPage> SaveButton => new(this, "SaveButton");
+}
+```
+
+Do not add page catalog classes or new fixture-owned page properties. Resolve
+pages from `fixture.Composition.CreateScope()` inside the test or UAT scenario.
+
 ### Clear Encapsulation
 
 ```csharp
@@ -418,6 +452,9 @@ catch (Exception ex)
 | Test interdependence | Flaky, hard to debug | Independent tests |
 | Too many assertions | Hard to identify failure | One behavior per test |
 | Raw selectors in tests | Brittle, duplicated | Use page objects |
+| Page catalog classes | Duplicate metadata and registration | Use `[TestPage]` discovery |
+| Fixture-owned page properties | Leak scoped state and force manual construction | Resolve pages from `TestComposition` scopes |
+| Custom page factories | Recreate DI badly | Let DI construct pages and flows |
 | Ignoring IsBusy | Race conditions | Check `WaitForNotBusy()` |
 | `Console.WriteLine()` | Unstructured | Use structured logging |
 | Catch-all exceptions | Hide real failures | Specific exception handling |

@@ -1,27 +1,25 @@
 namespace Brinell.Wpf.Uat.Tests.Runtime;
 
+[TestModuleScan(typeof(ShellPage), NamespacePrefix = "Brinell.Wpf.UITests.PageObjects")]
 public sealed class WpfUatFixture : WpfSampleFixture
 {
     public WpfUatFixture()
     {
-        ShellPage = new ShellPage(Context);
-        HomePage = new HomePage(Context);
-        LoginPage = new LoginPage(Context);
+        Composition = TestComposition.ForFixture(this, services =>
+            services.AddSingleton<IWpfTestContext>(Context));
     }
 
-    public ShellPage ShellPage { get; }
-
-    public HomePage HomePage { get; }
-
-    public LoginPage LoginPage { get; }
+    public TestComposition Composition { get; }
 
     public void NavigateToHome()
     {
-        ShellPage.NavigateToHome();
+        using var scope = Composition.CreateScope();
+        scope.ServiceProvider.GetRequiredService<ShellPage>().NavigateToHome();
     }
 
     public void NavigateToLogin()
     {
-        ShellPage.NavigateToLogin();
+        using var scope = Composition.CreateScope();
+        scope.ServiceProvider.GetRequiredService<ShellPage>().NavigateToLogin();
     }
 }

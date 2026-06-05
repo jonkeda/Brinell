@@ -27,6 +27,77 @@ public class FeatureTests : WpfUITestBase  // or MauiUITestBase, HtmlUITestBase
 
 ---
 
+## Composition Template
+
+```csharp
+[TestModuleScan(typeof(AppFixture), NamespacePrefix = "MyApp.UITests")]
+public sealed class AppFixture : IDisposable
+{
+    public AppFixture()
+    {
+        Context = CreateContext();
+
+        Composition = TestComposition.ForFixture(this, services =>
+            services.AddSingleton<IMauiTestContext>(Context));
+    }
+
+    public IMauiTestContext Context { get; }
+
+    public TestComposition Composition { get; }
+
+    public void Dispose() => Context.Dispose();
+}
+
+[TestPage("Settings")]
+public sealed class SettingsPage : PageObjectBase<SettingsPage>
+{
+    public SettingsPage(IMauiTestContext context)
+        : base(context)
+    {
+    }
+
+    public Entry<SettingsPage> UsernameInput => new(this, "UsernameInput");
+
+    public Button<SettingsPage> SaveButton => new(this, "SaveButton");
+
+    public Label<SettingsPage> StatusLabel => new(this, "StatusLabel");
+}
+
+[TestScenarioService]
+public sealed class SettingsFlow : TestScenarioServiceBase
+{
+    private readonly SettingsPage _settings;
+
+    public SettingsFlow(SettingsPage settings)
+    {
+        _settings = settings;
+    }
+
+    public void SaveUsername(string username)
+    {
+        _settings.UsernameInput.SetText(username);
+        _settings.SaveButton.Click();
+    }
+}
+
+public sealed class SettingsTests(AppFixture fixture) : IClassFixture<AppFixture>
+{
+    [Fact]
+    public void SaveUsername_ShowsSavedStatus()
+    {
+        using var scope = fixture.Composition.CreateScope();
+        var page = scope.ServiceProvider.GetRequiredService<SettingsPage>();
+        var flow = scope.ServiceProvider.GetRequiredService<SettingsFlow>();
+
+        flow.SaveUsername("newuser");
+
+        page.StatusLabel.AssertTextContains("Saved");
+    }
+}
+```
+
+---
+
 ## Page Object Template
 
 ```csharp
@@ -493,6 +564,7 @@ dotnet test --filter "Category!=Slow"
 ### DO ✅
 
 - Use descriptive test and page names
+- Use `TestComposition` for page, flow, and scenario service construction
 - Wait for page ready after navigation
 - Use page object actions for complex interactions
 - Assert one behavior per test
@@ -512,6 +584,7 @@ dotnet test --filter "Category!=Slow"
 - Ignore busy indicators
 - Skip page readiness checks
 - Use magic strings - define constants
+- Create page catalog classes or fixture-owned page properties for new tests
 
 ---
 

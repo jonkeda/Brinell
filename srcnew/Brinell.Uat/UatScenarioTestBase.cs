@@ -165,13 +165,33 @@ public abstract class UatScenarioTestBase<TFixture>
         UatRuntime runtime,
         CancellationToken cancellationToken)
     {
-        return UatScenarioExecutor.RunAsync(
-            scenario,
-            GetRunConfig(runtime),
-            BeforeScenario,
-            context => ConfigureScenarioContext(context, scenario, runtime),
-            CaptureEvidenceOnFailure,
-            cancellationToken);
+        var scope = runtime.CreateScope();
+        return RunScenarioWithScopeAsync(scenario, runtime, scope, cancellationToken);
+    }
+
+    private async Task<UatScenarioExecutionResult> RunScenarioWithScopeAsync(
+        UatBoundScenario scenario,
+        UatRuntime runtime,
+        IDisposable? scope,
+        CancellationToken cancellationToken)
+    {
+        using (scope)
+        {
+            return await UatScenarioExecutor.RunAsync(
+                scenario,
+                GetRunConfig(runtime),
+                BeforeScenario,
+                context =>
+                {
+                    ConfigureScenarioContext(context, scenario, runtime);
+                    if (scope is Microsoft.Extensions.DependencyInjection.IServiceScope serviceScope)
+                    {
+                        UatRuntime.ConfigureScope(context, serviceScope.ServiceProvider);
+                    }
+                },
+                CaptureEvidenceOnFailure,
+                cancellationToken).ConfigureAwait(false);
+        }
     }
 
     protected virtual IScreenshotService? GetScreenshotService()

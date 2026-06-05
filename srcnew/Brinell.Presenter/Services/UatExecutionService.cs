@@ -45,6 +45,7 @@ public sealed class UatExecutionService : IUatExecutionService
             $"BrinellPresenterAutPlacement_{Guid.NewGuid():N}.txt");
         DisposableGroup? environment = null;
         object? fixture = null;
+        IDisposable? executionScope = null;
 
         try
         {
@@ -57,7 +58,7 @@ public sealed class UatExecutionService : IUatExecutionService
             fixture = CreateFixture(config, pagesAssembly);
             var autPlacementReport = TryReadPlacementReport(placementReportPath);
 
-            var runtime = UatReflectionRuntime.FromRoot(fixture);
+            var runtime = new UatRuntime(fixture, configPath);
             var catalog = runtime.CreateCommandCatalog();
             var parse = UatMarkdownParser.ParseFile(scenarioFilePath);
             if (!parse.Success || parse.Document is null)
@@ -71,7 +72,7 @@ public sealed class UatExecutionService : IUatExecutionService
                 throw new InvalidOperationException(string.Join(
                     Environment.NewLine,
                     FormatDiagnostics(bind.Diagnostics),
-                    string.Join(Environment.NewLine, runtime.DescribeDiscovery()),
+                    runtime.DiscoveryReport,
                     FormatCatalog(catalog)));
             }
 
@@ -84,20 +85,28 @@ public sealed class UatExecutionService : IUatExecutionService
             }
 
             var runner = new UatScenarioRunner();
+            executionScope = runtime.CreateScope();
+            if (executionScope is Microsoft.Extensions.DependencyInjection.IServiceScope serviceScope)
+            {
+                UatRuntime.ConfigureScope(runner.Context, serviceScope.ServiceProvider);
+            }
+
             return new PresenterUatExecutionSession(
                 runner.CreateSession(scenario),
                 runner,
                 scenario,
                 catalog,
-                string.Join(Environment.NewLine, runtime.DescribeDiscovery()),
+                runtime.DiscoveryReport,
                 FormatCatalog(catalog),
                 autPlacementReport,
+                executionScope,
                 fixture as IDisposable,
                 resolver,
                 environment);
         }
         catch
         {
+            executionScope?.Dispose();
             (fixture as IDisposable)?.Dispose();
             environment?.Dispose();
             resolver.Dispose();

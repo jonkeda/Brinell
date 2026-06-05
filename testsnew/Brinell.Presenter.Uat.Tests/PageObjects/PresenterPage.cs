@@ -9,6 +9,7 @@ using Brinell.Uat;
 
 namespace Brinell.Presenter.Uat.Tests.PageObjects;
 
+[TestPage("Presenter")]
 public sealed class PresenterPage : PageObjectBase<PresenterPage>
 {
     public PresenterPage(IMauiTestContext context)

@@ -15,7 +15,7 @@
 │      Technology Adapters        │  Brinell.Maui.Appium, Brinell.Maui.FlaUI
 │  (Driver/Element impls)         │
 ├─────────────────────────────────┤
-│          Brinell.Core           │  Interfaces, Locators, Exceptions
+│          Brinell.Core           │  Interfaces, Locators, Composition
 │     (Zero platform deps)        │
 └─────────────────────────────────┘
 ```
@@ -24,7 +24,7 @@
 
 | Layer | Contains | Dependencies |
 |-------|----------|-------------|
-| **Core** | Interfaces (`IControlObject<TScope>`, `IDriver<TElement>`, `IElement<TSelf>`), Locators, Exceptions, Abstractions | .NET Standard only |
+| **Core** | Interfaces (`IControlObject<TScope>`, `IDriver<TElement>`, `IElement<TSelf>`), Locators, Exceptions, Abstractions, Composition | .NET + Microsoft.Extensions.DependencyInjection |
 | **Platform** | Control base classes, platform pages, gestures | Core + platform SDK |
 | **Technology** | Driver/Element implementations (Appium, FlaUI, Playwright) | Core + Platform + automation library |
 | **Tests** | Test fixtures, page objects, assertions | Everything above + xUnit |
@@ -35,7 +35,7 @@
 
 | Project | Layer | Purpose |
 |---------|-------|---------|
-| `Brinell.Core` | Core | Interfaces, locators, exceptions |
+| `Brinell.Core` | Core | Interfaces, locators, exceptions, test composition |
 | `Brinell.Maui` | Platform | MAUI controls, pages, context |
 | `Brinell.Maui.Appium` | Technology | Appium driver for MAUI |
 | `Brinell.Maui.FlaUI` | Technology | FlaUI driver for MAUI (desktop) |
@@ -93,6 +93,7 @@ Each platform is fully self-contained:
 | Microsoft.Playwright | 1.50.0 | Technology | Web automation |
 | Stride.Engine | 4.3.0.2507 | Technology | 3D game engine |
 | WireMock.Net | 1.6.10 | Testing | API mocking |
+| Microsoft.Extensions.DependencyInjection | 10.0.0 | Core | Test composition and scoped services |
 | Microsoft.EntityFrameworkCore | 10.0.0 | Testing | Database fixtures |
 | Serilog | 4.1.0 | Infrastructure | Structured logging |
 

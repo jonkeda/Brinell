@@ -1,3 +1,7 @@
+using System.Reflection;
+using Brinell.Core.Composition;
+using Microsoft.Extensions.DependencyInjection;
+
 namespace Brinell.Uat;
 
 public sealed class UatRuntime
@@ -16,7 +20,10 @@ public sealed class UatRuntime
         ConfigDirectory = Path.GetDirectoryName(ConfigFilePath) ?? Directory.GetCurrentDirectory();
         Config = UatConfigParser.ParseFile(ConfigFilePath, root.GetType().Assembly.GetName().Name);
         ValidateConfig(Config, ConfigFilePath, validationOptions ?? UatRuntimeValidationOptions.Default);
-        _reflectionRuntime = UatReflectionRuntime.FromRoot(root);
+        Composition = ResolveComposition(root);
+        _reflectionRuntime = Composition is null
+            ? UatReflectionRuntime.FromRoot(root)
+            : UatReflectionRuntime.FromComposition(root, Composition);
     }
 
     public string ConfigFilePath { get; }
@@ -25,11 +32,48 @@ public sealed class UatRuntime
 
     public UatConfig Config { get; }
 
+    public TestComposition? Composition { get; }
+
     public string DiscoveryReport => string.Join(Environment.NewLine, _reflectionRuntime.DescribeDiscovery());
 
     public UatCommandCatalog CreateCommandCatalog()
     {
         return _reflectionRuntime.CreateCommandCatalog();
+    }
+
+    public IServiceScope? CreateScope()
+    {
+        return Composition?.CreateScope();
+    }
+
+    public static void ConfigureScope(UatExecutionContext context, IServiceProvider serviceProvider)
+    {
+        UatReflectionRuntime.SetServiceProvider(context, serviceProvider);
+    }
+
+    private static TestComposition? ResolveComposition(object root)
+    {
+        if (root is null)
+        {
+            return null;
+        }
+
+        var properties = root.GetType()
+            .GetProperties(BindingFlags.Instance | BindingFlags.Public);
+        var property = FindCompositionProperty(properties, "Composition") ??
+                       FindCompositionProperty(properties, "TestComposition");
+
+        return property?.GetValue(root) as TestComposition;
+    }
+
+    private static PropertyInfo? FindCompositionProperty(
+        IEnumerable<PropertyInfo> properties,
+        string propertyName)
+    {
+        return properties.FirstOrDefault(property =>
+            property.Name.Equals(propertyName, StringComparison.Ordinal) &&
+            property.GetIndexParameters().Length == 0 &&
+            typeof(TestComposition).IsAssignableFrom(property.PropertyType));
     }
 
     private static void ValidateConfig(

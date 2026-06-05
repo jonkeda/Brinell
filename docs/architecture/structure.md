@@ -64,7 +64,7 @@ Brinell/
 
 **`srcnew/Brinell.Core/`:**
 - Purpose: Platform-agnostic framework contracts — the only project with zero automation driver dependencies
-- Contains: `Interfaces/`, `Abstractions/Controls/`, `Locators/`, `Exceptions/`, `Configuration/`, `Logging/`, `Services/`, `Models/`, `Testing/`, `Utilities/`, `Attributes/`
+- Contains: `Interfaces/`, `Abstractions/Controls/`, `Composition/`, `Locators/`, `Exceptions/`, `Configuration/`, `Logging/`, `Services/`, `Models/`, `Testing/`, `Utilities/`, `Attributes/`
 - Key files: `Interfaces/IControlObject.cs`, `Interfaces/IPageObject.cs`, `Interfaces/IDriver.cs`, `Interfaces/ITestContext.cs`, `Locators/Locator.cs`, `Configuration/TimeoutSettings.cs`
 
 **`srcnew/Brinell.Maui/`:**
@@ -149,7 +149,7 @@ Brinell/
 
 **New page object in UITests:**
 - Implementation: `testsnew/Brinell.Maui.UITests/Pages/{PageName}Page.cs` — inherit `PageObjectBase<{PageName}Page>`
-- Registration: add to `testsnew/Brinell.Maui.UITests/AppiumFixture.cs`
+- Registration: add `[TestPage]`; fixture uses `[TestModuleScan]` and `TestComposition.ForFixture(...)`
 - Tests: `testsnew/Brinell.Maui.UITests/Tests/{Feature}/{PageName}Tests.cs`
 
 **New platform driver:**

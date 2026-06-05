@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using Brinell.Presenter.Uat.Tests.PageObjects;
 using Brinell.Presenter.ViewModels;
 
@@ -6,14 +7,16 @@ namespace Brinell.Presenter.Uat.Tests.Runtime;
 [Collection(PresenterUatCollection.CollectionName)]
 [Trait("Category", "UAT")]
 [Trait("Target", "Presenter")]
-public sealed class PresenterWorkspaceTreeTests
+public sealed class PresenterWorkspaceTreeTests : IDisposable
 {
     private const string GreetingScenarioName = "Greeting appears when a name is entered";
+    private readonly IServiceScope _scope;
     private readonly PresenterPage _page;
 
     public PresenterWorkspaceTreeTests(PresenterFixture fixture)
     {
-        _page = fixture.PresenterPage;
+        _scope = fixture.Composition.CreateScope();
+        _page = _scope.ServiceProvider.GetRequiredService<PresenterPage>();
     }
 
     [Fact]
@@ -107,5 +110,10 @@ public sealed class PresenterWorkspaceTreeTests
         }
 
         return condition();
+    }
+
+    public void Dispose()
+    {
+        _scope.Dispose();
     }
 }
