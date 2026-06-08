@@ -30,7 +30,9 @@ public static class UatScenarioSource
 
         var scenarioDirectory = Path.Combine(baseDirectory ?? AppContext.BaseDirectory, folderName);
         IEnumerable<string> files = Directory.Exists(scenarioDirectory)
-            ? Directory.EnumerateFiles(scenarioDirectory, "*.uat.md").Order(StringComparer.OrdinalIgnoreCase)
+            ? Directory
+                .EnumerateFiles(scenarioDirectory, "*.uat.md", SearchOption.AllDirectories)
+                .Order(StringComparer.OrdinalIgnoreCase)
             : Array.Empty<string>();
 
         return ApplyFilter(files, ReadFilter(filterEnvironmentVariable));

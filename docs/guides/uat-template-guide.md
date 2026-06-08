@@ -46,6 +46,11 @@ Supported sections:
 - tag lines immediately before a scenario
 - `Given`, `When`, `Then`, `And`, `But`
 
+Scenario discovery scans `Scenarios/**/*.uat.md` recursively, so larger apps
+can keep executable specs in module folders such as
+`Scenarios/Contacts/00-smoke.uat.md` and
+`Scenarios/Projects/01-list-basic.uat.md`.
+
 ## Standard Metadata
 
 | Field | Purpose |
