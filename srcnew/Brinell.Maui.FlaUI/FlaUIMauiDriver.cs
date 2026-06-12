@@ -18,6 +18,8 @@ namespace Brinell.Maui.FlaUI;
 /// </summary>
 public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
 {
+    private const int SwRestore = 9;
+
     private readonly UIA3Automation _automation;
     private readonly Application? _application;
     private readonly AutomationElement _rootElement;
@@ -362,6 +364,15 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
 
     private void BringRootWindowToForeground()
     {
+        var nativeWindowHandle = _rootElement.Properties.NativeWindowHandle.ValueOrDefault;
+        if (nativeWindowHandle != 0)
+        {
+            var handle = new IntPtr(nativeWindowHandle);
+            ShowWindow(handle, SwRestore);
+            SetForegroundWindow(handle);
+            WaitHelper.Pause(100);
+        }
+
         try
         {
             if (_rootElement.Patterns.Window.IsSupported)
@@ -395,6 +406,12 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
             }
         }
     }
+
+    [DllImport("user32.dll")]
+    private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+    [DllImport("user32.dll")]
+    private static extern bool SetForegroundWindow(IntPtr hWnd);
 
     private void TryApplyRequestedWindowPlacement()
     {
