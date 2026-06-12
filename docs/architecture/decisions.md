@@ -1,99 +1,39 @@
 # Architectural Decisions
 
-**Version:** 3.2 | **Status:** Active
+This page records active decisions that should guide new Brinell work.
 
-## AD-001: Clean Architecture with Interface Segregation
+## AD-001: Core Stays Platform-Neutral
 
-**Decision:** Core layer contains only interfaces and value types. No implementations.
+`Brinell.Core` owns contracts and shared utilities. Platform element types stay
+in platform projects.
 
-**Rationale:** Enables platform libraries to implement interfaces without coupling to each other. Test code depends on interfaces, not implementations.
+## AD-002: Page Objects Own Structure
 
-**Consequence:** Each platform project is independent; adding a platform requires zero changes to Core.
+Tests should describe user intent. Page objects expose meaningful operations and
+controls; they do not leak locator plumbing into test methods.
 
-## AD-002: Interface-First Design
+## AD-003: Controls Own Repeated Interaction Behavior
 
-**Decision:** Define all control capabilities as interfaces before any implementation.
+If the same interaction pattern appears in multiple tests or pages, move it into
+a Brinell control or shared platform helper.
 
-**Rationale:** Interfaces define the test-writer's API contract. Implementations are platform-specific details.
+## AD-004: Wait For State
 
-**Consequence:** 25 interfaces in `Brinell.Core/Interfaces/`, each representing a single capability.
+Do not fix tests by adding arbitrary sleeps or longer delays. Wait for concrete
+UI state, navigation completion, busy sentinel changes, text, visibility,
+enabled state, request observation, or another observable condition.
 
-## AD-003: Platform-Specific Base Classes
+## AD-005: Pointer Input Is Opt-In
 
-**Decision:** Each platform has its own base class hierarchy, not shared abstract classes.
+Routine actions should use semantic control APIs and UI automation patterns.
+Pointer input is only for gesture-only surfaces and stays gated by
+`BRINELL_ALLOW_POINTER_INPUT`.
 
-**Rationale:** Platforms differ fundamentally (sync vs async, Appium vs Playwright, element models). Shared base classes leak abstractions.
+## AD-006: xUnit Assert Only
 
-**Consequence:** `MauiControlBase`, `BlazorControlBase`, etc. are independent hierarchies implementing Core interfaces.
+Use xUnit `Assert`. Do not add FluentAssertions.
 
-## AD-004: Separate Technology Adapters
+## AD-007: Shared Artifact Layout
 
-**Decision:** Driver implementations (Appium, FlaUI, Playwright) are in separate NuGet packages.
-
-**Rationale:** Tests should choose their driver at configuration time, not compile time. Enables driver swapping for CI vs local.
-
-**Consequence:** `Brinell.Maui.Appium` and `Brinell.Maui.FlaUI` are separate projects with `MauiDriverFactory` as the selector.
-
-## AD-005: Synchronous API for MAUI
-
-**Decision:** MAUI control API is synchronous. Blazor may be async.
-
-**Rationale:** Appium operations are inherently synchronous. Async wrappers add complexity without benefit. Test code reads better without `await`.
-
-**Consequence:** All MAUI `Is*/Wait*/Assert*` methods are synchronous. Blazor interfaces may introduce `Task<>`-returning variants.
-
-## AD-006: Nullable Skip Pattern
-
-**Decision:** `null` expected values in Wait/Assert methods mean "skip this check."
-
-**Rationale:** Enables data-driven tests where some assertions are conditional without if-branching.
-
-**Consequence:** Every Wait/Assert parameter is nullable. Methods must check for null before operating.
-
-## AD-007: Fluent TScope Return
-
-**Decision:** Action and assertion methods return `TScope` (the scope/page type) for chaining.
-
-**Rationale:** Enables fluent test code: `page.UserName.Enter("test").Password.Enter("pass").Submit.Click()`
-
-**Consequence:** Generic `TScope` type parameter threads through all interfaces and base classes.
-
-## AD-008: Locator Value Object
-
-**Decision:** Use `Locator` immutable value object instead of raw strings for element identification.
-
-**Rationale:** Supports multiple strategies (AutomationId, XPath, CSS, etc.) with platform-specific mapping.
-
-**Consequence:** All element-finding methods accept `Locator`. Implicit `string → Locator` conversion for convenience.
-
-## AD-009: No FluentAssertions
-
-**Decision:** Use xUnit `Assert` exclusively. No FluentAssertions dependency.
-
-**Rationale:** Licensing concerns. The framework's own `Assert*` methods provide fluent assertions for control state.
-
-**Consequence:** Custom assertion methods on controls replace FluentAssertions patterns.
-
-## AD-010: CSV Structured Logging
-
-**Decision:** Log to structured CSV files, one per test.
-
-**Rationale:** Easy to parse, diff, and aggregate. No dependency on logging frameworks.
-
-**Consequence:** `ITestLogger` writes CSV rows with timestamp, level, control, action, and outcome.
-
-## AD-011: Container Scoping Architecture
-
-**Decision:** Containers (`MauiContainerBase<TParent, TSelf>`) provide scoped element finding with cached roots and parent navigation.
-
-**Rationale:** Child element searches must be scoped within a container's root element to prevent finding wrong elements with the same ID in different containers. Root element caching (with stale detection/invalidation) avoids redundant lookups. Parent navigation enables fluent chains up the hierarchy (e.g., `container.Control.Click().Parent.StatusLabel.AssertText(...)`).
-
-**Consequence:** Two generic type parameters: `TParent` for navigating back to the parent scope, `TSelf` for fluent returns within the container. Adds complexity to container setup but enables precise element targeting.
-
-## AD-012: Self-Contained Platform Packages
-
-**Decision:** Each platform package contains its complete implementation without shared abstract base classes across platforms.
-
-**Rationale:** Platforms differ fundamentally (sync vs async, Appium vs Playwright, element models). Shared base classes would leak abstractions. Self-contained packages eliminate diamond dependency problems and enable platform-specific optimizations.
-
-**Consequence:** Some code patterns are duplicated across platforms, but each can evolve independently.
+Screenshots, logs, traces, UAT output, and runner reports should use the shared
+`TestResults/<run-id>/suites/<suite>/` layout.

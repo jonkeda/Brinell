@@ -1,9 +1,62 @@
 # UAT Template Guide
 
-Brinell UAT files use Markdown so product-level acceptance checks can be
-reviewed without reading C# test code.
+Brinell UAT tests execute markdown scenarios using a `uat.config.md` file and
+one or more `.uat.md` scenario files.
 
-## Scenario Template
+## Project Layout
+
+```text
+testsnew/Brinell.<Platform>.Uat.Tests/
+  uat.config.md
+  Scenarios/
+    scenario-name.uat.md
+  ExpectedFailures/
+    known-failure.uat.md
+  TestSettings/
+    settings.json
+```
+
+## Config Shape
+
+```markdown
+# UAT Config
+
+## Runtime
+
+| Field | Value |
+| --- | --- |
+| Target | MAUI |
+| Fixture | Appium |
+
+## Reporting
+
+| Field | Value |
+| --- | --- |
+| OutputDirectory | $(BrinellTestResults)/uat |
+| ScreenshotOnFailure | true |
+| IncludeRuntimeTrace | true |
+
+## Settings
+
+| Field | Value |
+| --- | --- |
+| Root | TestSettings |
+| DefaultFile | testsettings.json |
+| LocalFile | testsettings.local.json |
+| ScenarioConvention | scenarios/{ScenarioId}.json |
+
+## Skip Rules
+
+| Tag | EnvironmentVariable |
+| --- | --- |
+| hardware | BRINELL_UAT_HARDWARE |
+| live-api | BRINELL_UAT_LIVE_API |
+```
+
+`$(BrinellTestResults)` resolves through the shared Brinell artifact provider.
+If `OutputDirectory` is omitted, UAT should use the suite `uat/` folder.
+
+## Scenario File Shape
 
 ```markdown
 # UAT: MAUI Main Page Greeting
@@ -18,12 +71,11 @@ reviewed without reading C# test code.
 | Tags | smoke, maui, greeting |
 | Mode | Automated |
 | Requires | Deterministic |
-| Owner | QA |
 | Priority | Smoke |
-| Evidence | screenshot, transcript |
+| Evidence | none |
 
-@smoke @maui @greeting @automated @deterministic @uat-001-1
-## Scenario: UAT-001.1 Greeting appears when a name is entered
+@smoke @maui @greeting @automated @deterministic
+## Scenario: Greeting appears when a name is entered
 
 Given I am on the Main page
 When I clear Name
@@ -34,185 +86,100 @@ And Greeting should be visible
 And Name should be enabled
 ```
 
-Supported sections:
+The scenario parser supports this document shape:
 
-- `# UAT: ...`
-- `## Metadata`
-- optional `## Background`
-- optional `## Data: ...`
-- `## Scenario: ...`
-- `## Scenario Outline: ...`
-- `### Examples`
-- tag lines immediately before a scenario
-- `Given`, `When`, `Then`, `And`, `But`
+- The file must contain exactly one `# UAT: <title>` heading.
+- `## Metadata` is optional for parsing, but the format tests expect `App`,
+  `Area`, `Target`, `Tags`, `Mode`, `Requires`, `Priority`, and `Evidence`.
+  The table columns must be `Field` and `Value`.
+- `## Background` is optional and contains shared `Given`, `When`, `Then`,
+  `And`, or `But` steps.
+- `## Data: <name>` is optional and must contain a markdown table.
+- Tags are written as `@tag` lines and must be immediately followed by
+  `## Scenario:` or `## Scenario Outline:`.
+- `## Scenario: <name>` contains one or more step lines. Numbered lists and
+  generic `## Steps` / `## Expected` sections are not part of the parser
+  format.
+- `## Scenario Outline: <name>` expands one scenario per row in a required
+  `### Examples` table. Step text and step table cells can reference example
+  columns with `<columnName>` placeholders.
 
-## Standard Metadata
+For how step text binds to executable commands, see
+[UAT Phrases And Flows](uat-phrases-and-flows.md).
 
-| Field | Purpose |
+Scenario steps may include an immediate markdown table:
+
+```markdown
+## Scenario: Valid user can sign in
+
+Given I am on the Login page
+When I sign in with credentials
+| Field | Value |
 | --- | --- |
-| App | Application under test |
-| Area | Product area covered by the file |
-| Target | Platform target, such as MAUI, WPF, HTML, or Stride |
-| Tags | Human-readable file-level tags |
-| Mode | Automated, Semi-automated, Manual, Hardware, or Live API |
-| Requires | Deterministic, Hardware, Live API, HeyCyan, A9, or USB Camera |
-| Owner | Person or team responsible for sign-off |
-| Priority | Smoke, Critical, Normal, or Exploratory |
-| Evidence | Expected evidence type: screenshot, transcript, log, or artifact |
+| User name | ada@example.com |
+| Password | correct-password |
+Then I should see "Welcome Ada"
+```
 
-Brinell accepts additional metadata fields. Keep new fields stable once reports
-depend on them.
+Scenario outlines use `### Examples`:
 
-## Standard Tags
+```markdown
+## Scenario Outline: Login result is shown
 
-Common tags:
+Given I am on the Login page
+When I enter credentials
+| Field | Value |
+| --- | --- |
+| User name | <user> |
+| Password | <password> |
+Then I should see "<result>"
+
+### Examples
+
+| user | password | result |
+| --- | --- | --- |
+| ada@example.com | correct-password | Dashboard |
+| locked@example.com | correct-password | Account locked |
+```
+
+## Authoring Rules
+
+- Use stable user-facing intent in steps.
+- Keep locator names in commands or page objects, not prose.
+- Put repeated command behavior in Brinell commands or controls.
+- Keep expected failures in `ExpectedFailures/` with a clear reason.
+- Keep generated output under `TestResults/`, not under source folders.
+
+## Settings
+
+UAT settings are resolved through `JsonTestSettingsProvider`.
+
+Default lookup:
 
 ```text
-@smoke @regression @manual @hardware @live-api
-@maui @windows @android @ios
-@deterministic @openai-live
-@uat-003 @uat-003-6
+TestSettings/
+  testsettings.json
+  testsettings.local.json
+  scenarios/<ScenarioId>.json
 ```
 
-Scenario IDs can be represented in the title, in a tag, or both:
+`testsettings.local.json` is optional. Scenario settings are optional and are
+selected from a scenario tag that starts with `uat-`, for example `@uat-login`.
 
-```markdown
-@uat-003-6
-## Scenario: UAT-003.6 Sub-button hides action rows during capture
-```
-
-## Background Reset Pattern
-
-Use `## Background` for deterministic setup shared by every scenario in a file:
-
-```markdown
-## Background
-
-Given the app is running in deterministic UAT mode
-And app settings are reset
-And the transcript is empty
-```
-
-The phrases must bind to commands supplied by the project runtime.
-
-## Data Tables
-
-Use `## Data:` for named deterministic inputs:
-
-```markdown
-## Data: CameraFrames
-
-| Name | Asset | Description |
-| --- | --- | --- |
-| Office | assets/camera/office.jpg | Indoor person-facing frame |
-```
-
-## Config Template
-
-```markdown
-# UAT Config
-
-## Runtime
-
-| Field | Value |
-| --- | --- |
-| Target | MAUI |
-| Fixture | Appium |
-| AppPath | ../../samples/App/bin/Debug/app.exe |
-| WorkingDirectory | ../.. |
-
-## Assemblies
-
-| Kind | Assembly |
-| --- | --- |
-| Pages | ../App.UITests/bin/Debug/net10.0/App.UITests.dll |
-| Commands | ../../srcnew/Brinell.Uat/bin/Debug/net10.0/Brinell.Uat.dll |
-
-## Discovery
-
-| Field | Value |
-| --- | --- |
-| RequireExplicitUatAttributes | false |
-| AllowNameInference | true |
+Settings files must be JSON objects. The provider reads a top-level `settings`
+object and supports an `include` array for required included files.
 
 ## Reporting
 
-| Field | Value |
-| --- | --- |
-| ScreenshotOnFailure | true |
-| IncludeRuntimeTrace | true |
+Each scenario writes a result JSON file to the configured reporting directory.
+If `IncludeRuntimeTrace` is true, the report includes step traces, diagnostics,
+discovery data, and command catalog data. Scenario result files are also
+registered in the shared artifact manifest as `uat-scenario` artifacts.
+
+See [Reporting And Artifacts](reporting-artifacts.md).
 
 ## Skip Rules
 
-| Tag | EnvironmentVariable |
-| --- | --- |
-| hardware | BRINELL_UAT_HARDWARE |
-| live-api | BRINELL_UAT_LIVE_API |
-```
-
-`Reporting` and `Skip Rules` are optional. `UatScenarioTestBase<TFixture>`
-passes the parsed config into execution, so tag-based skip rules return skipped
-scenario results unless the mapped environment variable is enabled with `1`,
-`true`, `yes`, or `on`.
-
-## Runtime Composition Template
-
-```csharp
-[TestModuleScan(typeof(AppUatFixture), NamespacePrefix = "App.UAT")]
-public sealed class AppUatFixture : IDisposable
-{
-    public AppUatFixture()
-    {
-        Context = CreateContext();
-
-        Composition = TestComposition.ForFixture(this, services =>
-            services.AddSingleton<IMauiTestContext>(Context));
-    }
-
-    public IMauiTestContext Context { get; }
-
-    public TestComposition Composition { get; }
-
-    public void NavigateToMain()
-    {
-        Context.NavigateToRoot();
-    }
-
-    public void Dispose()
-    {
-        Context.Dispose();
-    }
-}
-
-[TestPage("Main")]
-public sealed class MainPage : PageObjectBase<MainPage>
-{
-    public MainPage(IMauiTestContext context)
-        : base(context)
-    {
-    }
-
-    public Entry<MainPage> NameEntry => new(this, "NameEntry");
-
-    public Button<MainPage> GreetButton => new(this, "GreetButton");
-
-    public Label<MainPage> GreetingLabel => new(this, "GreetingLabel");
-}
-
-public sealed class AppUatScenarioTests(AppUatFixture fixture)
-    : UatScenarioTestBase<AppUatFixture>(fixture),
-        IClassFixture<AppUatFixture>
-{
-    public static IEnumerable<object[]> ScenarioFiles => GetScenarioFiles();
-
-    protected override UatRuntimeValidationOptions RuntimeValidation { get; } =
-        new(Target: "MAUI", Fixture: "Appium");
-
-    [Theory(Timeout = 120000)]
-    [MemberData(nameof(ScenarioFiles))]
-    public Task UatFile_Passes(string filePath)
-    {
-        return RunUatFileAsync(filePath);
-    }
-}
-```
+Skip rules connect scenario tags to environment variables. A scenario tagged
+with `@hardware` is skipped unless its configured environment variable is
+enabled with `1`, `true`, `yes`, or `on`.
