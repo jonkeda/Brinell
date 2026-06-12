@@ -104,6 +104,12 @@ The scenario parser supports this document shape:
   `### Examples` table. Step text and step table cells can reference example
   columns with `<columnName>` placeholders.
 
+Scenario discovery scans `Scenarios/**/*.uat.md` recursively, so larger apps
+can keep executable specs in module folders such as
+`Scenarios/Contacts/00-smoke.uat.md` and
+`Scenarios/Projects/01-list-basic.uat.md`.
+
+## Standard Metadata
 For how step text binds to executable commands, see
 [UAT Phrases And Flows](uat-phrases-and-flows.md).
 
