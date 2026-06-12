@@ -1,33 +1,45 @@
-# Control Object Framework — Index
+# Control Object Index
 
-**Status:** Active | Based on implementation in `srcnew/Brinell.Core/Interfaces/`
+Brinell controls wrap platform elements with a consistent, test-friendly API.
 
-## Documents
+## Control Responsibilities
 
-| Document | Content |
-|----------|---------|
-| [001-INTERFACES.md](001-INTERFACES.md) | All 25 interfaces with method signatures |
-| [classes/](classes/) | Class specifications by category |
-| [hierarchy/](hierarchy/) | Platform hierarchy and base class specs |
-| [TESTING-GUIDE.md](TESTING-GUIDE.md) | Mockability and test patterns |
+Controls should:
 
-## Design Rules
+- expose semantic actions such as `Click`, `SetText`, `SelectItem`, and
+  `WaitReady`;
+- hide driver-specific locators and element details;
+- wait for state when performing actions;
+- provide clear assertions and diagnostics;
+- avoid pointer or coordinate APIs for routine interactions.
 
-1. **Nullable expected:** `null` value in Wait/Assert = skip (no-op)
-2. **Locator system:** `Locator` value object with 14 strategies via factory methods
-3. **Parameter order:** `required` → `nullable expected` → `message?` → `timeoutMs?`
-4. **Fluent chaining:** action/assertion methods return `TScope`
-5. **Tri-state queries:** `Is*()` returns `bool?` — null means element not found
+Controls should not:
 
-## Interface Categories
+- know test-specific business assertions;
+- depend on app-specific page objects;
+- use arbitrary sleeps to hide race conditions;
+- swallow driver failures without context.
 
-| Category | Interfaces | Count |
-|----------|-----------|-------|
-| Foundation | `IControlObject`, `IClickableControlObject`, `IFocusableControlObject` | 3 |
-| Text | `ITextControlObject`, `IEditableTextControlObject` | 2 |
-| Selection | `ISelectorControlObject`, `IToggleControlObject`, `ITabControlObject`, `IExpandableControlObject` | 4 |
-| Range | `IRangeControlObject`, `IProgressControlObject` | 2 |
-| DateTime | `IDateControlObject`, `ITimeControlObject` | 2 |
-| Scrolling | `IScrollableControlObject`, `ISwipeableControlObject`, `IRefreshableControlObject` | 3 |
-| Infrastructure | `IElement`, `IElementScope`, `IPagedScope`, `IPageObject`, `IDriver`, `IDiagnosticDriver`, `ITestContext`, `IContainerControl`, `IScreenshotService` | 9 |
-| **Total** | | **25** |
+## Common Control Families
+
+| Family | Examples |
+| --- | --- |
+| Foundation | base controls, containers, pages, contexts |
+| Input | entries, text boxes, buttons |
+| Toggle | checkboxes, switches |
+| Selection | pickers, combo boxes, radio groups |
+| Collection | lists, tables, item containers |
+| Range | sliders, steppers, progress |
+| Display | labels, images, status text |
+| Navigation | tabs, menus, links |
+| Media | image/video style controls |
+
+## Source Of Truth
+
+- Shared interfaces: `srcnew/Brinell.Core/Interfaces`
+- Locators: `srcnew/Brinell.Core/Locators`
+- MAUI controls: `srcnew/Brinell.Maui/Controls`
+- WPF/WinForms controls: `srcnew/Brinell.Wpf`, `srcnew/Brinell.WinForms`
+- Web controls: `srcnew/Brinell.Html`, `srcnew/Brinell.Html.Playwright`
+
+See [Core Interfaces](interfaces.md).

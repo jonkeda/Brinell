@@ -1,233 +1,109 @@
-# Quick Start Guide
+# Quick Start
 
-Get up and running with the UI Test Framework in 5 minutes.
+This page gets a Brinell developer from a clean checkout to a compiled framework
+and a first page-object style test.
 
----
+## Build The Framework
 
-## Installation
+Working directory: Brinell root.
 
-### 1. Add Package References
-
-```xml
-<PackageReference Include="xunit" Version="2.9.*" />
-<PackageReference Include="xunit.runner.visualstudio" Version="2.9.*" />
-
-<!-- Choose your platform -->
-<ProjectReference Include="..\..\UITestFramework\Oravey.UITestFramework.Wpf.csproj" />
-<!-- OR -->
-<ProjectReference Include="..\..\UITestFramework\Oravey.UITestFramework.Maui.csproj" />
-<!-- OR for Web (Selenium) -->
-<ProjectReference Include="..\..\UITestFramework\Oravey.UITestFramework.Html.csproj" />
-<!-- OR for Web (Playwright) -->
-<ProjectReference Include="..\..\Brinell.Html.Playwright\Brinell.Html.Playwright.csproj" />
+```powershell
+dotnet build srcnew\Brinell.sln -v:minimal /nr:false
 ```
 
-### 2. Create Configuration File
+Use `srcnew\Brinell.sln` as the broad active compile check. It covers many
+source, sample, and test projects, but it is not a complete project inventory.
+The top-level `Brinell.sln` includes a different slice plus tools and can fail
+for tool-specific restore rules.
 
-Create `appsettings.json` in your test project:
+## Add Packages
 
-```json
-{
-  "UITest": {
-    "Platform": "Windows",
-    "ApplicationPath": "path/to/YourApp.exe",
-    "DefaultTimeoutMs": 10000,
-    "LogOutputPath": "logs"
-  }
-}
+For package consumers:
+
+```powershell
+dotnet add package Brinell.Core
+dotnet add package Brinell.Maui
+dotnet add package Brinell.Maui.FlaUI
+dotnet add package Brinell.Html.Playwright
+dotnet add package Brinell.Wpf
+dotnet add package Brinell.WinForms
+dotnet add package Brinell.Mocking
+dotnet add package Brinell.Uat
 ```
 
----
+For repo-local tests, prefer project references to `srcnew/*` projects.
 
-## Your First Test (WPF Example)
+## First Page Object
 
-### Step 1: Create a Page Object
+Page objects should expose user intent and hide locator plumbing.
 
 ```csharp
-using Oravey.UITestFramework.Wpf;
+using Brinell.Core.Locators;
+using Brinell.Maui.Controls.Text;
+using Brinell.Maui.Pages;
 
-public class MainWindowPage : BusyPageBase
+public sealed class LoginPage : PageObjectBase<LoginPage>
 {
-    protected override string BusyIndicatorId => "MainBusyIndicator";
-    
-    public ButtonControl SettingsButton { get; }
-    public LabelControl WelcomeLabel { get; }
-    
-    public MainWindowPage(FlaUITestContext context) 
-        : base(context, "MainWindow")
+    public LoginPage(MauiTestContext context)
+        : base(context, "Login")
     {
-        SettingsButton = new ButtonControl(context, this, "SettingsButton");
-        WelcomeLabel = new LabelControl(context, this, "WelcomeLabel");
     }
-    
-    public void NavigateToSettings()
+
+    public Entry Username => Get<Entry>(Locator.ByAutomationId("UsernameEntry"));
+    public Entry Password => Get<Entry>(Locator.ByAutomationId("PasswordEntry"));
+    public Button SignIn => Get<Button>(Locator.ByAutomationId("SignInButton"));
+
+    public void SignInAs(string username, string password)
     {
-        SettingsButton.Click();
+        Username.SetText(username);
+        Password.SetText(password);
+        SignIn.Click();
     }
 }
 ```
 
-### Step 2: Create a Test Class
+Use the concrete platform page-object base and controls that match the test
+project you are writing. Keep repeated interaction behavior in Brinell controls,
+not in test methods.
+
+## First Test Shape
 
 ```csharp
 using Xunit;
-using Oravey.UITestFramework.Wpf.Testing;
 
-public class MainWindowTests : WpfUITestBase
+public sealed class LoginTests
 {
-    [Fact]
-    public void MainWindow_Displays_Welcome_Message()
+    private readonly AppFixture _fixture;
+
+    public LoginTests(AppFixture fixture)
     {
-        // Arrange
-        var mainPage = LaunchApp<MainWindowPage>();
-        mainPage.WaitForPageReady();
-        
-        // Assert
-        mainPage.WelcomeLabel.AssertText("Welcome!");
+        _fixture = fixture;
     }
-    
+
     [Fact]
-    public void Settings_Button_Navigates_To_Settings()
+    public void ValidCredentials_ShowHomePage()
     {
-        // Arrange
-        var mainPage = LaunchApp<MainWindowPage>();
-        mainPage.WaitForPageReady();
-        
-        // Act
-        mainPage.NavigateToSettings();
-        
-        var settingsPage = new SettingsPage(Context);
-        settingsPage.WaitForPageReady();
-        
-        // Assert
-        settingsPage.AssertDisplayed();
+        var login = _fixture.OpenLoginPage();
+
+        login.SignInAs("user@example.test", "password");
+
+        var home = _fixture.CurrentHomePage();
+        Assert.True(home.IsVisible(), "Home page should be visible after sign in.");
     }
 }
 ```
 
-### Step 3: Run Tests
+Rules:
 
-```bash
-dotnet test
-```
-
----
-
-## Key Concepts in 60 Seconds
-
-### 1. Page Objects Encapsulate Structure
-
-```csharp
-public class LoginPage : PageBase
-{
-    public TextBoxControl Username { get; }
-    public TextBoxControl Password { get; }
-    public ButtonControl LoginButton { get; }
-    
-    public void Login(string user, string pass)
-    {
-        Username.EnterText(user);
-        Password.EnterText(pass);
-        LoginButton.Click();
-    }
-}
-```
-
-### 2. Controls Have Built-In Waits
-
-```csharp
-// No need for manual waits - controls wait automatically
-button.Click();  // Waits for visible + enabled
-textBox.EnterText("value");  // Waits for enabled
-```
-
-### 3. Four-Tier State Verification
-
-```csharp
-// Is* - Immediate check
-if (button.IsVisible()) { }
-
-// Wait* - Poll until condition
-button.WaitVisible(true);
-
-// Check* - Wait + throw on failure
-button.CheckClickable();
-
-// Assert* - Semantic assertion with logging
-button.AssertText("Expected");
-```
-
-### 4. IsBusy Tracking for Page Readiness
-
-```csharp
-// Navigate and wait for page ready
-shell.NavigateToSettings();
-var settings = new SettingsPage(Context);
-settings.WaitForPageReady();  // Waits for IsBusy = false
-
-// Now safe to interact
-settings.SaveButton.Click();
-```
-
----
+- Use xUnit `Assert`.
+- Do not add FluentAssertions.
+- Wait for concrete UI state.
+- Do not add arbitrary sleeps to fix timing.
+- Use semantic control operations such as `SetText`, `Click`, `SelectItem`, and
+  `WaitReady`.
 
 ## Next Steps
 
-- **[Framework Overview](02-framework-overview.md)** - Understand the architecture
-- **[Control Objects](04-control-objects.md)** - Learn about control patterns
-- **[Page Objects](05-page-objects.md)** - Master page encapsulation
-- **[Test Writing Guide](15-test-writing-guide.md)** - Quick reference for common patterns
-- **[Playwright Guide](platform-guides/playwright.md)** - Modern browser automation alternative
-
----
-
-## Common Patterns
-
-### Navigation Pattern
-
-```csharp
-// In page object
-public void NavigateToSettings()
-{
-    SettingsButton.Click();
-}
-
-// In test
-homePage.NavigateToSettings();
-var settingsPage = new SettingsPage(Context);
-settingsPage.WaitForPageReady();
-```
-
-### Assertion Pattern
-
-```csharp
-// Visibility assertions
-element.AssertVisible();
-element.AssertNotVisible();
-
-// State assertions
-button.AssertEnabled();
-checkbox.AssertChecked();
-
-// Value assertions
-label.AssertText("Expected Text");
-textBox.AssertText("Expected Value");
-```
-
-### Waiting Pattern
-
-```csharp
-// Wait for element state
-element.WaitVisible(true);
-element.WaitEnabled(true);
-
-// Wait for specific value
-element.WaitText("Expected");
-
-// Wait for page ready
-page.WaitForPageReady();
-```
-
----
-
-*Next: [Framework Overview](02-framework-overview.md)*
+- Read [Framework Overview](framework-overview.md).
+- Read [Test Writing](../guides/test-writing.md).
+- Use [Build And Test](../run/build-and-test.md) for common commands.

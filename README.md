@@ -1,198 +1,75 @@
 # Brinell
 
-[![Build](https://github.com/YOUR_USERNAME/Brinell/actions/workflows/build.yml/badge.svg)](https://github.com/YOUR_USERNAME/Brinell/actions/workflows/build.yml)
-[![NuGet](https://img.shields.io/nuget/v/Brinell.Core.svg)](https://www.nuget.org/packages/Brinell.Core)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+Brinell is a cross-platform UI testing framework for .NET applications. It
+provides shared page-object, control-object, synchronization, artifact, mocking,
+and UAT patterns across desktop, web, MAUI, Stride, native Android, and the
+Presenter shell.
 
-A cross-platform UI testing framework for .NET applications. Brinell provides a unified API for automating WPF, HTML/Web, and MAUI applications with built-in API mocking support.
+## Current Docs
 
-## Features
+- [Documentation index](docs/README.md)
+- [Quick Start](docs/getting-started/quick-start.md)
+- [Framework Overview](docs/getting-started/framework-overview.md)
+- [Build And Test](docs/run/build-and-test.md)
+- [Spec Status](docs/specs/README.md)
 
-- **Unified API**: Consistent interface across WPF, HTML, MAUI, and Stride platforms
-- **Page Object Pattern**: Built-in support for maintainable test architecture
-- **Rich Control Library**: Pre-built control wrappers for common UI elements
-- **Visual Validation**: Screenshot capture and comparison capabilities
-- **API Mocking**: WireMock integration for isolated UI testing
-- **Stride 3D Engine Support**: UI testing for Stride game engine applications
-- **Multi-targeting**: Supports .NET 8.0, .NET 9.0, and .NET 10.0
+The previous documentation tree is preserved in [docs2](docs2/README.md) while
+the active docs are rebuilt.
+
+## Build
+
+Working directory: Brinell root.
+
+```powershell
+dotnet build srcnew\Brinell.sln -v:minimal /nr:false
+```
+
+Use `srcnew\Brinell.sln` as the broad active compile check. It covers many
+source, sample, and test projects, but it is not a complete project inventory.
+The top-level `Brinell.sln` includes a different slice plus tools and may fail
+for tool-specific restore policies even when the framework projects build.
 
 ## Packages
 
-| Package | Description |
-|---------|-------------|
-| [Brinell.Core](https://www.nuget.org/packages/Brinell.Core) | Core abstractions and interfaces |
-| [Brinell.Wpf](https://www.nuget.org/packages/Brinell.Wpf) | WPF automation using FlaUI |
-| [Brinell.Html](https://www.nuget.org/packages/Brinell.Html) | Web automation using Selenium |
-| [Brinell.Html.Playwright](https://www.nuget.org/packages/Brinell.Html.Playwright) | Web automation using Playwright |
-| [Brinell.Maui](https://www.nuget.org/packages/Brinell.Maui) | Mobile automation using Appium |
-| [Brinell.Stride](https://www.nuget.org/packages/Brinell.Stride) | Stride 3D game engine UI testing |
-| [Brinell.Stride.Automation](https://www.nuget.org/packages/Brinell.Stride.Automation) | In-game automation hooks for Stride |
-| [Brinell.Mocking](https://www.nuget.org/packages/Brinell.Mocking) | API mocking using WireMock |
+| Package | Purpose |
+| --- | --- |
+| `Brinell.Core` | Core contracts, locators, waits, artifacts, and shared services |
+| `Brinell.Maui` | MAUI controls and page-object infrastructure |
+| `Brinell.Maui.Appium` | Appium driver adapter for MAUI/mobile |
+| `Brinell.Maui.FlaUI` | FlaUI driver adapter for Windows MAUI |
+| `Brinell.Maui.CommunityToolkit` | MAUI Community Toolkit control support |
+| `Brinell.Wpf` | WPF automation through FlaUI |
+| `Brinell.WinForms` | WinForms automation through FlaUI |
+| `Brinell.Html` | HTML/web testing abstractions and Selenium support |
+| `Brinell.Html.Playwright` | Playwright-backed web automation |
+| `Brinell.Blazor` | Blazor-focused testing helpers |
+| `Brinell.Stride` | Stride UI testing integration |
+| `Brinell.Automation` | In-app automation hooks used by Stride-style tests |
+| `Brinell.Mocking` | WireMock and mock sensor helpers |
+| `Brinell.NativeAndroid` | Native Android automation helpers |
+| `Brinell.Uat` | Markdown-driven UAT scenario runtime |
+| `Brinell.Presenter` | Desktop presenter for UAT workspaces |
 
-## Installation
+## Source Layout
 
-```bash
-# For WPF applications
-dotnet add package Brinell.Wpf
+| Path | Purpose |
+| --- | --- |
+| `srcnew/` | Active source projects |
+| `testsnew/` | Active unit, UI, and UAT tests |
+| `samples/` | Sample applications used by tests and demos |
+| `docs/` | Active documentation |
+| `docs2/` | Preserved previous documentation |
+| `.my/reports/` | Planning and research notes |
 
-# For web applications (Selenium)
-dotnet add package Brinell.Html
+## Core Rules
 
-# For web applications (Playwright)
-dotnet add package Brinell.Html.Playwright
-
-# For MAUI/mobile applications
-dotnet add package Brinell.Maui
-
-# For Stride 3D game engine
-dotnet add package Brinell.Stride           # Test project
-dotnet add package Brinell.Stride.Automation  # Game project
-
-# For API mocking
-dotnet add package Brinell.Mocking
-```
-
-## Quick Start
-
-### WPF Application Testing
-
-```csharp
-using Brinell.Wpf.Testing;
-using Brinell.Wpf.Controls;
-using Brinell.Wpf.Infrastructure;
-
-public class LoginPageTests : WpfUITestBase
-{
-    [UITest]
-    public void Login_WithValidCredentials_NavigatesToDashboard()
-    {
-        // Arrange
-        var loginPage = new LoginPage(Context);
-        
-        // Act
-        loginPage.EnterUsername("testuser");
-        loginPage.EnterPassword("password123");
-        loginPage.ClickLogin();
-        
-        // Assert
-        var dashboardPage = new DashboardPage(Context);
-        Assert.True(dashboardPage.IsDisplayed);
-    }
-}
-```
-
-### Page Object Pattern
-
-```csharp
-using Brinell.Wpf.Controls.Base;
-using Brinell.Wpf.Controls;
-
-public class LoginPage : PageBase
-{
-    public TextBoxControl UsernameTextBox => FindControl<TextBoxControl>("UsernameTextBox");
-    public TextBoxControl PasswordTextBox => FindControl<TextBoxControl>("PasswordTextBox");
-    public ButtonControl LoginButton => FindControl<ButtonControl>("LoginButton");
-    
-    public LoginPage(FlaUITestContext context) : base(context) { }
-    
-    public void EnterUsername(string username) => UsernameTextBox.SetText(username);
-    public void EnterPassword(string password) => PasswordTextBox.SetText(password);
-    public void ClickLogin() => LoginButton.Click();
-}
-```
-
-### Web Application Testing
-
-```csharp
-using Brinell.Html.Testing;
-using Brinell.Html.Controls;
-
-public class WebLoginTests : HtmlUITestBase
-{
-    [UITest]
-    public void Login_WithValidCredentials_ShowsWelcome()
-    {
-        // Navigate to login page
-        Context.NavigateTo("https://example.com/login");
-        
-        // Find and interact with controls
-        var usernameInput = FindControl<TextInputControl>("username");
-        var passwordInput = FindControl<TextInputControl>("password");
-        var loginButton = FindControl<ButtonControl>("login-btn");
-        
-        usernameInput.SetText("user@example.com");
-        passwordInput.SetText("password123");
-        loginButton.Click();
-        
-        // Assert
-        var welcomeLabel = FindControl<LabelControl>("welcome-message");
-        Assert.Contains("Welcome", welcomeLabel.Text);
-    }
-}
-```
-
-### API Mocking
-
-```csharp
-using Brinell.Mocking;
-
-// Create a mock API server
-var mockServer = new MockApiServer();
-mockServer.Start(9000);
-
-// Setup endpoint stubs
-var stubBuilder = new ApiStubBuilder(mockServer);
-stubBuilder
-    .ForPath("/api/users")
-    .WithMethod("GET")
-    .ReturnsJson(new[] { new { Id = 1, Name = "Test User" } });
-
-// Run your UI tests against the mocked backend
-// ...
-
-mockServer.Stop();
-```
-
-## Architecture
-
-Brinell follows a layered architecture:
-
-```
-┌───────────────────────────────────────────────────────────────────────────┐
-│                           Your UI Tests                                   │
-├───────────────────────────────────────────────────────────────────────────┤
-│  Brinell.Wpf  │  Brinell.Html  │  Brinell.Maui  │  Brinell.Stride        │
-├───────────────────────────────────────────────────────────────────────────┤
-│                           Brinell.Core                                    │
-├───────────────────────────────────────────────────────────────────────────┤
-│    FlaUI      │   Selenium/    │    Appium      │  Named Pipe + Win32    │
-│               │   Playwright   │                │  + Stride.Automation   │
-└───────────────────────────────────────────────────────────────────────────┘
-```
-
-## Test Attributes
-
-```csharp
-[UITest]                    // Marks a method as a UI test
-[SmokeTest]                 // Marks a test as part of smoke test suite
-[Platform(Platform.Wpf)]    // Specifies target platform
-[Priority(1)]               // Sets test priority (1 = highest)
-```
-
-## Documentation
-
-- **[Specifications](.specs/README.md)** — Architecture, requirements, control interfaces, and active work-in-progress specs
-- **[Quick Start](docs/01-quick-start.md)** — Getting started guide
-- **[Framework Overview](docs/02-framework-overview.md)** — How Brinell works
-
-## Contributing
-
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
+- Tests express user intent.
+- Page objects own screen structure.
+- Controls own repeated interaction behavior.
+- Wait for concrete UI state instead of adding arbitrary sleeps.
+- Use xUnit `Assert`; do not add FluentAssertions.
+- Route screenshots, logs, traces, and UAT output through `TestResults/<run-id>/`.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Changelog
-
-See [CHANGELOG.md](CHANGELOG.md) for a list of changes.
+Brinell is licensed under the MIT License. See [LICENSE](LICENSE).
