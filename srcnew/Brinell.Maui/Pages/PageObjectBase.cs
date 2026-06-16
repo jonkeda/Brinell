@@ -2,7 +2,7 @@ using Brinell.Maui.Controls;
 using Brinell.Maui.Controls.Buttons;
 using Brinell.Maui.Controls.Collection;
 using Brinell.Maui.Controls.Container;
-using Brinell.Maui.Controls.DateTime;
+using Brinell.Maui.Controls.DateTimes;
 using Brinell.Maui.Controls.Display;
 using Brinell.Maui.Controls.Media;
 using Brinell.Maui.Controls.Range;

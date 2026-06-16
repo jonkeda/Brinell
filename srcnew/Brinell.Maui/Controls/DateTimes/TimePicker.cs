@@ -1,6 +1,4 @@
-using Brinell.Core.Locators;
-
-namespace Brinell.Maui.Controls.DateTime;
+namespace Brinell.Maui.Controls.DateTimes;
 
 /// <summary>
 /// MAUI TimePicker control for time selection.
@@ -209,7 +207,7 @@ public class TimePicker<TScope> : ControlBase<TScope>
 
         return RunWithElement(nameof(SetTime), time, timeoutMs, element =>
         {
-            SetTimeCore(element, time.Value);
+            SetTimeCore(element, time.Value, timeoutMs);
         });
     }
 
@@ -219,8 +217,11 @@ public class TimePicker<TScope> : ControlBase<TScope>
     /// </summary>
     /// <param name="element">The time picker element.</param>
     /// <param name="time">The time to set.</param>
-    protected virtual void SetTimeCore(IMauiElement element, TimeSpan time)
+    /// <param name="timeoutMs"></param>
+    protected virtual void SetTimeCore(IMauiElement element, TimeSpan time, int? timeoutMs)
     {
+        Scope.WaitReady(timeoutMs ?? DefaultTimeoutMs);
+
         // Click to open the picker
         element.Click();
 

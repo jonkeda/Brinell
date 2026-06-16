@@ -5,15 +5,15 @@ namespace Brinell.Maui.UITests.Tests.Range;
 /// <summary>
 /// UI tests for Stepper verifying increment/decrement operations.
 /// </summary>
-[Collection("Appium")]
+[Collection("Maui")]
 [Trait("Category", "UITest")]
 [Trait("Control", "Stepper")]
 public class StepperControlTests
 {
-    private readonly AppiumFixture _fixture;
+    private readonly MauiFixture _fixture;
     private UserFormPage Page => _fixture.UserFormPage;
 
-    public StepperControlTests(AppiumFixture fixture)
+    public StepperControlTests(MauiFixture fixture)
     {
         _fixture = fixture;
         _fixture.NavigateToUserForm();

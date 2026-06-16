@@ -5,14 +5,14 @@ namespace Brinell.Maui.UITests.Tests.Navigation;
 /// NOTE: These tests are skipped as the app has been converted from Flyout to TabBar navigation (SPEC-016).
 /// Flyout navigation tests are now obsolete. See TabControlTests for tab navigation tests.
 /// </summary>
-[Collection("Appium")]
+[Collection("Maui")]
 [Trait("Category", "UITest")]
 [Trait("Control", "FlyoutItem")]
 public class FlyoutItemControlTests
 {
-    private readonly AppiumFixture _fixture;
+    private readonly MauiFixture _fixture;
 
-    public FlyoutItemControlTests(AppiumFixture fixture)
+    public FlyoutItemControlTests(MauiFixture fixture)
     {
         _fixture = fixture;
     }

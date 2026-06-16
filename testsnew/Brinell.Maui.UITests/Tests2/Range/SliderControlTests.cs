@@ -5,15 +5,15 @@ namespace Brinell.Maui.UITests.Tests.Range;
 /// <summary>
 /// UI tests for Slider verifying slider value operations.
 /// </summary>
-[Collection("Appium")]
+[Collection("Maui")]
 [Trait("Category", "UITest")]
 [Trait("Control", "Slider")]
 public class SliderControlTests
 {
-    private readonly AppiumFixture _fixture;
+    private readonly MauiFixture _fixture;
     private UserFormPage Page => _fixture.UserFormPage;
 
-    public SliderControlTests(AppiumFixture fixture)
+    public SliderControlTests(MauiFixture fixture)
     {
         _fixture = fixture;
         _fixture.NavigateToUserForm();

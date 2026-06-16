@@ -7,9 +7,9 @@ namespace Brinell.Maui.Uat.Tests.Runtime;
 [Trait("Category", "UAT")]
 [Trait("Target", "MAUI")]
 public sealed class MauiUatScenarioTests
-    : UatScenarioTestBase<AppiumFixture>
+    : UatScenarioTestBase<MauiFixture>
 {
-    public MauiUatScenarioTests(AppiumFixture fixture)
+    public MauiUatScenarioTests(MauiFixture fixture)
         : base(fixture)
     {
     }

@@ -5,15 +5,15 @@ namespace Brinell.Maui.UITests.Tests.Text;
 /// <summary>
 /// UI tests for Editor verifying multi-line text operations.
 /// </summary>
-[Collection("Appium")]
+[Collection("Maui")]
 [Trait("Category", "UITest")]
 [Trait("Control", "Editor")]
 public class EditorControlTests
 {
-    private readonly AppiumFixture _fixture;
+    private readonly MauiFixture _fixture;
     private UserFormPage Page => _fixture.UserFormPage;
 
-    public EditorControlTests(AppiumFixture fixture)
+    public EditorControlTests(MauiFixture fixture)
     {
         _fixture = fixture;
         _fixture.NavigateToUserForm();

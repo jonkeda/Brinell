@@ -5,15 +5,15 @@ namespace Brinell.Maui.UITests.Tests.Collection;
 /// <summary>
 /// UI tests for CollectionView verifying collection operations.
 /// </summary>
-[Collection("Appium")]
+[Collection("Maui")]
 [Trait("Category", "UITest")]
 [Trait("Control", "CollectionView")]
 public class CollectionViewControlTests
 {
-    private readonly AppiumFixture _fixture;
+    private readonly MauiFixture _fixture;
     private MediaGalleryPage Page => _fixture.MediaGalleryPage;
 
-    public CollectionViewControlTests(AppiumFixture fixture)
+    public CollectionViewControlTests(MauiFixture fixture)
     {
         _fixture = fixture;
         _fixture.NavigateToMediaGallery();

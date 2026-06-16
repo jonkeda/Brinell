@@ -8,7 +8,7 @@ namespace Brinell.Maui.UITests.Tests;
 /// </summary>
 /// <remarks>
 /// Prerequisites:
-/// - Appium server running (e.g., on localhost:4723)
+/// - Maui server running (e.g., on localhost:4723)
 /// - Sample app deployed to device/emulator
 /// - Correct capabilities configured in test setup
 /// 
@@ -20,15 +20,15 @@ namespace Brinell.Maui.UITests.Tests;
 /// - Counter buttons demonstrating state
 /// - Toggle/slider/picker controls
 /// </remarks>
-[Collection("Appium")]
+[Collection("Maui")]
 [Trait("Category", "UITest")]
 [Trait("Page", "MainPage")]
 public class MainPageTests
 {
-    private readonly AppiumFixture _fixture;
+    private readonly MauiFixture _fixture;
     private MainPage Page => _fixture.MainPage;
 
-    public MainPageTests(AppiumFixture fixture)
+    public MainPageTests(MauiFixture fixture)
     {
         _fixture = fixture;
         // Navigate to Basics tab to ensure we're on the right page even when running as part of suite

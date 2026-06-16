@@ -17,6 +17,7 @@ public class AppShellPage : PageObjectBase<AppShellPage>
         : base(context)
     {
         ButtonsTab = new TabViewControl<AppShellPage>(this, "ButtonsTab", "Buttons");
+        DateTimeTab = new TabViewControl<AppShellPage>(this, "DateTimeTab", "DateTime");
 
         // TabViewControl uses AutomationId as primary, Title as fallback for Windows
         BasicsTab = new TabViewControl<AppShellPage>(this, "BasicsTab", "Basics");
@@ -43,6 +44,9 @@ public class AppShellPage : PageObjectBase<AppShellPage>
 
     /// <summary>Buttons page tab (default/first tab).</summary>
     public ITabControlObject<AppShellPage> ButtonsTab { get; }
+
+    /// <summary>DateTime page tab.</summary>
+    public ITabControlObject<AppShellPage> DateTimeTab { get; }
 
     /// <summary>Basics page tab (default/first tab).</summary>
     public ITabControlObject<AppShellPage> BasicsTab { get; }

@@ -1,5 +1,5 @@
 using Brinell.Core.Locators;
-using Brinell.Maui.Controls.DateTime;
+using Brinell.Maui.Controls.DateTimes;
 using Brinell.Maui.Controls.Display;
 using Brinell.Maui.Controls.Range;
 using Brinell.Maui.Controls.Text;

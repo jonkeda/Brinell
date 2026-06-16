@@ -17,6 +17,10 @@
         <testViews:ButtonsView />
     </ContentPage>
 
+    <!-- DateTime Tab -->
+    <ContentPage Title="DateTime" AutomationId="DateTimeTab">
+        <testViews:DateTimeView />
+    </ContentPage>
 
     <!-- Basics Tab -->
     <ContentPage Title="Basics" AutomationId="BasicsTab">

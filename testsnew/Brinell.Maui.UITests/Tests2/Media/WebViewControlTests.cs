@@ -10,10 +10,10 @@ namespace Brinell.Maui.UITests.Tests.Media;
 [Trait("Control", "WebView")]
 public class WebViewControlTests
 {
-    private readonly AppiumFixture _fixture;
+    private readonly MauiFixture _fixture;
     private MediaGalleryPage Page => _fixture.MediaGalleryPage;
 
-    public WebViewControlTests(AppiumFixture fixture)
+    public WebViewControlTests(MauiFixture fixture)
     {
         _fixture = fixture;
         _fixture.NavigateToMediaGallery();

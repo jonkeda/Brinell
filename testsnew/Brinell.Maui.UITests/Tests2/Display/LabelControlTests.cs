@@ -5,15 +5,15 @@ namespace Brinell.Maui.UITests.Tests.Display;
 /// <summary>
 /// UI tests for MauiLabelControl verifying text display capabilities.
 /// </summary>
-[Collection("Appium")]
+[Collection("Maui")]
 [Trait("Category", "UITest")]
 [Trait("Control", "Label")]
 public class LabelControlTests
 {
-    private readonly AppiumFixture _fixture;
+    private readonly MauiFixture _fixture;
     private MainPage Page => _fixture.MainPage;
 
-    public LabelControlTests(AppiumFixture fixture)
+    public LabelControlTests(MauiFixture fixture)
     {
         _fixture = fixture;
         _fixture.NavigateToMain();

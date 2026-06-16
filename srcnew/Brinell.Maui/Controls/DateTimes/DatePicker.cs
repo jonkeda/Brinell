@@ -1,6 +1,4 @@
-using Brinell.Core.Locators;
-
-namespace Brinell.Maui.Controls.DateTime;
+namespace Brinell.Maui.Controls.DateTimes;
 
 /// <summary>
 /// MAUI DatePicker control for date selection.

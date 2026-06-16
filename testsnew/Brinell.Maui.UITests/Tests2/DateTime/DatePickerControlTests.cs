@@ -5,15 +5,15 @@ namespace Brinell.Maui.UITests.Tests.DateTime;
 /// <summary>
 /// UI tests for DatePicker verifying date selection operations.
 /// </summary>
-[Collection("Appium")]
+[Collection("Maui")]
 [Trait("Category", "UITest")]
 [Trait("Control", "DatePicker")]
 public class DatePickerControlTests
 {
-    private readonly AppiumFixture _fixture;
+    private readonly MauiFixture _fixture;
     private UserFormPage Page => _fixture.UserFormPage;
 
-    public DatePickerControlTests(AppiumFixture fixture)
+    public DatePickerControlTests(MauiFixture fixture)
     {
         _fixture = fixture;
         _fixture.NavigateToUserForm();

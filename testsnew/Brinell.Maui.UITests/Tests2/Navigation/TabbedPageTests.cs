@@ -12,18 +12,18 @@ namespace Brinell.Maui.UITests.Tests.Navigation;
 /// AutomationId on Windows. The TabViewControl uses Name-based XPath fallback when
 /// AutomationId is unavailable.
 /// </remarks>
-[Collection("Appium")]
+[Collection("Maui")]
 [Trait("Category", "UITest")]
 [Trait("Feature", "TabbedPage")]
 public class TabbedPageTests
 {
-    private readonly AppiumFixture _fixture;
+    private readonly MauiFixture _fixture;
     private readonly ITestOutputHelper _output;
     private AppShellPage AppShell => _fixture.AppShell;
     private MainPage MainPage => _fixture.MainPage;
     private ContainerDemoPage ContainerDemoPage => _fixture.ContainerDemoPage;
 
-    public TabbedPageTests(AppiumFixture fixture, ITestOutputHelper output)
+    public TabbedPageTests(MauiFixture fixture, ITestOutputHelper output)
     {
         _fixture = fixture;
         _output = output;

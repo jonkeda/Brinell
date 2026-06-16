@@ -11,11 +11,11 @@ namespace Brinell.Maui.UITests.Tests.DateTime;
 [Trait("Category", "Diagnostic")]
 public class TimePickerDiagnosticTests
 {
-    private readonly AppiumFixture _fixture;
+    private readonly MauiFixture _fixture;
     private readonly ITestOutputHelper _output;
     private UserFormPage Page => _fixture.UserFormPage;
 
-    public TimePickerDiagnosticTests(AppiumFixture fixture, ITestOutputHelper output)
+    public TimePickerDiagnosticTests(MauiFixture fixture, ITestOutputHelper output)
     {
         _fixture = fixture;
         _output = output;

@@ -5,15 +5,15 @@ namespace Brinell.Maui.UITests.Tests.Display;
 /// <summary>
 /// UI tests for Image verifying image display.
 /// </summary>
-[Collection("Appium")]
+[Collection("Maui")]
 [Trait("Category", "UITest")]
 [Trait("Control", "Image")]
 public class ImageControlTests
 {
-    private readonly AppiumFixture _fixture;
+    private readonly MauiFixture _fixture;
     private MediaGalleryPage Page => _fixture.MediaGalleryPage;
 
-    public ImageControlTests(AppiumFixture fixture)
+    public ImageControlTests(MauiFixture fixture)
     {
         _fixture = fixture;
         _fixture.NavigateToMediaGallery();

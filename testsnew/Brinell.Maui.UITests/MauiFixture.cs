@@ -8,7 +8,7 @@ namespace Brinell.Maui.UITests;
 /// Inherits infrastructure from <see cref="MauiTestFixtureBase"/> and adds app-specific pages.
 /// </summary>
 [TestModuleScan(typeof(MainPage), NamespacePrefix = "Brinell.Maui.UITests.Pages")]
-public class AppiumFixture : MauiTestFixtureBase
+public class MauiFixture : MauiTestFixtureBase
 {
     private readonly AppShellPage _appShell;
     private readonly MainPage _mainPage;
@@ -19,7 +19,7 @@ public class AppiumFixture : MauiTestFixtureBase
     private readonly CollectionDemoPage _collectionDemoPage;
     private readonly DataGridPage _dataGridPage;
 
-    public AppiumFixture()
+    public MauiFixture()
     {
         _appShell = new AppShellPage(Context);
         _mainPage = new MainPage(Context);
@@ -158,7 +158,7 @@ public class AppiumFixture : MauiTestFixtureBase
 
     /// <summary>
     /// Navigates to the DataGrid sample page.
-    /// The page is accessed directly through the Appium context by finding its automation controls.
+    /// The page is accessed directly through the Maui context by finding its automation controls.
     /// </summary>
     public void NavigateToDataGrid()
     {
@@ -202,7 +202,7 @@ public class AppiumFixture : MauiTestFixtureBase
     {
         base.ConfigureAndroidOptions(options);
         // MAUI generates hashed activity names (e.g., crc643b83d6491f48953d.MainActivity)
-        // Don't specify appPackage/appActivity - let Appium extract from the APK
+        // Don't specify appPackage/appActivity - let Maui extract from the APK
         options.AdditionalCapabilities["autoGrantPermissions"] = true;
         options.AdditionalCapabilities["newCommandTimeout"] = 300; // 5 minutes
         // MAUI apps take longer to initialize - increase wait times

@@ -5,14 +5,14 @@ namespace Brinell.Maui.UITests.Tests.Buttons;
 /// <summary>
 /// UI tests for the Button control in the ButtonsTestView.
 /// </summary>
-[Collection("Appium")]
+[Collection("Maui")]
 [Trait("Category", "UITest")]
 [Trait("Control", "Button")]
 public class ButtonTests
 {
-    private readonly AppiumFixture _fixture;
+    private readonly MauiFixture _fixture;
 
-    public ButtonTests(AppiumFixture fixture)
+    public ButtonTests(MauiFixture fixture)
     {
         _fixture = fixture;
 

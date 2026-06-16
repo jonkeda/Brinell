@@ -7,15 +7,15 @@ namespace Brinell.Maui.UITests.Tests.Container;
 /// Demonstrates accessing controls within nested containers.
 /// Uses xUnit Assert per SPEC-017b design principles (never FluentAssertions).
 /// </summary>
-[Collection("Appium")]
+[Collection("Maui")]
 [Trait("Category", "UITest")]
 [Trait("Pattern", "NestedContainer")]
 public class NestedContainerTests
 {
-    private readonly AppiumFixture _fixture;
+    private readonly MauiFixture _fixture;
     private ContainerDemoPage Page => _fixture.ContainerDemoPage;
 
-    public NestedContainerTests(AppiumFixture fixture)
+    public NestedContainerTests(MauiFixture fixture)
     {
         _fixture = fixture;
         _fixture.NavigateToContainerDemo();

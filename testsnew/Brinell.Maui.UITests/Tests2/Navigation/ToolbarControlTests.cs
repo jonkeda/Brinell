@@ -8,9 +8,9 @@ namespace Brinell.Maui.UITests.Tests.Navigation;
 [Trait("Control", "Toolbar")]
 public class ToolbarControlTests
 {
-    private readonly AppiumFixture _fixture;
+    private readonly MauiFixture _fixture;
 
-    public ToolbarControlTests(AppiumFixture fixture)
+    public ToolbarControlTests(MauiFixture fixture)
     {
         _fixture = fixture;
     }

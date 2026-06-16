@@ -5,15 +5,15 @@ namespace Brinell.Maui.UITests.Tests.Collection;
 /// <summary>
 /// UI tests for CarouselView verifying carousel item navigation and state.
 /// </summary>
-[Collection("Appium")]
+[Collection("Maui")]
 [Trait("Category", "UITest")]
 [Trait("Control", "CarouselView")]
 public class CarouselViewControlTests
 {
-    private readonly AppiumFixture _fixture;
+    private readonly MauiFixture _fixture;
     private CollectionDemoPage Page => _fixture.CollectionDemoPage;
 
-    public CarouselViewControlTests(AppiumFixture fixture)
+    public CarouselViewControlTests(MauiFixture fixture)
     {
         _fixture = fixture;
         _fixture.NavigateToCollections();

@@ -8,19 +8,19 @@ namespace Brinell.Maui.UITests.Tests.Text;
 /// </summary>
 /// <remarks>
 /// Prerequisites:
-/// - Appium server running (e.g., on localhost:4723)
+/// - Maui server running (e.g., on localhost:4723)
 /// - Sample app deployed to device/emulator
 /// - Correct capabilities configured in test setup
 /// </remarks>
-[Collection("Appium")]
+[Collection("Maui")]
 [Trait("Category", "UITest")]
 [Trait("Control", "Entry")]
 public class EntryControlTests
 {
-    private readonly AppiumFixture _fixture;
+    private readonly MauiFixture _fixture;
     private MainPage Page => _fixture.MainPage;
 
-    public EntryControlTests(AppiumFixture fixture)
+    public EntryControlTests(MauiFixture fixture)
     {
         _fixture = fixture;
         // Navigate to the Basics tab where entry controls are located

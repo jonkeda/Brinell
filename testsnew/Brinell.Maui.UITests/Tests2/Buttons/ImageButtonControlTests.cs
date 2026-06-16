@@ -4,14 +4,14 @@ namespace Brinell.Maui.UITests.Tests2.Buttons;
 /// UI tests for ImageButton verifying image button operations.
 /// Note: ImageButton may need sample app update.
 /// </summary>
-[Collection("Appium")]
+[Collection("Maui")]
 [Trait("Category", "UITest")]
 [Trait("Control", "ImageButton")]
 public class ImageButtonControlTests
 {
-    private readonly AppiumFixture _fixture;
+    private readonly MauiFixture _fixture;
 
-    public ImageButtonControlTests(AppiumFixture fixture)
+    public ImageButtonControlTests(MauiFixture fixture)
     {
         _fixture = fixture;
     }

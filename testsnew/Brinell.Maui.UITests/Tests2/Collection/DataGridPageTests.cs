@@ -5,15 +5,15 @@ namespace Brinell.Maui.UITests.Tests.Collection;
 /// <summary>
 /// UI tests for DataGridPage verifying data management, search/filter, selection, and collection operations.
 /// </summary>
-[Collection("Appium")]
+[Collection("Maui")]
 [Trait("Category", "UITest")]
 [Trait("Control", "DataGrid")]
 public class DataGridPageTests
 {
-    private readonly AppiumFixture _fixture;
+    private readonly MauiFixture _fixture;
     private DataGridPage Page => new DataGridPage(_fixture.Context);
 
-    public DataGridPageTests(AppiumFixture fixture)
+    public DataGridPageTests(MauiFixture fixture)
     {
         _fixture = fixture;
         // Navigate to DataGridPage via the app fixture

@@ -7,15 +7,15 @@ namespace Brinell.Maui.UITests.Tests.Container;
 /// Demonstrates typed list access and item enumeration.
 /// Uses xUnit Assert per SPEC-017b design principles (never FluentAssertions).
 /// </summary>
-[Collection("Appium")]
+[Collection("Maui")]
 [Trait("Category", "UITest")]
 [Trait("Pattern", "ListContainer")]
 public class ListContainerTests
 {
-    private readonly AppiumFixture _fixture;
+    private readonly MauiFixture _fixture;
     private ContainerDemoPage Page => _fixture.ContainerDemoPage;
 
-    public ListContainerTests(AppiumFixture fixture)
+    public ListContainerTests(MauiFixture fixture)
     {
         _fixture = fixture;
         _fixture.NavigateToContainerDemo();

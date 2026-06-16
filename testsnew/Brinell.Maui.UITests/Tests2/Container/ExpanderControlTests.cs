@@ -4,14 +4,14 @@ namespace Brinell.Maui.UITests.Tests.Container;
 /// UI tests for Expander verifying expand/collapse operations.
 /// Note: Expander is a Toolkit control, may need sample app update.
 /// </summary>
-[Collection("Appium")]
+[Collection("Maui")]
 [Trait("Category", "UITest")]
 [Trait("Control", "Expander")]
 public class ExpanderControlTests
 {
-    private readonly AppiumFixture _fixture;
+    private readonly MauiFixture _fixture;
 
-    public ExpanderControlTests(AppiumFixture fixture)
+    public ExpanderControlTests(MauiFixture fixture)
     {
         _fixture = fixture;
     }

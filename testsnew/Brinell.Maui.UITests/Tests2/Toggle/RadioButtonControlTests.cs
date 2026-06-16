@@ -5,15 +5,15 @@ namespace Brinell.Maui.UITests.Tests.Toggle;
 /// <summary>
 /// UI tests for RadioButton verifying selection operations.
 /// </summary>
-[Collection("Appium")]
+[Collection("Maui")]
 [Trait("Category", "UITest")]
 [Trait("Control", "RadioButton")]
 public class RadioButtonControlTests
 {
-    private readonly AppiumFixture _fixture;
+    private readonly MauiFixture _fixture;
     private UserFormPage Page => _fixture.UserFormPage;
 
-    public RadioButtonControlTests(AppiumFixture fixture)
+    public RadioButtonControlTests(MauiFixture fixture)
     {
         _fixture = fixture;
         _fixture.NavigateToUserForm();

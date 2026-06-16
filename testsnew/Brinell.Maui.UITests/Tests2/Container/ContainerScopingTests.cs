@@ -13,15 +13,15 @@ namespace Brinell.Maui.UITests.Tests.Container;
 /// Tab navigation uses Name-based XPath fallback for Windows TabbedPage
 /// where AutomationId doesn't propagate to NavigationViewItem (see SPEC-023).
 /// </remarks>
-[Collection("Appium")]
+[Collection("Maui")]
 [Trait("Category", "UITest")]
 [Trait("Pattern", "ContainerScoping")]
 public class ContainerScopingTests
 {
-    private readonly AppiumFixture _fixture;
+    private readonly MauiFixture _fixture;
     private ContainerDemoPage Page => _fixture.ContainerDemoPage;
 
-    public ContainerScopingTests(AppiumFixture fixture)
+    public ContainerScopingTests(MauiFixture fixture)
     {
         _fixture = fixture;
         _fixture.NavigateToContainerDemo();

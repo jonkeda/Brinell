@@ -10,10 +10,10 @@ namespace Brinell.Maui.UITests.Tests.Collection;
 [Trait("Control", "TableView")]
 public class TableViewControlTests
 {
-    private readonly AppiumFixture _fixture;
+    private readonly MauiFixture _fixture;
     private CollectionDemoPage Page => _fixture.CollectionDemoPage;
 
-    public TableViewControlTests(AppiumFixture fixture)
+    public TableViewControlTests(MauiFixture fixture)
     {
         _fixture = fixture;
         _fixture.NavigateToCollections();

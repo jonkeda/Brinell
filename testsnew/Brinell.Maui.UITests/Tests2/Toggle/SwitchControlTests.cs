@@ -5,15 +5,15 @@ namespace Brinell.Maui.UITests.Tests.Toggle;
 /// <summary>
 /// UI tests for Switch verifying on/off operations.
 /// </summary>
-[Collection("Appium")]
+[Collection("Maui")]
 [Trait("Category", "UITest")]
 [Trait("Control", "Switch")]
 public class SwitchControlTests
 {
-    private readonly AppiumFixture _fixture;
+    private readonly MauiFixture _fixture;
     private UserFormPage Page => _fixture.UserFormPage;
 
-    public SwitchControlTests(AppiumFixture fixture)
+    public SwitchControlTests(MauiFixture fixture)
     {
         _fixture = fixture;
         _fixture.NavigateToUserForm();

@@ -10,10 +10,10 @@ namespace Brinell.Maui.UITests.Tests.DateTime;
 [Trait("Control", "TimePicker")]
 public class TimePickerControlTests
 {
-    private readonly AppiumFixture _fixture;
+    private readonly MauiFixture _fixture;
     private UserFormPage Page => _fixture.UserFormPage;
 
-    public TimePickerControlTests(AppiumFixture fixture)
+    public TimePickerControlTests(MauiFixture fixture)
     {
         _fixture = fixture;
         _fixture.NavigateToUserForm();

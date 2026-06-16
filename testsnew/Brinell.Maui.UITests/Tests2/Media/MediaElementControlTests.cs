@@ -4,14 +4,14 @@ namespace Brinell.Maui.UITests.Tests.Media;
 /// UI tests for MauiMediaElementControl verifying media playback operations.
 /// Note: MediaElement is a Toolkit control with complex platform behavior.
 /// </summary>
-[Collection("Appium")]
+[Collection("Maui")]
 [Trait("Category", "UITest")]
 [Trait("Control", "MediaElement")]
 public class MediaElementControlTests
 {
-    private readonly AppiumFixture _fixture;
+    private readonly MauiFixture _fixture;
 
-    public MediaElementControlTests(AppiumFixture fixture)
+    public MediaElementControlTests(MauiFixture fixture)
     {
         _fixture = fixture;
     }

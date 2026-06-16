@@ -5,15 +5,15 @@ namespace Brinell.Maui.UITests.Tests.Collection;
 /// <summary>
 /// UI tests for PaginatedList verifying pagination controls and page navigation.
 /// </summary>
-[Collection("Appium")]
+[Collection("Maui")]
 [Trait("Category", "UITest")]
 [Trait("Control", "PaginatedList")]
 public class PaginatedListControlTests
 {
-    private readonly AppiumFixture _fixture;
+    private readonly MauiFixture _fixture;
     private CollectionDemoPage Page => _fixture.CollectionDemoPage;
 
-    public PaginatedListControlTests(AppiumFixture fixture)
+    public PaginatedListControlTests(MauiFixture fixture)
     {
         _fixture = fixture;
         _fixture.NavigateToCollections();

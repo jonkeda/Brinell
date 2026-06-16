@@ -5,15 +5,15 @@ namespace Brinell.Maui.UITests.Tests.Display;
 /// <summary>
 /// UI tests for ActivityIndicator verifying running state.
 /// </summary>
-[Collection("Appium")]
+[Collection("Maui")]
 [Trait("Category", "UITest")]
 [Trait("Control", "ActivityIndicator")]
 public class ActivityIndicatorControlTests
 {
-    private readonly AppiumFixture _fixture;
+    private readonly MauiFixture _fixture;
     private MediaGalleryPage Page => _fixture.MediaGalleryPage;
 
-    public ActivityIndicatorControlTests(AppiumFixture fixture)
+    public ActivityIndicatorControlTests(MauiFixture fixture)
     {
         _fixture = fixture;
         _fixture.NavigateToMediaGallery();

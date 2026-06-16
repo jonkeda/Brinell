@@ -5,15 +5,15 @@ namespace Brinell.Maui.UITests.Tests.Selection;
 /// <summary>
 /// UI tests for Picker verifying selection operations.
 /// </summary>
-[Collection("Appium")]
+[Collection("Maui")]
 [Trait("Category", "UITest")]
 [Trait("Control", "Picker")]
 public class PickerControlTests
 {
-    private readonly AppiumFixture _fixture;
+    private readonly MauiFixture _fixture;
     private UserFormPage Page => _fixture.UserFormPage;
 
-    public PickerControlTests(AppiumFixture fixture)
+    public PickerControlTests(MauiFixture fixture)
     {
         _fixture = fixture;
         _fixture.NavigateToUserForm();

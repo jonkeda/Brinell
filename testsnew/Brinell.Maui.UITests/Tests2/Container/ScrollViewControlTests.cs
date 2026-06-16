@@ -5,15 +5,15 @@ namespace Brinell.Maui.UITests.Tests.Container;
 /// <summary>
 /// UI tests for ScrollView verifying scroll operations.
 /// </summary>
-[Collection("Appium")]
+[Collection("Maui")]
 [Trait("Category", "UITest")]
 [Trait("Control", "ScrollView")]
 public class ScrollViewControlTests
 {
-    private readonly AppiumFixture _fixture;
+    private readonly MauiFixture _fixture;
     private ContainerDemoPage Page => _fixture.ContainerDemoPage;
 
-    public ScrollViewControlTests(AppiumFixture fixture)
+    public ScrollViewControlTests(MauiFixture fixture)
     {
         _fixture = fixture;
         _fixture.NavigateToContainerDemo();

@@ -4,14 +4,14 @@ namespace Brinell.Maui.UITests.Tests.Navigation;
 /// UI tests for Menu verifying menu operations.
 /// Note: Menu control may need sample app update.
 /// </summary>
-[Collection("Appium")]
+[Collection("Maui")]
 [Trait("Category", "UITest")]
 [Trait("Control", "Menu")]
 public class MenuControlTests
 {
-    private readonly AppiumFixture _fixture;
+    private readonly MauiFixture _fixture;
 
-    public MenuControlTests(AppiumFixture fixture)
+    public MenuControlTests(MauiFixture fixture)
     {
         _fixture = fixture;
     }

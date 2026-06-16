@@ -4,14 +4,14 @@ namespace Brinell.Maui.UITests.Tests2.Buttons;
 /// UI tests for Link verifying link/hyperlink operations.
 /// Note: Link control may need sample app update.
 /// </summary>
-[Collection("Appium")]
+[Collection("Maui")]
 [Trait("Category", "UITest")]
 [Trait("Control", "Link")]
 public class LinkControlTests
 {
-    private readonly AppiumFixture _fixture;
+    private readonly MauiFixture _fixture;
 
-    public LinkControlTests(AppiumFixture fixture)
+    public LinkControlTests(MauiFixture fixture)
     {
         _fixture = fixture;
     }

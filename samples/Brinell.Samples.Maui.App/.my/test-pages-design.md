@@ -10,6 +10,20 @@
 
 This document outlines one test view per control category, each backed by a dedicated ViewModel. Each view provides a simple, focused environment for testing control behavior, accessibility, and state management. Tests are minimal and validate core interaction patterns.
 
+**Implementation Steps for Each Module:**
+
+1. **Create the View (XAML)** - Follow the XAML View Pattern below
+2. **Create the Code-Behind** - Simple InitializeComponent call
+3. **Create the ViewModel** - Inherit from ParentViewModel, implement property bindings and command handling
+4. **Register in Navigation** - Add tab to MainPage.xaml and AppShellPage.cs (see Navigation section)
+5. **Create UI Tests** - 
+   - **PageObject** in `testsnew/Brinell.Maui.UITests/Pages/[Module]TestPage.cs`
+   - **Test Classes** in `testsnew/Brinell.Maui.UITests/Tests/[Category]/` (one test class per control)
+   - Use xUnit with `[Collection("Appium")]`, `[Fact]`, and `[Trait]` attributes
+   - Follow fluent assertion patterns and test naming conventions
+
+See **DateTime Module** (sections 4, Navigation, Test Automation, and UI Testing & Page Objects) for a complete example implementation.
+
 ---
 
 ## Control Categories & Test Pages
@@ -504,10 +518,33 @@ Each test page should be easily testable with UITest automation:
 
 ## Navigation
 
-Main app shell:
-- AppShell.xaml
-- Route all test view pages
-- Include quick navigation menu to access each test view
+Main app navigation uses TabbedPage (`MainPage.xaml`). Each test view module must be registered in the UI navigation:
+
+**Steps to add a new test view to navigation:**
+
+1. **Add Tab to MainPage.xaml:**
+   ```xaml
+   <!-- Module Name Tab -->
+   <ContentPage Title="ModuleName" AutomationId="ModuleNameTab">
+       <testViews:ModuleNameView />
+   </ContentPage>
+   ```
+
+2. **Add Tab to AppShellPage.cs** (test fixture navigation):
+   ```csharp
+   // In constructor:
+   ModuleNameTab = new TabViewControl<AppShellPage>(this, "ModuleNameTab", "ModuleName");
+
+   // In Tab Controls region:
+   public ITabControlObject<AppShellPage> ModuleNameTab { get; }
+   ```
+
+3. **Update test fixture navigation** - Tests can now navigate to the view:
+   ```csharp
+   _fixture.AppShell.ModuleNameTab.Click();
+   ```
+
+See **DateTime Module** (MainPage.xaml and AppShellPage.cs) for implementation examples.
 
 ---
 

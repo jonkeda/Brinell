@@ -10,11 +10,13 @@ namespace Brinell.Maui.UITests.Tests.Buttons;
 [Trait("Control", "ImageButton")]
 public class ImageButtonTests
 {
-    private readonly AppiumFixture _fixture;
+    private readonly MauiFixture _fixture;
 
-    public ImageButtonTests(AppiumFixture fixture)
+    public ImageButtonTests(MauiFixture fixture)
     {
         _fixture = fixture;
+
+        _fixture.AppShell.ButtonsTab.Click();
     }
 
     private ButtonsTestPage GetPage()

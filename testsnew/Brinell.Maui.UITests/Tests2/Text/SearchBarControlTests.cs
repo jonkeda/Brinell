@@ -5,15 +5,15 @@ namespace Brinell.Maui.UITests.Tests.Text;
 /// <summary>
 /// UI tests for SearchBar verifying search text operations.
 /// </summary>
-[Collection("Appium")]
+[Collection("Maui")]
 [Trait("Category", "UITest")]
 [Trait("Control", "SearchBar")]
 public class SearchBarControlTests
 {
-    private readonly AppiumFixture _fixture;
+    private readonly MauiFixture _fixture;
     private UserFormPage Page => _fixture.UserFormPage;
 
-    public SearchBarControlTests(AppiumFixture fixture)
+    public SearchBarControlTests(MauiFixture fixture)
     {
         _fixture = fixture;
         _fixture.NavigateToUserForm();

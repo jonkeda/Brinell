@@ -4,14 +4,14 @@ namespace Brinell.Maui.UITests.Tests.Container;
 /// UI tests for RefreshView verifying pull-to-refresh operations.
 /// Note: RefreshView may need sample app update.
 /// </summary>
-[Collection("Appium")]
+[Collection("Maui")]
 [Trait("Category", "UITest")]
 [Trait("Control", "RefreshView")]
 public class RefreshViewControlTests
 {
-    private readonly AppiumFixture _fixture;
+    private readonly MauiFixture _fixture;
 
-    public RefreshViewControlTests(AppiumFixture fixture)
+    public RefreshViewControlTests(MauiFixture fixture)
     {
         _fixture = fixture;
     }

@@ -5,15 +5,15 @@ namespace Brinell.Maui.UITests.Tests.Display;
 /// <summary>
 /// UI tests for MauiProgressBarControl verifying progress bar display and value.
 /// </summary>
-[Collection("Appium")]
+[Collection("Maui")]
 [Trait("Category", "UITest")]
 [Trait("Control", "ProgressBar")]
 public class ProgressBarControlTests
 {
-    private readonly AppiumFixture _fixture;
+    private readonly MauiFixture _fixture;
     private MainPage Page => _fixture.MainPage;
 
-    public ProgressBarControlTests(AppiumFixture fixture)
+    public ProgressBarControlTests(MauiFixture fixture)
     {
         _fixture = fixture;
         _fixture.NavigateToMain();

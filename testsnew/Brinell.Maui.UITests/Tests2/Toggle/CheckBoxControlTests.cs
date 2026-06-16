@@ -5,15 +5,15 @@ namespace Brinell.Maui.UITests.Tests.Toggle;
 /// <summary>
 /// UI tests for CheckBox verifying check/uncheck operations.
 /// </summary>
-[Collection("Appium")]
+[Collection("Maui")]
 [Trait("Category", "UITest")]
 [Trait("Control", "CheckBox")]
 public class CheckBoxControlTests
 {
-    private readonly AppiumFixture _fixture;
+    private readonly MauiFixture _fixture;
     private UserFormPage Page => _fixture.UserFormPage;
 
-    public CheckBoxControlTests(AppiumFixture fixture)
+    public CheckBoxControlTests(MauiFixture fixture)
     {
         _fixture = fixture;
         _fixture.NavigateToUserForm();

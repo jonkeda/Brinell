@@ -4,14 +4,14 @@ namespace Brinell.Maui.UITests.Tests.Container;
 /// UI tests for SwipeView verifying swipe operations.
 /// Note: SwipeView may need sample app update.
 /// </summary>
-[Collection("Appium")]
+[Collection("Maui")]
 [Trait("Category", "UITest")]
 [Trait("Control", "SwipeView")]
 public class SwipeViewControlTests
 {
-    private readonly AppiumFixture _fixture;
+    private readonly MauiFixture _fixture;
 
-    public SwipeViewControlTests(AppiumFixture fixture)
+    public SwipeViewControlTests(MauiFixture fixture)
     {
         _fixture = fixture;
     }
