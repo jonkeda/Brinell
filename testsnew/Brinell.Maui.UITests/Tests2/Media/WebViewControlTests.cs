@@ -5,7 +5,7 @@ namespace Brinell.Maui.UITests.Tests.Media;
 /// <summary>
 /// UI tests for WebView verifying web view operations.
 /// </summary>
-[Collection("Appium")]
+[Collection("Maui")]
 [Trait("Category", "UITest")]
 [Trait("Control", "WebView")]
 public class WebViewControlTests

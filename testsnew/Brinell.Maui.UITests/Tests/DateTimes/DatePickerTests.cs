@@ -8,7 +8,7 @@ namespace Brinell.Maui.UITests.Tests.DateTimes;
 /// UI tests for the DatePicker control in the DateTimeTestView.
 /// Validates date selection, min/max constraint enforcement, and formatting.
 /// </summary>
-[Collection("Appium")]
+[Collection("Maui")]
 [Trait("Category", "UITest")]
 [Trait("Control", "DatePicker")]
 public class DatePickerTests

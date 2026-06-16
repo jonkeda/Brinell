@@ -22,6 +22,11 @@
         <testViews:DateTimeView />
     </ContentPage>
 
+    <!-- Text Tab -->
+    <ContentPage Title="Text" AutomationId="TextTab">
+        <testViews:TextView />
+    </ContentPage>
+
     <!-- Basics Tab -->
     <ContentPage Title="Basics" AutomationId="BasicsTab">
         <views2:BasicsView />

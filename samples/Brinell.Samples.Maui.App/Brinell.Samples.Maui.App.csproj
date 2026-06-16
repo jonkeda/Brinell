@@ -68,6 +68,9 @@
     <MauiXaml Update="Views2\DataGridView.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>
+    <MauiXaml Update="Views2\TestViews\TextView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
     <MauiXaml Update="Views\ButtonsView.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>
@@ -75,6 +78,9 @@
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>
     <MauiXaml Update="Views\DateTimeView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Views\TextView.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>
   </ItemGroup>
@@ -91,6 +97,7 @@
   <ItemGroup>
     <Folder Include="Models\" />
     <Folder Include="TestViews\" />
+    <Folder Include="Views2\TestViews\" />
   </ItemGroup>
 
   <ItemGroup>

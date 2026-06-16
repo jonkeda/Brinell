@@ -5,7 +5,7 @@ namespace Brinell.Maui.UITests.Tests.Buttons;
 /// <summary>
 /// UI tests for the ImageButton control in the ButtonsTestView.
 /// </summary>
-[Collection("Appium")]
+[Collection("Maui")]
 [Trait("Category", "UITest")]
 [Trait("Control", "ImageButton")]
 public class ImageButtonTests

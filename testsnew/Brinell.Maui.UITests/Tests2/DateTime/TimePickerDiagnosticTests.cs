@@ -7,7 +7,7 @@ namespace Brinell.Maui.UITests.Tests.DateTime;
 /// Diagnostic tests to understand Windows MAUI TimePicker automation tree structure.
 /// These tests dump element information to help debug value extraction.
 /// </summary>
-[Collection("Appium")]
+[Collection("Maui")]
 [Trait("Category", "Diagnostic")]
 public class TimePickerDiagnosticTests
 {

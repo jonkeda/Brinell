@@ -5,7 +5,7 @@ namespace Brinell.Maui.UITests.Tests.Collection;
 /// <summary>
 /// UI tests for TableView verifying table structure and settings intent.
 /// </summary>
-[Collection("Appium")]
+[Collection("Maui")]
 [Trait("Category", "UITest")]
 [Trait("Control", "TableView")]
 public class TableViewControlTests

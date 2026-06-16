@@ -7,7 +7,7 @@ namespace Brinell.Maui.UITests.Tests.DateTimes;
 /// UI tests for the TimePicker control in the DateTimeTestView.
 /// Validates time selection, value updates, and formatting.
 /// </summary>
-[Collection("Appium")]
+[Collection("Maui")]
 [Trait("Category", "UITest")]
 [Trait("Control", "TimePicker")]
 public class TimePickerTests

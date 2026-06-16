@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewModels="using:Brinell.Samples.Maui.App.ViewModels2"
+             x:Class="Brinell.Samples.Maui.App.Views2.TestViews.TextView"
+             BackgroundColor="{AppThemeBinding Light=White, Dark=#1F1F1F}">
+
+    <ContentView.BindingContext>
+        <viewModels:TextViewModel />
+    </ContentView.BindingContext>
+
+    <ScrollView>
+        <VerticalStackLayout 
+            Padding="20" 
+            Spacing="15"
+            BackgroundColor="{AppThemeBinding Light=White, Dark=#1F1F1F}">
+
+            <!-- Title -->
+            <Label 
+                Text="Text Module Test" 
+                FontSize="24" 
+                FontAttributes="Bold"
+                TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+
+            <Label 
+                Text="Test Entry, Editor, and SearchBar controls" 
+                FontSize="14"
+                TextColor="{AppThemeBinding Light=Gray, Dark=LightGray}" />
+
+            <BoxView Color="{AppThemeBinding Light=LightGray, Dark=Gray}" HeightRequest="1" />
+
+            <!-- Entry Section -->
+            <Label Text="Entry - Single Line Text Input" FontSize="16" FontAttributes="Bold" TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+            <Label Text="Type text and press return to confirm" FontSize="12" TextColor="{AppThemeBinding Light=Gray, Dark=LightGray}" />
+
+            <Entry 
+                Placeholder="Enter text here"
+                Text="{Binding EntryText}"
+                AutomationId="TestEntry"
+                PlaceholderColor="{AppThemeBinding Light=LightGray, Dark=Gray}" />
+
+            <Label 
+                Text="{Binding EntryStatusMessage}" 
+                AutomationId="EntryStatusLabel"
+                FontSize="13"
+                LineBreakMode="WordWrap"
+                TextColor="{AppThemeBinding Light=DarkGreen, Dark=LightGreen}"
+                Padding="10"
+                BackgroundColor="{AppThemeBinding Light=#F0F0F0, Dark=#2F2F2F}" />
+
+            <BoxView Color="{AppThemeBinding Light=LightGray, Dark=Gray}" HeightRequest="1" />
+
+            <!-- Editor Section -->
+            <Label Text="Editor - Multi-Line Text Input" FontSize="16" FontAttributes="Bold" TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+            <Label Text="Type multiple lines of text" FontSize="12" TextColor="{AppThemeBinding Light=Gray, Dark=LightGray}" />
+
+            <Editor 
+                Placeholder="Enter multi-line text here"
+                Text="{Binding EditorText}"
+                AutomationId="TestEditor"
+                HeightRequest="100"
+                PlaceholderColor="{AppThemeBinding Light=LightGray, Dark=Gray}" />
+
+            <Label 
+                Text="{Binding EditorStatusMessage}" 
+                AutomationId="EditorStatusLabel"
+                FontSize="13"
+                LineBreakMode="WordWrap"
+                TextColor="{AppThemeBinding Light=DarkGreen, Dark=LightGreen}"
+                Padding="10"
+                BackgroundColor="{AppThemeBinding Light=#F0F0F0, Dark=#2F2F2F}" />
+
+            <BoxView Color="{AppThemeBinding Light=LightGray, Dark=Gray}" HeightRequest="1" />
+
+            <!-- SearchBar Section -->
+            <Label Text="SearchBar - Search Input" FontSize="16" FontAttributes="Bold" TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+            <Label Text="Type to search and press search button" FontSize="12" TextColor="{AppThemeBinding Light=Gray, Dark=LightGray}" />
+
+            <SearchBar 
+                Placeholder="Search here"
+                Text="{Binding SearchText}"
+                SearchCommand="{Binding SearchCommand}"
+                AutomationId="TestSearchBar"
+                PlaceholderColor="{AppThemeBinding Light=LightGray, Dark=Gray}" />
+
+            <Label 
+                Text="{Binding SearchStatusMessage}" 
+                AutomationId="SearchStatusLabel"
+                FontSize="13"
+                LineBreakMode="WordWrap"
+                TextColor="{AppThemeBinding Light=DarkGreen, Dark=LightGreen}"
+                Padding="10"
+                BackgroundColor="{AppThemeBinding Light=#F0F0F0, Dark=#2F2F2F}" />
+
+            <BoxView Color="{AppThemeBinding Light=LightGray, Dark=Gray}" HeightRequest="1" />
+
+            <!-- Clear Buttons -->
+            <Button 
+                Text="Clear Entry" 
+                Command="{Binding ClearEntryCommand}"
+                AutomationId="ClearEntryButton" />
+
+            <Button 
+                Text="Clear Editor" 
+                Command="{Binding ClearEditorCommand}"
+                AutomationId="ClearEditorButton" />
+
+            <Button 
+                Text="Clear Search" 
+                Command="{Binding ClearSearchCommand}"
+                AutomationId="ClearSearchButton" />
+
+            <Button 
+                Text="Reset All" 
+                Command="{Binding ResetAllCommand}"
+                AutomationId="ResetAllButton"
+                BackgroundColor="#FF3B30" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentView>
