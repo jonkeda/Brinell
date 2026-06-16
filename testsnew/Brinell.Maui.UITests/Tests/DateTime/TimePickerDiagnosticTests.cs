@@ -1,5 +1,4 @@
 using Brinell.Maui.UITests.Pages;
-using Brinell.Core.Locators;
 using Xunit.Abstractions;
 
 namespace Brinell.Maui.UITests.Tests.DateTime;

@@ -1,10 +1,3 @@
-using Brinell.Maui.Controls;
-using Brinell.Maui.Controls.Display;
-using Brinell.Maui.Controls.Media;
-using Brinell.Maui.Controls.Range;
-using Brinell.Maui.Controls.Toggle;
-using Brinell.Maui.Pages;
-
 namespace Brinell.Maui.UITests.Pages;
 
 /// <summary>

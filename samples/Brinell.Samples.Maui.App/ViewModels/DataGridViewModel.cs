@@ -18,11 +18,7 @@ public class DataGridViewModel : ParentViewModel
     public string SearchText
     {
         get => _searchText;
-        set
-        {
-            if (SetProperty(ref _searchText, value))
-                FilterItems();
-        }
+        set => SetProperty(ref _searchText, value);
     }
 
     public SampleDataItem? SelectedItem
@@ -117,22 +113,23 @@ public class DataGridViewModel : ParentViewModel
 
     private void FilterItems()
     {
-        FilteredItems.Clear();
+        /*FilteredItems.Clear();
         var filtered = string.IsNullOrWhiteSpace(SearchText)
             ? Items
             : Items.Where(i => i.Title.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
                                i.Description.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
 
         foreach (var item in filtered)
-            FilteredItems.Add(item);
+            FilteredItems.Add(item);*/
     }
 
     private async Task RefreshAsync()
     {
-        IsRefreshing = true;
+        /*IsRefreshing = true;
         await Task.Delay(1000);
         LoadSampleData();
-        IsRefreshing = false;
+        IsRefreshing = false;*/
+        await Task.CompletedTask;
     }
 
     private async Task ClearFilterAsync()
@@ -143,34 +140,34 @@ public class DataGridViewModel : ParentViewModel
 
     private async Task SelectAllAsync()
     {
-        SelectedItems.Clear();
+        /*SelectedItems.Clear();
         foreach (var item in FilteredItems)
         {
             item.IsStarred = true;
             SelectedItems.Add(item);
         }
-        SelectedCount = SelectedItems.Count;
+        SelectedCount = SelectedItems.Count;*/
         await Task.CompletedTask;
     }
 
     private async Task UnselectAllAsync()
     {
-        foreach (var item in SelectedItems)
+        /*foreach (var item in SelectedItems)
             item.IsStarred = false;
         SelectedItems.Clear();
-        SelectedCount = 0;
+        SelectedCount = 0;*/
         await Task.CompletedTask;
     }
 
     private async Task DeleteSelectedAsync()
     {
-        foreach (var item in SelectedItems.ToList())
+        /*foreach (var item in SelectedItems.ToList())
         {
             Items.Remove(item);
             FilteredItems.Remove(item);
         }
         SelectedItems.Clear();
-        SelectedCount = 0;
+        SelectedCount = 0;*/
         await Task.CompletedTask;
     }
 }

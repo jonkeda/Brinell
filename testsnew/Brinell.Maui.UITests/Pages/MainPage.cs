@@ -1,5 +1,3 @@
-using Brinell.Maui.Pages;
-
 namespace Brinell.Maui.UITests.Pages;
 
 /// <summary>

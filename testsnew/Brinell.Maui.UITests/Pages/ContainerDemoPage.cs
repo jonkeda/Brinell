@@ -1,4 +1,3 @@
-using Brinell.Maui.Pages;
 using Brinell.Maui.UITests.Containers;
 
 namespace Brinell.Maui.UITests.Pages;

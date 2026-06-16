@@ -532,6 +532,18 @@ public abstract class PageObjectBase<TSelf> : ObjectBase, IMauiPage<TSelf>
         => new(this, locator);
 
     /// <summary>
+    /// Creates a border control within this page scope.
+    /// </summary>
+    protected Border<TSelf> Border(Locator locator)
+        => new(this, locator);
+
+    /// <summary>
+    /// Creates a border control within this page scope using automation ID.
+    /// </summary>
+    protected Border<TSelf> Border(string locator)
+        => new(this, locator);
+
+    /// <summary>
     /// Creates a swipe view control within this page scope.
     /// </summary>
     protected SwipeView<TSelf> SwipeView(Locator locator)

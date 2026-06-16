@@ -1,7 +1,3 @@
-using Brinell.Maui.Controls;
-using Brinell.Maui.Controls.Display;
-using Brinell.Maui.Pages;
-
 namespace Brinell.Maui.UITests.Pages;
 
 /// <summary>

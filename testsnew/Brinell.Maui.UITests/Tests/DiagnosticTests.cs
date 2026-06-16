@@ -1,4 +1,3 @@
-using Brinell.Maui.Context;
 using OpenQA.Selenium.Appium;
 
 namespace Brinell.Maui.UITests.Tests;

@@ -1,5 +1,3 @@
-using Brinell.Maui.UITests.Pages;
-
 namespace Brinell.Maui.UITests.Tests.Navigation;
 
 /// <summary>

@@ -1,6 +1,4 @@
-using Brinell.Core.Abstractions.Controls;
 using Brinell.Maui.CommunityToolkit.Controls;
-using Brinell.Maui.Pages;
 
 namespace Brinell.Maui.UITests.Pages;
 
@@ -28,6 +26,7 @@ public class AppShellPage : PageObjectBase<AppShellPage>
         NavigationTab = new TabViewControl<AppShellPage>(this, "NavigationTab", "Navigation");
         ToolkitTab = new TabViewControl<AppShellPage>(this, "ToolkitTab", "Toolkit");
         MediaTab = new TabViewControl<AppShellPage>(this, "MediaTab", "Media");
+        DataGridTab = new TabViewControl<AppShellPage>(this, "DataGridTab", "DataGrid");
     }
 
     /// <inheritdoc />
@@ -64,6 +63,9 @@ public class AppShellPage : PageObjectBase<AppShellPage>
 
     /// <summary>Media Gallery page tab.</summary>
     public ITabControlObject<AppShellPage> MediaTab { get; }
+
+    /// <summary>DataGrid page tab.</summary>
+    public ITabControlObject<AppShellPage> DataGridTab { get; }
 
     #endregion
 }

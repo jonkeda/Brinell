@@ -1,11 +1,3 @@
-using Brinell.Maui.Controls;
-using Brinell.Maui.Controls.DateTime;
-using Brinell.Maui.Controls.Range;
-using Brinell.Maui.Controls.Selection;
-using Brinell.Maui.Controls.Text;
-using Brinell.Maui.Controls.Toggle;
-using Brinell.Maui.Pages;
-
 namespace Brinell.Maui.UITests.Pages;
 
 /// <summary>

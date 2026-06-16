@@ -1,4 +1,3 @@
-using Brinell.Maui;
 using Brinell.Maui.Testing;
 using Brinell.Maui.UITests.Pages;
 
@@ -18,6 +17,7 @@ public class AppiumFixture : MauiTestFixtureBase
     private readonly MediaGalleryPage _mediaGalleryPage;
     private readonly ListsPage _listsPage;
     private readonly CollectionDemoPage _collectionDemoPage;
+    private readonly DataGridPage _dataGridPage;
 
     public AppiumFixture()
     {
@@ -28,6 +28,7 @@ public class AppiumFixture : MauiTestFixtureBase
         _mediaGalleryPage = new MediaGalleryPage(Context);
         _listsPage = new ListsPage(Context);
         _collectionDemoPage = new CollectionDemoPage(Context);
+        _dataGridPage = new DataGridPage(Context);
         Composition = TestComposition.ForFixture(this, services =>
             services.AddSingleton<IMauiTestContext>(Context));
     }
@@ -68,6 +69,11 @@ public class AppiumFixture : MauiTestFixtureBase
     /// Gets the CollectionDemoPage page object (CarouselView, TableView, PaginatedList).
     /// </summary>
     public CollectionDemoPage CollectionDemoPage => _collectionDemoPage;
+
+    /// <summary>
+    /// Gets the DataGridPage page object.
+    /// </summary>
+    public DataGridPage DataGridPage => _dataGridPage;
 
     /// <summary>
     /// Navigates to the Basics tab (first/main tab).
@@ -148,6 +154,25 @@ public class AppiumFixture : MauiTestFixtureBase
     public void NavigateToCollections()
     {
         NavigateToLists();
+    }
+
+    /// <summary>
+    /// Navigates to the DataGrid sample page.
+    /// The page is accessed directly through the Appium context by finding its automation controls.
+    /// </summary>
+    public void NavigateToDataGrid()
+    {
+        // If already loaded, skip navigation
+        if (_dataGridPage.IsLoaded())
+            return;
+
+        // Navigate via the DataGrid tab
+        _appShell.DataGridTab.Click();
+        // Wait for page to be ready (15s for slower tab transitions, similar to ContainerDemo)
+        if (!_dataGridPage.WaitReady(15000))
+        {
+            throw new InvalidOperationException("DataGridPage did not become ready after clicking DataGridTab. DataGridTitle may not be visible.");
+        }
     }
 
     #region MauiTestFixtureBase Overrides

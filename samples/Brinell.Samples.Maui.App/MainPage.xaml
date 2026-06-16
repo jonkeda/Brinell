@@ -48,4 +48,9 @@
         <views:MediaGalleryView />
     </ContentPage>
 
+    <!-- DataGrid Tab -->
+    <ContentPage Title="DataGrid" AutomationId="DataGridTab">
+        <views:DataGridView />
+    </ContentPage>
+
 </TabbedPage>
