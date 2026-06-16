@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage 
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Class="Brinell.Samples.Maui.App.Views2.TestViews.ButtonsTestView"
+    Title="Buttons Test View"
+    BackgroundColor="{AppThemeBinding Light=White, Dark=#1F1F1F}">
+
+    <ScrollView>
+        <VerticalStackLayout 
+            Padding="20" 
+            Spacing="15"
+            BackgroundColor="{AppThemeBinding Light=White, Dark=#1F1F1F}">
+
+            <!-- Title -->
+            <Label 
+                Text="Buttons Module Test" 
+                FontSize="24" 
+                FontAttributes="Bold"
+                TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+
+            <Label 
+                Text="Test all button variants and interactions" 
+                FontSize="14"
+                TextColor="{AppThemeBinding Light=Gray, Dark=LightGray}" />
+
+            <BoxView Color="{AppThemeBinding Light=LightGray, Dark=Gray}" HeightRequest="1" />
+
+            <!-- Button Test -->
+            <Label Text="Basic Button" FontSize="16" FontAttributes="Bold" TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+            <Button 
+                Text="Click Me" 
+                Command="{Binding TestButtonCommand}"
+                AutomationId="TestButton"
+                BackgroundColor="#007AFF" />
+
+            <!-- IconCommandButton Test -->
+            <Label Text="Icon Command Button" FontSize="16" FontAttributes="Bold" TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+            <Button 
+                Text="🔔 Notify" 
+                Command="{Binding TestIconCommandButtonCommand}"
+                AutomationId="TestIconCommandButton"
+                BackgroundColor="#34C759" />
+
+            <!-- ImageButton Test -->
+            <Label Text="Image Button" FontSize="16" FontAttributes="Bold" TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+            <Button 
+                Text="📷 Image Button" 
+                Command="{Binding TestImageButtonCommand}"
+                AutomationId="TestImageButton"
+                BackgroundColor="#FF9500" />
+
+            <!-- Link Test -->
+            <Label Text="Link Button" FontSize="16" FontAttributes="Bold" TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+            <Button 
+                Text="Visit Documentation" 
+                Command="{Binding TestLinkCommand}"
+                AutomationId="TestLink"
+                BackgroundColor="#5856D6" />
+
+            <!-- RoundButton Test -->
+            <Label Text="Round Button" FontSize="16" FontAttributes="Bold" TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+            <Button 
+                Text="✓" 
+                Command="{Binding TestRoundButtonCommand}"
+                AutomationId="TestRoundButton"
+                BackgroundColor="#FF3B30"
+                WidthRequest="60"
+                HeightRequest="60"
+                CornerRadius="30" />
+
+            <BoxView Color="{AppThemeBinding Light=LightGray, Dark=Gray}" HeightRequest="1" />
+
+            <!-- Status Display -->
+            <Label Text="Status:" FontSize="14" FontAttributes="Bold" TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+            <Label 
+                Text="{Binding StatusMessage}" 
+                AutomationId="StatusLabel"
+                FontSize="13"
+                LineBreakMode="WordWrap"
+                TextColor="{AppThemeBinding Light=DarkGreen, Dark=LightGreen}"
+                Padding="10"
+                BackgroundColor="{AppThemeBinding Light=#F0F0F0, Dark=#2F2F2F}" />
+
+            <!-- Reset Button -->
+            <Button 
+                Text="Reset" 
+                Command="{Binding ResetCommand}"
+                AutomationId="ResetButton"
+                BackgroundColor="#A2845C" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

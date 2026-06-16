@@ -1,4 +1,4 @@
-namespace Brinell.Maui.UITests.Tests.Buttons;
+namespace Brinell.Maui.UITests.Tests2.Buttons;
 
 /// <summary>
 /// UI tests for Link verifying link/hyperlink operations.

@@ -1,10 +1,7 @@
 using Brinell.Core.Locators;
 using Brinell.Maui.Controls.DateTime;
 using Brinell.Maui.Controls.Display;
-using Brinell.Maui.Controls.Generated;
-using Brinell.Maui.Controls.Navigation;
 using Brinell.Maui.Controls.Range;
-using Brinell.Maui.Controls.Selection;
 using Brinell.Maui.Controls.Text;
 using Brinell.Maui.Controls.Toggle;
 using Brinell.Maui.Enums;
@@ -294,53 +291,9 @@ public abstract class ContainerBase<TParent, TSelf> : ControlBase<TParent>, IMau
     protected Button<TSelf> Button(string locator)
         => new(this, locator);
 
-    /// <summary>
-    /// Creates an icon command button control within this container scope.
-    /// </summary>
-    protected IconCommandButton<TSelf> IconCommandButton(Locator locator)
-        => new(this, locator);
-
-    /// <summary>
-    /// Creates an icon command button control within this container scope using automation ID.
-    /// </summary>
-    protected IconCommandButton<TSelf> IconCommandButton(string locator)
-        => new(this, locator);
-
-    /// <summary>
-    /// Creates a round button control within this container scope.
-    /// </summary>
-    protected RoundButton<TSelf> RoundButton(Locator locator)
-        => new(this, locator);
-
-    /// <summary>
-    /// Creates a round button control within this container scope using automation ID.
-    /// </summary>
-    protected RoundButton<TSelf> RoundButton(string locator)
-        => new(this, locator);
-
-    /// <summary>
-    /// Creates an entry control within this page scope.
-    /// </summary>
-    protected Entry<TSelf> Entry(Locator locator)
-        => new(this, locator);
-
-    /// <summary>
-    /// Creates an entry control within this page scope using automation ID.
-    /// </summary>
-    protected Entry<TSelf> Entry(string locator)
-        => new(this, locator);
-
-    /// <summary>
-    /// Creates a generated editable field control within this container scope.
-    /// </summary>
-    protected EditableField<TSelf> EditableField(Locator locator)
-        => new(this, locator);
-
-    /// <summary>
-    /// Creates a generated editable field control within this container scope using automation ID.
-    /// </summary>
-    protected EditableField<TSelf> EditableField(string locator)
-        => new(this, locator);
+    // Extension control icon command button, round button, and editable field factories
+    // have been moved to Brinell.Maui.Extensions.
+    // Import those namespaces to use them directly within container scopes.
 
     #region Display Controls
 
@@ -413,6 +366,18 @@ public abstract class ContainerBase<TParent, TSelf> : ControlBase<TParent>, IMau
     #region Text Controls
 
     /// <summary>
+    /// Creates an entry control within this container scope.
+    /// </summary>
+    protected Entry<TSelf> Entry(Locator locator)
+        => new(this, locator);
+
+    /// <summary>
+    /// Creates an entry control within this container scope using the scope default locator.
+    /// </summary>
+    protected Entry<TSelf> Entry(string locator)
+        => new(this, locator);
+
+    /// <summary>
     /// Creates an editor control within this container scope.
     /// </summary>
     protected Editor<TSelf> Editor(Locator locator)
@@ -440,35 +405,18 @@ public abstract class ContainerBase<TParent, TSelf> : ControlBase<TParent>, IMau
 
     #region Selection Controls
 
-    /// <summary>
-    /// Creates a picker control within this container scope.
-    /// </summary>
-    protected Picker<TSelf> Picker(Locator locator)
-        => new(this, locator);
+    // Note: Picker control is not yet implemented in Brinell.Maui
+    // Uncomment and implement when Picker<TSelf> control is created
 
-    /// <summary>
-    /// Creates a picker control within this container scope using the scope default locator.
-    /// </summary>
-    protected Picker<TSelf> Picker(string locator)
-        => new(this, locator);
+    // protected Picker<TSelf> Picker(Locator locator)
+    //     => new(this, locator);
 
-    /// <summary>
-    /// Creates a GenericBrowser control within this container scope.
-    /// </summary>
-    protected GenericBrowser<TSelf> GenericBrowser()
-        => new(this);
+    // protected Picker<TSelf> Picker(string locator)
+    //     => new(this, locator);
 
-    /// <summary>
-    /// Creates a selection list control within this container scope.
-    /// </summary>
-    protected SelectionList<TSelf> SelectionList()
-        => new(this);
-
-    /// <summary>
-    /// Creates a shared MAUI tab menu control within this container scope.
-    /// </summary>
-    protected TabMenu<TSelf> TabMenu()
-        => new(this);
+    // Note: GenericBrowser, SelectionList, and TabMenu extension control factories
+    // have been moved to Brinell.Maui.Extensions.
+    // Import those namespaces to use them directly within container scopes.
 
     #endregion
 

@@ -142,7 +142,7 @@ public class MainPage : PageObjectBase<MainPage>
     /// <summary>
     /// The color picker.
     /// </summary>
-    public Picker<MainPage> ColorPicker => Picker("ColorPicker");
+    public Picker<MainPage> ColorPicker => new(this, "ColorPicker");
 
     /// <summary>
     /// The birth date picker.

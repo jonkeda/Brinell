@@ -1,6 +1,6 @@
 using Brinell.Maui.CommunityToolkit.Controls;
 
-namespace Brinell.Maui.UITests.Pages;
+namespace Brinell.Maui.UITests.Pages2;
 
 /// <summary>
 /// Page object for MAUI TabbedPage navigation.

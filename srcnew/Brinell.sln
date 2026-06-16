@@ -97,6 +97,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinell.Samples.Blazor.App"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinell.Html.Uat.Tests", "..\testsnew\Brinell.Html.Uat.Tests\Brinell.Html.Uat.Tests.csproj", "{22C94D13-762D-466B-85E0-FC4125BD1A45}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinell.Maui.Extensions", "Brinell.Maui.Extensions\Brinell.Maui.Extensions.csproj", "{45CDA4C0-A681-4411-9077-3890B5670787}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -611,6 +613,18 @@ Global
 		{22C94D13-762D-466B-85E0-FC4125BD1A45}.Release|x64.Build.0 = Release|Any CPU
 		{22C94D13-762D-466B-85E0-FC4125BD1A45}.Release|x86.ActiveCfg = Release|Any CPU
 		{22C94D13-762D-466B-85E0-FC4125BD1A45}.Release|x86.Build.0 = Release|Any CPU
+		{45CDA4C0-A681-4411-9077-3890B5670787}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{45CDA4C0-A681-4411-9077-3890B5670787}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{45CDA4C0-A681-4411-9077-3890B5670787}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{45CDA4C0-A681-4411-9077-3890B5670787}.Debug|x64.Build.0 = Debug|Any CPU
+		{45CDA4C0-A681-4411-9077-3890B5670787}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{45CDA4C0-A681-4411-9077-3890B5670787}.Debug|x86.Build.0 = Debug|Any CPU
+		{45CDA4C0-A681-4411-9077-3890B5670787}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{45CDA4C0-A681-4411-9077-3890B5670787}.Release|Any CPU.Build.0 = Release|Any CPU
+		{45CDA4C0-A681-4411-9077-3890B5670787}.Release|x64.ActiveCfg = Release|Any CPU
+		{45CDA4C0-A681-4411-9077-3890B5670787}.Release|x64.Build.0 = Release|Any CPU
+		{45CDA4C0-A681-4411-9077-3890B5670787}.Release|x86.ActiveCfg = Release|Any CPU
+		{45CDA4C0-A681-4411-9077-3890B5670787}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

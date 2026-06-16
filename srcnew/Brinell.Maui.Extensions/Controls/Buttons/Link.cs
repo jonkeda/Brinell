@@ -1,4 +1,4 @@
-namespace Brinell.Maui.Controls.Buttons;
+namespace Brinell.Maui.Extensions.Controls.Buttons;
 
 /// <summary>
 /// MAUI hyperlink/link control for clickable links.

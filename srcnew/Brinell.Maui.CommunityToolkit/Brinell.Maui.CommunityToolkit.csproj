@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <TargetFrameworks>net10.0</TargetFrameworks>
     <RootNamespace>Brinell.Maui.CommunityToolkit</RootNamespace>
     <Description>CommunityToolkit.Maui controls for Brinell UI testing framework.</Description>
     <PackageId>Brinell.Maui.CommunityToolkit</PackageId>
@@ -16,7 +17,7 @@
   </ItemGroup>
   
   <ItemGroup>
-    <PackageReference Update="Microsoft.SourceLink.GitHub" Version="8.0.0" />
+    <PackageReference Update="Microsoft.SourceLink.GitHub" Version="10.0.300" />
   </ItemGroup>
 
 </Project>

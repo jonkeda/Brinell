@@ -1,6 +1,6 @@
 using Brinell.Core;
 
-namespace Brinell.Maui.Controls.Generated;
+namespace Brinell.Maui.Extensions.Controls.Generated;
 
 /// <summary>
 /// MAUI generated editable field wrapper.

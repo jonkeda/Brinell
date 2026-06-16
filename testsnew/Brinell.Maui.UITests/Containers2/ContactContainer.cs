@@ -1,6 +1,6 @@
 using Brinell.Maui.UITests.Pages2;
 
-namespace Brinell.Maui.UITests.Containers;
+namespace Brinell.Maui.UITests.Containers2;
 
 /// <summary>
 /// Container for a contact card.

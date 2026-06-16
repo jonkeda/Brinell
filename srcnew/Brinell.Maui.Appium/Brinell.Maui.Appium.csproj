@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <TargetFrameworks>net10.0</TargetFrameworks>
     <RootNamespace>Brinell.Maui.Appium</RootNamespace>
     <Description>Appium-based driver implementation for MAUI UI testing on iOS and Android platforms.</Description>
     <PackageId>Brinell.Maui.Appium</PackageId>

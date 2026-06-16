@@ -17,10 +17,15 @@
     <None Update="TestSettings\**\*.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Update="coverlet.collector">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
   <Target Name="BuildStrideSampleApp" BeforeTargets="Build">
-    <MSBuild Projects="..\..\samples\Brinell.Samples.Stride.App\Brinell.Samples.Stride.App.csproj"
-             Targets="Build"
-             Properties="Configuration=$(Configuration)" />
+    <MSBuild Projects="..\..\samples\Brinell.Samples.Stride.App\Brinell.Samples.Stride.App.csproj" Targets="Build" Properties="Configuration=$(Configuration)" />
   </Target>
 
 </Project>

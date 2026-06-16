@@ -1,4 +1,4 @@
-namespace Brinell.Maui.Controls.Collection;
+namespace Brinell.Maui.Extensions.Controls.Collection;
 
 /// <summary>
 /// MAUI control for displaying a paginated list of items with next/previous page navigation.

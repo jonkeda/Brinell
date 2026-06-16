@@ -3,7 +3,6 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
-  
   <ItemGroup>
     <!-- Testing -->
     <PackageVersion Include="xunit" Version="2.9.3" />
@@ -12,31 +11,24 @@
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.0" />
     <PackageVersion Include="coverlet.collector" Version="6.0.4" />
     <PackageVersion Include="Moq" Version="4.20.70" />
-    
     <!-- FlaUI for WPF/WinForms -->
     <PackageVersion Include="FlaUI.Core" Version="5.0.0" />
     <PackageVersion Include="FlaUI.UIA3" Version="5.0.0" />
-    
     <!-- Playwright for Blazor/Html -->
-    <PackageVersion Include="Microsoft.Playwright" Version="1.50.0" />
-    
+    <PackageVersion Include="Microsoft.Playwright" Version="1.60.0" />
     <!-- Appium for MAUI -->
-    <PackageVersion Include="Appium.WebDriver" Version="8.0.1" />
-
+    <PackageVersion Include="Appium.WebDriver" Version="8.2.0" />
     <!-- MAUI app projects -->
-    <PackageVersion Include="Microsoft.Maui.Controls" Version="10.0.1" />
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0" />
-    <PackageVersion Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
+    <PackageVersion Include="Microsoft.Maui.Controls" Version="10.0.71" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.9" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Debug" Version="10.0.9" />
     <PackageVersion Include="CommunityToolkit.Maui" Version="9.0.0" />
-    
     <!-- WireMock for API mocking -->
-    <PackageVersion Include="WireMock.Net" Version="1.6.10" />
-    
+    <PackageVersion Include="WireMock.Net" Version="2.11.0" />
     <!-- Stride 3D Engine -->
     <PackageVersion Include="Stride.Engine" Version="4.3.0.2507" />
     <PackageVersion Include="Stride.UI" Version="4.3.0.2507" />
-    
     <!-- Source Link -->
-    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="8.0.0" />
+    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.300" />
   </ItemGroup>
 </Project>

@@ -1,4 +1,4 @@
-namespace Brinell.Maui.Controls.Buttons;
+namespace Brinell.Maui.Extensions.Controls.Buttons;
 
 /// <summary>
 /// Command button rendered with the shared IconLabelButtonView template.

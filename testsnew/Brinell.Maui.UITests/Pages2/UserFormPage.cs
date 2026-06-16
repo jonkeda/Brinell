@@ -75,22 +75,22 @@ public class UserFormPage : PageObjectBase<UserFormPage>
     /// <summary>
     /// The first name entry field.
     /// </summary>
-    public Entry<UserFormPage> FirstNameEntry => Entry("FirstNameEntry");
+    public Entry<UserFormPage> FirstNameEntry => new (this, "FirstNameEntry");
 
     /// <summary>
     /// The last name entry field.
     /// </summary>
-    public Entry<UserFormPage> LastNameEntry => Entry("LastNameEntry");
+    public Entry<UserFormPage> LastNameEntry => new(this, "LastNameEntry");
 
     /// <summary>
     /// The email entry field.
     /// </summary>
-    public Entry<UserFormPage> EmailEntry => Entry("EmailEntry");
+    public Entry<UserFormPage> EmailEntry => new(this, "EmailEntry");
 
     /// <summary>
     /// The phone entry field.
     /// </summary>
-    public Entry<UserFormPage> PhoneEntry => Entry("PhoneEntry");
+    public Entry<UserFormPage> PhoneEntry => new(this, "PhoneEntry");
 
     #endregion
 
@@ -160,12 +160,12 @@ public class UserFormPage : PageObjectBase<UserFormPage>
     /// <summary>
     /// The country picker.
     /// </summary>
-    public Picker<UserFormPage> CountryPicker => Picker("CountryPicker");
+    public Picker<UserFormPage> CountryPicker => new(this, "CountryPicker");
 
     /// <summary>
     /// The department picker.
     /// </summary>
-    public Picker<UserFormPage> DepartmentPicker => Picker("DepartmentPicker");
+    public Picker<UserFormPage> DepartmentPicker => new(this, "DepartmentPicker");
 
     #endregion
 

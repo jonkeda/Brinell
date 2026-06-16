@@ -4,11 +4,8 @@ using Brinell.Maui.Controls.Collection;
 using Brinell.Maui.Controls.Container;
 using Brinell.Maui.Controls.DateTime;
 using Brinell.Maui.Controls.Display;
-using Brinell.Maui.Controls.Generated;
 using Brinell.Maui.Controls.Media;
-using Brinell.Maui.Controls.Navigation;
 using Brinell.Maui.Controls.Range;
-using Brinell.Maui.Controls.Selection;
 using Brinell.Maui.Controls.Text;
 using Brinell.Maui.Controls.Toggle;
 
@@ -217,53 +214,9 @@ public abstract class PageObjectBase<TSelf> : ObjectBase, IMauiPage<TSelf>
     protected Button<TSelf> Button(string locator)
         => new(this, locator);
 
-    /// <summary>
-    /// Creates an icon command button control within this page scope.
-    /// </summary>
-    protected IconCommandButton<TSelf> IconCommandButton(Locator locator)
-        => new(this, locator);
-
-    /// <summary>
-    /// Creates an icon command button control within this page scope using automation ID.
-    /// </summary>
-    protected IconCommandButton<TSelf> IconCommandButton(string locator)
-        => new(this, locator);
-
-    /// <summary>
-    /// Creates a round button control within this page scope.
-    /// </summary>
-    protected RoundButton<TSelf> RoundButton(Locator locator)
-        => new(this, locator);
-
-    /// <summary>
-    /// Creates a round button control within this page scope using automation ID.
-    /// </summary>
-    protected RoundButton<TSelf> RoundButton(string locator)
-        => new(this, locator);
-
-    /// <summary>
-    /// Creates an entry control within this page scope.
-    /// </summary>
-    protected Entry<TSelf> Entry(Locator locator)
-        => new(this, locator);
-    
-    /// <summary>
-    /// Creates an entry control within this page scope using automation ID.
-    /// </summary>
-    protected Entry<TSelf> Entry(string locator)
-        => new (this, locator);
-
-    /// <summary>
-    /// Creates a generated editable field control within this page scope.
-    /// </summary>
-    protected EditableField<TSelf> EditableField(Locator locator)
-        => new(this, locator);
-
-    /// <summary>
-    /// Creates a generated editable field control within this page scope using automation ID.
-    /// </summary>
-    protected EditableField<TSelf> EditableField(string locator)
-        => new(this, locator);
+    // Extension control factories have been moved to Brinell.Maui.Extensions
+    // Import Brinell.Maui.Extensions.Controls.* namespaces to use them directly.
+    // Example: var button = new IconCommandButton<TSelf>(this, locator);
 
     #region Display Controls
 
@@ -362,6 +315,18 @@ public abstract class PageObjectBase<TSelf> : ObjectBase, IMauiPage<TSelf>
     /// <summary>
     /// Creates an editor control within this page scope.
     /// </summary>
+    protected Entry<TSelf> Entry(Locator locator)
+        => new(this, locator);
+
+    /// <summary>
+    /// Creates an editor control within this page scope using automation ID.
+    /// </summary>
+    protected Entry<TSelf> Entry(string locator)
+        => new(this, locator);
+
+    /// <summary>
+    /// Creates an editor control within this page scope.
+    /// </summary>
     protected Editor<TSelf> Editor(Locator locator)
         => new(this, locator);
 
@@ -387,29 +352,12 @@ public abstract class PageObjectBase<TSelf> : ObjectBase, IMauiPage<TSelf>
 
     #region Selection Controls
 
-    /// <summary>
-    /// Creates a picker control within this page scope.
-    /// </summary>
-    protected Picker<TSelf> Picker(Locator locator)
-        => new(this, locator);
+    // Note: Picker control is not yet implemented in Brinell.Maui
+    // Use the GenericBrowser and SelectionList extensions for selection functionality.
 
-    /// <summary>
-    /// Creates a picker control within this page scope using automation ID.
-    /// </summary>
-    protected Picker<TSelf> Picker(string locator)
-        => new(this, locator);
-
-    /// <summary>
-    /// Creates a GenericBrowser control within this page scope.
-    /// </summary>
-    protected GenericBrowser<TSelf> GenericBrowser()
-        => new(this);
-
-    /// <summary>
-    /// Creates a selection list control within this page scope.
-    /// </summary>
-    protected SelectionList<TSelf> SelectionList()
-        => new(this);
+    // Note: GenericBrowser and SelectionList factories removed - use Extensions namespace directly
+    // Example: using Brinell.Maui.Extensions.Controls.Selection;
+    //          var browser = new GenericBrowser<TSelf>(this);
 
     #endregion
 
@@ -471,53 +419,15 @@ public abstract class PageObjectBase<TSelf> : ObjectBase, IMauiPage<TSelf>
 
     #region Container Controls
 
-    /// <summary>
-    /// Creates a scroll view control within this page scope.
-    /// </summary>
-    protected ScrollView<TSelf> ScrollView(Locator locator)
-        => new(this, locator);
+    // Note: Expander extension control factory has been moved to Brinell.Maui.Extensions.
+    // To use it, add: using Brinell.Maui.Extensions.Controls.Container;
+    // Then instantiate: var expander = new Expander<TSelf>(this, locator);
 
-    /// <summary>
-    /// Creates a grid control within this page scope.
-    /// </summary>
-    protected Grid<TSelf> Grid(Locator locator)
-        => new(this, locator);
+    // protected Expander<TSelf> Expander(Locator locator)
+    //     => new(this, locator);
 
-    /// <summary>
-    /// Creates a grid control within this page scope using automation ID.
-    /// </summary>
-    protected Grid<TSelf> Grid(string locator)
-        => new(this, locator);
-
-    /// <summary>
-    /// Creates a collection view control within this page scope.
-    /// </summary>
-    protected CollectionView<TSelf> CollectionView(Locator locator)
-        => new(this, locator);
-
-    /// <summary>
-    /// Creates a collection view control within this page scope using automation ID.
-    /// </summary>
-    protected CollectionView<TSelf> CollectionView(string locator)
-        => new(this, locator);
-
-    /// <summary>
-    /// Creates a scroll view control within this page scope using automation ID.
-    /// </summary>
-    protected ScrollView<TSelf> ScrollView(string locator)
-        => new(this, locator);
-
-    /// <summary>
-    /// Creates an expander control within this page scope.
-    /// </summary>
-    protected Expander<TSelf> Expander(Locator locator)
-        => new(this, locator);
-
-    /// <summary>
-    /// Creates an expander control within this page scope using automation ID.
-    /// </summary>
-    protected Expander<TSelf> Expander(string locator)
-        => new(this, locator);
+    // protected Expander<TSelf> Expander(string locator)
+    //     => new(this, locator);
 
     /// <summary>
     /// Creates a refresh view control within this page scope.
@@ -586,39 +496,9 @@ public abstract class PageObjectBase<TSelf> : ObjectBase, IMauiPage<TSelf>
     // because they require TItem type parameter and item factory function.
     // Use them directly in page objects for type-safe list control access.
 
-    #region Navigation Controls
-
-    /// <summary>
-    /// Creates a menu control within this page scope.
-    /// </summary>
-    protected Menu<TSelf> Menu(Locator locator)
-        => new(this, locator);
-
-    /// <summary>
-    /// Creates a menu control within this page scope using automation ID.
-    /// </summary>
-    protected Menu<TSelf> Menu(string locator)
-        => new(this, locator);
-
-    /// <summary>
-    /// Creates a toolbar control within this page scope.
-    /// </summary>
-    protected Toolbar<TSelf> Toolbar(Locator locator)
-        => new(this, locator);
-
-    /// <summary>
-    /// Creates a toolbar control within this page scope using automation ID.
-    /// </summary>
-    protected Toolbar<TSelf> Toolbar(string locator)
-        => new(this, locator);
-
-    /// <summary>
-    /// Creates a shared MAUI tab menu control within this page scope.
-    /// </summary>
-    protected TabMenu<TSelf> TabMenu()
-        => new(this);
-
-    #endregion
+    // Note: Menu, Toolbar, TabMenu, and Link extension control factories have been moved to Brinell.Maui.Extensions.
+    // Import Brinell.Maui.Extensions.Controls.Navigation and Brinell.Maui.Extensions.Controls.Buttons
+    // to use them directly: var menu = new Menu<TSelf>(this, locator);
 
     #region Media Controls
 
@@ -662,17 +542,8 @@ public abstract class PageObjectBase<TSelf> : ObjectBase, IMauiPage<TSelf>
     protected ImageButton<TSelf> ImageButton(string locator)
         => new(this, locator);
 
-    /// <summary>
-    /// Creates a link control within this page scope.
-    /// </summary>
-    protected Link<TSelf> Link(Locator locator)
-        => new(this, locator);
-
-    /// <summary>
-    /// Creates a link control within this page scope using automation ID.
-    /// </summary>
-    protected Link<TSelf> Link(string locator)
-        => new(this, locator);
+    // Note: Link extension control factory has been moved to Brinell.Maui.Extensions.
+    // Import Brinell.Maui.Extensions.Controls.Buttons to use it directly.
 
     #endregion
     

@@ -1,4 +1,4 @@
-namespace Brinell.Maui.Controls.Navigation;
+namespace Brinell.Maui.Extensions.Controls.Navigation;
 
 /// <summary>
 /// Shared MAUI bottom tab menu control.

@@ -1,6 +1,6 @@
 using Brinell.Maui.UITests.Pages2;
 
-namespace Brinell.Maui.UITests.Tests.Buttons;
+namespace Brinell.Maui.UITests.Tests2.Buttons;
 
 /// <summary>
 /// Example UI tests demonstrating Button control testing patterns.

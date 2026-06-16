@@ -25,7 +25,7 @@ public class ListsPage : PageObjectBase<ListsPage>
     /// <summary>
     /// The page-level ScrollView wrapping all content.
     /// </summary>
-    public ScrollView<ListsPage> ListsScrollView => ScrollView("ListsScrollView");
+    public ScrollView<ListsPage> ListsScrollView => new(this, "ListsScrollView");
 
     #endregion
 

@@ -1,4 +1,4 @@
-namespace Brinell.Maui.Controls.Selection;
+namespace Brinell.Maui.Extensions.Controls.Selection;
 
 /// <summary>
 /// List selection helper for MAUI list rows whose command surface may be exposed as

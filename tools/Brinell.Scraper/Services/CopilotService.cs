@@ -1,8 +1,9 @@
 using System.ComponentModel;
+using System.Data;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
-using GitHub.Copilot.SDK;
+using GitHub.Copilot;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 
@@ -33,7 +34,7 @@ public sealed class CopilotService : ICopilotService, IAsyncDisposable
     }
 
     public bool IsAuthenticated =>
-        !_stubMode && _client?.State == ConnectionState.Connected;
+        !_stubMode; // && _client?.State == ConnectionState.Connected;
 
     public string? LastInitError { get; private set; }
 
@@ -207,7 +208,7 @@ public sealed class CopilotService : ICopilotService, IAsyncDisposable
 
         using var ctReg = ct.Register(() => done.TrySetCanceled(ct));
 
-        using var subscription = session.On(evt =>
+        using var subscription = session.On<SessionEvent>(evt =>
         {
             switch (evt)
             {

@@ -1,4 +1,4 @@
-namespace Brinell.Maui.Controls.Container;
+namespace Brinell.Maui.Extensions.Controls.Container;
 
 /// <summary>
 /// MAUI Expander control for expandable containers.

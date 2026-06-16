@@ -104,7 +104,7 @@ public class DataGridPage : PageObjectBase<DataGridPage>
     /// <summary>
     /// The scroll view containing the main content.
     /// </summary>
-    public ScrollView<DataGridPage> DataScrollView => ScrollView("DataScrollView");
+    public ScrollView<DataGridPage> DataScrollView => new(this, "DataScrollView");
 
     #endregion
 

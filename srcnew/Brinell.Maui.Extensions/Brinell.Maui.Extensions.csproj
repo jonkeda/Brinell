@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net10.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Brinell.Maui.Extensions</RootNamespace>
+    <Description>MAUI custom extension controls for Brinell UI testing. Provides non-standard Brinell-specific control objects that extend the base MAUI control wrappers.</Description>
+    <PackageId>Brinell.Maui.Extensions</PackageId>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Brinell.Core\Brinell.Core.csproj" />
+    <ProjectReference Include="..\Brinell.Maui\Brinell.Maui.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Appium.WebDriver" />
+    <PackageReference Include="xunit.extensibility.core" />
+  </ItemGroup>
+
+</Project>

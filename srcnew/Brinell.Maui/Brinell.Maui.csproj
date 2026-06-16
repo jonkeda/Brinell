@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <TargetFrameworks>net10.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>Brinell.Maui</RootNamespace>
     <Description>MAUI UI testing automation. Provides controls, page objects, and driver factory for cross-platform MAUI application testing.</Description>
     <PackageId>Brinell.Maui</PackageId>
@@ -9,8 +11,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Brinell.Core\Brinell.Core.csproj" />
-    <!-- Driver implementations are loaded dynamically by MauiDriverFactory -->
-    <!-- Test projects should reference Brinell.Maui.Appium and/or Brinell.Maui.FlaUI -->
   </ItemGroup>
 
   <ItemGroup>
@@ -18,6 +18,11 @@
     <PackageReference Include="Appium.WebDriver" />
     <!-- Required for BeforeAfterTestAttribute base class used by ScreenshotTestAttribute -->
     <PackageReference Include="xunit.extensibility.core" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Controls\Generated\" />
+    <Folder Include="Controls\Navigation\" />
   </ItemGroup>
 
 </Project>

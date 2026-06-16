@@ -1,3 +1,5 @@
+using Microsoft.Maui.Controls;
+
 namespace Brinell.Maui.UITests.Pages2;
 
 /// <summary>
@@ -79,7 +81,7 @@ public class MediaGalleryPage : PageObjectBase<MediaGalleryPage>
     /// The thumbnail collection view - accessed as generic control.
     /// Note: For typed item access, use CollectionView directly with item factory.
     /// </summary>
-    public CollectionView<MediaGalleryPage> ThumbnailCollection => CollectionView("ThumbnailCollection");
+    public CollectionView<MediaGalleryPage> ThumbnailCollection => new(this, "ThumbnailCollection");
 
     #endregion
 

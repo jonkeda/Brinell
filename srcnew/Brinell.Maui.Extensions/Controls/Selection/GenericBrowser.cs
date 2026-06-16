@@ -1,4 +1,4 @@
-namespace Brinell.Maui.Controls.Selection;
+namespace Brinell.Maui.Extensions.Controls.Selection;
 
 /// <summary>
 /// Shared GenericBrowser selector used by generated picker/drawer flows.

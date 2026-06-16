@@ -1,6 +1,6 @@
 using Brinell.Core.Interfaces;
 
-namespace Brinell.Maui.Controls.Navigation;
+namespace Brinell.Maui.Extensions.Controls.Navigation;
 
 /// <summary>
 /// MAUI Tab control for Shell TabBar navigation.

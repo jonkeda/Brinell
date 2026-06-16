@@ -1,4 +1,4 @@
-namespace Brinell.Maui.Controls.Navigation;
+namespace Brinell.Maui.Extensions.Controls.Navigation;
 
 /// <summary>
 /// MAUI Menu/FlyoutMenu control for navigation menus.
