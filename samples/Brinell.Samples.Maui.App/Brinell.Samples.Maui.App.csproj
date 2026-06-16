@@ -68,7 +68,10 @@
     <MauiXaml Update="Views2\DataGridView.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>
-    <MauiXaml Update="Views2\TestViews\ButtonsTestView.xaml">
+    <MauiXaml Update="Views\ButtonsView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Views\ButtonsView.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>
   </ItemGroup>
@@ -80,6 +83,17 @@
   <ItemGroup>
     <None Include=".my\maui-control-coverage-analysis.md" />
     <None Include=".my\test-pages-design.md" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Models\" />
+    <Folder Include="TestViews\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Views\ButtonsView.xaml.cs">
+      <DependentUpon>ButtonsView.xaml</DependentUpon>
+    </Compile>
   </ItemGroup>
 
 </Project>

@@ -3,36 +3,36 @@ namespace Brinell.Maui.Controls.Display;
 using Brinell.Maui.Interfaces;
 
 /// <summary>
-/// MAUI Label control for read-only text display.
-/// Uses inherited GetText(), AssertText(), and AssertTextContains() methods.
+/// MAUI TitleBar control for customizing window title bar appearance and behavior.
+/// TitleBar is used to customize the window decoration and is platform-specific.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public class Label<TScope> : ControlBase<TScope>
+public class TitleBar<TScope> : ControlBase<TScope>
     where TScope : IMauiScope<TScope>
 {
     /// <summary>
-    /// Creates a new label control within the specified scope.
+    /// Creates a new TitleBar control within the specified scope.
     /// </summary>
     /// <param name="scope">The scope (page or container) providing element finding.</param>
-    /// <param name="locator">The locator for the label element.</param>
-    public Label(IMauiScope<TScope> scope, Locator locator)
+    /// <param name="locator">The locator for the TitleBar element.</param>
+    public TitleBar(IMauiScope<TScope> scope, Locator locator)
         : base(scope, locator)
     {
     }
 
     /// <summary>
-    /// Creates a new label control within the specified scope using a string locator value.
+    /// Creates a new TitleBar control within the specified scope using a string locator value.
     /// Uses the scope's DefaultLocatorStrategy to create the locator.
     /// </summary>
     /// <param name="scope">The scope (page or container) providing element finding.</param>
     /// <param name="locatorValue">The locator value (e.g., automation ID, name).</param>
-    public Label(IMauiScope<TScope> scope, string locatorValue)
+    public TitleBar(IMauiScope<TScope> scope, string locatorValue)
         : base(scope, locatorValue)
     {
     }
 
     /// <summary>
-    /// Gets text from the label element, with support for nested text structures.
+    /// Gets text from the title bar element, with support for nested text structures.
     /// </summary>
     /// <param name="element">The pre-found element (may be null).</param>
     /// <returns>The text content, or null if not found.</returns>
@@ -40,7 +40,7 @@ public class Label<TScope> : ControlBase<TScope>
     {
         if (element == null) return null;
 
-        // For Windows/FlaUI, use GetNestedText which handles complex label structures
+        // For Windows/FlaUI, use GetNestedText which handles complex title bar structures
         if (element is INestedTextElement textElement)
         {
             var text = textElement.GetNestedText();

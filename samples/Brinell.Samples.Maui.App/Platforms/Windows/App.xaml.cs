@@ -1,5 +1,4 @@
 using Microsoft.UI.Xaml;
-using System;
 
 namespace Brinell.Samples.Maui.App.WinUI;
 

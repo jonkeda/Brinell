@@ -16,8 +16,9 @@ public class AppShellPage : PageObjectBase<AppShellPage>
     public AppShellPage(IMauiTestContext context)
         : base(context)
     {
+        ButtonsTab = new TabViewControl<AppShellPage>(this, "ButtonsTab", "Buttons");
+
         // TabViewControl uses AutomationId as primary, Title as fallback for Windows
-        // AutomationIds match MainPage.xaml TabbedPage children, Titles match ContentPage.Title
         BasicsTab = new TabViewControl<AppShellPage>(this, "BasicsTab", "Basics");
         ContainersTab = new TabViewControl<AppShellPage>(this, "ContainersTab", "Containers");
         FormsTab = new TabViewControl<AppShellPage>(this, "FormsTab", "Forms");
@@ -39,6 +40,9 @@ public class AppShellPage : PageObjectBase<AppShellPage>
     }
 
     #region Tab Controls
+
+    /// <summary>Buttons page tab (default/first tab).</summary>
+    public ITabControlObject<AppShellPage> ButtonsTab { get; }
 
     /// <summary>Basics page tab (default/first tab).</summary>
     public ITabControlObject<AppShellPage> BasicsTab { get; }

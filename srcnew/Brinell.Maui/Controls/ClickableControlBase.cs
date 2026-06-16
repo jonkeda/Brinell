@@ -161,7 +161,8 @@ public abstract class ClickableControlBase<TScope> : ControlBase<TScope>, IClick
     protected virtual void CheckClickableCore(IMauiElement element, int? timeoutMs = null)
     {
         var timeout = timeoutMs ?? DefaultTimeoutMs;
-        
+        Scope.WaitReady(timeout);
+
         // Check enabled state (element already exists, so skip WaitExists)
         if (IsEnabledCore(element) != true)
         {

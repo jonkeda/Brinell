@@ -1,6 +1,4 @@
 using System.Text.RegularExpressions;
-using Brinell.Samples.Shared.Commands;
-using Brinell.Samples.Shared.ViewModels;
 
 namespace Brinell.Samples.Maui.App.ViewModels2;
 

@@ -1,9 +1,5 @@
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using System.Windows.Input;
-using Brinell.Samples.Shared.Commands;
-using Brinell.Samples.Shared.ViewModels;
 
 namespace Brinell.Samples.Maui.App.ViewModels2;
 

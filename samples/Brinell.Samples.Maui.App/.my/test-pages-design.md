@@ -21,21 +21,20 @@ This document outlines one test view per control category, each backed by a dedi
 
 **Controls:**
 - Button
-- IconCommandButton
 - ImageButton
-- Link
-- RoundButton
 
 **Test Scenarios:**
 - Tap button and verify command execution
-- Verify button text/icon display
+- Verify button text/image display
 - Verify enabled/disabled state
 - Verify visual feedback on press
+- Tap image button and verify command
 
 **Validation Points:**
 - Command fires once per tap
 - Button state persists
 - Accessibility: label readable
+- ImageButton loads and displays image
 
 ---
 
@@ -47,8 +46,8 @@ This document outlines one test view per control category, each backed by a dedi
 **Controls:**
 - CarouselView
 - CollectionView
+- IndicatorView
 - ListView
-- PaginatedList
 - TableView
 
 **Test Scenarios:**
@@ -56,14 +55,14 @@ This document outlines one test view per control category, each backed by a dedi
 - Scroll and verify items visible
 - Tap item and verify selection
 - Refresh and reload data
-- Paginate to next set
+- Verify carousel navigation
 
 **Validation Points:**
 - Items render correctly
 - Selection fires event
 - Scroll position maintained
 - Refresh clears and reloads
-- Pagination updates content
+- IndicatorView displays position
 
 ---
 
@@ -74,27 +73,31 @@ This document outlines one test view per control category, each backed by a dedi
 
 **Controls:**
 - Border
-- Expander
+- BoxView
+- ContentView
+- Frame
 - Grid
+- IsoPaneView
 - RefreshView
 - ScrollView
 - SwipeView
 
 **Test Scenarios:**
 - Border displays with correct styling
-- Expander toggles open/closed
 - Grid arranges children
 - RefreshView pulls and refreshes
 - ScrollView scrolls to bottom
 - SwipeView reveals action on swipe
+- Frame displays with border
+- ContentView contains child
 
 **Validation Points:**
 - Visual bounds correct
-- Toggle state changes
 - Child layout respected
 - Refresh triggers action
 - Swipe gesture recognized
 - View can return to default
+- BoxView displays color/dimensions
 
 ---
 
@@ -156,12 +159,14 @@ This document outlines one test view per control category, each backed by a dedi
 - Image
 - Label
 - ProgressBar
+- TitleBar
 
 **Test Scenarios:**
 - Label displays text
 - Image loads and displays
 - ActivityIndicator animates when running
 - ProgressBar shows progress value
+- TitleBar displays with title
 - Verify text wrapping/truncation
 
 **Validation Points:**
@@ -170,15 +175,38 @@ This document outlines one test view per control category, each backed by a dedi
 - Spinner animates smoothly
 - Progress bar fills proportionally
 - Visual hierarchy maintained
+- TitleBar positioned correctly
 
 ---
 
-### 7. Media Module
+### 7. Graphics Module
+**Files:**
+- View: `GraphicsTestView.xaml`
+- ViewModel: `GraphicsTestViewModel.cs`
+
+**Controls:**
+- GraphicsView
+
+**Test Scenarios:**
+- Load graphics and verify rendering
+- Verify graphics display correctly
+- Test custom drawing operations
+
+**Validation Points:**
+- Graphics render without errors
+- Content displays
+- Performance acceptable
+
+---
+
+### 8. Media Module
 **Files:**
 - View: `MediaTestView.xaml`
 - ViewModel: `MediaTestViewModel.cs`
 
 **Controls:**
+- BlazorWebView
+- HybridWebView
 - MediaElement
 - WebView
 
@@ -187,44 +215,36 @@ This document outlines one test view per control category, each backed by a dedi
 - Load web content
 - Stop playback
 - Navigate webview
+- Load Blazor component
 
 **Validation Points:**
 - Media loads
 - Content renders
 - Playback responds to controls
 - WebView navigation works
+- Blazor component initializes
 
 ---
 
-### 8. Navigation Module
+### 9. Navigation Module
 **Files:**
 - View: `NavigationTestView.xaml`
 - ViewModel: `NavigationTestViewModel.cs`
 
 **Controls:**
-- FlyoutItem
-- Menu
-- Tab
-- TabMenu
-- Toolbar
+- (Navigation controls are shell-level, not standalone test controls)
 
 **Test Scenarios:**
-- Tap menu item and navigate
-- Select tab and verify content changes
-- Tap toolbar button and verify action
-- Verify menu open/close
-- Flyout item highlighted when selected
+- Navigation via shell routing
+- AppShell navigation menu access
 
 **Validation Points:**
-- Navigation fires correctly
-- Selection syncs with content
-- Toolbar buttons fire commands
-- Flyout opens/closes smoothly
-- Current item highlighted
+- Navigation works correctly
+- Page transitions smooth
 
 ---
 
-### 9. Range Module
+### 10. Range Module
 **Files:**
 - View: `RangeTestView.xaml`
 - ViewModel: `RangeTestViewModel.cs`
@@ -247,32 +267,55 @@ This document outlines one test view per control category, each backed by a dedi
 
 ---
 
-### 10. Selection Module
+### 11. Selection Module
 **Files:**
 - View: `SelectionTestView.xaml`
 - ViewModel: `SelectionTestViewModel.cs`
 
 **Controls:**
-- GenericBrowser
 - Picker
-- SelectionList
 
 **Test Scenarios:**
 - Open picker and select item
-- Open browser and search/filter
-- Verify selection list shows items
-- Tap item and verify selection
+- Verify selection displays
+- Verify picker closes after selection
 
 **Validation Points:**
 - Picker opens and closes
 - Selection fires event
-- Browser filters results
-- SelectionList displays all items
+- Selected value displays
 - Selected state visually distinct
 
 ---
 
-### 11. Text Module
+### 12. Shapes Module
+**Files:**
+- View: `ShapesTestView.xaml`
+- ViewModel: `ShapesTestViewModel.cs`
+
+**Controls:**
+- Ellipse
+- Line
+- Path
+- Polygon
+- Polyline
+- Rectangle
+- RoundRectangle
+
+**Test Scenarios:**
+- Shapes render correctly
+- Verify dimensions and positioning
+- Verify fill and stroke colors
+
+**Validation Points:**
+- All shapes display without error
+- Geometric calculations correct
+- Colors apply correctly
+- Layout respects bounds
+
+---
+
+### 13. Text Module
 **Files:**
 - View: `TextTestView.xaml`
 - ViewModel: `TextTestViewModel.cs`
@@ -299,7 +342,7 @@ This document outlines one test view per control category, each backed by a dedi
 
 ---
 
-### 12. Toggle Module
+### 14. Toggle Module
 **Files:**
 - View: `ToggleTestView.xaml`
 - ViewModel: `ToggleTestViewModel.cs`
@@ -465,10 +508,11 @@ samples/Brinell.Samples.Maui.App/
 │       ├── DateTimeTestView.xaml
 │       ├── DialogsTestView.xaml
 │       ├── DisplayTestView.xaml
+│       ├── GraphicsTestView.xaml
 │       ├── MediaTestView.xaml
-│       ├── NavigationTestView.xaml
 │       ├── RangeTestView.xaml
 │       ├── SelectionTestView.xaml
+│       ├── ShapesTestView.xaml
 │       ├── TextTestView.xaml
 │       └── ToggleTestView.xaml
 ├── ViewModels/
@@ -479,10 +523,11 @@ samples/Brinell.Samples.Maui.App/
 │       ├── DateTimeTestViewModel.cs
 │       ├── DialogsTestViewModel.cs
 │       ├── DisplayTestViewModel.cs
+│       ├── GraphicsTestViewModel.cs
 │       ├── MediaTestViewModel.cs
-│       ├── NavigationTestViewModel.cs
 │       ├── RangeTestViewModel.cs
 │       ├── SelectionTestViewModel.cs
+│       ├── ShapesTestViewModel.cs
 │       ├── TextTestViewModel.cs
 │       └── ToggleTestViewModel.cs
 └── AppShell.xaml
@@ -504,30 +549,31 @@ Brinell.Maui.UITests/
 │       ├── DateTimeTestPage.cs
 │       ├── DialogsTestPage.cs
 │       ├── DisplayTestPage.cs
+│       ├── GraphicsTestPage.cs
 │       ├── MediaTestPage.cs
-│       ├── NavigationTestPage.cs
 │       ├── RangeTestPage.cs
 │       ├── SelectionTestPage.cs
+│       ├── ShapesTestPage.cs
 │       ├── TextTestPage.cs
 │       └── ToggleTestPage.cs
 └── Tests/
     └── ControlTests/
         ├── Buttons/
         │   ├── ButtonTests.cs
-        │   ├── IconCommandButtonTests.cs
-        │   ├── ImageButtonTests.cs
-        │   ├── LinkTests.cs
-        │   └── RoundButtonTests.cs
+        │   └── ImageButtonTests.cs
         ├── Collection/
         │   ├── CarouselViewTests.cs
         │   ├── CollectionViewTests.cs
+        │   ├── IndicatorViewTests.cs
         │   ├── ListViewTests.cs
-        │   ├── PaginatedListTests.cs
         │   └── TableViewTests.cs
         ├── Container/
         │   ├── BorderTests.cs
-        │   ├── ExpanderTests.cs
+        │   ├── BoxViewTests.cs
+        │   ├── ContentViewTests.cs
+        │   ├── FrameTests.cs
         │   ├── GridTests.cs
+        │   ├── IsoPaneViewTests.cs
         │   ├── RefreshViewTests.cs
         │   ├── ScrollViewTests.cs
         │   └── SwipeViewTests.cs
@@ -540,27 +586,32 @@ Brinell.Maui.UITests/
         │   ├── ActivityIndicatorTests.cs
         │   ├── ImageTests.cs
         │   ├── LabelTests.cs
-        │   └── ProgressBarTests.cs
+        │   ├── ProgressBarTests.cs
+        │   └── TitleBarTests.cs
+        ├── Graphics/
+        │   └── GraphicsViewTests.cs
         ├── Media/
+        │   ├── BlazorWebViewTests.cs
+        │   ├── HybridWebViewTests.cs
         │   ├── MediaElementTests.cs
         │   └── WebViewTests.cs
-        ├── Navigation/
-        │   ├── FlyoutItemTests.cs
-        │   ├── MenuTests.cs
-        │   ├── TabTests.cs
-        │   ├── TabMenuTests.cs
-        │   └── ToolbarTests.cs
         ├── Range/
         │   ├── SliderTests.cs
         │   └── StepperTests.cs
         ├── Selection/
-        │   ├── GenericBrowserTests.cs
-        │   ├── PickerTests.cs
-        │   └── SelectionListTests.cs
-        ├── Text/
-        │   ├── EditorTests.cs
-        │   ├── EntryTests.cs
-        │   └── SearchBarTests.cs
+        │   └── PickerTests.cs
+        ├── Shapes/
+        │   ├── EllipseTests.cs
+        │   ├── LineTests.cs
+        │   ├── PathTests.cs
+        │   ├── PolygonTests.cs
+        │   ├── PolylineTests.cs
+        │   ├── RectangleTests.cs
+        │   └── RoundRectangleTests.cs
+        └── Text/
+            ├── EditorTests.cs
+            ├── EntryTests.cs
+            └── SearchBarTests.cs
         └── Toggle/
             ├── CheckBoxTests.cs
             ├── RadioButtonTests.cs

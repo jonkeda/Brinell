@@ -21,7 +21,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Controls\Generated\" />
     <Folder Include="Controls\Navigation\" />
   </ItemGroup>
 

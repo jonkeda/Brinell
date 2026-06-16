@@ -1,6 +1,6 @@
-using Brinell.Maui.UITests.Pages2.TestViewPages;
+using Brinell.Maui.UITests.Pages;
 
-namespace Brinell.Maui.UITests.Tests2.ControlTests.Buttons;
+namespace Brinell.Maui.UITests.Tests.Buttons;
 
 /// <summary>
 /// UI tests for the Button control in the ButtonsTestView.
@@ -15,6 +15,8 @@ public class ButtonTests
     public ButtonTests(AppiumFixture fixture)
     {
         _fixture = fixture;
+
+        _fixture.AppShell.ButtonsTab.Click();
     }
 
     private ButtonsTestPage GetPage()
@@ -31,7 +33,7 @@ public class ButtonTests
     {
         var page = GetPage();
         // Assert
-        Assert.True(page.TestButton.IsExists());
+        page.TestButton.AssertExists();
         return Task.CompletedTask;
     }
 
@@ -44,7 +46,7 @@ public class ButtonTests
     {
         var page = GetPage();
         // Assert
-        Assert.True(page.TestButton.IsVisible());
+        page.TestButton.AssertVisible();
         return Task.CompletedTask;
     }
 
@@ -57,7 +59,7 @@ public class ButtonTests
     {
         var page = GetPage();
         // Assert
-        Assert.True(page.TestButton.IsEnabled());
+        page.TestButton.AssertEnabled();
         return Task.CompletedTask;
     }
 
@@ -73,8 +75,8 @@ public class ButtonTests
         page.IsLoaded(timeoutMs: 5000);
 
         // Act
-        page.TapButton()
-            .VerifyStatusContains("Button tapped");
+        page.TestButton.Click()
+            .StatusLabel.AssertTextContains("Button tapped");
 
         return Task.CompletedTask;
     }
@@ -91,10 +93,10 @@ public class ButtonTests
         page.IsLoaded(timeoutMs: 5000);
 
         // Act
-        page.TapButton()
-            .VerifyStatusContains("1 time")
-            .TapButton()
-            .VerifyStatusContains("2 times");
+        page.TestButton.Click()
+            .StatusLabel.AssertTextContains("1 time")
+            .TestButton.Click()
+            .StatusLabel.AssertTextContains("2 times");
 
         return Task.CompletedTask;
     }
@@ -111,10 +113,10 @@ public class ButtonTests
         page.IsLoaded(timeoutMs: 5000);
 
         // Act
-        page.TapButton()
-            .VerifyStatusContains("Button tapped")
-            .Reset()
-            .VerifyStatusContains("Ready");
+        page.TestButton.Click()
+            .StatusLabel.AssertTextContains("Button tapped")
+            .ResetButton.Click()
+            .StatusLabel.AssertTextContains("Ready");
 
         return Task.CompletedTask;
     }

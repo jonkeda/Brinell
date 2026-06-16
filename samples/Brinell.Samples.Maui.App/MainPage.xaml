@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <TabbedPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-            xmlns:views="clr-namespace:Brinell.Samples.Maui.App.Views"
+            xmlns:views="using:Brinell.Samples.Maui.App.Views"
+            xmlns:views2="using:Brinell.Samples.Maui.App.Views2"
+            xmlns:testViews="using:Brinell.Samples.Maui.App.Views2.TestViews"
             x:Class="Brinell.Samples.Maui.App.MainPage"
             AutomationId="MainPage"
             Title="Brinell MAUI Sample"
@@ -10,47 +12,53 @@
             SelectedTabColor="White"
             UnselectedTabColor="LightGray">
 
+    <!-- Button -->
+    <ContentPage Title="Buttons" AutomationId="ButtonsTab">
+        <testViews:ButtonsView />
+    </ContentPage>
+
+
     <!-- Basics Tab -->
     <ContentPage Title="Basics" AutomationId="BasicsTab">
-        <views:BasicsView />
+        <views2:BasicsView />
     </ContentPage>
 
     <!-- Containers Tab -->
     <ContentPage Title="Containers" AutomationId="ContainersTab">
-        <views:ContainerDemoView />
+        <views2:ContainerDemoView />
     </ContentPage>
 
     <!-- Forms Tab -->
     <ContentPage Title="Forms" AutomationId="FormsTab">
-        <views:FormsView />
+        <views2:FormsView />
     </ContentPage>
 
     <!-- Lists Tab: CarouselView, TableView, PaginatedList -->
     <ContentPage Title="Lists" AutomationId="ListsTab">
-        <views:CollectionDemoView />
+        <views2:CollectionDemoView />
     </ContentPage>
     <ContentPage Title="Gestures" AutomationId="GesturesTab">
-        <views:GesturesView />
+        <views2:GesturesView />
     </ContentPage>
 
     <!-- Navigation Tab -->
     <ContentPage Title="Navigation" AutomationId="NavigationTab">
-        <views:NavigationDemoView />
+        <views2:NavigationDemoView />
     </ContentPage>
 
     <!-- Toolkit Tab -->
     <ContentPage Title="Toolkit" AutomationId="ToolkitTab">
-        <views:ToolkitView />
+        <views2:ToolkitView />
     </ContentPage>
 
     <!-- Media Tab -->
     <ContentPage Title="Media" AutomationId="MediaTab">
-        <views:MediaGalleryView />
+        <views2:MediaGalleryView />
     </ContentPage>
 
     <!-- DataGrid Tab -->
     <ContentPage Title="DataGrid" AutomationId="DataGridTab">
-        <views:DataGridView />
+        <views2:DataGridView />
     </ContentPage>
 
 </TabbedPage>

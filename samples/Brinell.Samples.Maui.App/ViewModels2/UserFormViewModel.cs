@@ -1,6 +1,4 @@
 using Brinell.Samples.Maui.App.Models2;
-using Brinell.Samples.Shared.Commands;
-using Brinell.Samples.Shared.ViewModels;
 
 namespace Brinell.Samples.Maui.App.ViewModels2;
 
