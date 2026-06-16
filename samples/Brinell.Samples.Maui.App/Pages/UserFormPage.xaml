@@ -20,8 +20,8 @@
                    FontAttributes="Bold" />
 
             <!-- Text Input Section (IEntry, IEditor, ISearchBar) -->
-            <Frame AutomationId="TextInputSection" 
-                   CornerRadius="10" 
+            <Border AutomationId="TextInputSection" 
+                    
                    Padding="15">
                 <VerticalStackLayout Spacing="10">
                     <Label Text="Personal Information" 
@@ -61,11 +61,11 @@
                                SearchCommand="{Binding SearchCommand}"
                                AutomationId="UserSearchBar" />
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
             <!-- Toggle Section (ISwitch, ICheckBox, IRadioButton) -->
-            <Frame AutomationId="ToggleSection" 
-                   CornerRadius="10" 
+            <Border AutomationId="ToggleSection" 
+                    
                    Padding="15">
                 <VerticalStackLayout Spacing="10">
                     <Label Text="Preferences" 
@@ -122,11 +122,11 @@
                                  IsChecked="{Binding SubscriptionTier, Converter={StaticResource StringToBoolConverter}, ConverterParameter=Enterprise}"
                                  AutomationId="EnterpriseRadio" />
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
             <!-- Selection Section (IPicker, IDatePicker, ITimePicker) -->
-            <Frame AutomationId="SelectionSection" 
-                   CornerRadius="10" 
+            <Border AutomationId="SelectionSection" 
+                    
                    Padding="15">
                 <VerticalStackLayout Spacing="10">
                     <Label Text="Selection Controls" 
@@ -159,11 +159,11 @@
                     <TimePicker Time="{Binding PreferredTime}"
                                 AutomationId="PreferredTimePicker" />
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
             <!-- Range Section (ISlider, IStepper) -->
-            <Frame AutomationId="RangeSection" 
-                   CornerRadius="10" 
+            <Border AutomationId="RangeSection" 
+                    
                    Padding="15">
                 <VerticalStackLayout Spacing="10">
                     <Label Text="Range Controls" 
@@ -199,7 +199,7 @@
                                AutomationId="QuantityLabel" />
                     </HorizontalStackLayout>
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
             <!-- Result Display -->
             <Label Text="{Binding ResultMessage}" 

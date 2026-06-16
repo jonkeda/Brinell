@@ -3,7 +3,6 @@ using CommunityToolkit.Maui;
 using Brinell.Samples.Maui.App.Controls;
 
 #if WINDOWS
-using Brinell.Samples.Maui.App.Platforms.Windows.Controls;
 using Brinell.Samples.Maui.App.Platforms.Windows.Handlers;
 #endif
 
@@ -22,7 +21,8 @@ public static class MauiProgram
 #if WINDOWS
                 // Register custom handler for AutomationContainer
                 // This enables container controls to expose AutomationId to UI Automation
-                handlers.AddHandler<AutomationContainer, AutomationContainerHandler>();
+                handlers.AddHandler<ContentView, AutomationContentViewHandler>();
+                handlers.AddHandler<Layout, AutomationLayoutHandler>();
 #endif
             });
 

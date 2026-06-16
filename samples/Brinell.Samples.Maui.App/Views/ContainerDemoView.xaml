@@ -21,7 +21,7 @@
             
             <!-- Section 1: Single Container (UserProfile) -->
             <!-- Using AutomationContainer instead of Border so the container is discoverable -->
-            <controls:AutomationContainer AutomationId="UserProfileFrame">
+            <controls:AutomationContainer AutomationId="UserProfileBorder">
                 <Border StrokeShape="RoundRectangle 10" Padding="15">
                     <VerticalStackLayout Spacing="10">
                         <Label AutomationId="ProfileTitle" Text="User Profile" FontSize="18" FontAttributes="Bold" />
@@ -34,12 +34,12 @@
             </controls:AutomationContainer>
             
             <!-- Section 2: Nested Containers -->
-            <controls:AutomationContainer AutomationId="OuterFrame">
+            <controls:AutomationContainer AutomationId="OuterBorder">
                 <Border StrokeShape="RoundRectangle 10" Padding="15">
                     <VerticalStackLayout Spacing="10">
                         <Label AutomationId="OuterTitle" Text="Outer Container" FontSize="16" FontAttributes="Bold" />
                         
-                        <controls:AutomationContainer AutomationId="InnerFrame">
+                        <controls:AutomationContainer AutomationId="InnerBorder">
                             <Border StrokeShape="RoundRectangle 5" BackgroundColor="#F0F0F0" Padding="10">
                                 <VerticalStackLayout Spacing="5">
                                     <Label AutomationId="InnerTitle" Text="Inner Container" FontSize="14" />
@@ -55,7 +55,7 @@
             </controls:AutomationContainer>
             
             <!-- Section 3: Task List (CollectionView) -->
-            <controls:AutomationContainer AutomationId="TaskListFrame">
+            <controls:AutomationContainer AutomationId="TaskListBorder">
                 <Border StrokeShape="RoundRectangle 10" Padding="15">
                     <VerticalStackLayout Spacing="10">
                         <Label AutomationId="TaskListTitle" Text="Tasks" FontSize="18" FontAttributes="Bold" />
@@ -88,7 +88,7 @@
             </controls:AutomationContainer>
             
             <!-- Section 4: Contact Cards (Static list with indexed IDs) -->
-            <controls:AutomationContainer AutomationId="ContactsFrame">
+            <controls:AutomationContainer AutomationId="ContactsBorder">
                 <Border StrokeShape="RoundRectangle 10" Padding="15">
                     <VerticalStackLayout Spacing="10">
                         <Label AutomationId="ContactsTitle" Text="Contacts" FontSize="18" FontAttributes="Bold" />

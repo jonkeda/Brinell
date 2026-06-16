@@ -17,13 +17,13 @@
                    SemanticProperties.HeadingLevel="Level1"
                    HorizontalOptions="Center" />
 
-            <Label AutomationId="SubtitleLabel" Text="UI Test Framework Demo"
+            <Label AutomationId="SubtitleLabel" Text="UI Test Borderwork Demo"
                    Style="{StaticResource SubHeadline}"
                    SemanticProperties.HeadingLevel="Level2"
                    HorizontalOptions="Center" />
 
             <!-- Counter Section -->
-            <Frame AutomationId="CounterFrame" Padding="20" CornerRadius="10">
+            <Border AutomationId="CounterBorder" Padding="20" >
                 <VerticalStackLayout Spacing="10">
                     <Label AutomationId="CounterLabel"
                            Text="{Binding CounterText}" FontSize="18" HorizontalOptions="Center" />
@@ -33,10 +33,10 @@
                     </HorizontalStackLayout>
                     <Button AutomationId="ResetButton" Text="Reset" Command="{Binding ResetCommand}" HorizontalOptions="Center" />
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
             <!-- Text Input Section -->
-            <Frame AutomationId="TextInputFrame" Padding="20" CornerRadius="10">
+            <Border AutomationId="TextInputBorder" Padding="20" >
                 <VerticalStackLayout Spacing="10">
                     <Label Text="Text Input" FontSize="16" FontAttributes="Bold" />
                     <Entry AutomationId="NameEntry" Placeholder="Enter your name" MaxLength="50" Text="{Binding Name}" />
@@ -45,10 +45,10 @@
                     <Label AutomationId="GreetingLabel" Text="{Binding Greeting}" FontSize="14" TextColor="{StaticResource Primary}" />
                     <Button AutomationId="GreetButton" Text="Greet" Command="{Binding GreetCommand}" />
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
             <!-- Toggle Controls Section -->
-            <Frame AutomationId="ToggleFrame" Padding="20" CornerRadius="10">
+            <Border AutomationId="ToggleBorder" Padding="20" >
                 <VerticalStackLayout Spacing="10">
                     <Label Text="Toggle Controls" FontSize="16" FontAttributes="Bold" />
                     <HorizontalStackLayout Spacing="10">
@@ -60,20 +60,20 @@
                         <Label Text="I agree to terms" VerticalOptions="Center" />
                     </HorizontalStackLayout>
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
             <!-- Slider Section -->
-            <Frame AutomationId="SliderFrame" Padding="20" CornerRadius="10">
+            <Border AutomationId="SliderBorder" Padding="20" >
                 <VerticalStackLayout Spacing="10">
                     <Label Text="Volume Control" FontSize="16" FontAttributes="Bold" />
                     <Slider AutomationId="VolumeSlider" Minimum="0" Maximum="100" Value="{Binding Volume}" />
                     <Label AutomationId="VolumeLabel" Text="{Binding VolumeText}" HorizontalOptions="Center" />
                     <ProgressBar AutomationId="VolumeProgress" Progress="{Binding VolumeProgress}" />
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
             <!-- Picker Section -->
-            <Frame AutomationId="PickerFrame" Padding="20" CornerRadius="10">
+            <Border AutomationId="PickerBorder" Padding="20" >
                 <VerticalStackLayout Spacing="10">
                     <Label Text="Selection Controls" FontSize="16" FontAttributes="Bold" />
                     <Picker AutomationId="ColorPicker" Title="Select a color" 
@@ -83,16 +83,16 @@
                     <DatePicker AutomationId="BirthDatePicker" MinimumDate="1900-01-01" MaximumDate="2025-12-31" Date="{Binding BirthDate}" />
                     <TimePicker AutomationId="ReminderTimePicker" Time="{Binding ReminderTime}" />
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
             <!-- Activity Indicator -->
-            <Frame AutomationId="ActivityFrame" Padding="20" CornerRadius="10">
+            <Border AutomationId="ActivityBorder" Padding="20" >
                 <VerticalStackLayout Spacing="10">
                     <Label Text="Activity Indicator" FontSize="16" FontAttributes="Bold" />
                     <ActivityIndicator AutomationId="LoadingIndicator" IsRunning="{Binding IsLoading}" Color="{StaticResource Primary}" />
                     <Button AutomationId="ToggleLoadingButton" Text="Toggle Loading" Command="{Binding ToggleLoadingCommand}" />
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
         </VerticalStackLayout>
     </ScrollView>

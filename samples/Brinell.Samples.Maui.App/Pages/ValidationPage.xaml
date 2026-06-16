@@ -24,11 +24,11 @@
                    AutomationId="ValidationSubtitle" />
 
             <!-- Validation Summary -->
-            <Frame BackgroundColor="#FFF3E0" 
-                   CornerRadius="10" 
+            <Border BackgroundColor="#FFF3E0" 
+                    
                    Padding="15"
                    IsVisible="{Binding ErrorCount, Converter={StaticResource IntToBoolConverter}}"
-                   AutomationId="ValidationSummaryFrame">
+                   AutomationId="ValidationSummaryBorder">
                 <VerticalStackLayout>
                     <Label Text="{Binding ErrorCount, StringFormat='Validation Errors: {0}'}"
                            FontAttributes="Bold"
@@ -38,23 +38,23 @@
                            TextColor="Red"
                            AutomationId="ValidationSummary" />
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
             <!-- Success Message -->
-            <Frame BackgroundColor="#E8F5E9" 
-                   CornerRadius="10" 
+            <Border BackgroundColor="#E8F5E9" 
+                    
                    Padding="15"
                    IsVisible="{Binding SuccessMessage, Converter={StaticResource StringToBoolConverter}}"
-                   AutomationId="SuccessFrame">
+                   AutomationId="SuccessBorder">
                 <Label Text="{Binding SuccessMessage}"
                        TextColor="Green"
                        FontAttributes="Bold"
                        AutomationId="SuccessMessage" />
-            </Frame>
+            </Border>
 
             <!-- Required Field Validation -->
-            <Frame AutomationId="RequiredSection" 
-                   CornerRadius="10" 
+            <Border AutomationId="RequiredSection" 
+                    
                    Padding="15">
                 <VerticalStackLayout Spacing="5">
                     <Label Text="Required Field *" 
@@ -68,11 +68,11 @@
                            FontSize="12"
                            AutomationId="RequiredError" />
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
             <!-- Email Validation -->
-            <Frame AutomationId="EmailSection" 
-                   CornerRadius="10" 
+            <Border AutomationId="EmailSection" 
+                    
                    Padding="15">
                 <VerticalStackLayout Spacing="5">
                     <Label Text="Email Address" 
@@ -87,11 +87,11 @@
                            FontSize="12"
                            AutomationId="EmailError" />
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
             <!-- Phone Validation -->
-            <Frame AutomationId="PhoneSection" 
-                   CornerRadius="10" 
+            <Border AutomationId="PhoneSection" 
+                    
                    Padding="15">
                 <VerticalStackLayout Spacing="5">
                     <Label Text="Phone Number (format: 123-456-7890)" 
@@ -106,11 +106,11 @@
                            FontSize="12"
                            AutomationId="PhoneError" />
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
             <!-- Min Length Validation -->
-            <Frame AutomationId="MinLengthSection" 
-                   CornerRadius="10" 
+            <Border AutomationId="MinLengthSection" 
+                    
                    Padding="15">
                 <VerticalStackLayout Spacing="5">
                     <Label Text="Minimum Length (5 characters)" 
@@ -124,11 +124,11 @@
                            FontSize="12"
                            AutomationId="MinLengthError" />
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
             <!-- Max Length Validation -->
-            <Frame AutomationId="MaxLengthSection" 
-                   CornerRadius="10" 
+            <Border AutomationId="MaxLengthSection" 
+                    
                    Padding="15">
                 <VerticalStackLayout Spacing="5">
                     <Label Text="Maximum Length (20 characters)" 
@@ -143,11 +143,11 @@
                            FontSize="12"
                            AutomationId="MaxLengthError" />
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
             <!-- Range Validation -->
-            <Frame AutomationId="RangeSection" 
-                   CornerRadius="10" 
+            <Border AutomationId="RangeSection" 
+                    
                    Padding="15">
                 <VerticalStackLayout Spacing="5">
                     <Label Text="Number Range (1-100)" 
@@ -162,11 +162,11 @@
                            FontSize="12"
                            AutomationId="RangeError" />
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
             <!-- Regex Validation -->
-            <Frame AutomationId="RegexSection" 
-                   CornerRadius="10" 
+            <Border AutomationId="RegexSection" 
+                    
                    Padding="15">
                 <VerticalStackLayout Spacing="5">
                     <Label Text="Alphanumeric Only (regex)" 
@@ -180,7 +180,7 @@
                            FontSize="12"
                            AutomationId="RegexError" />
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
             <!-- Action Buttons -->
             <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
@@ -197,8 +197,8 @@
             </Grid>
 
             <!-- Validation Rules Reference -->
-            <Frame AutomationId="ValidationRulesSection" 
-                   CornerRadius="10" 
+            <Border AutomationId="ValidationRulesSection" 
+                    
                    Padding="15"
                    BackgroundColor="#F5F5F5">
                 <VerticalStackLayout Spacing="5">
@@ -227,7 +227,7 @@
                            FontSize="12"
                            AutomationId="Rule7" />
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
         </VerticalStackLayout>
     </ScrollView>

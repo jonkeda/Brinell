@@ -23,7 +23,6 @@
         <Setter Property="FontFamily" Value="OpenSansRegular" />
         <Setter Property="FontSize" Value="14" />
         <Setter Property="BorderWidth" Value="0" />
-        <Setter Property="CornerRadius" Value="8" />
         <Setter Property="Padding" Value="14,10" />
         <Setter Property="MinimumHeightRequest" Value="44" />
         <Setter Property="MinimumWidthRequest" Value="44" />
@@ -61,9 +60,8 @@
         <Setter Property="PlaceholderColor" Value="{StaticResource Gray300}" />
     </Style>
 
-    <Style TargetType="Frame">
-        <Setter Property="BorderColor" Value="{StaticResource Gray200}" />
-        <Setter Property="HasShadow" Value="False" />
+    <Style TargetType="Border">
+        <Setter Property="Stroke" Value="{StaticResource Gray200}" />
         <Setter Property="BackgroundColor" Value="White" />
     </Style>
 

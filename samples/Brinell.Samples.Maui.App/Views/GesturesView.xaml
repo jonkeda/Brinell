@@ -23,8 +23,8 @@
                    AutomationId="GesturesSubtitle" />
 
             <!-- Gesture Log -->
-            <Frame AutomationId="GestureLogFrame" 
-                   CornerRadius="10" 
+            <Border AutomationId="GestureLogBorder" 
+                    
                    Padding="10"
                    BackgroundColor="#F0F0F0">
                 <VerticalStackLayout>
@@ -37,11 +37,11 @@
                            AutomationId="GestureLogContent"
                            HeightRequest="80" />
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
             <!-- Tap Gesture Section -->
-            <Frame AutomationId="TapSection" 
-                   CornerRadius="10" 
+            <Border AutomationId="TapSection" 
+                    
                    Padding="15">
                 <VerticalStackLayout Spacing="10">
                     <Label Text="Tap Gesture" 
@@ -49,14 +49,14 @@
                            FontAttributes="Bold"
                            AutomationId="TapSectionLabel" />
 
-                    <Frame BackgroundColor="#E3F2FD" 
+                    <Border BackgroundColor="#E3F2FD" 
                            HeightRequest="100"
-                           CornerRadius="10"
+                           
                            AutomationId="TapArea">
-                        <Frame.GestureRecognizers>
+                        <Border.GestureRecognizers>
                             <TapGestureRecognizer Command="{Binding TapCommand}"
                                                   NumberOfTapsRequired="1" />
-                        </Frame.GestureRecognizers>
+                        </Border.GestureRecognizers>
                         <VerticalStackLayout VerticalOptions="Center" 
                                              HorizontalOptions="Center">
                             <Label Text="Tap Here"
@@ -67,28 +67,28 @@
                                    HorizontalOptions="Center"
                                    AutomationId="TapCountDisplay" />
                         </VerticalStackLayout>
-                    </Frame>
+                    </Border>
 
                     <!-- Double Tap Area -->
-                    <Frame BackgroundColor="#E8F5E9" 
+                    <Border BackgroundColor="#E8F5E9" 
                            HeightRequest="80"
-                           CornerRadius="10"
+                           
                            AutomationId="DoubleTapArea">
-                        <Frame.GestureRecognizers>
+                        <Border.GestureRecognizers>
                             <TapGestureRecognizer Command="{Binding TapCommand}"
                                                   NumberOfTapsRequired="2" />
-                        </Frame.GestureRecognizers>
+                        </Border.GestureRecognizers>
                         <Label Text="Double Tap Area"
                                HorizontalOptions="Center"
                                VerticalOptions="Center"
                                AutomationId="DoubleTapText" />
-                    </Frame>
+                    </Border>
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
             <!-- Swipe Section -->
-            <Frame AutomationId="SwipeSection" 
-                   CornerRadius="10" 
+            <Border AutomationId="SwipeSection" 
+                    
                    Padding="15">
                 <VerticalStackLayout Spacing="10">
                     <Label Text="Swipe Gestures" 
@@ -113,26 +113,26 @@
                                            AutomationId="SwipeDelete" />
                             </SwipeItems>
                         </SwipeView.RightItems>
-                        <Frame BackgroundColor="#E1F5FE" 
+                        <Border BackgroundColor="#E1F5FE" 
                                HeightRequest="80"
-                               CornerRadius="10"
+                               
                                AutomationId="SwipeContent">
                             <Label Text="← Swipe Left or Right →"
                                    HorizontalOptions="Center"
                                    VerticalOptions="Center"
                                    AutomationId="SwipeText" />
-                        </Frame>
+                        </Border>
                     </SwipeView>
 
                     <Label Text="{Binding SwipeResult}"
                            TextColor="Blue"
                            AutomationId="SwipeResult" />
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
             <!-- Container Layout Section -->
-            <Frame AutomationId="LayoutSection" 
-                   CornerRadius="10" 
+            <Border AutomationId="LayoutSection" 
+                    
                    Padding="15">
                 <VerticalStackLayout Spacing="10">
                     <Label Text="Container Layouts" 
@@ -147,24 +147,24 @@
                           ColumnSpacing="5"
                           RowSpacing="5"
                           AutomationId="GridDemo">
-                        <Frame Grid.Row="0" Grid.Column="0" BackgroundColor="#FFCDD2" AutomationId="GridCell_0_0">
+                        <Border Grid.Row="0" Grid.Column="0" BackgroundColor="#FFCDD2" AutomationId="GridCell_0_0">
                             <Label Text="0,0" HorizontalOptions="Center" VerticalOptions="Center" />
-                        </Frame>
-                        <Frame Grid.Row="0" Grid.Column="1" BackgroundColor="#F8BBD0" AutomationId="GridCell_0_1">
+                        </Border>
+                        <Border Grid.Row="0" Grid.Column="1" BackgroundColor="#F8BBD0" AutomationId="GridCell_0_1">
                             <Label Text="0,1" HorizontalOptions="Center" VerticalOptions="Center" />
-                        </Frame>
-                        <Frame Grid.Row="0" Grid.Column="2" BackgroundColor="#E1BEE7" AutomationId="GridCell_0_2">
+                        </Border>
+                        <Border Grid.Row="0" Grid.Column="2" BackgroundColor="#E1BEE7" AutomationId="GridCell_0_2">
                             <Label Text="0,2" HorizontalOptions="Center" VerticalOptions="Center" />
-                        </Frame>
-                        <Frame Grid.Row="1" Grid.Column="0" BackgroundColor="#D1C4E9" AutomationId="GridCell_1_0">
+                        </Border>
+                        <Border Grid.Row="1" Grid.Column="0" BackgroundColor="#D1C4E9" AutomationId="GridCell_1_0">
                             <Label Text="1,0" HorizontalOptions="Center" VerticalOptions="Center" />
-                        </Frame>
-                        <Frame Grid.Row="1" Grid.Column="1" BackgroundColor="#C5CAE9" AutomationId="GridCell_1_1">
+                        </Border>
+                        <Border Grid.Row="1" Grid.Column="1" BackgroundColor="#C5CAE9" AutomationId="GridCell_1_1">
                             <Label Text="1,1" HorizontalOptions="Center" VerticalOptions="Center" />
-                        </Frame>
-                        <Frame Grid.Row="1" Grid.Column="2" BackgroundColor="#BBDEFB" AutomationId="GridCell_1_2">
+                        </Border>
+                        <Border Grid.Row="1" Grid.Column="2" BackgroundColor="#BBDEFB" AutomationId="GridCell_1_2">
                             <Label Text="1,2" HorizontalOptions="Center" VerticalOptions="Center" />
-                        </Frame>
+                        </Border>
                     </Grid>
 
                     <!-- FlexLayout Demo -->
@@ -172,21 +172,21 @@
                     <FlexLayout Wrap="Wrap" 
                                 JustifyContent="SpaceEvenly"
                                 AutomationId="FlexLayoutDemo">
-                        <Frame WidthRequest="60" HeightRequest="40" BackgroundColor="#B2DFDB" Margin="2" AutomationId="FlexItem1">
+                        <Border WidthRequest="60" HeightRequest="40" BackgroundColor="#B2DFDB" Margin="2" AutomationId="FlexItem1">
                             <Label Text="1" HorizontalOptions="Center" VerticalOptions="Center" />
-                        </Frame>
-                        <Frame WidthRequest="80" HeightRequest="40" BackgroundColor="#B2EBF2" Margin="2" AutomationId="FlexItem2">
+                        </Border>
+                        <Border WidthRequest="80" HeightRequest="40" BackgroundColor="#B2EBF2" Margin="2" AutomationId="FlexItem2">
                             <Label Text="2" HorizontalOptions="Center" VerticalOptions="Center" />
-                        </Frame>
-                        <Frame WidthRequest="50" HeightRequest="40" BackgroundColor="#B3E5FC" Margin="2" AutomationId="FlexItem3">
+                        </Border>
+                        <Border WidthRequest="50" HeightRequest="40" BackgroundColor="#B3E5FC" Margin="2" AutomationId="FlexItem3">
                             <Label Text="3" HorizontalOptions="Center" VerticalOptions="Center" />
-                        </Frame>
-                        <Frame WidthRequest="70" HeightRequest="40" BackgroundColor="#DCEDC8" Margin="2" AutomationId="FlexItem4">
+                        </Border>
+                        <Border WidthRequest="70" HeightRequest="40" BackgroundColor="#DCEDC8" Margin="2" AutomationId="FlexItem4">
                             <Label Text="4" HorizontalOptions="Center" VerticalOptions="Center" />
-                        </Frame>
+                        </Border>
                     </FlexLayout>
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
             <!-- Reset Button -->
             <Button Text="Reset All"

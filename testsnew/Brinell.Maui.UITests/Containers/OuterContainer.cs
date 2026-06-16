@@ -26,5 +26,5 @@ public class OuterContainer : ContainerBase<ContainerDemoPage, OuterContainer>
     /// <summary>
     /// The inner nested container.
     /// </summary>
-    public InnerContainer InnerFrame => new(this, "InnerFrame");
+    public InnerContainer InnerBorder => new(this, "InnerBorder");
 }

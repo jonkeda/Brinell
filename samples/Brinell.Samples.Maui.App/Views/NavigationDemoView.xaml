@@ -25,8 +25,8 @@
                    FontSize="14" />
 
             <!-- Navigation Buttons Section -->
-            <Frame AutomationId="NavigationButtonsSection" 
-                   CornerRadius="10" 
+            <Border AutomationId="NavigationButtonsSection" 
+                    
                    Padding="15">
                 <VerticalStackLayout Spacing="10">
                     <Label Text="Page Navigation" 
@@ -53,11 +53,11 @@
                                 AutomationId="PopToRootButton" />
                     </Grid>
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
             <!-- Expander Section (simulated with custom controls) -->
-            <Frame AutomationId="ExpanderSection" 
-                   CornerRadius="10" 
+            <Border AutomationId="ExpanderSection" 
+                    
                    Padding="15">
                 <VerticalStackLayout Spacing="10">
                     <Label Text="Expandable Sections" 
@@ -75,7 +75,7 @@
                     </HorizontalStackLayout>
 
                     <!-- Expander 1 -->
-                    <Frame CornerRadius="5" 
+                    <Border  
                            Padding="10"
                            AutomationId="Expander1">
                         <VerticalStackLayout>
@@ -99,10 +99,10 @@
                                 </CollectionView>
                             </VerticalStackLayout>
                         </VerticalStackLayout>
-                    </Frame>
+                    </Border>
 
                     <!-- Expander 2 -->
-                    <Frame CornerRadius="5" 
+                    <Border  
                            Padding="10"
                            AutomationId="Expander2">
                         <VerticalStackLayout>
@@ -126,10 +126,10 @@
                                 </CollectionView>
                             </VerticalStackLayout>
                         </VerticalStackLayout>
-                    </Frame>
+                    </Border>
 
                     <!-- Expander 3 -->
-                    <Frame CornerRadius="5" 
+                    <Border  
                            Padding="10"
                            AutomationId="Expander3">
                         <VerticalStackLayout>
@@ -153,13 +153,13 @@
                                 </CollectionView>
                             </VerticalStackLayout>
                         </VerticalStackLayout>
-                    </Frame>
+                    </Border>
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
             <!-- Menu/Flyout Section -->
-            <Frame AutomationId="FlyoutSection" 
-                   CornerRadius="10" 
+            <Border AutomationId="FlyoutSection" 
+                    
                    Padding="15">
                 <VerticalStackLayout Spacing="10">
                     <Label Text="Flyout Menu Items" 
@@ -173,33 +173,33 @@
 
                     <!-- Menu Items List -->
                     <VerticalStackLayout Spacing="5" AutomationId="MenuItemsList">
-                        <Frame Padding="10" AutomationId="MenuItem1">
+                        <Border Padding="10" AutomationId="MenuItem1">
                             <HorizontalStackLayout Spacing="10">
                                 <Label Text="🏠" FontSize="20" />
                                 <Label Text="Home" VerticalOptions="Center" />
                             </HorizontalStackLayout>
-                        </Frame>
-                        <Frame Padding="10" AutomationId="MenuItem2">
+                        </Border>
+                        <Border Padding="10" AutomationId="MenuItem2">
                             <HorizontalStackLayout Spacing="10">
                                 <Label Text="👤" FontSize="20" />
                                 <Label Text="Profile" VerticalOptions="Center" />
                             </HorizontalStackLayout>
-                        </Frame>
-                        <Frame Padding="10" AutomationId="MenuItem3">
+                        </Border>
+                        <Border Padding="10" AutomationId="MenuItem3">
                             <HorizontalStackLayout Spacing="10">
                                 <Label Text="⚙️" FontSize="20" />
                                 <Label Text="Settings" VerticalOptions="Center" />
                             </HorizontalStackLayout>
-                        </Frame>
-                        <Frame Padding="10" AutomationId="MenuItem4">
+                        </Border>
+                        <Border Padding="10" AutomationId="MenuItem4">
                             <HorizontalStackLayout Spacing="10">
                                 <Label Text="❓" FontSize="20" />
                                 <Label Text="Help" VerticalOptions="Center" />
                             </HorizontalStackLayout>
-                        </Frame>
+                        </Border>
                     </VerticalStackLayout>
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
         </VerticalStackLayout>
     </ScrollView>

@@ -39,49 +39,6 @@ public class IndexedContainerTests
     }
 
     /// <summary>
-    /// Debug test - verifies Task_0 can be found.
-    /// </summary>
-    [Fact]
-    [Trait("Method", "IsExists")]
-    public void Task_ByIndex_Exists_Debug()
-    {
-        // Create TaskItemContainer directly, same as Contact pattern
-        var task0 = new TaskItemContainer(Page, 0);
-        task0.AssertExists();
-    }
-
-    /// <summary>
-    /// Debug test - verifies Task_0 Frame exists as a simple control.
-    /// </summary>
-    [Fact]
-    [Trait("Method", "IsExists")]
-    public void Task_0_Control_Exists()
-    {
-        // DEBUG: Dump the page source to see what's in the automation tree
-        var pageSource = _fixture.Context.Driver.GetPageSource();
-        
-        // Save page source to file for analysis
-        System.IO.File.WriteAllText(@"E:\repos\Private\Iosk\Oravey\Brinell\TestResults\pagesource.xml", pageSource);
-        
-        // Look for Item_0 and Contact_0 in the page source
-        bool hasItem0 = pageSource.Contains("Item_0");
-        bool hasTask0 = pageSource.Contains("Task_0");
-        bool hasTask1 = pageSource.Contains("Task_1");
-        bool hasContact0 = pageSource.Contains("Contact_0");
-        bool hasTaskListFrame = pageSource.Contains("TaskListFrame");
-        bool hasContactsFrame = pageSource.Contains("ContactsFrame");
-        bool hasTaskListTitle = pageSource.Contains("TaskListTitle");
-        
-        // Report all findings
-        Assert.True(hasTaskListFrame, $"TaskListFrame should be in page source");
-        Assert.True(hasTaskListTitle, $"TaskListTitle should be in page source");
-        Assert.True(hasContactsFrame, $"ContactsFrame should be in page source");
-        Assert.True(hasContact0, $"Contact_0 should be in page source");
-        Assert.True(hasTask0 || hasTask1 || hasItem0, 
-            $"Task items should be in page source. hasTask0={hasTask0}, hasTask1={hasTask1}, hasItem0={hasItem0}. Saved to pagesource.xml");
-    }
-
-    /// <summary>
     /// Verifies contact controls exist.
     /// </summary>
     [Fact]
@@ -175,6 +132,7 @@ public class IndexedContainerTests
         // Arrange
         var contact = Page.Contact(0);
 
+        contact.CallButton.ScrollIntoView();
         // Assert
         contact.CallButton.AssertClickable();
     }

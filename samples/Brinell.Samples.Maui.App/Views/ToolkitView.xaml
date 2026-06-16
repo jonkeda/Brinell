@@ -20,8 +20,8 @@
                    FontAttributes="Bold" />
 
             <!-- Expander Section -->
-            <Frame AutomationId="ExpanderSection" 
-                   CornerRadius="10" 
+            <Border AutomationId="ExpanderSection" 
+                    
                    Padding="15">
                 <VerticalStackLayout Spacing="10">
                     <Label Text="Expander Controls" 
@@ -42,21 +42,21 @@
                     <toolkit:Expander IsExpanded="{Binding Expander1Expanded}" 
                                       AutomationId="SimpleExpander1">
                         <toolkit:Expander.Header>
-                            <Frame BackgroundColor="#E3F2FD" Padding="10" CornerRadius="5">
+                            <Border BackgroundColor="#E3F2FD" Padding="10" >
                                 <Label Text="Section 1: Introduction" 
                                        FontAttributes="Bold"
                                        AutomationId="Expander1Header" />
-                            </Frame>
+                            </Border>
                         </toolkit:Expander.Header>
                         <toolkit:Expander.Content>
-                            <Frame BackgroundColor="#F5F5F5" Padding="15" Margin="0,5,0,0"
+                            <Border BackgroundColor="#F5F5F5" Padding="15" Margin="0,5,0,0"
                                    AutomationId="Expander1Content">
                                 <VerticalStackLayout Spacing="5">
                                     <Label Text="Welcome to the Brinell MAUI Sample App!" />
                                     <Label Text="This app demonstrates various UI controls and patterns." />
                                     <Label Text="Each section can be expanded or collapsed." />
                                 </VerticalStackLayout>
-                            </Frame>
+                            </Border>
                         </toolkit:Expander.Content>
                     </toolkit:Expander>
 
@@ -64,14 +64,14 @@
                     <toolkit:Expander IsExpanded="{Binding Expander2Expanded}"
                                       AutomationId="SimpleExpander2">
                         <toolkit:Expander.Header>
-                            <Frame BackgroundColor="#E8F5E9" Padding="10" CornerRadius="5">
+                            <Border BackgroundColor="#E8F5E9" Padding="10" >
                                 <Label Text="Section 2: Features" 
                                        FontAttributes="Bold"
                                        AutomationId="Expander2Header" />
-                            </Frame>
+                            </Border>
                         </toolkit:Expander.Header>
                         <toolkit:Expander.Content>
-                            <Frame BackgroundColor="#F5F5F5" Padding="15" Margin="0,5,0,0"
+                            <Border BackgroundColor="#F5F5F5" Padding="15" Margin="0,5,0,0"
                                    AutomationId="Expander2Content">
                                 <VerticalStackLayout Spacing="5">
                                     <Label Text="• Data binding with MVVM pattern" />
@@ -79,7 +79,7 @@
                                     <Label Text="• CommunityToolkit.Maui controls" />
                                     <Label Text="• Platform-specific implementations" />
                                 </VerticalStackLayout>
-                            </Frame>
+                            </Border>
                         </toolkit:Expander.Content>
                     </toolkit:Expander>
 
@@ -87,14 +87,14 @@
                     <toolkit:Expander IsExpanded="{Binding Expander3Expanded}"
                                       AutomationId="SimpleExpander3">
                         <toolkit:Expander.Header>
-                            <Frame BackgroundColor="#FFF3E0" Padding="10" CornerRadius="5">
+                            <Border BackgroundColor="#FFF3E0" Padding="10" >
                                 <Label Text="Section 3: Getting Help" 
                                        FontAttributes="Bold"
                                        AutomationId="Expander3Header" />
-                            </Frame>
+                            </Border>
                         </toolkit:Expander.Header>
                         <toolkit:Expander.Content>
-                            <Frame BackgroundColor="#F5F5F5" Padding="15" Margin="0,5,0,0"
+                            <Border BackgroundColor="#F5F5F5" Padding="15" Margin="0,5,0,0"
                                    AutomationId="Expander3Content">
                                 <VerticalStackLayout Spacing="5">
                                     <Label Text="Need help? Check out our resources:" />
@@ -102,15 +102,15 @@
                                     <Label Text="• GitHub Issues" TextColor="Blue" />
                                     <Label Text="• Community Forums" TextColor="Blue" />
                                 </VerticalStackLayout>
-                            </Frame>
+                            </Border>
                         </toolkit:Expander.Content>
                     </toolkit:Expander>
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
             <!-- Segmented Control Style (Button Group) Section -->
-            <Frame AutomationId="SegmentedSection" 
-                   CornerRadius="10" 
+            <Border AutomationId="SegmentedSection" 
+                    
                    Padding="15">
                 <VerticalStackLayout Spacing="10">
                     <Label Text="Segmented Button Group" 
@@ -122,21 +122,18 @@
                     <HorizontalStackLayout Spacing="0" HorizontalOptions="Center">
                         <Button Text="Info" 
                                 AutomationId="SegmentInfo"
-                                CornerRadius="8"
                                 Clicked="OnSegmentClicked"
                                 BackgroundColor="{StaticResource Primary}"
                                 TextColor="White"
                                 WidthRequest="80" />
                         <Button Text="Settings" 
                                 AutomationId="SegmentSettings"
-                                CornerRadius="8"
                                 Clicked="OnSegmentClicked"
                                 BackgroundColor="LightGray"
                                 TextColor="Black"
                                 WidthRequest="80" />
                         <Button Text="About" 
                                 AutomationId="SegmentAbout"
-                                CornerRadius="8"
                                 Clicked="OnSegmentClicked"
                                 BackgroundColor="LightGray"
                                 TextColor="Black"
@@ -144,10 +141,9 @@
                     </HorizontalStackLayout>
 
                     <!-- Content panels for each segment -->
-                    <Frame BackgroundColor="#F5F5F5" 
+                    <Border BackgroundColor="#F5F5F5" 
                            Padding="15" 
-                           CornerRadius="8"
-                           AutomationId="SegmentContentFrame"
+                           AutomationId="SegmentContentBorder"
                            HeightRequest="120">
                         <VerticalStackLayout x:Name="SegmentContent" AutomationId="SegmentContent">
                             <Label x:Name="SegmentTitle" 
@@ -159,13 +155,13 @@
                                    Text="This demonstrates a custom segmented control. Click different segments to switch content."
                                    AutomationId="SegmentContentDescription" />
                         </VerticalStackLayout>
-                    </Frame>
+                    </Border>
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
             <!-- Popup/Snackbar Section -->
-            <Frame AutomationId="PopupSection" 
-                   CornerRadius="10" 
+            <Border AutomationId="PopupSection" 
+                    
                    Padding="15">
                 <VerticalStackLayout Spacing="10">
                     <Label Text="Popup &amp; Snackbar" 
@@ -189,7 +185,7 @@
                            AutomationId="SnackbarResultLabel"
                            TextColor="Green" />
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
         </VerticalStackLayout>
     </ScrollView>

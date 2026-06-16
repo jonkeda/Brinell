@@ -20,7 +20,7 @@
                    FontAttributes="Bold" />
             
             <!-- Section 1: Single Container (UserProfile) -->
-            <Frame AutomationId="UserProfileFrame" Padding="15" CornerRadius="10">
+            <Border AutomationId="UserProfileBorder" Padding="15" >
                 <VerticalStackLayout Spacing="10">
                     <Label AutomationId="ProfileTitle" Text="User Profile" FontSize="18" FontAttributes="Bold" />
                     <Entry AutomationId="ProfileNameEntry" Placeholder="Name" Text="{Binding ProfileName}" />
@@ -28,54 +28,54 @@
                     <Button AutomationId="ProfileSaveButton" Text="Save Profile" Command="{Binding SaveProfileCommand}" />
                     <Label AutomationId="ProfileStatusLabel" Text="{Binding ProfileStatus}" />
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
             
             <!-- Section 2: Nested Containers -->
-            <Frame AutomationId="OuterFrame" Padding="15" CornerRadius="10">
+            <Border AutomationId="OuterBorder" Padding="15" >
                 <VerticalStackLayout Spacing="10">
                     <Label AutomationId="OuterTitle" Text="Outer Container" FontSize="16" FontAttributes="Bold" />
                     
-                    <Frame AutomationId="InnerFrame" Padding="10" CornerRadius="5" BackgroundColor="#F0F0F0">
+                    <Border AutomationId="InnerBorder" Padding="10"  BackgroundColor="#F0F0F0">
                         <VerticalStackLayout Spacing="5">
                             <Label AutomationId="InnerTitle" Text="Inner Container" FontSize="14" />
                             <Entry AutomationId="InnerEntry" Placeholder="Nested input" Text="{Binding InnerText}" />
                             <Button AutomationId="InnerButton" Text="Inner Action" Command="{Binding InnerActionCommand}" />
                         </VerticalStackLayout>
-                    </Frame>
+                    </Border>
                     
                     <Button AutomationId="OuterButton" Text="Outer Action" Command="{Binding OuterActionCommand}" />
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
             
             <!-- Section 3: Task List (Static items with unique AutomationIds for Windows automation compatibility) -->
-            <Frame AutomationId="TaskListFrame" Padding="15" CornerRadius="10">
+            <Border AutomationId="TaskListBorder" Padding="15" >
                 <VerticalStackLayout Spacing="10">
                     <Label AutomationId="TaskListTitle" Text="Tasks" FontSize="18" FontAttributes="Bold" />
                     
                     <!-- Task items as direct children -->
-                    <Frame AutomationId="Task_0" Padding="10" Margin="0,5" CornerRadius="5">
+                    <Border AutomationId="Task_0" Padding="10" Margin="0,5" >
                         <HorizontalStackLayout Spacing="10">
                             <CheckBox AutomationId="TaskCheckBox" IsChecked="False" />
                             <Label AutomationId="TaskNameLabel" Text="Buy groceries" VerticalOptions="Center" HorizontalOptions="FillAndExpand" />
                             <Button AutomationId="TaskDeleteButton" Text="X" WidthRequest="40" />
                         </HorizontalStackLayout>
-                    </Frame>
+                    </Border>
                     
-                    <Frame AutomationId="Task_1" Padding="10" Margin="0,5" CornerRadius="5">
+                    <Border AutomationId="Task_1" Padding="10" Margin="0,5" >
                         <HorizontalStackLayout Spacing="10">
                             <CheckBox AutomationId="TaskCheckBox" IsChecked="True" />
                             <Label AutomationId="TaskNameLabel" Text="Walk the dog" VerticalOptions="Center" HorizontalOptions="FillAndExpand" />
                             <Button AutomationId="TaskDeleteButton" Text="X" WidthRequest="40" />
                         </HorizontalStackLayout>
-                    </Frame>
+                    </Border>
                     
-                    <Frame AutomationId="Task_2" Padding="10" Margin="0,5" CornerRadius="5">
+                    <Border AutomationId="Task_2" Padding="10" Margin="0,5" >
                         <HorizontalStackLayout Spacing="10">
                             <CheckBox AutomationId="TaskCheckBox" IsChecked="False" />
                             <Label AutomationId="TaskNameLabel" Text="Finish report" VerticalOptions="Center" HorizontalOptions="FillAndExpand" />
                             <Button AutomationId="TaskDeleteButton" Text="X" WidthRequest="40" />
                         </HorizontalStackLayout>
-                    </Frame>
+                    </Border>
                     
                     <HorizontalStackLayout Spacing="10">
                         <Entry AutomationId="NewTaskEntry" Placeholder="New task" HorizontalOptions="FillAndExpand" Text="{Binding NewTaskName}" />
@@ -84,38 +84,38 @@
                     
                     <Label AutomationId="TaskCountLabel" Text="{Binding TaskCount, StringFormat='Total: {0} tasks'}" />
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
             
             <!-- Section 4: Contact Cards (Static list with indexed IDs) -->
-            <Frame AutomationId="ContactsFrame" Padding="15" CornerRadius="10">
+            <Border AutomationId="ContactsBorder" Padding="15" >
                 <VerticalStackLayout Spacing="10">
                     <Label AutomationId="ContactsTitle" Text="Contacts" FontSize="18" FontAttributes="Bold" />
                     
-                    <Frame AutomationId="Contact_0" Padding="10" Margin="0,5" CornerRadius="5">
+                    <Border AutomationId="Contact_0" Padding="10" Margin="0,5" >
                         <VerticalStackLayout>
                             <Label AutomationId="ContactName" Text="Alice Johnson" FontAttributes="Bold" />
                             <Label AutomationId="ContactEmail" Text="alice@example.com" />
                             <Button AutomationId="ContactCallButton" Text="Call" />
                         </VerticalStackLayout>
-                    </Frame>
+                    </Border>
                     
-                    <Frame AutomationId="Contact_1" Padding="10" Margin="0,5" CornerRadius="5">
+                    <Border AutomationId="Contact_1" Padding="10" Margin="0,5" >
                         <VerticalStackLayout>
                             <Label AutomationId="ContactName" Text="Bob Smith" FontAttributes="Bold" />
                             <Label AutomationId="ContactEmail" Text="bob@example.com" />
                             <Button AutomationId="ContactCallButton" Text="Call" />
                         </VerticalStackLayout>
-                    </Frame>
+                    </Border>
                     
-                    <Frame AutomationId="Contact_2" Padding="10" Margin="0,5" CornerRadius="5">
+                    <Border AutomationId="Contact_2" Padding="10" Margin="0,5" >
                         <VerticalStackLayout>
                             <Label AutomationId="ContactName" Text="Carol White" FontAttributes="Bold" />
                             <Label AutomationId="ContactEmail" Text="carol@example.com" />
                             <Button AutomationId="ContactCallButton" Text="Call" />
                         </VerticalStackLayout>
-                    </Frame>
+                    </Border>
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
             
         </VerticalStackLayout>
     </ScrollView>

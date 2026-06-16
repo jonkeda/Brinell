@@ -19,8 +19,8 @@
                    FontAttributes="Bold" />
 
             <!-- CarouselView Section -->
-            <Frame AutomationId="CarouselViewSection"
-                   CornerRadius="10"
+            <Border AutomationId="CarouselViewSection"
+                   
                    Padding="15">
                 <VerticalStackLayout Spacing="10">
                     <Label Text="CarouselView"
@@ -41,10 +41,8 @@
                                   AutomationId="DemoCarouselView">
                         <CarouselView.ItemTemplate>
                             <DataTemplate>
-                                <Frame BackgroundColor="{Binding Color}"
-                                       CornerRadius="15"
+                                <Border BackgroundColor="{Binding Color}"
                                        Padding="20"
-                                       HasShadow="True"
                                        AutomationId="{Binding AutomationId}">
                                     <VerticalStackLayout VerticalOptions="Center"
                                                          HorizontalOptions="Center"
@@ -61,7 +59,7 @@
                                                HorizontalTextAlignment="Center"
                                                AutomationId="CarouselItemSubtitle" />
                                     </VerticalStackLayout>
-                                </Frame>
+                                </Border>
                             </DataTemplate>
                         </CarouselView.ItemTemplate>
                     </CarouselView>
@@ -75,11 +73,11 @@
                     <Label Text="{Binding CarouselPosition, StringFormat='Position: {0}'}"
                            AutomationId="CarouselPositionLabel" />
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
             <!-- TableView Section -->
-            <Frame AutomationId="TableViewSection"
-                   CornerRadius="10"
+            <Border AutomationId="TableViewSection"
+                   
                    Padding="15">
                 <VerticalStackLayout Spacing="10">
                     <Label Text="TableView Settings"
@@ -121,11 +119,11 @@
                         </TableRoot>
                     </TableView>
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
             <!-- PaginatedList Section -->
-            <Frame AutomationId="PaginatedListSection"
-                   CornerRadius="10"
+            <Border AutomationId="PaginatedListSection"
+                   
                    Padding="15">
                 <VerticalStackLayout Spacing="10">
                     <Label Text="Paginated List"
@@ -175,7 +173,7 @@
                                AutomationId="NextPageButton" />
                     </Grid>
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
         </VerticalStackLayout>
     </ScrollView>

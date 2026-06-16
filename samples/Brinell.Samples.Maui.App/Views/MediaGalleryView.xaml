@@ -19,8 +19,8 @@
                    FontAttributes="Bold" />
 
             <!-- Image Gallery Section -->
-            <Frame AutomationId="ImageSection" 
-                   CornerRadius="10" 
+            <Border AutomationId="ImageSection" 
+                    
                    Padding="15">
                 <VerticalStackLayout Spacing="10">
                     <Label Text="Image Gallery" 
@@ -29,14 +29,14 @@
                            AutomationId="ImageSectionLabel" />
 
                     <!-- Main Image Display -->
-                    <Frame CornerRadius="10" 
+                    <Border  
                            Padding="0"
                            HeightRequest="200"
-                           AutomationId="MainImageFrame">
+                           AutomationId="MainImageBorder">
                         <Image Source="{Binding SelectedMedia.FullUrl}"
                                Aspect="AspectFill"
                                AutomationId="MainImage" />
-                    </Frame>
+                    </Border>
 
                     <!-- Thumbnail Strip -->
                     <CollectionView ItemsSource="{Binding Thumbnails}"
@@ -49,23 +49,23 @@
                         </CollectionView.ItemsLayout>
                         <CollectionView.ItemTemplate>
                             <DataTemplate>
-                                <Frame CornerRadius="5" 
+                                <Border  
                                        Padding="0"
                                        WidthRequest="70"
                                        HeightRequest="70"
                                        AutomationId="{Binding Id, StringFormat='Thumbnail_{0}'}">
                                     <Image Source="{Binding ThumbnailUrl}"
                                            Aspect="AspectFill" />
-                                </Frame>
+                                </Border>
                             </DataTemplate>
                         </CollectionView.ItemTemplate>
                     </CollectionView>
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
             <!-- Media Player Section (simulated) -->
-            <Frame AutomationId="MediaPlayerSection" 
-                   CornerRadius="10" 
+            <Border AutomationId="MediaPlayerSection" 
+                    
                    Padding="15">
                 <VerticalStackLayout Spacing="10">
                     <Label Text="Media Player" 
@@ -74,16 +74,16 @@
                            AutomationId="MediaPlayerLabel" />
 
                     <!-- Video placeholder -->
-                    <Frame BackgroundColor="Black" 
+                    <Border BackgroundColor="Black" 
                            HeightRequest="180" 
-                           CornerRadius="10"
-                           AutomationId="VideoFrame">
+                           
+                           AutomationId="VideoBorder">
                         <Label Text="▶ Video Player"
                                TextColor="White"
                                HorizontalOptions="Center"
                                VerticalOptions="Center"
                                AutomationId="VideoPlaceholder" />
-                    </Frame>
+                    </Border>
 
                     <!-- Progress Slider -->
                     <Grid ColumnDefinitions="Auto,*,Auto">
@@ -134,11 +134,11 @@
                                VerticalOptions="Center" />
                     </HorizontalStackLayout>
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
             <!-- WebView Section -->
-            <Frame AutomationId="WebViewSection" 
-                   CornerRadius="10" 
+            <Border AutomationId="WebViewSection" 
+                    
                    Padding="15">
                 <VerticalStackLayout Spacing="10">
                     <Label Text="Web Content" 
@@ -175,7 +175,7 @@
                              HeightRequest="300"
                              AutomationId="ContentWebView" />
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
         </VerticalStackLayout>
     </ScrollView>

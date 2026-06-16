@@ -3,10 +3,10 @@ namespace Brinell.Samples.Maui.App.Controls;
 /// <summary>
 /// A container control that exposes AutomationId to UI Automation on Windows.
 /// 
-/// Use this control instead of Grid, Border, Frame, or ContentView when you need 
+/// Use this control instead of Grid, Border, Border, or ContentView when you need 
 /// the container to be discoverable by automation tools like Appium/WinAppDriver.
 /// 
-/// On Windows, standard MAUI layout controls (Grid, StackLayout, Border, ContentView, Frame)
+/// On Windows, standard MAUI layout controls (Grid, StackLayout, Border, ContentView, Border)
 /// do not expose AutomationId to UI Automation because they lack AutomationPeers.
 /// This control provides a custom AutomationPeer that properly exposes the AutomationId.
 /// </summary>

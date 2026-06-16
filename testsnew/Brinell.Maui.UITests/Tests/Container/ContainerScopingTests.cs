@@ -60,7 +60,7 @@ public class ContainerScopingTests
         
         // Controls in different containers are independent
         Page.UserProfile.SaveButton.AssertExists();
-        Page.Outer.InnerFrame.InnerButton.AssertExists();
+        Page.Outer.InnerBorder.InnerButton.AssertExists();
     }
 
     /// <summary>
@@ -73,7 +73,7 @@ public class ContainerScopingTests
         // Act - get text from controls in different containers
         var profileTitle = Page.UserProfile.TitleLabel.GetText();
         var outerText = Page.Outer.OuterTitle.GetText();
-        var innerText = Page.Outer.InnerFrame.InnerTitle.GetText();
+        var innerText = Page.Outer.InnerBorder.InnerTitle.GetText();
 
         // Assert - each has its own distinct text
         Assert.NotEqual(profileTitle, outerText);
@@ -93,7 +93,7 @@ public class ContainerScopingTests
     public void InnerContainer_DoesNotFindOuterControls()
     {
         // Arrange - create a control looking for OuterButton within InnerContainer scope
-        var innerScope = Page.Outer.InnerFrame;
+        var innerScope = Page.Outer.InnerBorder;
         var outerButtonInInner = new Button<InnerContainer>(innerScope, "OuterButton");
 
         // Act & Assert - inner container finds its own title but not outer's button
@@ -115,8 +115,8 @@ public class ContainerScopingTests
         outer.OuterTitle.AssertExists();
         
         // Assert - outer scope includes inner container
-        outer.InnerFrame.AssertExists();
-        outer.InnerFrame.InnerEntry.AssertExists();
+        outer.InnerBorder.AssertExists();
+        outer.InnerBorder.InnerEntry.AssertExists();
     }
 
     #endregion
@@ -144,7 +144,7 @@ public class ContainerScopingTests
         var name1 = item1.NameLabel.GetText();
 
         // Assert - different items have different names
-        // (Both have NameLabel but scoped to their own Frame)
+        // (Both have NameLabel but scoped to their own Border)
         item0.NameLabel.AssertExists();
         item1.NameLabel.AssertExists();
         Assert.NotEqual(name0, name1);
@@ -208,7 +208,7 @@ public class ContainerScopingTests
 
         // Assert - container controls also exist
         Page.UserProfile.SaveButton.AssertExists();
-        Page.Outer.InnerFrame.InnerButton.AssertExists();
+        Page.Outer.InnerBorder.InnerButton.AssertExists();
     }
 
     #endregion

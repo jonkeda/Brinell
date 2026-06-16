@@ -29,10 +29,10 @@
                FontAttributes="Bold" />
 
         <!-- Search and Filter -->
-        <Frame Grid.Row="1" 
+        <Border Grid.Row="1" 
                Padding="10" 
                Margin="0,10"
-               AutomationId="SearchFrame">
+               AutomationId="SearchBorder">
             <HorizontalStackLayout Spacing="10">
                 <SearchBar Placeholder="Filter items..."
                            Text="{Binding SearchText}"
@@ -45,7 +45,7 @@
                        VerticalOptions="Center"
                        AutomationId="SelectedCountLabel" />
             </HorizontalStackLayout>
-        </Frame>
+        </Border>
 
         <!-- Main Content Area with RefreshView -->
         <RefreshView Grid.Row="2" 
@@ -67,7 +67,7 @@
                                   PeekAreaInsets="20">
                         <CarouselView.ItemTemplate>
                             <DataTemplate>
-                                <Frame CornerRadius="10" 
+                                <Border  
                                        Margin="5"
                                        Padding="15"
                                        BackgroundColor="#F0F0F0"
@@ -81,7 +81,7 @@
                                                TextColor="Gray"
                                                HorizontalOptions="Center" />
                                     </VerticalStackLayout>
-                                </Frame>
+                                </Border>
                             </DataTemplate>
                         </CarouselView.ItemTemplate>
                     </CarouselView>
@@ -121,9 +121,9 @@
                                                        AutomationId="{Binding Id, StringFormat='DeleteSwipe_{0}'}" />
                                         </SwipeItems>
                                     </SwipeView.RightItems>
-                                    <Frame Margin="0,2" 
+                                    <Border Margin="0,2" 
                                            Padding="10" 
-                                           CornerRadius="5"
+                                           
                                            AutomationId="{Binding Id, StringFormat='DataItem_{0}'}">
                                         <Grid ColumnDefinitions="*,Auto,Auto">
                                             <VerticalStackLayout Grid.Column="0">
@@ -145,7 +145,7 @@
                                                    IsVisible="{Binding IsStarred}"
                                                    AutomationId="{Binding Id, StringFormat='ItemStar_{0}'}" />
                                         </Grid>
-                                    </Frame>
+                                    </Border>
                                 </SwipeView>
                             </DataTemplate>
                         </CollectionView.ItemTemplate>

@@ -19,8 +19,8 @@
                    FontAttributes="Bold" />
 
             <!-- Personal Info Section -->
-            <Frame AutomationId="PersonalInfoSection" 
-                   CornerRadius="10" 
+            <Border AutomationId="PersonalInfoSection" 
+                    
                    Padding="15">
                 <VerticalStackLayout Spacing="10">
                     <Label Text="Personal Information" 
@@ -68,11 +68,11 @@
                                Text="{Binding SearchText}"
                                SearchCommand="{Binding SearchCommand}" />
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
             <!-- Preferences Section -->
-            <Frame AutomationId="PreferencesSection" 
-                   CornerRadius="10" 
+            <Border AutomationId="PreferencesSection" 
+                    
                    Padding="15">
                 <VerticalStackLayout Spacing="10">
                     <Label Text="Preferences" 
@@ -108,11 +108,11 @@
                         <Label Text="Optional feature (indeterminate demo)" VerticalOptions="Center" />
                     </HorizontalStackLayout>
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
             <!-- Selection Section -->
-            <Frame AutomationId="SelectionSection" 
-                   CornerRadius="10" 
+            <Border AutomationId="SelectionSection" 
+                    
                    Padding="15">
                 <VerticalStackLayout Spacing="10">
                     <Label Text="Subscription Tier" 
@@ -147,11 +147,11 @@
                             ItemsSource="{Binding Departments}"
                             SelectedItem="{Binding SelectedDepartment}" />
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
             <!-- DateTime Section -->
-            <Frame AutomationId="DateTimeSection" 
-                   CornerRadius="10" 
+            <Border AutomationId="DateTimeSection" 
+                    
                    Padding="15">
                 <VerticalStackLayout Spacing="10">
                     <Label Text="Date &amp; Time" 
@@ -170,11 +170,11 @@
                     <TimePicker AutomationId="PreferredTimePicker" 
                                 Time="{Binding PreferredTime}" />
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
             <!-- Range Section -->
-            <Frame AutomationId="RangeSection" 
-                   CornerRadius="10" 
+            <Border AutomationId="RangeSection" 
+                    
                    Padding="15">
                 <VerticalStackLayout Spacing="10">
                     <Label Text="Range Controls" 
@@ -215,11 +215,11 @@
                                VerticalOptions="Center" />
                     </HorizontalStackLayout>
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
             <!-- Form Actions -->
-            <Frame AutomationId="ActionsSection" 
-                   CornerRadius="10" 
+            <Border AutomationId="ActionsSection" 
+                    
                    Padding="15">
                 <VerticalStackLayout Spacing="10">
                     <HorizontalStackLayout Spacing="10" HorizontalOptions="Center">
@@ -240,7 +240,7 @@
                            TextColor="Blue"
                            HorizontalOptions="Center" />
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
         </VerticalStackLayout>
     </ScrollView>

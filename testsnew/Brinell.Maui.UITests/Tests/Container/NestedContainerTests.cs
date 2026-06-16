@@ -42,7 +42,7 @@ public class NestedContainerTests
     public void InnerContainer_IsExists()
     {
         // Assert - inner exists within outer
-        Page.Outer.InnerFrame.AssertExists();
+        Page.Outer.InnerBorder.AssertExists();
     }
 
     /// <summary>
@@ -53,9 +53,9 @@ public class NestedContainerTests
     public void InnerContainer_FindsChildren()
     {
         // Assert - inner container controls
-        Page.Outer.InnerFrame.InnerTitle.AssertExists();
-        Page.Outer.InnerFrame.InnerEntry.AssertExists();
-        Page.Outer.InnerFrame.InnerButton.AssertExists();
+        Page.Outer.InnerBorder.InnerTitle.AssertExists();
+        Page.Outer.InnerBorder.InnerEntry.AssertExists();
+        Page.Outer.InnerBorder.InnerButton.AssertExists();
     }
 
     /// <summary>
@@ -83,7 +83,7 @@ public class NestedContainerTests
     {
         // Act
         var outerText = Page.Outer.OuterTitle.GetText();
-        var innerText = Page.Outer.InnerFrame.InnerTitle.GetText();
+        var innerText = Page.Outer.InnerBorder.InnerTitle.GetText();
 
         // Assert - each label has its own text
         Assert.Contains("Outer", outerText);
@@ -102,7 +102,7 @@ public class NestedContainerTests
     public void InnerContainer_Parent_ReturnsOuterContainer()
     {
         // Arrange
-        var inner = Page.Outer.InnerFrame;
+        var inner = Page.Outer.InnerBorder;
 
         // Act
         var outer = inner.Parent;
@@ -120,7 +120,7 @@ public class NestedContainerTests
     public void NestedContainer_Page_ReturnsPageObject()
     {
         // Arrange
-        var inner = Page.Outer.InnerFrame;
+        var inner = Page.Outer.InnerBorder;
 
         // Act - navigate up twice
         var page = inner.Parent.Parent;
@@ -143,7 +143,7 @@ public class NestedContainerTests
         // Act - fluent chain from page down into nested container and back
         Page.Outer
             .OuterTitle.AssertExists()
-            .InnerFrame
+            .InnerBorder
             .InnerTitle.AssertExists()
             .InnerButton.AssertClickable();
     }
@@ -156,7 +156,7 @@ public class NestedContainerTests
     public void InnerContainer_ButtonClick_ReturnsInnerContainer()
     {
         // Act - click button inside nested container
-        var inner = Page.Outer.InnerFrame.InnerButton.Click();
+        var inner = Page.Outer.InnerBorder.InnerButton.Click();
 
         // Assert - got inner container back
         Assert.NotNull(inner);
@@ -171,10 +171,10 @@ public class NestedContainerTests
     public void NestedContainer_DeepFluentChaining()
     {
         // Act - Clear and Enter return the container scope (InnerContainer)
-        Page.Outer.InnerFrame.InnerEntry.Clear();
-        Page.Outer.InnerFrame.InnerEntry.Enter("Nested value");
+        Page.Outer.InnerBorder.InnerEntry.Clear();
+        Page.Outer.InnerBorder.InnerEntry.Enter("Nested value");
         
-        Page.Outer.InnerFrame.InnerButton.Click();
+        Page.Outer.InnerBorder.InnerButton.Click();
         
         // Then access outer
         Page.Outer.OuterButton.Click();

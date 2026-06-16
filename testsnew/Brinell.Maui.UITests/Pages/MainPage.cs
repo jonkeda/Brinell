@@ -32,7 +32,7 @@ public class MainPage : PageObjectBase<MainPage>
     public Label<MainPage> TitleLabel => Label("TitleLabel");
 
     /// <summary>
-    /// The subtitle label "UI Test Framework Demo".
+    /// The subtitle label "UI Test Borderwork Demo".
     /// </summary>
     public Label<MainPage> SubtitleLabel => Label("SubtitleLabel");
 

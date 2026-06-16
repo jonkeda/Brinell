@@ -19,13 +19,13 @@
 
             <Label
                 AutomationId="SubtitleLabel"
-                Text="UI Test Framework Demo"
+                Text="UI Test Borderwork Demo"
                 Style="{StaticResource SubHeadline}"
                 SemanticProperties.HeadingLevel="Level2"
                 HorizontalOptions="Center" />
 
             <!-- Counter Section -->
-            <Frame AutomationId="CounterFrame" Padding="20" CornerRadius="10">
+            <Border AutomationId="CounterBorder" Padding="20" >
                 <VerticalStackLayout Spacing="10">
                     <Label
                         x:Name="CounterLabel"
@@ -54,10 +54,10 @@
                         Clicked="OnResetClicked"
                         HorizontalOptions="Center" />
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
             <!-- Text Input Section -->
-            <Frame AutomationId="TextInputFrame" Padding="20" CornerRadius="10">
+            <Border AutomationId="TextInputBorder" Padding="20" >
                 <VerticalStackLayout Spacing="10">
                     <Label Text="Text Input" FontSize="16" FontAttributes="Bold" />
 
@@ -90,10 +90,10 @@
                         Text="Greet"
                         Clicked="OnGreetClicked" />
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
             <!-- Toggle Controls Section -->
-            <Frame AutomationId="ToggleFrame" Padding="20" CornerRadius="10">
+            <Border AutomationId="ToggleBorder" Padding="20" >
                 <VerticalStackLayout Spacing="10">
                     <Label Text="Toggle Controls" FontSize="16" FontAttributes="Bold" />
 
@@ -116,10 +116,10 @@
                             VerticalOptions="Center" />
                     </HorizontalStackLayout>
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
             <!-- Slider Section -->
-            <Frame AutomationId="SliderFrame" Padding="20" CornerRadius="10">
+            <Border AutomationId="SliderBorder" Padding="20" >
                 <VerticalStackLayout Spacing="10">
                     <Label Text="Volume Control" FontSize="16" FontAttributes="Bold" />
 
@@ -141,10 +141,10 @@
                         AutomationId="VolumeProgress"
                         Progress="0.5" />
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
             <!-- Picker Section -->
-            <Frame AutomationId="PickerFrame" Padding="20" CornerRadius="10">
+            <Border AutomationId="PickerBorder" Padding="20" >
                 <VerticalStackLayout Spacing="10">
                     <Label Text="Selection Controls" FontSize="16" FontAttributes="Bold" />
 
@@ -179,10 +179,10 @@
                         AutomationId="ReminderTimePicker"
                         Time="09:00:00" />
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
             <!-- Activity Indicator -->
-            <Frame AutomationId="ActivityFrame" Padding="20" CornerRadius="10">
+            <Border AutomationId="ActivityBorder" Padding="20" >
                 <VerticalStackLayout Spacing="10">
                     <Label Text="Activity Indicator" FontSize="16" FontAttributes="Bold" />
 
@@ -197,7 +197,7 @@
                         Text="Toggle Loading"
                         Clicked="OnToggleLoadingClicked" />
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
         </VerticalStackLayout>
     </ScrollView>

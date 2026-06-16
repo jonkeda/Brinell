@@ -24,7 +24,7 @@
                    AutomationId="AdvancedSubtitle" />
 
             <!-- Gesture Log -->
-            <Border AutomationId="GestureLogFrame" 
+            <Border AutomationId="GestureLogBorder" 
                     StrokeShape="RoundRectangle 10" 
                     Padding="10"
                     BackgroundColor="#F0F0F0"
@@ -110,7 +110,7 @@
                             StrokeShape="RoundRectangle 10"
                             Stroke="Transparent"
                             AutomationId="PanArea"
-                            x:Name="PanFrame">
+                            x:Name="PanBorder">
                         <Border.GestureRecognizers>
                             <PanGestureRecognizer PanUpdated="OnPanUpdated" />
                         </Border.GestureRecognizers>
@@ -145,7 +145,7 @@
                             StrokeShape="RoundRectangle 10"
                             Stroke="Transparent"
                             AutomationId="PinchArea"
-                            x:Name="PinchFrame">
+                            x:Name="PinchBorder">
                         <Border.GestureRecognizers>
                             <PinchGestureRecognizer PinchUpdated="OnPinchUpdated" />
                         </Border.GestureRecognizers>

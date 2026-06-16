@@ -213,10 +213,10 @@ public class DiagnosticTests
             return;
         }
 
-        // Directly test the framework's button finding
+        // Directly test the Borderwork's button finding
         var mainPage = new Pages.MainPage(_context);
         
-        Console.WriteLine("=== Testing Button via Framework ===\n");
+        Console.WriteLine("=== Testing Button via Borderwork ===\n");
 
         Console.WriteLine($"Platform: {_context.Platform}");
         

@@ -14,13 +14,13 @@ public class ContainerDemoPage : PageObjectBase<ContainerDemoPage>
     {
         // Containers initialized in constructor, NOT as lazy properties with => new()
         PageTitle = new Label<ContainerDemoPage>(this, "PageTitle");
-        UserProfile = new UserProfileContainer(this, "UserProfileFrame");
-        Outer = new OuterContainer(this, "OuterFrame");
-        // TaskList uses TaskListFrame as container with static items (Task_0, Task_1, Task_2)
+        UserProfile = new UserProfileContainer(this, "UserProfileBorder");
+        Outer = new OuterContainer(this, "OuterBorder");
+        // TaskList uses TaskListBorder as container with static items (Task_0, Task_1, Task_2)
         // Item count is determined by iterating Task_0, Task_1, ... until not found
         TaskList = new List<ContainerDemoPage, TaskItemContainer>(
             this,
-            "TaskListFrame",  // Use TaskListFrame as the list container
+            "TaskListBorder",  // Use TaskListBorder as the list container
             "Task_",  // Prefix for Task_0, Task_1, Task_2
             (scope, index) => new TaskItemContainer(this, index));
     }
