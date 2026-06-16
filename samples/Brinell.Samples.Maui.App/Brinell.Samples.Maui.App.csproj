@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>net10.0-windows10.0.19041.0</TargetFrameworks>
@@ -55,13 +55,26 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Platforms\Windows\Controls\" />
+    <Compile Remove="Platforms\Windows\Controls\**" />
+    <EmbeddedResource Remove="Platforms\Windows\Controls\**" />
+    <MauiCss Remove="Platforms\Windows\Controls\**" />
+    <MauiXaml Remove="Platforms\Windows\Controls\**" />
+    <None Remove="Platforms\Windows\Controls\**" />
+    <Page Remove="Platforms\Windows\Controls\**" />
   </ItemGroup>
 
   <ItemGroup>
-    <MauiXaml Update="Views\DataGridView.xaml">
+    <MauiXaml Update="Views2\DataGridView.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PRIResource Remove="Platforms\Windows\Controls\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include=".my\test-pages-design.md" />
   </ItemGroup>
 
 </Project>

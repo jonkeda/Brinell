@@ -1,5 +1,5 @@
 using Brinell.Maui.Testing;
-using Brinell.Maui.UITests.Pages;
+using Brinell.Maui.UITests.Pages2;
 
 namespace Brinell.Maui.UITests;
 
