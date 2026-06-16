@@ -8,14 +8,7 @@ public class ButtonsViewModel : ParentViewModel
     public string StatusMessage
     {
         get => statusMessage;
-        set
-        {
-            if (statusMessage != value)
-            {
-                statusMessage = value;
-                OnPropertyChanged();
-            }
-        }
+        set => SetProperty(ref statusMessage, value);
     }
 
     public ICommand TestButtonCommand => new RelayCommand(TestButton);

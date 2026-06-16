@@ -2,7 +2,7 @@
 
 **Date:** 2025  
 **Purpose:** Define UI test views for Brinell.Maui controls validation  
-**Location:** `samples/Brinell.Samples.Maui.App/Views/TestViews/`
+**Location:** `samples/Brinell.Samples.Maui.App/Views/`
 
 ---
 
@@ -16,8 +16,8 @@ This document outlines one test view per control category, each backed by a dedi
 
 ### 1. Buttons Module
 **Files:** 
-- View: `ButtonsTestView.xaml`
-- ViewModel: `ButtonsTestViewModel.cs`
+- View: `ButtonsView.xaml`
+- ViewModel: `ButtonsViewModel.cs`
 
 **Controls:**
 - Button
@@ -40,8 +40,8 @@ This document outlines one test view per control category, each backed by a dedi
 
 ### 2. Collection Module
 **Files:**
-- View: `CollectionTestView.xaml`
-- ViewModel: `CollectionTestViewModel.cs`
+- View: `CollectionView.xaml`
+- ViewModel: `CollectionViewModel.cs`
 
 **Controls:**
 - CarouselView
@@ -68,8 +68,8 @@ This document outlines one test view per control category, each backed by a dedi
 
 ### 3. Container Module
 **Files:**
-- View: `ContainerTestView.xaml`
-- ViewModel: `ContainerTestViewModel.cs`
+- View: `ContainerView.xaml`
+- ViewModel: `ContainerViewModel.cs`
 
 **Controls:**
 - Border
@@ -103,8 +103,8 @@ This document outlines one test view per control category, each backed by a dedi
 
 ### 4. DateTime Module
 **Files:**
-- View: `DateTimeTestView.xaml`
-- ViewModel: `DateTimeTestViewModel.cs`
+- View: `DateTimeView.xaml`
+- ViewModel: `DateTimeViewModel.cs`
 
 **Controls:**
 - DatePicker
@@ -128,8 +128,8 @@ This document outlines one test view per control category, each backed by a dedi
 
 ### 5. Dialogs Module
 **Files:**
-- View: `DialogsTestView.xaml`
-- ViewModel: `DialogsTestViewModel.cs`
+- View: `DialogsView.xaml`
+- ViewModel: `DialogsViewModel.cs`
 
 **Controls:**
 - ContentDialog
@@ -151,8 +151,8 @@ This document outlines one test view per control category, each backed by a dedi
 
 ### 6. Display Module
 **Files:**
-- View: `DisplayTestView.xaml`
-- ViewModel: `DisplayTestViewModel.cs`
+- View: `DisplayView.xaml`
+- ViewModel: `DisplayViewModel.cs`
 
 **Controls:**
 - ActivityIndicator
@@ -181,8 +181,8 @@ This document outlines one test view per control category, each backed by a dedi
 
 ### 7. Graphics Module
 **Files:**
-- View: `GraphicsTestView.xaml`
-- ViewModel: `GraphicsTestViewModel.cs`
+- View: `GraphicsView.xaml`
+- ViewModel: `GraphicsViewModel.cs`
 
 **Controls:**
 - GraphicsView
@@ -201,8 +201,8 @@ This document outlines one test view per control category, each backed by a dedi
 
 ### 8. Media Module
 **Files:**
-- View: `MediaTestView.xaml`
-- ViewModel: `MediaTestViewModel.cs`
+- View: `MediaView.xaml`
+- ViewModel: `MediaViewModel.cs`
 
 **Controls:**
 - BlazorWebView
@@ -228,8 +228,8 @@ This document outlines one test view per control category, each backed by a dedi
 
 ### 9. Navigation Module
 **Files:**
-- View: `NavigationTestView.xaml`
-- ViewModel: `NavigationTestViewModel.cs`
+- View: `NavigationView.xaml`
+- ViewModel: `NavigationViewModel.cs`
 
 **Controls:**
 - (Navigation controls are shell-level, not standalone test controls)
@@ -246,8 +246,8 @@ This document outlines one test view per control category, each backed by a dedi
 
 ### 10. Range Module
 **Files:**
-- View: `RangeTestView.xaml`
-- ViewModel: `RangeTestViewModel.cs`
+- View: `RangeView.xaml`
+- ViewModel: `RangeViewModel.cs`
 
 **Controls:**
 - Slider
@@ -269,8 +269,8 @@ This document outlines one test view per control category, each backed by a dedi
 
 ### 11. Selection Module
 **Files:**
-- View: `SelectionTestView.xaml`
-- ViewModel: `SelectionTestViewModel.cs`
+- View: `SelectionView.xaml`
+- ViewModel: `SelectionViewModel.cs`
 
 **Controls:**
 - Picker
@@ -290,8 +290,8 @@ This document outlines one test view per control category, each backed by a dedi
 
 ### 12. Shapes Module
 **Files:**
-- View: `ShapesTestView.xaml`
-- ViewModel: `ShapesTestViewModel.cs`
+- View: `ShapesView.xaml`
+- ViewModel: `ShapesViewModel.cs`
 
 **Controls:**
 - Ellipse
@@ -317,8 +317,8 @@ This document outlines one test view per control category, each backed by a dedi
 
 ### 13. Text Module
 **Files:**
-- View: `TextTestView.xaml`
-- ViewModel: `TextTestViewModel.cs`
+- View: `TextView.xaml`
+- ViewModel: `TextViewModel.cs`
 
 **Controls:**
 - Editor
@@ -344,8 +344,8 @@ This document outlines one test view per control category, each backed by a dedi
 
 ### 14. Toggle Module
 **Files:**
-- View: `ToggleTestView.xaml`
-- ViewModel: `ToggleTestViewModel.cs`
+- View: `ToggleView.xaml`
+- ViewModel: `ToggleViewModel.cs`
 
 **Controls:**
 - CheckBox
@@ -373,7 +373,7 @@ This document outlines one test view per control category, each backed by a dedi
 Each test view follows this pattern:
 
 ```
-TestView.xaml
+View.xaml
 ├── VerticalStackLayout (main container)
 │   ├── Label (page title)
 │   ├── Label (description)
@@ -386,10 +386,15 @@ TestView.xaml
 
 ```xaml
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="Brinell.Samples.Maui.App.Views.ButtonsTestView"
+             xmlns:viewModels="using:Brinell.Samples.Maui.App.ViewModels"
+             x:Class="Brinell.Samples.Maui.App.Views.ButtonsView"
              Title="Buttons Test View">
+
+    <ContentView.BindingContext>
+        <viewModels:ButtonsViewModel />
+    </ContentView.BindingContext>
 
     <VerticalStackLayout Padding="20" Spacing="10">
         <Label Text="Buttons Module Test" FontSize="18" FontAttributes="Bold" />
@@ -417,12 +422,11 @@ TestView.xaml
 ```csharp
 namespace Brinell.Samples.Maui.App.Views;
 
-public partial class ButtonsTestView : ContentPage
+public partial class ButtonsView
 {
-    public ButtonsTestView()
+    public ButtonsView()
     {
         InitializeComponent();
-        BindingContext = new ButtonsTestViewModel();
     }
 }
 ```
@@ -430,30 +434,41 @@ public partial class ButtonsTestView : ContentPage
 ### ViewModel Pattern
 
 ```csharp
-using System.Collections.ObjectModel;
 using System.Windows.Input;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 
 namespace Brinell.Samples.Maui.App.ViewModels;
 
-public partial class ButtonsTestViewModel : ObservableObject
+public class ButtonsViewModel : ParentViewModel
 {
-    [ObservableProperty]
-    private string statusMessage = "Ready";
+    private string statusMessage = "Ready. Click any button to test.";
+    private int tapCount = 0;
 
-    [RelayCommand]
-    private void Test()
+    public string StatusMessage
     {
-        // Execute test logic
-        StatusMessage = "Button tapped successfully";
+        get => statusMessage;
+        set
+        {
+            if (statusMessage != value)
+            {
+                statusMessage = value;
+                OnPropertyChanged();
+            }
+        }
     }
 
-    [RelayCommand]
+    public ICommand TestButtonCommand => new RelayCommand(TestButton);
+    public ICommand ResetCommand => new RelayCommand(Reset);
+
+    private void TestButton()
+    {
+        tapCount++;
+        StatusMessage = $"✓ Button tapped {tapCount} time{(tapCount != 1 ? "s" : "")}. Command executed successfully.";
+    }
+
     private void Reset()
     {
-        // Clear state and reload
-        StatusMessage = "Ready";
+        StatusMessage = "Ready. Click any button to test.";
+        tapCount = 0;
     }
 }
 ```
@@ -501,35 +516,35 @@ Main app shell:
 ```
 samples/Brinell.Samples.Maui.App/
 ├── Views/
-│   └── TestViews/
-│       ├── ButtonsTestView.xaml
-│       ├── CollectionTestView.xaml
-│       ├── ContainerTestView.xaml
-│       ├── DateTimeTestView.xaml
-│       ├── DialogsTestView.xaml
-│       ├── DisplayTestView.xaml
-│       ├── GraphicsTestView.xaml
-│       ├── MediaTestView.xaml
-│       ├── RangeTestView.xaml
-│       ├── SelectionTestView.xaml
-│       ├── ShapesTestView.xaml
-│       ├── TextTestView.xaml
-│       └── ToggleTestView.xaml
+│   └── Views/
+│       ├── ButtonsView.xaml
+│       ├── CollectionView.xaml
+│       ├── ContainerView.xaml
+│       ├── DateTimeView.xaml
+│       ├── DialogsView.xaml
+│       ├── DisplayView.xaml
+│       ├── GraphicsView.xaml
+│       ├── MediaView.xaml
+│       ├── RangeView.xaml
+│       ├── SelectionView.xaml
+│       ├── ShapesView.xaml
+│       ├── TextView.xaml
+│       └── ToggleView.xaml
 ├── ViewModels/
-│   └── TestViewModels/
-│       ├── ButtonsTestViewModel.cs
-│       ├── CollectionTestViewModel.cs
-│       ├── ContainerTestViewModel.cs
-│       ├── DateTimeTestViewModel.cs
-│       ├── DialogsTestViewModel.cs
-│       ├── DisplayTestViewModel.cs
-│       ├── GraphicsTestViewModel.cs
-│       ├── MediaTestViewModel.cs
-│       ├── RangeTestViewModel.cs
-│       ├── SelectionTestViewModel.cs
-│       ├── ShapesTestViewModel.cs
-│       ├── TextTestViewModel.cs
-│       └── ToggleTestViewModel.cs
+│   └── ViewModels/
+│       ├── ButtonsViewModel.cs
+│       ├── CollectionViewModel.cs
+│       ├── ContainerViewModel.cs
+│       ├── DateTimeViewModel.cs
+│       ├── DialogsViewModel.cs
+│       ├── DisplayViewModel.cs
+│       ├── GraphicsViewModel.cs
+│       ├── MediaViewModel.cs
+│       ├── RangeViewModel.cs
+│       ├── SelectionViewModel.cs
+│       ├── ShapesViewModel.cs
+│       ├── TextViewModel.cs
+│       └── ToggleViewModel.cs
 └── AppShell.xaml
 ```
 
@@ -542,7 +557,7 @@ Tests and PageObjects for these test views are created in **`Brinell.Maui.UITest
 ```
 Brinell.Maui.UITests/
 ├── PageObjects/
-│   └── TestViewPages/
+│   └── ViewPages/
 │       ├── ButtonsTestPage.cs
 │       ├── CollectionTestPage.cs
 │       ├── ContainerTestPage.cs
@@ -623,136 +638,185 @@ Brinell.Maui.UITests/
 Each test view has a corresponding PageObject that encapsulates element locators and interactions:
 
 ```csharp
-namespace Brinell.Maui.UITests.PageObjects.TestViewPages;
+namespace Brinell.Maui.UITests.Pages;
 
-public class ButtonsTestPage : PageObject
+/// <summary>
+/// Page object for the ButtonsTestView. Exposes all button controls and their interactions.
+/// Demonstrates the page object pattern with control locators and action methods.
+/// </summary>
+public class ButtonsTestPage : PageObjectBase<ButtonsTestPage>
 {
-    // Locators
-    private By TestButton => By.Id("TestButton");
-    private By StatusLabel => By.Id("StatusLabel");
-    private By ResetButton => By.Id("ResetButton");
-
-    // Actions
-    public void TapTestButton()
+    public ButtonsTestPage(IMauiTestContext context)
+        : base(context)
     {
-        var button = WaitFor(TestButton);
-        button.Click();
     }
 
-    public string GetStatusMessage()
+    /// <inheritdoc />
+    public override string Name => "ButtonsTestPage";
+
+    /// <inheritdoc />
+    public override bool IsLoaded(int? timeoutMs = null)
     {
-        return Find(StatusLabel).Text;
+        // Page is loaded when the status label exists
+        return StatusLabel.IsExists();
     }
 
-    public void Reset()
-    {
-        Find(ResetButton).Click();
-    }
+    #region Buttons
+
+    /// <summary>
+    /// The basic Button test control.
+    /// </summary>
+    public Button<ButtonsTestPage> TestButton => Button("TestButton");
+
+    /// <summary>
+    /// The ImageButton test control.
+    /// </summary>
+    public Button<ButtonsTestPage> TestImageButton => Button("TestImageButton");
+
+    /// <summary>
+    /// The Reset button.
+    /// </summary>
+    public Button<ButtonsTestPage> ResetButton => Button("ResetButton");
+
+    #endregion
+
+    #region Labels
+
+    /// <summary>
+    /// The status message label showing test results.
+    /// </summary>
+    public Label<ButtonsTestPage> StatusLabel => Label("StatusLabel");
+
+    #endregion
 }
 ```
 
 ### Test Class Pattern
 
-Each individual control has its own dedicated test class:
+Each individual control has its own dedicated test class using xUnit with fluent assertions:
 
 ```csharp
-namespace Brinell.Maui.UITests.Tests.ControlTests.Buttons;
+using Brinell.Maui.UITests.Pages;
 
-[TestFixture]
-public class ButtonTests : UITestBase
+namespace Brinell.Maui.UITests.Tests.Buttons;
+
+/// <summary>
+/// UI tests for the Button control in the ButtonsTestView.
+/// </summary>
+[Collection("Appium")]
+[Trait("Category", "UITest")]
+[Trait("Control", "Button")]
+public class ButtonTests
 {
-    private ButtonsTestPage _page;
+    private readonly AppiumFixture _fixture;
 
-    [SetUp]
-    public void SetUp()
+    public ButtonTests(AppiumFixture fixture)
     {
-        _page = new ButtonsTestPage();
-        NavigateTo("buttons-test");
+        _fixture = fixture;
+        _fixture.AppShell.ButtonsTab.Click();
     }
 
-    [Test]
-    public void ButtonTap_Executes_Command()
+    private ButtonsTestPage GetPage()
+    {
+        return new(_fixture.Context);
+    }
+
+    /// <summary>
+    /// Verifies that the Button exists on the page.
+    /// </summary>
+    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [Trait("Method", "IsExists")]
+    public Task Button_IsExists_ReturnsTrue()
+    {
+        var page = GetPage();
+        // Assert
+        page.TestButton.AssertExists();
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Verifies that tapping the Button executes its command.
+    /// </summary>
+    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [Trait("Method", "Tap")]
+    public Task Button_Tap_ExecutesCommand()
     {
         // Arrange
-        var initialStatus = _page.GetStatusMessage();
+        var page = GetPage();
 
-        // Act
-        _page.TapTestButton();
+        // Act & Assert
+        page.TestButton.Click()
+            .StatusLabel.AssertTextContains("Button tapped");
 
-        // Assert
-        Assert.That(_page.GetStatusMessage(), Is.Not.EqualTo(initialStatus));
+        return Task.CompletedTask;
     }
 
-    [TearDown]
-    public void Cleanup()
+    /// <summary>
+    /// Verifies that tapping the Button multiple times increments the tap count.
+    /// </summary>
+    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [Trait("Method", "Tap")]
+    public Task Button_MultipleTaps_IncrementsCount()
     {
-        _page.Reset();
-    }
-}
-```
+        // Arrange
+        var page = GetPage();
 
-```csharp
-namespace Brinell.Maui.UITests.Tests.ControlTests.Buttons;
+        // Act & Assert
+        page.TestButton.Click()
+            .StatusLabel.AssertTextContains("1 time")
+            .TestButton.Click()
+            .StatusLabel.AssertTextContains("2 times");
 
-[TestFixture]
-public class IconCommandButtonTests : UITestBase
-{
-    private ButtonsTestPage _page;
-
-    [SetUp]
-    public void SetUp()
-    {
-        _page = new ButtonsTestPage();
-        NavigateTo("buttons-test");
+        return Task.CompletedTask;
     }
 
-    [Test]
-    public void IconCommandButtonTap_Executes_Command()
+    /// <summary>
+    /// Verifies that tapping the Reset button clears the status.
+    /// </summary>
+    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [Trait("Method", "Reset")]
+    public Task Button_Reset_ClearsStatus()
     {
-        // Arrange & Act
-        _page.TapIconCommandButton();
+        // Arrange
+        var page = GetPage();
 
-        // Assert
-        Assert.That(_page.GetStatusMessage(), Contains.Substring("IconCommandButton"));
-    }
+        // Act & Assert
+        page.TestButton.Click()
+            .StatusLabel.AssertTextContains("Button tapped")
+            .ResetButton.Click()
+            .StatusLabel.AssertTextContains("Ready");
 
-    [TearDown]
-    public void Cleanup()
-    {
-        _page.Reset();
+        return Task.CompletedTask;
     }
 }
 ```
 
 ### Naming Conventions
 
-- **PageObject classes**: `[ViewName]Page.cs` (e.g., `ButtonsTestPage.cs`) — one per view category
-- **Test classes**: One per control in a category folder (e.g., `Buttons/ButtonTests.cs`, `Buttons/IconCommandButtonTests.cs`)
-- **Test namespace**: `Brinell.Maui.UITests.Tests.ControlTests.[Category]`
+- **PageObject classes**: `[ViewName]TestPage.cs` (e.g., `ButtonsTestPage.cs`) — one per view category
+- **Test classes**: One per control in a category folder (e.g., `Buttons/ButtonTests.cs`, `Buttons/ImageButtonTests.cs`)
+- **Test namespace**: `Brinell.Maui.UITests.Tests.[Category]`
+- **PageObject namespace**: `Brinell.Maui.UITests.Pages`
 - **Locators**: Use `AutomationId` in XAML views for reliable identification
-- **Test methods**: Follow `[Control][Action]_[Condition]_[Expected]` pattern
+- **Test methods**: Follow `[Control]_[Method]_[Expected]` pattern (e.g., `Button_Tap_ExecutesCommand`)
+- **Traits**: Use xUnit Trait attributes for categorization (Category, Control, Method)
+- **Collection**: Use `[Collection("Appium")]` for Appium fixture sharing
+- **PageObject inheritance**: Inherit from `PageObjectBase<T>` where T is the PageObject itself
 
 ### Test Execution
 
-Run control view tests from solution root:
+Run control view tests from solution root using xUnit-based test runner:
 
 ```powershell
-# Run all UITests
+# Run all UI tests
 dotnet test testsnew\Brinell.Maui.Tests\Brinell.Maui.Tests.csproj -v:minimal /nr:false
 
 # Run specific control category
 dotnet test testsnew\Brinell.Maui.Tests\Brinell.Maui.Tests.csproj -k ButtonTests -v:minimal /nr:false
 
-# Run specific control with namespace
-dotnet test testsnew\Brinell.Maui.Tests\Brinell.Maui.Tests.csproj -k "Brinell.Maui.UITests.Tests.ControlTests.Buttons" -v:minimal /nr:false
+# Run specific test with full namespace
+dotnet test testsnew\Brinell.Maui.Tests\Brinell.Maui.Tests.csproj -k "Brinell.Maui.UITests.Tests.Buttons" -v:minimal /nr:false
 ```
 
 ---
 
-## Future Enhancements
-
-- Accessibility audit for each view
-- Keyboard navigation testing
-- Dark/Light theme validation
-- Orientation change handling
-- Multi-language label support
