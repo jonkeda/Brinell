@@ -1,6 +1,3 @@
-using Microsoft.Maui.Platform;
-using Microsoft.UI.Xaml.Automation.Peers;
-
 namespace Brinell.Samples.Maui.App.Platforms.Windows.Handlers;
 
 

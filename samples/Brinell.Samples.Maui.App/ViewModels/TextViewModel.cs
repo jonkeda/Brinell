@@ -1,6 +1,6 @@
 using System.Windows.Input;
 
-namespace Brinell.Samples.Maui.App.ViewModels2;
+namespace Brinell.Samples.Maui.App.ViewModels;
 
 /// <summary>
 /// ViewModel for Text controls testing (Entry, Editor, and SearchBar).
@@ -146,7 +146,7 @@ public class TextViewModel : ParentViewModel
         }
         else
         {
-            var lineCount = editorText.Split('\n').Length;
+            var lineCount = editorText.Split('\r').Length;
             EditorStatusMessage = $"✓ Editor text: {editorText.Length} chars, {lineCount} line{(lineCount != 1 ? "s" : "")}";
         }
     }

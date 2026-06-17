@@ -65,6 +65,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <MauiXaml Update="MainWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
     <MauiXaml Update="Views2\DataGridView.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>

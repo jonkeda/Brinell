@@ -5,7 +5,9 @@ namespace Brinell.Maui.Controls;
 /// Implements IClickableControlObject with Click, DoubleClick, RightClick, Hover, LongPress.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public abstract class ClickableControlBase<TScope> : ControlBase<TScope>, IClickableControlObject<TScope>
+public abstract class ClickableControlBase<TScope> : ControlBase<TScope>,
+    IClickableControlObject<TScope>,
+    IPressableControl<TScope>
     where TScope : IMauiScope<TScope>
 {
     /// <summary>
@@ -13,7 +15,7 @@ public abstract class ClickableControlBase<TScope> : ControlBase<TScope>, IClick
     /// </summary>
     /// <param name="scope">The scope (page or container) providing element finding.</param>
     /// <param name="locator">The locator for the element.</param>
-    public ClickableControlBase(IMauiScope<TScope> scope, Locator locator)
+    protected ClickableControlBase(IMauiScope<TScope> scope, Locator locator)
         : base(scope, locator)
     {
     }
@@ -24,18 +26,19 @@ public abstract class ClickableControlBase<TScope> : ControlBase<TScope>, IClick
     /// </summary>
     /// <param name="scope">The scope (page or container) providing element finding.</param>
     /// <param name="locatorValue">The locator value (e.g., automation ID, name).</param>
-    public ClickableControlBase(IMauiScope<TScope> scope, string locatorValue)
+    protected ClickableControlBase(IMauiScope<TScope> scope, string locatorValue)
         : base(scope, locatorValue)
     {
     }
-    
+
     #region IClickableControlObject<TScope> Implementation
-    
+
     /// <inheritdoc />
     public TScope Click(int? timeoutMs = null)
     {
         return RunWithElement(nameof(Click), timeoutMs, element =>
         {
+            EnsureClickableCore(element, timeoutMs);
             ClickCore(element, timeoutMs);
         });
     }
@@ -58,47 +61,51 @@ public abstract class ClickableControlBase<TScope> : ControlBase<TScope>, IClick
         Run(nameof(TryClick), () => ClickCore(element, timeoutMs));
         return true;
     }
-    
+
     /// <inheritdoc />
     public TScope DoubleClick(int? timeoutMs = null)
     {
         return RunWithElement(nameof(DoubleClick), timeoutMs, element =>
         {
+            EnsureClickableCore(element, timeoutMs);
             DoubleClickCore(element, timeoutMs);
         });
     }
-    
+
     /// <inheritdoc />
     public TScope RightClick(int? timeoutMs = null)
     {
         return RunWithElement(nameof(RightClick), timeoutMs, element =>
         {
+            EnsureClickableCore(element, timeoutMs);
             RightClickCore(element, timeoutMs);
         });
     }
-    
+
     /// <inheritdoc />
     public TScope Hover(int? timeoutMs = null)
     {
         return RunWithElement(nameof(Hover), timeoutMs, element =>
         {
+            EnsureClickableCore(element, timeoutMs);
             HoverCore(element);
         });
     }
-    
+
     /// <inheritdoc />
     public TScope LongPress(int? durationMs = null, int? timeoutMs = null)
     {
         return RunWithElement(nameof(LongPress), timeoutMs, element =>
         {
+            EnsureClickableCore(element, timeoutMs);
             LongPressCore(element, durationMs);
         });
     }
-    
+
     #endregion
-    
+
     #region Core Methods (Element-Aware, No Logging)
-    
+
     /// <summary>
     /// Performs click on pre-found element. No logging - caller handles logging.
     /// </summary>
@@ -106,7 +113,6 @@ public abstract class ClickableControlBase<TScope> : ControlBase<TScope>, IClick
     /// <param name="timeoutMs">Optional timeout for clickable check.</param>
     protected virtual void ClickCore(IMauiElement element, int? timeoutMs = null)
     {
-        CheckClickableCore(element, timeoutMs);
         element.Click();
     }
 
@@ -117,11 +123,10 @@ public abstract class ClickableControlBase<TScope> : ControlBase<TScope>, IClick
     /// <param name="timeoutMs">Optional timeout for clickable check.</param>
     protected virtual void DoubleClickCore(IMauiElement element, int? timeoutMs = null)
     {
-        CheckClickableCore(element, timeoutMs);
         element.Click();
         element.Click();
     }
-    
+
     /// <summary>
     /// Performs right-click on pre-found element. No logging - caller handles logging.
     /// </summary>
@@ -129,10 +134,9 @@ public abstract class ClickableControlBase<TScope> : ControlBase<TScope>, IClick
     /// <param name="timeoutMs">Optional timeout for clickable check.</param>
     protected virtual void RightClickCore(IMauiElement element, int? timeoutMs = null)
     {
-        CheckClickableCore(element, timeoutMs);
         element.RightClick();
     }
-    
+
     /// <summary>
     /// Core implementation of Hover using pre-found element.
     /// </summary>
@@ -141,7 +145,7 @@ public abstract class ClickableControlBase<TScope> : ControlBase<TScope>, IClick
     {
         element.Hover();
     }
-    
+
     /// <summary>
     /// Core implementation of LongPress using pre-found element.
     /// </summary>
@@ -152,44 +156,23 @@ public abstract class ClickableControlBase<TScope> : ControlBase<TScope>, IClick
         var duration = durationMs ?? 1000; // Default 1 second
         element.LongPress(duration);
     }
-    
+
+    #endregion
+
+    #region IsClickable
+
     /// <summary>
     /// Verifies element is clickable using pre-found element. No logging.
     /// </summary>
     /// <param name="element">The pre-found element.</param>
     /// <param name="timeoutMs">Optional timeout for enabled check.</param>
-    protected virtual void CheckClickableCore(IMauiElement element, int? timeoutMs = null)
+    protected virtual void EnsureClickableCore(IMauiElement element, int? timeoutMs = null)
     {
         var timeout = timeoutMs ?? DefaultTimeoutMs;
-        Scope.WaitReady(timeout);
 
-        // Check enabled state (element already exists, so skip WaitExists)
-        if (IsEnabledCore(element) != true)
-        {
-            if (!WaitEnabledCore(element, true, timeout))
-            {
-                throw new TimeoutException(
-                    $"Element was not enabled within {timeout}ms. Locator: {Locator}");
-            }
-        }
-        
-        // Check visibility, scroll if needed
-        if (IsVisibleCore(element) != true)
-        {
-            element.ScrollIntoView();
-
-            if (!WaitVisibleCore(element, true, timeout))
-            {
-                throw new TimeoutException(
-                    $"Element was not visible within {timeout}ms after scrolling into view. Locator: {Locator}");
-            }
-        }
+        EnsureEnabledCore(element, timeout);
     }
-    
-    #endregion
-    
-    #region IsClickable
-    
+
     /// <summary>
     /// Checks clickable state using pre-found element.
     /// </summary>
@@ -199,33 +182,23 @@ public abstract class ClickableControlBase<TScope> : ControlBase<TScope>, IClick
     {
         var isVisible = IsVisibleCore(element);
         var isEnabled = IsEnabledCore(element);
-        
+
         if (isVisible == null || isEnabled == null)
             return null;
-        
+
         return isVisible.Value && isEnabled.Value;
     }
-    
+
     /// <inheritdoc />
     public bool? IsClickable()
     {
         return IsClickableCore(TryFindElement());
     }
-    
-    /// <summary>
-    /// Public CheckClickable - finds element and delegates to Core.
-    /// </summary>
-    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
-    public void CheckClickable(int? timeoutMs = null)
-    {
-        var element = FindElementWithWait(timeoutMs ?? DefaultTimeoutMs);
-        CheckClickableCore(element, timeoutMs);
-    }
 
     #endregion
-    
+
     #region WaitClickable
-    
+
     /// <summary>
     /// Waits for clickable state using pre-found element.
     /// </summary>
@@ -244,22 +217,23 @@ public abstract class ClickableControlBase<TScope> : ControlBase<TScope>, IClick
     /// <inheritdoc />
     public bool WaitClickable(bool? expected, int? timeoutMs = null)
     {
-        if (expected == null) return true;
-        
+        if (expected == null)
+            return true;
+
         var element = TryFindElement();
         if (element == null)
         {
             // If element doesn't exist and we expect clickable=false, that's a match
             return expected.Value == false;
         }
-        
+
         return WaitClickableCore(element, expected.Value, timeoutMs ?? DefaultTimeoutMs);
     }
-    
+
     #endregion
-    
+
     #region AssertClickable
-    
+
     /// <summary>
     /// Asserts the element is clickable (visible and enabled). Throws if it isn't.
     /// </summary>
@@ -268,18 +242,66 @@ public abstract class ClickableControlBase<TScope> : ControlBase<TScope>, IClick
     /// <returns>The containing scope for fluent chaining.</returns>
     public TScope AssertClickable(string? message = null, int? timeoutMs = null)
         => AssertClickable(true, message, timeoutMs);
-    
+
     /// <inheritdoc />
     public TScope AssertClickable(bool? expected, string? message = null, int? timeoutMs = null)
     {
-        if (expected == null) return ContainingScope;
-        
+        if (expected == null)
+            return ContainingScope;
+
         return RunAssert(nameof(AssertClickable), expected, () =>
         {
             WaitClickable(expected, timeoutMs);
             return IsClickable();
         }, message ?? $"Expected element {(expected.Value ? "to be clickable" : "not to be clickable")}. Locator: {Locator}");
     }
-    
+
+    #endregion
+
+
+    #region
+
+
+    /// <summary>
+    /// Activates the button through keyboard input after focusing it.
+    /// Useful for MAUI/WinUI button surfaces where UIA Invoke reports success
+    /// without dispatching the app command.
+    /// </summary>
+    public TScope Press(int? timeoutMs = null)
+    {
+        return RunWithElement(nameof(Press), timeoutMs, element =>
+        {
+            EnsureClickableCore(element, timeoutMs);
+            PressCore(element, timeoutMs);
+        });
+    }
+
+    /// <summary>
+    /// Attempts to activate the button through keyboard input if it exists.
+    /// </summary>
+    public bool TryPress(int? timeoutMs = null)
+    {
+        var element = TryFindElement();
+        if (element == null)
+        {
+            return false;
+        }
+
+        EnsureVisible(element);
+        return Run(nameof(TryPress), () =>
+        {
+            EnsureClickableCore(element, timeoutMs);
+            PressCore(element, timeoutMs);
+            return true;
+        });
+    }
+
+    private void PressCore(IMauiElement element, int? timeoutMs = null)
+    {
+        EnsureClickableCore(element, timeoutMs);
+        element.SendKeys(Keys.Space);
+    }
+
+
     #endregion
 }

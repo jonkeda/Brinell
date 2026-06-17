@@ -51,6 +51,21 @@ public abstract class PageObjectBase<TSelf> : ObjectBase, IMauiPage<TSelf>
     /// <inheritdoc />
     public Label<TSelf> BusySentinel => Label("UITest_IsBusy");
 
+    private bool _ensuringLoad = false;
+    private bool EnsureLoaded()
+    {
+        if (_ensuringLoad) return true;
+        try
+        {
+            _ensuringLoad = true;
+            return IsLoaded();
+        }
+        finally
+        {
+            _ensuringLoad = false;
+        }
+    }
+    
     /// <inheritdoc />
     public virtual bool IsLoaded(int? timeoutMs = null)
     {
@@ -183,18 +198,21 @@ public abstract class PageObjectBase<TSelf> : ObjectBase, IMauiPage<TSelf>
     /// <inheritdoc />
     IMauiElement? IElementScope<IMauiElement>.TryFindElement(Locator locator)
     {
+        EnsureLoaded();
         return _context.TryFindElement(locator);
     }
     
     /// <inheritdoc />
     IMauiElement IElementScope<IMauiElement>.FindElement(Locator locator)
     {
+        EnsureLoaded();
         return _context.FindElement(locator);
     }
     
     /// <inheritdoc />
     IReadOnlyList<IMauiElement> IElementScope<IMauiElement>.FindElements(Locator locator)
     {
+        EnsureLoaded();
         return _context.FindElements(locator);
     }
 

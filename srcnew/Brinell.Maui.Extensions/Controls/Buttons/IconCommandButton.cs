@@ -30,7 +30,7 @@ public class IconCommandButton<TScope> : ClickableControlBase<TScope>
     /// <inheritdoc />
     protected override void ClickCore(IMauiElement element, int? timeoutMs = null)
     {
-        CheckClickableCore(element, timeoutMs);
+        EnsureClickableCore(element, timeoutMs);
 
         var target = ElementSearch.FindChildByAutomationId(MauiScope, element, NativeButtonId)
             ?? ElementSearch.FindChildByAutomationId(MauiScope, element, IconButtonId)

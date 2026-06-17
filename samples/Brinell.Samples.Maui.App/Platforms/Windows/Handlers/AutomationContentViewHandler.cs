@@ -1,5 +1,4 @@
 using Microsoft.Maui.Handlers;
-using Microsoft.Maui.Platform;
 
 namespace Brinell.Samples.Maui.App.Platforms.Windows.Handlers;
 

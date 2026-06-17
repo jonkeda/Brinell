@@ -89,7 +89,7 @@ public class EditorTests
     public Task Editor_SetText_MultiLine_TextIsSet()
     {
         var page = GetPage();
-        const string testText = "Line 1\nLine 2\nLine 3";
+        const string testText = "Line 1\rLine 2\rLine 3";
 
         // Act
         page.TestEditor.SetText(testText);

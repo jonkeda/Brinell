@@ -24,7 +24,7 @@
 
     <!-- Text Tab -->
     <ContentPage Title="Text" AutomationId="TextTab">
-        <testViews:TextView />
+            <testViews:TextView />
     </ContentPage>
 
     <!-- Basics Tab -->

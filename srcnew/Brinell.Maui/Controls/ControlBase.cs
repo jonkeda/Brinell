@@ -18,7 +18,7 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
     /// </summary>
     /// <param name="scope">The scope (page or container) providing element finding.</param>
     /// <param name="locator">The locator used to find the control element.</param>
-    public ControlBase(IMauiScope<TScope> scope, Locator locator)
+    protected ControlBase(IMauiScope<TScope> scope, Locator locator)
         : base(locator, scope)
     {
         _mauiScope = scope ?? throw new ArgumentNullException(nameof(scope));
@@ -30,7 +30,7 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
     /// </summary>
     /// <param name="scope">The scope (page or container) providing element finding.</param>
     /// <param name="locatorValue">The locator value (e.g., automation ID, name).</param>
-    public ControlBase(IMauiScope<TScope> scope, string locatorValue)
+    protected ControlBase(IMauiScope<TScope> scope, string locatorValue)
         : base(new Locator(scope?.DefaultLocatorStrategy ?? LocatorStrategy.AutomationId, locatorValue), 
                scope!)
     {
@@ -120,36 +120,11 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
     /// <param name="element">The element to scroll into view.</param>
     protected virtual void ScrollIntoViewCore(IMauiElement element)
     {
-        // Skip if already visible
         if (IsVisibleCore(element) == true)
         {
             return;
         }
-
-        // Use the element's built-in ScrollIntoView which uses Selenium 4 API
         element.ScrollIntoView();
-
-        // Poll until the element is actually visible
-        WaitVisibleCore(element, true, DefaultTimeoutMs);
-    }
-    
-    /// <summary>
-    /// Ensures element is scrolled into view before performing an action.
-    /// Called automatically by interaction methods.
-    /// </summary>
-    /// <param name="element">The element to ensure visibility for.</param>
-    protected void EnsureVisible(IMauiElement element)
-    {
-        if (IsVisibleCore(element) != true)
-        {
-            ScrollIntoViewCore(element);
-
-            if (IsVisibleCore(element) != true)
-            {
-                throw new TimeoutException(
-                    $"Element was not visible after scrolling into view. Locator: {Locator}");
-            }
-        }
     }
     
     #endregion
@@ -437,7 +412,7 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
     
     #endregion
     
-    #region State (Is methods - immediate, no waiting)
+    #region Visible
     
     /// <inheritdoc />
     public bool IsExists()
@@ -462,7 +437,100 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
     {
         return IsVisibleCore(TryFindElement());
     }
-    
+
+    /// <inheritdoc />
+    public bool WaitVisible(bool? expected, int? timeoutMs = null)
+    {
+        // Nullable skip pattern
+        if (expected == null)
+            return true;
+
+        return Poll(
+            () => IsVisible() == expected.Value,
+            timeoutMs ?? DefaultTimeoutMs);
+    }
+
+    /// <summary>
+    /// Polls visible state using pre-found element.
+    /// </summary>
+    /// <param name="element">The pre-found element.</param>
+    /// <param name="expected">The expected visible state.</param>
+    /// <param name="timeoutMs">Maximum time to wait in milliseconds.</param>
+    /// <returns>True if condition was met, false if timeout reached.</returns>
+    protected bool WaitVisibleCore(IMauiElement element, bool expected, int timeoutMs)
+    {
+        return PollWithElement(
+            element,
+            e => IsVisibleCore(e) == expected,
+            timeoutMs);
+    }
+
+    protected virtual void EnsureVisibleCore(IMauiElement element, int timeout)
+    {
+        if (IsVisibleCore(element) != true)
+        {
+            element.ScrollIntoView();
+
+            if (!WaitVisibleCore(element, true, timeout))
+            {
+                throw new TimeoutException(
+                    $"Element was not visible within {timeout}ms after scrolling into view. Locator: {Locator}");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Ensures element is scrolled into view before performing an action.
+    /// Called automatically by interaction methods.
+    /// </summary>
+    /// <param name="element">The element to ensure visibility for.</param>
+    protected void EnsureVisible(IMauiElement element)
+    {
+        EnsureVisibleCore(element, DefaultTimeoutMs);
+    }
+
+    /// <summary>
+    /// Asserts the element is visible. Throws if it isn't.
+    /// </summary>
+    /// <param name="message">Optional custom message for the assertion failure.</param>
+    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
+    /// <returns>The containing scope for fluent chaining.</returns>
+    public TScope AssertVisible(string? message = null, int? timeoutMs = null)
+        => AssertVisible(true, message, timeoutMs);
+
+    /// <inheritdoc />
+    public TScope AssertVisible(bool? expected, string? message = null, int? timeoutMs = null)
+    {
+        // Nullable skip pattern
+        if (expected == null)
+            return ContainingScope;
+
+        if (!WaitVisible(expected, timeoutMs))
+        {
+            var actual = IsVisible();
+            throw new AssertionException(
+                message ?? $"Expected element {(expected.Value ? "to be visible" : "not to be visible")} but visibility is {actual?.ToString() ?? "unknown (element not found)"}. Locator: {Locator}");
+        }
+
+        return ContainingScope;
+    }
+
+    #endregion
+
+    #region Enabled
+
+    protected virtual void EnsureEnabledCore(IMauiElement element, int timeout)
+    {
+        if (IsEnabledCore(element) != true)
+        {
+            if (!WaitEnabledCore(element, true, timeout))
+            {
+                throw new TimeoutException(
+                    $"Element was not enabled within {timeout}ms. Locator: {Locator}");
+            }
+        }
+    }
+
     /// <summary>
     /// Checks if element is enabled using pre-found element.
     /// No stale element handling - element is found once at operation start.
@@ -480,11 +548,7 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
     {
         return IsEnabledCore(TryFindElement());
     }
-    
-    #endregion
-    
-    #region Waiting - Core Methods (Element-Aware)
-    
+
     /// <summary>
     /// Polls enabled state using pre-found element.
     /// </summary>
@@ -500,47 +564,6 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
             timeoutMs);
     }
     
-    /// <summary>
-    /// Polls visible state using pre-found element.
-    /// </summary>
-    /// <param name="element">The pre-found element.</param>
-    /// <param name="expected">The expected visible state.</param>
-    /// <param name="timeoutMs">Maximum time to wait in milliseconds.</param>
-    /// <returns>True if condition was met, false if timeout reached.</returns>
-    protected bool WaitVisibleCore(IMauiElement element, bool expected, int timeoutMs)
-    {
-        return PollWithElement(
-            element,
-            e => IsVisibleCore(e) == expected,
-            timeoutMs);
-    }
-    
-    #endregion
-    
-    #region Waiting (poll until condition or timeout)
-    
-    /// <inheritdoc />
-    public bool WaitExists(bool? expected, int? timeoutMs = null)
-    {
-        // Nullable skip pattern
-        if (expected == null) return true;
-        
-        return Poll(
-            () => IsExists() == expected.Value,
-            timeoutMs ?? DefaultTimeoutMs);
-    }
-    
-    /// <inheritdoc />
-    public bool WaitVisible(bool? expected, int? timeoutMs = null)
-    {
-        // Nullable skip pattern
-        if (expected == null) return true;
-        
-        return Poll(
-            () => IsVisible() == expected.Value,
-            timeoutMs ?? DefaultTimeoutMs);
-    }
-    
     /// <inheritdoc />
     public bool WaitEnabled(bool? expected, int? timeoutMs = null)
     {
@@ -551,61 +574,7 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
             () => IsEnabled() == expected.Value,
             timeoutMs ?? DefaultTimeoutMs);
     }
-    
-    #endregion
-    
-    #region Assertions (throw on failure)
-    
-    /// <summary>
-    /// Asserts the element exists. Throws if it doesn't.
-    /// </summary>
-    /// <param name="message">Optional custom message for the assertion failure.</param>
-    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
-    /// <returns>The containing scope for fluent chaining.</returns>
-    public TScope AssertExists(string? message = null, int? timeoutMs = null)
-        => AssertExists(true, message, timeoutMs);
-    
-    /// <inheritdoc />
-    public TScope AssertExists(bool? expected, string? message = null, int? timeoutMs = null)
-    {
-        // Nullable skip pattern
-        if (expected == null) return ContainingScope;
-        
-        if (!WaitExists(expected, timeoutMs))
-        {
-            var actual = IsExists();
-            throw new AssertionException(
-                message ?? $"Expected element {(expected.Value ? "to exist" : "not to exist")} but it {(actual ? "exists" : "does not exist")}. Locator: {Locator}");
-        }
-        
-        return ContainingScope;
-    }
-    
-    /// <summary>
-    /// Asserts the element is visible. Throws if it isn't.
-    /// </summary>
-    /// <param name="message">Optional custom message for the assertion failure.</param>
-    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
-    /// <returns>The containing scope for fluent chaining.</returns>
-    public TScope AssertVisible(string? message = null, int? timeoutMs = null)
-        => AssertVisible(true, message, timeoutMs);
-    
-    /// <inheritdoc />
-    public TScope AssertVisible(bool? expected, string? message = null, int? timeoutMs = null)
-    {
-        // Nullable skip pattern
-        if (expected == null) return ContainingScope;
-        
-        if (!WaitVisible(expected, timeoutMs))
-        {
-            var actual = IsVisible();
-            throw new AssertionException(
-                message ?? $"Expected element {(expected.Value ? "to be visible" : "not to be visible")} but visibility is {actual?.ToString() ?? "unknown (element not found)"}. Locator: {Locator}");
-        }
-        
-        return ContainingScope;
-    }
-    
+
     /// <summary>
     /// Asserts the element is enabled. Throws if it isn't.
     /// </summary>
@@ -614,23 +583,65 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
     /// <returns>The containing scope for fluent chaining.</returns>
     public TScope AssertEnabled(string? message = null, int? timeoutMs = null)
         => AssertEnabled(true, message, timeoutMs);
-    
+
     /// <inheritdoc />
     public TScope AssertEnabled(bool? expected, string? message = null, int? timeoutMs = null)
     {
         // Nullable skip pattern
-        if (expected == null) return ContainingScope;
-        
+        if (expected == null)
+            return ContainingScope;
+
         if (!WaitEnabled(expected, timeoutMs))
         {
             var actual = IsEnabled();
             throw new AssertionException(
                 message ?? $"Expected element {(expected.Value ? "to be enabled" : "to be disabled")} but enabled state is {actual?.ToString() ?? "unknown (element not found)"}. Locator: {Locator}");
         }
-        
+
         return ContainingScope;
     }
-    
+
+    #endregion
+
+    #region Exists
+
+    /// <inheritdoc />
+    public bool WaitExists(bool? expected, int? timeoutMs = null)
+    {
+        // Nullable skip pattern
+        if (expected == null) return true;
+        
+        return Poll(
+            () => IsExists() == expected.Value,
+            timeoutMs ?? DefaultTimeoutMs);
+    }
+
+    /// <summary>
+    /// Asserts the element exists. Throws if it doesn't.
+    /// </summary>
+    /// <param name="message">Optional custom message for the assertion failure.</param>
+    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
+    /// <returns>The containing scope for fluent chaining.</returns>
+    public TScope AssertExists(string? message = null, int? timeoutMs = null)
+        => AssertExists(true, message, timeoutMs);
+
+    /// <inheritdoc />
+    public TScope AssertExists(bool? expected, string? message = null, int? timeoutMs = null)
+    {
+        // Nullable skip pattern
+        if (expected == null)
+            return ContainingScope;
+
+        if (!WaitExists(expected, timeoutMs))
+        {
+            var actual = IsExists();
+            throw new AssertionException(
+                message ?? $"Expected element {(expected.Value ? "to exist" : "not to exist")} but it {(actual ? "exists" : "does not exist")}. Locator: {Locator}");
+        }
+
+        return ContainingScope;
+    }
+
     #endregion
     
     #region Text

@@ -71,9 +71,6 @@ public class ButtonTests
     public Task Button_Tap_ExecutesCommand()
     {
         var page = GetPage();
-        // Arrange
-        page.IsLoaded(timeoutMs: 5000);
-
         // Act
         page.TestButton.Click()
             .StatusLabel.AssertTextContains("Button tapped");

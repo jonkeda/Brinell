@@ -67,6 +67,7 @@ public class Entry<TScope> : ControlBase<TScope>, IEditableTextControlObject<TSc
 
         return RunWithElement(nameof(Enter), text, timeoutMs, element =>
         {
+            CheckEnabledCore(element, timeoutMs);
             EnterCore(element, text, timeoutMs);
         });
     }
@@ -80,6 +81,7 @@ public class Entry<TScope> : ControlBase<TScope>, IEditableTextControlObject<TSc
     {
         return RunWithElement(nameof(Clear), timeoutMs, element =>
         {
+            CheckEnabledCore(element, timeoutMs);
             ClearCore(element, timeoutMs);
         });
     }
@@ -108,6 +110,7 @@ public class Entry<TScope> : ControlBase<TScope>, IEditableTextControlObject<TSc
 
         return RunWithElement(nameof(SetText), text, timeoutMs, element =>
         {
+            CheckEnabledCore(element, timeoutMs);
             SetTextCore(element, text, timeoutMs);
         });
     }
@@ -190,6 +193,7 @@ public class Entry<TScope> : ControlBase<TScope>, IEditableTextControlObject<TSc
 
         return RunWithElement(nameof(Append), text, timeoutMs, element =>
         {
+            CheckEnabledCore(element, timeoutMs);
             AppendCore(element, text, timeoutMs);
         });
     }
@@ -216,7 +220,6 @@ public class Entry<TScope> : ControlBase<TScope>, IEditableTextControlObject<TSc
     /// <param name="timeoutMs">Optional timeout for enabled check.</param>
     protected virtual void ClearCore(IMauiElement element, int? timeoutMs = null)
     {
-        CheckEnabledCore(element, timeoutMs);
         element.Clear();
     }
 
@@ -228,14 +231,15 @@ public class Entry<TScope> : ControlBase<TScope>, IEditableTextControlObject<TSc
     /// <param name="timeoutMs">Optional timeout for enabled check.</param>
     protected virtual void SetTextCore(IMauiElement element, string text, int? timeoutMs = null)
     {
-        CheckEnabledCore(element, timeoutMs);
-        if (element is Interfaces.INestedTextElement textElement && textElement.SetTextWithFallback(text))
+        if (element is Interfaces.INestedTextElement textElement
+            && textElement.SetTextWithFallback(text))
         {
             return;
         }
 
         element.Clear();
         element.SendKeys(text, TextInputMethod.SetValue);
+        element.SendKeys("\t");
     }
     
     /// <summary>
@@ -247,7 +251,6 @@ public class Entry<TScope> : ControlBase<TScope>, IEditableTextControlObject<TSc
     /// <param name="timeoutMs">Optional timeout for enabled check.</param>
     protected void AppendCore(IMauiElement element, string text, int? timeoutMs = null)
     {
-        CheckEnabledCore(element, timeoutMs);
         element.SendKeys(text);
     }
 

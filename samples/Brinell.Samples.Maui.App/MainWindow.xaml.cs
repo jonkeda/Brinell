@@ -1,9 +1,8 @@
-
 namespace Brinell.Samples.Maui.App;
 
-public partial class MainPage
+public partial class MainWindow : Window
 {
-    public MainPage()
+    public MainWindow()
     {
         InitializeComponent();
     }

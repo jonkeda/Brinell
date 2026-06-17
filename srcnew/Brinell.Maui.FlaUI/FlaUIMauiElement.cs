@@ -1,12 +1,15 @@
-using System.Drawing;
 using Brinell.Core;
 using Brinell.Core.Exceptions;
 using Brinell.Core.Interfaces;
 using Brinell.Core.Utilities;
 using Brinell.Maui.Enums;
 using Brinell.Maui.Interfaces;
+using FlaUI.Core.Definitions;
 using FlaUI.Core.Input;
 using FlaUI.Core.WindowsAPI;
+using FlaUI.UIA3.Patterns;
+using System.Drawing;
+using FlaUI.Core.Patterns;
 
 namespace Brinell.Maui.FlaUI;
 
@@ -260,7 +263,7 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
         var center = new System.Drawing.Point(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
         _driver.PointerLongPress(center, durationMs, nameof(LongPress));
     }
-    
+
     /// <inheritdoc />
     public void ScrollIntoView(int timeoutMs = 5000)
     {
@@ -268,36 +271,103 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
         {
             _element.Patterns.ScrollItem.Pattern.ScrollIntoView();
         }
-        else
+
+        if (!_element.IsOffscreen)
+            return;
+
+        // Find scrollable parent
+        var parent = _element.Parent;
+        IScrollPattern? scroll = null;
+
+        while (parent != null)
         {
-            // Try to find scrollable parent and scroll
-            var parent = _element.Parent;
-            while (parent != null)
+            if (parent.Patterns.Scroll.IsSupported)
             {
-                if (parent.Patterns.Scroll.IsSupported)
-                {
-                    // Calculate if element is in view
-                    var parentRect = parent.BoundingRectangle;
-                    var elementRect = _element.BoundingRectangle;
-                    
-                    if (elementRect.Bottom > parentRect.Bottom)
-                    {
-                        parent.Patterns.Scroll.Pattern.Scroll(
-                            global::FlaUI.Core.Definitions.ScrollAmount.NoAmount,
-                            global::FlaUI.Core.Definitions.ScrollAmount.LargeIncrement);
-                    }
-                    else if (elementRect.Top < parentRect.Top)
-                    {
-                        parent.Patterns.Scroll.Pattern.Scroll(
-                            global::FlaUI.Core.Definitions.ScrollAmount.NoAmount,
-                            global::FlaUI.Core.Definitions.ScrollAmount.LargeDecrement);
-                    }
-                    break;
-                }
-                parent = parent.Parent;
+                scroll = parent.Patterns.Scroll.Pattern;
+                break;
             }
+            parent = parent.Parent;
+        }
+
+        if (scroll == null || parent == null)
+            return;
+
+        // If bounding rectangle is valid, try geometry-based scroll
+        var elementRect = _element.BoundingRectangle;
+        var parentRect = parent.BoundingRectangle;
+
+        var rectValid =
+            elementRect is { Bottom: > 0, Top: > 0, Height: > 0, Width: > 0 };
+
+        if (rectValid)
+        {
+            if (elementRect.Bottom > parentRect.Bottom)
+            {
+                scroll.Scroll(ScrollAmount.NoAmount, ScrollAmount.LargeIncrement);
+            }
+            else if (elementRect.Top < parentRect.Top)
+            {
+                scroll.Scroll(ScrollAmount.NoAmount, ScrollAmount.SmallDecrement);
+            }
+
+            return;
+        }
+
+        //
+        // FALLBACK: bounding rectangle invalid → use percent-based scrolling
+        //
+
+        // 1. Scroll to top
+        double last = -1;
+
+        scroll.Scroll(
+            ScrollAmount.NoAmount,
+            ScrollAmount.SmallDecrement);
+
+        Thread.Sleep(50);
+        while (scroll.VerticalScrollPercent > 0)
+        {
+            // Detect no movement → break
+            if (Math.Abs(scroll.VerticalScrollPercent - last) < 0.01)
+                break;
+
+            last = scroll.VerticalScrollPercent;
+
+            scroll.Scroll(
+                ScrollAmount.NoAmount,
+                ScrollAmount.LargeDecrement);  
+
+            Thread.Sleep(50); 
+        }
+
+        // 2. Scroll down until element becomes visible
+        last = -1;
+
+        while (_element.IsOffscreen && scroll.VerticalScrollPercent < 100)
+        {
+            if (Math.Abs(scroll.VerticalScrollPercent - last) < 0.01)
+                break; // stuck → stop
+
+            last = scroll.VerticalScrollPercent;
+
+            scroll.Scroll(ScrollAmount.NoAmount, ScrollAmount.LargeIncrement);
+            Thread.Sleep(50);
+        }
+
+        last = -1;
+        while (_element.IsOffscreen && scroll.VerticalScrollPercent < 100)
+        {
+            if (Math.Abs(scroll.VerticalScrollPercent - last) < 0.01)
+                break; // stuck → stop
+
+            last = scroll.VerticalScrollPercent;
+
+            scroll.Scroll(ScrollAmount.NoAmount, ScrollAmount.SmallIncrement);
+            Thread.Sleep(50);
         }
     }
+
+    
     
     /// <inheritdoc />
     public void Swipe(int startX, int startY, int endX, int endY, int durationMs = 500)
