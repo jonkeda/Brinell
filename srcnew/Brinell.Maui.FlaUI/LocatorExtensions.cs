@@ -49,6 +49,12 @@ public static class LocatorExtensions
             
             // ID - map to AutomationId for WPF/MAUI, with Name fallback.
             LocatorStrategy.Id => conditionFactory.ByAutomationId(locator.Value).Or(conditionFactory.ByName(locator.Value)),
+
+            // ControlTypeAndName
+            LocatorStrategy.ControlTypeAndName => new AndCondition(
+                conditionFactory.ByControlType(ParseControlType(locator.TypeName!)),
+                conditionFactory.ByName(locator.Value)
+                ),
             
             // XPath, CSS, LinkText etc. are not supported by Windows UI Automation
             LocatorStrategy.XPath or

@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell
+    x:Class="Brinell.Samples.Maui.App.AppShell"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:local="clr-namespace:Brinell.Samples.Maui.App"
+    Shell.FlyoutBehavior="Disabled"
+    Title="Brinell MAUI Sample">
+
+    <TabBar>
+        <!-- Buttons Tab -->
+        <ShellContent
+            Title="Buttons"
+            Icon="tab_about.png"
+            ContentTemplate="{DataTemplate local:ButtonsPage}"
+            Route="ButtonsPage" />
+
+        <!-- DateTime Tab -->
+        <ShellContent
+            Title="DateTime"
+            Icon="tab_about.png"
+            ContentTemplate="{DataTemplate local:DateTimePage}"
+            Route="DateTimePage" />
+
+        <!-- Text Tab -->
+        <ShellContent
+            Title="Text"
+            Icon="tab_about.png"
+            ContentTemplate="{DataTemplate local:TextPage}"
+            Route="TextPage" />
+
+        <!-- Basics Tab -->
+        <ShellContent
+            Title="Basics"
+            Icon="tab_about.png"
+            ContentTemplate="{DataTemplate local:BasicsPage}"
+            Route="BasicsPage" />
+
+        <!-- Containers Tab -->
+        <ShellContent
+            Title="Containers"
+            Icon="tab_about.png"
+            ContentTemplate="{DataTemplate local:ContainersPage}"
+            Route="ContainersPage" />
+
+        <!-- Forms Tab -->
+        <ShellContent
+            Title="Forms"
+            Icon="tab_about.png"
+            ContentTemplate="{DataTemplate local:FormsPage}"
+            Route="FormsPage" />
+
+        <!-- Lists Tab -->
+        <ShellContent
+            Title="Lists"
+            Icon="tab_about.png"
+            ContentTemplate="{DataTemplate local:ListsPage}"
+            Route="ListsPage" />
+
+        <!-- Gestures Tab -->
+        <ShellContent
+            Title="Gestures"
+            Icon="tab_about.png"
+            ContentTemplate="{DataTemplate local:GesturesPage}"
+            Route="GesturesPage" />
+
+        <!-- Navigation Tab -->
+        <ShellContent
+            Title="Navigation"
+            Icon="tab_about.png"
+            ContentTemplate="{DataTemplate local:NavigationPage}"
+            Route="NavigationPage" />
+
+        <!-- Toolkit Tab -->
+        <ShellContent
+            Title="Toolkit"
+            Icon="tab_about.png"
+            ContentTemplate="{DataTemplate local:ToolkitPage}"
+            Route="ToolkitPage" />
+
+        <!-- Media Tab -->
+        <ShellContent
+            Title="Media"
+            Icon="tab_about.png"
+            ContentTemplate="{DataTemplate local:MediaPage}"
+            Route="MediaPage" />
+
+        <!-- DataGrid Tab -->
+        <ShellContent
+            Title="DataGrid"
+            Icon="tab_about.png"
+            ContentTemplate="{DataTemplate local:DataGridPage}"
+            Route="DataGridPage" />
+    </TabBar>
+
+</Shell>

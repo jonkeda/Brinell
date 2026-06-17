@@ -11,6 +11,7 @@ namespace Brinell.Maui.UITests;
 public class MauiFixture : MauiTestFixtureBase
 {
     private readonly AppShellPage _appShell;
+    private readonly AppShellPageV2 _appShellV2;
     private readonly MainPage _mainPage;
     private readonly ContainerDemoPage _containerDemoPage;
     private readonly UserFormPage _userFormPage;
@@ -22,6 +23,7 @@ public class MauiFixture : MauiTestFixtureBase
     public MauiFixture()
     {
         _appShell = new AppShellPage(Context);
+        _appShellV2 = new AppShellPageV2(Context);
         _mainPage = new MainPage(Context);
         _containerDemoPage = new ContainerDemoPage(Context);
         _userFormPage = new UserFormPage(Context);
@@ -39,6 +41,8 @@ public class MauiFixture : MauiTestFixtureBase
     /// Gets the AppShell page object for TabbedPage navigation.
     /// </summary>
     public AppShellPage AppShell => _appShell;
+
+    public AppShellPageV2 AppShell2 => _appShellV2;
 
     /// <summary>
     /// Gets the MainPage page object (Basics tab content).

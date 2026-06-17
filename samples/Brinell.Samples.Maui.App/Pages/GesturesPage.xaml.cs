@@ -1,8 +1,8 @@
 namespace Brinell.Samples.Maui.App;
 
-public partial class MainPage : ContentPage
+public partial class GesturesPage : ContentPage
 {
-    public MainPage()
+    public GesturesPage()
     {
         InitializeComponent();
     }

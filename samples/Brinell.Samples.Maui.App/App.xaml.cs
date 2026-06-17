@@ -9,11 +9,6 @@ public partial class App
     public App()
     {
         InitializeComponent();
-    }
-
-    protected override Window CreateWindow(IActivationState? activationState)
-    {
-        // TabbedPage should not be wrapped in NavigationPage
-        return new MainWindow();
+        MainPage = new AppShell();
     }
 }

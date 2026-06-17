@@ -10,7 +10,6 @@
     </ContentView.BindingContext>
 
     <ScrollView>
-        <Grid MaximumWidthRequest="200">
             <VerticalStackLayout Padding="20" 
                                  Spacing="15"
                                  BackgroundColor="{AppThemeBinding Light=White, Dark=#1F1F1F}">
@@ -123,7 +122,6 @@
                 BackgroundColor="#FF3B30" />
 
         </VerticalStackLayout>
-            </Grid>
     </ScrollView>
 
 </ContentView>

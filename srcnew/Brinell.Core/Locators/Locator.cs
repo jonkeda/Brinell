@@ -14,6 +14,8 @@ public sealed class Locator
     /// The value used with the strategy (e.g., the AutomationId string).
     /// </summary>
     public string Value { get; }
+
+    public string? TypeName { get; }
     
     /// <summary>
     /// Optional parent locator for scoped searches.
@@ -29,9 +31,17 @@ public sealed class Locator
         Value = value ?? throw new ArgumentNullException(nameof(value));
         Parent = parent;
     }
-    
+
+    public Locator(string typeName, string value, Locator? parent = null)
+    {
+        Strategy = LocatorStrategy.ControlTypeAndName;
+        Value = value ?? throw new ArgumentNullException(nameof(value));
+        TypeName = typeName;
+        Parent = parent;
+    }
+
     // Factory methods
-    
+
     /// <summary>
     /// Create a locator by AutomationId (MAUI, WPF).
     /// </summary>

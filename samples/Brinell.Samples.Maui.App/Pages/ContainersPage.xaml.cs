@@ -1,8 +1,8 @@
 namespace Brinell.Samples.Maui.App;
 
-public partial class MainPage : ContentPage
+public partial class ContainersPage : ContentPage
 {
-    public MainPage()
+    public ContainersPage()
     {
         InitializeComponent();
     }

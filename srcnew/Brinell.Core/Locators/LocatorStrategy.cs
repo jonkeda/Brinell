@@ -73,5 +73,10 @@ public enum LocatorStrategy
     /// <summary>
     /// Locate by control type (WPF).
     /// </summary>
-    ControlType
+    ControlType,
+
+    /// <summary>
+    /// Locate by Control Type and name (FLAUI)
+    /// </summary>
+    ControlTypeAndName
 }

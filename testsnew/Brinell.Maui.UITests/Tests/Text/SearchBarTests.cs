@@ -16,7 +16,7 @@ public class SearchBarTests
     {
         _fixture = fixture;
 
-        fixture.AppShell.TextTab.Click();
+        fixture.AppShell2.TextContent.Click();
     }
 
     private TextTestPage GetPage()
@@ -117,7 +117,7 @@ public class SearchBarTests
         page.ClearSearchButton.Click();
 
         // Assert
-        page.SearchStatusLabel.AssertTextContains("empty");
+        page.SearchStatusLabel.AssertTextContains("cleared");
         return Task.CompletedTask;
     }
 
@@ -130,6 +130,7 @@ public class SearchBarTests
     {
         var page = GetPage();
 
+        page.TestSearchBar.Clear();
         // Assert - SearchBar should show empty status when no text
         page.TestSearchBar.AssertExists();
         page.SearchStatusLabel.AssertTextContains("empty");

@@ -1,8 +1,8 @@
 namespace Brinell.Samples.Maui.App;
 
-public partial class MainPage : ContentPage
+public partial class DataGridPage : ContentPage
 {
-    public MainPage()
+    public DataGridPage()
     {
         InitializeComponent();
     }
