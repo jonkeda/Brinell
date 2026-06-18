@@ -100,7 +100,7 @@ public class CarouselView<TScope, TItem> : List<TScope, TItem>
     /// <returns>True if position was reached, false if timeout.</returns>
     public bool WaitPosition(int expectedPosition, int? timeoutMs = null)
     {
-        return RunCheck(() => GetPosition() == expectedPosition, timeoutMs);
+        return RunWait(() => GetPosition() == expectedPosition, timeoutMs);
     }
 
     /// <summary>

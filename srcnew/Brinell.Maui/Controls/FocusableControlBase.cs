@@ -124,30 +124,16 @@ public abstract class FocusableControlBase<TScope> : ControlBase<TScope>, IFocus
     /// <summary>
     /// Waits for focus state using pre-found element.
     /// </summary>
-    /// <param name="element">The pre-found element.</param>
     /// <param name="expected">The expected focus state.</param>
     /// <param name="timeoutMs">Maximum time to wait in milliseconds.</param>
     /// <returns>True if condition was met, false if timeout reached.</returns>
-    protected bool WaitFocusedCore(IMauiElement element, bool expected, int timeoutMs)
-    {
-        return PollWithElement(
-            element,
-            e => IsFocusedCore(e) == expected,
-            timeoutMs);
-    }
-
-    /// <inheritdoc />
     public bool WaitFocused(bool? expected, int? timeoutMs = null)
     {
-        if (expected == null) return true;
-        
-        var element = TryFindElement();
-        if (element == null)
-        {
-            return false;
-        }
-        
-        return WaitFocusedCore(element, expected.Value, timeoutMs ?? DefaultTimeoutMs);
+        if (expected == null)
+            return true;
+        return RunWaitWithElement(
+            e => IsFocusedCore(e) == expected,
+            timeoutMs);
     }
     
     #endregion

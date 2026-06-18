@@ -174,8 +174,7 @@ public class Slider<TScope> : RangeControlBase<TScope>
         }
         
         // Poll until the value is near target or timeout
-        _ = PollWithElement(
-            element,
+        _ = RunWaitWithElement(
             e =>
             {
                 var current = GetValueCore(e);

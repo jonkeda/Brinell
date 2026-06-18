@@ -30,48 +30,48 @@ public class ImageButton<TScope> : ClickableControlBase<TScope>
     /// Gets the source/path of the image.
     /// </summary>
     /// <returns>The image source, or null if not available.</returns>
-    public string? GetSource()
+    public string? GetSource(int? timeoutMs = null)
     {
-        var element = TryFindElement();
-        if (element == null) return null;
+        return RunGetWithElement(
+         element => {
+             var source = element.GetAttribute("Source");
+             if (!string.IsNullOrEmpty(source))
+                 return source;
 
-        var source = element.GetAttribute("Source");
-        if (!string.IsNullOrEmpty(source)) return source;
+             source = element.GetAttribute("src");
+             if (!string.IsNullOrEmpty(source))
+                 return source;
 
-        source = element.GetAttribute("src");
-        if (!string.IsNullOrEmpty(source)) return source;
+             return null;
 
-        return null;
+         }, timeoutMs);
     }
 
     /// <summary>
     /// Checks if the image button is pressed.
     /// </summary>
     /// <returns>True if pressed, false otherwise, null if unknown.</returns>
-    public bool? IsPressed()
+    public bool? IsPressed(int? timeoutMs = null)
     {
-        var element = TryFindElement();
-        if (element == null) return null;
-
-        var attr = element.GetAttribute("IsPressed");
-        if (!string.IsNullOrEmpty(attr))
+        return RunGetWithElement(element =>
         {
-            return attr.Equals("true", StringComparison.OrdinalIgnoreCase);
-        }
+            var attr = element.GetAttribute("IsPressed");
+            if (!string.IsNullOrEmpty(attr))
+            {
+                return attr.Equals("true", StringComparison.OrdinalIgnoreCase);
+            }
 
-        return null;
+            return false;
+        }, timeoutMs);
     }
 
     /// <summary>
     /// Gets the aspect ratio of the image.
     /// </summary>
     /// <returns>The aspect ratio string, or null if not available.</returns>
-    public string? GetAspect()
+    public string? GetAspect(int? timeoutMs)
     {
-        var element = TryFindElement();
-        if (element == null) return null;
-
-        return element.GetAttribute("Aspect");
+        return GetAttribute("Aspect", timeoutMs);
     }
 
     #endregion

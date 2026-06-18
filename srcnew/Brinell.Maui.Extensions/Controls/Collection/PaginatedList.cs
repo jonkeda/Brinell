@@ -157,7 +157,7 @@ public class PaginatedList<TScope, TItem> : List<TScope, TItem>
     /// <returns>True if the text matched within the timeout, false otherwise.</returns>
     public bool WaitPageInfo(string expected, int? timeoutMs = null)
     {
-        return RunCheck(()  => GetPageInfoText() == expected, timeoutMs);
+        return RunWait(()  => GetPageInfoText() == expected, timeoutMs);
     }
 
     /// <summary>
@@ -186,7 +186,7 @@ public class PaginatedList<TScope, TItem> : List<TScope, TItem>
     /// <returns>True if the condition was met within the timeout.</returns>
     public bool WaitHasNextPage(bool expected, int? timeoutMs = null)
     {
-        return RunCheck(() => HasNextPage() == expected, timeoutMs);
+        return RunWait(() => HasNextPage() == expected, timeoutMs);
     }
 
     /// <summary>
@@ -197,7 +197,7 @@ public class PaginatedList<TScope, TItem> : List<TScope, TItem>
     /// <returns>True if the condition was met within the timeout.</returns>
     public bool WaitHasPreviousPage(bool expected, int? timeoutMs = null)
     {
-        return RunCheck(() => HasPreviousPage() == expected, timeoutMs);
+        return RunWait(() => HasPreviousPage() == expected, timeoutMs);
     }
 
     #endregion

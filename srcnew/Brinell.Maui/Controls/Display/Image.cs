@@ -141,7 +141,7 @@ public class Image<TScope> : ControlBase<TScope>
     {
         if (expected == null) return true;
 
-        return RunCheck(
+        return RunWait(
             () => IsLoaded() == expected.Value,
             timeoutMs);
     }
@@ -188,7 +188,7 @@ public class Image<TScope> : ControlBase<TScope>
     {
         if (expected == null) return ContainingScope;
 
-        var passed = RunCheck(() => GetSource() == expected, timeoutMs);
+        var passed = RunWait(() => GetSource() == expected, timeoutMs);
 
         if (!passed)
         {

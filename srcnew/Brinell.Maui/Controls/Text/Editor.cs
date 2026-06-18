@@ -42,8 +42,6 @@ public class Editor<TScope> : Entry<TScope>
     /// <param name="timeoutMs">Optional timeout for enabled check.</param>
     protected override void ClearCore(IMauiElement element, int? timeoutMs = null)
     {
-        CheckEnabledCore(element, timeoutMs);
-        
         // For Windows/FlaUI, use ClearWithFallback for robust clearing
         if (element is Interfaces.INestedTextElement textElement)
         {
@@ -63,8 +61,6 @@ public class Editor<TScope> : Entry<TScope>
     /// <param name="timeoutMs">Optional timeout for enabled check.</param>
     protected override void SetTextCore(IMauiElement element, string text, int? timeoutMs = null)
     {
-        CheckEnabledCore(element, timeoutMs);
-        
         // For Windows/FlaUI, use ClearWithFallback for robust clearing
         if (element is Interfaces.INestedTextElement textElement)
         {

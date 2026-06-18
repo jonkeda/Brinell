@@ -5,7 +5,7 @@ namespace Brinell.Maui.Controls;
 /// Implements IClickableControlObject with Click, DoubleClick, RightClick, Hover, LongPress.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public abstract class ClickableControlBase<TScope> : ControlBase<TScope>,
+public abstract class ClickableControlBase<TScope> : FocusableControlBase<TScope>,
     IClickableControlObject<TScope>,
     IPressableControl<TScope>
     where TScope : IMauiScope<TScope>
@@ -41,25 +41,6 @@ public abstract class ClickableControlBase<TScope> : ControlBase<TScope>,
             EnsureClickableCore(element);
             ClickCore(element);
         }, timeoutMs);
-    }
-
-    /// <summary>
-    /// Attempts to click the element if it exists.
-    /// Returns false when the element is not found.
-    /// </summary>
-    /// <param name="timeoutMs">Timeout in milliseconds used for enabled-state checking after the element is found.</param>
-    /// <returns>True if the element was found and clicked; otherwise false.</returns>
-    public bool TryClick(int? timeoutMs = null)
-    {
-        var element = TryFindElement();
-        if (element == null)
-        {
-            return false;
-        }
-
-        EnsureVisible(element);
-        RunDo(() => ClickCore(element), null);
-        return true;
     }
 
     /// <inheritdoc />
@@ -204,28 +185,23 @@ public abstract class ClickableControlBase<TScope> : ControlBase<TScope>,
     /// <param name="expected">The expected clickable state.</param>
     /// <param name="timeoutMs">Maximum time to wait in milliseconds.</param>
     /// <returns>True if condition was met, false if timeout reached.</returns>
-    protected bool WaitClickableCore(IMauiElement element, bool expected, int timeoutMs)
+    protected bool WaitClickableCore(IMauiElement element, bool expected)
     {
-        return PollWithElement(
-            element,
-            e => IsClickableCore(e) == expected,
-            timeoutMs);
+        return IsClickableCore(element) == expected;
     }
 
     /// <inheritdoc />
     public bool WaitClickable(bool? expected, int? timeoutMs = null)
     {
         if (expected == null)
-            return true;
-
-        var element = TryFindElement();
-        if (element == null)
         {
-            // If element doesn't exist and we expect clickable=false, that's a match
-            return expected.Value == false;
+            return true;
         }
 
-        return WaitClickableCore(element, expected.Value, timeoutMs ?? DefaultTimeoutMs);
+        return RunWaitWithElement(element =>
+        {
+            return WaitClickableCore(element, expected.Value);
+        }, timeoutMs);
     }
 
     #endregion
@@ -258,8 +234,7 @@ public abstract class ClickableControlBase<TScope> : ControlBase<TScope>,
 
 
     #region
-
-
+    
     /// <summary>
     /// Activates the button through keyboard input after focusing it.
     /// Useful for MAUI/WinUI button surfaces where UIA Invoke reports success
@@ -274,32 +249,11 @@ public abstract class ClickableControlBase<TScope> : ControlBase<TScope>,
         }, timeoutMs);
     }
 
-    /// <summary>
-    /// Attempts to activate the button through keyboard input if it exists.
-    /// </summary>
-    public bool TryPress(int? timeoutMs = null)
-    {
-        var element = TryFindElement();
-        if (element == null)
-        {
-            return false;
-        }
-
-        EnsureVisible(element);
-        RunDo( () =>
-        {
-            EnsureClickableCore(element);
-            PressCore(element);
-        });
-        return true;
-    }
-
     private void PressCore(IMauiElement element)
     {
         EnsureClickableCore(element);
         element.SendKeys(Keys.Space);
     }
-
 
     #endregion
 }

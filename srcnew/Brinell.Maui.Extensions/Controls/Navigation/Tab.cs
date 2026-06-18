@@ -60,25 +60,11 @@ public class Tab<TScope> : ClickableControlBase<TScope>, ITabControlObject<TScop
     /// <inheritdoc />
     public bool WaitSelected(bool? expected, int? timeoutMs = null)
     {
-        if (expected == null) return true;
+        if (expected == null)
+            return true;
 
-        var element = TryFindElement();
-        if (element == null)
-            return expected.Value == false;
-
-        return WaitSelectedCore(element, expected.Value, timeoutMs ?? DefaultTimeoutMs);
-    }
-
-    /// <summary>
-    /// Polls selected state using pre-found element.
-    /// </summary>
-    /// <param name="element">The pre-found element.</param>
-    /// <param name="expected">The expected selected state.</param>
-    /// <param name="timeoutMs">Maximum time to wait in milliseconds.</param>
-    /// <returns>True if condition was met, false if timeout reached.</returns>
-    protected bool WaitSelectedCore(IMauiElement element, bool expected, int timeoutMs)
-    {
-        return PollWithElement(element, e => IsSelectedCore(e) == expected, timeoutMs);
+        return RunWaitWithElement(
+            element => IsSelectedCore(element) == expected, timeoutMs);
     }
 
     /// <inheritdoc />

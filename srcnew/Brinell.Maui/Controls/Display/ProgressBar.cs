@@ -106,33 +106,17 @@ public class ProgressBar<TScope> : ControlBase<TScope>
     /// <summary>
     /// Waits for progress value using pre-found element.
     /// </summary>
-    protected bool WaitProgressCore(IMauiElement element, double expected, double tolerance, int timeoutMs)
+    public bool WaitProgress(double? expected, double tolerance, int? timeoutMs = null)
     {
-        return PollWithElement(
-            element,
+        if (expected == null)
+            return true;
+        return RunWaitWithElement(
             e =>
             {
                 var actual = GetProgressCore(e);
-                return actual.HasValue && Math.Abs(actual.Value - expected) <= tolerance;
+                return actual.HasValue && Math.Abs(actual.Value - expected.Value) <= tolerance;
             },
             timeoutMs);
-    }
-
-    /// <summary>
-    /// Waits for progress to reach expected value.
-    /// </summary>
-    /// <param name="expected">The expected progress value (0-1).</param>
-    /// <param name="tolerance">Allowed tolerance for comparison (default 0.01).</param>
-    /// <param name="timeoutMs">Maximum time to wait.</param>
-    /// <returns>True if condition met, false if timeout.</returns>
-    public bool WaitProgress(double? expected, double tolerance = 0.01, int? timeoutMs = null)
-    {
-        if (expected == null) return true;
-
-        var element = TryFindElement();
-        if (element == null) return false;
-
-        return WaitProgressCore(element, expected.Value, tolerance, timeoutMs ?? DefaultTimeoutMs);
     }
 
     #endregion
@@ -172,7 +156,7 @@ public class ProgressBar<TScope> : ControlBase<TScope>
     {
         if (expected == null) return ContainingScope;
 
-        var passed = RunCheck(() => IsIndeterminate() == expected.Value, timeoutMs);
+        var passed = RunWait(() => IsIndeterminate() == expected.Value, timeoutMs);
 
         if (!passed)
         {

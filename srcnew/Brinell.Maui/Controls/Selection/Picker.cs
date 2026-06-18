@@ -56,7 +56,7 @@ public class Picker<TScope> : SelectorControlBase<TScope>
         {
             if (timeoutMs.HasValue)
             {
-                RunCheck(() => GetTitle() == expected, timeoutMs);
+                RunWait(() => GetTitle() == expected, timeoutMs);
             }
             return GetTitle();
         }, message ?? $"Expected picker title to be '{expected}'. Locator: {Locator}");

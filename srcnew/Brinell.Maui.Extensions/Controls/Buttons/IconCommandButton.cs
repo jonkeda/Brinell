@@ -41,23 +41,4 @@ public class IconCommandButton<TScope> : ClickableControlBase<TScope>
             throw new InvalidOperationException($"Could not activate icon command button. Locator: {Locator}");
         }
     }
-
-    /// <summary>
-    /// Attempts to activate the command button.
-    /// </summary>
-    public new bool TryClick(int? timeoutMs = null)
-    {
-        var element = TryFindElement();
-        if (element == null)
-        {
-            return false;
-        }
-
-        EnsureVisible(element);
-        return Run(nameof(TryClick), () =>
-        {
-            ClickCore(element, timeoutMs);
-            return true;
-        });
-    }
 }

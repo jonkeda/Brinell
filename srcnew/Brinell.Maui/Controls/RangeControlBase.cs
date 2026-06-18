@@ -5,7 +5,7 @@ namespace Brinell.Maui.Controls;
 /// Implements IRangeControlObject with GetValue, SetValue, Increment, Decrement.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public abstract class RangeControlBase<TScope> : ControlBase<TScope>, IRangeControlObject<TScope>
+public abstract class RangeControlBase<TScope> : FocusableControlBase<TScope>, IRangeControlObject<TScope>
     where TScope : IMauiScope<TScope>
 {
     /// <summary>
@@ -34,12 +34,7 @@ public abstract class RangeControlBase<TScope> : ControlBase<TScope>, IRangeCont
     /// <inheritdoc />
     public double? GetValue(int? timeoutMs = null)
     {
-        if (timeoutMs.HasValue)
-        {
-            WaitExists(true, timeoutMs);
-        }
-        
-        return GetValueCore(TryFindElement());
+        return RunGetWithElement(GetValueCore, timeoutMs);
     }
     
     /// <inheritdoc />
@@ -57,29 +52,19 @@ public abstract class RangeControlBase<TScope> : ControlBase<TScope>, IRangeCont
     /// <inheritdoc />
     public double? GetMinimum(int? timeoutMs = null)
     {
-        return RunGetWithElement(element => GetMinimumCore(element));
+        return RunGetWithElement(GetMinimumCore, timeoutMs);
     }
     
     /// <inheritdoc />
     public double? GetMaximum(int? timeoutMs = null)
     {
-        if (timeoutMs.HasValue)
-        {
-            WaitExists(true, timeoutMs);
-        }
-        
-        return GetMaximumCore(TryFindElement());
+        return RunGetWithElement(GetMaximumCore, timeoutMs);
     }
     
     /// <inheritdoc />
     public double? GetStep(int? timeoutMs = null)
     {
-        if (timeoutMs.HasValue)
-        {
-            WaitExists(true, timeoutMs);
-        }
-        
-        return GetStepCore(TryFindElement());
+        return RunGetWithElement(GetStepCore, timeoutMs);
     }
     
     /// <inheritdoc />
@@ -307,40 +292,21 @@ public abstract class RangeControlBase<TScope> : ControlBase<TScope>, IRangeCont
     #endregion
     
     #region WaitValue
-    
-    /// <summary>
-    /// Waits for value using pre-found element with tolerance comparison.
-    /// </summary>
-    /// <param name="element">The pre-found element.</param>
-    /// <param name="expected">The expected value.</param>
-    /// <param name="tolerance">The tolerance for comparison.</param>
-    /// <param name="timeoutMs">Maximum time to wait in milliseconds.</param>
-    /// <returns>True if condition was met, false if timeout reached.</returns>
-    protected bool WaitValueCore(IMauiElement element, double expected, double tolerance, int timeoutMs)
-    {
-        return PollWithElement(
-            element,
-            e =>
-            {
-                var actual = GetValueCore(e);
-                if (actual == null) return false;
-                return Math.Abs(actual.Value - expected) <= tolerance;
-            },
-            timeoutMs);
-    }
 
     /// <inheritdoc />
     public bool WaitValue(double? expected, double tolerance = 0.001, int? timeoutMs = null)
     {
         if (expected == null) return true;
-        
-        var element = TryFindElement();
-        if (element == null)
-        {
-            return false;
-        }
-        
-        return WaitValueCore(element, expected.Value, tolerance, timeoutMs ?? DefaultTimeoutMs);
+        return RunWaitWithElement(
+            element =>
+            {
+                var actual = GetValueCore(element);
+                if (actual == null)
+                    return false;
+                return Math.Abs(actual.Value - expected.Value) <= tolerance;
+
+            },
+        timeoutMs);
     }
     
     #endregion

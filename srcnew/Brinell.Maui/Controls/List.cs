@@ -139,7 +139,7 @@ public class List<TScope, TItem> : ControlBase<TScope>, IScrollableControlObject
     /// </summary>
     public bool WaitItemCount(int expected, int? timeoutMs = null)
     {
-        return RunCheck(() => GetItemCount() == expected, timeoutMs);
+        return RunWait(() => GetItemCount() == expected, timeoutMs);
     }
     
     /// <summary>
@@ -274,7 +274,7 @@ public class List<TScope, TItem> : ControlBase<TScope>, IScrollableControlObject
         ScrollToRenderItems();
         
         // Poll for items
-        return RunCheck(() => GetItemCount() >= minimumCount, timeout);
+        return RunWait(() => GetItemCount() >= minimumCount, timeout);
     }
 
     #endregion
@@ -309,11 +309,11 @@ public class List<TScope, TItem> : ControlBase<TScope>, IScrollableControlObject
     public TScope ScrollTo(Locator locator, int? timeoutMs = null)
     {
         var timeout = timeoutMs ?? DefaultTimeoutMs;
-        var found = RunCheck(() => MauiScope.TryFindElement(locator)?.Visible == true, timeout);
+        var found = RunWait(() => MauiScope.TryFindElement(locator)?.Visible == true, timeout);
         if (!found)
         {
             ScrollToRenderItems();
-            found = RunCheck(() => MauiScope.TryFindElement(locator)?.Visible == true, timeout);
+            found = RunWait(() => MauiScope.TryFindElement(locator)?.Visible == true, timeout);
         }
 
         if (!found)
@@ -376,7 +376,7 @@ public class List<TScope, TItem> : ControlBase<TScope>, IScrollableControlObject
     {
         if (expected == null) return true;
 
-        return RunCheck(() =>
+        return RunWait(() =>
         {
             var actual = GetScrollPosition();
             if (actual == null) return false;

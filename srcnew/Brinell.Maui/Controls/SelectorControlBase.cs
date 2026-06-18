@@ -5,7 +5,7 @@ namespace Brinell.Maui.Controls;
 /// Implements ISelectorControlObject with SelectByText, SelectByIndex, GetSelectedText.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public abstract class SelectorControlBase<TScope> : ControlBase<TScope>, ISelectorControlObject<TScope>
+public abstract class SelectorControlBase<TScope> : FocusableControlBase<TScope>, ISelectorControlObject<TScope>
     where TScope : IMauiScope<TScope>
 {
     /// <summary>
@@ -61,45 +61,29 @@ public abstract class SelectorControlBase<TScope> : ControlBase<TScope>, ISelect
     /// <inheritdoc />
     public string? GetSelectedText(int? timeoutMs = null)
     {
-        if (timeoutMs.HasValue)
-        {
-            WaitExists(true, timeoutMs);
-        }
-        
-        return GetSelectedTextCore(TryFindElement());
+        return RunGetWithElement(element =>
+            GetSelectedTextCore(element), timeoutMs);
     }
     
     /// <inheritdoc />
     public int? GetSelectedIndex(int? timeoutMs = null)
     {
-        if (timeoutMs.HasValue)
-        {
-            WaitExists(true, timeoutMs);
-        }
-        
-        return GetSelectedIndexCore(TryFindElement());
+        return RunGetWithElement(element =>
+            GetSelectedIndexCore(element), timeoutMs);
     }
     
     /// <inheritdoc />
     public IReadOnlyList<string>? GetItemTexts(int? timeoutMs = null)
     {
-        if (timeoutMs.HasValue)
-        {
-            WaitExists(true, timeoutMs);
-        }
-        
-        return GetItemTextsCore(TryFindElement());
+        return RunGetWithElement(element =>
+            GetItemTextsCore(element), timeoutMs);
     }
     
     /// <inheritdoc />
     public int? GetItemCount(int? timeoutMs = null)
     {
-        if (timeoutMs.HasValue)
-        {
-            WaitExists(true, timeoutMs);
-        }
-        
-        return GetItemCountCore(TryFindElement());
+        return RunGetWithElement(element =>
+            GetItemCountCore(element), timeoutMs);
     }
     
     #endregion
@@ -327,8 +311,8 @@ public abstract class SelectorControlBase<TScope> : ControlBase<TScope>, ISelect
     {
         if (expected == null) return true;
         
-        return RunCheck(
-            () => GetSelectedText() == expected,
+        return RunWaitWithElement(
+            element => GetSelectedTextCore(element) == expected,
             timeoutMs);
     }
     
@@ -357,8 +341,8 @@ public abstract class SelectorControlBase<TScope> : ControlBase<TScope>, ISelect
     {
         if (expected == null) return true;
         
-        return RunCheck(
-            () => GetSelectedIndex() == expected.Value,
+        return RunWaitWithElement(
+            element => GetSelectedIndexCore(element) == expected.Value,
             timeoutMs);
     }
     
@@ -387,8 +371,8 @@ public abstract class SelectorControlBase<TScope> : ControlBase<TScope>, ISelect
     {
         if (expected == null) return true;
         
-        return RunCheck(
-            () => GetItemCount() == expected.Value,
+        return RunWaitWithElement(
+            element => GetItemCountCore(element) == expected.Value,
             timeoutMs);
     }
     

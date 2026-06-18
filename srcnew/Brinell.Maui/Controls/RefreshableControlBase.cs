@@ -110,8 +110,7 @@ public abstract class RefreshableControlBase<TScope> : ControlBase<TScope>, IRef
     /// <returns>True if condition was met, false if timeout reached.</returns>
     protected bool WaitRefreshingCore(IMauiElement element, bool expected, int timeoutMs)
     {
-        return PollWithElement(
-            element,
+        return RunWaitWithElement(
             e => IsRefreshingCore(e) == expected,
             timeoutMs);
     }
@@ -120,7 +119,7 @@ public abstract class RefreshableControlBase<TScope> : ControlBase<TScope>, IRef
     public bool WaitRefreshing(bool? expected, int? timeoutMs = null)
     {
         if (expected == null) return true;
-        return RunCheckWithElement(
+        return RunWaitWithElement(
             element => IsRefreshingCore(element) == expected,
             timeoutMs);
     }

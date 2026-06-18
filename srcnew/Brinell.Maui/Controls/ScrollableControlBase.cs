@@ -73,12 +73,9 @@ public abstract class ScrollableControlBase<TScope> : ControlBase<TScope>, IScro
     /// <inheritdoc />
     public double? GetScrollPosition(int? timeoutMs = null)
     {
-        if (timeoutMs.HasValue)
-        {
-            WaitExists(true, timeoutMs);
-        }
-        
-        return GetScrollPositionCore(TryFindElement());
+        return RunGetWithElement(
+            element => GetScrollPositionCore(element),
+            timeoutMs);
     }
     
     /// <inheritdoc />
@@ -93,23 +90,15 @@ public abstract class ScrollableControlBase<TScope> : ControlBase<TScope>, IScro
     /// <inheritdoc />
     public bool? CanScrollDown(int? timeoutMs = null)
     {
-        if (timeoutMs.HasValue)
-        {
-            WaitExists(true, timeoutMs);
-        }
-        
-        return CanScrollDownCore(TryFindElement());
+        return RunGetWithElement(
+            element => CanScrollDownCore(element), timeoutMs);
     }
     
     /// <inheritdoc />
     public bool? CanScrollUp(int? timeoutMs = null)
     {
-        if (timeoutMs.HasValue)
-        {
-            WaitExists(true, timeoutMs);
-        }
-        
-        return CanScrollUpCore(TryFindElement());
+        return RunGetWithElement(
+            element => CanScrollUpCore(element), timeoutMs);
     }
     
     #endregion
@@ -378,10 +367,10 @@ public abstract class ScrollableControlBase<TScope> : ControlBase<TScope>, IScro
     {
         if (expected == null) return true;
         
-        return RunCheck(
-            () =>
+        return RunWaitWithElement(
+            element =>
             {
-                var actual = GetScrollPosition();
+                var actual = GetScrollPositionCore(element);
                 if (actual == null) return false;
                 return Math.Abs(actual.Value - expected.Value) <= tolerance;
             },

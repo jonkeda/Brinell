@@ -153,45 +153,11 @@ public class FluentChainingTests
         mockElement.Verify(e => e.Click(), Times.Never);
     }
 
-    [Fact]
-    public void TrySubmit_SendsEnterWithoutClick()
-    {
-        // Arrange
-        var mockElement = SetupMockElement("TestEntry");
-
-        // Act
-        var result = _testPage.TestEntry.TrySubmit();
-
-        // Assert
-        Assert.True(result);
-        mockElement.Verify(e => e.SendKeys(Keys.Enter, TextInputMethod.Keys), Times.Once);
-        mockElement.Verify(e => e.Click(), Times.Never);
-    }
-    
+  
     #endregion
     
     #region Method Chaining Tests
-    
-    [Fact]
-    public void ChainedActions_ExecuteInOrder()
-    {
-        // Arrange
-        var sequence = new List<string>();
-        var buttonElement = SetupMockElement("TestButton", () => sequence.Add("Click"));
-        var entryElement = SetupMockElement("TestEntry", () => sequence.Add("Enter"));
-        
-        // Act - chain multiple actions
-        var result = _testPage
-            .TestEntry.Enter("username")
-            .TestEntry.Clear()
-            .TestButton.Click();
-        
-        // Assert
-        Assert.Same(_testPage, result);
-        // Verify the chained calls worked (element was found for each action)
-        // Note: After SPEC-015b optimization, we use TryFindElement via FindElementWithWait pattern
-        _mockContext.Verify(c => c.TryFindElement(It.IsAny<Locator>()), Times.AtLeast(3));
-    }
+
     
     [Fact]
     public void FluentChaining_AllowsMultipleEntriesAndClick()

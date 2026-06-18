@@ -8,9 +8,4 @@ public interface IPressableControl<TScope> : IControlObject<TScope>
     /// without dispatching the app command.
     /// </summary>
     TScope Press(int? timeoutMs = null);
-
-    /// <summary>
-    /// Attempts to activate the button through keyboard input if it exists.
-    /// </summary>
-    bool TryPress(int? timeoutMs = null);
 }

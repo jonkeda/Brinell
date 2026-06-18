@@ -73,8 +73,7 @@ public class ContentDialog<TParent> : ContainerBase<TParent, ContentDialog<TPare
 
     private bool TryClickScopedDialogButtonAndWaitDismissed(string buttonText, int timeoutMs)
     {
-        if (!DialogButton(buttonText).TryClick(timeoutMs))
-            return false;
+        DialogButton(buttonText).Click(timeoutMs);
 
         InvalidateCache();
         return WaitExists(false, timeoutMs);
@@ -102,7 +101,7 @@ public class ContentDialog<TParent> : ContainerBase<TParent, ContentDialog<TPare
         if (!ElementActivator.TryActivate(button))
             return false;
 
-        return RunCheck(
+        return RunWait(
             () => !Context.Driver.TryFindPopupElement(Locator.ByControlType("button"), out var candidate)
                   || candidate == null
                   || !MatchesText(candidate, buttonText),
@@ -117,7 +116,7 @@ public class ContentDialog<TParent> : ContainerBase<TParent, ContentDialog<TPare
         if (!ElementActivator.TryActivate(button))
             return false;
 
-        return RunCheck(
+        return RunWait(
             () => !Context.Driver.TryFindPopupElement(locator, out _),
             timeoutMs);
     }
@@ -129,7 +128,7 @@ public class ContentDialog<TParent> : ContainerBase<TParent, ContentDialog<TPare
         if (button == null || !ElementActivator.TryActivate(button))
             return false;
 
-        return RunCheck(
+        return RunWait(
             () => FindButtonByText(Parent.FindElements(locator), buttonText) == null,
             timeoutMs);
     }
@@ -137,10 +136,9 @@ public class ContentDialog<TParent> : ContainerBase<TParent, ContentDialog<TPare
     private bool TryClickParentButtonAndWaitDismissed(Locator locator, int timeoutMs)
     {
         var button = new Button<TParent>(Parent, locator);
-        if (!button.TryClick(timeoutMs))
-            return false;
+        button.Click(timeoutMs);
 
-        return RunCheck(
+        return RunWait(
             () => Parent.TryFindElement(locator) == null,
             timeoutMs);
     }

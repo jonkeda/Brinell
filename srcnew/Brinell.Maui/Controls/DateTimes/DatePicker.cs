@@ -245,8 +245,7 @@ public class DatePicker<TScope> : ControlBase<TScope>
         var element = TryFindElement();
         if (element == null) return false;
 
-        return PollWithElement(
-            element,
+        return RunWaitWithElement(
             e =>
             {
                 var actual = GetDateCore(e);

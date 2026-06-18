@@ -138,14 +138,6 @@ public abstract class ToggleControlBase<TScope> : ClickableControlBase<TScope>, 
         if (current == @checked)
             return;
 
-        EnsureVisible(element);
-
-        if (element is ITogglePatternElement toggle
-            && toggle.SupportsTogglePattern
-            && toggle.SetToggleStatePattern(@checked)
-            && WaitCheckedCore(element, @checked, 500))
-            return;
-
         if (current != @checked)
             ToggleCore(element);
     }
@@ -243,29 +235,15 @@ public abstract class ToggleControlBase<TScope> : ClickableControlBase<TScope>, 
     /// <param name="expected">The expected checked state.</param>
     /// <param name="timeoutMs">Maximum time to wait in milliseconds.</param>
     /// <returns>True if condition was met, false if timeout reached.</returns>
-    protected bool WaitCheckedCore(IMauiElement element, bool expected, int timeoutMs)
+    public bool WaitChecked(bool? expected, int? timeoutMs = null)
     {
-        return PollWithElement(
-            element,
+        if (expected == null)
+            return true;
+        return RunWaitWithElement(
             e => IsCheckedCore(e) == expected,
             timeoutMs);
     }
 
-    /// <inheritdoc />
-    public bool WaitChecked(bool? expected, int? timeoutMs = null)
-    {
-        if (expected == null) return true;
-        
-        var element = TryFindElement();
-        if (element == null)
-        {
-            // If element doesn't exist, can't match expected state
-            return false;
-        }
-        
-        return WaitCheckedCore(element, expected.Value, timeoutMs ?? DefaultTimeoutMs);
-    }
-    
     #endregion
     
     #region AssertChecked

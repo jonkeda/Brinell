@@ -251,8 +251,7 @@ public class TimePicker<TScope> : ControlBase<TScope>
 
         var tolerance = TimeSpan.FromSeconds(toleranceSeconds);
 
-        return PollWithElement(
-            element,
+        return RunWaitWithElement(
             e =>
             {
                 var actual = GetTimeCore(e);

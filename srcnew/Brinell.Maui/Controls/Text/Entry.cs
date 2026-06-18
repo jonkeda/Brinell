@@ -1,5 +1,6 @@
-using System.Text.RegularExpressions;
 using Brinell.Core;
+using System.Text.RegularExpressions;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Brinell.Maui.Controls.Text;
 
@@ -31,7 +32,7 @@ public class Entry<TScope> : ControlBase<TScope>, IEditableTextControlObject<TSc
     public bool WaitTextContains(string? expected, int? timeoutMs = null)
     {
         if (expected == null) return true;
-        return RunCheck(() => GetText()?.Contains(expected) == true, timeoutMs);
+        return RunWait(() => GetText()?.Contains(expected) == true, timeoutMs);
     }
 
     public TScope AssertTextMatches(string? pattern, string? message = null, int? timeoutMs = null)
@@ -41,7 +42,7 @@ public class Entry<TScope> : ControlBase<TScope>, IEditableTextControlObject<TSc
         var regex = new Regex(pattern);
         return RunAssert(nameof(AssertTextMatches), pattern, () =>
         {
-            RunCheck(() =>
+            RunWait(() =>
             {
                 var text = GetText();
                 return text != null && regex.IsMatch(text);
@@ -65,7 +66,6 @@ public class Entry<TScope> : ControlBase<TScope>, IEditableTextControlObject<TSc
     {
         return RunSetWithElement(text, element =>
         {
-            CheckEnabledCore(element, timeoutMs);
             EnterCore(element, text!, timeoutMs);
         }, timeoutMs);
     }
@@ -79,21 +79,8 @@ public class Entry<TScope> : ControlBase<TScope>, IEditableTextControlObject<TSc
     {
         return RunDoWithElement(element =>
         {
-            CheckEnabledCore(element, timeoutMs);
             ClearCore(element, timeoutMs);
         }, timeoutMs);
-    }
-
-    /// <summary>
-    /// Checks if the element is enabled and can be interacted with.
-    /// </summary>
-    /// <param name="timeoutMs">Optional timeout for waiting.</param>
-    /// <exception cref="ElementNotFoundException">Thrown when element is not found.</exception>
-    /// <exception cref="InvalidOperationException">Thrown when element is disabled.</exception>
-    public void CheckEnabled(int? timeoutMs = null)
-    {
-        var element = FindElementWithWait(timeoutMs ?? DefaultTimeoutMs);
-        CheckEnabledCore(element, timeoutMs);
     }
 
     /// <summary>
@@ -106,7 +93,6 @@ public class Entry<TScope> : ControlBase<TScope>, IEditableTextControlObject<TSc
     {
         return RunSetWithElement(text, element =>
         {
-            CheckEnabledCore(element, timeoutMs);
             SetTextCore(element, text!, timeoutMs);
         }, timeoutMs);
     }
@@ -117,63 +103,10 @@ public class Entry<TScope> : ControlBase<TScope>, IEditableTextControlObject<TSc
     /// </summary>
     public TScope Submit(int? timeoutMs = null)
     {
-        if (!TrySubmit(timeoutMs))
+        return RunSetWithElement(Keys.Enter, element =>
         {
-            throw new InvalidOperationException($"Could not submit entry. Locator: {Locator}");
-        }
-
-        return ContainingScope;
-    }
-
-    /// <summary>
-    /// Attempts to submit the entry by sending Enter without using pointer focus.
-    /// </summary>
-    public bool TrySubmit(int? timeoutMs = null)
-    {
-        return Run(nameof(TrySubmit), () =>
-        {
-            var timeout = timeoutMs ?? DefaultTimeoutMs;
-            IMauiElement element;
-            try
-            {
-                element = FindElementWithWait(timeout);
-            }
-            catch (Exception ex) when (ex is ElementNotFoundException or TimeoutException)
-            {
-                return false;
-            }
-
-            if (IsEnabledCore(element) != true && !WaitEnabledCore(element, true, timeout))
-            {
-                return false;
-            }
-
-            if (IsVisibleCore(element) != true)
-            {
-                try
-                {
-                    ScrollIntoViewCore(element);
-                }
-                catch (Exception ex) when (ex is InvalidOperationException or TimeoutException)
-                {
-                    return false;
-                }
-            }
-
-            try
-            {
-                element.SendKeys(Keys.Enter, TextInputMethod.Keys);
-                return true;
-            }
-            catch (WindowsInteractionPolicyException)
-            {
-                throw;
-            }
-            catch (InvalidOperationException)
-            {
-                return false;
-            }
-        });
+            element.SendKeys(Keys.Enter, TextInputMethod.Keys);
+        }, timeoutMs);
     }
     
     /// <summary>
@@ -187,7 +120,6 @@ public class Entry<TScope> : ControlBase<TScope>, IEditableTextControlObject<TSc
     {
         return RunSetWithElement(text, element =>
         {
-            CheckEnabledCore(element, timeoutMs);
             AppendCore(element, text!, timeoutMs);
         }, timeoutMs);
     }
@@ -247,29 +179,7 @@ public class Entry<TScope> : ControlBase<TScope>, IEditableTextControlObject<TSc
     {
         element.SendKeys(text);
     }
-
-    /// <summary>
-    /// Core implementation of CheckEnabled using pre-found element.
-    /// Element already exists (was found by RunWithElement), just check if it's enabled.
-    /// </summary>
-    /// <param name="element">The pre-found element.</param>
-    /// <param name="timeoutMs">Optional timeout for waiting for enabled state.</param>
-    /// <exception cref="InvalidOperationException">Thrown when element is disabled.</exception>
-    protected void CheckEnabledCore(IMauiElement element, int? timeoutMs = null)
-    {
-        var timeout = timeoutMs ?? DefaultTimeoutMs;
-
-        // Element already exists - just check enabled state
-        if (IsEnabledCore(element) != true)
-        {
-            if (!WaitEnabledCore(element, true, timeout))
-            {
-                throw new InvalidOperationException(
-                    $"Element is disabled and cannot be interacted with. Locator: {Locator}");
-            }
-        }
-    }
-
+    
     #endregion
 
     #region Placeholder - Core Methods
@@ -299,15 +209,9 @@ public class Entry<TScope> : ControlBase<TScope>, IEditableTextControlObject<TSc
     /// <summary>
     /// Polls placeholder text using pre-found element.
     /// </summary>
-    /// <param name="element">The pre-found element.</param>
     /// <param name="expected">The expected placeholder text.</param>
     /// <param name="timeoutMs">Maximum time to wait in milliseconds.</param>
     /// <returns>True if condition was met, false if timeout reached.</returns>
-    protected bool WaitPlaceholderCore(IMauiElement element, string expected, int timeoutMs)
-    {
-        return PollWithElement(element, e => GetPlaceholderCore(e) == expected, timeoutMs);
-    }
-
     public bool WaitPlaceholder(string? expected, int? timeoutMs = null)
     {
         if (expected == null) return true;
@@ -315,7 +219,7 @@ public class Entry<TScope> : ControlBase<TScope>, IEditableTextControlObject<TSc
         var element = TryFindElement();
         if (element == null) return false;
 
-        return WaitPlaceholderCore(element, expected, timeoutMs ?? DefaultTimeoutMs);
+        return RunWaitWithElement(e => GetPlaceholderCore(e) == expected, timeoutMs);
     }
 
     public TScope AssertPlaceholder(string? expected, string? message = null, int? timeoutMs = null)
@@ -359,15 +263,9 @@ public class Entry<TScope> : ControlBase<TScope>, IEditableTextControlObject<TSc
     /// <summary>
     /// Polls read-only state using pre-found element.
     /// </summary>
-    /// <param name="element">The pre-found element.</param>
     /// <param name="expected">The expected read-only state.</param>
     /// <param name="timeoutMs">Maximum time to wait in milliseconds.</param>
     /// <returns>True if condition was met, false if timeout reached.</returns>
-    protected bool WaitReadOnlyCore(IMauiElement element, bool expected, int timeoutMs)
-    {
-        return PollWithElement(element, e => IsReadOnlyCore(e) == expected, timeoutMs);
-    }
-
     public bool WaitReadOnly(bool? expected, int? timeoutMs = null)
     {
         if (expected == null) return true;
@@ -375,7 +273,7 @@ public class Entry<TScope> : ControlBase<TScope>, IEditableTextControlObject<TSc
         var element = TryFindElement();
         if (element == null) return expected.Value == false; // Not found = not readonly
 
-        return WaitReadOnlyCore(element, expected.Value, timeoutMs ?? DefaultTimeoutMs);
+        return RunWaitWithElement(e => IsReadOnlyCore(e) == expected, timeoutMs);
     }
 
     public TScope AssertReadOnly(bool? expected, string? message = null, int? timeoutMs = null)

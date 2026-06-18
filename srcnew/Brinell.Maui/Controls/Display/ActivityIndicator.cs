@@ -68,32 +68,13 @@ public class ActivityIndicator<TScope> : ControlBase<TScope>
     /// <summary>
     /// Waits for running state using pre-found element.
     /// </summary>
-    protected bool WaitRunningCore(IMauiElement element, bool expected, int timeoutMs)
-    {
-        return PollWithElement(
-            element,
-            e => IsRunningCore(e) == expected,
-            timeoutMs);
-    }
-
-    /// <summary>
-    /// Waits for the activity indicator to reach expected running state.
-    /// </summary>
-    /// <param name="expected">The expected running state.</param>
-    /// <param name="timeoutMs">Maximum time to wait.</param>
-    /// <returns>True if condition met, false if timeout.</returns>
     public bool WaitRunning(bool? expected, int? timeoutMs = null)
     {
-        if (expected == null) return true;
-
-        var element = TryFindElement();
-        if (element == null)
-        {
-            // If not found and expecting not running, that's a match
-            return expected.Value == false;
-        }
-
-        return WaitRunningCore(element, expected.Value, timeoutMs ?? DefaultTimeoutMs);
+        if (expected == null)
+            return true;
+        return RunWaitWithElement(
+            e => IsRunningCore(e) == expected,
+            timeoutMs);
     }
 
     #endregion

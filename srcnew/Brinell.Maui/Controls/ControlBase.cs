@@ -113,7 +113,7 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
         return ok;
     }
 
-    protected bool RunCheck(Func<bool> operation, int? timeoutMs = null,
+    protected bool RunWait(Func<bool> operation, int? timeoutMs = null,
         [CallerMemberName] string? caller = null)
     {
         return RunPoll(null, () =>
@@ -122,7 +122,7 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
         }, timeoutMs, caller);
     }
 
-    protected bool RunCheckWithElement(Func<IMauiElement, bool> coreOperation,
+    protected bool RunWaitWithElement(Func<IMauiElement, bool> coreOperation,
         int? timeoutMs = null, [CallerMemberName] string? caller = null)
     {
         return RunPoll(null, () =>
@@ -376,16 +376,10 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
     {
         element.SendKeys(keys);
     }
-    
+
     #endregion
-    
+
     #region Visible
-    
-    /// <inheritdoc />
-    public bool IsExists()
-    {
-        return TryFindElement() != null;
-    }
     
     /// <summary>
     /// Checks if element is visible using pre-found element.
@@ -412,7 +406,7 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
         if (expected == null)
             return true;
 
-        return RunCheckWithElement(
+        return RunWaitWithElement(
             element => IsVisibleCore(element) == expected.Value,
             timeoutMs);
     }
@@ -515,24 +509,15 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
     /// <summary>
     /// Polls enabled state using pre-found element.
     /// </summary>
-    /// <param name="element">The pre-found element.</param>
     /// <param name="expected">The expected enabled state.</param>
     /// <param name="timeoutMs">Maximum time to wait in milliseconds.</param>
     /// <returns>True if condition was met, false if timeout reached.</returns>
-    protected bool WaitEnabledCore(IMauiElement element, bool expected, int timeoutMs)
-    {
-        return PollWithElement(
-            element,
-            e => IsEnabledCore(e) == expected,
-            timeoutMs);
-    }
-    
     /// <inheritdoc />
     public bool WaitEnabled(bool? expected, int? timeoutMs = null)
     {
         if (expected == null) return true;
         
-        return RunCheckWithElement(
+        return RunWaitWithElement(
             element => IsEnabledCore(element) == expected.Value,
             timeoutMs);
     }
@@ -567,14 +552,22 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
 
     #region Exists
 
+    protected bool? IsExistsCore(IMauiElement? element)
+    {
+        return element != null;
+    }
+
+    /// <inheritdoc />
+    public bool IsExists()
+    {
+        return IsExistsCore(TryFindElement()) == true;
+    }
+
     /// <inheritdoc />
     public bool WaitExists(bool? expected, int? timeoutMs = null)
     {
-        // Nullable skip pattern
-        if (expected == null) return true;
-
-        return RunCheckWithElement(
-            ele => IsExists() == expected.Value,
+        return RunWaitWithElement(
+            element => IsExistsCore(element) == expected!.Value,
             timeoutMs);
     }
 
@@ -628,7 +621,7 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
     {
         if (expected == null) return true;
         
-        return RunCheckWithElement(
+        return RunWaitWithElement(
             element => GetTextCore(element) == expected, timeoutMs);
     }
     
@@ -652,7 +645,7 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
         // Nullable skip pattern
         if (expected == null) return ContainingScope;
         
-        var passed = RunCheck(
+        var passed = RunWait(
             () => GetText()?.Contains(expected) == true,
             timeoutMs);
         
@@ -671,7 +664,7 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
         // Nullable skip pattern
         if (expected == null) return ContainingScope;
         
-        var passed = RunCheck(
+        var passed = RunWait(
             () => GetText()?.StartsWith(expected) == true,
             timeoutMs);
         
@@ -690,7 +683,7 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
         // Nullable skip pattern
         if (expected == null) return ContainingScope;
         
-        var passed = RunCheck(
+        var passed = RunWait(
             () => GetText()?.EndsWith(expected) == true,
             timeoutMs);
         
@@ -709,7 +702,7 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
         // Nullable skip pattern
         if (expected == null) return ContainingScope;
         
-        var passed = RunCheck(
+        var passed = RunWait(
             () => 
             {
                 var text = GetText();
