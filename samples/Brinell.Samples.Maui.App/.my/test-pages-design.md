@@ -279,6 +279,9 @@ See **DateTime Module** (sections 4, Navigation, Test Automation, and UI Testing
 - Value bounded by min/max
 - Event fires on value change
 
+**Shell Navigation:**
+A ShellContent needs to be added to `AppShell.xaml` and a `RangePage.xaml` wrapper page must be created. See the **ShellContent Pattern** and **RangePage.xaml Pattern** sections below for implementation details.
+
 ---
 
 ### 11. Selection Module
@@ -486,6 +489,75 @@ public class ButtonsViewModel : ParentViewModel
     }
 }
 ```
+
+### ShellContent Pattern
+
+ShellContent elements are used within an `AppShell.xaml` to register a tab in the shell navigation. Each test view module should have a corresponding ShellContent entry:
+
+```xaml
+<!-- Module Name Tab -->
+<ShellContent
+    Title="ModuleName"
+    Icon="tab_module.png"
+    ContentTemplate="{DataTemplate local:ModuleNamePage}"
+    Route="ModuleNamePage" />
+```
+
+**Key attributes:**
+- **Title** - The tab label displayed to the user
+- **Icon** - The tab icon image file (located in resources)
+- **ContentTemplate** - DataTemplate binding to the page (e.g., `local:RangePage`)
+- **Route** - Unique route identifier for navigation (matches the page name convention)
+
+**Example for Range Module:**
+
+```xaml
+<!-- Range Tab -->
+<ShellContent
+    Title="Range"
+    Icon="tab_range.png"
+    ContentTemplate="{DataTemplate local:RangePage}"
+    Route="RangePage" />
+```
+
+---
+
+### RangePage.xaml Pattern
+
+A page like `RangePage.xaml` provides navigation entry point to the Range test controls. It wraps the test view in a ContentPage for shell navigation:
+
+```xaml
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:testViews="using:Brinell.Samples.Maui.App.Views"
+             x:Class="Brinell.Samples.Maui.App.Pages.RangePage"
+             Title="Range">
+
+    <testViews:RangeView />
+
+</ContentPage>
+```
+
+**Code-Behind:**
+
+```csharp
+namespace Brinell.Samples.Maui.App.Pages;
+
+public partial class RangePage : ContentPage
+{
+    public RangePage()
+    {
+        InitializeComponent();
+    }
+}
+```
+
+**Directory Structure Note:**
+
+- Pages are located in: `Brinell.Samples.Maui.App/Pages/`
+- Views are located in: `Brinell.Samples.Maui.App/Views/`
+- The page acts as a shell-navigable container; the view contains the actual test controls
 
 ---
 
