@@ -1,13 +1,8 @@
-using Brinell.Core;
 using Brinell.Core.Exceptions;
 using Brinell.Core.Interfaces;
 using Brinell.Core.Utilities;
-using Brinell.Maui.Enums;
-using Brinell.Maui.Interfaces;
 using FlaUI.Core.Definitions;
-using FlaUI.Core.Input;
 using FlaUI.Core.WindowsAPI;
-using FlaUI.UIA3.Patterns;
 using System.Drawing;
 using FlaUI.Core.Patterns;
 
@@ -51,9 +46,11 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
     {
         get
         {
-            try
-            {
+           // try
+           // {
+                return !_element.IsOffscreen;
                 // Primary check: IsOffscreen property
+                /*
                 if (!_element.IsOffscreen)
                     return true;
                 
@@ -97,6 +94,7 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
             {
                 return false;
             }
+        */
         }
     }
     
@@ -175,10 +173,12 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
         if (SelectItemPattern())
             return;
 
-        if (DoDefaultActionPattern())
-            return;
+        /*if (DoDefaultActionPattern())
+            return;*/
 
-        ClickWithPointerFallback();
+        _element.Click();
+        
+        // ClickWithPointerFallback();
     }
 
     private void ClickWithPointerFallback()

@@ -21,7 +21,7 @@ public class AppShellPage : PageObjectBase<AppShellPage>
         TextTab = new TabViewControl<AppShellPage>(this, "TextTab", "Text");
 
 
-        
+
         // TabViewControl uses AutomationId as primary, Title as fallback for Windows
         BasicsTab = new TabViewControl<AppShellPage>(this, "BasicsTab", "Basics");
         ContainersTab = new TabViewControl<AppShellPage>(this, "ContainersTab", "Containers");
@@ -32,6 +32,7 @@ public class AppShellPage : PageObjectBase<AppShellPage>
         ToolkitTab = new TabViewControl<AppShellPage>(this, "ToolkitTab", "Toolkit");
         MediaTab = new TabViewControl<AppShellPage>(this, "MediaTab", "Media");
         DataGridTab = new TabViewControl<AppShellPage>(this, "DataGridTab", "DataGrid");
+        ToggleTab = new TabViewControl<AppShellPage>(this, "ToggleTab", "Toggle");
     }
 
     /// <inheritdoc />
@@ -83,6 +84,9 @@ public class AppShellPage : PageObjectBase<AppShellPage>
 
     /// <summary>DataGrid page tab.</summary>
     public ITabControlObject<AppShellPage> DataGridTab { get; }
+
+    /// <summary>Toggle page tab.</summary>
+    public ITabControlObject<AppShellPage> ToggleTab { get; }
 
     #endregion
 }

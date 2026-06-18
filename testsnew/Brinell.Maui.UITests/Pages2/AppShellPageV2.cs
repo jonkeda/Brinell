@@ -29,6 +29,7 @@ public class AppShellPageV2 : PageObjectBase<AppShellPageV2>
         ToolkitContent = new ShellContent<AppShellPageV2>(this, "ToolkitPage", "Toolkit");
         MediaContent = new ShellContent<AppShellPageV2>(this, "MediaPage", "Media");
         DataGridContent = new ShellContent<AppShellPageV2>(this, "DataGridPage", "DataGrid");
+        ToggleContent = new ShellContent<AppShellPageV2>(this, "TogglePage", "Toggle");
     }
 
     /// <inheritdoc />
@@ -115,6 +116,11 @@ public class AppShellPageV2 : PageObjectBase<AppShellPageV2>
     /// DataGrid ShellContent control.
     /// </summary>
     public ITabControlObject<AppShellPageV2> DataGridContent { get; }
+
+    /// <summary>
+    /// Toggle ShellContent control.
+    /// </summary>
+    public ITabControlObject<AppShellPageV2> ToggleContent { get; }
 
     #endregion
 
@@ -222,6 +228,14 @@ public class AppShellPageV2 : PageObjectBase<AppShellPageV2>
     public AppShellPageV2 GoToDataGridTab()
     {
         return _shell.NavigateTo("DataGrid");
+    }
+
+    /// <summary>
+    /// Navigates to the Toggle tab.
+    /// </summary>
+    public AppShellPageV2 GoToToggleTab()
+    {
+        return _shell.NavigateTo("Toggle");
     }
 
     #endregion

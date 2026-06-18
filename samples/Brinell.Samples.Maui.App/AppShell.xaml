@@ -36,70 +36,12 @@
             ContentTemplate="{DataTemplate local:RangePage}"
             Route="RangePage" />
 
-
-
-        <!-- Basics Tab -->
+        <!-- Toggle Tab -->
         <ShellContent
-            Title="Basics"
+            Title="Toggle"
             Icon="tab_about.png"
-            ContentTemplate="{DataTemplate local:BasicsPage}"
-            Route="BasicsPage" />
-
-        <!-- Containers Tab -->
-        <ShellContent
-            Title="Containers"
-            Icon="tab_about.png"
-            ContentTemplate="{DataTemplate local:ContainersPage}"
-            Route="ContainersPage" />
-
-        <!-- Forms Tab -->
-        <ShellContent
-            Title="Forms"
-            Icon="tab_about.png"
-            ContentTemplate="{DataTemplate local:FormsPage}"
-            Route="FormsPage" />
-
-        <!-- Lists Tab -->
-        <ShellContent
-            Title="Lists"
-            Icon="tab_about.png"
-            ContentTemplate="{DataTemplate local:ListsPage}"
-            Route="ListsPage" />
-
-        <!-- Gestures Tab -->
-        <ShellContent
-            Title="Gestures"
-            Icon="tab_about.png"
-            ContentTemplate="{DataTemplate local:GesturesPage}"
-            Route="GesturesPage" />
-
-        <!-- Navigation Tab -->
-        <ShellContent
-            Title="Navigation"
-            Icon="tab_about.png"
-            ContentTemplate="{DataTemplate local:NavigationPage}"
-            Route="NavigationPage" />
-
-        <!-- Toolkit Tab -->
-        <ShellContent
-            Title="Toolkit"
-            Icon="tab_about.png"
-            ContentTemplate="{DataTemplate local:ToolkitPage}"
-            Route="ToolkitPage" />
-
-        <!-- Media Tab -->
-        <ShellContent
-            Title="Media"
-            Icon="tab_about.png"
-            ContentTemplate="{DataTemplate local:MediaPage}"
-            Route="MediaPage" />
-
-        <!-- DataGrid Tab -->
-        <ShellContent
-            Title="DataGrid"
-            Icon="tab_about.png"
-            ContentTemplate="{DataTemplate local:DataGridPage}"
-            Route="DataGridPage" />
+            ContentTemplate="{DataTemplate local:TogglePage}"
+            Route="TogglePage" />
     </TabBar>
 
 </Shell>
