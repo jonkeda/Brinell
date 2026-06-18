@@ -26,22 +26,22 @@ public class DataGridPage : PageObjectBase<DataGridPage>
     /// <summary>
     /// The main title label "Data Management".
     /// </summary>
-    public Label<DataGridPage> DataGridTitle => Label("DataGridTitle");
+    public Label<DataGridPage> DataGridTitle => new(this,"DataGridTitle");
 
     /// <summary>
     /// The featured items section label.
     /// </summary>
-    public Label<DataGridPage> FeaturedLabel => Label("FeaturedLabel");
+    public Label<DataGridPage> FeaturedLabel => new(this,"FeaturedLabel");
 
     /// <summary>
     /// The data items section label.
     /// </summary>
-    public Label<DataGridPage> DataItemsLabel => Label("DataItemsLabel");
+    public Label<DataGridPage> DataItemsLabel => new(this,"DataItemsLabel");
 
     /// <summary>
     /// The grouped items section label.
     /// </summary>
-    public Label<DataGridPage> GroupedItemsLabel => Label("GroupedItemsLabel");
+    public Label<DataGridPage> GroupedItemsLabel => new(this,"GroupedItemsLabel");
 
     #endregion
 
@@ -50,22 +50,22 @@ public class DataGridPage : PageObjectBase<DataGridPage>
     /// <summary>
     /// The search bar for filtering data items.
     /// </summary>
-    public SearchBar<DataGridPage> DataSearchBar => SearchBar("DataSearchBar");
+    public SearchBar<DataGridPage> DataSearchBar => new(this,"DataSearchBar");
 
     /// <summary>
     /// The clear filter button.
     /// </summary>
-    public Button<DataGridPage> ClearFilterButton => Button("ClearFilterButton");
+    public Button<DataGridPage> ClearFilterButton => new(this,"ClearFilterButton");
 
     /// <summary>
     /// The label showing the selected count.
     /// </summary>
-    public Label<DataGridPage> SelectedCountLabel => Label("SelectedCountLabel");
+    public Label<DataGridPage> SelectedCountLabel => new(this,"SelectedCountLabel");
 
     /// <summary>
     /// The search border container.
     /// </summary>
-    public Border<DataGridPage> SearchBorder => Border("SearchBorder");
+    public Border<DataGridPage> SearchBorder => new(this,"SearchBorder");
 
     #endregion
 
@@ -74,7 +74,7 @@ public class DataGridPage : PageObjectBase<DataGridPage>
     /// <summary>
     /// The featured items carousel view.
     /// </summary>
-    public CarouselView<DataGridPage> FeaturedCarousel => CarouselView("FeaturedCarousel");
+    public CarouselView<DataGridPage> FeaturedCarousel => new(this,"FeaturedCarousel");
 
     #endregion
 
@@ -99,7 +99,7 @@ public class DataGridPage : PageObjectBase<DataGridPage>
     /// <summary>
     /// The refresh view for pulling to refresh data.
     /// </summary>
-    public RefreshView<DataGridPage> DataRefreshView => RefreshView("DataRefreshView");
+    public RefreshView<DataGridPage> DataRefreshView => new(this,"DataRefreshView");
 
     /// <summary>
     /// The scroll view containing the main content.
@@ -113,17 +113,17 @@ public class DataGridPage : PageObjectBase<DataGridPage>
     /// <summary>
     /// The refresh data button.
     /// </summary>
-    public Button<DataGridPage> RefreshDataButton => Button("RefreshDataButton");
+    public Button<DataGridPage> RefreshDataButton => new(this,"RefreshDataButton");
 
     /// <summary>
     /// The select all button.
     /// </summary>
-    public Button<DataGridPage> SelectAllButton => Button("SelectAllButton");
+    public Button<DataGridPage> SelectAllButton => new(this,"SelectAllButton");
 
     /// <summary>
     /// The unselect all button.
     /// </summary>
-    public Button<DataGridPage> UnselectAllButton => Button("UnselectAllButton");
+    public Button<DataGridPage> UnselectAllButton => new(this,"UnselectAllButton");
 
     #endregion
 }

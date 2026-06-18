@@ -28,47 +28,47 @@ public class UserFormPage : PageObjectBase<UserFormPage>
     /// <summary>
     /// The main title label "User Registration".
     /// </summary>
-    public Label<UserFormPage> UserFormTitle => Label("UserFormTitle");
+    public Label<UserFormPage> UserFormTitle => new(this,"UserFormTitle");
 
     /// <summary>
     /// The personal info section label.
     /// </summary>
-    public Label<UserFormPage> PersonalInfoLabel => Label("PersonalInfoLabel");
+    public Label<UserFormPage> PersonalInfoLabel => new(this,"PersonalInfoLabel");
 
     /// <summary>
     /// The preferences section label.
     /// </summary>
-    public Label<UserFormPage> PreferencesLabel => Label("PreferencesLabel");
+    public Label<UserFormPage> PreferencesLabel => new(this,"PreferencesLabel");
 
     /// <summary>
     /// The selection section label.
     /// </summary>
-    public Label<UserFormPage> SelectionLabel => Label("SelectionLabel");
+    public Label<UserFormPage> SelectionLabel => new(this,"SelectionLabel");
 
     /// <summary>
     /// The range section label.
     /// </summary>
-    public Label<UserFormPage> RangeLabel => Label("RangeLabel");
+    public Label<UserFormPage> RangeLabel => new(this,"RangeLabel");
 
     /// <summary>
     /// The result message label.
     /// </summary>
-    public Label<UserFormPage> ResultMessage => Label("ResultMessage");
+    public Label<UserFormPage> ResultMessage => new(this,"ResultMessage");
 
     /// <summary>
     /// The font size display label.
     /// </summary>
-    public Label<UserFormPage> FontSizeLabel => Label("FontSizeLabel");
+    public Label<UserFormPage> FontSizeLabel => new(this,"FontSizeLabel");
 
     /// <summary>
     /// The volume display label.
     /// </summary>
-    public Label<UserFormPage> VolumeLabel => Label("VolumeLabel");
+    public Label<UserFormPage> VolumeLabel => new(this,"VolumeLabel");
 
     /// <summary>
     /// The quantity display label.
     /// </summary>
-    public Label<UserFormPage> QuantityLabel => Label("QuantityLabel");
+    public Label<UserFormPage> QuantityLabel => new(this,"QuantityLabel");
 
     #endregion
 
@@ -101,7 +101,7 @@ public class UserFormPage : PageObjectBase<UserFormPage>
     /// <summary>
     /// The bio editor (multi-line text).
     /// </summary>
-    public Editor<UserFormPage> BioEditor => Editor("BioEditor");
+    public Editor<UserFormPage> BioEditor => new(this,"BioEditor");
 
     #endregion
 
@@ -110,7 +110,7 @@ public class UserFormPage : PageObjectBase<UserFormPage>
     /// <summary>
     /// The user search bar.
     /// </summary>
-    public SearchBar<UserFormPage> UserSearchBar => SearchBar("UserSearchBar");
+    public SearchBar<UserFormPage> UserSearchBar => new(this,"UserSearchBar");
 
     #endregion
 
@@ -119,22 +119,22 @@ public class UserFormPage : PageObjectBase<UserFormPage>
     /// <summary>
     /// The newsletter subscription switch.
     /// </summary>
-    public Switch<UserFormPage> NewsletterSwitch => Switch("NewsletterSwitch");
+    public Switch<UserFormPage> NewsletterSwitch => new(this,"NewsletterSwitch");
 
     /// <summary>
     /// The terms of service checkbox.
     /// </summary>
-    public CheckBox<UserFormPage> TermsCheckBox => CheckBox("TermsCheckBox");
+    public CheckBox<UserFormPage> TermsCheckBox => new(this,"TermsCheckBox");
 
     /// <summary>
     /// The privacy policy checkbox.
     /// </summary>
-    public CheckBox<UserFormPage> PrivacyCheckBox => CheckBox("PrivacyCheckBox");
+    public CheckBox<UserFormPage> PrivacyCheckBox => new(this,"PrivacyCheckBox");
 
     /// <summary>
     /// The indeterminate simulation checkbox.
     /// </summary>
-    public CheckBox<UserFormPage> IndeterminateCheckBox => CheckBox("IndeterminateCheckBox");
+    public CheckBox<UserFormPage> IndeterminateCheckBox => new(this,"IndeterminateCheckBox");
 
     #endregion
 
@@ -143,17 +143,17 @@ public class UserFormPage : PageObjectBase<UserFormPage>
     /// <summary>
     /// The Basic subscription tier radio button.
     /// </summary>
-    public RadioButton<UserFormPage> BasicRadio => RadioButton("BasicRadio");
+    public RadioButton<UserFormPage> BasicRadio => new(this,"BasicRadio");
 
     /// <summary>
     /// The Professional subscription tier radio button.
     /// </summary>
-    public RadioButton<UserFormPage> ProfessionalRadio => RadioButton("ProfessionalRadio");
+    public RadioButton<UserFormPage> ProfessionalRadio => new(this,"ProfessionalRadio");
 
     /// <summary>
     /// The Enterprise subscription tier radio button.
     /// </summary>
-    public RadioButton<UserFormPage> EnterpriseRadio => RadioButton("EnterpriseRadio");
+    public RadioButton<UserFormPage> EnterpriseRadio => new(this,"EnterpriseRadio");
 
     #endregion
 
@@ -176,12 +176,12 @@ public class UserFormPage : PageObjectBase<UserFormPage>
     /// <summary>
     /// The birth date picker.
     /// </summary>
-    public DatePicker<UserFormPage> BirthDatePicker => DatePicker("BirthDatePicker");
+    public DatePicker<UserFormPage> BirthDatePicker => new(this,"BirthDatePicker");
 
     /// <summary>
     /// The preferred contact time picker.
     /// </summary>
-    public TimePicker<UserFormPage> PreferredTimePicker => TimePicker("PreferredTimePicker");
+    public TimePicker<UserFormPage> PreferredTimePicker => new(this,"PreferredTimePicker");
 
     #endregion
 
@@ -190,12 +190,12 @@ public class UserFormPage : PageObjectBase<UserFormPage>
     /// <summary>
     /// The font size slider (8-72).
     /// </summary>
-    public Slider<UserFormPage> FontSizeSlider => Slider("FontSizeSlider");
+    public Slider<UserFormPage> FontSizeSlider => new(this,"FontSizeSlider");
 
     /// <summary>
     /// The volume slider (0-100).
     /// </summary>
-    public Slider<UserFormPage> VolumeSlider => Slider("VolumeSlider");
+    public Slider<UserFormPage> VolumeSlider => new(this,"VolumeSlider");
 
     #endregion
 
@@ -204,7 +204,7 @@ public class UserFormPage : PageObjectBase<UserFormPage>
     /// <summary>
     /// The quantity stepper (1-99).
     /// </summary>
-    public Stepper<UserFormPage> QuantityStepper => Stepper("QuantityStepper");
+    public Stepper<UserFormPage> QuantityStepper => new(this,"QuantityStepper");
 
     #endregion
 
@@ -213,17 +213,17 @@ public class UserFormPage : PageObjectBase<UserFormPage>
     /// <summary>
     /// The submit button.
     /// </summary>
-    public Button<UserFormPage> SubmitButton => Button("SubmitButton");
+    public Button<UserFormPage> SubmitButton => new(this,"SubmitButton");
 
     /// <summary>
     /// The save draft button.
     /// </summary>
-    public Button<UserFormPage> SaveDraftButton => Button("SaveDraftButton");
+    public Button<UserFormPage> SaveDraftButton => new(this,"SaveDraftButton");
 
     /// <summary>
     /// The clear button.
     /// </summary>
-    public Button<UserFormPage> ClearButton => Button("ClearButton");
+    public Button<UserFormPage> ClearButton => new(this,"ClearButton");
 
     #endregion
 }

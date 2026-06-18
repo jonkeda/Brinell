@@ -29,37 +29,37 @@ public class MainPage : PageObjectBase<MainPage>
     /// <summary>
     /// The main title label "Brinell MAUI Sample".
     /// </summary>
-    public Label<MainPage> TitleLabel => Label("TitleLabel");
+    public Label<MainPage> TitleLabel => new(this,"TitleLabel");
 
     /// <summary>
     /// The subtitle label "UI Test Borderwork Demo".
     /// </summary>
-    public Label<MainPage> SubtitleLabel => Label("SubtitleLabel");
+    public Label<MainPage> SubtitleLabel => new(this,"SubtitleLabel");
 
     /// <summary>
     /// The counter display label showing "Counter: X".
     /// </summary>
-    public Label<MainPage> CounterLabel => Label("CounterLabel");
+    public Label<MainPage> CounterLabel => new(this,"CounterLabel");
 
     /// <summary>
     /// The greeting label that shows the greeting message.
     /// </summary>
-    public Label<MainPage> GreetingLabel => Label("GreetingLabel");
+    public Label<MainPage> GreetingLabel => new(this,"GreetingLabel");
 
     /// <summary>
     /// The volume percentage label.
     /// </summary>
-    public Label<MainPage> VolumeLabel => Label("VolumeLabel");
+    public Label<MainPage> VolumeLabel => new(this,"VolumeLabel");
 
     /// <summary>
     /// The notification status label.
     /// </summary>
-    public Label<MainPage> NotificationLabel => Label("NotificationLabel");
+    public Label<MainPage> NotificationLabel => new(this,"NotificationLabel");
 
     /// <summary>
     /// The selected color label.
     /// </summary>
-    public Label<MainPage> SelectedColorLabel => Label("SelectedColorLabel");
+    public Label<MainPage> SelectedColorLabel => new(this,"SelectedColorLabel");
 
     #endregion
 
@@ -68,27 +68,27 @@ public class MainPage : PageObjectBase<MainPage>
     /// <summary>
     /// The increment (+) button for the counter.
     /// </summary>
-    public Button<MainPage> IncrementButton => Button("IncrementButton");
+    public Button<MainPage> IncrementButton => new(this,"IncrementButton");
 
     /// <summary>
     /// The decrement (-) button for the counter.
     /// </summary>
-    public Button<MainPage> DecrementButton => Button("DecrementButton");
+    public Button<MainPage> DecrementButton => new(this,"DecrementButton");
 
     /// <summary>
     /// The reset button for the counter.
     /// </summary>
-    public Button<MainPage> ResetButton => Button("ResetButton");
+    public Button<MainPage> ResetButton => new(this,"ResetButton");
 
     /// <summary>
     /// The greet button that generates a greeting from the name entry.
     /// </summary>
-    public Button<MainPage> GreetButton => Button("GreetButton");
+    public Button<MainPage> GreetButton => new(this,"GreetButton");
 
     /// <summary>
     /// The toggle loading button for the activity indicator.
     /// </summary>
-    public Button<MainPage> ToggleLoadingButton => Button("ToggleLoadingButton");
+    public Button<MainPage> ToggleLoadingButton => new(this,"ToggleLoadingButton");
 
     #endregion
 
@@ -97,17 +97,17 @@ public class MainPage : PageObjectBase<MainPage>
     /// <summary>
     /// The name entry field.
     /// </summary>
-    public Entry<MainPage> NameEntry => Entry("NameEntry");
+    public Entry<MainPage> NameEntry => new(this,"NameEntry");
 
     /// <summary>
     /// The email entry field.
     /// </summary>
-    public Entry<MainPage> EmailEntry => Entry("EmailEntry");
+    public Entry<MainPage> EmailEntry => new(this,"EmailEntry");
 
     /// <summary>
     /// The message editor (multi-line text).
     /// </summary>
-    public Editor<MainPage> MessageEditor => Editor("MessageEditor");
+    public Editor<MainPage> MessageEditor => new(this,"MessageEditor");
 
     #endregion
 
@@ -116,12 +116,12 @@ public class MainPage : PageObjectBase<MainPage>
     /// <summary>
     /// The notification switch.
     /// </summary>
-    public Switch<MainPage> NotificationSwitch => Switch("NotificationSwitch");
+    public Switch<MainPage> NotificationSwitch => new(this,"NotificationSwitch");
 
     /// <summary>
     /// The agree to terms checkbox.
     /// </summary>
-    public CheckBox<MainPage> AgreeCheckBox => CheckBox("AgreeCheckBox");
+    public CheckBox<MainPage> AgreeCheckBox => new(this,"AgreeCheckBox");
 
     #endregion
 
@@ -130,12 +130,12 @@ public class MainPage : PageObjectBase<MainPage>
     /// <summary>
     /// The volume slider control.
     /// </summary>
-    public Slider<MainPage> VolumeSlider => Slider("VolumeSlider");
+    public Slider<MainPage> VolumeSlider => new(this,"VolumeSlider");
 
     /// <summary>
     /// The volume progress bar.
     /// </summary>
-    public ProgressBar<MainPage> VolumeProgress => ProgressBar("VolumeProgress");
+    public ProgressBar<MainPage> VolumeProgress => new(this,"VolumeProgress");
 
     #endregion
 
@@ -149,12 +149,12 @@ public class MainPage : PageObjectBase<MainPage>
     /// <summary>
     /// The birth date picker.
     /// </summary>
-    public DatePicker<MainPage> BirthDatePicker => DatePicker("BirthDatePicker");
+    public DatePicker<MainPage> BirthDatePicker => new(this,"BirthDatePicker");
 
     /// <summary>
     /// The reminder time picker.
     /// </summary>
-    public TimePicker<MainPage> ReminderTimePicker => TimePicker("ReminderTimePicker");
+    public TimePicker<MainPage> ReminderTimePicker => new(this,"ReminderTimePicker");
 
     #endregion
 
@@ -163,7 +163,7 @@ public class MainPage : PageObjectBase<MainPage>
     /// <summary>
     /// The loading activity indicator.
     /// </summary>
-    public ActivityIndicator<MainPage> LoadingIndicator => ActivityIndicator("LoadingIndicator");
+    public ActivityIndicator<MainPage> LoadingIndicator => new(this,"LoadingIndicator");
 
     #endregion
 }

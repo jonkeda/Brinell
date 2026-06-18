@@ -966,7 +966,7 @@ public class SemanticControlTests
 
         public TabMenu<TestPage> Tabs => new(this);
 
-        public CheckBox<TestPage> IncludeProblemReports => CheckBox("IncludeProblemReports");
+        public CheckBox<TestPage> IncludeProblemReports => new(this, "IncludeProblemReports");
 
         public List<TestPage, TestListItem> TypedList => new(
             this,

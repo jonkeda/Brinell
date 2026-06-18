@@ -34,12 +34,12 @@ public class ListsPage : PageObjectBase<ListsPage>
     /// <summary>
     /// The main title label "Lists Demo".
     /// </summary>
-    public Label<ListsPage> ListsTitle => Label("ListsTitle");
+    public Label<ListsPage> ListsTitle => new(this,"ListsTitle");
 
     /// <summary>
     /// The selected item label for the ListView.
     /// </summary>
-    public Label<ListsPage> SelectedItemLabel => Label("SelectedItemLabel");
+    public Label<ListsPage> SelectedItemLabel => new(this,"SelectedItemLabel");
 
     #endregion
 
@@ -48,7 +48,7 @@ public class ListsPage : PageObjectBase<ListsPage>
     /// <summary>
     /// The section label for the ListView section.
     /// </summary>
-    public Label<ListsPage> ListViewSectionLabel => Label("ListViewLabel");
+    public Label<ListsPage> ListViewSectionLabel => new(this,"ListViewLabel");
 
     #endregion
 
@@ -57,7 +57,7 @@ public class ListsPage : PageObjectBase<ListsPage>
     /// <summary>
     /// The demo ListView section label.
     /// </summary>
-    public Label<ListsPage> ListViewLabel => Label("ListViewLabel");
+    public Label<ListsPage> ListViewLabel => new(this,"ListViewLabel");
 
     #endregion
 }

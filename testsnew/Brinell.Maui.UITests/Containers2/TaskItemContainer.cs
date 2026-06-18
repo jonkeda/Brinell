@@ -24,15 +24,15 @@ public class TaskItemContainer : ContainerBase<ContainerDemoPage, TaskItemContai
     /// <summary>
     /// The task checkbox.
     /// </summary>
-    public CheckBox<TaskItemContainer> TaskCheckBox => CheckBox("TaskCheckBox");
+    public CheckBox<TaskItemContainer> TaskCheckBox => new(this,"TaskCheckBox");
 
     /// <summary>
     /// The task name label.
     /// </summary>
-    public Label<TaskItemContainer> NameLabel => Label("TaskNameLabel");
+    public Label<TaskItemContainer> NameLabel => new(this,"TaskNameLabel");
 
     /// <summary>
     /// The delete task button.
     /// </summary>
-    public Button<TaskItemContainer> DeleteButton => Button("TaskDeleteButton");
+    public Button<TaskItemContainer> DeleteButton => new(this,"TaskDeleteButton");
 }

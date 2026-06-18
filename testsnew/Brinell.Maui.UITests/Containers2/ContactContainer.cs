@@ -24,15 +24,15 @@ public class ContactContainer : ContainerBase<ContainerDemoPage, ContactContaine
     /// <summary>
     /// The contact name label.
     /// </summary>
-    public Label<ContactContainer> NameLabel => Label("ContactName");
+    public Label<ContactContainer> NameLabel => new(this,"ContactName");
 
     /// <summary>
     /// The contact email label.
     /// </summary>
-    public Label<ContactContainer> EmailLabel => Label("ContactEmail");
+    public Label<ContactContainer> EmailLabel => new(this,"ContactEmail");
 
     /// <summary>
     /// The call button.
     /// </summary>
-    public Button<ContactContainer> CallButton => Button("ContactCallButton");
+    public Button<ContactContainer> CallButton => new(this,"ContactCallButton");
 }

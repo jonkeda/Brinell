@@ -26,17 +26,17 @@ public class TextTestPage : PageObjectBase<TextTestPage>
     /// <summary>
     /// The Entry test control for single-line text input.
     /// </summary>
-    public Entry<TextTestPage> TestEntry => Entry("TestEntry");
+    public Entry<TextTestPage> TestEntry => new(this,"TestEntry");
 
     /// <summary>
     /// The Editor test control for multi-line text input.
     /// </summary>
-    public Editor<TextTestPage> TestEditor => Editor("TestEditor");
+    public Editor<TextTestPage> TestEditor => new(this,"TestEditor");
 
     /// <summary>
     /// The SearchBar test control for search input.
     /// </summary>
-    public SearchBar<TextTestPage> TestSearchBar => SearchBar("TestSearchBar");
+    public SearchBar<TextTestPage> TestSearchBar => new(this,"TestSearchBar");
 
     #endregion
 
@@ -45,22 +45,22 @@ public class TextTestPage : PageObjectBase<TextTestPage>
     /// <summary>
     /// The Clear Entry button.
     /// </summary>
-    public Button<TextTestPage> ClearEntryButton => Button("ClearEntryButton");
+    public Button<TextTestPage> ClearEntryButton => new(this,"ClearEntryButton");
 
     /// <summary>
     /// The Clear Editor button.
     /// </summary>
-    public Button<TextTestPage> ClearEditorButton => Button("ClearEditorButton");
+    public Button<TextTestPage> ClearEditorButton => new(this,"ClearEditorButton");
 
     /// <summary>
     /// The Clear Search button.
     /// </summary>
-    public Button<TextTestPage> ClearSearchButton => Button("ClearSearchButton");
+    public Button<TextTestPage> ClearSearchButton => new(this,"ClearSearchButton");
 
     /// <summary>
     /// The Reset All button.
     /// </summary>
-    public Button<TextTestPage> ResetAllButton => Button("ResetAllButton");
+    public Button<TextTestPage> ResetAllButton => new(this,"ResetAllButton");
 
     #endregion
 
@@ -69,17 +69,17 @@ public class TextTestPage : PageObjectBase<TextTestPage>
     /// <summary>
     /// The Entry status message label.
     /// </summary>
-    public Label<TextTestPage> EntryStatusLabel => Label("EntryStatusLabel");
+    public Label<TextTestPage> EntryStatusLabel => new(this,"EntryStatusLabel");
 
     /// <summary>
     /// The Editor status message label.
     /// </summary>
-    public Label<TextTestPage> EditorStatusLabel => Label("EditorStatusLabel");
+    public Label<TextTestPage> EditorStatusLabel => new(this,"EditorStatusLabel");
 
     /// <summary>
     /// The Search status message label.
     /// </summary>
-    public Label<TextTestPage> SearchStatusLabel => Label("SearchStatusLabel");
+    public Label<TextTestPage> SearchStatusLabel => new(this,"SearchStatusLabel");
 
     #endregion
 }

@@ -44,17 +44,17 @@ public class ContainerDemoPage : PageObjectBase<ContainerDemoPage>
     /// <summary>
     /// The new task entry field.
     /// </summary>
-    public Entry<ContainerDemoPage> NewTaskEntry => Entry("NewTaskEntry");
+    public Entry<ContainerDemoPage> NewTaskEntry => new(this,"NewTaskEntry");
     
     /// <summary>
     /// The add task button.
     /// </summary>
-    public Button<ContainerDemoPage> AddTaskButton => Button("AddTaskButton");
+    public Button<ContainerDemoPage> AddTaskButton => new(this,"AddTaskButton");
     
     /// <summary>
     /// The task count label.
     /// </summary>
-    public Label<ContainerDemoPage> TaskCountLabel => Label("TaskCountLabel");
+    public Label<ContainerDemoPage> TaskCountLabel => new(this,"TaskCountLabel");
     
     #endregion
 

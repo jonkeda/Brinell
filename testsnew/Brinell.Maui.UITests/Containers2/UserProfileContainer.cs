@@ -18,12 +18,12 @@ public class UserProfileContainer : ContainerBase<ContainerDemoPage, UserProfile
     /// <summary>
     /// The profile title label.
     /// </summary>
-    public Label<UserProfileContainer> TitleLabel => Label("ProfileTitle");
+    public Label<UserProfileContainer> TitleLabel => new(this,"ProfileTitle");
 
     /// <summary>
     /// The profile status label.
     /// </summary>
-    public Label<UserProfileContainer> StatusLabel => Label("ProfileStatusLabel");
+    public Label<UserProfileContainer> StatusLabel => new(this,"ProfileStatusLabel");
 
     #endregion
 
@@ -32,12 +32,12 @@ public class UserProfileContainer : ContainerBase<ContainerDemoPage, UserProfile
     /// <summary>
     /// The profile name entry.
     /// </summary>
-    public Entry<UserProfileContainer> NameEntry => Entry("ProfileNameEntry");
+    public Entry<UserProfileContainer> NameEntry => new(this,"ProfileNameEntry");
 
     /// <summary>
     /// The profile email entry.
     /// </summary>
-    public Entry<UserProfileContainer> EmailEntry => Entry("ProfileEmailEntry");
+    public Entry<UserProfileContainer> EmailEntry => new(this,"ProfileEmailEntry");
 
     #endregion
 
@@ -46,7 +46,7 @@ public class UserProfileContainer : ContainerBase<ContainerDemoPage, UserProfile
     /// <summary>
     /// The save profile button.
     /// </summary>
-    public Button<UserProfileContainer> SaveButton => Button("ProfileSaveButton");
+    public Button<UserProfileContainer> SaveButton => new(this,"ProfileSaveButton");
 
     #endregion
 }

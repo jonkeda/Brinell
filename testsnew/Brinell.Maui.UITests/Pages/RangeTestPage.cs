@@ -26,12 +26,12 @@ public class RangeTestPage : PageObjectBase<RangeTestPage>
     /// <summary>
     /// The Slider test control for testing value range adjustments.
     /// </summary>
-    public Slider<RangeTestPage> TestSlider => Slider("TestSlider");
+    public Slider<RangeTestPage> TestSlider => new(this,"TestSlider");
 
     /// <summary>
     /// The Slider value display label.
     /// </summary>
-    public Label<RangeTestPage> SliderValueLabel => Label("SliderValueLabel");
+    public Label<RangeTestPage> SliderValueLabel => new(this,"SliderValueLabel");
 
     #endregion
 
@@ -40,12 +40,12 @@ public class RangeTestPage : PageObjectBase<RangeTestPage>
     /// <summary>
     /// The Stepper test control for testing increment/decrement operations.
     /// </summary>
-    public Stepper<RangeTestPage> TestStepper => Stepper("TestStepper");
+    public Stepper<RangeTestPage> TestStepper => new(this,"TestStepper");
 
     /// <summary>
     /// The Stepper value display label.
     /// </summary>
-    public Label<RangeTestPage> StepperValueLabel => Label("StepperValueLabel");
+    public Label<RangeTestPage> StepperValueLabel => new(this,"StepperValueLabel");
 
     #endregion
 
@@ -54,7 +54,7 @@ public class RangeTestPage : PageObjectBase<RangeTestPage>
     /// <summary>
     /// The status message label showing test results and current state.
     /// </summary>
-    public Label<RangeTestPage> StatusLabel => Label("StatusLabel");
+    public Label<RangeTestPage> StatusLabel => new(this,"StatusLabel");
 
     #endregion
 
@@ -63,7 +63,7 @@ public class RangeTestPage : PageObjectBase<RangeTestPage>
     /// <summary>
     /// The Reset button to restore controls to initial state.
     /// </summary>
-    public Button<RangeTestPage> ResetButton => Button("ResetButton");
+    public Button<RangeTestPage> ResetButton => new(this,"ResetButton");
 
     #endregion
 }

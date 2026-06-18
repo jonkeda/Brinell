@@ -14,15 +14,15 @@ public class InnerContainer : ContainerBase<OuterContainer, InnerContainer>
     /// <summary>
     /// Title label in the inner container.
     /// </summary>
-    public Label<InnerContainer> InnerTitle => Label("InnerTitle");
+    public Label<InnerContainer> InnerTitle => new(this,"InnerTitle");
 
     /// <summary>
     /// The entry field in the inner container.
     /// </summary>
-    public Entry<InnerContainer> InnerEntry => Entry("InnerEntry");
+    public Entry<InnerContainer> InnerEntry => new(this,"InnerEntry");
 
     /// <summary>
     /// The action button in the inner container.
     /// </summary>
-    public Button<InnerContainer> InnerButton => Button("InnerButton");
+    public Button<InnerContainer> InnerButton => new(this,"InnerButton");
 }

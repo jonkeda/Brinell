@@ -15,12 +15,12 @@ public class OuterContainer : ContainerBase<ContainerDemoPage, OuterContainer>
     /// <summary>
     /// Title label in the outer container.
     /// </summary>
-    public Label<OuterContainer> OuterTitle => Label("OuterTitle");
+    public Label<OuterContainer> OuterTitle => new(this,"OuterTitle");
 
     /// <summary>
     /// Outer action button.
     /// </summary>
-    public Button<OuterContainer> OuterButton => Button("OuterButton");
+    public Button<OuterContainer> OuterButton => new(this,"OuterButton");
 
     /// <summary>
     /// The inner nested container.
