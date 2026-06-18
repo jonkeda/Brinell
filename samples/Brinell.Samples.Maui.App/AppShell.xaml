@@ -36,6 +36,13 @@
             ContentTemplate="{DataTemplate local:RangePage}"
             Route="RangePage" />
 
+        <!-- Selection Tab -->
+        <ShellContent
+            Title="Selection"
+            Icon="tab_about.png"
+            ContentTemplate="{DataTemplate local:SelectionPage}"
+            Route="SelectionPage" />
+
         <!-- Toggle Tab -->
         <ShellContent
             Title="Toggle"

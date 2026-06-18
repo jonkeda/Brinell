@@ -19,7 +19,8 @@ public class AppShellPage : PageObjectBase<AppShellPage>
         ButtonsTab = new TabViewControl<AppShellPage>(this, "ButtonsTab", "Buttons");
         DateTimeTab = new TabViewControl<AppShellPage>(this, "DateTimeTab", "DateTime");
         TextTab = new TabViewControl<AppShellPage>(this, "TextTab", "Text");
-
+        RangeTab = new TabViewControl<AppShellPage>(this, "RangeTab", "Range");
+        SelectionTab = new TabViewControl<AppShellPage>(this, "SelectionTab", "Selection");
 
 
         // TabViewControl uses AutomationId as primary, Title as fallback for Windows
@@ -55,9 +56,14 @@ public class AppShellPage : PageObjectBase<AppShellPage>
     /// <summary>Text page tab.</summary>
     public ITabControlObject<AppShellPage> TextTab { get; }
 
+    /// <summary>Range page tab.</summary>
+    public ITabControlObject<AppShellPage> RangeTab { get; }
+
+    /// <summary>Selection page tab.</summary>
+    public ITabControlObject<AppShellPage> SelectionTab { get; }
 
 
-    
+
     /// <summary>Basics page tab (default/first tab).</summary>
     public ITabControlObject<AppShellPage> BasicsTab { get; }
 

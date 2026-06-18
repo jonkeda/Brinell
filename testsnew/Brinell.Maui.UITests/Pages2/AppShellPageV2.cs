@@ -20,6 +20,7 @@ public class AppShellPageV2 : PageObjectBase<AppShellPageV2>
         DateTimeContent = new ShellContent<AppShellPageV2>(this, "DateTimePage", "DateTime");
         TextContent = new ShellContent<AppShellPageV2>(this, "TextPage", "Text");
         RangeContent = new ShellContent<AppShellPageV2>(this, "RangePage", "Range");
+        SelectionContent = new ShellContent<AppShellPageV2>(this, "SelectionPage", "Selection");
         BasicsContent = new ShellContent<AppShellPageV2>(this, "BasicsPage", "Basics");
         ContainersContent = new ShellContent<AppShellPageV2>(this, "ContainersPage", "Containers");
         FormsContent = new ShellContent<AppShellPageV2>(this, "FormsPage", "Forms");
@@ -71,6 +72,11 @@ public class AppShellPageV2 : PageObjectBase<AppShellPageV2>
     /// Range ShellContent control.
     /// </summary>
     public ITabControlObject<AppShellPageV2> RangeContent { get; }
+
+    /// <summary>
+    /// Selection ShellContent control.
+    /// </summary>
+    public ITabControlObject<AppShellPageV2> SelectionContent { get; }
 
     /// <summary>
     /// Basics ShellContent control.
