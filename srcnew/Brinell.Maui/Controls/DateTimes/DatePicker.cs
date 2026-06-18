@@ -194,13 +194,10 @@ public class DatePicker<TScope> : ControlBase<TScope>
     /// <returns>The containing scope for fluent chaining.</returns>
     public TScope SetDate(System.DateTime? date, int? timeoutMs = null)
     {
-        if (date == null)
-            return ContainingScope;
-
-        return RunWithElement(nameof(SetDate), date, timeoutMs, element =>
+        return RunSetWithElement(date, element =>
         {
-            SetDateCore(element, date.Value);
-        });
+            SetDateCore(element, date!.Value);
+        }, timeoutMs);
     }
 
     /// <summary>

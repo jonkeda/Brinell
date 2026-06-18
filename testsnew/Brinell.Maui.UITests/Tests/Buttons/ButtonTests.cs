@@ -86,8 +86,6 @@ public class ButtonTests
     public Task Button_MultipleTaps_IncrementsCount()
     {
         var page = GetPage();
-        // Arrange
-        page.IsLoaded(timeoutMs: 5000);
 
         // Act
         page.TestButton.Click()
@@ -107,7 +105,6 @@ public class ButtonTests
     {
         var page = GetPage();
         // Arrange
-        page.IsLoaded(timeoutMs: 5000);
 
         // Act
         page.TestButton.Click()

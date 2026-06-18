@@ -1,5 +1,6 @@
 using Brinell.Core.Abstractions.Controls;
 using Brinell.Core.Utilities;
+using System.Runtime.CompilerServices;
 
 namespace Brinell.Maui.Controls;
 
@@ -63,74 +64,137 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
     /// Gets the polling interval in milliseconds.
     /// </summary>
     protected int PollingIntervalMs => Context.Timeouts.PollingInterval;
-    
-    #region Polling
-    
-    /// <summary>
-    /// Polls a condition until it returns true or timeout is reached.
-    /// </summary>
-    /// <param name="condition">The condition to check.</param>
-    /// <param name="timeoutMs">Maximum time to wait in milliseconds.</param>
-    /// <returns>True if condition was met, false if timeout reached.</returns>
-    protected bool Poll(Func<bool> condition, int timeoutMs)
+
+    #region RunPoll
+
+    private bool RunPoll(string? value, Func<bool> condition,
+        int? timeoutMs = null, [CallerMemberName] string? caller = null)
     {
         var stopwatch = Stopwatch.StartNew();
-        
-        while (stopwatch.ElapsedMilliseconds < timeoutMs)
+         Logger?.LogEntry(TestName, PageName, ControlId, caller ?? string.Empty, value);
+
+        var ok = false;
+        Exception? lastException = null;
+        while (stopwatch.ElapsedMilliseconds < (timeoutMs ?? DefaultTimeoutMs))
         {
             try
             {
                 if (condition())
                 {
-                    return true;
+                    ok = true;
+                    break;
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                lastException = ex;
                 // Polling expects transient failures (stale elements, not-yet-rendered)
             }
 
             WaitHelper.Pause(PollingIntervalMs);
         }
+        stopwatch.Stop();
+        if (ok)
+        {
+            Logger?.LogExit(TestName, PageName, ControlId, caller ?? string.Empty,
+                LogResult.Success, (int)stopwatch.ElapsedMilliseconds);
 
-        // Final check - let exceptions propagate so callers see the real failure
-        return condition();
-    }
-    
-    #endregion
-    
-    #region ScrollIntoView
-    
-    /// <summary>
-    /// Scrolls the element into the visible viewport if not already visible.
-    /// </summary>
-    /// <param name="timeoutMs">Optional timeout for finding the element.</param>
-    /// <returns>The containing scope for fluent chaining.</returns>
-    public TScope ScrollIntoView(int? timeoutMs = null)
-    {
-        return RunWithElement(nameof(ScrollIntoView), timeoutMs, element =>
-        {
-            ScrollIntoViewCore(element);
-        }, skipEnsureVisible: true);
-    }
-    
-    /// <summary>
-    /// Core scroll implementation. Uses element's ScrollIntoView method.
-    /// </summary>
-    /// <param name="element">The element to scroll into view.</param>
-    protected virtual void ScrollIntoViewCore(IMauiElement element)
-    {
-        if (IsVisibleCore(element) == true)
-        {
-            return;
         }
-        element.ScrollIntoView();
+        else
+        {
+            Logger?.LogExit(TestName, PageName, ControlId, caller ?? string.Empty,
+                LogResult.Error, (int)stopwatch.ElapsedMilliseconds, lastException?.Message);
+
+            if (lastException != null)
+            {
+                throw lastException;
+            }
+        }
+        return ok;
     }
-    
+
+    protected bool RunCheck(Func<bool> operation, int? timeoutMs = null,
+        [CallerMemberName] string? caller = null)
+    {
+        return RunPoll(null, () =>
+        {
+            return operation();
+        }, timeoutMs, caller);
+    }
+
+    protected bool RunCheckWithElement(Func<IMauiElement, bool> coreOperation,
+        int? timeoutMs = null, [CallerMemberName] string? caller = null)
+    {
+        return RunPoll(null, () =>
+        {
+            var element = FindElement();
+            EnsureVisible(element);
+            return coreOperation(element);
+        }, timeoutMs, caller);
+    }
+
+    protected TScope RunDo(Action operation, int? timeoutMs = null,
+        [CallerMemberName] string? caller = null)
+    {
+        RunPoll(null, () =>
+        {
+            operation();
+            return true;
+        }, timeoutMs, caller);
+        return ContainingScope;
+    }
+
+    protected TScope RunDoWithElement(Action<IMauiElement> coreOperation,
+        int? timeoutMs = null, bool doEnsureVisible = true, [CallerMemberName] string? caller = null)
+    {
+        RunPoll(null, () =>
+        {
+            var element = FindElement();
+            if (doEnsureVisible)
+            {
+                EnsureVisible(element);
+            }
+            coreOperation(element);
+            return true;
+        }, timeoutMs, caller);
+        return ContainingScope;
+    }
+
+    protected TScope RunSetWithElement<T>(T? value, Action<IMauiElement> coreOperation, 
+         int? timeoutMs = null, [CallerMemberName] string? caller = null)
+    {
+        if (value == null)
+        {
+            return ContainingScope;
+        }
+        RunPoll(value?.ToString(), () =>
+        {
+            var element = FindElement();
+            EnsureVisible(element);
+            coreOperation(element);
+            return true;
+        }, timeoutMs, caller);
+        return ContainingScope;
+    }
+
+    protected T? RunGetWithElement<T>(Func<IMauiElement, T> coreOperation,
+        int? timeoutMs = null, [CallerMemberName] string? caller = null)
+    {
+        var value = default(T);
+        RunPoll(null, () =>
+        {
+            var element = FindElement();
+            EnsureVisible(element);
+            value = coreOperation(element);
+            return true;
+        }, timeoutMs, caller);
+        return value;
+    }
+
     #endregion
-    
+
     #region Element Finding
-    
+
     /// <summary>
     /// Tries to find the element within the scope.
     /// </summary>
@@ -145,7 +209,7 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
     /// </summary>
     /// <returns>The element.</returns>
     /// <exception cref="ElementNotFoundException">Thrown when element is not found.</exception>
-    protected IMauiElement FindElement()
+    protected virtual IMauiElement FindElement()
     {
         return _mauiScope.FindElement(Locator);
     }
@@ -216,38 +280,7 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
     private string ControlId => Locator.Value;
     private ITestLogger? Logger => Context.Logger;
     
-    /// <summary>
-    /// Run operation without a value parameter.
-    /// </summary>
-    protected void Run(string action, Action operation)
-    {
-        Run<object?>(action, null, operation);
-    }
-    
-    /// <summary>
-    /// Run operation with a typed value parameter.
-    /// </summary>
-    protected void Run<T>(string action, T? value, Action operation)
-    {
-        var stopwatch = Stopwatch.StartNew();
-        Logger?.LogEntry(TestName, PageName, ControlId, action, value?.ToString());
-        
-        try
-        {
-            operation();
-            stopwatch.Stop();
-            Logger?.LogExit(TestName, PageName, ControlId, action, 
-                LogResult.Success, (int)stopwatch.ElapsedMilliseconds);
-        }
-        catch (Exception ex)
-        {
-            stopwatch.Stop();
-            Logger?.LogExit(TestName, PageName, ControlId, action, 
-                LogResult.Error, (int)stopwatch.ElapsedMilliseconds, ex.Message);
-            throw;
-        }
-    }
-    
+   
     /// <summary>
     /// Run operation that returns a value.
     /// </summary>
@@ -315,73 +348,7 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
                 message ?? $"Expected '{expected}' but got '{actual}'");
         }
     }
-    
-    /// <summary>
-    /// Run operation that finds element first, then executes core logic.
-    /// Logging wraps the entire operation including element finding.
-    /// Automatically scrolls element into view before action.
-    /// </summary>
-    /// <param name="action">The action name for logging.</param>
-    /// <param name="timeoutMs">Optional timeout for element finding.</param>
-    /// <param name="coreOperation">The core operation to execute with the found element.</param>
-    /// <param name="skipEnsureVisible">If true, skips automatic scroll into view (used by ScrollIntoView itself).</param>
-    /// <returns>The containing scope for fluent chaining.</returns>
-    protected TScope RunWithElement(string action, int? timeoutMs, Action<IMauiElement> coreOperation, bool skipEnsureVisible = false)
-    {
-        Run(action, () =>
-        {
-            var element = FindElementWithWait(timeoutMs ?? DefaultTimeoutMs);
-            if (!skipEnsureVisible)
-            {
-                EnsureVisible(element);
-            }
-            coreOperation(element);
-        });
-        return ContainingScope;
-    }
-    
-    /// <summary>
-    /// Run operation with value that finds element first, then executes core logic.
-    /// Automatically scrolls element into view before action.
-    /// </summary>
-    /// <typeparam name="TValue">The type of the value parameter.</typeparam>
-    /// <param name="action">The action name for logging.</param>
-    /// <param name="value">The value to log.</param>
-    /// <param name="timeoutMs">Optional timeout for element finding.</param>
-    /// <param name="coreOperation">The core operation to execute with the found element.</param>
-    /// <returns>The containing scope for fluent chaining.</returns>
-    protected TScope RunWithElement<TValue>(string action, TValue? value, int? timeoutMs, 
-        Action<IMauiElement> coreOperation)
-    {
-        Run(action, value, () =>
-        {
-            var element = FindElementWithWait(timeoutMs ?? DefaultTimeoutMs);
-            EnsureVisible(element);
-            coreOperation(element);
-        });
-        return ContainingScope;
-    }
-    
-    /// <summary>
-    /// Run operation that finds element first, then executes core logic returning a result.
-    /// Automatically scrolls element into view before action.
-    /// </summary>
-    /// <typeparam name="TResult">The return type.</typeparam>
-    /// <param name="action">The action name for logging.</param>
-    /// <param name="timeoutMs">Optional timeout for element finding.</param>
-    /// <param name="coreOperation">The core operation to execute with the found element.</param>
-    /// <returns>The result of the operation.</returns>
-    protected TResult RunWithElement<TResult>(string action, int? timeoutMs, 
-        Func<IMauiElement, TResult> coreOperation)
-    {
-        return Run(action, () =>
-        {
-            var element = FindElementWithWait(timeoutMs ?? DefaultTimeoutMs);
-            EnsureVisible(element);
-            return coreOperation(element);
-        });
-    }
-    
+   
     #endregion
     
     #region Basic Interactions
@@ -392,12 +359,12 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
     /// </summary>
     /// <param name="keys">The keys to send.</param>
     /// <returns>The containing scope for fluent chaining.</returns>
-    public virtual TScope SendKeys(string keys)
+    public virtual TScope SendKeys(string keys, int? timeoutMs = null)
     {
-        return RunWithElement(nameof(SendKeys), keys, null, element =>
+        return RunSetWithElement(keys, element =>
         {
             SendKeysCore(element, keys);
-        });
+        }, timeoutMs);
     }
     
     /// <summary>
@@ -445,9 +412,9 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
         if (expected == null)
             return true;
 
-        return Poll(
-            () => IsVisible() == expected.Value,
-            timeoutMs ?? DefaultTimeoutMs);
+        return RunCheckWithElement(
+            element => IsVisibleCore(element) == expected.Value,
+            timeoutMs);
     }
 
     /// <summary>
@@ -519,15 +486,12 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
 
     #region Enabled
 
-    protected virtual void EnsureEnabledCore(IMauiElement element, int timeout)
+    protected virtual void EnsureEnabledCore(IMauiElement element)
     {
         if (IsEnabledCore(element) != true)
         {
-            if (!WaitEnabledCore(element, true, timeout))
-            {
-                throw new TimeoutException(
-                    $"Element was not enabled within {timeout}ms. Locator: {Locator}");
-            }
+            throw new TimeoutException(
+                $"Element was not enabled. Locator: {Locator}");
         }
     }
 
@@ -543,7 +507,6 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
         return element.Enabled;
     }
     
-    /// <inheritdoc />
     public bool? IsEnabled()
     {
         return IsEnabledCore(TryFindElement());
@@ -567,12 +530,11 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
     /// <inheritdoc />
     public bool WaitEnabled(bool? expected, int? timeoutMs = null)
     {
-        // Nullable skip pattern
         if (expected == null) return true;
         
-        return Poll(
-            () => IsEnabled() == expected.Value,
-            timeoutMs ?? DefaultTimeoutMs);
+        return RunCheckWithElement(
+            element => IsEnabledCore(element) == expected.Value,
+            timeoutMs);
     }
 
     /// <summary>
@@ -610,10 +572,10 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
     {
         // Nullable skip pattern
         if (expected == null) return true;
-        
-        return Poll(
-            () => IsExists() == expected.Value,
-            timeoutMs ?? DefaultTimeoutMs);
+
+        return RunCheckWithElement(
+            ele => IsExists() == expected.Value,
+            timeoutMs);
     }
 
     /// <summary>
@@ -652,36 +614,24 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
     /// </summary>
     /// <param name="element">The pre-found element (may be null).</param>
     /// <returns>The element text, or null if element is null.</returns>
-    protected virtual string? GetTextCore(IMauiElement? element)
+    protected virtual string? GetTextCore(IMauiElement element)
     {
-        if (element == null) return null;
         return element.Text;
     }
     
-    /// <inheritdoc />
     public string? GetText(int? timeoutMs = null)
     {
-        // Optionally wait for element to exist first
-        if (timeoutMs.HasValue)
-        {
-            WaitExists(true, timeoutMs);
-        }
-        
-        return GetTextCore(TryFindElement());
+        return RunGetWithElement(element => GetTextCore(element), timeoutMs);
     }
     
-    /// <inheritdoc />
     public bool WaitText(string? expected, int? timeoutMs = null)
     {
-        // Nullable skip pattern
         if (expected == null) return true;
         
-        return Poll(
-            () => GetText() == expected,
-            timeoutMs ?? DefaultTimeoutMs);
+        return RunCheckWithElement(
+            element => GetTextCore(element) == expected, timeoutMs);
     }
     
-    /// <inheritdoc />
     public TScope AssertText(string? expected, string? message = null, int? timeoutMs = null)
     {
         // Nullable skip pattern
@@ -697,15 +647,14 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
         return ContainingScope;
     }
     
-    /// <inheritdoc />
     public TScope AssertTextContains(string? expected, string? message = null, int? timeoutMs = null)
     {
         // Nullable skip pattern
         if (expected == null) return ContainingScope;
         
-        var passed = Poll(
+        var passed = RunCheck(
             () => GetText()?.Contains(expected) == true,
-            timeoutMs ?? DefaultTimeoutMs);
+            timeoutMs);
         
         if (!passed)
         {
@@ -717,15 +666,14 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
         return ContainingScope;
     }
     
-    /// <inheritdoc />
     public TScope AssertTextStartsWith(string? expected, string? message = null, int? timeoutMs = null)
     {
         // Nullable skip pattern
         if (expected == null) return ContainingScope;
         
-        var passed = Poll(
+        var passed = RunCheck(
             () => GetText()?.StartsWith(expected) == true,
-            timeoutMs ?? DefaultTimeoutMs);
+            timeoutMs);
         
         if (!passed)
         {
@@ -737,15 +685,14 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
         return ContainingScope;
     }
     
-    /// <inheritdoc />
     public TScope AssertTextEndsWith(string? expected, string? message = null, int? timeoutMs = null)
     {
         // Nullable skip pattern
         if (expected == null) return ContainingScope;
         
-        var passed = Poll(
+        var passed = RunCheck(
             () => GetText()?.EndsWith(expected) == true,
-            timeoutMs ?? DefaultTimeoutMs);
+            timeoutMs);
         
         if (!passed)
         {
@@ -757,20 +704,19 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
         return ContainingScope;
     }
     
-    /// <inheritdoc />
     public TScope AssertTextEmpty(bool? expected, string? message = null, int? timeoutMs = null)
     {
         // Nullable skip pattern
         if (expected == null) return ContainingScope;
         
-        var passed = Poll(
+        var passed = RunCheck(
             () => 
             {
                 var text = GetText();
                 var isEmpty = string.IsNullOrEmpty(text);
                 return isEmpty == expected.Value;
             },
-            timeoutMs ?? DefaultTimeoutMs);
+            timeoutMs);
         
         if (!passed)
         {
@@ -786,14 +732,42 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
     
     #region Attributes
     
-    /// <inheritdoc />
-    public string? GetAttribute(string name)
+    public string? GetAttribute(string name, int? timeoutMs = null)
     {
-        var element = TryFindElement();
-        if (element == null) return null;
-        
-        return element.GetAttribute(name);
+        return RunGetWithElement(element => element.GetAttribute(name), timeoutMs);
     }
-    
+
     #endregion
+
+
+    #region ScrollIntoView
+
+    /// <summary>
+    /// Scrolls the element into the visible viewport if not already visible.
+    /// </summary>
+    /// <param name="timeoutMs">Optional timeout for finding the element.</param>
+    /// <returns>The containing scope for fluent chaining.</returns>
+    public TScope ScrollIntoView(int? timeoutMs = null)
+    {
+        return RunDoWithElement(element =>
+        {
+            ScrollIntoViewCore(element);
+        }, timeoutMs, true);
+    }
+
+    /// <summary>
+    /// Core scroll implementation. Uses element's ScrollIntoView method.
+    /// </summary>
+    /// <param name="element">The element to scroll into view.</param>
+    protected virtual void ScrollIntoViewCore(IMauiElement element)
+    {
+        element.ScrollIntoView();
+    }
+
+    #endregion
+
+    protected void EnsureSettableCore(IMauiElement element)
+    {
+        EnsureEnabledCore(element);
+    }
 }

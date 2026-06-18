@@ -31,7 +31,7 @@ public class Entry<TScope> : ControlBase<TScope>, IEditableTextControlObject<TSc
     public bool WaitTextContains(string? expected, int? timeoutMs = null)
     {
         if (expected == null) return true;
-        return Poll(() => GetText()?.Contains(expected) == true, timeoutMs ?? DefaultTimeoutMs);
+        return RunCheck(() => GetText()?.Contains(expected) == true, timeoutMs);
     }
 
     public TScope AssertTextMatches(string? pattern, string? message = null, int? timeoutMs = null)
@@ -41,11 +41,11 @@ public class Entry<TScope> : ControlBase<TScope>, IEditableTextControlObject<TSc
         var regex = new Regex(pattern);
         return RunAssert(nameof(AssertTextMatches), pattern, () =>
         {
-            Poll(() =>
+            RunCheck(() =>
             {
                 var text = GetText();
                 return text != null && regex.IsMatch(text);
-            }, timeoutMs ?? DefaultTimeoutMs);
+            }, timeoutMs);
             return GetText();
         }, (actual, exp) => actual != null && regex.IsMatch(actual),
             message ?? $"Expected text to match pattern '{pattern}'. Locator: {Locator}");
@@ -63,13 +63,11 @@ public class Entry<TScope> : ControlBase<TScope>, IEditableTextControlObject<TSc
     /// <returns>The containing scope for fluent chaining.</returns>
     public TScope Enter(string? text, int? timeoutMs = null)
     {
-        if (text == null) return ContainingScope;
-
-        return RunWithElement(nameof(Enter), text, timeoutMs, element =>
+        return RunSetWithElement(text, element =>
         {
             CheckEnabledCore(element, timeoutMs);
-            EnterCore(element, text, timeoutMs);
-        });
+            EnterCore(element, text!, timeoutMs);
+        }, timeoutMs);
     }
 
     /// <summary>
@@ -79,11 +77,11 @@ public class Entry<TScope> : ControlBase<TScope>, IEditableTextControlObject<TSc
     /// <returns>The containing scope for fluent chaining.</returns>
     public TScope Clear(int? timeoutMs = null)
     {
-        return RunWithElement(nameof(Clear), timeoutMs, element =>
+        return RunDoWithElement(element =>
         {
             CheckEnabledCore(element, timeoutMs);
             ClearCore(element, timeoutMs);
-        });
+        }, timeoutMs);
     }
 
     /// <summary>
@@ -106,13 +104,11 @@ public class Entry<TScope> : ControlBase<TScope>, IEditableTextControlObject<TSc
     /// <returns>The containing scope for fluent chaining.</returns>
     public TScope SetText(string? text, int? timeoutMs = null)
     {
-        if (text == null) return ContainingScope;
-
-        return RunWithElement(nameof(SetText), text, timeoutMs, element =>
+        return RunSetWithElement(text, element =>
         {
             CheckEnabledCore(element, timeoutMs);
-            SetTextCore(element, text, timeoutMs);
-        });
+            SetTextCore(element, text!, timeoutMs);
+        }, timeoutMs);
     }
 
     /// <summary>
@@ -189,13 +185,11 @@ public class Entry<TScope> : ControlBase<TScope>, IEditableTextControlObject<TSc
     /// <returns>The containing scope for fluent chaining.</returns>
     public TScope Append(string? text, int? timeoutMs = null)
     {
-        if (text == null) return ContainingScope;
-
-        return RunWithElement(nameof(Append), text, timeoutMs, element =>
+        return RunSetWithElement(text, element =>
         {
             CheckEnabledCore(element, timeoutMs);
-            AppendCore(element, text, timeoutMs);
-        });
+            AppendCore(element, text!, timeoutMs);
+        }, timeoutMs);
     }
 
     #endregion

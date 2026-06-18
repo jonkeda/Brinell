@@ -104,5 +104,5 @@ public interface IControlObject<TScope>
     /// Get an attribute value from the element.
     /// Returns null if attribute or element doesn't exist.
     /// </summary>
-    string? GetAttribute(string name);
+    string? GetAttribute(string name, int? timeoutMs);
 }

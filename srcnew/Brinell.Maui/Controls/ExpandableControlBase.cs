@@ -35,28 +35,28 @@ public abstract class ExpandableControlBase<TScope> : ClickableControlBase<TScop
     /// <inheritdoc />
     public TScope Expand(int? timeoutMs = null)
     {
-        return RunWithElement(nameof(Expand), timeoutMs, element =>
+        return RunDoWithElement(element =>
         {
             ExpandCore(element);
-        });
+        }, timeoutMs);
     }
     
     /// <inheritdoc />
     public TScope Collapse(int? timeoutMs = null)
     {
-        return RunWithElement(nameof(Collapse), timeoutMs, element =>
+        return RunDoWithElement(element =>
         {
             CollapseCore(element);
-        });
+        }, timeoutMs);
     }
     
     /// <inheritdoc />
     public TScope ToggleExpanded(int? timeoutMs = null)
     {
-        return RunWithElement(nameof(ToggleExpanded), timeoutMs, element =>
+        return RunDoWithElement(element =>
         {
             ToggleExpandedCore(element);
-        });
+        }, timeoutMs);
     }
     
     #endregion

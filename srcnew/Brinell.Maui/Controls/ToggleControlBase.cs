@@ -1,5 +1,3 @@
-using Brinell.Maui.Interfaces;
-
 namespace Brinell.Maui.Controls;
 
 /// <summary>
@@ -15,7 +13,7 @@ public abstract class ToggleControlBase<TScope> : ClickableControlBase<TScope>, 
     /// </summary>
     /// <param name="scope">The scope (page or container) providing element finding.</param>
     /// <param name="locator">The locator for the element.</param>
-    public ToggleControlBase(IMauiScope<TScope> scope, Locator locator)
+    protected ToggleControlBase(IMauiScope<TScope> scope, Locator locator)
         : base(scope, locator)
     {
     }
@@ -26,7 +24,7 @@ public abstract class ToggleControlBase<TScope> : ClickableControlBase<TScope>, 
     /// </summary>
     /// <param name="scope">The scope (page or container) providing element finding.</param>
     /// <param name="locatorValue">The locator value (e.g., automation ID, name).</param>
-    public ToggleControlBase(IMauiScope<TScope> scope, string locatorValue)
+    protected ToggleControlBase(IMauiScope<TScope> scope, string locatorValue)
         : base(scope, locatorValue)
     {
     }
@@ -36,10 +34,10 @@ public abstract class ToggleControlBase<TScope> : ClickableControlBase<TScope>, 
     /// <inheritdoc />
     public TScope Toggle(int? timeoutMs = null)
     {
-        return RunWithElement(nameof(Toggle), timeoutMs, element =>
+        return RunDoWithElement(element =>
         {
             ToggleCore(element);
-        });
+        }, timeoutMs);
     }
     
     /// <inheritdoc />
@@ -59,10 +57,10 @@ public abstract class ToggleControlBase<TScope> : ClickableControlBase<TScope>, 
     {
         if (@checked == null) return ContainingScope;
         
-        return RunWithElement(nameof(SetChecked), @checked, timeoutMs, element =>
+        return RunSetWithElement(@checked, element =>
         {
             SetCheckedCore(element, @checked.Value);
-        });
+        }, timeoutMs);
     }
     
     #endregion

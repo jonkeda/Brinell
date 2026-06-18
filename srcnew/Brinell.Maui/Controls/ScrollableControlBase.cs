@@ -37,37 +37,37 @@ public abstract class ScrollableControlBase<TScope> : ControlBase<TScope>, IScro
     /// <inheritdoc />
     public TScope ScrollToTop(int? timeoutMs = null)
     {
-        return RunWithElement(nameof(ScrollToTop), timeoutMs, element =>
+        return RunDoWithElement(element =>
         {
             ScrollToTopCore(element);
-        });
+        }, timeoutMs);
     }
     
     /// <inheritdoc />
     public TScope ScrollToEnd(int? timeoutMs = null)
     {
-        return RunWithElement(nameof(ScrollToEnd), timeoutMs, element =>
+        return RunDoWithElement(element =>
         {
             ScrollToEndCore(element);
-        });
+        }, timeoutMs);
     }
     
     /// <inheritdoc />
     public TScope ScrollBy(int deltaX, int deltaY, int? timeoutMs = null)
     {
-        return RunWithElement(nameof(ScrollBy), timeoutMs, element =>
+        return RunDoWithElement( element =>
         {
             ScrollByCore(element, deltaX, deltaY);
-        });
+        }, timeoutMs);
     }
     
     /// <inheritdoc />
     public TScope ScrollTo(Locator locator, int? timeoutMs = null)
     {
-        return RunWithElement(nameof(ScrollTo), timeoutMs, element =>
+        return RunDoWithElement(element =>
         {
             ScrollToCore(element, locator, timeoutMs ?? DefaultTimeoutMs);
-        });
+        }, timeoutMs);
     }
     
     /// <inheritdoc />
@@ -84,10 +84,10 @@ public abstract class ScrollableControlBase<TScope> : ControlBase<TScope>, IScro
     /// <inheritdoc />
     public TScope SetScrollPosition(double percent, int? timeoutMs = null)
     {
-        return RunWithElement(nameof(SetScrollPosition), percent, timeoutMs, element =>
+        return RunSetWithElement(percent, element =>
         {
             SetScrollPositionCore(element, percent);
-        });
+        }, timeoutMs);
     }
     
     /// <inheritdoc />
@@ -378,14 +378,14 @@ public abstract class ScrollableControlBase<TScope> : ControlBase<TScope>, IScro
     {
         if (expected == null) return true;
         
-        return Poll(
+        return RunCheck(
             () =>
             {
                 var actual = GetScrollPosition();
                 if (actual == null) return false;
                 return Math.Abs(actual.Value - expected.Value) <= tolerance;
             },
-            timeoutMs ?? DefaultTimeoutMs);
+            timeoutMs);
     }
     
     #endregion

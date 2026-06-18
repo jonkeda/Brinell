@@ -47,21 +47,17 @@ public abstract class RangeControlBase<TScope> : ControlBase<TScope>, IRangeCont
     {
         if (value == null) return ContainingScope;
         
-        return RunWithElement(nameof(SetValue), value, timeoutMs, element =>
+        return RunSetWithElement(value, element =>
         {
+            EnsureSettableCore(element);
             SetValueCore(element, value.Value);
-        });
+        }, timeoutMs);
     }
-    
+
     /// <inheritdoc />
     public double? GetMinimum(int? timeoutMs = null)
     {
-        if (timeoutMs.HasValue)
-        {
-            WaitExists(true, timeoutMs);
-        }
-        
-        return GetMinimumCore(TryFindElement());
+        return RunGetWithElement(element => GetMinimumCore(element));
     }
     
     /// <inheritdoc />
@@ -89,19 +85,19 @@ public abstract class RangeControlBase<TScope> : ControlBase<TScope>, IRangeCont
     /// <inheritdoc />
     public TScope Increment(int? timeoutMs = null)
     {
-        return RunWithElement(nameof(Increment), timeoutMs, element =>
+        return RunDoWithElement(element =>
         {
             IncrementCore(element);
-        });
+        }, timeoutMs);
     }
     
     /// <inheritdoc />
     public TScope Decrement(int? timeoutMs = null)
     {
-        return RunWithElement(nameof(Decrement), timeoutMs, element =>
+        return RunDoWithElement(element =>
         {
             DecrementCore(element);
-        });
+        }, timeoutMs);
     }
     
     #endregion

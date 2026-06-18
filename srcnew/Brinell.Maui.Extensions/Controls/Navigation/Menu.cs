@@ -42,10 +42,10 @@ public class Menu<TScope> : ControlBase<TScope>
     /// <returns>The containing scope for fluent chaining.</returns>
     public TScope Open(int? timeoutMs = null)
     {
-        return RunWithElement(nameof(Open), timeoutMs, element =>
+        return RunDoWithElement(element =>
         {
             element.Click();
-        });
+        }, timeoutMs);
     }
 
     /// <summary>
@@ -57,11 +57,11 @@ public class Menu<TScope> : ControlBase<TScope>
     /// <returns>The containing scope for fluent chaining.</returns>
     public TScope ClickMenuItem(Locator itemLocator, int? timeoutMs = null)
     {
-        return RunWithElement(nameof(ClickMenuItem), timeoutMs, menuElement =>
+        return RunDoWithElement(menuElement =>
         {
             var menuItem = menuElement.FindElement(itemLocator, timeoutMs ?? DefaultTimeoutMs);
             menuItem.Click();
-        });
+        }, timeoutMs);
     }
 
     #endregion

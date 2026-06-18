@@ -70,8 +70,6 @@ public class PickerTests
     public Task Picker_SelectByIndex_UpdatesStatus()
     {
         var page = GetPage();
-        // Arrange
-        page.IsLoaded(timeoutMs: 5000);
 
         // Act & Assert
         page.TestPicker.SelectByIndex(0)
@@ -88,8 +86,6 @@ public class PickerTests
     public Task Picker_SelectByText_UpdatesStatus()
     {
         var page = GetPage();
-        // Arrange
-        page.IsLoaded(timeoutMs: 5000);
 
         // Act & Assert
         page.TestPicker.SelectByText("Option 1")
@@ -106,8 +102,6 @@ public class PickerTests
     public Task Picker_MultipleSelections_UpdatesStatus()
     {
         var page = GetPage();
-        // Arrange
-        page.IsLoaded(timeoutMs: 5000);
 
         // Act & Assert
         page.TestPicker.SelectByIndex(0)
@@ -126,8 +120,6 @@ public class PickerTests
     public Task Picker_Reset_ClearsSelection()
     {
         var page = GetPage();
-        // Arrange
-        page.IsLoaded(timeoutMs: 5000);
 
         // Act
         page.TestPicker.SelectByIndex(1)
@@ -146,8 +138,6 @@ public class PickerTests
     public Task Picker_GetSelectedText_ReturnsCorrectValue()
     {
         var page = GetPage();
-        // Arrange
-        page.IsLoaded(timeoutMs: 5000);
 
         // Act
         page.TestPicker.SelectByIndex(0);

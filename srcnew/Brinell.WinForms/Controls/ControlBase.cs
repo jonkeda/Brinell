@@ -316,7 +316,7 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
 
     #region IControlObject<TScope> - Attribute
 
-    public string? GetAttribute(string name)
+    public string? GetAttribute(string name, int? timeoutMs)
     {
         try
         {

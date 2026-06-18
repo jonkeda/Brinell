@@ -34,10 +34,10 @@ public abstract class RefreshableControlBase<TScope> : ControlBase<TScope>, IRef
     /// <inheritdoc />
     public TScope PullToRefresh(int? timeoutMs = null)
     {
-        return RunWithElement(nameof(PullToRefresh), timeoutMs, element =>
+        return RunDoWithElement(element =>
         {
             PullToRefreshCore(element);
-        });
+        }, timeoutMs);
     }
     
     #endregion
@@ -120,14 +120,9 @@ public abstract class RefreshableControlBase<TScope> : ControlBase<TScope>, IRef
     public bool WaitRefreshing(bool? expected, int? timeoutMs = null)
     {
         if (expected == null) return true;
-        
-        var element = TryFindElement();
-        if (element == null)
-        {
-            return false;
-        }
-        
-        return WaitRefreshingCore(element, expected.Value, timeoutMs ?? DefaultTimeoutMs);
+        return RunCheckWithElement(
+            element => IsRefreshingCore(element) == expected,
+            timeoutMs);
     }
     
     #endregion
@@ -150,8 +145,7 @@ public abstract class RefreshableControlBase<TScope> : ControlBase<TScope>, IRef
         
         return RunAssert(nameof(AssertRefreshing), expected, () =>
         {
-            WaitRefreshing(expected, timeoutMs);
-            return IsRefreshing();
+            return WaitRefreshing(expected, timeoutMs);
         }, message ?? $"Expected element {(expected.Value ? "to be refreshing" : "not to be refreshing")}. Locator: {Locator}");
     }
     

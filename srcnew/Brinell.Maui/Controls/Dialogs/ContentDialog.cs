@@ -102,7 +102,7 @@ public class ContentDialog<TParent> : ContainerBase<TParent, ContentDialog<TPare
         if (!ElementActivator.TryActivate(button))
             return false;
 
-        return Poll(
+        return RunCheck(
             () => !Context.Driver.TryFindPopupElement(Locator.ByControlType("button"), out var candidate)
                   || candidate == null
                   || !MatchesText(candidate, buttonText),
@@ -117,7 +117,7 @@ public class ContentDialog<TParent> : ContainerBase<TParent, ContentDialog<TPare
         if (!ElementActivator.TryActivate(button))
             return false;
 
-        return Poll(
+        return RunCheck(
             () => !Context.Driver.TryFindPopupElement(locator, out _),
             timeoutMs);
     }
@@ -129,7 +129,7 @@ public class ContentDialog<TParent> : ContainerBase<TParent, ContentDialog<TPare
         if (button == null || !ElementActivator.TryActivate(button))
             return false;
 
-        return Poll(
+        return RunCheck(
             () => FindButtonByText(Parent.FindElements(locator), buttonText) == null,
             timeoutMs);
     }
@@ -140,7 +140,7 @@ public class ContentDialog<TParent> : ContainerBase<TParent, ContentDialog<TPare
         if (!button.TryClick(timeoutMs))
             return false;
 
-        return Poll(
+        return RunCheck(
             () => Parent.TryFindElement(locator) == null,
             timeoutMs);
     }

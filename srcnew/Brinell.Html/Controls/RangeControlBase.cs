@@ -19,17 +19,17 @@ public abstract class RangeControlBase<TScope> : FocusableControlBase<TScope>, I
 
     public string? GetMin()
     {
-        return GetAttribute("min");
+        return GetAttribute("min", null);
     }
 
     public string? GetMax()
     {
-        return GetAttribute("max");
+        return GetAttribute("max", null);
     }
 
     public string? GetStep()
     {
-        return GetAttribute("step");
+        return GetAttribute("step", null);
     }
 
     public string GetValue()

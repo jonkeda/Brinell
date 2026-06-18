@@ -16,6 +16,7 @@
             <converters:PlayPauseConverter x:Key="PlayPauseConverter" />
             <converters:InverseBoolConverter x:Key="InverseBoolConverter" />
             <converters:BoolToFolderIconConverter x:Key="BoolToFolderIconConverter" />
+            <converters:DoubleToProgressConverter x:Key="DoubleToProgressConverter" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

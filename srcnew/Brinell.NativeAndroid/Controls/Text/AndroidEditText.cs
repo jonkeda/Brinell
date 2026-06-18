@@ -54,7 +54,7 @@ public class AndroidEditText<TScope> : AndroidText<TScope>, IEditableTextControl
     }
 
     public string? GetPlaceholder()
-        => GetAttribute("hint");
+        => GetAttribute("hint", null);
 
     public bool WaitPlaceholder(string? expected, int? timeoutMs = null)
     {

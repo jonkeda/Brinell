@@ -34,19 +34,19 @@ public abstract class FocusableControlBase<TScope> : ControlBase<TScope>, IFocus
     /// <inheritdoc />
     public TScope Focus(int? timeoutMs = null)
     {
-        return RunWithElement(nameof(Focus), timeoutMs, element =>
+        return RunDoWithElement(element =>
         {
             FocusCore(element);
-        });
+        }, timeoutMs);
     }
     
     /// <inheritdoc />
     public TScope Blur(int? timeoutMs = null)
     {
-        return RunWithElement(nameof(Blur), timeoutMs, element =>
+        return RunDoWithElement(element =>
         {
             BlurCore(element);
-        });
+        }, timeoutMs);
     }
     
     #endregion

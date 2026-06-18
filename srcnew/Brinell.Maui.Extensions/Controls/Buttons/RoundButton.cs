@@ -29,7 +29,7 @@ public class RoundButton<TScope> : ClickableControlBase<TScope>
     /// <inheritdoc />
     protected override void ClickCore(IMauiElement element, int? timeoutMs = null)
     {
-        EnsureClickableCore(element, timeoutMs);
+        EnsureClickableCore(element);
 
         var target = ElementSearch.FindChildByAutomationId(MauiScope, element, NativeButtonId)
             ?? ElementSearch.FindChildByAutomationId(MauiScope, element, LegacyClickableContainerId)

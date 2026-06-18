@@ -49,6 +49,14 @@
             Icon="tab_about.png"
             ContentTemplate="{DataTemplate local:TogglePage}"
             Route="TogglePage" />
+
+        <!-- Display Tab -->
+        <ShellContent
+            Title="Display"
+            Icon="tab_about.png"
+            ContentTemplate="{DataTemplate local:DisplayPage}"
+            Route="DisplayPage" />
+
     </TabBar>
 
 </Shell>

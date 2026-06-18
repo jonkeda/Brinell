@@ -234,7 +234,7 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
         return ContainingScope;
     }
 
-    public string? GetAttribute(string name)
+    public string? GetAttribute(string name, int? timeoutMs)
     {
         // Stride doesn't have a general attribute concept — return state properties by name
         var state = GetState();

@@ -71,8 +71,6 @@ public class ImageButtonTests
     public Task ImageButton_Tap_ExecutesCommand()
     {
         var page = GetPage();
-        // Arrange
-        page.IsLoaded(timeoutMs: 5000);
 
         // Act
         page.TestImageButton.Click()
@@ -89,8 +87,6 @@ public class ImageButtonTests
     public Task ImageButton_Tap_UpdatesStatus()
     {
         var page = GetPage();
-        // Arrange
-        page.IsLoaded(timeoutMs: 5000);
 
         // Act
         page.TestImageButton.Click();

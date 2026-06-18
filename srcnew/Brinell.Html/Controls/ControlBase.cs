@@ -204,7 +204,7 @@ public abstract class ControlBase<TScope> : ObjectBase, IControlObject<TScope>, 
         return ContainingScope;
     }
 
-    public string? GetAttribute(string name)
+    public string? GetAttribute(string name, int? timeoutMs)
     {
         var element = TryFindElement();
         if (element == null)
@@ -300,7 +300,7 @@ public abstract class ControlBase<TScope> : ObjectBase, IControlObject<TScope>, 
         => Task.FromResult(AssertTextContains(expected, message, timeoutMs));
 
     Task<string?> IHtmlAsyncControlObject<TScope>.GetAttribute(string name)
-        => Task.FromResult(GetAttribute(name));
+        => Task.FromResult(GetAttribute(name, null));
 
     #endregion
 }

@@ -333,13 +333,13 @@ public class Stepper<TScope> : RangeControlBase<TScope>
         if (times == null || times <= 0)
             return ContainingScope;
 
-        return RunWithElement(nameof(IncrementBy), times, timeoutMs, element =>
+        return RunSetWithElement(times, element =>
         {
             for (int i = 0; i < times; i++)
             {
                 IncrementCore(element);
             }
-        });
+        }, timeoutMs);
     }
 
     /// <summary>
@@ -353,13 +353,13 @@ public class Stepper<TScope> : RangeControlBase<TScope>
         if (times == null || times <= 0)
             return ContainingScope;
 
-        return RunWithElement(nameof(DecrementBy), times, timeoutMs, element =>
+        return RunSetWithElement(times, element =>
         {
             for (int i = 0; i < times; i++)
             {
                 DecrementCore(element);
             }
-        });
+        }, timeoutMs);
     }
 
     /// <summary>
@@ -369,11 +369,11 @@ public class Stepper<TScope> : RangeControlBase<TScope>
     /// <returns>The containing scope for fluent chaining.</returns>
     public TScope SetToMinimum(int? timeoutMs = null)
     {
-        return RunWithElement(nameof(SetToMinimum), timeoutMs, element =>
+        return RunDoWithElement(element =>
         {
             var min = GetMinimumCore(element) ?? 0;
             SetValueCore(element, min);
-        });
+        }, timeoutMs);
     }
 
     /// <summary>
@@ -383,11 +383,11 @@ public class Stepper<TScope> : RangeControlBase<TScope>
     /// <returns>The containing scope for fluent chaining.</returns>
     public TScope SetToMaximum(int? timeoutMs = null)
     {
-        return RunWithElement(nameof(SetToMaximum), timeoutMs, element =>
+        return RunDoWithElement( element =>
         {
             var max = GetMaximumCore(element) ?? 100;
             SetValueCore(element, max);
-        });
+        }, timeoutMs);
     }
 
     /// <summary>

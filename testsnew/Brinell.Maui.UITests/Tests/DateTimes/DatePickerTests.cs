@@ -76,8 +76,6 @@ public class DatePickerTests
     public Task DatePicker_SetDate_UpdatesDisplay()
     {
         var page = GetPage();
-        // Arrange
-        page.IsLoaded(timeoutMs: 5000);
 
         // Act & Assert
         page.TestDatePicker.SetDate(DateTimeType.Now.Date.AddDays(5))
@@ -94,8 +92,6 @@ public class DatePickerTests
     public Task DatePicker_DateBeforeMinimum_ShowsValidationError()
     {
         var page = GetPage();
-        // Arrange
-        page.IsLoaded(timeoutMs: 5000);
         var pastDate = DateTimeType.Now.Date.AddDays(-1); // Yesterday (before minimum of today)
 
         // Act & Assert
@@ -113,8 +109,6 @@ public class DatePickerTests
     public Task DatePicker_DateAfterMaximum_ShowsValidationError()
     {
         var page = GetPage();
-        // Arrange
-        page.IsLoaded(timeoutMs: 5000);
         var futureDate = DateTimeType.Now.Date.AddDays(31); // 31 days from now (max is 30)
 
         // Act & Assert
@@ -132,8 +126,6 @@ public class DatePickerTests
     public Task DatePicker_DateWithinRange_ShowsSuccess()
     {
         var page = GetPage();
-        // Arrange
-        page.IsLoaded(timeoutMs: 5000);
         var validDate = DateTimeType.Now.Date.AddDays(15); // 15 days from now (within 0-30 range)
 
         // Act & Assert
@@ -151,8 +143,6 @@ public class DatePickerTests
     public Task DatePicker_DateFormat_DisplaysCorrectly()
     {
         var page = GetPage();
-        // Arrange
-        page.IsLoaded(timeoutMs: 5000);
         var testDate = DateTimeType.Now.Date.AddDays(10);
 
         // Act & Assert
@@ -170,8 +160,6 @@ public class DatePickerTests
     public Task DatePicker_Reset_ClearsSelection()
     {
         var page = GetPage();
-        // Arrange
-        page.IsLoaded(timeoutMs: 5000);
 
         // Act & Assert
         page.TestDatePicker.SetDate(DateTimeType.Now.Date.AddDays(10))

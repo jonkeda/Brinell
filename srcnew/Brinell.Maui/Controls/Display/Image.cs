@@ -141,9 +141,9 @@ public class Image<TScope> : ControlBase<TScope>
     {
         if (expected == null) return true;
 
-        return Poll(
+        return RunCheck(
             () => IsLoaded() == expected.Value,
-            timeoutMs ?? DefaultTimeoutMs);
+            timeoutMs);
     }
 
     #endregion
@@ -188,7 +188,7 @@ public class Image<TScope> : ControlBase<TScope>
     {
         if (expected == null) return ContainingScope;
 
-        var passed = Poll(() => GetSource() == expected, timeoutMs ?? DefaultTimeoutMs);
+        var passed = RunCheck(() => GetSource() == expected, timeoutMs);
 
         if (!passed)
         {

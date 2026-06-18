@@ -62,9 +62,9 @@ public class CarouselView<TScope, TItem> : List<TScope, TItem>
     /// Swipes to the next item in the carousel.
     /// </summary>
     /// <returns>The containing scope for fluent chaining.</returns>
-    public TScope SwipeNext()
+    public TScope SwipeNext(int? timeoutMs = null)
     {
-        return RunWithElement(nameof(SwipeNext), null, element =>
+        return RunDoWithElement(  element =>
         {
             var rect = element.Rect;
             var centerY = rect.Y + rect.Height / 2;
@@ -72,16 +72,16 @@ public class CarouselView<TScope, TItem> : List<TScope, TItem>
             var endX = rect.X + 20;
 
             element.Swipe(startX, centerY, endX, centerY);
-        });
+        }, timeoutMs);
     }
 
     /// <summary>
     /// Swipes to the previous item in the carousel.
     /// </summary>
     /// <returns>The containing scope for fluent chaining.</returns>
-    public TScope SwipePrevious()
+    public TScope SwipePrevious(int? timeoutMs = null)
     {
-        return RunWithElement(nameof(SwipePrevious), null, element =>
+        return RunDoWithElement(element =>
         {
             var rect = element.Rect;
             var centerY = rect.Y + rect.Height / 2;
@@ -89,7 +89,7 @@ public class CarouselView<TScope, TItem> : List<TScope, TItem>
             var endX = rect.X + rect.Width - 20;
 
             element.Swipe(startX, centerY, endX, centerY);
-        });
+        }, timeoutMs);
     }
 
     /// <summary>
@@ -100,7 +100,7 @@ public class CarouselView<TScope, TItem> : List<TScope, TItem>
     /// <returns>True if position was reached, false if timeout.</returns>
     public bool WaitPosition(int expectedPosition, int? timeoutMs = null)
     {
-        return Poll(() => GetPosition() == expectedPosition, timeoutMs ?? DefaultTimeoutMs);
+        return RunCheck(() => GetPosition() == expectedPosition, timeoutMs);
     }
 
     /// <summary>

@@ -74,8 +74,6 @@ public class TimePickerTests
     public Task TimePicker_SetTime_UpdatesDisplay()
     {
         var page = GetPage();
-        // Arrange
-        page.IsLoaded(timeoutMs: 5000);
         var testTime = new TimeSpan(14, 30, 0); // 2:30 PM
 
         // Act & Assert
@@ -93,8 +91,6 @@ public class TimePickerTests
     public Task TimePicker_TimeFormat_DisplaysCorrectly()
     {
         var page = GetPage();
-        // Arrange
-        page.IsLoaded(timeoutMs: 5000);
         var testTime = new TimeSpan(9, 45, 30); // 9:45:30 AM
 
         // Act & Assert
@@ -112,8 +108,6 @@ public class TimePickerTests
     public Task TimePicker_MultipleTimeChanges_UpdatesEachTime()
     {
         var page = GetPage();
-        // Arrange
-        page.IsLoaded(timeoutMs: 5000);
         var time1 = new TimeSpan(8, 0, 0);
         var time2 = new TimeSpan(12, 30, 0);
         var time3 = new TimeSpan(18, 45, 0);
@@ -137,8 +131,6 @@ public class TimePickerTests
     public Task TimePicker_Midnight_DisplaysCorrectly()
     {
         var page = GetPage();
-        // Arrange
-        page.IsLoaded(timeoutMs: 5000);
         var midnight = new TimeSpan(0, 0, 0);
 
         // Act & Assert
@@ -156,8 +148,6 @@ public class TimePickerTests
     public Task TimePicker_EndOfDay_DisplaysCorrectly()
     {
         var page = GetPage();
-        // Arrange
-        page.IsLoaded(timeoutMs: 5000);
         var endOfDay = new TimeSpan(23, 59, 59);
 
         // Act & Assert
@@ -175,8 +165,6 @@ public class TimePickerTests
     public Task TimePicker_Reset_ClearsSelection()
     {
         var page = GetPage();
-        // Arrange
-        page.IsLoaded(timeoutMs: 5000);
         var testTime = new TimeSpan(14, 30, 0);
 
         // Act & Assert
@@ -196,8 +184,6 @@ public class TimePickerTests
     public Task TimePicker_CombinedWithDate_WorksTogether()
     {
         var page = GetPage();
-        // Arrange
-        page.IsLoaded(timeoutMs: 5000);
         var testDate = DateTimeType.Now.Date.AddDays(14);
         var testTime = new TimeSpan(15, 30, 0);
 

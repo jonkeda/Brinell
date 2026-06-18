@@ -18,6 +18,7 @@ public class AppShellPageV2 : PageObjectBase<AppShellPageV2>
         // Initialize ShellContent controls by route
         ButtonsContent = new ShellContent<AppShellPageV2>(this, "ButtonsShell", "Buttons");
         DateTimeContent = new ShellContent<AppShellPageV2>(this, "DateTimePage", "DateTime");
+        DisplayContent = new ShellContent<AppShellPageV2>(this, "DisplayPage", "Display");
         TextContent = new ShellContent<AppShellPageV2>(this, "TextPage", "Text");
         RangeContent = new ShellContent<AppShellPageV2>(this, "RangePage", "Range");
         SelectionContent = new ShellContent<AppShellPageV2>(this, "SelectionPage", "Selection");
@@ -62,6 +63,11 @@ public class AppShellPageV2 : PageObjectBase<AppShellPageV2>
     /// DateTime ShellContent control.
     /// </summary>
     public ITabControlObject<AppShellPageV2> DateTimeContent { get; }
+
+    /// <summary>
+    /// Display ShellContent control.
+    /// </summary>
+    public ITabControlObject<AppShellPageV2> DisplayContent { get; }
 
     /// <summary>
     /// Text ShellContent control.
@@ -146,6 +152,14 @@ public class AppShellPageV2 : PageObjectBase<AppShellPageV2>
     public AppShellPageV2 GoToDateTimeTab()
     {
         return _shell.NavigateTo("DateTime");
+    }
+
+    /// <summary>
+    /// Navigates to the Display tab.
+    /// </summary>
+    public AppShellPageV2 GoToDisplayTab()
+    {
+        return _shell.NavigateTo("Display");
     }
 
     /// <summary>

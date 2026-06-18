@@ -39,15 +39,12 @@ public class SearchBar<TScope> : Entry<TScope>
     /// <returns>The containing scope for fluent chaining.</returns>
     public TScope Search(string? searchText, int? timeoutMs = null)
     {
-        if (searchText == null)
-            return ContainingScope;
-
-        return RunWithElement(nameof(Search), searchText, timeoutMs, element =>
+        return RunSetWithElement( searchText, element =>
         {
-            SetTextCore(element, searchText, timeoutMs);
+            SetTextCore(element, searchText!, timeoutMs);
             // Submit search
             SubmitSearchCore(element);
-        });
+        }, timeoutMs);
     }
 
     /// <summary>
@@ -57,10 +54,10 @@ public class SearchBar<TScope> : Entry<TScope>
     /// <returns>The containing scope for fluent chaining.</returns>
     public TScope SubmitSearch(int? timeoutMs = null)
     {
-        return RunWithElement(nameof(SubmitSearch), timeoutMs, element =>
+        return RunDoWithElement(element =>
         {
             SubmitSearchCore(element);
-        });
+        }, timeoutMs);
     }
 
     /// <summary>

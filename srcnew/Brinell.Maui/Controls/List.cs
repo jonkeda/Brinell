@@ -139,7 +139,7 @@ public class List<TScope, TItem> : ControlBase<TScope>, IScrollableControlObject
     /// </summary>
     public bool WaitItemCount(int expected, int? timeoutMs = null)
     {
-        return Poll(() => GetItemCount() == expected, timeoutMs ?? DefaultTimeoutMs);
+        return RunCheck(() => GetItemCount() == expected, timeoutMs);
     }
     
     /// <summary>
@@ -274,7 +274,7 @@ public class List<TScope, TItem> : ControlBase<TScope>, IScrollableControlObject
         ScrollToRenderItems();
         
         // Poll for items
-        return Poll(() => GetItemCount() >= minimumCount, timeout);
+        return RunCheck(() => GetItemCount() >= minimumCount, timeout);
     }
 
     #endregion
@@ -296,24 +296,24 @@ public class List<TScope, TItem> : ControlBase<TScope>, IScrollableControlObject
     /// <inheritdoc />
     public TScope ScrollBy(int deltaX, int deltaY, int? timeoutMs = null)
     {
-        return RunWithElement(nameof(ScrollBy), timeoutMs, element =>
+        return RunDoWithElement(element =>
         {
             var rect = element.Rect;
             var centerX = rect.X + (rect.Width / 2);
             var centerY = rect.Y + (rect.Height / 2);
             element.Swipe(centerX, centerY, centerX - deltaX, centerY - deltaY);
-        });
+        }, timeoutMs);
     }
 
     /// <inheritdoc />
     public TScope ScrollTo(Locator locator, int? timeoutMs = null)
     {
         var timeout = timeoutMs ?? DefaultTimeoutMs;
-        var found = Poll(() => MauiScope.TryFindElement(locator)?.Visible == true, timeout);
+        var found = RunCheck(() => MauiScope.TryFindElement(locator)?.Visible == true, timeout);
         if (!found)
         {
             ScrollToRenderItems();
-            found = Poll(() => MauiScope.TryFindElement(locator)?.Visible == true, timeout);
+            found = RunCheck(() => MauiScope.TryFindElement(locator)?.Visible == true, timeout);
         }
 
         if (!found)
@@ -376,12 +376,12 @@ public class List<TScope, TItem> : ControlBase<TScope>, IScrollableControlObject
     {
         if (expected == null) return true;
 
-        return Poll(() =>
+        return RunCheck(() =>
         {
             var actual = GetScrollPosition();
             if (actual == null) return false;
             return Math.Abs(actual.Value - expected.Value) <= tolerance;
-        }, timeoutMs ?? DefaultTimeoutMs);
+        }, timeoutMs);
     }
 
     /// <inheritdoc />

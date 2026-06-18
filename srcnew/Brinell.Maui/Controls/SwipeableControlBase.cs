@@ -34,46 +34,46 @@ public abstract class SwipeableControlBase<TScope> : ControlBase<TScope>, ISwipe
     /// <inheritdoc />
     public TScope SwipeLeft(int? timeoutMs = null)
     {
-        return RunWithElement(nameof(SwipeLeft), timeoutMs, element =>
+        return RunDoWithElement(element =>
         {
             SwipeLeftCore(element);
-        });
+        }, timeoutMs);
     }
     
     /// <inheritdoc />
     public TScope SwipeRight(int? timeoutMs = null)
     {
-        return RunWithElement(nameof(SwipeRight), timeoutMs, element =>
+        return RunDoWithElement(element =>
         {
             SwipeRightCore(element);
-        });
+        }, timeoutMs);
     }
     
     /// <inheritdoc />
     public TScope SwipeUp(int? timeoutMs = null)
     {
-        return RunWithElement(nameof(SwipeUp), timeoutMs, element =>
+        return RunDoWithElement(element =>
         {
             SwipeUpCore(element);
-        });
+        }, timeoutMs);
     }
     
     /// <inheritdoc />
     public TScope SwipeDown(int? timeoutMs = null)
     {
-        return RunWithElement(nameof(SwipeDown), timeoutMs, element =>
+        return RunDoWithElement(element =>
         {
             SwipeDownCore(element);
-        });
+        }, timeoutMs);
     }
     
     /// <inheritdoc />
     public TScope Swipe(int startX, int startY, int endX, int endY, int? timeoutMs = null)
     {
-        return RunWithElement(nameof(Swipe), timeoutMs, element =>
+        return RunDoWithElement(element =>
         {
             SwipeCore(element, startX, startY, endX, endY);
-        });
+        }, timeoutMs);
     }
     
     #endregion

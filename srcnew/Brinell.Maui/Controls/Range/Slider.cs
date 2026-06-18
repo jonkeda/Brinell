@@ -197,16 +197,14 @@ public class Slider<TScope> : RangeControlBase<TScope>
     /// <returns>The containing scope for fluent chaining.</returns>
     public TScope SlideToPercentage(double? percentage, int? timeoutMs = null)
     {
-        if (percentage == null)
-            return ContainingScope;
 
-        return RunWithElement(nameof(SlideToPercentage), percentage, timeoutMs, element =>
+        return RunSetWithElement(percentage, element =>
         {
             var min = GetMinimumCore(element) ?? 0;
             var max = GetMaximumCore(element) ?? 100;
-            var value = min + ((max - min) * (percentage.Value / 100.0));
+            var value = min + ((max - min) * (percentage!.Value / 100.0));
             SetValueCore(element, value);
-        });
+        }, timeoutMs);
     }
 
     /// <summary>
@@ -236,11 +234,11 @@ public class Slider<TScope> : RangeControlBase<TScope>
     /// <returns>The containing scope for fluent chaining.</returns>
     public TScope SlideToMinimum(int? timeoutMs = null)
     {
-        return RunWithElement(nameof(SlideToMinimum), timeoutMs, element =>
+        return RunDoWithElement( element =>
         {
             var min = GetMinimumCore(element) ?? 0;
             SetValueCore(element, min);
-        });
+        }, timeoutMs);
     }
 
     /// <summary>
@@ -250,11 +248,11 @@ public class Slider<TScope> : RangeControlBase<TScope>
     /// <returns>The containing scope for fluent chaining.</returns>
     public TScope SlideToMaximum(int? timeoutMs = null)
     {
-        return RunWithElement(nameof(SlideToMaximum), timeoutMs, element =>
+        return RunDoWithElement( element =>
         {
             var max = GetMaximumCore(element) ?? 100;
             SetValueCore(element, max);
-        });
+        }, timeoutMs);
     }
 
     #endregion

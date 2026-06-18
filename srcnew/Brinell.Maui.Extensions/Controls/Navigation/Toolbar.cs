@@ -35,11 +35,11 @@ public class Toolbar<TScope> : ControlBase<TScope>
     /// <returns>The containing scope for fluent chaining.</returns>
     public TScope ClickToolbarItem(Locator itemLocator, int? timeoutMs = null)
     {
-        return RunWithElement(nameof(ClickToolbarItem), timeoutMs, toolbarElement =>
+        return RunDoWithElement( toolbarElement =>
         {
             var toolbarItem = toolbarElement.FindElement(itemLocator, timeoutMs ?? DefaultTimeoutMs);
             toolbarItem.Click();
-        });
+        }, timeoutMs);
     }
 
     /// <summary>

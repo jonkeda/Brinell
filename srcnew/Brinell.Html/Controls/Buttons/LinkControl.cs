@@ -23,7 +23,7 @@ public class LinkControl<TScope> : ClickableControlBase<TScope>
     /// <summary>
     /// Get the href attribute value.
     /// </summary>
-    public string? Href => GetAttribute("href");
+    public string? Href => GetAttribute("href", null);
 
     /// <summary>
     /// Assert the href attribute matches expected.

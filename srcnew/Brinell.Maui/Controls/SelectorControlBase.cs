@@ -34,34 +34,28 @@ public abstract class SelectorControlBase<TScope> : ControlBase<TScope>, ISelect
     /// <inheritdoc />
     public TScope SelectByText(string? text, int? timeoutMs = null)
     {
-        if (text == null) return ContainingScope;
-        
-        return RunWithElement(nameof(SelectByText), text, timeoutMs, element =>
+        return RunSetWithElement(text, element =>
         {
-            SelectByTextCore(element, text);
-        });
+            SelectByTextCore(element, text!);
+        }, timeoutMs);
     }
     
     /// <inheritdoc />
     public TScope SelectByIndex(int? index, int? timeoutMs = null)
     {
-        if (index == null) return ContainingScope;
-        
-        return RunWithElement(nameof(SelectByIndex), index, timeoutMs, element =>
+        return RunSetWithElement(index, element =>
         {
-            SelectByIndexCore(element, index.Value);
-        });
+            SelectByIndexCore(element, index!.Value);
+        }, timeoutMs);
     }
     
     /// <inheritdoc />
     public TScope SelectByValue(string? value, int? timeoutMs = null)
     {
-        if (value == null) return ContainingScope;
-        
-        return RunWithElement(nameof(SelectByValue), value, timeoutMs, element =>
+        return RunSetWithElement(value, element =>
         {
-            SelectByValueCore(element, value);
-        });
+            SelectByValueCore(element, value!);
+        }, timeoutMs);
     }
     
     /// <inheritdoc />
@@ -333,9 +327,9 @@ public abstract class SelectorControlBase<TScope> : ControlBase<TScope>, ISelect
     {
         if (expected == null) return true;
         
-        return Poll(
+        return RunCheck(
             () => GetSelectedText() == expected,
-            timeoutMs ?? DefaultTimeoutMs);
+            timeoutMs);
     }
     
     #endregion
@@ -363,9 +357,9 @@ public abstract class SelectorControlBase<TScope> : ControlBase<TScope>, ISelect
     {
         if (expected == null) return true;
         
-        return Poll(
+        return RunCheck(
             () => GetSelectedIndex() == expected.Value,
-            timeoutMs ?? DefaultTimeoutMs);
+            timeoutMs);
     }
     
     #endregion
@@ -393,9 +387,9 @@ public abstract class SelectorControlBase<TScope> : ControlBase<TScope>, ISelect
     {
         if (expected == null) return true;
         
-        return Poll(
+        return RunCheck(
             () => GetItemCount() == expected.Value,
-            timeoutMs ?? DefaultTimeoutMs);
+            timeoutMs);
     }
     
     #endregion

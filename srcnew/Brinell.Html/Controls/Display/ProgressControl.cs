@@ -20,14 +20,14 @@ public class ProgressControl<TScope> : ControlBase<TScope>
 
     public double GetValue()
     {
-        return double.TryParse(GetAttribute("value"), NumberStyles.Any, CultureInfo.InvariantCulture, out var value)
+        return double.TryParse(GetAttribute("value", null), NumberStyles.Any, CultureInfo.InvariantCulture, out var value)
             ? value
             : 0;
     }
 
     public double GetMax()
     {
-        return double.TryParse(GetAttribute("max"), NumberStyles.Any, CultureInfo.InvariantCulture, out var max)
+        return double.TryParse(GetAttribute("max", null), NumberStyles.Any, CultureInfo.InvariantCulture, out var max)
             ? max
             : 100;
     }

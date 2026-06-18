@@ -36,11 +36,11 @@ public abstract class ClickableControlBase<TScope> : ControlBase<TScope>,
     /// <inheritdoc />
     public TScope Click(int? timeoutMs = null)
     {
-        return RunWithElement(nameof(Click), timeoutMs, element =>
+        return RunDoWithElement(element =>
         {
-            EnsureClickableCore(element, timeoutMs);
-            ClickCore(element, timeoutMs);
-        });
+            EnsureClickableCore(element);
+            ClickCore(element);
+        }, timeoutMs);
     }
 
     /// <summary>
@@ -58,48 +58,48 @@ public abstract class ClickableControlBase<TScope> : ControlBase<TScope>,
         }
 
         EnsureVisible(element);
-        Run(nameof(TryClick), () => ClickCore(element, timeoutMs));
+        RunDo(() => ClickCore(element), null);
         return true;
     }
 
     /// <inheritdoc />
     public TScope DoubleClick(int? timeoutMs = null)
     {
-        return RunWithElement(nameof(DoubleClick), timeoutMs, element =>
+        return RunDoWithElement(element =>
         {
-            EnsureClickableCore(element, timeoutMs);
-            DoubleClickCore(element, timeoutMs);
-        });
+            EnsureClickableCore(element);
+            DoubleClickCore(element);
+        }, timeoutMs);
     }
 
     /// <inheritdoc />
     public TScope RightClick(int? timeoutMs = null)
     {
-        return RunWithElement(nameof(RightClick), timeoutMs, element =>
+        return RunDoWithElement(element =>
         {
-            EnsureClickableCore(element, timeoutMs);
-            RightClickCore(element, timeoutMs);
-        });
+            EnsureClickableCore(element);
+            RightClickCore(element);
+        }, timeoutMs);
     }
 
     /// <inheritdoc />
     public TScope Hover(int? timeoutMs = null)
     {
-        return RunWithElement(nameof(Hover), timeoutMs, element =>
+        return RunDoWithElement(element =>
         {
-            EnsureClickableCore(element, timeoutMs);
+            EnsureClickableCore(element);
             HoverCore(element);
-        });
+        }, timeoutMs);
     }
 
     /// <inheritdoc />
     public TScope LongPress(int? durationMs = null, int? timeoutMs = null)
     {
-        return RunWithElement(nameof(LongPress), timeoutMs, element =>
+        return RunDoWithElement(element =>
         {
-            EnsureClickableCore(element, timeoutMs);
-            LongPressCore(element, durationMs);
-        });
+            EnsureClickableCore(element);
+            LongPressCore(element);
+        }, timeoutMs);
     }
 
     #endregion
@@ -166,11 +166,9 @@ public abstract class ClickableControlBase<TScope> : ControlBase<TScope>,
     /// </summary>
     /// <param name="element">The pre-found element.</param>
     /// <param name="timeoutMs">Optional timeout for enabled check.</param>
-    protected virtual void EnsureClickableCore(IMauiElement element, int? timeoutMs = null)
+    protected virtual void EnsureClickableCore(IMauiElement element)
     {
-        var timeout = timeoutMs ?? DefaultTimeoutMs;
-
-        EnsureEnabledCore(element, timeout);
+        EnsureEnabledCore(element);
     }
 
     /// <summary>
@@ -269,11 +267,11 @@ public abstract class ClickableControlBase<TScope> : ControlBase<TScope>,
     /// </summary>
     public TScope Press(int? timeoutMs = null)
     {
-        return RunWithElement(nameof(Press), timeoutMs, element =>
+        return RunDoWithElement(element =>
         {
-            EnsureClickableCore(element, timeoutMs);
-            PressCore(element, timeoutMs);
-        });
+            EnsureClickableCore(element);
+            PressCore(element);
+        }, timeoutMs);
     }
 
     /// <summary>
@@ -288,17 +286,17 @@ public abstract class ClickableControlBase<TScope> : ControlBase<TScope>,
         }
 
         EnsureVisible(element);
-        return Run(nameof(TryPress), () =>
+        RunDo( () =>
         {
-            EnsureClickableCore(element, timeoutMs);
-            PressCore(element, timeoutMs);
-            return true;
+            EnsureClickableCore(element);
+            PressCore(element);
         });
+        return true;
     }
 
-    private void PressCore(IMauiElement element, int? timeoutMs = null)
+    private void PressCore(IMauiElement element)
     {
-        EnsureClickableCore(element, timeoutMs);
+        EnsureClickableCore(element);
         element.SendKeys(Keys.Space);
     }
 

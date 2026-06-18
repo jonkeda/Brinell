@@ -202,13 +202,10 @@ public class TimePicker<TScope> : ControlBase<TScope>
     /// <returns>The containing scope for fluent chaining.</returns>
     public TScope SetTime(TimeSpan? time, int? timeoutMs = null)
     {
-        if (time == null)
-            return ContainingScope;
-
-        return RunWithElement(nameof(SetTime), time, timeoutMs, element =>
+        return RunSetWithElement(time, element =>
         {
-            SetTimeCore(element, time.Value, timeoutMs);
-        });
+            SetTimeCore(element, time!.Value, timeoutMs);
+        }, timeoutMs);
     }
 
     /// <summary>

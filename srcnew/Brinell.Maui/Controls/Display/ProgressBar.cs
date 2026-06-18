@@ -172,7 +172,7 @@ public class ProgressBar<TScope> : ControlBase<TScope>
     {
         if (expected == null) return ContainingScope;
 
-        var passed = Poll(() => IsIndeterminate() == expected.Value, timeoutMs ?? DefaultTimeoutMs);
+        var passed = RunCheck(() => IsIndeterminate() == expected.Value, timeoutMs);
 
         if (!passed)
         {

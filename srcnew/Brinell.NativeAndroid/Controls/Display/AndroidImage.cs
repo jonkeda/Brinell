@@ -14,7 +14,7 @@ public sealed class AndroidImage<TScope> : NativeAndroidControl<TScope>
     }
 
     public string? GetContentDescription()
-        => GetAttribute("content-desc");
+        => GetAttribute("content-desc", null);
 
     public TScope AssertContentDescription(string? expected, string? message = null, int? timeoutMs = null)
     {

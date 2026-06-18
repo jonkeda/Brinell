@@ -231,7 +231,7 @@ public class NativeAndroidControl<TScope> : ControlObjectBase<TScope>, IControlO
         return ContainingScope;
     }
 
-    public virtual string? GetAttribute(string name)
+    public virtual string? GetAttribute(string name, int? timeoutMs)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
         return TryFindElement()?.GetAttribute(name);
