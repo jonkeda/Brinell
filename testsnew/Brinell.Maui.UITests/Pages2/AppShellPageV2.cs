@@ -19,6 +19,7 @@ public class AppShellPageV2 : PageObjectBase<AppShellPageV2>
         ButtonsContent = new ShellContent<AppShellPageV2>(this, "ButtonsShell", "Buttons");
         DateTimeContent = new ShellContent<AppShellPageV2>(this, "DateTimePage", "DateTime");
         TextContent = new ShellContent<AppShellPageV2>(this, "TextPage", "Text");
+        RangeContent = new ShellContent<AppShellPageV2>(this, "RangePage", "Range");
         BasicsContent = new ShellContent<AppShellPageV2>(this, "BasicsPage", "Basics");
         ContainersContent = new ShellContent<AppShellPageV2>(this, "ContainersPage", "Containers");
         FormsContent = new ShellContent<AppShellPageV2>(this, "FormsPage", "Forms");
@@ -64,6 +65,11 @@ public class AppShellPageV2 : PageObjectBase<AppShellPageV2>
     /// Text ShellContent control.
     /// </summary>
     public ITabControlObject<AppShellPageV2> TextContent { get; }
+
+    /// <summary>
+    /// Range ShellContent control.
+    /// </summary>
+    public ITabControlObject<AppShellPageV2> RangeContent { get; }
 
     /// <summary>
     /// Basics ShellContent control.
@@ -136,6 +142,14 @@ public class AppShellPageV2 : PageObjectBase<AppShellPageV2>
     public AppShellPageV2 GoToTextTab()
     {
         return _shell.NavigateTo("Text");
+    }
+
+    /// <summary>
+    /// Navigates to the Range tab.
+    /// </summary>
+    public AppShellPageV2 GoToRangeTab()
+    {
+        return _shell.NavigateTo("Range");
     }
 
     /// <summary>

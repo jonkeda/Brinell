@@ -29,6 +29,15 @@
             ContentTemplate="{DataTemplate local:TextPage}"
             Route="TextPage" />
 
+        <!-- Sliders Tab -->
+        <ShellContent
+            Title="Range"
+            Icon="tab_about.png"
+            ContentTemplate="{DataTemplate local:RangePage}"
+            Route="RangePage" />
+
+
+
         <!-- Basics Tab -->
         <ShellContent
             Title="Basics"

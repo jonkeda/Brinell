@@ -1,4 +1,3 @@
-using Microsoft.Maui.Controls;
 using Microsoft.Maui.Controls.Handlers;
 using Microsoft.Maui.Handlers;
 using Microsoft.UI.Xaml.Controls;

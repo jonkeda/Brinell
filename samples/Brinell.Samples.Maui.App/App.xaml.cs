@@ -1,6 +1,5 @@
 
 using Microsoft.Maui;
-using Microsoft.Maui.Controls;
 
 namespace Brinell.Samples.Maui.App;
 

@@ -4,7 +4,6 @@ using Microsoft.Maui.Controls.Hosting;
 
 #if WINDOWS
 using Brinell.Samples.Maui.App.Platforms.Windows.Handlers;
-using Microsoft.Maui.Controls;
 #endif
 
 namespace Brinell.Samples.Maui.App;

@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>net10.0-windows10.0.19041.0</TargetFrameworks>
@@ -71,13 +71,16 @@
     <MauiXaml Update="Pages\ButtonsPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>
-    <MauiXaml Update="Pages\FormsPage.xaml">
+    <MauiXaml Update="Pages2\FormsPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>
     <MauiXaml Update="ListsPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>
     <MauiXaml Update="MainWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Pages\RangePage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>
     <MauiXaml Update="Views2\DataGridView.xaml">
@@ -93,6 +96,9 @@
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>
     <MauiXaml Update="Views\DateTimeView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Views\RangeView.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>
     <MauiXaml Update="Views\TextView.xaml">
@@ -116,6 +122,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Update="Pages\RangePage.xaml.cs">
+      <DependentUpon>RangePage.xaml</DependentUpon>
+    </Compile>
     <Compile Update="Views\ButtonsView.xaml.cs">
       <DependentUpon>ButtonsView.xaml</DependentUpon>
     </Compile>

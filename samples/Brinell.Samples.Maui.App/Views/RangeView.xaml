@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView 
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:viewModels="using:Brinell.Samples.Maui.App.ViewModels"
+    x:Class="Brinell.Samples.Maui.App.Views2.TestViews.RangeView"
+    BackgroundColor="{AppThemeBinding Light=White, Dark=#1F1F1F}">
+
+    <ContentView.BindingContext>
+        <viewModels:RangeViewModel />
+    </ContentView.BindingContext>
+
+    <ScrollView>
+        <VerticalStackLayout 
+            Padding="20" 
+            Spacing="15"
+            BackgroundColor="{AppThemeBinding Light=White, Dark=#1F1F1F}">
+
+            <!-- Title -->
+            <Label 
+                Text="Range Module Test" 
+                FontSize="24" 
+                FontAttributes="Bold"
+                TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+
+            <Label 
+                Text="Test Slider and Stepper controls" 
+                FontSize="14"
+                TextColor="{AppThemeBinding Light=Gray, Dark=LightGray}" />
+
+            <BoxView Color="{AppThemeBinding Light=LightGray, Dark=Gray}" HeightRequest="1" />
+
+            <!-- Slider Test Section -->
+            <Label Text="Slider Control" FontSize="16" FontAttributes="Bold" TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+
+            <HorizontalStackLayout Spacing="10" Padding="0">
+                <Label Text="Value:" VerticalTextAlignment="Center" TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+                <Label Text="{Binding SliderValue, StringFormat='{0:F1}'}" 
+                       WidthRequest="40"
+                       VerticalTextAlignment="Center"
+                       AutomationId="SliderValueLabel"
+                       TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+            </HorizontalStackLayout>
+
+            <Slider 
+                Value="{Binding SliderValue}"
+                Minimum="{Binding SliderMinimum}"
+                Maximum="{Binding SliderMaximum}"
+                AutomationId="TestSlider"
+                BackgroundColor="{AppThemeBinding Light=LightGray, Dark=Gray}" />
+
+            <HorizontalStackLayout Spacing="20">
+                <Label Text="{Binding SliderMinimum, StringFormat='Min: {0:F0}'}" 
+                       FontSize="12"
+                       TextColor="{AppThemeBinding Light=Gray, Dark=LightGray}" />
+                <Label Text="{Binding SliderMaximum, StringFormat='Max: {0:F0}'}" 
+                       FontSize="12"
+                       TextColor="{AppThemeBinding Light=Gray, Dark=LightGray}" />
+            </HorizontalStackLayout>
+
+            <BoxView Color="{AppThemeBinding Light=LightGray, Dark=Gray}" HeightRequest="1" />
+
+            <!-- Stepper Test Section -->
+            <Label Text="Stepper Control" FontSize="16" FontAttributes="Bold" TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+
+            <HorizontalStackLayout Spacing="10" Padding="0">
+                <Label Text="Value:" VerticalTextAlignment="Center" TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+                <Label Text="{Binding StepperValue, StringFormat='{0:F0}'}" 
+                       WidthRequest="40"
+                       VerticalTextAlignment="Center"
+                       AutomationId="StepperValueLabel"
+                       TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+            </HorizontalStackLayout>
+
+            <Stepper 
+                Value="{Binding StepperValue}"
+                Minimum="{Binding StepperMinimum}"
+                Maximum="{Binding StepperMaximum}"
+                Increment="{Binding StepperIncrement}"
+                AutomationId="TestStepper" />
+
+            <HorizontalStackLayout Spacing="20">
+                <Label Text="{Binding StepperMinimum, StringFormat='Min: {0:F0}'}" 
+                       FontSize="12"
+                       TextColor="{AppThemeBinding Light=Gray, Dark=LightGray}" />
+                <Label Text="{Binding StepperMaximum, StringFormat='Max: {0:F0}'}" 
+                       FontSize="12"
+                       TextColor="{AppThemeBinding Light=Gray, Dark=LightGray}" />
+                <Label Text="{Binding StepperIncrement, StringFormat='Step: {0:F1}'}" 
+                       FontSize="12"
+                       TextColor="{AppThemeBinding Light=Gray, Dark=LightGray}" />
+            </HorizontalStackLayout>
+
+            <BoxView Color="{AppThemeBinding Light=LightGray, Dark=Gray}" HeightRequest="1" />
+
+            <!-- Status Display -->
+            <Label Text="Status" FontSize="16" FontAttributes="Bold" TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+            <Label Text="{Binding StatusMessage}" 
+                   AutomationId="StatusLabel"
+                   TextColor="{AppThemeBinding Light=Black, Dark=White}"
+                   LineBreakMode="WordWrap" />
+
+            <BoxView Color="{AppThemeBinding Light=LightGray, Dark=Gray}" HeightRequest="1" />
+
+            <!-- Reset Button -->
+            <Button Text="Reset" 
+                    Command="{Binding ResetCommand}"
+                    AutomationId="ResetButton"
+                    BackgroundColor="#FF6B6B" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentView>
