@@ -38,7 +38,7 @@ public sealed class NativeAndroidDriver : IDriver<NativeAndroidElement>, IDiagno
     public static NativeAndroidDriver CreateFromEnvironment()
         => Create(NativeAndroidDriverOptions.FromEnvironment());
 
-    public NativeAndroidElement FindElement(Locator locator, int timeoutMs = 5000)
+    public NativeAndroidElement FindElement(Locator locator, int timeoutMs)
     {
         ArgumentNullException.ThrowIfNull(locator);
         var by = locator.ToAndroidBy();
@@ -90,7 +90,7 @@ public sealed class NativeAndroidDriver : IDriver<NativeAndroidElement>, IDiagno
             .ToList();
     }
 
-    public bool TryFindElement(Locator locator, out NativeAndroidElement? element, int timeoutMs = 0)
+    public bool TryFindElement(Locator locator, out NativeAndroidElement? element, int timeoutMs = 2000)
     {
         try
         {

@@ -29,7 +29,7 @@ public abstract class ObjectBase
     /// <param name="condition">The condition to check.</param>
     /// <param name="timeoutMs">Maximum time to wait in milliseconds.</param>
     /// <returns>True if condition was met, false if timeout reached.</returns>
-    protected bool Poll(Func<bool> condition, int timeoutMs)
+    protected bool Poll(Func<bool> condition, int? timeoutMs)
     {
         var stopwatch = Stopwatch.StartNew();
         
