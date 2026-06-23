@@ -5,6 +5,7 @@ using FlaUI.Core.Definitions;
 using FlaUI.Core.WindowsAPI;
 using System.Drawing;
 using FlaUI.Core.Patterns;
+using Brinell.Maui.Configuration;
 
 namespace Brinell.Maui.FlaUI;
 

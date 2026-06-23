@@ -35,9 +35,6 @@ public sealed class NativeAndroidDriver : IDriver<NativeAndroidElement>, IDiagno
         return new NativeAndroidDriver(new AndroidDriver(options.AppiumServerUri, appiumOptions), options);
     }
 
-    public static NativeAndroidDriver CreateFromEnvironment()
-        => Create(NativeAndroidDriverOptions.FromEnvironment());
-
     public NativeAndroidElement FindElement(Locator locator, int timeoutMs)
     {
         ArgumentNullException.ThrowIfNull(locator);

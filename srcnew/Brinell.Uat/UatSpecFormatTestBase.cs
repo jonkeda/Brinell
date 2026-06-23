@@ -24,11 +24,11 @@ public abstract class UatSpecFormatTestBase
 
     protected static IEnumerable<object[]> GetScenarioFiles(
         string folderName = "Scenarios",
-        string? filterEnvironmentVariable = null)
+        string? configurationFilter = null)
     {
         return UatScenarioSource.GetScenarioFileTheoryData(
             folderName,
-            filterEnvironmentVariable: filterEnvironmentVariable);
+            configurationFilter: configurationFilter);
     }
 
     protected void AssertUatFileParsesAndContainsRequiredMetadata(string filePath)

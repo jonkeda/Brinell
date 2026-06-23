@@ -1,4 +1,5 @@
 using Brinell.Core;
+using Brinell.Maui.Configuration;
 
 namespace Brinell.Maui.Extensions.Controls.Generated;
 

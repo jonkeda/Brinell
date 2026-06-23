@@ -1,5 +1,7 @@
 namespace Brinell.Blazor.Uat.Tests.Runtime;
 
+using Brinell.Core.Configuration;
+
 [TestModuleScan(typeof(CounterPage), NamespacePrefix = "Brinell.Blazor.UITests.PageObjects")]
 public sealed class BlazorUatFixture : IDisposable
 {
@@ -9,14 +11,15 @@ public sealed class BlazorUatFixture : IDisposable
 
     public BlazorUatFixture()
     {
-        _host = BlazorSampleHost.Start();
+        var config = BrinellBlazorConfiguration.Load();
+        _host = BlazorSampleHost.Start(config?.Blazor);
         try
         {
             _context = BlazorTestContext.CreateAsync(new HtmlTestContextOptions
             {
                 BaseUrl = _host.BaseUrl,
-                Headless = ParseBool(Environment.GetEnvironmentVariable("HEADLESS"), true),
-                BrowserType = Environment.GetEnvironmentVariable("BROWSER_TYPE") ?? "chromium"
+                Headless = config?.Browser?.Headless ?? true,
+                BrowserType = config?.Browser?.BrowserType ?? "chromium"
             }).GetAwaiter().GetResult();
         }
         catch
@@ -63,7 +66,4 @@ public sealed class BlazorUatFixture : IDisposable
     {
         _context.NavigateTo($"{_host.BaseUrl.TrimEnd('/')}/{path.TrimStart('/')}");
     }
-
-    private static bool ParseBool(string? value, bool defaultValue)
-        => bool.TryParse(value, out var parsed) ? parsed : defaultValue;
 }

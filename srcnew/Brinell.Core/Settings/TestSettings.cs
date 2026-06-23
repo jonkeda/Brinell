@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 
 namespace Brinell.Core.Settings;
 
@@ -10,7 +11,8 @@ public sealed class TestSettings
     {
         PropertyNameCaseInsensitive = true,
         ReadCommentHandling = JsonCommentHandling.Skip,
-        AllowTrailingCommas = true
+        AllowTrailingCommas = true,
+        Converters = { new CaseInsensitiveEnumConverter() }
     };
 
     private readonly JsonObject _values;
@@ -134,5 +136,86 @@ public sealed class TestSettings
 
         value = null;
         return false;
+    }
+}
+
+/// <summary>
+/// Custom JSON converter for enums that handles case-insensitive deserialization.
+/// This converter attempts to match enum values regardless of case, falling back to
+/// the exact case-sensitive match if no case-insensitive match is found.
+/// </summary>
+internal sealed class CaseInsensitiveEnumConverter : JsonConverterFactory
+{
+    public override bool CanConvert(Type typeToConvert)
+    {
+        return typeToConvert.IsEnum;
+    }
+
+    public override JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options)
+    {
+        var converterType = typeof(CaseInsensitiveEnumConverter<>).MakeGenericType(typeToConvert);
+        return (JsonConverter?)Activator.CreateInstance(converterType);
+    }
+}
+
+/// <summary>
+/// Generic enum converter implementation that performs case-insensitive matching.
+/// </summary>
+/// <typeparam name="TEnum">The enum type to convert.</typeparam>
+internal sealed class CaseInsensitiveEnumConverter<TEnum> : JsonConverter<TEnum>
+    where TEnum : struct, Enum
+{
+    public override TEnum Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        switch (reader.TokenType)
+        {
+            case JsonTokenType.String:
+                var stringValue = reader.GetString();
+                if (stringValue is null)
+                {
+                    throw new JsonException($"Null value cannot be converted to enum type {typeof(TEnum).Name}.");
+                }
+
+                // Try case-insensitive match first
+                var values = Enum.GetValues(typeof(TEnum));
+                foreach (TEnum value in values)
+                {
+                    if (value.ToString().Equals(stringValue, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return value;
+                    }
+                }
+
+                // If no case-insensitive match found, try exact match (for backwards compatibility)
+                try
+                {
+                    return (TEnum)Enum.Parse(typeof(TEnum), stringValue, ignoreCase: false);
+                }
+                catch (ArgumentException ex)
+                {
+                    throw new JsonException(
+                        $"Unable to convert \"{stringValue}\" to enum \"{typeof(TEnum).Name}\". Valid values are: {string.Join(", ", values)}.",
+                        ex);
+                }
+
+            case JsonTokenType.Number:
+                if (reader.TryGetInt32(out int intValue))
+                {
+                    return (TEnum)Enum.ToObject(typeof(TEnum), intValue);
+                }
+                if (reader.TryGetInt64(out long longValue))
+                {
+                    return (TEnum)Enum.ToObject(typeof(TEnum), longValue);
+                }
+                throw new JsonException($"Unable to convert number to enum type {typeof(TEnum).Name}.");
+
+            default:
+                throw new JsonException($"Unexpected token {reader.TokenType} when parsing enum {typeof(TEnum).Name}.");
+        }
+    }
+
+    public override void Write(Utf8JsonWriter writer, TEnum value, JsonSerializerOptions options)
+    {
+        writer.WriteStringValue(value.ToString());
     }
 }

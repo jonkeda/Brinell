@@ -1,5 +1,7 @@
 namespace Brinell.Html.Uat.Tests.Runtime;
 
+using Brinell.Core.Configuration;
+
 [TestModuleScan(typeof(CounterPage), NamespacePrefix = "Brinell.Html.Uat.Tests.Pages")]
 public sealed class HtmlUatFixture : IDisposable
 {
@@ -9,14 +11,15 @@ public sealed class HtmlUatFixture : IDisposable
 
     public HtmlUatFixture()
     {
-        _host = HtmlSampleHost.Start();
+        var config = BrinellHtmlConfiguration.Load();
+        _host = HtmlSampleHost.Start(config?.Html);
         try
         {
             _context = PlaywrightTestContext.CreateAsync(new HtmlTestContextOptions
             {
                 BaseUrl = _host.BaseUrl,
-                Headless = ParseBool(Environment.GetEnvironmentVariable("HEADLESS"), true),
-                BrowserType = Environment.GetEnvironmentVariable("BROWSER_TYPE") ?? "chromium"
+                Headless = config?.Browser?.Headless ?? true,
+                BrowserType = config?.Browser?.BrowserType ?? "chromium"
             }).GetAwaiter().GetResult();
         }
         catch
@@ -57,7 +60,4 @@ public sealed class HtmlUatFixture : IDisposable
     {
         _context.NavigateTo($"{_host.BaseUrl.TrimEnd('/')}/{path.TrimStart('/')}");
     }
-
-    private static bool ParseBool(string? value, bool defaultValue)
-        => bool.TryParse(value, out var parsed) ? parsed : defaultValue;
 }

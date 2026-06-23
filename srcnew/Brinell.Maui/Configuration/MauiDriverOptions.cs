@@ -1,7 +1,8 @@
+using Brinell.Core.Configuration;
 using Brinell.Core.Logging;
 using Brinell.Maui.Enums;
 
-namespace Brinell.Maui;
+namespace Brinell.Maui.Configuration;
 
 /// <summary>
 /// Configuration options for MAUI driver creation.
@@ -72,41 +73,33 @@ public class MauiDriverOptions
     /// Defaults to semantic, background-safe automation.
     /// </summary>
     public WindowsInteractionOptions WindowsInteraction { get; set; } = WindowsInteractionOptions.Semantic.Clone();
-    
+
     /// <summary>
-    /// Creates options from environment variables.
+    /// Creates MAUI driver options from configuration objects.
+    /// Configuration is required; no fallback to environment variables.
     /// </summary>
-    /// <remarks>
-    /// Reads the following environment variables:
-    /// - APPIUM_PLATFORM: "windows", "android", or "ios"
-    /// - APPIUM_APP_PATH: Path to app executable/package
-    /// - APPIUM_PROCESS_NAME: Process name for attach mode on Windows
-    /// - APPIUM_WINDOW_HANDLE: Window handle (hex or decimal) for attach mode on Windows
-    /// - APPIUM_DEVICE_NAME: Device name for Android/iOS
-    /// - APPIUM_PLATFORM_VERSION: Platform version for iOS
-    /// - APPIUM_SERVER_URI: Appium server URL
-    /// </remarks>
-    public static MauiDriverOptions FromEnvironment()
+    public static MauiDriverOptions FromConfiguration(MauiOptions mauiConfig, WindowsInteractionConfig? windowsConfig = null)
     {
-        var platform = Environment.GetEnvironmentVariable("APPIUM_PLATFORM")?.ToLowerInvariant() switch
-        {
-            "android" => MauiPlatform.Android,
-            "ios" => MauiPlatform.iOS,
-            "windows" or _ => MauiPlatform.Windows
-        };
-        
-        var windowHandle = ParseWindowHandle(Environment.GetEnvironmentVariable("APPIUM_WINDOW_HANDLE"));
+        ArgumentNullException.ThrowIfNull(mauiConfig);
+
+        var windowHandle = !string.IsNullOrWhiteSpace(mauiConfig.WindowHandle)
+            ? ParseWindowHandle(mauiConfig.WindowHandle)
+            : null;
+
+        var windowsInteraction = windowsConfig != null
+            ? WindowsInteractionOptions.FromConfiguration(windowsConfig)
+            : WindowsInteractionOptions.Semantic.Clone();
 
         return new MauiDriverOptions
         {
-            Platform = platform,
-            AppPath = Environment.GetEnvironmentVariable("APPIUM_APP_PATH"),
-            ProcessName = Environment.GetEnvironmentVariable("APPIUM_PROCESS_NAME"),
+            Platform = mauiConfig.Platform,
+            AppPath = mauiConfig.AppPath,
+            ProcessName = mauiConfig.ProcessName,
             WindowHandle = windowHandle,
-            DeviceName = Environment.GetEnvironmentVariable("APPIUM_DEVICE_NAME"),
-            PlatformVersion = Environment.GetEnvironmentVariable("APPIUM_PLATFORM_VERSION"),
-            AppiumServerUri = new Uri(Environment.GetEnvironmentVariable("APPIUM_SERVER_URI") ?? "http://127.0.0.1:4723"),
-            WindowsInteraction = WindowsInteractionOptions.FromEnvironment()
+            DeviceName = mauiConfig.DeviceName,
+            PlatformVersion = mauiConfig.PlatformVersion,
+            AppiumServerUri = new Uri(mauiConfig.ServerUri ?? "http://127.0.0.1:4723"),
+            WindowsInteraction = windowsInteraction
         };
     }
 

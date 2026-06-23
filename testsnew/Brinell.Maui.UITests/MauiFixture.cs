@@ -1,3 +1,5 @@
+using Brinell.Maui.Configuration;
+using Brinell.Maui.Enums;
 using Brinell.Maui.Testing;
 using Brinell.Maui.UITests.Pages2;
 
@@ -182,19 +184,19 @@ public class MauiFixture : MauiTestFixtureBase
     #region MauiTestFixtureBase Overrides
 
     /// <inheritdoc />
-    protected override string GetDefaultAppPath(string platform)
+    protected override string GetDefaultAppPath(MauiPlatform platform)
     {
         var solutionDir = FindSolutionDirectory();
         
-        return platform.ToLowerInvariant() switch
+        return platform switch
         {
-            "windows" => Path.Combine(solutionDir, 
+            MauiPlatform.Windows => Path.Combine(solutionDir, 
                 "samples", "Brinell.Samples.Maui.App", "bin", "Debug", 
                 "net10.0-windows10.0.19041.0", "win-x64", "Brinell.Samples.Maui.App.exe"),
-            "android" => Path.Combine(solutionDir,
+            MauiPlatform.Android => Path.Combine(solutionDir,
                 "samples", "Brinell.Samples.Maui.App", "bin", "Debug",
                 "net10.0-android", "com.brinell.samples.maui-Signed.apk"),
-            "ios" => Path.Combine(solutionDir,
+            MauiPlatform.iOS => Path.Combine(solutionDir,
                 "samples", "Brinell.Samples.Maui.App", "bin", "Debug",
                 "net10.0-ios", "iossimulator-x64", "Brinell.Samples.Maui.App.app"),
             _ => ""

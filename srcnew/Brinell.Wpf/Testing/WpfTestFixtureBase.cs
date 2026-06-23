@@ -1,3 +1,4 @@
+using Brinell.Core.Configuration;
 using Brinell.Wpf.Context;
 using Brinell.Core.Artifacts;
 
@@ -8,11 +9,9 @@ namespace Brinell.Wpf.Testing;
 /// Inherit from this class and implement <see cref="GetDefaultAppPath"/>.
 /// </summary>
 /// <remarks>
-/// Configuration via environment variables:
-/// - WPF_APP_PATH: Path to the WPF app executable
-/// - WPF_PROCESS_NAME: Process name to attach to (when WPF_ATTACH_TO_RUNNING is true)
-/// - WPF_ATTACH_TO_RUNNING: "true" to attach to an already running instance
-/// - WPF_WINDOW_HANDLE: Window handle to attach to (hex or decimal)
+/// Configuration is loaded from brinell.wpf.config.json.
+/// For per-test overrides, use SetupWith() before running your test.
+/// Environment variables are still supported for backward compatibility but are deprecated.
 /// </remarks>
 public abstract class WpfTestFixtureBase : IDisposable
 {
@@ -22,12 +21,20 @@ public abstract class WpfTestFixtureBase : IDisposable
     private bool _disposed;
 
     /// <summary>
-    /// Initializes the fixture by creating the test context.
+    /// Current WPF configuration loaded from brinell.wpf.config.json
+    /// </summary>
+    protected BrinellWpfConfiguration Configuration { get; private set; }
+
+    /// <summary>
+    /// Initializes the fixture by loading configuration and creating the test context.
     /// </summary>
     protected WpfTestFixtureBase()
     {
         _instanceId = Interlocked.Increment(ref _instanceCount);
         Console.WriteLine($"[FIXTURE] {GetType().Name} #{_instanceId} CREATING at {DateTime.Now:HH:mm:ss.fff}");
+
+        // Load configuration from config file (or defaults if not found)
+        Configuration = BrinellWpfConfiguration.Load();
 
         var options = CreateTestContextOptions();
         _context = new WpfTestContext(options);
@@ -50,19 +57,37 @@ public abstract class WpfTestFixtureBase : IDisposable
 
     #endregion
 
+    #region Configuration Setup
+
+    /// <summary>
+    /// Allows per-test configuration overrides.
+    /// Call this before your test logic to customize the configuration for a specific test.
+    /// </summary>
+    protected void SetupWith(Action<BrinellWpfConfiguration> configureAction)
+    {
+        ArgumentNullException.ThrowIfNull(configureAction);
+        configureAction(Configuration);
+    }
+
+    #endregion
+
     #region Virtual Configuration Methods
 
     /// <summary>
-    /// Creates test context options from environment variables or defaults.
-    /// Override to customize driver configuration.
+    /// Creates test context options from configuration or environment variables.
+    /// Override to further customize driver configuration.
     /// </summary>
     protected virtual WpfTestContextOptions CreateTestContextOptions()
     {
-        var attachToRunning = ParseBool(Environment.GetEnvironmentVariable("WPF_ATTACH_TO_RUNNING"));
-        var processName = Environment.GetEnvironmentVariable("WPF_PROCESS_NAME");
-        var windowHandle = ParseWindowHandle(Environment.GetEnvironmentVariable("WPF_WINDOW_HANDLE"));
+        ArgumentNullException.ThrowIfNull(Configuration, nameof(Configuration));
+        ArgumentNullException.ThrowIfNull(Configuration.Wpf, nameof(Configuration.Wpf));
 
-        var appPath = Environment.GetEnvironmentVariable("WPF_APP_PATH");
+        var attachToRunning = Configuration.Wpf.AttachToRunning;
+        var processName = Configuration.Wpf.ProcessName;
+        var windowHandleStr = Configuration.Wpf.WindowHandle;
+        var windowHandle = ParseWindowHandle(windowHandleStr);
+
+        var appPath = Configuration.Wpf.AppPath;
         if (string.IsNullOrWhiteSpace(appPath) && !attachToRunning)
         {
             appPath = GetDefaultAppPath();
@@ -122,7 +147,7 @@ public abstract class WpfTestFixtureBase : IDisposable
 
     protected virtual ITestArtifactPathProvider GetArtifactPathProvider()
     {
-        return DefaultTestArtifactPathProvider.Create(GetType().Assembly.GetName().Name);
+        return DefaultTestArtifactPathProvider.Create(Configuration.Artifacts, GetType().Assembly.GetName().Name);
     }
 
     /// <summary>

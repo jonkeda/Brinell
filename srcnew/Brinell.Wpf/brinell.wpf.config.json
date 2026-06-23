@@ -1,0 +1,13 @@
+{
+  "artifacts": {
+    "rootDirectory": null,
+    "runId": null,
+    "suite": "WPF"
+  },
+  "wpf": {
+    "appPath": null,
+    "processName": null,
+    "windowHandle": null,
+    "attachToRunning": false
+  }
+}

@@ -14,7 +14,7 @@ public sealed class TestArtifactPathProviderTests
             runId: "run:42",
             suite: "Suite/Name");
 
-        var provider = DefaultTestArtifactPathProvider.Create(baseDirectory: root);
+        var provider = DefaultTestArtifactPathProvider.Create();
 
         Assert.Equal(Path.GetFullPath(root), provider.RootDirectory);
         Assert.EndsWith(Path.Combine("run_42", "suites", "Suite_Name"), provider.SuiteDirectory);
@@ -32,8 +32,7 @@ public sealed class TestArtifactPathProviderTests
             suite: "EnvironmentSuite");
 
         var provider = DefaultTestArtifactPathProvider.Create(
-            suiteName: "ProvidedSuite",
-            baseDirectory: root);
+            suiteName: "ProvidedSuite");
 
         Assert.EndsWith(Path.Combine("run-1", "suites", "EnvironmentSuite"), provider.SuiteDirectory);
     }
@@ -46,7 +45,7 @@ public sealed class TestArtifactPathProviderTests
             rootDirectory: root,
             runId: "run-1",
             suite: "Suite");
-        var provider = DefaultTestArtifactPathProvider.Create(baseDirectory: root);
+        var provider = DefaultTestArtifactPathProvider.Create();
 
         provider.EnsureDirectories();
 
@@ -72,7 +71,7 @@ public sealed class TestArtifactPathProviderTests
             rootDirectory: root,
             runId: "run-1",
             suite: "Suite");
-        var provider = DefaultTestArtifactPathProvider.Create(baseDirectory: root);
+        var provider = DefaultTestArtifactPathProvider.Create();
         Directory.CreateDirectory(provider.ScreenshotsDirectory);
         var screenshotPath = Path.Combine(provider.ScreenshotsDirectory, "sample.png");
         File.WriteAllText(screenshotPath, "fake png");

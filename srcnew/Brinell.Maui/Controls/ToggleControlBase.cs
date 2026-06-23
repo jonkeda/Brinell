@@ -1,3 +1,5 @@
+using Brinell.Maui.Configuration;
+
 namespace Brinell.Maui.Controls;
 
 /// <summary>

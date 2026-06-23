@@ -107,13 +107,13 @@ public abstract class ContainerBase<TParent, TSelf> : ControlBase<TParent>, IMau
     IMauiTestContext IMauiElementScope.Context => Context;
     
     /// <inheritdoc />
-    public new IPageObject? Page => ((IElementScope)_parent).Page;
+    public new IPageObject? Page => _parent.Page;
     
     /// <inheritdoc />
     public bool IsReady(int? timeoutMs = null)
     {
         // Container is ready when parent is ready AND container root exists
-        var parentReady = ((IElementScope)_parent).IsReady(timeoutMs);
+        var parentReady = _parent.IsReady(timeoutMs);
         if (!parentReady) return false;
         
         return TryGetContainerRoot() != null;
@@ -123,7 +123,7 @@ public abstract class ContainerBase<TParent, TSelf> : ControlBase<TParent>, IMau
     public bool WaitReady(int? timeoutMs = null)
     {
         // First wait for parent to be ready
-        var parentReady = ((IElementScope)_parent).WaitReady(timeoutMs);
+        var parentReady = _parent.WaitReady(timeoutMs);
         if (!parentReady) return false;
         
         // Then wait for container root to exist

@@ -1,3 +1,4 @@
+using Brinell.Core.Configuration;
 using Brinell.WinForms.Context;
 using Brinell.Core.Artifacts;
 
@@ -8,11 +9,9 @@ namespace Brinell.WinForms.Testing;
 /// Inherit from this class and implement <see cref="GetDefaultAppPath"/>.
 /// </summary>
 /// <remarks>
-/// Configuration via environment variables:
-/// - WINFORMS_APP_PATH: Path to the WinForms app executable
-/// - WINFORMS_PROCESS_NAME: Process name to attach to (when WINFORMS_ATTACH_TO_RUNNING is true)
-/// - WINFORMS_ATTACH_TO_RUNNING: "true" to attach to an already running instance
-/// - WINFORMS_WINDOW_HANDLE: Window handle to attach to (hex or decimal)
+/// Configuration is loaded from brinell.winforms.config.json.
+/// For per-test overrides, use SetupWith() before running your test.
+/// Environment variables are still supported for backward compatibility but are deprecated.
 /// </remarks>
 public abstract class WinFormsTestFixtureBase : IDisposable
 {
@@ -22,12 +21,20 @@ public abstract class WinFormsTestFixtureBase : IDisposable
     private bool _disposed;
 
     /// <summary>
-    /// Initializes the fixture by creating the test context.
+    /// Current WinForms configuration loaded from brinell.winforms.config.json
+    /// </summary>
+    protected BrinellWinFormsConfiguration Configuration { get; private set; }
+
+    /// <summary>
+    /// Initializes the fixture by loading configuration and creating the test context.
     /// </summary>
     protected WinFormsTestFixtureBase()
     {
         _instanceId = Interlocked.Increment(ref _instanceCount);
         Console.WriteLine($"[FIXTURE] {GetType().Name} #{_instanceId} CREATING at {DateTime.Now:HH:mm:ss.fff}");
+
+        // Load configuration from config file (or defaults if not found)
+        Configuration = BrinellWinFormsConfiguration.Load();
 
         var options = CreateTestContextOptions();
         _context = new WinFormsTestContext(options);
@@ -50,19 +57,36 @@ public abstract class WinFormsTestFixtureBase : IDisposable
 
     #endregion
 
-    #region Virtual Configuration Methods
+    #region Configuration Setup
 
     /// <summary>
-    /// Creates test context options from environment variables or defaults.
-    /// Override to customize driver configuration.
+    /// Allows per-test configuration overrides.
+    /// </summary>
+    protected void SetupWith(Action<BrinellWinFormsConfiguration> configureAction)
+    {
+        ArgumentNullException.ThrowIfNull(configureAction);
+        configureAction(Configuration);
+    }
+
+    #endregion
+
+    #region Options Creation
+
+    /// <summary>
+    /// Creates test context options from configuration or environment variables.
+    /// Override to further customize driver configuration.
     /// </summary>
     protected virtual WinFormsTestContextOptions CreateTestContextOptions()
     {
-        var attachToRunning = ParseBool(Environment.GetEnvironmentVariable("WINFORMS_ATTACH_TO_RUNNING"));
-        var processName = Environment.GetEnvironmentVariable("WINFORMS_PROCESS_NAME");
-        var windowHandle = ParseWindowHandle(Environment.GetEnvironmentVariable("WINFORMS_WINDOW_HANDLE"));
+        ArgumentNullException.ThrowIfNull(Configuration, nameof(Configuration));
+        ArgumentNullException.ThrowIfNull(Configuration.WinForms, nameof(Configuration.WinForms));
 
-        var appPath = Environment.GetEnvironmentVariable("WINFORMS_APP_PATH");
+        var attachToRunning = Configuration.WinForms.AttachToRunning;
+        var processName = Configuration.WinForms.ProcessName;
+        var windowHandleStr = Configuration.WinForms.WindowHandle;
+        var windowHandle = ParseWindowHandle(windowHandleStr);
+
+        var appPath = Configuration.WinForms.AppPath;
         if (string.IsNullOrWhiteSpace(appPath) && !attachToRunning)
         {
             appPath = GetDefaultAppPath();
@@ -122,7 +146,7 @@ public abstract class WinFormsTestFixtureBase : IDisposable
 
     protected virtual ITestArtifactPathProvider GetArtifactPathProvider()
     {
-        return DefaultTestArtifactPathProvider.Create(GetType().Assembly.GetName().Name);
+        return DefaultTestArtifactPathProvider.Create(Configuration.Artifacts, GetType().Assembly.GetName().Name);
     }
 
     /// <summary>

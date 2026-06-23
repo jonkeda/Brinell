@@ -1,10 +1,8 @@
-using Brinell.Core.Configuration;
-using Brinell.Core.Interfaces;
 using Brinell.Core.Services;
 using Brinell.Core.Testing;
 using Brinell.Core.Artifacts;
 using Brinell.Maui.Context;
-using Brinell.Maui.Enums;
+using Brinell.Maui.Configuration;
 
 namespace Brinell.Maui.Testing;
 
@@ -13,12 +11,9 @@ namespace Brinell.Maui.Testing;
 /// Inherit from this class in your test project and implement <see cref="GetDefaultAppPath"/>.
 /// </summary>
 /// <remarks>
-/// Configuration via environment variables:
-/// - APPIUM_SERVER_URI: Appium server URL (default: http://127.0.0.1:4723)
-/// - APPIUM_PLATFORM: "windows", "android", or "ios" (default: windows)
-/// - APPIUM_APP_PATH: Path to the app executable/package
-/// - APPIUM_DEVICE_NAME: Device/emulator name (Android/iOS only)
-/// - APPIUM_PLATFORM_VERSION: Platform version (iOS only)
+/// Configuration is loaded from brinell.maui.config.json. 
+/// For per-test overrides, use SetupWith() before running your test.
+/// Environment variables are still supported for backward compatibility but are deprecated.
 /// </remarks>
 public abstract class MauiTestFixtureBase : IDisposable
 {
@@ -27,14 +22,22 @@ public abstract class MauiTestFixtureBase : IDisposable
     private readonly MauiTestContext _context;
     private readonly IScreenshotService _screenshotService;
     private bool _disposed;
+    
+    /// <summary>
+    /// Current MAUI configuration loaded from brinell.maui.config.json
+    /// </summary>
+    protected BrinellMauiConfiguration Configuration { get; private set; }
 
     /// <summary>
-    /// Initializes the fixture by creating the test context and screenshot service.
+    /// Initializes the fixture by loading configuration and creating the test context and screenshot service.
     /// </summary>
     protected MauiTestFixtureBase()
     {
         _instanceId = Interlocked.Increment(ref _instanceCount);
         Console.WriteLine($"[FIXTURE] {GetType().Name} #{_instanceId} CREATING at {DateTime.Now:HH:mm:ss.fff}");
+        
+        // Load configuration from config file (or defaults if not found)
+        Configuration = BrinellMauiConfiguration.Load();
         
         var options = CreateTestContextOptions();
         _context = new MauiTestContext(options);
@@ -64,9 +67,9 @@ public abstract class MauiTestFixtureBase : IDisposable
     public IScreenshotService ScreenshotService => _screenshotService;
 
     /// <summary>
-    /// Gets the current platform from environment variable or default.
+    /// Gets the current platform from configuration.
     /// </summary>
-    protected string Platform => Environment.GetEnvironmentVariable("APPIUM_PLATFORM") ?? "windows";
+    protected MauiPlatform Platform => Configuration?.Maui?.Platform ?? MauiPlatform.Windows;
 
     #region Abstract Methods
 
@@ -75,7 +78,31 @@ public abstract class MauiTestFixtureBase : IDisposable
     /// </summary>
     /// <param name="platform">The platform: "windows", "android", or "ios".</param>
     /// <returns>The path to the app executable or package.</returns>
-    protected abstract string GetDefaultAppPath(string platform);
+    protected abstract string GetDefaultAppPath(MauiPlatform platform);
+
+    #endregion
+
+    #region Configuration Setup
+
+    /// <summary>
+    /// Allows per-test configuration overrides.
+    /// Call this before your test logic to customize the configuration for a specific test.
+    /// </summary>
+    /// <example>
+    /// <code>
+    /// var fixture = new MyTestFixture();
+    /// fixture.SetupWith(config => {
+    ///     config.Maui.Platform = "android";
+    ///     config.Maui.DeviceName = "emulator-5556";
+    /// });
+    /// // Now run your test with the customized configuration
+    /// </code>
+    /// </example>
+    protected void SetupWith(Action<BrinellMauiConfiguration> configureAction)
+    {
+        ArgumentNullException.ThrowIfNull(configureAction);
+        configureAction(Configuration);
+    }
 
     #endregion
 
@@ -83,49 +110,31 @@ public abstract class MauiTestFixtureBase : IDisposable
 
     /// <summary>
     /// Creates test context options with platform-specific capabilities.
-    /// Override to customize driver configuration.
+    /// Uses configuration loaded from brinell.maui.config.json.
+    /// Override to further customize driver configuration.
     /// </summary>
     protected virtual MauiTestContextOptions CreateTestContextOptions()
     {
-        var platform = Platform;
+        ArgumentNullException.ThrowIfNull(Configuration, nameof(Configuration));
+        ArgumentNullException.ThrowIfNull(Configuration.Maui, nameof(Configuration.Maui));
 
-        var attachToRunning = ParseBool(Environment.GetEnvironmentVariable("APPIUM_ATTACH_TO_RUNNING"));
-        var processName = Environment.GetEnvironmentVariable("APPIUM_PROCESS_NAME");
-        var windowHandle = ParseWindowHandle(Environment.GetEnvironmentVariable("APPIUM_WINDOW_HANDLE"));
-
-        var appPath = Environment.GetEnvironmentVariable("APPIUM_APP_PATH");
-        if (string.IsNullOrWhiteSpace(appPath) && !attachToRunning)
+        // Create driver options from configuration
+        var windowsConfig = Configuration.Framework?.WindowsInteraction;
+        var driverOptions = MauiDriverOptions.FromConfiguration(Configuration.Maui, windowsConfig);
+        
+        // Set timeouts
+        driverOptions.Timeouts = new TimeoutSettings
         {
-            appPath = GetDefaultAppPath(platform);
-        }
-
-        var mauiPlatform = platform.ToLowerInvariant() switch
-        {
-            "android" => MauiPlatform.Android,
-            "ios" => MauiPlatform.iOS,
-            "windows" => MauiPlatform.Windows,
-            _ => throw new InvalidOperationException($"Unsupported platform: {platform}")
-        };
-
-        var driverOptions = new MauiDriverOptions
-        {
-            Platform = mauiPlatform,
-            AppPath = appPath,
-            ProcessName = attachToRunning ? processName : null,
-            WindowHandle = attachToRunning ? windowHandle : null,
-            Timeouts = new TimeoutSettings
-            {
-                DefaultWait = 5000,
-                PageLoad = 10000,
-                ElementFind = 3000,
-                ElementState = 3000,
-                Animation = 300,
-                PollingInterval = 100
-            }
+            DefaultWait = 5000,
+            PageLoad = 10000,
+            ElementFind = 3000,
+            ElementState = 3000,
+            Animation = 300,
+            PollingInterval = 100
         };
         
         // Configure platform-specific options
-        switch (mauiPlatform)
+        switch (Configuration.Maui.Platform)
         {
             case MauiPlatform.Android:
                 ConfigureAndroidOptions(driverOptions);
@@ -149,10 +158,9 @@ public abstract class MauiTestFixtureBase : IDisposable
     /// </summary>
     protected virtual void ConfigureAndroidOptions(MauiDriverOptions options)
     {
-        var serverUri = Environment.GetEnvironmentVariable("APPIUM_SERVER_URI")
-            ?? "http://127.0.0.1:4723";
-        var deviceName = Environment.GetEnvironmentVariable("APPIUM_DEVICE_NAME")
-            ?? "emulator-5554";
+        // Use configuration values, fall back to defaults
+        var serverUri = Configuration?.Maui?.ServerUri ?? "http://127.0.0.1:4723";
+        var deviceName = Configuration?.Maui?.DeviceName ?? "emulator-5554";
         
         options.AppiumServerUri = new Uri(serverUri);
         options.DeviceName = deviceName;
@@ -164,12 +172,10 @@ public abstract class MauiTestFixtureBase : IDisposable
     /// </summary>
     protected virtual void ConfigureiOSOptions(MauiDriverOptions options)
     {
-        var serverUri = Environment.GetEnvironmentVariable("APPIUM_SERVER_URI")
-            ?? "http://127.0.0.1:4723";
-        var deviceName = Environment.GetEnvironmentVariable("APPIUM_DEVICE_NAME")
-            ?? "iPhone 15";
-        var platformVersion = Environment.GetEnvironmentVariable("APPIUM_PLATFORM_VERSION")
-            ?? "17.0";
+        // Use configuration values, fall back to defaults
+        var serverUri = Configuration?.Maui?.ServerUri ?? "http://127.0.0.1:4723";
+        var deviceName = Configuration?.Maui?.DeviceName ?? "iPhone 15";
+        var platformVersion = Configuration?.Maui?.PlatformVersion ?? "17.0";
         
         options.AppiumServerUri = new Uri(serverUri);
         options.DeviceName = deviceName;
@@ -180,10 +186,6 @@ public abstract class MauiTestFixtureBase : IDisposable
 
     #region Utility Methods
 
-    /// <summary>
-    /// Gets the screenshot output directory path.
-    /// Override to customize the screenshot location.
-    /// </summary>
     protected virtual string GetScreenshotDirectory()
     {
         var path = GetArtifactPathProvider().ScreenshotsDirectory;
@@ -193,7 +195,7 @@ public abstract class MauiTestFixtureBase : IDisposable
 
     protected virtual ITestArtifactPathProvider GetArtifactPathProvider()
     {
-        return DefaultTestArtifactPathProvider.Create(GetType().Assembly.GetName().Name);
+        return DefaultTestArtifactPathProvider.Create(Configuration.Artifacts, GetType().Assembly.GetName().Name);
     }
     
     /// <summary>
@@ -238,39 +240,6 @@ public abstract class MauiTestFixtureBase : IDisposable
 
         Console.WriteLine($"[FIXTURE] {GetType().Name} #{_instanceId} DISPOSED");
         _disposed = true;
-    }
-
-    private static bool ParseBool(string? value)
-    {
-        return string.Equals(value, "1", StringComparison.OrdinalIgnoreCase)
-               || string.Equals(value, "true", StringComparison.OrdinalIgnoreCase)
-               || string.Equals(value, "yes", StringComparison.OrdinalIgnoreCase);
-    }
-
-    private static IntPtr? ParseWindowHandle(string? value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return null;
-        }
-
-        var normalized = value.Trim();
-        if (normalized.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-        {
-            normalized = normalized[2..];
-        }
-
-        if (long.TryParse(normalized, System.Globalization.NumberStyles.HexNumber, null, out var hexResult))
-        {
-            return new IntPtr(hexResult);
-        }
-
-        if (long.TryParse(normalized, out var decimalResult))
-        {
-            return new IntPtr(decimalResult);
-        }
-
-        return null;
     }
 
     #endregion

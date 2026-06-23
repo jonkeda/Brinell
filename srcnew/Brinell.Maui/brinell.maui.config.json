@@ -1,0 +1,29 @@
+{
+  "artifacts": {
+    "rootDirectory": null,
+    "runId": null,
+    "suite": "MAUI"
+  },
+  "framework": {
+    "windowsInteraction": {
+      "mode": "semantic",
+      "allowForegroundActivation": false,
+      "allowPointerInput": false,
+      "allowGlobalKeyboardInput": false,
+      "allowClipboardInput": false
+    },
+    "automation": {
+      "enabled": false
+    }
+  },
+  "maui": {
+    "serverUri": "http://127.0.0.1:4723",
+    "platform": "windows",
+    "appPath": null,
+    "processName": null,
+    "windowHandle": null,
+    "deviceName": null,
+    "platformVersion": null,
+    "attachToRunning": false
+  }
+}

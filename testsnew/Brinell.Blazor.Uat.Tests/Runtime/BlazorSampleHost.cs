@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
 using System.Net.Sockets;
+using Brinell.Core.Configuration;
 
 namespace Brinell.Blazor.Uat.Tests.Runtime;
 
@@ -9,19 +10,23 @@ internal sealed class BlazorSampleHost : IDisposable
 {
     private readonly Process _process;
     private readonly List<string> _output = [];
+    private readonly BlazorOptions _options;
     private bool _disposed;
 
-    private BlazorSampleHost(Process process, string baseUrl)
+    private BlazorSampleHost(Process process, string baseUrl, BlazorOptions options)
     {
         _process = process;
         BaseUrl = baseUrl;
+        _options = options;
     }
 
     public string BaseUrl { get; }
 
-    public static BlazorSampleHost Start()
+    public static BlazorSampleHost Start(BlazorOptions? options = null)
     {
-        var projectPath = ResolveAppProjectPath();
+        options ??= BrinellBlazorConfiguration.Load()?.Blazor ?? new BlazorOptions();
+        
+        var projectPath = ResolveAppProjectPath(options);
         var port = GetFreePort();
         var baseUrl = $"http://127.0.0.1:{port}";
 
@@ -48,7 +53,7 @@ internal sealed class BlazorSampleHost : IDisposable
 
         try
         {
-            var host = new BlazorSampleHost(process, baseUrl);
+            var host = new BlazorSampleHost(process, baseUrl, options);
             process.OutputDataReceived += (_, args) => host.Capture(args.Data);
             process.ErrorDataReceived += (_, args) => host.Capture(args.Data);
             process.BeginOutputReadLine();
@@ -90,7 +95,8 @@ internal sealed class BlazorSampleHost : IDisposable
     private async Task WaitUntilReadyAsync()
     {
         using var client = new HttpClient { Timeout = TimeSpan.FromMilliseconds(500) };
-        var deadline = DateTime.UtcNow.AddSeconds(GetReadyTimeoutSeconds());
+        var readyTimeoutSeconds = _options.ReadyTimeoutSeconds > 0 ? _options.ReadyTimeoutSeconds : 90;
+        var deadline = DateTime.UtcNow.AddSeconds(readyTimeoutSeconds);
 
         while (DateTime.UtcNow < deadline)
         {
@@ -142,22 +148,15 @@ internal sealed class BlazorSampleHost : IDisposable
         return port;
     }
 
-    private static int GetReadyTimeoutSeconds()
+    private static string ResolveAppProjectPath(BlazorOptions options)
     {
-        var configured = Environment.GetEnvironmentVariable("BLAZOR_APP_READY_TIMEOUT_SECONDS");
-        return int.TryParse(configured, out var seconds) && seconds > 0
-            ? seconds
-            : 90;
-    }
-
-    private static string ResolveAppProjectPath()
-    {
-        var configured = Environment.GetEnvironmentVariable("BLAZOR_APP_PATH");
-        if (!string.IsNullOrWhiteSpace(configured))
+        // Use configuration path if available
+        if (!string.IsNullOrWhiteSpace(options.AppPath))
         {
-            return Path.GetFullPath(configured);
+            return Path.GetFullPath(options.AppPath);
         }
 
+        // Fall back to default location
         var solutionDir = FindSolutionDirectory();
         return Path.Combine(solutionDir, "samples", "Brinell.Samples.Blazor.App", "Brinell.Samples.Blazor.App.csproj");
     }

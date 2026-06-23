@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
 using System.Net.Sockets;
+using Brinell.Core.Configuration;
 
 namespace Brinell.Html.Uat.Tests.Runtime;
 
@@ -9,19 +10,23 @@ internal sealed class HtmlSampleHost : IDisposable
 {
     private readonly Process _process;
     private readonly List<string> _output = [];
+    private readonly HtmlOptions _options;
     private bool _disposed;
 
-    private HtmlSampleHost(Process process, string baseUrl)
+    private HtmlSampleHost(Process process, string baseUrl, HtmlOptions options)
     {
         _process = process;
         BaseUrl = baseUrl;
+        _options = options;
     }
 
     public string BaseUrl { get; }
 
-    public static HtmlSampleHost Start()
+    public static HtmlSampleHost Start(HtmlOptions? options = null)
     {
-        var projectPath = ResolveAppProjectPath();
+        options ??= BrinellHtmlConfiguration.Load()?.Html ?? new HtmlOptions();
+        
+        var projectPath = ResolveAppProjectPath(options);
         var port = GetFreePort();
         var baseUrl = $"http://127.0.0.1:{port}";
 
@@ -46,7 +51,7 @@ internal sealed class HtmlSampleHost : IDisposable
         var process = Process.Start(startInfo)
             ?? throw new InvalidOperationException("Failed to start HTML sample app.");
 
-        var host = new HtmlSampleHost(process, baseUrl);
+        var host = new HtmlSampleHost(process, baseUrl, options);
         process.OutputDataReceived += (_, args) => host.Capture(args.Data);
         process.ErrorDataReceived += (_, args) => host.Capture(args.Data);
         process.BeginOutputReadLine();
@@ -128,14 +133,15 @@ internal sealed class HtmlSampleHost : IDisposable
         return port;
     }
 
-    private static string ResolveAppProjectPath()
+    private static string ResolveAppProjectPath(HtmlOptions options)
     {
-        var configured = Environment.GetEnvironmentVariable("HTML_APP_PATH");
-        if (!string.IsNullOrWhiteSpace(configured))
+        // Use configuration path if available
+        if (!string.IsNullOrWhiteSpace(options.AppPath))
         {
-            return Path.GetFullPath(configured);
+            return Path.GetFullPath(options.AppPath);
         }
 
+        // Fall back to default location
         var solutionDir = FindSolutionDirectory();
         return Path.Combine(solutionDir, "samples", "Brinell.Samples.Blazor.App", "Brinell.Samples.Blazor.App.csproj");
     }

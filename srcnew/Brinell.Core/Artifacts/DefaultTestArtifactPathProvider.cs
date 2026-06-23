@@ -1,4 +1,5 @@
 using System.Reflection;
+using Brinell.Core.Configuration;
 
 namespace Brinell.Core.Artifacts;
 
@@ -55,23 +56,34 @@ public sealed class DefaultTestArtifactPathProvider : ITestArtifactPathProvider
 
     public string AttachmentsDirectory { get; }
 
-    public static DefaultTestArtifactPathProvider Create(
-        string? suiteName = null,
-        string? baseDirectory = null)
+    /// <summary>
+    /// Creates artifact path provider from configuration.
+    /// Configuration values are required; no fallback to environment variables.
+    /// </summary>
+    public static DefaultTestArtifactPathProvider Create(ArtifactsOptions artifacts, string? suiteName = null)
     {
-        var root = FirstNonEmpty(
-            Environment.GetEnvironmentVariable(TestArtifactOptions.RootDirectoryEnvironmentVariable),
-            baseDirectory,
-            Path.Combine(FindRepositoryRoot(Environment.CurrentDirectory), "TestResults"));
+        ArgumentNullException.ThrowIfNull(artifacts);
 
-        var runId = FirstNonEmpty(
-            Environment.GetEnvironmentVariable(TestArtifactOptions.RunIdEnvironmentVariable),
-            LocalRunId.Value);
+        // Use configuration values with reasonable defaults
+        var root = artifacts.RootDirectory 
+            ?? Path.Combine(FindRepositoryRoot(Environment.CurrentDirectory), "TestResults");
 
-        var suite = FirstNonEmpty(
-            Environment.GetEnvironmentVariable(TestArtifactOptions.SuiteEnvironmentVariable),
-            suiteName,
-            InferSuiteName());
+        var runId = artifacts.RunId ?? LocalRunId.Value;
+
+        var suite = artifacts.Suite ?? suiteName ?? InferSuiteName();
+
+        return new DefaultTestArtifactPathProvider(new TestArtifactOptions(root, runId, suite));
+    }
+
+    /// <summary>
+    /// Creates artifact path provider with default values.
+    /// Used for scenarios where configuration is not available (backward compatibility).
+    /// </summary>
+    public static DefaultTestArtifactPathProvider Create(string? suiteName = null)
+    {
+        var root = Path.Combine(FindRepositoryRoot(Environment.CurrentDirectory), "TestResults");
+        var runId = LocalRunId.Value;
+        var suite = suiteName ?? InferSuiteName();
 
         return new DefaultTestArtifactPathProvider(new TestArtifactOptions(root, runId, suite));
     }

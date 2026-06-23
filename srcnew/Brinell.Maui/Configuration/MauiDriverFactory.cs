@@ -3,7 +3,7 @@ using System.Reflection;
 using Brinell.Maui.Enums;
 using Brinell.Maui.Interfaces;
 
-namespace Brinell.Maui;
+namespace Brinell.Maui.Configuration;
 
 /// <summary>
 /// Factory for creating platform-appropriate MAUI drivers.

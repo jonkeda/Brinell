@@ -10,21 +10,13 @@ public static class UatScenarioSource
         return Path.Combine(baseDirectory ?? AppContext.BaseDirectory, configFileName);
     }
 
-    public static IEnumerable<object[]> GetScenarioFileTheoryData(
-        string folderName = "Scenarios",
-        string? baseDirectory = null,
-        string? filterEnvironmentVariable = null)
-    {
-        foreach (var filePath in EnumerateScenarioFiles(folderName, baseDirectory, filterEnvironmentVariable))
-        {
-            yield return [filePath];
-        }
-    }
-
+    /// <summary>
+    /// Enumerates scenario files, optionally filtered by configuration.
+    /// </summary>
     public static IEnumerable<string> EnumerateScenarioFiles(
         string folderName = "Scenarios",
         string? baseDirectory = null,
-        string? filterEnvironmentVariable = null)
+        string? configurationFilter = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(folderName);
 
@@ -35,7 +27,22 @@ public static class UatScenarioSource
                 .Order(StringComparer.OrdinalIgnoreCase)
             : Array.Empty<string>();
 
-        return ApplyFilter(files, ReadFilter(filterEnvironmentVariable));
+        // Use configuration filter if provided
+        return ApplyFilter(files, configurationFilter);
+    }
+
+    /// <summary>
+    /// Gets scenario files as theory data, optionally filtered by configuration.
+    /// </summary>
+    public static IEnumerable<object[]> GetScenarioFileTheoryData(
+        string folderName = "Scenarios",
+        string? baseDirectory = null,
+        string? configurationFilter = null)
+    {
+        foreach (var filePath in EnumerateScenarioFiles(folderName, baseDirectory, configurationFilter))
+        {
+            yield return [filePath];
+        }
     }
 
     public static IEnumerable<string> ApplyFilter(IEnumerable<string> filePaths, string? filter)
@@ -50,12 +57,5 @@ public static class UatScenarioSource
             : filePaths.Where(path => terms.Any(term =>
                 path.Contains(term, StringComparison.OrdinalIgnoreCase) ||
                 Path.GetFileName(path).Contains(term, StringComparison.OrdinalIgnoreCase)));
-    }
-
-    private static string? ReadFilter(string? filterEnvironmentVariable)
-    {
-        return string.IsNullOrWhiteSpace(filterEnvironmentVariable)
-            ? null
-            : Environment.GetEnvironmentVariable(filterEnvironmentVariable);
     }
 }

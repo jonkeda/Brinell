@@ -14,4 +14,9 @@
     <PackageReference Include="Stride.UI" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="../Brinell.Core/Brinell.Core.csproj" />
+    <ProjectReference Include="../Brinell.Stride/Brinell.Stride.csproj" />
+  </ItemGroup>
+
 </Project>

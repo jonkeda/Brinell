@@ -1,4 +1,4 @@
-namespace Brinell.Maui;
+namespace Brinell.Maui.Configuration;
 
 /// <summary>
 /// Thrown when a Windows automation action is blocked by the configured interaction policy.

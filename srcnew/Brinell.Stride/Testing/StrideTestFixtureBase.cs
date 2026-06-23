@@ -1,3 +1,4 @@
+using Brinell.Core.Configuration;
 using Brinell.Stride.Communication;
 using Brinell.Stride.Context;
 using Brinell.Stride.Infrastructure;
@@ -16,6 +17,11 @@ public abstract class StrideTestFixtureBase : IDisposable
     private StrideGameDriver? _driver;
     private StrideTestContext? _context;
     private bool _disposed;
+
+    /// <summary>
+    /// Current Stride configuration loaded from brinell.stride.config.json
+    /// </summary>
+    protected BrinellStrideConfiguration Configuration { get; private set; } = BrinellStrideConfiguration.Load();
 
     /// <summary>
     /// Gets the Stride test context. Available after <see cref="InitializeAsync"/>.
@@ -69,7 +75,20 @@ public abstract class StrideTestFixtureBase : IDisposable
 
     protected virtual ITestArtifactPathProvider GetArtifactPathProvider()
     {
-        return DefaultTestArtifactPathProvider.Create(GetType().Assembly.GetName().Name);
+        return DefaultTestArtifactPathProvider.Create(Configuration.Artifacts, GetType().Assembly.GetName().Name);
+    }
+
+    #endregion
+
+    #region Configuration Setup
+
+    /// <summary>
+    /// Allows per-test configuration overrides.
+    /// </summary>
+    protected void SetupWith(Action<BrinellStrideConfiguration> configureAction)
+    {
+        ArgumentNullException.ThrowIfNull(configureAction);
+        configureAction(Configuration);
     }
 
     #endregion
@@ -129,11 +148,12 @@ public abstract class StrideTestFixtureBase : IDisposable
     #region Utility
 
     /// <summary>
-    /// Gets the app path from environment variable or default.
+    /// Gets the app path from configuration or environment variable.
     /// </summary>
     private string GetAppPath()
     {
-        return Environment.GetEnvironmentVariable("STRIDE_APP_PATH")
+        return Configuration?.Stride?.AppPath
+            ?? Environment.GetEnvironmentVariable("STRIDE_APP_PATH")
             ?? GetDefaultAppPath();
     }
 

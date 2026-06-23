@@ -1,4 +1,4 @@
-namespace Brinell.Maui;
+namespace Brinell.Maui.Configuration;
 
 /// <summary>
 /// Defines how Windows desktop automation may interact with the active user desktop.

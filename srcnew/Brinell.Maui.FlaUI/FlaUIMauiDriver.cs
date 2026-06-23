@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using Brinell.Core;
 using Brinell.Core.Exceptions;
 using Brinell.Core.Utilities;
+using Brinell.Maui.Configuration;
 using Brinell.Maui.Enums;
 using FlaUI.Core.Capturing;
 using FlaUI.Core.Definitions;
@@ -188,7 +189,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
             throw CreatePolicyException(
                 action,
                 "pointer input",
-                WindowsInteractionOptions.AllowPointerInputEnvironmentVariable,
+                "BRINELL_WINDOWS_ALLOW_POINTER_INPUT",
                 "Prefer UI Automation patterns, or run with BRINELL_WINDOWS_INTERACTION_MODE=interactive.");
         }
     }
@@ -200,7 +201,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
             throw CreatePolicyException(
                 action,
                 "global keyboard input",
-                WindowsInteractionOptions.AllowGlobalKeyboardInputEnvironmentVariable,
+                "BRINELL_WINDOWS_ALLOW_GLOBAL_KEYBOARD_INPUT",
                 "Prefer SetText()/ValuePattern or run with BRINELL_WINDOWS_INTERACTION_MODE=interactive.");
         }
     }
@@ -212,7 +213,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
             throw CreatePolicyException(
                 action,
                 "clipboard input",
-                WindowsInteractionOptions.AllowClipboardInputEnvironmentVariable,
+                "BRINELL_WINDOWS_ALLOW_CLIPBOARD_INPUT",
                 "Prefer SetText()/ValuePattern or run with BRINELL_WINDOWS_INTERACTION_MODE=interactive.");
         }
     }
@@ -349,7 +350,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
             throw CreatePolicyException(
                 action,
                 "foreground activation",
-                WindowsInteractionOptions.AllowForegroundActivationEnvironmentVariable,
+                "BRINELL_WINDOWS_ALLOW_FOREGROUND_ACTIVATION",
                 "Prefer UI Automation patterns, or run with BRINELL_WINDOWS_INTERACTION_MODE=interactive.");
         }
     }
