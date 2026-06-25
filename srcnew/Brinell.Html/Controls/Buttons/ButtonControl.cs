@@ -24,6 +24,6 @@ public class ButtonControl<TScope> : ClickableControlBase<TScope>
     /// </summary>
     public TScope Submit()
     {
-        return RunWithElement(element => element.Submit());
+        return RunDoWithElement(element => element.Submit());
     }
 }

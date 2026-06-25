@@ -1,3 +1,5 @@
+using Brinell.Maui.Configuration;
+
 namespace Brinell.Maui.Tests.Semantic;
 
 public class CheckBoxControlTests : SemanticControlTestsBase

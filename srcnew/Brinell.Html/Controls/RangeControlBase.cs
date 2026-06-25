@@ -32,7 +32,7 @@ public abstract class RangeControlBase<TScope> : FocusableControlBase<TScope>, I
         return GetAttribute("step", null);
     }
 
-    public string GetValue()
+    public string? GetValue()
     {
         return RunWithElement(element => element.InputValue);
     }
@@ -53,7 +53,7 @@ public abstract class RangeControlBase<TScope> : FocusableControlBase<TScope>, I
     Task<string?> IHtmlAsyncRange<TScope>.GetStep()
         => Task.FromResult(GetStep());
 
-    Task<string> IHtmlAsyncRange<TScope>.GetValue()
+    Task<string?> IHtmlAsyncRange<TScope>.GetValue()
         => Task.FromResult(GetValue());
 
     Task<TScope> IHtmlAsyncRange<TScope>.SetValue(string value)

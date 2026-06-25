@@ -40,12 +40,10 @@ public abstract class RangeControlBase<TScope> : FocusableControlBase<TScope>, I
     /// <inheritdoc />
     public TScope SetValue(double? value, int? timeoutMs = null)
     {
-        if (value == null) return ContainingScope;
-        
         return RunSetWithElement(value, element =>
         {
             EnsureSettableCore(element);
-            SetValueCore(element, value.Value);
+            SetValueCore(element, value!.Value);
         }, timeoutMs);
     }
 

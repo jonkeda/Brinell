@@ -77,13 +77,14 @@ public sealed class PlaywrightHtmlElement : IHtmlElement
     public IHtmlElement FindElement(Locator locator, int timeoutMs = 5000)
     {
         var childLocator = LocatorExtensions.ToPlaywrightLocator(_locator, locator);
+        
         if (timeoutMs > 0)
         {
             try
             {
                 childLocator.First.WaitForAsync(new LocatorWaitForOptions
                 {
-                    State = WaitForSelectorState.Attached,
+                    State = WaitForSelectorState.Visible,
                     Timeout = timeoutMs
                 }).GetAwaiter().GetResult();
             }

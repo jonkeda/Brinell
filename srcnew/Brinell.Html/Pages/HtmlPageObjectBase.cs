@@ -16,17 +16,33 @@ public abstract class HtmlPageObjectBase<TSelf> : ObjectBase, IHtmlPage<TSelf>
         _context = context ?? throw new ArgumentNullException(nameof(context));
     }
 
+    protected HtmlPageObjectBase(IHtmlTestContext context, string url)
+    {
+        _context = context ?? throw new ArgumentNullException(nameof(context));
+        Url = url;
+    }
+
     public override IHtmlTestContext Context => _context;
 
     public TSelf Self => (TSelf)this;
+
+    public string? Url { get; }
 
     public virtual string Name => GetType().Name;
 
     public LocatorStrategy DefaultLocatorStrategy => _context.DefaultLocatorStrategy;
 
+    protected virtual bool CompareUrl()
+    {
+        var uri = new Uri(_context.CurrentUrl);
+
+        return uri.LocalPath == Url;
+    }
+
     public virtual bool IsLoaded(int? timeoutMs = null)
     {
-        return true;
+        return CompareUrl()
+            && _context.IsIdle();
     }
 
     public bool WaitLoaded(bool? expected, int? timeoutMs = null)
@@ -101,6 +117,14 @@ public abstract class HtmlPageObjectBase<TSelf> : ObjectBase, IHtmlPage<TSelf>
     public bool WaitReady(int? timeoutMs = null)
     {
         return WaitLoaded(true, timeoutMs);
+    }
+
+    public void EnsureReady(int? timeoutMs = null)
+    {
+        if (!IsReady(timeoutMs))
+        {
+            throw new Exception($" Pager {Url} Not ready.");
+        }
     }
 
     IHtmlElement? IElementScope<IHtmlElement>.TryFindElement(Locator locator)

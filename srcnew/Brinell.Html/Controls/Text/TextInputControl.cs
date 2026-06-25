@@ -26,13 +26,17 @@ public class TextInputControl<TScope> : FocusableControlBase<TScope>, IHtmlAsync
     /// </summary>
     public TScope SetText(string text)
     {
-        return RunWithElement(element => element.Fill(text));
+        return RunWithElement(element =>
+        {
+            EnsureEnabledCore(element);
+            element.Fill(text);
+        });
     }
 
     /// <summary>
     /// Get the current input value.
     /// </summary>
-    public string GetValue()
+    public string? GetValue()
     {
         return RunWithElement(element => element.InputValue);
     }
@@ -83,7 +87,7 @@ public class TextInputControl<TScope> : FocusableControlBase<TScope>, IHtmlAsync
     Task<TScope> IHtmlAsyncEditable<TScope>.SetText(string text)
         => Task.FromResult(SetText(text));
 
-    Task<string> IHtmlAsyncEditable<TScope>.GetValue()
+    Task<string?> IHtmlAsyncEditable<TScope>.GetValue()
         => Task.FromResult(GetValue());
 
     Task<TScope> IHtmlAsyncEditable<TScope>.TypeText(string text)

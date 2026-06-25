@@ -1,4 +1,5 @@
 using Brinell.Maui.Context;
+using Brinell.Maui.Enums;
 using Brinell.Maui.Testing;
 using Brinell.Presenter.Uat.Tests.PageObjects;
 
@@ -29,12 +30,12 @@ public sealed class PresenterFixture : MauiTestFixtureBase
         return base.CreateTestContextOptions();
     }
 
-    protected override string GetDefaultAppPath(string platform)
+    protected override string GetDefaultAppPath(MauiPlatform platform)
     {
         var solutionDirectory = FindSolutionDirectory();
-        return platform.ToLowerInvariant() switch
+        return platform switch
         {
-            "windows" => Path.Combine(
+             MauiPlatform.Windows => Path.Combine(
                 solutionDirectory,
                 "srcnew",
                 "Brinell.Presenter",

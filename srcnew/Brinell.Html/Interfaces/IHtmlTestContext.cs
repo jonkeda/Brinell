@@ -8,4 +8,5 @@ public interface IHtmlTestContext : ITestContext<IHtmlElement>, IHtmlElementScop
     string CurrentUrl { get; }
     string PageTitle { get; }
     void GoForward();
+    bool IsIdle();
 }

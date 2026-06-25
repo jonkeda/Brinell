@@ -7,7 +7,7 @@ using Brinell.Core.Configuration;
 /// MAUI test platform configuration.
 /// Loads from brinell.maui.config.json
 /// </summary>
-public sealed class BrinellMauiConfiguration : BrinellConfigurationBase
+public class BrinellMauiConfiguration : BrinellConfigurationBase
 {
     /// <summary>
     /// Framework-level options (Windows interaction, automation, etc.).

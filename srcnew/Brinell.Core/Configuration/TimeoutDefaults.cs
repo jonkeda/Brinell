@@ -18,12 +18,12 @@ public static class TimeoutDefaults
     /// <summary>
     /// Timeout for element finding (milliseconds).
     /// </summary>
-    public static int ElementFind => 3000;
+    public static int ElementFind => 5000;
     
     /// <summary>
     /// Timeout for element state changes (milliseconds).
     /// </summary>
-    public static int ElementState => 3000;
+    public static int ElementState => 5000;
     
     /// <summary>
     /// Delay for animation settling (milliseconds).

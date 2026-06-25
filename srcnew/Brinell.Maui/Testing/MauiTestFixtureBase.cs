@@ -40,6 +40,7 @@ public abstract class MauiTestFixtureBase : IDisposable
         Configuration = BrinellMauiConfiguration.Load();
         
         var options = CreateTestContextOptions();
+        
         _context = new MauiTestContext(options);
         
         Console.WriteLine($"[FIXTURE] {GetType().Name} #{_instanceId} CREATED - Driver session started");
@@ -132,6 +133,7 @@ public abstract class MauiTestFixtureBase : IDisposable
             Animation = 300,
             PollingInterval = 100
         };
+        driverOptions.AppPath = GetDefaultAppPath(Configuration.Maui.Platform);
         
         // Configure platform-specific options
         switch (Configuration.Maui.Platform)
@@ -147,6 +149,7 @@ public abstract class MauiTestFixtureBase : IDisposable
 
         return new MauiTestContextOptions
         {
+            
             DriverOptions = driverOptions,
             Timeouts = driverOptions.Timeouts
         };

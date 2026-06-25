@@ -127,6 +127,7 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
     {
         return RunPoll(null, () =>
         {
+            
             var element = FindElement();
             EnsureVisible(element);
             return coreOperation(element);
@@ -149,6 +150,7 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
     {
         RunPoll(null, () =>
         {
+
             var element = FindElement();
             if (doEnsureVisible)
             {
@@ -191,7 +193,61 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
         return value;
     }
 
+    /// <summary>
+    /// Run assertion with custom comparison function.
+    /// </summary>
+    protected TScope RunAssert<T>(T? expected, Func<T?> getActual,
+        Func<T?, T?, bool> compare, string? message = null,
+        int? timeoutMs = null, [CallerMemberName] string? caller = null)
+    {
+        if (expected == null)
+        {
+            return ContainingScope;
+        }
+        RunPoll(null, () =>
+        {
+            var actual = getActual();
+            if (!compare(actual, expected))
+            {
+                throw new AssertionException(message ?? "Assert exception", expected, actual);
+            }
+            return true;
+        }, timeoutMs, caller);
+        return ContainingScope;
+    }
+
+    protected TScope RunAssertWithElement<T>(T? expected, Func<IMauiElement, T?> getActual,
+        Func<T?, T?, bool> compare, string? message = null,
+        int? timeoutMs = null, [CallerMemberName] string? caller = null)
+    {
+        if (expected == null)
+        {
+            return ContainingScope;
+        }
+        RunPoll(null, () =>
+        {
+            var element = FindElement();
+            EnsureVisible(element);
+
+            var actual = getActual(element);
+            if (!compare(actual, expected))
+            {
+                throw new AssertionException(message ?? "Assert exception", expected, actual);
+            }
+            return true;
+        }, timeoutMs, caller);
+        return ContainingScope;
+    }
+
     #endregion
+
+    private void EnsureScopeReady(int? timeoutMs = null)
+    {
+        if (!ContainingScope.IsReady(timeoutMs))
+        {
+            throw new Exception();
+        }
+    }
 
     #region Element Finding
 
@@ -201,9 +257,10 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
     /// <returns>The element if found, null otherwise.</returns>
     protected virtual IMauiElement? TryFindElement()
     {
+        EnsureScopeReady();
         return _mauiScope.TryFindElement(Locator);
     }
-    
+
     /// <summary>
     /// Finds the element within the scope.
     /// </summary>
@@ -211,6 +268,7 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
     /// <exception cref="ElementNotFoundException">Thrown when element is not found.</exception>
     protected virtual IMauiElement FindElement()
     {
+        EnsureScopeReady();
         return _mauiScope.FindElement(Locator);
     }
     
@@ -313,7 +371,9 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
             throw;
         }
     }
-    
+
+
+
     /// <summary>
     /// Run assertion with default equality comparison.
     /// </summary>
@@ -321,19 +381,19 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
     {
         return RunAssert(assertType, expected, getActual, (actual, exp) => Equals(actual, exp), message);
     }
-    
+
     /// <summary>
     /// Run assertion with custom comparison function.
     /// </summary>
-    protected TScope RunAssert<T>(string assertType, T? expected, Func<T?> getActual, 
+    protected TScope RunAssert<T>(string assertType, T? expected, Func<T?> getActual,
         Func<T?, T?, bool> compare, string? message = null)
     {
         var stopwatch = Stopwatch.StartNew();
         Logger?.LogEntry(TestName, PageName, ControlId, assertType, expected?.ToString());
-        
+
         var actual = getActual();
         stopwatch.Stop();
-        
+
         if (compare(actual, expected))
         {
             Logger?.LogAssertExit(TestName, PageName, ControlId, assertType,
@@ -348,11 +408,16 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
                 message ?? $"Expected '{expected}' but got '{actual}'");
         }
     }
-   
+
     #endregion
-    
+
     #region Basic Interactions
-    
+
+    protected void EnsureSettableCore(IMauiElement element)
+    {
+        EnsureEnabledCore(element);
+    }
+
     /// <summary>
     /// Sends keyboard keys to the control. Uses framework's Run for logging.
     /// Optimized to find element once and reuse.
@@ -389,8 +454,7 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
     /// <returns>True if visible, false otherwise.</returns>
     protected bool? IsVisibleCore(IMauiElement? element)
     {
-        if (element == null) return null;
-        return element.Visible;
+        return element?.Visible;
     }
     
     /// <inheritdoc />
@@ -420,10 +484,7 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
     /// <returns>True if condition was met, false if timeout reached.</returns>
     protected bool WaitVisibleCore(IMauiElement element, bool expected, int timeoutMs)
     {
-        return PollWithElement(
-            element,
-            e => IsVisibleCore(e) == expected,
-            timeoutMs);
+        return RunPoll(null, () => IsVisibleCore(element) == expected, timeoutMs);
     }
 
     protected virtual void EnsureVisibleCore(IMauiElement element, int timeout)
@@ -462,18 +523,9 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
     /// <inheritdoc />
     public TScope AssertVisible(bool? expected, string? message = null, int? timeoutMs = null)
     {
-        // Nullable skip pattern
-        if (expected == null)
-            return ContainingScope;
-
-        if (!WaitVisible(expected, timeoutMs))
-        {
-            var actual = IsVisible();
-            throw new AssertionException(
-                message ?? $"Expected element {(expected.Value ? "to be visible" : "not to be visible")} but visibility is {actual?.ToString() ?? "unknown (element not found)"}. Locator: {Locator}");
-        }
-
-        return ContainingScope;
+        return RunAssertWithElement(expected,
+            e => IsVisibleCore(e), (actual, expected1) =>  (actual == expected1),
+            null, timeoutMs);
     }
 
     #endregion
@@ -497,8 +549,7 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
     /// <returns>True if enabled, false otherwise.</returns>
     protected bool? IsEnabledCore(IMauiElement? element)
     {
-        if (element == null) return null;
-        return element.Enabled;
+        return element?.Enabled;
     }
     
     public bool? IsEnabled()
@@ -534,18 +585,9 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
     /// <inheritdoc />
     public TScope AssertEnabled(bool? expected, string? message = null, int? timeoutMs = null)
     {
-        // Nullable skip pattern
-        if (expected == null)
-            return ContainingScope;
-
-        if (!WaitEnabled(expected, timeoutMs))
-        {
-            var actual = IsEnabled();
-            throw new AssertionException(
-                message ?? $"Expected element {(expected.Value ? "to be enabled" : "to be disabled")} but enabled state is {actual?.ToString() ?? "unknown (element not found)"}. Locator: {Locator}");
-        }
-
-        return ContainingScope;
+        return RunAssertWithElement(expected,
+            IsEnabledCore, (actual, expected1) => (actual == expected1),
+            null, timeoutMs);
     }
 
     #endregion
@@ -583,18 +625,9 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
     /// <inheritdoc />
     public TScope AssertExists(bool? expected, string? message = null, int? timeoutMs = null)
     {
-        // Nullable skip pattern
-        if (expected == null)
-            return ContainingScope;
-
-        if (!WaitExists(expected, timeoutMs))
-        {
-            var actual = IsExists();
-            throw new AssertionException(
-                message ?? $"Expected element {(expected.Value ? "to exist" : "not to exist")} but it {(actual ? "exists" : "does not exist")}. Locator: {Locator}");
-        }
-
-        return ContainingScope;
+        return RunAssertWithElement(expected,
+            IsExistsCore, (actual, expected1) => (actual == expected1),
+            null, timeoutMs);
     }
 
     #endregion
@@ -627,112 +660,72 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
     
     public TScope AssertText(string? expected, string? message = null, int? timeoutMs = null)
     {
-        // Nullable skip pattern
-        if (expected == null) return ContainingScope;
-        
-        if (!WaitText(expected, timeoutMs))
-        {
-            var actual = GetText();
-            throw new AssertionException(
-                message ?? $"Expected text '{expected}' but got '{actual ?? "(null)"}'. Locator: {Locator}");
-        }
-        
-        return ContainingScope;
+        return RunAssertWithElement(expected,
+            GetTextCore, (actual, expected1) => (actual == expected1),
+            null, timeoutMs);
     }
     
     public TScope AssertTextContains(string? expected, string? message = null, int? timeoutMs = null)
     {
-        // Nullable skip pattern
-        if (expected == null) return ContainingScope;
-        
-        var passed = RunWait(
-            () => GetText()?.Contains(expected) == true,
-            timeoutMs);
-        
-        if (!passed)
-        {
-            var actual = GetText();
-            throw new AssertionException(
-                message ?? $"Expected text to contain '{expected}' but got '{actual ?? "(null)"}'. Locator: {Locator}");
-        }
-        
-        return ContainingScope;
+        return RunAssertWithElement(expected,
+            GetTextCore, (actual, expected1) => (actual?.Contains(expected!) == true),
+            null, timeoutMs);
     }
     
     public TScope AssertTextStartsWith(string? expected, string? message = null, int? timeoutMs = null)
     {
-        // Nullable skip pattern
-        if (expected == null) return ContainingScope;
-        
-        var passed = RunWait(
-            () => GetText()?.StartsWith(expected) == true,
-            timeoutMs);
-        
-        if (!passed)
-        {
-            var actual = GetText();
-            throw new AssertionException(
-                message ?? $"Expected text to start with '{expected}' but got '{actual ?? "(null)"}'. Locator: {Locator}");
-        }
-        
-        return ContainingScope;
+        return RunAssertWithElement(expected,
+            GetTextCore, (actual, expected1) => (actual?.StartsWith(expected!) == true),
+            null, timeoutMs);
     }
     
     public TScope AssertTextEndsWith(string? expected, string? message = null, int? timeoutMs = null)
     {
-        // Nullable skip pattern
-        if (expected == null) return ContainingScope;
-        
-        var passed = RunWait(
-            () => GetText()?.EndsWith(expected) == true,
-            timeoutMs);
-        
-        if (!passed)
-        {
-            var actual = GetText();
-            throw new AssertionException(
-                message ?? $"Expected text to end with '{expected}' but got '{actual ?? "(null)"}'. Locator: {Locator}");
-        }
-        
-        return ContainingScope;
+        return RunAssertWithElement(expected,
+            GetTextCore, (actual, expected1) => (actual?.EndsWith(expected!) == true),
+            null, timeoutMs);
     }
     
     public TScope AssertTextEmpty(bool? expected, string? message = null, int? timeoutMs = null)
     {
-        // Nullable skip pattern
-        if (expected == null) return ContainingScope;
-        
-        var passed = RunWait(
-            () => 
-            {
-                var text = GetText();
-                var isEmpty = string.IsNullOrEmpty(text);
-                return isEmpty == expected.Value;
-            },
-            timeoutMs);
-        
-        if (!passed)
-        {
-            var actual = GetText();
-            throw new AssertionException(
-                message ?? $"Expected text {(expected.Value ? "to be empty" : "not to be empty")} but got '{actual ?? "(null)"}'. Locator: {Locator}");
-        }
-        
-        return ContainingScope;
+        return RunAssertWithElement<bool?>(expected,
+            e => { return string.IsNullOrEmpty(GetTextCore(e)); },
+            (actual, expected1) => actual == expected1, null, timeoutMs);
     }
-    
+
     #endregion
-    
+
     #region Attributes
-    
+
+    protected virtual string? GetAttributeCore(IMauiElement element, string? name)
+    {
+        if (string.IsNullOrEmpty(name)) return null;
+        return element.GetAttribute(name);
+    }
+
     public string? GetAttribute(string name, int? timeoutMs = null)
     {
-        return RunGetWithElement(element => element.GetAttribute(name), timeoutMs);
+        return RunGetWithElement(element => GetAttributeCore(element, name), timeoutMs);
+    }
+
+    public bool WaitAttribute(string name, string? expected, int? timeoutMs = null)
+    {
+        if (expected == null)
+            return true;
+
+        return RunWaitWithElement(
+            element => GetAttributeCore(element, name) == expected, timeoutMs);
+    }
+
+    public TScope AssertAttribute(string name, string? expected, string? message = null, int? timeoutMs = null)
+    {
+        return RunAssertWithElement(expected,
+            element => GetAttributeCore(element, name), (actual, expected1) => (actual == expected1),
+            null, timeoutMs);
     }
 
     #endregion
-
-
+    
     #region ScrollIntoView
 
     /// <summary>
@@ -759,8 +752,4 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
 
     #endregion
 
-    protected void EnsureSettableCore(IMauiElement element)
-    {
-        EnsureEnabledCore(element);
-    }
 }

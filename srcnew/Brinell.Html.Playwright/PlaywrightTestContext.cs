@@ -253,6 +253,27 @@ public sealed class PlaywrightTestContext : IHtmlTestContext, IAsyncDisposable
         _page.GoForwardAsync().GetAwaiter().GetResult();
     }
 
+    public bool IsIdle()
+    {
+        return IsIdleAsync().GetAwaiter().GetResult();
+    }
+
+    public async Task<bool> IsIdleAsync()
+    {
+        try
+        {
+            await _page.WaitForLoadStateAsync(LoadState.NetworkIdle, new()
+            {
+                Timeout = 10
+            });
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     public void Refresh()
     {
         _page.ReloadAsync().GetAwaiter().GetResult();

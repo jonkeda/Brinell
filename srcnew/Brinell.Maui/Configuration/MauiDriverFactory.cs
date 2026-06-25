@@ -59,30 +59,30 @@ public static class MauiDriverFactory
                 ?? throw new InvalidOperationException("FlaUIMauiDriver(IntPtr, WindowsInteractionOptions) constructor not found");
             return (IMauiDriver)ctor.Invoke([options.WindowHandle.Value, options.WindowsInteraction]);
         }
-        else if (!string.IsNullOrEmpty(options.ProcessName))
+
+        if (!string.IsNullOrEmpty(options.ProcessName))
         {
             var process = Process.GetProcessesByName(options.ProcessName).FirstOrDefault()
-                ?? throw new InvalidOperationException(
-                    $"Process not found: {options.ProcessName}. " +
-                    "Ensure the application is running or use AppPath to launch it.");
+                          ?? throw new InvalidOperationException(
+                              $"Process not found: {options.ProcessName}. " +
+                              "Ensure the application is running or use AppPath to launch it.");
             
             var ctor = driverType.GetConstructor([typeof(Process), typeof(WindowsInteractionOptions)])
-                ?? throw new InvalidOperationException("FlaUIMauiDriver(Process, WindowsInteractionOptions) constructor not found");
+                       ?? throw new InvalidOperationException("FlaUIMauiDriver(Process, WindowsInteractionOptions) constructor not found");
             return (IMauiDriver)ctor.Invoke([process, options.WindowsInteraction]);
         }
-        else if (!string.IsNullOrEmpty(options.AppPath))
+
+        if (!string.IsNullOrEmpty(options.AppPath))
         {
             var ctor = driverType.GetConstructor([typeof(string), typeof(string), typeof(WindowsInteractionOptions)])
-                ?? throw new InvalidOperationException("FlaUIMauiDriver(string, string, WindowsInteractionOptions) constructor not found");
+                       ?? throw new InvalidOperationException("FlaUIMauiDriver(string, string, WindowsInteractionOptions) constructor not found");
             return (IMauiDriver)ctor.Invoke([options.AppPath, null, options.WindowsInteraction]);
         }
-        else
-        {
-            throw new ArgumentException(
-                "FlaUI driver requires AppPath, ProcessName, or WindowHandle. " +
-                "Set APPIUM_APP_PATH environment variable or configure options.",
-                nameof(options));
-        }
+
+        throw new ArgumentException(
+            "FlaUI driver requires AppPath, ProcessName, or WindowHandle. " +
+            "Set APPIUM_APP_PATH environment variable or configure options.",
+            nameof(options));
     }
     
     private static IMauiDriver CreateAppiumDriver(MauiDriverOptions options)

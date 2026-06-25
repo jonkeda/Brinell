@@ -165,7 +165,7 @@ public static class HtmlAsyncExtensions
         where TScope : IHtmlScope<TScope>
         => control.SetText(text);
 
-    public static Task<string> GetValueAsync<TScope>(this IHtmlAsyncEditable<TScope> control)
+    public static Task<string?> GetValueAsync<TScope>(this IHtmlAsyncEditable<TScope> control)
         where TScope : IHtmlScope<TScope>
         => control.GetValue();
 
@@ -227,7 +227,7 @@ public static class HtmlAsyncExtensions
         where TScope : IHtmlScope<TScope>
         => control.GetStep();
 
-    public static Task<string> GetRangeValueAsync<TScope>(this IHtmlAsyncRange<TScope> control)
+    public static Task<string?> GetRangeValueAsync<TScope>(this IHtmlAsyncRange<TScope> control)
         where TScope : IHtmlScope<TScope>
         => control.GetValue();
 

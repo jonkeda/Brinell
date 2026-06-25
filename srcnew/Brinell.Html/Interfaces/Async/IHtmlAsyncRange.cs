@@ -6,6 +6,6 @@ public interface IHtmlAsyncRange<TScope> : IHtmlAsyncFocusable<TScope>
     Task<string?> GetMin();
     Task<string?> GetMax();
     Task<string?> GetStep();
-    Task<string> GetValue();
+    Task<string?> GetValue();
     Task<TScope> SetValue(string value);
 }

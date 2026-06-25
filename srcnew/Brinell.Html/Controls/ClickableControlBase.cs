@@ -17,9 +17,18 @@ public abstract class ClickableControlBase<TScope> : Control<TScope>, IHtmlAsync
     {
     }
 
+    public new TScope Click()
+    {
+        return RunWithElement(element =>
+        {
+            EnsureEnabledCore(element);
+            element.Click();
+        });
+    }
+
     public TScope DoubleClick()
     {
-        return RunWithElement(element => element.DoubleClick());
+        return RunDoWithElement(element => element.DoubleClick());
     }
 
     public TScope RightClick()
