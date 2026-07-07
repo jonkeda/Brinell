@@ -75,4 +75,5 @@ public sealed class BlazorTestContext : IHtmlTestContext, IAsyncDisposable
     public void Dispose() => _inner.Dispose();
 
     public ValueTask DisposeAsync() => ((IAsyncDisposable)_inner).DisposeAsync();
+    public bool IsIdle() => true;
 }

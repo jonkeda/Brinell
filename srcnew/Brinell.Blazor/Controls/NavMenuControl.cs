@@ -18,10 +18,12 @@ public class NavMenuControl<TScope> : ControlBase<TScope>
     public int GetItemCount() => RunWithElement(e =>
         e.FindElements(Locator.ByCss(_itemSelector)).Count);
 
+#pragma warning disable CS8603 // Possible null reference return.
     public IReadOnlyList<string> GetItems() => RunWithElement(e =>
         e.FindElements(Locator.ByCss(_itemSelector))
             .Select(item => item.Text?.Trim() ?? "")
             .ToList());
+#pragma warning restore CS8603 // Possible null reference return.
 
     public string? GetActiveItem() => RunWithElement(e =>
     {
