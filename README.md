@@ -3,7 +3,7 @@
 Brinell is a cross-platform UI testing framework for .NET applications. It
 provides shared page-object, control-object, synchronization, artifact, mocking,
 and UAT patterns across desktop, web, MAUI, Stride, native Android, and the
-Presenter shell.
+Presenter shell..
 
 ## Current Docs
 
