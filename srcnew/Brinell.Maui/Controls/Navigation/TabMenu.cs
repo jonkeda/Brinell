@@ -1,4 +1,4 @@
-namespace Brinell.Maui.Extensions.Controls.Navigation;
+namespace Brinell.Maui.Controls.Navigation;
 
 /// <summary>
 /// Shared MAUI bottom tab menu control.
@@ -61,19 +61,19 @@ public class TabMenu<TScope> : ControlBase<TScope>
                 continue;
             }
 
-            if (index < buttons.Count && ElementActivator.TryActivate(buttons[index]))
+            if (index < buttons.Count && ElementClicker.TryClick(buttons[index]))
                 return true;
 
-            if (index < tabGrids.Count && ElementActivator.TryActivate(tabGrids[index]))
+            if (index < tabGrids.Count && ElementClicker.TryClick(tabGrids[index]))
                 return true;
 
-            return ElementActivator.TryActivate(captions[index]);
+            return ElementClicker.TryClick(captions[index]);
         }
 
-        if (ElementActivator.TryActivate(ElementSearch.FindVisibleByName(MauiScope, caption)))
+        if (ElementClicker.TryClick(ElementSearch.FindVisibleByName(MauiScope, caption)))
             return true;
 
-        return ElementActivator.TryActivate(
+        return ElementClicker.TryClick(
             ElementSearch.FirstVisible(MauiScope.FindElements(Locator.ByText(caption))));
     }
 }

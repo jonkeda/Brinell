@@ -150,7 +150,6 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
     {
         RunPoll(null, () =>
         {
-
             var element = FindElement();
             if (doEnsureVisible)
             {
@@ -241,14 +240,6 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
 
     #endregion
 
-    private void EnsureScopeReady(int? timeoutMs = null)
-    {
-        if (!ContainingScope.IsReady(timeoutMs))
-        {
-            throw new Exception();
-        }
-    }
-
     #region Element Finding
 
     /// <summary>
@@ -257,7 +248,6 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
     /// <returns>The element if found, null otherwise.</returns>
     protected virtual IMauiElement? TryFindElement()
     {
-        EnsureScopeReady();
         return _mauiScope.TryFindElement(Locator);
     }
 
@@ -268,62 +258,7 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
     /// <exception cref="ElementNotFoundException">Thrown when element is not found.</exception>
     protected virtual IMauiElement FindElement()
     {
-        EnsureScopeReady();
         return _mauiScope.FindElement(Locator);
-    }
-    
-    /// <summary>
-    /// Finds element, waiting for it to exist if timeout is specified.
-    /// Single entry point for element retrieval with optional wait.
-    /// </summary>
-    /// <param name="timeoutMs">Optional timeout to wait for element to exist.</param>
-    /// <returns>The element.</returns>
-    /// <exception cref="ElementNotFoundException">Thrown when element is not found within timeout.</exception>
-    protected IMauiElement FindElementWithWait(int? timeoutMs = null)
-    {
-        if (timeoutMs.HasValue)
-        {
-            var timeout = timeoutMs.Value;
-            var stopwatch = Stopwatch.StartNew();
-            
-            while (stopwatch.ElapsedMilliseconds < timeout)
-            {
-                var element = TryFindElement();
-                if (element != null)
-                    return element;
-                    
-                WaitHelper.Pause(PollingIntervalMs);
-            }
-        }
-        
-        return FindElement(); // Throws if not found
-    }
-    
-    /// <summary>
-    /// Polls with pre-found element reference.
-    /// Element is found once at operation start, no re-finding needed.
-    /// </summary>
-    /// <param name="element">The pre-found element.</param>
-    /// <param name="condition">The condition to check.</param>
-    /// <param name="timeoutMs">Maximum time to wait in milliseconds.</param>
-    /// <returns>True if condition was met, false if timeout reached.</returns>
-    protected bool PollWithElement(
-        IMauiElement element,
-        Func<IMauiElement, bool> condition,
-        int timeoutMs)
-    {
-        var stopwatch = Stopwatch.StartNew();
-        
-        while (stopwatch.ElapsedMilliseconds < timeoutMs)
-        {
-            if (condition(element))
-                return true;
-            
-            WaitHelper.Pause(PollingIntervalMs);
-        }
-        
-        // Final check
-        return condition(element);
     }
     
     #endregion
@@ -338,16 +273,7 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
     private string ControlId => Locator.Value;
     private ITestLogger? Logger => Context.Logger;
     
-   
-    /// <summary>
-    /// Run operation that returns a value.
-    /// </summary>
-    protected TResult Run<TResult>(string action, Func<TResult> operation)
-    {
-        return Run<object?, TResult>(action, null, operation);
-    }
-    
-    /// <summary>
+   /// <summary>
     /// Run operation with a typed value parameter that returns a result.
     /// </summary>
     protected TResult Run<TValue, TResult>(string action, TValue? value, Func<TResult> operation)
@@ -377,6 +303,7 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
     /// <summary>
     /// Run assertion with default equality comparison.
     /// </summary>
+    [Obsolete("Use RunAssert(expected, getActual, compare, message, timeoutMs) instead", false)]
     protected TScope RunAssert<T>(string assertType, T? expected, Func<T?> getActual, string? message = null)
     {
         return RunAssert(assertType, expected, getActual, (actual, exp) => Equals(actual, exp), message);
@@ -385,6 +312,7 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
     /// <summary>
     /// Run assertion with custom comparison function.
     /// </summary>
+    [Obsolete("Use RunAssert(expected, getActual, compare, message, timeoutMs) instead", false)]
     protected TScope RunAssert<T>(string assertType, T? expected, Func<T?> getActual,
         Func<T?, T?, bool> compare, string? message = null)
     {

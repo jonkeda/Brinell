@@ -26,6 +26,17 @@ public class MediaElement<TScope> : ControlBase<TScope>
 
     #region Media State Methods
 
+    protected virtual bool? IsPlayingCore(IMauiElement element)
+    {
+        var state = element.GetAttribute("CurrentState");
+        if (!string.IsNullOrEmpty(state))
+        {
+            return state.Equals("Playing", StringComparison.OrdinalIgnoreCase);
+        }
+
+        return null;
+    }
+
     /// <summary>
     /// Checks if the media is currently playing.
     /// </summary>
@@ -39,6 +50,17 @@ public class MediaElement<TScope> : ControlBase<TScope>
         if (!string.IsNullOrEmpty(state))
         {
             return state.Equals("Playing", StringComparison.OrdinalIgnoreCase);
+        }
+
+        return null;
+    }
+
+    protected virtual bool? IsPausedCore(IMauiElement element)
+    {
+        var state = element.GetAttribute("CurrentState");
+        if (!string.IsNullOrEmpty(state))
+        {
+            return state.Equals("Paused", StringComparison.OrdinalIgnoreCase);
         }
 
         return null;
@@ -172,9 +194,9 @@ public class MediaElement<TScope> : ControlBase<TScope>
     /// </summary>
     /// <param name="message">Optional assertion message.</param>
     /// <returns>The containing scope for fluent chaining.</returns>
-    public TScope AssertPlaying(string? message = null)
+    public TScope AssertPlaying(bool? expected = null)
     {
-        return RunAssert(nameof(AssertPlaying), true, () => IsPlaying(), message);
+        return RunAssertWithElement(expected, IsPlayingCore, (actual, exp) => Equals(actual, exp));
     }
 
     /// <summary>
@@ -182,9 +204,9 @@ public class MediaElement<TScope> : ControlBase<TScope>
     /// </summary>
     /// <param name="message">Optional assertion message.</param>
     /// <returns>The containing scope for fluent chaining.</returns>
-    public TScope AssertPaused(string? message = null)
+    public TScope AssertPaused(bool? expected = null)
     {
-        return RunAssert(nameof(AssertPaused), true, () => IsPaused(), message);
+        return RunAssertWithElement(expected, IsPausedCore, (actual, exp) => Equals(actual, exp));
     }
 
     #endregion

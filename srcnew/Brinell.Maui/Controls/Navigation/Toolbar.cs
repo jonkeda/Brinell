@@ -1,4 +1,4 @@
-namespace Brinell.Maui.Extensions.Controls.Navigation;
+namespace Brinell.Maui.Controls.Navigation;
 
 /// <summary>
 /// MAUI Toolbar control for app navigation bars and toolbars.

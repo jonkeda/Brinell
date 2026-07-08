@@ -314,19 +314,14 @@ public abstract class RangeControlBase<TScope> : FocusableControlBase<TScope>, I
     /// <inheritdoc />
     public TScope AssertValue(double? expected, double tolerance = 0.001, string? message = null, int? timeoutMs = null)
     {
-        if (expected == null) return ContainingScope;
-        
-        return RunAssert(nameof(AssertValue), expected, () =>
-        {
-            WaitValue(expected, tolerance, timeoutMs);
-            return GetValue();
-        }, 
-        (actual, exp) => 
-        {
-            if (actual == null || exp == null) return actual == exp;
-            return Math.Abs(actual.Value - exp.Value) <= tolerance;
-        },
-        message ?? $"Expected value '{expected}' (±{tolerance}) but got different value. Locator: {Locator}");
+        return RunAssertWithElement(expected,
+            GetValueCore, (actual, expected1) =>
+            {
+                if (actual == null || expected1 == null)
+                    return actual == expected1;
+                return Math.Abs(actual.Value - expected1.Value) <= tolerance;
+            },
+            null, timeoutMs);
     }
     
     #endregion

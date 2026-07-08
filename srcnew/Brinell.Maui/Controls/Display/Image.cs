@@ -170,11 +170,9 @@ public class Image<TScope> : ControlBase<TScope>
     {
         if (expected == null) return ContainingScope;
 
-        return RunAssert(nameof(AssertLoaded), expected, () =>
-        {
-            WaitLoaded(expected, timeoutMs);
-            return IsLoaded();
-        }, message ?? $"Expected image {(expected.Value ? "to be loaded" : "not to be loaded")}. Locator: {Locator}");
+        return RunAssertWithElement(expected,
+            IsLoadedCore, (actual, exp) => Equals(actual, exp),
+            message ?? $"Expected image {(expected.Value ? "to be loaded" : "not to be loaded")}. Locator: {Locator}", timeoutMs);
     }
 
     /// <summary>

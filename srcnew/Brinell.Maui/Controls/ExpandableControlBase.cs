@@ -181,12 +181,12 @@ public abstract class ExpandableControlBase<TScope> : ClickableControlBase<TScop
     public TScope AssertExpanded(bool? expected, string? message = null, int? timeoutMs = null)
     {
         if (expected == null) return ContainingScope;
-        
-        return RunAssert(nameof(AssertExpanded), expected, () =>
+
+        return RunAssert(expected, () =>
         {
             WaitExpanded(expected, timeoutMs);
             return IsExpanded();
-        }, message ?? $"Expected element {(expected.Value ? "to be expanded" : "to be collapsed")}. Locator: {Locator}");
+        }, (actual, exp) => Equals(actual, exp), message ?? $"Expected element {(expected.Value ? "to be expanded" : "to be collapsed")}. Locator: {Locator}", timeoutMs);
     }
     
     #endregion

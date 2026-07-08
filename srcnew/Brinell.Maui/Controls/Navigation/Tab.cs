@@ -1,6 +1,6 @@
 using Brinell.Core.Interfaces;
 
-namespace Brinell.Maui.Extensions.Controls.Navigation;
+namespace Brinell.Maui.Controls.Navigation;
 
 /// <summary>
 /// MAUI Tab control for Shell TabBar navigation.
@@ -72,11 +72,9 @@ public class Tab<TScope> : ClickableControlBase<TScope>, ITabControlObject<TScop
     {
         if (expected == null) return ContainingScope;
 
-        return RunAssert(nameof(AssertSelected), expected, () =>
-        {
-            WaitSelected(expected, timeoutMs);
-            return IsSelected();
-        }, message ?? $"Expected tab '{_title}' {(expected.Value ? "to be selected" : "not to be selected")}.");
+        return RunAssertWithElement(expected, IsSelectedCore,
+        (actual, exp) => Equals(actual, exp),
+        message ?? $"Expected tab '{_title}' {(expected.Value ? "to be selected" : "not to be selected")}.", timeoutMs);
     }
 
     #endregion

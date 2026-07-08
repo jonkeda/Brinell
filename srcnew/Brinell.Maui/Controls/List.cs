@@ -128,7 +128,7 @@ public class List<TScope, TItem> : ControlBase<TScope>, IScrollableControlObject
                 return false;
             }
 
-            return ElementActivator.TryActivateContainingListItemOrElement(
+            return ElementClicker.TryActivateContainingListItemOrElement(
                 MauiScope,
                 itemContainer.ContainerRoot);
         });
@@ -327,10 +327,14 @@ public class List<TScope, TItem> : ControlBase<TScope>, IScrollableControlObject
     /// <inheritdoc />
     public double? GetScrollPosition(int? timeoutMs = null)
     {
+        var scrollPercent = GetAttribute("Scroll.VerticalScrollPercent", timeoutMs);
+
+        /*
         var element = timeoutMs.HasValue ? FindElementWithWait(timeoutMs.Value) : TryFindElement();
         if (element == null) return null;
 
         var scrollPercent = element.GetAttribute("Scroll.VerticalScrollPercent");
+        */
         if (!string.IsNullOrEmpty(scrollPercent) && double.TryParse(scrollPercent, out var percent))
         {
             return percent;

@@ -40,7 +40,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\srcnew\Brinell.Maui.Extensions\Brinell.Maui.Extensions.csproj" />
     <ProjectReference Include="..\Brinell.Samples.Shared\Brinell.Samples.Shared.csproj" />
   </ItemGroup>
 

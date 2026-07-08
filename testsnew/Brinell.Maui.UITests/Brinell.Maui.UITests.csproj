@@ -7,10 +7,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\srcnew\Brinell.Core\Brinell.Core.csproj" />
-    <ProjectReference Include="..\..\srcnew\Brinell.Maui\Brinell.Maui.csproj" />
-    <ProjectReference Include="..\..\srcnew\Brinell.Maui.Extensions\Brinell.Maui.Extensions.csproj" />
-    <ProjectReference Include="..\..\srcnew\Brinell.Maui.FlaUI\Brinell.Maui.FlaUI.csproj" />
     <ProjectReference Include="..\..\srcnew\Brinell.Maui.CommunityToolkit\Brinell.Maui.CommunityToolkit.csproj" />
+    <ProjectReference Include="..\..\srcnew\Brinell.Maui\Brinell.Maui.csproj" />
+    <ProjectReference Include="..\..\srcnew\Brinell.Maui.FlaUI\Brinell.Maui.FlaUI.csproj" />
   </ItemGroup>
 
   <ItemGroup>

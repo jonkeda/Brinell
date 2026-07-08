@@ -97,7 +97,7 @@ public abstract class ToggleControlBase<TScope> : ClickableControlBase<TScope>, 
 
     private bool TryToggleByActivation(IMauiElement element, bool? beforeState)
     {
-        return ElementActivator.TryActivate(element)
+        return ElementClicker.TryClick(element)
                && WaitForStateChange(element, beforeState);
     }
 
@@ -118,15 +118,11 @@ public abstract class ToggleControlBase<TScope> : ClickableControlBase<TScope>, 
         }
     }
 
-    private bool WaitForStateChange(IMauiElement element, bool? beforeState)
+    private bool WaitForStateChange(IMauiElement element, bool? beforeState, int? timeoutMs = null)
     {
         if (beforeState == null)
             return true;
-
-        return PollWithElement(
-            element,
-            e => IsCheckedCore(e) != beforeState,
-            500);
+        return RunWaitWithElement(e => IsCheckedCore(e) != beforeState, timeoutMs);
     }
     
     /// <summary>
@@ -263,12 +259,10 @@ public abstract class ToggleControlBase<TScope> : ClickableControlBase<TScope>, 
     public TScope AssertChecked(bool? expected, string? message = null, int? timeoutMs = null)
     {
         if (expected == null) return ContainingScope;
-        
-        return RunAssert(nameof(AssertChecked), expected, () =>
-        {
-            WaitChecked(expected, timeoutMs);
-            return IsChecked();
-        }, message ?? $"Expected element {(expected.Value ? "to be checked" : "to be unchecked")}. Locator: {Locator}");
+
+        return RunAssertWithElement(expected,
+            IsCheckedCore,
+            (actual, exp) => Equals(actual, exp), message ?? $"Expected element {(expected.Value ? "to be checked" : "to be unchecked")}. Locator: {Locator}", timeoutMs);
     }
     
     #endregion

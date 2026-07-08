@@ -35,23 +35,6 @@ public class Entry<TScope> : ControlBase<TScope>, IEditableTextControlObject<TSc
         return RunWait(() => GetText()?.Contains(expected) == true, timeoutMs);
     }
 
-    public TScope AssertTextMatches(string? pattern, string? message = null, int? timeoutMs = null)
-    {
-        if (pattern == null) return ContainingScope;
-
-        var regex = new Regex(pattern);
-        return RunAssert(nameof(AssertTextMatches), pattern, () =>
-        {
-            RunWait(() =>
-            {
-                var text = GetText();
-                return text != null && regex.IsMatch(text);
-            }, timeoutMs);
-            return GetText();
-        }, (actual, exp) => actual != null && regex.IsMatch(actual),
-            message ?? $"Expected text to match pattern '{pattern}'. Locator: {Locator}");
-    }
-
     #endregion
 
     #region IEditableTextControlObject<TScope> Implementation - Public API
@@ -225,12 +208,12 @@ public class Entry<TScope> : ControlBase<TScope>, IEditableTextControlObject<TSc
     public TScope AssertPlaceholder(string? expected, string? message = null, int? timeoutMs = null)
     {
         if (expected == null) return ContainingScope;
-        
-        return RunAssert(nameof(AssertPlaceholder), expected, () =>
+
+        return RunAssert(expected, () =>
         {
             WaitPlaceholder(expected, timeoutMs);
             return GetPlaceholder();
-        }, message ?? $"Expected placeholder '{expected}'. Locator: {Locator}");
+        }, (actual, exp) => Equals(actual, exp), message ?? $"Expected placeholder '{expected}'. Locator: {Locator}", timeoutMs);
     }
 
     #endregion
@@ -279,12 +262,12 @@ public class Entry<TScope> : ControlBase<TScope>, IEditableTextControlObject<TSc
     public TScope AssertReadOnly(bool? expected, string? message = null, int? timeoutMs = null)
     {
         if (expected == null) return ContainingScope;
-        
-        return RunAssert(nameof(AssertReadOnly), expected, () =>
+
+        return RunAssert(expected, () =>
         {
             WaitReadOnly(expected, timeoutMs);
             return IsReadOnly();
-        }, message ?? $"Expected element {(expected.Value ? "to be read-only" : "not to be read-only")}. Locator: {Locator}");
+        }, (actual, exp) => Equals(actual, exp), message ?? $"Expected element {(expected.Value ? "to be read-only" : "not to be read-only")}. Locator: {Locator}", timeoutMs);
     }
 
     #endregion

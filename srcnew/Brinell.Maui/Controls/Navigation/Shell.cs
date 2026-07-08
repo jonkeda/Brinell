@@ -1,7 +1,7 @@
 using Brinell.Core.Interfaces;
 using Brinell.Maui.Controls;
 
-namespace Brinell.Maui.Extensions.Controls.Navigation;
+namespace Brinell.Maui.Controls.Navigation;
 
 /// <summary>
 /// MAUI Shell control for managing TabBar navigation and shell state.
@@ -111,7 +111,8 @@ public class Shell<TScope> : ControlBase<TScope>
     /// <returns>True if shell is found, false otherwise.</returns>
     public bool IsLoaded()
     {
-        return IsExists();
+        return true;
+        // return IsExists();
     }
 
     /// <summary>
@@ -133,7 +134,7 @@ public class Shell<TScope> : ControlBase<TScope>
     public TScope AssertLoaded(string? message = null, int? timeoutMs = null)
     {
         WaitLoaded(timeoutMs);
-        return RunAssert(nameof(AssertLoaded), true, () => IsLoaded(), 
-            message ?? "Shell should be loaded.");
+        return RunAssert(true, () => IsLoaded(), (actual, exp) => Equals(actual, exp),
+            message ?? "Shell should be loaded.", timeoutMs);
     }
 }

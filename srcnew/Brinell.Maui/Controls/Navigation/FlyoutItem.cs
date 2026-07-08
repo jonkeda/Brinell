@@ -1,4 +1,4 @@
-namespace Brinell.Maui.Extensions.Controls.Navigation;
+namespace Brinell.Maui.Controls.Navigation;
 
 /// <summary>
 /// MAUI Shell FlyoutItem control for navigation.

@@ -280,17 +280,14 @@ public class TimePicker<TScope> : ControlBase<TScope>
 
         var tolerance = TimeSpan.FromSeconds(toleranceSeconds);
 
-        return RunAssert(nameof(AssertTime), expected, () =>
-        {
-            WaitTime(expected, toleranceSeconds, timeoutMs);
-            return GetTime();
-        }, (actual, exp) =>
+        return RunAssertWithElement(expected,
+            GetTimeCore, (actual, exp) =>
         {
             if (!actual.HasValue || !exp.HasValue) return false;
             var diff = (actual.Value - exp.Value).Duration();
             return diff <= tolerance;
         },
-            message ?? $"Expected time {expected:hh\\:mm}. Locator: {Locator}");
+            message ?? $"Expected time {expected:hh\\:mm}. Locator: {Locator}", timeoutMs);
     }
 
     #endregion

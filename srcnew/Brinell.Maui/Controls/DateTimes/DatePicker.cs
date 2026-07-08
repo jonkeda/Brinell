@@ -269,12 +269,12 @@ public class DatePicker<TScope> : ControlBase<TScope>
     {
         if (expected == null) return ContainingScope;
 
-        return RunAssert(nameof(AssertDate), expected, () =>
+        return RunAssert(expected, () =>
         {
             WaitDate(expected, timeoutMs);
             return GetDate();
         }, (actual, exp) => actual.HasValue && exp.HasValue && actual.Value.Date == exp.Value.Date,
-            message ?? $"Expected date {expected:yyyy-MM-dd}. Locator: {Locator}");
+            message ?? $"Expected date {expected:yyyy-MM-dd}. Locator: {Locator}", timeoutMs);
     }
 
     #endregion

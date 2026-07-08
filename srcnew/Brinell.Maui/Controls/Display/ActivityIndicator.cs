@@ -101,11 +101,8 @@ public class ActivityIndicator<TScope> : ControlBase<TScope>
     {
         if (expected == null) return ContainingScope;
 
-        return RunAssert(nameof(AssertRunning), expected, () =>
-        {
-            WaitRunning(expected, timeoutMs);
-            return IsRunning();
-        }, message ?? $"Expected activity indicator {(expected.Value ? "to be running" : "to be stopped")}. Locator: {Locator}");
+        return RunAssertWithElement(expected, 
+            IsRunningCore, (actual, exp) => Equals(actual, exp), message ?? $"Expected activity indicator {(expected.Value ? "to be running" : "to be stopped")}. Locator: {Locator}", timeoutMs);
     }
 
     #endregion

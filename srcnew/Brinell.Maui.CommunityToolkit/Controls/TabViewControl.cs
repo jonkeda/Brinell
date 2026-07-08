@@ -169,11 +169,9 @@ public class TabViewControl<TScope> : ClickableControlBase<TScope>, ITabControlO
     {
         if (expected == null) return ContainingScope;
 
-        return RunAssert(nameof(AssertSelected), expected, () =>
-        {
-            WaitSelected(expected, timeoutMs);
-            return IsSelected();
-        }, message ?? $"Expected tab '{_automationId}' {(expected.Value ? "to be selected" : "not to be selected")}.");
+        return RunAssertWithElement(expected,
+            IsSelectedCore,
+            (actual, exp) => Equals(actual, exp), message ?? $"Expected tab '{_automationId}' {(expected.Value ? "to be selected" : "not to be selected")}.", timeoutMs);
     }
 
     #endregion

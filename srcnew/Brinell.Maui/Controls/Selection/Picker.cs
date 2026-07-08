@@ -52,14 +52,8 @@ public class Picker<TScope> : SelectorControlBase<TScope>
         if (expected == null)
             return ContainingScope;
 
-        return RunAssert(nameof(AssertTitle), expected, () =>
-        {
-            if (timeoutMs.HasValue)
-            {
-                RunWait(() => GetTitle() == expected, timeoutMs);
-            }
-            return GetTitle();
-        }, message ?? $"Expected picker title to be '{expected}'. Locator: {Locator}");
+        return RunAssertWithElement(expected, 
+            GetTitleCore, (actual, exp) => Equals(actual, exp), message ?? $"Expected picker title to be '{expected}'. Locator: {Locator}", timeoutMs);
     }
 
     #endregion

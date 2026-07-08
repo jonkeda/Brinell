@@ -82,7 +82,7 @@ public class ContentDialog<TParent> : ContainerBase<TParent, ContentDialog<TPare
     private bool TryClickScopedButtonByTextAndWaitDismissed(string buttonText, int timeoutMs)
     {
         var button = FindButtonByText(FindElements(Locator.ByControlType("button")), buttonText);
-        if (button == null || !ElementActivator.TryActivate(button))
+        if (button == null || !ElementClicker.TryClick(button))
             return false;
 
         InvalidateCache();
@@ -98,7 +98,7 @@ public class ContentDialog<TParent> : ContainerBase<TParent, ContentDialog<TPare
             return false;
         }
 
-        if (!ElementActivator.TryActivate(button))
+        if (!ElementClicker.TryClick(button))
             return false;
 
         return RunWait(
@@ -113,7 +113,7 @@ public class ContentDialog<TParent> : ContainerBase<TParent, ContentDialog<TPare
         if (!Context.Driver.TryFindPopupElement(locator, out var button) || button == null)
             return false;
 
-        if (!ElementActivator.TryActivate(button))
+        if (!ElementClicker.TryClick(button))
             return false;
 
         return RunWait(
@@ -125,7 +125,7 @@ public class ContentDialog<TParent> : ContainerBase<TParent, ContentDialog<TPare
     {
         var locator = Locator.ByControlType("button");
         var button = FindButtonByText(Parent.FindElements(locator), buttonText);
-        if (button == null || !ElementActivator.TryActivate(button))
+        if (button == null || !ElementClicker.TryClick(button))
             return false;
 
         return RunWait(

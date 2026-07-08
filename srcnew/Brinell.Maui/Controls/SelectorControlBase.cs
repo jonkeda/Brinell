@@ -324,12 +324,12 @@ public abstract class SelectorControlBase<TScope> : FocusableControlBase<TScope>
     public TScope AssertSelectedText(string? expected, string? message = null, int? timeoutMs = null)
     {
         if (expected == null) return ContainingScope;
-        
-        return RunAssert(nameof(AssertSelectedText), expected, () =>
+
+        return RunAssert(expected, () =>
         {
             WaitSelectedText(expected, timeoutMs);
             return GetSelectedText();
-        }, message ?? $"Expected selected text '{expected}'. Locator: {Locator}");
+        }, (actual, exp) => Equals(actual, exp), message ?? $"Expected selected text '{expected}'. Locator: {Locator}", timeoutMs);
     }
     
     #endregion
@@ -354,12 +354,12 @@ public abstract class SelectorControlBase<TScope> : FocusableControlBase<TScope>
     public TScope AssertSelectedIndex(int? expected, string? message = null, int? timeoutMs = null)
     {
         if (expected == null) return ContainingScope;
-        
-        return RunAssert(nameof(AssertSelectedIndex), expected, () =>
+
+        return RunAssert(expected, () =>
         {
             WaitSelectedIndex(expected, timeoutMs);
             return GetSelectedIndex();
-        }, message ?? $"Expected selected index '{expected}'. Locator: {Locator}");
+        }, (actual, exp) => Equals(actual, exp), message ?? $"Expected selected index '{expected}'. Locator: {Locator}", timeoutMs);
     }
     
     #endregion
@@ -384,12 +384,12 @@ public abstract class SelectorControlBase<TScope> : FocusableControlBase<TScope>
     public TScope AssertItemCount(int? expected, string? message = null, int? timeoutMs = null)
     {
         if (expected == null) return ContainingScope;
-        
-        return RunAssert(nameof(AssertItemCount), expected, () =>
+
+        return RunAssert(expected, () =>
         {
             WaitItemCount(expected, timeoutMs);
             return GetItemCount();
-        }, message ?? $"Expected item count '{expected}'. Locator: {Locator}");
+        }, (actual, exp) => Equals(actual, exp), message ?? $"Expected item count '{expected}'. Locator: {Locator}", timeoutMs);
     }
     
     #endregion

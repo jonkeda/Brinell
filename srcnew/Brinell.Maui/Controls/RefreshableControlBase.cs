@@ -141,11 +141,11 @@ public abstract class RefreshableControlBase<TScope> : ControlBase<TScope>, IRef
     public TScope AssertRefreshing(bool? expected, string? message = null, int? timeoutMs = null)
     {
         if (expected == null) return ContainingScope;
-        
-        return RunAssert(nameof(AssertRefreshing), expected, () =>
+
+        return RunAssert(expected, () =>
         {
             return WaitRefreshing(expected, timeoutMs);
-        }, message ?? $"Expected element {(expected.Value ? "to be refreshing" : "not to be refreshing")}. Locator: {Locator}");
+        }, (actual, exp) => Equals(actual, exp), message ?? $"Expected element {(expected.Value ? "to be refreshing" : "not to be refreshing")}. Locator: {Locator}", timeoutMs);
     }
     
     #endregion

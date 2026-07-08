@@ -1,6 +1,6 @@
 using Brinell.Core.Interfaces;
 
-namespace Brinell.Maui.Extensions.Controls.Navigation;
+namespace Brinell.Maui.Controls.Navigation;
 
 /// <summary>
 /// MAUI ShellContent control for Shell navigation items.
@@ -110,18 +110,15 @@ public class ShellContent<TScope> : ClickableControlBase<TScope>, ITabControlObj
     /// Asserts this ShellContent is selected or unselected.
     /// </summary>
     /// <param name="expected">Expected selected state. Null skips the check.</param>
-    /// <param name="message">Optional custom assertion message.</param>
     /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
     /// <returns>The containing scope for fluent chaining.</returns>
-    public TScope AssertSelected(bool? expected, string? message = null, int? timeoutMs = null)
+    public TScope AssertSelected(bool? expected, int? timeoutMs = null)
     {
         if (expected == null) return ContainingScope;
 
-        return RunAssert(nameof(AssertSelected), expected, () =>
-        {
-            WaitSelected(expected, timeoutMs);
-            return IsSelected();
-        }, message ?? $"Expected ShellContent '{_title}' {(expected.Value ? "to be selected" : "not to be selected")}.");
+        return RunAssertWithElement(expected, 
+            IsSelectedCore,
+            (actual, exp) => Equals(actual, exp), $"Expected ShellContent '{_title}' {(expected.Value ? "to be selected" : "not to be selected")}.", timeoutMs);
     }
 
     #endregion

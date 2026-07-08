@@ -135,12 +135,10 @@ public class ProgressBar<TScope> : ControlBase<TScope>
     {
         if (expected == null) return ContainingScope;
 
-        return RunAssert(nameof(AssertProgress), expected, () =>
-        {
-            WaitProgress(expected, tolerance, timeoutMs);
-            return GetProgress();
-        }, (actual, exp) => actual.HasValue && exp.HasValue && Math.Abs(actual.Value - exp.Value) <= tolerance,
-            message ?? $"Expected progress {expected} (±{tolerance}). Locator: {Locator}");
+        return RunAssertWithElement(expected, 
+            GetProgressCore,
+            (actual, exp) => actual.HasValue && exp.HasValue && Math.Abs(actual.Value - exp.Value) <= tolerance,
+            message ?? $"Expected progress {expected} (±{tolerance}). Locator: {Locator}", timeoutMs);
     }
 
     /// <summary>

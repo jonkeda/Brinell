@@ -385,8 +385,8 @@ public abstract class ScrollableControlBase<TScope> : ControlBase<TScope>, IScro
     public TScope AssertScrollPosition(double? expected, double tolerance = 1.0, string? message = null, int? timeoutMs = null)
     {
         if (expected == null) return ContainingScope;
-        
-        return RunAssert(nameof(AssertScrollPosition), expected, () =>
+
+        return RunAssert(expected, () =>
         {
             WaitScrollPosition(expected, tolerance, timeoutMs);
             return GetScrollPosition();
@@ -396,7 +396,7 @@ public abstract class ScrollableControlBase<TScope> : ControlBase<TScope>, IScro
             if (actual == null || exp == null) return actual == exp;
             return Math.Abs(actual.Value - exp.Value) <= tolerance;
         },
-        message ?? $"Expected scroll position '{expected}' (±{tolerance}). Locator: {Locator}");
+        message ?? $"Expected scroll position '{expected}' (±{tolerance}). Locator: {Locator}", timeoutMs);
     }
     
     #endregion

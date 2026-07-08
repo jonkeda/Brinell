@@ -1,4 +1,4 @@
-using Brinell.Maui.Extensions.Controls.Navigation;
+using Brinell.Maui.Controls.Navigation;
 
 namespace Brinell.Maui.UITests.Pages2;
 

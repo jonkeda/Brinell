@@ -20,8 +20,4 @@
     <PackageReference Include="xunit.extensibility.core" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Controls\Navigation\" />
-  </ItemGroup>
-
 </Project>

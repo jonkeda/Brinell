@@ -26,6 +26,24 @@ public class WebView<TScope> : ControlBase<TScope>
 
     #region WebView Methods
 
+    private string? GetUrlCore(IMauiElement element)
+    {
+        var url = element.GetAttribute("url");
+        if (!string.IsNullOrEmpty(url))
+            return url;
+
+        url = element.GetAttribute("Source");
+        if (!string.IsNullOrEmpty(url))
+            return url;
+
+        // Fallback: ValuePattern or Name (on Windows, WebView2 may expose URL here)
+        var text = element.Text;
+        if (!string.IsNullOrEmpty(text))
+            return text;
+
+        return null;
+    }
+
     /// <summary>
     /// Gets the current URL of the WebView.
     /// </summary>
@@ -108,13 +126,10 @@ public class WebView<TScope> : ControlBase<TScope>
     /// <returns>The containing scope for fluent chaining.</returns>
     public TScope AssertUrlContains(string expectedUrlPart, string? message = null)
     {
-        return RunAssert(nameof(AssertUrlContains), expectedUrlPart, () =>
-        {
-            var url = GetUrl();
-            return url != null && url.Contains(expectedUrlPart, StringComparison.OrdinalIgnoreCase)
-                ? expectedUrlPart
-                : url;
-        }, message);
+        return RunAssertWithElement(expectedUrlPart,
+            GetUrlCore,
+            (actual, exp) => actual?.Contains(expectedUrlPart, StringComparison.OrdinalIgnoreCase) == true
+        );
     }
 
     #endregion

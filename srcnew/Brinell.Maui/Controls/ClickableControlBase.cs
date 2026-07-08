@@ -223,11 +223,11 @@ public abstract class ClickableControlBase<TScope> : FocusableControlBase<TScope
         if (expected == null)
             return ContainingScope;
 
-        return RunAssert(nameof(AssertClickable), expected, () =>
+        return RunAssert(expected, () =>
         {
             WaitClickable(expected, timeoutMs);
             return IsClickable();
-        }, message ?? $"Expected element {(expected.Value ? "to be clickable" : "not to be clickable")}. Locator: {Locator}");
+        }, (actual, exp) => Equals(actual, exp), message ?? $"Expected element {(expected.Value ? "to be clickable" : "not to be clickable")}. Locator: {Locator}", timeoutMs);
     }
 
     #endregion

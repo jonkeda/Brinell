@@ -153,12 +153,12 @@ public abstract class FocusableControlBase<TScope> : ControlBase<TScope>, IFocus
     public TScope AssertFocused(bool? expected, string? message = null, int? timeoutMs = null)
     {
         if (expected == null) return ContainingScope;
-        
-        return RunAssert(nameof(AssertFocused), expected, () =>
+
+        return RunAssert(expected, () =>
         {
             WaitFocused(expected, timeoutMs);
             return IsFocused();
-        }, message ?? $"Expected element {(expected.Value ? "to have focus" : "not to have focus")}. Locator: {Locator}");
+        }, (actual, exp) => Equals(actual, exp), message ?? $"Expected element {(expected.Value ? "to have focus" : "not to have focus")}. Locator: {Locator}", timeoutMs);
     }
     
     #endregion

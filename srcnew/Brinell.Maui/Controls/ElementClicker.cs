@@ -2,9 +2,9 @@ using Brinell.Maui.Configuration;
 
 namespace Brinell.Maui.Controls;
 
-internal static class ElementActivator
+internal static class ElementClicker
 {
-    public static bool TryActivate(IMauiElement? element)
+    public static bool TryClick(IMauiElement? element)
     {
         if (!ElementSearch.HasUsableBounds(element))
         {
@@ -58,12 +58,12 @@ internal static class ElementActivator
 
         foreach (var row in ElementSearch.FindContainingListItems(scope, element!))
         {
-            if (TryActivate(row))
+            if (TryClick(row))
             {
                 return true;
             }
         }
 
-        return TryActivate(element);
+        return TryClick(element);
     }
 }
