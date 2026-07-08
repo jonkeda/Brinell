@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\tools\Brinell.Generator\Brinell.Generator.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Don't compile test data files - they're just reference files -->
+    <Compile Remove="TestData/**/*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Include test data files as content, copied to output directory -->
+    <Content Include="TestData/**/*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>

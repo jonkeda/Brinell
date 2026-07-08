@@ -522,7 +522,7 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
 
     #region Exists
 
-    protected bool? IsExistsCore(IMauiElement? element)
+    protected virtual bool? IsExistsCore(IMauiElement? element)
     {
         return element != null;
     }
