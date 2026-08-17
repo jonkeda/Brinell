@@ -1,5 +1,5 @@
 ﻿using Brinell.Generator;
-using Brinell.Generator.Handlers;
+using Brinell.Generator.Generators;
 using Brinell.Generator.Models;
 
 if (args.Length < 2)
@@ -11,6 +11,7 @@ if (args.Length < 2)
 string? inputFile = null;
 string? outputFile = null;
 string? className = null;
+string members = "all";
 
 // Parse arguments
 for (int i = 0; i < args.Length; i++)
@@ -27,12 +28,22 @@ for (int i = 0; i < args.Length; i++)
     {
         className = args[++i];
     }
+    else if (args[i] == "--members" && i + 1 < args.Length)
+    {
+        members = args[++i].ToLowerInvariant();
+    }
 }
 
 if (string.IsNullOrWhiteSpace(inputFile) || string.IsNullOrWhiteSpace(outputFile))
 {
     Console.Error.WriteLine("Error: --input and --output are required");
     PrintUsage();
+    Environment.Exit(1);
+}
+
+if (members is not ("all" or "actions" or "state"))
+{
+    Console.Error.WriteLine($"Error: --members must be one of: all, actions, state (got '{members}')");
     Environment.Exit(1);
 }
 
@@ -46,17 +57,13 @@ try
 
     Console.WriteLine($"Analyzing {inputFile}...");
 
-    var generator = new MethodWrapperGenerator();
+    var generator = BuildGenerator(members);
     var options = new GeneratorOptions
     {
         InputFilePath = inputFile,
         OutputFilePath = outputFile,
         TargetClassName = className,
-        IncludeGeneratedHeader = true,
-        Handlers = new List<IMethodHandler>
-        {
-            new CoreMethodHandler()
-        }
+        IncludeGeneratedHeader = true
     };
 
     generator.GenerateToFile(inputFile, outputFile, options);
@@ -70,9 +77,22 @@ catch (Exception ex)
     Environment.Exit(1);
 }
 
+static ControlObjectGenerator BuildGenerator(string members)
+{
+    if (members == "all")
+        return ControlObjectGenerator.CreateDefault();
+
+    var generator = new ControlObjectGenerator();
+    if (members == "state")
+        generator.Register(new IsWaitAssertGenerator());
+    if (members == "actions")
+        generator.Register(new ActionGenerator());
+    return generator;
+}
+
 void PrintUsage()
 {
-    Console.WriteLine("Brinell Method Wrapper Generator");
+    Console.WriteLine("Brinell ControlObject Generator");
     Console.WriteLine();
     Console.WriteLine("Usage: Brinell.Generator.Cli [options]");
     Console.WriteLine();
@@ -80,5 +100,6 @@ void PrintUsage()
     Console.WriteLine("  --input, -i <path>    Input C# source file to analyze");
     Console.WriteLine("  --output, -o <path>   Output file to write generated code");
     Console.WriteLine("  --class, -c <name>    Target class name (optional)");
+    Console.WriteLine("  --members <value>     Which members to generate: all (default), actions, state");
 }
 

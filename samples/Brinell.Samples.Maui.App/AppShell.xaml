@@ -11,6 +11,7 @@
         <!-- Buttons Tab -->
         <ShellContent
             Title="Buttons"
+            AutomationId="ButtonsTab"
             Icon="tab_about.png"
             ContentTemplate="{DataTemplate local:ButtonsPage}"
             Route="ButtonsPage" />
@@ -18,20 +19,23 @@
         <!-- DateTime Tab -->
         <ShellContent
             Title="DateTime"
+            AutomationId="DateTimeTab"
             Icon="tab_about.png"
             ContentTemplate="{DataTemplate local:DateTimePage}"
             Route="DateTimePage" />
 
-        <!-- Text Tab -->
+        <!-- Display Tab -->
         <ShellContent
-            Title="Text"
+            Title="Display"
+            AutomationId="DisplayTab"
             Icon="tab_about.png"
-            ContentTemplate="{DataTemplate local:TextPage}"
-            Route="TextPage" />
+            ContentTemplate="{DataTemplate local:DisplayPage}"
+            Route="DisplayPage" />
 
         <!-- Sliders Tab -->
         <ShellContent
             Title="Range"
+            AutomationId="RangeTab"
             Icon="tab_about.png"
             ContentTemplate="{DataTemplate local:RangePage}"
             Route="RangePage" />
@@ -39,23 +43,26 @@
         <!-- Selection Tab -->
         <ShellContent
             Title="Selection"
+            AutomationId="SelectionTab"
             Icon="tab_about.png"
             ContentTemplate="{DataTemplate local:SelectionPage}"
             Route="SelectionPage" />
 
+        <!-- Text Tab -->
+        <ShellContent
+            Title="Text"
+            AutomationId="TextTab"
+            Icon="tab_about.png"
+            ContentTemplate="{DataTemplate local:TextPage}"
+            Route="TextPage" />
+
         <!-- Toggle Tab -->
         <ShellContent
             Title="Toggle"
+            AutomationId="ToggleTab"
             Icon="tab_about.png"
             ContentTemplate="{DataTemplate local:TogglePage}"
             Route="TogglePage" />
-
-        <!-- Display Tab -->
-        <ShellContent
-            Title="Display"
-            Icon="tab_about.png"
-            ContentTemplate="{DataTemplate local:DisplayPage}"
-            Route="DisplayPage" />
 
     </TabBar>
 

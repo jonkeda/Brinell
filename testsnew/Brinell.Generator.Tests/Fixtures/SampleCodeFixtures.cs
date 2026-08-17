@@ -101,4 +101,20 @@ public abstract class WithDocs<TScope>
         element.Click();
     }
 }";
+
+    public const string MixedControlClass = @"namespace Brinell.Maui.Controls;
+
+public abstract class MixedControl<TScope>
+    where TScope : IScope<TScope>
+{
+    protected virtual void ClickCore(IMauiElement element, int? timeoutMs = null)
+    {
+        element.Click();
+    }
+
+    protected virtual bool? IsVisibleCore(IMauiElement? element)
+    {
+        return element?.Visible;
+    }
+}";
 }

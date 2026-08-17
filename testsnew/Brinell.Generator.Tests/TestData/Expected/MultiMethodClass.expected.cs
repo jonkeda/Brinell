@@ -3,20 +3,29 @@
 
 namespace Brinell.Maui.Controls;
 
+
 /// <summary>
 /// Class with multiple Core methods.
 /// </summary>
+
 public abstract partial class MultiClickable<TScope> : Base<TScope>
     where TScope : IScope<TScope>
 {
+    #region Click
 
     public TScope Click(int? timeoutMs = null)
     {
-        return RunDoWithElement(element => { EnsureClickableCore(element); ClickCore(element, timeoutMs); }, timeoutMs);
+        return RunDoWithElement(element => { ClickCore(element, timeoutMs); }, timeoutMs);
     }
+
+    #endregion
+    #region Hover
 
     public TScope Hover()
     {
-        return RunDoWithElement(element => { EnsureClickableCore(element); HoverCore(element); });
+        return RunDoWithElement(element => { HoverCore(element); });
     }
+
+    #endregion
+
 }

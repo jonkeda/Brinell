@@ -22,7 +22,7 @@ public interface ITextControlObject<TScope> : IControlObject<TScope>
     /// Assert text matches pattern (regex).
     /// If pattern is null, returns immediately (skip).
     /// </summary>
-    TScope AssertTextMatches(string? pattern, string? message = null, int? timeoutMs = null);
+    //TScope AssertTextMatches(string? pattern, string? message = null, int? timeoutMs = null);
     
     /// <summary>
     /// Assert text starts with expected prefix.

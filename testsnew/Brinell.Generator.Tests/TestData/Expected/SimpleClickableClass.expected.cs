@@ -3,15 +3,21 @@
 
 namespace Brinell.Maui.Controls;
 
+
 /// <summary>
 /// Simple clickable class with one Core method.
 /// </summary>
+
 public abstract partial class SimpleClickable<TScope> : Base<TScope>
     where TScope : IScope<TScope>
 {
+    #region Click
 
     public TScope Click(int? timeoutMs = null)
     {
-        return RunDoWithElement(element => { EnsureClickableCore(element); ClickCore(element, timeoutMs); }, timeoutMs);
+        return RunDoWithElement(element => { ClickCore(element, timeoutMs); }, timeoutMs);
     }
+
+    #endregion
+
 }

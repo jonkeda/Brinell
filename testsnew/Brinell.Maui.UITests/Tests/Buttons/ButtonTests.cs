@@ -16,7 +16,7 @@ public class ButtonTests
     {
         _fixture = fixture;
 
-        _fixture.AppShell2.ButtonsContent.Click();
+        _fixture.AppShell.ButtonsTab.Click();
     }
 
     private ButtonsTestPage GetPage()

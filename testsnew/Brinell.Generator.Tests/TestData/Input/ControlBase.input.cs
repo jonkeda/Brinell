@@ -35,7 +35,7 @@ public abstract class ControlBase<TScope>
 
     #region Visible
 
-    protected bool? IsVisibleCore(IMauiElement? element)
+    protected virtual bool? IsVisibleCore(IMauiElement? element)
     {
         return element?.Visible;
     }
@@ -44,7 +44,7 @@ public abstract class ControlBase<TScope>
 
     #region Enabled
 
-    protected bool? IsEnabledCore(IMauiElement? element)
+    protected virtual bool? IsEnabledCore(IMauiElement? element)
     {
         return element?.Enabled;
     }
@@ -53,7 +53,7 @@ public abstract class ControlBase<TScope>
 
     #region Exists
 
-    protected bool? IsExistsCore(IMauiElement? element)
+    protected virtual bool IsExistsCore(IMauiElement? element)
     {
         return element != null;
     }

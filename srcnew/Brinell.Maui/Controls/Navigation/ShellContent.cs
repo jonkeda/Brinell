@@ -106,6 +106,8 @@ public class ShellContent<TScope> : ClickableControlBase<TScope>, ITabControlObj
             element => IsSelectedCore(element) == expected, timeoutMs);
     }
 
+    public TScope AssertSelected(bool? expected, string? message = null, int? timeoutMs = null) => throw new NotImplementedException();
+
     /// <summary>
     /// Asserts this ShellContent is selected or unselected.
     /// </summary>

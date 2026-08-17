@@ -16,11 +16,6 @@ public class GeneratorOptions
     public string OutputFilePath { get; set; } = "";
 
     /// <summary>
-    /// Gets or sets the collection of handlers to apply.
-    /// </summary>
-    public List<IMethodHandler> Handlers { get; set; } = [];
-
-    /// <summary>
     /// Gets or sets whether to include a generated header comment.
     /// </summary>
     public bool IncludeGeneratedHeader { get; set; } = true;

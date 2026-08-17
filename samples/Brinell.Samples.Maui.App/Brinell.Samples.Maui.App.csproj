@@ -55,11 +55,21 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="Models\**" />
     <Compile Remove="Platforms\Windows\Controls\**" />
+    <Compile Remove="TestViews\**" />
+    <EmbeddedResource Remove="Models\**" />
     <EmbeddedResource Remove="Platforms\Windows\Controls\**" />
+    <EmbeddedResource Remove="TestViews\**" />
+    <MauiCss Remove="Models\**" />
     <MauiCss Remove="Platforms\Windows\Controls\**" />
+    <MauiCss Remove="TestViews\**" />
+    <MauiXaml Remove="Models\**" />
     <MauiXaml Remove="Platforms\Windows\Controls\**" />
+    <MauiXaml Remove="TestViews\**" />
+    <None Remove="Models\**" />
     <None Remove="Platforms\Windows\Controls\**" />
+    <None Remove="TestViews\**" />
     <Page Remove="Platforms\Windows\Controls\**" />
   </ItemGroup>
 
@@ -68,12 +78,6 @@
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>
     <MauiXaml Update="Pages\ButtonsPage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </MauiXaml>
-    <MauiXaml Update="Pages2\FormsPage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </MauiXaml>
-    <MauiXaml Update="ListsPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>
     <MauiXaml Update="MainWindow.xaml">
@@ -89,12 +93,6 @@
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>
     <MauiXaml Update="Pages\TogglePage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </MauiXaml>
-    <MauiXaml Update="Views2\DataGridView.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </MauiXaml>
-    <MauiXaml Update="Views2\TestViews\TextView.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>
     <MauiXaml Update="Views\ButtonsView.xaml">
@@ -133,12 +131,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Models\" />
-    <Folder Include="TestViews\" />
-    <Folder Include="Views2\TestViews\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Compile Update="Pages\RangePage.xaml.cs">
       <DependentUpon>RangePage.xaml</DependentUpon>
     </Compile>
@@ -148,6 +140,14 @@
     <Compile Update="Views\ButtonsView.xaml.cs">
       <DependentUpon>ButtonsView.xaml</DependentUpon>
     </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PRIResource Remove="Models\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PRIResource Remove="TestViews\**" />
   </ItemGroup>
 
 </Project>

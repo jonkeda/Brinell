@@ -15,7 +15,7 @@ public class PickerTests
     public PickerTests(MauiFixture fixture)
     {
         _fixture = fixture;
-        _fixture.AppShell2.SelectionContent.Click();
+        _fixture.AppShell.SelectionTab.Click();
     }
 
     private SelectionTestPage GetPage()

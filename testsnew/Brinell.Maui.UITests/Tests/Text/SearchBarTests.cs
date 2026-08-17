@@ -16,7 +16,7 @@ public class SearchBarTests
     {
         _fixture = fixture;
 
-        fixture.AppShell2.TextContent.Click();
+        fixture.AppShell.TextTab.Click();
     }
 
     private TextTestPage GetPage()

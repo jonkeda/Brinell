@@ -16,7 +16,7 @@ public class ActivityIndicatorTests
     {
         _fixture = fixture;
         // Navigate to Display tab
-        _fixture.AppShell2.DisplayContent.Click();
+        _fixture.AppShell.DisplayTab.Click();
     }
 
     private DisplayTestPage GetPage()

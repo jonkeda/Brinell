@@ -15,7 +15,7 @@ public class SwitchTests
     public SwitchTests(MauiFixture fixture)
     {
         _fixture = fixture;
-        _fixture.AppShell2.ToggleContent.Click();
+        _fixture.AppShell.ToggleTab.Click();
     }
 
     private ToggleTestPage GetPage()
