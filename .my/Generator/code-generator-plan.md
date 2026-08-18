@@ -1,6 +1,6 @@
 # Code Generator Plan: Wrapper Method Generation
 
-**Date:** 2026-07-08  
+**Date:** 2026-07-08
 **Purpose:** Design a code generator to automatically create public wrapper methods from protected virtual Core methods
 
 ---
@@ -8,13 +8,15 @@
 ## 1. Problem Statement
 
 Currently, **ClickableControlBase** and similar control classes have repetitive boilerplate:
+
 - Each protected virtual `*Core` method has a corresponding public wrapper method
 - The wrapper follows a consistent pattern:
-  - Calls `EnsureClickableCore(element)` 
+  - Calls `EnsureClickableCore(element)`
   - Delegates to the `*Core` method
   - Wraps in `RunDoWithElement` for fluent chaining
 
 Example:
+
 ```csharp
 // Protected virtual
 protected virtual void RightClickCore(IMauiElement element, int? timeoutMs = null) { ... }
@@ -55,11 +57,13 @@ Output File (Button.gen.cs)
 ### 2.2 Project Structure
 
 **Brinell.Generator** (core library)
+
 - Roslyn parsing and analysis logic
 - Wrapper generation engine
 - Reusable across tools and integrations
 
 **Brinell.Generator.Cli** (command-line interface)
+
 - Entry point for standalone tool
 - Argument parsing
 - File I/O orchestration
@@ -67,6 +71,7 @@ Output File (Button.gen.cs)
 ### 2.3 Components
 
 #### A. **Roslyn Parser**
+
 - **Tool:** `CSharpSyntaxTree.ParseText()` + `CSharpCompilation.Create()`
 - **Job:** Read `.code.cs` file and build syntax tree
 - **Extract:**
@@ -77,6 +82,7 @@ Output File (Button.gen.cs)
   - Method constraints (e.g., `where TScope : IMauiScope<TScope>`)
 
 #### B. **Pluggable Method Handler Interface**
+
 - **Interface:** `IMethodHandler` (abstract pattern matcher and transformer)
 - **Responsibility:** Define how to identify and extract methods for wrapping
 - **Built-in Handlers:**
@@ -90,6 +96,7 @@ Output File (Button.gen.cs)
   - Name transformation logic
 
 #### C. **Method Analyzer** (uses pluggable handler)
+
 - **Input:** Method handler + syntax tree
 - **Process:**
   - Iterate class methods
@@ -99,6 +106,7 @@ Output File (Button.gen.cs)
 - **Output:** Portable metadata (not syntax trees)
 
 #### D. **Wrapper Generator (Roslyn SyntaxFactory)**
+
 - **Input:** `MethodInfo` list + handler strategy
 - **Process:**
   - Use `SyntaxFactory` to build method syntax nodes
@@ -108,6 +116,7 @@ Output File (Button.gen.cs)
 - **Output:** `SyntaxTree` (structured IR)
 
 #### E. **Code Formatter (Roslyn CSharpFormatter)**
+
 - **Input:** `SyntaxTree`
 - **Process:**
   - Apply Roslyn formatting rules (indentation, spacing)
@@ -116,6 +125,7 @@ Output File (Button.gen.cs)
 - **Output:** Formatted `.gen.cs` file text
 
 #### D. **File Writer**
+
 - Write to `ClassName.gen.cs`
 - Include header comment: `// This file is auto-generated. Do not edit manually.`
 - Preserve namespace and using statements
@@ -125,15 +135,19 @@ Output File (Button.gen.cs)
 ## 3. Implementation Phases
 
 ### Phase 1: Spike / Prototype
+
 **Scope:** Proof-of-concept for ClickableControlBase
+
 - **Deliverable:** Console app that reads `ClickableControlBase.cs` and outputs wrapped methods
 - **Input:** File path
 - **Output:** Console output of generated methods
 - **Duration:** 1-2 hours
 
 ### Phase 2: Generator Tool
+
 **Scope:** Standalone tool with pluggable architecture
-- **Deliverable:** 
+
+- **Deliverable:**
   - `Brinell.Generator` library with pluggable handlers and Roslyn-based code generation
   - `Brinell.Generator.Cli` wrapper with argument parsing
 - **Features:**
@@ -145,7 +159,9 @@ Output File (Button.gen.cs)
   - Extensible for future patterns without core changes
 
 ### Phase 3: Integration
+
 **Scope:** MSBuild / Pre-build integration
+
 - **Options:**
   1. **MSBuild Task:** Invoke generator as pre-build step
   2. **Project File:** Add `<GenerateWrappers>true</GenerateWrappers>` property
@@ -166,12 +182,12 @@ public interface IMethodHandler
     /// Determines if this handler should process a method.
     /// </summary>
     bool Matches(MethodDeclarationSyntax method);
-    
+  
     /// <summary>
     /// Extracts portable metadata from a matched method.
     /// </summary>
     MethodInfo Extract(MethodDeclarationSyntax method);
-    
+  
     /// <summary>
     /// Generates wrapper method syntax for this handler's pattern.
     /// </summary>
@@ -183,16 +199,17 @@ public class CoreMethodHandler : IMethodHandler
 {
     // Matches: protected virtual void *Core(IMauiElement element, ...)
     public bool Matches(MethodDeclarationSyntax method) => ...
-    
+  
     // Extract: name stem, parameters, doc, etc.
     public MethodInfo Extract(MethodDeclarationSyntax method) => ...
-    
+  
     // Generate: public wrapper with RunDoWithElement
     public MethodDeclarationSyntax GenerateWrapper(MethodInfo info) => ...
 }
 ```
 
 **Benefits:**
+
 - Add new patterns without touching existing code
 - Test each handler independently
 - Support multiple handlers per class (future: async wrappers, proxy patterns, etc.)
@@ -222,6 +239,7 @@ var code = formattedSyntax.ToFullString();
 ```
 
 **Benefits:**
+
 - Roslyn handles all indentation, spacing, line breaks
 - No manual string formatting
 - Consistent with C# conventions automatically
@@ -254,12 +272,12 @@ Output File (.gen.cs)
 
 ### 4.4 Parameter Handling (Roslyn-aware)
 
-| Pattern | Action |
-|---------|--------|
-| `void` return | Wrap in `RunDoWithElement` + return `TScope` |
-| `bool` return | Consider generating `RunFuncWithElement` variant |
-| `string` return | Consider generating `RunFuncWithElement` variant |
-| Multiple overloads | Generate for each |
+| Pattern            | Action                                            |
+| ------------------ | ------------------------------------------------- |
+| `void` return    | Wrap in`RunDoWithElement` + return `TScope`   |
+| `bool` return    | Consider generating`RunFuncWithElement` variant |
+| `string` return  | Consider generating`RunFuncWithElement` variant |
+| Multiple overloads | Generate for each                                 |
 
 ---
 
@@ -269,27 +287,27 @@ Output File (.gen.cs)
 tools/
   Brinell.Generator/                  ← Core library
     Brinell.Generator.csproj
-    
+  
     Handlers/
       IMethodHandler.cs               ← Pluggable interface
       CoreMethodHandler.cs            ← Built-in handler for *Core methods
-      
+    
     Models/
       MethodInfo.cs                   ← Portable method metadata
       HandlerOptions.cs               ← Configuration for handlers
       GeneratorOptions.cs             ← Overall generation config
-      
+    
     Analysis/
       CoreMethodAnalyzer.cs           ← Roslyn syntax tree parsing
-      
+    
     Generation/
       WrapperGenerator.cs             ← Roslyn SyntaxFactory builder
       CodeFormatter.cs                ← Roslyn CSharpFormatter
-      
+    
   Brinell.Generator.Cli/              ← CLI wrapper
     Brinell.Generator.Cli.csproj
     Program.cs                        ← Argument parsing, file I/O
-    
+  
 srcnew/
   Brinell.Maui/
     Controls/
@@ -302,33 +320,36 @@ srcnew/
 
 ## 7. Benefits & Reusability
 
-| Benefit | Impact |
-|---------|--------|
-| **DRY Principle** | Eliminates repetitive wrapper boilerplate |
-| **Maintainability** | Change Core method → auto-update public wrapper |
-| **Consistency** | All wrappers follow same pattern automatically |
-| **Scaling** | Easy to apply to other control types (TextBox, Picker, etc.) |
-| **Testing** | Fewer manual edits = fewer bugs |
-| **Modularity** | `Brinell.Generator` lib can be reused by build tasks, MSBuild tools, IDEs |
-| **CLI Separation** | `Brinell.Generator.Cli` decouples UI tool from core logic |
-| **Pluggable Handlers** | Add new method patterns (async, proxy, decorator) without core changes |
-| **Roslyn Formatting** | No manual formatting — Roslyn handles all indentation and spacing |
+| Benefit                      | Impact                                                                      |
+| ---------------------------- | --------------------------------------------------------------------------- |
+| **DRY Principle**      | Eliminates repetitive wrapper boilerplate                                   |
+| **Maintainability**    | Change Core method → auto-update public wrapper                            |
+| **Consistency**        | All wrappers follow same pattern automatically                              |
+| **Scaling**            | Easy to apply to other control types (TextBox, Picker, etc.)                |
+| **Testing**            | Fewer manual edits = fewer bugs                                             |
+| **Modularity**         | `Brinell.Generator` lib can be reused by build tasks, MSBuild tools, IDEs |
+| **CLI Separation**     | `Brinell.Generator.Cli` decouples UI tool from core logic                 |
+| **Pluggable Handlers** | Add new method patterns (async, proxy, decorator) without core changes      |
+| **Roslyn Formatting**  | No manual formatting — Roslyn handles all indentation and spacing          |
 
 ---
 
 ## 8. Alternative Approaches Considered
 
 ### A. Source Generators (Modern Roslyn)
+
 - ✅ Integrated into compilation
 - ❌ Complex attribute setup, debugging harder
 - 📌 **Decision:** Start with standalone tool (easier), migrate later if needed
 
 ### B. T4 Templates
+
 - ✅ Built-in to Visual Studio
 - ❌ Older, different syntax
 - 📌 **Decision:** Roslyn is more modern and flexible
 
 ### C. Code Templates (Rider MPS)
+
 - ✅ IDE-aware
 - ❌ Not portable, not open-source friendly
 - 📌 **Decision:** Roslyn is best fit
@@ -349,18 +370,18 @@ srcnew/
 
 ## 10. Acceptance Criteria
 
-- [x] `Brinell.Generator` library compiles without errors
-- [x] `Brinell.Generator.Cli` wraps generator with argument parsing
-- [x] `IMethodHandler` interface allows pluggable pattern matching
-- [x] `CoreMethodHandler` correctly identifies and extracts `*Core` protected virtual methods
-- [x] Generator reads `.code.cs` file without errors
-- [x] Generates `.gen.cs` with identical wrapper methods as current manual code
-- [x] Handles method parameter mapping correctly (preserves all except first IMauiElement)
-- [x] Preserves XML documentation (if present)
-- [x] Uses Roslyn `SyntaxFactory` to build method syntax trees
-- [x] Uses Roslyn `CSharpFormatter` for output formatting
-- [x] Output is consistent, properly indented, and formatted
-- [x] Can be run as command-line tool: `dotnet run --project tools/Brinell.Generator.Cli --input file.code.cs --output file.gen.cs`
+- [X] `Brinell.Generator` library compiles without errors
+- [X] `Brinell.Generator.Cli` wraps generator with argument parsing
+- [X] `IMethodHandler` interface allows pluggable pattern matching
+- [X] `CoreMethodHandler` correctly identifies and extracts `*Core` protected virtual methods
+- [X] Generator reads `.code.cs` file without errors
+- [X] Generates `.gen.cs` with identical wrapper methods as current manual code
+- [X] Handles method parameter mapping correctly (preserves all except first IMauiElement)
+- [X] Preserves XML documentation (if present)
+- [X] Uses Roslyn `SyntaxFactory` to build method syntax trees
+- [X] Uses Roslyn `CSharpFormatter` for output formatting
+- [X] Output is consistent, properly indented, and formatted
+- [X] Can be run as command-line tool: `dotnet run --project tools/Brinell.Generator.Cli --input file.code.cs --output file.gen.cs`
 - [ ] Generated file compiles without warnings
 - [ ] Zero manual edits needed to generated code
 - [ ] Handler design allows adding new patterns (async, proxy, etc.) without core changes

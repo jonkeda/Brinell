@@ -57,6 +57,10 @@ public class IsWaitAssertGenerator : IMemberGenerator
         if (_options.RequireVirtual && !modifiers.Any(m => m.IsKind(SyntaxKind.VirtualKeyword)))
             return false;
 
+        // Exclude overrides — the base class already generated the public trio.
+        if (modifiers.Any(m => m.IsKind(SyntaxKind.OverrideKeyword)))
+            return false;
+
         // Ensure first parameter is the platform element (nullable or not)
         if (method.ParameterList.Parameters.Count == 0)
             return false;
@@ -105,9 +109,48 @@ public class IsWaitAssertGenerator : IMemberGenerator
                 var paramName = param.Identifier.Text;
                 info.Parameters.Add((typeName, paramName, null));
             }
+
+            foreach (var comparison in ExtractComparisons(method))
+            {
+                info.Comparisons.Add(comparison);
+            }
         }
 
         return info;
+    }
+
+    /// <summary>
+    /// Reads the comparison variants declared by [GenerateComparisons] on a Core
+    /// method. Matched syntactically (no semantic model), so the attribute may appear
+    /// with or without the "Attribute" suffix and with any qualification. Equality is
+    /// always included, so an absent attribute keeps the previous behaviour.
+    /// </summary>
+    private static List<string> ExtractComparisons(MethodDeclarationSyntax method)
+    {
+        var comparisons = new List<string> { "Equals" };
+
+        var attribute = method.AttributeLists
+            .SelectMany(list => list.Attributes)
+            .FirstOrDefault(a =>
+            {
+                var name = a.Name.ToString();
+                var simpleName = name.Contains('.') ? name[(name.LastIndexOf('.') + 1)..] : name;
+                return simpleName is "GenerateComparisons" or "GenerateComparisonsAttribute";
+            });
+
+        if (attribute?.ArgumentList == null)
+            return comparisons;
+
+        // Flags are written as `Comparison.Contains | Comparison.StartsWith`; pull the
+        // member names out of the expression text rather than evaluating it.
+        var argumentText = attribute.ArgumentList.Arguments.ToString();
+        foreach (var variant in new[] { "Contains", "StartsWith", "EndsWith", "Empty" })
+        {
+            if (argumentText.Contains(variant) && !comparisons.Contains(variant))
+                comparisons.Add(variant);
+        }
+
+        return comparisons;
     }
 
     /// <summary>
@@ -187,15 +230,89 @@ public class IsWaitAssertGenerator : IMemberGenerator
         writer.WriteLine("return RunAssertWithElement(expected,");
         writer.IncreaseSpace(1);
         writer.WriteLine($"element => {coreMethod.MethodName}(element{lambdaArgs}), (actual, expected1) => (actual == expected1),");
-        writer.WriteLine("null, timeoutMs);");
+        writer.WriteLine($"{BuildAssertMessage(propertyName)}, timeoutMs);");
         writer.DecreaseSpace(1);
         writer.Close();
         writer.WriteLine();
+
+        // Additional comparison variants declared via [GenerateComparisons].
+        foreach (var comparison in coreMethod.Comparisons.Where(c => c != "Equals"))
+        {
+            GenerateComparisonVariant(writer, coreMethod, propertyName, comparison,
+                paramPrefix, nullableReturnType, lambdaArgs);
+            writer.WriteLine();
+        }
 
         // Write region end
         writer.WriteLine("#endregion");
 
         return writer.ToString();
+    }
+
+    /// <summary>
+    /// Emits a Wait/Assert pair for one non-equality comparison variant, e.g.
+    /// <c>WaitTextContains</c> / <c>AssertTextContains</c>.
+    /// </summary>
+    private void GenerateComparisonVariant(CsWriter writer, MethodInfo coreMethod,
+        string propertyName, string comparison, string paramPrefix,
+        string nullableReturnType, string lambdaArgs)
+    {
+        var memberName = $"{propertyName}{comparison}";
+
+        if (comparison == "Empty")
+        {
+            // Empty is a bool? predicate over the value, not a value comparison.
+            writer.WriteLine($"public bool? Wait{memberName}({paramPrefix}bool? expected = true, int? timeoutMs = null)");
+            writer.Open();
+            writer.WriteLine("return RunWaitWithElement(expected,");
+            writer.IncreaseSpace(1);
+            writer.WriteLine($"element => string.IsNullOrEmpty({coreMethod.MethodName}(element{lambdaArgs})) == expected,");
+            writer.WriteLine("timeoutMs);");
+            writer.DecreaseSpace(1);
+            writer.Close();
+            writer.WriteLine();
+
+            writer.WriteLine($"public TScope Assert{memberName}({paramPrefix}bool? expected = true, string? message = null, int? timeoutMs = null)");
+            writer.Open();
+            writer.WriteLine("return RunAssertWithElement(expected,");
+            writer.IncreaseSpace(1);
+            writer.WriteLine($"element => (bool?)string.IsNullOrEmpty({coreMethod.MethodName}(element{lambdaArgs})), (actual, expected1) => (actual == expected1),");
+            writer.WriteLine($"{BuildAssertMessage(memberName)}, timeoutMs);");
+            writer.DecreaseSpace(1);
+            writer.Close();
+            return;
+        }
+
+        var predicate = $"actual?.{comparison}(expected1!) == true";
+
+        writer.WriteLine($"public bool? Wait{memberName}({paramPrefix}{nullableReturnType} expected, int? timeoutMs = null)");
+        writer.Open();
+        writer.WriteLine("return RunWaitWithElement(expected,");
+        writer.IncreaseSpace(1);
+        writer.WriteLine($"element => {coreMethod.MethodName}(element{lambdaArgs})?.{comparison}(expected!) == true,");
+        writer.WriteLine("timeoutMs);");
+        writer.DecreaseSpace(1);
+        writer.Close();
+        writer.WriteLine();
+
+        writer.WriteLine($"public TScope Assert{memberName}({paramPrefix}{nullableReturnType} expected, string? message = null, int? timeoutMs = null)");
+        writer.Open();
+        writer.WriteLine("return RunAssertWithElement(expected,");
+        writer.IncreaseSpace(1);
+        writer.WriteLine($"element => {coreMethod.MethodName}(element{lambdaArgs}), (actual, expected1) => ({predicate}),");
+        writer.WriteLine($"{BuildAssertMessage(memberName)}, timeoutMs);");
+        writer.DecreaseSpace(1);
+        writer.Close();
+    }
+
+    /// <summary>
+    /// Builds the message argument for a generated Assert. The caller's
+    /// <c>message</c> wins; otherwise a diagnostic naming the property, the expected
+    /// value, and the locator is synthesized so failures stay readable.
+    /// </summary>
+    private static string BuildAssertMessage(string propertyName)
+    {
+        return $"message ?? $\"Expected {propertyName} to be '{{expected}}'. Locator: {{Locator}}\"";
     }
 
     private static string BuildParameterListPrefix(MethodInfo coreMethod)
@@ -254,7 +371,7 @@ public class IsWaitAssertGenerator : IMemberGenerator
         writer.WriteLine("return RunAssertWithElement(expected,");
         writer.IncreaseSpace(1);
         writer.WriteLine($"{coreMethod.MethodName}, (actual, expected1) => (actual == expected1),");
-        writer.WriteLine("null, timeoutMs);");
+        writer.WriteLine($"{BuildAssertMessage(propertyName)}, timeoutMs);");
         writer.DecreaseSpace(1);
         writer.Close();
     }

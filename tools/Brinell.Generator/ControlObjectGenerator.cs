@@ -50,6 +50,11 @@ public sealed class ControlObjectGenerator
         var context = _analyzer.BuildContext(classDecl, root);
 
         var members = new List<string>();
+
+        // Tracks which Core method claimed each generated member name, so colliding
+        // names fail with a clear message instead of emitting uncompilable code.
+        var claimedNames = new Dictionary<string, string>(StringComparer.Ordinal);
+
         foreach (var method in _analyzer.CoreMethods(classDecl))
         {
             foreach (var generator in _generators)
@@ -58,6 +63,18 @@ public sealed class ControlObjectGenerator
                     continue;
 
                 var info = generator.Extract(method);
+
+                if (claimedNames.TryGetValue(info.PublicMethodName, out var previousCoreMethod))
+                {
+                    throw new InvalidOperationException(
+                        $"Generated member name '{info.PublicMethodName}' is claimed by both " +
+                        $"'{previousCoreMethod}' and '{info.MethodName}' in {context.ContainingTypeName}. " +
+                        "Rename one of the Core methods — overloads that differ only by parameters " +
+                        "collide on the generated name.");
+                }
+
+                claimedNames.Add(info.PublicMethodName, info.MethodName);
+
                 members.Add(generator.Generate(info, context));
                 break; // first matching generator wins
             }
@@ -88,12 +105,14 @@ public sealed class ControlObjectGenerator
     }
 
     /// <summary>
-    /// Creates a generator wired with the default member generators: the
-    /// Is/Wait/Assert family (registered first so <c>Is*Core</c> is not captured
-    /// by the broader action family) and the action family.
+    /// Creates a generator wired with the default member generators. Order matters:
+    /// the Is/Wait/Assert family and the Set family are registered before the broader
+    /// action family so <c>Is*Core</c>, <c>Get*Core</c>, and <c>Set*Core</c> are not
+    /// captured as plain actions.
     /// </summary>
     public static ControlObjectGenerator CreateDefault() =>
         new ControlObjectGenerator()
             .Register(new IsWaitAssertGenerator())
+            .Register(new SetGenerator())
             .Register(new ActionGenerator());
 }

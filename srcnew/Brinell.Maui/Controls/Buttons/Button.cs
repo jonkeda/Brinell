@@ -5,7 +5,7 @@ namespace Brinell.Maui.Controls.Buttons;
 /// Inherits from ClickableControlBase which provides all click functionality.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public class Button<TScope> : ClickableControlBase<TScope>
+public class Button<TScope> : Base.ClickableControlBase<TScope>
     where TScope : IMauiScope<TScope>
 {
     /// <summary>

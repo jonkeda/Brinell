@@ -168,7 +168,7 @@ public class Test {
     }
 
     [Fact]
-    public void Generate_EmitsRunDoWithElementAndClickableGuard()
+    public void Generate_EmitsRunDoWithElementDelegatingToCore()
     {
         var method = FirstMethod(SampleCodeFixtures.SimpleClickableClass);
         var generator = new ActionGenerator();

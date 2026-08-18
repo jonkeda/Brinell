@@ -7,78 +7,66 @@ using Brinell.Generator.Writers;
 namespace Brinell.Generator.Generators;
 
 /// <summary>
-/// Emits the public action wrapper for a protected virtual <c>*Core</c> method
-/// (e.g., <c>ClickCore</c> → <c>Click</c>). The wrapper delegates straight to the
-/// Core method via <c>RunDoWithElement</c>; no guard is injected, so any
-/// <c>Ensure*Core</c> check belongs inside the Core method body.
+/// Emits the public value-writing wrapper for a protected virtual <c>Set*Core</c>
+/// method (e.g., <c>SetTextCore</c> → <c>SetText</c>). The wrapper delegates via
+/// <c>RunSetWithElement</c>, which already implements the nullable skip pattern —
+/// a null value returns the containing scope without touching the element.
 /// </summary>
-public class ActionGenerator : IMemberGenerator
+public class SetGenerator : IMemberGenerator
 {
-    /// <summary>
-    /// Reserved prefix for guard helpers (e.g., <c>EnsureClickableCore</c>). Guards are
-    /// internal checks, not actions, so they never get a public wrapper.
-    /// </summary>
-    private const string GuardPrefix = "Ensure";
-
     private readonly MemberGeneratorOptions _options;
+    private const string SetterPrefix = "Set";
 
-    public ActionGenerator(MemberGeneratorOptions? options = null)
+    public SetGenerator(MemberGeneratorOptions? options = null)
     {
         _options = options ?? new MemberGeneratorOptions();
     }
 
     /// <summary>
-    /// Matches methods ending with "Core", declared as protected and virtual,
-    /// excluding <c>Is*Core</c>/<c>Get*Core</c> queries (handled by the Is/Wait/Assert
-    /// family), <c>Set*Core</c> writers (handled by <see cref="SetGenerator"/>),
-    /// <c>Ensure*</c> guards, and <c>override</c>s (the base already generated the wrapper).
+    /// Determines whether a method is a <c>Set*Core</c> value writer, independent of
+    /// its modifiers. Used by <see cref="ActionGenerator"/> to yield these methods to
+    /// this generator regardless of registration order.
     /// </summary>
-    public bool Matches(MethodDeclarationSyntax method)
+    public static bool IsSetCoreMethod(MethodDeclarationSyntax method, string methodSuffix)
     {
         var methodName = method.Identifier.Text;
 
-        // Check if name ends with suffix
-        if (!methodName.EndsWith(_options.MethodSuffix))
+        if (!methodName.EndsWith(methodSuffix))
+            return false;
+        if (!methodName.StartsWith(SetterPrefix))
             return false;
 
-        // Exclude Is*Core state queries — those belong to IsWaitAssertGenerator.
-        if (methodName.StartsWith("Is") && method.ReturnType.ToString() == "bool?")
-            return false;
+        // A setter takes the element plus at least one value to write.
+        return method.ParameterList.Parameters.Count >= 2;
+    }
 
-        // Exclude Get*Core value queries — those belong to IsWaitAssertGenerator.
-        if (methodName.StartsWith("Get"))
-            return false;
-
-        // Exclude Set*Core value writers — those belong to SetGenerator.
-        if (SetGenerator.IsSetCoreMethod(method, _options.MethodSuffix))
-            return false;
-
-        // Exclude Ensure* guards — internal checks, not actions.
-        if (methodName.StartsWith(GuardPrefix))
+    /// <summary>
+    /// Matches protected virtual <c>Set*Core</c> methods whose first parameter is the
+    /// platform element and which take at least one value parameter.
+    /// </summary>
+    public bool Matches(MethodDeclarationSyntax method)
+    {
+        if (!IsSetCoreMethod(method, _options.MethodSuffix))
             return false;
 
         var modifiers = method.Modifiers;
+        if (_options.RequireProtected && !modifiers.Any(m => m.IsKind(SyntaxKind.ProtectedKeyword)))
+            return false;
+        if (_options.RequireVirtual && !modifiers.Any(m => m.IsKind(SyntaxKind.VirtualKeyword)))
+            return false;
 
         // Exclude overrides — the base class already generated the public wrapper.
         if (modifiers.Any(m => m.IsKind(SyntaxKind.OverrideKeyword)))
             return false;
 
-        // Check for required modifiers
-        if (_options.RequireProtected && !modifiers.Any(m => m.IsKind(SyntaxKind.ProtectedKeyword)))
-            return false;
-
-        if (_options.RequireVirtual && !modifiers.Any(m => m.IsKind(SyntaxKind.VirtualKeyword)))
-            return false;
-
-        // Ensure it has at least the element parameter
-        if (method.ParameterList.Parameters.Count == 0)
-            return false;
-
-        return true;
+        var firstParam = method.ParameterList.Parameters[0];
+        var paramType = firstParam.Type?.ToString() ?? "";
+        return paramType.Contains("Element");
     }
 
     /// <summary>
-    /// Extracts method metadata, stripping the Core suffix and preparing parameters.
+    /// Extracts method metadata, stripping the Core suffix and skipping the element
+    /// parameter (e.g., <c>SetTextCore</c> → <c>SetText</c>).
     /// </summary>
     public MethodInfo Extract(MethodDeclarationSyntax method)
     {
@@ -89,12 +77,11 @@ public class ActionGenerator : IMemberGenerator
         var info = new MethodInfo
         {
             MethodName = methodName,
-            PublicMethodName = _options.PublicMethodPrefix + publicName,
+            PublicMethodName = publicName,
             ReturnType = method.ReturnType.ToString(),
             XmlDocumentation = ExtractXmlDocumentation(method)
         };
 
-        // Extract parameters, skipping the first one (element)
         var parameters = method.ParameterList.Parameters;
         for (int i = 1; i < parameters.Count; i++)
         {
@@ -110,36 +97,32 @@ public class ActionGenerator : IMemberGenerator
     }
 
     /// <summary>
-    /// Generates the public action wrapper using <c>RunDoWithElement</c>. The emitted
-    /// body calls the Core method directly and adds no guard of its own.
+    /// Generates the public setter wrapping <c>RunSetWithElement</c>. The first value
+    /// parameter drives the nullable skip; a declared <c>timeoutMs</c> is forwarded.
     /// </summary>
     public string Generate(MethodInfo coreMethod, ControlObjectContext context)
     {
-        var writer = new CsWriter(0); // Start with no indentation - let the file-level writer handle it
+        var writer = new CsWriter(0);
         var publicMethodName = coreMethod.PublicMethodName;
 
-        // Determine return type
         var returnTypeStr = context.TypeParameters.TrimStart('<').TrimEnd('>');
         if (string.IsNullOrEmpty(returnTypeStr))
             returnTypeStr = "void";
 
-        // Write region start
         writer.WriteLine($"#region {publicMethodName}");
         writer.WriteLine();
 
-        // Build parameter list
         var paramList = BuildParameterList(coreMethod);
+        var lambdaArgs = BuildLambdaArguments(coreMethod);
 
-        // Write method signature
+        // The value being written is the first parameter after the element.
+        var valueParameterName = coreMethod.Parameters[0].ParameterName;
+        var hasTimeoutMs = coreMethod.Parameters.Any(p => p.ParameterName == "timeoutMs");
+
         writer.WriteLine($"public {returnTypeStr} {publicMethodName}({paramList})");
         writer.Open();
 
-        // Build lambda arguments (additional parameters after element)
-        var lambdaArgs = BuildLambdaArguments(coreMethod);
-        var hasTimeoutMs = coreMethod.Parameters.Any(p => p.ParameterName == "timeoutMs");
-
-        // Build method body with RunDoWithElement call
-        writer.WriteStart("return RunDoWithElement(element => { ");
+        writer.WriteStart($"return RunSetWithElement({valueParameterName}, element => {{ ");
         writer.Write($"{coreMethod.MethodName}(element{lambdaArgs}); ");
         writer.Write("}");
 
@@ -152,7 +135,6 @@ public class ActionGenerator : IMemberGenerator
         writer.Close();
         writer.WriteLine();
 
-        // Write region end
         writer.WriteLine("#endregion");
 
         return writer.ToString();

@@ -31,4 +31,10 @@ public class MethodInfo
     /// Gets the return type (e.g., "void", "bool", "string").
     /// </summary>
     public string ReturnType { get; set; } = "void";
+
+    /// <summary>
+    /// Gets the comparison variants to emit for a Get*Core query, read from
+    /// [GenerateComparisons] on the Core method. Defaults to equality only.
+    /// </summary>
+    public List<string> Comparisons { get; } = [];
 }
