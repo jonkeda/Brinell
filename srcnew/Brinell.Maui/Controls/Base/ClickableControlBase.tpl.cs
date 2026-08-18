@@ -151,4 +151,26 @@ public abstract partial class ClickableControlBase<TScope> : FocusableControlBas
     }
 
     #endregion
+
+    #region Pressed
+
+    /// <summary>
+    /// Checks whether the control is pressed, from the pre-found element.
+    /// </summary>
+    /// <param name="element">The pre-found element (may be null).</param>
+    /// <returns>True if pressed, false otherwise, null if element is null.</returns>
+    protected virtual bool? IsPressedCore(IMauiElement? element)
+    {
+        if (element == null) return null;
+
+        var attr = element.GetAttribute("IsPressed");
+        if (!string.IsNullOrEmpty(attr))
+        {
+            return attr.Equals("true", StringComparison.OrdinalIgnoreCase);
+        }
+
+        return false;
+    }
+
+    #endregion
 }

@@ -87,5 +87,27 @@ public abstract partial class ClickableControlBase<TScope> : FocusableControlBas
     }
 
     #endregion
+    #region Pressed (IsPressed / WaitPressed / AssertPressed)
+
+    public bool? IsPressed()
+    {
+        return IsPressedCore(TryFindElement()) == true;
+    }
+
+    public bool WaitPressed(bool? expected = true, int? timeoutMs = null)
+    {
+        return RunWaitWithElement(expected,
+           element => IsPressedCore(element) == expected!.Value,
+           timeoutMs);
+    }
+
+    public TScope AssertPressed(bool? expected = true, string? message = null, int? timeoutMs = null)
+    {
+        return RunAssertWithElement(expected,
+           IsPressedCore, (actual, expected1) => (actual == expected1),
+           message ?? $"Expected Pressed to be '{expected}'. Locator: {Locator}", timeoutMs);
+    }
+
+    #endregion
 
 }
