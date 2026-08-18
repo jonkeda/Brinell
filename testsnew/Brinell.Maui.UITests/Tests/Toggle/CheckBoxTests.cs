@@ -43,12 +43,13 @@ public class CheckBoxTests
     [Trait("Method", "Click")]
     public Task CheckBox_Click_TogglesChecked()
     {
-        // Arrange
+        // Arrange - start from a known unchecked state, whatever earlier tests left behind
         var page = GetPage();
+        page.TestCheckBox.CheckOff();
 
-        // Act & Assert
+        // Act & Assert - "is checked" rather than "checked", which also matches "unchecked"
         page.TestCheckBox.Click()
-            .CheckBoxStatusLabel.AssertTextContains("checked");
+            .CheckBoxStatusLabel.AssertTextContains("is checked");
 
         return Task.CompletedTask;
     }
@@ -60,14 +61,15 @@ public class CheckBoxTests
     [Trait("Method", "Click")]
     public Task CheckBox_ClickTwice_TogglesUnchecked()
     {
-        // Arrange
+        // Arrange - the two clicks only land on checked-then-unchecked if we start off
         var page = GetPage();
+        page.TestCheckBox.CheckOff();
 
         // Act & Assert
         page.TestCheckBox.Click()
-            .CheckBoxStatusLabel.AssertTextContains("checked")
+            .CheckBoxStatusLabel.AssertTextContains("is checked")
             .TestCheckBox.Click()
-            .CheckBoxStatusLabel.AssertTextContains("unchecked");
+            .CheckBoxStatusLabel.AssertTextContains("is unchecked");
 
         return Task.CompletedTask;
     }
@@ -79,14 +81,14 @@ public class CheckBoxTests
     [Trait("Method", "Reset")]
     public Task CheckBox_Reset_ClearsState()
     {
-        // Arrange
+        // Arrange - Reset only proves anything if the box is on when we press it
         var page = GetPage();
+        page.TestCheckBox.CheckOn();
 
         // Act & Assert
-        page.TestCheckBox.Click()
-            .CheckBoxStatusLabel.AssertTextContains("checked")
+        page.CheckBoxStatusLabel.AssertTextContains("is checked")
             .ResetButton.Click()
-            .CheckBoxStatusLabel.AssertTextContains("unchecked");
+            .CheckBoxStatusLabel.AssertTextContains("is unchecked");
 
         return Task.CompletedTask;
     }

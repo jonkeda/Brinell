@@ -5,7 +5,7 @@ namespace Brinell.Maui.Controls.Toggle;
 /// Provides IsOn, TurnOn, TurnOff alias methods in addition to inherited toggle methods.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public class Switch<TScope> : ToggleControlBase<TScope>
+public partial class Switch<TScope> : Base.ToggleControlBase<TScope>
     where TScope : IMauiScope<TScope>
 {
     /// <summary>
@@ -29,39 +29,43 @@ public class Switch<TScope> : ToggleControlBase<TScope>
     {
     }
 
-    #region Switch-Specific Alias Methods
+    #region Core Methods (Element-Aware, No Logging)
 
     /// <summary>
-    /// Checks if the switch is in the On position.
-    /// Alias for IsChecked().
+    /// Reads the On/Off state from the pre-found element.
+    /// Switch terminology for the underlying checked state.
     /// </summary>
-    /// <returns>True if on, false if off, null if element not found.</returns>
-    public bool? IsOn() => IsChecked();
+    /// <param name="element">The pre-found element.</param>
+    /// <returns>True if on, false if off, null if element is null.</returns>
+    protected virtual bool? IsOnCore(IMauiElement? element) => IsCheckedCore(element);
 
     /// <summary>
-    /// Turns the switch on.
-    /// Alias for Check().
+    /// Sets the On/Off state on the pre-found element.
+    /// Switch terminology for the underlying checked state.
+    /// </summary>
+    /// <param name="element">The pre-found element.</param>
+    /// <param name="on">The desired state. Null skips the operation.</param>
+    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
+    protected virtual void SetOnCore(IMauiElement element, bool? on, int? timeoutMs = null)
+        => SetCheckedCore(element, on, timeoutMs);
+
+    #endregion
+
+    #region Hand-written Convenience Members
+
+    /// <summary>
+    /// Turns the switch on. Alias for Check().
     /// </summary>
     /// <param name="timeoutMs">Optional timeout.</param>
     /// <returns>The containing scope for fluent chaining.</returns>
-    public TScope TurnOn(int? timeoutMs = null) => Check(timeoutMs);
+    public TScope TurnOn(int? timeoutMs = null) => SetOn(true, timeoutMs);
 
     /// <summary>
-    /// Turns the switch off.
-    /// Alias for Uncheck().
+    /// Turns the switch off. Alias for Uncheck().
     /// </summary>
     /// <param name="timeoutMs">Optional timeout.</param>
     /// <returns>The containing scope for fluent chaining.</returns>
-    public TScope TurnOff(int? timeoutMs = null) => Uncheck(timeoutMs);
-
-    /// <summary>
-    /// Waits for the switch to be in the expected On/Off state.
-    /// Alias for WaitChecked().
-    /// </summary>
-    /// <param name="expected">Expected state (true = on, false = off).</param>
-    /// <param name="timeoutMs">Optional timeout.</param>
-    /// <returns>True if condition met, false if timeout.</returns>
-    public bool WaitOn(bool? expected, int? timeoutMs = null) => WaitChecked(expected, timeoutMs);
+    public TScope TurnOff(int? timeoutMs = null) => SetOn(false, timeoutMs);
 
     /// <summary>
     /// Asserts the switch is on.
@@ -69,8 +73,8 @@ public class Switch<TScope> : ToggleControlBase<TScope>
     /// <param name="message">Optional assertion message.</param>
     /// <param name="timeoutMs">Optional timeout.</param>
     /// <returns>The containing scope for fluent chaining.</returns>
-    public TScope AssertOn(string? message = null, int? timeoutMs = null)
-        => AssertChecked(true, message ?? "Expected switch to be on", timeoutMs);
+    public TScope AssertOn(string? message, int? timeoutMs = null)
+        => AssertOn(true, message ?? "Expected switch to be on", timeoutMs);
 
     /// <summary>
     /// Asserts the switch is off.
@@ -79,7 +83,7 @@ public class Switch<TScope> : ToggleControlBase<TScope>
     /// <param name="timeoutMs">Optional timeout.</param>
     /// <returns>The containing scope for fluent chaining.</returns>
     public TScope AssertOff(string? message = null, int? timeoutMs = null)
-        => AssertChecked(false, message ?? "Expected switch to be off", timeoutMs);
+        => AssertOn(false, message ?? "Expected switch to be off", timeoutMs);
 
     #endregion
 }

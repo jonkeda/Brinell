@@ -80,9 +80,8 @@ public sealed class ControlObjectGenerator
             }
         }
 
-        if (members.Count == 0)
-            return sourceCode; // No members to generate
-
+        // A template with no Core methods still gets a (member-less) partial: echoing the
+        // source back would duplicate the class declaration in the .gen.cs file.
         var code = _builder.BuildCompilationUnit(context, members, options.IncludeGeneratedHeader);
         return _formatter.Format(code);
     }

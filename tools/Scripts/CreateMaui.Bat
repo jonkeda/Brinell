@@ -1,13 +1,13 @@
 @echo off
 setlocal
 
-rem Generates .gen.cs files from every .tpl.cs file in the Controls\Base folder
+rem Generates .gen.cs files from every .tpl.cs file under the Controls folder
 rem using the Brinell ControlObject generator.
 
 set "SCRIPT_DIR=%~dp0"
 set "CLI_PROJECT=%SCRIPT_DIR%..\Brinell.Generator.Cli\Brinell.Generator.Cli.csproj"
 set "CLI_EXE=%SCRIPT_DIR%..\Brinell.Generator.Cli\bin\Release\net10.0\Brinell.Generator.Cli.exe"
-set "INPUT=%SCRIPT_DIR%..\..\srcnew\Brinell.Maui\Controls\Base"
+set "INPUT=%SCRIPT_DIR%..\..\srcnew\Brinell.Maui\Controls"
 
 echo Building Brinell.Generator.Cli...
 dotnet build "%CLI_PROJECT%" -c Release -v:minimal /nr:false

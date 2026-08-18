@@ -5,7 +5,7 @@ namespace Brinell.Maui.Controls.Toggle;
 /// Provides IsSelected, Select alias methods. Note: Radio buttons cannot be directly deselected.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public class RadioButton<TScope> : ToggleControlBase<TScope>
+public partial class RadioButton<TScope> : Base.ToggleControlBase<TScope>
     where TScope : IMauiScope<TScope>
 {
     /// <summary>
@@ -29,14 +29,19 @@ public class RadioButton<TScope> : ToggleControlBase<TScope>
     {
     }
 
-    #region RadioButton-Specific Alias Methods
+    #region Core Methods (Element-Aware, No Logging)
 
     /// <summary>
-    /// Checks if the radio button is selected.
-    /// Alias for IsChecked().
+    /// Reads the selected state from the pre-found element.
+    /// RadioButton terminology for the underlying checked state.
     /// </summary>
-    /// <returns>True if selected, false if not, null if element not found.</returns>
-    public bool? IsSelected() => IsChecked();
+    /// <param name="element">The pre-found element.</param>
+    /// <returns>True if selected, false if not, null if element is null.</returns>
+    protected virtual bool? IsSelectedCore(IMauiElement? element) => IsCheckedCore(element);
+
+    #endregion
+
+    #region Hand-written Convenience Members
 
     /// <summary>
     /// Selects this radio button.
@@ -47,22 +52,13 @@ public class RadioButton<TScope> : ToggleControlBase<TScope>
     public TScope Select(int? timeoutMs = null) => Check(timeoutMs);
 
     /// <summary>
-    /// Waits for the radio button to be in the expected selected state.
-    /// Alias for WaitChecked().
-    /// </summary>
-    /// <param name="expected">Expected state (true = selected, false = not selected).</param>
-    /// <param name="timeoutMs">Optional timeout.</param>
-    /// <returns>True if condition met, false if timeout.</returns>
-    public bool WaitSelected(bool? expected, int? timeoutMs = null) => WaitChecked(expected, timeoutMs);
-
-    /// <summary>
     /// Asserts the radio button is selected.
     /// </summary>
     /// <param name="message">Optional assertion message.</param>
     /// <param name="timeoutMs">Optional timeout.</param>
     /// <returns>The containing scope for fluent chaining.</returns>
-    public TScope AssertSelected(string? message = null, int? timeoutMs = null)
-        => AssertChecked(true, message ?? "Expected radio button to be selected", timeoutMs);
+    public TScope AssertSelected(string? message, int? timeoutMs = null)
+        => AssertSelected(true, message ?? "Expected radio button to be selected", timeoutMs);
 
     /// <summary>
     /// Asserts the radio button is not selected.
@@ -71,7 +67,7 @@ public class RadioButton<TScope> : ToggleControlBase<TScope>
     /// <param name="timeoutMs">Optional timeout.</param>
     /// <returns>The containing scope for fluent chaining.</returns>
     public TScope AssertNotSelected(string? message = null, int? timeoutMs = null)
-        => AssertChecked(false, message ?? "Expected radio button not to be selected", timeoutMs);
+        => AssertSelected(false, message ?? "Expected radio button not to be selected", timeoutMs);
 
     #endregion
 }
