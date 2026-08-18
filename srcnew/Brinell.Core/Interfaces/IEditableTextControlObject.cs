@@ -38,13 +38,13 @@ public interface IEditableTextControlObject<TScope> : ITextControlObject<TScope>
     /// Get the placeholder/hint text.
     /// Returns null if not available.
     /// </summary>
-    string? GetPlaceholder();
-    
+    string? GetPlaceholder(int? timeoutMs = null);
+
     /// <summary>
     /// Wait until placeholder text matches expected value.
-    /// If expected is null, returns true immediately (skip).
+    /// If expected is null, the wait is skipped and null is returned.
     /// </summary>
-    bool WaitPlaceholder(string? expected, int? timeoutMs = null);
+    bool? WaitPlaceholder(string? expected, int? timeoutMs = null);
     
     /// <summary>
     /// Assert placeholder text matches expected value.

@@ -53,14 +53,14 @@ public class AndroidEditText<TScope> : AndroidText<TScope>, IEditableTextControl
         return Enter(text, timeoutMs);
     }
 
-    public string? GetPlaceholder()
+    public string? GetPlaceholder(int? timeoutMs = null)
         => GetAttribute("hint", null);
 
-    public bool WaitPlaceholder(string? expected, int? timeoutMs = null)
+    public bool? WaitPlaceholder(string? expected, int? timeoutMs = null)
     {
         if (expected is null)
         {
-            return true;
+            return null;
         }
 
         return Poll(
@@ -75,7 +75,7 @@ public class AndroidEditText<TScope> : AndroidText<TScope>, IEditableTextControl
             return ContainingScope;
         }
 
-        if (!WaitPlaceholder(expected, timeoutMs))
+        if (WaitPlaceholder(expected, timeoutMs) != true)
         {
             Fail(message ?? $"Expected placeholder '{expected}', actual '{GetPlaceholder()}'.", expected, GetPlaceholder());
         }

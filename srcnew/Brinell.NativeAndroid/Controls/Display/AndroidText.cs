@@ -16,11 +16,11 @@ public class AndroidText<TScope> : NativeAndroidControl<TScope>, ITextControlObj
     public bool WaitTextEquals(string? expected, int? timeoutMs = null)
         => WaitText(expected, timeoutMs);
 
-    public bool WaitTextContains(string? expected, int? timeoutMs = null)
+    public bool? WaitTextContains(string? expected, int? timeoutMs = null)
     {
         if (expected is null)
         {
-            return true;
+            return null;
         }
 
         return Poll(

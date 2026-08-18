@@ -5,7 +5,7 @@ namespace Brinell.Maui.Controls.Text;
 /// Inherits all text manipulation from Entry, adds search-specific methods.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public class SearchBar<TScope> : Entry<TScope>
+public partial class SearchBar<TScope> : Entry<TScope>
     where TScope : IMauiScope<TScope>
 {
     /// <summary>
@@ -29,35 +29,21 @@ public class SearchBar<TScope> : Entry<TScope>
     {
     }
 
-    #region Search-Specific Methods
+    #region Search-Specific Core Methods
 
     /// <summary>
-    /// Enters text and submits the search.
+    /// Core implementation of Search using pre-found element.
+    /// Enters the search text and submits it.
     /// </summary>
+    /// <param name="element">The pre-found element.</param>
     /// <param name="searchText">The text to search for. Null skips the operation.</param>
     /// <param name="timeoutMs">Optional timeout.</param>
-    /// <returns>The containing scope for fluent chaining.</returns>
-    public TScope Search(string? searchText, int? timeoutMs = null)
+    protected virtual void SetSearchCore(IMauiElement element, string? searchText, int? timeoutMs = null)
     {
-        return RunSetWithElement( searchText, element =>
-        {
-            SetTextCore(element, searchText!, timeoutMs);
-            // Submit search
-            SubmitSearchCore(element);
-        }, timeoutMs);
-    }
+        if (searchText == null) return;
 
-    /// <summary>
-    /// Submits the current search query.
-    /// </summary>
-    /// <param name="timeoutMs">Optional timeout.</param>
-    /// <returns>The containing scope for fluent chaining.</returns>
-    public TScope SubmitSearch(int? timeoutMs = null)
-    {
-        return RunDoWithElement(element =>
-        {
-            SubmitSearchCore(element);
-        }, timeoutMs);
+        SetTextCore(element, searchText, timeoutMs);
+        SubmitSearchCore(element, timeoutMs);
     }
 
     /// <summary>
@@ -65,32 +51,17 @@ public class SearchBar<TScope> : Entry<TScope>
     /// Platform-specific: sends Enter key to trigger search action.
     /// </summary>
     /// <param name="element">The search bar element.</param>
-    protected virtual void SubmitSearchCore(IMauiElement element)
+    /// <param name="timeoutMs">Optional timeout.</param>
+    protected virtual void SubmitSearchCore(IMauiElement element, int? timeoutMs = null)
     {
         // Submit the search by pressing Enter key
         element.Submit();
     }
-    
-    /// <summary>
-    /// Clears the element with fallback for complex controls.
-    /// </summary>
-    /// <param name="element">The element to clear.</param>
-    protected virtual void ClearElementCore(IMauiElement element)
-    {
-        // For Windows/FlaUI, use ClearWithFallback for robust clearing
-        if (element is Interfaces.INestedTextElement textElement)
-        {
-            textElement.ClearWithFallback();
-            return;
-        }
-        
-        element.Clear();
-    }
 
     #endregion
-    
+
     #region Text Override for Nested TextBox
-    
+
     /// <summary>
     /// Gets the text using nested TextBox discovery for Windows SearchBar.
     /// </summary>
@@ -99,7 +70,7 @@ public class SearchBar<TScope> : Entry<TScope>
     protected override string? GetTextCore(IMauiElement? element)
     {
         if (element == null) return null;
-        
+
         // For Windows/FlaUI, use GetNestedText which handles AutoSuggestBox structure
         if (element is Interfaces.INestedTextElement textElement)
         {
@@ -107,10 +78,23 @@ public class SearchBar<TScope> : Entry<TScope>
             if (text != null)
                 return text;
         }
-        
+
         // Fall back to base implementation
         return base.GetTextCore(element);
     }
-    
+
+    #endregion
+
+    #region Hand-written Convenience Members
+
+    /// <summary>
+    /// Enters text and submits the search.
+    /// </summary>
+    /// <param name="searchText">The text to search for. Null skips the operation.</param>
+    /// <param name="timeoutMs">Optional timeout.</param>
+    /// <returns>The containing scope for fluent chaining.</returns>
+    public TScope Search(string? searchText, int? timeoutMs = null)
+        => SetSearch(searchText, timeoutMs);
+
     #endregion
 }

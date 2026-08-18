@@ -8,7 +8,7 @@ namespace Brinell.Maui.Controls.Text;
 /// Includes FlaUI-specific clear handling for Windows.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public class Editor<TScope> : Entry<TScope>
+public partial class Editor<TScope> : Entry<TScope>
     where TScope : IMauiScope<TScope>
 {
     /// <summary>
@@ -31,7 +31,7 @@ public class Editor<TScope> : Entry<TScope>
         : base(scope, locatorValue)
     {
     }
-    
+
     #region Clear Override for FlaUI
 
     /// <summary>
@@ -48,10 +48,10 @@ public class Editor<TScope> : Entry<TScope>
             textElement.ClearWithFallback();
             return;
         }
-        
+
         element.Clear();
     }
-    
+
     /// <summary>
     /// Core implementation of SetText using pre-found element.
     /// Uses FlaUI ClearWithFallback for robust clearing on Windows.
@@ -59,8 +59,10 @@ public class Editor<TScope> : Entry<TScope>
     /// <param name="element">The pre-found element.</param>
     /// <param name="text">The text to set.</param>
     /// <param name="timeoutMs">Optional timeout for enabled check.</param>
-    protected override void SetTextCore(IMauiElement element, string text, int? timeoutMs = null)
+    protected override void SetTextCore(IMauiElement element, string? text, int? timeoutMs = null)
     {
+        if (text == null) return;
+
         // For Windows/FlaUI, use ClearWithFallback for robust clearing
         if (element is Interfaces.INestedTextElement textElement)
         {
@@ -74,9 +76,9 @@ public class Editor<TScope> : Entry<TScope>
         {
             element.Clear();
         }
-        
+
         element.SendKeys(text, TextInputMethod.SetValue);
     }
-    
+
     #endregion
 }
