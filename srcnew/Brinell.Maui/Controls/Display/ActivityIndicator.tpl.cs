@@ -5,7 +5,7 @@ namespace Brinell.Maui.Controls.Display;
 /// Provides IsRunning(), WaitRunning(), and running state assertions.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public class ActivityIndicator<TScope> : ControlBase<TScope>
+public partial class ActivityIndicator<TScope> : Base.ViewBase<TScope>
     where TScope : IMauiScope<TScope>
 {
     /// <summary>
@@ -35,14 +35,14 @@ public class ActivityIndicator<TScope> : ControlBase<TScope>
     /// </summary>
     /// <param name="element">The pre-found element (may be null).</param>
     /// <returns>True if running, false otherwise, null if not found.</returns>
-    protected bool? IsRunningCore(IMauiElement? element)
+    protected virtual bool? IsRunningCore(IMauiElement? element)
     {
         if (element == null) return null;
 
         // Try IsRunning attribute (MAUI property)
         var isRunning = element.GetAttribute("IsRunning")
             ?? element.GetAttribute("isRunning");
-        
+
         if (!string.IsNullOrEmpty(isRunning))
         {
             return isRunning.Equals("true", StringComparison.OrdinalIgnoreCase);
@@ -52,34 +52,9 @@ public class ActivityIndicator<TScope> : ControlBase<TScope>
         return element.Visible;
     }
 
-    /// <summary>
-    /// Checks if the activity indicator is currently running (spinning).
-    /// </summary>
-    /// <returns>True if running, false if stopped, null if not found.</returns>
-    public bool? IsRunning()
-    {
-        return IsRunningCore(TryFindElement());
-    }
-
     #endregion
 
-    #region WaitRunning
-
-    /// <summary>
-    /// Waits for running state using pre-found element.
-    /// </summary>
-    public bool WaitRunning(bool? expected, int? timeoutMs = null)
-    {
-        if (expected == null)
-            return true;
-        return RunWaitWithElement(
-            e => IsRunningCore(e) == expected,
-            timeoutMs);
-    }
-
-    #endregion
-
-    #region AssertRunning
+    #region Hand-written Convenience Members
 
     /// <summary>
     /// Asserts the activity indicator is running.
@@ -87,23 +62,8 @@ public class ActivityIndicator<TScope> : ControlBase<TScope>
     /// <param name="message">Optional assertion message.</param>
     /// <param name="timeoutMs">Optional timeout.</param>
     /// <returns>The containing scope for fluent chaining.</returns>
-    public TScope AssertRunning(string? message = null, int? timeoutMs = null)
+    public TScope AssertRunning(string? message, int? timeoutMs = null)
         => AssertRunning(true, message, timeoutMs);
-
-    /// <summary>
-    /// Asserts the activity indicator running state.
-    /// </summary>
-    /// <param name="expected">The expected running state.</param>
-    /// <param name="message">Optional assertion message.</param>
-    /// <param name="timeoutMs">Optional timeout.</param>
-    /// <returns>The containing scope for fluent chaining.</returns>
-    public TScope AssertRunning(bool? expected, string? message = null, int? timeoutMs = null)
-    {
-        if (expected == null) return ContainingScope;
-
-        return RunAssertWithElement(expected, 
-            IsRunningCore, (actual, exp) => Equals(actual, exp), message ?? $"Expected activity indicator {(expected.Value ? "to be running" : "to be stopped")}. Locator: {Locator}", timeoutMs);
-    }
 
     #endregion
 }

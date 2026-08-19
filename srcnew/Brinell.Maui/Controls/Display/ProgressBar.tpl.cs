@@ -5,7 +5,7 @@ namespace Brinell.Maui.Controls.Display;
 /// Provides GetProgress(), IsIndeterminate(), and progress assertions.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public class ProgressBar<TScope> : ControlBase<TScope>
+public partial class ProgressBar<TScope> : Base.ViewBase<TScope>
     where TScope : IMauiScope<TScope>
 {
     /// <summary>
@@ -35,35 +35,21 @@ public class ProgressBar<TScope> : ControlBase<TScope>
     /// </summary>
     /// <param name="element">The pre-found element (may be null).</param>
     /// <returns>Progress value between 0 and 1, or null if not found.</returns>
-    protected double? GetProgressCore(IMauiElement? element)
+    protected virtual double? GetProgressCore(IMauiElement? element)
     {
         if (element == null) return null;
 
         // Try Value attribute first (Windows/MAUI)
-        var valueAttr = element.GetAttribute("Value") 
+        var valueAttr = element.GetAttribute("Value")
             ?? element.GetAttribute("Progress")
             ?? element.GetAttribute("RangeValue.Value");
-        
+
         if (!string.IsNullOrEmpty(valueAttr) && double.TryParse(valueAttr, out var value))
         {
             return value;
         }
 
         return null;
-    }
-
-    /// <summary>
-    /// Gets the current progress value (0-1).
-    /// </summary>
-    /// <param name="timeoutMs">Optional timeout for finding the element.</param>
-    /// <returns>The progress value, or null if element not found.</returns>
-    public double? GetProgress(int? timeoutMs = null)
-    {
-        if (timeoutMs.HasValue)
-        {
-            WaitExists(true, timeoutMs);
-        }
-        return GetProgressCore(TryFindElement());
     }
 
     #endregion
@@ -75,13 +61,13 @@ public class ProgressBar<TScope> : ControlBase<TScope>
     /// </summary>
     /// <param name="element">The pre-found element (may be null).</param>
     /// <returns>True if indeterminate, false otherwise, null if not found.</returns>
-    protected bool? IsIndeterminateCore(IMauiElement? element)
+    protected virtual bool? IsIndeterminateCore(IMauiElement? element)
     {
         if (element == null) return null;
 
         var isIndeterminate = element.GetAttribute("IsIndeterminate")
             ?? element.GetAttribute("isIndeterminate");
-        
+
         if (!string.IsNullOrEmpty(isIndeterminate))
         {
             return isIndeterminate.Equals("true", StringComparison.OrdinalIgnoreCase);
@@ -90,27 +76,27 @@ public class ProgressBar<TScope> : ControlBase<TScope>
         return false;
     }
 
-    /// <summary>
-    /// Checks if the progress bar is in indeterminate (loading) mode.
-    /// </summary>
-    /// <returns>True if indeterminate, false if showing progress, null if not found.</returns>
-    public bool? IsIndeterminate()
-    {
-        return IsIndeterminateCore(TryFindElement());
-    }
-
     #endregion
 
-    #region Wait Progress
+    #region Hand-written Convenience Members
+
+    // Tolerance-based comparison is beyond the generated Assert/Wait variants, so the
+    // progress members that take a tolerance stay hand-written. They overload the
+    // generated exact-equality AssertProgress/WaitProgress rather than replacing them.
 
     /// <summary>
-    /// Waits for progress value using pre-found element.
+    /// Waits for the progress value to reach the expected value within a tolerance.
     /// </summary>
+    /// <param name="expected">The expected progress value (0-1). Null skips the wait.</param>
+    /// <param name="tolerance">Allowed tolerance for comparison.</param>
+    /// <param name="timeoutMs">Optional timeout.</param>
+    /// <returns>True if the condition was met, false if the timeout was reached.</returns>
     public bool WaitProgress(double? expected, double tolerance, int? timeoutMs = null)
     {
         if (expected == null)
             return true;
-        return RunWaitWithElement(
+
+        return RunWaitWithElement(expected,
             e =>
             {
                 var actual = GetProgressCore(e);
@@ -119,23 +105,19 @@ public class ProgressBar<TScope> : ControlBase<TScope>
             timeoutMs);
     }
 
-    #endregion
-
-    #region Assert Progress
-
     /// <summary>
-    /// Asserts progress has reached expected value.
+    /// Asserts progress has reached expected value within a tolerance.
     /// </summary>
-    /// <param name="expected">The expected progress value (0-1).</param>
-    /// <param name="tolerance">Allowed tolerance for comparison (default 0.01).</param>
+    /// <param name="expected">The expected progress value (0-1). Null skips the assertion.</param>
+    /// <param name="tolerance">Allowed tolerance for comparison.</param>
     /// <param name="message">Optional assertion message.</param>
     /// <param name="timeoutMs">Optional timeout.</param>
     /// <returns>The containing scope for fluent chaining.</returns>
-    public TScope AssertProgress(double? expected, double tolerance = 0.01, string? message = null, int? timeoutMs = null)
+    public TScope AssertProgress(double? expected, double tolerance, string? message = null, int? timeoutMs = null)
     {
         if (expected == null) return ContainingScope;
 
-        return RunAssertWithElement(expected, 
+        return RunAssertWithElement(expected,
             GetProgressCore,
             (actual, exp) => actual.HasValue && exp.HasValue && Math.Abs(actual.Value - exp.Value) <= tolerance,
             message ?? $"Expected progress {expected} (±{tolerance}). Locator: {Locator}", timeoutMs);
@@ -144,27 +126,11 @@ public class ProgressBar<TScope> : ControlBase<TScope>
     /// <summary>
     /// Asserts progress bar is indeterminate.
     /// </summary>
-    public TScope AssertIndeterminate(string? message = null, int? timeoutMs = null)
+    /// <param name="message">Optional assertion message.</param>
+    /// <param name="timeoutMs">Optional timeout.</param>
+    /// <returns>The containing scope for fluent chaining.</returns>
+    public TScope AssertIndeterminate(string? message, int? timeoutMs = null)
         => AssertIndeterminate(true, message, timeoutMs);
-
-    /// <summary>
-    /// Asserts progress bar indeterminate state.
-    /// </summary>
-    public TScope AssertIndeterminate(bool? expected, string? message = null, int? timeoutMs = null)
-    {
-        if (expected == null) return ContainingScope;
-
-        var passed = RunWait(() => IsIndeterminate() == expected.Value, timeoutMs);
-
-        if (!passed)
-        {
-            var actual = IsIndeterminate();
-            throw new AssertionException(
-                message ?? $"Expected indeterminate={expected} but was {actual}. Locator: {Locator}");
-        }
-
-        return ContainingScope;
-    }
 
     #endregion
 }

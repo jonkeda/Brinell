@@ -4,10 +4,10 @@ using Brinell.Maui.Interfaces;
 
 /// <summary>
 /// MAUI Label control for read-only text display.
-/// Uses inherited GetText(), AssertText(), and AssertTextContains() methods.
+/// Uses generated GetText(), AssertText(), and AssertTextContains() members.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public class Label<TScope> : ControlBase<TScope>
+public partial class Label<TScope> : Base.ViewBase<TScope>
     where TScope : IMauiScope<TScope>
 {
     /// <summary>
@@ -31,12 +31,16 @@ public class Label<TScope> : ControlBase<TScope>
     {
     }
 
+    #region Text - Core Methods
+
     /// <summary>
     /// Gets text from the label element, with support for nested text structures.
     /// </summary>
     /// <param name="element">The pre-found element (may be null).</param>
     /// <returns>The text content, or null if not found.</returns>
-    protected override string? GetTextCore(IMauiElement? element)
+    [GenerateComparisons(Comparison.Equals | Comparison.Contains | Comparison.StartsWith
+        | Comparison.EndsWith | Comparison.Empty)]
+    protected virtual string? GetTextCore(IMauiElement? element)
     {
         if (element == null) return null;
 
@@ -48,7 +52,9 @@ public class Label<TScope> : ControlBase<TScope>
                 return text;
         }
 
-        // Fall back to base implementation
-        return base.GetTextCore(element);
+        // Fall back to the raw element text
+        return element.Text;
     }
+
+    #endregion
 }
