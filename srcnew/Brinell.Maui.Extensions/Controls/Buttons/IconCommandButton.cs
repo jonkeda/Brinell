@@ -36,7 +36,7 @@ public class IconCommandButton<TScope> : ClickableControlBase<TScope>
             ?? ElementSearch.FindChildByAutomationId(MauiScope, element, IconButtonId)
             ?? element;
 
-        if (!ElementActivator.TryActivate(target))
+        if (!ElementClicker.TryClick(target))
         {
             throw new InvalidOperationException($"Could not activate icon command button. Locator: {Locator}");
         }

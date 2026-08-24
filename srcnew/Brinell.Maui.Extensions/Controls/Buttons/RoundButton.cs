@@ -35,7 +35,7 @@ public class RoundButton<TScope> : ClickableControlBase<TScope>
             ?? ElementSearch.FindChildByAutomationId(MauiScope, element, LegacyClickableContainerId)
             ?? element;
 
-        if (!ElementActivator.TryActivate(target))
+        if (!ElementClicker.TryClick(target))
         {
             throw new InvalidOperationException($"Could not activate round button. Locator: {Locator}");
         }

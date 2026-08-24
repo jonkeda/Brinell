@@ -24,6 +24,7 @@ public class AppShellPage : PageObjectBase<AppShellPage>
         SelectionTab = new ShellContent<AppShellPage>(this, "SelectionTab", "Selection");
         TextTab = new ShellContent<AppShellPage>(this, "TextTab", "Text");
         ToggleTab = new ShellContent<AppShellPage>(this, "ToggleTab", "Toggle");
+        GridCollectionTab = new ShellContent<AppShellPage>(this, "GridCollectionTab", "Containers");
     }
 
     /// <inheritdoc />
@@ -57,6 +58,9 @@ public class AppShellPage : PageObjectBase<AppShellPage>
 
     /// <summary>Toggle page tab.</summary>
     public ShellContent<AppShellPage> ToggleTab { get; }
+
+    /// <summary>Grid + CollectionView container demo tab.</summary>
+    public ShellContent<AppShellPage> GridCollectionTab { get; }
 
     #endregion
 }

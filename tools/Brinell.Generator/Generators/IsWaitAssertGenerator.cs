@@ -158,12 +158,16 @@ public class IsWaitAssertGenerator : IMemberGenerator
     /// </summary>
     public string Generate(MethodInfo coreMethod, ControlObjectContext context)
     {
+        // Assert* members return the scope for fluent chaining. Which type parameter
+        // that is depends on the class: TScope for a control, TSelf for a container.
+        var fluentReturnType = context.FluentReturnType;
+
         return coreMethod.MethodName.StartsWith(_getterPrefix)
-            ? GenerateGetter(coreMethod)
-            : GenerateState(coreMethod);
+            ? GenerateGetter(coreMethod, fluentReturnType)
+            : GenerateState(coreMethod, fluentReturnType);
     }
 
-    private string GenerateState(MethodInfo coreMethod)
+    private string GenerateState(MethodInfo coreMethod, string fluentReturnType)
     {
         var propertyName = coreMethod.PublicMethodName;
         var writer = new CsWriter(0);
@@ -181,7 +185,7 @@ public class IsWaitAssertGenerator : IMemberGenerator
         writer.WriteLine();
 
         // Generate Assert*(bool? expected, string? message = null, int? timeoutMs = null) method
-        GenerateAssertMethod(writer, coreMethod, propertyName);
+        GenerateAssertMethod(writer, coreMethod, propertyName, fluentReturnType);
         writer.WriteLine();
 
         // Write region end
@@ -193,7 +197,7 @@ public class IsWaitAssertGenerator : IMemberGenerator
     /// <summary>
     /// Generates the Get*/Wait*/Assert* trio from a single Get*Core method.
     /// </summary>
-    private string GenerateGetter(MethodInfo coreMethod)
+    private string GenerateGetter(MethodInfo coreMethod, string fluentReturnType)
     {
         var propertyName = coreMethod.PublicMethodName;
         var returnType = coreMethod.ReturnType;
@@ -225,7 +229,7 @@ public class IsWaitAssertGenerator : IMemberGenerator
         writer.WriteLine();
 
         // Assert{PropertyName}(...) assertion
-        writer.WriteLine($"public TScope Assert{propertyName}({paramPrefix}{nullableReturnType} expected, string? message = null, int? timeoutMs = null)");
+        writer.WriteLine($"public {fluentReturnType} Assert{propertyName}({paramPrefix}{nullableReturnType} expected, string? message = null, int? timeoutMs = null)");
         writer.Open();
         writer.WriteLine("return RunAssertWithElement(expected,");
         writer.IncreaseSpace(1);
@@ -239,7 +243,7 @@ public class IsWaitAssertGenerator : IMemberGenerator
         foreach (var comparison in coreMethod.Comparisons.Where(c => c != "Equals"))
         {
             GenerateComparisonVariant(writer, coreMethod, propertyName, comparison,
-                paramPrefix, nullableReturnType, lambdaArgs);
+                paramPrefix, nullableReturnType, lambdaArgs, fluentReturnType);
             writer.WriteLine();
         }
 
@@ -255,7 +259,7 @@ public class IsWaitAssertGenerator : IMemberGenerator
     /// </summary>
     private void GenerateComparisonVariant(CsWriter writer, MethodInfo coreMethod,
         string propertyName, string comparison, string paramPrefix,
-        string nullableReturnType, string lambdaArgs)
+        string nullableReturnType, string lambdaArgs, string fluentReturnType)
     {
         var memberName = $"{propertyName}{comparison}";
 
@@ -272,7 +276,7 @@ public class IsWaitAssertGenerator : IMemberGenerator
             writer.Close();
             writer.WriteLine();
 
-            writer.WriteLine($"public TScope Assert{memberName}({paramPrefix}bool? expected = true, string? message = null, int? timeoutMs = null)");
+            writer.WriteLine($"public {fluentReturnType} Assert{memberName}({paramPrefix}bool? expected = true, string? message = null, int? timeoutMs = null)");
             writer.Open();
             writer.WriteLine("return RunAssertWithElement(expected,");
             writer.IncreaseSpace(1);
@@ -295,7 +299,7 @@ public class IsWaitAssertGenerator : IMemberGenerator
         writer.Close();
         writer.WriteLine();
 
-        writer.WriteLine($"public TScope Assert{memberName}({paramPrefix}{nullableReturnType} expected, string? message = null, int? timeoutMs = null)");
+        writer.WriteLine($"public {fluentReturnType} Assert{memberName}({paramPrefix}{nullableReturnType} expected, string? message = null, int? timeoutMs = null)");
         writer.Open();
         writer.WriteLine("return RunAssertWithElement(expected,");
         writer.IncreaseSpace(1);
@@ -362,11 +366,13 @@ public class IsWaitAssertGenerator : IMemberGenerator
     }
 
     /// <summary>
-    /// Generates public TScope Assert{PropertyName}(bool? expected, string? message = null, int? timeoutMs = null) method.
+    /// Generates the public Assert{PropertyName}(bool? expected, string? message = null, int? timeoutMs = null)
+    /// method, returning the resolved fluent type for chaining.
     /// </summary>
-    private void GenerateAssertMethod(CsWriter writer, MethodInfo coreMethod, string propertyName)
+    private void GenerateAssertMethod(CsWriter writer, MethodInfo coreMethod, string propertyName,
+        string fluentReturnType)
     {
-        writer.WriteLine($"public TScope Assert{propertyName}(bool? expected = true, string? message = null, int? timeoutMs = null)");
+        writer.WriteLine($"public {fluentReturnType} Assert{propertyName}(bool? expected = true, string? message = null, int? timeoutMs = null)");
         writer.Open();
         writer.WriteLine("return RunAssertWithElement(expected,");
         writer.IncreaseSpace(1);

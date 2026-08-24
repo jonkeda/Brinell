@@ -39,7 +39,7 @@ public class SelectionList<TScope> : ControlBase<TScope>
         return Run(nameof(TrySelectByAutomationId), automationId, () =>
         {
             var item = WaitForAutomationId(automationId, timeoutMs);
-            return ElementActivator.TryActivateContainingListItemOrElement(MauiScope, item);
+            return ElementClicker.TryActivateContainingListItemOrElement(MauiScope, item);
         });
     }
 
@@ -53,7 +53,7 @@ public class SelectionList<TScope> : ControlBase<TScope>
         return Run(nameof(TrySelectByText), text, () =>
         {
             var item = WaitForName(text, timeoutMs);
-            return ElementActivator.TryActivateContainingListItemOrElement(MauiScope, item);
+            return ElementClicker.TryActivateContainingListItemOrElement(MauiScope, item);
         });
     }
 

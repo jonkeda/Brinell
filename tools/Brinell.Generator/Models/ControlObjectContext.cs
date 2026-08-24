@@ -25,6 +25,15 @@ public sealed class ControlObjectContext
     public string ElementType { get; init; } = "IMauiElement";
 
     /// <summary>
+    /// Gets the type parameter that public members return for fluent chaining.
+    /// Controls return the containing scope (<c>TScope</c>); containers and collections
+    /// return themselves (<c>TSelf</c>). Resolved by
+    /// <see cref="Analysis.ControlObjectAnalyzer.ResolveFluentReturnType"/>.
+    /// Empty when the class has no type parameters, in which case actions return void.
+    /// </summary>
+    public string FluentReturnType { get; init; } = "TScope";
+
+    /// <summary>
     /// Gets the namespace of the source class (null when none).
     /// </summary>
     public string? Namespace { get; init; }

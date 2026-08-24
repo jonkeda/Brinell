@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+    Sample page for the container/collection design.
+
+    Two things are deliberate here and both matter for the design:
+
+    1. The Grid container (ProductForm) is a real Grid, not an AutomationContainer.
+       On Windows a bare Grid does not expose AutomationId to UI Automation, so this
+       page is the test case for the "container root marker" problem. See
+       container-and-collection-design.md 4.2.
+
+    2. Every item template uses REPEATING AutomationIds - each row has a
+       "ProductName" label, not "ProductName_0". Under today's List<TScope,TItem>
+       these rows are unaddressable (design 3.2). Under CollectionObjectBase each
+       item is scoped to its own root, so repeating ids are the natural style.
+
+    Target: samples/Brinell.Samples.Maui.App2/Views2/GridCollectionDemoView.xaml
+
+    STAGED - not yet part of the codebase. Move to the destination above only on an
+    explicit instruction to start implementing. A matching .xaml.cs code-behind and a
+    Pages2/GridCollectionPage.xaml host page must be written at that time.
+-->
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:Brinell.Samples.Maui.App.Controls"
+             xmlns:viewModels2="using:Brinell.Samples.Maui.App.ViewModels2"
+             x:Class="Brinell.Samples.Maui.App.Views2.GridCollectionDemoView"
+             AutomationId="GridCollectionDemoPage">
+
+    <ContentView.BindingContext>
+        <viewModels2:GridCollectionDemoViewModel />
+    </ContentView.BindingContext>
+
+    <ScrollView AutomationId="GridCollectionScrollView">
+        <VerticalStackLayout Padding="20" Spacing="20">
+
+            <Label AutomationId="PageTitle"
+                   Text="Grid + CollectionView Demo"
+                   FontSize="28"
+                   FontAttributes="Bold" />
+
+            <!-- ============================================================
+                 SECTION 1 - Grid container
+                 A plain Grid holding controls, addressed as a ContainerObject.
+                 ============================================================ -->
+            <controls:AutomationContainer AutomationId="ProductFormContainer">
+                <Grid AutomationId="ProductFormGrid"
+                      RowDefinitions="Auto,Auto,Auto,Auto,Auto"
+                      ColumnDefinitions="120,*"
+                      RowSpacing="8"
+                      ColumnSpacing="10"
+                      Padding="15">
+
+                    <Label Grid.Row="0" Grid.ColumnSpan="2"
+                           AutomationId="ProductFormTitle"
+                           Text="Add Product"
+                           FontSize="18"
+                           FontAttributes="Bold" />
+
+                    <Label Grid.Row="1" Grid.Column="0"
+                           AutomationId="ProductNameCaption"
+                           Text="Name"
+                           VerticalOptions="Center" />
+                    <Entry Grid.Row="1" Grid.Column="1"
+                           AutomationId="ProductNameEntry"
+                           Placeholder="Product name"
+                           Text="{Binding NewProductName}" />
+
+                    <Label Grid.Row="2" Grid.Column="0"
+                           AutomationId="ProductPriceCaption"
+                           Text="Price"
+                           VerticalOptions="Center" />
+                    <Entry Grid.Row="2" Grid.Column="1"
+                           AutomationId="ProductPriceEntry"
+                           Placeholder="0.00"
+                           Keyboard="Numeric"
+                           Text="{Binding NewProductPrice}" />
+
+                    <!-- Nested grid inside the grid: container-in-container -->
+                    <controls:AutomationContainer Grid.Row="3" Grid.ColumnSpan="2"
+                                                  AutomationId="ProductOptionsContainer">
+                        <Grid AutomationId="ProductOptionsGrid"
+                              ColumnDefinitions="Auto,*"
+                              ColumnSpacing="10">
+                            <CheckBox Grid.Column="0"
+                                      AutomationId="ProductInStockCheckBox"
+                                      IsChecked="{Binding NewProductInStock}" />
+                            <Label Grid.Column="1"
+                                   AutomationId="ProductInStockCaption"
+                                   Text="In stock"
+                                   VerticalOptions="Center" />
+                        </Grid>
+                    </controls:AutomationContainer>
+
+                    <Button Grid.Row="4" Grid.ColumnSpan="2"
+                            AutomationId="ProductAddButton"
+                            Text="Add Product"
+                            Command="{Binding AddProductCommand}" />
+                </Grid>
+            </controls:AutomationContainer>
+
+            <!-- ============================================================
+                 SECTION 2 - CollectionView
+                 NOTE the repeating AutomationIds in the item template.
+                 ============================================================ -->
+            <controls:AutomationContainer AutomationId="ProductListContainer">
+                <VerticalStackLayout Spacing="10" Padding="15">
+
+                    <Label AutomationId="ProductListTitle"
+                           Text="Products"
+                           FontSize="18"
+                           FontAttributes="Bold" />
+
+                    <!-- Shown only when the collection is empty - exercises
+                         "a collection is a scope that can hold controls" (design 4.4) -->
+                    <Label AutomationId="ProductListEmptyLabel"
+                           Text="No products yet"
+                           TextColor="Gray"
+                           IsVisible="{Binding IsProductListEmpty}" />
+
+                    <CollectionView AutomationId="ProductCollectionView"
+                                    ItemsSource="{Binding Products}"
+                                    SelectionMode="Single"
+                                    SelectedItem="{Binding SelectedProduct}"
+                                    HeightRequest="260">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <!-- ProductRow repeats on EVERY row - this is the
+                                     item root the item strategy discovers. -->
+                                <controls:AutomationContainer AutomationId="ProductRow">
+                                    <Grid ColumnDefinitions="Auto,*,Auto,Auto"
+                                          ColumnSpacing="10"
+                                          Padding="10">
+                                        <CheckBox Grid.Column="0"
+                                                  AutomationId="ProductSelectedCheckBox"
+                                                  IsChecked="{Binding IsSelected}" />
+                                        <VerticalStackLayout Grid.Column="1">
+                                            <Label AutomationId="ProductNameLabel"
+                                                   Text="{Binding Name}"
+                                                   FontAttributes="Bold" />
+                                            <Label AutomationId="ProductPriceLabel"
+                                                   Text="{Binding PriceText}"
+                                                   FontSize="12"
+                                                   TextColor="Gray" />
+                                        </VerticalStackLayout>
+                                        <Label Grid.Column="2"
+                                               AutomationId="ProductStockLabel"
+                                               Text="{Binding StockText}"
+                                               VerticalOptions="Center" />
+                                        <Button Grid.Column="3"
+                                                AutomationId="ProductDeleteButton"
+                                                Text="X"
+                                                WidthRequest="40"
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels2:GridCollectionDemoViewModel}}, Path=DeleteProductCommand}"
+                                                CommandParameter="{Binding}" />
+                                    </Grid>
+                                </controls:AutomationContainer>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+
+                    <Label AutomationId="ProductCountLabel"
+                           Text="{Binding ProductCount, StringFormat='Total: {0} products'}" />
+
+                    <Button AutomationId="ProductClearButton"
+                            Text="Clear All"
+                            Command="{Binding ClearProductsCommand}" />
+
+                    <!-- Adds 60 rows so ScrollToItem / virtualization has something
+                         real to work against (design 4.7) -->
+                    <Button AutomationId="ProductBulkAddButton"
+                            Text="Add 60 Products"
+                            Command="{Binding BulkAddProductsCommand}" />
+                </VerticalStackLayout>
+            </controls:AutomationContainer>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentView>

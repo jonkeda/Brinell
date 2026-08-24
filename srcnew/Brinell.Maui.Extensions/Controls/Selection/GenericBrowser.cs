@@ -98,13 +98,13 @@ public class GenericBrowser<TScope> : ControlBase<TScope>
         return Run(nameof(TryToggleItem), identifier, () =>
         {
             var invokeButton = WaitForAutomationId(BuildItemButtonAutomationId(identifier), timeoutMs);
-            if (ElementActivator.TryActivate(invokeButton))
+            if (ElementClicker.TryClick(invokeButton))
             {
                 return true;
             }
 
             var item = WaitForAutomationId(BuildItemAutomationId(identifier), timeoutMs);
-            if (ElementActivator.TryActivateContainingListItemOrElement(MauiScope, item))
+            if (ElementClicker.TryActivateContainingListItemOrElement(MauiScope, item))
             {
                 return true;
             }
@@ -112,7 +112,7 @@ public class GenericBrowser<TScope> : ControlBase<TScope>
             if (!string.IsNullOrWhiteSpace(visibleText))
             {
                 var label = WaitForNameInOpenBrowser(visibleText, timeoutMs);
-                return ElementActivator.TryActivateContainingListItemOrElement(MauiScope, label);
+                return ElementClicker.TryActivateContainingListItemOrElement(MauiScope, label);
             }
 
             return false;
@@ -137,7 +137,7 @@ public class GenericBrowser<TScope> : ControlBase<TScope>
     /// </summary>
     public bool TryClose(int? timeoutMs = null)
     {
-        return Run(nameof(TryClose), () =>
+        return Run(nameof(TryClose), (string?)null, () =>
         {
             var closeButton = WaitForAnyAutomationId(timeoutMs,
                 DrawerNativeCloseAutomationId,
@@ -145,20 +145,20 @@ public class GenericBrowser<TScope> : ControlBase<TScope>
                 FlyoutNativeCloseAutomationId,
                 FlyoutCloseAutomationId);
 
-            return ElementActivator.TryActivate(closeButton)
+            return ElementClicker.TryClick(closeButton)
                 && WaitForCloseSurfaceToDismiss(timeoutMs);
         });
     }
 
     private bool TryActivateAndWait(IMauiElement? element, string itemAutomationId, int? timeoutMs)
     {
-        return ElementActivator.TryActivateContainingListItemOrElement(MauiScope, element)
+        return ElementClicker.TryActivateContainingListItemOrElement(MauiScope, element)
             && WaitForItemToClose(itemAutomationId, timeoutMs);
     }
 
     private bool TryActivateElementAndWait(IMauiElement? element, string itemAutomationId, int? timeoutMs)
     {
-        return ElementActivator.TryActivate(element)
+        return ElementClicker.TryClick(element)
             && WaitForItemToClose(itemAutomationId, timeoutMs);
     }
 

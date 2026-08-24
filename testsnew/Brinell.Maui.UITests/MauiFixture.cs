@@ -1,6 +1,8 @@
 using Brinell.Maui.Configuration;
 using Brinell.Maui.Enums;
 using Brinell.Maui.Testing;
+using Brinell.Maui.UITests.Containers;
+using Brinell.Maui.UITests.Pages;
 using Brinell.Maui.UITests.Pages2;
 
 namespace Brinell.Maui.UITests;
@@ -13,7 +15,8 @@ namespace Brinell.Maui.UITests;
 public class MauiFixture : MauiTestFixtureBase
 {
     private readonly AppShellPage _appShell;
- 
+    private GridCollectionDemoPage? _gridCollectionDemoPage;
+
     public MauiFixture()
     {
         _appShell = new AppShellPage(Context);
@@ -34,6 +37,40 @@ public class MauiFixture : MauiTestFixtureBase
     public void NavigateToMain()
     {
         _appShell.ButtonsTab.Click();
+    }
+
+    /// <summary>
+    /// Gets the Grid + CollectionView demo page object.
+    /// </summary>
+    /// <remarks>
+    /// Cached so the form and collection keep their container-root caches across tests.
+    /// </remarks>
+    public GridCollectionDemoPage GridCollectionDemoPage
+        => _gridCollectionDemoPage ??= new GridCollectionDemoPage(Context);
+
+    /// <summary>
+    /// Navigates to the container demo and restores its seeded state.
+    /// </summary>
+    /// <remarks>
+    /// This collection shares one fixture and one Shell across test classes, and Shell
+    /// may retain page instances, so navigation alone does not guarantee clean state.
+    /// Resetting here makes each test order-independent. Every wait is on observed UI
+    /// state, never a fixed delay.
+    /// </remarks>
+    public GridCollectionDemoPage NavigateToGridCollectionDemo()
+    {
+        _appShell.GridCollectionTab.Click();
+
+        var page = GridCollectionDemoPage;
+        page.WaitLoaded(true, TestConstants.DefaultTestTimeoutMs);
+
+        page.Products.Reset(TestConstants.DefaultTestTimeoutMs);
+        page.Products.AssertLogicalCount(
+            ProductCollection.SeedCount,
+            "Container demo did not return to its seeded state after reset.",
+            TestConstants.DefaultTestTimeoutMs);
+
+        return page;
     }
 
 

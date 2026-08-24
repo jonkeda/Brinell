@@ -19,6 +19,12 @@ Two things, stated as the request framed them:
 Focus is `Brinell.Maui`. Core interface changes are called out separately because they are
 shared with WinForms/Wpf/Blazor/NativeAndroid.
 
+> **Status: design only — not implemented.** Nothing in `srcnew/` or `testsnew/` has been
+> changed. The sample app page, page objects, and tests under [samples/](samples/) are written
+> against the proposed bases and are destined for the real MAUI codebase at the paths each file
+> names, but they land **only on an explicit go-ahead**. See
+> [README.md](README.md#destinations-when-implementing) for the full destination map.
+
 ## 2. Where the current code already gets it right
 
 This is not a greenfield design. The scope abstraction is already in place and is sound:
@@ -39,54 +45,91 @@ The gaps are what the rest of this document is about.
 
 ## 3. What is actually broken
 
-### 3.1 `ContainerBase` derives from `ControlBase` — the fluent return type is wrong
+> **Verified.** Every claim in this section is pinned by a runnable Moq test in
+> [samples/VerifiedDefectRecordTests.cs](samples/VerifiedDefectRecordTests.cs), which passes
+> against the code as it stands today (4/4). Two earlier drafts of this section overstated the
+> problem; the scope below is what the tests actually show.
+
+### 3.0 What already works — do not "fix" this
+
+A **control** inside a container is already correct on both axes:
+
+- it resolves **element-relative** to the container root, and
+- it returns the **container**, not the page.
+
+`Works_ControlInContainer_IsScopedAndReturnsContainer` asserts both. This is because
+`Button<LegacyContainer>` binds the *control's* own `TScope` to the container, and
+`ClickableControlBase<TScope>.Click()` returns `TScope`. Nothing here needs changing, and the
+new bases must preserve it.
+
+### 3.1 A container's own inherited actions return the parent, not the container
+
+`ContainerBase<TParent, TSelf> : ControlBase<TParent>` — so members the container inherits *as a
+control* return `TParent`:
 
 ```csharp
-public abstract class ContainerBase<TParent, TSelf> : ControlBase<TParent>, IMauiContainer<TParent, TSelf>
+LegacyTestPage result = page.Container.AssertVisible(true);   // the PAGE, not the container
 ```
 
-`ControlBase<TParent>` means every inherited action returns `TParent`, not `TSelf`. So:
+`Defect_ContainerOwnAction_ReturnsPage` confirms this. The consequence is narrower than "every
+action ejects you" — it is specifically the container's own state members (`AssertVisible`,
+`AssertExists`, `Click` on the container itself) that break a chain:
 
 ```csharp
-page.UserProfile.Click()      // returns ContainerDemoPage — jumps out of the container
-     .NameEntry               // compile error: page has no NameEntry
+page.UserProfile
+    .AssertVisible(true)     // -> ContainerDemoPage
+    .NameEntry               // compile error: page has no NameEntry
 ```
 
-A container's own actions eject you from the container. You must re-enter via `page.UserProfile`
-every time. That defeats the point of a container being a scope you work *inside*.
+You must restart from `page.UserProfile`. `Grid<TParent,TSelf>` / `Grid<TScope>` exist as a
+doubled type to work around exactly this.
 
-### 3.2 `List<TScope,TItem>` items are not scoped to the item — they are scoped to the page
+### 3.2 List item roots are resolved page-wide, so rows need globally unique ids
 
-This is the most serious defect. In `List.Item(int)`:
+The child controls of a row *are* scoped correctly — the mock trace shows
+`rowRoot.FindElement(RowLabel)`, element-relative. The defect is one level up: **the row root
+itself** is found by a page-wide locator.
+
+[List.cs:82-87](../../srcnew/Brinell.Maui/Controls/List.cs#L82-L87) passes the list's *parent*
+scope to the item factory:
 
 ```csharp
 public TItem Item(int index)
 {
     var scope = ContainingScope as IMauiScope<TScope> ...;
-    return _itemFactory(scope, index);   // scope = the LIST'S parent, not the list, not the item
+    return _itemFactory(scope, index);   // the LIST'S parent - not the list, not the item
 }
 ```
 
-And the demo page confirms the consequence — the factory ignores its own `scope` parameter:
+and [ContainerDemoPage.cs:23-27](../../testsnew/Brinell.Maui.UITests2/Pages2/ContainerDemoPage.cs#L23-L27)
+shows the factory ignoring its own `scope` parameter and passing the page:
 
 ```csharp
-TaskList = new List<ContainerDemoPage, TaskItemContainer>(
-    this, "TaskListBorder", "Task_",
-    (scope, index) => new TaskItemContainer(this, index));   // 'this' = the page
+(scope, index) => new TaskItemContainer(this, index)   // 'this' = the page
 ```
 
-So `TaskItemContainer` searches the **whole page** and is only saved from collisions by every
-item carrying a globally unique `AutomationId` (`Task_0`, `Task_1`, …). The container's promise —
-"searching for controls happens inside this" — does not hold for list items.
+So each row is located by `Locator.ByAutomationId($"Task_{index}")` against the whole page. That
+only works because every row carries a globally unique id. Give rows a **repeating** id — the
+normal MAUI item-template style — and every index collapses onto the same element:
 
-The knock-on effects:
+```csharp
+// Defect_RepeatingRowId_AllIndexesCollapseToSameRow
+Assert.Equal("FIRST ROW ONLY", page.Rows.Item(0).RowLabel.GetText());
+Assert.Equal("FIRST ROW ONLY", page.Rows.Item(1).RowLabel.GetText());   // same row
+```
 
-- `GetItemCount()` probes `Task_0, Task_1, …` against the **containing scope**, with a hard
-  `maxItems = 100` safety limit, so it cannot count a list it is not scoped to and silently
-  truncates at 100.
-- Item template controls must have per-item-unique ids. A plain `<Label AutomationId="TaskName"/>`
-  repeated per row — the normal MAUI item template — cannot be addressed at all.
-- `TItem` is constrained only to `class`, so nothing guarantees an item is even a container.
+The sample app pays this tax today. `ContainerDemoViewModel.TaskItem` carries an
+`AutomationId => $"Task_{_id}"` property and a `ReindexTasks()` call after every mutation, purely
+so rows stay addressable. And
+[ContainerScopingTests.ListItems_AreIndependentlyScoped](../../testsnew/Brinell.Maui.UITests2/Tests2/Container/ContainerScopingTests.cs)
+is `[Fact(Skip = ...)]`, attributed to "sample app XAML naming inconsistency" — but the XAML uses
+repeating `TaskNameLabel` ids on every row, so the skip is really this defect.
+
+Two further consequences:
+
+- `GetItemCount()` probes `Task_0, Task_1, …` one at a time against the containing scope and stops
+  at a hardcoded `maxItems = 100`, silently truncating (`Defect_GetItemCount_CapsAt100`).
+- `TItem` is constrained only to `class`, so nothing guarantees an item is a container.
   `TrySelectItem` has to feature-test with `if (item is not IContainerControl<IMauiElement>)`.
 
 ### 3.3 There is no `ContainerObject` concept, only a control that happens to scope
@@ -121,10 +164,14 @@ IMauiScope<TSelf>                     "things you can search inside"
 └── IMauiCollectionObject<TParent,TSelf,TItem>   container + typed item access
 ```
 
-`ObjectBase`
-`├── PageObjectBase<TSelf>`          (unchanged)
-`├── ContainerObjectBase<TParent,TSelf>`   **new** — not a ControlBase
-`└── CollectionObjectBase<TParent,TSelf,TItem>` **new** — extends ContainerObjectBase
+```
+ObjectBase
+└── ScopeObjectBase<TSelf>                     new (8.4) — Run*, ready-state, factories
+    ├── PageObjectBase<TSelf>                  driver-rooted, IsLoaded / WaitIdle
+    └── ContainerObjectBase<TParent,TSelf>     new — element-rooted, not a ControlBase
+        ├── CollectionObjectBase<TParent,TSelf,TItem>   new — container + typed items
+        └── ItemContainerBase<TCollection,TSelf>        new — root is a supplied element
+```
 
 Controls stay exactly as they are: `ControlBase<TScope> where TScope : IMauiScope<TScope>`.
 They already accept a page or a container interchangeably. **No control changes are needed.**
@@ -185,6 +232,8 @@ page.UserProfile                       // enter container
 
 `Parent` is the single, explicit way out. That is the whole ergonomic story.
 
+Note which line actually changes: the two control lines already behave this way today (3.0). Only `.AssertVisible(true)` — the container's own member — is fixed here, and that one line is what currently breaks the chain.
+
 The root-caching, stale-element retry, and no-fallback-to-parent search semantics in today's
 `ContainerBase` are correct and move over unchanged — including the `catch (ElementNotFoundException)
 → return null` behaviour with its "Container scoping means elements must be within the container"
@@ -228,7 +277,8 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     public TItem this[int index] { get; }          // indexer: page.Tasks[2]
     public TItem Item(int index);
     public TItem? TryItem(int index);
-    public IReadOnlyList<TItem> Items { get; }
+    public IEnumerable<TItem> Items { get; }        // lazy - see 8.2
+    public IReadOnlyList<TItem> ToList();          // materializes everything
     public int GetItemCount(int? timeoutMs = null);
 
     // --- search by content ---
@@ -416,23 +466,59 @@ the page.
 
 ## 6. Migration
 
-The existing types stay and keep working; new work moves to the new bases.
+**No shims, no `[Obsolete]` layer, no back-compat.** `ContainerBase` and `List<TScope,TItem>` are
+replaced outright and deleted. Same rule as the generator (see
+[generator-changes.md](generator-changes.md)): the old shapes are not a constraint to design
+around.
 
-| Step | Change | Breaks callers? |
+This is affordable because the MAUI blast radius is small and entirely inside this repo —
+every consumer was enumerated:
+
+| Consumer | File |
+|---|---|
+| `ContainerBase` | [Grid.cs:10](../../srcnew/Brinell.Maui/Controls/Container/Grid.cs#L10) |
+| `ContainerBase` | [ContentDialog.cs:10](../../srcnew/Brinell.Maui/Controls/Dialogs/ContentDialog.cs#L10) |
+| `ContainerBase` | `testsnew/Brinell.Maui.UITests2/Containers2/` — 5 containers |
+| `ContainerBase` | `testsnew/Brinell.Maui.Tests/FluentChainingTests.cs`, `Semantic/SemanticControlTestsBase.cs` |
+| `List<T,T>` | [ContainerDemoPage.cs:20,80](../../testsnew/Brinell.Maui.UITests2/Pages2/ContainerDemoPage.cs#L20) |
+| `List<T,T>` | `testsnew/Brinell.Maui.Tests/Semantic/SemanticControlTestsBase.cs:150` |
+
+Two source files and a handful of test files. There are no external callers, so a shim would
+carry cost for nobody.
+
+`Brinell.Html` and `Brinell.NativeAndroid` have their *own* `ContainerBase` /
+`AndroidContainerBase` types — they do not reference the MAUI one and are untouched by this work
+(see 7).
+
+### Steps
+
+| Step | Change | Notes |
 |---|---|---|
-| 1 | Add `IMauiContainerObject`, `IMauiCollectionObject`, `IMauiItemContainer` | no |
-| 2 | Add `ContainerObjectBase`, `CollectionObjectBase`, `ItemContainerBase` | no |
-| 3 | `ContainerBase<TParent,TSelf>` → `[Obsolete]` shim over `ContainerObjectBase` | no (warning) |
-| 4 | Add `IItemStrategy` + implementations; `List<TScope,TItem>` delegates to them | no |
-| 5 | Give `Border`/`Frame`/`ContentView`/`ScrollView`/`SwipeView`/`RefreshView` scoping forms | no (additive) |
-| 6 | Collections re-based on `CollectionObjectBase`; keep `List<…>` as `[Obsolete]` shim | no (warning) |
-| 7 | Generate scope factories for both page and container | no |
-| 8 | Port `UITests2` containers to the new bases as the reference example | test-only |
-| 9 | Drop obsolete shims at the next major version, per [BREAKING-CHANGES-POLICY.md](../../BREAKING-CHANGES-POLICY.md) | yes, gated |
+| 1 | Generator: G1 + G2 from [generator-changes.md](generator-changes.md) | prerequisite — nothing below compiles without it |
+| 2 | Add `IMauiContainerObject`, `IMauiCollectionObject`, `IMauiItemContainer` | |
+| 3 | Add `ScopeObjectBase<TSelf>`; reparent `PageObjectBase` onto it | carries the single `RunPoll` (G2) |
+| 4 | Add `ContainerObjectBase`, `CollectionObjectBase`, `ItemContainerBase` | |
+| 5 | Add `IItemStrategy` + the four implementations | `ChildElementStrategy` is the default |
+| 6 | Regenerate: `tools\Scripts\CreateMaui.Bat` | all 30 templates |
+| 7 | Reparent `Grid` and `ContentDialog`; collapse the `Grid<TScope>` / `Grid<TParent,TSelf>` pair | the pair only existed to work around 3.1 |
+| 8 | Give `Border`/`Frame`/`ContentView`/`ScrollView`/`SwipeView`/`RefreshView` scoping forms | 4.3 |
+| 9 | Re-base `CollectionView`/`ListView`/`CarouselView` on `CollectionObjectBase`; collapse the `.Basic` duplicates | |
+| 10 | **Delete** `Controls/ContainerBase.cs` and `Controls/List.cs` | |
+| 11 | Port `UITests2` containers, `ContainerDemoPage`, and the two `Maui.Tests` files | |
+| 12 | Generate scope factories for page and container | 4.8, non-blocking |
 
-Step 3 note: `ContainerBase` currently returns `TParent` from inherited control actions; the shim
-must keep that to stay source-compatible, so it is a genuinely separate type from
-`ContainerObjectBase`, not a subclass.
+Steps 10 and 11 swap order in practice — port the consumers, then delete, so the tree compiles
+at each commit.
+
+### Two things the port must fix, not preserve
+
+- **`ContainerDemoPage`** currently passes the page into its item factory
+  (`(scope, index) => new TaskItemContainer(this, index)`). The new factory receives the item's
+  own root element; the `Task_{index}` ids and `ContainerDemoViewModel.ReindexTasks()` that
+  existed to support the old lookup should go with it.
+- **`ContainerScopingTests.ListItems_AreIndependentlyScoped`** is `[Fact(Skip = ...)]`. Un-skip
+  it — it is a correct test that the old design could not satisfy (3.2). If it does not pass
+  after the port, the port is wrong.
 
 ## 7. Cross-platform note
 
@@ -451,14 +537,85 @@ This design deliberately does not touch them — that is a follow-up, and each p
 discovery differs enough (DOM query vs. `RecyclerView` vs. UIA `ListItem`) that `IItemStrategy`
 is the right seam.
 
-## 8. Open questions
+## 8. Resolved decisions
 
-1. **Indexer vs. `Item(i)`** — the design offers both. If only one, `Item(i)` reads better in
-   fluent chains and matches the existing API.
-2. **`Items` eager list** — on a virtualized collection this materializes everything by scrolling.
-   Should it be `IEnumerable<TItem>` with lazy scrolling instead, so `.First(…)` stops early?
-3. **`ContainerObjectBase` and `IsLoaded`** — pages have `IsLoaded`/`WaitIdle`/`BusySentinel`.
-   Should containers get a `WaitContentReady` hook for containers that load async?
-4. **Should `PageObjectBase` and `ContainerObjectBase` share a `ScopeObjectBase`?** It would remove
-   real duplication (ready-state, factories, logging identity) but adds a layer; the generated
-   factory partial may be enough on its own.
+All four questions answered; the design above reflects them.
+
+### 8.1 Indexer and `Item(i)` — both
+
+`collection[i]` and `collection.Item(i)` both ship. The indexer reads well for a direct
+lookup (`page.Products[2]`), `Item(i)` reads better mid-chain and matches the existing API.
+The indexer delegates to `Item(i)` so there is exactly one implementation and one place that
+throws.
+
+### 8.2 `Items` is lazy — `IEnumerable<TItem>`
+
+`Items` is `IEnumerable<TItem>`, yielding rows as the item strategy materializes them and
+scrolling only when the consumer asks for more. `.First(…)` on a 500-row virtualized collection
+stops at the first match instead of scrolling to the end.
+
+Consequences to honour in the implementation:
+
+- Add `IReadOnlyList<TItem> ToList()` for callers that genuinely want everything (and accept the
+  full scroll). `Assert.Equal(n, c.Items.Count())` should be written `AssertItemCount(n)`.
+- Enumerating twice re-materializes; that is correct for a live UI, but document it, because
+  `Items.First()` followed by `Items.Count()` costs two passes.
+- `ItemWhere` / `FindItem` are implemented on top of the lazy sequence, which is what lets them
+  stop early (4.7).
+
+### 8.3 Containers get a `WaitContentReady` hook — yes
+
+`ContainerObjectBase` gains a virtual readiness hook alongside root existence:
+
+```csharp
+/// <summary>
+/// Extra readiness beyond "root element exists". Override for containers whose content
+/// loads asynchronously. Default returns true.
+/// </summary>
+protected virtual bool WaitContentReadyCore(int? timeoutMs = null) => true;
+
+public bool WaitContentReady(int? timeoutMs = null);
+```
+
+`IsReady` / `WaitReady` become: parent ready → root exists → `WaitContentReadyCore`. The default
+keeps today's behaviour, so nothing changes for containers that do not override it. A container
+over an async-loading section overrides it to wait on a concrete signal (a spinner disappearing,
+a row count becoming non-zero) — never a sleep, per AGENTS.md.
+
+`CollectionObjectBase` overrides it to `WaitAnyItem() || IsEmpty()`, so a collection is "ready"
+once it has settled either way.
+
+### 8.4 Share a `ScopeObjectBase` — yes
+
+`PageObjectBase<TSelf>` and `ContainerObjectBase<TParent,TSelf>` both derive from a new
+`ScopeObjectBase<TSelf>`, which owns what is genuinely common:
+
+- the `Run*` helper surface and the single `RunPoll` implementation (which G2 in
+  [generator-changes.md](generator-changes.md) needs anyway — this is where it lives, so there is
+  no second copy)
+- ready-state plumbing (`IsReady` / `WaitReady` / `WaitContentReady`)
+- logging identity (`TestName` / `PageName` / control id resolution)
+- the generated control factories (4.8)
+
+What stays split: pages own `IsLoaded` / `WaitIdle` / `BusySentinel` / `TakeScreenshot` and root
+their finds at the driver; containers own `Parent` / `ContainerRoot` / `InvalidateCache` and root
+their finds at an element.
+
+This subsumes the "maybe the generated partial is enough" alternative — the factory partial alone
+would not have solved the `RunPoll` duplication, and G2 makes that duplication concrete rather
+than hypothetical. Adding the layer is the smaller cost.
+
+Revised hierarchy:
+
+```
+ObjectBase
+└── ScopeObjectBase<TSelf>                        Run*, ready-state, factories, logging
+    ├── PageObjectBase<TSelf>                     driver-rooted, IsLoaded/WaitIdle
+    └── ContainerObjectBase<TParent,TSelf>        element-rooted, Parent/ContainerRoot
+        └── CollectionObjectBase<TParent,TSelf,TItem>
+            (ItemContainerBase<TCollection,TSelf> derives from ContainerObjectBase)
+```
+
+Migration step 2 in 6 therefore adds `ScopeObjectBase` first; step 3's `[Obsolete]`
+`ContainerBase` shim is unaffected, since it keeps deriving from `ControlBase` for source
+compatibility.

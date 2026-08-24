@@ -95,6 +95,12 @@
     <MauiXaml Update="Pages\TogglePage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>
+    <MauiXaml Update="Pages\GridCollectionPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Views\GridCollectionDemoView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
     <MauiXaml Update="Views\ButtonsView.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>

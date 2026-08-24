@@ -65,7 +65,8 @@ public class Link<TScope> : ClickableControlBase<TScope>
     /// <returns>The containing scope for fluent chaining.</returns>
     public TScope AssertLinkTextEquals(string expected, string? message = null)
     {
-        return RunAssert(nameof(AssertLinkTextEquals), expected, () => GetLinkText(), message);
+        return RunAssert(expected, () => GetLinkText(),
+            (actual, exp) => Equals(actual, exp), message);
     }
 
     /// <summary>
@@ -76,13 +77,13 @@ public class Link<TScope> : ClickableControlBase<TScope>
     /// <returns>The containing scope for fluent chaining.</returns>
     public TScope AssertUrlContains(string expectedUrlPart, string? message = null)
     {
-        return RunAssert(nameof(AssertUrlContains), expectedUrlPart, () =>
+        return RunAssert(expectedUrlPart, () =>
         {
             var url = GetUrl();
             return url != null && url.Contains(expectedUrlPart, StringComparison.OrdinalIgnoreCase)
                 ? expectedUrlPart
                 : url;
-        }, message);
+        }, (actual, exp) => Equals(actual, exp), message);
     }
 
     #endregion

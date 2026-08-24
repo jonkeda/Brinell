@@ -1,0 +1,132 @@
+namespace Brinell.Maui.Containers;
+
+/// <summary>
+/// Decides how a collection discovers its item root elements. How items are found is a
+/// policy that varies by platform and by how the app marks up its rows, so it is
+/// pluggable rather than fixed.
+/// </summary>
+public interface IItemStrategy
+{
+    /// <summary>
+    /// Finds the root element of every currently materialized item, in document order.
+    /// </summary>
+    IReadOnlyList<IMauiElement> FindItemElements(IMauiElement collectionRoot);
+
+    /// <summary>
+    /// Finds one item's root, or null when the index is out of range.
+    /// </summary>
+    IMauiElement? FindItemElement(IMauiElement collectionRoot, int index);
+}
+
+/// <summary>
+/// Factory methods for the built-in item strategies.
+/// </summary>
+public static class ItemStrategy
+{
+    /// <summary>
+    /// Finds rows by a locator applied within the collection root. The locator's value
+    /// repeats across rows, which is the normal shape of a MAUI item template.
+    /// </summary>
+    public static IItemStrategy ByLocator(Locator itemLocator) => new LocatorItemStrategy(itemLocator);
+
+    /// <summary>
+    /// Finds rows by automation id, within the collection root.
+    /// </summary>
+    public static IItemStrategy ByAutomationId(string automationId)
+        => new LocatorItemStrategy(Locator.ByAutomationId(automationId));
+
+    /// <summary>
+    /// Finds rows by a per-index automation id (<c>Task_0</c>, <c>Task_1</c>, ...),
+    /// searched within the collection root.
+    /// </summary>
+    /// <remarks>
+    /// Requires the app to give every row a globally unique id. Prefer
+    /// <see cref="ByLocator"/>, which lets an item template keep repeating ids.
+    /// Enumeration probes one index at a time and stops at <paramref name="maxItems"/>,
+    /// so a collection longer than that reports a truncated count.
+    /// </remarks>
+    public static IItemStrategy ByIndexedId(string prefix, int maxItems = 1000)
+        => new IndexedIdItemStrategy(prefix, maxItems);
+}
+
+/// <summary>
+/// Finds item roots by applying one locator inside the collection root.
+/// </summary>
+internal sealed class LocatorItemStrategy : IItemStrategy
+{
+    private readonly Locator _itemLocator;
+
+    public LocatorItemStrategy(Locator itemLocator)
+        => _itemLocator = itemLocator ?? throw new ArgumentNullException(nameof(itemLocator));
+
+    /// <inheritdoc />
+    public IReadOnlyList<IMauiElement> FindItemElements(IMauiElement collectionRoot)
+    {
+        ArgumentNullException.ThrowIfNull(collectionRoot);
+
+        return collectionRoot.FindElements(_itemLocator, timeoutMs: 0);
+    }
+
+    /// <inheritdoc />
+    public IMauiElement? FindItemElement(IMauiElement collectionRoot, int index)
+    {
+        if (index < 0) return null;
+
+        var items = FindItemElements(collectionRoot);
+        return index < items.Count ? items[index] : null;
+    }
+}
+
+/// <summary>
+/// Finds item roots by a per-index automation id.
+/// </summary>
+internal sealed class IndexedIdItemStrategy : IItemStrategy
+{
+    private readonly string _prefix;
+    private readonly int _maxItems;
+
+    public IndexedIdItemStrategy(string prefix, int maxItems)
+    {
+        _prefix = prefix ?? throw new ArgumentNullException(nameof(prefix));
+
+        if (maxItems <= 0)
+            throw new ArgumentOutOfRangeException(nameof(maxItems), maxItems, "Must be greater than zero.");
+
+        _maxItems = maxItems;
+    }
+
+    /// <inheritdoc />
+    public IReadOnlyList<IMauiElement> FindItemElements(IMauiElement collectionRoot)
+    {
+        ArgumentNullException.ThrowIfNull(collectionRoot);
+
+        var items = new List<IMauiElement>();
+        for (var index = 0; index < _maxItems; index++)
+        {
+            var element = FindItemElement(collectionRoot, index);
+            if (element == null) break;
+
+            items.Add(element);
+        }
+
+        return items;
+    }
+
+    /// <inheritdoc />
+    public IMauiElement? FindItemElement(IMauiElement collectionRoot, int index)
+    {
+        ArgumentNullException.ThrowIfNull(collectionRoot);
+
+        if (index < 0) return null;
+
+        try
+        {
+            return collectionRoot.FindElement(
+                Locator.ByAutomationId($"{_prefix}{index}"), timeoutMs: 0);
+        }
+        catch (ElementNotFoundException)
+        {
+            return null;
+        }
+    }
+}

@@ -54,16 +54,18 @@ public class EditableField<TScope> : ControlBase<TScope>
     /// </summary>
     public bool TryOpen(int? timeoutMs = null)
     {
-        return Run(nameof(TryOpen), () =>
+        return Run(nameof(TryOpen), (string?)null, () =>
         {
-            var root = FindElementWithWait(timeoutMs ?? DefaultTimeoutMs);
+            var root = TryFindElement();
+            if (root == null) return false;
+
             var target = FindChild(root, NativeButtonId)
                 ?? FindChild(root, TextEditorNativeButtonId)
                 ?? FindChild(root, ButtonId)
                 ?? FindChild(root, TextEditorButtonId)
                 ?? root;
 
-            return ElementActivator.TryActivate(target);
+            return ElementClicker.TryClick(target);
         });
     }
 
@@ -87,7 +89,9 @@ public class EditableField<TScope> : ControlBase<TScope>
     {
         return Run(nameof(TrySetText), text, () =>
         {
-            var root = FindElementWithWait(timeoutMs ?? DefaultTimeoutMs);
+            var root = TryFindElement();
+            if (root == null) return false;
+
             var entry = FindChild(root, TextEntryId);
             if (entry != null)
             {
@@ -104,10 +108,10 @@ public class EditableField<TScope> : ControlBase<TScope>
     /// </summary>
     public string? GetEntryText(int? timeoutMs = null)
     {
-        return Run(nameof(GetEntryText), () =>
+        return Run(nameof(GetEntryText), (string?)null, () =>
         {
-            var root = FindElementWithWait(timeoutMs ?? DefaultTimeoutMs);
-            return FindChild(root, TextEntryId)?.Text;
+            var root = TryFindElement();
+            return root == null ? null : FindChild(root, TextEntryId)?.Text;
         });
     }
 
@@ -130,7 +134,7 @@ public class EditableField<TScope> : ControlBase<TScope>
         SetElementText(editor, text);
 
         var okButton = WaitForTextEditorConfirmButton(timeoutMs);
-        return ElementActivator.TryActivate(okButton);
+        return ElementClicker.TryClick(okButton);
     }
 
     private bool TryOpenTextEditor(IMauiElement root, int? timeoutMs)
@@ -139,7 +143,7 @@ public class EditableField<TScope> : ControlBase<TScope>
             ?? FindChild(root, TextEditorButtonId)
             ?? root;
 
-        if (ElementActivator.TryActivate(target) && WaitForTextEditorOpen(timeoutMs))
+        if (ElementClicker.TryClick(target) && WaitForTextEditorOpen(timeoutMs))
         {
             return true;
         }

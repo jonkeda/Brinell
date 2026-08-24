@@ -207,7 +207,7 @@ public class Test {
     public void Generate_WithIsVisibleCore_GeneratesThreeMethods()
     {
         var code = @"
-public class Test {
+public class Test<TScope> {
     protected virtual bool? IsVisibleCore(IMauiElement? element) => element?.Visible;
 }";
         var method = FirstMethod(code);
@@ -258,7 +258,7 @@ public class Test {
     public void Generate_WithGetTextCore_GeneratesGetWaitAssert()
     {
         var code = @"
-public class Test {
+public class Test<TScope> {
     protected virtual string? GetTextCore(IMauiElement element) => element.Text;
 }";
         var method = FirstMethod(code);

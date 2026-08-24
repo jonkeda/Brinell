@@ -64,6 +64,14 @@
             ContentTemplate="{DataTemplate local:TogglePage}"
             Route="TogglePage" />
 
+        <!-- Containers Tab -->
+        <ShellContent
+            Title="Containers"
+            AutomationId="GridCollectionTab"
+            Icon="tab_about.png"
+            ContentTemplate="{DataTemplate local:GridCollectionPage}"
+            Route="GridCollectionPage" />
+
     </TabBar>
 
 </Shell>

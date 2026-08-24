@@ -42,6 +42,7 @@ public class ControlObjectAnalyzer
         {
             ContainingTypeName = classDecl.Identifier.Text,
             TypeParameters = GetTypeParameters(classDecl),
+            FluentReturnType = ResolveFluentReturnType(classDecl),
             ElementType = DetectElementType(classDecl),
             Namespace = GetNamespace(root),
             Usings = GetUsingStatements(root),
@@ -115,6 +116,83 @@ public class ControlObjectAnalyzer
 
         var parameters = string.Join(", ", classDecl.TypeParameterList.Parameters.Select(p => p.Identifier.Text));
         return $"<{parameters}>";
+    }
+
+    /// <summary>
+    /// Resolves the type parameter that public members return for fluent chaining.
+    /// </summary>
+    /// <remarks>
+    /// Rules, in order:
+    /// <list type="number">
+    /// <item><c>[FluentReturn("T")]</c> on the class, when present.</item>
+    /// <item><c>TSelf</c>, when the class declares it — containers and collections
+    /// return themselves so a chain stays inside the scope.</item>
+    /// <item>The single type parameter — the control case, which returns its
+    /// containing scope.</item>
+    /// <item>Empty, when the class has no type parameters; actions then return void.</item>
+    /// </list>
+    /// </remarks>
+    /// <param name="classDecl">The class to resolve against.</param>
+    /// <returns>The type parameter name, or an empty string when there is none.</returns>
+    public string ResolveFluentReturnType(ClassDeclarationSyntax classDecl)
+    {
+        var declared = classDecl.TypeParameterList?.Parameters
+            .Select(p => p.Identifier.Text)
+            .ToList() ?? [];
+
+        var explicitReturn = GetFluentReturnAttributeValue(classDecl);
+        if (!string.IsNullOrEmpty(explicitReturn))
+        {
+            if (declared.Count > 0 && !declared.Contains(explicitReturn))
+            {
+                throw new InvalidOperationException(
+                    $"[FluentReturn(\"{explicitReturn}\")] on '{classDecl.Identifier.Text}' names a type " +
+                    $"parameter the class does not declare. Declared: {string.Join(", ", declared)}.");
+            }
+
+            return explicitReturn;
+        }
+
+        if (declared.Contains("TSelf"))
+            return "TSelf";
+
+        if (declared.Count == 1)
+            return declared[0];
+
+        if (declared.Count == 0)
+            return "";
+
+        throw new InvalidOperationException(
+            $"Cannot infer the fluent return type for '{classDecl.Identifier.Text}': it declares " +
+            $"{declared.Count} type parameters ({string.Join(", ", declared)}) and none is named 'TSelf'. " +
+            $"Add [FluentReturn(\"<name>\")] to the class to say which one public members return.");
+    }
+
+    /// <summary>
+    /// Reads the single string argument of a <c>[FluentReturn(...)]</c> attribute, if present.
+    /// </summary>
+    private static string? GetFluentReturnAttributeValue(ClassDeclarationSyntax classDecl)
+    {
+        var attribute = classDecl.AttributeLists
+            .SelectMany(list => list.Attributes)
+            .FirstOrDefault(a =>
+            {
+                var name = a.Name.ToString();
+                return name is "FluentReturn" or "FluentReturnAttribute"
+                    || name.EndsWith(".FluentReturn", StringComparison.Ordinal)
+                    || name.EndsWith(".FluentReturnAttribute", StringComparison.Ordinal);
+            });
+
+        var argument = attribute?.ArgumentList?.Arguments.FirstOrDefault()?.Expression;
+
+        return argument switch
+        {
+            LiteralExpressionSyntax literal => literal.Token.ValueText,
+            // nameof(TSelf) - take the operand's text
+            InvocationExpressionSyntax { Expression: IdentifierNameSyntax { Identifier.Text: "nameof" } } invocation
+                => invocation.ArgumentList.Arguments.FirstOrDefault()?.Expression.ToString(),
+            _ => null
+        };
     }
 
     /// <summary>

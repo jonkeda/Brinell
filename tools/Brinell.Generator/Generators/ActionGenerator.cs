@@ -118,8 +118,9 @@ public class ActionGenerator : IMemberGenerator
         var writer = new CsWriter(0); // Start with no indentation - let the file-level writer handle it
         var publicMethodName = coreMethod.PublicMethodName;
 
-        // Determine return type
-        var returnTypeStr = context.TypeParameters.TrimStart('<').TrimEnd('>');
+        // Determine return type - the resolved fluent type parameter, not the whole
+        // type parameter list (which would emit "TParent, TSelf" for a container).
+        var returnTypeStr = context.FluentReturnType;
         if (string.IsNullOrEmpty(returnTypeStr))
             returnTypeStr = "void";
 
@@ -138,8 +139,9 @@ public class ActionGenerator : IMemberGenerator
         var lambdaArgs = BuildLambdaArguments(coreMethod);
         var hasTimeoutMs = coreMethod.Parameters.Any(p => p.ParameterName == "timeoutMs");
 
-        // Build method body with RunDoWithElement call
-        writer.WriteStart("return RunDoWithElement(element => { ");
+        // Build method body with RunDoWithElement call. A void wrapper must not
+        // return the helper's result.
+        writer.WriteStart($"{(returnTypeStr == "void" ? "" : "return ")}RunDoWithElement(element => {{ ");
         writer.Write($"{coreMethod.MethodName}(element{lambdaArgs}); ");
         writer.Write("}");
 

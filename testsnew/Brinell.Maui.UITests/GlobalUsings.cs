@@ -6,6 +6,7 @@ global using System.Threading.Tasks;
 global using Xunit;
 global using Brinell.Core.Abstractions;
 global using Brinell.Core.Composition;
+global using Brinell.Core.Exceptions;
 global using Brinell.Core.Interfaces;
 global using Brinell.Core.Locators;
 global using Brinell.Maui.Context;
