@@ -14,7 +14,7 @@ namespace Brinell.Maui.Controls.Range;
 /// This control automatically handles this by falling back to the button-based approach.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public class Stepper<TScope> : RangeControlBase<TScope>
+public partial class Stepper<TScope> : Base.RangeControlBase<TScope>
     where TScope : IMauiScope<TScope>
 {
     private readonly string? _baseAutomationId;
@@ -128,7 +128,8 @@ public class Stepper<TScope> : RangeControlBase<TScope>
     /// Uses button mode on Windows where buttons are exposed separately.
     /// </summary>
     /// <param name="element">The pre-found stepper element.</param>
-    protected override void IncrementCore(IMauiElement element)
+    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
+    protected override void IncrementCore(IMauiElement element, int? timeoutMs = null)
     {
         // In Windows button mode, use the cached plus button
         if (_usingButtonMode && _plusButton != null)
@@ -145,7 +146,7 @@ public class Stepper<TScope> : RangeControlBase<TScope>
             return;
         }
         
-        base.IncrementCore(element);
+        base.IncrementCore(element, timeoutMs);
     }
     
     /// <summary>
@@ -153,7 +154,8 @@ public class Stepper<TScope> : RangeControlBase<TScope>
     /// Uses button mode on Windows where buttons are exposed separately.
     /// </summary>
     /// <param name="element">The pre-found stepper element.</param>
-    protected override void DecrementCore(IMauiElement element)
+    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
+    protected override void DecrementCore(IMauiElement element, int? timeoutMs = null)
     {
         // In Windows button mode, use the cached minus button
         if (_usingButtonMode && _minusButton != null)
@@ -170,7 +172,7 @@ public class Stepper<TScope> : RangeControlBase<TScope>
             return;
         }
         
-        base.DecrementCore(element);
+        base.DecrementCore(element, timeoutMs);
     }
     
     /// <summary>
@@ -228,12 +230,18 @@ public class Stepper<TScope> : RangeControlBase<TScope>
     /// Sets value by repeatedly clicking increment/decrement buttons.
     /// </summary>
     /// <param name="element">The pre-found stepper element.</param>
-    /// <param name="value">The target value.</param>
-    protected override void SetValueCore(IMauiElement element, double value)
+    /// <param name="value">The target value. Null skips the operation.</param>
+    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
+    protected override void SetValueCore(IMauiElement element, double? value, int? timeoutMs = null)
     {
+        if (value == null) return;
+
+        EnsureSettableCore(element);
+
+        var target = value.Value;
         var current = GetValueCore(element) ?? 0;
         var step = GetStepCore(element) ?? 1;
-        var diff = value - current;
+        var diff = target - current;
         var clicks = (int)Math.Abs(diff / step);
         
         // Limit to prevent infinite loops while still allowing full stepper ranges
@@ -243,9 +251,9 @@ public class Stepper<TScope> : RangeControlBase<TScope>
         for (int i = 0; i < clicks; i++)
         {
             if (increment)
-                IncrementCore(element);
+                IncrementCore(element, timeoutMs);
             else
-                DecrementCore(element);
+                DecrementCore(element, timeoutMs);
         }
         
         // In button mode, poll until the label reflects the target value
@@ -253,7 +261,7 @@ public class Stepper<TScope> : RangeControlBase<TScope>
         {
             WaitHelper.WaitFor(
                 () => GetValueCore(element),
-                v => v.HasValue && Math.Abs(v.Value - value) < 0.01,
+                v => v.HasValue && Math.Abs(v.Value - target) < 0.01,
                 timeoutMs: 1000,
                 pollingIntervalMs: 50);
         }
@@ -295,7 +303,7 @@ public class Stepper<TScope> : RangeControlBase<TScope>
     
     #endregion
 
-    #region Stepper-Specific Methods
+    #region Hand-written Convenience Members
 
     /// <summary>
     /// Reads the value and polls until two consecutive reads return the same result,
@@ -337,7 +345,7 @@ public class Stepper<TScope> : RangeControlBase<TScope>
         {
             for (int i = 0; i < times; i++)
             {
-                IncrementCore(element);
+                IncrementCore(element, timeoutMs);
             }
         }, timeoutMs);
     }
@@ -357,7 +365,7 @@ public class Stepper<TScope> : RangeControlBase<TScope>
         {
             for (int i = 0; i < times; i++)
             {
-                DecrementCore(element);
+                DecrementCore(element, timeoutMs);
             }
         }, timeoutMs);
     }
@@ -372,7 +380,7 @@ public class Stepper<TScope> : RangeControlBase<TScope>
         return RunDoWithElement(element =>
         {
             var min = GetMinimumCore(element) ?? 0;
-            SetValueCore(element, min);
+            SetValueCore(element, min, timeoutMs);
         }, timeoutMs);
     }
 
@@ -383,10 +391,10 @@ public class Stepper<TScope> : RangeControlBase<TScope>
     /// <returns>The containing scope for fluent chaining.</returns>
     public TScope SetToMaximum(int? timeoutMs = null)
     {
-        return RunDoWithElement( element =>
+        return RunDoWithElement(element =>
         {
             var max = GetMaximumCore(element) ?? 100;
-            SetValueCore(element, max);
+            SetValueCore(element, max, timeoutMs);
         }, timeoutMs);
     }
 

@@ -97,7 +97,7 @@ public abstract class SelectorControlBase<TScope> : ClickableControlBase<TScope>
     }
 
     /// <inheritdoc />
-    public bool WaitSelectedText(string? expected, int? timeoutMs = null)
+    public bool? WaitSelectedText(string? expected, int? timeoutMs = null)
     {
         if (expected == null) return true;
         var timeout = timeoutMs ?? DefaultTimeoutMs;
@@ -108,7 +108,7 @@ public abstract class SelectorControlBase<TScope> : ClickableControlBase<TScope>
     public TScope AssertSelectedText(string? expected, string? message = null, int? timeoutMs = null)
     {
         if (expected == null) return ContainingScope;
-        if (!WaitSelectedText(expected, timeoutMs))
+        if (WaitSelectedText(expected, timeoutMs) != true)
         {
             var actual = GetSelectedText();
             throw new AssertionException(
@@ -140,7 +140,7 @@ public abstract class SelectorControlBase<TScope> : ClickableControlBase<TScope>
     }
 
     /// <inheritdoc />
-    public bool WaitSelectedIndex(int? expected, int? timeoutMs = null)
+    public bool? WaitSelectedIndex(int? expected, int? timeoutMs = null)
     {
         if (expected == null) return true;
         var timeout = timeoutMs ?? DefaultTimeoutMs;
@@ -151,7 +151,7 @@ public abstract class SelectorControlBase<TScope> : ClickableControlBase<TScope>
     public TScope AssertSelectedIndex(int? expected, string? message = null, int? timeoutMs = null)
     {
         if (expected == null) return ContainingScope;
-        if (!WaitSelectedIndex(expected, timeoutMs))
+        if (WaitSelectedIndex(expected, timeoutMs) != true)
         {
             var actual = GetSelectedIndex();
             throw new AssertionException(
@@ -199,7 +199,7 @@ public abstract class SelectorControlBase<TScope> : ClickableControlBase<TScope>
     }
 
     /// <inheritdoc />
-    public bool WaitItemCount(int? expected, int? timeoutMs = null)
+    public bool? WaitItemCount(int? expected, int? timeoutMs = null)
     {
         if (expected == null) return true;
         var timeout = timeoutMs ?? DefaultTimeoutMs;
@@ -210,7 +210,7 @@ public abstract class SelectorControlBase<TScope> : ClickableControlBase<TScope>
     public TScope AssertItemCount(int? expected, string? message = null, int? timeoutMs = null)
     {
         if (expected == null) return ContainingScope;
-        if (!WaitItemCount(expected, timeoutMs))
+        if (WaitItemCount(expected, timeoutMs) != true)
         {
             var actual = GetItemCount();
             throw new AssertionException(

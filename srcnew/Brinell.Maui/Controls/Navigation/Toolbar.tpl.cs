@@ -5,7 +5,7 @@ namespace Brinell.Maui.Controls.Navigation;
 /// Provides access to toolbar items and navigation actions.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public class Toolbar<TScope> : ControlBase<TScope>
+public partial class Toolbar<TScope> : Base.ViewBase<TScope>
     where TScope : IMauiScope<TScope>
 {
     /// <summary>
@@ -24,31 +24,27 @@ public class Toolbar<TScope> : ControlBase<TScope>
     {
     }
 
-    #region Toolbar Methods
+    #region Core Methods (Element-Aware, No Logging)
 
     /// <summary>
-    /// Clicks a toolbar item by finding it within the toolbar and clicking.
-    /// The item is searched within the toolbar's own element, not the page root.
+    /// Clicks a toolbar item found within the toolbar element, not the page root.
     /// </summary>
+    /// <param name="element">The pre-found toolbar element.</param>
     /// <param name="itemLocator">The locator for the toolbar item.</param>
-    /// <param name="timeoutMs">Optional timeout.</param>
-    /// <returns>The containing scope for fluent chaining.</returns>
-    public TScope ClickToolbarItem(Locator itemLocator, int? timeoutMs = null)
+    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
+    protected virtual void ClickToolbarItemCore(IMauiElement element, Locator itemLocator, int? timeoutMs = null)
     {
-        return RunDoWithElement( toolbarElement =>
-        {
-            var toolbarItem = toolbarElement.FindElement(itemLocator, timeoutMs ?? DefaultTimeoutMs);
-            toolbarItem.Click();
-        }, timeoutMs);
+        var toolbarItem = element.FindElement(itemLocator, timeoutMs ?? DefaultTimeoutMs);
+        toolbarItem.Click();
     }
 
     /// <summary>
     /// Gets the title text displayed in the toolbar.
     /// </summary>
+    /// <param name="element">The pre-found element (may be null).</param>
     /// <returns>The title text, or null if not available.</returns>
-    public string? GetTitle()
+    protected virtual string? GetTitleCore(IMauiElement? element)
     {
-        var element = TryFindElement();
         if (element == null) return null;
 
         // Try common attributes for toolbar title
@@ -60,6 +56,10 @@ public class Toolbar<TScope> : ControlBase<TScope>
 
         return element.Text;
     }
+
+    #endregion
+
+    #region Hand-written Convenience Members
 
     /// <summary>
     /// Clicks the back navigation button (if present).

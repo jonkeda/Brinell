@@ -5,7 +5,7 @@ namespace Brinell.Maui.Controls.Selection;
 /// Inherits SelectByText, SelectByIndex, GetSelectedText from SelectorControlBase.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public class Picker<TScope> : SelectorControlBase<TScope>
+public partial class Picker<TScope> : Base.SelectorControlBase<TScope>
     where TScope : IMauiScope<TScope>
 {
     /// <summary>
@@ -29,36 +29,7 @@ public class Picker<TScope> : SelectorControlBase<TScope>
     {
     }
 
-    #region Picker-Specific Methods
-
-    /// <summary>
-    /// Gets the title/header text of the picker.
-    /// </summary>
-    /// <returns>The title text, or null if not found.</returns>
-    public string? GetTitle()
-    {
-        return GetTitleCore(TryFindElement());
-    }
-
-    /// <summary>
-    /// Asserts the picker title matches the expected value.
-    /// </summary>
-    /// <param name="expected">Expected title text. Null skips the assertion.</param>
-    /// <param name="message">Optional assertion message.</param>
-    /// <param name="timeoutMs">Optional timeout.</param>
-    /// <returns>The containing scope for fluent chaining.</returns>
-    public TScope AssertTitle(string? expected, string? message = null, int? timeoutMs = null)
-    {
-        if (expected == null)
-            return ContainingScope;
-
-        return RunAssertWithElement(expected, 
-            GetTitleCore, (actual, exp) => Equals(actual, exp), message ?? $"Expected picker title to be '{expected}'. Locator: {Locator}", timeoutMs);
-    }
-
-    #endregion
-
-    #region Core Method Overrides
+    #region Title - Core Methods
 
     /// <summary>
     /// Gets the picker title from the element.

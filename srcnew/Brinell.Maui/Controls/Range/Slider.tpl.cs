@@ -10,7 +10,7 @@ using Brinell.Core.Utilities;
 /// doesn't support mouse Actions API (only pen/touch pointer input supported).
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public class Slider<TScope> : RangeControlBase<TScope>
+public partial class Slider<TScope> : Base.RangeControlBase<TScope>
     where TScope : IMauiScope<TScope>
 {
     /// <summary>
@@ -33,46 +33,75 @@ public class Slider<TScope> : RangeControlBase<TScope>
         : base(scope, locatorValue)
     {
     }
-    
-    #region SetValue Override
-    
+
+    #region Core Methods (Element-Aware, No Logging)
+
     /// <summary>
     /// Sets slider value using the best available approach.
     /// Priority: 1) RangeValue pattern (FlaUI), 2) windows: click, 3) keyboard navigation.
     /// </summary>
     /// <param name="element">The slider element.</param>
-    /// <param name="value">The target value.</param>
-    protected override void SetValueCore(IMauiElement element, double value)
+    /// <param name="value">The target value. Null skips the operation.</param>
+    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
+    protected override void SetValueCore(IMauiElement element, double? value, int? timeoutMs = null)
     {
+        if (value == null) return;
+
+        EnsureSettableCore(element);
+
         var min = GetMinimumCore(element) ?? 0;
         var max = GetMaximumCore(element) ?? 100;
         var range = max - min;
-        
+
         if (range <= 0)
         {
             throw new InvalidOperationException($"Invalid slider range: min={min}, max={max}");
         }
-        
+
         // Clamp value to valid range
-        value = Math.Clamp(value, min, max);
-        
+        var target = Math.Clamp(value.Value, min, max);
+
         // Try RangeValue pattern first (Windows/FlaUI) - most reliable
         if (element is IRangePatternElement rangeElement && rangeElement.SupportsRangeValue)
         {
-            if (rangeElement.SetRangeValue(value))
+            if (rangeElement.SetRangeValue(target))
                 return;
         }
-        
+
         // Try using windows: click extension (bypasses W3C Actions)
-        if (TrySetValueWithWindowsClick(element, value, min, max))
+        if (TrySetValueWithWindowsClick(element, target, min, max))
         {
             return;
         }
-        
+
         // Fallback: Use keyboard-based approach
-        SetValueWithKeyboard(element, value, min, max);
+        SetValueWithKeyboard(element, target, min, max);
     }
-    
+
+    /// <summary>
+    /// Gets the current value as a percentage of the range from a pre-found element.
+    /// </summary>
+    /// <param name="element">The pre-found element.</param>
+    /// <returns>The percentage (0-100), or null if not available.</returns>
+    protected virtual double? GetPercentageCore(IMauiElement? element)
+    {
+        if (element == null) return null;
+
+        var current = GetValueCore(element);
+        if (current == null) return null;
+
+        var min = GetMinimumCore(element) ?? 0;
+        var max = GetMaximumCore(element) ?? 100;
+
+        if (Math.Abs(max - min) < 0.0001) return 0;
+
+        return ((current.Value - min) / (max - min)) * 100.0;
+    }
+
+    #endregion
+
+    #region SetValue Helpers
+
     /// <summary>
     /// Attempts to set slider value using the windows: click extension.
     /// This bypasses the W3C Actions API that doesn't work on Windows.
@@ -174,7 +203,7 @@ public class Slider<TScope> : RangeControlBase<TScope>
         }
         
         // Poll until the value is near target or timeout
-        _ = RunWaitWithElement(
+        _ = RunWaitWithElement(value,
             e =>
             {
                 var current = GetValueCore(e);
@@ -186,7 +215,7 @@ public class Slider<TScope> : RangeControlBase<TScope>
     
     #endregion
 
-    #region Slider-Specific Methods
+    #region Hand-written Convenience Members
 
     /// <summary>
     /// Slides to the specified percentage of the slider range.
@@ -196,34 +225,13 @@ public class Slider<TScope> : RangeControlBase<TScope>
     /// <returns>The containing scope for fluent chaining.</returns>
     public TScope SlideToPercentage(double? percentage, int? timeoutMs = null)
     {
-
         return RunSetWithElement(percentage, element =>
         {
             var min = GetMinimumCore(element) ?? 0;
             var max = GetMaximumCore(element) ?? 100;
             var value = min + ((max - min) * (percentage!.Value / 100.0));
-            SetValueCore(element, value);
+            SetValueCore(element, value, timeoutMs);
         }, timeoutMs);
-    }
-
-    /// <summary>
-    /// Gets the current value as a percentage of the range.
-    /// </summary>
-    /// <returns>The percentage (0-100), or null if element not found.</returns>
-    public double? GetPercentage()
-    {
-        var element = TryFindElement();
-        if (element == null) return null;
-
-        var current = GetValueCore(element);
-        if (current == null) return null;
-
-        var min = GetMinimumCore(element) ?? 0;
-        var max = GetMaximumCore(element) ?? 100;
-
-        if (Math.Abs(max - min) < 0.0001) return 0;
-
-        return ((current.Value - min) / (max - min)) * 100.0;
     }
 
     /// <summary>
@@ -233,10 +241,10 @@ public class Slider<TScope> : RangeControlBase<TScope>
     /// <returns>The containing scope for fluent chaining.</returns>
     public TScope SlideToMinimum(int? timeoutMs = null)
     {
-        return RunDoWithElement( element =>
+        return RunDoWithElement(element =>
         {
             var min = GetMinimumCore(element) ?? 0;
-            SetValueCore(element, min);
+            SetValueCore(element, min, timeoutMs);
         }, timeoutMs);
     }
 
@@ -247,10 +255,10 @@ public class Slider<TScope> : RangeControlBase<TScope>
     /// <returns>The containing scope for fluent chaining.</returns>
     public TScope SlideToMaximum(int? timeoutMs = null)
     {
-        return RunDoWithElement( element =>
+        return RunDoWithElement(element =>
         {
             var max = GetMaximumCore(element) ?? 100;
-            SetValueCore(element, max);
+            SetValueCore(element, max, timeoutMs);
         }, timeoutMs);
     }
 

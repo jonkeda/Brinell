@@ -63,7 +63,22 @@ public abstract class AndroidRangeControlBase<TScope> : NativeAndroidControl<TSc
         return ContainingScope;
     }
 
-    public virtual bool WaitValue(double? expected, double tolerance = 0.001, int? timeoutMs = null)
+    public virtual bool? WaitValue(double? expected, int? timeoutMs = null)
+    {
+        if (expected is null)
+        {
+            return null;
+        }
+
+        return WaitValueWithin(expected, 0, timeoutMs);
+    }
+
+    public virtual TScope AssertValue(double? expected, string? message = null, int? timeoutMs = null)
+    {
+        return AssertValueWithin(expected, 0, message, timeoutMs);
+    }
+
+    public virtual bool WaitValueWithin(double? expected, double tolerance, int? timeoutMs = null)
     {
         if (expected is null)
         {
@@ -79,14 +94,14 @@ public abstract class AndroidRangeControlBase<TScope> : NativeAndroidControl<TSc
             timeoutMs ?? DefaultTimeoutMs);
     }
 
-    public virtual TScope AssertValue(double? expected, double tolerance = 0.001, string? message = null, int? timeoutMs = null)
+    public virtual TScope AssertValueWithin(double? expected, double tolerance, string? message = null, int? timeoutMs = null)
     {
         if (expected is null)
         {
             return ContainingScope;
         }
 
-        if (!WaitValue(expected, tolerance, timeoutMs))
+        if (!WaitValueWithin(expected, tolerance, timeoutMs))
         {
             Fail(message ?? $"Expected value '{expected}' (+/- {tolerance}), actual '{GetValue()}'.", expected, GetValue());
         }

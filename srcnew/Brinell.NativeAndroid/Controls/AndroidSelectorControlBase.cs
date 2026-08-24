@@ -129,7 +129,7 @@ public abstract class AndroidSelectorControlBase<TScope> : NativeAndroidControl<
     public virtual int? GetItemCount(int? timeoutMs = null)
         => GetItemTexts(timeoutMs)?.Count;
 
-    public virtual bool WaitSelectedText(string? expected, int? timeoutMs = null)
+    public virtual bool? WaitSelectedText(string? expected, int? timeoutMs = null)
     {
         if (expected is null)
         {
@@ -146,7 +146,7 @@ public abstract class AndroidSelectorControlBase<TScope> : NativeAndroidControl<
             return ContainingScope;
         }
 
-        if (!WaitSelectedText(expected, timeoutMs))
+        if (WaitSelectedText(expected, timeoutMs) != true)
         {
             Fail(message ?? $"Expected selected text '{expected}', actual '{GetSelectedText()}'.", expected, GetSelectedText());
         }
@@ -154,7 +154,7 @@ public abstract class AndroidSelectorControlBase<TScope> : NativeAndroidControl<
         return ContainingScope;
     }
 
-    public virtual bool WaitSelectedIndex(int? expected, int? timeoutMs = null)
+    public virtual bool? WaitSelectedIndex(int? expected, int? timeoutMs = null)
     {
         if (expected is null)
         {
@@ -171,7 +171,7 @@ public abstract class AndroidSelectorControlBase<TScope> : NativeAndroidControl<
             return ContainingScope;
         }
 
-        if (!WaitSelectedIndex(expected, timeoutMs))
+        if (WaitSelectedIndex(expected, timeoutMs) != true)
         {
             Fail(message ?? $"Expected selected index '{expected}', actual '{GetSelectedIndex()}'.", expected, GetSelectedIndex());
         }
@@ -179,7 +179,7 @@ public abstract class AndroidSelectorControlBase<TScope> : NativeAndroidControl<
         return ContainingScope;
     }
 
-    public virtual bool WaitItemCount(int? expected, int? timeoutMs = null)
+    public virtual bool? WaitItemCount(int? expected, int? timeoutMs = null)
     {
         if (expected is null)
         {
@@ -196,7 +196,7 @@ public abstract class AndroidSelectorControlBase<TScope> : NativeAndroidControl<
             return ContainingScope;
         }
 
-        if (!WaitItemCount(expected, timeoutMs))
+        if (WaitItemCount(expected, timeoutMs) != true)
         {
             Fail(message ?? $"Expected item count '{expected}', actual '{GetItemCount()}'.", expected, GetItemCount());
         }

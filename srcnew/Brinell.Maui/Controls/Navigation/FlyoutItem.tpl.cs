@@ -7,7 +7,7 @@ namespace Brinell.Maui.Controls.Navigation;
 /// Inherits from ClickableControlBase for click functionality.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public class FlyoutItem<TScope> : ClickableControlBase<TScope>
+public partial class FlyoutItem<TScope> : Base.ClickableControlBase<TScope>
     where TScope : IMauiScope<TScope>
 {
     private readonly string _title;

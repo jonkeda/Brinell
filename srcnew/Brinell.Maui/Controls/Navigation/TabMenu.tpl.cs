@@ -5,7 +5,7 @@ namespace Brinell.Maui.Controls.Navigation;
 /// Uses invokable tab button surfaces when available and avoids pointer-only fallbacks.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public class TabMenu<TScope> : ControlBase<TScope>
+public partial class TabMenu<TScope> : Base.ViewBase<TScope>
     where TScope : IMauiScope<TScope>
 {
     private const string ButtonId = "TabMenuView_Button";
@@ -19,6 +19,8 @@ public class TabMenu<TScope> : ControlBase<TScope>
         : base(scope, Locator.ByAutomationId("TabMenuView"))
     {
     }
+
+    #region Hand-written Convenience Members
 
     /// <summary>
     /// Selects a tab by caption.
@@ -35,16 +37,13 @@ public class TabMenu<TScope> : ControlBase<TScope>
 
     /// <summary>
     /// Attempts to select a tab by caption.
+    /// Hand-written: selection searches sibling caption/button elements rather than this control's element.
     /// </summary>
     public bool TrySelect(string caption, int? timeoutMs = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(caption);
 
-        return Run(nameof(TrySelect), caption, () =>
-        {
-            var timeout = TimeSpan.FromMilliseconds(timeoutMs ?? DefaultTimeoutMs);
-            return ElementSearch.WaitUntil(() => TrySelectNow(caption), timeout);
-        });
+        return RunWait(() => TrySelectNow(caption), timeoutMs);
     }
 
     private bool TrySelectNow(string caption)
@@ -76,4 +75,6 @@ public class TabMenu<TScope> : ControlBase<TScope>
         return ElementClicker.TryClick(
             ElementSearch.FirstVisible(MauiScope.FindElements(Locator.ByText(caption))));
     }
+
+    #endregion
 }

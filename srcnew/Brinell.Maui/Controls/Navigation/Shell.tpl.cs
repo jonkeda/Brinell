@@ -1,5 +1,4 @@
 using Brinell.Core.Interfaces;
-using Brinell.Maui.Controls;
 
 namespace Brinell.Maui.Controls.Navigation;
 
@@ -8,7 +7,7 @@ namespace Brinell.Maui.Controls.Navigation;
 /// Provides access to individual tabs and shell-level operations.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public class Shell<TScope> : ControlBase<TScope>
+public partial class Shell<TScope> : Base.ViewBase<TScope>
     where TScope : IMauiScope<TScope>
 {
     private readonly Dictionary<string, Tab<TScope>> _tabs = new();
@@ -22,6 +21,8 @@ public class Shell<TScope> : ControlBase<TScope>
         : base(scope, automationId)
     {
     }
+
+    #region Hand-written Convenience Members
 
     /// <summary>
     /// Gets a tab by its title, with lazy loading and caching.
@@ -107,12 +108,13 @@ public class Shell<TScope> : ControlBase<TScope>
 
     /// <summary>
     /// Checks if the Shell is loaded/visible.
+    /// Hand-written: the Shell element is not exposed on every platform, so this reports loaded
+    /// without probing the element.
     /// </summary>
     /// <returns>True if shell is found, false otherwise.</returns>
     public bool IsLoaded()
     {
         return true;
-        // return IsExists();
     }
 
     /// <summary>
@@ -137,4 +139,6 @@ public class Shell<TScope> : ControlBase<TScope>
         return RunAssert(true, () => IsLoaded(), (actual, exp) => Equals(actual, exp),
             message ?? "Shell should be loaded.", timeoutMs);
     }
+
+    #endregion
 }

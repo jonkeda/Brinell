@@ -8,7 +8,7 @@ namespace Brinell.Maui.Controls.Navigation;
 /// Inherits from ClickableControlBase for click functionality.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public class Tab<TScope> : ClickableControlBase<TScope>, ITabControlObject<TScope>
+public partial class Tab<TScope> : Base.ClickableControlBase<TScope>, ITabControlObject<TScope>
     where TScope : IMauiScope<TScope>
 {
     private readonly string _title;
@@ -27,25 +27,19 @@ public class Tab<TScope> : ClickableControlBase<TScope>, ITabControlObject<TScop
     /// <inheritdoc />
     public string Title => _title;
 
-    #region ITabControlObject - Selection State
-
-    /// <inheritdoc />
-    public bool? IsSelected()
-    {
-        return IsSelectedCore(TryFindElement());
-    }
+    #region Selection State - Core Methods
 
     /// <summary>
     /// Checks if tab is selected using pre-found element.
     /// </summary>
     /// <param name="element">The pre-found element (may be null).</param>
     /// <returns>True if selected, false if not, null if element not found.</returns>
-    protected bool? IsSelectedCore(IMauiElement? element)
+    protected virtual bool? IsSelectedCore(IMauiElement? element)
     {
         if (element == null) return null;
 
         // For MAUI TabBar, check the Selected property or aria-selected attribute
-        var selected = element.GetAttribute("Selected") 
+        var selected = element.GetAttribute("Selected")
                     ?? element.GetAttribute("IsSelected")
                     ?? element.GetAttribute("aria-selected");
 
@@ -55,26 +49,6 @@ public class Tab<TScope> : ClickableControlBase<TScope>, ITabControlObject<TScop
         // Fallback: check if element has "selected" in class/state
         var className = element.GetAttribute("class") ?? "";
         return className.Contains("selected", StringComparison.OrdinalIgnoreCase);
-    }
-
-    /// <inheritdoc />
-    public bool WaitSelected(bool? expected, int? timeoutMs = null)
-    {
-        if (expected == null)
-            return true;
-
-        return RunWaitWithElement(
-            element => IsSelectedCore(element) == expected, timeoutMs);
-    }
-
-    /// <inheritdoc />
-    public TScope AssertSelected(bool? expected, string? message = null, int? timeoutMs = null)
-    {
-        if (expected == null) return ContainingScope;
-
-        return RunAssertWithElement(expected, IsSelectedCore,
-        (actual, exp) => Equals(actual, exp),
-        message ?? $"Expected tab '{_title}' {(expected.Value ? "to be selected" : "not to be selected")}.", timeoutMs);
     }
 
     #endregion

@@ -36,9 +36,9 @@ public interface ISelectorControlObject<TScope> : IControlObject<TScope>
     
     /// <summary>
     /// Wait until selected text matches expected value.
-    /// If expected is null, returns true immediately (skip).
+    /// If expected is null, the wait is skipped and null is returned.
     /// </summary>
-    bool WaitSelectedText(string? expected, int? timeoutMs = null);
+    bool? WaitSelectedText(string? expected, int? timeoutMs = null);
     
     /// <summary>
     /// Assert selected text matches expected value.
@@ -55,9 +55,9 @@ public interface ISelectorControlObject<TScope> : IControlObject<TScope>
     
     /// <summary>
     /// Wait until selected index matches expected value.
-    /// If expected is null, returns true immediately (skip).
+    /// If expected is null, the wait is skipped and null is returned.
     /// </summary>
-    bool WaitSelectedIndex(int? expected, int? timeoutMs = null);
+    bool? WaitSelectedIndex(int? expected, int? timeoutMs = null);
     
     /// <summary>
     /// Assert selected index matches expected value.
@@ -80,9 +80,9 @@ public interface ISelectorControlObject<TScope> : IControlObject<TScope>
     
     /// <summary>
     /// Wait until item count matches expected value.
-    /// If expected is null, returns true immediately (skip).
+    /// If expected is null, the wait is skipped and null is returned.
     /// </summary>
-    bool WaitItemCount(int? expected, int? timeoutMs = null);
+    bool? WaitItemCount(int? expected, int? timeoutMs = null);
     
     /// <summary>
     /// Assert item count matches expected value.

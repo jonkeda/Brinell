@@ -5,7 +5,7 @@ namespace Brinell.Maui.Controls.DateTimes;
 /// Provides GetDate, SetDate, and date assertion methods.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public class DatePicker<TScope> : ControlBase<TScope>
+public partial class DatePicker<TScope> : Base.ViewBase<TScope>
     where TScope : IMauiScope<TScope>
 {
     /// <summary>
@@ -28,14 +28,19 @@ public class DatePicker<TScope> : ControlBase<TScope>
     {
     }
 
-    #region GetDate
+    #region Date - Core Methods
+
+    // Named GetDateValueCore rather than GetDateCore so the generated exact-equality
+    // trio lands on DateValue. AssertDate/WaitDate compare whole days only, which the
+    // generated equality comparison cannot express, so those stay hand-written below
+    // and keep their original signatures.
 
     /// <summary>
     /// Gets the date value from pre-found element.
     /// </summary>
     /// <param name="element">The pre-found element (may be null).</param>
     /// <returns>The date value, or null if not found or unparseable.</returns>
-    protected System.DateTime? GetDateCore(IMauiElement? element)
+    protected virtual System.DateTime? GetDateValueCore(IMauiElement? element)
     {
         if (element == null) return null;
 
@@ -108,6 +113,73 @@ public class DatePicker<TScope> : ControlBase<TScope>
     }
 
     /// <summary>
+    /// Gets the minimum allowed date from the pre-found element.
+    /// </summary>
+    /// <param name="element">The pre-found element (may be null).</param>
+    /// <returns>The minimum date, or null if not available.</returns>
+    protected virtual System.DateTime? GetMinimumDateCore(IMauiElement? element)
+    {
+        if (element == null) return null;
+
+        var minAttr = element.GetAttribute("MinimumDate") ?? element.GetAttribute("Minimum");
+        if (!string.IsNullOrEmpty(minAttr) && System.DateTime.TryParse(minAttr, out var minValue))
+        {
+            return minValue;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Gets the maximum allowed date from the pre-found element.
+    /// </summary>
+    /// <param name="element">The pre-found element (may be null).</param>
+    /// <returns>The maximum date, or null if not available.</returns>
+    protected virtual System.DateTime? GetMaximumDateCore(IMauiElement? element)
+    {
+        if (element == null) return null;
+
+        var maxAttr = element.GetAttribute("MaximumDate") ?? element.GetAttribute("Maximum");
+        if (!string.IsNullOrEmpty(maxAttr) && System.DateTime.TryParse(maxAttr, out var maxValue))
+        {
+            return maxValue;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Sets the date on pre-found element.
+    /// Platform-specific implementation may need adjustment.
+    /// </summary>
+    /// <param name="element">The date picker element.</param>
+    /// <param name="date">The date to set. Null skips the operation.</param>
+    /// <param name="timeoutMs">Optional timeout.</param>
+    protected virtual void SetDateCore(IMauiElement element, System.DateTime? date, int? timeoutMs = null)
+    {
+        if (date == null) return;
+
+        // Click to open the picker
+        element.Click();
+
+        // Platform-specific date entry
+        // Clear can throw on WinUI CalendarDatePicker (non-text host), so treat as best effort.
+        try
+        {
+            element.Clear();
+        }
+        catch
+        {
+            // Continue with direct input attempt.
+        }
+
+        element.SendKeys(date.Value.ToString("yyyy-MM-dd"));
+
+        // Close by pressing Enter or clicking elsewhere
+        element.SendKeys(OpenQA.Selenium.Keys.Enter);
+    }
+
+    /// <summary>
     /// Attempts to parse a date string in various formats.
     /// </summary>
     /// <param name="text">The text to parse.</param>
@@ -122,7 +194,7 @@ public class DatePicker<TScope> : ControlBase<TScope>
         // Windows MAUI embeds these in date strings like "‎20‎-‎Jan‎-‎01"
         var cleaned = System.Text.RegularExpressions.Regex.Replace(text, @"\p{Cf}", "");
         cleaned = cleaned.Trim();
-        
+
         if (string.IsNullOrEmpty(cleaned)) return false;
 
         // Try standard DateTime parsing
@@ -134,7 +206,7 @@ public class DatePicker<TScope> : ControlBase<TScope>
         {
             "yyyy-MM-dd",           // ISO format
             "MM/dd/yyyy",           // US format
-            "dd/MM/yyyy",           // UK/EU format  
+            "dd/MM/yyyy",           // UK/EU format
             "dd-MMM-yy",            // 20-Jan-01 (Windows MAUI format)
             "d-MMM-yy",             // 1-Jan-01
             "dd-MMM-yyyy",          // 20-Jan-2001
@@ -149,7 +221,7 @@ public class DatePicker<TScope> : ControlBase<TScope>
 
         foreach (var format in formats)
         {
-            if (System.DateTime.TryParseExact(cleaned, format, 
+            if (System.DateTime.TryParseExact(cleaned, format,
                 System.Globalization.CultureInfo.InvariantCulture,
                 System.Globalization.DateTimeStyles.None, out var parsed))
             {
@@ -168,72 +240,24 @@ public class DatePicker<TScope> : ControlBase<TScope>
         return false;
     }
 
+    #endregion
+
+    #region Hand-written Convenience Members
+
+    // Date comparison here is whole-day only (.Date), which the generated equality
+    // comparison cannot express, so these keep their original signatures rather than
+    // being replaced by the generated DateValue family.
+
     /// <summary>
     /// Gets the currently selected date.
     /// </summary>
     /// <param name="timeoutMs">Optional timeout for finding the element.</param>
     /// <returns>The selected date, or null if element not found.</returns>
     public System.DateTime? GetDate(int? timeoutMs = null)
-    {
-        if (timeoutMs.HasValue)
-        {
-            WaitExists(true, timeoutMs);
-        }
-        return GetDateCore(TryFindElement());
-    }
-
-    #endregion
-
-    #region SetDate
+        => GetDateValue(timeoutMs);
 
     /// <summary>
-    /// Sets the date value.
-    /// </summary>
-    /// <param name="date">The date to set. Null skips the operation.</param>
-    /// <param name="timeoutMs">Optional timeout.</param>
-    /// <returns>The containing scope for fluent chaining.</returns>
-    public TScope SetDate(System.DateTime? date, int? timeoutMs = null)
-    {
-        return RunSetWithElement(date, element =>
-        {
-            SetDateCore(element, date!.Value);
-        }, timeoutMs);
-    }
-
-    /// <summary>
-    /// Sets the date on pre-found element.
-    /// Platform-specific implementation may need adjustment.
-    /// </summary>
-    /// <param name="element">The date picker element.</param>
-    /// <param name="date">The date to set.</param>
-    protected virtual void SetDateCore(IMauiElement element, System.DateTime date)
-    {
-        // Click to open the picker
-        element.Click();
-
-        // Platform-specific date entry
-        // Clear can throw on WinUI CalendarDatePicker (non-text host), so treat as best effort.
-        try
-        {
-            element.Clear();
-        }
-        catch
-        {
-            // Continue with direct input attempt.
-        }
-
-        element.SendKeys(date.ToString("yyyy-MM-dd"));
-
-        // Close by pressing Enter or clicking elsewhere
-        element.SendKeys(OpenQA.Selenium.Keys.Enter);
-    }
-
-    #endregion
-
-    #region WaitDate
-
-    /// <summary>
-    /// Waits for the date to match the expected value.
+    /// Waits for the date to match the expected value, comparing whole days.
     /// </summary>
     /// <param name="expected">Expected date. Null skips the wait.</param>
     /// <param name="timeoutMs">Optional timeout.</param>
@@ -242,24 +266,17 @@ public class DatePicker<TScope> : ControlBase<TScope>
     {
         if (expected == null) return true;
 
-        var element = TryFindElement();
-        if (element == null) return false;
-
-        return RunWaitWithElement(
+        return RunWaitWithElement(expected,
             e =>
             {
-                var actual = GetDateCore(e);
+                var actual = GetDateValueCore(e);
                 return actual.HasValue && actual.Value.Date == expected.Value.Date;
             },
-            timeoutMs ?? DefaultTimeoutMs);
+            timeoutMs);
     }
 
-    #endregion
-
-    #region AssertDate
-
     /// <summary>
-    /// Asserts the date matches the expected value.
+    /// Asserts the date matches the expected value, comparing whole days.
     /// </summary>
     /// <param name="expected">Expected date. Null skips the assertion.</param>
     /// <param name="message">Optional assertion message.</param>
@@ -269,52 +286,10 @@ public class DatePicker<TScope> : ControlBase<TScope>
     {
         if (expected == null) return ContainingScope;
 
-        return RunAssert(expected, () =>
-        {
-            WaitDate(expected, timeoutMs);
-            return GetDate();
-        }, (actual, exp) => actual.HasValue && exp.HasValue && actual.Value.Date == exp.Value.Date,
+        return RunAssertWithElement(expected,
+            GetDateValueCore,
+            (actual, exp) => actual.HasValue && exp.HasValue && actual.Value.Date == exp.Value.Date,
             message ?? $"Expected date {expected:yyyy-MM-dd}. Locator: {Locator}", timeoutMs);
-    }
-
-    #endregion
-
-    #region MinimumDate / MaximumDate
-
-    /// <summary>
-    /// Gets the minimum allowed date.
-    /// </summary>
-    /// <returns>The minimum date, or null if not available.</returns>
-    public System.DateTime? GetMinimumDate()
-    {
-        var element = TryFindElement();
-        if (element == null) return null;
-
-        var minAttr = element.GetAttribute("MinimumDate") ?? element.GetAttribute("Minimum");
-        if (!string.IsNullOrEmpty(minAttr) && System.DateTime.TryParse(minAttr, out var minValue))
-        {
-            return minValue;
-        }
-
-        return null;
-    }
-
-    /// <summary>
-    /// Gets the maximum allowed date.
-    /// </summary>
-    /// <returns>The maximum date, or null if not available.</returns>
-    public System.DateTime? GetMaximumDate()
-    {
-        var element = TryFindElement();
-        if (element == null) return null;
-
-        var maxAttr = element.GetAttribute("MaximumDate") ?? element.GetAttribute("Maximum");
-        if (!string.IsNullOrEmpty(maxAttr) && System.DateTime.TryParse(maxAttr, out var maxValue))
-        {
-            return maxValue;
-        }
-
-        return null;
     }
 
     #endregion

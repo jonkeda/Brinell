@@ -5,7 +5,7 @@ namespace Brinell.Maui.Controls.DateTimes;
 /// Provides GetTime, SetTime, and time assertion methods.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public class TimePicker<TScope> : ControlBase<TScope>
+public partial class TimePicker<TScope> : Base.ViewBase<TScope>
     where TScope : IMauiScope<TScope>
 {
     /// <summary>
@@ -28,14 +28,19 @@ public class TimePicker<TScope> : ControlBase<TScope>
     {
     }
 
-    #region GetTime
+    #region Time - Core Methods
+
+    // Named GetTimeValueCore rather than GetTimeCore so the generated exact-equality
+    // trio lands on TimeValue. AssertTime/WaitTime compare within a tolerance, which the
+    // generated equality comparison cannot express, so those stay hand-written below
+    // and keep their original signatures (including the defaulted toleranceSeconds).
 
     /// <summary>
     /// Gets the time value from pre-found element.
     /// </summary>
     /// <param name="element">The pre-found element (may be null).</param>
     /// <returns>The time value, or null if not found or unparseable.</returns>
-    protected TimeSpan? GetTimeCore(IMauiElement? element)
+    protected virtual TimeSpan? GetTimeValueCore(IMauiElement? element)
     {
         if (element == null) return null;
 
@@ -112,6 +117,31 @@ public class TimePicker<TScope> : ControlBase<TScope>
     }
 
     /// <summary>
+    /// Sets the time on pre-found element.
+    /// Platform-specific implementation may need adjustment.
+    /// </summary>
+    /// <param name="element">The time picker element.</param>
+    /// <param name="time">The time to set. Null skips the operation.</param>
+    /// <param name="timeoutMs">Optional timeout.</param>
+    protected virtual void SetTimeCore(IMauiElement element, TimeSpan? time, int? timeoutMs = null)
+    {
+        if (time == null) return;
+
+        Scope.WaitReady(timeoutMs ?? DefaultTimeoutMs);
+
+        // Click to open the picker
+        element.Click();
+
+        // Platform-specific time entry
+        // For text-based input, clear and send formatted time
+        element.Clear();
+        element.SendKeys(time.Value.ToString(@"hh\:mm"));
+
+        // Close by pressing Enter or clicking elsewhere
+        element.SendKeys(OpenQA.Selenium.Keys.Enter);
+    }
+
+    /// <summary>
     /// Attempts to parse a time string in various formats.
     /// </summary>
     /// <param name="text">The text to parse.</param>
@@ -125,12 +155,12 @@ public class TimePicker<TScope> : ControlBase<TScope>
         // Clean up text: strip Unicode control characters (like LTR marks U+200E)
         // Windows MAUI embeds these in time strings like " ‎9‎:‎00‎ ‎AM time picker"
         var cleaned = System.Text.RegularExpressions.Regex.Replace(text, @"\p{Cf}", "");
-        
+
         // Remove "time picker" suffix if present (Windows MAUI adds this)
-        cleaned = System.Text.RegularExpressions.Regex.Replace(cleaned, @"\s*time\s*picker\s*$", "", 
+        cleaned = System.Text.RegularExpressions.Regex.Replace(cleaned, @"\s*time\s*picker\s*$", "",
             System.Text.RegularExpressions.RegexOptions.IgnoreCase);
         cleaned = cleaned.Trim();
-        
+
         if (string.IsNullOrEmpty(cleaned)) return false;
 
         // Try standard TimeSpan parsing
@@ -157,7 +187,7 @@ public class TimePicker<TScope> : ControlBase<TScope>
 
         foreach (var format in formats)
         {
-            if (System.DateTime.TryParseExact(cleaned, format, 
+            if (System.DateTime.TryParseExact(cleaned, format,
                 System.Globalization.CultureInfo.InvariantCulture,
                 System.Globalization.DateTimeStyles.None, out var parsed))
             {
@@ -176,64 +206,21 @@ public class TimePicker<TScope> : ControlBase<TScope>
         return false;
     }
 
+    #endregion
+
+    #region Hand-written Convenience Members
+
+    // Time comparison here is tolerance-based, which the generated equality comparison
+    // cannot express, so these keep their original signatures rather than being replaced
+    // by the generated TimeValue family.
+
     /// <summary>
     /// Gets the currently selected time.
     /// </summary>
     /// <param name="timeoutMs">Optional timeout for finding the element.</param>
     /// <returns>The selected time, or null if element not found.</returns>
     public TimeSpan? GetTime(int? timeoutMs = null)
-    {
-        if (timeoutMs.HasValue)
-        {
-            WaitExists(true, timeoutMs);
-        }
-        return GetTimeCore(TryFindElement());
-    }
-
-    #endregion
-
-    #region SetTime
-
-    /// <summary>
-    /// Sets the time value.
-    /// </summary>
-    /// <param name="time">The time to set. Null skips the operation.</param>
-    /// <param name="timeoutMs">Optional timeout.</param>
-    /// <returns>The containing scope for fluent chaining.</returns>
-    public TScope SetTime(TimeSpan? time, int? timeoutMs = null)
-    {
-        return RunSetWithElement(time, element =>
-        {
-            SetTimeCore(element, time!.Value, timeoutMs);
-        }, timeoutMs);
-    }
-
-    /// <summary>
-    /// Sets the time on pre-found element.
-    /// Platform-specific implementation may need adjustment.
-    /// </summary>
-    /// <param name="element">The time picker element.</param>
-    /// <param name="time">The time to set.</param>
-    /// <param name="timeoutMs"></param>
-    protected virtual void SetTimeCore(IMauiElement element, TimeSpan time, int? timeoutMs)
-    {
-        Scope.WaitReady(timeoutMs ?? DefaultTimeoutMs);
-
-        // Click to open the picker
-        element.Click();
-
-        // Platform-specific time entry
-        // For text-based input, clear and send formatted time
-        element.Clear();
-        element.SendKeys(time.ToString(@"hh\:mm"));
-
-        // Close by pressing Enter or clicking elsewhere
-        element.SendKeys(OpenQA.Selenium.Keys.Enter);
-    }
-
-    #endregion
-
-    #region WaitTime
+        => GetTimeValue(timeoutMs);
 
     /// <summary>
     /// Waits for the time to match the expected value.
@@ -246,25 +233,18 @@ public class TimePicker<TScope> : ControlBase<TScope>
     {
         if (expected == null) return true;
 
-        var element = TryFindElement();
-        if (element == null) return false;
-
         var tolerance = TimeSpan.FromSeconds(toleranceSeconds);
 
-        return RunWaitWithElement(
+        return RunWaitWithElement(expected,
             e =>
             {
-                var actual = GetTimeCore(e);
+                var actual = GetTimeValueCore(e);
                 if (!actual.HasValue) return false;
                 var diff = (actual.Value - expected.Value).Duration();
                 return diff <= tolerance;
             },
-            timeoutMs ?? DefaultTimeoutMs);
+            timeoutMs);
     }
-
-    #endregion
-
-    #region AssertTime
 
     /// <summary>
     /// Asserts the time matches the expected value.
@@ -281,18 +261,14 @@ public class TimePicker<TScope> : ControlBase<TScope>
         var tolerance = TimeSpan.FromSeconds(toleranceSeconds);
 
         return RunAssertWithElement(expected,
-            GetTimeCore, (actual, exp) =>
-        {
-            if (!actual.HasValue || !exp.HasValue) return false;
-            var diff = (actual.Value - exp.Value).Duration();
-            return diff <= tolerance;
-        },
+            GetTimeValueCore, (actual, exp) =>
+            {
+                if (!actual.HasValue || !exp.HasValue) return false;
+                var diff = (actual.Value - exp.Value).Duration();
+                return diff <= tolerance;
+            },
             message ?? $"Expected time {expected:hh\\:mm}. Locator: {Locator}", timeoutMs);
     }
-
-    #endregion
-
-    #region Helper Methods
 
     /// <summary>
     /// Gets the hours component of the selected time.

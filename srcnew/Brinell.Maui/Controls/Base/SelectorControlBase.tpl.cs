@@ -1,11 +1,12 @@
-namespace Brinell.Maui.Controls;
+namespace Brinell.Maui.Controls.Base;
 
 /// <summary>
 /// Base class for MAUI controls with selection capability.
 /// Implements ISelectorControlObject with SelectByText, SelectByIndex, GetSelectedText.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public abstract class SelectorControlBase<TScope> : FocusableControlBase<TScope>, ISelectorControlObject<TScope>
+public abstract partial class SelectorControlBase<TScope> : FocusableControlBase<TScope>,
+    ISelectorControlObject<TScope>
     where TScope : IMauiScope<TScope>
 {
     /// <summary>
@@ -28,76 +29,20 @@ public abstract class SelectorControlBase<TScope> : FocusableControlBase<TScope>
         : base(scope, locatorValue)
     {
     }
-    
-    #region ISelectorControlObject<TScope> Implementation
-    
-    /// <inheritdoc />
-    public TScope SelectByText(string? text, int? timeoutMs = null)
-    {
-        return RunSetWithElement(text, element =>
-        {
-            SelectByTextCore(element, text!);
-        }, timeoutMs);
-    }
-    
-    /// <inheritdoc />
-    public TScope SelectByIndex(int? index, int? timeoutMs = null)
-    {
-        return RunSetWithElement(index, element =>
-        {
-            SelectByIndexCore(element, index!.Value);
-        }, timeoutMs);
-    }
-    
-    /// <inheritdoc />
-    public TScope SelectByValue(string? value, int? timeoutMs = null)
-    {
-        return RunSetWithElement(value, element =>
-        {
-            SelectByValueCore(element, value!);
-        }, timeoutMs);
-    }
-    
-    /// <inheritdoc />
-    public string? GetSelectedText(int? timeoutMs = null)
-    {
-        return RunGetWithElement(element =>
-            GetSelectedTextCore(element), timeoutMs);
-    }
-    
-    /// <inheritdoc />
-    public int? GetSelectedIndex(int? timeoutMs = null)
-    {
-        return RunGetWithElement(element =>
-            GetSelectedIndexCore(element), timeoutMs);
-    }
-    
-    /// <inheritdoc />
-    public IReadOnlyList<string>? GetItemTexts(int? timeoutMs = null)
-    {
-        return RunGetWithElement(element =>
-            GetItemTextsCore(element), timeoutMs);
-    }
-    
-    /// <inheritdoc />
-    public int? GetItemCount(int? timeoutMs = null)
-    {
-        return RunGetWithElement(element =>
-            GetItemCountCore(element), timeoutMs);
-    }
-    
-    #endregion
-    
-    #region Core Methods (Element-Aware, No Logging)
-    
+
+    #region Selection - Core Methods
+
     /// <summary>
     /// Selects item by text on pre-found element.
     /// Uses FlaUI ExpandCollapse pattern when available for Windows ComboBox support.
     /// </summary>
     /// <param name="element">The pre-found element.</param>
-    /// <param name="text">The text to select.</param>
-    protected virtual void SelectByTextCore(IMauiElement element, string text)
+    /// <param name="text">The text to select. Null skips the operation.</param>
+    /// <param name="timeoutMs">Optional timeout.</param>
+    protected virtual void SelectByTextCore(IMauiElement element, string? text, int? timeoutMs = null)
     {
+        if (text == null) return;
+
         // For ComboBox with ExpandCollapse pattern, use SelectItemByText for reliable selection
         if (element is Interfaces.IExpandCollapsePatternElement comboBox && comboBox.SupportsExpandCollapse)
         {
@@ -107,10 +52,10 @@ public abstract class SelectorControlBase<TScope> : FocusableControlBase<TScope>
             }
             return;
         }
-        
+
         // Default implementation: open picker and find item
         element.Click();
-        
+
         // Find and click item with matching text
         var defaultItems = GetItemElementsCore(element);
         var defaultItem = defaultItems?.FirstOrDefault(i => i.Text == text);
@@ -123,51 +68,61 @@ public abstract class SelectorControlBase<TScope> : FocusableControlBase<TScope>
             throw new InvalidOperationException($"Item with text '{text}' not found. Locator: {Locator}");
         }
     }
-    
+
     /// <summary>
     /// Selects item by index on pre-found element.
     /// Uses FlaUI ExpandCollapse pattern when available for Windows ComboBox support.
     /// </summary>
     /// <param name="element">The pre-found element.</param>
-    /// <param name="index">The 0-based index to select.</param>
-    protected virtual void SelectByIndexCore(IMauiElement element, int index)
+    /// <param name="index">The 0-based index to select. Null skips the operation.</param>
+    /// <param name="timeoutMs">Optional timeout.</param>
+    protected virtual void SelectByIndexCore(IMauiElement element, int? index, int? timeoutMs = null)
     {
+        if (index == null) return;
+
         // For ComboBox with ExpandCollapse pattern, use SelectItemByIndex for reliable selection
         if (element is Interfaces.IExpandCollapsePatternElement comboBox && comboBox.SupportsExpandCollapse)
         {
-            if (!comboBox.SelectItemByIndex(index))
+            if (!comboBox.SelectItemByIndex(index.Value))
             {
-                throw new ArgumentOutOfRangeException(nameof(index), 
+                throw new ArgumentOutOfRangeException(nameof(index),
                     $"Index {index} is out of range. Locator: {Locator}");
             }
             return;
         }
-        
+
         // Default implementation
         element.Click();
-        
+
         var defaultItems = GetItemElementsCore(element);
-        if (defaultItems == null || index >= defaultItems.Count)
+        if (defaultItems == null || index.Value >= defaultItems.Count)
         {
-            throw new ArgumentOutOfRangeException(nameof(index), 
+            throw new ArgumentOutOfRangeException(nameof(index),
                 $"Index {index} is out of range. Available items: {defaultItems?.Count ?? 0}. Locator: {Locator}");
         }
-        
-        defaultItems[index].Click();
+
+        defaultItems[index.Value].Click();
     }
-    
+
     /// <summary>
     /// Selects item by value on pre-found element.
     /// Override in derived classes for picker-specific implementation.
     /// </summary>
     /// <param name="element">The pre-found element.</param>
-    /// <param name="value">The value to select.</param>
-    protected virtual void SelectByValueCore(IMauiElement element, string value)
+    /// <param name="value">The value to select. Null skips the operation.</param>
+    /// <param name="timeoutMs">Optional timeout.</param>
+    protected virtual void SelectByValueCore(IMauiElement element, string? value, int? timeoutMs = null)
     {
+        if (value == null) return;
+
         // Default: treat value same as text
-        SelectByTextCore(element, value);
+        SelectByTextCore(element, value, timeoutMs);
     }
-    
+
+    #endregion
+
+    #region Selection State - Core Methods
+
     /// <summary>
     /// Gets selected text from pre-found element.
     /// Uses SelectionPattern for ComboBox controls, which returns the actual selected item
@@ -178,22 +133,22 @@ public abstract class SelectorControlBase<TScope> : FocusableControlBase<TScope>
     protected virtual string? GetSelectedTextCore(IMauiElement? element)
     {
         if (element == null) return null;
-        
+
         // For ComboBox (ExpandCollapse pattern), use SelectionPattern to get the selected item text
         // This avoids returning the ComboBox header/title instead of the selected value
         if (element is Interfaces.IExpandCollapsePatternElement comboBox && comboBox.SupportsExpandCollapse)
         {
             return comboBox.GetSelectedItemText();
         }
-        
+
         // Try common selection attributes
         var selectedText = element.GetAttribute("Selection.Item.Name");
         if (!string.IsNullOrEmpty(selectedText)) return selectedText;
-        
+
         // Try text content
         return element.Text;
     }
-    
+
     /// <summary>
     /// Gets selected index from pre-found element.
     /// </summary>
@@ -202,19 +157,19 @@ public abstract class SelectorControlBase<TScope> : FocusableControlBase<TScope>
     protected virtual int? GetSelectedIndexCore(IMauiElement? element)
     {
         if (element == null) return null;
-        
+
         var indexAttr = element.GetAttribute("Selection.SelectedIndex");
         if (!string.IsNullOrEmpty(indexAttr) && int.TryParse(indexAttr, out var index))
         {
             return index;
         }
-        
+
         var indexAttr2 = element.GetAttribute("SelectedIndex");
         if (!string.IsNullOrEmpty(indexAttr2) && int.TryParse(indexAttr2, out var index2))
         {
             return index2;
         }
-        
+
         // Fallback: derive index by matching selected text against item texts
         var selectedText = GetSelectedTextCore(element);
         if (!string.IsNullOrEmpty(selectedText))
@@ -229,20 +184,24 @@ public abstract class SelectorControlBase<TScope> : FocusableControlBase<TScope>
                 }
             }
         }
-        
+
         return null;
     }
-    
+
     /// <summary>
     /// Gets all item texts from pre-found element.
     /// Override in derived classes for picker-specific implementation.
+    /// Deliberately non-virtual: a virtual Get*Core would generate a Wait/Assert pair that
+    /// compares IReadOnlyList&lt;string&gt; with ==, i.e. by reference, which no caller could
+    /// satisfy. The public GetItemTexts is hand-written below instead. Derived controls
+    /// needing different item discovery should override GetItemCountCore.
     /// </summary>
     /// <param name="element">The pre-found element.</param>
     /// <returns>List of item texts, or null if not available.</returns>
-    protected virtual IReadOnlyList<string>? GetItemTextsCore(IMauiElement? element)
+    protected IReadOnlyList<string>? GetItemTextsCore(IMauiElement? element)
     {
         if (element == null) return null;
-        
+
         // For ExpandCollapse elements, expand first so item elements remain valid while reading texts
         if (element is Interfaces.IExpandCollapsePatternElement comboBox && comboBox.SupportsExpandCollapse)
         {
@@ -258,11 +217,11 @@ public abstract class SelectorControlBase<TScope> : FocusableControlBase<TScope>
                 comboBox.Collapse();
             }
         }
-        
+
         var defaultItems = GetItemElementsCore(element);
         return defaultItems?.Select(i => i.Text ?? string.Empty).ToList();
     }
-    
+
     /// <summary>
     /// Gets item count from pre-found element.
     /// </summary>
@@ -271,126 +230,57 @@ public abstract class SelectorControlBase<TScope> : FocusableControlBase<TScope>
     protected virtual int? GetItemCountCore(IMauiElement? element)
     {
         if (element == null) return null;
-        
+
         var countAttr = element.GetAttribute("ItemCount");
         if (!string.IsNullOrEmpty(countAttr) && int.TryParse(countAttr, out var count))
         {
             return count;
         }
-        
+
         var items = GetItemElementsCore(element);
         return items?.Count;
     }
-    
+
+    #endregion
+
+    #region Hand-written Convenience Members
+
+    /// <summary>
+    /// Gets all available item texts.
+    /// </summary>
+    /// <param name="timeoutMs">Optional timeout.</param>
+    /// <returns>List of item texts, or null if not available.</returns>
+    public IReadOnlyList<string>? GetItemTexts(int? timeoutMs = null)
+    {
+        return RunGetWithElement(element => GetItemTextsCore(element), timeoutMs);
+    }
+
+    #endregion
+
+    #region Helpers
+
     /// <summary>
     /// Gets child item elements from the selector.
     /// Uses FlaUI ExpandCollapse pattern when available for Windows ComboBox support.
+    /// Deliberately non-virtual: a virtual Get*Core would generate a public GetItemElements
+    /// wrapper, leaking platform elements into the control's API. Derived controls that need
+    /// different item discovery should override GetItemTextsCore / GetItemCountCore instead.
     /// </summary>
     /// <param name="element">The parent selector element.</param>
     /// <returns>List of item elements, or null if not available.</returns>
-    protected virtual IReadOnlyList<IMauiElement>? GetItemElementsCore(IMauiElement? element)
+    protected IReadOnlyList<IMauiElement>? GetItemElementsCore(IMauiElement? element)
     {
         if (element == null) return null;
-        
+
         // For ComboBox with ExpandCollapse pattern, use GetExpandedItems which handles expand/collapse
         if (element is Interfaces.IExpandCollapsePatternElement comboBox && comboBox.SupportsExpandCollapse)
         {
             return comboBox.GetExpandedItems();
         }
-        
+
         // Default implementation - override for specific controls
         return null;
     }
-    
-    #endregion
-    
-    #region WaitSelectedText
-    
-    /// <inheritdoc />
-    public bool WaitSelectedText(string? expected, int? timeoutMs = null)
-    {
-        if (expected == null) return true;
-        
-        return RunWaitWithElement(
-            element => GetSelectedTextCore(element) == expected,
-            timeoutMs);
-    }
-    
-    #endregion
-    
-    #region AssertSelectedText
-    
-    /// <inheritdoc />
-    public TScope AssertSelectedText(string? expected, string? message = null, int? timeoutMs = null)
-    {
-        if (expected == null) return ContainingScope;
 
-        return RunAssert(expected, () =>
-        {
-            WaitSelectedText(expected, timeoutMs);
-            return GetSelectedText();
-        }, (actual, exp) => Equals(actual, exp), message ?? $"Expected selected text '{expected}'. Locator: {Locator}", timeoutMs);
-    }
-    
-    #endregion
-    
-    #region WaitSelectedIndex
-    
-    /// <inheritdoc />
-    public bool WaitSelectedIndex(int? expected, int? timeoutMs = null)
-    {
-        if (expected == null) return true;
-        
-        return RunWaitWithElement(
-            element => GetSelectedIndexCore(element) == expected.Value,
-            timeoutMs);
-    }
-    
-    #endregion
-    
-    #region AssertSelectedIndex
-    
-    /// <inheritdoc />
-    public TScope AssertSelectedIndex(int? expected, string? message = null, int? timeoutMs = null)
-    {
-        if (expected == null) return ContainingScope;
-
-        return RunAssert(expected, () =>
-        {
-            WaitSelectedIndex(expected, timeoutMs);
-            return GetSelectedIndex();
-        }, (actual, exp) => Equals(actual, exp), message ?? $"Expected selected index '{expected}'. Locator: {Locator}", timeoutMs);
-    }
-    
-    #endregion
-    
-    #region WaitItemCount
-    
-    /// <inheritdoc />
-    public bool WaitItemCount(int? expected, int? timeoutMs = null)
-    {
-        if (expected == null) return true;
-        
-        return RunWaitWithElement(
-            element => GetItemCountCore(element) == expected.Value,
-            timeoutMs);
-    }
-    
-    #endregion
-    
-    #region AssertItemCount
-    
-    /// <inheritdoc />
-    public TScope AssertItemCount(int? expected, string? message = null, int? timeoutMs = null)
-    {
-        if (expected == null) return ContainingScope;
-
-        return RunAssert(expected, () =>
-        {
-            WaitItemCount(expected, timeoutMs);
-            return GetItemCount();
-        }, (actual, exp) => Equals(actual, exp), message ?? $"Expected item count '{expected}'. Locator: {Locator}", timeoutMs);
-    }
-    
     #endregion
 }

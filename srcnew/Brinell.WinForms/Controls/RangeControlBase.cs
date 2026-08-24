@@ -128,7 +128,18 @@ public abstract class RangeControlBase<TScope> : ControlBase<TScope>, IRangeCont
 
     #region Wait/Assert
 
-    public bool WaitValue(double? expected, double tolerance = 0.001, int? timeoutMs = null)
+    public bool? WaitValue(double? expected, int? timeoutMs = null)
+    {
+        if (expected == null) return null;
+        return WaitValueWithin(expected, 0, timeoutMs);
+    }
+
+    public TScope AssertValue(double? expected, string? message = null, int? timeoutMs = null)
+    {
+        return AssertValueWithin(expected, 0, message, timeoutMs);
+    }
+
+    public bool WaitValueWithin(double? expected, double tolerance, int? timeoutMs = null)
     {
         if (expected == null) return true;
         var timeout = timeoutMs ?? DefaultTimeoutMs;
@@ -139,10 +150,10 @@ public abstract class RangeControlBase<TScope> : ControlBase<TScope>, IRangeCont
         }, timeout);
     }
 
-    public TScope AssertValue(double? expected, double tolerance = 0.001, string? message = null, int? timeoutMs = null)
+    public TScope AssertValueWithin(double? expected, double tolerance, string? message = null, int? timeoutMs = null)
     {
         if (expected == null) return ContainingScope;
-        if (!WaitValue(expected, tolerance, timeoutMs))
+        if (!WaitValueWithin(expected, tolerance, timeoutMs))
         {
             var actual = GetValue();
             throw new AssertionException(

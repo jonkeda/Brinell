@@ -8,7 +8,7 @@ namespace Brinell.Maui.Controls.Navigation;
 /// Supports navigation by clicking and checking selection state.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public class ShellContent<TScope> : ClickableControlBase<TScope>, ITabControlObject<TScope>
+public partial class ShellContent<TScope> : Base.ClickableControlBase<TScope>, ITabControlObject<TScope>
     where TScope : IMauiScope<TScope>
 {
     private readonly string _route;
@@ -52,33 +52,14 @@ public class ShellContent<TScope> : ClickableControlBase<TScope>, ITabControlObj
     /// </summary>
     public string Title => _title;
 
-    /// <summary>
-    /// Navigates to this ShellContent by clicking it. MAUI Shell handles the navigation.
-    /// </summary>
-    /// <returns>The containing scope for fluent chaining.</returns>
-    public TScope ClickAndNavigate()
-    {
-        base.Click();
-        return ContainingScope;
-    }
-
-    #region ITabControlObject - Selection State
-
-    /// <summary>
-    /// Checks if this ShellContent is currently selected/active.
-    /// </summary>
-    /// <returns>True if selected, false if not, null if element not found.</returns>
-    public bool? IsSelected()
-    {
-        return IsSelectedCore(TryFindElement());
-    }
+    #region Selection State - Core Methods
 
     /// <summary>
     /// Checks if ShellContent is selected using pre-found element.
     /// </summary>
     /// <param name="element">The pre-found element (may be null).</param>
     /// <returns>True if selected, false if not, null if element not found.</returns>
-    protected bool? IsSelectedCore(IMauiElement? element)
+    protected virtual bool? IsSelectedCore(IMauiElement? element)
     {
         if (element == null) return null;
 
@@ -96,36 +77,18 @@ public class ShellContent<TScope> : ClickableControlBase<TScope>, ITabControlObj
         return className.Contains("selected", StringComparison.OrdinalIgnoreCase);
     }
 
-    /// <inheritdoc />
-    public bool WaitSelected(bool? expected, int? timeoutMs = null)
-    {
-        if (expected == null)
-            return true;
-
-        return RunWaitWithElement(
-            element => IsSelectedCore(element) == expected, timeoutMs);
-    }
-
-    public TScope AssertSelected(bool? expected, string? message = null, int? timeoutMs = null) => throw new NotImplementedException();
-
-    /// <summary>
-    /// Asserts this ShellContent is selected or unselected.
-    /// </summary>
-    /// <param name="expected">Expected selected state. Null skips the check.</param>
-    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
-    /// <returns>The containing scope for fluent chaining.</returns>
-    public TScope AssertSelected(bool? expected, int? timeoutMs = null)
-    {
-        if (expected == null) return ContainingScope;
-
-        return RunAssertWithElement(expected, 
-            IsSelectedCore,
-            (actual, exp) => Equals(actual, exp), $"Expected ShellContent '{_title}' {(expected.Value ? "to be selected" : "not to be selected")}.", timeoutMs);
-    }
-
     #endregion
 
-    #region Navigation Helpers
+    #region Hand-written Convenience Members
+
+    /// <summary>
+    /// Navigates to this ShellContent by clicking it. MAUI Shell handles the navigation.
+    /// </summary>
+    /// <returns>The containing scope for fluent chaining.</returns>
+    public TScope ClickAndNavigate()
+    {
+        return Click();
+    }
 
     /// <summary>
     /// Navigates to this ShellContent and waits for it to be selected.
