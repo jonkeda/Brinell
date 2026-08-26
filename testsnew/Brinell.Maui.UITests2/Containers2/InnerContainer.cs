@@ -1,10 +1,12 @@
+using Brinell.Maui.Containers;
+
 namespace Brinell.Maui.UITests.Containers2;
 
 /// <summary>
 /// Inner container nested inside OuterContainer.
 /// Demonstrates nested container patterns.
 /// </summary>
-public class InnerContainer : ContainerBase<OuterContainer, InnerContainer>
+public class InnerContainer : ContainerObjectBase<OuterContainer, InnerContainer>
 {
     public InnerContainer(IMauiScope<OuterContainer> parentScope, string automationId)
         : base(parentScope, new Locator(LocatorStrategy.AutomationId, automationId))

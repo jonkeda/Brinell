@@ -79,3 +79,32 @@ dotnet test testsnew\Brinell.Core.Tests\Brinell.Core.Tests.csproj -v:minimal /nr
 dotnet test testsnew\Brinell.Maui.Tests\Brinell.Maui.Tests.csproj -v:minimal /nr:false
 dotnet build srcnew\Brinell.Maui.FlaUI\Brinell.Maui.FlaUI.csproj -f net10.0-windows -v:minimal /nr:false
 ```
+
+### Match the test scope to the change
+
+**Do not run the full UI suite to verify a narrow change.** `Brinell.Maui.UITests`
+launches a real Windows app and drives it through UI Automation; it takes minutes,
+and most of it is irrelevant to any given edit. Run the smallest tier that can
+actually falsify the change, and only widen if that tier fails or the change is
+genuinely broad.
+
+| Tier | Command (filter on `testsnew\Brinell.Maui.UITests`) | Cost |
+|---|---|---|
+| 1. One area | `--filter "FullyQualifiedName~AutomationProbeTests"` | ~7 s |
+| 2. Related areas | `--filter "FullyQualifiedName~Tests.Container\|FullyQualifiedName~Tests.Collection"` | ~11 s |
+| 3. Full suite | no filter | minutes |
+
+Use tier 3 only when finishing a phase of work, when the change touches shared
+infrastructure (fixture, navigation, `MauiProgram`, handler registration), or when a
+narrower tier fails in a way that suggests wider breakage.
+
+Notes:
+
+- `dotnet test` takes **one** `--filter`; passing two silently drops the first. Use
+  `|` for OR and `&` for AND inside a single filter string.
+- The suite has **pre-existing failures unrelated to container work** (DatePicker,
+  TimePicker, Image, ProgressBar, Stepper, Switch). Before reporting a regression,
+  establish the baseline — stash the change, rebuild, re-run the same filter — rather
+  than assuming a failure is yours.
+- A mechanical refactor (moving files, extracting a project) is verified by *the same
+  tests passing identically*, not by running more of them.

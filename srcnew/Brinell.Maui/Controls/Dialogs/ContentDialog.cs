@@ -1,3 +1,5 @@
+using Brinell.Maui.Containers;
+using Brinell.Maui.Controls.Buttons;
 using Brinell.Maui.Controls.Text;
 
 namespace Brinell.Maui.Controls.Dialogs;
@@ -7,7 +9,7 @@ namespace Brinell.Maui.Controls.Dialogs;
 /// DisplayPromptAsync.
 /// </summary>
 /// <typeparam name="TParent">The parent scope type.</typeparam>
-public class ContentDialog<TParent> : ContainerBase<TParent, ContentDialog<TParent>>
+public class ContentDialog<TParent> : ContainerObjectBase<TParent, ContentDialog<TParent>>
     where TParent : IMauiScope<TParent>
 {
     /// <summary>
@@ -20,14 +22,6 @@ public class ContentDialog<TParent> : ContainerBase<TParent, ContentDialog<TPare
     }
 
     /// <inheritdoc />
-    protected override IMauiElement? TryFindElement()
-    {
-        return Context.Driver.TryFindPopupElement(Locator, out var element)
-            ? element
-            : null;
-    }
-
-    /// <inheritdoc />
     protected override IMauiElement FindContainerRootElement()
     {
         return Context.Driver.FindPopupElement(Locator);
@@ -37,7 +31,7 @@ public class ContentDialog<TParent> : ContainerBase<TParent, ContentDialog<TPare
     /// Finds a dialog button by visible text.
     /// </summary>
     public Button<ContentDialog<TParent>> DialogButton(string buttonText)
-        => Button(Locator.ByName(buttonText));
+        => new(this, Locator.ByName(buttonText));
 
     /// <summary>
     /// Tries to click a dialog button and waits until the dialog closes.
@@ -69,7 +63,7 @@ public class ContentDialog<TParent> : ContainerBase<TParent, ContentDialog<TPare
     /// The text input field inside a DisplayPromptAsync dialog.
     /// </summary>
     public Entry<ContentDialog<TParent>> PromptInput
-        => Entry(Locator.ByControlType("entry"));
+        => new(this, Locator.ByControlType("entry"));
 
     private bool TryClickScopedDialogButtonAndWaitDismissed(string buttonText, int timeoutMs)
     {

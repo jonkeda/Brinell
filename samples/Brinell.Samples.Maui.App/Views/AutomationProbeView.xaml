@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+    Phase 0 automation probe.
+
+    Purpose: determine empirically which MAUI layout types expose their AutomationId
+    to UI Automation on Windows, and therefore which of them can back a Brinell
+    container object at all.
+
+    This page is a MEASUREMENT INSTRUMENT, not a feature demo. Two rules make the
+    result meaningful:
+
+    1. Every probe container carries an AutomationId of the form "Probe{Type}", and
+       holds exactly one Label whose AutomationId is "Probe{Type}Child". The child is
+       what proves the container can be used as a SCOPE, not merely found.
+
+    2. The children deliberately share nothing with each other, so a child resolving
+       through the wrong container is visible as a wrong-text failure rather than a
+       false pass.
+
+    The AutomationContainer control is included as the CONTROL GROUP. It is known to
+    expose an AutomationPeer on Windows, so it must pass. If it fails, the probe
+    itself is broken and no other result on this page can be trusted.
+-->
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:Brinell.Samples.Maui.App.Controls"
+             x:Class="Brinell.Samples.Maui.App.Views2.TestViews.AutomationProbeView"
+             BackgroundColor="{AppThemeBinding Light=White, Dark=#1F1F1F}">
+
+    <ScrollView AutomationId="ProbeRootScroll">
+        <VerticalStackLayout Padding="20" Spacing="12">
+
+            <Label AutomationId="PageTitle"
+                   Text="Automation Probe"
+                   FontSize="24"
+                   FontAttributes="Bold" />
+
+            <Label AutomationId="ProbeSubtitle"
+                   Text="Each box below is one layout type under test."
+                   FontSize="12" />
+
+            <!-- ============ CONTROL GROUP: known-good, must pass ============ -->
+
+            <controls:AutomationContainer AutomationId="ProbeAutomationContainer">
+                <Label AutomationId="ProbeAutomationContainerChild"
+                       Text="AutomationContainer" />
+            </controls:AutomationContainer>
+
+            <!-- ============ Layout types under test ============ -->
+
+            <Grid AutomationId="ProbeGrid">
+                <Label AutomationId="ProbeGridChild" Text="Grid" />
+            </Grid>
+
+            <VerticalStackLayout AutomationId="ProbeVerticalStackLayout">
+                <Label AutomationId="ProbeVerticalStackLayoutChild"
+                       Text="VerticalStackLayout" />
+            </VerticalStackLayout>
+
+            <HorizontalStackLayout AutomationId="ProbeHorizontalStackLayout">
+                <Label AutomationId="ProbeHorizontalStackLayoutChild"
+                       Text="HorizontalStackLayout" />
+            </HorizontalStackLayout>
+
+            <StackLayout AutomationId="ProbeStackLayout">
+                <Label AutomationId="ProbeStackLayoutChild" Text="StackLayout" />
+            </StackLayout>
+
+            <FlexLayout AutomationId="ProbeFlexLayout">
+                <Label AutomationId="ProbeFlexLayoutChild" Text="FlexLayout" />
+            </FlexLayout>
+
+            <AbsoluteLayout AutomationId="ProbeAbsoluteLayout" HeightRequest="30">
+                <Label AutomationId="ProbeAbsoluteLayoutChild" Text="AbsoluteLayout" />
+            </AbsoluteLayout>
+
+            <!-- ============ Content / decoration containers ============ -->
+
+            <Border AutomationId="ProbeBorder" Padding="4">
+                <Label AutomationId="ProbeBorderChild" Text="Border" />
+            </Border>
+
+            <Frame AutomationId="ProbeFrame" Padding="4">
+                <Label AutomationId="ProbeFrameChild" Text="Frame" />
+            </Frame>
+
+            <ContentView AutomationId="ProbeContentView">
+                <Label AutomationId="ProbeContentViewChild" Text="ContentView" />
+            </ContentView>
+
+            <!-- ============ Scrollable / interactive containers ============ -->
+
+            <!--
+                ScrollView needs a bounded height, otherwise it takes its content's
+                size and never behaves as a scroller.
+            -->
+            <ScrollView AutomationId="ProbeScrollView" HeightRequest="40">
+                <Label AutomationId="ProbeScrollViewChild" Text="ScrollView" />
+            </ScrollView>
+
+            <SwipeView AutomationId="ProbeSwipeView">
+                <Label AutomationId="ProbeSwipeViewChild" Text="SwipeView" />
+            </SwipeView>
+
+            <!--
+                RefreshView requires a scrollable child, so the Label is wrapped.
+                The inner ScrollView is intentionally NOT given an AutomationId - it
+                would be a second probe subject inside this one and muddy the result.
+            -->
+            <RefreshView AutomationId="ProbeRefreshView" HeightRequest="40">
+                <ScrollView>
+                    <Label AutomationId="ProbeRefreshViewChild" Text="RefreshView" />
+                </ScrollView>
+            </RefreshView>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentView>

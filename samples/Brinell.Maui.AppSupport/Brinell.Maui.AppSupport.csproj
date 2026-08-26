@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net10.0-windows10.0.19041.0</TargetFrameworks>
+    <RootNamespace>Brinell.Maui.AppSupport</RootNamespace>
+    <UseMaui>true</UseMaui>
+    <SingleProject>true</SingleProject>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <!-- Match the sample app: this repo's Directory.Build.props turns warnings into
+         errors, which is inappropriate for code that is meant to be copied out. -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
+    <TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
+  </PropertyGroup>
+
+  <!--
+    DELIBERATELY NO ProjectReference TO ANYTHING IN THIS REPO.
+
+    This project is designed to be copied, not only referenced. An app under test is
+    often one Brinell cannot add a dependency to - third-party, legacy, or otherwise
+    outside our control - and dropping these source files in must remain a viable
+    route. A reference to Brinell.Core or Brinell.Maui would break that silently.
+
+    Microsoft.Maui.* only. Keep it that way.
+  -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Maui.Controls" />
+  </ItemGroup>
+
+</Project>

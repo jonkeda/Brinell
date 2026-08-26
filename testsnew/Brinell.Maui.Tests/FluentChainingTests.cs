@@ -357,7 +357,7 @@ public class FluentChainingTests
     /// <summary>
     /// Test container using the new scope-aware pattern.
     /// </summary>
-    private class TestContainer : ContainerBase<TestPage, TestContainer>
+    private class TestContainer : ContainerObjectBase<TestPage, TestContainer>
     {
         public TestContainer(IMauiScope<TestPage> parentScope, Locator locator) 
             : base(parentScope, locator) { }

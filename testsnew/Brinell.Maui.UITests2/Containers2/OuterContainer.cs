@@ -1,3 +1,4 @@
+using Brinell.Maui.Containers;
 using Brinell.Maui.UITests.Pages2;
 
 namespace Brinell.Maui.UITests.Containers2;
@@ -5,7 +6,7 @@ namespace Brinell.Maui.UITests.Containers2;
 /// <summary>
 /// Outer container for nested container testing.
 /// </summary>
-public class OuterContainer : ContainerBase<ContainerDemoPage, OuterContainer>
+public class OuterContainer : ContainerObjectBase<ContainerDemoPage, OuterContainer>
 {
     public OuterContainer(IMauiScope<ContainerDemoPage> parentScope, string automationId)
         : base(parentScope, new Locator(LocatorStrategy.AutomationId, automationId))

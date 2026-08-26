@@ -41,6 +41,12 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Brinell.Samples.Shared\Brinell.Samples.Shared.csproj" />
+    <!--
+      Demonstrates the "reference the project" route for the Brinell automation
+      handlers. The other supported route is copying AppSupport's sources into the
+      app under test - see BrinellAutomationSupport for why both exist.
+    -->
+    <ProjectReference Include="..\Brinell.Maui.AppSupport\Brinell.Maui.AppSupport.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -99,6 +105,12 @@
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>
     <MauiXaml Update="Views\GridCollectionDemoView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Pages\AutomationProbePage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Views\AutomationProbeView.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>
     <MauiXaml Update="Views\ButtonsView.xaml">

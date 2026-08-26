@@ -1,3 +1,4 @@
+using Brinell.Maui.Containers;
 using Brinell.Maui.UITests.Pages2;
 
 namespace Brinell.Maui.UITests.Containers2;
@@ -6,7 +7,7 @@ namespace Brinell.Maui.UITests.Containers2;
 /// Container for a task item in the TaskList.
 /// Uses unique AutomationId per task (Task_0, Task_1, Task_2, etc.).
 /// </summary>
-public class TaskItemContainer : ContainerBase<ContainerDemoPage, TaskItemContainer>
+public class TaskItemContainer : ContainerObjectBase<ContainerDemoPage, TaskItemContainer>
 {
     private readonly int _index;
 

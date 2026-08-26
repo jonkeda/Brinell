@@ -147,17 +147,32 @@ public abstract class SemanticControlTestsBase
 
         public CheckBox<TestPage> IncludeProblemReports => new(this, "IncludeProblemReports");
 
-        public List<TestPage, TestListItem> TypedList => new(
-            this,
-            "TestList",
-            "Item_",
-            (scope, index) => new TestListItem(scope, index));
+        public TestCollection TypedList => new(this, "TestList");
     }
 
-    protected sealed class TestListItem : ContainerBase<TestPage, TestListItem>
+    /// <summary>
+    /// A collection whose rows are discovered by a repeating automation id.
+    /// </summary>
+    /// <remarks>
+    /// The rows deliberately share one id ("ListItem") rather than carrying indexed ids.
+    /// Item scoping, not the id, is what keeps them distinct.
+    /// </remarks>
+    protected sealed class TestCollection
+        : CollectionObjectBase<TestPage, TestCollection, TestListItem>
     {
-        public TestListItem(IMauiScope<TestPage> scope, int index)
-            : base(scope, Locator.ByAutomationId($"Item_{index}"))
+        public TestCollection(IMauiScope<TestPage> scope, string automationId)
+            : base(scope,
+                   automationId,
+                   ItemStrategy.ByLocator(Locator.ByControlType("ListItem")),
+                   (collection, itemRoot, index) => new TestListItem(collection, itemRoot, index))
+        {
+        }
+    }
+
+    protected sealed class TestListItem : ItemContainerBase<TestCollection, TestListItem>
+    {
+        public TestListItem(TestCollection collection, IMauiElement itemRoot, int index)
+            : base(collection, itemRoot, index)
         {
         }
     }

@@ -182,6 +182,27 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     }
 
     /// <summary>
+    /// Waits until at least <paramref name="minimumCount"/> items are materialized,
+    /// scrolling to realize more if the count is short.
+    /// </summary>
+    /// <remarks>
+    /// Prefer this to <see cref="WaitItemCount"/> on a virtualizing collection: the
+    /// realized count is bounded by the viewport, so an exact match may never occur even
+    /// though the data source holds more. Scrolling is attempted only when the count is
+    /// short, and is best-effort - see <see cref="ScrollToEnd"/> for its limits.
+    /// </remarks>
+    public bool WaitForItems(int minimumCount = 1, int? timeoutMs = null)
+    {
+        if (GetItemCount() >= minimumCount) return true;
+
+        // Realize more rows before polling, otherwise a short viewport guarantees a
+        // timeout rather than a wait.
+        TryMaterializeMore(GetItemCount());
+
+        return Poll(() => GetItemCount() >= minimumCount, timeoutMs ?? DefaultTimeoutMs);
+    }
+
+    /// <summary>
     /// Asserts the materialized item count, returning the collection for chaining.
     /// </summary>
     /// <remarks>
@@ -326,20 +347,7 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     {
         if (TryScrollItemIntoView(0)) return Self;
 
-        var root = TryGetContainerRoot();
-        if (root == null) return Self;
-
-        try
-        {
-            var rect = root.Rect;
-            var centerX = rect.X + (rect.Width / 2);
-            root.Swipe(centerX, rect.Y + 20, centerX, rect.Y + rect.Height - 20);
-        }
-        catch (WindowsInteractionPolicyException)
-        {
-            // Pointer input not permitted; the automation route above is all we have.
-        }
-
+        ScrollHelper.TrySwipeBack(ScrollTarget ?? TryGetContainerRoot());
         return Self;
     }
 
@@ -403,19 +411,12 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
         {
             // Swipe over the scrollable element, which is the item host - not this
             // container's root, which may be a non-scrolling wrapper around it.
-            var target = ScrollTarget ?? root;
-
-            var rect = target.Rect;
-            if (rect.Height <= 40) return false;
-
-            var centerX = rect.X + (rect.Width / 2);
-            target.Swipe(centerX, rect.Y + rect.Height - 20, centerX, rect.Y + 20);
-        }
-        catch (WindowsInteractionPolicyException)
-        {
-            // Pointer input is not permitted, and automation made no progress: this is
-            // as far as scrolling can go. Callers treat that as "no more items".
-            return false;
+            if (!ScrollHelper.TrySwipeForward(ScrollTarget ?? root))
+            {
+                // Pointer input is not permitted or the target is too small, and
+                // automation made no progress: this is as far as scrolling can go.
+                return false;
+            }
         }
         catch (StaleElementReferenceException)
         {
@@ -448,16 +449,7 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
         var last = TryGetItemRoot(count - 1);
         if (last == null) return false;
 
-        try
-        {
-            last.ScrollIntoView();
-            return true;
-        }
-        catch
-        {
-            // Not every element supports the scroll-item pattern.
-            return false;
-        }
+        return ScrollHelper.TryScrollIntoView(last);
     }
 
     /// <summary>

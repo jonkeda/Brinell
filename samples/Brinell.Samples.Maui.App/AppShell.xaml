@@ -72,6 +72,14 @@
             ContentTemplate="{DataTemplate local:GridCollectionPage}"
             Route="GridCollectionPage" />
 
+        <!-- Automation Probe Tab (Phase 0 measurement page) -->
+        <ShellContent
+            Title="Probe"
+            AutomationId="AutomationProbeTab"
+            Icon="tab_about.png"
+            ContentTemplate="{DataTemplate local:AutomationProbePage}"
+            Route="AutomationProbePage" />
+
     </TabBar>
 
 </Shell>

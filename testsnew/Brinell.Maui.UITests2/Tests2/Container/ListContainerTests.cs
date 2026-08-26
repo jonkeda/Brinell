@@ -20,9 +20,8 @@ public class ListContainerTests
         _fixture = fixture;
         _fixture.NavigateToContainerDemo();
         
-        // Don't wait for items - just navigate and let tests run directly
-        // Page.TaskList.WaitForItems(minimumCount: 1, timeoutMs: 5000);
-        Page.TaskList.ScrollIntoView();
+        // Ensure at least one row is realized before any test reads the collection.
+        Page.TaskList.WaitForItems(minimumCount: 1, timeoutMs: 5000);
     }
 
     #region List Count Tests
@@ -148,7 +147,7 @@ public class ListContainerTests
     public void TaskList_GetAllItems_ReturnsAllTasks()
     {
         // Act
-        var tasks = Page.TaskList.GetAllItems();
+        var tasks = Page.TaskList.ToList();
 
         // Assert
         Assert.NotEmpty(tasks);
@@ -163,7 +162,7 @@ public class ListContainerTests
     public void TaskList_AllItems_HaveExpectedStructure()
     {
         // Act
-        var tasks = Page.TaskList.GetAllItems();
+        var tasks = Page.TaskList.ToList();
 
         // Assert - each task has the expected controls
         foreach (var task in tasks)

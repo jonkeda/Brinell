@@ -1,3 +1,4 @@
+using Brinell.Maui.Containers;
 using Brinell.Maui.UITests.Pages2;
 
 namespace Brinell.Maui.UITests.Containers2;
@@ -6,7 +7,7 @@ namespace Brinell.Maui.UITests.Containers2;
 /// Container for a contact card.
 /// Demonstrates indexed container without List wrapper.
 /// </summary>
-public class ContactContainer : ContainerBase<ContainerDemoPage, ContactContainer>
+public class ContactContainer : ContainerObjectBase<ContainerDemoPage, ContactContainer>
 {
     private readonly int _index;
 

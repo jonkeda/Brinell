@@ -1,3 +1,4 @@
+using Brinell.Maui.Containers;
 using Brinell.Maui.UITests.Pages2;
 
 namespace Brinell.Maui.UITests.Containers2;
@@ -6,7 +7,7 @@ namespace Brinell.Maui.UITests.Containers2;
 /// Container for the user profile section.
 /// Demonstrates single container with controls and child container.
 /// </summary>
-public class UserProfileContainer : ContainerBase<ContainerDemoPage, UserProfileContainer>
+public class UserProfileContainer : ContainerObjectBase<ContainerDemoPage, UserProfileContainer>
 {
     public UserProfileContainer(IMauiScope<ContainerDemoPage> parentScope, string automationId)
         : base(parentScope, new Locator(LocatorStrategy.AutomationId, automationId))

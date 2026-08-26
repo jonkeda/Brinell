@@ -15,13 +15,10 @@ public class ContainerDemoPage : PageObjectBase<ContainerDemoPage>
         PageTitle = new Label<ContainerDemoPage>(this, "PageTitle");
         UserProfile = new UserProfileContainer(this, "UserProfileBorder");
         Outer = new OuterContainer(this, "OuterBorder");
-        // TaskList uses TaskListBorder as container with static items (Task_0, Task_1, Task_2)
-        // Item count is determined by iterating Task_0, Task_1, ... until not found
-        TaskList = new List<ContainerDemoPage, TaskItemContainer>(
-            this,
-            "TaskListBorder",  // Use TaskListBorder as the list container
-            "Task_",  // Prefix for Task_0, Task_1, Task_2
-            (scope, index) => new TaskItemContainer(this, index));
+        // Rows are found within the CollectionView by control type. The item template
+        // gives each row an id-less Border root and repeats the child ids, so scoping -
+        // not the id - is what separates the rows.
+        TaskList = new TaskCollection(this, "TaskList");
     }
 
     /// <inheritdoc />
@@ -77,12 +74,12 @@ public class ContainerDemoPage : PageObjectBase<ContainerDemoPage>
     /// <summary>
     /// The task list containing task items.
     /// </summary>
-    public List<ContainerDemoPage, TaskItemContainer> TaskList { get; }
-    
+    public TaskCollection TaskList { get; }
+
     /// <summary>
-    /// Gets a task item by index (convenience method).
+    /// Gets a task row by index (convenience method).
     /// </summary>
-    public TaskItemContainer TaskItem(int index) => TaskList.Item(index);
+    public TaskRow TaskItem(int index) => TaskList.Item(index);
 
     #endregion
 

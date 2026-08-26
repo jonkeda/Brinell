@@ -127,9 +127,22 @@ public class ContainerScopingTests
     /// Verifies list items are scoped independently.
     /// </summary>
     /// <remarks>
-    /// Skip: Sample app XAML uses inconsistent naming (Item_0 vs Task_0) that needs app rebuild/restart to fix.
+    /// <para>
+    /// The original skip reason - "sample app XAML naming inconsistency" - is fixed. The
+    /// old List&lt;&gt; looked rows up page-wide by a <c>Task_{index}</c> AutomationId
+    /// that the item template never emitted; rows are now found within the CollectionView
+    /// and scoped to their own root, so those ids are no longer needed.
+    /// </para>
+    /// <para>
+    /// Still skipped for a different, pre-existing reason: this whole fixture cannot
+    /// navigate. <c>MauiFixture.NavigateToContainerDemo</c> clicks a "ContainersTab" that
+    /// does not exist - <c>Brinell.Samples.Maui.App2/AppShell.xaml</c> declares seven tabs,
+    /// none of them Containers, and none with an AutomationId. All 9 tests in this class
+    /// fail in the constructor at HEAD, independently of this work. Un-skip once App2 has
+    /// a reachable Containers tab.
+    /// </para>
     /// </remarks>
-    [Fact(Skip = "Sample app XAML naming inconsistency requires app rebuild/restart")]
+    [Fact(Skip = "Blocked: App2 AppShell has no ContainersTab, so this fixture cannot navigate. Pre-existing - all 9 tests in this class fail in the constructor at HEAD. Not related to item scoping, which this test would now exercise correctly.")]
     [Trait("Pattern", "ListItemScoping")]
     public void ListItems_AreIndependentlyScoped()
     {

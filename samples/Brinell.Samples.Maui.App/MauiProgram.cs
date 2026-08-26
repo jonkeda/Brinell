@@ -3,6 +3,7 @@ using CommunityToolkit.Maui;
 using Microsoft.Maui.Controls.Hosting;
 
 #if WINDOWS
+using Brinell.Maui.AppSupport;
 using Brinell.Samples.Maui.App.Platforms.Windows.Handlers;
 #endif
 
@@ -19,10 +20,13 @@ public static class MauiProgram
             .ConfigureMauiHandlers(handlers =>
             {
 #if WINDOWS
-                // Register custom handler for AutomationContainer
-                // This enables container controls to expose AutomationId to UI Automation
-                handlers.AddHandler<ContentView, AutomationContentViewHandler>();
-                handlers.AddHandler<Layout, AutomationLayoutHandler>();
+                // Makes Grid, the stack layouts, FlexLayout, AbsoluteLayout,
+                // ContentView, and Border expose their AutomationId to UI Automation.
+                // Without this, Brinell container objects cannot resolve on Windows.
+                //
+                // Referenced here as a project; copying AppSupport's sources into the
+                // app is the equally supported alternative.
+                handlers.AddBrinellAutomationHandlers();
 #endif
             });
 

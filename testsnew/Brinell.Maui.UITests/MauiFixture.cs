@@ -16,6 +16,7 @@ public class MauiFixture : MauiTestFixtureBase
 {
     private readonly AppShellPage _appShell;
     private GridCollectionDemoPage? _gridCollectionDemoPage;
+    private AutomationProbePage? _automationProbePage;
 
     public MauiFixture()
     {
@@ -73,7 +74,28 @@ public class MauiFixture : MauiTestFixtureBase
         return page;
     }
 
+    /// <summary>
+    /// Gets the Phase 0 automation probe page object.
+    /// </summary>
+    public AutomationProbePage AutomationProbePage
+        => _automationProbePage ??= new AutomationProbePage(Context);
 
+    /// <summary>
+    /// Navigates to the automation probe page.
+    /// </summary>
+    /// <remarks>
+    /// The probe page is stateless — it has no data to seed and nothing to mutate —
+    /// so unlike <see cref="NavigateToGridCollectionDemo"/> there is nothing to reset.
+    /// </remarks>
+    public AutomationProbePage NavigateToAutomationProbe()
+    {
+        _appShell.AutomationProbeTab.Click();
+
+        var page = AutomationProbePage;
+        page.WaitLoaded(true, TestConstants.DefaultTestTimeoutMs);
+
+        return page;
+    }
 
     #region MauiTestFixtureBase Overrides
 
