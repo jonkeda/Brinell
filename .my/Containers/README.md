@@ -1,82 +1,77 @@
 ---
 title: Containers and Collections — design set
-description: Index for the Brinell.Maui ContainerObject / CollectionObject design
+description: Index for the Brinell.Maui ContainerObject / CollectionObject work
 ---
 
 # Containers and Collections
 
-Design for treating a container as a `ContainerObject` (a PageObject sibling that holds
-`ControlObject`s and other `ContainerObject`s, scoping searches inside itself), and for
-collections that hand out real scoped list items. Scoped to `Brinell.Maui`.
+Design and rollout for treating a container as a `ContainerObject` (a PageObject sibling
+that holds `ControlObject`s and other `ContainerObject`s, scoping searches inside itself),
+and for collections that hand out real scoped list items. Scoped to `Brinell.Maui`.
 
-> **Status: design only — not implemented.** No file under `srcnew/` or `testsnew/` has been
-> modified. Everything here is a proposal plus reference code awaiting a go-ahead.
+> **Status: partially implemented.** The framework layer, the generator change, the sample
+> demo page, and Phases 0–1 of the rollout are done and verified against the real Windows
+> app. Phases 2–6 are not started. Each document states its own status.
 
 ## Documents
 
-| File | What it covers |
+| File | What it covers | Status |
+|---|---|---|
+| [container-and-collection-design.md](container-and-collection-design.md) | The design: what was broken (verified), the bases, migration, resolved decisions | implemented |
+| [generator-changes.md](generator-changes.md) | The `Brinell.Generator` fluent-return-type change | implemented |
+| [sample-app-ui-tests-design.md](sample-app-ui-tests-design.md) | The `GridCollectionDemo` page and its end-to-end coverage | implemented; §8 records what was blocked |
+| [common-controls-rollout-plan.md](common-controls-rollout-plan.md) | Rolling the bases out to every container and collection control | Phases 0–1 done, 2–6 open |
+| [uncovered-areas-plan.md](uncovered-areas-plan.md) | Media, Navigation, and the data-management scenario — the areas lost with `UITests2` | not started |
+
+Related, outside this folder:
+
+- [`.my/fixes/waitexists-absence-assertions.md`](../fixes/waitexists-absence-assertions.md) —
+  `AssertExists(false)` and friends throw instead of reporting absence. Blocks clean
+  empty-state assertions in both plans.
+
+## What is built
+
+| Thing | Where |
 |---|---|
-| [container-and-collection-design.md](container-and-collection-design.md) | The design: what is broken (verified), the proposed bases, migration, resolved decisions |
-| [generator-changes.md](generator-changes.md) | What `Brinell.Generator` needs first — two blocking changes, one addition |
-| [sample-app-ui-tests-design.md](sample-app-ui-tests-design.md) | How to add the demo page to `Brinell.Samples.Maui.App` and end-to-end coverage to `Brinell.Maui.UITests` |
+| `ContainerObjectBase`, `CollectionObjectBase`, `ItemContainerBase`, `ItemStrategy`, `ScrollHelper` | `srcnew/Brinell.Maui/Containers/` |
+| Container controls on the new bases: `Grid`, `Border`, `ContentView`, `ScrollView`, `ContentDialog` | `srcnew/Brinell.Maui/Controls/` |
+| Automation handlers the app under test must register | `samples/Brinell.Maui.AppSupport/` |
+| `GridCollectionDemo` page + `AutomationProbe` page | `samples/Brinell.Samples.Maui.App/` |
+| 28 container/collection UI tests, 3 probe tests | `testsnew/Brinell.Maui.UITests/` |
+| 32 container/collection unit tests | `testsnew/Brinell.Maui.Tests/ContainerCollectionTests.cs` |
 
-## Destinations when implementing
+`srcnew/Brinell.Maui/Controls/ContainerBase.cs` was deleted in Phase 1.
+`Controls/List.cs` survives until rollout Phase 3 re-bases its remaining consumers.
 
-The sample app page and the tests are meant to become part of the actual MAUI codebase —
-they are staged here, not intended to live here. **Move them only on an explicit instruction
-to start implementing.**
+## Two facts that shape everything here
 
-| Staged file | Destination |
-|---|---|
-| [samples/GridCollectionDemoView.xaml](samples/GridCollectionDemoView.xaml) | `samples/Brinell.Samples.Maui.App2/Views2/GridCollectionDemoView.xaml` |
-| — (new, write at implementation time) | `samples/Brinell.Samples.Maui.App2/Views2/GridCollectionDemoView.xaml.cs` |
-| [samples/GridCollectionDemoViewModel.cs](samples/GridCollectionDemoViewModel.cs) | `samples/Brinell.Samples.Maui.App2/ViewModels2/GridCollectionDemoViewModel.cs` |
-| — (new, write at implementation time) | `samples/Brinell.Samples.Maui.App2/Pages2/GridCollectionPage.xaml` + `.xaml.cs` |
-| [samples/GridCollectionDemoPage.cs](samples/GridCollectionDemoPage.cs) | split → `testsnew/Brinell.Maui.UITests2/Pages2/GridCollectionDemoPage.cs` and `Containers2/{ProductFormContainer,ProductOptionsContainer,ProductCollection,ProductRow}.cs` |
-| [samples/GridContainerTests.cs](samples/GridContainerTests.cs) | `testsnew/Brinell.Maui.UITests2/Tests2/Container/GridContainerTests.cs` |
-| [samples/CollectionViewTests.cs](samples/CollectionViewTests.cs) | `testsnew/Brinell.Maui.UITests2/Tests2/Collection/ProductCollectionTests.cs` |
-| [samples/ContainerCollectionUnitTests.cs](samples/ContainerCollectionUnitTests.cs) | `testsnew/Brinell.Maui.Tests/ContainerCollectionTests.cs` |
-| [samples/VerifiedDefectRecordTests.cs](samples/VerifiedDefectRecordTests.cs) | delete on implementation — it records the *old* behaviour, which will no longer exist |
+**Windows needs automation handlers.** Stock MAUI layouts and content containers map to
+WinUI panels with no `AutomationPeer`, so their `AutomationId` is invisible to UI
+Automation and a container object targeting one will not resolve — with no diagnostic
+beyond `ElementNotFoundException`. The app under test must register the handlers from
+`Brinell.Maui.AppSupport`, either by project reference or by copying the sources. Measured
+in rollout Phase 0; 10 of 13 layout types are addressable once registered, and
+`SwipeView`/`RefreshView` must **not** be (overriding their peers collapses the whole UIA
+tree).
 
-Also required at implementation time, not staged here:
+**Item templates use repeating ids.** Rows share one set of `AutomationId`s and scoping
+keeps them distinct. Unique per-row ids would make item-scoping tests pass without testing
+anything.
 
-- register the new page in the sample app's tab/navigation shell, next to `ContainersPage`
-- add `GridCollectionDemoPage` + `NavigateToGridCollectionDemo()` to
-  `testsnew/Brinell.Maui.UITests2/MauiFixture.cs`
+## Deleted
 
-Everything except `VerifiedDefectRecordTests.cs` targets the **proposed** bases and does not
-compile until migration steps 1–5 land. Each file repeats its destination in a header comment.
+`testsnew/Brinell.Maui.UITests2` and `samples/Brinell.Samples.Maui.App2` were removed after
+Phase 1 — a stale parallel copy, never in the solution, unable to navigate, with 14 of ~250
+tests discovered and 12 of those failing. The areas they nominally covered are picked up by
+[uncovered-areas-plan.md](uncovered-areas-plan.md).
 
-## Verification status
-
-`VerifiedDefectRecordTests.cs` was compiled and run against the current `Brinell.Core` +
-`Brinell.Maui` — **4 passed, 0 failed**. It pins three defects and one already-correct behaviour:
-
-| Test | Records |
-|---|---|
-| `Works_ControlInContainer_IsScopedAndReturnsContainer` | Already correct — controls in a container are element-scoped and return the container. Do not regress. |
-| `Defect_ContainerOwnAction_ReturnsPage` | §3.1 — the container's own inherited members return the page |
-| `Defect_RepeatingRowId_AllIndexesCollapseToSameRow` | §3.2 — row roots resolve page-wide, so repeating template ids collapse |
-| `Defect_GetItemCount_CapsAt100` | §3.2 — sequential probing, silently truncated at 100 |
-
-Running these required an isolated project referencing only `Brinell.Core` and `Brinell.Maui`:
-`Brinell.Maui.Extensions` does not build at `HEAD` (34 errors, from the in-flight `ControlBase`
-refactor — unrelated to this design), and it blocks `Brinell.Maui.Tests`. **That must be fixed
-before implementation starts**, or the ported unit tests cannot run.
-
-## Approach
-
-Two decisions shape the whole plan:
-
-- **No backward compatibility.** `ContainerBase` and `List<TScope,TItem>` are replaced and
-  deleted — no `[Obsolete]` shims. The MAUI blast radius is 2 source files and a handful of test
-  files, all inside this repo, with no external callers.
-- **Regenerate, don't preserve.** `.gen.cs` files are build artifacts. Change the generator, run
-  `tools\Scripts\CreateMaui.Bat` over all 30 templates, take the output.
+The `samples/` folder here holds the original staged reference files. They were adapted into
+the live projects and are kept only as a record; the live code is authoritative.
 
 ## Reading order
 
-1. `container-and-collection-design.md` §3 — what is actually broken, and what already works
-2. `generator-changes.md` — the generator is a prerequisite, not a follow-up
-3. `samples/GridCollectionDemoPage.cs` — what the API feels like at the call site
-4. `container-and-collection-design.md` §6 and §8 — migration and the four resolved decisions
+1. `container-and-collection-design.md` §3 — what was broken, and what already worked
+2. `common-controls-rollout-plan.md` §3 Phase 0 — the Windows automation finding
+3. `sample-app-ui-tests-design.md` §8 — the two limits that constrain every collection test
+   (deep virtualized scrolling, absence assertions)
+4. `common-controls-rollout-plan.md` §6 — the five resolved design decisions

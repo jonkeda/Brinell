@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+    Navigation controls demo.
+
+    Covers the four Brinell navigation control objects that had no live coverage:
+    Toolbar, Menu, FlyoutItem, TabMenu.
+
+    Three things here are test contract, not styling:
+
+    1. The MenuBar lives on the PAGE (NavigationPage.xaml), not here - MAUI only renders
+       MenuBarItem when it is declared on a ContentPage. The page-level menu drives
+       MenuAction* labels in this view so tests can observe that a menu item fired.
+
+    2. Every action writes to a status label rather than mutating layout. Tests assert on
+       observed text, never on a fixed delay.
+
+    3. The Reset button restores the initial state, so the fixture can guarantee a clean
+       page regardless of test order.
+-->
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:Brinell.Samples.Maui.App.Controls"
+             xmlns:viewModels="using:Brinell.Samples.Maui.App.ViewModels"
+             x:Class="Brinell.Samples.Maui.App.Views2.TestViews.NavigationDemoView"
+             x:DataType="viewModels:NavigationDemoViewModel"
+             BackgroundColor="{AppThemeBinding Light=White, Dark=#1F1F1F}">
+
+    <ContentView.BindingContext>
+        <viewModels:NavigationDemoViewModel />
+    </ContentView.BindingContext>
+
+    <ScrollView AutomationId="NavigationScroll">
+        <VerticalStackLayout Padding="20" Spacing="16">
+
+            <Label AutomationId="PageTitle"
+                   Text="Navigation Demo"
+                   FontSize="24"
+                   FontAttributes="Bold" />
+
+            <!-- ============ Status: what tests observe ============ -->
+
+            <controls:AutomationContainer AutomationId="NavigationStatusContainer">
+                <VerticalStackLayout Spacing="4">
+                    <Label AutomationId="LastActionLabel"
+                           Text="{Binding LastAction}" />
+                    <Label AutomationId="ActionCountLabel"
+                           Text="{Binding ActionCount}" />
+                </VerticalStackLayout>
+            </controls:AutomationContainer>
+
+            <!-- ============ Toolbar ============
+
+                 A Brinell Toolbar<TScope> binds to any container holding items, and
+                 ClickToolbarItem searches WITHIN that container. Modelled here as an
+                 explicit bar so the scoping is observable: the same item ids appear in
+                 the second bar below, and clicking through one must not reach the other.
+            -->
+            <Label Text="Toolbar" FontAttributes="Bold" />
+
+            <controls:AutomationContainer AutomationId="PrimaryToolbar">
+                <HorizontalStackLayout Spacing="8">
+                    <Button AutomationId="ToolbarSaveButton"
+                            Text="Save"
+                            Command="{Binding ToolbarCommand}"
+                            CommandParameter="Primary/Save" />
+                    <Button AutomationId="ToolbarDeleteButton"
+                            Text="Delete"
+                            Command="{Binding ToolbarCommand}"
+                            CommandParameter="Primary/Delete" />
+                    <Button AutomationId="ToolbarBackButton"
+                            Text="Back"
+                            Command="{Binding ToolbarCommand}"
+                            CommandParameter="Primary/Back" />
+                </HorizontalStackLayout>
+            </controls:AutomationContainer>
+
+            <!-- Same child ids, different toolbar: proves ClickToolbarItem is scoped. -->
+            <controls:AutomationContainer AutomationId="SecondaryToolbar">
+                <HorizontalStackLayout Spacing="8">
+                    <Button AutomationId="ToolbarSaveButton"
+                            Text="Save"
+                            Command="{Binding ToolbarCommand}"
+                            CommandParameter="Secondary/Save" />
+                    <Button AutomationId="ToolbarDeleteButton"
+                            Text="Delete"
+                            Command="{Binding ToolbarCommand}"
+                            CommandParameter="Secondary/Delete" />
+                </HorizontalStackLayout>
+            </controls:AutomationContainer>
+
+            <!-- ============ Menu ============
+
+                 Menu<TScope>.Open() clicks the control's own element; ClickMenuItem
+                 searches within it. A disclosure-style menu models that directly: the
+                 root is the trigger, the items live inside it.
+            -->
+            <Label Text="Menu" FontAttributes="Bold" />
+
+            <controls:AutomationContainer AutomationId="ActionsMenu">
+                <VerticalStackLayout Spacing="4">
+                    <Button AutomationId="ActionsMenuTrigger"
+                            Text="{Binding MenuTriggerText}"
+                            Command="{Binding ToggleMenuCommand}" />
+                    <VerticalStackLayout AutomationId="ActionsMenuItems"
+                                         IsVisible="{Binding IsMenuOpen}"
+                                         Spacing="2">
+                        <Button AutomationId="MenuItemNew"
+                                Text="New"
+                                Command="{Binding MenuCommand}"
+                                CommandParameter="New" />
+                        <Button AutomationId="MenuItemOpen"
+                                Text="Open"
+                                Command="{Binding MenuCommand}"
+                                CommandParameter="Open" />
+                        <Button AutomationId="MenuItemClose"
+                                Text="Close"
+                                Command="{Binding MenuCommand}"
+                                CommandParameter="Close" />
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </controls:AutomationContainer>
+
+            <!-- ============ TabMenu ============
+
+                 TabMenu<TScope> is a Brinell composite, not a stock MAUI control. It
+                 locates "TabMenuView" and matches on sibling TabMenuView_Caption text,
+                 clicking the paired TabMenuView_Button. The ids below are its contract -
+                 see Controls/Navigation/TabMenu.tpl.cs. Captions repeat their id across
+                 tabs by design; the control pairs them positionally.
+            -->
+            <Label Text="TabMenu" FontAttributes="Bold" />
+
+            <controls:AutomationContainer AutomationId="TabMenuView">
+                <HorizontalStackLayout Spacing="12">
+                    <VerticalStackLayout AutomationId="TabMenuView_Grid">
+                        <Button AutomationId="TabMenuView_Button"
+                                Text="Home"
+                                Command="{Binding TabCommand}"
+                                CommandParameter="Home" />
+                        <Label AutomationId="TabMenuView_Caption" Text="Home" />
+                    </VerticalStackLayout>
+                    <VerticalStackLayout AutomationId="TabMenuView_Grid">
+                        <Button AutomationId="TabMenuView_Button"
+                                Text="Search"
+                                Command="{Binding TabCommand}"
+                                CommandParameter="Search" />
+                        <Label AutomationId="TabMenuView_Caption" Text="Search" />
+                    </VerticalStackLayout>
+                    <VerticalStackLayout AutomationId="TabMenuView_Grid">
+                        <Button AutomationId="TabMenuView_Button"
+                                Text="Profile"
+                                Command="{Binding TabCommand}"
+                                CommandParameter="Profile" />
+                        <Label AutomationId="TabMenuView_Caption" Text="Profile" />
+                    </VerticalStackLayout>
+                </HorizontalStackLayout>
+            </controls:AutomationContainer>
+
+            <Label AutomationId="SelectedTabLabel"
+                   Text="{Binding SelectedTab}" />
+
+            <!-- ============ Reset ============ -->
+
+            <Button AutomationId="NavigationResetButton"
+                    Text="Reset"
+                    Command="{Binding ResetCommand}" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentView>

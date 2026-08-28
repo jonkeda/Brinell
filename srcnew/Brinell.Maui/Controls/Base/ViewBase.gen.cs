@@ -28,14 +28,14 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
 
     public bool WaitVisible(bool? expected = true, int? timeoutMs = null)
     {
-        return RunWaitWithElement(expected,
+        return RunWaitWithOptionalElement(expected,
            element => IsVisibleCore(element) == expected!.Value,
            timeoutMs);
     }
 
     public TScope AssertVisible(bool? expected = true, string? message = null, int? timeoutMs = null)
     {
-        return RunAssertWithElement(expected,
+        return RunAssertWithOptionalElement(expected,
            IsVisibleCore, (actual, expected1) => (actual == expected1),
            message ?? $"Expected Visible to be '{expected}'. Locator: {Locator}", timeoutMs);
     }

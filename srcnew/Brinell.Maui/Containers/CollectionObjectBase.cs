@@ -347,7 +347,15 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     {
         if (TryScrollItemIntoView(0)) return Self;
 
-        ScrollHelper.TrySwipeBack(ScrollTarget ?? TryGetContainerRoot());
+        var target = ScrollTarget ?? TryGetContainerRoot();
+
+        // Scroll pattern first; repeat until it stops making progress, since one step is
+        // one viewport.
+        while (ScrollHelper.TryScrollBack(target))
+        {
+        }
+
+        ScrollHelper.TrySwipeBack(target);
         return Self;
     }
 
@@ -409,12 +417,22 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
 
         try
         {
-            // Swipe over the scrollable element, which is the item host - not this
-            // container's root, which may be a non-scrolling wrapper around it.
-            if (!ScrollHelper.TrySwipeForward(ScrollTarget ?? root))
+            // The scrollable element is the item host, not this container's root, which
+            // may be a non-scrolling wrapper around it.
+            var target = ScrollTarget ?? root;
+
+            // UI Automation scroll pattern first: it moves the scrolling container, so it
+            // advances a virtualizing list past its realized window, and it is not gated
+            // by the pointer-input policy.
+            if (ScrollHelper.TryScrollForward(target))
             {
-                // Pointer input is not permitted or the target is too small, and
-                // automation made no progress: this is as far as scrolling can go.
+                return HasMoreThan(countBefore);
+            }
+
+            // Pointer fallback, for surfaces with no scroll pattern.
+            if (!ScrollHelper.TrySwipeForward(target))
+            {
+                // Neither route made progress: this is as far as scrolling can go.
                 return false;
             }
         }

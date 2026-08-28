@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+    Container module test view.
+
+    Covers all nine container controls from test-pages-design.md section 3.
+
+    PLATFORM NOTE. Three of these are not addressable by AutomationId on Windows, measured
+    by AutomationProbeTests: Frame (deprecated, no handler to hook), SwipeView and
+    RefreshView (WinUI controls whose automation peers must not be overridden - doing so
+    collapses the entire UIA tree). Their markup is here anyway because the app is planned
+    to run on Android and iOS, where these surfaces behave differently and the gesture
+    scenarios in the design become testable. The Windows test class covers what Windows can
+    reach and says so.
+
+    The addressable containers are wrapped in AutomationContainer or rely on the handlers in
+    Brinell.Maui.AppSupport; without those, none of them resolve.
+-->
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewModels="using:Brinell.Samples.Maui.App.ViewModels"
+             x:Class="Brinell.Samples.Maui.App.Views2.TestViews.ContainerView"
+             x:DataType="viewModels:ContainerViewModel"
+             BackgroundColor="{AppThemeBinding Light=White, Dark=#1F1F1F}">
+
+    <ContentView.BindingContext>
+        <viewModels:ContainerViewModel />
+    </ContentView.BindingContext>
+
+    <ScrollView AutomationId="ContainerRootScroll">
+        <VerticalStackLayout Padding="20" Spacing="15">
+
+            <Label AutomationId="ContainerPageTitle"
+                   Text="Container Module Test"
+                   FontSize="24"
+                   FontAttributes="Bold" />
+
+            <Label AutomationId="ContainerStatusLabel"
+                   Text="{Binding Status}"
+                   FontSize="14" />
+
+            <BoxView AutomationId="TestBoxView"
+                     Color="{AppThemeBinding Light=LightGray, Dark=Gray}"
+                     HeightRequest="20"
+                     WidthRequest="120" />
+
+            <!-- ===================== Grid ===================== -->
+            <Label Text="Grid" FontSize="16" FontAttributes="Bold" />
+
+            <Grid AutomationId="TestGrid"
+                  RowDefinitions="Auto,Auto"
+                  ColumnDefinitions="*,*"
+                  RowSpacing="6"
+                  ColumnSpacing="6">
+                <Label Grid.Row="0" Grid.Column="0" AutomationId="GridCellTopLeft" Text="Top left" />
+                <Label Grid.Row="0" Grid.Column="1" AutomationId="GridCellTopRight" Text="Top right" />
+                <Label Grid.Row="1" Grid.Column="0" AutomationId="GridCellBottomLeft" Text="Bottom left" />
+                <Button Grid.Row="1" Grid.Column="1"
+                        AutomationId="GridButton"
+                        Text="Grid action"
+                        Command="{Binding RecordCommand}"
+                        CommandParameter="Grid" />
+            </Grid>
+
+            <!-- ===================== Border ===================== -->
+            <Label Text="Border" FontSize="16" FontAttributes="Bold" />
+
+            <Border AutomationId="TestBorder"
+                    StrokeShape="RoundRectangle 8"
+                    Stroke="{AppThemeBinding Light=Gray, Dark=LightGray}"
+                    Padding="10">
+                <VerticalStackLayout Spacing="6">
+                    <Label AutomationId="BorderChildLabel" Text="Inside the border" />
+                    <Button AutomationId="BorderButton"
+                            Text="Border action"
+                            Command="{Binding RecordCommand}"
+                            CommandParameter="Border" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- ===================== ContentView ===================== -->
+            <Label Text="ContentView" FontSize="16" FontAttributes="Bold" />
+
+            <ContentView AutomationId="TestContentView" Padding="10">
+                <VerticalStackLayout Spacing="6">
+                    <Label AutomationId="ContentViewChildLabel" Text="Inside the content view" />
+                    <Button AutomationId="ContentViewButton"
+                            Text="ContentView action"
+                            Command="{Binding RecordCommand}"
+                            CommandParameter="ContentView" />
+                </VerticalStackLayout>
+            </ContentView>
+
+            <!-- ===================== ScrollView =====================
+                 Bounded so it owns its own scrolling; a ScrollView sized to its content
+                 never scrolls and the scroll scenario would be vacuous.
+            -->
+            <Label Text="ScrollView" FontSize="16" FontAttributes="Bold" />
+
+            <ScrollView AutomationId="TestScrollView" HeightRequest="120">
+                <VerticalStackLayout Spacing="4">
+                    <Label AutomationId="ScrollFirstLabel" Text="First item" />
+                    <Label Text="Filler 1" /><Label Text="Filler 2" />
+                    <Label Text="Filler 3" /><Label Text="Filler 4" />
+                    <Label Text="Filler 5" /><Label Text="Filler 6" />
+                    <Label Text="Filler 7" /><Label Text="Filler 8" />
+                    <Label AutomationId="ScrollLastLabel" Text="Last item" />
+                </VerticalStackLayout>
+            </ScrollView>
+
+            <!-- ===================== Frame =====================
+                 Deprecated in MAUI and unaddressable on Windows. Present for the mobile
+                 phase and to keep the module complete.
+            -->
+            <Label Text="Frame (not addressable on Windows)" FontSize="16" FontAttributes="Bold" />
+
+            <Frame AutomationId="TestFrame" Padding="10" HasShadow="False">
+                <Label AutomationId="FrameChildLabel" Text="Inside the frame" />
+            </Frame>
+
+            <!-- ===================== SwipeView =====================
+                 The swipe gesture is the scenario, and it is a mobile interaction. On
+                 Windows the root is not addressable at all.
+            -->
+            <Label Text="SwipeView (gesture; mobile)" FontSize="16" FontAttributes="Bold" />
+
+            <SwipeView AutomationId="TestSwipeView">
+                <SwipeView.LeftItems>
+                    <SwipeItems>
+                        <SwipeItem AutomationId="SwipeDeleteItem"
+                                   Text="Delete"
+                                   Command="{Binding RecordCommand}"
+                                   CommandParameter="Swipe/Delete" />
+                    </SwipeItems>
+                </SwipeView.LeftItems>
+                <Grid HeightRequest="44" BackgroundColor="{AppThemeBinding Light=#F0F0F0, Dark=#333333}">
+                    <Label AutomationId="SwipeContentLabel"
+                           Text="Swipe me"
+                           VerticalOptions="Center"
+                           Margin="10,0" />
+                </Grid>
+            </SwipeView>
+
+            <!-- ===================== RefreshView =====================
+                 Pull-to-refresh is likewise a mobile gesture. IsRefreshing is bound so a
+                 test can drive it through the view model where the gesture is unavailable.
+            -->
+            <Label Text="RefreshView (gesture; mobile)" FontSize="16" FontAttributes="Bold" />
+
+            <RefreshView AutomationId="TestRefreshView"
+                         IsRefreshing="{Binding IsRefreshing}"
+                         Command="{Binding RefreshCommand}"
+                         HeightRequest="80">
+                <ScrollView>
+                    <VerticalStackLayout>
+                        <Label AutomationId="RefreshContentLabel" Text="{Binding RefreshText}" />
+                    </VerticalStackLayout>
+                </ScrollView>
+            </RefreshView>
+
+            <Button AutomationId="TriggerRefreshButton"
+                    Text="Trigger refresh"
+                    Command="{Binding RefreshCommand}" />
+
+            <!-- ===================== Reset ===================== -->
+            <Button AutomationId="ContainerResetButton"
+                    Text="Reset"
+                    Command="{Binding ResetCommand}" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentView>

@@ -39,6 +39,25 @@
                    Text="Each box below is one layout type under test."
                    FontSize="12" />
 
+            <!--
+                Module navigation.
+
+                Exactly 10 Shell tabs are reachable on Windows; an eleventh pushes the
+                tenth into an overflow "More" menu where ShellContent cannot click it
+                (ShellContent locates a tab by control type TabItem plus Title). The
+                Container, Collection, Shapes, and Dialogs modules are therefore reached by
+                Shell route from here rather than by tabs of their own. This page hosts them
+                because it is already the diagnostics surface.
+            -->
+            <Label Text="Modules" FontSize="16" FontAttributes="Bold" />
+
+            <VerticalStackLayout AutomationId="ModuleLinks" Spacing="6">
+                <Button AutomationId="GoToContainerButton" Text="Container module" Clicked="OnGoToContainer" />
+                <Button AutomationId="GoToCollectionButton" Text="Collection module" Clicked="OnGoToCollection" />
+                <Button AutomationId="GoToShapesButton" Text="Shapes and Graphics module" Clicked="OnGoToShapes" />
+                <Button AutomationId="GoToDialogsButton" Text="Dialogs module" Clicked="OnGoToDialogs" />
+            </VerticalStackLayout>
+
             <!-- ============ CONTROL GROUP: known-good, must pass ============ -->
 
             <controls:AutomationContainer AutomationId="ProbeAutomationContainer">

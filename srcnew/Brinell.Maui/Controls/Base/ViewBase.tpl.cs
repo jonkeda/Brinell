@@ -147,6 +147,58 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
         }, timeoutMs, caller);
     }
 
+    /// <summary>
+    /// Polls a predicate that is meaningful when the element is absent.
+    /// </summary>
+    /// <remarks>
+    /// Unlike <see cref="RunWaitWithElement{T}"/>, the element is resolved with
+    /// <see cref="TryFindElement"/> and may be null, and visibility is not forced — the
+    /// predicate may be asking about invisibility. Used by generated members whose Core
+    /// method carries <c>[AbsenceTolerant]</c>.
+    /// </remarks>
+    protected bool RunWaitWithOptionalElement<T>(T? expected,
+        Func<IMauiElement?, bool> coreOperation,
+        int? timeoutMs = null, [CallerMemberName] string? caller = null)
+    {
+        if (expected == null)
+        {
+            return true;
+        }
+
+        return RunPoll(null, () => coreOperation(TryFindElement()), timeoutMs, caller);
+    }
+
+    /// <summary>
+    /// Asserts a value that is meaningful when the element is absent.
+    /// </summary>
+    /// <remarks>
+    /// The counterpart of <see cref="RunWaitWithOptionalElement{T}"/>: resolves the
+    /// element optionally so a missing element fails the comparison rather than raising
+    /// <c>ElementNotFoundException</c>.
+    /// </remarks>
+    protected TScope RunAssertWithOptionalElement<T>(T? expected,
+        Func<IMauiElement?, T?> getActual, Func<T?, T?, bool> compare,
+        string? message = null, int? timeoutMs = null,
+        [CallerMemberName] string? caller = null)
+    {
+        if (expected == null)
+        {
+            return ContainingScope;
+        }
+
+        RunPoll(null, () =>
+        {
+            var actual = getActual(TryFindElement());
+            if (!compare(actual, expected))
+            {
+                throw new AssertionException(message ?? "Assert exception", expected, actual);
+            }
+            return true;
+        }, timeoutMs, caller);
+
+        return ContainingScope;
+    }
+
     protected TScope RunDo(Action operation, int? timeoutMs = null,
         [CallerMemberName] string? caller = null)
     {
@@ -284,6 +336,7 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
     /// </summary>
     /// <param name="element">The pre-found element.</param>
     /// <returns>True if visible, false otherwise.</returns>
+    [AbsenceTolerant]
     protected virtual bool? IsVisibleCore(IMauiElement? element)
     {
         return element?.Visible;
@@ -344,18 +397,32 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
         return IsExistsBase(TryFindElement()) == true;
     }
 
+    /// <summary>
+    /// Waits until the element's presence matches <paramref name="expected"/>.
+    /// </summary>
+    /// <remarks>
+    /// Resolves the element optionally, so <c>WaitExists(false)</c> reports the absence it
+    /// is asking about instead of raising <c>ElementNotFoundException</c>.
+    /// </remarks>
     public bool WaitExists(bool? expected = true, int? timeoutMs = null)
     {
-        return RunWaitWithElement(expected,
+        return RunWaitWithOptionalElement(expected,
             element => IsExistsBase(element) == expected!.Value,
             timeoutMs);
     }
 
+    /// <summary>
+    /// Asserts the element's presence, returning the scope for chaining.
+    /// </summary>
+    /// <remarks>
+    /// Resolves the element optionally, so <c>AssertExists(false)</c> passes for a missing
+    /// element rather than throwing.
+    /// </remarks>
     public TScope AssertExists(bool? expected = true, string? message = null, int? timeoutMs = null)
     {
-        return RunAssertWithElement(expected,
+        return RunAssertWithOptionalElement(expected,
              IsExistsBase, (actual, expected1) => (actual == expected1),
-            null, timeoutMs);
+            message ?? $"Expected Exists to be '{expected}'. Locator: {Locator}", timeoutMs);
     }
 
     #endregion

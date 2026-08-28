@@ -94,10 +94,13 @@ must survive the re-base; they are not on `CollectionObjectBase` today.
 
 Consumers to port first (the tree must compile at every commit):
 
-- `testsnew/Brinell.Maui.UITests2/Containers2/` — 5 containers
-- `testsnew/Brinell.Maui.UITests2/Pages2/ContainerDemoPage.cs`
-- `testsnew/Brinell.Maui.Tests/FluentChainingTests.cs:360`
-- `testsnew/Brinell.Maui.Tests/Semantic/SemanticControlTestsBase.cs:150,157`
+- `testsnew/Brinell.Maui.Tests/FluentChainingTests.cs` — done in Phase 1
+- `testsnew/Brinell.Maui.Tests/Semantic/SemanticControlTestsBase.cs` — done in Phase 1
+
+> `Brinell.Maui.UITests2` and `Brinell.Samples.Maui.App2` **were deleted** after Phase 1.
+> They were a stale parallel copy: never in the solution, unable to navigate (App2's
+> shell had no Containers tab and no AutomationIds), with only 14 of ~250 `Tests2`
+> discovered and 12 of those failing. Their container consumers are gone with them.
 
 ## 3. Ordering
 
@@ -279,6 +282,94 @@ old page-wide indexed lookup, which no longer exists. It now verifies rows resol
 *through the collection root* and adds a guard that the page is never asked for rows.
 Both pass.
 
+> The `UITests2` half of this porting was **discarded**: that project and `App2` were
+> deleted immediately afterwards (see 2.4). Only the `Brinell.Maui.Tests` ports survive,
+> and they are what `ContainerBase`'s deletion actually depended on.
+
+#### Step 7 is moot — the test was deleted with its project
+
+The plan said: un-skip `ListItems_AreIndependentlyScoped`, and "if it does not pass
+after the port, the port is wrong."
+
+It did not pass, but not because the port was wrong. The whole `UITests2` fixture could
+not navigate: `App2/AppShell.xaml` declared seven tabs, none of them Containers, none
+carrying an AutomationId, so all 9 tests in `ContainerScopingTests` failed in the
+**constructor** before any test body ran. Measured by stashing all Phase 1 changes and
+re-running: 8 failed / 1 skipped both before and after — exact parity.
+
+`UITests2` and `App2` have since been deleted, so the test is gone. The behaviour it was
+meant to prove — rows with repeating ids scoped independently — **is** covered, by
+`ProductCollectionTests.Rows_WithRepeatingIds_AreIndependentlyScoped` in the live project,
+which passes.
+
+Worth recording, because it explains why that test could never have worked: App2's item
+template gave each row a bare `Border` root with **no AutomationId at all**, while the old
+`List<>` looked rows up page-wide by `Task_{index}`. Those ids existed only in
+`ContainerDemoViewModel.ReindexTasks()`, which maintained them for nothing. The rebuilt
+collection pages in Phase 5 must not repeat that: give item templates repeating ids and
+let scoping separate the rows.
+
+#### Verification
+
+- `Brinell.Maui.UITests`: **114 passed / 31 failed / 2 skipped**
+- Baseline on a clean tree (probe stashed): **111 passed / 31 failed / 2 skipped**
+
+The 31 failures are pre-existing and unrelated (DatePicker, TimePicker, Image,
+ProgressBar, Stepper, Switch). Verified by stashing all Phase 0 changes, rebuilding,
+and re-running. Phase 0 added 3 passing tests and **zero** regressions.
+
+> Note: this 31-failure baseline in `Brinell.Maui.UITests` is separate from, and
+> additional to, the 8 pre-existing `Brinell.Maui.Tests` unit-test failures §5
+> already records. Both predate this work.
+
+### Phase 1 — Container base migration — **DONE**
+
+Design §6 steps 7 and 8, minus the new layouts.
+
+| Step | Status |
+|---|---|
+| 1. Reparent `ContentDialog` to `ContainerObjectBase` | done |
+| 2. Collapse the `Grid` pair | done |
+| 3. Scoping forms for `Border`, `ContentView` | done |
+| 4. `ScrollView` per 6.1(b) | done |
+| 5. Port the consumers | done |
+| 6. Delete `ContainerBase.cs` | done — 480 lines |
+| 7. Un-skip `ListItems_AreIndependentlyScoped` | **blocked, see below** |
+
+#### What was built
+
+- **`ScrollHelper`** (`srcnew/Brinell.Maui/Containers/ScrollHelper.cs`) — 6.1(b) realised.
+  Static UIA-first primitives over `IMauiElement` (`TryScrollIntoView`,
+  `TrySwipeForward`, `TrySwipeBack`), each swallowing
+  `WindowsInteractionPolicyException` and reporting progress rather than throwing.
+  `CollectionObjectBase` was refactored onto it, so this removed duplication rather than
+  adding a third copy. That refactor also fixed a latent inconsistency: `ScrollToTop`
+  ignored `ScrollTarget` while `TryMaterializeMore` honoured it — both now agree.
+- **One-parameter convenience forms.** Each container ships as
+  `X<TParent, TSelf>` plus a sealed `X<TParent> : X<TParent, X<TParent>>`. This keeps
+  the old `Grid<TScope>` ergonomics for the common "just scope this element" case
+  without the broken semantics that made the original pair necessary.
+- **`WaitForItems(minimumCount)`** added to `CollectionObjectBase`. The old `List<>` had
+  it and the new base had only exact-count and any-item waits; "at least N" is the right
+  shape under virtualization, where an exact match may never occur.
+- Every new container's XML docs name the Windows handler requirement and point at
+  `Brinell.Maui.AppSupport` (6.4).
+
+#### Consumers ported
+
+`FluentChainingTests.TestContainer`, `SemanticControlTestsBase` (now a real
+`TestCollection`/`TestListItem` pair on the new bases), the five `UITests2` containers,
+and `ContainerDemoPage` (`List<>` → new `TaskCollection`/`TaskRow`).
+
+`TypedListControlTests` was rewritten rather than mechanically ported: it asserted the
+old page-wide indexed lookup, which no longer exists. It now verifies rows resolve
+*through the collection root* and adds a guard that the page is never asked for rows.
+Both pass.
+
+> The `UITests2` half of this porting was **discarded**: that project and `App2` were
+> deleted immediately afterwards (see 2.4). Only the `Brinell.Maui.Tests` ports survive,
+> and they are what `ContainerBase`'s deletion actually depended on.
+
 #### Step 7 is blocked — and the blocker is not this work
 
 The plan said: un-skip `ListItems_AreIndependentlyScoped`, and "if it does not pass
@@ -312,16 +403,21 @@ this plan's scope, and worth doing before Phase 5 leans on `UITests2`.
 | `dotnet build Brinell.sln` | succeeded |
 | UI tier 2 (Container + Collection) | **26 passed, 2 skipped, 0 failed** |
 | `Brinell.Maui.Tests` | 62 passed, 8 failed, 1 skipped |
-| `UITests2` `ContainerScopingTests` | 8 failed, 1 skipped — **parity with baseline** |
+| `UITests2` `ContainerScopingTests` | 8 failed, 1 skipped — parity with baseline; project since deleted |
 
 The 8 `Brinell.Maui.Tests` failures are the known pre-existing set (`ViewBase` `RunPoll`,
 including `Enter_WithNullText`). Passing count rose 61 → 62 from the new scoping test.
 
 #### Carried forward
 
-`Controls/List.cs` (407 lines) is **not** deleted: `CollectionView`, `ListView`, and
-`CarouselView` still derive from it. It goes in Phase 3, which re-bases them. Deleting it
-now would break the tree, and step 6's intent — remove the dead container base — is met.
+`Controls/List.cs` (407 lines) is **not** deleted. Three types still derive from it:
+`CollectionView`, `ListView`, and `CarouselView` — all in `Brinell.Maui`. It goes in
+Phase 3, which re-bases them. Step 6's intent, removing the dead container base, is met.
+
+> A fourth consumer, `Brinell.Maui.Extensions/Controls/Collection/PaginatedList.cs`, was
+> missed in the original survey because it lives in a different project. It has since been
+> **deleted** — see [uncovered-areas-plan.md](uncovered-areas-plan.md) Phase A — so Phase 3
+> has three consumers to re-base, not four.
 
 ### Phase 2 — Layout controls
 
@@ -339,7 +435,9 @@ Design §6 step 9.
 1. Re-base `CollectionView` on `CollectionObjectBase`, preserving
    `GetSelectionMode` / `IsMultiSelectEnabled`.
 2. Re-base `ListView` and `CarouselView`.
-3. Delete the `.Basic` files and `List.cs`.
+3. Delete the `.Basic` files and `List.cs`. Its only remaining consumers are the three
+   controls above; `PaginatedList` was removed in
+   [uncovered-areas-plan.md](uncovered-areas-plan.md) Phase A.
 4. `CarouselView` needs a `CurrentItem` / `GetPosition` concept that
    `CollectionObjectBase` does not have — see 6.3.
 
@@ -359,6 +457,19 @@ call sites lose the `new X<Y>(this, "id")` ceremony. Pure ergonomics; ship last,
 or not at all this round.
 
 ## 4. Samples and UI tests
+
+> **Phase 5 now builds everything fresh.** The plan originally expected to port
+> `UITests2`'s container tests as a starting point. That project and `App2` were deleted
+> after Phase 1, so there is nothing to port — which is the better outcome: the App2
+> markup carried real defects (item rows with no AutomationId, a `ReindexTasks()`
+> maintaining ids nothing consumed) that a port would have inherited.
+>
+> Deleting them did lose coverage **areas** with no live equivalent: `CarouselView`,
+> `ListView`, `TableView`, `PaginatedList`, `DataGrid`, plus Media and Navigation. Those
+> tests were not running — only 14 of ~250 were even discovered, 12 of those failing — so
+> nothing working was lost, but the areas are now genuinely uncovered until Phases 3–5
+> rebuild them. `TableView` and the collection controls are already in scope below;
+> Media, Navigation, and `DataGrid` are **not**, and need their own decision.
 
 ### 4.1 Sample pages
 
@@ -570,7 +681,7 @@ Rough, assuming the framework layer stays as-is:
 | Phase | Size | Note |
 |---|---|---|
 | 0 — automation probe | ~~half a day~~ **done** | 3 tests, 0 regressions; changed the shape of 2.1 and 6.4 |
-| 1 — container migration | ~~2–3 days~~ **done** | `ContainerBase` deleted; `List.cs` deferred to Phase 3; step 7 blocked on App2 navigation |
+| 1 — container migration | ~~2–3 days~~ **done** | `ContainerBase` deleted; `List.cs` deferred to Phase 3; step 7 moot (UITests2 deleted) |
 | 2 — layout controls | 1 day | thin, repetitive; all 5 confirmed viable by Phase 0 |
 | 3 — collection migration | 2–3 days | 6.3 is the unknown |
 | 4 — `TableView` | 2 days | separable; may prove not to fit |

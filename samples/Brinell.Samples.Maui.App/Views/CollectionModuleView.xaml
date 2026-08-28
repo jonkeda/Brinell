@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+    Collection module test view.
+
+    Covers CarouselView, ListView, IndicatorView, and TableView from
+    test-pages-design.md section 2. CollectionView is deliberately absent - it already has
+    a dedicated page (GridCollectionDemoView) with 15 tests covering item scoping,
+    mutation, and empty state. Duplicating it here would add maintenance without coverage.
+
+    Two constraints from measurement, not preference:
+
+    1. Every list is SHORT (5 items). Deep virtualized scrolling does not work on Windows:
+       CollectionView recycles row containers, so only ~30 of 63 rows exist in the
+       automation tree at once even at 100% scroll. Tests stay inside the realized window.
+
+    2. Item templates use REPEATING AutomationIds with no index baked in. Scoping is what
+       separates the rows. Unique per-row ids would make item tests pass without testing
+       anything.
+-->
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:Brinell.Samples.Maui.App.Controls"
+             xmlns:viewModels="using:Brinell.Samples.Maui.App.ViewModels"
+             x:Class="Brinell.Samples.Maui.App.Views2.TestViews.CollectionModuleView"
+             x:DataType="viewModels:CollectionModuleViewModel"
+             BackgroundColor="{AppThemeBinding Light=White, Dark=#1F1F1F}">
+
+    <ContentView.BindingContext>
+        <viewModels:CollectionModuleViewModel />
+    </ContentView.BindingContext>
+
+    <ScrollView AutomationId="CollectionRootScroll">
+        <VerticalStackLayout Padding="20" Spacing="15">
+
+            <Label AutomationId="PageTitle"
+                   Text="Collection Module Test"
+                   FontSize="24"
+                   FontAttributes="Bold" />
+
+            <controls:AutomationContainer AutomationId="CollectionStatusContainer">
+                <VerticalStackLayout Spacing="4">
+                    <Label AutomationId="CollectionStatusLabel" Text="{Binding Status}" />
+                    <Label AutomationId="CollectionCountLabel" Text="{Binding ItemCount}" />
+                </VerticalStackLayout>
+            </controls:AutomationContainer>
+
+            <!-- ===================== ListView ===================== -->
+            <Label Text="ListView" FontSize="16" FontAttributes="Bold" />
+
+            <controls:AutomationContainer AutomationId="ListViewContainer">
+                <ListView AutomationId="TestListView"
+                          ItemsSource="{Binding Items}"
+                          SelectedItem="{Binding SelectedItem}"
+                          HeightRequest="180"
+                          RowHeight="36">
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="viewModels:CollectionItem">
+                            <ViewCell>
+                                <Grid Padding="8,4" ColumnDefinitions="*,Auto">
+                                    <Label Grid.Column="0"
+                                           AutomationId="ListRowLabel"
+                                           Text="{Binding Name}"
+                                           VerticalOptions="Center" />
+                                    <Label Grid.Column="1"
+                                           AutomationId="ListRowValue"
+                                           Text="{Binding Value}"
+                                           VerticalOptions="Center" />
+                                </Grid>
+                            </ViewCell>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </controls:AutomationContainer>
+
+            <Label AutomationId="ListSelectionLabel" Text="{Binding SelectedName}" />
+
+            <!-- ===================== CarouselView + IndicatorView =====================
+                 IndicatorView is bound to the carousel, so its state is a function of the
+                 carousel's position rather than something separately driven.
+            -->
+            <Label Text="CarouselView / IndicatorView" FontSize="16" FontAttributes="Bold" />
+
+            <controls:AutomationContainer AutomationId="CarouselContainer">
+                <VerticalStackLayout Spacing="6">
+                    <CarouselView AutomationId="TestCarouselView"
+                                  ItemsSource="{Binding Items}"
+                                  Position="{Binding CarouselPosition}"
+                                  HeightRequest="90"
+                                  IndicatorView="TestIndicatorView">
+                        <CarouselView.ItemTemplate>
+                            <DataTemplate x:DataType="viewModels:CollectionItem">
+                                <Grid Padding="10">
+                                    <Label AutomationId="CarouselCardLabel"
+                                           Text="{Binding Name}"
+                                           FontSize="18"
+                                           HorizontalOptions="Center"
+                                           VerticalOptions="Center" />
+                                </Grid>
+                            </DataTemplate>
+                        </CarouselView.ItemTemplate>
+                    </CarouselView>
+
+                    <IndicatorView x:Name="TestIndicatorView"
+                                   AutomationId="TestIndicatorView"
+                                   HorizontalOptions="Center"
+                                   IndicatorColor="{AppThemeBinding Light=LightGray, Dark=Gray}"
+                                   SelectedIndicatorColor="{AppThemeBinding Light=Black, Dark=White}" />
+                </VerticalStackLayout>
+            </controls:AutomationContainer>
+
+            <Label AutomationId="CarouselPositionLabel" Text="{Binding CarouselPosition}" />
+
+            <HorizontalStackLayout Spacing="8">
+                <Button AutomationId="CarouselPreviousButton"
+                        Text="Previous"
+                        Command="{Binding PreviousCommand}" />
+                <Button AutomationId="CarouselNextButton"
+                        Text="Next"
+                        Command="{Binding NextCommand}" />
+            </HorizontalStackLayout>
+
+            <!-- ===================== TableView =====================
+                 TableView is a static, section-based control: its cells are declared, not
+                 bound to a collection. That two-level shape is why it does not fit
+                 CollectionObjectBase - see the rollout plan section 6.2.
+            -->
+            <Label Text="TableView" FontSize="16" FontAttributes="Bold" />
+
+            <controls:AutomationContainer AutomationId="TableViewContainer">
+                <TableView AutomationId="TestTableView"
+                           Intent="Settings"
+                           HeightRequest="180">
+                    <TableRoot>
+                        <TableSection Title="Display">
+                            <TextCell AutomationId="TableCellTheme" Text="Theme" Detail="System" />
+                            <SwitchCell AutomationId="TableCellNotifications"
+                                        Text="Notifications"
+                                        On="{Binding NotificationsEnabled}" />
+                        </TableSection>
+                        <TableSection Title="Account">
+                            <TextCell AutomationId="TableCellProfile" Text="Profile" Detail="Signed in" />
+                        </TableSection>
+                    </TableRoot>
+                </TableView>
+            </controls:AutomationContainer>
+
+            <!-- ===================== Mutation and reset ===================== -->
+            <HorizontalStackLayout Spacing="8">
+                <Button AutomationId="CollectionAddButton"
+                        Text="Add"
+                        Command="{Binding AddCommand}" />
+                <Button AutomationId="CollectionRemoveButton"
+                        Text="Remove"
+                        Command="{Binding RemoveCommand}" />
+                <Button AutomationId="CollectionResetButton"
+                        Text="Reset"
+                        Command="{Binding ResetCommand}" />
+            </HorizontalStackLayout>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentView>

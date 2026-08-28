@@ -26,6 +26,7 @@ public class AppShellPage : PageObjectBase<AppShellPage>
         ToggleTab = new ShellContent<AppShellPage>(this, "ToggleTab", "Toggle");
         GridCollectionTab = new ShellContent<AppShellPage>(this, "GridCollectionTab", "Containers");
         AutomationProbeTab = new ShellContent<AppShellPage>(this, "AutomationProbeTab", "Probe");
+        NavigationTab = new ShellContent<AppShellPage>(this, "NavigationTab", "Navigation");
     }
 
     /// <inheritdoc />
@@ -65,6 +66,10 @@ public class AppShellPage : PageObjectBase<AppShellPage>
 
     /// <summary>Phase 0 automation probe tab.</summary>
     public ShellContent<AppShellPage> AutomationProbeTab { get; }
+
+    /// <summary>Navigation controls demo tab.</summary>
+    public ShellContent<AppShellPage> NavigationTab { get; }
+
 
     #endregion
 }

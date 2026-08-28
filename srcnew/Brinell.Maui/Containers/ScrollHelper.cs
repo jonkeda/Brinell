@@ -60,9 +60,48 @@ public static class ScrollHelper
     }
 
     /// <summary>
+    /// Scrolls an element's content one viewport step toward the end, using the platform
+    /// scroll pattern.
+    /// </summary>
+    /// <returns>True if the content moved; false if it cannot scroll or is at the end.</returns>
+    /// <remarks>
+    /// Preferred over <see cref="TrySwipeForward"/>: it is UI Automation rather than
+    /// pointer input, so it is not policy-gated, and unlike
+    /// <see cref="TryScrollIntoView"/> it moves the scrolling container rather than asking
+    /// an already-visible item to reveal itself — which is what advances a virtualizing
+    /// list past its realized window.
+    /// </remarks>
+    public static bool TryScrollForward(IMauiElement? element)
+        => element != null && SafeScroll(element, 1);
+
+    /// <summary>
+    /// Scrolls an element's content one viewport step toward the start.
+    /// </summary>
+    /// <returns>True if the content moved; false if it cannot scroll or is at the start.</returns>
+    public static bool TryScrollBack(IMauiElement? element)
+        => element != null && SafeScroll(element, -1);
+
+    private static bool SafeScroll(IMauiElement element, int verticalSteps)
+    {
+        try
+        {
+            return element.TryScrollContent(verticalSteps);
+        }
+        catch (Exception)
+        {
+            // An adapter without the capability, or a dead element: a negative answer.
+            return false;
+        }
+    }
+
+    /// <summary>
     /// Swipes an element's content upward, revealing content further down.
     /// </summary>
     /// <returns>True if the swipe was performed; false if it was not possible.</returns>
+    /// <remarks>
+    /// Pointer input, and therefore policy-gated on Windows. Try
+    /// <see cref="TryScrollForward"/> first.
+    /// </remarks>
     public static bool TrySwipeForward(IMauiElement? element)
         => TrySwipeVertical(element, forward: true);
 

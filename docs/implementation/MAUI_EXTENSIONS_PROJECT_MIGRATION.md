@@ -50,6 +50,9 @@ Migrated 13 custom controls from `srcnew/Brinell.Maui/Controls/` to `srcnew/Brin
 
 #### Collection Controls (`Controls/Collections/`)
 - `PaginatedList.cs` - Paginated list container
+  > **Removed since.** `PaginatedList` had no callers anywhere in the repo and derived from
+  > the deprecated `Brinell.Maui/Controls/List.cs`. It was deleted, and the
+  > `Controls/Collection/` folder with it. This section records the state at migration time.
 
 ### 3. Updated Project References
 Modified referencing projects to import the new Extensions assembly:

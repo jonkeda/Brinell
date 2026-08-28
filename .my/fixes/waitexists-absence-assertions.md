@@ -1,6 +1,6 @@
 # Fix: `WaitExists(false)` / `AssertExists(false)` / `AssertVisible(false)` cannot express absence
 
-**Status:** proposed, not implemented
+**Status:** IMPLEMENTED for `Brinell.Maui`. `Brinell.Html` still has the defect — see §8.
 **Found by:** `ProductCollectionTests.Clear_ShowsEmptyState_ResetRestoresSeed`
 **Affects:** `Brinell.Maui` (`ViewBase.tpl.cs`, `ControlBase.cs`), `Brinell.Generator` (`IsWaitAssertGenerator`), and the `Brinell.Html` equivalents
 
@@ -276,6 +276,69 @@ The one judgement call is 3.1: whether value assertions such as `AssertText`
 should also tolerate absence. They should not. "The element is gone" is a
 genuine failure for a text comparison, and making it pass silently would be a
 worse bug than the one being fixed.
+
+## 8. Implementation record
+
+Implemented as proposed, with one deviation and one deliberate omission.
+
+### What was built
+
+| Piece | Where |
+|---|---|
+| `[AbsenceTolerant]` attribute (Option A) | `srcnew/Brinell.Core/Interfaces/AbsenceTolerantAttribute.cs` |
+| `RunWaitWithOptionalElement` / `RunAssertWithOptionalElement` | `ViewBase.tpl.cs` and `Controls/ControlBase.cs` |
+| `MethodInfo.IsAbsenceTolerant` + syntactic attribute detection | `tools/Brinell.Generator/` |
+| Helper selection in the emitters | `IsWaitAssertGenerator.GenerateWaitMethod` / `GenerateAssertMethod` |
+| 8 generator tests | `testsnew/Brinell.Generator.Tests/Generators/AbsenceToleranceTests.cs` |
+
+`IsVisibleCore` in `ViewBase.tpl.cs` carries the attribute, so the generated `Visible` trio
+picks up the tolerant helpers. The regeneration diff was **one file, two lines** — exactly
+the `Visible` region, confirming nothing else changed shape.
+
+### Deviation: three hand-written regions, not one
+
+§3.3 said `ControlBase.cs`'s `Exists` region is hand-written and needs updating by hand.
+There were **three** such regions, not one:
+
+- `ControlBase.cs` — `Exists` **and** `Visible` (its `IsVisibleCore` is non-virtual and its
+  `Wait`/`Assert` members are hand-written, so the attribute does nothing there)
+- `ViewBase.tpl.cs` — `Exists`, which uses `IsExistsBase` rather than an `Is*Core` method
+  and so is invisible to the generator entirely
+
+All were updated by hand. `AssertExists`/`AssertVisible` also gained the diagnostic message
+the generated members already had; they were passing `null`.
+
+### Omission: `ContainerObjectBase` needed no change
+
+§3.1 said to mirror the helpers there. It turned out already correct — it resolves through
+`TryGetContainerRoot()` and polls, so `AssertExists(false)` and `AssertVisible(false)`
+already reported absence rather than throwing. Left alone.
+
+### Not done: `Brinell.Html`
+
+`srcnew/Brinell.Html/Controls/ControlBase.cs` has the identical defect at `:540` and `:557`.
+It was **not** fixed: no Html test or caller uses the negative form today, and there is no
+way to verify a change there against a running app the way the MAUI fix was verified. The
+fix is mechanical and this document describes it; do it when something needs it.
+
+### Verification
+
+| Check | Result |
+|---|---|
+| `dotnet build Brinell.sln` | succeeded |
+| `Brinell.Generator.Tests` | **104 passed** (96 before, +8 new) |
+| Regeneration diff | 1 file, 2 lines — `Visible` region only |
+| UI: Navigation + Container + Collection | **46 passed, 2 skipped, 0 failed** |
+| `Brinell.Maui.Tests` | 62 passed, 8 failed — **identical to baseline** |
+
+Both workarounds this defect had forced were removed and replaced with the fluent form,
+then verified against the real Windows app:
+
+- `NavigationControlTests` — a local `WaitUntilMenuClosed()` polling helper, deleted; two
+  call sites now use `WaitExists(false, ...)`, and the closed-state check uses
+  `AssertExists(false)`
+- `ProductCollectionTests.Clear_ShowsEmptyState_ResetRestoresSeed` — the original report
+  site; `Assert.False(...IsExists())` is now `AssertExists(false)`
 
 ## 7. Related
 

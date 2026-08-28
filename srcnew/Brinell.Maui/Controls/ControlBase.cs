@@ -122,6 +122,47 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
         }, timeoutMs, caller);
     }
 
+    /// <summary>
+    /// Polls a predicate that is meaningful when the element is absent.
+    /// </summary>
+    /// <remarks>
+    /// The element is resolved with TryFindElement and may be null, and visibility is not
+    /// forced - the predicate may be asking about invisibility. Presence and visibility
+    /// checks use this; value comparisons keep RunWaitWithElement, where a missing element
+    /// is a genuine failure.
+    /// </remarks>
+    protected bool RunWaitWithOptionalElement(Func<IMauiElement?, bool> coreOperation,
+        int? timeoutMs = null, [CallerMemberName] string? caller = null)
+    {
+        return RunPoll(null, () => coreOperation(TryFindElement()), timeoutMs, caller);
+    }
+
+    /// <summary>
+    /// Asserts a value that is meaningful when the element is absent.
+    /// </summary>
+    protected TScope RunAssertWithOptionalElement<T>(T? expected,
+        Func<IMauiElement?, T?> getActual, Func<T?, T?, bool> compare,
+        string? message = null, int? timeoutMs = null,
+        [CallerMemberName] string? caller = null)
+    {
+        if (expected == null)
+        {
+            return ContainingScope;
+        }
+
+        RunPoll(null, () =>
+        {
+            var actual = getActual(TryFindElement());
+            if (!compare(actual, expected))
+            {
+                throw new AssertionException(message ?? "Assert exception", expected, actual);
+            }
+            return true;
+        }, timeoutMs, caller);
+
+        return ContainingScope;
+    }
+
     protected bool RunWaitWithElement(Func<IMauiElement, bool> coreOperation,
         int? timeoutMs = null, [CallerMemberName] string? caller = null)
     {
@@ -398,7 +439,7 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
         if (expected == null)
             return true;
 
-        return RunWaitWithElement(
+        return RunWaitWithOptionalElement(
             element => IsVisibleCore(element) == expected.Value,
             timeoutMs);
     }
@@ -451,9 +492,9 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
     /// <inheritdoc />
     public TScope AssertVisible(bool? expected, string? message = null, int? timeoutMs = null)
     {
-        return RunAssertWithElement(expected,
-            e => IsVisibleCore(e), (actual, expected1) =>  (actual == expected1),
-            null, timeoutMs);
+        return RunAssertWithOptionalElement(expected,
+            e => IsVisibleCore(e), (actual, expected1) => (actual == expected1),
+            message ?? $"Expected Visible to be '{expected}'. Locator: {Locator}", timeoutMs);
     }
 
     #endregion
@@ -536,7 +577,7 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
     /// <inheritdoc />
     public bool WaitExists(bool? expected, int? timeoutMs = null)
     {
-        return RunWaitWithElement(
+        return RunWaitWithOptionalElement(
             element => IsExistsCore(element) == expected!.Value,
             timeoutMs);
     }
@@ -553,9 +594,9 @@ public abstract class ControlBase<TScope> : ControlObjectBase<TScope>, IControlO
     /// <inheritdoc />
     public TScope AssertExists(bool? expected, string? message = null, int? timeoutMs = null)
     {
-        return RunAssertWithElement(expected,
+        return RunAssertWithOptionalElement(expected,
             IsExistsCore, (actual, expected1) => (actual == expected1),
-            null, timeoutMs);
+            message ?? $"Expected Exists to be '{expected}'. Locator: {Locator}", timeoutMs);
     }
 
     #endregion

@@ -158,10 +158,7 @@ public class ProductCollectionTests
         Page.Products.AssertLogicalCount(ProductCollection.SeedCount);
 
         // IsVisible="false" removes the label from the automation tree on Windows.
-        // Both Assert* and Wait* resolve the element first and surface
-        // ElementNotFoundException rather than reporting "absent", so the absence check
-        // uses IsExists, which answers without throwing.
-        Assert.False(Page.Products.EmptyLabel.IsExists());
+        Page.Products.EmptyLabel.AssertExists(false);
         Page.Products.AssertEmpty(false);
 
         return Task.CompletedTask;
@@ -263,7 +260,7 @@ public class ProductCollectionTests
     }
 
     /// <summary>13. ScrollToItem materializes an off-screen row without a fixed delay.</summary>
-    [Fact(Timeout = TestConstants.LongTestTimeoutMs, Skip = "Blocked: deep scrolling a virtualized CollectionView is not supported by the Windows/FlaUI adapter. IMauiElement exposes only ScrollIntoView (a no-op once the last realized row is visible) and Swipe (policy-gated, and it does not advance the realized window either). About 29 of 63 rows realize, then progress stops. Needs a Scroll-pattern primitive on IMauiElement + FlaUI - see notes in the design.")]
+    [Fact(Timeout = TestConstants.LongTestTimeoutMs, Skip = "Blocked by MAUI CollectionView row recycling, not by a missing scroll primitive. Scrolling now works: TryScrollContent drives the UIA Scroll pattern and reaches VerticalScrollPercent=100. But only ~30 of 63 rows are ever in the automation tree at once - MAUI recycles row containers, so a far index is never simultaneously realized with index 0. Any test needing a specific far row must scroll AND re-resolve as the window moves; the collection API returns positional indexes over the realized window, which cannot express that. See design section 8.1.")]
     [Trait("Pattern", "Virtualization")]
     public Task ScrollToItem_MaterializesOffscreenRow()
     {
@@ -278,7 +275,7 @@ public class ProductCollectionTests
     }
 
     /// <summary>14. Content search finds a bulk row that starts off-screen.</summary>
-    [Fact(Timeout = TestConstants.LongTestTimeoutMs, Skip = "Blocked: deep scrolling a virtualized CollectionView is not supported by the Windows/FlaUI adapter. IMauiElement exposes only ScrollIntoView (a no-op once the last realized row is visible) and Swipe (policy-gated, and it does not advance the realized window either). About 29 of 63 rows realize, then progress stops. Needs a Scroll-pattern primitive on IMauiElement + FlaUI - see notes in the design.")]
+    [Fact(Timeout = TestConstants.LongTestTimeoutMs, Skip = "Blocked by MAUI CollectionView row recycling, not by a missing scroll primitive. Scrolling now works: TryScrollContent drives the UIA Scroll pattern and reaches VerticalScrollPercent=100. But only ~30 of 63 rows are ever in the automation tree at once - MAUI recycles row containers, so a far index is never simultaneously realized with index 0. Any test needing a specific far row must scroll AND re-resolve as the window moves; the collection API returns positional indexes over the realized window, which cannot express that. See design section 8.1.")]
     [Trait("Pattern", "Virtualization")]
     public Task ItemWhere_ScrollsToFindOffscreenRow()
     {

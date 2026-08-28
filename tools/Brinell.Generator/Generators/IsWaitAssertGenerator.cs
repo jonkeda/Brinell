@@ -95,7 +95,8 @@ public class IsWaitAssertGenerator : IMemberGenerator
             MethodName = methodName,
             PublicMethodName = propertyName,  // Used as base for Is*/Get*, Wait*, Assert*
             ReturnType = method.ReturnType.ToString(),
-            XmlDocumentation = ExtractXmlDocumentation(method)
+            XmlDocumentation = ExtractXmlDocumentation(method),
+            IsAbsenceTolerant = HasAbsenceTolerantAttribute(method)
         };
 
         // Capture extra parameters (after the element) for getter signatures.
@@ -125,6 +126,23 @@ public class IsWaitAssertGenerator : IMemberGenerator
     /// with or without the "Attribute" suffix and with any qualification. Equality is
     /// always included, so an absent attribute keeps the previous behaviour.
     /// </summary>
+    /// <summary>
+    /// Reads [AbsenceTolerant] from a Core method. Matched syntactically (no semantic
+    /// model), so the attribute may appear with or without the "Attribute" suffix and
+    /// with any qualification - the same approach ExtractComparisons uses.
+    /// </summary>
+    private static bool HasAbsenceTolerantAttribute(MethodDeclarationSyntax method)
+    {
+        return method.AttributeLists
+            .SelectMany(list => list.Attributes)
+            .Any(a =>
+            {
+                var name = a.Name.ToString();
+                var simpleName = name.Contains('.') ? name[(name.LastIndexOf('.') + 1)..] : name;
+                return simpleName is "AbsenceTolerant" or "AbsenceTolerantAttribute";
+            });
+    }
+
     private static List<string> ExtractComparisons(MethodDeclarationSyntax method)
     {
         var comparisons = new List<string> { "Equals" };
@@ -355,9 +373,15 @@ public class IsWaitAssertGenerator : IMemberGenerator
     /// </summary>
     private void GenerateWaitMethod(CsWriter writer, MethodInfo coreMethod, string propertyName)
     {
+        // An absence-tolerant query resolves the element optionally, so asking for the
+        // absent state reports it instead of raising ElementNotFoundException.
+        var helper = coreMethod.IsAbsenceTolerant
+            ? "RunWaitWithOptionalElement"
+            : "RunWaitWithElement";
+
         writer.WriteLine($"public bool Wait{propertyName}(bool? expected = true, int? timeoutMs = null)");
         writer.Open();
-        writer.WriteLine("return RunWaitWithElement(expected,");
+        writer.WriteLine($"return {helper}(expected,");
         writer.IncreaseSpace(1);
         writer.WriteLine($"element => {coreMethod.MethodName}(element) == expected!.Value,");
         writer.WriteLine("timeoutMs);");
@@ -372,9 +396,13 @@ public class IsWaitAssertGenerator : IMemberGenerator
     private void GenerateAssertMethod(CsWriter writer, MethodInfo coreMethod, string propertyName,
         string fluentReturnType)
     {
+        var helper = coreMethod.IsAbsenceTolerant
+            ? "RunAssertWithOptionalElement"
+            : "RunAssertWithElement";
+
         writer.WriteLine($"public {fluentReturnType} Assert{propertyName}(bool? expected = true, string? message = null, int? timeoutMs = null)");
         writer.Open();
-        writer.WriteLine("return RunAssertWithElement(expected,");
+        writer.WriteLine($"return {helper}(expected,");
         writer.IncreaseSpace(1);
         writer.WriteLine($"{coreMethod.MethodName}, (actual, expected1) => (actual == expected1),");
         writer.WriteLine($"{BuildAssertMessage(propertyName)}, timeoutMs);");

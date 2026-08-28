@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+    Hosts the navigation demo view, and adds the two navigation surfaces that MAUI only
+    renders when declared on a ContentPage: ToolbarItem and MenuBarItem.
+
+    Whether either is addressable by AutomationId on Windows is exactly what
+    NavigationProbeTests measures - MAUI has a history of not propagating AutomationId to
+    Shell/menu chrome (dotnet/maui#3996), which is why ShellAutomationMapper exists in
+    this sample. Do not assume these work; read the probe.
+-->
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:testViews="using:Brinell.Samples.Maui.App.Views2.TestViews"
+             x:Class="Brinell.Samples.Maui.App.NavigationDemoPage"
+             AutomationId="NavigationDemoPage"
+             Title="Navigation">
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem AutomationId="PageToolbarRefresh" Text="Refresh" />
+        <ToolbarItem AutomationId="PageToolbarAbout" Text="About" />
+    </ContentPage.ToolbarItems>
+
+    <ContentPage.MenuBarItems>
+        <MenuBarItem AutomationId="PageMenuFile" Text="File">
+            <MenuFlyoutItem AutomationId="PageMenuFileNew" Text="New" />
+            <MenuFlyoutItem AutomationId="PageMenuFileExit" Text="Exit" />
+        </MenuBarItem>
+    </ContentPage.MenuBarItems>
+
+    <testViews:NavigationDemoView />
+</ContentPage>

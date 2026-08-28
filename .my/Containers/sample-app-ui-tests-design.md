@@ -1,7 +1,7 @@
 ---
 title: MAUI Sample Container and Collection Test Integration
 description: Design for adding container and collection demo pages to Brinell.Samples.Maui.App and end-to-end coverage to Brinell.Maui.UITests
-status: proposed
+status: implemented (2 of 25 tests skipped - see section 8.1)
 scope: samples/Brinell.Samples.Maui.App, testsnew/Brinell.Maui.UITests
 ---
 
@@ -262,7 +262,9 @@ Implementation is complete when:
 ## 8. Implementation Status
 
 Implemented and passing on Windows/FlaUI: **23 of 25 tests**, both classes together
-(`GridContainerTests` 10/10, `ProductCollectionTests` 13/15).
+(`GridContainerTests` 10/10, `ProductCollectionTests` 13/15). The two exceptions are
+skipped for the reason in 8.1, which was re-diagnosed by measurement after the first
+explanation proved wrong.
 
 Met in full: sample page and Shell tab, bounded CollectionView with compiled bindings,
 repeating row AutomationIds with no reindexing, nested scoping with no implicit escape,
@@ -271,57 +273,70 @@ per-class and combined runs, and no sleeps or shims.
 
 ### 8.1 Blocked: deep scrolling a virtualized CollectionView
 
-Two acceptance items - 4.4 requirement 13 (`ScrollToItem(60)`) and requirement 14
-(finding `Bulk Product 55`) - are **not met**. Both tests are `[Fact(Skip = ...)]` with
-this reason recorded in the test file.
+Two acceptance items — 4.4 requirement 13 (`ScrollToItem(60)`) and requirement 14
+(finding `Bulk Product 55`) — are **not met**. Both tests are `[Fact(Skip = ...)]`.
 
-Cause is a platform gap, not the container design. `IMauiElement` exposes only two ways
-to move a list:
+**The original diagnosis in this section was wrong, and has been corrected by
+measurement.** It claimed the cause was a missing scroll primitive and proposed adding one.
+The primitive was built; it works; the tests still fail, for a different reason.
 
-| Primitive | Why it does not work here |
+#### What was built
+
+`IElement.TryScrollContent(verticalSteps, horizontalSteps)` — a default interface method
+returning false, so no platform adapter was forced to change — implemented in
+`FlaUIMauiElement` against `_element.Patterns.Scroll.Pattern`, walking to the nearest
+scrollable ancestor when the element itself does not scroll. `ScrollHelper` gained
+`TryScrollForward`/`TryScrollBack`, and `CollectionObjectBase.TryMaterializeMore` now tries
+the scroll pattern **before** falling back to a pointer swipe.
+
+This is a genuine improvement independent of the two skipped tests: materialization is now
+UI Automation first, so it is not gated by `BRINELL_WINDOWS_ALLOW_POINTER_INPUT`.
+
+One real bug surfaced while building it. Reading `VerticalScrollPercent` immediately after
+`Scroll(...)` returns the **pre-scroll** value — the property does not update
+synchronously. The first implementation therefore reported "no progress" while rows were
+demonstrably realizing. Fixed by polling for the change (`WaitForScrollChange`, 500ms
+budget). Worth knowing for any future scroll work.
+
+#### The actual blocker: row recycling
+
+A probe (`ScrollPatternProbeTests`, kept as a diagnostic) measured the ground truth on a
+63-row list:
+
+| Measurement | Value |
 |---|---|
-| `ScrollIntoView()` | Delegates to the UIA ScrollItem pattern. A no-op once the target row is already visible, so asking the last realized row to scroll itself does not advance the viewport. |
-| `Swipe(...)` | Pointer input, gated behind `BRINELL_WINDOWS_ALLOW_POINTER_INPUT`. Enabling it does **not** fix this: the realized window still stops growing. |
+| `VerticallyScrollable` | **True** — the pattern is supported |
+| `VerticalScrollPercent` after repeated scrolling | **100** — fully at the end |
+| Realized rows at 0% | 10 |
+| Realized rows at 100% | **30 of 63** |
 
-Observed behaviour: about 29 of 63 rows realize, then progress stops regardless of which
-primitive is used or whether pointer input is permitted. `ScrollToItem` reports its
-furthest reach in the failure message.
+Scrolling works perfectly and reaches the end of the list. MAUI's CollectionView simply
+**recycles row containers**: only ~30 are in the automation tree at any moment, and which
+30 depends on scroll position. Index 60 is therefore never simultaneously present with
+index 0.
 
-Note that no existing test in this repository scrolls a virtualized list to a far index,
-and `Brinell.Samples.Maui.App2` demonstrates long lists through **pagination**
-(`PagedListView`, Previous/Next) rather than deep scrolling - consistent with this
-capability not existing yet.
+That is a data-model mismatch, not a missing capability. `Item(int)` addresses a position
+in the *realized window*, and no scroll primitive can make a recycled row exist. Expressing
+requirement 13 would need an API that scrolls and re-resolves as the window moves — for
+example a `ScrollUntil(predicate)` that returns the row it stopped on rather than an index.
+That is a design change to `CollectionObjectBase`, outside this document.
 
-**To unblock**, add a scroll primitive that drives the UIA Scroll pattern on the
-scrolling element itself:
+**Do not attempt to unblock these two tests by adding more scroll primitives.** The
+scrolling is not the problem.
 
-```csharp
-// Brinell.Core/Interfaces/IElement.cs
-void ScrollBy(int horizontalAmount, int verticalAmount);
-// or
-void SetScrollPercent(double horizontal, double vertical);
-```
+### 8.2 Framework limitation found: asserting absence — **FIXED**
 
-then implement it in `FlaUIMauiElement` against `_element.Patterns.Scroll.Pattern`,
-which the adapter already reaches privately inside `ScrollIntoView`. Once that exists,
-`CollectionObjectBase.TryMaterializeMore` should prefer it and the two tests can be
-un-skipped unchanged.
+Generated `Assert*` and `Wait*` members resolved the element before comparing, so
+`AssertVisible(false)`, `AssertExists(false)`, and `WaitExists(false)` raised
+`ElementNotFoundException` instead of reporting absence.
 
-`CollectionObjectBase` already exposes a `ScrollTarget` hook for the related problem of
-a collection whose root is an automation wrapper rather than the scrolling element;
-`ProductCollection` overrides it to point at `ProductCollectionView`.
+This has since been fixed — see
+[`.my/fixes/waitexists-absence-assertions.md`](../fixes/waitexists-absence-assertions.md)
+§8. An `[AbsenceTolerant]` attribute marks the presence/visibility queries, and the
+generator emits null-tolerant helpers for them while value assertions keep the strict path.
 
-### 8.2 Framework limitation found: asserting absence
-
-Generated `Assert*` and `Wait*` members resolve the element before comparing, so they
-raise `ElementNotFoundException` instead of reporting "absent". A control bound to
-`IsVisible="false"` leaves the Windows automation tree entirely, so
-`AssertVisible(false)`, `AssertExists(false)`, and `WaitExists(false)` all throw where
-they should report false.
-
-`Clear_ShowsEmptyState_ResetRestoresSeed` therefore uses `IsExists()`, which answers
-without throwing. Worth fixing in the generator - the state family should tolerate a
-missing element when the expectation is absence - but it is outside this design.
+`Clear_ShowsEmptyState_ResetRestoresSeed` no longer needs the `IsExists()` workaround and
+now reads `Page.Products.EmptyLabel.AssertExists(false)`.
 
 ### 8.3 Deviation: collection height
 

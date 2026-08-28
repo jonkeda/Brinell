@@ -266,6 +266,96 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
     }
 
     /// <inheritdoc />
+    /// <inheritdoc />
+    /// <remarks>
+    /// Drives the UIA Scroll pattern on this element, or on the nearest scrollable
+    /// ancestor when this element does not scroll itself — a MAUI CollectionView is often
+    /// wrapped, so the addressable element and the scrolling one differ.
+    /// </remarks>
+    public bool TryScrollContent(int verticalSteps, int horizontalSteps = 0)
+    {
+        if (verticalSteps == 0 && horizontalSteps == 0)
+            return false;
+
+        var scroll = FindScrollPattern();
+        if (scroll == null)
+            return false;
+
+        try
+        {
+            var before = scroll.VerticalScrollPercent.ValueOrDefault;
+
+            scroll.Scroll(ToAmount(horizontalSteps), ToAmount(verticalSteps));
+
+            // The scroll percent does not update synchronously: reading it immediately
+            // reports the pre-scroll value and makes a successful scroll look like no
+            // progress. Poll briefly for the change instead. Measured, not assumed - the
+            // naive read returned false while rows were demonstrably realizing.
+            return WaitForScrollChange(scroll, before);
+        }
+        catch (Exception)
+        {
+            // A dead element or an unsupported combination is a negative answer, not a
+            // fault: the caller falls back or stops.
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Polls until the scroll percent moves away from <paramref name="before"/>.
+    /// </summary>
+    /// <returns>True if it moved; false if it stayed put for the whole window.</returns>
+    /// <remarks>
+    /// A false return legitimately means "already at the extreme". The window is short
+    /// because the caller polls the realized item count separately.
+    /// </remarks>
+    private static bool WaitForScrollChange(IScrollPattern scroll, double before)
+    {
+        const int budgetMs = 500;
+        const int intervalMs = 25;
+
+        for (var waited = 0; waited < budgetMs; waited += intervalMs)
+        {
+            var now = scroll.VerticalScrollPercent.ValueOrDefault;
+            if (Math.Abs(now - before) > 0.01)
+                return true;
+
+            Thread.Sleep(intervalMs);
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Maps a step count onto the UIA scroll increments, which are coarse by design.
+    /// </summary>
+    private static ScrollAmount ToAmount(int steps) => steps switch
+    {
+        0 => ScrollAmount.NoAmount,
+        > 0 => ScrollAmount.LargeIncrement,
+        _ => ScrollAmount.LargeDecrement,
+    };
+
+    /// <summary>
+    /// Returns this element's scroll pattern, or the nearest ancestor's.
+    /// </summary>
+    private IScrollPattern? FindScrollPattern()
+    {
+        if (_element.Patterns.Scroll.IsSupported)
+            return _element.Patterns.Scroll.Pattern;
+
+        var parent = _element.Parent;
+        while (parent != null)
+        {
+            if (parent.Patterns.Scroll.IsSupported)
+                return parent.Patterns.Scroll.Pattern;
+
+            parent = parent.Parent;
+        }
+
+        return null;
+    }
+
     public void ScrollIntoView(int timeoutMs = 5000)
     {
         if (_element.Patterns.ScrollItem.IsSupported)

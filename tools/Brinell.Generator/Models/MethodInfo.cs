@@ -37,4 +37,11 @@ public class MethodInfo
     /// [GenerateComparisons] on the Core method. Defaults to equality only.
     /// </summary>
     public List<string> Comparisons { get; } = [];
+
+    /// <summary>
+    /// Whether the Core method is meaningful when the element is absent, declared by
+    /// [AbsenceTolerant]. Generated Wait*/Assert* then resolve the element optionally
+    /// instead of throwing ElementNotFoundException for the state they are testing.
+    /// </summary>
+    public bool IsAbsenceTolerant { get; set; }
 }

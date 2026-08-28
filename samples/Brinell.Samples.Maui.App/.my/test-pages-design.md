@@ -929,3 +929,71 @@ dotnet test testsnew\Brinell.Maui.Tests\Brinell.Maui.Tests.csproj -k "Brinell.Ma
 
 ---
 
+
+---
+
+## Implementation status (revised)
+
+Modules marked **X** in the headings below were already implemented. This section records
+what was added since, and one hard platform limit discovered in the process.
+
+### The 10-tab ceiling — read this before adding a module
+
+**Exactly 10 Shell tabs are reachable on Windows.** An eleventh pushes the tenth into a
+WinUI overflow "More" menu, where `ShellContent` cannot click it — it locates a tab by
+control type `TabItem` plus Title, and an overflowed tab is not present under that.
+
+This was found the hard way: adding four module tabs took the count to 14 and silently
+broke navigation for **13 previously passing tests**, including the automation probe.
+`TabBarCapacityProbeTests` now measures and reports this; run it first if navigation starts
+failing for no apparent reason.
+
+The design's step 4 ("Register in Navigation — add tab to MainPage.xaml") therefore does not
+scale past 10 modules. Modules beyond that must be reached by **Shell route**, registered in
+`AppShell.xaml.cs` and linked from an existing page. The `AutomationProbeView` hosts those
+links because it is already the diagnostics surface.
+
+### Added: sample pages for four modules
+
+| Module | View | ViewModel | Reached by |
+|---|---|---|---|
+| Container (3) | `ContainerView.xaml` | `ContainerViewModel` | route from probe page |
+| Collection (2) | `CollectionModuleView.xaml` | `CollectionModuleViewModel` | route from probe page |
+| Shapes (12) + Graphics (7) | `ShapesView.xaml` | none needed | route from probe page |
+| Dialogs (5) | `DialogsView.xaml` | `DialogsViewModel` | route from probe page |
+
+Shapes and Graphics share a view: both are non-interactive, and the design's validation
+points for each are "renders without error" and "dimensions correct". Two pages for eight
+controls needing only existence checks would be ceremony.
+
+`CollectionModuleView` deliberately omits `CollectionView` — it already has a dedicated
+page (`GridCollectionDemoView`) with 15 tests covering item scoping, mutation, and empty
+state.
+
+### Platform notes affecting these modules
+
+Measured on Windows/FlaUI. The planned Android/iOS phase should re-measure rather than
+inherit these:
+
+| Control | Status | Consequence for the design's scenarios |
+|---|---|---|
+| `Frame` | not addressable | deprecated in MAUI; use `Border` |
+| `SwipeView` | not addressable | the swipe scenario is a mobile gesture |
+| `RefreshView` | not addressable | pull-to-refresh is a mobile gesture; the command is driven by a button instead |
+| `BoxView` | not addressable | a drawing primitive with no AutomationPeer; no children and no behaviour, so nothing is lost |
+| `CollectionView` | recycles rows | ~30 of 63 rows exist at once even at 100% scroll, so lists here are kept short |
+
+### Incomplete: Container module tests
+
+`ContainerModuleTests` (10 tests) is written but **not passing**. The tests themselves are
+sound — route navigation was verified working, and the container objects resolve — but the
+fixture cannot reliably return to the probe page between tests once a route has pushed a
+page onto the Shell stack. That is a navigation-plumbing problem introduced by the 10-tab
+workaround, not a container defect.
+
+**No pre-existing test regressed**: Navigation, Collection, Grid container, and probe suites
+are 47 passed / 2 skipped, unchanged.
+
+The remaining work is a fixture helper that pops the Shell stack back to a tab root before
+each module navigation. Page objects and tests for Collection, Shapes, and Dialogs are not
+written yet, and should wait until that helper exists — they will need it too.

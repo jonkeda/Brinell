@@ -119,7 +119,37 @@ public interface IElement<TSelf>
     /// <param name="endY">Ending Y coordinate.</param>
     /// <param name="durationMs">Duration of the swipe in milliseconds. Default is 500ms.</param>
     void Swipe(int startX, int startY, int endX, int endY, int durationMs = 500);
-    
+
+    /// <summary>
+    /// Scrolls this element's own content by one viewport step, using the platform's
+    /// scroll pattern rather than pointer input.
+    /// </summary>
+    /// <param name="verticalSteps">
+    /// Viewport steps to scroll: positive moves toward the end, negative toward the start,
+    /// zero does nothing.
+    /// </param>
+    /// <param name="horizontalSteps">As <paramref name="verticalSteps"/>, horizontally.</param>
+    /// <returns>
+    /// True if the element scrolled; false if it does not support scrolling or was already
+    /// at the requested extreme.
+    /// </returns>
+    /// <remarks>
+    /// <para>
+    /// This differs from <see cref="ScrollIntoView"/> in what it acts on.
+    /// <c>ScrollIntoView</c> asks an <i>item</i> to bring itself into view, which is a
+    /// no-op once that item is already visible — so it cannot advance a virtualizing list
+    /// past its realized window. This asks the <i>scrolling container</i> to move, which
+    /// realizes further content.
+    /// </para>
+    /// <para>
+    /// Returning false rather than throwing is deliberate: "this element does not scroll"
+    /// is an ordinary answer, and callers use it to stop iterating. The default
+    /// implementation returns false, so a platform adapter that has no scroll pattern
+    /// needs no change.
+    /// </para>
+    /// </remarks>
+    bool TryScrollContent(int verticalSteps, int horizontalSteps = 0) => false;
+
     #endregion
     
     #region Attributes

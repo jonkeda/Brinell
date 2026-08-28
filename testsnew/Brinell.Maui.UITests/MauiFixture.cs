@@ -17,6 +17,8 @@ public class MauiFixture : MauiTestFixtureBase
     private readonly AppShellPage _appShell;
     private GridCollectionDemoPage? _gridCollectionDemoPage;
     private AutomationProbePage? _automationProbePage;
+    private NavigationDemoPage? _navigationDemoPage;
+    private ContainerTestPage? _containerTestPage;
 
     public MauiFixture()
     {
@@ -93,6 +95,73 @@ public class MauiFixture : MauiTestFixtureBase
 
         var page = AutomationProbePage;
         page.WaitLoaded(true, TestConstants.DefaultTestTimeoutMs);
+
+        return page;
+    }
+
+    /// <summary>
+    /// Gets the navigation controls demo page object.
+    /// </summary>
+    /// <remarks>
+    /// Cached so the toolbars and menu keep any element caches across tests.
+    /// </remarks>
+    public NavigationDemoPage NavigationDemoPage
+        => _navigationDemoPage ??= new NavigationDemoPage(Context);
+
+    /// <summary>
+    /// Navigates to the navigation demo and restores its initial state.
+    /// </summary>
+    /// <remarks>
+    /// The fixture is shared across test classes and Shell may retain page instances, so
+    /// navigation alone does not guarantee clean state. Reset makes each test
+    /// order-independent; the wait is on observed UI state, never a fixed delay.
+    /// </remarks>
+    public NavigationDemoPage NavigateToNavigationDemo()
+    {
+        _appShell.NavigationTab.Click();
+
+        var page = NavigationDemoPage;
+        page.WaitLoaded(true, TestConstants.DefaultTestTimeoutMs);
+
+        page.ResetButton.Click();
+        page.LastAction.WaitText("none", TestConstants.DefaultTestTimeoutMs);
+
+        return page;
+    }
+
+    /// <summary>
+    /// Gets the container module test page object.
+    /// </summary>
+    public ContainerTestPage ContainerTestPage
+        => _containerTestPage ??= new ContainerTestPage(Context);
+
+    /// <summary>
+    /// Navigates to the container module page and restores its initial state.
+    /// </summary>
+    /// <remarks>
+    /// Reached through the Modules hub, not a tab: only 9 Shell tabs are clickable on
+    /// Windows and the tab bar is full.
+    /// </remarks>
+    public ContainerTestPage NavigateToContainerModule()
+    {
+        // Route navigation pushes a page onto the Shell stack, so a second visit starts
+        // from wherever the previous test left off. Clicking the tab first returns to the
+        // probe page and makes the module links reachable again.
+        var probe = NavigateToAutomationProbe();
+        if (!probe.GoToContainerButton.WaitExists(true, TestConstants.ShortTestTimeoutMs))
+        {
+            // Still on a routed page: pop back to the tab root, then retry.
+            _appShell.AutomationProbeTab.Click();
+            probe.GoToContainerButton.WaitExists(true, TestConstants.DefaultTestTimeoutMs);
+        }
+
+        probe.GoToContainerButton.Click();
+
+        var page = ContainerTestPage;
+        page.WaitLoaded(true, TestConstants.DefaultTestTimeoutMs);
+
+        page.ResetButton.Click();
+        page.Status.WaitText("none", TestConstants.DefaultTestTimeoutMs);
 
         return page;
     }
