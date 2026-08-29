@@ -103,6 +103,12 @@ public abstract partial class ToggleControlBase<TScope> : ClickableControlBase<T
     /// <summary>
     /// Sets checked state on pre-found element. No-op if already in the target state.
     /// </summary>
+    /// <remarks>
+    /// Prefers the platform's set-state command over a toggle: asking for the state you want
+    /// is idempotent, while toggling depends on the state read beforehand still being true
+    /// when the toggle lands. Falls back to <see cref="ToggleCore"/> where no such command
+    /// exists — which is every mobile platform, since neither Android nor iOS exposes one.
+    /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <param name="checked">The desired checked state. Null skips the operation.</param>
     /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
@@ -115,7 +121,29 @@ public abstract partial class ToggleControlBase<TScope> : ClickableControlBase<T
         if (current == @checked)
             return;
 
+        if (TrySetStateByPattern(element, @checked.Value, timeoutMs))
+            return;
+
         ToggleCore(element, timeoutMs);
+    }
+
+    /// <summary>
+    /// Sets the state through the platform's Toggle pattern, when it offers one.
+    /// </summary>
+    /// <remarks>
+    /// The state change is confirmed rather than assumed: a pattern that reports success
+    /// without moving the control would otherwise leave the caller believing a state was set
+    /// that was not.
+    /// </remarks>
+    private bool TrySetStateByPattern(IMauiElement element, bool @checked, int? timeoutMs)
+    {
+        if (element is not ITogglePatternElement { SupportsTogglePattern: true } toggle)
+            return false;
+
+        if (!toggle.SetToggleStatePattern(@checked))
+            return false;
+
+        return RunWaitWithElement(@checked, e => IsCheckedCore(e) == @checked, timeoutMs);
     }
 
     /// <summary>

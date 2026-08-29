@@ -13,7 +13,23 @@ namespace Brinell.Maui.Appium;
 /// Appium-based implementation of <see cref="IMauiElement"/>.
 /// Delegates all operations to the underlying AppiumElement.
 /// </summary>
-public sealed class AppiumMauiElement : IMauiElement
+/// <remarks>
+/// <para>
+/// Implements the two capability interfaces that mobile platforms can actually honour:
+/// <see cref="ITogglePatternElement"/> and <see cref="ISelectionItemPatternElement"/>. The
+/// UIA-shaped capabilities (<c>IInvokePatternElement</c>,
+/// <c>ILegacyIAccessiblePatternElement</c>, <c>INestedTextElement</c>,
+/// <c>IExpandCollapsePatternElement</c>) are deliberately <em>not</em> implemented: not
+/// implementing an interface is how this element reports "unsupported", and controls then
+/// fall through to <see cref="Click"/> or <see cref="Text"/>, which is correct on mobile.
+/// </para>
+/// <para>
+/// Android and iOS express toggle and selection state through different attributes, so each
+/// capability reads the platform's own attribute rather than a common one. That difference
+/// stops here, at the element: no control object above this layer branches on platform.
+/// </para>
+/// </remarks>
+public sealed class AppiumMauiElement : IMauiElement, ITogglePatternElement, ISelectionItemPatternElement
 {
     private readonly AppiumElement _element;
     private readonly AppiumMauiDriver _driver;
@@ -442,13 +458,170 @@ public sealed class AppiumMauiElement : IMauiElement
     public void Submit() => _element.Submit();
     
     #endregion
-    
+
+    #region ITogglePatternElement
+
+    /// <summary>
+    /// The attribute carrying checked state, per platform.
+    /// </summary>
+    /// <remarks>
+    /// Android surfaces <c>checked</c> ("true"/"false") on CheckBox and Switch. iOS surfaces
+    /// <c>value</c> ("1"/"0") on a UISwitch. Anything else has no known attribute, so the
+    /// capability reports unsupported rather than guessing.
+    /// </remarks>
+    private string? ToggleStateAttribute => _driver.Platform switch
+    {
+        MauiPlatform.Android => "checked",
+        MauiPlatform.iOS => "value",
+        _ => null
+    };
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Support is decided by whether the element actually reports the platform's toggle
+    /// attribute, not by its control type: a MAUI Switch and a CheckBox both surface it,
+    /// while a Label does not, and the attribute is the only reliable way to tell them apart
+    /// across drivers.
+    /// </remarks>
+    public bool SupportsTogglePattern
+    {
+        get
+        {
+            var attribute = ToggleStateAttribute;
+            if (attribute == null) return false;
+
+            try
+            {
+                return !string.IsNullOrEmpty(_element.GetAttribute(attribute));
+            }
+            catch
+            {
+                // A driver may throw rather than return null for an absent attribute.
+                return false;
+            }
+        }
+    }
+
+    /// <inheritdoc />
+    public bool? IsTogglePatternChecked()
+    {
+        var attribute = ToggleStateAttribute;
+        if (attribute == null) return null;
+
+        try
+        {
+            var value = _element.GetAttribute(attribute);
+            if (string.IsNullOrEmpty(value)) return null;
+
+            return value.Equals("true", StringComparison.OrdinalIgnoreCase)
+                || value.Equals("1", StringComparison.Ordinal);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Neither platform exposes a toggle command, only toggle state, so this taps the element
+    /// and confirms the state actually moved. Reporting success without that check would let a
+    /// tap that hit a disabled or mis-located control read as a successful toggle — the same
+    /// failure mode that made <c>LegacyIAccessible</c> unusable in the Windows click ladder.
+    /// </remarks>
+    public bool TogglePattern()
+    {
+        if (!SupportsTogglePattern) return false;
+
+        var before = IsTogglePatternChecked();
+
+        try
+        {
+            _element.Click();
+        }
+        catch
+        {
+            return false;
+        }
+
+        // A control that reports no state cannot be verified; treat the tap as done rather
+        // than claiming a transition that cannot be observed.
+        if (before == null) return true;
+
+        return IsTogglePatternChecked() != before;
+    }
+
+    /// <inheritdoc />
+    public bool SetToggleStatePattern(bool isChecked)
+    {
+        if (!SupportsTogglePattern) return false;
+
+        var current = IsTogglePatternChecked();
+        if (current == isChecked) return true;
+
+        return TogglePattern() && IsTogglePatternChecked() == isChecked;
+    }
+
+    #endregion
+
+    #region ISelectionItemPatternElement
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Mobile has no selection pattern distinct from tapping: a list row is selected by being
+    /// tapped. Support is therefore reported only when the element exposes selection state to
+    /// confirm the result with — otherwise the control's ladder falls through to its own
+    /// click, which is the same action without a false claim of pattern support.
+    /// </remarks>
+    public bool SupportsSelectionItemPattern
+    {
+        get
+        {
+            try
+            {
+                return !string.IsNullOrEmpty(_element.GetAttribute("selected"));
+            }
+            catch
+            {
+                return false;
+            }
+        }
+    }
+
+    /// <inheritdoc />
+    public bool SelectItemPattern()
+    {
+        if (!SupportsSelectionItemPattern) return false;
+
+        try
+        {
+            _element.Click();
+        }
+        catch
+        {
+            return false;
+        }
+
+        try
+        {
+            return _element.Selected;
+        }
+        catch
+        {
+            // Selected can throw on a row the tap navigated away from. The tap landed, which
+            // is what the caller asked for.
+            return true;
+        }
+    }
+
+    #endregion
+
     #region Internal
-    
+
     /// <summary>
     /// Gets the underlying AppiumElement for internal use.
     /// </summary>
     internal AppiumElement Element => _element;
-    
+
     #endregion
 }

@@ -19,6 +19,22 @@ namespace Brinell.Maui.Controls.Base;
 public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IElementObject<TScope>
     where TScope : IMauiScope<TScope>
 {
+    #region FindChild
+
+    public TScope FindChild(string automationId)
+    {
+        return RunDoWithElement(element => { FindChildCore(element, automationId); });
+    }
+
+    #endregion
+    #region FindChildByControlType
+
+    public TScope FindChildByControlType(string controlType)
+    {
+        return RunDoWithElement(element => { FindChildByControlTypeCore(element, controlType); });
+    }
+
+    #endregion
     #region Visible (IsVisible / WaitVisible / AssertVisible)
 
     public bool? IsVisible()

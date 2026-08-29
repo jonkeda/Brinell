@@ -416,17 +416,37 @@ pre-change baseline.
 **Deliberately deferred:** `ExpandHelper` and `GestureHelper` are the same smell but have
 fewer users (`Expander`, `SwipeView`, `RefreshView`, `CarouselView`). Phase 5.
 
-### Phase 2 — Close the Appium capability gap (goals 3, 6)
+### Phase 2 — Close the Appium capability gap (goals 3, 6) ✅
 
-1. Implement `ITogglePatternElement` and `ISelectionItemPatternElement` on
-   `AppiumMauiElement` (Android `checked`, iOS `value`).
-2. Make unsupported capabilities explicit: `Supports... => false`, and the action methods
-   return `false` rather than throwing, so the control's ladder reads cleanly.
-3. Unit-test the negotiation in `Brinell.Maui.Tests` against a mocked `IMauiElement` — no
-   device needed. This is the tier that catches regressions cheaply.
+1. ✅ `AppiumMauiElement` implements `ITogglePatternElement` and
+   `ISelectionItemPatternElement`. Toggle state reads Android's `checked` and iOS's `value`;
+   support is decided by whether the attribute is actually present, not by control type,
+   since that is the only signal that works across drivers.
+2. ✅ Unsupported capabilities stay **unimplemented** rather than implemented-and-returning-false.
+   Not implementing the interface is the report: the control's `is` test misses and it falls
+   through. The four UIA-shaped capabilities are deliberately absent on mobile.
+3. ✅ `CapabilityNegotiationTests` (6 tests) covers both branches of the toggle ladder against
+   a mocked `IMauiElement` — capability present, capability absent, and capability advertised
+   but declining.
 
-**Done when:** `Brinell.Maui.Tests` covers both the supported and unsupported branch of
-each ladder.
+**Neither platform exposes a toggle *command*, only toggle state**, so `TogglePattern()` taps
+and then verifies the state moved. Reporting success without that check is the failure mode
+that made `LegacyIAccessible` unusable in the Windows click ladder (phase 1) — a pattern that
+claims success while the control does not move.
+
+#### Found and fixed while here
+
+- **`SetToggleStatePattern` was dead code.** Both drivers implemented it; nothing called it.
+  `SetCheckedCore` went through `ToggleCore` instead, so setting a state depended on the
+  state read beforehand still holding when the toggle landed. It now prefers the platform's
+  set-state command — idempotent — and falls back to toggling where none exists, which is
+  every mobile platform. A pre-existing unit test asserted this behaviour and had been
+  failing; it now passes.
+- **Two `CheckBoxControlTests` stubbed only `TryFindElement`**, leaving `FindElement` null so
+  the control raised `NullReferenceException`. A test-setup defect, not a product one.
+
+**Done:** unit suite 77 passed / 6 failed (from 62/8 at the session baseline — the 2 recovered
+here plus 13 new tests). UI suite excluding phase-7 parked tests: 137 passed / 1 failed.
 
 ### Phase 3 — Generate the remaining 28 controls, extending the generator as needed (goals 2, 14, 15, 16)
 

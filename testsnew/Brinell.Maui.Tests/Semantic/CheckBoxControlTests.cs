@@ -11,6 +11,11 @@ public class CheckBoxControlTests : SemanticControlTestsBase
         Context
             .Setup(c => c.TryFindElement(It.Is<Locator>(l => l.Value == "IncludeProblemReports")))
             .Returns(checkBox.Object);
+        // Toggle actions resolve through FindElement; state reads go through TryFindElement.
+        // Stubbing only the latter leaves FindElement returning null and the control NREs.
+        Context
+            .Setup(c => c.FindElement(It.Is<Locator>(l => l.Value == "IncludeProblemReports")))
+            .Returns(checkBox.Object);
 
         Page.IncludeProblemReports.Check();
 
@@ -35,6 +40,11 @@ public class CheckBoxControlTests : SemanticControlTestsBase
             .Callback(() => isChecked = !isChecked);
         Context
             .Setup(c => c.TryFindElement(It.Is<Locator>(l => l.Value == "IncludeProblemReports")))
+            .Returns(checkBox.Object);
+        // Toggle actions resolve through FindElement; state reads go through TryFindElement.
+        // Stubbing only the latter leaves FindElement returning null and the control NREs.
+        Context
+            .Setup(c => c.FindElement(It.Is<Locator>(l => l.Value == "IncludeProblemReports")))
             .Returns(checkBox.Object);
 
         var ex = Assert.Throws<WindowsInteractionPolicyException>(
