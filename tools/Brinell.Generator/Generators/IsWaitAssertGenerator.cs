@@ -162,11 +162,23 @@ public class IsWaitAssertGenerator : IMemberGenerator
         // Flags are written as `Comparison.Contains | Comparison.StartsWith`; pull the
         // member names out of the expression text rather than evaluating it.
         var argumentText = attribute.ArgumentList.Arguments.ToString();
-        foreach (var variant in new[] { "Contains", "StartsWith", "EndsWith", "Empty" })
+
+        // Matched as `Comparison.<Name>` rather than by bare substring: "Equals" occurs
+        // inside "SequenceEquals", so a substring test would silently add the wrong variant.
+        foreach (var variant in new[]
+                 {
+                     "Contains", "StartsWith", "EndsWith", "Empty",
+                     "SequenceEquals", "HasItem", "Count"
+                 })
         {
-            if (argumentText.Contains(variant) && !comparisons.Contains(variant))
+            if (argumentText.Contains($".{variant}") && !comparisons.Contains(variant))
                 comparisons.Add(variant);
         }
+
+        // A collection getter has no meaningful reference equality, so SequenceEquals
+        // replaces the default rather than joining it.
+        if (comparisons.Contains("SequenceEquals"))
+            comparisons.Remove("Equals");
 
         return comparisons;
     }
@@ -235,27 +247,35 @@ public class IsWaitAssertGenerator : IMemberGenerator
         writer.Close();
         writer.WriteLine();
 
-        // Wait{PropertyName}(...) waiter
-        writer.WriteLine($"public bool? Wait{propertyName}({paramPrefix}{nullableReturnType} expected, int? timeoutMs = null)");
-        writer.Open();
-        writer.WriteLine("return RunWaitWithElement(expected,");
-        writer.IncreaseSpace(1);
-        writer.WriteLine($"element => {coreMethod.MethodName}(element{lambdaArgs}) == expected,");
-        writer.WriteLine("timeoutMs);");
-        writer.DecreaseSpace(1);
-        writer.Close();
-        writer.WriteLine();
+        // SequenceEquals supplies Wait/Assert{PropertyName} with element-wise semantics, so
+        // the reference-comparing default is suppressed rather than emitted and shadowed —
+        // two members of the same name would not compile.
+        var hasSequenceEquality = coreMethod.Comparisons.Contains("SequenceEquals");
 
-        // Assert{PropertyName}(...) assertion
-        writer.WriteLine($"public {fluentReturnType} Assert{propertyName}({paramPrefix}{nullableReturnType} expected, string? message = null, int? timeoutMs = null)");
-        writer.Open();
-        writer.WriteLine("return RunAssertWithElement(expected,");
-        writer.IncreaseSpace(1);
-        writer.WriteLine($"element => {coreMethod.MethodName}(element{lambdaArgs}), (actual, expected1) => (actual == expected1),");
-        writer.WriteLine($"{BuildAssertMessage(propertyName)}, timeoutMs);");
-        writer.DecreaseSpace(1);
-        writer.Close();
-        writer.WriteLine();
+        if (!hasSequenceEquality)
+        {
+            // Wait{PropertyName}(...) waiter
+            writer.WriteLine($"public bool? Wait{propertyName}({paramPrefix}{nullableReturnType} expected, int? timeoutMs = null)");
+            writer.Open();
+            writer.WriteLine("return RunWaitWithElement(expected,");
+            writer.IncreaseSpace(1);
+            writer.WriteLine($"element => {coreMethod.MethodName}(element{lambdaArgs}) == expected,");
+            writer.WriteLine("timeoutMs);");
+            writer.DecreaseSpace(1);
+            writer.Close();
+            writer.WriteLine();
+
+            // Assert{PropertyName}(...) assertion
+            writer.WriteLine($"public {fluentReturnType} Assert{propertyName}({paramPrefix}{nullableReturnType} expected, string? message = null, int? timeoutMs = null)");
+            writer.Open();
+            writer.WriteLine("return RunAssertWithElement(expected,");
+            writer.IncreaseSpace(1);
+            writer.WriteLine($"element => {coreMethod.MethodName}(element{lambdaArgs}), (actual, expected1) => (actual == expected1),");
+            writer.WriteLine($"{BuildAssertMessage(propertyName)}, timeoutMs);");
+            writer.DecreaseSpace(1);
+            writer.Close();
+            writer.WriteLine();
+        }
 
         // Additional comparison variants declared via [GenerateComparisons].
         foreach (var comparison in coreMethod.Comparisons.Where(c => c != "Equals"))
@@ -305,6 +325,13 @@ public class IsWaitAssertGenerator : IMemberGenerator
             return;
         }
 
+        if (comparison is "SequenceEquals" or "HasItem" or "Count")
+        {
+            GenerateCollectionVariant(writer, coreMethod, propertyName, comparison,
+                paramPrefix, nullableReturnType, lambdaArgs, fluentReturnType);
+            return;
+        }
+
         var predicate = $"actual?.{comparison}(expected1!) == true";
 
         writer.WriteLine($"public bool? Wait{memberName}({paramPrefix}{nullableReturnType} expected, int? timeoutMs = null)");
@@ -325,6 +352,115 @@ public class IsWaitAssertGenerator : IMemberGenerator
         writer.WriteLine($"{BuildAssertMessage(memberName)}, timeoutMs);");
         writer.DecreaseSpace(1);
         writer.Close();
+    }
+
+    /// <summary>
+    /// Emits a Wait/Assert pair for a <c>Get*Core</c> that returns a collection.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Collection getters cannot use the default <c>Equals</c> variant: <c>==</c> on
+    /// <c>IReadOnlyList&lt;T&gt;</c> compares references, so the generated assert could never
+    /// pass. That is why <c>SelectorControlBase.GetItemTextsCore</c> was excluded from
+    /// generation and its public member hand-written.
+    /// </para>
+    /// <para>
+    /// Each variant takes the parameter type its question implies rather than the collection
+    /// type: an item for <c>HasItem</c>, an <c>int</c> for <c>Count</c>, the collection only
+    /// for <c>SequenceEquals</c>.
+    /// </para>
+    /// </remarks>
+    private void GenerateCollectionVariant(CsWriter writer, MethodInfo coreMethod,
+        string propertyName, string comparison, string paramPrefix,
+        string nullableReturnType, string lambdaArgs, string fluentReturnType)
+    {
+        var memberName = comparison == "SequenceEquals" ? propertyName : $"{propertyName}{comparison}";
+        var call = $"{coreMethod.MethodName}(element{lambdaArgs})";
+
+        // HasItem asks a yes/no question about the collection, so — like the Empty variant —
+        // both the parameter and the compared value are bool?. Emitting it as
+        // "expected: an item, actual: the collection" would not type-check:
+        // RunAssertWithElement<T> needs one T for both sides.
+        if (comparison == "HasItem")
+        {
+            var itemType = ElementTypeOf(nullableReturnType);
+
+            writer.WriteLine($"public bool? Wait{memberName}({paramPrefix}{itemType} item, int? timeoutMs = null)");
+            writer.Open();
+            writer.WriteLine("return RunWaitWithElement(item,");
+            writer.IncreaseSpace(1);
+            writer.WriteLine($"element => {call}?.Contains(item!) == true,");
+            writer.WriteLine("timeoutMs);");
+            writer.DecreaseSpace(1);
+            writer.Close();
+            writer.WriteLine();
+
+            writer.WriteLine($"public {fluentReturnType} Assert{memberName}({paramPrefix}{itemType} item, string? message = null, int? timeoutMs = null)");
+            writer.Open();
+            writer.WriteLine("return RunAssertWithElement((bool?)true,");
+            writer.IncreaseSpace(1);
+            writer.WriteLine($"element => (bool?)({call}?.Contains(item!) == true), (actual, expected1) => (actual == expected1),");
+            writer.WriteLine($"message ?? $\"Expected {memberName} to contain '{{item}}'. Locator: {{Locator}}\", timeoutMs);");
+            writer.DecreaseSpace(1);
+            writer.Close();
+            return;
+        }
+
+        var (expectedType, waitPredicate, assertActual, assertPredicate) = comparison switch
+        {
+            "SequenceEquals" => (
+                nullableReturnType,
+                $"{call}?.SequenceEqual(expected!) == true",
+                call,
+                "actual?.SequenceEqual(expected1!) == true"),
+
+            // Count compares an int against an int; the actual value is projected inside the
+            // lambda so both sides of RunAssertWithElement<T> agree on T.
+            _ => (
+                "int?",
+                $"{call}?.Count() == expected",
+                $"(int?)({call}?.Count())",
+                "actual == expected1"),
+        };
+
+        writer.WriteLine($"public bool? Wait{memberName}({paramPrefix}{expectedType} expected, int? timeoutMs = null)");
+        writer.Open();
+        writer.WriteLine("return RunWaitWithElement(expected,");
+        writer.IncreaseSpace(1);
+        writer.WriteLine($"element => {waitPredicate},");
+        writer.WriteLine("timeoutMs);");
+        writer.DecreaseSpace(1);
+        writer.Close();
+        writer.WriteLine();
+
+        writer.WriteLine($"public {fluentReturnType} Assert{memberName}({paramPrefix}{expectedType} expected, string? message = null, int? timeoutMs = null)");
+        writer.Open();
+        writer.WriteLine("return RunAssertWithElement(expected,");
+        writer.IncreaseSpace(1);
+        writer.WriteLine($"element => {assertActual}, (actual, expected1) => ({assertPredicate}),");
+        writer.WriteLine($"{BuildAssertMessage(memberName)}, timeoutMs);");
+        writer.DecreaseSpace(1);
+        writer.Close();
+    }
+
+    /// <summary>
+    /// The item type of a collection return type, for variants that take one item.
+    /// </summary>
+    /// <remarks>
+    /// Extracted syntactically from the single type argument — the generator has no semantic
+    /// model. A collection type with no type argument falls back to the collection type
+    /// itself, which fails to compile visibly rather than emitting a wrong signature quietly.
+    /// </remarks>
+    private static string ElementTypeOf(string collectionType)
+    {
+        var open = collectionType.IndexOf('<');
+        var close = collectionType.LastIndexOf('>');
+        if (open < 0 || close < open) return collectionType;
+
+        var inner = collectionType[(open + 1)..close].Trim();
+
+        // A nested generic argument (Dictionary<K,V>) is not a single-item collection.
+        return inner.Contains(',') ? collectionType : inner;
     }
 
     /// <summary>

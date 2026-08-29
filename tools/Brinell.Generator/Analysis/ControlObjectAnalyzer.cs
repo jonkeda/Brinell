@@ -1,3 +1,4 @@
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Brinell.Generator.Models;
@@ -31,6 +32,95 @@ public class ControlObjectAnalyzer
     public IEnumerable<MethodDeclarationSyntax> CoreMethods(ClassDeclarationSyntax classDecl)
     {
         return classDecl.Members.OfType<MethodDeclarationSyntax>();
+    }
+
+    /// <summary>
+    /// Reports methods that look like generation candidates but would be skipped silently.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A method named <c>*Core</c> taking the platform element first is, by every visible
+    /// signal, meant to generate. If it lacks <c>virtual</c> or <c>protected</c> the
+    /// generator simply passes over it — no warning, no output — and the missing public API
+    /// surfaces much later, if at all. Two such methods sat in <c>SelectorControlBase</c>
+    /// for exactly that reason.
+    /// </para>
+    /// <para>
+    /// Deliberate exclusions are declared with <c>[SkipGeneration("reason")]</c>, which keeps
+    /// the method <c>virtual</c> and overridable. With intent declarable, silence is no
+    /// longer an acceptable default: anything else that misses is reported.
+    /// </para>
+    /// <para>
+    /// <c>Ensure*</c> guards are exempt — <c>ActionGenerator</c> excludes them by name, and
+    /// they are internal checks rather than API. Overrides are exempt because the base class
+    /// already generated the member.
+    /// </para>
+    /// </remarks>
+    /// <param name="classDecl">The class being generated.</param>
+    /// <returns>One diagnostic message per near-miss; empty when all are well-formed.</returns>
+    public IReadOnlyList<string> FindSilentlySkippedCoreMethods(ClassDeclarationSyntax classDecl)
+    {
+        var problems = new List<string>();
+
+        foreach (var method in CoreMethods(classDecl))
+        {
+            var name = method.Identifier.Text;
+
+            if (!name.EndsWith("Core", StringComparison.Ordinal)) continue;
+            if (name.StartsWith("Ensure", StringComparison.Ordinal)) continue;
+            if (HasSkipGenerationAttribute(method)) continue;
+
+            var modifiers = method.Modifiers;
+            if (modifiers.Any(m => m.IsKind(SyntaxKind.OverrideKeyword))) continue;
+
+            // Only methods taking the platform element first are candidates at all; anything
+            // else is a private helper that happens to end in "Core".
+            var firstParam = method.ParameterList.Parameters.FirstOrDefault();
+            if (firstParam?.Type?.ToString().Contains("Element") != true) continue;
+
+            var isProtected = modifiers.Any(m => m.IsKind(SyntaxKind.ProtectedKeyword));
+            var isVirtual = modifiers.Any(m => m.IsKind(SyntaxKind.VirtualKeyword));
+            if (isProtected && isVirtual) continue;
+
+            var missing = (isProtected, isVirtual) switch
+            {
+                (false, false) => "'protected' and 'virtual'",
+                (true, false) => "'virtual'",
+                _ => "'protected'"
+            };
+
+            problems.Add(
+                $"'{name}' looks like a generation candidate but is missing {missing}, so it " +
+                "would be skipped without warning. Add the missing modifier to generate a " +
+                "public member, or [SkipGeneration(\"reason\")] if that is deliberate.");
+        }
+
+        return problems;
+    }
+
+    /// <summary>
+    /// Whether a Core method opts out of generation with <c>[SkipGeneration]</c>.
+    /// </summary>
+    public static bool IsGenerationSkipped(MethodDeclarationSyntax method)
+        => HasSkipGenerationAttribute(method);
+
+    /// <summary>
+    /// Reads [SkipGeneration] from a Core method.
+    /// </summary>
+    /// <remarks>
+    /// Matched syntactically, with or without the "Attribute" suffix and with any
+    /// qualification — the same approach the member generators use for their attributes.
+    /// </remarks>
+    private static bool HasSkipGenerationAttribute(MethodDeclarationSyntax method)
+    {
+        return method.AttributeLists
+            .SelectMany(list => list.Attributes)
+            .Any(a =>
+            {
+                var name = a.Name.ToString();
+                var simpleName = name.Contains('.') ? name[(name.LastIndexOf('.') + 1)..] : name;
+                return simpleName is "SkipGeneration" or "SkipGenerationAttribute";
+            });
     }
 
     /// <summary>

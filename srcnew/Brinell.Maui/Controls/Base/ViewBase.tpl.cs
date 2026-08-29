@@ -451,11 +451,17 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
     /// <summary>
     /// Polls visible state using pre-found element.
     /// </summary>
+    /// <remarks>
+    /// Not generated: this is already a <c>Wait*</c>, and the generated
+    /// <c>WaitVisible</c> comes from <see cref="IsVisibleCore"/>. Generating from this one
+    /// too would collide on the name.
+    /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <param name="expected">The expected visible state.</param>
     /// <param name="timeoutMs">Maximum time to wait in milliseconds.</param>
     /// <returns>True if condition was met, false if timeout reached.</returns>
-    protected bool WaitVisibleCore(IMauiElement element, bool expected, int timeoutMs)
+    [SkipGeneration("Already a Wait* helper; WaitVisible is generated from IsVisibleCore.")]
+    protected virtual bool WaitVisibleCore(IMauiElement element, bool expected, int timeoutMs)
     {
         return RunPoll(null, () => IsVisibleCore(element) == expected, timeoutMs);
     }

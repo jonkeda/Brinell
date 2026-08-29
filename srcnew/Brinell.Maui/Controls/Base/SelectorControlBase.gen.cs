@@ -84,6 +84,56 @@ public abstract partial class SelectorControlBase<TScope> : FocusableControlBase
     }
 
     #endregion
+    #region ItemTexts (GetItemTexts / WaitItemTexts / AssertItemTexts)
+
+    public IReadOnlyList<string>? GetItemTexts(int? timeoutMs = null)
+    {
+        return RunGetWithElement(element => GetItemTextsCore(element), timeoutMs);
+    }
+
+    public bool? WaitItemTexts(IReadOnlyList<string>? expected, int? timeoutMs = null)
+    {
+        return RunWaitWithElement(expected,
+           element => GetItemTextsCore(element)?.SequenceEqual(expected!) == true,
+           timeoutMs);
+    }
+
+    public TScope AssertItemTexts(IReadOnlyList<string>? expected, string? message = null, int? timeoutMs = null)
+    {
+        return RunAssertWithElement(expected,
+           element => GetItemTextsCore(element), (actual, expected1) => (actual?.SequenceEqual(expected1!) == true),
+           message ?? $"Expected ItemTexts to be '{expected}'. Locator: {Locator}", timeoutMs);
+    }
+
+    public bool? WaitItemTextsHasItem(string item, int? timeoutMs = null)
+    {
+        return RunWaitWithElement(item,
+           element => GetItemTextsCore(element)?.Contains(item!) == true,
+           timeoutMs);
+    }
+
+    public TScope AssertItemTextsHasItem(string item, string? message = null, int? timeoutMs = null)
+    {
+        return RunAssertWithElement((bool?)true,
+           element => (bool?)(GetItemTextsCore(element)?.Contains(item!) == true), (actual, expected1) => (actual == expected1),
+           message ?? $"Expected ItemTextsHasItem to contain '{item}'. Locator: {Locator}", timeoutMs);
+    }
+
+    public bool? WaitItemTextsCount(int? expected, int? timeoutMs = null)
+    {
+        return RunWaitWithElement(expected,
+           element => GetItemTextsCore(element)?.Count() == expected,
+           timeoutMs);
+    }
+
+    public TScope AssertItemTextsCount(int? expected, string? message = null, int? timeoutMs = null)
+    {
+        return RunAssertWithElement(expected,
+           element => (int?)(GetItemTextsCore(element)?.Count()), (actual, expected1) => (actual == expected1),
+           message ?? $"Expected ItemTextsCount to be '{expected}'. Locator: {Locator}", timeoutMs);
+    }
+
+    #endregion
     #region ItemCount (GetItemCount / WaitItemCount / AssertItemCount)
 
     public int? GetItemCount(int? timeoutMs = null)

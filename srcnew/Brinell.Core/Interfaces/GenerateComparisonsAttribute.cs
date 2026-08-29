@@ -20,7 +20,31 @@ public enum Comparison
     EndsWith = 8,
 
     /// <summary>Empty / non-empty check — <c>AssertTextEmpty</c>.</summary>
-    Empty = 16
+    Empty = 16,
+
+    /// <summary>
+    /// Element-wise sequence equality, order significant — <c>AssertItemTexts</c>.
+    /// </summary>
+    /// <remarks>
+    /// For a <c>Get*Core</c> returning a collection. <see cref="Equals"/> would compare such a
+    /// return value by reference, which no caller can satisfy; this compares contents.
+    /// </remarks>
+    SequenceEquals = 32,
+
+    /// <summary>
+    /// Membership in a returned collection — <c>AssertItemTextsHasItem("Blue")</c>.
+    /// </summary>
+    /// <remarks>
+    /// Deliberately not <see cref="Contains"/>, which means substring for a string-valued
+    /// getter. Overloading one name across both meanings would make the generated API
+    /// ambiguous at the call site.
+    /// </remarks>
+    HasItem = 64,
+
+    /// <summary>
+    /// Cardinality of a returned collection — <c>AssertItemTextsCount(3)</c>.
+    /// </summary>
+    Count = 128
 }
 
 /// <summary>

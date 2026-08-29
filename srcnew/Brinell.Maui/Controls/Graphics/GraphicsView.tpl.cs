@@ -5,7 +5,7 @@ namespace Brinell.Maui.Controls.Graphics;
 /// GraphicsView provides a canvas for custom drawing and graphics operations.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public class GraphicsView<TScope> : Base.ViewBase<TScope>
+public partial class GraphicsView<TScope> : Base.ViewBase<TScope>
     where TScope : IMauiScope<TScope>
 {
     /// <summary>

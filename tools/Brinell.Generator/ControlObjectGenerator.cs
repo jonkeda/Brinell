@@ -47,6 +47,15 @@ public sealed class ControlObjectGenerator
         if (classDecl == null)
             throw new InvalidOperationException($"Could not find class {options.TargetClassName ?? "(any)"} in source code.");
 
+        // A near-miss Core method used to vanish silently; with [SkipGeneration] available to
+        // declare a deliberate exclusion, an undeclared one is an error rather than a maybe.
+        var skipped = _analyzer.FindSilentlySkippedCoreMethods(classDecl);
+        if (skipped.Count > 0)
+        {
+            throw new InvalidOperationException(
+                $"In {classDecl.Identifier.Text}: " + string.Join(" ", skipped));
+        }
+
         var context = _analyzer.BuildContext(classDecl, root);
 
         var members = new List<string>();
@@ -57,6 +66,11 @@ public sealed class ControlObjectGenerator
 
         foreach (var method in _analyzer.CoreMethods(classDecl))
         {
+            // Filtered once here rather than in each generator's Matches: opting out is a
+            // property of the method, not of which family would have claimed it.
+            if (ControlObjectAnalyzer.IsGenerationSkipped(method))
+                continue;
+
             foreach (var generator in _generators)
             {
                 if (!generator.Matches(method))

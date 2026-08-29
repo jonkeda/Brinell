@@ -1,30 +1,30 @@
-namespace Brinell.Maui.Controls.Shapes;
+namespace Brinell.Maui.Controls.Container;
 
 /// <summary>
-/// MAUI Line shape control for drawing straight lines.
-/// Line is used as a visual drawing element, typically not requiring interaction testing.
+/// MAUI BoxView control for displaying a simple colored rectangle.
+/// BoxView is typically used as a visual element for layout purposes.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public class Line<TScope> : Base.ViewBase<TScope>
+public partial class BoxView<TScope> : Base.ViewBase<TScope>
     where TScope : IMauiScope<TScope>
 {
     /// <summary>
-    /// Creates a new Line control within the specified scope.
+    /// Creates a new BoxView control within the specified scope.
     /// </summary>
     /// <param name="scope">The scope (page or container) providing element finding.</param>
-    /// <param name="locator">The locator for the Line element.</param>
-    public Line(IMauiScope<TScope> scope, Locator locator)
+    /// <param name="locator">The locator for the BoxView element.</param>
+    public BoxView(IMauiScope<TScope> scope, Locator locator)
         : base(scope, locator)
     {
     }
 
     /// <summary>
-    /// Creates a new Line control within the specified scope using a string locator value.
+    /// Creates a new BoxView control within the specified scope using a string locator value.
     /// Uses the scope's DefaultLocatorStrategy to create the locator.
     /// </summary>
     /// <param name="scope">The scope (page or container) providing element finding.</param>
     /// <param name="locatorValue">The locator value (e.g., automation ID, name).</param>
-    public Line(IMauiScope<TScope> scope, string locatorValue)
+    public BoxView(IMauiScope<TScope> scope, string locatorValue)
         : base(scope, locatorValue)
     {
     }

@@ -22,7 +22,7 @@ namespace Brinell.Maui.Controls.Container;
 /// </remarks>
 /// <typeparam name="TParent">The parent scope type (a page or another container).</typeparam>
 /// <typeparam name="TSelf">The view type itself (self-referencing for fluent returns).</typeparam>
-public class ContentView<TParent, TSelf> : ContainerObjectBase<TParent, TSelf>
+public partial class ContentView<TParent, TSelf> : ContainerObjectBase<TParent, TSelf>
     where TParent : IMauiScope<TParent>
     where TSelf : ContentView<TParent, TSelf>
 {

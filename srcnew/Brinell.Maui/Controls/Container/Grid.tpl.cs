@@ -24,7 +24,7 @@ namespace Brinell.Maui.Controls.Container;
 /// </remarks>
 /// <typeparam name="TParent">The parent scope type (a page or another container).</typeparam>
 /// <typeparam name="TSelf">The grid type itself (self-referencing for fluent returns).</typeparam>
-public class Grid<TParent, TSelf> : ContainerObjectBase<TParent, TSelf>
+public partial class Grid<TParent, TSelf> : ContainerObjectBase<TParent, TSelf>
     where TParent : IMauiScope<TParent>
     where TSelf : Grid<TParent, TSelf>
 {

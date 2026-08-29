@@ -5,7 +5,7 @@ namespace Brinell.Maui.Controls.Media;
 /// HybridWebView enables bidirectional communication between managed code and web content.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public class HybridWebView<TScope> : Base.ViewBase<TScope>
+public partial class HybridWebView<TScope> : Base.ViewBase<TScope>
     where TScope : IMauiScope<TScope>
 {
     /// <summary>

@@ -191,14 +191,16 @@ public abstract partial class SelectorControlBase<TScope> : FocusableControlBase
     /// <summary>
     /// Gets all item texts from pre-found element.
     /// Override in derived classes for picker-specific implementation.
-    /// Deliberately non-virtual: a virtual Get*Core would generate a Wait/Assert pair that
-    /// compares IReadOnlyList&lt;string&gt; with ==, i.e. by reference, which no caller could
-    /// satisfy. The public GetItemTexts is hand-written below instead. Derived controls
-    /// needing different item discovery should override GetItemCountCore.
     /// </summary>
+    /// <remarks>
+    /// Generates <c>GetItemTexts</c> plus sequence-aware comparisons. Plain equality is not
+    /// generated for a collection: <c>==</c> would compare references, which no caller could
+    /// satisfy.
+    /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <returns>List of item texts, or null if not available.</returns>
-    protected IReadOnlyList<string>? GetItemTextsCore(IMauiElement? element)
+    [GenerateComparisons(Comparison.SequenceEquals | Comparison.HasItem | Comparison.Count)]
+    protected virtual IReadOnlyList<string>? GetItemTextsCore(IMauiElement? element)
     {
         if (element == null) return null;
 
@@ -243,32 +245,22 @@ public abstract partial class SelectorControlBase<TScope> : FocusableControlBase
 
     #endregion
 
-    #region Hand-written Convenience Members
-
-    /// <summary>
-    /// Gets all available item texts.
-    /// </summary>
-    /// <param name="timeoutMs">Optional timeout.</param>
-    /// <returns>List of item texts, or null if not available.</returns>
-    public IReadOnlyList<string>? GetItemTexts(int? timeoutMs = null)
-    {
-        return RunGetWithElement(element => GetItemTextsCore(element), timeoutMs);
-    }
-
-    #endregion
-
     #region Helpers
 
     /// <summary>
     /// Gets child item elements from the selector.
     /// Uses FlaUI ExpandCollapse pattern when available for Windows ComboBox support.
-    /// Deliberately non-virtual: a virtual Get*Core would generate a public GetItemElements
-    /// wrapper, leaking platform elements into the control's API. Derived controls that need
-    /// different item discovery should override GetItemTextsCore / GetItemCountCore instead.
     /// </summary>
+    /// <remarks>
+    /// Not generated: a public <c>GetItemElements</c> would leak <see cref="IMauiElement"/>
+    /// into the control's API, and a test should be reasoning about item text or count, not
+    /// platform elements. It stays <c>virtual</c> so a derived control can change how items
+    /// are discovered — which the previous non-virtual form prevented.
+    /// </remarks>
     /// <param name="element">The parent selector element.</param>
     /// <returns>List of item elements, or null if not available.</returns>
-    protected IReadOnlyList<IMauiElement>? GetItemElementsCore(IMauiElement? element)
+    [SkipGeneration("A public wrapper would leak IMauiElement into the control's API.")]
+    protected virtual IReadOnlyList<IMauiElement>? GetItemElementsCore(IMauiElement? element)
     {
         if (element == null) return null;
 

@@ -550,10 +550,44 @@ in a speculative redesign pass:
   A likely outcome is a sibling base for non-interactive display surfaces — decide it with
   batch 3a in hand, not now.
 
-**Done when:** `find srcnew/Brinell.Maui/Controls -name '*.cs' ! -name '*.tpl.cs'
-! -name '*.gen.cs'` returns nothing outside `Internal/`; every `*Core` method in the MAUI
-tree is either `protected virtual` or carries `[SkipGeneration]`; and a near-miss fails
-generation with a named error. `GetItemTexts` is generated, not hand-written.
+**Done when:** the generator handles every shape the converted controls need; every `*Core`
+method in the MAUI tree is either `protected virtual` or carries `[SkipGeneration]`; a
+near-miss fails generation with a named error; and `GetItemTexts` is generated rather than
+hand-written.
+
+The 8 controls whose conversion depends on phase 5 dissolving the helpers moved to
+**phase 5b**; "nothing outside `Internal/`" is that phase's exit criterion, not this one.
+
+#### Status: generator work complete, 20 of 28 controls converted
+
+**Generator (§3.1) — done.** All three fixes plus the loud near-miss error, covered by 11 new
+tests (`SilentSkipAndCollectionTests`); generator suite 115 passing.
+
+The validation earned its place immediately: enabling it failed generation on **three**
+near-misses, including `ViewBase.WaitVisibleCore`, which the §3.1 analysis had classified as
+"not a candidate". The analysis was wrong and the tool was right — precisely the outcome that
+justifies a machine check over a manual sweep.
+
+| Fix | Outcome |
+|---|---|
+| `[SkipGeneration("reason")]` | `GetItemElementsCore` and `WaitVisibleCore` now declare intent and stay `virtual` — the latter was previously un-overridable |
+| `SequenceEquals` / `HasItem` / `Count` | `GetItemTextsCore` generates; the hand-written `GetItemTexts` is deleted, and every selector gains `AssertItemTexts`, `AssertItemTextsHasItem`, `AssertItemTextsCount` |
+| Loud near-miss | A `*Core` that misses the contract fails generation naming the method and the missing modifier |
+
+**Converted (20):** all 7 Shapes; `BoxView`, `Border`, `Frame`, `ContentView`, `Grid`,
+`IsoPaneView`, `SwipeView`; `Button`, `GraphicsView`, `IndicatorView`, `ListView`;
+`HybridWebView`, `BlazorWebView`.
+
+`SwipeView` is the one that carried real behaviour: its five gesture members became `*Core`
+methods, which also begins dissolving `GestureHelper` ahead of phase 5. Generated API is
+identical to the hand-written one, parameterized `Swipe` included.
+
+**Remaining 8 → moved to phase 5b.** Each needs Core extraction rather than a rename, and
+three of them touch code phase 5 is about to change. See that phase for the breakdown.
+
+**Verified:** solution build unchanged (same 2 pre-existing `PresenterPage` errors);
+`Brinell.Maui.Tests` 77 passed / 6 failed (unchanged); `Brinell.Generator.Tests` 115 passed;
+UI suite excluding phase-7 parked tests 137 passed / 1 failed (unchanged).
 
 ### Phase 4 — Sample app and tests on three platforms (goals 3, 4)
 
@@ -611,6 +645,44 @@ on an Android emulator. iOS: projects and traits present, run deferred.
 
 **Done when:** the Toolkit control is generated using only public API, and every `internal`
 that blocked it has been made public or deliberately kept with a recorded reason.
+
+### Phase 5b — Convert the 8 controls that were waiting on phase 5 (goal 2)
+
+Phase 3 converted 20 of 28. These 8 were held back because each needs `*Core` extraction
+rather than a rename, and several touch code phase 5 changes — converting before that would
+mean converting twice.
+
+| Control | Why it waited | Order |
+|---|---|---|
+| `RefreshView` | Coupled to `GestureHelper`, dissolved in phase 5 | 1 |
+| `ScrollView` | Hand-written `ScrollForward` / `ScrollBack` / `ScrollTo` ×2, no Core | 1 |
+| `TableView` | Hand-written `GetIntent` / `HasIntent`, no Core | 1 |
+| `WebView`, `MediaElement` | Partial Core coverage under a large hand-written surface (136 and 213 lines) | 2 |
+| `ContentDialog` | Resolves elements through `FindPopupElement`, outside the normal scope; also the `RequiresLoadedPage` case from [RCA-002](rca/rca-002-page-precondition-discarded-slow-failures.md) | 2 |
+| `CarouselView` | Self-referencing 3-parameter generic **and** `GestureHelper`-coupled | 3 |
+| `CollectionView` | `CollectionView<TParent, TSelf, TItem>` — the known hard case | 3 |
+
+**Order matters.** Groups 1 and 2 are ordinary conversions. Group 3 is the batch-3d risk the
+plan has flagged from the start: the generator has never emitted into a self-referencing
+three-parameter generic partial. **Prove it on `CarouselView` before starting
+`CollectionView`** — if the generator cannot express it, that is a generator gap to record in
+`.my/Generator/generator-gaps-plan.md`, not a control to force.
+
+Two things make this phase cheaper than it looks:
+
+- The phase 3 generator work removed the three blockers these would otherwise hit —
+  collection-valued getters, declared skips, and silent near-misses now all have answers.
+- `SwipeView` is the worked example: five hand-written gesture members became `*Core`
+  methods, `GestureHelper` calls moved inside them, and the generated API came out identical
+  to the hand-written one.
+
+**Every conversion must diff its generated public surface against the original** (skill
+step 9). A member that silently disappears is the failure mode this whole phase exists to
+prevent — and it is now a generation error rather than silence, so the check is cheap.
+
+**Done when:** `find srcnew/Brinell.Maui/Controls -name '*.cs' ! -name '*.tpl.cs'
+! -name '*.gen.cs'` returns nothing outside `Internal/`, or any control left hand-written has
+a recorded reason naming the generator limitation that blocks it.
 
 ### Phase 6 — Control behavior adapters, driven by real divergence (goal 17)
 
