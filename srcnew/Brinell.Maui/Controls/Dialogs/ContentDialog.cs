@@ -1,3 +1,4 @@
+using Brinell.Maui.Configuration;
 using Brinell.Maui.Containers;
 using Brinell.Maui.Controls.Buttons;
 using Brinell.Maui.Controls.Text;
@@ -76,7 +77,7 @@ public class ContentDialog<TParent> : ContainerObjectBase<TParent, ContentDialog
     private bool TryClickScopedButtonByTextAndWaitDismissed(string buttonText, int timeoutMs)
     {
         var button = FindButtonByText(FindElements(Locator.ByControlType("button")), buttonText);
-        if (button == null || !ElementClicker.TryClick(button))
+        if (button == null || !TryActivateDialogButton(button))
             return false;
 
         InvalidateCache();
@@ -92,7 +93,7 @@ public class ContentDialog<TParent> : ContainerObjectBase<TParent, ContentDialog
             return false;
         }
 
-        if (!ElementClicker.TryClick(button))
+        if (!TryActivateDialogButton(button))
             return false;
 
         return RunWait(
@@ -107,7 +108,7 @@ public class ContentDialog<TParent> : ContainerObjectBase<TParent, ContentDialog
         if (!Context.Driver.TryFindPopupElement(locator, out var button) || button == null)
             return false;
 
-        if (!ElementClicker.TryClick(button))
+        if (!TryActivateDialogButton(button))
             return false;
 
         return RunWait(
@@ -119,7 +120,7 @@ public class ContentDialog<TParent> : ContainerObjectBase<TParent, ContentDialog
     {
         var locator = Locator.ByControlType("button");
         var button = FindButtonByText(Parent.FindElements(locator), buttonText);
-        if (button == null || !ElementClicker.TryClick(button))
+        if (button == null || !TryActivateDialogButton(button))
             return false;
 
         return RunWait(
@@ -135,6 +136,49 @@ public class ContentDialog<TParent> : ContainerObjectBase<TParent, ContentDialog
         return RunWait(
             () => Parent.TryFindElement(locator) == null,
             timeoutMs);
+    }
+
+    /// <summary>
+    /// Activates one candidate dialog button, reporting failure rather than throwing.
+    /// </summary>
+    /// <remarks>
+    /// A WinUI3 ContentDialog is reached through several fallbacks — scoped, popup window,
+    /// parent scope — and each may hand back a button that turns out not to be the live one.
+    /// A failure here means "not this candidate", so the caller tries the next fallback.
+    /// A pointer-policy violation still surfaces: that is configuration, not a wrong candidate.
+    /// </remarks>
+    private static bool TryActivateDialogButton(IMauiElement? button)
+    {
+        if (!button.HasUsableBounds())
+        {
+            return false;
+        }
+
+        try
+        {
+            if (button is IInvokePatternElement { SupportsInvokePattern: true } invoke
+                && invoke.InvokePattern())
+            {
+                return true;
+            }
+
+            if (button is ILegacyIAccessiblePatternElement { SupportsLegacyIAccessiblePattern: true } legacy
+                && legacy.DoDefaultActionPattern())
+            {
+                return true;
+            }
+
+            button!.Click();
+            return true;
+        }
+        catch (WindowsInteractionPolicyException)
+        {
+            throw;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private static IMauiElement? FindButtonByText(IEnumerable<IMauiElement>? buttons, string buttonText)

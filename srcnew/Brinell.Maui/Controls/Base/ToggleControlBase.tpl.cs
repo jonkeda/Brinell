@@ -61,10 +61,19 @@ public abstract partial class ToggleControlBase<TScope> : ClickableControlBase<T
                && WaitForStateChange(element, beforeState, timeoutMs);
     }
 
+    /// <remarks>
+    /// Uses the inherited activation ladder rather than a shared click helper, so a toggle
+    /// control that activates through a different child (a template's inner checkbox, say)
+    /// overrides <c>TryActivateByPattern</c> once and both click and toggle follow it.
+    /// </remarks>
     private bool TryToggleByActivation(IMauiElement element, bool? beforeState, int? timeoutMs = null)
     {
-        return ElementClicker.TryClick(element)
-               && WaitForStateChange(element, beforeState, timeoutMs);
+        if (!TryActivateByPattern(element))
+        {
+            element.Click();
+        }
+
+        return WaitForStateChange(element, beforeState, timeoutMs);
     }
 
     private bool TryToggleByKeyboard(IMauiElement element, bool? beforeState, int? timeoutMs = null)

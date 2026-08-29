@@ -505,7 +505,104 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
         var itemRoot = TryGetItemRoot(index);
         if (itemRoot == null) return false;
 
-        return ElementClicker.TryActivateContainingListItemOrElement(this, itemRoot);
+        return ActivateItemCore(itemRoot);
+    }
+
+    /// <summary>
+    /// Activates an item, given the element the item strategy found for it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The element a strategy matches is usually inside the row rather than the row itself —
+    /// a label or a cell — and on Windows selection responds to the <c>ListItem</c> that
+    /// contains it, not to that inner element. So the containing row is tried first, then the
+    /// element itself.
+    /// </para>
+    /// <para>
+    /// This lives on the collection rather than in a shared helper because "the row that owns
+    /// this element" is collection knowledge. A collection whose rows activate differently
+    /// overrides this.
+    /// </para>
+    /// </remarks>
+    /// <param name="itemRoot">The element found for the item.</param>
+    /// <returns>True when the item was activated.</returns>
+    protected virtual bool ActivateItemCore(IMauiElement itemRoot)
+    {
+        ArgumentNullException.ThrowIfNull(itemRoot);
+
+        if (!itemRoot.HasUsableBounds())
+        {
+            return false;
+        }
+
+        foreach (var row in FindContainingRows(itemRoot))
+        {
+            if (TryActivate(row))
+            {
+                return true;
+            }
+        }
+
+        return TryActivate(itemRoot);
+    }
+
+    /// <summary>
+    /// The <c>ListItem</c> elements whose bounds contain the given element, tightest first.
+    /// </summary>
+    /// <remarks>
+    /// Ordered by area so a nested row is preferred over the outer list that also contains it.
+    /// </remarks>
+    private IReadOnlyList<IMauiElement> FindContainingRows(IMauiElement element)
+    {
+        var center = ElementGeometryExtensions.CenterOf(element.Rect);
+
+        return this.FindVisibleElements(Locator.ByControlType("ListItem"))
+            .Where(item => item.Rect.Contains(center))
+            .OrderBy(item => item.Area())
+            .ToList();
+    }
+
+    /// <summary>
+    /// Activates a candidate row, reporting failure rather than throwing.
+    /// </summary>
+    /// <remarks>
+    /// Unlike a control's click, this walks a list of candidates and a given one may simply be
+    /// the wrong element, so an unsuccessful pattern is an answer rather than a fault. A
+    /// pointer-policy violation is still allowed to surface — that is a configuration error,
+    /// not a mismatched candidate.
+    /// </remarks>
+    private static bool TryActivate(IMauiElement element)
+    {
+        if (!element.HasUsableBounds())
+        {
+            return false;
+        }
+
+        try
+        {
+            if (element is ISelectionItemPatternElement { SupportsSelectionItemPattern: true } selectionItem
+                && selectionItem.SelectItemPattern())
+            {
+                return true;
+            }
+
+            if (element is IInvokePatternElement { SupportsInvokePattern: true } invoke
+                && invoke.InvokePattern())
+            {
+                return true;
+            }
+
+            element.Click();
+            return true;
+        }
+        catch (WindowsInteractionPolicyException)
+        {
+            throw;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     #endregion

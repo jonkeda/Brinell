@@ -36,12 +36,66 @@ public abstract partial class ClickableControlBase<TScope> : FocusableControlBas
     /// <summary>
     /// Performs click on pre-found element. No logging - caller handles logging.
     /// </summary>
+    /// <remarks>
+    /// Walks the activation ladder (<see cref="TryActivateByPattern"/>) before falling back to
+    /// a pointer click. A control whose view activates differently overrides this or the
+    /// ladder, rather than a shared helper deciding for every control.
+    /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <param name="timeoutMs">Optional timeout for clickable check.</param>
     protected virtual void ClickCore(IMauiElement element, int? timeoutMs = null)
     {
         EnsureClickableCore(element);
+
+        if (TryActivateByPattern(element))
+            return;
+
         element.Click();
+    }
+
+    /// <summary>
+    /// Activates the element through an automation pattern, when the platform exposes one.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Windows UIA reaches a control's command more reliably than a synthetic pointer click,
+    /// which can be swallowed by an overlay or land on the wrong visual child. On platforms
+    /// without these patterns — Appium on Android and iOS — every probe reports unsupported
+    /// and the caller falls through to <see cref="IElement{TSelf}.Click"/>, which is the
+    /// correct mobile behaviour.
+    /// </para>
+    /// <para>
+    /// This deliberately does not catch exceptions. Its predecessor
+    /// (<c>ElementClicker.TryClick</c>) swallowed every failure and returned false, which
+    /// turned a broken click into an unrelated assertion failure later in the test. A pattern
+    /// that is present but fails is a real fault and is allowed to surface.
+    /// </para>
+    /// <para>
+    /// LegacyIAccessible is deliberately <em>not</em> in this ladder. A WinUI toggle advertises
+    /// it and its <c>DoDefaultAction</c> reports success without changing the control's state,
+    /// so including it makes <c>Click</c> silently do nothing on a Switch. Controls that
+    /// genuinely need that rung add it by overriding this method.
+    /// </para>
+    /// </remarks>
+    /// <param name="element">The pre-found element.</param>
+    /// <returns>True when a pattern was available and reported success.</returns>
+    protected virtual bool TryActivateByPattern(IMauiElement element)
+    {
+        ArgumentNullException.ThrowIfNull(element);
+
+        if (element is ISelectionItemPatternElement { SupportsSelectionItemPattern: true } selectionItem
+            && selectionItem.SelectItemPattern())
+        {
+            return true;
+        }
+
+        if (element is IInvokePatternElement { SupportsInvokePattern: true } invoke
+            && invoke.InvokePattern())
+        {
+            return true;
+        }
+
+        return false;
     }
 
     /// <summary>

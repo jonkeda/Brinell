@@ -14,7 +14,7 @@ namespace Brinell.Maui.FlaUI;
 /// Provides native Windows UI Automation support for MAUI desktop apps.
 /// Also implements pattern-based interfaces for enhanced Windows Automation support.
 /// </summary>
-public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISelectionItemPatternElement, ILegacyIAccessiblePatternElement, IRangePatternElement, IExpandCollapsePatternElement, INestedTextElement, ITogglePatternElement
+public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISelectionItemPatternElement, ILegacyIAccessiblePatternElement, IRangePatternElement, IExpandCollapsePatternElement<IMauiElement>, INestedTextElement<IMauiElement>, ITogglePatternElement
 {
     private readonly AutomationElement _element;
     private readonly FlaUIMauiDriver _driver;

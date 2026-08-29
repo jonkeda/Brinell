@@ -1,3 +1,5 @@
+using Brinell.Maui.Configuration;
+
 namespace Brinell.Maui.Extensions.Controls.Selection;
 
 /// <summary>
@@ -98,13 +100,13 @@ public class GenericBrowser<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope
         return Run(nameof(TryToggleItem), identifier, () =>
         {
             var invokeButton = WaitForAutomationId(BuildItemButtonAutomationId(identifier), timeoutMs);
-            if (ElementClicker.TryClick(invokeButton))
+            if (invokeButton != null && TryActivate(invokeButton))
             {
                 return true;
             }
 
             var item = WaitForAutomationId(BuildItemAutomationId(identifier), timeoutMs);
-            if (ElementClicker.TryActivateContainingListItemOrElement(MauiScope, item))
+            if (ActivateRowCore(item))
             {
                 return true;
             }
@@ -112,7 +114,7 @@ public class GenericBrowser<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope
             if (!string.IsNullOrWhiteSpace(visibleText))
             {
                 var label = WaitForNameInOpenBrowser(visibleText, timeoutMs);
-                return ElementClicker.TryActivateContainingListItemOrElement(MauiScope, label);
+                return ActivateRowCore(label);
             }
 
             return false;
@@ -145,45 +147,41 @@ public class GenericBrowser<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope
                 FlyoutNativeCloseAutomationId,
                 FlyoutCloseAutomationId);
 
-            return ElementClicker.TryClick(closeButton)
+            return closeButton != null
+                && TryActivate(closeButton)
                 && WaitForCloseSurfaceToDismiss(timeoutMs);
         });
     }
 
     private bool TryActivateAndWait(IMauiElement? element, string itemAutomationId, int? timeoutMs)
     {
-        return ElementClicker.TryActivateContainingListItemOrElement(MauiScope, element)
+        return ActivateRowCore(element)
             && WaitForItemToClose(itemAutomationId, timeoutMs);
     }
 
     private bool TryActivateElementAndWait(IMauiElement? element, string itemAutomationId, int? timeoutMs)
     {
-        return ElementClicker.TryClick(element)
+        return element != null
+            && TryActivate(element)
             && WaitForItemToClose(itemAutomationId, timeoutMs);
     }
 
     private IMauiElement? WaitForAutomationId(string automationId, int? timeoutMs)
     {
         IMauiElement? result = null;
-        ElementSearch.WaitUntil(
-            () =>
-            {
-                result = ElementSearch.FindVisibleByAutomationId(MauiScope, automationId);
-                return result != null;
-            },
-            TimeSpan.FromMilliseconds(timeoutMs ?? DefaultTimeoutMs));
+        RunWait(() => (result = MauiScope.FindVisibleByAutomationId(automationId)) != null, timeoutMs);
         return result;
     }
 
     private IMauiElement? WaitForAnyAutomationId(int? timeoutMs, params string[] automationIds)
     {
         IMauiElement? result = null;
-        ElementSearch.WaitUntil(
+        RunWait(
             () =>
             {
                 foreach (var automationId in automationIds)
                 {
-                    result = ElementSearch.FindVisibleByAutomationId(MauiScope, automationId);
+                    result = MauiScope.FindVisibleByAutomationId(automationId);
                     if (result != null)
                     {
                         return true;
@@ -192,27 +190,21 @@ public class GenericBrowser<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope
 
                 return false;
             },
-            TimeSpan.FromMilliseconds(timeoutMs ?? DefaultTimeoutMs));
+            timeoutMs);
         return result;
     }
 
     private IMauiElement? WaitForNameInOpenBrowser(string name, int? timeoutMs)
     {
         IMauiElement? result = null;
-        ElementSearch.WaitUntil(
-            () =>
-            {
-                result = FindVisibleByNameInOpenBrowser(name);
-                return result != null;
-            },
-            TimeSpan.FromMilliseconds(timeoutMs ?? DefaultTimeoutMs));
+        RunWait(() => (result = FindVisibleByNameInOpenBrowser(name)) != null, timeoutMs);
         return result;
     }
 
     private IMauiElement? FindVisibleByNameInOpenBrowser(string name)
     {
-        var browserRoots = (MauiScope.FindElements(Locator.ByAutomationId(BrowserAutomationId)) ?? Array.Empty<IMauiElement>())
-            .Where(ElementSearch.HasUsableBounds)
+        var browserRoots = MauiScope
+            .FindVisibleElements(Locator.ByAutomationId(BrowserAutomationId))
             .ToList();
         if (browserRoots.Count == 0)
         {
@@ -221,37 +213,35 @@ public class GenericBrowser<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope
 
         foreach (var browserRoot in browserRoots)
         {
-            var directChild = ElementSearch.FirstVisible(browserRoot.FindElements(Locator.ByName(name)));
+            var directChild = browserRoot.FindElements(Locator.ByName(name)).FirstVisible();
             if (directChild != null)
             {
                 return directChild;
             }
         }
 
-        return (MauiScope.FindElements(Locator.ByName(name)) ?? Array.Empty<IMauiElement>())
-            .Where(ElementSearch.HasUsableBounds)
-            .FirstOrDefault(candidate => browserRoots.Any(root => ElementSearch.ContainsCenter(root, candidate)));
+        return MauiScope.FindVisibleElements(Locator.ByName(name))
+            .FirstOrDefault(candidate => browserRoots.Any(root => root.ContainsCenter(candidate)));
     }
 
     private bool WaitForItemToClose(string automationId, int? timeoutMs)
     {
-        return ElementSearch.WaitUntil(
-            () => !MauiScope.FindElements(Locator.ByAutomationId(automationId)).Any(ElementSearch.HasUsableBounds),
-            TimeSpan.FromMilliseconds(timeoutMs ?? 3_000));
+        return RunWait(
+            () => !MauiScope.FindVisibleElements(Locator.ByAutomationId(automationId)).Any(),
+            timeoutMs ?? 3_000);
     }
 
     private bool WaitForCloseSurfaceToDismiss(int? timeoutMs)
     {
-        return ElementSearch.WaitUntil(
+        return RunWait(
             () => !HasVisibleElement(BrowserAutomationId)
                   && !HasVisibleElement(DrawerCloseAutomationId)
                   && !HasVisibleElement(FlyoutCloseAutomationId),
-            TimeSpan.FromMilliseconds(timeoutMs ?? 3_000));
+            timeoutMs ?? 3_000);
     }
 
     private bool HasVisibleElement(string automationId)
-        => (MauiScope.FindElements(Locator.ByAutomationId(automationId)) ?? Array.Empty<IMauiElement>())
-            .Any(ElementSearch.HasUsableBounds);
+        => MauiScope.FindVisibleElements(Locator.ByAutomationId(automationId)).Any();
 
     private static string BuildItemAutomationId(string identifier)
         => BuildAutomationId(ItemPrefix, identifier);
@@ -269,5 +259,85 @@ public class GenericBrowser<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope
         return string.IsNullOrWhiteSpace(safeIdentifier)
             ? prefix
             : $"{prefix}_{safeIdentifier}";
+    }
+
+    /// <summary>
+    /// Activates a row of the browser list, given an element found inside it.
+    /// </summary>
+    /// <remarks>
+    /// The element matched by id or name is usually a label inside the row; on Windows the
+    /// containing <c>ListItem</c> is what responds to selection. The row is tried first, then
+    /// the element itself. Overridable so a browser whose rows differ changes this one method.
+    /// </remarks>
+    protected virtual bool ActivateRowCore(IMauiElement? item)
+    {
+        if (!item.HasUsableBounds())
+        {
+            return false;
+        }
+
+        var center = ElementGeometryExtensions.CenterOf(item!.Rect);
+
+        var containingRows = MauiScope.FindVisibleElements(Locator.ByControlType("ListItem"))
+            .Where(row => row.Rect.Contains(center))
+            .OrderBy(row => row.Area());
+
+        foreach (var row in containingRows)
+        {
+            if (TryActivate(row))
+            {
+                return true;
+            }
+        }
+
+        return TryActivate(item);
+    }
+
+    /// <summary>
+    /// Activates one candidate element, reporting failure rather than throwing.
+    /// </summary>
+    /// <remarks>
+    /// Every caller here is walking a list of possible surfaces - item button, row, label,
+    /// close button - so a failure means "not this one" and the caller falls back.
+    /// A pointer-policy violation still surfaces: that is configuration, not a wrong candidate.
+    /// </remarks>
+    private static bool TryActivate(IMauiElement element)
+    {
+        if (!element.HasUsableBounds())
+        {
+            return false;
+        }
+
+        try
+        {
+            if (element is ISelectionItemPatternElement { SupportsSelectionItemPattern: true } selectionItem
+                && selectionItem.SelectItemPattern())
+            {
+                return true;
+            }
+
+            if (element is IInvokePatternElement { SupportsInvokePattern: true } invoke
+                && invoke.InvokePattern())
+            {
+                return true;
+            }
+
+            if (element is ILegacyIAccessiblePatternElement { SupportsLegacyIAccessiblePattern: true } legacy
+                && legacy.DoDefaultActionPattern())
+            {
+                return true;
+            }
+
+            element.Click();
+            return true;
+        }
+        catch (WindowsInteractionPolicyException)
+        {
+            throw;
+        }
+        catch
+        {
+            return false;
+        }
     }
 }

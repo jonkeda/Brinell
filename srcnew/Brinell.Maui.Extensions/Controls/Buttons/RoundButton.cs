@@ -27,17 +27,22 @@ public class RoundButton<TScope> : Brinell.Maui.Controls.Base.ClickableControlBa
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// The template wraps a native button, which is what carries the command; the template
+    /// root only hosts it. Resolving the child here — rather than in a shared helper — is what
+    /// keeps this control responsible for its own view.
+    /// </remarks>
     protected override void ClickCore(IMauiElement element, int? timeoutMs = null)
     {
         EnsureClickableCore(element);
 
-        var target = ElementSearch.FindChildByAutomationId(MauiScope, element, NativeButtonId)
-            ?? ElementSearch.FindChildByAutomationId(MauiScope, element, LegacyClickableContainerId)
+        var target = FindChildCore(element, NativeButtonId)
+            ?? FindChildCore(element, LegacyClickableContainerId)
             ?? element;
 
-        if (!ElementClicker.TryClick(target))
+        if (!TryActivateByPattern(target))
         {
-            throw new InvalidOperationException($"Could not activate round button. Locator: {Locator}");
+            target.Click();
         }
     }
 }

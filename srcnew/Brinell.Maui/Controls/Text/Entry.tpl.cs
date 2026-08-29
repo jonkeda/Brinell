@@ -69,7 +69,7 @@ public partial class Entry<TScope> : Base.FocusableControlBase<TScope>, IEditabl
     {
         if (text == null) return;
 
-        if (element is Interfaces.INestedTextElement textElement
+        if (element is INestedTextElement<IMauiElement> textElement
             && textElement.SetTextWithFallback(text))
         {
             return;

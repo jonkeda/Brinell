@@ -1,4 +1,4 @@
-namespace Brinell.Maui.Interfaces;
+namespace Brinell.Core.Interfaces;
 
 /// <summary>
 /// Interface for elements with nested text structure (Windows UI Automation).
@@ -6,14 +6,15 @@ namespace Brinell.Maui.Interfaces;
 /// actual text is in a nested TextBox element.
 /// Implemented by platform-specific drivers (e.g., FlaUIMauiElement).
 /// </summary>
-public interface INestedTextElement
+/// <typeparam name="TElement">The platform element type returned by <see cref="FindNestedTextBox"/>.</typeparam>
+public interface INestedTextElement<TElement>
 {
     /// <summary>
     /// Finds the nested TextBox (Edit) element within this control.
     /// Used for controls like SearchBar/AutoSuggestBox where text is in a child element.
     /// </summary>
     /// <returns>The nested TextBox element, or null if not found.</returns>
-    IMauiElement? FindNestedTextBox();
+    TElement? FindNestedTextBox();
     
     /// <summary>
     /// Gets text from the nested TextBox if direct text access fails.

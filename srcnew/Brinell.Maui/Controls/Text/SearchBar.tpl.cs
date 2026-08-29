@@ -72,7 +72,7 @@ public partial class SearchBar<TScope> : Entry<TScope>
         if (element == null) return null;
 
         // For Windows/FlaUI, use GetNestedText which handles AutoSuggestBox structure
-        if (element is Interfaces.INestedTextElement textElement)
+        if (element is INestedTextElement<IMauiElement> textElement)
         {
             var text = textElement.GetNestedText();
             if (text != null)

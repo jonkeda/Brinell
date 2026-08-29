@@ -28,17 +28,22 @@ public class IconCommandButton<TScope> : Brinell.Maui.Controls.Base.ClickableCon
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// The template wraps a native button and an icon child; the root itself is not clickable.
+    /// Resolving the child here — rather than in a shared helper — is what keeps this control
+    /// responsible for its own view.
+    /// </remarks>
     protected override void ClickCore(IMauiElement element, int? timeoutMs = null)
     {
         EnsureClickableCore(element);
 
-        var target = ElementSearch.FindChildByAutomationId(MauiScope, element, NativeButtonId)
-            ?? ElementSearch.FindChildByAutomationId(MauiScope, element, IconButtonId)
+        var target = FindChildCore(element, NativeButtonId)
+            ?? FindChildCore(element, IconButtonId)
             ?? element;
 
-        if (!ElementClicker.TryClick(target))
+        if (!TryActivateByPattern(target))
         {
-            throw new InvalidOperationException($"Could not activate icon command button. Locator: {Locator}");
+            target.Click();
         }
     }
 }

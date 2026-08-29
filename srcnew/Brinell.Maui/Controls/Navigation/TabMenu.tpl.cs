@@ -1,3 +1,5 @@
+using Brinell.Maui.Configuration;
+
 namespace Brinell.Maui.Controls.Navigation;
 
 /// <summary>
@@ -60,20 +62,63 @@ public partial class TabMenu<TScope> : Base.ViewBase<TScope>
                 continue;
             }
 
-            if (index < buttons.Count && ElementClicker.TryClick(buttons[index]))
+            if (index < buttons.Count && TryActivateTabSurface(buttons[index]))
                 return true;
 
-            if (index < tabGrids.Count && ElementClicker.TryClick(tabGrids[index]))
+            if (index < tabGrids.Count && TryActivateTabSurface(tabGrids[index]))
                 return true;
 
-            return ElementClicker.TryClick(captions[index]);
+            return TryActivateTabSurface(captions[index]);
         }
 
-        if (ElementClicker.TryClick(ElementSearch.FindVisibleByName(MauiScope, caption)))
+        if (TryActivateTabSurface(MauiScope.FindVisibleByName(caption)))
             return true;
 
-        return ElementClicker.TryClick(
-            ElementSearch.FirstVisible(MauiScope.FindElements(Locator.ByText(caption))));
+        return TryActivateTabSurface(
+            MauiScope.FindElements(Locator.ByText(caption)).FirstVisible());
+    }
+
+    /// <summary>
+    /// Activates one candidate tab surface, reporting failure rather than throwing.
+    /// </summary>
+    /// <remarks>
+    /// A tab renders as several stacked elements — a button, a grid, a caption — and which one
+    /// carries the command varies by platform. This walks candidates, so a given one failing
+    /// means "not this surface", not a test error, and the caller moves to the next.
+    /// A pointer-policy violation still surfaces: that is configuration, not a wrong candidate.
+    /// </remarks>
+    private static bool TryActivateTabSurface(IMauiElement? element)
+    {
+        if (!element.HasUsableBounds())
+        {
+            return false;
+        }
+
+        try
+        {
+            if (element is IInvokePatternElement { SupportsInvokePattern: true } invoke
+                && invoke.InvokePattern())
+            {
+                return true;
+            }
+
+            if (element is ILegacyIAccessiblePatternElement { SupportsLegacyIAccessiblePattern: true } legacy
+                && legacy.DoDefaultActionPattern())
+            {
+                return true;
+            }
+
+            element!.Click();
+            return true;
+        }
+        catch (WindowsInteractionPolicyException)
+        {
+            throw;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     #endregion

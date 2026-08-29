@@ -1,3 +1,5 @@
+using Brinell.Maui.Configuration;
+
 namespace Brinell.Maui.Extensions.Controls.Selection;
 
 /// <summary>
@@ -39,7 +41,7 @@ public class SelectionList<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope>
         return Run(nameof(TrySelectByAutomationId), automationId, () =>
         {
             var item = WaitForAutomationId(automationId, timeoutMs);
-            return ElementClicker.TryActivateContainingListItemOrElement(MauiScope, item);
+            return ActivateRowCore(item);
         });
     }
 
@@ -53,33 +55,100 @@ public class SelectionList<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope>
         return Run(nameof(TrySelectByText), text, () =>
         {
             var item = WaitForName(text, timeoutMs);
-            return ElementClicker.TryActivateContainingListItemOrElement(MauiScope, item);
+            return ActivateRowCore(item);
         });
     }
 
+    /// <summary>
+    /// Activates a row, given an element found inside it.
+    /// </summary>
+    /// <remarks>
+    /// The element matched by id or name is usually a label inside the row, and on Windows
+    /// selection responds to the containing <c>ListItem</c>, not to that label. The containing
+    /// row is tried first, then the element itself.
+    /// <para>
+    /// Overridable so a list whose rows activate differently changes this one method.
+    /// </para>
+    /// </remarks>
+    /// <param name="item">The element found for the row. May be null when the wait timed out.</param>
+    /// <returns>True when the row was activated.</returns>
+    protected virtual bool ActivateRowCore(IMauiElement? item)
+    {
+        if (!item.HasUsableBounds())
+        {
+            return false;
+        }
+
+        var center = ElementGeometryExtensions.CenterOf(item!.Rect);
+
+        var containingRows = MauiScope.FindVisibleElements(Locator.ByControlType("ListItem"))
+            .Where(row => row.Rect.Contains(center))
+            .OrderBy(row => row.Area());
+
+        foreach (var row in containingRows)
+        {
+            if (TryActivate(row))
+            {
+                return true;
+            }
+        }
+
+        return TryActivate(item);
+    }
+
+    /// <summary>
+    /// Activates one candidate row element, reporting failure rather than throwing.
+    /// </summary>
+    /// <remarks>
+    /// Candidates are tried in turn, so a failure means "not this row" and the caller moves on.
+    /// A pointer-policy violation still surfaces: that is configuration, not a wrong candidate.
+    /// </remarks>
+    private static bool TryActivate(IMauiElement element)
+    {
+        try
+        {
+            if (element is ISelectionItemPatternElement { SupportsSelectionItemPattern: true } selectionItem
+                && selectionItem.SelectItemPattern())
+            {
+                return true;
+            }
+
+            if (element is IInvokePatternElement { SupportsInvokePattern: true } invoke
+                && invoke.InvokePattern())
+            {
+                return true;
+            }
+
+            element.Click();
+            return true;
+        }
+        catch (WindowsInteractionPolicyException)
+        {
+            throw;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Waits for a visible element with the given automation id.
+    /// </summary>
     private IMauiElement? WaitForAutomationId(string automationId, int? timeoutMs)
     {
         IMauiElement? result = null;
-        ElementSearch.WaitUntil(
-            () =>
-            {
-                result = ElementSearch.FindVisibleByAutomationId(MauiScope, automationId);
-                return result != null;
-            },
-            TimeSpan.FromMilliseconds(timeoutMs ?? DefaultTimeoutMs));
+        RunWait(() => (result = MauiScope.FindVisibleByAutomationId(automationId)) != null, timeoutMs);
         return result;
     }
 
+    /// <summary>
+    /// Waits for a visible element with the given name.
+    /// </summary>
     private IMauiElement? WaitForName(string name, int? timeoutMs)
     {
         IMauiElement? result = null;
-        ElementSearch.WaitUntil(
-            () =>
-            {
-                result = ElementSearch.FindVisibleByName(MauiScope, name);
-                return result != null;
-            },
-            TimeSpan.FromMilliseconds(timeoutMs ?? DefaultTimeoutMs));
+        RunWait(() => (result = MauiScope.FindVisibleByName(name)) != null, timeoutMs);
         return result;
     }
 }

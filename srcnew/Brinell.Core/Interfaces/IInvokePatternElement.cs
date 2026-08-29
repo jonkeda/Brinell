@@ -1,4 +1,4 @@
-namespace Brinell.Maui.Interfaces;
+namespace Brinell.Core.Interfaces;
 
 /// <summary>
 /// Optional platform capability for elements that expose a UI Automation Invoke pattern.

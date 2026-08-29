@@ -43,7 +43,7 @@ public partial class Editor<TScope> : Entry<TScope>
     protected override void ClearCore(IMauiElement element, int? timeoutMs = null)
     {
         // For Windows/FlaUI, use ClearWithFallback for robust clearing
-        if (element is Interfaces.INestedTextElement textElement)
+        if (element is INestedTextElement<IMauiElement> textElement)
         {
             textElement.ClearWithFallback();
             return;
@@ -64,7 +64,7 @@ public partial class Editor<TScope> : Entry<TScope>
         if (text == null) return;
 
         // For Windows/FlaUI, use ClearWithFallback for robust clearing
-        if (element is Interfaces.INestedTextElement textElement)
+        if (element is INestedTextElement<IMauiElement> textElement)
         {
             textElement.ClearWithFallback();
             if (textElement.SetTextWithFallback(text))

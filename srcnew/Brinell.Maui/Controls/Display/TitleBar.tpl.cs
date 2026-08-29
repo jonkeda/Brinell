@@ -45,7 +45,7 @@ public partial class TitleBar<TScope> : Base.ViewBase<TScope>
         if (element == null) return null;
 
         // For Windows/FlaUI, use GetNestedText which handles complex title bar structures
-        if (element is INestedTextElement textElement)
+        if (element is INestedTextElement<IMauiElement> textElement)
         {
             var text = textElement.GetNestedText();
             if (text != null)

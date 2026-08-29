@@ -6,7 +6,7 @@ public class EditorControlTests : SemanticControlTestsBase
     public void Editor_SetText_PrefersNestedTextValuePatternFallback()
     {
         var editor = CreateElement("Notes", 0, 0, 200, 80);
-        editor.As<INestedTextElement>()
+        editor.As<INestedTextElement<IMauiElement>>()
             .Setup(e => e.SetTextWithFallback("Toolbox note"))
             .Returns(true);
         Context
@@ -15,7 +15,7 @@ public class EditorControlTests : SemanticControlTestsBase
 
         Page.Notes.SetText("Toolbox note");
 
-        editor.As<INestedTextElement>().Verify(e => e.SetTextWithFallback("Toolbox note"), Times.Once);
+        editor.As<INestedTextElement<IMauiElement>>().Verify(e => e.SetTextWithFallback("Toolbox note"), Times.Once);
         editor.Verify(e => e.SendKeys(It.IsAny<string>(), It.IsAny<TextInputMethod>()), Times.Never);
     }
 }

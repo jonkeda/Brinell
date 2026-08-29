@@ -356,6 +356,82 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
         return _mauiScope.FindElement(Locator);
     }
 
+    /// <summary>
+    /// Finds a descendant of this control's element by automation id.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// For compound controls whose template wraps a native child — a round button hosting a
+    /// platform button, an editable field hosting an entry. The child is looked for beneath
+    /// the control's own element first; failing that, the scope is searched and candidates are
+    /// filtered to those positioned inside the control. The second pass exists because some
+    /// MAUI handlers reparent the native child out of the logical subtree, leaving position as
+    /// the only reliable link.
+    /// </para>
+    /// <para>
+    /// This is <c>protected virtual</c> on the control rather than a shared static helper:
+    /// which child a compound control activates is knowledge about that control, and a custom
+    /// control outside this assembly overrides it the same way the built-ins do.
+    /// </para>
+    /// </remarks>
+    /// <param name="root">The control's own element.</param>
+    /// <param name="automationId">The automation id of the child to find.</param>
+    /// <returns>The child element, or null when no visible match exists.</returns>
+    protected virtual IMauiElement? FindChildCore(IMauiElement root, string automationId)
+    {
+        ArgumentNullException.ThrowIfNull(root);
+
+        var locator = Locator.ByAutomationId(automationId);
+
+        var directChild = root.FindElements(locator).FirstVisible();
+        if (directChild != null)
+        {
+            return directChild;
+        }
+
+        if (!root.HasUsableBounds())
+        {
+            return null;
+        }
+
+        return MauiScope.FindVisibleElements(locator)
+            .FirstOrDefault(root.ContainsCenter);
+    }
+
+    /// <summary>
+    /// Finds a descendant of this control's element by control type.
+    /// </summary>
+    /// <remarks>
+    /// The by-id counterpart of <see cref="FindChildCore(IMauiElement, string)"/>, for templates
+    /// whose inner part carries no automation id. Among positional candidates the smallest is
+    /// taken, since a larger match is usually an ancestor that merely contains the control.
+    /// </remarks>
+    /// <param name="root">The control's own element.</param>
+    /// <param name="controlType">The control type of the child to find.</param>
+    /// <returns>The child element, or null when no visible match exists.</returns>
+    protected virtual IMauiElement? FindChildByControlTypeCore(IMauiElement root, string controlType)
+    {
+        ArgumentNullException.ThrowIfNull(root);
+
+        var locator = Locator.ByControlType(controlType);
+
+        var directChild = root.FindElements(locator).FirstVisible();
+        if (directChild != null)
+        {
+            return directChild;
+        }
+
+        if (!root.HasUsableBounds())
+        {
+            return null;
+        }
+
+        return MauiScope.FindVisibleElements(locator)
+            .Where(root.ContainsCenter)
+            .OrderBy(candidate => candidate.Area())
+            .FirstOrDefault();
+    }
+
     #endregion
 
     #region Visible

@@ -65,7 +65,7 @@ public class EditableField<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope>
                 ?? FindChild(root, TextEditorButtonId)
                 ?? root;
 
-            return ElementClicker.TryClick(target);
+            return TryActivate(target);
         });
     }
 
@@ -116,7 +116,50 @@ public class EditableField<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope>
     }
 
     private IMauiElement? FindChild(IMauiElement root, string automationId)
-        => ElementSearch.FindChildByAutomationId(MauiScope, root, automationId);
+        => FindChildCore(root, automationId);
+
+    /// <summary>
+    /// Activates one candidate surface of the generated field, reporting failure rather than throwing.
+    /// </summary>
+    /// <remarks>
+    /// The template exposes several possible command surfaces (native button, icon, root) and
+    /// callers try them in turn, so a failure here means "not this surface" and the caller
+    /// falls back — to keyboard activation, for instance. A pointer-policy violation still
+    /// surfaces: that is configuration, not a wrong candidate.
+    /// </remarks>
+    private static bool TryActivate(IMauiElement element)
+    {
+        if (!element.HasUsableBounds())
+        {
+            return false;
+        }
+
+        try
+        {
+            if (element is IInvokePatternElement { SupportsInvokePattern: true } invoke
+                && invoke.InvokePattern())
+            {
+                return true;
+            }
+
+            if (element is ILegacyIAccessiblePatternElement { SupportsLegacyIAccessiblePattern: true } legacy
+                && legacy.DoDefaultActionPattern())
+            {
+                return true;
+            }
+
+            element.Click();
+            return true;
+        }
+        catch (WindowsInteractionPolicyException)
+        {
+            throw;
+        }
+        catch
+        {
+            return false;
+        }
+    }
 
     private bool TrySetTextEditor(IMauiElement root, string text, int? timeoutMs)
     {
@@ -134,7 +177,7 @@ public class EditableField<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope>
         SetElementText(editor, text);
 
         var okButton = WaitForTextEditorConfirmButton(timeoutMs);
-        return ElementClicker.TryClick(okButton);
+        return okButton != null && TryActivate(okButton);
     }
 
     private bool TryOpenTextEditor(IMauiElement root, int? timeoutMs)
@@ -143,7 +186,7 @@ public class EditableField<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope>
             ?? FindChild(root, TextEditorButtonId)
             ?? root;
 
-        if (ElementClicker.TryClick(target) && WaitForTextEditorOpen(timeoutMs))
+        if (TryActivate(target) && WaitForTextEditorOpen(timeoutMs))
         {
             return true;
         }
@@ -188,12 +231,12 @@ public class EditableField<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope>
     private IMauiElement? WaitForLargestEditControl(int? timeoutMs)
     {
         IMauiElement? result = null;
-        ElementSearch.WaitUntil(
+        RunWait(
             () =>
             {
                 result = MauiScope
                     .FindElements(Locator.ByControlType("Edit"))
-                    .Where(ElementSearch.HasUsableBounds)
+                    .Where(element => element.HasUsableBounds())
                     .Where(element => !string.Equals(
                         element.GetAttribute("AutomationId"),
                         TextEntryId,
@@ -202,7 +245,7 @@ public class EditableField<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope>
                     .FirstOrDefault();
                 return result != null;
             },
-            TimeSpan.FromMilliseconds(timeoutMs ?? DefaultTimeoutMs));
+            timeoutMs);
 
         return result;
     }
@@ -210,20 +253,13 @@ public class EditableField<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope>
     private IMauiElement? WaitForAutomationId(string automationId, int? timeoutMs)
     {
         IMauiElement? result = null;
-        ElementSearch.WaitUntil(
-            () =>
-            {
-                result = ElementSearch.FindVisibleByAutomationId(MauiScope, automationId);
-                return result != null;
-            },
-            TimeSpan.FromMilliseconds(timeoutMs ?? DefaultTimeoutMs));
-
+        RunWait(() => (result = MauiScope.FindVisibleByAutomationId(automationId)) != null, timeoutMs);
         return result;
     }
 
     private static void SetElementText(IMauiElement element, string text)
     {
-        if (element is Interfaces.INestedTextElement textElement)
+        if (element is INestedTextElement<IMauiElement> textElement)
         {
             textElement.ClearWithFallback();
             if (textElement.SetTextWithFallback(text))

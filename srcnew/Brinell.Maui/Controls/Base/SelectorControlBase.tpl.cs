@@ -44,7 +44,7 @@ public abstract partial class SelectorControlBase<TScope> : FocusableControlBase
         if (text == null) return;
 
         // For ComboBox with ExpandCollapse pattern, use SelectItemByText for reliable selection
-        if (element is Interfaces.IExpandCollapsePatternElement comboBox && comboBox.SupportsExpandCollapse)
+        if (element is IExpandCollapsePatternElement<IMauiElement> comboBox && comboBox.SupportsExpandCollapse)
         {
             if (!comboBox.SelectItemByText(text))
             {
@@ -81,7 +81,7 @@ public abstract partial class SelectorControlBase<TScope> : FocusableControlBase
         if (index == null) return;
 
         // For ComboBox with ExpandCollapse pattern, use SelectItemByIndex for reliable selection
-        if (element is Interfaces.IExpandCollapsePatternElement comboBox && comboBox.SupportsExpandCollapse)
+        if (element is IExpandCollapsePatternElement<IMauiElement> comboBox && comboBox.SupportsExpandCollapse)
         {
             if (!comboBox.SelectItemByIndex(index.Value))
             {
@@ -136,7 +136,7 @@ public abstract partial class SelectorControlBase<TScope> : FocusableControlBase
 
         // For ComboBox (ExpandCollapse pattern), use SelectionPattern to get the selected item text
         // This avoids returning the ComboBox header/title instead of the selected value
-        if (element is Interfaces.IExpandCollapsePatternElement comboBox && comboBox.SupportsExpandCollapse)
+        if (element is IExpandCollapsePatternElement<IMauiElement> comboBox && comboBox.SupportsExpandCollapse)
         {
             return comboBox.GetSelectedItemText();
         }
@@ -203,7 +203,7 @@ public abstract partial class SelectorControlBase<TScope> : FocusableControlBase
         if (element == null) return null;
 
         // For ExpandCollapse elements, expand first so item elements remain valid while reading texts
-        if (element is Interfaces.IExpandCollapsePatternElement comboBox && comboBox.SupportsExpandCollapse)
+        if (element is IExpandCollapsePatternElement<IMauiElement> comboBox && comboBox.SupportsExpandCollapse)
         {
             comboBox.Expand();
             try
@@ -273,7 +273,7 @@ public abstract partial class SelectorControlBase<TScope> : FocusableControlBase
         if (element == null) return null;
 
         // For ComboBox with ExpandCollapse pattern, use GetExpandedItems which handles expand/collapse
-        if (element is Interfaces.IExpandCollapsePatternElement comboBox && comboBox.SupportsExpandCollapse)
+        if (element is IExpandCollapsePatternElement<IMauiElement> comboBox && comboBox.SupportsExpandCollapse)
         {
             return comboBox.GetExpandedItems();
         }

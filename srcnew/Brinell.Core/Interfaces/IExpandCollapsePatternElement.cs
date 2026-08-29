@@ -1,11 +1,12 @@
-namespace Brinell.Maui.Interfaces;
+namespace Brinell.Core.Interfaces;
 
 /// <summary>
 /// Interface for elements supporting ExpandCollapse pattern (Windows UI Automation).
 /// Used for ComboBox/Picker controls on Windows.
 /// Implemented by platform-specific drivers (e.g., FlaUIMauiElement).
 /// </summary>
-public interface IExpandCollapsePatternElement
+/// <typeparam name="TElement">The platform element type returned by <see cref="GetExpandedItems"/>.</typeparam>
+public interface IExpandCollapsePatternElement<TElement>
 {
     /// <summary>
     /// Gets whether the element supports the ExpandCollapse UI Automation pattern.
@@ -34,7 +35,7 @@ public interface IExpandCollapsePatternElement
     /// Automatically expands if needed and restores original state.
     /// </summary>
     /// <returns>List of item elements, or null if pattern not supported.</returns>
-    IReadOnlyList<IMauiElement>? GetExpandedItems();
+    IReadOnlyList<TElement>? GetExpandedItems();
     
     /// <summary>
     /// Selects an item by text. Expands, finds the item, selects it using the appropriate 

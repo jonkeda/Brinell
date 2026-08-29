@@ -43,7 +43,32 @@ public abstract class PageObjectBase<TSelf> : ObjectBase, IMauiPage<TSelf>
     /// <inheritdoc />
     public Label<TSelf> BusySentinel => new (this, "UITest_IsBusy");
 
+    /// <summary>
+    /// Whether element lookups on this page require the page to be loaded first.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// True by default: an element cannot be inside a page that is not on screen, so looking
+    /// for one is a guaranteed timeout and the wait tells the reader nothing.
+    /// </para>
+    /// <para>
+    /// Override to <c>false</c> for a page that deliberately resolves elements outside its own
+    /// root — a dialog host, for instance, where a WinUI3 <c>ContentDialog</c> renders in a
+    /// separate popup window that is not a descendant of the page.
+    /// </para>
+    /// </remarks>
+    protected virtual bool RequiresLoadedPage => true;
+
     private bool _ensuringLoad = false;
+
+    /// <summary>
+    /// Whether the page is loaded, guarding against re-entry.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="IsLoaded()"/> resolves elements through this same scope, so without the
+    /// guard the load check would recurse into itself. During that inner call the answer is
+    /// reported as true, which lets the check complete rather than deadlock.
+    /// </remarks>
     private bool EnsureLoaded()
     {
         if (_ensuringLoad) return true;
@@ -57,6 +82,30 @@ public abstract class PageObjectBase<TSelf> : ObjectBase, IMauiPage<TSelf>
             _ensuringLoad = false;
         }
     }
+
+    /// <summary>
+    /// Whether an element lookup may proceed.
+    /// </summary>
+    /// <remarks>
+    /// Kept separate from <see cref="EnsureLoaded"/> so the re-entrancy guard stays the only
+    /// thing that method does, and so an opted-out page skips the load check entirely rather
+    /// than paying for it and ignoring the result.
+    /// </remarks>
+    private bool CanResolveElements() => !RequiresLoadedPage || EnsureLoaded();
+
+    /// <summary>
+    /// The exception thrown when a lookup is attempted on a page that is not loaded.
+    /// </summary>
+    /// <remarks>
+    /// Names the page as well as the element. The element name alone is what made this
+    /// condition so hard to read: it describes a symptom of being on the wrong page, not the
+    /// cause. See <c>.my/maui/rca/rca-002-page-precondition-discarded-slow-failures.md</c>.
+    /// </remarks>
+    private ElementNotFoundException PageNotLoaded(Locator locator)
+        => new($"Page '{Name}' is not loaded, so '{locator}' cannot be found in it. " +
+               $"The page root is located by AutomationId:{Name}. " +
+               "Navigate to the page first, or override RequiresLoadedPage if this page " +
+               "resolves elements outside its own root.");
     
     /// <inheritdoc />
     public virtual bool IsLoaded(int? timeoutMs = null)
@@ -70,7 +119,7 @@ public abstract class PageObjectBase<TSelf> : ObjectBase, IMauiPage<TSelf>
     private bool IsVisiblePageRootLoaded()
         => _context
             .FindElements(Locator.ByAutomationId(Name))
-            .Any(ElementSearch.HasUsableBounds);
+            .Any(element => element.HasUsableBounds());
 
     /// <summary>
     /// Waits for the page to finish loading.
@@ -190,21 +239,29 @@ public abstract class PageObjectBase<TSelf> : ObjectBase, IMauiPage<TSelf>
     /// <inheritdoc />
     IMauiElement? IElementScope<IMauiElement>.TryFindElement(Locator locator)
     {
-        EnsureLoaded();
+        if (!CanResolveElements()) return null;
+
         return _context.TryFindElement(locator);
     }
-    
+
     /// <inheritdoc />
+    /// <remarks>
+    /// Throws immediately when the page is not loaded rather than searching for an element
+    /// that cannot be there. The search would spend the full <c>ElementFind</c> timeout and
+    /// then report a missing element, which describes the symptom rather than the cause.
+    /// </remarks>
     IMauiElement IElementScope<IMauiElement>.FindElement(Locator locator)
     {
-        EnsureLoaded();
+        if (!CanResolveElements()) throw PageNotLoaded(locator);
+
         return _context.FindElement(locator);
     }
-    
+
     /// <inheritdoc />
     IReadOnlyList<IMauiElement> IElementScope<IMauiElement>.FindElements(Locator locator)
     {
-        EnsureLoaded();
+        if (!CanResolveElements()) return [];
+
         return _context.FindElements(locator);
     }
 
