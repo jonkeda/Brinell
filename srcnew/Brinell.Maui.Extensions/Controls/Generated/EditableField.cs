@@ -8,7 +8,7 @@ namespace Brinell.Maui.Extensions.Controls.Generated;
 /// Handles generated field roots that expose child native buttons/text entries.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public class EditableField<TScope> : ControlBase<TScope>
+public class EditableField<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope>
     where TScope : IMauiScope<TScope>
 {
     private const string NativeButtonId = "EditableFieldView_NativeButton";

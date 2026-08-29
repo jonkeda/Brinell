@@ -5,7 +5,7 @@ namespace Brinell.Maui.Controls.Shapes;
 /// Ellipse is used as a visual drawing element, typically not requiring interaction testing.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public class Ellipse<TScope> : ControlBase<TScope>
+public class Ellipse<TScope> : Base.ViewBase<TScope>
     where TScope : IMauiScope<TScope>
 {
     /// <summary>

@@ -5,7 +5,7 @@ namespace Brinell.Maui.Controls.Collection;
 /// TableView uses sections (TableSection) with cells (TextCell, SwitchCell, EntryCell, etc.).
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public class TableView<TScope> : ControlBase<TScope>
+public class TableView<TScope> : Base.ViewBase<TScope>
     where TScope : IMauiScope<TScope>
 {
     /// <summary>

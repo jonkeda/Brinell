@@ -5,7 +5,7 @@ namespace Brinell.Maui.Controls.Media;
 /// BlazorWebView enables running Blazor apps as part of a MAUI application.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public class BlazorWebView<TScope> : ControlBase<TScope>
+public class BlazorWebView<TScope> : Base.ViewBase<TScope>
     where TScope : IMauiScope<TScope>
 {
     /// <summary>

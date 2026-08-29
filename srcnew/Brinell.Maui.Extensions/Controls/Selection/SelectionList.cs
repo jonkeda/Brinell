@@ -5,7 +5,7 @@ namespace Brinell.Maui.Extensions.Controls.Selection;
 /// a UIA ListItem rather than the text/layout element found by AutomationId.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public class SelectionList<TScope> : ControlBase<TScope>
+public class SelectionList<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope>
     where TScope : IMauiScope<TScope>
 {
     /// <summary>

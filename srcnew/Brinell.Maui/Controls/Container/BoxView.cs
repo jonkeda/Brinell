@@ -5,7 +5,7 @@ namespace Brinell.Maui.Controls.Container;
 /// BoxView is typically used as a visual element for layout purposes.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public class BoxView<TScope> : ControlBase<TScope>
+public class BoxView<TScope> : Base.ViewBase<TScope>
     where TScope : IMauiScope<TScope>
 {
     /// <summary>

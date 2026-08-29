@@ -5,7 +5,7 @@ namespace Brinell.Maui.Controls.Media;
 /// Provides methods for media playback control and state inspection.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public class MediaElement<TScope> : ControlBase<TScope>
+public class MediaElement<TScope> : Base.ViewBase<TScope>
     where TScope : IMauiScope<TScope>
 {
     /// <summary>

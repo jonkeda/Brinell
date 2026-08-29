@@ -5,7 +5,7 @@ namespace Brinell.Maui.Extensions.Controls.Buttons;
 /// Activates the native button/icon child before falling back to the template root.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public class IconCommandButton<TScope> : ClickableControlBase<TScope>
+public class IconCommandButton<TScope> : Brinell.Maui.Controls.Base.ClickableControlBase<TScope>
     where TScope : IMauiScope<TScope>
 {
     private const string NativeButtonId = "IconLabelButtonView_NativeButton";

@@ -5,7 +5,7 @@ namespace Brinell.Maui.Controls.Container;
 /// Frame wraps content with a border, shadow, and background.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public class Frame<TScope> : ControlBase<TScope>
+public class Frame<TScope> : Base.ViewBase<TScope>
     where TScope : IMauiScope<TScope>
 {
     /// <summary>

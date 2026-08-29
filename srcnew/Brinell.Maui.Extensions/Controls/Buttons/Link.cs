@@ -5,7 +5,7 @@ namespace Brinell.Maui.Extensions.Controls.Buttons;
 /// Typically a Label with GestureRecognizer or a custom hyperlink control.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public class Link<TScope> : ClickableControlBase<TScope>
+public class Link<TScope> : Brinell.Maui.Controls.Base.ClickableControlBase<TScope>
     where TScope : IMauiScope<TScope>
 {
     /// <summary>
@@ -32,7 +32,9 @@ public class Link<TScope> : ClickableControlBase<TScope>
     /// <returns>The link text, or null if not available.</returns>
     public string? GetLinkText()
     {
-        return GetText();
+        // Reads the element's text directly. ViewBase has no GetText - text is a control
+        // concern, supplied by Label and the input controls rather than by the base.
+        return RunGetWithElement(element => element.Text);
     }
 
     /// <summary>

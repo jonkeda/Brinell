@@ -5,7 +5,7 @@ namespace Brinell.Maui.Controls.Collection;
 /// IndicatorView shows visual indicators (typically dots) representing positions in a collection.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public class IndicatorView<TScope> : ControlBase<TScope>
+public class IndicatorView<TScope> : Base.ViewBase<TScope>
     where TScope : IMauiScope<TScope>
 {
     /// <summary>

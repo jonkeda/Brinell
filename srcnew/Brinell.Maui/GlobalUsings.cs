@@ -4,6 +4,7 @@ global using Brinell.Core.Exceptions;
 global using Brinell.Core.Interfaces;
 global using Brinell.Core.Locators;
 global using Brinell.Core.Logging;
+global using Brinell.Maui.Controls.Internal;
 global using Brinell.Maui.Controls.Buttons;
 global using Brinell.Maui.Controls.Text;
 global using Brinell.Maui.Enums;

@@ -1,4 +1,4 @@
-namespace Brinell.Maui.Controls;
+namespace Brinell.Maui.Controls.Internal;
 
 internal static class ElementSearch
 {

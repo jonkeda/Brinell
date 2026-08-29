@@ -5,7 +5,7 @@ namespace Brinell.Maui.Controls.Media;
 /// Provides methods for URL navigation and web content interaction.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public class WebView<TScope> : ControlBase<TScope>
+public class WebView<TScope> : Base.ViewBase<TScope>
     where TScope : IMauiScope<TScope>
 {
     /// <summary>

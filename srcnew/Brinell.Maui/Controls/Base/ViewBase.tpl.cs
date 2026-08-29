@@ -122,6 +122,36 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
         return ok;
     }
 
+    /// <summary>
+    /// Runs an operation once, with entry/exit logging, and returns its result.
+    /// </summary>
+    /// <remarks>
+    /// Unlike the <c>Run*WithElement</c> family this does not poll and does not resolve an
+    /// element — the operation owns both. Controls whose logic spans several elements use
+    /// it to get one logged unit of work rather than one per lookup.
+    /// </remarks>
+    protected TResult Run<TValue, TResult>(string action, TValue? value, Func<TResult> operation)
+    {
+        var stopwatch = Stopwatch.StartNew();
+        Logger?.LogEntry(TestName, PageName, ControlId, action, value?.ToString());
+
+        try
+        {
+            var result = operation();
+            stopwatch.Stop();
+            Logger?.LogExit(TestName, PageName, ControlId, action,
+                LogResult.Success, (int)stopwatch.ElapsedMilliseconds);
+            return result;
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            Logger?.LogExit(TestName, PageName, ControlId, action,
+                LogResult.Error, (int)stopwatch.ElapsedMilliseconds, ex.Message);
+            throw;
+        }
+    }
+
     protected bool RunWait(Func<bool> operation, int? timeoutMs = null,
         [CallerMemberName] string? caller = null)
     {

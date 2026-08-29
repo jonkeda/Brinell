@@ -1,154 +1,146 @@
+using Brinell.Maui.Containers;
+using Brinell.Maui.Controls.Internal;
+
 namespace Brinell.Maui.Controls.Collection;
 
 /// <summary>
-/// MAUI CarouselView control for displaying swipeable item carousels.
-/// Combines list functionality with swipe-based navigation between items.
+/// MAUI CarouselView: a swipeable collection with a notion of current position.
 /// </summary>
-/// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-/// <typeparam name="TItem">The item container type.</typeparam>
-public class CarouselView<TScope, TItem> : List<TScope, TItem>
-    where TScope : IMauiScope<TScope>
-    where TItem : class
+/// <remarks>
+/// <para>
+/// Derive from this rather than instantiating it — the base is self-referencing so that
+/// every member returns the concrete collection type:
+/// </para>
+/// <code>
+/// public class BannerCarousel : CarouselView&lt;HomePage, BannerCarousel, BannerCard&gt;
+/// {
+///     public BannerCarousel(IMauiScope&lt;HomePage&gt; scope)
+///         : base(scope, "Banners", ItemStrategy.ByAutomationId("BannerCard"),
+///                (c, root, i) =&gt; new BannerCard(c, root, i)) { }
+/// }
+/// </code>
+/// <para>
+/// Position lives here rather than on <see cref="CollectionObjectBase{TParent, TSelf, TItem}"/>:
+/// only a carousel has a "current" item, so putting it on the shared base would give every
+/// collection a member most cannot honour.
+/// </para>
+/// </remarks>
+/// <typeparam name="TParent">The parent scope type (a page or another container).</typeparam>
+/// <typeparam name="TSelf">The carousel type itself (self-referencing).</typeparam>
+/// <typeparam name="TItem">The card type.</typeparam>
+public abstract class CarouselView<TParent, TSelf, TItem>
+    : CollectionObjectBase<TParent, TSelf, TItem>
+    where TParent : IMauiScope<TParent>
+    where TSelf : CarouselView<TParent, TSelf, TItem>
+    where TItem : ItemContainerBase<TSelf, TItem>
 {
     /// <summary>
-    /// Creates a CarouselView control.
+    /// Creates a CarouselView bound to an explicit locator.
     /// </summary>
-    /// <param name="scope">The containing scope.</param>
-    /// <param name="listLocator">Locator for the CarouselView container.</param>
-    /// <param name="itemAutomationIdPrefix">Prefix for item AutomationIds.</param>
-    /// <param name="itemFactory">Factory to create item containers.</param>
-    public CarouselView(
-        IMauiScope<TScope> scope,
-        Locator listLocator,
-        string itemAutomationIdPrefix,
-        Func<IMauiScope<TScope>, int, TItem> itemFactory)
-        : base(scope, listLocator, itemAutomationIdPrefix, itemFactory)
+    protected CarouselView(
+        IMauiScope<TParent> parentScope,
+        Locator locator,
+        IItemStrategy itemStrategy,
+        Func<TSelf, IMauiElement, int, TItem> itemFactory)
+        : base(parentScope, locator, itemStrategy, itemFactory)
     {
     }
 
     /// <summary>
-    /// Creates a CarouselView control using automation ID.
+    /// Creates a CarouselView using the scope's default locator strategy.
     /// </summary>
-    public CarouselView(
-        IMauiScope<TScope> scope,
+    protected CarouselView(
+        IMauiScope<TParent> parentScope,
         string automationId,
-        string itemAutomationIdPrefix,
-        Func<IMauiScope<TScope>, int, TItem> itemFactory)
-        : base(scope, automationId, itemAutomationIdPrefix, itemFactory)
+        IItemStrategy itemStrategy,
+        Func<TSelf, IMauiElement, int, TItem> itemFactory)
+        : base(parentScope, automationId, itemStrategy, itemFactory)
     {
     }
 
-    #region CarouselView-Specific Methods
+    #region Position
 
     /// <summary>
-    /// Gets the current position (0-based index) of the carousel.
+    /// Gets the carousel's current zero-based position.
     /// </summary>
-    /// <returns>The current position, or null if element not found.</returns>
+    /// <returns>The position, or null when the carousel cannot be resolved.</returns>
     public int? GetPosition()
     {
-        var element = TryFindElement();
-        if (element == null) return null;
+        var root = TryGetContainerRoot();
+        if (root == null) return null;
 
-        var attr = element.GetAttribute("Position");
-        if (!string.IsNullOrEmpty(attr) && int.TryParse(attr, out var position))
-        {
-            return position;
-        }
-
-        return 0;
+        var attribute = root.GetAttribute("Position");
+        return !string.IsNullOrEmpty(attribute) && int.TryParse(attribute, out var position)
+            ? position
+            : 0;
     }
 
     /// <summary>
-    /// Swipes to the next item in the carousel.
+    /// Whether the carousel loops back to the start.
     /// </summary>
-    /// <returns>The containing scope for fluent chaining.</returns>
-    public TScope SwipeNext(int? timeoutMs = null)
-    {
-        return RunDoWithElement(  element =>
-        {
-            var rect = element.Rect;
-            var centerY = rect.Y + rect.Height / 2;
-            var startX = rect.X + rect.Width - 20;
-            var endX = rect.X + 20;
-
-            element.Swipe(startX, centerY, endX, centerY);
-        }, timeoutMs);
-    }
-
-    /// <summary>
-    /// Swipes to the previous item in the carousel.
-    /// </summary>
-    /// <returns>The containing scope for fluent chaining.</returns>
-    public TScope SwipePrevious(int? timeoutMs = null)
-    {
-        return RunDoWithElement(element =>
-        {
-            var rect = element.Rect;
-            var centerY = rect.Y + rect.Height / 2;
-            var startX = rect.X + 20;
-            var endX = rect.X + rect.Width - 20;
-
-            element.Swipe(startX, centerY, endX, centerY);
-        }, timeoutMs);
-    }
-
-    /// <summary>
-    /// Waits for the carousel to reach the expected position.
-    /// </summary>
-    /// <param name="expectedPosition">The expected 0-based position.</param>
-    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
-    /// <returns>True if position was reached, false if timeout.</returns>
-    public bool WaitPosition(int expectedPosition, int? timeoutMs = null)
-    {
-        return RunWait(() => GetPosition() == expectedPosition, timeoutMs);
-    }
-
-    /// <summary>
-    /// Asserts the carousel is at the expected position.
-    /// </summary>
-    /// <param name="expectedPosition">The expected 0-based position.</param>
-    /// <param name="message">Optional assertion message.</param>
-    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
-    /// <returns>The containing scope for fluent chaining.</returns>
-    public TScope AssertPosition(int expectedPosition, string? message = null, int? timeoutMs = null)
-    {
-        if (!WaitPosition(expectedPosition, timeoutMs))
-        {
-            var actual = GetPosition();
-            throw new AssertionException(
-                message ?? $"Expected carousel position {expectedPosition} but got {actual}. Locator: {Locator}");
-        }
-        return ContainingScope;
-    }
-
-    /// <summary>
-    /// Gets whether the carousel loops back to the beginning.
-    /// </summary>
-    /// <returns>True if looping is enabled, null if element not found.</returns>
+    /// <returns>True when looping is enabled; null when the carousel cannot be resolved.</returns>
     public bool? IsLoopEnabled()
     {
-        var element = TryFindElement();
-        if (element == null) return null;
+        var root = TryGetContainerRoot();
+        if (root == null) return null;
 
-        var attr = element.GetAttribute("Loop");
-        if (!string.IsNullOrEmpty(attr))
-        {
-            return attr.Equals("true", StringComparison.OrdinalIgnoreCase);
-        }
-
-        return false;
+        var attribute = root.GetAttribute("Loop");
+        return !string.IsNullOrEmpty(attribute)
+            && attribute.Equals("true", StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>
-    /// Gets the current item at the carousel's position.
+    /// Gets the card at the carousel's current position.
     /// </summary>
-    /// <returns>The current item, or null if position cannot be determined.</returns>
+    /// <returns>The current card, or null when the position cannot be determined.</returns>
     public TItem? GetCurrentItem()
     {
         var position = GetPosition();
-        if (position == null) return null;
+        return position == null ? null : TryItem(position.Value);
+    }
 
-        return Item(position.Value);
+    /// <summary>
+    /// Swipes to the next card.
+    /// </summary>
+    /// <returns>The carousel, for chaining.</returns>
+    /// <remarks>
+    /// Pointer input, and therefore policy-gated on Windows. The swipe is a no-op rather
+    /// than a failure where pointer input is forbidden.
+    /// </remarks>
+    public TSelf SwipeNext()
+    {
+        GestureHelper.TrySwipeLeft(TryGetContainerRoot());
+        return Self;
+    }
+
+    /// <summary>
+    /// Swipes to the previous card.
+    /// </summary>
+    /// <returns>The carousel, for chaining.</returns>
+    public TSelf SwipePrevious()
+    {
+        GestureHelper.TrySwipeRight(TryGetContainerRoot());
+        return Self;
+    }
+
+    /// <summary>
+    /// Waits until the carousel reaches a position.
+    /// </summary>
+    public bool WaitPosition(int expectedPosition, int? timeoutMs = null)
+        => RunWait(() => GetPosition() == expectedPosition, timeoutMs);
+
+    /// <summary>
+    /// Asserts the carousel's position, returning the carousel for chaining.
+    /// </summary>
+    public TSelf AssertPosition(int expectedPosition, string? message = null, int? timeoutMs = null)
+    {
+        if (!WaitPosition(expectedPosition, timeoutMs))
+        {
+            throw new AssertionException(
+                message ?? $"Expected carousel position {expectedPosition} but it was {GetPosition()}. Locator: {Locator}");
+        }
+
+        return Self;
     }
 
     #endregion

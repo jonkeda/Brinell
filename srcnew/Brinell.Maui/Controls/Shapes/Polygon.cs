@@ -5,7 +5,7 @@ namespace Brinell.Maui.Controls.Shapes;
 /// Polygon is used as a visual drawing element, typically not requiring interaction testing.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public class Polygon<TScope> : ControlBase<TScope>
+public class Polygon<TScope> : Base.ViewBase<TScope>
     where TScope : IMauiScope<TScope>
 {
     /// <summary>

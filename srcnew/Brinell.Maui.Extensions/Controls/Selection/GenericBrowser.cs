@@ -4,7 +4,7 @@ namespace Brinell.Maui.Extensions.Controls.Selection;
 /// Shared GenericBrowser selector used by generated picker/drawer flows.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public class GenericBrowser<TScope> : ControlBase<TScope>
+public class GenericBrowser<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope>
     where TScope : IMauiScope<TScope>
 {
     private const string BrowserAutomationId = "GenericBrowser";

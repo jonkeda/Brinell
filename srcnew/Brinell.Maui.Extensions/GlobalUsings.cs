@@ -7,5 +7,6 @@ global using Brinell.Core;
 global using Brinell.Core.Exceptions;
 global using Brinell.Core.Locators;
 global using Brinell.Maui;
+global using Brinell.Maui.Controls.Internal;
 global using Brinell.Maui.Controls;
 global using Brinell.Maui.Interfaces;

@@ -5,7 +5,7 @@ namespace Brinell.Maui.Controls.Container;
 /// IsoPaneView is used to display content across multiple panes on foldable screens.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public class IsoPaneView<TScope> : ControlBase<TScope>
+public class IsoPaneView<TScope> : Base.ViewBase<TScope>
     where TScope : IMauiScope<TScope>
 {
     /// <summary>

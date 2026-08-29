@@ -1,62 +1,59 @@
+using Brinell.Maui.Containers;
+
 namespace Brinell.Maui.Controls.Collection;
 
 /// <summary>
-/// MAUI ListView control for displaying scrollable lists of items.
-/// Wraps List pattern with ListView-specific semantics.
+/// MAUI ListView: a scrollable list that hands out typed, scoped rows.
 /// </summary>
-/// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-/// <typeparam name="TItem">The item container type.</typeparam>
-public class ListView<TScope, TItem> : List<TScope, TItem>
-    where TScope : IMauiScope<TScope>
-    where TItem : class
+/// <remarks>
+/// <para>
+/// Derive from this rather than instantiating it — the base is self-referencing so that
+/// every member returns the concrete collection type:
+/// </para>
+/// <code>
+/// public class TaskList : ListView&lt;TasksPage, TaskList, TaskRow&gt;
+/// {
+///     public TaskList(IMauiScope&lt;TasksPage&gt; scope)
+///         : base(scope, "TaskList", ItemStrategy.ByLocator(Locator.ByControlType("ListItem")),
+///                (c, root, i) =&gt; new TaskRow(c, root, i)) { }
+/// }
+/// </code>
+/// <para>
+/// <c>ListView</c> is superseded by <c>CollectionView</c> in modern MAUI. It is kept for
+/// apps that still use it; prefer <see cref="CollectionView{TParent, TSelf, TItem}"/> for
+/// new work.
+/// </para>
+/// </remarks>
+/// <typeparam name="TParent">The parent scope type (a page or another container).</typeparam>
+/// <typeparam name="TSelf">The list type itself (self-referencing).</typeparam>
+/// <typeparam name="TItem">The row type.</typeparam>
+public abstract class ListView<TParent, TSelf, TItem>
+    : CollectionObjectBase<TParent, TSelf, TItem>
+    where TParent : IMauiScope<TParent>
+    where TSelf : ListView<TParent, TSelf, TItem>
+    where TItem : ItemContainerBase<TSelf, TItem>
 {
     /// <summary>
-    /// Creates a ListView control.
+    /// Creates a ListView bound to an explicit locator.
     /// </summary>
-    /// <param name="scope">The containing scope.</param>
-    /// <param name="listLocator">Locator for the ListView container.</param>
-    /// <param name="itemAutomationIdPrefix">Prefix for item AutomationIds (e.g., "ListItem_").</param>
-    /// <param name="itemFactory">Factory to create item containers.</param>
-    public ListView(
-        IMauiScope<TScope> scope,
-        Locator listLocator,
-        string itemAutomationIdPrefix,
-        Func<IMauiScope<TScope>, int, TItem> itemFactory)
-        : base(scope, listLocator, itemAutomationIdPrefix, itemFactory)
+    protected ListView(
+        IMauiScope<TParent> parentScope,
+        Locator locator,
+        IItemStrategy itemStrategy,
+        Func<TSelf, IMauiElement, int, TItem> itemFactory)
+        : base(parentScope, locator, itemStrategy, itemFactory)
     {
     }
 
     /// <summary>
-    /// Creates a ListView control using automation ID.
+    /// Creates a ListView using the scope's default locator strategy.
     /// </summary>
-    public ListView(
-        IMauiScope<TScope> scope,
+    protected ListView(
+        IMauiScope<TParent> parentScope,
         string automationId,
-        string itemAutomationIdPrefix,
-        Func<IMauiScope<TScope>, int, TItem> itemFactory)
-        : base(scope, automationId, itemAutomationIdPrefix, itemFactory)
+        IItemStrategy itemStrategy,
+        Func<TSelf, IMauiElement, int, TItem> itemFactory)
+        : base(parentScope, automationId, itemStrategy, itemFactory)
     {
     }
-
-    #region ListView-Specific Methods
-
-    /// <summary>
-    /// Checks if the ListView has a pull-to-refresh capability enabled.
-    /// </summary>
-    /// <returns>True if refreshable, null if element not found.</returns>
-    public bool? IsPullToRefreshEnabled()
-    {
-        var element = TryFindElement();
-        if (element == null) return null;
-
-        var attr = element.GetAttribute("IsPullToRefreshEnabled");
-        if (!string.IsNullOrEmpty(attr))
-        {
-            return attr.Equals("true", StringComparison.OrdinalIgnoreCase);
-        }
-
-        return false;
-    }
-
-    #endregion
 }

@@ -2,6 +2,7 @@ using Brinell.Core;
 using Brinell.Core.Interfaces;
 using Brinell.Core.Locators;
 using Brinell.Maui.Controls;
+using Brinell.Maui.Controls.Base;
 using Brinell.Maui.Interfaces;
 
 namespace Brinell.Maui.CommunityToolkit.Controls;
@@ -30,7 +31,7 @@ namespace Brinell.Maui.CommunityToolkit.Controls;
 /// </example>
 /// </summary>
 /// <typeparam name="TScope">The scope type (typically a page object)</typeparam>
-public class TabViewControl<TScope> : ClickableControlBase<TScope>, ITabControlObject<TScope>
+public class TabViewControl<TScope> : Brinell.Maui.Controls.Base.ClickableControlBase<TScope>, ITabControlObject<TScope>
     where TScope : IMauiScope<TScope>
 {
     private readonly string _automationId;
@@ -159,7 +160,9 @@ public class TabViewControl<TScope> : ClickableControlBase<TScope>, ITabControlO
     {
         if (expected == null) return true;
 
-        return RunWaitWithElement(
+        // ViewBase's RunWaitWithElement takes the expectation first, so a null expectation
+        // short-circuits inside the helper rather than at each call site.
+        return RunWaitWithElement(expected,
             element => IsSelectedCore(element) == expected, timeoutMs);
     }
 

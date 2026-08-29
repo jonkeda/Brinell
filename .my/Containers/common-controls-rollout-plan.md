@@ -1,6 +1,6 @@
 # Plan: roll out all common container and collection controls
 
-**Status:** Phases 0 and 1 complete and verified; Phases 2–6 not started
+**Status:** Phases 0, 1 and 3 complete and verified; Phases 2, 4–6 not started
 **Scope:** `Brinell.Maui` only — containers, collections, sample pages, UI tests
 **Builds on:** [container-and-collection-design.md](container-and-collection-design.md) §6 steps 7–12,
 which this plan expands into ordered, individually shippable work.
@@ -428,18 +428,36 @@ These are near-identical thin subclasses. Write one by hand, confirm it, then
 replicate — but do **not** introduce a code generator for them; five files of
 eight lines each is not worth a template.
 
-### Phase 3 — Collection migration
+### Phase 3 — Collection migration — **DONE**
 
-Design §6 step 9.
+Completed as step 8 of [`.my/clean/controls-base-cleanup-plan.md`](../clean/controls-base-cleanup-plan.md),
+because deleting `ControlBase` depended on it.
 
-1. Re-base `CollectionView` on `CollectionObjectBase`, preserving
-   `GetSelectionMode` / `IsMultiSelectEnabled`.
-2. Re-base `ListView` and `CarouselView`.
-3. Delete the `.Basic` files and `List.cs`. Its only remaining consumers are the three
-   controls above; `PaginatedList` was removed in
-   [uncovered-areas-plan.md](uncovered-areas-plan.md) Phase A.
-4. `CarouselView` needs a `CurrentItem` / `GetPosition` concept that
-   `CollectionObjectBase` does not have — see 6.3.
+**Smaller than estimated.** The plan budgeted 2–3 days for a careful re-base of live types.
+A survey found that `CollectionView`, `ListView`, and `CarouselView` had **no consumers
+anywhere** — not in `Brinell.Maui`, its Extensions, the samples, or the tests — so all three
+could be rewritten outright rather than migrated.
+
+All three are now abstract bases over `CollectionObjectBase<TParent, TSelf, TItem>`. Abstract
+because that base is self-referencing: consumers subclass to bind their own type, as
+`ProductCollection` already does.
+
+Members carried across as this plan required:
+
+- `CollectionView` — `GetSelectionMode`, `IsMultiSelectEnabled`
+- `CarouselView` — `GetPosition`, `IsLoopEnabled`, `GetCurrentItem`, `SwipeNext`,
+  `SwipePrevious`, `WaitPosition`, `AssertPosition` (decision 6.3: these stay on
+  `CarouselView`, not on the shared base)
+
+Deleted: `CollectionView.Basic.cs`, `CarouselView.Basic.cs`, `List.cs` (407 lines),
+`ScrollableControlBase.cs`, and `ControlBase.cs` (724 lines).
+
+`PaginatedList`, the fourth `List<>` consumer, had already gone in the uncovered-areas
+plan's Phase A.
+
+**Caveat:** the rewritten controls have no tests, because they had no consumers to test
+through. They were equally untested as `List<>` subclasses, so this is not a regression —
+but the rewrite is verified only by compilation until something subclasses one.
 
 ### Phase 4 — `TableView` (separable; defer if time-boxed)
 
@@ -683,7 +701,7 @@ Rough, assuming the framework layer stays as-is:
 | 0 — automation probe | ~~half a day~~ **done** | 3 tests, 0 regressions; changed the shape of 2.1 and 6.4 |
 | 1 — container migration | ~~2–3 days~~ **done** | `ContainerBase` deleted; `List.cs` deferred to Phase 3; step 7 moot (UITests2 deleted) |
 | 2 — layout controls | 1 day | thin, repetitive; all 5 confirmed viable by Phase 0 |
-| 3 — collection migration | 2–3 days | 6.3 is the unknown |
+| 3 — collection migration | ~~2–3 days~~ **done in hours** | the three controls had no consumers; 6.3 resolved as planned |
 | 4 — `TableView` | 2 days | separable; may prove not to fit |
 | 5 — samples + UI tests | 4–5 days | the largest, and the one that finds the real bugs |
 | 6 — scope factories | 1–2 days | ergonomics only |

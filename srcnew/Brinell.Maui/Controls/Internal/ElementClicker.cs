@@ -1,6 +1,6 @@
 using Brinell.Maui.Configuration;
 
-namespace Brinell.Maui.Controls;
+namespace Brinell.Maui.Controls.Internal;
 
 internal static class ElementClicker
 {
