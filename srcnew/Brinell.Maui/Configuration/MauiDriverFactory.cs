@@ -14,6 +14,17 @@ namespace Brinell.Maui.Configuration;
 /// </summary>
 public static class MauiDriverFactory
 {
+    /// <summary>
+    /// The Appium client assembly name.
+    /// </summary>
+    /// <remarks>
+    /// The NuGet package is called <c>Appium.WebDriver</c> but the assembly it ships is
+    /// <c>Appium.Net</c>. Loading by the package name fails at runtime with "assembly not
+    /// found", which reads as a missing package rather than a wrong name — and, because the
+    /// load is by reflection, nothing catches it at compile time.
+    /// </remarks>
+    private const string AppiumAssemblyName = "Appium.Net";
+
     private static Type? _appiumDriverType;
     private static Type? _flaUIDriverType;
     
@@ -159,15 +170,15 @@ public static class MauiDriverFactory
     {
         try
         {
-            var assembly = Assembly.Load("Appium.WebDriver");
+            var assembly = Assembly.Load(AppiumAssemblyName);
             return assembly.GetType("OpenQA.Selenium.Appium.AppiumOptions")
                 ?? throw new InvalidOperationException("AppiumOptions type not found");
         }
         catch (FileNotFoundException)
         {
             throw new InvalidOperationException(
-                "Appium.WebDriver assembly not found. " +
-                "Ensure the Appium.WebDriver package is installed.");
+                $"{AppiumAssemblyName} assembly not found. " +
+                "Ensure the Appium.WebDriver package is referenced by the test project.");
         }
     }
     
@@ -217,7 +228,7 @@ public static class MauiDriverFactory
     {
         try
         {
-            var assembly = Assembly.Load("Appium.WebDriver");
+            var assembly = Assembly.Load(AppiumAssemblyName);
             
             Type driverType = platform switch
             {
@@ -234,8 +245,8 @@ public static class MauiDriverFactory
         catch (FileNotFoundException)
         {
             throw new InvalidOperationException(
-                "Appium.WebDriver assembly not found. " +
-                "Ensure the Appium.WebDriver package is installed.");
+                $"{AppiumAssemblyName} assembly not found. " +
+                "Ensure the Appium.WebDriver package is referenced by the test project.");
         }
     }
 }

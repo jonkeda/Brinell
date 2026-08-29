@@ -35,8 +35,6 @@ public static class MauiProgram
         // This fixes dotnet/maui#3996 where tabs don't expose AutomationId
         TabbedPageAutomationMapper.Configure();
 
-        // Same fix, for Shell/TabBar tabs
-        ShellAutomationMapper.Configure();
 #endif
 
 #if DEBUG

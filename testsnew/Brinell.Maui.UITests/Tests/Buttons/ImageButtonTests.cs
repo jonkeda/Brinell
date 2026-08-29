@@ -16,7 +16,7 @@ public class ImageButtonTests
     {
         _fixture = fixture;
 
-        _fixture.AppShell.ButtonsTab.Click();
+        _fixture.Open(SamplePage.Buttons);
     }
 
     private ButtonsTestPage GetPage()

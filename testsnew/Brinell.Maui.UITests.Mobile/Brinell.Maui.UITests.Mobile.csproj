@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Brinell.Maui.UITests</RootNamespace>
+    <!--
+      Plain net10.0, not a platform TFM: this project does not build the app, it drives an
+      already-installed one through an Appium server. The device-specific part is the app
+      package, produced by the sample app's own android/ios heads.
+    -->
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <!--
+    The test sources are LINKED from Brinell.Maui.UITests rather than copied or moved.
+
+    That is the whole point of the phase 4 split: one set of page objects, containers and
+    test bodies, compiled into a Windows head that references the FlaUI driver and a mobile
+    head that references the Appium driver. A test is written once and runs on all three
+    platforms unchanged - goal (c) in .my/maui/maui-control-architecture-plan.md.
+
+    Linking rather than moving keeps the Windows project's layout untouched, so the existing
+    suite and its tooling carry on working exactly as before.
+  -->
+  <ItemGroup>
+    <Compile Include="..\Brinell.Maui.UITests\**\*.cs"
+             Exclude="..\Brinell.Maui.UITests\bin\**;..\Brinell.Maui.UITests\obj\**"
+             Link="%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\srcnew\Brinell.Core\Brinell.Core.csproj" />
+    <ProjectReference Include="..\..\srcnew\Brinell.Maui\Brinell.Maui.csproj" />
+    <ProjectReference Include="..\..\srcnew\Brinell.Maui.CommunityToolkit\Brinell.Maui.CommunityToolkit.csproj" />
+    <!-- The only difference from the Windows head: Appium instead of FlaUI. -->
+    <ProjectReference Include="..\..\srcnew\Brinell.Maui.Appium\Brinell.Maui.Appium.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="coverlet.collector">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

@@ -1,4 +1,6 @@
+#if WINDOWS
 using Brinell.Maui.AppSupport.Handlers;
+#endif
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Hosting;
 

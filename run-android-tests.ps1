@@ -53,7 +53,10 @@ Write-Host ""
 
 # Paths
 $SampleAppDir = Join-Path $ScriptDir "samples\Brinell.Samples.Maui.App"
-$TestProjectDir = Join-Path $ScriptDir "testsnew\Brinell.Maui.UITests"
+# The mobile head, not testsnew\Brinell.Maui.UITests: that project targets net10.0-windows
+# and references the FlaUI driver, so it cannot host an Android run. The mobile head links
+# the same test sources and references Appium instead.
+$TestProjectDir = Join-Path $ScriptDir "testsnew\Brinell.Maui.UITests.Mobile"
 $ApkPath = Join-Path $SampleAppDir "bin\Debug\net10.0-android\com.brinell.samples.maui-Signed.apk"
 
 # Check prerequisites

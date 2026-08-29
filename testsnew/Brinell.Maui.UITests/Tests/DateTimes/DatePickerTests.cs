@@ -21,7 +21,7 @@ public class DatePickerTests
         // Navigate to DateTime test page if needed
         // For now, assumes the view is accessible via direct route or default navigation
 
-        _fixture.AppShell.DateTimeTab.Click();
+        _fixture.Open(SamplePage.DateTime);
     }
 
     private DateTimeTestPage GetPage()

@@ -25,25 +25,6 @@ public class AutomationProbePage : PageObjectBase<AutomationProbePage>
     /// <summary>The page title label.</summary>
     public Label<AutomationProbePage> PageTitle => new(this, "PageTitle");
 
-    #region Module navigation
-
-    // Exactly 10 Shell tabs are reachable on Windows - see TabBarCapacityProbeTests. The
-    // modules past that limit are reached by Shell route from this page instead of by tabs
-    // of their own, so their navigation lives here.
-
-    /// <summary>Navigates to the container module.</summary>
-    public Button<AutomationProbePage> GoToContainerButton => new(this, "GoToContainerButton");
-
-    /// <summary>Navigates to the collection module.</summary>
-    public Button<AutomationProbePage> GoToCollectionButton => new(this, "GoToCollectionButton");
-
-    /// <summary>Navigates to the shapes and graphics module.</summary>
-    public Button<AutomationProbePage> GoToShapesButton => new(this, "GoToShapesButton");
-
-    /// <summary>Navigates to the dialogs module.</summary>
-    public Button<AutomationProbePage> GoToDialogsButton => new(this, "GoToDialogsButton");
-
-    #endregion
 
     /// <summary>
     /// Resolves a probe container root by its automation id, from page scope.

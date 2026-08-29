@@ -15,7 +15,7 @@ public class SliderTests
     public SliderTests(MauiFixture fixture)
     {
         _fixture = fixture;
-        _fixture.AppShell.RangeTab.Click();
+        _fixture.Open(SamplePage.Range);
     }
 
     private RangeTestPage GetPage()

@@ -16,7 +16,7 @@ public class EntryTests
     {
         _fixture = fixture;
 
-        fixture.AppShell.TextTab.Click();
+        fixture.Open(SamplePage.Text);
     }
 
     private TextTestPage GetPage()

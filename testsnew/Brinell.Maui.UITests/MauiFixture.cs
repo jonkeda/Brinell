@@ -10,18 +10,14 @@ namespace Brinell.Maui.UITests;
 /// Test fixture for Brinell.Samples.Maui.App UI tests.
 /// Inherits infrastructure from <see cref="MauiTestFixtureBase"/> and adds app-specific pages.
 /// </summary>
-[TestModuleScan(typeof(AppShellPage), NamespacePrefix = "Brinell.Maui.UITests.Pages")]
+[TestModuleScan(typeof(HubPage), NamespacePrefix = "Brinell.Maui.UITests.Pages")]
 public class MauiFixture : MauiTestFixtureBase
 {
-    private readonly AppShellPage _appShell;
-    private GridCollectionDemoPage? _gridCollectionDemoPage;
-    private AutomationProbePage? _automationProbePage;
-    private NavigationDemoPage? _navigationDemoPage;
-    private ContainerTestPage? _containerTestPage;
+    private readonly HubPage _hub;
 
     public MauiFixture()
     {
-        _appShell = new AppShellPage(Context);
+        _hub = new HubPage(Context);
         Composition = TestComposition.ForFixture(this, services =>
             services.AddSingleton<IMauiTestContext>(Context));
     }
@@ -29,39 +25,96 @@ public class MauiFixture : MauiTestFixtureBase
     public TestComposition Composition { get; }
 
     /// <summary>
-    /// Gets the AppShell page object for TabbedPage navigation.
+    /// Gets the hub page object: the app's flat page list.
     /// </summary>
-    public AppShellPage AppShell => _appShell;
+    public HubPage Hub => _hub;
 
-     /// <summary>
-    /// Navigates to the Basics tab (first/main tab).
+
+    /// <summary>
+    /// Opens a page from the hub, returning to the hub first if another page is open.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The single navigation primitive: one click, identical on Windows, Android and iOS.
+    /// It replaced Shell tab navigation, which was neither - Android hid tabs past the fifth
+    /// behind an overflow menu, and Windows exposed only nine.
+    /// </para>
+    /// <para>
+    /// Because the hub pushes a fresh page instance each time and this pops back to the hub
+    /// first, a test cannot inherit the previous test's page or its position in a navigation
+    /// stack. That is what removes the class of failure recorded in
+    /// <c>.my/maui/rca/rca-001-container-module-tests-navigation-stack.md</c> - not a
+    /// recovery routine, but the absence of state to recover from.
+    /// </para>
+    /// </remarks>
+    public void Open(SamplePage page)
+    {
+        ReturnToHub();
+        _hub.OpenButton(page).Click();
+    }
+
+    /// <summary>
+    /// Returns to the hub if a page is open.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Uses the page's own Back button rather than <c>IMauiDriver.NavigateBack</c>. On Windows
+    /// that method falls back to Alt+Left, which is global keyboard input and blocked by the
+    /// interaction policy unless <c>BRINELL_WINDOWS_ALLOW_GLOBAL_KEYBOARD_INPUT</c> is set —
+    /// so every test after the first in a class threw in its constructor. Clicking the button
+    /// the user would click needs no such permission and is the same gesture on every
+    /// platform.
+    /// </para>
+    /// <para>
+    /// The stack is one deep by construction — the hub pushes a page, a page never pushes
+    /// another — so one press suffices. The loop guards against a page that pushes
+    /// internally, not an expectation that any does.
+    /// </para>
+    /// </remarks>
+    private void ReturnToHub()
+    {
+        const int MaxPops = 3;
+
+        for (var pop = 0; pop < MaxPops && !_hub.IsLoaded(); pop++)
+        {
+            if (!_hub.TryGoBack(TestConstants.ShortTestTimeoutMs))
+            {
+                break;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Navigates to the Buttons page.
     /// </summary>
     public void NavigateToMain()
     {
-        _appShell.ButtonsTab.Click();
+        Open(SamplePage.Buttons);
     }
 
     /// <summary>
     /// Gets the Grid + CollectionView demo page object.
     /// </summary>
     /// <remarks>
-    /// Cached so the form and collection keep their container-root caches across tests.
+    /// Created per access, not cached. A container object caches the element it resolved as
+    /// its root, and the hub builds a fresh page on every open — so a cached page object
+    /// would hold roots belonging to a page instance that no longer exists. Shell used to
+    /// retain page instances, which is what made caching viable before.
     /// </remarks>
-    public GridCollectionDemoPage GridCollectionDemoPage
-        => _gridCollectionDemoPage ??= new GridCollectionDemoPage(Context);
+    public GridCollectionDemoPage GridCollectionDemoPage => new(Context);
 
     /// <summary>
     /// Navigates to the container demo and restores its seeded state.
     /// </summary>
     /// <remarks>
-    /// This collection shares one fixture and one Shell across test classes, and Shell
-    /// may retain page instances, so navigation alone does not guarantee clean state.
-    /// Resetting here makes each test order-independent. Every wait is on observed UI
-    /// state, never a fixed delay.
+    /// The hub builds a fresh page on every open, but this fixture is shared across test
+    /// classes and the page object caches container roots, so the demo's data is still reset
+    /// here to keep tests order-independent. Every wait is on observed UI state, never a
+    /// fixed delay.
     /// </remarks>
     public GridCollectionDemoPage NavigateToGridCollectionDemo()
     {
-        _appShell.GridCollectionTab.Click();
+        Open(SamplePage.GridCollection);
 
         var page = GridCollectionDemoPage;
         page.WaitLoaded(true, TestConstants.DefaultTestTimeoutMs);
@@ -78,30 +131,20 @@ public class MauiFixture : MauiTestFixtureBase
     /// <summary>
     /// Gets the Phase 0 automation probe page object.
     /// </summary>
-    public AutomationProbePage AutomationProbePage
-        => _automationProbePage ??= new AutomationProbePage(Context);
+    public AutomationProbePage AutomationProbePage => new(Context);
 
     /// <summary>
     /// Navigates to the automation probe page.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// The probe page is stateless — it has no data to seed and nothing to mutate —
-    /// so unlike <see cref="NavigateToGridCollectionDemo"/> there is nothing to reset.
-    /// </para>
-    /// <para>
-    /// It does, however, have navigation state to undo: the probe page's module links push
-    /// routes onto the Shell stack, so a previous test may have left the app on a pushed page
-    /// with this tab still selected. Popping happens before <c>WaitLoaded</c> because a
-    /// covered page never reports loaded.
-    /// </para>
+    /// The probe page is stateless — it has no data to seed and nothing to mutate — so
+    /// unlike <see cref="NavigateToGridCollectionDemo"/> there is nothing to reset.
     /// </remarks>
     public AutomationProbePage NavigateToAutomationProbe()
     {
-        _appShell.AutomationProbeTab.Click();
+        Open(SamplePage.AutomationProbe);
 
         var page = AutomationProbePage;
-        EnsureProbeModuleLinksReachable(page);
         page.WaitLoaded(true, TestConstants.DefaultTestTimeoutMs);
 
         return page;
@@ -111,22 +154,21 @@ public class MauiFixture : MauiTestFixtureBase
     /// Gets the navigation controls demo page object.
     /// </summary>
     /// <remarks>
-    /// Cached so the toolbars and menu keep any element caches across tests.
+    /// Created per access — see <see cref="GridCollectionDemoPage"/> for why caching a page
+    /// object is no longer safe.
     /// </remarks>
-    public NavigationDemoPage NavigationDemoPage
-        => _navigationDemoPage ??= new NavigationDemoPage(Context);
+    public NavigationDemoPage NavigationDemoPage => new(Context);
 
     /// <summary>
     /// Navigates to the navigation demo and restores its initial state.
     /// </summary>
     /// <remarks>
-    /// The fixture is shared across test classes and Shell may retain page instances, so
-    /// navigation alone does not guarantee clean state. Reset makes each test
-    /// order-independent; the wait is on observed UI state, never a fixed delay.
+    /// The page object is cached across test classes, so its state is reset explicitly to
+    /// keep tests order-independent; the wait is on observed UI state, never a fixed delay.
     /// </remarks>
     public NavigationDemoPage NavigateToNavigationDemo()
     {
-        _appShell.NavigationTab.Click();
+        Open(SamplePage.Navigation);
 
         var page = NavigationDemoPage;
         page.WaitLoaded(true, TestConstants.DefaultTestTimeoutMs);
@@ -140,23 +182,20 @@ public class MauiFixture : MauiTestFixtureBase
     /// <summary>
     /// Gets the container module test page object.
     /// </summary>
-    public ContainerTestPage ContainerTestPage
-        => _containerTestPage ??= new ContainerTestPage(Context);
+    public ContainerTestPage ContainerTestPage => new(Context);
 
     /// <summary>
     /// Navigates to the container module page and restores its initial state.
     /// </summary>
     /// <remarks>
-    /// Reached through the Modules hub, not a tab: only 9 Shell tabs are clickable on
-    /// Windows and the tab bar is full.
+    /// Opened directly from the hub. This previously went via the probe page's module links,
+    /// because the Shell tab bar was full - the indirection that
+    /// <c>.my/maui/rca/rca-001-container-module-tests-navigation-stack.md</c> traced its
+    /// 7-minute, 9-failure hang to.
     /// </remarks>
     public ContainerTestPage NavigateToContainerModule()
     {
-        // NavigateToAutomationProbe pops any route a previous test pushed, so the module
-        // links are reachable by the time it returns.
-        var probe = NavigateToAutomationProbe();
-
-        probe.GoToContainerButton.Click();
+        Open(SamplePage.Container);
 
         var page = ContainerTestPage;
         page.WaitLoaded(true, TestConstants.DefaultTestTimeoutMs);
@@ -165,60 +204,6 @@ public class MauiFixture : MauiTestFixtureBase
         page.Status.WaitText("none", TestConstants.DefaultTestTimeoutMs);
 
         return page;
-    }
-
-    /// <summary>
-    /// Ensures the probe page is showing its own content, popping pushed routes if needed.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// The module pages are reached with <c>Shell.Current.GoToAsync("ContainerPage")</c>,
-    /// which <em>pushes</em> onto the tab's navigation stack rather than replacing the tab's
-    /// content. So after one test the app sits on the pushed page with the Probe tab still
-    /// selected, and the module links are not on screen.
-    /// </para>
-    /// <para>
-    /// Clicking the Probe tab does not fix this: the tab is already current, so the click is
-    /// a no-op and the pushed page stays on top. The stack has to be popped, which is what
-    /// the driver's back navigation does — the same Shell back arrow a user would press.
-    /// </para>
-    /// <para>
-    /// A test may have pushed more than one page, so this pops until the links are reachable,
-    /// up to a bound. Failing that it throws immediately: the alternative is to fall through
-    /// to a <c>Click</c> that spends its full timeout failing to find a button that cannot be
-    /// there, reporting nothing about why. See
-    /// <c>.my/maui/rca/rca-001-container-module-tests-navigation-stack.md</c>.
-    /// </para>
-    /// </remarks>
-    private void EnsureProbeModuleLinksReachable(AutomationProbePage probe)
-    {
-        const int MaxPops = 3;
-
-        // Probe timeout, not the standard wait: the button is either already rendered or the
-        // app is on a pushed route, and no amount of waiting changes which. A full
-        // ShortTestTimeoutMs here is paid on every test after the first, purely to confirm an
-        // absence that popping is about to fix.
-        const int PresenceProbeMs = 750;
-
-        if (probe.GoToContainerButton.WaitExists(true, PresenceProbeMs))
-        {
-            return;
-        }
-
-        for (var pop = 0; pop < MaxPops; pop++)
-        {
-            Context.Driver.NavigateBack();
-
-            if (probe.GoToContainerButton.WaitExists(true, PresenceProbeMs))
-            {
-                return;
-            }
-        }
-
-        throw new InvalidOperationException(
-            $"Could not return to the AutomationProbe page: 'GoToContainerButton' is still not " +
-            $"present after {MaxPops} back-navigations. The app is most likely on a pushed Shell " +
-            "route that did not pop. See .my/maui/rca/rca-001-container-module-tests-navigation-stack.md.");
     }
 
     #region MauiTestFixtureBase Overrides
@@ -253,8 +238,12 @@ public class MauiFixture : MauiTestFixtureBase
         options.AdditionalCapabilities["newCommandTimeout"] = 300; // 5 minutes
         // MAUI apps take longer to initialize - increase wait times
         options.AdditionalCapabilities["appWaitDuration"] = 60000; // 60 seconds to wait for app
-        options.AdditionalCapabilities["appWaitActivity"] = "*"; // Wait for any activity
         options.AdditionalCapabilities["adbExecTimeout"] = 60000; // 60 seconds for ADB commands
+
+        // MAUI hashes the activity name (crc64<hash>.MainActivity) and the hash changes with
+        // the namespace, so it cannot be written literally here. Waiting on the package alone
+        // lets UiAutomator2 accept whatever activity that package launches.
+        options.AdditionalCapabilities["appWaitPackage"] = "com.brinell.samples.maui";
     }
 
     /// <inheritdoc />

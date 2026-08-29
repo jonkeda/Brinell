@@ -16,7 +16,7 @@ public class ImageTests
     {
         _fixture = fixture;
         // Navigate to Display tab
-        _fixture.AppShell.DisplayTab.Click();
+        _fixture.Open(SamplePage.Display);
     }
 
     private DisplayTestPage GetPage()

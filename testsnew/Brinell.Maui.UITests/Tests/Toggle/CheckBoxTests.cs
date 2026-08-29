@@ -15,7 +15,7 @@ public class CheckBoxTests
     public CheckBoxTests(MauiFixture fixture)
     {
         _fixture = fixture;
-        _fixture.AppShell.ToggleTab.Click();
+        _fixture.Open(SamplePage.Toggle);
     }
 
     private ToggleTestPage GetPage()

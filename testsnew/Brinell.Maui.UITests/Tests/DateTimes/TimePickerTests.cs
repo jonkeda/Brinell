@@ -19,7 +19,7 @@ public class TimePickerTests
         _fixture = fixture;
         
         // Navigate to DateTime test page if needed
-        _fixture.AppShell.DateTimeTab.Click();
+        _fixture.Open(SamplePage.DateTime);
     }
 
     private DateTimeTestPage GetPage()

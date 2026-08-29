@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net10.0-windows10.0.19041.0</TargetFrameworks>
+    <TargetFrameworks>net10.0-windows10.0.19041.0;net10.0-android;net10.0-ios</TargetFrameworks>
     <OutputType>Exe</OutputType>
     <RootNamespace>Brinell.Samples.Maui.App</RootNamespace>
     <UseMaui>true</UseMaui>
@@ -31,6 +31,21 @@
     <!-- Windows -->
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
     <TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
+
+    <!-- Mobile -->
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">21.0</SupportedOSPlatformVersion>
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>
+
+    <!--
+      Embed the managed assemblies in the APK even in Debug.
+
+      Android Debug builds default to Fast Deployment, which leaves the assemblies out of the
+      APK for `dotnet run` to push separately. A UI test installs only the APK, so the app
+      aborts at startup with "No assemblies found ... Assuming this is part of Fast
+      Deployment" - a crash before any test code runs, reported by Appium only as "app never
+      started".
+    -->
+    <EmbedAssembliesIntoApk Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">true</EmbedAssembliesIntoApk>
   </PropertyGroup>
 
   <ItemGroup>
@@ -80,7 +95,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <MauiXaml Update="AppShell.xaml">
+    <MauiXaml Update="Pages\HubPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>
     <MauiXaml Update="Pages\ButtonsPage.xaml">

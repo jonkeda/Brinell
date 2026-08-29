@@ -621,6 +621,123 @@ Do not report a green iOS run that never happened.
 **Done when:** the Windows suite still matches baseline, and the mobile smoke set passes
 on an Android emulator. iOS: projects and traits present, run deferred.
 
+#### Status: builds for all three platforms; mobile run blocked on hardware
+
+**The sample app now builds for Windows, Android and iOS.** iOS was expected to be
+unbuildable here; it is not — Windows cross-compiles the `net10.0-ios` head fine. Only
+*running* it needs a Mac, so the routes in the table above still apply to execution, not to
+compilation.
+
+| Target | Build |
+|---|---|
+| `net10.0-windows10.0.19041.0` | ✅ 0 errors |
+| `net10.0-android` | ✅ 0 errors |
+| `net10.0-ios` | ✅ 0 errors |
+
+**`Platforms/iOS/`** added (`AppDelegate`, `Program`). `Brinell.Maui.AppSupport` is now
+multi-targeted, with its WinUI automation peers excluded by file on non-Windows rather than
+wrapped in `#if` — those files are meant to be copied into an app under test, and a reader
+should not have to strip preprocessor directives to follow them.
+
+**Two shared-code fixes were needed**, both in `GlobalUsings.cs` and neither platform-specific
+in effect:
+
+- `Microsoft.UI.Xaml.Automation.Peers` is now `#if WINDOWS`.
+- `Microsoft.Maui.Platform` is no longer imported globally at all. On iOS it also defines
+  `ContentView`, which collided with `Microsoft.Maui.Controls.ContentView` across every view
+  in the app. Nothing in the app used it — the Windows handlers had already moved to
+  AppSupport — so removing it is a simplification, not a workaround.
+
+**The test split turned out simpler than planned.** §4.3 proposed a three-project split with a
+`.Shared` project. That was unnecessary: **no test source is coupled to Windows at all** — the
+coupling was entirely the csproj (`net10.0-windows` TFM plus the FlaUI reference), and
+`MauiTestFixtureBase` already selects the platform at runtime from `APPIUM_PLATFORM`.
+
+So `Brinell.Maui.UITests.Mobile` **links** the existing test sources rather than moving them:
+
+```
+testsnew/Brinell.Maui.UITests          net10.0-windows  → Brinell.Maui.FlaUI
+testsnew/Brinell.Maui.UITests.Mobile   net10.0          → Brinell.Maui.Appium
+                                                          (Compile Include=..\UITests\**\*.cs)
+```
+
+One set of page objects, containers and test bodies; two heads differing only by driver. The
+Windows project's layout is untouched, so the existing suite and its tooling are unaffected.
+Both projects are in `Brinell.sln` and `srcnew/Brinell.sln`.
+
+**The smoke set needed no new code.** Tests already carry a `Control` trait, so the basics set
+is a filter:
+
+```
+--filter "Control=Button|Control=Label|Control=Entry|Control=CheckBox|Control=Switch"
+```
+
+27 tests; **26 pass on Windows**, the 1 failure being the phase-7 `Switch_ClickTwice_TogglesOff`.
+
+`run-android-tests.ps1` was repointed at the mobile head — it referenced the Windows project,
+which could never have hosted an Android run.
+
+#### The Android run: executed, and it found five real defects
+
+An emulator (`Medium_Phone`, API 36) plus Appium 3.1.2 with `uiautomator2` was brought up and
+the smoke set run against it. **No test passes on Android yet**, but the run did its job: it
+converted "architecturally supported and unverified" into a specific, ordered list of
+blockers, four of which are now fixed.
+
+| # | Defect | Status |
+|---|---|---|
+| 1 | `APPIUM_PLATFORM` was **read by nothing** — only named in an error message. Every run selected Windows and demanded FlaUI | ✅ fixed in `BrinellMauiConfiguration.Load` |
+| 2 | `Assembly.Load("Appium.WebDriver")` used the **package** name; the assembly is `Appium.Net` | ✅ fixed in `MauiDriverFactory` |
+| 3 | Android Debug builds default to **Fast Deployment**, leaving assemblies out of the APK; the app aborted at startup | ✅ `EmbedAssembliesIntoApk=true` |
+| 4 | `appWaitActivity = "*"` never matched MAUI's hashed activity name | ✅ replaced with `appWaitPackage` |
+| 5 | `ShellContent` uses the `ControlTypeAndName` locator, which the Appium driver rejects outright | ⏳ **phase 6** |
+
+Defects 1 and 2 are the important ones: **together they made any Appium run impossible**, and
+neither could surface on Windows. They are why mobile had never worked, and they were
+invisible to every existing test.
+
+Two smaller shared-XAML/page-object fixes came out of it, both of the kind §4.4 prescribes:
+`AppShell` gained an `AutomationId`, and `AppShellPage` now overrides `RequiresLoadedPage` —
+the first real instance of the escape hatch [RCA-002](rca/rca-002-page-precondition-discarded-slow-failures.md)
+added, since Shell renders as native Android chrome and has no addressable root there.
+
+**Defect 5 is the phase 6 evidence this plan has been waiting for.** §4.5 said the list of
+genuinely divergent controls could not be known until Android ran. It now has its first two
+entries, both concerning Shell navigation:
+
+- **`ShellContent` locator strategy.** `ControlTypeAndName` is a UIA concept. On Android a tab
+  is a `content-desc`. Same control, different addressing — a tier-3 adapter, not a fix.
+- **Tab overflow.** Android's `BottomNavigationView` shows 5 tabs plus **More**; the rest are
+  behind that menu. `DisplayTab` is not merely addressed differently, it is *not on screen*.
+  Windows shows all 10. A test that clicks a tab must mean "reach that tab" on both.
+
+Both belong below the test body, exactly as §4.5 requires. Neither was guessed — the UI
+hierarchy dump is the evidence.
+
+**A sub-plan proposes removing the cause rather than adapting to it:**
+[sample-app-navigation-redesign.md](sample-app-navigation-redesign.md). ⏸ **Parked
+mid-implementation, uncommitted, Windows currently regressed 117/21 vs 137/1** — see that
+document's §3.5 for exactly what is built and the defects it exposed.
+
+**To resume, follow [plan-sample-app-recovery-and-phase4.md](plan-sample-app-recovery-and-phase4.md).**
+It keeps the hub design, reverts to the green baseline, and reapplies it behind a build flag
+with a manual app-launch gate before every test run — the discipline whose absence, not the
+design, is what broke the first attempt. It also carries phase 4 to completion on Android. The sample app exists
+to exercise control objects, not to demonstrate Shell; replacing Shell with a flat hub page
+makes "open a page" one uniform action on all three platforms and also removes the navigation
+stack that caused RCA-001. Shell control objects stay supported and gain a dedicated test
+page — Shell becomes a *subject* rather than the mechanism every other test depends on.
+
+That sub-plan and the tier-3 adapter are not alternatives: the adapter remains the right
+answer for user apps that navigate by Shell. It changes where the evidence for it comes from.
+
+**Status: Android is now verified as *reaching the app*** — Appium connects, installs,
+launches, and drives the real UI (runs take ~30 s, not milliseconds). It is **not** verified
+as passing tests, and must not be reported as such. iOS remains build-only.
+
+The phase 2 `AppiumMauiElement` capability code still has not executed: the runs get as far as
+Shell navigation and stop there, before any control-level capability is exercised.
+
 ### Phase 5 — Extension points, proven by an external consumer (goals 12, 13)
 
 1. Dissolve `ExpandHelper` and `GestureHelper` the same way as phase 1.
@@ -687,6 +804,19 @@ a recorded reason naming the generator limitation that blocks it.
 ### Phase 6 — Control behavior adapters, driven by real divergence (goal 17)
 
 Only now, with an Android run in hand, is the list of genuinely divergent controls known.
+
+**Phase 4's run supplied the first two entries, both in Shell navigation:**
+
+| Divergence | Windows | Android | Tier |
+|---|---|---|---|
+| `ShellContent` addressing | `ControlTypeAndName` (a UIA concept) | tab is a `content-desc`; the driver rejects that strategy outright | 3 |
+| Tab reachability | all 10 tabs visible | `BottomNavigationView` shows 5 + **More**; the rest need the overflow opened first | 3 |
+
+The second is the more interesting one, and the better argument for the adapter: the tab is
+not merely *addressed* differently, it is **not on screen**. A test that says "click the
+Display tab" must mean "reach the Display tab" on both platforms — which on Android means
+opening an overflow menu first. That sequence is precisely what a tier-3 behavior owns, and
+it cannot be expressed as a capability probe or an attribute rename.
 
 1. Take the failures from phase 4's mobile smoke set and sort each into a tier from 4.5.
    Expect most to be tier 1 or 2 — a missing capability or a differently-named attribute —
