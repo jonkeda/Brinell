@@ -738,9 +738,28 @@ as passing tests, and must not be reported as such. iOS remains build-only.
 The phase 2 `AppiumMauiElement` capability code still has not executed: the runs get as far as
 Shell navigation and stop there, before any control-level capability is exercised.
 
-### Phase 5 — Extension points, proven by an external consumer (goals 12, 13)
+### Phase 5 — Extension points, proven by an external consumer (goals 12, 13) ✅
 
-1. Dissolve `ExpandHelper` and `GestureHelper` the same way as phase 1.
+1. ✅ **Dissolve `ExpandHelper` and `GestureHelper`.** Done — `Controls/Internal/` is now
+   **empty and removed**, completing what phase 1 started.
+
+   | Helper | Where it went | Why there |
+   |---|---|---|
+   | `ExpandHelper` | `Expander.tpl.cs` `*Core` methods | Every member was Expander-specific; it had exactly one consumer |
+   | `GestureHelper` swipes | `MauiElementGestureExtensions` (public) | Arithmetic over `Rect` plus `Swipe` — element knowledge, and now reachable by an out-of-repo control |
+   | `GestureHelper.IsRefreshing` | `RefreshView.IsRefreshingCore` | Not a gesture at all: refreshing is what that one control *means* |
+
+   `Expander` and `RefreshView` were converted to `.tpl.cs` in the process, so both are now
+   generated — and both generated APIs match their hand-written originals member for member.
+   That takes phase 5b's remaining count from 8 to 7.
+
+   **One thing did not move as planned.** The swipe extensions belong in `Brinell.Core` by the
+   same logic that put the geometry helpers there — but they must swallow
+   `WindowsInteractionPolicyException`, which is defined in `Brinell.Maui` and is `sealed`, so
+   Core cannot catch it by type. The alternatives were catching `InvalidOperationException`
+   broadly (which would hide real faults) or lifting the exception into Core speculatively.
+   They stay in `Brinell.Maui`, public, with the constraint recorded in the file: when a
+   second platform needs swipes, that is the moment to lift the exception and these with it.
 2. **Treat `Brinell.Maui.CommunityToolkit` as the first external consumer.** It is a
    separate assembly with a single control (`TabViewControl`), which makes it the ideal
    proof: convert it to `.tpl.cs` by running the CLI against *its own* folder, using only
@@ -763,7 +782,41 @@ Shell navigation and stop there, before any control-level capability is exercise
 **Done when:** the Toolkit control is generated using only public API, and every `internal`
 that blocked it has been made public or deliberately kept with a recorded reason.
 
-### Phase 5b — Convert the 8 controls that were waiting on phase 5 (goal 2)
+#### ✅ Done — goal 13 proven, not asserted
+
+`Brinell.Maui.CommunityToolkit` is a **separate assembly**. `TabViewControl` was converted to
+`.tpl.cs`, the CLI was run against its own folder exactly as an out-of-repo consumer would
+(`--input srcnew/Brinell.Maui.CommunityToolkit/Controls`), and the project **compiled with no
+changes to `Brinell.Maui`**.
+
+**Nothing was blocked by an `internal`.** That claim is now backed by a compiler rather than a
+review: had anything the control needed been assembly-private, the build would have failed.
+Phase 1's decision to make the geometry and search helpers public is what paid off here.
+
+The conversion was mostly deletion, as §3.1 fix 3 predicted: `IsSelectedCore` was `protected`
+without `virtual` and the class hand-wrote the `IsSelected`/`WaitSelected`/`AssertSelected`
+trio the generator emits. Making it `protected virtual` and deleting the three members
+produced an identical public API.
+
+**The custom-control path, as actually exercised** (step 3), is three steps and no tooling
+change:
+
+1. Derive from `ViewBase` / `ClickableControlBase` (or a capability base).
+2. Declare `protected virtual *Core` methods; add `[SkipGeneration("reason")]` where a member
+   deliberately should not be public.
+3. Run `Brinell.Generator.Cli --input <your folder>` — it already accepts any path.
+
+**Verified:** solution build unchanged (same 2 pre-existing `PresenterPage` errors);
+`Brinell.Maui.Tests` 77 passed / 6 failed, unchanged; UI test project builds clean.
+
+**Step 5 (what generalizes) — deferred with a reason.** The gesture-extension finding above is
+the concrete evidence for it: the Core/generated split, the capability interfaces and the
+five-layer table generalize, but a helper that must catch a *platform-specific* exception
+cannot move to `Brinell.Core` without lifting that exception too. Recording the general rule
+is worth doing when a second platform actually adopts this shape, not before — otherwise it is
+a guess dressed as documentation.
+
+### Phase 5b — Convert the 8 controls that were waiting on phase 5 (goal 2) ✅
 
 Phase 3 converted 20 of 28. These 8 were held back because each needs `*Core` extraction
 rather than a rename, and several touch code phase 5 changes — converting before that would
@@ -800,6 +853,47 @@ prevent — and it is now a generation error rather than silence, so the check i
 **Done when:** `find srcnew/Brinell.Maui/Controls -name '*.cs' ! -name '*.tpl.cs'
 ! -name '*.gen.cs'` returns nothing outside `Internal/`, or any control left hand-written has
 a recorded reason naming the generator limitation that blocks it.
+
+#### ✅ Done — 6 converted, 1 recorded as deliberately hand-written
+
+`RefreshView` was already done in phase 5 (it came free with dissolving `GestureHelper`), so
+7 remained. That query now returns **only `ContentDialog`**.
+
+| Control | Outcome |
+|---|---|
+| `ScrollView`, `TableView` | Converted. `TableView` gains `WaitIntent`/`AssertIntent` for free |
+| `WebView`, `MediaElement` | Converted. Both had **public methods duplicating their own Core verbatim** — `GetUrl`/`GetUrlCore` and `IsPlaying`/`IsPlayingCore` were identical bodies. The conversion deleted the duplication |
+| `CarouselView`, `CollectionView` | Converted — see below |
+| `ContentDialog` | **Deliberately hand-written**, reason recorded below |
+
+**The batch-3d risk is resolved.** The generator emits correctly into a self-referencing
+three-parameter generic partial — `ResolveFluentReturnType` already preferred `TSelf`, which
+was the hard part. `CarouselView` proved it before `CollectionView` was touched, as the plan
+required.
+
+**But it surfaced two real gaps in `ContainerObjectBase`**, both now fixed:
+
+1. **No absence-tolerant helpers.** `[AbsenceTolerant]` emits calls to
+   `RunWaitWithOptionalElement` / `RunAssertWithOptionalElement`, which existed on `ViewBase`
+   but not on the container base — so any container with an absence-tolerant getter failed to
+   compile. Both added, mirroring `ViewBase`.
+2. **No parameterless `TryFindElement()`.** The generator emits one call shape for "this
+   object's element"; containers only had `TryFindElement(Locator)`. Added as an alias for
+   `TryGetContainerRoot()`, so each base decides what its own element is and the generator
+   need not know which base it is generating for.
+
+Fixing these in the base rather than special-casing the generator is what keeps §3's rule
+intact: the generator emits one shape, the hierarchy supplies the meaning.
+
+**`ContentDialog` stays hand-written.** Its public surface is two element factories
+(`DialogButton`, `PromptInput`) and one orchestration method that walks six private fallbacks
+across scoped, popup-window and parent-scope lookups. **Not one member takes an element
+first**, so nothing meets the Core contract — converting it would produce an empty `.gen.cs`
+and add a file without adding API. This is a control the generator correctly has nothing to
+say about, not a generator limitation to fix.
+
+**Verified:** solution build unchanged (same 2 pre-existing `PresenterPage` errors);
+`Brinell.Maui.Tests` 77 passed / 6 failed, unchanged; `Brinell.Generator.Tests` 115 passed.
 
 ### Phase 6 — Control behavior adapters, driven by real divergence (goal 17)
 

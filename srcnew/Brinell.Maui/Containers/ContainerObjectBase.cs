@@ -123,6 +123,17 @@ public abstract class ContainerObjectBase<TParent, TSelf>
     }
 
     /// <summary>
+    /// Gets this container's own element, or null when it is absent.
+    /// </summary>
+    /// <remarks>
+    /// The container's answer to "the element for this object", which for a container is its
+    /// root. Named to match <c>ViewBase.TryFindElement()</c> so a generated member reads the
+    /// same on both bases — the generator emits one call shape and each base decides what its
+    /// own element is.
+    /// </remarks>
+    protected IMauiElement? TryFindElement() => TryGetContainerRoot();
+
+    /// <summary>
     /// Gets the container root without throwing when it is absent.
     /// </summary>
     protected IMauiElement? TryGetContainerRoot()
@@ -418,6 +429,52 @@ public abstract class ContainerObjectBase<TParent, TSelf>
         var value = default(T);
         RunPoll(null, () => { value = coreOperation(ContainerRoot); return true; }, timeoutMs, caller);
         return value;
+    }
+
+    /// <summary>
+    /// Polls a predicate that is meaningful when the container root is absent.
+    /// </summary>
+    /// <remarks>
+    /// The counterpart of <see cref="RunDoWithElement"/> for <c>[AbsenceTolerant]</c> Core
+    /// methods: the root is resolved with <see cref="TryGetContainerRoot"/> and may be null,
+    /// because the predicate may be asking about absence. Mirrors
+    /// <c>ViewBase.RunWaitWithOptionalElement</c> — generated members use whichever helper
+    /// their base class provides, so both bases must offer the pair.
+    /// </remarks>
+    protected bool RunWaitWithOptionalElement<T>(T? expected,
+        Func<IMauiElement?, bool> coreOperation,
+        int? timeoutMs = null, [CallerMemberName] string? caller = null)
+    {
+        if (expected == null) return true;
+
+        return RunPoll(null, () => coreOperation(TryGetContainerRoot()), timeoutMs, caller);
+    }
+
+    /// <summary>
+    /// Asserts a value that is meaningful when the container root is absent.
+    /// </summary>
+    /// <remarks>
+    /// Resolves the root optionally so a missing container fails the comparison rather than
+    /// raising <c>ElementNotFoundException</c>.
+    /// </remarks>
+    protected TSelf RunAssertWithOptionalElement<T>(T? expected,
+        Func<IMauiElement?, T?> getActual, Func<T?, T?, bool> compare,
+        string? message = null, int? timeoutMs = null,
+        [CallerMemberName] string? caller = null)
+    {
+        if (expected == null) return Self;
+
+        RunPoll(null, () =>
+        {
+            var actual = getActual(TryGetContainerRoot());
+            if (!compare(actual, expected))
+            {
+                throw new AssertionException(message ?? "Assert exception", expected, actual);
+            }
+            return true;
+        }, timeoutMs, caller);
+
+        return Self;
     }
 
     /// <summary>Asserts a value, returning the container for chaining.</summary>

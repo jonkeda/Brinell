@@ -31,7 +31,7 @@ namespace Brinell.Maui.CommunityToolkit.Controls;
 /// </example>
 /// </summary>
 /// <typeparam name="TScope">The scope type (typically a page object)</typeparam>
-public class TabViewControl<TScope> : Brinell.Maui.Controls.Base.ClickableControlBase<TScope>, ITabControlObject<TScope>
+public partial class TabViewControl<TScope> : Brinell.Maui.Controls.Base.ClickableControlBase<TScope>, ITabControlObject<TScope>
     where TScope : IMauiScope<TScope>
 {
     private readonly string _automationId;
@@ -125,25 +125,24 @@ public class TabViewControl<TScope> : Brinell.Maui.Controls.Base.ClickableContro
         return null;
     }
 
-    #region ITabControlObject - Selection State
-
-    /// <inheritdoc />
-    public bool? IsSelected()
-    {
-        return IsSelectedCore(TryFindElement());
-    }
+    #region Core Methods (Element-Aware, No Logging)
 
     /// <summary>
     /// Checks if tab is selected using pre-found element.
     /// </summary>
+    /// <remarks>
+    /// The toolkit's TabView surfaces selection under several names depending on the platform
+    /// mapping, with a CSS-class fallback for the web-shaped case, so all four are tried.
+    /// </remarks>
     /// <param name="element">The pre-found element (may be null).</param>
     /// <returns>True if selected, false if not, null if element not found.</returns>
-    protected bool? IsSelectedCore(IMauiElement? element)
+    [AbsenceTolerant]
+    protected virtual bool? IsSelectedCore(IMauiElement? element)
     {
         if (element == null) return null;
 
         // For CommunityToolkit TabView, check the IsSelected property
-        var selected = element.GetAttribute("IsSelected") 
+        var selected = element.GetAttribute("IsSelected")
                     ?? element.GetAttribute("Selected")
                     ?? element.GetAttribute("aria-selected");
 
@@ -153,28 +152,6 @@ public class TabViewControl<TScope> : Brinell.Maui.Controls.Base.ClickableContro
         // Fallback: check if element has "selected" in class/state
         var className = element.GetAttribute("class") ?? "";
         return className.Contains("selected", StringComparison.OrdinalIgnoreCase);
-    }
-
-    /// <inheritdoc />
-    public bool WaitSelected(bool? expected, int? timeoutMs = null)
-    {
-        if (expected == null) return true;
-
-        // ViewBase's RunWaitWithElement takes the expectation first, so a null expectation
-        // short-circuits inside the helper rather than at each call site.
-        return RunWaitWithElement(expected,
-            element => IsSelectedCore(element) == expected, timeoutMs);
-    }
-
-
-    /// <inheritdoc />
-    public TScope AssertSelected(bool? expected, string? message = null, int? timeoutMs = null)
-    {
-        if (expected == null) return ContainingScope;
-
-        return RunAssertWithElement(expected,
-            IsSelectedCore,
-            (actual, exp) => Equals(actual, exp), message ?? $"Expected tab '{_automationId}' {(expected.Value ? "to be selected" : "not to be selected")}.", timeoutMs);
     }
 
     #endregion

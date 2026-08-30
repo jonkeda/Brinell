@@ -5,7 +5,7 @@ namespace Brinell.Maui.Controls.Media;
 /// Provides methods for URL navigation and web content interaction.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public class WebView<TScope> : Base.ViewBase<TScope>
+public partial class WebView<TScope> : Base.ViewBase<TScope>
     where TScope : IMauiScope<TScope>
 {
     /// <summary>
@@ -24,10 +24,24 @@ public class WebView<TScope> : Base.ViewBase<TScope>
     {
     }
 
-    #region WebView Methods
+    #region Core Methods (Element-Aware, No Logging)
 
-    private string? GetUrlCore(IMauiElement element)
+    /// <summary>
+    /// Gets the current URL of the WebView.
+    /// </summary>
+    /// <remarks>
+    /// Each platform surfaces the URL differently, so all three are tried in turn: an
+    /// explicit attribute, the bound Source, and finally the element's text — on Windows a
+    /// WebView2 exposes its address through the value pattern rather than an attribute.
+    /// </remarks>
+    /// <param name="element">The pre-found element (may be null).</param>
+    /// <returns>The current URL, or null if not available.</returns>
+    [AbsenceTolerant]
+    [GenerateComparisons(Comparison.Equals | Comparison.Contains)]
+    protected virtual string? GetUrlCore(IMauiElement? element)
     {
+        if (element == null) return null;
+
         var url = element.GetAttribute("url");
         if (!string.IsNullOrEmpty(url))
             return url;
@@ -45,35 +59,14 @@ public class WebView<TScope> : Base.ViewBase<TScope>
     }
 
     /// <summary>
-    /// Gets the current URL of the WebView.
-    /// </summary>
-    /// <returns>The current URL, or null if not available.</returns>
-    public string? GetUrl()
-    {
-        var element = TryFindElement();
-        if (element == null) return null;
-
-        // Try common attributes for URL
-        var url = element.GetAttribute("url");
-        if (!string.IsNullOrEmpty(url)) return url;
-
-        url = element.GetAttribute("Source");
-        if (!string.IsNullOrEmpty(url)) return url;
-
-        // Fallback: ValuePattern or Name (on Windows, WebView2 may expose URL here)
-        var text = element.Text;
-        if (!string.IsNullOrEmpty(text)) return text;
-
-        return null;
-    }
-
-    /// <summary>
     /// Gets the title of the currently loaded page.
     /// </summary>
+    /// <param name="element">The pre-found element (may be null).</param>
     /// <returns>The page title, or null if not available.</returns>
-    public string? GetPageTitle()
+    [AbsenceTolerant]
+    [GenerateComparisons(Comparison.Equals | Comparison.Contains)]
+    protected virtual string? GetPageTitleCore(IMauiElement? element)
     {
-        var element = TryFindElement();
         if (element == null) return null;
 
         var title = element.GetAttribute("title");
@@ -85,10 +78,16 @@ public class WebView<TScope> : Base.ViewBase<TScope>
     /// <summary>
     /// Checks if the WebView can navigate back.
     /// </summary>
-    /// <returns>True if can go back, false otherwise, null if unknown.</returns>
-    public bool? CanGoBack()
+    /// <remarks>
+    /// Returns null rather than false when the attribute is absent: "this platform does not
+    /// report it" is not the same answer as "there is no history", and a test asserting the
+    /// latter should not pass on the former.
+    /// </remarks>
+    /// <param name="element">The pre-found element (may be null).</param>
+    /// <returns>True if it can go back, false if not, null if unknown.</returns>
+    [AbsenceTolerant]
+    protected virtual bool? IsCanGoBackCore(IMauiElement? element)
     {
-        var element = TryFindElement();
         if (element == null) return null;
 
         var attr = element.GetAttribute("CanGoBack");
@@ -103,10 +102,11 @@ public class WebView<TScope> : Base.ViewBase<TScope>
     /// <summary>
     /// Checks if the WebView can navigate forward.
     /// </summary>
-    /// <returns>True if can go forward, false otherwise, null if unknown.</returns>
-    public bool? CanGoForward()
+    /// <param name="element">The pre-found element (may be null).</param>
+    /// <returns>True if it can go forward, false if not, null if unknown.</returns>
+    [AbsenceTolerant]
+    protected virtual bool? IsCanGoForwardCore(IMauiElement? element)
     {
-        var element = TryFindElement();
         if (element == null) return null;
 
         var attr = element.GetAttribute("CanGoForward");
@@ -118,18 +118,28 @@ public class WebView<TScope> : Base.ViewBase<TScope>
         return null;
     }
 
+    #endregion
+
+    #region Hand-written Convenience Members
+
     /// <summary>
-    /// Asserts that the current URL contains the specified text.
+    /// Asserts that the current URL contains the specified text, case-insensitively.
     /// </summary>
+    /// <remarks>
+    /// Kept alongside the generated <c>AssertUrlContains</c>-equivalent because URLs are
+    /// compared case-insensitively here; the generated comparison is ordinal. Named
+    /// <c>AssertUrlContainsIgnoreCase</c> so the two do not collide and the difference is
+    /// visible at the call site.
+    /// </remarks>
     /// <param name="expectedUrlPart">The expected URL part.</param>
     /// <param name="message">Optional assertion message.</param>
     /// <returns>The containing scope for fluent chaining.</returns>
-    public TScope AssertUrlContains(string expectedUrlPart, string? message = null)
+    public TScope AssertUrlContainsIgnoreCase(string expectedUrlPart, string? message = null)
     {
         return RunAssertWithElement(expectedUrlPart,
             GetUrlCore,
-            (actual, exp) => actual?.Contains(expectedUrlPart, StringComparison.OrdinalIgnoreCase) == true
-        );
+            (actual, exp) => actual?.Contains(expectedUrlPart, StringComparison.OrdinalIgnoreCase) == true,
+            message);
     }
 
     #endregion

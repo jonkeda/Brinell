@@ -29,7 +29,7 @@ namespace Brinell.Maui.Controls.Collection;
 /// <typeparam name="TParent">The parent scope type (a page or another container).</typeparam>
 /// <typeparam name="TSelf">The collection type itself (self-referencing).</typeparam>
 /// <typeparam name="TItem">The row type.</typeparam>
-public abstract class CollectionView<TParent, TSelf, TItem>
+public abstract partial class CollectionView<TParent, TSelf, TItem>
     : CollectionObjectBase<TParent, TSelf, TItem>
     where TParent : IMauiScope<TParent>
     where TSelf : CollectionView<TParent, TSelf, TItem>
@@ -59,21 +59,29 @@ public abstract class CollectionView<TParent, TSelf, TItem>
     {
     }
 
-    #region CollectionView-specific members
+    #region Core Methods (Element-Aware, No Logging)
 
     /// <summary>
     /// Gets the collection's selection mode.
     /// </summary>
+    /// <param name="element">The collection's own element (may be null).</param>
     /// <returns>The selection mode string, or null when the attribute is unavailable.</returns>
-    public string? GetSelectionMode()
-        => TryGetContainerRoot()?.GetAttribute("SelectionMode");
+    [AbsenceTolerant]
+    protected virtual string? GetSelectionModeCore(IMauiElement? element)
+        => element?.GetAttribute("SelectionMode");
 
     /// <summary>
     /// Whether multiple selection is enabled.
     /// </summary>
+    /// <remarks>
+    /// Derived from <see cref="GetSelectionModeCore"/> rather than read separately: MAUI
+    /// reports one SelectionMode attribute, and "multiple" is a reading of it.
+    /// </remarks>
+    /// <param name="element">The collection's own element (may be null).</param>
     /// <returns>True for multiple selection; false for single or none; null if unknown.</returns>
-    public bool? IsMultiSelectEnabled()
-        => GetSelectionMode()?.Equals("Multiple", StringComparison.OrdinalIgnoreCase);
+    [AbsenceTolerant]
+    protected virtual bool? IsMultiSelectEnabledCore(IMauiElement? element)
+        => GetSelectionModeCore(element)?.Equals("Multiple", StringComparison.OrdinalIgnoreCase);
 
     #endregion
 }

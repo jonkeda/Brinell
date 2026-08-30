@@ -1,5 +1,3 @@
-using Brinell.Maui.Controls.Internal;
-
 namespace Brinell.Maui.Controls.Container;
 
 /// <summary>
@@ -8,7 +6,7 @@ namespace Brinell.Maui.Controls.Container;
 /// <remarks>
 /// <para>
 /// Swiping is declared as a capability (<see cref="ISwipeableControlObject{TScope}"/>) and
-/// delegated to <see cref="GestureHelper"/>, rather than inherited from a swipeable base
+/// delegated to the element gesture extensions, rather than inherited from a swipeable base
 /// class. C# allows one base class, and a control may need swiping alongside another
 /// capability; composing interfaces keeps that open.
 /// </para>
@@ -46,25 +44,25 @@ public partial class SwipeView<TScope> : Base.ViewBase<TScope>, ISwipeableContro
     /// <param name="element">The pre-found element.</param>
     /// <param name="timeoutMs">Optional timeout.</param>
     protected virtual void SwipeLeftCore(IMauiElement element, int? timeoutMs = null)
-        => GestureHelper.TrySwipeLeft(element);
+        => element.TrySwipeLeft();
 
     /// <summary>Swipes left-to-right across the element.</summary>
     /// <param name="element">The pre-found element.</param>
     /// <param name="timeoutMs">Optional timeout.</param>
     protected virtual void SwipeRightCore(IMauiElement element, int? timeoutMs = null)
-        => GestureHelper.TrySwipeRight(element);
+        => element.TrySwipeRight();
 
     /// <summary>Swipes bottom-to-top across the element.</summary>
     /// <param name="element">The pre-found element.</param>
     /// <param name="timeoutMs">Optional timeout.</param>
     protected virtual void SwipeUpCore(IMauiElement element, int? timeoutMs = null)
-        => GestureHelper.TrySwipeUp(element);
+        => element.TrySwipeUp();
 
     /// <summary>Swipes top-to-bottom across the element.</summary>
     /// <param name="element">The pre-found element.</param>
     /// <param name="timeoutMs">Optional timeout.</param>
     protected virtual void SwipeDownCore(IMauiElement element, int? timeoutMs = null)
-        => GestureHelper.TrySwipeDown(element);
+        => element.TrySwipeDown();
 
     /// <summary>Swipes between two points relative to the element's top-left corner.</summary>
     /// <param name="element">The pre-found element.</param>
@@ -75,7 +73,7 @@ public partial class SwipeView<TScope> : Base.ViewBase<TScope>, ISwipeableContro
     /// <param name="timeoutMs">Optional timeout.</param>
     protected virtual void SwipeCore(IMauiElement element,
         int startX, int startY, int endX, int endY, int? timeoutMs = null)
-        => GestureHelper.TrySwipeRelative(element, startX, startY, endX, endY);
+        => element.TrySwipeRelative(startX, startY, endX, endY);
 
     #endregion
 }

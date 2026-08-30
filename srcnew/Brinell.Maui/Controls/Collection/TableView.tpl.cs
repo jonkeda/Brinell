@@ -5,7 +5,7 @@ namespace Brinell.Maui.Controls.Collection;
 /// TableView uses sections (TableSection) with cells (TextCell, SwitchCell, EntryCell, etc.).
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public class TableView<TScope> : Base.ViewBase<TScope>
+public partial class TableView<TScope> : Base.ViewBase<TScope>
     where TScope : IMauiScope<TScope>
 {
     /// <summary>
@@ -24,25 +24,31 @@ public class TableView<TScope> : Base.ViewBase<TScope>
     {
     }
 
-    #region TableView-Specific Methods
+    #region Core Methods (Element-Aware, No Logging)
 
     /// <summary>
     /// Gets the intent of the TableView (Data, Form, Settings, Menu).
     /// </summary>
-    /// <returns>The intent string, or null if element not found.</returns>
-    public string? GetIntent()
-    {
-        var element = TryFindElement();
-        if (element == null) return null;
+    /// <param name="element">The pre-found element (may be null).</param>
+    /// <returns>The intent string, or null if the element is not found.</returns>
+    [AbsenceTolerant]
+    protected virtual string? GetIntentCore(IMauiElement? element)
+        => element?.GetAttribute("Intent");
 
-        return element.GetAttribute("Intent");
-    }
+    #endregion
+
+    #region Hand-written Convenience Members
 
     /// <summary>
     /// Checks if the TableView has a specific intent.
     /// </summary>
+    /// <remarks>
+    /// Hand-written because the comparison is case-insensitive; the generated
+    /// <c>AssertIntent</c> compares with <c>==</c>. Kept as a question rather than an
+    /// assertion so a caller can branch on it.
+    /// </remarks>
     /// <param name="intent">The intent to check (e.g., "Settings", "Form").</param>
-    /// <returns>True if intent matches, null if element not found.</returns>
+    /// <returns>True if intent matches, null if the element is not found.</returns>
     public bool? HasIntent(string intent)
     {
         var actual = GetIntent();

@@ -26,7 +26,7 @@ namespace Brinell.Maui.Controls.Container;
 /// </remarks>
 /// <typeparam name="TParent">The parent scope type (a page or another container).</typeparam>
 /// <typeparam name="TSelf">The view type itself (self-referencing for fluent returns).</typeparam>
-public class ScrollView<TParent, TSelf> : ContainerObjectBase<TParent, TSelf>
+public partial class ScrollView<TParent, TSelf> : ContainerObjectBase<TParent, TSelf>
     where TParent : IMauiScope<TParent>
     where TSelf : ScrollView<TParent, TSelf>
 {
@@ -46,25 +46,25 @@ public class ScrollView<TParent, TSelf> : ContainerObjectBase<TParent, TSelf>
     {
     }
 
+    #region Core Methods (Element-Aware, No Logging)
+
     /// <summary>
     /// Scrolls one viewport toward the end of the content.
     /// </summary>
-    /// <returns>The container, for chaining.</returns>
-    public TSelf ScrollForward()
-    {
-        ScrollHelper.TrySwipeForward(TryGetContainerRoot());
-        return Self;
-    }
+    /// <param name="element">The container's own element.</param>
+    protected virtual void ScrollForwardCore(IMauiElement element)
+        => ScrollHelper.TrySwipeForward(element);
 
     /// <summary>
     /// Scrolls one viewport back toward the start of the content.
     /// </summary>
-    /// <returns>The container, for chaining.</returns>
-    public TSelf ScrollBack()
-    {
-        ScrollHelper.TrySwipeBack(TryGetContainerRoot());
-        return Self;
-    }
+    /// <param name="element">The container's own element.</param>
+    protected virtual void ScrollBackCore(IMauiElement element)
+        => ScrollHelper.TrySwipeBack(element);
+
+    #endregion
+
+    #region Hand-written Convenience Members
 
     /// <summary>
     /// Brings a descendant into view, scrolling if necessary.
@@ -72,10 +72,17 @@ public class ScrollView<TParent, TSelf> : ContainerObjectBase<TParent, TSelf>
     /// <param name="locator">Locator for the descendant, resolved within this container.</param>
     /// <returns>The container, for chaining.</returns>
     /// <remarks>
-    /// Asks the element to scroll itself into view via the platform's scroll-item
-    /// pattern. Silently does nothing when the element is not present — use
-    /// <see cref="ContainerObjectBase{TParent, TSelf}.FindElement"/> first if absence
-    /// should be an error.
+    /// <para>
+    /// Hand-written: this resolves a <em>descendant</em> from a locator the caller supplies,
+    /// so its subject is not the container's own element and it does not fit the Core
+    /// contract, which passes the control's own element first.
+    /// </para>
+    /// <para>
+    /// Asks the element to scroll itself into view via the platform's scroll-item pattern.
+    /// Silently does nothing when the element is not present — use
+    /// <see cref="ContainerObjectBase{TParent, TSelf}.FindElement"/> first if absence should
+    /// be an error.
+    /// </para>
     /// </remarks>
     public TSelf ScrollTo(Locator locator)
     {
@@ -89,6 +96,8 @@ public class ScrollView<TParent, TSelf> : ContainerObjectBase<TParent, TSelf>
     /// <returns>The container, for chaining.</returns>
     public TSelf ScrollTo(string automationId)
         => ScrollTo(Locator.ByAutomationId(automationId));
+
+    #endregion
 }
 
 /// <summary>
@@ -96,7 +105,7 @@ public class ScrollView<TParent, TSelf> : ContainerObjectBase<TParent, TSelf>
 /// needed.
 /// </summary>
 /// <typeparam name="TParent">The parent scope type.</typeparam>
-public sealed class ScrollView<TParent> : ScrollView<TParent, ScrollView<TParent>>
+public sealed partial class ScrollView<TParent> : ScrollView<TParent, ScrollView<TParent>>
     where TParent : IMauiScope<TParent>
 {
     /// <summary>
