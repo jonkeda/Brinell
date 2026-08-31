@@ -82,7 +82,15 @@ public class HubPage : PageObjectBase<HubPage>
     /// <summary>
     /// The "back to hub" toolbar item the hub adds to every page it opens.
     /// </summary>
-    public Button<HubPage> BackToHub => new(this, "BackToHub");
+    /// <remarks>
+    /// Located by accessibility id, not automation id. A <c>ToolbarItem</c> is rendered into
+    /// native chrome rather than page content, and MAUI surfaces its AutomationId there as the
+    /// accessibility label — on Android the node's <c>resource-id</c> is empty and the value
+    /// appears in <c>content-desc</c>. AutomationId maps to <c>resource-id</c> on Android, so
+    /// looking it up that way finds nothing. AccessibilityId is the same string on both
+    /// platforms, so one locator serves all three.
+    /// </remarks>
+    public Button<HubPage> BackToHub => new(this, Locator.ByAccessibilityId("BackToHub"));
 
     /// <summary>
     /// Clicks "back to hub" if it is present.

@@ -166,35 +166,8 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
     #region Actions (IElement<IMauiElement>)
     
     /// <inheritdoc />
-    public void Click()
-    {
-        if (InvokePattern())
-            return;
-
-        if (SelectItemPattern())
-            return;
-
-        /*if (DoDefaultActionPattern())
-            return;*/
-
-        _element.Click();
-        
-        // ClickWithPointerFallback();
-    }
-
-    private void ClickWithPointerFallback()
-    {
-        var rect = _element.BoundingRectangle;
-        if (rect.Width <= 0 || rect.Height <= 0)
-        {
-            throw new InvalidOperationException(
-                $"Element is not gesture-clickable because bounds are empty ({rect}).");
-        }
-
-        var center = new Point(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
-        _driver.PointerClick(center, nameof(Click));
-    }
-    
+    public void Click() => _element.Click();
+   
     /// <inheritdoc />
     public void SendKeys(string text, TextInputMethod method = TextInputMethod.Keys)
     {

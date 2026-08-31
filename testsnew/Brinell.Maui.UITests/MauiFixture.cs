@@ -51,6 +51,7 @@ public class MauiFixture : MauiTestFixtureBase
     {
         ReturnToHub();
         _hub.OpenButton(page).Click();
+
     }
 
     /// <summary>

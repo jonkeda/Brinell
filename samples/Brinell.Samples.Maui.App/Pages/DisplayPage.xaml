@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:views="using:Brinell.Samples.Maui.App.Views"
              x:Class="Brinell.Samples.Maui.App.DisplayPage"
-             AutomationId="DisplayTab"
+             AutomationId="DisplayTestPage"
              Title="Display">
     <views:DisplayView />
 </ContentPage>

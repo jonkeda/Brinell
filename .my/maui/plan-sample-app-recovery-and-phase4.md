@@ -314,6 +314,47 @@ Expected remaining work, in order:
 **Done when:** the smoke set passes on Android, or each failure is a recorded control-level
 divergence with a named cause and a tier.
 
+### Android run, 2026-08-30 — two blockers cleared, one remaining
+
+Ran `ButtonTests` on the emulator. Two real blockers found and fixed; the remaining failure is
+narrower than anything before it.
+
+**Blocker 1 — the emulator was out of RAM, not the app crashing.**
+
+```
+lowmemorykiller: Kill 'com.brinell.samples.maui' (3891) ... reason: min watermark is breached
+```
+
+`MemTotal 2 GB, MemFree 55 MB`. Android was reaping the app mid-startup. **This retro-explains
+the earlier "Android exits silently, no FATAL, no managed exception" finding** — there was no
+exception because there was no crash. Restarting with `-memory 4096` (4 GB, 630 MB free) fixed
+it: the app launches, stays up, and renders the hub with all 14 `Open_*` buttons.
+
+**Check `/proc/meminfo` before diagnosing any Android startup failure.** A default 2 GB AVD is
+not enough for a .NET MAUI Debug build plus UiAutomator2.
+
+**Blocker 2 — pages were still named for Shell tabs.** `ButtonsPage.xaml` carried
+`AutomationId="ButtonsTab"` while `ButtonsTestPage` expects `ButtonsTestPage`. Seven pages
+were affected (Buttons, DateTime, Display, Range, Selection, Text, Toggle) — the rename this
+step listed as overdue. Renamed to match their page objects; no stale `*Tab` references remain.
+
+With both fixed, the Buttons page is **fully addressable on Android**, verified by driving the
+app by hand and dumping the tree:
+
+```
+ButtonsTestPage, TestButton, TestImageButton, ResetButton, StatusLabel
+```
+
+**What still fails.** All 6 `ButtonTests` now fail with `Expected Exists to be 'True'.
+Locator: AutomationId:TestButton`. The *page-not-loaded* error is gone, so navigation reaches
+a page — but the fixture does not land on the Buttons page, while a manual tap on the same
+button does. That isolates the fault to the fixture's `Open`, not to the app, the ids, or the
+control objects.
+
+**Next step:** instrument `Open` to dump where it actually lands rather than inferring. The 16
+remaining Windows failures are plausibly the same fault — both are "navigation completes but
+the expected page is not there", and both appeared with the hub fixture.
+
 ---
 
 ## 8. Step 5 — Make adding a page genuinely one line

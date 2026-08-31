@@ -40,7 +40,7 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable
     /// <inheritdoc />
     public IMauiElement FindElement(Locator locator, int timeoutMs = 5000)
     {
-        var by = locator.ToBy();
+        var by = locator.ToBy(_platform);
         
         if (timeoutMs > 0)
         {
@@ -69,7 +69,7 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable
     /// <inheritdoc />
     public IReadOnlyList<IMauiElement> FindElements(Locator locator, int timeoutMs = 0)
     {
-        var by = locator.ToBy();
+        var by = locator.ToBy(_platform);
         
         if (timeoutMs > 0)
         {

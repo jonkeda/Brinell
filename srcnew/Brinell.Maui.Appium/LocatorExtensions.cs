@@ -11,19 +11,13 @@ namespace Brinell.Maui.Appium;
 /// </summary>
 internal static class LocatorExtensions
 {
-    /// <summary>
-    /// Converts a Brinell Locator to an Appium/Selenium By selector.
-    /// Uses Windows platform semantics (AutomationId maps to AccessibilityId).
-    /// </summary>
-    /// <param name="locator">The locator to convert.</param>
-    /// <returns>A By selector that can be used with Appium WebDriver.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when locator is null.</exception>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when locator strategy is not supported.</exception>
-    public static By ToBy(this Locator locator)
-    {
-        return locator.ToBy(MauiPlatform.Windows);
-    }
-    
+    // There is deliberately no platform-less ToBy overload. One existed and defaulted to
+    // MauiPlatform.Windows, so every AutomationId on Android resolved as an AccessibilityId
+    // (content-desc) instead of By.Id (resource-id) - which is how MAUI actually surfaces it
+    // there. The result was that a control was found only when it happened to carry a
+    // content-desc, and the caller had no way to see why. The platform is always known at the
+    // call site; requiring it makes the mistake unrepresentable.
+
     /// <summary>
     /// Converts a Brinell Locator to an Appium/Selenium By selector for a specific platform.
     /// </summary>

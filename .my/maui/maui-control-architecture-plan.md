@@ -895,11 +895,43 @@ say about, not a generator limitation to fix.
 **Verified:** solution build unchanged (same 2 pre-existing `PresenterPage` errors);
 `Brinell.Maui.Tests` 77 passed / 6 failed, unchanged; `Brinell.Generator.Tests` 115 passed.
 
-### Phase 6 — Control behavior adapters, driven by real divergence (goal 17)
+### Phase 6 — Control behavior adapters, driven by real divergence (goal 17) ⛔ BLOCKED — gate not met
 
-Only now, with an Android run in hand, is the list of genuinely divergent controls known.
+**Do not implement this phase yet.** Its own step 2 is conditional: *build the registry only
+if step 1 produces at least one tier-3 control; if it produces none, record that and stop.*
+Step 1 cannot run, and the two divergences that motivated the phase no longer reproduce.
 
-**Phase 4's run supplied the first two entries, both in Shell navigation:**
+**Why the gate is not met:**
+
+1. **There is no evidence list.** Step 1 sorts "the failures from phase 4's mobile smoke
+   set". Phase 4 is paused — Appium reached the app and drove real UI, but the smoke set
+   never completed, so no failure list exists to tier.
+2. **Both recorded divergences have been removed, not absorbed.** Both were Shell navigation.
+   The sample app no longer uses Shell at all — `grep` finds only comments. `ShellContent`
+   appears nowhere in the tests. The overflow-menu problem was solved by deleting the tab bar
+   that caused it, which is a better outcome than adapting to it, but it means the phase has
+   lost its reproduction.
+
+**This is the plan working, not failing.** §4.5 said the divergent-control list could not be
+known until Android ran, and warned that building the framework early would be guessing.
+Implementing it now would mean inventing divergences to justify the seam — the precise
+failure the gate exists to prevent.
+
+**What unblocks it:** finish phase 4 (see
+[plan-sample-app-recovery-and-phase4.md](plan-sample-app-recovery-and-phase4.md)) and run the
+basics smoke set on Android. Then sort each failure into a 4.5 tier. If any needs tier 3,
+build the seam for exactly those controls; if none does, **record that the capability model
+was sufficient and close the phase without building anything.** That is a legitimate and
+likely outcome — phases 1 and 2 moved a lot of platform difference down to the element layer.
+
+**The Shell control objects are still worth an adapter eventually**, just not on this
+evidence. `Shell`, `ShellContent`, `Tab` and `FlyoutItem` remain in `Brinell.Maui` and real
+apps use them, so the divergences below are still true of *user* apps. They would be
+demonstrated by the `ShellNavigationPage` test subject proposed in
+[sample-app-navigation-redesign.md](sample-app-navigation-redesign.md) §5 — a page that tests
+Shell, rather than Shell being the mechanism every other test depends on.
+
+**The two divergences, retained as the record of what tier 3 is for:**
 
 | Divergence | Windows | Android | Tier |
 |---|---|---|---|

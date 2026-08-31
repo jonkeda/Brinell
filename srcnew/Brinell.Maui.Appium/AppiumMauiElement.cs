@@ -492,6 +492,17 @@ public sealed class AppiumMauiElement : IMauiElement, ITogglePatternElement, ISe
 
             try
             {
+                // Android reports checked="false" on EVERY view, a plain Button included, so
+                // "the attribute is present" cannot distinguish a real toggle. `checkable` is
+                // the attribute that actually says whether this control has a checked state
+                // at all. Without this gate the probe was true for everything, which is the
+                // same defect that made the SelectionItem probe fire on ordinary buttons.
+                if (_driver.Platform == MauiPlatform.Android
+                    && !IsAttributeTrue("checkable"))
+                {
+                    return false;
+                }
+
                 return !string.IsNullOrEmpty(_element.GetAttribute(attribute));
             }
             catch
@@ -499,6 +510,23 @@ public sealed class AppiumMauiElement : IMauiElement, ITogglePatternElement, ISe
                 // A driver may throw rather than return null for an absent attribute.
                 return false;
             }
+        }
+    }
+
+    /// <summary>
+    /// Whether an attribute is present and reads as true.
+    /// </summary>
+    private bool IsAttributeTrue(string name)
+    {
+        try
+        {
+            var value = _element.GetAttribute(name);
+            return !string.IsNullOrEmpty(value)
+                && value.Equals("true", StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return false;
         }
     }
 
@@ -577,42 +605,30 @@ public sealed class AppiumMauiElement : IMauiElement, ITogglePatternElement, ISe
     {
         get
         {
-            try
-            {
-                return !string.IsNullOrEmpty(_element.GetAttribute("selected"));
-            }
-            catch
-            {
-                return false;
-            }
+            // Deliberately always false on mobile.
+            //
+            // The obvious probe - "does the element report a 'selected' attribute" - is wrong:
+            // every Android view reports selected="false", including a plain
+            // android.widget.Button. That made the probe true for everything, so
+            // SelectItemPattern clicked, saw Selected still false, reported failure, and the
+            // caller's ladder clicked AGAIN - two taps for one Click(). It is what made
+            // Button_MultipleTaps_IncrementsCount see "2 times" where it expected "1 time".
+            //
+            // There is no mobile equivalent of the UIA SelectionItem pattern: selecting a row
+            // IS tapping it. Reporting unsupported lets a control fall through to its own
+            // click, which performs exactly one tap and is the correct mobile behaviour.
+            // See .my/maui/plan-fix-hub-navigation.md.
+            return false;
         }
     }
 
     /// <inheritdoc />
-    public bool SelectItemPattern()
-    {
-        if (!SupportsSelectionItemPattern) return false;
-
-        try
-        {
-            _element.Click();
-        }
-        catch
-        {
-            return false;
-        }
-
-        try
-        {
-            return _element.Selected;
-        }
-        catch
-        {
-            // Selected can throw on a row the tap navigated away from. The tap landed, which
-            // is what the caller asked for.
-            return true;
-        }
-    }
+    /// <remarks>
+    /// Always false, because <see cref="SupportsSelectionItemPattern"/> is. Kept rather than
+    /// throwing so the interface stays honest: a caller that asks is told "not available", the
+    /// same answer it gets from the probe, and the control falls through to its own click.
+    /// </remarks>
+    public bool SelectItemPattern() => false;
 
     #endregion
 

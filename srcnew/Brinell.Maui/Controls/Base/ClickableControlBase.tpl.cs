@@ -106,8 +106,7 @@ public abstract partial class ClickableControlBase<TScope> : FocusableControlBas
     protected virtual void DoubleClickCore(IMauiElement element, int? timeoutMs = null)
     {
         EnsureClickableCore(element);
-        element.Click();
-        element.Click();
+        element.DoubleClick();
     }
 
     /// <summary>

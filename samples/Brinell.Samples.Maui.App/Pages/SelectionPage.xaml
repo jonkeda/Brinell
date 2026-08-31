@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:testViews="using:Brinell.Samples.Maui.App.Views2.TestViews"
              x:Class="Brinell.Samples.Maui.App.SelectionPage"
-             AutomationId="SelectionTab"
+             AutomationId="SelectionTestPage"
              Title="Selection">
     <testViews:SelectionView />
 </ContentPage>
