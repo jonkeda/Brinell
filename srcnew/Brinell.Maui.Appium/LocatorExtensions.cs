@@ -32,15 +32,16 @@ internal static class LocatorExtensions
         
         return locator.Strategy switch
         {
-            // MAUI AutomationId maps differently per platform:
-            // - Windows: AccessibilityId in automation tree
-            // - Android: resource-id attribute (use By.Id)
-            // - iOS: AccessibilityId
+            // MAUI surfaces AutomationId differently on each mobile platform:
+            // - Android: the resource-id attribute, so By.Id
+            // - iOS: the accessibility identifier
             LocatorStrategy.AutomationId => platform switch
             {
                 MauiPlatform.Android => By.Id(locator.Value),
                 MauiPlatform.iOS => MobileBy.AccessibilityId(locator.Value),
-                _ => MobileBy.AccessibilityId(locator.Value)
+                _ => throw new ArgumentOutOfRangeException(
+                    nameof(platform), platform,
+                    "Brinell.Maui.Appium drives Android and iOS. Windows uses Brinell.Maui.FlaUI.")
             },
             LocatorStrategy.AccessibilityId => MobileBy.AccessibilityId(locator.Value),
             LocatorStrategy.Id => By.Id(locator.Value),

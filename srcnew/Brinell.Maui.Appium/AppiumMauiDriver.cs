@@ -22,7 +22,7 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable
     /// <param name="driver">The AppiumDriver to wrap.</param>
     /// <param name="platform">The platform this driver is connected to.</param>
     /// <exception cref="ArgumentNullException">Thrown when driver is null.</exception>
-    public AppiumMauiDriver(AppiumDriver driver, MauiPlatform platform = MauiPlatform.Windows)
+    public AppiumMauiDriver(AppiumDriver driver, MauiPlatform platform)
     {
         _driver = driver ?? throw new ArgumentNullException(nameof(driver));
         _platform = platform;

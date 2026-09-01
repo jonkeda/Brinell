@@ -44,15 +44,8 @@ public partial class Label<TScope> : Base.ViewBase<TScope>
     {
         if (element == null) return null;
 
-        // For Windows/FlaUI, use GetNestedText which handles complex label structures
-        if (element is INestedTextElement<IMauiElement> textElement)
-        {
-            var text = textElement.GetNestedText();
-            if (text != null)
-                return text;
-        }
-
-        // Fall back to the raw element text
+        // The element resolves its own text. On Windows that means reading through a MAUI
+        // wrapper to the nested Edit; the control does not need to know that.
         return element.Text;
     }
 

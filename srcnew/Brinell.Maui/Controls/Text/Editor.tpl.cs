@@ -36,25 +36,16 @@ public partial class Editor<TScope> : Entry<TScope>
 
     /// <summary>
     /// Core implementation of Clear using pre-found element.
-    /// Uses FlaUI ClearWithFallback for robust clearing on Windows.
     /// </summary>
     /// <param name="element">The pre-found element.</param>
     /// <param name="timeoutMs">Optional timeout for enabled check.</param>
     protected override void ClearCore(IMauiElement element, int? timeoutMs = null)
     {
-        // For Windows/FlaUI, use ClearWithFallback for robust clearing
-        if (element is INestedTextElement<IMauiElement> textElement)
-        {
-            textElement.ClearWithFallback();
-            return;
-        }
-
         element.Clear();
     }
 
     /// <summary>
     /// Core implementation of SetText using pre-found element.
-    /// Uses FlaUI ClearWithFallback for robust clearing on Windows.
     /// </summary>
     /// <param name="element">The pre-found element.</param>
     /// <param name="text">The text to set.</param>
@@ -63,20 +54,7 @@ public partial class Editor<TScope> : Entry<TScope>
     {
         if (text == null) return;
 
-        // For Windows/FlaUI, use ClearWithFallback for robust clearing
-        if (element is INestedTextElement<IMauiElement> textElement)
-        {
-            textElement.ClearWithFallback();
-            if (textElement.SetTextWithFallback(text))
-            {
-                return;
-            }
-        }
-        else
-        {
-            element.Clear();
-        }
-
+        element.Clear();
         element.SendKeys(text, TextInputMethod.SetValue);
     }
 

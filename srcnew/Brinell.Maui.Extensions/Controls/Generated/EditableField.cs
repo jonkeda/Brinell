@@ -259,19 +259,7 @@ public class EditableField<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope>
 
     private static void SetElementText(IMauiElement element, string text)
     {
-        if (element is INestedTextElement<IMauiElement> textElement)
-        {
-            textElement.ClearWithFallback();
-            if (textElement.SetTextWithFallback(text))
-            {
-                return;
-            }
-        }
-        else
-        {
-            element.Clear();
-        }
-
+        element.Clear();
         element.SendKeys(text, TextInputMethod.SetValue);
     }
 }

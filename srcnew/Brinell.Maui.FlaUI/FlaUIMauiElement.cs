@@ -14,11 +14,11 @@ namespace Brinell.Maui.FlaUI;
 /// Provides native Windows UI Automation support for MAUI desktop apps.
 /// Also implements pattern-based interfaces for enhanced Windows Automation support.
 /// </summary>
-public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISelectionItemPatternElement, ILegacyIAccessiblePatternElement, IRangePatternElement, IExpandCollapsePatternElement<IMauiElement>, INestedTextElement<IMauiElement>, ITogglePatternElement
+public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISelectionItemPatternElement, ILegacyIAccessiblePatternElement, IRangePatternElement, IExpandCollapsePatternElement<IMauiElement>, ITogglePatternElement
 {
     private readonly AutomationElement _element;
     private readonly FlaUIMauiDriver _driver;
-    
+
     /// <summary>
     /// Creates a new FlaUIMauiElement wrapper.
     /// </summary>
@@ -30,9 +30,9 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
         _element = element ?? throw new ArgumentNullException(nameof(element));
         _driver = driver ?? throw new ArgumentNullException(nameof(driver));
     }
-    
+
     #region State Properties (IElement<IMauiElement>)
-    
+
     /// <inheritdoc />
     /// <remarks>
     /// Uses multiple checks for visibility because FlaUI's IsOffscreen can be 
@@ -98,10 +98,10 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
         */
         }
     }
-    
+
     /// <inheritdoc />
     public bool Enabled => _element.IsEnabled;
-    
+
     /// <inheritdoc />
     public bool Selected
     {
@@ -121,7 +121,7 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
             return false;
         }
     }
-    
+
     /// <inheritdoc />
     public string? Text
     {
@@ -139,6 +139,22 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
                 {
                     return _element.Patterns.RangeValue.Pattern.Value.Value.ToString();
                 }
+
+                // MAUI wraps text controls on WinUI: the AutomationId sits on a wrapper whose
+                // own Value pattern is absent, and the text lives in a nested Edit. Reading
+                // through to it here means a caller just asks for Text - it does not need to
+                // know that this platform nests, which is why there is no longer an
+                // INestedTextElement capability for controls to probe.
+                var nested = FindNestedTextBoxElement();
+                if (nested != null)
+                {
+                    var nestedText = nested.Patterns.Value.IsSupported
+                        ? nested.Patterns.Value.Pattern.Value.Value
+                        : nested.Properties.Name.ValueOrDefault;
+                    if (!string.IsNullOrEmpty(nestedText))
+                        return nestedText;
+                }
+
                 // Fallback to Name property with safe access
                 return _element.Properties.Name.ValueOrDefault;
             }
@@ -148,23 +164,23 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
             }
         }
     }
-    
+
     /// <inheritdoc />
     public string? TagName => _element.ControlType.ToString();
-    
+
     /// <inheritdoc />
     public Point Location => new Point(_element.BoundingRectangle.X, _element.BoundingRectangle.Y);
-    
+
     /// <inheritdoc />
     public Size Size => new Size(_element.BoundingRectangle.Width, _element.BoundingRectangle.Height);
-    
+
     /// <inheritdoc />
     public Rectangle Rect => new Rectangle(Location, Size);
-    
+
     #endregion
-    
+
     #region Actions (IElement<IMauiElement>)
-    
+
     /// <inheritdoc />
     public void Click() => _element.Click();
    
@@ -194,7 +210,7 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
                 break;
         }
     }
-    
+
     /// <inheritdoc />
     public void Clear()
     {
@@ -209,19 +225,19 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
             VirtualKeyShort.KEY_A);
         _driver.GlobalType(VirtualKeyShort.DELETE, nameof(Clear));
     }
-    
+
     /// <inheritdoc />
     public void DoubleClick()
     {
         _driver.PointerDoubleClick(_element, nameof(DoubleClick));
     }
-    
+
     /// <inheritdoc />
     public void RightClick()
     {
         _driver.PointerRightClick(_element, nameof(RightClick));
     }
-    
+
     /// <inheritdoc />
     public void Hover()
     {
@@ -229,7 +245,7 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
         var center = new System.Drawing.Point(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
         _driver.PointerHover(center, nameof(Hover));
     }
-    
+
     /// <inheritdoc />
     public void LongPress(int durationMs = 1000)
     {
@@ -431,8 +447,8 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
         }
     }
 
-    
-    
+
+
     /// <inheritdoc />
     public void Swipe(int startX, int startY, int endX, int endY, int durationMs = 500)
     {
@@ -462,11 +478,11 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
             durationMs,
             nameof(Swipe));
     }
-    
+
     #endregion
-    
+
     #region Element Finding (IElement<IMauiElement>)
-    
+
     /// <inheritdoc />
     public IMauiElement FindElement(Locator locator, int timeoutMs = 5000)
     {
@@ -490,7 +506,7 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
         
         throw new ElementNotFoundException(locator);
     }
-    
+
     /// <inheritdoc />
     public IReadOnlyList<IMauiElement> FindElements(Locator locator, int timeoutMs = 0)
     {
@@ -515,7 +531,7 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
         var elements = _element.FindAllDescendants(condition);
         return elements.Select(e => new FlaUIMauiElement(e, _driver)).ToList();
     }
-    
+
     /// <inheritdoc />
     public bool TryFindElement(Locator locator, out IMauiElement? element, int timeoutMs = 0)
     {
@@ -530,11 +546,11 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
             return false;
         }
     }
-    
+
     #endregion
-    
+
     #region Attribute Access (IMauiElement)
-    
+
     /// <inheritdoc />
     public string? GetAttribute(string attributeName)
     {
@@ -584,28 +600,28 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
             return null;
         return accessor(_element.Patterns.Scroll.Pattern).ToString();
     }
-    
+
     /// <inheritdoc />
     public string? GetDomAttribute(string attributeName)
     {
         // FlaUI doesn't have DOM attributes - return null
         return null;
     }
-    
+
     /// <inheritdoc />
     public string? GetDomProperty(string propertyName)
     {
         // FlaUI doesn't have DOM properties - return null
         return null;
     }
-    
+
     /// <inheritdoc />
     public string? GetCssValue(string propertyName)
     {
         // FlaUI doesn't have CSS values - return null
         return null;
     }
-    
+
     /// <inheritdoc />
     public void Submit()
     {
@@ -613,16 +629,16 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
         _driver.FocusForGlobalKeyboardInput(_element, nameof(Submit));
         _driver.GlobalType(VirtualKeyShort.ENTER, nameof(Submit));
     }
-    
+
     #endregion
-    
+
     #region Internal
-    
+
     /// <summary>
     /// Gets the underlying FlaUI AutomationElement for internal use.
     /// </summary>
     internal AutomationElement Element => _element;
-    
+
     #endregion
 
     #region ITogglePatternElement Implementation
@@ -802,9 +818,9 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
     }
 
     #endregion
-    
+
     #region IRangePatternElement Implementation
-    
+
     /// <inheritdoc />
     public bool SupportsRangeValue
     {
@@ -820,7 +836,7 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
             }
         }
     }
-    
+
     /// <inheritdoc />
     public bool SetRangeValue(double value)
     {
@@ -844,7 +860,7 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
             return false;
         }
     }
-    
+
     /// <inheritdoc />
     public double? GetRangeValue()
     {
@@ -859,7 +875,7 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
             return null;
         }
     }
-    
+
     /// <inheritdoc />
     public double? GetRangeMinimum()
     {
@@ -874,7 +890,7 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
             return null;
         }
     }
-    
+
     /// <inheritdoc />
     public double? GetRangeMaximum()
     {
@@ -889,7 +905,7 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
             return null;
         }
     }
-    
+
     /// <inheritdoc />
     public double? GetRangeSmallChange()
     {
@@ -904,11 +920,11 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
             return null;
         }
     }
-    
+
     #endregion
-    
+
     #region IExpandCollapsePatternElement Implementation
-    
+
     /// <inheritdoc />
     public bool SupportsExpandCollapse
     {
@@ -919,7 +935,7 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
             return true;
         }
     }
-    
+
     /// <inheritdoc />
     public bool IsExpanded
     {
@@ -931,7 +947,7 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
                    global::FlaUI.Core.Definitions.ExpandCollapseState.Expanded;
         }
     }
-    
+
     /// <inheritdoc />
     public bool Expand()
     {
@@ -949,7 +965,7 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
         
         return IsExpanded;
     }
-    
+
     /// <inheritdoc />
     public bool Collapse()
     {
@@ -959,7 +975,7 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
         _element.Patterns.ExpandCollapse.Pattern.Collapse();
         return true;
     }
-    
+
     /// <inheritdoc />
     public IReadOnlyList<IMauiElement>? GetExpandedItems()
     {
@@ -1004,7 +1020,7 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
             }
         }
     }
-    
+
     /// <inheritdoc />
     public bool SelectItemByText(string text)
     {
@@ -1048,7 +1064,7 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
         
         return true;
     }
-    
+
     /// <inheritdoc />
     public bool SelectItemByIndex(int index)
     {
@@ -1093,7 +1109,7 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
         
         return true;
     }
-    
+
     /// <inheritdoc />
     public string? GetSelectedItemText()
     {
@@ -1107,133 +1123,21 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
         
         return selection[0].Name;
     }
-    
+
     #endregion
-    
-    #region INestedTextElement Implementation
-    
-    /// <inheritdoc />
-    public IMauiElement? FindNestedTextBox()
-    {
-        try
-        {
-            var textBox = FindNestedTextBoxElement();
-            
-            if (textBox != null)
-                return new FlaUIMauiElement(textBox, _driver);
-                
-            return null;
-        }
-        catch
-        {
-            return null;
-        }
-    }
-    
-    /// <inheritdoc />
-    public string? GetNestedText()
-    {
-        try
-        {
-            // First try direct Value pattern
-            if (_element.Patterns.Value.IsSupported)
-            {
-                var value = _element.Patterns.Value.Pattern.Value.Value;
-                if (value != null)
-                    return value;
-            }
-            
-            // Fall back to nested TextBox
-            var nestedTextBox = FindNestedTextBox();
-            if (nestedTextBox != null)
-            {
-                return nestedTextBox.Text;
-            }
-            
-            // Last resort: Name property
-            return _element.Properties.Name.ValueOrDefault;
-        }
-        catch
-        {
-            return null;
-        }
-    }
-    
-    /// <inheritdoc />
-    public bool ClearWithFallback()
-    {
-        try
-        {
-            bool IsEmpty(string? value) => string.IsNullOrEmpty(value);
 
-            if (TrySetTextValue(string.Empty) && IsEmpty(GetNestedText()))
-                return true;
+    #region Nested text resolution
 
-            var focusTargets = GetTextValueTargets();
-
-            for (var attempt = 0; attempt < 3; attempt++)
-            {
-                if (IsEmpty(GetNestedText()))
-                    return true;
-
-                // ValuePattern attempt on wrapper and nested targets.
-                foreach (var target in focusTargets)
-                {
-                    if (target.Patterns.Value.IsSupported && !target.Patterns.Value.Pattern.IsReadOnly.Value)
-                    {
-                        target.Patterns.Value.Pattern.SetValue(string.Empty);
-                        if (IsEmpty(GetNestedText()))
-                            return true;
-                    }
-                }
-
-                // Keyboard attempt: Ctrl+A then Delete on each possible focus target.
-                foreach (var target in focusTargets)
-                {
-                    _driver.FocusForGlobalKeyboardInput(target, nameof(ClearWithFallback));
-                    _driver.GlobalTypeSimultaneously(
-                        nameof(ClearWithFallback),
-                        VirtualKeyShort.CONTROL,
-                        VirtualKeyShort.KEY_A);
-                    _driver.GlobalType(VirtualKeyShort.DELETE, nameof(ClearWithFallback));
-                    if (IsEmpty(GetNestedText()))
-                        return true;
-                }
-
-                // Keyboard attempt: force end and backspace remaining characters.
-                var remainingText = GetNestedText() ?? string.Empty;
-                if (remainingText.Length > 0)
-                {
-                    var target = focusTargets[0];
-                    _driver.FocusForGlobalKeyboardInput(target, nameof(ClearWithFallback));
-                    _driver.GlobalType(VirtualKeyShort.END, nameof(ClearWithFallback));
-
-                    var backspaceCount = Math.Max(remainingText.Length + 10, 20);
-                    for (var i = 0; i < backspaceCount; i++)
-                    {
-                        _driver.GlobalType(VirtualKeyShort.BACK, nameof(ClearWithFallback));
-                    }
-
-                    if (IsEmpty(GetNestedText()))
-                        return true;
-                }
-            }
-
-            return IsEmpty(GetNestedText());
-        }
-        catch (WindowsInteractionPolicyException)
-        {
-            throw;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    /// <inheritdoc />
-    public bool SetTextWithFallback(string text)
-        => TrySetTextValue(text);
+    // MAUI wraps text controls on WinUI: the AutomationId sits on a wrapper whose own Value
+    // pattern is absent, and the real text lives in a nested Edit. Resolving that is this
+    // element's job - the Text property and TrySetTextValue below both go through it - so no
+    // control needs to know this platform nests, and there is no INestedTextElement capability
+    // for one to probe.
+    //
+    // A verify-and-retry ladder (ClearWithFallback, GetNestedText, SetTextWithFallback) used
+    // to live here. It became unreachable once the capability was removed, and is deliberately
+    // not being reinstated: SetText should stay simple. See
+    // .my/maui/plan-appium-text-entry.md step 2.
 
     private AutomationElement? FindNestedTextBoxElement()
     {
@@ -1248,43 +1152,54 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
         }
     }
 
-    private List<AutomationElement> GetTextValueTargets()
-    {
-        var targets = new List<AutomationElement>();
-        var nestedTextBox = FindNestedTextBoxElement();
-        if (nestedTextBox != null)
-            targets.Add(nestedTextBox);
-
-        if (!targets.Contains(_element))
-            targets.Add(_element);
-
-        return targets;
-    }
-
+    /// <summary>
+    /// Writes a value through the UIA Value pattern, reaching into a wrapper if it has to.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Self first, wrapper only if self cannot be written. Measured against the sample app:
+    /// MAUI maps <c>Entry</c> and <c>Editor</c> straight to a WinUI <c>Edit</c>, which is
+    /// writable directly — but <c>SearchBar</c> becomes an AutoSuggestBox, which surfaces as a
+    /// <c>Group</c> with no Value pattern of its own and the real field nested inside.
+    /// </para>
+    /// <para>
+    /// So the descendant search is not generic caution: it is what makes SearchBar writable at
+    /// all, and it now costs nothing on the controls that do not need it because it only runs
+    /// once the direct write is ruled out.
+    /// </para>
+    /// </remarks>
     private bool TrySetTextValue(string text)
     {
-        foreach (var target in GetTextValueTargets())
-        {
-            try
-            {
-                if (!target.Patterns.Value.IsSupported)
-                    continue;
+        if (TryWriteValue(_element, text))
+            return true;
 
-                var pattern = target.Patterns.Value.Pattern;
-                if (pattern.IsReadOnly.Value)
-                    continue;
-
-                pattern.SetValue(text);
-                return true;
-            }
-            catch
-            {
-                // Try the next candidate target.
-            }
-        }
-
-        return false;
+        var nested = FindNestedTextBoxElement();
+        return nested != null && TryWriteValue(nested, text);
     }
-    
+
+    /// <summary>
+    /// Writes to one element, reporting whether its Value pattern accepted the write.
+    /// </summary>
+    private static bool TryWriteValue(AutomationElement target, string text)
+    {
+        try
+        {
+            if (!target.Patterns.Value.IsSupported)
+                return false;
+
+            var pattern = target.Patterns.Value.Pattern;
+            if (pattern.IsReadOnly.Value)
+                return false;
+
+            pattern.SetValue(text);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+
     #endregion
 }

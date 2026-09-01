@@ -10,16 +10,24 @@ using OpenQA.Selenium.Support.UI;
 namespace Brinell.Maui.Appium;
 
 /// <summary>
-/// Appium-based implementation of <see cref="IMauiElement"/>.
+/// Appium-based implementation of <see cref="IMauiElement"/> for <b>Android and iOS</b>.
 /// Delegates all operations to the underlying AppiumElement.
 /// </summary>
+/// <remarks>
+/// <para>
+/// Windows is served by <c>Brinell.Maui.FlaUI</c>, not by this driver. Anything here shaped
+/// for the desktop is a mistake rather than a fallback: a Windows default on
+/// <c>Locator.ToBy</c> silently resolved every Android AutomationId as an AccessibilityId, and
+/// an iOS-only script name (<c>mobile: setValue</c>) was called on Android where it does not
+/// exist. Both were invisible until a device ran.
+/// </para>
 /// <remarks>
 /// <para>
 /// Implements the two capability interfaces that mobile platforms can actually honour:
 /// <see cref="ITogglePatternElement"/> and <see cref="ISelectionItemPatternElement"/>. The
 /// UIA-shaped capabilities (<c>IInvokePatternElement</c>,
-/// <c>ILegacyIAccessiblePatternElement</c>, <c>INestedTextElement</c>,
-/// <c>IExpandCollapsePatternElement</c>) are deliberately <em>not</em> implemented: not
+/// <c>ILegacyIAccessiblePatternElement</c>, <c>IExpandCollapsePatternElement</c>) are
+/// deliberately <em>not</em> implemented: not
 /// implementing an interface is how this element reports "unsupported", and controls then
 /// fall through to <see cref="Click"/> or <see cref="Text"/>, which is correct on mobile.
 /// </para>
@@ -92,12 +100,7 @@ public sealed class AppiumMauiElement : IMauiElement, ITogglePatternElement, ISe
                 SetClipboardAndPaste(text);
                 break;
             case TextInputMethod.SetValue:
-                // Use direct value setting (bypasses keyboard)
-                _driver.Driver.ExecuteScript("mobile: setValue", new Dictionary<string, object>
-                {
-                    { "elementId", _element.Id },
-                    { "text", text }
-                });
+                SetValueDirectly(text);
                 break;
         }
     }
@@ -110,6 +113,49 @@ public sealed class AppiumMauiElement : IMauiElement, ITogglePatternElement, ISe
         _element.SendKeys(text);
     }
     
+    /// <summary>
+    /// Sets an element's value directly, bypassing the keyboard.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The script name differs per driver and there is no shared one. XCUITest exposes
+    /// <c>mobile: setValue</c>; UiAutomator2 does not have that name at all and exposes
+    /// <c>mobile: replaceElementValue</c> instead. Calling the iOS name on Android fails with
+    /// "Unsupported execute method 'mobile: setValue', did you mean 'mobile: setUiMode'?",
+    /// which reads like a driver version problem rather than the wrong API for the platform.
+    /// </para>
+    /// <para>
+    /// Anything else clears and types: slower, needs a keyboard, but works on any driver
+    /// rather than failing on the ones this method has not been taught.
+    /// </para>
+    /// </remarks>
+    private void SetValueDirectly(string text)
+    {
+        switch (_driver.Platform)
+        {
+            case MauiPlatform.Android:
+                _driver.Driver.ExecuteScript("mobile: replaceElementValue", new Dictionary<string, object>
+                {
+                    { "elementId", _element.Id },
+                    { "text", text }
+                });
+                break;
+
+            case MauiPlatform.iOS:
+                _driver.Driver.ExecuteScript("mobile: setValue", new Dictionary<string, object>
+                {
+                    { "elementId", _element.Id },
+                    { "text", text }
+                });
+                break;
+
+            default:
+                _element.Clear();
+                _element.SendKeys(text);
+                break;
+        }
+    }
+
     /// <inheritdoc />
     public void Clear() => _element.Clear();
     
