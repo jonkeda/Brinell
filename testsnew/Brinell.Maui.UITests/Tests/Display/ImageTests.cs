@@ -46,7 +46,11 @@ public class ImageTests
     {
         var page = GetPage();
         // Assert
-        page.TestImage.AssertVisible();
+        // AssertVisibleAfterScroll, not AssertVisible: the page is a ScrollView and this control
+        // sits below the fold, so "is it on screen right now" is false for a perfectly healthy
+        // control. Which controls happen to start above the fold depends on window size, so
+        // asserting that would encode this machine's screen rather than the app's behaviour.
+        page.TestImage.AssertVisibleAfterScroll();
         return Task.CompletedTask;
     }
 }

@@ -59,7 +59,7 @@
                 HasShadow="True"
                 HeightRequest="150">
                 <Image 
-                    Source="appicon.png" 
+                    Source="testimage.png" 
                     Aspect="AspectFit"
                     AutomationId="TestImage" />
             </Frame>

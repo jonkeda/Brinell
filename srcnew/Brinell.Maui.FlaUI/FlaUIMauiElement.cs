@@ -35,69 +35,25 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
 
     /// <inheritdoc />
     /// <remarks>
-    /// Uses multiple checks for visibility because FlaUI's IsOffscreen can be 
-    /// unreliable for some MAUI controls (e.g., Switch on Windows).
-    /// An element is considered visible if:
-    /// 1. IsOffscreen is false, OR
-    /// 2. The element has a valid (non-empty) bounding rectangle, OR
-    /// 3. The element is enabled and has visible children (MAUI wrapper elements), OR
-    /// 4. The element is enabled and supports Toggle pattern (MAUI Switch workaround)
+    /// <para>
+    /// Whether the element is on screen <em>right now</em>. UIA's <c>IsOffscreen</c> is false
+    /// when the element is inside the viewport, and true when it is scrolled away, clipped, or
+    /// not rendered.
+    /// </para>
+    /// <para>
+    /// Deliberately nothing more. This replaced a ladder of fallbacks — a bounding-rectangle
+    /// check, a walk over children, and a "supports Toggle, so treat it as visible" rule for
+    /// MAUI's Switch. Every rung had been commented out for some time while the summary above
+    /// still described all four as though they ran. The Switch rung is the telling one: that is
+    /// control knowledge sitting in an element, which must not know what a MAUI view means. A
+    /// control that genuinely needs it overrides <c>IsVisibleCore</c> instead.
+    /// </para>
+    /// <para>
+    /// "Visible once the user scrolls to it" is a different question, and the control object
+    /// answers it separately through <c>IsVisibleAfterScroll</c>.
+    /// </para>
     /// </remarks>
-    public bool Visible
-    {
-        get
-        {
-           // try
-           // {
-                return !_element.IsOffscreen;
-                // Primary check: IsOffscreen property
-                /*
-                if (!_element.IsOffscreen)
-                    return true;
-                
-                // Fallback 1: Check if element has a valid bounding rectangle
-                // Some controls incorrectly report IsOffscreen=true but are actually visible
-                var bounds = _element.BoundingRectangle;
-                if (bounds.Width > 0 && bounds.Height > 0)
-                    return true;
-                
-                // Fallback 2: For MAUI wrapper elements with zero bounds,
-                // check if any child has valid bounds
-                if (_element.IsEnabled)
-                {
-                    var children = _element.FindAllChildren();
-                    foreach (var child in children)
-                    {
-                        try
-                        {
-                            if (!child.IsOffscreen)
-                                return true;
-                            var childBounds = child.BoundingRectangle;
-                            if (childBounds.Width > 0 && childBounds.Height > 0)
-                                return true;
-                        }
-                        catch
-                        {
-                            // Ignore children that can't be queried
-                        }
-                    }
-                }
-                
-                // Fallback 3: MAUI Switch on Windows workaround
-                // If the element supports Toggle pattern and is enabled, treat as visible
-                // This handles cases where MAUI wraps WinUI controls with zero-bounds containers
-                if (_element.IsEnabled && _element.Patterns.Toggle.IsSupported)
-                    return true;
-                
-                return false;
-            }
-            catch
-            {
-                return false;
-            }
-        */
-        }
-    }
+    public bool Visible => !_element.IsOffscreen;
 
     /// <inheritdoc />
     public bool Enabled => _element.IsEnabled;

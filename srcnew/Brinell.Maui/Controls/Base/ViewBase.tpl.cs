@@ -508,6 +508,49 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
         return RunPoll(null, () => IsVisibleCore(element) == expected, timeoutMs);
     }
 
+    /// <summary>
+    /// Checks whether the element can be seen at all, scrolling to it when it is not already
+    /// on screen.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Visibility is two questions, not one. <c>IsVisible</c> answers "is it on screen right
+    /// now"; this answers "could the user see it at all". On a scrolling page they give
+    /// different answers for the same healthy control, and which one a test wants depends on
+    /// what it is really asserting.
+    /// </para>
+    /// <para>
+    /// Answering the second question <em>requires</em> scrolling: UIA reports a control that is
+    /// merely scrolled out of view exactly as it reports one that is not rendered — offscreen,
+    /// with a zero bounding rectangle — so no property distinguishes them. The name says so
+    /// rather than hiding a side effect behind an innocent-looking query.
+    /// </para>
+    /// <para>
+    /// Prefer this over <c>IsVisible</c> when a test means "the page shows this control",
+    /// because whether a control happens to sit above the fold depends on window size and screen
+    /// density, and so differs between Windows, Android and iOS — exactly the accidental
+    /// difference tests should not encode.
+    /// </para>
+    /// </remarks>
+    /// <param name="element">The pre-found element.</param>
+    /// <returns>True when visible, scrolling to it first if needed; null when absent.</returns>
+    [AbsenceTolerant]
+    protected virtual bool? IsVisibleAfterScrollCore(IMauiElement? element)
+    {
+        if (element == null)
+        {
+            return null;
+        }
+
+        if (IsVisibleCore(element) == true)
+        {
+            return true;
+        }
+
+        ScrollIntoViewCore(element);
+        return IsVisibleCore(element);
+    }
+
     protected virtual void EnsureVisible(IMauiElement element, int timeout)
     {
         if (IsVisibleCore(element) != true)

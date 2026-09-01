@@ -79,7 +79,12 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
             Arguments = arguments ?? string.Empty,
             UseShellExecute = true
         };
-        
+
+        // Whoever the user was working in before the run. Windows hands a freshly launched
+        // process the foreground, so without this the app steals focus and keeps it for the
+        // whole run - see RestoreForegroundWindow.
+        var previousForeground = GetForegroundWindow();
+
         var process = Process.Start(processStartInfo)
             ?? throw new InvalidOperationException($"Failed to start process: {executablePath}");
         
@@ -93,6 +98,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
         _rootElement = window ?? throw new InvalidOperationException("Failed to get main window");
         _conditionFactory = new ConditionFactory(_automation.PropertyLibrary);
         TryApplyRequestedWindowPlacement();
+        RestoreForegroundWindow(previousForeground);
     }
     
     /// <summary>
@@ -413,6 +419,47 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
 
     [DllImport("user32.dll")]
     private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetForegroundWindow();
+
+    /// <summary>
+    /// Hands the foreground back to the window that had it before the app was launched.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Launching a process is the one moment automation cannot avoid taking the foreground:
+    /// Windows grants it to a new process, and the app then keeps it for the whole run because
+    /// nothing takes it back. Measured on the Buttons and Text suites, that is the <em>only</em>
+    /// time the window comes forward - every deliberate foreground path is gated behind
+    /// <see cref="RequireForegroundActivation"/>, which the default semantic policy denies.
+    /// </para>
+    /// <para>
+    /// The window stays shown, only unfocused, so its layout and bounding rectangles remain
+    /// valid for UI Automation. Skipped under interactive mode, where physical mouse and
+    /// keyboard input are allowed and genuinely need the app in front.
+    /// </para>
+    /// <para>
+    /// Best effort by nature: Windows only permits a foreground change from a process that
+    /// currently holds it, so this can legitimately fail and is not worth failing a run over.
+    /// </para>
+    /// </remarks>
+    private void RestoreForegroundWindow(IntPtr previousForeground)
+    {
+        if (_windowsInteraction.AllowForegroundActivation || previousForeground == IntPtr.Zero)
+        {
+            return;
+        }
+
+        try
+        {
+            SetForegroundWindow(previousForeground);
+        }
+        catch
+        {
+            // Losing this race only means the app keeps focus; it changes no test outcome.
+        }
+    }
 
     private void TryApplyRequestedWindowPlacement()
     {

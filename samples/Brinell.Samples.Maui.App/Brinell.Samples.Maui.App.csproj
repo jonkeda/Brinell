@@ -71,6 +71,11 @@
     <!-- Splash Screen -->
     <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#512BD4" BaseSize="128,128" />
 
+    <!-- Images. Without this the app shipped no images at all, so the Image demo's
+         Source="appicon.png" resolved to nothing: the control rendered at zero size and
+         reported no bounding rectangle, which is why its visibility test could never pass. -->
+    <MauiImage Include="Resources\Images\**" />
+
     <!-- Raw Assets -->
     <MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>

@@ -57,6 +57,28 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
     }
 
     #endregion
+    #region VisibleAfterScroll (IsVisibleAfterScroll / WaitVisibleAfterScroll / AssertVisibleAfterScroll)
+
+    public bool? IsVisibleAfterScroll()
+    {
+        return IsVisibleAfterScrollCore(TryFindElement()) == true;
+    }
+
+    public bool WaitVisibleAfterScroll(bool? expected = true, int? timeoutMs = null)
+    {
+        return RunWaitWithOptionalElement(expected,
+           element => IsVisibleAfterScrollCore(element) == expected!.Value,
+           timeoutMs);
+    }
+
+    public TScope AssertVisibleAfterScroll(bool? expected = true, string? message = null, int? timeoutMs = null)
+    {
+        return RunAssertWithOptionalElement(expected,
+           IsVisibleAfterScrollCore, (actual, expected1) => (actual == expected1),
+           message ?? $"Expected VisibleAfterScroll to be '{expected}'. Locator: {Locator}", timeoutMs);
+    }
+
+    #endregion
     #region Enabled (IsEnabled / WaitEnabled / AssertEnabled)
 
     public bool? IsEnabled()
