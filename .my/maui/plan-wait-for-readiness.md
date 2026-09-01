@@ -111,6 +111,55 @@ readiness. The options, for whoever takes it:
 The first is almost certainly right: **poll to get ready, then act once.** That is the same
 principle as §2, applied one level in.
 
+### 0.2 Built — and it exposed the readiness gap the retry had been hiding
+
+Implemented as option 1. Two changes, in `ViewBase` and `PageObjectBase`.
+
+**Change 1 — split resolution from action.** `RunDoWithElement` and `RunSetWithElement` now
+call a private `ResolveReadyElement`, which polls; the action runs after the loop, once.
+Readiness that used to live inside the action moved into the poll via a new
+`EnsureReadyForActionCore` hook — `ClickableControlBase` overrides it to check *enabled*, so
+"waits for a control enabled late" still holds.
+
+**Change 2 — the query path waits for the page.** This is the one the split forced into the
+open. With the action no longer retried, `Open()` returned sooner, and
+`ImageButton_IsExists_ReturnsTrue` began failing **deterministically, in 1 second**, in
+isolation.
+
+That was not a regression. **The old retry loop had been supplying an accidental delay** — a
+click that navigated away made the element stale, `RunPoll` caught it and retried, and the
+retry's own timeout gave the next page time to render. The double-action bug and the
+missing page-wait were the same loop papering over each other.
+
+So the two paths need opposite treatment, and now get it:
+
+| Path | Waits how | Why |
+|---|---|---|
+| `FindElement` (actions) | Throws; the caller's `RunPoll` retries | A wait here would nest one poll inside another |
+| `TryFindElement` (queries) | Waits for the page itself | Nothing polls above a query — `IsExists()` asks once and returns |
+
+The query waits for the **page**, never the **element**. Being on the page is a precondition
+for the question meaning anything; the element's absence is the answer. Without that
+distinction every `AssertExists(false)` would cost a full timeout.
+
+**One trap found while building:** passing a timeout to `IsLoaded(timeoutMs)` does nothing.
+Page objects routinely override it to check a signature control — `ButtonsTestPage` returns
+`StatusLabel.IsExists()` — and those overrides ignore the parameter. `EnsureLoaded` therefore
+polls the **no-argument** form itself rather than delegating the wait to an override that will
+drop it.
+
+### Result
+
+| | Before | After |
+|---|---|---|
+| Android Buttons + ImageButtons | 10 / 11 (deterministic failure) | **11 / 11**, stable over 3 runs |
+| Windows Buttons + ImageButtons | 11 / 11 | **11 / 11** |
+| `Brinell.Maui.Tests` | 83 passed / 6 pre-existing | **84 passed / 6 pre-existing** |
+| Readiness tests | 6 | **7** |
+
+`Click_IsPerformedOnce_WhenTheDriverThrowsAfterActing` replaces the test that pinned the old
+double-action behaviour, so the guarantee is now asserted rather than merely observed.
+
 ---
 
 ## Original plan (superseded by §0)

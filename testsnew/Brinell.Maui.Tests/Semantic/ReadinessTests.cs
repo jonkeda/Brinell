@@ -149,19 +149,20 @@ public class ReadinessTests
     #region Queries stay instantaneous
 
     /// <summary>
-    /// <c>IsExists()</c> answers immediately when the page is not loaded.
+    /// <c>IsExists()</c> answers immediately when the page is loaded and the element is not.
     /// </summary>
     /// <remarks>
-    /// The constraint that keeps this design from becoming "wait everywhere". <c>IsExists</c>
-    /// is a question, not an action: if it waited for the page, then <c>IsExists() == false</c>
-    /// — and every <c>AssertExists(false)</c> built on it — would cost a full page timeout to
-    /// establish.
+    /// The constraint that keeps this design from becoming "wait everywhere". The query waits
+    /// for the <em>page</em>, because being on the page is a precondition for the question
+    /// meaning anything — but never for the <em>element</em>, because the element's absence is
+    /// the answer. If it waited for the element, every <c>AssertExists(false)</c> would cost a
+    /// full timeout.
     /// </remarks>
     [Fact]
-    public void IsExists_ReturnsFalseImmediately_WhenThePageIsNotLoaded()
+    public void IsExists_ReturnsFalseImmediately_WhenThePageIsLoadedAndTheElementIsNot()
     {
-        var page = new GatedPage(_context.Object, () => false);
-        GivenElement();
+        var page = new GatedPage(_context.Object, () => true);
+        _context.Setup(c => c.TryFindElement(It.IsAny<Locator>())).Returns((IMauiElement?)null);
 
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         var exists = page.Target.IsExists();
@@ -169,7 +170,25 @@ public class ReadinessTests
 
         Assert.False(exists);
         Assert.True(stopwatch.ElapsedMilliseconds < 500,
-            $"IsExists should not wait for the page; took {stopwatch.ElapsedMilliseconds}ms");
+            $"IsExists must not wait for the element; took {stopwatch.ElapsedMilliseconds}ms");
+    }
+
+    /// <summary>
+    /// <c>IsExists()</c> waits for a page that arrives late, then reports the element.
+    /// </summary>
+    /// <remarks>
+    /// A query issued straight after navigation is the ordinary case. Nothing polls above a
+    /// query — <c>IsExists</c> asks once and returns — so the wait has to happen inside the
+    /// scope resolution or not at all.
+    /// </remarks>
+    [Fact]
+    public void IsExists_WaitsForThePage_WhenItArrivesLate()
+    {
+        var checks = 0;
+        var page = new GatedPage(_context.Object, () => ++checks >= 3);
+        GivenElement();
+
+        Assert.True(page.Target.IsExists());
     }
 
     #endregion
@@ -177,27 +196,28 @@ public class ReadinessTests
     #region Retry safety
 
     /// <summary>
-    /// An action that throws *after* taking effect is performed twice.
+    /// An action that throws after taking effect is performed exactly once.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>This documents a known limitation, not desired behaviour.</b> <c>RunPoll</c> retries
-    /// its whole body on any exception, and the body of <c>RunDoWithElement</c> ends with the
-    /// action itself. So a driver that acts and then throws — a click that navigates away and
-    /// leaves the element stale is the realistic case — gets its action replayed.
+    /// <b>Poll to get ready, then act once.</b> Resolution — finding the element, checking
+    /// visible and enabled — is safe to repeat, so the retry loop covers it. The action is not
+    /// safe to repeat, so it runs after the loop.
     /// </para>
     /// <para>
-    /// The failure mode is a silent double action: a counter incremented twice, an item added
-    /// twice, a form submitted twice. It is the same shape as the Android double-tap traced in
-    /// <c>plan-fix-hub-navigation.md</c>, reached by a different route.
+    /// Before that split, <c>RunPoll</c> retried its whole body including the action, so a
+    /// driver that acted and then threw had its action replayed. A click that navigates away
+    /// leaves the element stale and some drivers raise on the response, which made this an
+    /// ordinary case rather than an exotic one. The symptom was a silent double action: a
+    /// counter incremented twice, an item added twice, a form submitted twice.
     /// </para>
     /// <para>
-    /// Pinned here so the behaviour is visible and a fix has a test to turn green. See
-    /// <c>.my/maui/plan-wait-for-readiness.md</c> §0.1.
+    /// The exception now propagates rather than being retried. That is the point: once an
+    /// action has been attempted, repeating it can only compound the damage.
     /// </para>
     /// </remarks>
     [Fact]
-    public void Click_IsPerformedTwice_WhenTheDriverThrowsAfterActing()
+    public void Click_IsPerformedOnce_WhenTheDriverThrowsAfterActing()
     {
         var page = new GatedPage(_context.Object, () => true);
         var element = GivenElement();
@@ -206,14 +226,12 @@ public class ReadinessTests
         element.Setup(e => e.Click()).Callback(() =>
         {
             clicks++;
-            if (clicks == 1) throw new InvalidOperationException("stale after navigation");
+            throw new InvalidOperationException("stale after navigation");
         });
 
-        page.Target.Click();
+        Assert.Throws<InvalidOperationException>(() => page.Target.Click());
 
-        // Current behaviour, asserted so a fix breaks this test deliberately rather than
-        // silently changing it.
-        Assert.Equal(2, clicks);
+        Assert.Equal(1, clicks);
     }
 
     #endregion

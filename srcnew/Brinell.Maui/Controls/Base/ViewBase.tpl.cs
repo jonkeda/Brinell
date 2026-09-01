@@ -243,6 +243,36 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
     protected TScope RunDoWithElement(Action<IMauiElement> coreOperation,
         int? timeoutMs = null, bool doEnsureVisible = true, [CallerMemberName] string? caller = null)
     {
+        var element = ResolveReadyElement(timeoutMs, doEnsureVisible, caller);
+        coreOperation(element);
+        return ContainingScope;
+    }
+
+    /// <summary>
+    /// Polls until the control is ready to be acted on, and returns its element.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Poll to get ready, then act once.</b> Resolution is safe to repeat — finding an
+    /// element, checking visibility, checking enabled — so it is what the retry loop covers.
+    /// The action is not safe to repeat, so it runs after the loop, exactly once.
+    /// </para>
+    /// <para>
+    /// Previously the action ran <em>inside</em> the loop, so a driver that acted and then
+    /// threw — a click that navigates away and leaves the element stale is the realistic case
+    /// — had its action replayed. The symptom was a silent double action: a counter
+    /// incremented twice, an item added twice. See <c>.my/maui/plan-wait-for-readiness.md</c>
+    /// §0.1.
+    /// </para>
+    /// <para>
+    /// An exception from the action now propagates instead of being retried, which is correct:
+    /// once the action has been attempted, retrying can only compound the damage.
+    /// </para>
+    /// </remarks>
+    private IMauiElement ResolveReadyElement(int? timeoutMs, bool doEnsureVisible, string? caller)
+    {
+        IMauiElement? ready = null;
+
         RunPoll(null, () =>
         {
             var element = FindElement();
@@ -250,10 +280,25 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
             {
                 EnsureVisible(element, DefaultTimeoutMs);
             }
-            coreOperation(element);
+            EnsureReadyForActionCore(element);
+            ready = element;
             return true;
         }, timeoutMs, caller);
-        return ContainingScope;
+
+        return ready ?? FindElement();
+    }
+
+    /// <summary>
+    /// Checks any additional readiness this control requires before it can be acted on.
+    /// </summary>
+    /// <remarks>
+    /// Runs inside the readiness poll, so a control that becomes ready a moment late is waited
+    /// for rather than failed against. <see cref="ViewBase{TScope}"/> requires nothing beyond
+    /// being present and visible; <c>ClickableControlBase</c> adds "enabled".
+    /// </remarks>
+    /// <param name="element">The pre-found element.</param>
+    protected virtual void EnsureReadyForActionCore(IMauiElement element)
+    {
     }
 
     protected TScope RunSetWithElement<T>(T? value, Action<IMauiElement> coreOperation,
@@ -263,13 +308,10 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
         {
             return ContainingScope;
         }
-        RunPoll(value?.ToString(), () =>
-        {
-            var element = FindElement();
-            EnsureVisible(element, DefaultTimeoutMs);
-            coreOperation(element);
-            return true;
-        }, timeoutMs, caller);
+        // Same split as RunDoWithElement: setting a value is an action, not a query, so it
+        // must not be replayed by the readiness retry.
+        var element = ResolveReadyElement(timeoutMs, doEnsureVisible: true, caller);
+        coreOperation(element);
         return ContainingScope;
     }
 

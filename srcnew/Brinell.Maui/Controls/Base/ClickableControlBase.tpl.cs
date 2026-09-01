@@ -183,6 +183,17 @@ public abstract partial class ClickableControlBase<TScope> : FocusableControlBas
         EnsureEnabledCore(element);
     }
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// A clickable control must also be enabled. Checked here, inside the readiness poll, so a
+    /// control enabled by a binding that resolves a frame later is waited for rather than
+    /// failed against — <c>ClickCore</c> re-checks it, but by then the retry loop has ended.
+    /// </remarks>
+    protected override void EnsureReadyForActionCore(IMauiElement element)
+    {
+        EnsureClickableCore(element);
+    }
+
     #endregion
 
     #region Clickable

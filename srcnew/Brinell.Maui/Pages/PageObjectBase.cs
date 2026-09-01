@@ -69,13 +69,20 @@ public abstract class PageObjectBase<TSelf> : ObjectBase, IMauiPage<TSelf>
     /// guard the load check would recurse into itself. During that inner call the answer is
     /// reported as true, which lets the check complete rather than deadlock.
     /// </remarks>
-    private bool EnsureLoaded()
+    private bool EnsureLoaded(bool wait = false)
     {
         if (_ensuringLoad) return true;
         try
         {
             _ensuringLoad = true;
-            return IsLoaded();
+
+            if (!wait) return IsLoaded();
+
+            // Polls the no-argument form rather than passing a timeout to IsLoaded. Page
+            // objects routinely override IsLoaded to check for a signature control - "loaded
+            // means the status label exists" - and those overrides ignore the timeout
+            // parameter, so delegating the wait to them would silently do nothing.
+            return IsLoaded() || Poll(() => IsLoaded(), _context.Timeouts.PageLoad);
         }
         finally
         {
@@ -91,7 +98,8 @@ public abstract class PageObjectBase<TSelf> : ObjectBase, IMauiPage<TSelf>
     /// thing that method does, and so an opted-out page skips the load check entirely rather
     /// than paying for it and ignoring the result.
     /// </remarks>
-    private bool CanResolveElements() => !RequiresLoadedPage || EnsureLoaded();
+    private bool CanResolveElements(bool wait = false)
+        => !RequiresLoadedPage || EnsureLoaded(wait);
 
     /// <summary>
     /// The exception thrown when a lookup is attempted on a page that is not loaded.
@@ -237,9 +245,25 @@ public abstract class PageObjectBase<TSelf> : ObjectBase, IMauiPage<TSelf>
     }
     
     /// <inheritdoc />
+    /// <inheritdoc />
+    /// <remarks>
+    /// <para>
+    /// Waits for the page, unlike <see cref="FindElement"/>. The difference is who does the
+    /// polling: an action resolves through <c>FindElement</c>, which throws and lets the
+    /// caller's <c>RunPoll</c> retry, so a wait here would nest one poll inside another. A
+    /// query has no loop above it — <c>IsExists()</c> asks once and returns — so if it does
+    /// not wait, nothing does.
+    /// </para>
+    /// <para>
+    /// It waits for the <em>page</em> only, never for the element. "Is this element present?"
+    /// must stay cheap to answer with "no", or <c>AssertExists(false)</c> costs a full timeout
+    /// on every call. Being on the page is a precondition for the question being meaningful;
+    /// the element's absence is the answer.
+    /// </para>
+    /// </remarks>
     IMauiElement? IElementScope<IMauiElement>.TryFindElement(Locator locator)
     {
-        if (!CanResolveElements()) return null;
+        if (!CanResolveElements(wait: true)) return null;
 
         return _context.TryFindElement(locator);
     }
