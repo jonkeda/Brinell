@@ -66,9 +66,9 @@ public static class MauiDriverFactory
         // Determine which constructor to use
         if (options.WindowHandle.HasValue)
         {
-            var ctor = driverType.GetConstructor([typeof(IntPtr), typeof(WindowsInteractionOptions)])
-                ?? throw new InvalidOperationException("FlaUIMauiDriver(IntPtr, WindowsInteractionOptions) constructor not found");
-            return (IMauiDriver)ctor.Invoke([options.WindowHandle.Value, options.WindowsInteraction]);
+            var ctor = driverType.GetConstructor([typeof(IntPtr)])
+                ?? throw new InvalidOperationException("FlaUIMauiDriver(IntPtr) constructor not found");
+            return (IMauiDriver)ctor.Invoke([options.WindowHandle.Value]);
         }
 
         if (!string.IsNullOrEmpty(options.ProcessName))
@@ -78,16 +78,16 @@ public static class MauiDriverFactory
                               $"Process not found: {options.ProcessName}. " +
                               "Ensure the application is running or use AppPath to launch it.");
             
-            var ctor = driverType.GetConstructor([typeof(Process), typeof(WindowsInteractionOptions)])
-                       ?? throw new InvalidOperationException("FlaUIMauiDriver(Process, WindowsInteractionOptions) constructor not found");
-            return (IMauiDriver)ctor.Invoke([process, options.WindowsInteraction]);
+            var ctor = driverType.GetConstructor([typeof(Process)])
+                       ?? throw new InvalidOperationException("FlaUIMauiDriver(Process) constructor not found");
+            return (IMauiDriver)ctor.Invoke([process]);
         }
 
         if (!string.IsNullOrEmpty(options.AppPath))
         {
-            var ctor = driverType.GetConstructor([typeof(string), typeof(string), typeof(WindowsInteractionOptions)])
-                       ?? throw new InvalidOperationException("FlaUIMauiDriver(string, string, WindowsInteractionOptions) constructor not found");
-            return (IMauiDriver)ctor.Invoke([options.AppPath, null, options.WindowsInteraction]);
+            var ctor = driverType.GetConstructor([typeof(string), typeof(string)])
+                       ?? throw new InvalidOperationException("FlaUIMauiDriver(string, string) constructor not found");
+            return (IMauiDriver)ctor.Invoke([options.AppPath, null]);
         }
 
         throw new ArgumentException(

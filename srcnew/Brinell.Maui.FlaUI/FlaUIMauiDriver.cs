@@ -25,7 +25,6 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     private readonly Application? _application;
     private readonly AutomationElement _rootElement;
     private readonly ConditionFactory _conditionFactory;
-    private readonly WindowsInteractionOptions _windowsInteraction;
     private bool _disposed;
     
     /// <summary>
@@ -33,18 +32,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// </summary>
     /// <param name="windowHandle">The window handle to attach to.</param>
     public FlaUIMauiDriver(IntPtr windowHandle)
-        : this(windowHandle, WindowsInteractionOptions.Semantic)
     {
-    }
-
-    /// <summary>
-    /// Creates a new FlaUIMauiDriver for an existing window.
-    /// </summary>
-    /// <param name="windowHandle">The window handle to attach to.</param>
-    /// <param name="windowsInteraction">Windows interaction policy.</param>
-    public FlaUIMauiDriver(IntPtr windowHandle, WindowsInteractionOptions windowsInteraction)
-    {
-        _windowsInteraction = (windowsInteraction ?? WindowsInteractionOptions.Semantic).Clone();
         _automation = new UIA3Automation();
         _rootElement = _automation.FromHandle(windowHandle);
         _conditionFactory = new ConditionFactory(_automation.PropertyLibrary);
@@ -56,22 +44,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// <param name="executablePath">Path to the application executable.</param>
     /// <param name="arguments">Optional command line arguments.</param>
     public FlaUIMauiDriver(string executablePath, string? arguments = null)
-        : this(executablePath, arguments, WindowsInteractionOptions.Semantic)
     {
-    }
-
-    /// <summary>
-    /// Creates a new FlaUIMauiDriver by launching an application.
-    /// </summary>
-    /// <param name="executablePath">Path to the application executable.</param>
-    /// <param name="arguments">Optional command line arguments.</param>
-    /// <param name="windowsInteraction">Windows interaction policy.</param>
-    public FlaUIMauiDriver(
-        string executablePath,
-        string? arguments,
-        WindowsInteractionOptions windowsInteraction)
-    {
-        _windowsInteraction = (windowsInteraction ?? WindowsInteractionOptions.Semantic).Clone();
         _automation = new UIA3Automation();
         
         var processStartInfo = new ProcessStartInfo(executablePath)
@@ -106,18 +79,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// </summary>
     /// <param name="process">The process to attach to.</param>
     public FlaUIMauiDriver(Process process)
-        : this(process, WindowsInteractionOptions.Semantic)
     {
-    }
-
-    /// <summary>
-    /// Creates a new FlaUIMauiDriver by attaching to a running process.
-    /// </summary>
-    /// <param name="process">The process to attach to.</param>
-    /// <param name="windowsInteraction">Windows interaction policy.</param>
-    public FlaUIMauiDriver(Process process, WindowsInteractionOptions windowsInteraction)
-    {
-        _windowsInteraction = (windowsInteraction ?? WindowsInteractionOptions.Semantic).Clone();
         _automation = new UIA3Automation();
         _application = Application.Attach(process);
         
@@ -148,8 +110,6 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// <summary>
     /// Gets the Windows interaction policy for this driver session.
     /// </summary>
-    internal WindowsInteractionOptions WindowsInteraction => _windowsInteraction;
-
     /// <summary>
     /// Checks whether a screen point falls within the root window bounds.
     /// </summary>
@@ -184,49 +144,11 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// </summary>
     internal void EnsureRootWindowFocused(string action = "physical input")
     {
-        RequireForegroundActivation(action);
         BringRootWindowToForeground();
-    }
-
-    internal void RequirePointerInput(string action)
-    {
-        if (!_windowsInteraction.AllowPointerInput)
-        {
-            throw CreatePolicyException(
-                action,
-                "pointer input",
-                "BRINELL_WINDOWS_ALLOW_POINTER_INPUT",
-                "Prefer UI Automation patterns, or run with BRINELL_WINDOWS_INTERACTION_MODE=interactive.");
-        }
-    }
-
-    internal void RequireGlobalKeyboardInput(string action)
-    {
-        if (!_windowsInteraction.AllowGlobalKeyboardInput)
-        {
-            throw CreatePolicyException(
-                action,
-                "global keyboard input",
-                "BRINELL_WINDOWS_ALLOW_GLOBAL_KEYBOARD_INPUT",
-                "Prefer SetText()/ValuePattern or run with BRINELL_WINDOWS_INTERACTION_MODE=interactive.");
-        }
-    }
-
-    internal void RequireClipboardInput(string action)
-    {
-        if (!_windowsInteraction.AllowClipboardInput)
-        {
-            throw CreatePolicyException(
-                action,
-                "clipboard input",
-                "BRINELL_WINDOWS_ALLOW_CLIPBOARD_INPUT",
-                "Prefer SetText()/ValuePattern or run with BRINELL_WINDOWS_INTERACTION_MODE=interactive.");
-        }
     }
 
     internal void PointerClick(Point point, string action)
     {
-        RequirePointerInput(action);
         EnsureRootWindowFocused(action);
         Mouse.MoveTo(point);
         Mouse.Down(MouseButton.Left);
@@ -242,28 +164,24 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
 
     internal void PointerDoubleClick(AutomationElement element, string action)
     {
-        RequirePointerInput(action);
         EnsureRootWindowFocused(action);
         element.DoubleClick();
     }
 
     internal void PointerRightClick(AutomationElement element, string action)
     {
-        RequirePointerInput(action);
         EnsureRootWindowFocused(action);
         element.RightClick();
     }
 
     internal void PointerHover(Point point, string action)
     {
-        RequirePointerInput(action);
         EnsureRootWindowFocused(action);
         Mouse.MoveTo(point);
     }
 
     internal void PointerLongPress(Point point, int durationMs, string action)
     {
-        RequirePointerInput(action);
         EnsureRootWindowFocused(action);
         Mouse.Position = point;
         Mouse.Down(MouseButton.Left);
@@ -279,7 +197,6 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
 
     internal void PointerScroll(Point point, int wheelClicks, string action)
     {
-        RequirePointerInput(action);
         EnsureRootWindowFocused(action);
         Mouse.MoveTo(point);
         Mouse.Scroll(wheelClicks);
@@ -291,7 +208,6 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
         int durationMs,
         string action)
     {
-        RequirePointerInput(action);
         EnsureRootWindowFocused(action);
         Mouse.MoveTo(start);
         Mouse.Down(MouseButton.Left);
@@ -318,20 +234,17 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
 
     internal void FocusForGlobalKeyboardInput(AutomationElement element, string action)
     {
-        RequireGlobalKeyboardInput(action);
         EnsureRootWindowFocused(action);
         element.Focus();
     }
 
     internal void GlobalType(string text, string action)
     {
-        RequireGlobalKeyboardInput(action);
         Keyboard.Type(text);
     }
 
     internal void GlobalType(VirtualKeyShort key, string action)
     {
-        RequireGlobalKeyboardInput(action);
         Keyboard.Type(key);
     }
 
@@ -339,35 +252,13 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
         string action,
         params VirtualKeyShort[] keys)
     {
-        RequireGlobalKeyboardInput(action);
         Keyboard.TypeSimultaneously(keys);
     }
 
     internal void SetClipboardTextForInput(string text, string action)
     {
-        RequireClipboardInput(action);
         System.Windows.Forms.Clipboard.SetText(text);
     }
-
-    private void RequireForegroundActivation(string action)
-    {
-        if (!_windowsInteraction.AllowForegroundActivation)
-        {
-            throw CreatePolicyException(
-                action,
-                "foreground activation",
-                "BRINELL_WINDOWS_ALLOW_FOREGROUND_ACTIVATION",
-                "Prefer UI Automation patterns, or run with BRINELL_WINDOWS_INTERACTION_MODE=interactive.");
-        }
-    }
-
-    private static WindowsInteractionPolicyException CreatePolicyException(
-        string action,
-        string capability,
-        string variableName,
-        string guidance)
-        => new(
-            $"The '{action}' action requires {capability}, but {variableName} is not enabled. {guidance}");
 
     private void BringRootWindowToForeground()
     {
@@ -431,13 +322,12 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// Launching a process is the one moment automation cannot avoid taking the foreground:
     /// Windows grants it to a new process, and the app then keeps it for the whole run because
     /// nothing takes it back. Measured on the Buttons and Text suites, that is the <em>only</em>
-    /// time the window comes forward - every deliberate foreground path is gated behind
-    /// <see cref="RequireForegroundActivation"/>, which the default semantic policy denies.
+    /// time the window comes forward: nothing in the automation path asks for the foreground,
+    /// because UI Automation patterns drive the app without it.
     /// </para>
     /// <para>
     /// The window stays shown, only unfocused, so its layout and bounding rectangles remain
-    /// valid for UI Automation. Skipped under interactive mode, where physical mouse and
-    /// keyboard input are allowed and genuinely need the app in front.
+    /// valid for UI Automation.
     /// </para>
     /// <para>
     /// Best effort by nature: Windows only permits a foreground change from a process that
@@ -446,7 +336,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// </remarks>
     private void RestoreForegroundWindow(IntPtr previousForeground)
     {
-        if (_windowsInteraction.AllowForegroundActivation || previousForeground == IntPtr.Zero)
+        if (previousForeground == IntPtr.Zero)
         {
             return;
         }

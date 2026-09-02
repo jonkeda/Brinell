@@ -14,18 +14,13 @@ namespace Brinell.Maui.Interfaces;
 /// </para>
 /// <para>
 /// <b>Why here and not in <c>Brinell.Core</c>.</b> The geometry is platform-neutral and would
-/// generalize, but the pointer-policy refusal these must swallow —
-/// <see cref="WindowsInteractionPolicyException"/> — is defined in <c>Brinell.Maui</c> and is
-/// sealed, so Core cannot catch it by type. Moving these would mean either catching
-/// <c>InvalidOperationException</c> broadly (which would hide real faults) or lifting the
-/// policy exception into Core. Neither is worth doing speculatively; when a second platform
-/// needs swipes, that is the moment to lift the exception and these with it.
+/// generalize, so this is placement by convenience rather than necessity. The reason it used
+/// to be necessary is gone: these once had to catch a policy refusal that only
+/// <c>Brinell.Maui</c> could name. When a second platform needs swipes, move them.
 /// </para>
 /// <para>
-/// <b>Pointer input.</b> Swipes are pointer gestures, policy-gated on Windows. Each method
-/// reports whether the gesture was performed rather than throwing, so a caller on a platform
-/// that forbids pointer input gets <c>false</c> instead of an exception and decides for
-/// itself whether that matters.
+/// <b>Pointer input.</b> Swipes are real pointer gestures. They either happen or throw;
+/// nothing swallows a failure and reports it as an unperformed gesture.
 /// </para>
 /// <para>
 /// <b>Largely unexercised.</b> The controls that use these — <c>SwipeView</c> and
@@ -113,23 +108,14 @@ public static class MauiElementGestureExtensions
     /// Swipes between two absolute points, reporting whether the gesture was performed.
     /// </summary>
     /// <remarks>
-    /// Catches only the pointer-policy refusal. Any other failure is a real fault and is
-    /// allowed to surface — the same rule the click ladder follows, and for the same reason:
-    /// a swallowed failure resurfaces later as an unrelated assertion failure.
+    /// Catches nothing. A swipe either happens or throws, which is the rule the click ladder
+    /// follows and for the same reason: a swallowed failure resurfaces later as an unrelated
+    /// assertion failure.
     /// </remarks>
     private static bool TrySwipe(this IMauiElement element,
         int startX, int startY, int endX, int endY)
     {
-        try
-        {
-            element.Swipe(startX, startY, endX, endY);
-            return true;
-        }
-        catch (WindowsInteractionPolicyException)
-        {
-            // Pointer input is not permitted in this run. Not an error: the caller decides
-            // whether a gesture it cannot perform matters.
-            return false;
-        }
+        element.Swipe(startX, startY, endX, endY);
+        return true;
     }
 }

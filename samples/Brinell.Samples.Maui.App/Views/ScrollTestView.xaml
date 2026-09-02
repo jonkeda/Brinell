@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewModels="using:Brinell.Samples.Maui.App.ViewModels"
+             x:Class="Brinell.Samples.Maui.App.Views2.TestViews.ScrollTestView"
+             BackgroundColor="{AppThemeBinding Light=White, Dark=#1F1F1F}">
+
+    <ContentView.BindingContext>
+        <viewModels:ScrollViewModel />
+    </ContentView.BindingContext>
+
+    <!-- The AutomationId lives on the ScrollView, not on the ContentPage wrapper. A ContentPage
+         is not a rendered view on Android, so its AutomationId never reaches the accessibility
+         tree; a ScrollView is, and it cannot scroll itself out of view. -->
+    <ScrollView AutomationId="ScrollTestPage">
+        <VerticalStackLayout Padding="20" Spacing="15">
+
+            <Label Text="Scroll Module Test" FontSize="20" FontAttributes="Bold" />
+
+            <!-- Deliberately the first element: every button below reports here, so acting on
+                 one and reading the result spans the full height of the page. -->
+            <Label Text="{Binding ScrollStatusMessage}"
+                   AutomationId="ScrollStatusLabel"
+                   FontSize="14"
+                   Padding="10"
+                   BackgroundColor="{AppThemeBinding Light=#F0F0F0, Dark=#2F2F2F}" />
+
+            <Button Text="Top Button" Command="{Binding TopCommand}" AutomationId="ScrollTopButton" />
+            <Button Text="Reset" Command="{Binding ResetCommand}" AutomationId="ScrollResetButton" />
+
+            <Label Text="— filler —" HeightRequest="300" />
+            <Label Text="— filler —" HeightRequest="300" />
+            <Label Text="— filler —" HeightRequest="300" />
+
+            <Button Text="Middle Button" Command="{Binding MiddleCommand}" AutomationId="ScrollMiddleButton" />
+
+            <Label Text="— filler —" HeightRequest="300" />
+            <Label Text="— filler —" HeightRequest="300" />
+            <Label Text="— filler —" HeightRequest="300" />
+
+            <!-- Last element on the page: unreachable without scrolling on any screen size. -->
+            <Label Text="bottom reached"
+                   AutomationId="ScrollBottomLabel"
+                   FontSize="14" />
+
+            <Button Text="Bottom Button" Command="{Binding BottomCommand}" AutomationId="ScrollBottomButton" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentView>

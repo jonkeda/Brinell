@@ -60,11 +60,9 @@ public class MauiFixture : MauiTestFixtureBase
     /// <remarks>
     /// <para>
     /// Uses the page's own Back button rather than <c>IMauiDriver.NavigateBack</c>. On Windows
-    /// that method falls back to Alt+Left, which is global keyboard input and blocked by the
-    /// interaction policy unless <c>BRINELL_WINDOWS_ALLOW_GLOBAL_KEYBOARD_INPUT</c> is set —
-    /// so every test after the first in a class threw in its constructor. Clicking the button
-    /// the user would click needs no such permission and is the same gesture on every
-    /// platform.
+    /// that method falls back to Alt+Left — a global keystroke that lands wherever the focus
+    /// happens to be, which is not necessarily the app. Clicking the button the user would
+    /// click needs no focus at all and is the same gesture on every platform.
     /// </para>
     /// <para>
     /// The stack is one deep by construction — the hub pushes a page, a page never pushes
@@ -126,6 +124,20 @@ public class MauiFixture : MauiTestFixtureBase
             "Container demo did not return to its seeded state after reset.",
             TestConstants.DefaultTestTimeoutMs);
 
+        return page;
+    }
+
+    /// <summary>
+    /// Opens the scroll test page and returns it in its reset state.
+    /// </summary>
+    public ScrollTestPage NavigateToScroll()
+    {
+        Open(SamplePage.Scroll);
+
+        var page = new ScrollTestPage(Context);
+        page.WaitLoaded(true, TestConstants.DefaultTestTimeoutMs);
+        page.ResetButton.Click();
+        page.StatusLabel.WaitText("none", TestConstants.DefaultTestTimeoutMs);
         return page;
     }
 

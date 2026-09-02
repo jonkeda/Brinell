@@ -50,6 +50,9 @@ public enum SamplePage
     /// <summary>Toolbar, Menu and TabMenu navigation controls, as test subjects.</summary>
     Navigation,
 
+    /// <summary>A long ScrollView used to test scrolling on its own.</summary>
+    Scroll,
+
     /// <summary>Phase 0 probe measuring which layouts expose their AutomationId.</summary>
     AutomationProbe
 }

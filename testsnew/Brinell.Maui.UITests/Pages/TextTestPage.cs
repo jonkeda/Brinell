@@ -14,13 +14,6 @@ public class TextTestPage : PageObjectBase<TextTestPage>
     /// <inheritdoc />
     public override string Name => "TextTestPage";
 
-    /// <inheritdoc />
-    public override bool IsLoaded(int? timeoutMs = null)
-    {
-        // Page is loaded when the Entry control exists
-        return TestEntry.IsExists();
-    }
-
     #region Entry Controls
 
     /// <summary>

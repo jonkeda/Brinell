@@ -64,27 +64,18 @@ public class MauiDriverOptions
     /// </summary>
     public ITestLogger? Logger { get; set; }
 
-    /// <summary>
-    /// Windows-only interaction policy used by the FlaUI MAUI driver.
-    /// Defaults to semantic, background-safe automation.
-    /// </summary>
-    public WindowsInteractionOptions WindowsInteraction { get; set; } = WindowsInteractionOptions.Semantic.Clone();
 
     /// <summary>
     /// Creates MAUI driver options from configuration objects.
     /// Configuration is required; no fallback to environment variables.
     /// </summary>
-    public static MauiDriverOptions FromConfiguration(MauiOptions mauiConfig, WindowsInteractionConfig? windowsConfig = null)
+    public static MauiDriverOptions FromConfiguration(MauiOptions mauiConfig)
     {
         ArgumentNullException.ThrowIfNull(mauiConfig);
 
         var windowHandle = !string.IsNullOrWhiteSpace(mauiConfig.WindowHandle)
             ? ParseWindowHandle(mauiConfig.WindowHandle)
             : null;
-
-        var windowsInteraction = windowsConfig != null
-            ? WindowsInteractionOptions.FromConfiguration(windowsConfig)
-            : WindowsInteractionOptions.Semantic.Clone();
 
         return new MauiDriverOptions
         {
@@ -94,8 +85,7 @@ public class MauiDriverOptions
             WindowHandle = windowHandle,
             DeviceName = mauiConfig.DeviceName,
             PlatformVersion = mauiConfig.PlatformVersion,
-            AppiumServerUri = new Uri(mauiConfig.ServerUri ?? "http://127.0.0.1:4723"),
-            WindowsInteraction = windowsInteraction
+            AppiumServerUri = new Uri(mauiConfig.ServerUri ?? "http://127.0.0.1:4723")
         };
     }
 

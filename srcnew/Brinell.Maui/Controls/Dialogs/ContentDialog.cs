@@ -171,10 +171,6 @@ public class ContentDialog<TParent> : ContainerObjectBase<TParent, ContentDialog
             button!.Click();
             return true;
         }
-        catch (WindowsInteractionPolicyException)
-        {
-            throw;
-        }
         catch
         {
             return false;

@@ -137,55 +137,77 @@ public class MauiTestContext : IMauiTestContext
     /// <summary>
     /// Tries to find an element using Android's UiScrollable to scroll into view.
     /// </summary>
+    /// <remarks>
+    /// Scrolls <c>scrollable(true).instance(0)</c> — the first scrollable container on the page.
+    /// That is an assumption, and a known limit: where an outer <c>ScrollView</c> wraps the
+    /// container that actually scrolls, this scrolls the wrong one. Trying each container in
+    /// turn was measured and did not help, while making every failed lookup roughly ten times
+    /// slower, so the simpler query stands until something proves the extra work earns its cost.
+    /// See <c>Tests/Scroll/ScrollTests.cs</c>.
+    /// </remarks>
     /// <param name="locator">The locator for the element.</param>
     /// <returns>The element if found, null otherwise.</returns>
     private IMauiElement? TryFindWithUiScrollable(Locator locator)
     {
-        try
+        var locatorValue = locator.Value;
+
+        // resource-id first, then content-desc: MAUI maps AutomationId to one or the other
+        // depending on the control.
+        string[] matchers =
+        [
+            $"new UiSelector().resourceIdMatches(\".*{locatorValue}\")",
+            $"new UiSelector().description(\"{locatorValue}\")"
+        ];
+
+        foreach (var matcher in matchers)
         {
-            // Get the locator value (typically AutomationId)
-            var locatorValue = locator.Value;
-            
-            // Build UiScrollable query that scrolls a scrollable container
-            // and finds element by resource ID matching the automation ID
-            var uiAutomatorQuery = 
-                $"new UiScrollable(new UiSelector().scrollable(true).instance(0))" +
-                $".scrollIntoView(new UiSelector().resourceIdMatches(\".*{locatorValue}\"))";
-            
-            // UiScrollable is Android-specific - use driver's FindByAndroidUIAutomator
-            var elements = _driver.FindByAndroidUIAutomator(uiAutomatorQuery);
-            
-            if (elements.Count > 0)
-            {
-                return elements[0];
-            }
-        }
-        catch
-        {
-            // Try with content-desc (accessibility label) as fallback
             try
             {
-                var locatorValue = locator.Value;
-                var uiAutomatorQuery = 
-                    $"new UiScrollable(new UiSelector().scrollable(true).instance(0))" +
-                    $".scrollIntoView(new UiSelector().description(\"{locatorValue}\"))";
-                
-                var elements = _driver.FindByAndroidUIAutomator(uiAutomatorQuery);
-                
+                var query =
+                    "new UiScrollable(new UiSelector().scrollable(true).instance(0))" +
+                    $".scrollIntoView({matcher})";
+
+                var elements = _driver.FindByAndroidUIAutomator(query);
                 if (elements.Count > 0)
                 {
-                    return elements[0];
+                    return ReResolveAfterScrolling(locator) ?? elements[0];
                 }
             }
             catch
             {
-                // UiScrollable approach failed
+                // Try the next matcher.
             }
         }
-        
+
         return null;
     }
-    
+
+    /// <summary>
+    /// Looks the element up again by its own locator once <c>UiScrollable</c> has brought it
+    /// into view.
+    /// </summary>
+    /// <remarks>
+    /// <c>UiScrollable(...).scrollIntoView(...)</c> is a scrolling command that happens to
+    /// return a node. Acting on that node is not the same as acting on the element: it is
+    /// matched by a <c>resourceIdMatches</c> regex during the scroll rather than by the caller's
+    /// own locator. Re-resolving costs one lookup, now that the element is on screen, and gives
+    /// the caller the element it actually asked for.
+    /// </remarks>
+    /// <param name="locator">The caller's locator.</param>
+    /// <returns>The freshly resolved element, or null to fall back to the scroll result.</returns>
+    private IMauiElement? ReResolveAfterScrolling(Locator locator)
+    {
+        try
+        {
+            var elements = _driver.FindElements(locator);
+            return elements.Count > 0 ? elements[0] : null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     /// <inheritdoc />
     public IReadOnlyList<IMauiElement> FindElements(Locator locator)
     {        

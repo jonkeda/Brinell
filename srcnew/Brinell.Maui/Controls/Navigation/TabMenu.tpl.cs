@@ -111,10 +111,6 @@ public partial class TabMenu<TScope> : Base.ViewBase<TScope>
             element!.Click();
             return true;
         }
-        catch (WindowsInteractionPolicyException)
-        {
-            throw;
-        }
         catch
         {
             return false;

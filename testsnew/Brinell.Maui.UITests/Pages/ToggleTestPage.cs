@@ -14,13 +14,6 @@ public class ToggleTestPage : PageObjectBase<ToggleTestPage>
     /// <inheritdoc />
     public override string Name => "ToggleTestPage";
 
-    /// <inheritdoc />
-    public override bool IsLoaded(int? timeoutMs = null)
-    {
-        // Page is loaded when the status label exists
-        return StatusLabel.IsExists();
-    }
-
     #region CheckBox
 
     /// <summary>

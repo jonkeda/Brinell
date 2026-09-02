@@ -15,10 +15,9 @@ namespace Brinell.Maui.Containers;
 /// </para>
 /// <para>
 /// Every method here is <b>UI Automation first</b>, with pointer input as a guarded
-/// fallback. Pointer input is policy-gated on Windows, so each pointer path catches
-/// <see cref="WindowsInteractionPolicyException"/> and reports failure rather than
-/// letting it escape. Callers treat a false return as "scrolling made no progress",
-/// never as an error.
+/// fallback. A false return means "scrolling made no progress" — the element was too short
+/// to swipe, or there was nothing to scroll — never that an error was swallowed. A swipe that
+/// fails throws.
 /// </para>
 /// </remarks>
 public static class ScrollHelper
@@ -116,28 +115,19 @@ public static class ScrollHelper
     {
         if (element == null) return false;
 
-        try
-        {
-            var rect = element.Rect;
-            if (rect.Height <= MinimumSwipeHeight) return false;
+        var rect = element.Rect;
+        if (rect.Height <= MinimumSwipeHeight) return false;
 
-            var centerX = rect.X + (rect.Width / 2);
-            var near = rect.Y + EdgeInset;
-            var far = rect.Y + rect.Height - EdgeInset;
+        var centerX = rect.X + (rect.Width / 2);
+        var near = rect.Y + EdgeInset;
+        var far = rect.Y + rect.Height - EdgeInset;
 
-            // Swiping from far to near drags content upward, revealing what follows.
-            if (forward)
-                element.Swipe(centerX, far, centerX, near);
-            else
-                element.Swipe(centerX, near, centerX, far);
+        // Swiping from far to near drags content upward, revealing what follows.
+        if (forward)
+            element.Swipe(centerX, far, centerX, near);
+        else
+            element.Swipe(centerX, near, centerX, far);
 
-            return true;
-        }
-        catch (WindowsInteractionPolicyException)
-        {
-            // Pointer input is not permitted in this run. Not an error: the caller has
-            // already tried the automation route and will report no progress.
-            return false;
-        }
+        return true;
     }
 }

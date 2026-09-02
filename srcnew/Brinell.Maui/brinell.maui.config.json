@@ -5,13 +5,6 @@
     "suite": "MAUI"
   },
   "framework": {
-    "windowsInteraction": {
-      "mode": "semantic",
-      "allowForegroundActivation": false,
-      "allowPointerInput": false,
-      "allowGlobalKeyboardInput": false,
-      "allowClipboardInput": false
-    },
     "automation": {
       "enabled": false
     }

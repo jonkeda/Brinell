@@ -120,8 +120,7 @@ public abstract class MauiTestFixtureBase : IDisposable
         ArgumentNullException.ThrowIfNull(Configuration.Maui, nameof(Configuration.Maui));
 
         // Create driver options from configuration
-        var windowsConfig = Configuration.Framework?.WindowsInteraction;
-        var driverOptions = MauiDriverOptions.FromConfiguration(Configuration.Maui, windowsConfig);
+        var driverOptions = MauiDriverOptions.FromConfiguration(Configuration.Maui);
         
         // Set timeouts
         driverOptions.Timeouts = new TimeoutSettings

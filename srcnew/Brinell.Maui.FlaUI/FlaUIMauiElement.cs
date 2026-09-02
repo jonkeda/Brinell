@@ -138,7 +138,24 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
     #region Actions (IElement<IMauiElement>)
 
     /// <inheritdoc />
-    public void Click() => _element.Click();
+    /// <inheritdoc />
+    /// <remarks>
+    /// <para>
+    /// A real mouse click, and the last resort. Measured across the Buttons, Text, Display and
+    /// Toggle suites — 70 tests — it is never reached: UI Automation patterns handle every
+    /// click, which is why removing the interaction policy that used to guard it cost nothing.
+    /// </para>
+    /// <para>
+    /// It still exists because a control can genuinely expose no usable pattern, and because on
+    /// Android and iOS a tap is the ordinary path rather than a fallback.
+    /// </para>
+    /// </remarks>
+    public void Click()
+    {
+        var rect = _element.BoundingRectangle;
+        var center = new System.Drawing.Point(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
+        _driver.PointerClick(center, nameof(Click));
+    }
    
     /// <inheritdoc />
     public void SendKeys(string text, TextInputMethod method = TextInputMethod.Keys)

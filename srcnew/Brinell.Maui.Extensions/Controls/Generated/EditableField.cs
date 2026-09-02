@@ -151,10 +151,6 @@ public class EditableField<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope>
             element.Click();
             return true;
         }
-        catch (WindowsInteractionPolicyException)
-        {
-            throw;
-        }
         catch
         {
             return false;
@@ -205,10 +201,6 @@ public class EditableField<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope>
         {
             element.SendKeys(key);
             return true;
-        }
-        catch (WindowsInteractionPolicyException)
-        {
-            throw;
         }
         catch
         {

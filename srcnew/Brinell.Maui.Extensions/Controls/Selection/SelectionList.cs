@@ -122,10 +122,6 @@ public class SelectionList<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope>
             element.Click();
             return true;
         }
-        catch (WindowsInteractionPolicyException)
-        {
-            throw;
-        }
         catch
         {
             return false;

@@ -72,6 +72,9 @@ public static class SamplePages
         new(SamplePage.Text, "Text", "Entry, Editor and SearchBar",
             () => new TextPage()),
 
+        new(SamplePage.Scroll, "Scroll", "A long page for scrolling tests",
+            () => new ScrollPage()),
+
         new(SamplePage.Toggle, "Toggle", "CheckBox, RadioButton and Switch",
             () => new TogglePage()),
 

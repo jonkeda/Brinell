@@ -35,6 +35,44 @@ public abstract partial class ToggleControlBase<TScope> : ClickableControlBase<T
     #region Core Methods (Element-Aware, No Logging)
 
     /// <summary>
+    /// Adds the toggle command to the inherited activation ladder.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A toggle's activation <em>is</em> its toggle command. Measured on Windows, MAUI's
+    /// <c>Switch</c> and <c>CheckBox</c> expose only that:
+    /// </para>
+    /// <code>
+    /// [CLK] AutomationId:TestSwitch   sel=False inv=False tog=True
+    /// [CLK] AutomationId:TestCheckBox sel=False inv=False tog=True
+    /// [CLK] AutomationId:Open_Toggle  sel=False inv=True  tog=False
+    /// </code>
+    /// <para>
+    /// So without this rung <c>Click()</c> fell through the whole ladder to a pointer click,
+    /// which needs the window in front and does not reliably reach a XAML toggle - the control
+    /// never flipped and the assertion failed on the app's unchanged status label rather than
+    /// on the click.
+    /// </para>
+    /// <para>
+    /// Deliberately last. <c>RadioButton</c> shares this base and activates through
+    /// <c>SelectionItem</c>, which carries the "one of a group" meaning that a bare toggle does
+    /// not; letting toggle win first would flip a radio as if it were independent.
+    /// </para>
+    /// </remarks>
+    /// <param name="element">The pre-found element.</param>
+    /// <returns>True when a pattern was available and reported success.</returns>
+    protected override bool TryActivateByPattern(IMauiElement element)
+    {
+        if (base.TryActivateByPattern(element))
+        {
+            return true;
+        }
+
+        return element is ITogglePatternElement { SupportsTogglePattern: true } toggle
+               && toggle.TogglePattern();
+    }
+
+    /// <summary>
     /// Performs toggle on pre-found element with state verification and retry.
     /// </summary>
     /// <param name="element">The pre-found element.</param>
@@ -82,10 +120,6 @@ public abstract partial class ToggleControlBase<TScope> : ClickableControlBase<T
         {
             element.SendKeys(OpenQA.Selenium.Keys.Space);
             return WaitForStateChange(element, beforeState, timeoutMs);
-        }
-        catch (WindowsInteractionPolicyException)
-        {
-            throw;
         }
         catch (Exception)
         {

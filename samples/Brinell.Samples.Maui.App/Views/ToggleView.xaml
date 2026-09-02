@@ -9,7 +9,7 @@
         <viewModels:ToggleViewModel />
     </ContentView.BindingContext>
 
-    <ScrollView>
+    <ScrollView AutomationId="ToggleTestPage">
         <VerticalStackLayout 
             Padding="20" 
             Spacing="15"

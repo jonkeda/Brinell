@@ -10,6 +10,10 @@
     <ProjectReference Include="..\..\srcnew\Brinell.Maui.CommunityToolkit\Brinell.Maui.CommunityToolkit.csproj" />
     <ProjectReference Include="..\..\srcnew\Brinell.Maui\Brinell.Maui.csproj" />
     <ProjectReference Include="..\..\srcnew\Brinell.Maui.FlaUI\Brinell.Maui.FlaUI.csproj" />
+    <!-- Android and iOS. MauiDriverFactory loads this by assembly name at runtime, so the
+         compile-time reference is optional but the assembly must reach the output directory;
+         without it an APPIUM_PLATFORM=android run fails in the fixture constructor. -->
+    <ProjectReference Include="..\..\srcnew\Brinell.Maui.Appium\Brinell.Maui.Appium.csproj" />
   </ItemGroup>
 
   <ItemGroup>

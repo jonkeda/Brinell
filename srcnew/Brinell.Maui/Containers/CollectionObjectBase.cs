@@ -595,10 +595,6 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
             element.Click();
             return true;
         }
-        catch (WindowsInteractionPolicyException)
-        {
-            throw;
-        }
         catch
         {
             return false;
