@@ -9,10 +9,7 @@
         <viewModels:ScrollViewModel />
     </ContentView.BindingContext>
 
-    <!-- The AutomationId lives on the ScrollView, not on the ContentPage wrapper. A ContentPage
-         is not a rendered view on Android, so its AutomationId never reaches the accessibility
-         tree; a ScrollView is, and it cannot scroll itself out of view. -->
-    <ScrollView AutomationId="ScrollTestPage">
+    <ScrollView>
         <VerticalStackLayout Padding="20" Spacing="15">
 
             <Label Text="Scroll Module Test" FontSize="20" FontAttributes="Bold" />

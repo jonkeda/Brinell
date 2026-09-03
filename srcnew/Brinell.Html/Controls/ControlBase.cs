@@ -41,7 +41,7 @@ public abstract class ControlBase<TScope> : ObjectBase, IControlObject<TScope>, 
     /// <summary>
     /// Gets logging context information.
     /// </summary>
-    private string TestName => "Test"; // TODO: Get from test context when available
+    private string TestName => "Test";
     private string PageName => "Unknown";
     private string ControlId => Locator.Value;
     private ITestLogger? Logger => Context.Logger;
@@ -224,19 +224,16 @@ public abstract class ControlBase<TScope> : ObjectBase, IControlObject<TScope>, 
 
     #endregion
 
-    // TODO: Replace all with RunDoWithElement
     protected TScope RunWithElement(Action<IHtmlElement> action)
     {
         return RunDoWithElement(action);
     }
 
-    // TODO: Replace all with RunDoWithElement
     protected TResult? RunWithElement<TResult>(Func<IHtmlElement, TResult> action)
     {
         return RunGetWithElement(action);
     }
 
-    // TODO: Replace all with RunDoWithElement
     protected TScope RunAssert(Action<IHtmlElement> assertion)
     {
         var element = FindElement();

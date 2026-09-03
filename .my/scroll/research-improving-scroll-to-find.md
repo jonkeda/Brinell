@@ -84,7 +84,7 @@ before choosing a fix.**
 ### A. Scope-directed scrolling — recommended
 
 Brinell already holds the missing information. A page object knows its root
-(`AutomationId:{Name}`, now on the root `ScrollView`), and `CollectionObjectBase` resolves and
+(`AutomationId:{Name}` on the page itself), and `CollectionObjectBase` resolves and
 caches a container root. The scope can therefore *name* the container to scroll, instead of the
 driver guessing.
 
@@ -125,6 +125,63 @@ anything larger.
 Give every scrollable container an `AutomationId` — done for three page roots already. Cheap, and
 it is what makes option A possible at all. It is also a testability requirement worth stating
 openly: a container nobody can name is a container automation has to guess at.
+
+## Step 1 executed: the diagnosis overturned the premise
+
+Dumped the real Android tree (`adb shell uiautomator dump`) for the hub. Both halves of the
+container-choice theory are **wrong**:
+
+```
+total nodes: 34 | scrollable: 1
+  instance(0) class=android.widget.ScrollView id=.../PageHubScroll bounds=[0,210][1080,2400]
+
+Open_Text    y=1134..1250
+Open_Scroll  y=1271..1387   <- present, and on screen
+Open_Toggle  y=1408..1524
+```
+
+- There is exactly **one** scrollable node, `PageHubScroll`. `PageHubList` is a plain `ViewGroup`,
+  not scrollable — so `instance(0)` was already the right container, and nothing was nested.
+- `Open_Scroll` was **present and fully on screen** (y=1271 of a 2400-high screen). The hub fits
+  without scrolling at all.
+
+So the element was never unreachable. It was **absent from the build under test**: Appium did not
+reinstall the rebuilt APK. MAUI keeps the same `versionCode` between builds and the driver's
+`enforceAppInstall` defaults to false, so a package already installed at that version is left
+alone. The test ran against the previous APK, which had no Scroll page.
+
+After `adb install -r` by hand, the same tests went from **0/7 to 5/7** with no code change.
+
+**This is a workflow hazard well beyond scrolling: an Android run can silently test yesterday's
+build.** Worth fixing at the fixture level (set `enforceAppInstall=true`, or bump `versionCode`
+per build) before trusting any further Android measurement.
+
+### Consequently
+
+Steps 2 to 4 below were premised on a container-choice defect that does not exist. `setMaxSearchSwipes`
+(D) has nothing to fix here, and scope-directed scrolling (A) solves a problem this app does not
+currently have — though it remains the right answer *if* a genuinely nested scrollable appears,
+which is why the nested-scrollable test in "How to verify" is still worth adding.
+
+### What the page did find
+
+With the fresh build installed, two real defects surfaced — both the same asymmetry, neither
+about choosing a container:
+
+1. **`IsVisibleAfterScroll` could not work on Android.** It is `[AbsenceTolerant]`, so it received
+   a null element and returned before scrolling: it needed the element in order to scroll to it,
+   but the element only appears once scrolled to. Fixed — it now resolves through `FindElement`
+   (which falls back to `UiScrollable` on Android and is an ordinary lookup on Windows) when the
+   plain lookup finds nothing. **Android scroll tests 5/7 to 6/7.**
+
+2. **`IsExists` disagrees across platforms.** `BottomButton_Exists_WithoutScrolling` passes on
+   Windows and fails on Android, because Windows keeps off-screen elements in the tree and Android
+   does not. This is a semantic decision, not a bug to patch quietly: either `IsExists` means "in
+   the tree right now" (and the test is wrong to assert it for a below-fold control), or it means
+   "exists on this page" and should scroll to find, at the cost of making every genuine-absence
+   check scroll first. Goal (c) argues for the second. **Open — needs a decision.**
+
+## Original recommended sequence (superseded by step 1)
 
 ## Recommended sequence
 

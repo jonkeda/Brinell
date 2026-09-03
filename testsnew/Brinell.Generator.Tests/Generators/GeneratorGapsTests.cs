@@ -7,8 +7,8 @@ using Brinell.Generator.Models;
 namespace Brinell.Generator.Tests.Generators;
 
 /// <summary>
-/// Covers the fixes from .my/Generator/generator-gaps-plan.md: guard exclusion,
-/// override skipping, assertion messages, comparison variants, and name collisions.
+/// Guard exclusion, override skipping, assertion messages, comparison variants and name
+/// collisions.
 /// </summary>
 public class GeneratorGapsTests
 {

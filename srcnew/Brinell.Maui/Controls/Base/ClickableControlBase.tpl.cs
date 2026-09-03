@@ -65,10 +65,8 @@ public abstract partial class ClickableControlBase<TScope> : FocusableControlBas
     /// correct mobile behaviour.
     /// </para>
     /// <para>
-    /// This deliberately does not catch exceptions. Its predecessor
-    /// (<c>ElementClicker.TryClick</c>) swallowed every failure and returned false, which
-    /// turned a broken click into an unrelated assertion failure later in the test. A pattern
-    /// that is present but fails is a real fault and is allowed to surface.
+    /// Deliberately does not catch exceptions: a pattern that is present but fails is a real
+    /// fault, and swallowing it turns a broken click into an unrelated assertion failure later.
     /// </para>
     /// <para>
     /// LegacyIAccessible is deliberately <em>not</em> in this ladder. A WinUI toggle advertises

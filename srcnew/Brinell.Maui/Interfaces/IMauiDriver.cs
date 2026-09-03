@@ -116,15 +116,26 @@ public interface IMauiDriver : IDriver<IMauiElement>, IDiagnosticDriver
     
     #endregion
     
-    #region Platform-Specific
-    
+    #region Scrolling
+
     /// <summary>
-    /// Finds elements using Android UIAutomator query.
-    /// Returns empty list if not on Android platform.
+    /// Finds an element by scrolling a container until it enters the accessibility tree.
     /// </summary>
-    /// <param name="uiAutomatorQuery">The UIAutomator query string.</param>
-    /// <returns>List of matching elements.</returns>
-    IReadOnlyList<IMauiElement> FindByAndroidUIAutomator(string uiAutomatorQuery);
-    
+    /// <remarks>
+    /// The neutral form of "the tree omits what is not rendered", which every backend has some
+    /// version of: UiAutomator2 drops scrolled-off-screen elements, while UIA and the DOM keep
+    /// them but drop virtualised ones. A driver whose backend hides nothing relevant answers
+    /// null, which is an answer rather than a gap.
+    /// </remarks>
+    /// <param name="container">
+    /// The container to scroll, or null to let the platform pick the scrolling container on
+    /// screen.
+    /// </param>
+    /// <param name="locator">The locator for the element.</param>
+    /// <returns>
+    /// The element once it is on screen and still, or null when scrolling does not reach it.
+    /// </returns>
+    IMauiElement? TryFindByScrollingWithin(IMauiElement? container, Locator locator);
+
     #endregion
 }

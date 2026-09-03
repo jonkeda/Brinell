@@ -98,8 +98,8 @@ public class ContainerCollectionTests
     }
 
     /// <summary>
-    /// The headline fix: the container's OWN member returns the container, not the page.
-    /// Under the old ContainerBase this returned TestPage and broke the chain.
+    /// A container's own member returns the container, not the page, so the fluent chain
+    /// stays inside it.
     /// </summary>
     [Fact]
     [Trait("Pattern", "FluentReturn")]

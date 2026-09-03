@@ -70,13 +70,9 @@ public partial class Entry<TScope> : Base.FocusableControlBase<TScope>, IEditabl
         if (text == null) return;
 
         element.Clear();
+        // SetValue writes through the platform's own value mechanism, which needs no commit
+        // keystroke: no trailing Tab.
         element.SendKeys(text, TextInputMethod.SetValue);
-
-        // No trailing Tab. It used to commit the value, but SetValue writes through the
-        // platform's own value mechanism — UIA ValuePattern on Windows, replaceElementValue on
-        // Android — which needs no commit keystroke. Sending one costs a global keyboard
-        // event, which the Windows interaction policy blocks by default; it only went
-        // unnoticed because the old nested-text branch returned before reaching it.
     }
 
     /// <summary>

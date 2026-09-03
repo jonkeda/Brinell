@@ -33,10 +33,8 @@ public enum SamplePage
 /// Page object for the sample app's hub: the flat page list that replaced Shell navigation.
 /// </summary>
 /// <remarks>
-/// Opening a page is one click on all three platforms. Shell's tab bar was not uniform —
-/// Android hid tabs past the fifth behind an overflow menu and Windows exposed only nine —
-/// and its pushed routes leaked navigation state between tests
-/// (see <c>.my/maui/rca/rca-001-container-module-tests-navigation-stack.md</c>).
+/// Opening a page is one click on all three platforms, and each open pushes a fresh page, so
+/// no navigation state leaks between tests.
 /// </remarks>
 public class HubPage : PageObjectBase<HubPage>
 {
@@ -49,7 +47,11 @@ public class HubPage : PageObjectBase<HubPage>
     public override string Name => "PageHub";
 
     /// <inheritdoc />
-    public override bool IsLoaded(int? timeoutMs = null) => Title.IsExists();
+    /// <remarks>
+    /// No override, deliberately: the base checks the page root (<c>PageHub</c>) with a plain
+    /// lookup. A readiness check must never scroll — a page marker that is not present now means
+    /// you are on another page, and scrolling cannot change that.
+    /// </remarks>
 
     /// <inheritdoc />
     /// <remarks>
@@ -57,9 +59,7 @@ public class HubPage : PageObjectBase<HubPage>
     /// <see cref="BackToHub"/>, which lives on whichever page is currently open. Gating
     /// lookups on the hub being loaded would make <see cref="TryGoBack"/> unable to find the
     /// only control that gets back to it — the hub reports not-loaded precisely when the back
-    /// button is needed. See
-    /// <c>.my/maui/rca/rca-002-page-precondition-discarded-slow-failures.md</c> for the
-    /// precondition this opts out of.
+    /// button is needed.
     /// </remarks>
     protected override bool RequiresLoadedPage => false;
 

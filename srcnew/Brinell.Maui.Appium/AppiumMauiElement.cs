@@ -341,7 +341,54 @@ public sealed class AppiumMauiElement : IMauiElement, ITogglePatternElement, ISe
             }
         }
     }
-    
+
+    /// <summary>
+    /// Waits until the element stops moving, so a caller acts on where it is rather than where it
+    /// was.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Android scrolling flings: <c>UiScrollable</c> hands back control while the container is
+    /// still coasting, so a tap issued then lands at coordinates the element has already left
+    /// and silently does nothing. Two identical rectangles in a row means settled; it returns as
+    /// soon as the element is still rather than sleeping a fixed time.
+    /// </para>
+    /// <para>
+    /// The mechanism is general — two identical rectangles in a row — and depends on nothing but
+    /// <see cref="Rect"/>; it lives here because the need does not generalise. UIA scrolling is
+    /// synchronous, and Playwright already performs this check internally as its "stable"
+    /// actionability requirement. If a smooth-scrolling Windows surface ever needs it, the home
+    /// is <c>ElementGeometryExtensions</c> beside <c>HasUsableBounds</c>, and it is a move rather
+    /// than a rewrite.
+    /// </para>
+    /// </remarks>
+    internal void WaitUntilPositionSettles()
+    {
+        const int MaxChecks = 10;
+        const int IntervalMs = 50;
+
+        try
+        {
+            var previous = Rect;
+            for (var check = 0; check < MaxChecks; check++)
+            {
+                WaitHelper.Pause(IntervalMs);
+                var current = Rect;
+                if (current == previous)
+                {
+                    return;
+                }
+
+                previous = current;
+            }
+        }
+        catch
+        {
+            // A position we cannot read is one we cannot wait on; let the caller proceed.
+        }
+    }
+
+
     /// <inheritdoc />
     public void Swipe(int startX, int startY, int endX, int endY, int durationMs = 500)
     {
@@ -663,7 +710,6 @@ public sealed class AppiumMauiElement : IMauiElement, ITogglePatternElement, ISe
             // There is no mobile equivalent of the UIA SelectionItem pattern: selecting a row
             // IS tapping it. Reporting unsupported lets a control fall through to its own
             // click, which performs exactly one tap and is the correct mobile behaviour.
-            // See .my/maui/plan-fix-hub-navigation.md.
             return false;
         }
     }

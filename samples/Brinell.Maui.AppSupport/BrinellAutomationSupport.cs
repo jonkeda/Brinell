@@ -35,8 +35,8 @@ namespace Brinell.Maui.AppSupport;
 public static class BrinellAutomationSupport
 {
     /// <summary>
-    /// Registers automation handlers for <c>Layout</c>, <c>ContentView</c>, and
-    /// <c>Border</c>.
+    /// Registers automation handlers for <c>Layout</c>, <c>ContentView</c>, <c>Border</c> and
+    /// <c>ContentPage</c>.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -51,6 +51,11 @@ public static class BrinellAutomationSupport
     /// while the app continues to render normally. This was measured, not assumed. To
     /// scope inside a SwipeView or RefreshView, wrap its <i>content</i> in a container
     /// that is addressable.
+    /// </para>
+    /// <para>
+    /// <c>ContentPage</c> is included: it maps to the same peerless <c>ContentPanel</c>, so
+    /// without a handler a page cannot be found by its own <c>AutomationId</c> and a page object
+    /// must identify itself by a child control instead. Verified not to collapse the tree.
     /// </para>
     /// <para>
     /// <c>Frame</c> is also absent: it is deprecated in MAUI and has no handler to
@@ -70,6 +75,7 @@ public static class BrinellAutomationSupport
         handlers.AddHandler<Layout, AutomationLayoutHandler>();
         handlers.AddHandler<ContentView, AutomationContentViewHandler>();
         handlers.AddHandler<Border, AutomationBorderHandler>();
+        handlers.AddHandler<ContentPage, AutomationPageHandler>();
 #endif
 
         return handlers;

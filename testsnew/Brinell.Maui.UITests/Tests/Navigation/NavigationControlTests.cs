@@ -12,9 +12,7 @@ namespace Brinell.Maui.UITests.Tests.Navigation;
 /// delay. A click either changed <c>LastActionLabel</c> or it did not.
 /// </para>
 /// <para>
-/// <c>FlyoutItem</c> is not covered here; see
-/// <see cref="NavigationProbeTests"/> and the Phase B notes in
-/// <c>.my/Containers/uncovered-areas-plan.md</c> for why.
+/// <c>FlyoutItem</c> is not covered here; see <see cref="NavigationProbeTests"/>.
 /// </para>
 /// </remarks>
 [Collection("Maui")]

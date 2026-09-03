@@ -9,7 +9,6 @@ namespace Brinell.Maui.Tests.Semantic;
 /// shows up as a timeout against an element rather than a statement about what was not ready,
 /// and only on the slower platform. Mocking the element makes each rung testable in
 /// milliseconds, so the guarantee is pinned here rather than inferred from a device run.
-/// See <c>.my/maui/plan-wait-for-readiness.md</c>.
 /// </remarks>
 public class ReadinessTests
 {
@@ -56,6 +55,7 @@ public class ReadinessTests
 
         _context.Setup(c => c.FindElement(It.IsAny<Locator>())).Returns(element.Object);
         _context.Setup(c => c.TryFindElement(It.IsAny<Locator>())).Returns(element.Object);
+        _context.Setup(c => c.TryFindElementAfterScroll(It.IsAny<Locator>())).Returns(element.Object);
 
         return element;
     }
@@ -87,9 +87,8 @@ public class ReadinessTests
     /// A page that never loads fails naming the page, not the element.
     /// </summary>
     /// <remarks>
-    /// The message is the point. Before
-    /// <c>rca-002-page-precondition-discarded-slow-failures.md</c> this surfaced as "element
-    /// not found", which describes a symptom of being on the wrong page rather than the cause.
+    /// The message is the point: "element not found" describes a symptom of being on the wrong
+    /// page rather than the cause.
     /// </remarks>
     [Fact]
     public void Click_FailsNamingThePage_WhenItNeverLoads()

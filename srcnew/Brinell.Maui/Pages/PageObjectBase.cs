@@ -105,9 +105,8 @@ public abstract class PageObjectBase<TSelf> : ObjectBase, IMauiPage<TSelf>
     /// The exception thrown when a lookup is attempted on a page that is not loaded.
     /// </summary>
     /// <remarks>
-    /// Names the page as well as the element. The element name alone is what made this
-    /// condition so hard to read: it describes a symptom of being on the wrong page, not the
-    /// cause. See <c>.my/maui/rca/rca-002-page-precondition-discarded-slow-failures.md</c>.
+    /// Names the page as well as the element: the element name alone describes a symptom of
+    /// being on the wrong page rather than the cause.
     /// </remarks>
     private ElementNotFoundException PageNotLoaded(Locator locator)
         => new($"Page '{Name}' is not loaded, so '{locator}' cannot be found in it. " +
@@ -266,6 +265,14 @@ public abstract class PageObjectBase<TSelf> : ObjectBase, IMauiPage<TSelf>
         if (!CanResolveElements(wait: true)) return null;
 
         return _context.TryFindElement(locator);
+    }
+
+    /// <inheritdoc />
+    IMauiElement? IMauiElementScope.TryFindElementAfterScroll(Locator locator)
+    {
+        if (!CanResolveElements(wait: true)) return null;
+
+        return _context.TryFindElementAfterScroll(locator);
     }
 
     /// <inheritdoc />

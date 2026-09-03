@@ -12,8 +12,7 @@ public class EditorControlTests : SemanticControlTestsBase
     /// not in a branch every control repeats. Android maps <c>Editor</c> straight to
     /// <c>android.widget.EditText</c> and never needed it.
     /// <para>
-    /// What matters now is that the control expresses intent — clear, then write — and each
-    /// driver decides how. See <c>.my/maui/plan-appium-text-entry.md</c>.
+    /// The control expresses intent — clear, then write — and each driver decides how.
     /// </para>
     /// </remarks>
     [Fact]

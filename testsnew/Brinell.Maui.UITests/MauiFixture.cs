@@ -42,16 +42,13 @@ public class MauiFixture : MauiTestFixtureBase
     /// <para>
     /// Because the hub pushes a fresh page instance each time and this pops back to the hub
     /// first, a test cannot inherit the previous test's page or its position in a navigation
-    /// stack. That is what removes the class of failure recorded in
-    /// <c>.my/maui/rca/rca-001-container-module-tests-navigation-stack.md</c> - not a
-    /// recovery routine, but the absence of state to recover from.
+    /// stack — the absence of state to recover from, rather than a recovery routine.
     /// </para>
     /// </remarks>
     public void Open(SamplePage page)
     {
         ReturnToHub();
         _hub.OpenButton(page).Click();
-
     }
 
     /// <summary>
@@ -80,6 +77,11 @@ public class MauiFixture : MauiTestFixtureBase
             {
                 break;
             }
+
+            // Wait for the hub before deciding whether to pop again. Testing IsLoaded straight
+            // after the click reads the page mid-transition, so the loop goes round and spends a
+            // full timeout waiting for a Back button that has already gone.
+            _hub.WaitLoaded(true, TestConstants.ShortTestTimeoutMs);
         }
     }
 
@@ -201,10 +203,7 @@ public class MauiFixture : MauiTestFixtureBase
     /// Navigates to the container module page and restores its initial state.
     /// </summary>
     /// <remarks>
-    /// Opened directly from the hub. This previously went via the probe page's module links,
-    /// because the Shell tab bar was full - the indirection that
-    /// <c>.my/maui/rca/rca-001-container-module-tests-navigation-stack.md</c> traced its
-    /// 7-minute, 9-failure hang to.
+    /// Opened directly from the hub, so no other page's state can leak into it.
     /// </remarks>
     public ContainerTestPage NavigateToContainerModule()
     {
@@ -257,6 +256,15 @@ public class MauiFixture : MauiTestFixtureBase
         // the namespace, so it cannot be written literally here. Waiting on the package alone
         // lets UiAutomator2 accept whatever activity that package launches.
         options.AdditionalCapabilities["appWaitPackage"] = "com.brinell.samples.maui";
+
+        // UiAutomator2 waits for the app to report idle before each command, defaulting to
+        // 10 s. A MAUI app that animates may never report idle, so commands pay that wait.
+        // See .my/scroll/perf-why-exists-was-slow.md for the measurements behind these settings.
+        options.AdditionalCapabilities["settings[waitForIdleTimeout]"] = 100;
+
+        // Reinstall even when the installed APK reports the same version: MAUI does not bump
+        // versionCode between builds, so without this a run can silently test the previous one.
+        options.AdditionalCapabilities["enforceAppInstall"] = true;
     }
 
     /// <inheritdoc />

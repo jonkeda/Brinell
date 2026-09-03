@@ -320,14 +320,9 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// <remarks>
     /// <para>
     /// Launching a process is the one moment automation cannot avoid taking the foreground:
-    /// Windows grants it to a new process, and the app then keeps it for the whole run because
-    /// nothing takes it back. Measured on the Buttons and Text suites, that is the <em>only</em>
-    /// time the window comes forward: nothing in the automation path asks for the foreground,
-    /// because UI Automation patterns drive the app without it.
-    /// </para>
-    /// <para>
-    /// The window stays shown, only unfocused, so its layout and bounding rectangles remain
-    /// valid for UI Automation.
+    /// Windows grants it to a new process, and nothing in the automation path takes it back,
+    /// because UI Automation patterns drive the app without focus. The window stays shown, only
+    /// unfocused, so its layout and bounding rectangles remain valid.
     /// </para>
     /// <para>
     /// Best effort by nature: Windows only permits a foreground change from a process that
@@ -900,15 +895,17 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     
     #endregion
     
-    #region Platform-Specific
-    
+    #region Scrolling
+
     /// <inheritdoc />
-    public IReadOnlyList<IMauiElement> FindByAndroidUIAutomator(string uiAutomatorQuery)
-    {
-        // Not supported on Windows - return empty list
-        return Array.Empty<IMauiElement>();
-    }
-    
+    /// <remarks>
+    /// UIA keeps scrolled-off-screen elements in the tree with <c>IsOffscreen=true</c>, so
+    /// scrolling reveals nothing a plain lookup missed. A virtualised list is the exception —
+    /// there the answer is <c>VirtualizedItemPattern.Realize()</c>, not scrolling — and no list
+    /// under test virtualises.
+    /// </remarks>
+    public IMauiElement? TryFindByScrollingWithin(IMauiElement? container, Locator locator) => null;
+
     #endregion
     
     #region IDisposable

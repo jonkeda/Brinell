@@ -7,10 +7,8 @@ namespace Brinell.Maui.Interfaces;
 /// </summary>
 /// <remarks>
 /// <para>
-/// These replace the former <c>Controls.Internal.GestureHelper</c>. The behaviour is
-/// unchanged; what changed is reach — they are <c>public</c> extensions rather than an
-/// <c>internal static</c>, so a control object outside this assembly can use them. That is
-/// goal 13, and it is the same reason phase 1 made the geometry and search helpers public.
+/// Public extensions rather than internal helpers, so a control object outside this assembly
+/// can use them.
 /// </para>
 /// <para>
 /// <b>Why here and not in <c>Brinell.Core</c>.</b> The geometry is platform-neutral and would

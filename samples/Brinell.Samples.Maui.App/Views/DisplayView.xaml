@@ -9,7 +9,7 @@
         <viewModels:DisplayViewModel />
     </ContentView.BindingContext>
 
-    <ScrollView AutomationId="DisplayTestPage">
+    <ScrollView>
         <VerticalStackLayout 
             Padding="20" 
             Spacing="15"

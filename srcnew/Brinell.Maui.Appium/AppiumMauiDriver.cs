@@ -213,16 +213,126 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable
     
     #endregion
     
-    #region Platform-Specific
-    
+    #region Scrolling
+
     /// <inheritdoc />
-    public IReadOnlyList<IMauiElement> FindByAndroidUIAutomator(string uiAutomatorQuery)
+    /// <remarks>
+    /// Android only. iOS would be served by <c>mobile: scroll</c> with the container as
+    /// <c>element</c>; until that is written and run on a device, answering null keeps the
+    /// caller on the plain-lookup result rather than on an untested path.
+    /// </remarks>
+    public IMauiElement? TryFindByScrollingWithin(IMauiElement? container, Locator locator)
     {
         if (_platform != MauiPlatform.Android)
         {
-            return Array.Empty<IMauiElement>();
+            return null;
         }
-        
+
+        var scrollable = ScrollableSelector(container);
+
+        // resource-id first, then content-desc: MAUI maps AutomationId to one or the other
+        // depending on the control.
+        string[] matchers =
+        [
+            $"new UiSelector().resourceIdMatches(\".*{locator.Value}\")",
+            $"new UiSelector().description(\"{locator.Value}\")"
+        ];
+
+        foreach (var matcher in matchers)
+        {
+            try
+            {
+                var elements = FindByUiAutomator(
+                    $"new UiScrollable({scrollable}).scrollIntoView({matcher})");
+                if (elements.Count > 0)
+                {
+                    return ReResolveAfterScrolling(locator) ?? elements[0];
+                }
+            }
+            catch
+            {
+                // Try the next matcher.
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// The <c>UiSelector</c> naming the container to scroll.
+    /// </summary>
+    /// <remarks>
+    /// A named container is scrolled by its own resource-id. Without one there is nothing to
+    /// name, so the selector falls back to the first scrollable container on screen — which is
+    /// wrong wherever an outer <c>ScrollView</c> wraps the container that actually scrolls, and
+    /// is why the parameter exists.
+    /// </remarks>
+    private static string ScrollableSelector(IMauiElement? container)
+    {
+        var resourceId = TryGetResourceId(container);
+
+        return resourceId == null
+            ? "new UiSelector().scrollable(true).instance(0)"
+            : $"new UiSelector().resourceIdMatches(\".*{resourceId}\")";
+    }
+
+    private static string? TryGetResourceId(IMauiElement? container)
+    {
+        if (container == null)
+        {
+            return null;
+        }
+
+        try
+        {
+            var resourceId = container.GetAttribute("resource-id");
+            return string.IsNullOrEmpty(resourceId) ? null : resourceId;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Looks the element up again by its own locator once <c>UiScrollable</c> has brought it
+    /// into view.
+    /// </summary>
+    /// <remarks>
+    /// <c>UiScrollable(...).scrollIntoView(...)</c> is a scrolling command that happens to
+    /// return a node. Acting on that node is not the same as acting on the element: it is
+    /// matched by a <c>resourceIdMatches</c> regex during the scroll rather than by the caller's
+    /// own locator. Re-resolving costs one lookup, now that the element is on screen, and gives
+    /// the caller the element it actually asked for.
+    /// </remarks>
+    /// <param name="locator">The caller's locator.</param>
+    /// <returns>The freshly resolved element, or null to fall back to the scroll result.</returns>
+    private IMauiElement? ReResolveAfterScrolling(Locator locator)
+    {
+        try
+        {
+            var elements = FindElements(locator);
+            if (elements.Count == 0)
+            {
+                return null;
+            }
+
+            var element = elements[0];
+            (element as AppiumMauiElement)?.WaitUntilPositionSettles();
+            return element;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Runs a raw UIAutomator query. Android-only, and private: a caller that wants this has
+    /// already chosen to be Android-specific, and none exists outside the scroll path.
+    /// </summary>
+    private IReadOnlyList<IMauiElement> FindByUiAutomator(string uiAutomatorQuery)
+    {
         try
         {
             var elements = _driver.FindElements(MobileBy.AndroidUIAutomator(uiAutomatorQuery));
@@ -233,7 +343,7 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable
             return Array.Empty<IMauiElement>();
         }
     }
-    
+
     #endregion
     
     #region IDisposable

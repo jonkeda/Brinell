@@ -38,3 +38,17 @@ public class AutomationBorderHandler : BorderHandler
 {
     protected override ContentPanel CreatePlatformView() => new AutomationContentPanel();
 }
+
+/// <summary>
+/// Page handler returning a peer-bearing panel, so a page's own AutomationId is visible.
+/// </summary>
+/// <remarks>
+/// <c>ContentPage</c> maps to the same <c>ContentPanel</c> that ContentView and Border use, and
+/// like them it carries no AutomationPeer of its own. Without this a page cannot be located by
+/// its <c>AutomationId</c>, so a page object has to identify itself by some child control
+/// instead — which fails as soon as that child scrolls out of view.
+/// </remarks>
+public class AutomationPageHandler : PageHandler
+{
+    protected override ContentPanel CreatePlatformView() => new AutomationContentPanel();
+}

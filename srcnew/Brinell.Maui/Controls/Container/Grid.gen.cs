@@ -14,11 +14,8 @@ namespace Brinell.Maui.Controls.Container;
 /// </summary>
 /// <remarks>
 /// <para>
-/// This replaces the former <c>Grid&lt;TScope&gt;</c> / <c>Grid&lt;TParent, TSelf&gt;</c>
-/// pair. That split existed only because the old container base made a container's own
-/// inherited members return the parent scope; with
-/// <see cref="ContainerObjectBase{TParent, TSelf}"/> every member returns the grid, so
-/// one type serves both uses.
+/// One type serves both a scoped and a nested grid: every inherited member returns the grid
+/// itself, so there is no need for a separate parent-returning variant.
 /// </para>
 /// <para>
 /// <b>Windows requires an automation handler.</b> A stock MAUI <c>Grid</c> maps to a

@@ -38,26 +38,11 @@ public abstract partial class ToggleControlBase<TScope> : ClickableControlBase<T
     /// Adds the toggle command to the inherited activation ladder.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// A toggle's activation <em>is</em> its toggle command. Measured on Windows, MAUI's
-    /// <c>Switch</c> and <c>CheckBox</c> expose only that:
-    /// </para>
-    /// <code>
-    /// [CLK] AutomationId:TestSwitch   sel=False inv=False tog=True
-    /// [CLK] AutomationId:TestCheckBox sel=False inv=False tog=True
-    /// [CLK] AutomationId:Open_Toggle  sel=False inv=True  tog=False
-    /// </code>
-    /// <para>
-    /// So without this rung <c>Click()</c> fell through the whole ladder to a pointer click,
-    /// which needs the window in front and does not reliably reach a XAML toggle - the control
-    /// never flipped and the assertion failed on the app's unchanged status label rather than
-    /// on the click.
-    /// </para>
-    /// <para>
-    /// Deliberately last. <c>RadioButton</c> shares this base and activates through
-    /// <c>SelectionItem</c>, which carries the "one of a group" meaning that a bare toggle does
-    /// not; letting toggle win first would flip a radio as if it were independent.
-    /// </para>
+    /// MAUI's <c>Switch</c> and <c>CheckBox</c> expose <c>Toggle</c> and neither <c>Invoke</c>
+    /// nor <c>SelectionItem</c>, so without this rung a click falls through to a pointer click
+    /// that does not reliably reach a XAML toggle. Deliberately last: <c>RadioButton</c> shares
+    /// this base and activates through <c>SelectionItem</c>, which carries the "one of a group"
+    /// meaning a bare toggle does not.
     /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <returns>True when a pattern was available and reported success.</returns>

@@ -7,9 +7,9 @@ namespace Brinell.Maui.UITests.Tests.Scroll;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Scrolling used to be exercised only incidentally, by tests whose Reset button happened to sit
-/// below the fold, so a scroll defect surfaced as an unrelated assertion about a status label.
-/// These tests make the scroll itself the subject.
+/// These make the scroll itself the subject, rather than exercising it incidentally through
+/// tests whose target happens to sit below the fold — where a scroll defect surfaces as an
+/// unrelated assertion about something else.
 /// </para>
 /// <para>
 /// The page is deliberately taller than any screen, with the status label first and the buttons

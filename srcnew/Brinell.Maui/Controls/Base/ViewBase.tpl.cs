@@ -70,7 +70,7 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
     /// <summary>
     /// Gets logging context information.
     /// </summary>
-    private string TestName => "Test"; // TODO: Get from test context when available
+    private string TestName => "Test";
     private string PageName => Page?.GetType().Name ?? "Unknown";
     private string ControlId => Locator.Value;
     private ITestLogger Logger => Context.Logger;
@@ -188,14 +188,15 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
     /// </remarks>
     protected bool RunWaitWithOptionalElement<T>(T? expected,
         Func<IMauiElement?, bool> coreOperation,
-        int? timeoutMs = null, [CallerMemberName] string? caller = null)
+        int? timeoutMs = null, Func<IMauiElement?>? resolve = null,
+        [CallerMemberName] string? caller = null)
     {
         if (expected == null)
         {
             return true;
         }
 
-        return RunPoll(null, () => coreOperation(TryFindElement()), timeoutMs, caller);
+        return RunPoll(null, () => coreOperation((resolve ?? TryFindElement)()), timeoutMs, caller);
     }
 
     /// <summary>
@@ -208,7 +209,7 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
     /// </remarks>
     protected TScope RunAssertWithOptionalElement<T>(T? expected,
         Func<IMauiElement?, T?> getActual, Func<T?, T?, bool> compare,
-        string? message = null, int? timeoutMs = null,
+        string? message = null, int? timeoutMs = null, Func<IMauiElement?>? resolve = null,
         [CallerMemberName] string? caller = null)
     {
         if (expected == null)
@@ -218,7 +219,7 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
 
         RunPoll(null, () =>
         {
-            var actual = getActual(TryFindElement());
+            var actual = getActual((resolve ?? TryFindElement)());
             if (!compare(actual, expected))
             {
                 throw new AssertionException(message ?? "Assert exception", expected, actual);
@@ -258,15 +259,9 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
     /// The action is not safe to repeat, so it runs after the loop, exactly once.
     /// </para>
     /// <para>
-    /// Previously the action ran <em>inside</em> the loop, so a driver that acted and then
-    /// threw — a click that navigates away and leaves the element stale is the realistic case
-    /// — had its action replayed. The symptom was a silent double action: a counter
-    /// incremented twice, an item added twice. See <c>.my/maui/plan-wait-for-readiness.md</c>
-    /// §0.1.
-    /// </para>
-    /// <para>
-    /// An exception from the action now propagates instead of being retried, which is correct:
-    /// once the action has been attempted, retrying can only compound the damage.
+    /// An exception from the action propagates rather than being retried: once the action has
+    /// been attempted, retrying can only compound the damage — a driver that acts and then
+    /// throws would otherwise replay it, silently doubling a click.
     /// </para>
     /// </remarks>
     private IMauiElement ResolveReadyElement(int? timeoutMs, bool doEnsureVisible, string? caller)
@@ -360,12 +355,31 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
         {
             return ContainingScope;
         }
+        // Resolve once, then re-read the value each tick. The element rarely changes identity
+        // while an assertion waits for its value to settle, but re-finding it every 100 ms is
+        // the single largest source of traffic in an Android run — 811 lookups for 34 tests,
+        // 78 s. A stale handle drops back to re-resolving, which is the case that made
+        // re-finding look necessary in the first place.
+        IMauiElement? element = null;
         RunPoll(null, () =>
         {
-            var element = FindElement();
-            EnsureVisible(element, DefaultTimeoutMs);
+            if (element == null)
+            {
+                element = FindElement();
+                EnsureVisible(element, DefaultTimeoutMs);
+            }
 
-            var actual = getActual(element);
+            T? actual;
+            try
+            {
+                actual = getActual(element);
+            }
+            catch (StaleElementReferenceException)
+            {
+                element = null;
+                return false;
+            }
+
             if (!compare(actual, expected))
             {
                 throw new AssertionException(message ?? "Assert exception", expected, actual);
@@ -389,6 +403,56 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
     }
 
     /// <summary>
+    /// Resolves the element anywhere on the page, scrolling to it if it is not on screen.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The difference from <see cref="TryFindElement"/> matters only on Android, which publishes
+    /// an accessibility node only for content inside the viewport: a control scrolled out of a
+    /// <c>ScrollView</c> still exists and is laid out, but a plain lookup answers "no such
+    /// element". Windows keeps the same element with <c>IsOffscreen=true</c> and answers yes.
+    /// </para>
+    /// <para>
+    /// The scope scrolls to it on Android and does nothing extra on Windows, so both platforms
+    /// give a test the same answer. It does not poll: the caller has already established that a
+    /// plain lookup finds nothing.
+    /// </para>
+    /// </remarks>
+    /// <returns>The element, or null when it is genuinely not on the page.</returns>
+    protected IMauiElement? TryFindElementAfterScroll()
+    {
+        return _mauiScope.TryFindElementAfterScroll(Locator);
+    }
+
+    /// <summary>
+    /// A resolver that scrolls to look at most once, then falls back to plain lookups.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// For use inside a poll, where resolving through <see cref="TryFindElementAfterScroll"/>
+    /// on every tick would sweep the container repeatedly — a sweep costs orders of magnitude
+    /// more than a plain lookup. One sweep answers the question it exists for: if the element is
+    /// on the page the sweep leaves it on screen, and if it is not, sweeping again will not
+    /// change that.
+    /// </para>
+    /// </remarks>
+    /// <returns>A resolver to hand to a polling helper.</returns>
+    protected Func<IMauiElement?> ScrollingOnceResolver()
+    {
+        var swept = false;
+        return () =>
+        {
+            if (swept)
+            {
+                return TryFindElement();
+            }
+
+            swept = true;
+            return TryFindElementAfterScroll();
+        };
+    }
+
+    /// <summary>
     /// Finds the element within the scope.
     /// </summary>
     /// <returns>The element.</returns>
@@ -403,17 +467,14 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
     /// </summary>
     /// <remarks>
     /// <para>
-    /// For compound controls whose template wraps a native child — a round button hosting a
-    /// platform button, an editable field hosting an entry. The child is looked for beneath
-    /// the control's own element first; failing that, the scope is searched and candidates are
-    /// filtered to those positioned inside the control. The second pass exists because some
-    /// MAUI handlers reparent the native child out of the logical subtree, leaving position as
-    /// the only reliable link.
+    /// For compound controls whose template wraps a native child. The child is looked for
+    /// beneath the control's own element first; failing that, the scope is searched and
+    /// candidates filtered by position, because some MAUI handlers reparent the native child out
+    /// of the logical subtree.
     /// </para>
     /// <para>
-    /// This is <c>protected virtual</c> on the control rather than a shared static helper:
-    /// which child a compound control activates is knowledge about that control, and a custom
-    /// control outside this assembly overrides it the same way the built-ins do.
+    /// <c>protected virtual</c> rather than a shared helper: which child a compound control
+    /// activates is knowledge about that control.
     /// </para>
     /// </remarks>
     /// <param name="root">The control's own element.</param>
@@ -513,42 +574,43 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
     /// on screen.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// Visibility is two questions, not one. <c>IsVisible</c> answers "is it on screen right
-    /// now"; this answers "could the user see it at all". On a scrolling page they give
-    /// different answers for the same healthy control, and which one a test wants depends on
-    /// what it is really asserting.
-    /// </para>
-    /// <para>
-    /// Answering the second question <em>requires</em> scrolling: UIA reports a control that is
-    /// merely scrolled out of view exactly as it reports one that is not rendered — offscreen,
-    /// with a zero bounding rectangle — so no property distinguishes them. The name says so
-    /// rather than hiding a side effect behind an innocent-looking query.
-    /// </para>
-    /// <para>
-    /// Prefer this over <c>IsVisible</c> when a test means "the page shows this control",
-    /// because whether a control happens to sit above the fold depends on window size and screen
-    /// density, and so differs between Windows, Android and iOS — exactly the accidental
-    /// difference tests should not encode.
-    /// </para>
+    /// <c>IsVisible</c> answers "on screen right now"; this answers "could the user see it at
+    /// all", which requires scrolling — no property distinguishes a control scrolled out of view
+    /// from one that is not rendered. Prefer this when a test means "the page shows this
+    /// control", since whether something sits above the fold depends on window size and so
+    /// differs between platforms.
     /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <returns>True when visible, scrolling to it first if needed; null when absent.</returns>
     [AbsenceTolerant]
     protected virtual bool? IsVisibleAfterScrollCore(IMauiElement? element)
     {
-        if (element == null)
-        {
-            return null;
-        }
-
-        if (IsVisibleCore(element) == true)
+        if (element != null && IsVisibleCore(element) == true)
         {
             return true;
         }
 
-        ScrollIntoViewCore(element);
-        return IsVisibleCore(element);
+        // A null element does not mean "not on the page". Android drops an off-screen view from
+        // the accessibility tree entirely, so the very control this method exists to reach is
+        // absent until something scrolls to it — and the plain lookup that produced this
+        // argument does not scroll. Resolving through FindElement does: it falls back to
+        // UiScrollable on Android, and is an ordinary lookup on Windows, where the element was
+        // in the tree all along.
+        var resolved = element;
+        if (resolved == null)
+        {
+            try
+            {
+                resolved = FindElement();
+            }
+            catch (ElementNotFoundException)
+            {
+                return null;
+            }
+        }
+
+        ScrollIntoViewCore(resolved);
+        return IsVisibleCore(resolved);
     }
 
     protected virtual void EnsureVisible(IMauiElement element, int timeout)
@@ -589,37 +651,56 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
         return element != null;
     }
 
+    /// <summary>
+    /// Whether the control is on the page, scrolling to it if it is not on screen.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// "On the page", not "in the accessibility tree right now": Android publishes a node only
+    /// for content inside the viewport, so the second reading answers no for a control Windows
+    /// answers yes for. Deliberately not split into two methods the way visibility is — only
+    /// one existence question is real, and naming the platform artifact would invite tests to
+    /// depend on it.
+    /// </para>
+    /// <para>
+    /// The cost lands on absence: <c>AssertExists(false)</c> must exhaust a scroll of the
+    /// container before it can answer, which is the honest price of "is it really not there?"
+    /// and is paid only when the element is not found.
+    /// </para>
+    /// </remarks>
     public bool IsExists()
     {
-        return IsExistsBase(TryFindElement()) == true;
+        return IsExistsBase(TryFindElementAfterScroll()) == true;
     }
 
     /// <summary>
     /// Waits until the element's presence matches <paramref name="expected"/>.
     /// </summary>
     /// <remarks>
-    /// Resolves the element optionally, so <c>WaitExists(false)</c> reports the absence it
-    /// is asking about instead of raising <c>ElementNotFoundException</c>.
+    /// Resolves optionally, so <c>WaitExists(false)</c> reports the absence it is asking about
+    /// instead of raising <c>ElementNotFoundException</c>, and scrolls to look — see
+    /// <see cref="IsExists"/>.
     /// </remarks>
     public bool WaitExists(bool? expected = true, int? timeoutMs = null)
     {
         return RunWaitWithOptionalElement(expected,
             element => IsExistsBase(element) == expected!.Value,
-            timeoutMs);
+            timeoutMs, ScrollingOnceResolver());
     }
 
     /// <summary>
     /// Asserts the element's presence, returning the scope for chaining.
     /// </summary>
     /// <remarks>
-    /// Resolves the element optionally, so <c>AssertExists(false)</c> passes for a missing
-    /// element rather than throwing.
+    /// Resolves optionally, so <c>AssertExists(false)</c> passes for a missing element rather
+    /// than throwing, and scrolls to look — see <see cref="IsExists"/>.
     /// </remarks>
     public TScope AssertExists(bool? expected = true, string? message = null, int? timeoutMs = null)
     {
         return RunAssertWithOptionalElement(expected,
              IsExistsBase, (actual, expected1) => (actual == expected1),
-            message ?? $"Expected Exists to be '{expected}'. Locator: {Locator}", timeoutMs);
+            message ?? $"Expected Exists to be '{expected}'. Locator: {Locator}", timeoutMs,
+            ScrollingOnceResolver());
     }
 
     #endregion

@@ -3,13 +3,13 @@ using Brinell.Generator.Models;
 namespace Brinell.Generator.Tests.Generators;
 
 /// <summary>
-/// Covers the phase 3 generator work: near-miss Core methods now fail generation instead of
+/// Near-miss Core methods fail generation instead of
 /// vanishing, <c>[SkipGeneration]</c> declares a deliberate exclusion, and collection-valued
 /// getters generate sequence-aware comparisons.
 /// </summary>
 /// <remarks>
-/// See <c>.my/maui/maui-control-architecture-plan.md</c> §3.1. The motivating case was
-/// <c>SelectorControlBase</c>, where two Core methods were dropped silently because they were
+/// The motivating case is <c>SelectorControlBase</c>, where two Core methods were dropped
+/// silently because they were
 /// <c>protected</c> without <c>virtual</c> — invisible API loss that no test could catch,
 /// because nothing reported it.
 /// </remarks>

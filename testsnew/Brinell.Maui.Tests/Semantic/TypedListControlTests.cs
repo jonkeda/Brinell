@@ -44,10 +44,9 @@ public class TypedListControlTests : SemanticControlTestsBase
     /// Rows are not searched for page-wide.
     /// </summary>
     /// <remarks>
-    /// A regression guard on the behaviour the old <c>List&lt;&gt;</c> had: it resolved
-    /// items from the page scope, so a matching element outside the collection would be
-    /// picked up. Here the page offers no rows at all and the collection must still find
-    /// its own.
+    /// Items resolve from the collection's own scope, not the page's, so a matching element
+    /// outside the collection is never picked up. Here the page offers no rows at all and the
+    /// collection must still find its own.
     /// </remarks>
     [Fact]
     public void TypedList_DoesNotResolveRowsThroughThePage()

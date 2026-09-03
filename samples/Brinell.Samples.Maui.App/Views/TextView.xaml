@@ -9,7 +9,7 @@
         <viewModels:TextViewModel />
     </ContentView.BindingContext>
 
-    <ScrollView AutomationId="TextTestPage">
+    <ScrollView>
             <VerticalStackLayout Padding="20" 
                                  Spacing="15"
                                  BackgroundColor="{AppThemeBinding Light=White, Dark=#1F1F1F}">

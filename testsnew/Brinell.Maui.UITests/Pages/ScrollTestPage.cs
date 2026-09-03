@@ -5,9 +5,8 @@ namespace Brinell.Maui.UITests.Pages;
 /// its own rather than through tests that happen to need it.
 /// </summary>
 /// <remarks>
-/// No <c>IsLoaded</c> override. The root marker sits on the page's <c>ScrollView</c>, which is a
-/// real rendered view on every platform and cannot scroll itself out of view — unlike a probe on
-/// some child control, which is what the other page objects used and what broke on Android.
+/// No <c>IsLoaded</c> override: the base finds the page by its own <c>AutomationId</c>, which
+/// beats probing a child control that can scroll out of view.
 /// </remarks>
 public class ScrollTestPage : PageObjectBase<ScrollTestPage>
 {

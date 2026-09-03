@@ -41,12 +41,9 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
     /// not rendered.
     /// </para>
     /// <para>
-    /// Deliberately nothing more. This replaced a ladder of fallbacks — a bounding-rectangle
-    /// check, a walk over children, and a "supports Toggle, so treat it as visible" rule for
-    /// MAUI's Switch. Every rung had been commented out for some time while the summary above
-    /// still described all four as though they ran. The Switch rung is the telling one: that is
-    /// control knowledge sitting in an element, which must not know what a MAUI view means. A
-    /// control that genuinely needs it overrides <c>IsVisibleCore</c> instead.
+    /// Deliberately nothing more. A control needing anything else — a Switch whose wrapper
+    /// reports zero bounds, say — overrides <c>IsVisibleCore</c>, because that is control
+    /// knowledge and an element must not know what a MAUI view means.
     /// </para>
     /// <para>
     /// "Visible once the user scrolls to it" is a different question, and the control object
@@ -141,13 +138,9 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
     /// <inheritdoc />
     /// <remarks>
     /// <para>
-    /// A real mouse click, and the last resort. Measured across the Buttons, Text, Display and
-    /// Toggle suites — 70 tests — it is never reached: UI Automation patterns handle every
-    /// click, which is why removing the interaction policy that used to guard it cost nothing.
-    /// </para>
-    /// <para>
-    /// It still exists because a control can genuinely expose no usable pattern, and because on
-    /// Android and iOS a tap is the ordinary path rather than a fallback.
+    /// A real mouse click, and the last resort: UI Automation patterns handle every click the
+    /// suite performs. It exists because a control can genuinely expose no usable pattern, and
+    /// because on Android and iOS a tap is the ordinary path rather than a fallback.
     /// </para>
     /// </remarks>
     public void Click()
@@ -249,10 +242,8 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
 
             scroll.Scroll(ToAmount(horizontalSteps), ToAmount(verticalSteps));
 
-            // The scroll percent does not update synchronously: reading it immediately
-            // reports the pre-scroll value and makes a successful scroll look like no
-            // progress. Poll briefly for the change instead. Measured, not assumed - the
-            // naive read returned false while rows were demonstrably realizing.
+            // The scroll percent does not update synchronously: read immediately it reports
+            // the pre-scroll value, making a successful scroll look like no progress.
             return WaitForScrollChange(scroll, before);
         }
         catch (Exception)
@@ -1106,11 +1097,6 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
     // element's job - the Text property and TrySetTextValue below both go through it - so no
     // control needs to know this platform nests, and there is no INestedTextElement capability
     // for one to probe.
-    //
-    // A verify-and-retry ladder (ClearWithFallback, GetNestedText, SetTextWithFallback) used
-    // to live here. It became unreachable once the capability was removed, and is deliberately
-    // not being reinstated: SetText should stay simple. See
-    // .my/maui/plan-appium-text-entry.md step 2.
 
     private AutomationElement? FindNestedTextBoxElement()
     {
@@ -1130,14 +1116,10 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
     /// </summary>
     /// <remarks>
     /// <para>
-    /// Self first, wrapper only if self cannot be written. Measured against the sample app:
-    /// MAUI maps <c>Entry</c> and <c>Editor</c> straight to a WinUI <c>Edit</c>, which is
-    /// writable directly — but <c>SearchBar</c> becomes an AutoSuggestBox, which surfaces as a
-    /// <c>Group</c> with no Value pattern of its own and the real field nested inside.
-    /// </para>
-    /// <para>
-    /// So the descendant search is not generic caution: it is what makes SearchBar writable at
-    /// all, and it now costs nothing on the controls that do not need it because it only runs
+    /// Self first, wrapper only if self cannot be written. MAUI maps <c>Entry</c> and
+    /// <c>Editor</c> straight to a writable WinUI <c>Edit</c>, but <c>SearchBar</c> becomes an
+    /// AutoSuggestBox: a <c>Group</c> with no Value pattern of its own and the real field nested
+    /// inside. The descendant search is what makes SearchBar writable at all, and it runs only
     /// once the direct write is ruled out.
     /// </para>
     /// </remarks>

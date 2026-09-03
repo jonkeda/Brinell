@@ -153,6 +153,15 @@ public abstract class ContainerObjectBase<TParent, TSelf>
     #region Element finding (scoped to the container root)
 
     /// <inheritdoc />
+    /// <inheritdoc />
+    /// <remarks>
+    /// The same lookup as <see cref="TryFindElement"/>: a container scopes its search to its own
+    /// root, and scrolling that root is the container's own concern — <c>ScrollHelper</c> — not
+    /// something an element lookup should trigger as a side effect. Overridden by a container
+    /// that can scroll itself to reach a child.
+    /// </remarks>
+    public virtual IMauiElement? TryFindElementAfterScroll(Locator locator) => TryFindElement(locator);
+
     public IMauiElement? TryFindElement(Locator locator)
     {
         ArgumentNullException.ThrowIfNull(locator);

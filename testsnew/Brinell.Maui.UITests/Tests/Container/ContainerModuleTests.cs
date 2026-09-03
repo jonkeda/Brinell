@@ -158,10 +158,9 @@ public class ContainerModuleTests
     /// BoxView is not addressable on Windows.
     /// </summary>
     /// <remarks>
-    /// Measured, not assumed: BoxView is a drawing primitive rather than a control, and it
-    /// gets no AutomationPeer - the same reason Frame, SwipeView, and RefreshView are
-    /// unreachable. It has no children and no behaviour, so nothing is lost beyond an
-    /// existence check. Recorded here so the Android/iOS phase has a baseline.
+    /// BoxView is a drawing primitive rather than a control and gets no AutomationPeer — the
+    /// same reason Frame, SwipeView and RefreshView are unreachable. It has no children and no
+    /// behaviour, so nothing is lost beyond an existence check.
     /// </remarks>
     [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Control", "BoxView")]
