@@ -24,5 +24,37 @@ namespace Brinell.Maui.Controls.Range;
 public partial class Stepper<TScope> : Base.RangeControlBase<TScope>
     where TScope : IMauiScope<TScope>
 {
+    #region IncrementBy
+
+    public TScope IncrementBy(int? times, int? timeoutMs = null)
+    {
+        return RunDoWithElement(element => { IncrementByCore(element, times, timeoutMs); }, timeoutMs);
+    }
+
+    #endregion
+    #region DecrementBy
+
+    public TScope DecrementBy(int? times, int? timeoutMs = null)
+    {
+        return RunDoWithElement(element => { DecrementByCore(element, times, timeoutMs); }, timeoutMs);
+    }
+
+    #endregion
+    #region SetToMinimum
+
+    public TScope SetToMinimum(int? timeoutMs = null)
+    {
+        return RunDoWithElement(element => { SetToMinimumCore(element, timeoutMs); }, timeoutMs);
+    }
+
+    #endregion
+    #region SetToMaximum
+
+    public TScope SetToMaximum(int? timeoutMs = null)
+    {
+        return RunDoWithElement(element => { SetToMaximumCore(element, timeoutMs); }, timeoutMs);
+    }
+
+    #endregion
 
 }

@@ -323,7 +323,12 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable
             }
 
             var element = elements[0];
-            (element as AppiumMauiElement)?.WaitUntilPositionSettles();
+            if (element is AppiumMauiElement appiumElement)
+            {
+                appiumElement.WaitUntilPositionSettles();
+                appiumElement.NudgeClearOfBottomEdge();
+            }
+
             return element;
         }
         catch

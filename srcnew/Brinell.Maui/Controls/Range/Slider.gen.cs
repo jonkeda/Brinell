@@ -40,5 +40,29 @@ public partial class Slider<TScope> : Base.RangeControlBase<TScope>
     }
 
     #endregion
+    #region SlideToPercentage
+
+    public TScope SlideToPercentage(double? percentage, int? timeoutMs = null)
+    {
+        return RunDoWithElement(element => { SlideToPercentageCore(element, percentage, timeoutMs); }, timeoutMs);
+    }
+
+    #endregion
+    #region SlideToMinimum
+
+    public TScope SlideToMinimum(int? timeoutMs = null)
+    {
+        return RunDoWithElement(element => { SlideToMinimumCore(element, timeoutMs); }, timeoutMs);
+    }
+
+    #endregion
+    #region SlideToMaximum
+
+    public TScope SlideToMaximum(int? timeoutMs = null)
+    {
+        return RunDoWithElement(element => { SlideToMaximumCore(element, timeoutMs); }, timeoutMs);
+    }
+
+    #endregion
 
 }

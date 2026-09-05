@@ -1,5 +1,10 @@
 # Cleanup: scrolling, finding, and the comments around them
 
+> **Status: done.** All four points are applied. `MauiTestContext` is back to a root scope,
+> `FindByAndroidUIAutomator` and the popup finders are gone from `IMauiDriver`, scrolling lives in
+> `Brinell.Maui.Appium`, and the comment pass is recorded in `comment-guidelines.md`.
+> Verified afterwards: Windows 77/77, Android 34/34, unit suites green.
+
 ## What happened
 
 The scroll work was done under measurement pressure — find a cause, change one thing, run, keep

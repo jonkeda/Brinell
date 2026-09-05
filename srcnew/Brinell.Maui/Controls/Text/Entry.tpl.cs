@@ -44,6 +44,7 @@ public partial class Entry<TScope> : Base.FocusableControlBase<TScope>, IEditabl
     /// <param name="element">The pre-found element.</param>
     /// <param name="text">The text to enter.</param>
     /// <param name="timeoutMs">Optional timeout for enabled check.</param>
+    [SkipGeneration("Enter is hand-written below so a null text skips without resolving an element.")]
     protected virtual void EnterCore(IMauiElement element, string? text, int? timeoutMs = null)
     {
         SetTextCore(element, text, timeoutMs);
@@ -147,6 +148,22 @@ public partial class Entry<TScope> : Base.FocusableControlBase<TScope>, IEditabl
     #endregion
 
     #region Hand-written Convenience Members
+
+    /// <summary>
+    /// Enters text, doing nothing when the text is null.
+    /// </summary>
+    /// <remarks>
+    /// Hand-written to follow the nullable skip pattern the generated setters use: a null value
+    /// returns the scope without resolving an element. The generator classifies setters by the
+    /// <c>Set</c> prefix, and <c>Enter</c> is the same operation under a different name.
+    /// </remarks>
+    /// <param name="text">The text to enter, or null to skip.</param>
+    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
+    /// <returns>The containing scope, for chaining.</returns>
+    public TScope Enter(string? text, int? timeoutMs = null)
+    {
+        return RunSetWithElement(text, element => EnterCore(element, text, timeoutMs), timeoutMs);
+    }
 
     /// <summary>
     /// Waits until the text equals the expected value.

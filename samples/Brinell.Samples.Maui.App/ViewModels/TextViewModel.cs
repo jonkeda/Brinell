@@ -146,7 +146,13 @@ public class TextViewModel : ParentViewModel
         }
         else
         {
-            var lineCount = editorText.Split('\r').Length;
+            // Count lines regardless of which newline the platform stored: WinUI's TextBox
+            // keeps a bare CR, Android keeps the LF it was given.
+            var lineCount = editorText
+                .Replace("\r\n", "\n")
+                .Replace('\r', '\n')
+                .Split('\n')
+                .Length;
             EditorStatusMessage = $"✓ Editor text: {editorText.Length} chars, {lineCount} line{(lineCount != 1 ? "s" : "")}";
         }
     }

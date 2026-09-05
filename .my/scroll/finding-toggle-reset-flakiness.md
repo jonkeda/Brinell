@@ -30,47 +30,54 @@ find SwitchStatusLabel               (assert "off" — FAILS)
 
 Windows never scrolls to reach the button, which is exactly why Windows never fails.
 
-## Cause: the tap is issued while the page is still moving
+## Cause: the button comes to rest under the navigation bar
 
-`UiScrollable.scrollIntoView` flings the container and returns while it is still coasting. A tap
-issued at that moment is delivered at coordinates the element has already left, so it lands on
-nothing — or on whatever slid into that spot. Nothing throws; the click simply does not happen,
-and the failure surfaces two steps later as an unchanged status label.
+The first hypothesis — that the tap was issued mid-fling — was **wrong**. Instrumenting the tap
+showed the button perfectly still:
 
-## Fix applied
+```
+[TAP] .../ResetButton before={X=53,Y=2169,W=975,H=116} after={same} moved=False
+```
 
-`ReResolveAfterScrolling` now waits for the element to stop moving before returning it:
-`WaitUntilPositionSettles` reads the element's rectangle until two consecutive reads agree, up to
-500 ms. Not a fixed sleep — it returns as soon as the element is still, and gives up rather than
-blocking if it never is.
+Stationary, on screen, findable, tapped once — and the app did not respond.
 
-**Result: `Switch_Reset` fixed.** The Toggle suite went from two or three failures a run to
-consistently one.
+What matters is *where* it came to rest. The screen is 1080x2400 and the button occupies
+Y=2169-2285, hard against the bottom, where `dumpsys window displays` reports
+`mHasBottomNavigationBar=true`. `scrollIntoView` stops the moment an element is on screen, which
+parks it under Android's navigation bar — and the navigation bar sits above the app and swallows
+touches aimed at what is beneath it.
 
-## What is left, and why it is probably the same shape
+That explains every part of the pattern: Windows never scrolls to reach the button so never
+fails; the failing test rotated because it depended on exactly where each scroll happened to
+stop; and the test passed when run alone, because a different scroll position left the button
+clear.
 
-Three consecutive Toggle runs after the fix:
+## Fixes applied
 
-| run | result | failing test |
+Two, in the order they were found:
+
+1. **Wait for the element to stop moving** (`WaitUntilPositionSettles`). Correct in itself — a
+   tap should not be issued at coordinates the element is leaving — and it fixed
+   `Switch_Reset`, which is what made the fling hypothesis look right.
+2. **Scroll the element clear of the bottom edge** (`NudgeClearOfBottomEdge`). After settling, if
+   the element rests within an eighth of the screen height of the bottom, the container is
+   scrolled slightly so the element sits in the safe area before anything acts on it.
+
+Both live in `Brinell.Maui.Appium`, where platform behaviour belongs.
+
+## Result
+
+| | Before | After |
 |---|---|---|
-| 1 | 15 / 16 | `CheckBox_Reset` |
-| 2 | 15 / 16 | `CheckBox_Reset` |
-| 3 | 15 / 16 | `RadioButton_Reset` |
+| Android Toggle | 15 / 16, rotating failure | **16 / 16** |
+| Android Scroll + Buttons + Toggle | 33 / 34 | **34 / 34**, twice in a row |
+| Windows (Buttons, Text, Display, Toggle, Scroll) | 76 / 77 | **77 / 77** |
 
-Exactly one Reset test fails per run, and **which one moves**. That rules out a per-control
-defect: all three click the same button by the same path. Run on its own,
-`CheckBox_Reset_ClearsState` **passes** in 10 s, which rules out the test itself.
+Three consecutive clean Android runs, where before exactly one Reset test failed every run.
 
-The remaining suspect is where `scrollIntoView` leaves the element. It stops as soon as the
-element is on screen, which puts it hard against the bottom edge — and a tap aimed at the
-geometric centre of a partially clipped element can land outside the visible area. That would be
-intermittent in exactly this way, depending on where each scroll happens to stop.
+## What this cost, and the lesson
 
-### Next step
-
-After scrolling to an element, do not act on it at the viewport edge: scroll far enough that it
-sits fully inside the container, then act. That needs the container's bounds alongside the
-element's, both of which are already available where the sweep happens.
-
-Worth doing before any further performance work — a suite that fails one test a run for reasons
-unrelated to the code under test is a worse problem than a slow one.
+The fling hypothesis was plausible, fitted the symptoms, and was wrong. It survived one round of
+"fixing" because the fix it motivated happened to repair one of the three failures — which looked
+like confirmation. The diagnostic that settled it took one instrumented run and should have come
+first.

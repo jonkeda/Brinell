@@ -226,18 +226,24 @@ public class ProductCollectionTests
     [Trait("Pattern", "FluentReturn")]
     public Task CollectionMembers_ReturnTheCollection()
     {
-        ProductCollection afterAssert = Page.Products.AssertLogicalCount(ProductCollection.SeedCount);
-        ProductCollection afterSelect = Page.Products.SelectItem(1);
+        // One reference throughout: page and container objects are created per access, so each
+        // read of Page.Products is a different instance by design. The contract under test is
+        // that a call hands back the scope it was called on.
+        var page = Page;
+        var products = page.Products;
 
-        Assert.Same(Page.Products, afterAssert);
-        Assert.Same(Page.Products, afterSelect);
+        ProductCollection afterAssert = products.AssertLogicalCount(ProductCollection.SeedCount);
+        ProductCollection afterSelect = products.SelectItem(1);
 
-        ProductRow row = Page.Products.Item(0);
+        Assert.Same(products, afterAssert);
+        Assert.Same(products, afterSelect);
+
+        ProductRow row = products.Item(0);
         ProductRow afterCheck = row.Selected.SetChecked(true);
 
         Assert.Same(row, afterCheck);
-        Assert.Same(Page.Products, afterCheck.Parent);
-        Assert.Same(Page, afterCheck.Parent.Parent);
+        Assert.Same(products, afterCheck.Parent);
+        Assert.Same(page, afterCheck.Parent.Parent);
 
         return Task.CompletedTask;
     }

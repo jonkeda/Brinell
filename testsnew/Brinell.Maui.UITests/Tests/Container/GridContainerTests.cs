@@ -86,9 +86,15 @@ public class GridContainerTests
     [Trait("Pattern", "FluentReturn")]
     public Task ControlAction_ReturnsContainer_NotPage()
     {
-        ProductFormContainer result = Page.ProductForm.NameEntry.SetText("Widget");
+        // One reference throughout: page and container objects are created per access, so two
+        // reads of Page.ProductForm are deliberately different instances. What this test is
+        // about is that the call hands back the container it was called on.
+        var page = Page;
+        var form = page.ProductForm;
 
-        Assert.Same(Page.ProductForm, result);
+        ProductFormContainer result = form.NameEntry.SetText("Widget");
+
+        Assert.Same(form, result);
         return Task.CompletedTask;
     }
 
@@ -97,9 +103,11 @@ public class GridContainerTests
     [Trait("Pattern", "FluentReturn")]
     public Task ContainerAssertion_ReturnsSameContainer()
     {
-        ProductFormContainer result = Page.ProductForm.AssertVisible(true);
+        var form = Page.ProductForm;
 
-        Assert.Same(Page.ProductForm, result);
+        ProductFormContainer result = form.AssertVisible(true);
+
+        Assert.Same(form, result);
         return Task.CompletedTask;
     }
 
@@ -108,12 +116,12 @@ public class GridContainerTests
     [Trait("Property", "Parent")]
     public Task Parent_ExitsOneLevelAtATime()
     {
-        ProductFormContainer form = Page.ProductForm.Options.Parent;
-        GridCollectionDemoPage page = Page.ProductForm.Options.Parent.Parent;
+        var page = Page;
+        var form = page.ProductForm;
 
-        Assert.Same(Page.ProductForm, form);
-        Assert.Same(Page, page);
-        Assert.Same(Page, Page.ProductForm.Parent);
+        Assert.Same(form, form.Options.Parent);
+        Assert.Same(page, form.Options.Parent.Parent);
+        Assert.Same(page, form.Parent);
         return Task.CompletedTask;
     }
 
@@ -156,8 +164,10 @@ public class GridContainerTests
     [Trait("Method", "SetChecked")]
     public Task ProductOptions_CheckBox_TogglesWithinScope()
     {
-        ProductOptionsContainer options = Page.ProductForm.Options.InStockCheckBox.SetChecked(false);
-        Assert.Same(Page.ProductForm.Options.Parent, options.Parent);
+        var form = Page.ProductForm;
+
+        ProductOptionsContainer options = form.Options.InStockCheckBox.SetChecked(false);
+        Assert.Same(form, options.Parent);
         Assert.Equal(false, options.InStockCheckBox.IsChecked());
 
         options.InStockCheckBox.SetChecked(true);

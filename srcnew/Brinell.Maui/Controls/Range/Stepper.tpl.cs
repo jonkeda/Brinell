@@ -303,7 +303,7 @@ public partial class Stepper<TScope> : Base.RangeControlBase<TScope>
     
     #endregion
 
-    #region Hand-written Convenience Members
+    #region Stepper-Specific Core Methods
 
     /// <summary>
     /// Reads the value and polls until two consecutive reads return the same result,
@@ -333,73 +333,65 @@ public partial class Stepper<TScope> : Base.RangeControlBase<TScope>
     /// <summary>
     /// Increments the stepper value multiple times.
     /// </summary>
-    /// <param name="times">Number of times to increment. Null skips the operation.</param>
+    /// <param name="element">The pre-found stepper element.</param>
+    /// <param name="times">Number of times to increment. Null or non-positive skips the operation.</param>
     /// <param name="timeoutMs">Optional timeout for each increment.</param>
-    /// <returns>The containing scope for fluent chaining.</returns>
-    public TScope IncrementBy(int? times, int? timeoutMs = null)
+    protected virtual void IncrementByCore(IMauiElement element, int? times, int? timeoutMs = null)
     {
-        if (times == null || times <= 0)
-            return ContainingScope;
+        if (times == null || times <= 0) return;
 
-        return RunSetWithElement(times, element =>
+        for (int i = 0; i < times; i++)
         {
-            for (int i = 0; i < times; i++)
-            {
-                IncrementCore(element, timeoutMs);
-            }
-        }, timeoutMs);
+            IncrementCore(element, timeoutMs);
+        }
     }
 
     /// <summary>
     /// Decrements the stepper value multiple times.
     /// </summary>
-    /// <param name="times">Number of times to decrement. Null skips the operation.</param>
+    /// <param name="element">The pre-found stepper element.</param>
+    /// <param name="times">Number of times to decrement. Null or non-positive skips the operation.</param>
     /// <param name="timeoutMs">Optional timeout for each decrement.</param>
-    /// <returns>The containing scope for fluent chaining.</returns>
-    public TScope DecrementBy(int? times, int? timeoutMs = null)
+    protected virtual void DecrementByCore(IMauiElement element, int? times, int? timeoutMs = null)
     {
-        if (times == null || times <= 0)
-            return ContainingScope;
+        if (times == null || times <= 0) return;
 
-        return RunSetWithElement(times, element =>
+        for (int i = 0; i < times; i++)
         {
-            for (int i = 0; i < times; i++)
-            {
-                DecrementCore(element, timeoutMs);
-            }
-        }, timeoutMs);
+            DecrementCore(element, timeoutMs);
+        }
     }
 
     /// <summary>
     /// Sets the stepper to its minimum value.
     /// </summary>
-    /// <param name="timeoutMs">Optional timeout.</param>
-    /// <returns>The containing scope for fluent chaining.</returns>
-    public TScope SetToMinimum(int? timeoutMs = null)
+    /// <param name="element">The pre-found stepper element.</param>
+    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
+    protected virtual void SetToMinimumCore(IMauiElement element, int? timeoutMs = null)
     {
-        return RunDoWithElement(element =>
-        {
-            var min = GetMinimumCore(element) ?? 0;
-            SetValueCore(element, min, timeoutMs);
-        }, timeoutMs);
+        var min = GetMinimumCore(element) ?? 0;
+        SetValueCore(element, min, timeoutMs);
     }
 
     /// <summary>
     /// Sets the stepper to its maximum value.
     /// </summary>
-    /// <param name="timeoutMs">Optional timeout.</param>
-    /// <returns>The containing scope for fluent chaining.</returns>
-    public TScope SetToMaximum(int? timeoutMs = null)
+    /// <param name="element">The pre-found stepper element.</param>
+    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
+    protected virtual void SetToMaximumCore(IMauiElement element, int? timeoutMs = null)
     {
-        return RunDoWithElement(element =>
-        {
-            var max = GetMaximumCore(element) ?? 100;
-            SetValueCore(element, max, timeoutMs);
-        }, timeoutMs);
+        var max = GetMaximumCore(element) ?? 100;
+        SetValueCore(element, max, timeoutMs);
     }
+
+    #endregion
+
+    #region Hand-written Convenience Members
 
     /// <summary>
     /// Checks if the stepper can be incremented (not at maximum).
+    /// Hand-written: the generator always names its state trio <c>Is{Name}</c>, so it
+    /// cannot emit a member called <c>CanIncrement</c>.
     /// </summary>
     /// <returns>True if increment is possible, false otherwise.</returns>
     public bool? CanIncrement()
@@ -448,6 +440,8 @@ public partial class Stepper<TScope> : Base.RangeControlBase<TScope>
 
     /// <summary>
     /// Checks if the stepper can be decremented (not at minimum).
+    /// Hand-written: the generator always names its state trio <c>Is{Name}</c>, so it
+    /// cannot emit a member called <c>CanDecrement</c>.
     /// </summary>
     /// <returns>True if decrement is possible, false otherwise.</returns>
     public bool? CanDecrement()

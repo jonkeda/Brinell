@@ -820,20 +820,21 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// <inheritdoc />
     public IMauiElement? TryFindActiveDialogRoot()
     {
-        if (_application == null) return null;
-
         var popupCondition = _conditionFactory.ByControlType(ControlType.Window)
             .And(_conditionFactory.ByClassName("Popup"));
         var contentDialogCondition = _conditionFactory.ByClassName("ContentDialog");
         var buttonCondition = _conditionFactory.ByControlType(ControlType.Button);
-        var allWindows = _application.GetAllTopLevelWindows(_automation);
 
-        foreach (var window in allWindows)
+        // Searched inside the app's own window: a WinUI ContentDialog renders as a Popup
+        // descendant of it, not as the sibling top-level window one might expect. Enumerating
+        // top-level windows instead costs about 8 s a call — it walks the desktop and filters by
+        // process, so it grows with whatever else the machine has open — against about 15 ms
+        // here.
+        var inRootWindow = TryFindDialogRoot(
+            _rootElement, popupCondition, contentDialogCondition, buttonCondition);
+        if (inRootWindow != null && !ReferenceEquals(inRootWindow, _rootElement))
         {
-            var found = TryFindDialogRoot(
-                window, popupCondition, contentDialogCondition, buttonCondition);
-            if (found != null)
-                return new FlaUIMauiElement(found, this);
+            return new FlaUIMauiElement(inRootWindow, this);
         }
 
         return null;

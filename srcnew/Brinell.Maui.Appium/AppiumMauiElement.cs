@@ -362,6 +362,44 @@ public sealed class AppiumMauiElement : IMauiElement, ITogglePatternElement, ISe
     /// than a rewrite.
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// Scrolls the element clear of the bottom of the screen when it has come to rest there.
+    /// </summary>
+    /// <remarks>
+    /// <c>scrollIntoView</c> stops as soon as the element is on screen, which leaves it hard
+    /// against the bottom edge — under Android's navigation bar, which sits above the app and
+    /// swallows touches aimed at what is beneath it. The element is then visible, stationary and
+    /// perfectly findable, and the tap simply does not reach it.
+    /// </remarks>
+    internal void NudgeClearOfBottomEdge()
+    {
+        try
+        {
+            var screenHeight = _driver.Driver.Manage().Window.Size.Height;
+            var margin = screenHeight / 8;
+            if (Rect.Bottom <= screenHeight - margin)
+            {
+                return;
+            }
+
+            _driver.Driver.ExecuteScript("mobile: scrollGesture", new Dictionary<string, object>
+            {
+                { "left", 50 },
+                { "top", 150 },
+                { "width", _driver.Driver.Manage().Window.Size.Width - 100 },
+                { "height", screenHeight - 300 },
+                { "direction", "down" },
+                { "percent", 0.25 }
+            });
+
+            WaitUntilPositionSettles();
+        }
+        catch
+        {
+            // Not being able to move it is not a reason to refuse to act on it.
+        }
+    }
+
     internal void WaitUntilPositionSettles()
     {
         const int MaxChecks = 10;

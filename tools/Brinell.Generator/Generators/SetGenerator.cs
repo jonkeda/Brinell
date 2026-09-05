@@ -17,6 +17,11 @@ public class SetGenerator : IMemberGenerator
     private readonly MemberGeneratorOptions _options;
     private const string SetterPrefix = "Set";
 
+    /// <summary>
+    /// Plumbing parameter shared by every wrapper, never the value being written.
+    /// </summary>
+    private const string TimeoutParameterName = "timeoutMs";
+
     public SetGenerator(MemberGeneratorOptions? options = null)
     {
         _options = options ?? new MemberGeneratorOptions();
@@ -36,8 +41,15 @@ public class SetGenerator : IMemberGenerator
         if (!methodName.StartsWith(SetterPrefix))
             return false;
 
-        // A setter takes the element plus at least one value to write.
-        return method.ParameterList.Parameters.Count >= 2;
+        // A setter takes the element plus at least one value to write. `timeoutMs` is
+        // plumbing rather than a value, so a method whose only extra parameter is the
+        // timeout is an action, not a setter — `SetToMinimumCore(element, timeoutMs)`
+        // writes nothing the caller supplied. Claiming it here would emit
+        // `RunSetWithElement(timeoutMs, ...)`, whose nullable-skip would make the public
+        // wrapper silently do nothing whenever the caller omitted the timeout.
+        return method.ParameterList.Parameters
+            .Skip(1)
+            .Any(p => p.Identifier.Text != TimeoutParameterName);
     }
 
     /// <summary>

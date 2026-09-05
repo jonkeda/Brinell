@@ -215,51 +215,45 @@ public partial class Slider<TScope> : Base.RangeControlBase<TScope>
     
     #endregion
 
-    #region Hand-written Convenience Members
+    #region Slider-Specific Core Methods
 
     /// <summary>
     /// Slides to the specified percentage of the slider range.
     /// </summary>
+    /// <param name="element">The pre-found slider element.</param>
     /// <param name="percentage">Percentage (0-100) to slide to. Null skips the operation.</param>
-    /// <param name="timeoutMs">Optional timeout.</param>
-    /// <returns>The containing scope for fluent chaining.</returns>
-    public TScope SlideToPercentage(double? percentage, int? timeoutMs = null)
+    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
+    protected virtual void SlideToPercentageCore(IMauiElement element, double? percentage,
+        int? timeoutMs = null)
     {
-        return RunSetWithElement(percentage, element =>
-        {
-            var min = GetMinimumCore(element) ?? 0;
-            var max = GetMaximumCore(element) ?? 100;
-            var value = min + ((max - min) * (percentage!.Value / 100.0));
-            SetValueCore(element, value, timeoutMs);
-        }, timeoutMs);
+        if (percentage == null) return;
+
+        var min = GetMinimumCore(element) ?? 0;
+        var max = GetMaximumCore(element) ?? 100;
+        var value = min + ((max - min) * (percentage.Value / 100.0));
+        SetValueCore(element, value, timeoutMs);
     }
 
     /// <summary>
     /// Slides to the minimum value.
     /// </summary>
-    /// <param name="timeoutMs">Optional timeout.</param>
-    /// <returns>The containing scope for fluent chaining.</returns>
-    public TScope SlideToMinimum(int? timeoutMs = null)
+    /// <param name="element">The pre-found slider element.</param>
+    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
+    protected virtual void SlideToMinimumCore(IMauiElement element, int? timeoutMs = null)
     {
-        return RunDoWithElement(element =>
-        {
-            var min = GetMinimumCore(element) ?? 0;
-            SetValueCore(element, min, timeoutMs);
-        }, timeoutMs);
+        var min = GetMinimumCore(element) ?? 0;
+        SetValueCore(element, min, timeoutMs);
     }
 
     /// <summary>
     /// Slides to the maximum value.
     /// </summary>
-    /// <param name="timeoutMs">Optional timeout.</param>
-    /// <returns>The containing scope for fluent chaining.</returns>
-    public TScope SlideToMaximum(int? timeoutMs = null)
+    /// <param name="element">The pre-found slider element.</param>
+    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
+    protected virtual void SlideToMaximumCore(IMauiElement element, int? timeoutMs = null)
     {
-        return RunDoWithElement(element =>
-        {
-            var max = GetMaximumCore(element) ?? 100;
-            SetValueCore(element, max, timeoutMs);
-        }, timeoutMs);
+        var max = GetMaximumCore(element) ?? 100;
+        SetValueCore(element, max, timeoutMs);
     }
 
     #endregion

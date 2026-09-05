@@ -133,10 +133,12 @@ public class NavigationControlTests
     [Trait("Pattern", "FluentReturn")]
     public Task Toolbar_Actions_ReturnTheContainingScope()
     {
-        NavigationDemoPage afterClick =
-            Page.PrimaryToolbar.ClickToolbarItem(Locator.ByAutomationId("ToolbarSaveButton"));
+        var page = Page;
 
-        Assert.Same(Page, afterClick);
+        NavigationDemoPage afterClick =
+            page.PrimaryToolbar.ClickToolbarItem(Locator.ByAutomationId("ToolbarSaveButton"));
+
+        Assert.Same(page, afterClick);
 
         return Task.CompletedTask;
     }

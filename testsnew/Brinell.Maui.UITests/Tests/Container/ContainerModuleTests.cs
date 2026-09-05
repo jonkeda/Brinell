@@ -139,11 +139,13 @@ public class ContainerModuleTests
     [Trait("Method", "ScrollTo")]
     public Task ScrollView_ScrollsToItsLastChild()
     {
-        var returned = Page.TestScrollView.ScrollTo("ScrollLastLabel");
+        var scrollView = Page.TestScrollView;
 
-        Assert.Same(Page.TestScrollView, returned);
+        var returned = scrollView.ScrollTo("ScrollLastLabel");
 
-        var last = Page.TestScrollView.TryFindElement(Locator.ByAutomationId("ScrollLastLabel"));
+        Assert.Same(scrollView, returned);
+
+        var last = scrollView.TryFindElement(Locator.ByAutomationId("ScrollLastLabel"));
         Assert.NotNull(last);
         Assert.True(last!.Visible, "The last label was not visible after scrolling to it.");
 

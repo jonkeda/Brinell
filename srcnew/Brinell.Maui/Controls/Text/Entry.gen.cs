@@ -94,14 +94,6 @@ public partial class Entry<TScope> : Base.FocusableControlBase<TScope>, IEditabl
     }
 
     #endregion
-    #region Enter
-
-    public TScope Enter(string? text, int? timeoutMs = null)
-    {
-        return RunDoWithElement(element => { EnterCore(element, text, timeoutMs); }, timeoutMs);
-    }
-
-    #endregion
     #region Clear
 
     public TScope Clear(int? timeoutMs = null)

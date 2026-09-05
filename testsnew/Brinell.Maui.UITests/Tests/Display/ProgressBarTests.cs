@@ -107,8 +107,13 @@ public class ProgressBarTests
     }
 
     /// <summary>
-    /// Verifies that resetting clears the progress to initial state.
+    /// Verifies that resetting returns the progress to its initial value.
     /// </summary>
+    /// <remarks>
+    /// Asserts the control's own progress rather than the status label. Reset deliberately
+    /// replaces the status with "Ready…", so the label cannot report the value it restored —
+    /// and the value is what this test is about.
+    /// </remarks>
     [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Method", "Reset")]
     public Task ProgressBar_Reset_ReturnsToInitialState()
@@ -119,7 +124,9 @@ public class ProgressBarTests
         page.IncreaseProgressButton.Click()
             .StatusLabel.AssertTextContains("60%")
             .ResetButton.Click()
-            .StatusLabel.AssertTextContains("50%");
+            .StatusLabel.AssertTextContains("Ready");
+
+        page.TestProgressBar.AssertProgress(0.5, tolerance: 0.01);
 
         return Task.CompletedTask;
     }
