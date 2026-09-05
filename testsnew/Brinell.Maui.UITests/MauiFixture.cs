@@ -218,6 +218,20 @@ public class MauiFixture : MauiTestFixtureBase
         return page;
     }
 
+    /// <summary>
+    /// Opens the dialogs sample page and restores its initial result.
+    /// </summary>
+    public DialogsTestPage NavigateToDialogs()
+    {
+        Open(SamplePage.Dialogs);
+
+        var page = new DialogsTestPage(Context);
+        page.WaitLoaded(true, TestConstants.DefaultTestTimeoutMs);
+        page.ResetButton.Click();
+        page.Result.WaitText("none", TestConstants.DefaultTestTimeoutMs);
+        return page;
+    }
+
     #region MauiTestFixtureBase Overrides
 
     /// <inheritdoc />

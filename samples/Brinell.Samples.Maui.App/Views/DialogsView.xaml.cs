@@ -23,7 +23,7 @@ public partial class DialogsView : ContentView
         var page = GetPage();
         if (page == null) return;
 
-        await page.DisplayAlert("Alert", "This is an alert.", "OK");
+        await page.DisplayAlertAsync("Alert", "This is an alert.", "OK");
         ViewModel?.Record("alert dismissed");
     }
 
@@ -32,7 +32,7 @@ public partial class DialogsView : ContentView
         var page = GetPage();
         if (page == null) return;
 
-        var accepted = await page.DisplayAlert("Confirm", "Proceed?", "Yes", "No");
+        var accepted = await page.DisplayAlertAsync("Confirm", "Proceed?", "Yes", "No");
         ViewModel?.Record(accepted ? "confirmed" : "declined");
     }
 

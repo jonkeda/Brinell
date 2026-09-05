@@ -428,8 +428,9 @@ appears in every control below.
 `base: ContainerObjectBase` · **deliberately not generated** — no member takes an element first
 
 - [ ] ✋ `DialogButton(text)` / `PromptInput`
-- [ ] ✋ `TryClickButtonAndWaitDismissed` — six fallbacks across scoped, popup and parent scopes
-- [ ] Popup-window resolution via `FindPopupElement`
+- [ ] Children resolve strictly within the active dialog root
+- [ ] Interaction composes child controls with inherited container state; no dialog-specific actions
+- [ ] Active-root resolution via `TryFindActiveDialogRoot`
 
 ---
 

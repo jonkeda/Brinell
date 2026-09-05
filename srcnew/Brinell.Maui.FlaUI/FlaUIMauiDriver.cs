@@ -25,6 +25,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     private readonly Application? _application;
     private readonly AutomationElement _rootElement;
     private readonly ConditionFactory _conditionFactory;
+    private readonly nint _rootWindowHandle;
     private bool _disposed;
     
     /// <summary>
@@ -36,6 +37,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
         _automation = new UIA3Automation();
         _rootElement = _automation.FromHandle(windowHandle);
         _conditionFactory = new ConditionFactory(_automation.PropertyLibrary);
+        _rootWindowHandle = windowHandle;
     }
     
     /// <summary>
@@ -70,6 +72,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
         var window = _application.GetMainWindow(_automation, TimeSpan.FromSeconds(30));
         _rootElement = window ?? throw new InvalidOperationException("Failed to get main window");
         _conditionFactory = new ConditionFactory(_automation.PropertyLibrary);
+        _rootWindowHandle = _rootElement.Properties.NativeWindowHandle.ValueOrDefault;
         TryApplyRequestedWindowPlacement();
         RestoreForegroundWindow(previousForeground);
     }
@@ -86,6 +89,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
         var window = _application.GetMainWindow(_automation, TimeSpan.FromSeconds(30));
         _rootElement = window ?? throw new InvalidOperationException("Failed to get main window");
         _conditionFactory = new ConditionFactory(_automation.PropertyLibrary);
+        _rootWindowHandle = _rootElement.Properties.NativeWindowHandle.ValueOrDefault;
     }
     
     #region Platform
@@ -811,88 +815,59 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
                && bounds.Top <= maxY;
     }
     
-    #region Popup Windows
-    
+    #region Dialogs
+
     /// <inheritdoc />
-    public IMauiElement FindPopupElement(Locator locator, int timeoutMs = 5000)
+    public IMauiElement? TryFindActiveDialogRoot()
     {
-        var condition = locator.ToCondition(_conditionFactory);
-        
-        var startTime = DateTime.UtcNow;
-        var timeout = TimeSpan.FromMilliseconds(timeoutMs);
-        
-        while (DateTime.UtcNow - startTime < timeout)
+        if (_application == null) return null;
+
+        var popupCondition = _conditionFactory.ByControlType(ControlType.Window)
+            .And(_conditionFactory.ByClassName("Popup"));
+        var contentDialogCondition = _conditionFactory.ByClassName("ContentDialog");
+        var buttonCondition = _conditionFactory.ByControlType(ControlType.Button);
+        var allWindows = _application.GetAllTopLevelWindows(_automation);
+
+        foreach (var window in allWindows)
         {
-            var found = FindInPopupWindows(condition);
+            var found = TryFindDialogRoot(
+                window, popupCondition, contentDialogCondition, buttonCondition);
             if (found != null)
-            {
-                return found;
-            }
-            
-            if (timeoutMs <= 0) break;
-            WaitHelper.Pause(100);
+                return new FlaUIMauiElement(found, this);
         }
-        
-        throw new ElementNotFoundException(locator);
+
+        return null;
     }
-    
-    /// <inheritdoc />
-    public bool TryFindPopupElement(Locator locator, out IMauiElement? element, int timeoutMs = 0)
+
+    private AutomationElement? TryFindDialogRoot(
+        AutomationElement window,
+        ConditionBase popupCondition,
+        ConditionBase contentDialogCondition,
+        ConditionBase buttonCondition)
     {
         try
         {
-            element = FindPopupElement(locator, timeoutMs);
-            return true;
+            var popup = window.FindAllDescendants(popupCondition)
+                .LastOrDefault(candidate =>
+                    !candidate.Properties.IsOffscreen.ValueOrDefault
+                    && candidate.FindFirstDescendant(buttonCondition) != null);
+
+            var dialog = popup
+                ?? window.FindFirst(TreeScope.Element, contentDialogCondition)
+                ?? window.FindFirstDescendant(contentDialogCondition);
+            if (dialog != null)
+                return dialog;
+
+            return window.Properties.NativeWindowHandle.ValueOrDefault == _rootWindowHandle
+                ? null
+                : window;
         }
-        catch (ElementNotFoundException)
+        catch (COMException)
         {
-            element = null;
-            return false;
+            return null;
         }
     }
-    
-    /// <summary>
-    /// Searches all top-level windows of the process (excluding the main window)
-    /// for a descendant matching the condition.
-    /// </summary>
-    private IMauiElement? FindInPopupWindows(ConditionBase condition)
-    {
-        if (_application == null) return null;
-        
-        var allWindows = _application.GetAllTopLevelWindows(_automation);
-        var mainHandle = _rootElement.Properties.NativeWindowHandle.ValueOrDefault;
-        
-        foreach (var window in allWindows)
-        {
-            // Skip the main window — that's what normal FindElement searches
-            if (window.Properties.NativeWindowHandle.ValueOrDefault == mainHandle)
-                continue;
-            
-            // Search descendants of the popup window
-            var found = window.FindFirstDescendant(condition);
-            if (found != null)
-            {
-                return new FlaUIMauiElement(found, this);
-            }
-            
-            // Also check the popup window element itself
-            try
-            {
-                var selfMatch = window.FindFirst(TreeScope.Element, condition);
-                if (selfMatch != null)
-                {
-                    return new FlaUIMauiElement(selfMatch, this);
-                }
-            }
-            catch
-            {
-                // Ignore — some windows may not support all property queries
-            }
-        }
-        
-        return null;
-    }
-    
+
     #endregion
     
     #region Scrolling

@@ -77,6 +77,11 @@ public abstract class ContainerObjectBase<TParent, TSelf>
     /// <inheritdoc />
     public LocatorStrategy DefaultLocatorStrategy => LocatorStrategy.AutomationId;
 
+    /// <summary>
+    /// Whether this container keeps its resolved root between operations.
+    /// </summary>
+    protected virtual bool CacheContainerRoot => true;
+
     #region Container root
 
     /// <inheritdoc />
@@ -84,6 +89,9 @@ public abstract class ContainerObjectBase<TParent, TSelf>
     {
         get
         {
+            if (!CacheContainerRoot)
+                return FindContainerRootElement();
+
             if (_rootCacheValid && _cachedRoot != null)
             {
                 try

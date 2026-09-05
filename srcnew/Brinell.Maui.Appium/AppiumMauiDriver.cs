@@ -197,20 +197,25 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable
     
     #endregion
     
-    #region Popup Windows
-    
+    #region Dialogs
+
     /// <inheritdoc />
-    /// <remarks>
-    /// On Appium (Android/iOS), dialogs are part of the normal element tree,
-    /// so this delegates to <see cref="FindElement"/>.
-    /// </remarks>
-    public IMauiElement FindPopupElement(Locator locator, int timeoutMs = 5000)
-        => FindElement(locator, timeoutMs);
-    
-    /// <inheritdoc />
-    public bool TryFindPopupElement(Locator locator, out IMauiElement? element, int timeoutMs = 0)
-        => TryFindElement(locator, out element, timeoutMs);
-    
+    public IMauiElement? TryFindActiveDialogRoot()
+    {
+        var by = _platform switch
+        {
+            MauiPlatform.Android => By.Id("android:id/parentPanel"),
+            MauiPlatform.iOS => MobileBy.ClassName("XCUIElementTypeAlert"),
+            _ => null
+        };
+
+        if (by == null)
+            return null;
+
+        var root = _driver.FindElements(by).LastOrDefault();
+        return root == null ? null : new AppiumMauiElement(root, this);
+    }
+
     #endregion
     
     #region Scrolling

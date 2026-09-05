@@ -52,10 +52,25 @@ internal static class LocatorExtensions
             LocatorStrategy.TagName => By.TagName(locator.Value),
             LocatorStrategy.LinkText => By.LinkText(locator.Value),
             LocatorStrategy.PartialLinkText => By.PartialLinkText(locator.Value),
+            LocatorStrategy.ControlType => ToControlTypeBy(locator.Value, platform),
             _ => throw new ArgumentOutOfRangeException(
                 nameof(locator), 
                 locator.Strategy, 
                 $"Locator strategy '{locator.Strategy}' is not supported for MAUI/Appium.")
         };
+    }
+
+    private static By ToControlTypeBy(string controlType, MauiPlatform platform)
+    {
+        var className = (platform, controlType.ToLowerInvariant()) switch
+        {
+            (MauiPlatform.Android, "entry") => "android.widget.EditText",
+            (MauiPlatform.iOS, "entry") => "XCUIElementTypeTextField",
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(controlType), controlType,
+                $"Control type '{controlType}' is not supported on {platform}.")
+        };
+
+        return MobileBy.ClassName(className);
     }
 }

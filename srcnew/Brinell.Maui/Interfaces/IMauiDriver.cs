@@ -88,32 +88,18 @@ public interface IMauiDriver : IDriver<IMauiElement>, IDiagnosticDriver
     
     #endregion
     
-    #region Popup Windows
-    
+    #region Dialogs
+
     /// <summary>
-    /// Finds an element in popup windows belonging to the same process but outside the main window.
-    /// On Windows, WinUI3 <c>ContentDialog</c> renders in a separate popup HWND that is a sibling
-    /// of the main window in the UIA tree. Normal <c>FindElement</c> searches only the main window's
-    /// subtree, so this method searches the other top-level windows of the process.
-    /// On platforms where dialogs are in the normal tree (Android, iOS), this falls back to
-    /// <see cref="IDriver{TElement}.FindElement"/>.
+    /// Gets the active native dialog root, or null when no dialog is open.
     /// </summary>
-    /// <param name="locator">The locator for the element.</param>
-    /// <param name="timeoutMs">Maximum time to wait for the element. Default is 5000ms.</param>
-    /// <returns>The found element.</returns>
-    /// <exception cref="Brinell.Core.Exceptions.ElementNotFoundException">When no element matches within timeout.</exception>
-    IMauiElement FindPopupElement(Locator locator, int timeoutMs = 5000);
-    
-    /// <summary>
-    /// Tries to find an element in popup windows without throwing.
-    /// See <see cref="FindPopupElement"/> for details.
-    /// </summary>
-    /// <param name="locator">The locator for the element.</param>
-    /// <param name="element">The found element, or null.</param>
-    /// <param name="timeoutMs">Maximum time to wait. Default is 0ms (immediate).</param>
-    /// <returns>True if the element was found.</returns>
-    bool TryFindPopupElement(Locator locator, out IMauiElement? element, int timeoutMs = 0);
-    
+    /// <remarks>
+    /// On Windows, WinUI3 dialogs live in a sibling top-level window. Other platforms expose
+    /// dialogs in the normal element tree. The returned element is the root used to scope all
+    /// dialog content lookups.
+    /// </remarks>
+    IMauiElement? TryFindActiveDialogRoot();
+
     #endregion
     
     #region Scrolling

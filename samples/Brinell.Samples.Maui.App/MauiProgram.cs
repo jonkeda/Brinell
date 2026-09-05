@@ -2,6 +2,10 @@ using Microsoft.Extensions.Logging;
 using CommunityToolkit.Maui;
 using Microsoft.Maui.Controls.Hosting;
 
+#if MAUI_DEVFLOW
+using Microsoft.Maui.DevFlow.Agent;
+#endif
+
 #if WINDOWS
 using Brinell.Maui.AppSupport;
 using Brinell.Samples.Maui.App.Platforms.Windows.Handlers;
@@ -29,6 +33,10 @@ public static class MauiProgram
                 handlers.AddBrinellAutomationHandlers();
 #endif
             });
+
+        #if MAUI_DEVFLOW
+            builder.AddMauiDevFlowAgent();
+        #endif
 
 #if WINDOWS
         // Configure TabbedPage to properly map AutomationId to tab elements
