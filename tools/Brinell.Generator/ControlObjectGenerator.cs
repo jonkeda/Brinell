@@ -61,7 +61,8 @@ public sealed class ControlObjectGenerator
         var members = new List<string>();
 
         // Tracks which Core method claimed each generated member name, so colliding
-        // names fail with a clear message instead of emitting uncompilable code.
+        // names fail with a clear message instead of emitting uncompilable code. Keyed on the
+        // names actually emitted, not on the stem they share.
         var claimedNames = new Dictionary<string, string>(StringComparer.Ordinal);
 
         foreach (var method in _analyzer.CoreMethods(classDecl))
@@ -78,16 +79,19 @@ public sealed class ControlObjectGenerator
 
                 var info = generator.Extract(method);
 
-                if (claimedNames.TryGetValue(info.PublicMethodName, out var previousCoreMethod))
+                foreach (var emittedName in generator.EmittedMemberNames(info))
                 {
-                    throw new InvalidOperationException(
-                        $"Generated member name '{info.PublicMethodName}' is claimed by both " +
-                        $"'{previousCoreMethod}' and '{info.MethodName}' in {context.ContainingTypeName}. " +
-                        "Rename one of the Core methods — overloads that differ only by parameters " +
-                        "collide on the generated name.");
-                }
+                    if (claimedNames.TryGetValue(emittedName, out var previousCoreMethod))
+                    {
+                        throw new InvalidOperationException(
+                            $"Generated member name '{emittedName}' is claimed by both " +
+                            $"'{previousCoreMethod}' and '{info.MethodName}' in {context.ContainingTypeName}. " +
+                            "Rename one of the Core methods — overloads that differ only by parameters " +
+                            "collide on the generated name.");
+                    }
 
-                claimedNames.Add(info.PublicMethodName, info.MethodName);
+                    claimedNames.Add(emittedName, info.MethodName);
+                }
 
                 members.Add(generator.Generate(info, context));
                 break; // first matching generator wins

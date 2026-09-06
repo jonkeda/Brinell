@@ -574,6 +574,54 @@ public sealed class AppiumMauiElement : IMauiElement, ITogglePatternElement, ISe
     #region Attribute Access (IMauiElement)
     
     /// <inheritdoc />
+    /// <remarks>
+    /// Android reports the resource id fully qualified - <c>com.example.app:id/SaveButton</c> -
+    /// where MAUI put only the <c>AutomationId</c>, so the package prefix is stripped and the
+    /// caller gets back what the app author wrote. iOS carries the accessibility identifier,
+    /// which the driver reports as <c>name</c>.
+    /// </remarks>
+    public string? AutomationId => _driver.Platform switch
+    {
+        MauiPlatform.Android => WithoutResourcePackage(Present(GetAttribute("resource-id"))),
+        MauiPlatform.iOS => Present(GetAttribute("name")),
+        _ => null
+    };
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Android's accessible name is the content description; an element without one is named by
+    /// its text, which is what a screen reader falls back to as well.
+    /// </remarks>
+    public string? Name => _driver.Platform switch
+    {
+        MauiPlatform.Android => Present(GetAttribute("content-desc")) ?? Present(_element.Text),
+        MauiPlatform.iOS => Present(GetAttribute("name")) ?? Present(GetAttribute("label")),
+        _ => null
+    };
+
+    /// <summary>
+    /// An attribute value, or null when there is none.
+    /// </summary>
+    /// <remarks>
+    /// UiAutomator2 reports a missing attribute as the four characters <c>null</c> rather than
+    /// as nothing, so an element with no resource id answers "null" to a caller comparing ids.
+    /// An element whose content really is the word "null" is misread here, which is the price
+    /// of a driver that does not distinguish the two.
+    /// </remarks>
+    private static string? Present(string? value)
+        => string.IsNullOrEmpty(value) || value == "null" ? null : value;
+
+    /// <summary>
+    /// Takes the identifier out of an Android resource id.
+    /// </summary>
+    private static string? WithoutResourcePackage(string? resourceId)
+    {
+        if (string.IsNullOrEmpty(resourceId)) return resourceId;
+
+        var separator = resourceId.LastIndexOf('/');
+        return separator >= 0 ? resourceId[(separator + 1)..] : resourceId;
+    }
+
     /// <inheritdoc />
     /// <remarks>
     /// An attribute the platform does not expose reads as null rather than throwing. UiAutomator2

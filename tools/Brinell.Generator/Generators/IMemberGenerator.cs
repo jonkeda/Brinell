@@ -25,6 +25,19 @@ public interface IMemberGenerator
     MethodInfo Extract(MethodDeclarationSyntax method);
 
     /// <summary>
+    /// The names of the public members this generator will emit for one Core method.
+    /// </summary>
+    /// <remarks>
+    /// Used to detect real collisions between Core methods. It is the emitted names that can
+    /// clash, not the stem they share: <c>OpenCore</c> emits <c>Open</c> while
+    /// <c>IsOpenCore</c> emits <c>IsOpen</c>, <c>WaitOpen</c> and <c>AssertOpen</c>, so the two
+    /// coexist even though both are "about Open".
+    /// </remarks>
+    /// <param name="coreMethod">The extracted core method metadata.</param>
+    /// <returns>Every member name that <see cref="Generate"/> will declare.</returns>
+    IReadOnlyList<string> EmittedMemberNames(MethodInfo coreMethod);
+
+    /// <summary>
     /// Emits the public member(s) for one Core method as formatted C# code.
     /// </summary>
     /// <param name="coreMethod">The extracted core method metadata.</param>

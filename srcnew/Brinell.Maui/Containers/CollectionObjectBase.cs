@@ -11,8 +11,11 @@ namespace Brinell.Maui.Containers;
 /// Being a container, a collection scopes its own non-item controls too - a title,
 /// an empty view, a footer - alongside <see cref="Item"/>.
 /// <para>
-/// <typeparamref name="TItem"/> is constrained to be a container owned by this
-/// collection, so items are structurally guaranteed to be scoped.
+/// <typeparamref name="TItem"/> is constrained to <see cref="IMauiItemContainer{TCollection,
+/// TSelf}"/> - the contract, not <see cref="ItemContainerBase{TCollection, TSelf}"/> - so
+/// items are still structurally guaranteed to be scoped to this collection while an item type
+/// stays free to arrive at that any way it likes. The base class supplies nothing this class
+/// calls: items are built by the factory and handed straight back.
 /// </para>
 /// </remarks>
 /// <typeparam name="TParent">The parent scope type.</typeparam>
@@ -22,7 +25,7 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     : ContainerObjectBase<TParent, TSelf>, IMauiCollectionObject<TParent, TSelf, TItem>, IItemRootProvider
     where TParent : IMauiScope<TParent>
     where TSelf : CollectionObjectBase<TParent, TSelf, TItem>
-    where TItem : ItemContainerBase<TSelf, TItem>
+    where TItem : class, IMauiItemContainer<TSelf, TItem>
 {
     private readonly IItemStrategy _itemStrategy;
     private readonly Func<TSelf, IMauiElement, int, TItem> _itemFactory;
@@ -110,6 +113,199 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
 
             root = TryGetContainerRoot();
             return root == null ? null : _itemStrategy.FindItemElement(root, index);
+        }
+    }
+
+    /// <summary>
+    /// Gets the item identified by <paramref name="key"/>: its automation id, or failing
+    /// that its caption.
+    /// </summary>
+    /// <remarks>
+    /// The id is tried first across every item before any caption is considered, because an
+    /// id is the identifier the app author chose and a caption is what the platform happened
+    /// to render. Say which one you mean with the <see cref="Locator"/> overload -
+    /// <c>Toolbar[Locator.ByText("Save")]</c> - when a collection could answer to both.
+    /// </remarks>
+    [System.Runtime.CompilerServices.IndexerName("ItemAt")]
+    public TItem this[string key] => Item(key);
+
+    /// <summary>
+    /// Gets the item matching <paramref name="key"/> - by automation id, caption, name or
+    /// control type.
+    /// </summary>
+    /// <remarks>
+    /// <c>Toolbar[Locator.ByAutomationId("ToolbarSaveButton")]</c>,
+    /// <c>Toolbar[Locator.ByText("Save")]</c>,
+    /// <c>Toolbar[Locator.ByControlType("Button")]</c>. See
+    /// <see cref="ElementMatch"/> for how each is compared.
+    /// </remarks>
+    [System.Runtime.CompilerServices.IndexerName("ItemAt")]
+    public TItem this[Locator key] => Item(key);
+
+    /// <summary>
+    /// Gets the item identified by <paramref name="key"/>, waiting for it to appear and
+    /// throwing when it does not.
+    /// </summary>
+    /// <remarks>
+    /// Waits, for the same reason <c>FindElement</c> waits and <c>TryFindElement</c> does not:
+    /// naming an item is a search, and the thing being searched for often arrives a frame
+    /// after whatever revealed it - <c>Menu.Open()["New"]</c> asks for an item the click has
+    /// only just started rendering. Use <see cref="TryItem(string)"/> to ask about right now.
+    /// </remarks>
+    public TItem Item(string key, int? timeoutMs = null)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+
+        return WaitForItem(() => TryItem(key), timeoutMs)
+            ?? throw new ElementNotFoundException(
+                $"No item with the automation id or caption '{key}' in collection. " +
+                $"Locator: {Locator}, materialized items: {GetItemCount()}.");
+    }
+
+    /// <summary>
+    /// Gets the item matching <paramref name="key"/>, waiting for it to appear and throwing
+    /// when it does not.
+    /// </summary>
+    /// <inheritdoc cref="Item(string, int?)" path="/remarks"/>
+    public TItem Item(Locator key, int? timeoutMs = null)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+
+        return WaitForItem(() => TryItem(key), timeoutMs)
+            ?? throw new ElementNotFoundException(
+                $"No item matched {key} in collection. " +
+                $"Locator: {Locator}, materialized items: {GetItemCount()}.");
+    }
+
+    /// <summary>
+    /// Polls a keyed lookup until it finds something or the timeout runs out.
+    /// </summary>
+    private TItem? WaitForItem(Func<TItem?> lookup, int? timeoutMs)
+    {
+        TItem? match = null;
+        Poll(() => (match = lookup()) != null, timeoutMs ?? DefaultTimeoutMs);
+
+        return match;
+    }
+
+    /// <summary>
+    /// Gets the item identified by <paramref name="key"/>, or null when none matches.
+    /// </summary>
+    /// <remarks>
+    /// Three passes, each across every item before the next begins: the automation id the app
+    /// author chose, then the caption the platform rendered, then the accessibility name.
+    /// The last is not redundant - navigation chrome regularly carries a name and no text at
+    /// all, which is how Android labels a tab.
+    /// </remarks>
+    public TItem? TryItem(string key)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+
+        var itemRoots = TryGetItemRoots();
+
+        return MatchItem(itemRoots, Locator.ByAutomationId(key))
+            ?? MatchItem(itemRoots, Locator.ByText(key))
+            ?? MatchItem(itemRoots, Locator.ByName(key));
+    }
+
+    /// <summary>
+    /// Gets the item matching <paramref name="key"/>, or null when none matches.
+    /// </summary>
+    /// <remarks>
+    /// Matching walks the materialized items and reads one property from each, so it costs a
+    /// lookup per item. That suits a handful of navigation items; index the collection when
+    /// walking a long list.
+    /// </remarks>
+    public TItem? TryItem(Locator key)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+
+        return MatchItem(TryGetItemRoots(), key);
+    }
+
+    /// <summary>
+    /// Gets the item whose automation id is <paramref name="automationId"/>.
+    /// </summary>
+    /// <remarks>
+    /// This and the three below are named forms of <see cref="Item(Locator)"/>, for when the
+    /// selector is fixed at the call site: <c>Toolbar.ItemByText("Save")</c> reads better than
+    /// <c>Toolbar[Locator.ByText("Save")]</c>. Pass a <see cref="Locator"/> instead when the
+    /// selector is chosen at run time.
+    /// </remarks>
+    public TItem ItemByAutomationId(string automationId) => Item(Locator.ByAutomationId(automationId));
+
+    /// <summary>Gets the item whose automation id matches, or null when none does.</summary>
+    public TItem? TryItemByAutomationId(string automationId) => TryItem(Locator.ByAutomationId(automationId));
+
+    /// <summary>Gets the item whose caption is <paramref name="text"/>.</summary>
+    public TItem ItemByText(string text) => Item(Locator.ByText(text));
+
+    /// <summary>Gets the item whose caption matches, or null when none does.</summary>
+    public TItem? TryItemByText(string text) => TryItem(Locator.ByText(text));
+
+    /// <summary>Gets the item whose name is <paramref name="name"/>.</summary>
+    public TItem ItemByName(string name) => Item(Locator.ByName(name));
+
+    /// <summary>Gets the item whose name matches, or null when none does.</summary>
+    public TItem? TryItemByName(string name) => TryItem(Locator.ByName(name));
+
+    /// <summary>Gets the first item of control type <paramref name="controlType"/>.</summary>
+    public TItem ItemByControlType(string controlType) => Item(Locator.ByControlType(controlType));
+
+    /// <summary>Gets the first item of that control type, or null when there is none.</summary>
+    public TItem? TryItemByControlType(string controlType) => TryItem(Locator.ByControlType(controlType));
+
+    /// <summary>
+    /// The first item whose root matches, built at the index it was found at.
+    /// </summary>
+    private TItem? MatchItem(IReadOnlyList<IMauiElement> itemRoots, Locator key)
+    {
+        for (var index = 0; index < itemRoots.Count; index++)
+        {
+            if (MatchesKey(itemRoots[index], key))
+            {
+                return _itemFactory(Self, itemRoots[index], index);
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Whether an item root answers to <paramref name="key"/>.
+    /// </summary>
+    /// <remarks>
+    /// Override for a collection whose items are identified by something the element itself
+    /// does not carry - a child label's text, say.
+    /// </remarks>
+    /// <param name="itemRoot">The element the item strategy found.</param>
+    /// <param name="key">What is being looked for.</param>
+    protected virtual bool MatchesKey(IMauiElement itemRoot, Locator key)
+        => ElementMatch.Matches(itemRoot, key);
+
+    /// <summary>
+    /// Every materialized item root, or an empty list when the collection is absent.
+    /// </summary>
+    /// <remarks>
+    /// Protected because a collection sometimes has to ask about the elements rather than the
+    /// items - "is any of these visible", say - and building item objects to answer that would
+    /// be paying for scoping nobody uses.
+    /// </remarks>
+    protected IReadOnlyList<IMauiElement> TryGetItemRoots()
+    {
+        var root = TryGetContainerRoot();
+        if (root == null) return [];
+
+        try
+        {
+            return _itemStrategy.FindItemElements(root);
+        }
+        catch (StaleElementReferenceException)
+        {
+            InvalidateCache();
+
+            root = TryGetContainerRoot();
+            return root == null ? [] : _itemStrategy.FindItemElements(root);
         }
     }
 
@@ -580,14 +776,7 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
 
         try
         {
-            if (element is ISelectionItemPatternElement { SupportsSelectionItemPattern: true } selectionItem
-                && selectionItem.SelectItemPattern())
-            {
-                return true;
-            }
-
-            if (element is IInvokePatternElement { SupportsInvokePattern: true } invoke
-                && invoke.InvokePattern())
+            if (ActivationHelper.TryActivateByPattern(element))
             {
                 return true;
             }

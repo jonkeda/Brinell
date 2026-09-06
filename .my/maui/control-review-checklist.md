@@ -374,7 +374,8 @@ appears in every control below.
 `base: ViewBase`
 
 - [ ] `GetTitle` / `WaitTitle` / `AssertTitle`
-- [ ] `ClickToolbarItem` — scoped to its own toolbar
+- [x] `Toolbar["Save"].Click()` — scoped to its own toolbar (`ClickToolbarItem` is gone; see
+      `.my/navigation/redesign-navigation-as-collections.md`)
 - [ ] ✋ `GoBack`
 
 ---

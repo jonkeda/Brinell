@@ -217,6 +217,10 @@ public class ControlObjectAnalyzer
     /// <item><c>[FluentReturn("T")]</c> on the class, when present.</item>
     /// <item><c>TSelf</c>, when the class declares it — containers and collections
     /// return themselves so a chain stays inside the scope.</item>
+    /// <item>The class itself, when it passes itself to its base as a type argument:
+    /// <c>Toolbar&lt;TParent&gt; : CollectionObjectBase&lt;TParent, Toolbar&lt;TParent&gt;,
+    /// ToolbarItem&lt;TParent&gt;&gt;</c> is the same self-reference as <c>TSelf</c>, closed
+    /// by a concrete class instead of passed on.</item>
     /// <item>The single type parameter — the control case, which returns its
     /// containing scope.</item>
     /// <item>Empty, when the class has no type parameters; actions then return void.</item>
@@ -246,6 +250,10 @@ public class ControlObjectAnalyzer
         if (declared.Contains("TSelf"))
             return "TSelf";
 
+        var closedSelf = ResolveClosedSelfType(classDecl);
+        if (closedSelf != null)
+            return closedSelf;
+
         if (declared.Count == 1)
             return declared[0];
 
@@ -257,6 +265,38 @@ public class ControlObjectAnalyzer
             $"{declared.Count} type parameters ({string.Join(", ", declared)}) and none is named 'TSelf'. " +
             $"Add [FluentReturn(\"<name>\")] to the class to say which one public members return.");
     }
+
+    /// <summary>
+    /// The class's own type, when the class supplies itself as a type argument to its base.
+    /// </summary>
+    /// <remarks>
+    /// The self-referencing bases take the concrete type as <c>TSelf</c> so their members can
+    /// return it. An abstract base passes its own <c>TSelf</c> along and is caught by the rule
+    /// above; a concrete class closes the reference with its own name, and its members return
+    /// that same type. Comparison is on syntax alone, ignoring whitespace, because the analyzer
+    /// has no semantic model.
+    /// </remarks>
+    /// <returns>The self type (for example <c>Toolbar&lt;TParent&gt;</c>), or null.</returns>
+    private static string? ResolveClosedSelfType(ClassDeclarationSyntax classDecl)
+    {
+        if (classDecl.TypeParameterList == null || classDecl.BaseList == null)
+            return null;
+
+        var selfType = classDecl.Identifier.Text + "<" +
+            string.Join(", ", classDecl.TypeParameterList.Parameters.Select(p => p.Identifier.Text)) + ">";
+        var normalizedSelf = WithoutWhitespace(selfType);
+
+        var arguments = classDecl.BaseList.Types
+            .SelectMany(baseType => baseType.Type.DescendantNodesAndSelf().OfType<GenericNameSyntax>())
+            .SelectMany(generic => generic.TypeArgumentList.Arguments);
+
+        return arguments.Any(argument => WithoutWhitespace(argument.ToString()) == normalizedSelf)
+            ? selfType
+            : null;
+    }
+
+    private static string WithoutWhitespace(string value)
+        => new(value.Where(c => !char.IsWhiteSpace(c)).ToArray());
 
     /// <summary>
     /// Reads the single string argument of a <c>[FluentReturn(...)]</c> attribute, if present.

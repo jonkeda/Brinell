@@ -37,7 +37,7 @@ namespace Brinell.Maui.Controls.Collection;
 public abstract partial class ListView<TParent, TSelf, TItem> : CollectionObjectBase<TParent, TSelf, TItem>
     where TParent : IMauiScope<TParent>
     where TSelf : ListView<TParent, TSelf, TItem>
-    where TItem : ItemContainerBase<TSelf, TItem>
+    where TItem : class, IMauiItemContainer<TSelf, TItem>
 {
 
 }

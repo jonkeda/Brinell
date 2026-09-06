@@ -57,44 +57,14 @@ public abstract partial class ClickableControlBase<TScope> : FocusableControlBas
     /// Activates the element through an automation pattern, when the platform exposes one.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// Windows UIA reaches a control's command more reliably than a synthetic pointer click,
-    /// which can be swallowed by an overlay or land on the wrong visual child. On platforms
-    /// without these patterns — Appium on Android and iOS — every probe reports unsupported
-    /// and the caller falls through to <see cref="IElement{TSelf}.Click"/>, which is the
-    /// correct mobile behaviour.
-    /// </para>
-    /// <para>
-    /// Deliberately does not catch exceptions: a pattern that is present but fails is a real
-    /// fault, and swallowing it turns a broken click into an unrelated assertion failure later.
-    /// </para>
-    /// <para>
-    /// LegacyIAccessible is deliberately <em>not</em> in this ladder. A WinUI toggle advertises
-    /// it and its <c>DoDefaultAction</c> reports success without changing the control's state,
-    /// so including it makes <c>Click</c> silently do nothing on a Switch. Controls that
-    /// genuinely need that rung add it by overriding this method.
-    /// </para>
+    /// The ladder itself lives in <see cref="Containers.ActivationHelper"/>, shared with the
+    /// collection and item bases. Controls that need a different rung - a toggle, say -
+    /// override this method rather than changing the shared ladder.
     /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <returns>True when a pattern was available and reported success.</returns>
     protected virtual bool TryActivateByPattern(IMauiElement element)
-    {
-        ArgumentNullException.ThrowIfNull(element);
-
-        if (element is ISelectionItemPatternElement { SupportsSelectionItemPattern: true } selectionItem
-            && selectionItem.SelectItemPattern())
-        {
-            return true;
-        }
-
-        if (element is IInvokePatternElement { SupportsInvokePattern: true } invoke
-            && invoke.InvokePattern())
-        {
-            return true;
-        }
-
-        return false;
-    }
+        => Containers.ActivationHelper.TryActivateByPattern(element);
 
     /// <summary>
     /// Performs double-click on pre-found element. No logging - caller handles logging.

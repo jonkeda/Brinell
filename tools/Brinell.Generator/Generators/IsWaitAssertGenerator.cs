@@ -183,6 +183,17 @@ public class IsWaitAssertGenerator : IMemberGenerator
         return comparisons;
     }
 
+    /// <inheritdoc />
+    public IReadOnlyList<string> EmittedMemberNames(MethodInfo coreMethod)
+    {
+        var propertyName = coreMethod.PublicMethodName;
+        var queryPrefix = coreMethod.MethodName.StartsWith(_getterPrefix) ? _getterPrefix : _methodPrefix;
+
+        // The comparison variants (Wait{P}Contains, Assert{P}Empty, ...) all carry the same
+        // stem, so anything that would clash with one already clashes with these three.
+        return [queryPrefix + propertyName, "Wait" + propertyName, "Assert" + propertyName];
+    }
+
     /// <summary>
     /// Generates the query/Wait/Assert trio from a single Is*Core or Get*Core method.
     /// </summary>

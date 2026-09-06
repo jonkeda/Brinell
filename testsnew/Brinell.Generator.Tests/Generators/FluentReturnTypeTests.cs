@@ -78,6 +78,37 @@ public class FluentReturnTypeTests
     }
 
     [Fact]
+    public void ClosedSelfReference_ResolvesToTheClassItself()
+    {
+        // A concrete collection closes the self-reference its base passes on, so its
+        // members return the collection, not the parent scope.
+        var code = "public class Toolbar<TParent> : CollectionObjectBase<TParent, Toolbar<TParent>, ToolbarItem<TParent>> { }";
+        var (classDecl, _) = _analyzer.FindTarget(code);
+
+        Assert.Equal("Toolbar<TParent>", _analyzer.ResolveFluentReturnType(classDecl!));
+    }
+
+    [Fact]
+    public void ClosedSelfReference_IsFoundThroughAQualifiedBaseName()
+    {
+        var code = "public class ToolbarItem<TParent> : Base.ClickableItemBase<Toolbar<TParent>, ToolbarItem<TParent>> { }";
+        var (classDecl, _) = _analyzer.FindTarget(code);
+
+        Assert.Equal("ToolbarItem<TParent>", _analyzer.ResolveFluentReturnType(classDecl!));
+    }
+
+    [Fact]
+    public void ControlBase_IsNotMistakenForASelfReference()
+    {
+        // A control passes its scope to its base, not itself: the single-parameter rule
+        // must still win.
+        var code = "public class Button<TScope> : ClickableControlBase<TScope> { }";
+        var (classDecl, _) = _analyzer.FindTarget(code);
+
+        Assert.Equal("TScope", _analyzer.ResolveFluentReturnType(classDecl!));
+    }
+
+    [Fact]
     public void FluentReturnAttribute_OverridesInference()
     {
         var code = @"

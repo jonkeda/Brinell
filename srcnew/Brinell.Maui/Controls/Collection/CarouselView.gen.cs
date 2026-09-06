@@ -37,7 +37,7 @@ namespace Brinell.Maui.Controls.Collection;
 public abstract partial class CarouselView<TParent, TSelf, TItem> : CollectionObjectBase<TParent, TSelf, TItem>
     where TParent : IMauiScope<TParent>
     where TSelf : CarouselView<TParent, TSelf, TItem>
-    where TItem : ItemContainerBase<TSelf, TItem>
+    where TItem : class, IMauiItemContainer<TSelf, TItem>
 {
     #region Position (GetPosition / WaitPosition / AssertPosition)
 

@@ -50,10 +50,10 @@
 
             <!-- ============ Toolbar ============
 
-                 A Brinell Toolbar<TScope> binds to any container holding items, and
-                 ClickToolbarItem searches WITHIN that container. Modelled here as an
-                 explicit bar so the scoping is observable: the same item ids appear in
-                 the second bar below, and clicking through one must not reach the other.
+                 A Brinell Toolbar<TParent> is a collection of the items inside it, found
+                 WITHIN that container. Modelled here as an explicit bar so the scoping is
+                 observable: the same items appear in the second bar below, and clicking
+                 through one must not reach the other.
             -->
             <Label Text="Toolbar" FontAttributes="Bold" />
 
@@ -74,7 +74,7 @@
                 </HorizontalStackLayout>
             </controls:AutomationContainer>
 
-            <!-- Same child ids, different toolbar: proves ClickToolbarItem is scoped. -->
+            <!-- Same items, different toolbar: proves item lookup is scoped. -->
             <controls:AutomationContainer AutomationId="SecondaryToolbar">
                 <HorizontalStackLayout Spacing="8">
                     <Button AutomationId="ToolbarSaveButton"
@@ -122,11 +122,11 @@
 
             <!-- ============ TabMenu ============
 
-                 TabMenu<TScope> is a Brinell composite, not a stock MAUI control. It
-                 locates "TabMenuView" and matches on sibling TabMenuView_Caption text,
-                 clicking the paired TabMenuView_Button. The ids below are its contract -
-                 see Controls/Navigation/TabMenu.tpl.cs. Captions repeat their id across
-                 tabs by design; the control pairs them positionally.
+                 TabMenu<TParent> is a Brinell composite, not a stock MAUI control. It
+                 locates "TabMenuView" and treats each TabMenuView_Grid as one tab, reading
+                 its caption from the label inside it and clicking the button inside it. The
+                 ids below are its contract - see Controls/Navigation/TabMenuMarkup.cs. The
+                 ids repeat across tabs by design: each tab is scoped to its own surface.
             -->
             <Label Text="TabMenu" FontAttributes="Bold" />
 

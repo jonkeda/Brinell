@@ -66,6 +66,10 @@ internal static class LocatorExtensions
         {
             (MauiPlatform.Android, "entry") => "android.widget.EditText",
             (MauiPlatform.iOS, "entry") => "XCUIElementTypeTextField",
+            // A MAUI Button renders as a MaterialButton, but Android reports the accessibility
+            // class of its Button ancestor, which is what a class-name match sees.
+            (MauiPlatform.Android, "button") => "android.widget.Button",
+            (MauiPlatform.iOS, "button") => "XCUIElementTypeButton",
             _ => throw new ArgumentOutOfRangeException(
                 nameof(controlType), controlType,
                 $"Control type '{controlType}' is not supported on {platform}.")

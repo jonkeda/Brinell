@@ -76,6 +76,38 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
     }
 
     /// <inheritdoc />
+    public string? AutomationId
+    {
+        get
+        {
+            try
+            {
+                return _element.Properties.AutomationId.ValueOrDefault;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+    }
+
+    /// <inheritdoc />
+    public string? Name
+    {
+        get
+        {
+            try
+            {
+                return _element.Properties.Name.ValueOrDefault;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+    }
+
+    /// <inheritdoc />
     public string? Text
     {
         get

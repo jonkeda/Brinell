@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Brinell.Samples.Maui.ShellApp.Pages.DetailPage"
+             Title="Detail">
+    <VerticalStackLayout AutomationId="ShellDetailPage" Padding="20" Spacing="10">
+        <Label AutomationId="ShellDetailLabel" Text="Detail" />
+
+        <!-- Pushes a route onto this tab's stack: the case RCA-001 found. -->
+        <Button AutomationId="ShellDetailPushButton"
+                Text="Open sub-page"
+                Clicked="OnPushSubPage" />
+    </VerticalStackLayout>
+</ContentPage>

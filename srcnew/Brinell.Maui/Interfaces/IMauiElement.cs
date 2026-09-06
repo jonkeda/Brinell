@@ -12,6 +12,33 @@ namespace Brinell.Maui.Interfaces;
 /// </summary>
 public interface IMauiElement : IElement<IMauiElement>
 {
+    #region Identity
+
+    /// <summary>
+    /// The element's automation id - the identifier the app author set, in the app author's
+    /// terms.
+    /// </summary>
+    /// <remarks>
+    /// Each platform publishes a MAUI <c>AutomationId</c> differently: Windows as the UIA
+    /// AutomationId, Android as the view's resource id, iOS as the accessibility identifier.
+    /// This property is where that difference is answered, so code that compares ids does not
+    /// have to know which platform it is on. Null when the element carries no id.
+    /// </remarks>
+    string? AutomationId { get; }
+
+    /// <summary>
+    /// The element's accessible name - what a screen reader would announce.
+    /// </summary>
+    /// <remarks>
+    /// The other way an element is named, and the only one platform-drawn chrome usually
+    /// carries: an Android tab has no text and no id, and answers only to this. Windows reports
+    /// the UIA Name, Android the content description (falling back to its text), iOS the
+    /// accessibility label. Null when the element has none.
+    /// </remarks>
+    string? Name { get; }
+
+    #endregion
+
     #region DOM Access (Hybrid Apps)
     
     /// <summary>

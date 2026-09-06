@@ -33,7 +33,7 @@ public abstract partial class CollectionView<TParent, TSelf, TItem>
     : CollectionObjectBase<TParent, TSelf, TItem>
     where TParent : IMauiScope<TParent>
     where TSelf : CollectionView<TParent, TSelf, TItem>
-    where TItem : ItemContainerBase<TSelf, TItem>
+    where TItem : class, IMauiItemContainer<TSelf, TItem>
 {
     /// <summary>
     /// Creates a CollectionView bound to an explicit locator.

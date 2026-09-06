@@ -36,6 +36,27 @@ public static class ItemStrategy
         => new LocatorItemStrategy(Locator.ByAutomationId(automationId));
 
     /// <summary>
+    /// Narrows another strategy to a host element inside the collection root.
+    /// </summary>
+    /// <remarks>
+    /// A collection's root is often not the element holding the rows - a menu's root holds a
+    /// trigger as well as its items, and an automation wrapper holds the real list. Composing
+    /// says where to look without teaching every strategy about hosts:
+    /// <c>ItemStrategy.Within(Locator.ByAutomationId("ActionsMenuItems"), inner)</c>. A host
+    /// that is not there yields no items, which is the right answer for a menu that is closed.
+    /// </remarks>
+    /// <param name="hostLocator">The element inside the root that holds the items.</param>
+    /// <param name="inner">How to find items once the host is found.</param>
+    public static IItemStrategy Within(Locator hostLocator, IItemStrategy inner)
+        => new WithinItemStrategy(hostLocator, inner);
+
+    /// <summary>
+    /// Finds rows by a locator, inside a host element within the collection root.
+    /// </summary>
+    public static IItemStrategy Within(Locator hostLocator, Locator itemLocator)
+        => new WithinItemStrategy(hostLocator, ByLocator(itemLocator));
+
+    /// <summary>
     /// Finds rows by a per-index automation id (<c>Task_0</c>, <c>Task_1</c>, ...),
     /// searched within the collection root.
     /// </summary>
@@ -128,5 +149,47 @@ internal sealed class IndexedIdItemStrategy : IItemStrategy
         {
             return null;
         }
+    }
+}
+
+/// <summary>
+/// Applies another strategy inside a host element found within the collection root.
+/// </summary>
+internal sealed class WithinItemStrategy : IItemStrategy
+{
+    private readonly Locator _hostLocator;
+    private readonly IItemStrategy _inner;
+
+    public WithinItemStrategy(Locator hostLocator, IItemStrategy inner)
+    {
+        _hostLocator = hostLocator ?? throw new ArgumentNullException(nameof(hostLocator));
+        _inner = inner ?? throw new ArgumentNullException(nameof(inner));
+    }
+
+    /// <inheritdoc />
+    public IReadOnlyList<IMauiElement> FindItemElements(IMauiElement collectionRoot)
+    {
+        var host = TryFindHost(collectionRoot);
+        return host == null ? [] : _inner.FindItemElements(host);
+    }
+
+    /// <inheritdoc />
+    public IMauiElement? FindItemElement(IMauiElement collectionRoot, int index)
+    {
+        if (index < 0) return null;
+
+        var host = TryFindHost(collectionRoot);
+        return host == null ? null : _inner.FindItemElement(host, index);
+    }
+
+    /// <summary>
+    /// The host, or null when it is not there - a hidden host leaves the tree on Android and
+    /// is collapsed out of it on Windows, and either way the collection is empty.
+    /// </summary>
+    private IMauiElement? TryFindHost(IMauiElement collectionRoot)
+    {
+        ArgumentNullException.ThrowIfNull(collectionRoot);
+
+        return collectionRoot.TryFindElement(_hostLocator, out var host, 0) ? host : null;
     }
 }

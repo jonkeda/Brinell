@@ -113,7 +113,11 @@ public class ActionGenerator : IMemberGenerator
     /// Generates the public action wrapper using <c>RunDoWithElement</c>. The emitted
     /// body calls the Core method directly and adds no guard of its own.
     /// </summary>
-    public string Generate(MethodInfo coreMethod, ControlObjectContext context)
+    /// <inheritdoc />
+    public IReadOnlyList<string> EmittedMemberNames(MethodInfo coreMethod)
+        => [coreMethod.PublicMethodName];
+
+        public string Generate(MethodInfo coreMethod, ControlObjectContext context)
     {
         var writer = new CsWriter(0); // Start with no indentation - let the file-level writer handle it
         var publicMethodName = coreMethod.PublicMethodName;

@@ -188,6 +188,45 @@ public abstract class S<TScope> where TScope : IScope<TScope>
         Assert.Contains("GetValueCore", ex.Message);
     }
 
+    /// <summary>
+    /// An action and a state query about the same thing do not collide: the emitted names
+    /// are what can clash, not the stem they share.
+    /// </summary>
+    [Fact]
+    public void Generate_ActionAndStateWithTheSameStem_DoesNotThrow()
+    {
+        var code = @"namespace T;
+public abstract class S<TScope> where TScope : IScope<TScope>
+{
+    protected virtual void OpenCore(IMauiElement element, int? timeoutMs = null) { }
+    protected virtual bool? IsOpenCore(IMauiElement? element) => null;
+}";
+        var generated = GenerateAll(code);
+
+        Assert.Contains("Open(int? timeoutMs = null)", generated);
+        Assert.Contains("IsOpen()", generated);
+        Assert.Contains("WaitOpen(", generated);
+        Assert.Contains("AssertOpen(", generated);
+    }
+
+    /// <summary>
+    /// A getter and a state query <em>do</em> collide: both emit Wait and Assert on the stem.
+    /// </summary>
+    [Fact]
+    public void Generate_GetterAndStateWithTheSameStem_Throws()
+    {
+        var code = @"namespace T;
+public abstract class S<TScope> where TScope : IScope<TScope>
+{
+    protected virtual string? GetOpenCore(IMauiElement element) => null;
+    protected virtual bool? IsOpenCore(IMauiElement? element) => null;
+}";
+
+        var ex = Assert.Throws<InvalidOperationException>(() => GenerateAll(code));
+
+        Assert.Contains("WaitOpen", ex.Message);
+    }
+
     [Fact]
     public void Generate_DistinctNames_DoesNotThrow()
     {

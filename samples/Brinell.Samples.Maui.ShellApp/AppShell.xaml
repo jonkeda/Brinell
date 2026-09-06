@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+       xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+       xmlns:pages="clr-namespace:Brinell.Samples.Maui.ShellApp.Pages"
+       x:Class="Brinell.Samples.Maui.ShellApp.AppShell"
+       Title="Brinell Shell Sample"
+       FlyoutBehavior="Flyout">
+
+    <!--
+        Four tabs, held by one FlyoutItem rather than by a TabBar.
+
+        MAUI disables the flyout while a TabBar is the active item, so an app cannot show a
+        TabBar and a flyout at once. Since this sample exists to test both, the tabs live
+        inside the "Main" flyout item, and the remaining flyout items sit beside it.
+    -->
+    <FlyoutItem Title="Main" Route="main" AutomationId="ShellMainItem">
+        <Tab Title="Home" Route="home" AutomationId="ShellHomeTab">
+            <ShellContent ContentTemplate="{DataTemplate pages:HomePage}" />
+        </Tab>
+        <Tab Title="Controls" Route="controls" AutomationId="ShellControlsTab">
+            <ShellContent ContentTemplate="{DataTemplate pages:ControlsPage}" />
+        </Tab>
+        <Tab Title="Detail" Route="detail" AutomationId="ShellDetailTab">
+            <ShellContent ContentTemplate="{DataTemplate pages:DetailPage}" />
+        </Tab>
+        <Tab Title="Status" Route="status" AutomationId="ShellStatusTab">
+            <ShellContent ContentTemplate="{DataTemplate pages:StatusPage}" />
+        </Tab>
+    </FlyoutItem>
+
+    <!--
+        Six flyout items, declared inline: each is one label naming itself, so a test can
+        assert which item it landed on without six near-identical page files.
+    -->
+    <FlyoutItem Title="Settings" Route="settings" AutomationId="ShellSettingsItem">
+        <ShellContent>
+            <ContentPage Title="Settings">
+                <VerticalStackLayout AutomationId="ShellFlyoutPage" Padding="20" Spacing="10">
+                    <Label AutomationId="ShellFlyoutPageTitle" Text="Settings" />
+                </VerticalStackLayout>
+            </ContentPage>
+        </ShellContent>
+    </FlyoutItem>
+
+    <FlyoutItem Title="Profile" Route="profile" AutomationId="ShellProfileItem">
+        <ShellContent>
+            <ContentPage Title="Profile">
+                <VerticalStackLayout AutomationId="ShellFlyoutPage" Padding="20" Spacing="10">
+                    <Label AutomationId="ShellFlyoutPageTitle" Text="Profile" />
+                </VerticalStackLayout>
+            </ContentPage>
+        </ShellContent>
+    </FlyoutItem>
+
+    <FlyoutItem Title="Reports" Route="reports" AutomationId="ShellReportsItem">
+        <ShellContent>
+            <ContentPage Title="Reports">
+                <VerticalStackLayout AutomationId="ShellFlyoutPage" Padding="20" Spacing="10">
+                    <Label AutomationId="ShellFlyoutPageTitle" Text="Reports" />
+                </VerticalStackLayout>
+            </ContentPage>
+        </ShellContent>
+    </FlyoutItem>
+
+    <FlyoutItem Title="History" Route="history" AutomationId="ShellHistoryItem">
+        <ShellContent>
+            <ContentPage Title="History">
+                <VerticalStackLayout AutomationId="ShellFlyoutPage" Padding="20" Spacing="10">
+                    <Label AutomationId="ShellFlyoutPageTitle" Text="History" />
+                </VerticalStackLayout>
+            </ContentPage>
+        </ShellContent>
+    </FlyoutItem>
+
+    <FlyoutItem Title="Downloads" Route="downloads" AutomationId="ShellDownloadsItem">
+        <ShellContent>
+            <ContentPage Title="Downloads">
+                <VerticalStackLayout AutomationId="ShellFlyoutPage" Padding="20" Spacing="10">
+                    <Label AutomationId="ShellFlyoutPageTitle" Text="Downloads" />
+                </VerticalStackLayout>
+            </ContentPage>
+        </ShellContent>
+    </FlyoutItem>
+
+    <FlyoutItem Title="About" Route="about" AutomationId="ShellAboutItem">
+        <ShellContent>
+            <ContentPage Title="About">
+                <VerticalStackLayout AutomationId="ShellFlyoutPage" Padding="20" Spacing="10">
+                    <Label AutomationId="ShellFlyoutPageTitle" Text="About" />
+                </VerticalStackLayout>
+            </ContentPage>
+        </ShellContent>
+    </FlyoutItem>
+
+</Shell>

@@ -6,10 +6,9 @@ namespace Brinell.Maui.UITests.Pages;
 /// Page object for the navigation controls demo page.
 /// </summary>
 /// <remarks>
-/// The two toolbars carry the <b>same</b> child automation ids. That is deliberate:
-/// <c>Toolbar.ClickToolbarItem</c> searches within the toolbar element, so a scoped click
-/// must reach the right bar. Unique ids would make those tests pass without testing
-/// anything.
+/// The two toolbars carry the <b>same</b> items. That is deliberate: a toolbar finds its
+/// items within its own element, so a scoped click must reach the right bar. Distinct items
+/// would make those tests pass without testing anything.
 /// </remarks>
 public class NavigationDemoPage : PageObjectBase<NavigationDemoPage>
 {
@@ -18,7 +17,9 @@ public class NavigationDemoPage : PageObjectBase<NavigationDemoPage>
     {
         PrimaryToolbar = new Toolbar<NavigationDemoPage>(this, "PrimaryToolbar");
         SecondaryToolbar = new Toolbar<NavigationDemoPage>(this, "SecondaryToolbar");
-        ActionsMenu = new Menu<NavigationDemoPage>(this, "ActionsMenuTrigger");
+        ActionsMenu = new Menu<NavigationDemoPage>(this, "ActionsMenu",
+            triggerLocator: Locator.ByAutomationId("ActionsMenuTrigger"),
+            itemsHostLocator: Locator.ByAutomationId("ActionsMenuItems"));
         Tabs = new TabMenu<NavigationDemoPage>(this);
     }
 
@@ -52,23 +53,16 @@ public class NavigationDemoPage : PageObjectBase<NavigationDemoPage>
     /// <summary>The primary toolbar.</summary>
     public Toolbar<NavigationDemoPage> PrimaryToolbar { get; }
 
-    /// <summary>A second toolbar sharing the primary's child ids.</summary>
+    /// <summary>A second toolbar holding the same items as the primary.</summary>
     public Toolbar<NavigationDemoPage> SecondaryToolbar { get; }
 
     /// <summary>
-    /// The actions menu, bound to its trigger.
+    /// The actions menu: the whole menu, with its trigger and its item host inside it.
     /// </summary>
-    /// <remarks>
-    /// <c>Menu.Open()</c> clicks the control's own element, so the control is bound to the
-    /// trigger button rather than to the surrounding container.
-    /// </remarks>
     public Menu<NavigationDemoPage> ActionsMenu { get; }
 
     /// <summary>The bottom tab menu.</summary>
     public TabMenu<NavigationDemoPage> Tabs { get; }
-
-    /// <summary>The menu's item list, visible only while the menu is open.</summary>
-    public Label<NavigationDemoPage> MenuItemsHost => new(this, "ActionsMenuItems");
 
     #endregion
 
@@ -97,9 +91,9 @@ public class NavigationDemoPage : PageObjectBase<NavigationDemoPage>
     /// Resolves an element by its visible name, or null.
     /// </summary>
     /// <remarks>
-    /// MAUI chrome frequently exposes a Name but not an AutomationId — this is how
-    /// <see cref="FlyoutItem{TScope}"/> locates itself. Separating the two lets the probe
-    /// distinguish "absent" from "present but not addressable by id".
+    /// MAUI chrome frequently exposes a Name but not an AutomationId — Shell's tabs and
+    /// flyout items are found that way. Separating the two lets the probe distinguish
+    /// "absent" from "present but not addressable by id".
     /// </remarks>
     public IMauiElement? TryFindByName(string name)
     {

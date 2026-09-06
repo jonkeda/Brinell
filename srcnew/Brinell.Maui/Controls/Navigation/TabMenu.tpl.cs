@@ -1,121 +1,69 @@
-using Brinell.Maui.Configuration;
+using Brinell.Maui.Containers;
 
 namespace Brinell.Maui.Controls.Navigation;
 
 /// <summary>
-/// Shared MAUI bottom tab menu control.
-/// Uses invokable tab button surfaces when available and avoids pointer-only fallbacks.
+/// MAUI tab bar: a collection of <see cref="TabItem{TParent}"/>.
 /// </summary>
-/// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public partial class TabMenu<TScope> : Base.ViewBase<TScope>
-    where TScope : IMauiScope<TScope>
+/// <remarks>
+/// <para>
+/// A Brinell composite rather than a stock MAUI control - see <see cref="TabMenuMarkup"/> for
+/// the ids it expects. Each tab is one item, rooted at the surface that holds that tab's
+/// button and caption:
+/// </para>
+/// <code>
+/// Tabs["Search"].Click();
+/// Tabs.AssertItemCount(3);
+/// Tabs["Search"].AssertSelected();
+/// </code>
+/// <para>
+/// This replaces a hand-written search that fetched three parallel lists - captions, buttons
+/// and tab surfaces - and paired them by position, which no other collection could reuse and
+/// which broke silently if one list came back shorter than the others.
+/// </para>
+/// </remarks>
+/// <typeparam name="TParent">The containing scope type.</typeparam>
+public partial class TabMenu<TParent>
+    : CollectionObjectBase<TParent, TabMenu<TParent>, TabItem<TParent>>
+    where TParent : IMauiScope<TParent>
 {
-    private const string ButtonId = "TabMenuView_Button";
-    private const string CaptionId = "TabMenuView_Caption";
-    private const string GridId = "TabMenuView_Grid";
-
     /// <summary>
-    /// Creates a tab menu control within the specified scope.
+    /// How a tab bar finds its tabs when the caller does not say.
     /// </summary>
-    public TabMenu(IMauiScope<TScope> scope)
-        : base(scope, Locator.ByAutomationId("TabMenuView"))
-    {
-    }
-
-    #region Hand-written Convenience Members
+    public static IItemStrategy DefaultItemStrategy { get; } =
+        ItemStrategy.ByAutomationId(TabMenuMarkup.TabId);
 
     /// <summary>
-    /// Selects a tab by caption.
+    /// Creates a tab menu within the specified scope.
     /// </summary>
-    public TScope Select(string caption, int? timeoutMs = null)
+    /// <param name="scope">The parent scope.</param>
+    /// <param name="itemStrategy">How tabs are found. Defaults to <see cref="DefaultItemStrategy"/>.</param>
+    public TabMenu(IMauiScope<TParent> scope, IItemStrategy? itemStrategy = null)
+        : base(scope,
+               Locator.ByAutomationId(TabMenuMarkup.RootId),
+               itemStrategy ?? DefaultItemStrategy,
+               NewItem)
     {
-        if (!TrySelect(caption, timeoutMs))
-        {
-            throw new ElementNotFoundException($"Could not select tab menu item '{caption}'.");
-        }
-
-        return ContainingScope;
     }
+
+    private static TabItem<TParent> NewItem(TabMenu<TParent> tabMenu, IMauiElement itemRoot, int index)
+        => new(tabMenu, itemRoot, index);
 
     /// <summary>
-    /// Attempts to select a tab by caption.
-    /// Hand-written: selection searches sibling caption/button elements rather than this control's element.
-    /// </summary>
-    public bool TrySelect(string caption, int? timeoutMs = null)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(caption);
-
-        return RunWait(() => TrySelectNow(caption), timeoutMs);
-    }
-
-    private bool TrySelectNow(string caption)
-    {
-        var captions = MauiScope.FindElements(Locator.ByAutomationId(CaptionId));
-        var buttons = MauiScope.FindElements(Locator.ByAutomationId(ButtonId));
-        var tabGrids = MauiScope.FindElements(Locator.ByAutomationId(GridId));
-
-        for (var index = 0; index < captions.Count; index++)
-        {
-            var captionText = captions[index].Text;
-            if (!string.Equals(captionText?.Trim(), caption, StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
-
-            if (index < buttons.Count && TryActivateTabSurface(buttons[index]))
-                return true;
-
-            if (index < tabGrids.Count && TryActivateTabSurface(tabGrids[index]))
-                return true;
-
-            return TryActivateTabSurface(captions[index]);
-        }
-
-        if (TryActivateTabSurface(MauiScope.FindVisibleByName(caption)))
-            return true;
-
-        return TryActivateTabSurface(
-            MauiScope.FindElements(Locator.ByText(caption)).FirstVisible());
-    }
-
-    /// <summary>
-    /// Activates one candidate tab surface, reporting failure rather than throwing.
+    /// Matches a tab by its own element, then by its caption and its button.
     /// </summary>
     /// <remarks>
-    /// A tab renders as several stacked elements — a button, a grid, a caption — and which one
-    /// carries the command varies by platform. This walks candidates, so a given one failing
-    /// means "not this surface", not a test error, and the caller moves to the next.
-    /// A pointer-policy violation still surfaces: that is configuration, not a wrong candidate.
+    /// A tab's root is a layout: on Windows it reports an empty string for text, so
+    /// <c>Tabs["Search"]</c> would match nothing without reaching the parts that carry it.
     /// </remarks>
-    private static bool TryActivateTabSurface(IMauiElement? element)
+    protected override bool MatchesKey(IMauiElement itemRoot, Locator key)
     {
-        if (!element.HasUsableBounds())
-        {
-            return false;
-        }
+        if (base.MatchesKey(itemRoot, key)) return true;
 
-        try
-        {
-            if (element is IInvokePatternElement { SupportsInvokePattern: true } invoke
-                && invoke.InvokePattern())
-            {
-                return true;
-            }
+        var caption = TabMenuMarkup.CaptionWithin(itemRoot);
+        if (caption != null && ElementMatch.Matches(caption, key)) return true;
 
-            if (element is ILegacyIAccessiblePatternElement { SupportsLegacyIAccessiblePattern: true } legacy
-                && legacy.DoDefaultActionPattern())
-            {
-                return true;
-            }
-
-            element!.Click();
-            return true;
-        }
-        catch
-        {
-            return false;
-        }
+        var button = TabMenuMarkup.ButtonWithin(itemRoot);
+        return button != null && ElementMatch.Matches(button, key);
     }
-
-    #endregion
 }

@@ -112,7 +112,11 @@ public class SetGenerator : IMemberGenerator
     /// Generates the public setter wrapping <c>RunSetWithElement</c>. The first value
     /// parameter drives the nullable skip; a declared <c>timeoutMs</c> is forwarded.
     /// </summary>
-    public string Generate(MethodInfo coreMethod, ControlObjectContext context)
+    /// <inheritdoc />
+    public IReadOnlyList<string> EmittedMemberNames(MethodInfo coreMethod)
+        => [coreMethod.PublicMethodName];
+
+        public string Generate(MethodInfo coreMethod, ControlObjectContext context)
     {
         var writer = new CsWriter(0);
         var publicMethodName = coreMethod.PublicMethodName;

@@ -503,6 +503,138 @@ public class ContainerCollectionTests
 
     #endregion
 
+    #region Item keys
+
+    /// <summary>
+    /// An id match anywhere in the collection beats a caption match, rather than the first
+    /// item that matches either way winning.
+    /// </summary>
+    [Fact]
+    [Trait("Pattern", "ItemKey")]
+    public void ItemKey_PrefersAutomationId_AcrossTheWholeCollection()
+    {
+        var page = new TestPage(_context.Object);
+        SetupKeyedCollection("Rows",
+            (Id: "Second", Text: "First", TagName: "Button"),
+            (Id: "First", Text: "Second", TagName: "Button"));
+
+        // Item 0 answers to "First" by caption; item 1 answers by id. The id wins.
+        Assert.Equal(1, page.Rows["First"].Index);
+    }
+
+    [Fact]
+    [Trait("Pattern", "ItemKey")]
+    public void ItemKey_FallsBackToTheCaption_WhenNoIdMatches()
+    {
+        var page = new TestPage(_context.Object);
+        SetupKeyedCollection("Rows",
+            (Id: "ToolbarSaveButton", Text: "Save", TagName: "Button"),
+            (Id: "ToolbarDeleteButton", Text: "Delete", TagName: "Button"));
+
+        Assert.Equal(1, page.Rows["Delete"].Index);
+        Assert.Equal(0, page.Rows["ToolbarSaveButton"].Index);
+    }
+
+    /// <summary>
+    /// Captions are compared leniently because the platform renders them; ids exactly
+    /// because the app author writes them.
+    /// </summary>
+    [Fact]
+    [Trait("Pattern", "ItemKey")]
+    public void ItemKey_ComparesCaptionsLoosely_AndIdsExactly()
+    {
+        var page = new TestPage(_context.Object);
+        SetupKeyedCollection("Rows", (Id: "SaveButton", Text: "  SAVE  ", TagName: "Button"));
+
+        Assert.Equal(0, page.Rows["Save"].Index);
+        Assert.Throws<ElementNotFoundException>(() => page.Rows["savebutton"]);
+    }
+
+    [Fact]
+    [Trait("Pattern", "ItemKey")]
+    public void ItemKey_ByLocator_SelectsTheStrategy()
+    {
+        var page = new TestPage(_context.Object);
+        SetupKeyedCollection("Rows",
+            (Id: "Delete", Text: "Save", TagName: "Button"),
+            (Id: "Save", Text: "Delete", TagName: "Button"));
+
+        Assert.Equal(0, page.Rows[Locator.ByText("Save")].Index);
+        Assert.Equal(1, page.Rows[Locator.ByAutomationId("Save")].Index);
+    }
+
+    /// <summary>
+    /// A control type is matched on the last segment of the platform's own name, so one key
+    /// works on both platforms wherever the two agree on the name.
+    /// </summary>
+    [Fact]
+    [Trait("Pattern", "ItemKey")]
+    public void ItemKey_ByControlType_MatchesThePlatformTypeName()
+    {
+        var page = new TestPage(_context.Object);
+        SetupKeyedCollection("Rows",
+            (Id: "Title", Text: "Heading", TagName: "android.widget.TextView"),
+            (Id: "Save", Text: "Save", TagName: "android.widget.Button"));
+
+        Assert.Equal(1, page.Rows[Locator.ByControlType("Button")].Index);
+    }
+
+    /// <summary>
+    /// The named forms select the same item as the locator they stand for.
+    /// </summary>
+    [Fact]
+    [Trait("Pattern", "ItemKey")]
+    public void ItemKey_NamedSelectors_MatchTheirLocatorForm()
+    {
+        var page = new TestPage(_context.Object);
+        SetupKeyedCollection("Rows",
+            (Id: "Delete", Text: "Save", TagName: "android.widget.TextView"),
+            (Id: "Save", Text: "Delete", TagName: "android.widget.Button"));
+
+        Assert.Equal(1, page.Rows.ItemByAutomationId("Save").Index);
+        Assert.Equal(0, page.Rows.ItemByText("Save").Index);
+        Assert.Equal(1, page.Rows.ItemByControlType("Button").Index);
+
+        Assert.Null(page.Rows.TryItemByAutomationId("Publish"));
+        Assert.Null(page.Rows.TryItemByText("Publish"));
+        Assert.Null(page.Rows.TryItemByControlType("Slider"));
+
+        Assert.Throws<ElementNotFoundException>(() => page.Rows.ItemByText("Publish"));
+    }
+
+    [Fact]
+    [Trait("Pattern", "ItemKey")]
+    public void ItemKey_Missing_Throws()
+    {
+        var page = new TestPage(_context.Object);
+        SetupKeyedCollection("Rows", (Id: "Save", Text: "Save", TagName: "Button"));
+
+        Assert.Null(page.Rows.TryItem("Publish"));
+        Assert.Throws<ElementNotFoundException>(() => page.Rows["Publish"]);
+    }
+
+    /// <summary>
+    /// A keyed item carries the index it was found at, so it can re-resolve itself the same
+    /// way an indexed one does.
+    /// </summary>
+    [Fact]
+    [Trait("Pattern", "ItemKey")]
+    public void ItemKey_ItemIsScopedToItsOwnRow()
+    {
+        var page = new TestPage(_context.Object);
+        var rows = SetupKeyedCollection("Rows",
+            (Id: "First", Text: "First", TagName: "Grid"),
+            (Id: "Second", Text: "Second", TagName: "Grid"));
+        SetupChild(rows[1], "RowName", "Widget");
+
+        var row = page.Rows["Second"];
+
+        Assert.Equal(1, row.Index);
+        Assert.Equal("Widget", row.Name.GetText());
+    }
+
+    #endregion
+
     #region Mock helpers
 
     /// <summary>Creates a page-level element and registers it with the context.</summary>
@@ -544,6 +676,36 @@ public class ContainerCollectionTests
             .Returns(new[] { child.Object });
 
         return child;
+    }
+
+    /// <summary>
+    /// Builds a collection whose row roots carry an id, a caption and a type of their own -
+    /// what item-key matching reads.
+    /// </summary>
+    private List<Mock<IMauiElement>> SetupKeyedCollection(
+        string collectionId, params (string Id, string Text, string TagName)[] rows)
+    {
+        var root = SetupRootElement(collectionId);
+        var rowMocks = new List<Mock<IMauiElement>>();
+
+        foreach (var (id, text, tagName) in rows)
+        {
+            var rowRoot = new Mock<IMauiElement>();
+            rowRoot.Setup(e => e.Visible).Returns(true);
+            rowRoot.Setup(e => e.Enabled).Returns(true);
+            rowRoot.Setup(e => e.AutomationId).Returns(id);
+            rowRoot.Setup(e => e.Text).Returns(text);
+            rowRoot.Setup(e => e.TagName).Returns(tagName);
+            rowRoot.Setup(e => e.Rect).Returns(new System.Drawing.Rectangle(0, 0, 300, 40));
+
+            rowMocks.Add(rowRoot);
+        }
+
+        root.Setup(e => e.FindElements(
+                It.Is<Locator>(l => l.Value == "RowRoot"), It.IsAny<int>()))
+            .Returns(rowMocks.Select(m => m.Object).ToArray());
+
+        return rowMocks;
     }
 
     /// <summary>
