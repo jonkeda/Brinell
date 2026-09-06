@@ -85,9 +85,9 @@ public class ActivityIndicatorTests
         // Act - Stop the indicator
         page.ToggleActivityButton.Click()
             .StatusLabel.AssertTextContains("Stopped")
-            // Reset it back to initial state
+            // Reset it back to initial state, which reports the state it restored
             .ResetButton.Click()
-            .StatusLabel.AssertTextContains("Ready");
+            .StatusLabel.AssertTextContains("Running");
 
         return Task.CompletedTask;
     }

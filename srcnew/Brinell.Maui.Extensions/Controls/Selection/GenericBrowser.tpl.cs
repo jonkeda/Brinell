@@ -6,7 +6,7 @@ namespace Brinell.Maui.Extensions.Controls.Selection;
 /// Shared GenericBrowser selector used by generated picker/drawer flows.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public class GenericBrowser<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope>
+public partial class GenericBrowser<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope>
     where TScope : IMauiScope<TScope>
 {
     private const string BrowserAutomationId = "GenericBrowser";
@@ -26,17 +26,20 @@ public class GenericBrowser<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope
     }
 
     /// <summary>
-    /// Selects an item by identifier, optionally falling back to visible text.
+    /// Selects an item by identifier, throwing when it cannot be selected.
     /// </summary>
-    public TScope SelectItem(string identifier, string? visibleText = null, int? timeoutMs = null)
+    /// <param name="element">The browser element, resolved and ready.</param>
+    /// <param name="identifier">The item identifier.</param>
+    /// <param name="visibleText">Optional visible text to fall back to.</param>
+    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
+    protected virtual void SelectItemCore(
+        IMauiElement element, string identifier, string? visibleText = null, int? timeoutMs = null)
     {
         if (!TrySelectItem(identifier, visibleText, timeoutMs))
         {
             throw new ElementNotFoundException(
                 $"Could not select GenericBrowser item '{identifier}'{(visibleText == null ? string.Empty : $" / '{visibleText}'")}.");
         }
-
-        return ContainingScope;
     }
 
     /// <summary>
@@ -76,18 +79,21 @@ public class GenericBrowser<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope
     }
 
     /// <summary>
-    /// Toggles an item in a multiple-selection GenericBrowser without waiting
-    /// for the drawer to close.
+    /// Toggles an item in a multiple-selection GenericBrowser without waiting for the drawer to
+    /// close, throwing when it cannot be toggled.
     /// </summary>
-    public TScope ToggleItem(string identifier, string? visibleText = null, int? timeoutMs = null)
+    /// <param name="element">The browser element, resolved and ready.</param>
+    /// <param name="identifier">The item identifier.</param>
+    /// <param name="visibleText">Optional visible text to fall back to.</param>
+    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
+    protected virtual void ToggleItemCore(
+        IMauiElement element, string identifier, string? visibleText = null, int? timeoutMs = null)
     {
         if (!TryToggleItem(identifier, visibleText, timeoutMs))
         {
             throw new ElementNotFoundException(
                 $"Could not toggle GenericBrowser item '{identifier}'{(visibleText == null ? string.Empty : $" / '{visibleText}'")}.");
         }
-
-        return ContainingScope;
     }
 
     /// <summary>
@@ -122,16 +128,16 @@ public class GenericBrowser<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope
     }
 
     /// <summary>
-    /// Closes the GenericBrowser drawer/flyout.
+    /// Closes the GenericBrowser drawer/flyout, throwing when it cannot be closed.
     /// </summary>
-    public TScope Close(int? timeoutMs = null)
+    /// <param name="element">The browser element, resolved and ready.</param>
+    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
+    protected virtual void CloseCore(IMauiElement element, int? timeoutMs = null)
     {
         if (!TryClose(timeoutMs))
         {
             throw new ElementNotFoundException("Could not close GenericBrowser.");
         }
-
-        return ContainingScope;
     }
 
     /// <summary>
@@ -269,6 +275,7 @@ public class GenericBrowser<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope
     /// containing <c>ListItem</c> is what responds to selection. The row is tried first, then
     /// the element itself. Overridable so a browser whose rows differ changes this one method.
     /// </remarks>
+    [SkipGeneration("An internal step of the select and toggle methods, not an operation a caller performs.")]
     protected virtual bool ActivateRowCore(IMauiElement? item)
     {
         if (!item.HasUsableBounds())

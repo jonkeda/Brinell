@@ -574,7 +574,24 @@ public sealed class AppiumMauiElement : IMauiElement, ITogglePatternElement, ISe
     #region Attribute Access (IMauiElement)
     
     /// <inheritdoc />
-    public string? GetAttribute(string attributeName) => _element.GetAttribute(attributeName);
+    /// <inheritdoc />
+    /// <remarks>
+    /// An attribute the platform does not expose reads as null rather than throwing. UiAutomator2
+    /// raises <c>NotImplementedException</c> for anything outside its fixed list, so a control
+    /// probing several candidate names — as the progress and placeholder readers do — would abort
+    /// on the first miss, while the same probe returns null on Windows.
+    /// </remarks>
+    public string? GetAttribute(string attributeName)
+    {
+        try
+        {
+            return _element.GetAttribute(attributeName);
+        }
+        catch (NotImplementedException)
+        {
+            return null;
+        }
+    }
     
     /// <inheritdoc />
     public string? GetDomAttribute(string attributeName) => _element.GetDomAttribute(attributeName);

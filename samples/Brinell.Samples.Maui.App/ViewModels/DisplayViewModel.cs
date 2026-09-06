@@ -129,6 +129,10 @@ public class DisplayViewModel : ParentViewModel
         LabelText = "This is a test label with wrapping";
         ProgressValue = 50;
         IsActivityRunning = true;
-        StatusMessage = "Ready. Interact with controls to test.";
+
+        // Report the state reset restored, the way every other change does. Overwriting the
+        // status with a generic message left no way to observe the restored value — the
+        // ProgressBar's value itself is not readable on Android, which exposes no range info.
+        UpdateStatus();
     }
 }

@@ -53,17 +53,4 @@ public partial class ActivityIndicator<TScope> : Base.ViewBase<TScope>
     }
 
     #endregion
-
-    #region Hand-written Convenience Members
-
-    /// <summary>
-    /// Asserts the activity indicator is running.
-    /// </summary>
-    /// <param name="message">Optional assertion message.</param>
-    /// <param name="timeoutMs">Optional timeout.</param>
-    /// <returns>The containing scope for fluent chaining.</returns>
-    public TScope AssertRunning(string? message, int? timeoutMs = null)
-        => AssertRunning(true, message, timeoutMs);
-
-    #endregion
 }

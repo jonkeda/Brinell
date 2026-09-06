@@ -96,14 +96,5 @@ public partial class Image<TScope> : Base.ViewBase<TScope>
 
     #region Hand-written Convenience Members
 
-    /// <summary>
-    /// Asserts the image is loaded.
-    /// </summary>
-    /// <param name="message">Optional assertion message.</param>
-    /// <param name="timeoutMs">Optional timeout.</param>
-    /// <returns>The containing scope for fluent chaining.</returns>
-    public TScope AssertLoaded(string? message, int? timeoutMs = null)
-        => AssertLoaded(true, message, timeoutMs);
-
     #endregion
 }

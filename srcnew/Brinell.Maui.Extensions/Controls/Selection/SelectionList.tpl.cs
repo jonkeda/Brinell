@@ -7,7 +7,7 @@ namespace Brinell.Maui.Extensions.Controls.Selection;
 /// a UIA ListItem rather than the text/layout element found by AutomationId.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public class SelectionList<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope>
+public partial class SelectionList<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope>
     where TScope : IMauiScope<TScope>
 {
     /// <summary>
@@ -19,16 +19,18 @@ public class SelectionList<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope>
     }
 
     /// <summary>
-    /// Selects a row by AutomationId.
+    /// Selects a row by AutomationId, throwing when no such row can be activated.
     /// </summary>
-    public TScope SelectByAutomationId(string automationId, int? timeoutMs = null)
+    /// <param name="element">The list element, resolved and ready.</param>
+    /// <param name="automationId">The AutomationId of the row to select.</param>
+    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
+    protected virtual void SelectByAutomationIdCore(
+        IMauiElement element, string automationId, int? timeoutMs = null)
     {
         if (!TrySelectByAutomationId(automationId, timeoutMs))
         {
             throw new ElementNotFoundException($"Could not select list item '{automationId}'.");
         }
-
-        return ContainingScope;
     }
 
     /// <summary>
@@ -72,6 +74,7 @@ public class SelectionList<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope>
     /// </remarks>
     /// <param name="item">The element found for the row. May be null when the wait timed out.</param>
     /// <returns>True when the row was activated.</returns>
+    [SkipGeneration("An internal step of the select methods, not an operation a caller performs.")]
     protected virtual bool ActivateRowCore(IMauiElement? item)
     {
         if (!item.HasUsableBounds())
