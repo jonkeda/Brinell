@@ -108,7 +108,7 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
         return RunGetWithElement(element => GetAttributeCore(element, name), timeoutMs);
     }
 
-    public bool? WaitAttribute(string? name, string? expected, int? timeoutMs = null)
+    public bool WaitAttribute(string? name, string? expected, int? timeoutMs = null)
     {
         return RunWaitWithElement(expected,
            element => GetAttributeCore(element, name) == expected,

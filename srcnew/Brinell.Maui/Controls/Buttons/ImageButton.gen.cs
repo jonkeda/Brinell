@@ -22,7 +22,7 @@ public partial class ImageButton<TScope> : Base.ClickableControlBase<TScope>
         return RunGetWithElement(element => GetAspectCore(element), timeoutMs);
     }
 
-    public bool? WaitAspect(string? expected, int? timeoutMs = null)
+    public bool WaitAspect(string? expected, int? timeoutMs = null)
     {
         return RunWaitWithElement(expected,
            element => GetAspectCore(element) == expected,

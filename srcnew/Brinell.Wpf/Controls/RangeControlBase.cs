@@ -149,9 +149,9 @@ public abstract class RangeControlBase<TScope> : ControlBase<TScope>, IRangeCont
     #region Wait/Assert
 
     /// <inheritdoc />
-    public bool? WaitValue(double? expected, int? timeoutMs = null)
+    public bool WaitValue(double? expected, int? timeoutMs = null)
     {
-        if (expected == null) return null;
+        if (expected == null) return true; // nullable-skip: nothing asked, nothing failed
         return WaitValueWithin(expected, 0, timeoutMs);
     }
 

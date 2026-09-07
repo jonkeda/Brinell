@@ -22,7 +22,7 @@ public partial class Picker<TScope> : Base.SelectorControlBase<TScope>
         return RunGetWithElement(element => GetTitleCore(element), timeoutMs);
     }
 
-    public bool? WaitTitle(string? expected, int? timeoutMs = null)
+    public bool WaitTitle(string? expected, int? timeoutMs = null)
     {
         return RunWaitWithElement(expected,
            element => GetTitleCore(element) == expected,

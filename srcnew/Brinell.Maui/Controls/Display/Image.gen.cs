@@ -44,7 +44,7 @@ public partial class Image<TScope> : Base.ViewBase<TScope>
         return RunGetWithElement(element => GetWidthCore(element), timeoutMs);
     }
 
-    public bool? WaitWidth(int? expected, int? timeoutMs = null)
+    public bool WaitWidth(int? expected, int? timeoutMs = null)
     {
         return RunWaitWithElement(expected,
            element => GetWidthCore(element) == expected,
@@ -66,7 +66,7 @@ public partial class Image<TScope> : Base.ViewBase<TScope>
         return RunGetWithElement(element => GetHeightCore(element), timeoutMs);
     }
 
-    public bool? WaitHeight(int? expected, int? timeoutMs = null)
+    public bool WaitHeight(int? expected, int? timeoutMs = null)
     {
         return RunWaitWithElement(expected,
            element => GetHeightCore(element) == expected,

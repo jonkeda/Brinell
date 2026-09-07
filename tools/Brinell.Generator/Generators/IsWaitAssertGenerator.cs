@@ -266,7 +266,7 @@ public class IsWaitAssertGenerator : IMemberGenerator
         if (!hasSequenceEquality)
         {
             // Wait{PropertyName}(...) waiter
-            writer.WriteLine($"public bool? Wait{propertyName}({paramPrefix}{nullableReturnType} expected, int? timeoutMs = null)");
+            writer.WriteLine($"public bool Wait{propertyName}({paramPrefix}{nullableReturnType} expected, int? timeoutMs = null)");
             writer.Open();
             writer.WriteLine("return RunWaitWithElement(expected,");
             writer.IncreaseSpace(1);
@@ -315,7 +315,7 @@ public class IsWaitAssertGenerator : IMemberGenerator
         if (comparison == "Empty")
         {
             // Empty is a bool? predicate over the value, not a value comparison.
-            writer.WriteLine($"public bool? Wait{memberName}({paramPrefix}bool? expected = true, int? timeoutMs = null)");
+            writer.WriteLine($"public bool Wait{memberName}({paramPrefix}bool? expected = true, int? timeoutMs = null)");
             writer.Open();
             writer.WriteLine("return RunWaitWithElement(expected,");
             writer.IncreaseSpace(1);
@@ -345,7 +345,7 @@ public class IsWaitAssertGenerator : IMemberGenerator
 
         var predicate = $"actual?.{comparison}(expected1!) == true";
 
-        writer.WriteLine($"public bool? Wait{memberName}({paramPrefix}{nullableReturnType} expected, int? timeoutMs = null)");
+        writer.WriteLine($"public bool Wait{memberName}({paramPrefix}{nullableReturnType} expected, int? timeoutMs = null)");
         writer.Open();
         writer.WriteLine("return RunWaitWithElement(expected,");
         writer.IncreaseSpace(1);
@@ -396,7 +396,7 @@ public class IsWaitAssertGenerator : IMemberGenerator
         {
             var itemType = ElementTypeOf(nullableReturnType);
 
-            writer.WriteLine($"public bool? Wait{memberName}({paramPrefix}{itemType} item, int? timeoutMs = null)");
+            writer.WriteLine($"public bool Wait{memberName}({paramPrefix}{itemType} item, int? timeoutMs = null)");
             writer.Open();
             writer.WriteLine("return RunWaitWithElement(item,");
             writer.IncreaseSpace(1);
@@ -434,7 +434,7 @@ public class IsWaitAssertGenerator : IMemberGenerator
                 "actual == expected1"),
         };
 
-        writer.WriteLine($"public bool? Wait{memberName}({paramPrefix}{expectedType} expected, int? timeoutMs = null)");
+        writer.WriteLine($"public bool Wait{memberName}({paramPrefix}{expectedType} expected, int? timeoutMs = null)");
         writer.Open();
         writer.WriteLine("return RunWaitWithElement(expected,");
         writer.IncreaseSpace(1);

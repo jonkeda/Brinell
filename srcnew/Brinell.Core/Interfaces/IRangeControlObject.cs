@@ -49,7 +49,7 @@ public interface IRangeControlObject<TScope> : IControlObject<TScope>
     /// Wait until value equals expected.
     /// If expected is null, the wait is skipped and null is returned.
     /// </summary>
-    bool? WaitValue(double? expected, int? timeoutMs = null);
+    bool WaitValue(double? expected, int? timeoutMs = null);
     
     /// <summary>
     /// Assert value equals expected within the given tolerance.

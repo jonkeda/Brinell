@@ -67,6 +67,48 @@ public class ContainerTestPage : PageObjectBase<ContainerTestPage>
 
     #endregion
 
+    #region Container children
+
+    // Declared rather than reached for. These are the children the container tests assert on;
+    // without them a test has nowhere to get "GridCellTopRight" from and builds a control - or
+    // a raw locator - on the spot, which is how element finding leaks back into tests.
+
+    /// <summary>Top-left cell of <see cref="TestGrid"/>.</summary>
+    public Label<Grid<ContainerTestPage>> GridCellTopLeft => TestGrid.Label("GridCellTopLeft");
+
+    /// <summary>Top-right cell of <see cref="TestGrid"/>.</summary>
+    public Label<Grid<ContainerTestPage>> GridCellTopRight => TestGrid.Label("GridCellTopRight");
+
+    /// <summary>Bottom-left cell of <see cref="TestGrid"/>.</summary>
+    public Label<Grid<ContainerTestPage>> GridCellBottomLeft => TestGrid.Label("GridCellBottomLeft");
+
+    /// <summary>The button inside <see cref="TestGrid"/>.</summary>
+    public Button<Grid<ContainerTestPage>> GridButton => TestGrid.Button("GridButton");
+
+    /// <summary>The label inside <see cref="TestBorder"/>.</summary>
+    public Label<Border<ContainerTestPage>> BorderChildLabel => TestBorder.Label("BorderChildLabel");
+
+    /// <summary>The button inside <see cref="TestBorder"/>.</summary>
+    public Button<Border<ContainerTestPage>> BorderButton => TestBorder.Button("BorderButton");
+
+    /// <summary>The label inside <see cref="TestContentView"/>.</summary>
+    public Label<ContentView<ContainerTestPage>> ContentViewChildLabel
+        => TestContentView.Label("ContentViewChildLabel");
+
+    /// <summary>The button inside <see cref="TestContentView"/>.</summary>
+    public Button<ContentView<ContainerTestPage>> ContentViewButton
+        => TestContentView.Button("ContentViewButton");
+
+    /// <summary>The first label inside <see cref="TestScrollView"/>.</summary>
+    public Label<ScrollView<ContainerTestPage>> ScrollFirstLabel
+        => TestScrollView.Label("ScrollFirstLabel");
+
+    /// <summary>The last label inside <see cref="TestScrollView"/>, below the fold.</summary>
+    public Label<ScrollView<ContainerTestPage>> ScrollLastLabel
+        => TestScrollView.Label("ScrollLastLabel");
+
+    #endregion
+
     /// <summary>
     /// Resolves an element by automation id from page scope, or null.
     /// </summary>

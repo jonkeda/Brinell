@@ -44,7 +44,7 @@ public interface IEditableTextControlObject<TScope> : ITextControlObject<TScope>
     /// Wait until placeholder text matches expected value.
     /// If expected is null, the wait is skipped and null is returned.
     /// </summary>
-    bool? WaitPlaceholder(string? expected, int? timeoutMs = null);
+    bool WaitPlaceholder(string? expected, int? timeoutMs = null);
     
     /// <summary>
     /// Assert placeholder text matches expected value.

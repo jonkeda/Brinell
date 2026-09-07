@@ -22,7 +22,7 @@ public partial class WebView<TScope> : Base.ViewBase<TScope>
         return RunGetWithElement(element => GetUrlCore(element), timeoutMs);
     }
 
-    public bool? WaitUrl(string? expected, int? timeoutMs = null)
+    public bool WaitUrl(string? expected, int? timeoutMs = null)
     {
         return RunWaitWithElement(expected,
            element => GetUrlCore(element) == expected,
@@ -36,7 +36,7 @@ public partial class WebView<TScope> : Base.ViewBase<TScope>
            message ?? $"Expected Url to be '{expected}'. Locator: {Locator}", timeoutMs);
     }
 
-    public bool? WaitUrlContains(string? expected, int? timeoutMs = null)
+    public bool WaitUrlContains(string? expected, int? timeoutMs = null)
     {
         return RunWaitWithElement(expected,
            element => GetUrlCore(element)?.Contains(expected!) == true,
@@ -58,7 +58,7 @@ public partial class WebView<TScope> : Base.ViewBase<TScope>
         return RunGetWithElement(element => GetPageTitleCore(element), timeoutMs);
     }
 
-    public bool? WaitPageTitle(string? expected, int? timeoutMs = null)
+    public bool WaitPageTitle(string? expected, int? timeoutMs = null)
     {
         return RunWaitWithElement(expected,
            element => GetPageTitleCore(element) == expected,
@@ -72,7 +72,7 @@ public partial class WebView<TScope> : Base.ViewBase<TScope>
            message ?? $"Expected PageTitle to be '{expected}'. Locator: {Locator}", timeoutMs);
     }
 
-    public bool? WaitPageTitleContains(string? expected, int? timeoutMs = null)
+    public bool WaitPageTitleContains(string? expected, int? timeoutMs = null)
     {
         return RunWaitWithElement(expected,
            element => GetPageTitleCore(element)?.Contains(expected!) == true,

@@ -161,6 +161,27 @@ public class DatePickerTests
     }
 
     /// <summary>
+    /// Verifies the picker can be focused, and reports it, without the pointer.
+    /// </summary>
+    /// <remarks>
+    /// DatePicker derived from ViewBase until this was added, so it had no Focus at all - the
+    /// call did not compile. Focusing goes through the platform's own focus rather than a click,
+    /// which matters here more than elsewhere: clicking this control opens its calendar.
+    /// </remarks>
+    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [Trait("Method", "Focus")]
+    public Task DatePicker_Focus_IsReported()
+    {
+        var page = GetPage();
+
+        page.TestDatePicker.Focus();
+
+        page.TestDatePicker.AssertFocused();
+
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
     /// Verifies that the Reset button clears the date selection and status.
     /// </summary>
     [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]

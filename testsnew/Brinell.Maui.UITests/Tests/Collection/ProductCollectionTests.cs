@@ -112,7 +112,7 @@ public class ProductCollectionTests
     [Trait("Pattern", "NoParentFallback")]
     public Task Row_DoesNotFindCollectionLevelControls()
     {
-        var countInRow = new Label<ProductRow>(Page.Products.Item(0), "ProductCountLabel");
+        var countInRow = Page.Products.Item(0).Label("ProductCountLabel");
 
         Page.Products.CountLabel.AssertExists();
         Assert.False(countInRow.IsExists());

@@ -129,7 +129,7 @@ public abstract class AndroidSelectorControlBase<TScope> : NativeAndroidControl<
     public virtual int? GetItemCount(int? timeoutMs = null)
         => GetItemTexts(timeoutMs)?.Count;
 
-    public virtual bool? WaitSelectedText(string? expected, int? timeoutMs = null)
+    public virtual bool WaitSelectedText(string? expected, int? timeoutMs = null)
     {
         if (expected is null)
         {
@@ -154,7 +154,7 @@ public abstract class AndroidSelectorControlBase<TScope> : NativeAndroidControl<
         return ContainingScope;
     }
 
-    public virtual bool? WaitSelectedIndex(int? expected, int? timeoutMs = null)
+    public virtual bool WaitSelectedIndex(int? expected, int? timeoutMs = null)
     {
         if (expected is null)
         {
@@ -179,7 +179,7 @@ public abstract class AndroidSelectorControlBase<TScope> : NativeAndroidControl<
         return ContainingScope;
     }
 
-    public virtual bool? WaitItemCount(int? expected, int? timeoutMs = null)
+    public virtual bool WaitItemCount(int? expected, int? timeoutMs = null)
     {
         if (expected is null)
         {

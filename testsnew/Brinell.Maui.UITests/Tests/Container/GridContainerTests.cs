@@ -46,7 +46,7 @@ public class GridContainerTests
     public Task ProductForm_DoesNotFindControlsOutsideItself()
     {
         // PageTitle exists on the page, but not inside the product form.
-        var titleInForm = new Label<ProductFormContainer>(Page.ProductForm, "PageTitle");
+        var titleInForm = Page.ProductForm.Label("PageTitle");
 
         Page.PageTitle.AssertExists();
         Assert.False(titleInForm.IsExists());
@@ -70,7 +70,7 @@ public class GridContainerTests
     public Task ProductOptions_DoesNotFindParentControls()
     {
         var addButtonInOptions =
-            new Button<ProductOptionsContainer>(Page.ProductForm.Options, "ProductAddButton");
+            Page.ProductForm.Options.Button("ProductAddButton");
 
         Page.ProductForm.AddButton.AssertExists();
         Assert.False(addButtonInOptions.IsExists());

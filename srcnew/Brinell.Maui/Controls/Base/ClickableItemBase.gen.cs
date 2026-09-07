@@ -48,7 +48,7 @@ public abstract partial class ClickableItemBase<TCollection, TSelf> : ItemContai
         return RunGetWithElement(element => GetTextCore(element), timeoutMs);
     }
 
-    public bool? WaitText(string? expected, int? timeoutMs = null)
+    public bool WaitText(string? expected, int? timeoutMs = null)
     {
         return RunWaitWithElement(expected,
            element => GetTextCore(element) == expected,
@@ -62,7 +62,7 @@ public abstract partial class ClickableItemBase<TCollection, TSelf> : ItemContai
            message ?? $"Expected Text to be '{expected}'. Locator: {Locator}", timeoutMs);
     }
 
-    public bool? WaitTextContains(string? expected, int? timeoutMs = null)
+    public bool WaitTextContains(string? expected, int? timeoutMs = null)
     {
         return RunWaitWithElement(expected,
            element => GetTextCore(element)?.Contains(expected!) == true,
@@ -76,7 +76,7 @@ public abstract partial class ClickableItemBase<TCollection, TSelf> : ItemContai
            message ?? $"Expected TextContains to be '{expected}'. Locator: {Locator}", timeoutMs);
     }
 
-    public bool? WaitTextEmpty(bool? expected = true, int? timeoutMs = null)
+    public bool WaitTextEmpty(bool? expected = true, int? timeoutMs = null)
     {
         return RunWaitWithElement(expected,
            element => string.IsNullOrEmpty(GetTextCore(element)) == expected,

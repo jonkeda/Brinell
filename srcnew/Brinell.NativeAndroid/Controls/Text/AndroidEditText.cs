@@ -56,11 +56,12 @@ public class AndroidEditText<TScope> : AndroidText<TScope>, IEditableTextControl
     public string? GetPlaceholder(int? timeoutMs = null)
         => GetAttribute("hint", null);
 
-    public bool? WaitPlaceholder(string? expected, int? timeoutMs = null)
+    public bool WaitPlaceholder(string? expected, int? timeoutMs = null)
     {
         if (expected is null)
         {
-            return null;
+            // Nothing was asked, so nothing failed - the nullable-skip convention.
+            return true;
         }
 
         return Poll(

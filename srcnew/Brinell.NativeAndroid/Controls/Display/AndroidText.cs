@@ -16,11 +16,12 @@ public class AndroidText<TScope> : NativeAndroidControl<TScope>, ITextControlObj
     public bool WaitTextEquals(string? expected, int? timeoutMs = null)
         => WaitText(expected, timeoutMs);
 
-    public bool? WaitTextContains(string? expected, int? timeoutMs = null)
+    public bool WaitTextContains(string? expected, int? timeoutMs = null)
     {
         if (expected is null)
         {
-            return null;
+            // Nothing was asked, so nothing failed - the nullable-skip convention.
+            return true;
         }
 
         return Poll(

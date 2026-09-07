@@ -9,7 +9,7 @@ namespace Brinell.Maui.Controls.DateTimes;
 /// Provides GetDate, SetDate, and date assertion methods.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public partial class DatePicker<TScope> : Base.ViewBase<TScope>
+public partial class DatePicker<TScope> : Base.FocusableControlBase<TScope>
     where TScope : IMauiScope<TScope>
 {
     /// <summary>
@@ -97,7 +97,7 @@ public partial class DatePicker<TScope> : Base.ViewBase<TScope>
 
     #region Date - Core Methods
 
-    // Named GetDateValueCore rather than GetDateCore so the generated exact-equality
+    // Named ReadDate rather than GetDateCore so the generated exact-equality
     // trio lands on DateValue. AssertDate/WaitDate compare whole days only, which the
     // generated equality comparison cannot express, so those stay hand-written below
     // and keep their original signatures.
@@ -111,7 +111,7 @@ public partial class DatePicker<TScope> : Base.ViewBase<TScope>
     /// appears here and not in <see cref="SetDateCore"/>. The DateText child is the fallback for
     /// platforms that publish no Value pattern.
     /// </remarks>
-    protected virtual System.DateTime? GetDateValueCore(IMauiElement? element)
+    protected virtual System.DateTime? ReadDate(IMauiElement? element)
     {
         if (element == null) return null;
 
@@ -172,7 +172,7 @@ public partial class DatePicker<TScope> : Base.ViewBase<TScope>
             return false;
 
         element.SendKeys(date.ToString(Format, Culture), TextInputMethod.SetValue);
-        return GetDateValueCore(element)?.Date == date.Date;
+        return ReadDate(element)?.Date == date.Date;
     }
 
     /// <summary>Rung 3: type into a control that really hosts text.</summary>
@@ -187,7 +187,7 @@ public partial class DatePicker<TScope> : Base.ViewBase<TScope>
             return false;
         }
 
-        return GetDateValueCore(element)?.Date == date.Date;
+        return ReadDate(element)?.Date == date.Date;
     }
 
     #endregion
@@ -245,7 +245,7 @@ public partial class DatePicker<TScope> : Base.ViewBase<TScope>
         do
         {
             var element = MauiScope.TryFindElement(Locator);
-            if (element != null && GetDateValueCore(element)?.Date == date.Date)
+            if (element != null && ReadDate(element)?.Date == date.Date)
                 return true;
 
             WaitHelper.Pause(PollingIntervalMs);
@@ -377,9 +377,8 @@ public partial class DatePicker<TScope> : Base.ViewBase<TScope>
 
     #region Hand-written Convenience Members
 
-    // Date comparison here is whole-day only (.Date), which the generated equality
-    // comparison cannot express, so these keep their original signatures rather than
-    // being replaced by the generated DateValue family.
+    // Whole-day comparison (.Date): the control holds a day, and a caller passing
+    // DateTime.Now should not fail against a picker showing today.
 
     /// <summary>
     /// Gets the currently selected date.
@@ -387,7 +386,7 @@ public partial class DatePicker<TScope> : Base.ViewBase<TScope>
     /// <param name="timeoutMs">Optional timeout for finding the element.</param>
     /// <returns>The selected date, or null if element not found.</returns>
     public System.DateTime? GetDate(int? timeoutMs = null)
-        => GetDateValue(timeoutMs);
+        => RunGetWithElement(element => ReadDate(element), timeoutMs);
 
     /// <summary>
     /// Waits for the date to match the expected value, comparing whole days.
@@ -402,7 +401,7 @@ public partial class DatePicker<TScope> : Base.ViewBase<TScope>
         return RunWaitWithElement(expected,
             e =>
             {
-                var actual = GetDateValueCore(e);
+                var actual = ReadDate(e);
                 return actual.HasValue && actual.Value.Date == expected.Value.Date;
             },
             timeoutMs);
@@ -420,7 +419,7 @@ public partial class DatePicker<TScope> : Base.ViewBase<TScope>
         if (expected == null) return ContainingScope;
 
         return RunAssertWithElement(expected,
-            GetDateValueCore,
+            ReadDate,
             (actual, exp) => actual.HasValue && exp.HasValue && actual.Value.Date == exp.Value.Date,
             message ?? $"Expected date {expected:yyyy-MM-dd}. Locator: {Locator}", timeoutMs);
     }

@@ -250,11 +250,38 @@ the refusal, which is the real contract. And the WinUI time flyout has no second
 `23:59:59` and `09:45:30` were asking for something the control cannot express; those now use
 whole minutes.
 
-**Result: `Tests.DateTimes` 19 / 19, from 12 / 19.**
+**Result: `Tests.DateTimes` 20 / 20, from 12 / 19** - nineteen existing tests plus a new
+`DatePicker_Focus_IsReported`, which could not even be written before §4.
 
-Not done: §4, the `FocusableControlBase` change. Both partial declarations name the base class and
-the `.gen.cs` half is generated out of band by `Brinell.Generator`, so it is a generator change
-rather than a date change and does not belong in this pass.
+### §4, and the focus primitive it needed
+
+Both pickers now derive from `FocusableControlBase`. The `.gen.cs` half is generated out of band,
+so the base class was changed in the template and both files regenerated with
+`tools/Brinell.Generator.Cli` — which reconstructs the class signature from the template's
+`BaseList`, so the two halves cannot drift.
+
+The change did not work as-is, because `FocusableControlBase.FocusCore` **focused by clicking**.
+That is wrong for any control that opens on activation, and a date picker is exactly that: focusing
+it would have opened its calendar. Clicking was standing in for an operation the element interface
+did not expose - `IMauiElement` publishes `Focused` to read, and nothing to set.
+
+So focus became a capability, in the same shape as the pattern interfaces beside it:
+
+```csharp
+public interface IFocusPatternElement
+{
+    bool SupportsSetFocus { get; }
+    bool SetFocus();
+}
+```
+
+`FlaUIMauiElement` implements it over UIA's own focus; `FocusCore` prefers it and keeps the click
+as the fallback for WebDriver-backed elements, which genuinely cannot focus without touching.
+
+**That fixed `EntryTests.Entry_Focus_IsReported`**, which had been failing since before this work
+and was verified failing on unmodified code earlier the same day. `IsFocusedCore` reads
+`HasKeyboardFocus`, and a click on a WinUI `Entry` does not reliably set it; a real focus call
+does. The defect was never in the reading - it was that nothing ever properly set focus.
 
 ## Open questions
 

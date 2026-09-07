@@ -97,7 +97,7 @@ public abstract class SelectorControlBase<TScope> : ClickableControlBase<TScope>
     }
 
     /// <inheritdoc />
-    public bool? WaitSelectedText(string? expected, int? timeoutMs = null)
+    public bool WaitSelectedText(string? expected, int? timeoutMs = null)
     {
         if (expected == null) return true;
         var timeout = timeoutMs ?? DefaultTimeoutMs;
@@ -140,7 +140,7 @@ public abstract class SelectorControlBase<TScope> : ClickableControlBase<TScope>
     }
 
     /// <inheritdoc />
-    public bool? WaitSelectedIndex(int? expected, int? timeoutMs = null)
+    public bool WaitSelectedIndex(int? expected, int? timeoutMs = null)
     {
         if (expected == null) return true;
         var timeout = timeoutMs ?? DefaultTimeoutMs;
@@ -199,7 +199,7 @@ public abstract class SelectorControlBase<TScope> : ClickableControlBase<TScope>
     }
 
     /// <inheritdoc />
-    public bool? WaitItemCount(int? expected, int? timeoutMs = null)
+    public bool WaitItemCount(int? expected, int? timeoutMs = null)
     {
         if (expected == null) return true;
         var timeout = timeoutMs ?? DefaultTimeoutMs;

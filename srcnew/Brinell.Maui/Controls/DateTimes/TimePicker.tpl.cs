@@ -9,7 +9,7 @@ namespace Brinell.Maui.Controls.DateTimes;
 /// Provides GetTime, SetTime, and time assertion methods.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public partial class TimePicker<TScope> : Base.ViewBase<TScope>
+public partial class TimePicker<TScope> : Base.FocusableControlBase<TScope>
     where TScope : IMauiScope<TScope>
 {
     /// <summary>
@@ -94,7 +94,7 @@ public partial class TimePicker<TScope> : Base.ViewBase<TScope>
 
     #region Time - Core Methods
 
-    // Named GetTimeValueCore rather than GetTimeCore so the generated exact-equality
+    // Named ReadTime rather than GetTimeCore so the generated exact-equality
     // trio lands on TimeValue. AssertTime/WaitTime compare within a tolerance, which the
     // generated equality comparison cannot express, so those stay hand-written below
     // and keep their original signatures (including the defaulted toleranceSeconds).
@@ -106,7 +106,7 @@ public partial class TimePicker<TScope> : Base.ViewBase<TScope>
     /// The TimePicker root publishes no patterns at all on Windows - the value lives on its
     /// FlyoutButton child, which is why this reads through to it rather than asking the root.
     /// </remarks>
-    protected virtual TimeSpan? GetTimeValueCore(IMauiElement? element)
+    protected virtual TimeSpan? ReadTime(IMauiElement? element)
     {
         if (element == null) return null;
 
@@ -182,7 +182,7 @@ public partial class TimePicker<TScope> : Base.ViewBase<TScope>
 
         if (WaitForTime(time)) return null;
 
-        var actual = MauiScope.TryFindElement(Locator) is { } e ? GetTimeValueCore(e) : null;
+        var actual = MauiScope.TryFindElement(Locator) is { } e ? ReadTime(e) : null;
         var seconds = time.Seconds != 0
             ? " The requested time carries seconds, and the WinUI flyout selects hours and minutes only."
             : string.Empty;
@@ -254,7 +254,7 @@ public partial class TimePicker<TScope> : Base.ViewBase<TScope>
         do
         {
             var element = MauiScope.TryFindElement(Locator);
-            var actual = element == null ? null : GetTimeValueCore(element);
+            var actual = element == null ? null : ReadTime(element);
             if (actual != null)
             {
                 everRead = true;
@@ -273,9 +273,7 @@ public partial class TimePicker<TScope> : Base.ViewBase<TScope>
 
     #region Hand-written Convenience Members
 
-    // Time comparison here is tolerance-based, which the generated equality comparison
-    // cannot express, so these keep their original signatures rather than being replaced
-    // by the generated TimeValue family.
+    // Tolerance-based comparison: a time picker's value moves while a test runs.
 
     /// <summary>
     /// Gets the currently selected time.
@@ -283,7 +281,7 @@ public partial class TimePicker<TScope> : Base.ViewBase<TScope>
     /// <param name="timeoutMs">Optional timeout for finding the element.</param>
     /// <returns>The selected time, or null if element not found.</returns>
     public TimeSpan? GetTime(int? timeoutMs = null)
-        => GetTimeValue(timeoutMs);
+        => RunGetWithElement(element => ReadTime(element), timeoutMs);
 
     /// <summary>
     /// Waits for the time to match the expected value.
@@ -301,7 +299,7 @@ public partial class TimePicker<TScope> : Base.ViewBase<TScope>
         return RunWaitWithElement(expected,
             e =>
             {
-                var actual = GetTimeValueCore(e);
+                var actual = ReadTime(e);
                 if (!actual.HasValue) return false;
                 var diff = (actual.Value - expected.Value).Duration();
                 return diff <= tolerance;
@@ -324,7 +322,7 @@ public partial class TimePicker<TScope> : Base.ViewBase<TScope>
         var tolerance = TimeSpan.FromSeconds(toleranceSeconds);
 
         return RunAssertWithElement(expected,
-            GetTimeValueCore, (actual, exp) =>
+            ReadTime, (actual, exp) =>
             {
                 if (!actual.HasValue || !exp.HasValue) return false;
                 var diff = (actual.Value - exp.Value).Duration();

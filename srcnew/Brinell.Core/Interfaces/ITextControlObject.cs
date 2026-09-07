@@ -16,7 +16,7 @@ public interface ITextControlObject<TScope> : IControlObject<TScope>
     /// Wait until text contains expected substring.
     /// If expected is null, the wait is skipped and null is returned.
     /// </summary>
-    bool? WaitTextContains(string? expected, int? timeoutMs = null);
+    bool WaitTextContains(string? expected, int? timeoutMs = null);
     
     /// <summary>
     /// Assert text matches pattern (regex).

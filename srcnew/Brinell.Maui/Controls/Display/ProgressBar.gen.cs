@@ -22,7 +22,7 @@ public partial class ProgressBar<TScope> : Base.ViewBase<TScope>
         return RunGetWithElement(element => GetProgressCore(element), timeoutMs);
     }
 
-    public bool? WaitProgress(double? expected, int? timeoutMs = null)
+    public bool WaitProgress(double? expected, int? timeoutMs = null)
     {
         return RunWaitWithElement(expected,
            element => GetProgressCore(element) == expected,

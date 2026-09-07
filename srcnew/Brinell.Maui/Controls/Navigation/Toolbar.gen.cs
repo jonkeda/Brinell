@@ -38,7 +38,7 @@ public partial class Toolbar<TParent> : CollectionObjectBase<TParent, Toolbar<TP
         return RunGetWithElement(element => GetTitleCore(element), timeoutMs);
     }
 
-    public bool? WaitTitle(string? expected, int? timeoutMs = null)
+    public bool WaitTitle(string? expected, int? timeoutMs = null)
     {
         return RunWaitWithElement(expected,
            element => GetTitleCore(element) == expected,

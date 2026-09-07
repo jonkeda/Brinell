@@ -158,6 +158,56 @@ public abstract class ContainerObjectBase<TParent, TSelf>
 
     #endregion
 
+    #region Typed children (scoped to the container root)
+
+    /// <summary>
+    /// A child control of this container, as a control object rather than a raw element.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The container is already a scope, so a child resolves within it and nothing else needs to
+    /// know where the container sits. This is the typed counterpart to <see cref="FindElement"/>:
+    /// that one hands back an <c>IMauiElement</c>, which is where a test stops chaining and starts
+    /// doing automation by hand.
+    /// </para>
+    /// <para>
+    /// Prefer declaring a named property on the container - <c>public Label&lt;ProductRow&gt; Name
+    /// =&gt; new(this, "ProductNameLabel");</c> - which reads better and gives the child a name.
+    /// This exists for children not worth naming, and for tests that would otherwise reach for a
+    /// locator.
+    /// </para>
+    /// </remarks>
+    /// <typeparam name="TControl">The control type to resolve the child as.</typeparam>
+    /// <param name="automationId">The child's automation id.</param>
+    public TControl Child<TControl>(string automationId)
+        where TControl : Controls.Base.ViewBase<TSelf>
+    {
+        ArgumentException.ThrowIfNullOrEmpty(automationId);
+
+        return (TControl)Activator.CreateInstance(
+            typeof(TControl),
+            (IMauiScope<TSelf>)(TSelf)this,
+            automationId)!;
+    }
+
+    /// <summary>A child <see cref="Controls.Display.Label{TScope}"/> of this container.</summary>
+    public Controls.Display.Label<TSelf> Label(string automationId)
+        => new((TSelf)this, automationId);
+
+    /// <summary>A child <see cref="Controls.Buttons.Button{TScope}"/> of this container.</summary>
+    public Controls.Buttons.Button<TSelf> Button(string automationId)
+        => new((TSelf)this, automationId);
+
+    /// <summary>A child <see cref="Controls.Text.Entry{TScope}"/> of this container.</summary>
+    public Controls.Text.Entry<TSelf> Entry(string automationId)
+        => new((TSelf)this, automationId);
+
+    /// <summary>A child <see cref="Controls.Toggle.CheckBox{TScope}"/> of this container.</summary>
+    public Controls.Toggle.CheckBox<TSelf> CheckBox(string automationId)
+        => new((TSelf)this, automationId);
+
+    #endregion
+
     #region Element finding (scoped to the container root)
 
     /// <inheritdoc />

@@ -15,7 +15,7 @@ namespace Brinell.Maui.FlaUI;
 /// Provides native Windows UI Automation support for MAUI desktop apps.
 /// Also implements pattern-based interfaces for enhanced Windows Automation support.
 /// </summary>
-public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISelectionItemPatternElement, ILegacyIAccessiblePatternElement, IRangePatternElement, IExpandCollapsePatternElement<IMauiElement>, ITogglePatternElement, IValuePatternElement
+public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISelectionItemPatternElement, ILegacyIAccessiblePatternElement, IRangePatternElement, IExpandCollapsePatternElement<IMauiElement>, ITogglePatternElement, IValuePatternElement, IFocusPatternElement
 {
     private readonly AutomationElement _element;
     private readonly FlaUIMauiDriver _driver;
@@ -719,6 +719,28 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
     /// Gets the underlying FlaUI AutomationElement for internal use.
     /// </summary>
     internal AutomationElement Element => _element;
+
+    #region IFocusPatternElement Implementation
+
+    /// <inheritdoc />
+    /// <remarks>UIA can always focus an element; there is nothing to advertise.</remarks>
+    public bool SupportsSetFocus => true;
+
+    /// <inheritdoc />
+    public bool SetFocus()
+    {
+        try
+        {
+            FocusForKeyboardInput();
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    #endregion
 
     /// <summary>
     /// Brings the app to the front, then gives this element keyboard focus.

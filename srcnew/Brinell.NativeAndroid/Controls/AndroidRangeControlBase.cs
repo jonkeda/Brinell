@@ -63,11 +63,12 @@ public abstract class AndroidRangeControlBase<TScope> : NativeAndroidControl<TSc
         return ContainingScope;
     }
 
-    public virtual bool? WaitValue(double? expected, int? timeoutMs = null)
+    public virtual bool WaitValue(double? expected, int? timeoutMs = null)
     {
         if (expected is null)
         {
-            return null;
+            // Nothing was asked, so nothing failed - the nullable-skip convention.
+            return true;
         }
 
         return WaitValueWithin(expected, 0, timeoutMs);

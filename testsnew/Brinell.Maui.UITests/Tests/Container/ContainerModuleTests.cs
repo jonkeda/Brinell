@@ -47,11 +47,10 @@ public class ContainerModuleTests
     {
         Page.TestGrid.AssertExists();
 
-        new Label<Pages.ContainerTestPage>(Page, "GridCellTopLeft").AssertText("Top left");
-
-        Assert.NotNull(Page.TestGrid.TryFindElement(Locator.ByAutomationId("GridCellTopRight")));
-        Assert.NotNull(Page.TestGrid.TryFindElement(Locator.ByAutomationId("GridCellBottomLeft")));
-        Assert.NotNull(Page.TestGrid.TryFindElement(Locator.ByAutomationId("GridButton")));
+        Page.GridCellTopLeft.AssertText("Top left");
+        Page.GridCellTopRight.AssertExists();
+        Page.GridCellBottomLeft.AssertExists();
+        Page.GridButton.AssertExists();
 
         return Task.CompletedTask;
     }
@@ -61,9 +60,8 @@ public class ContainerModuleTests
     [Trait("Control", "Grid")]
     public Task Grid_ChildAction_Fires()
     {
-        new Button<Pages.ContainerTestPage>(Page, "GridButton").Click();
-
-        Page.Status.AssertText("Grid");
+        Page.GridButton.Click()
+            .Parent.Status.AssertText("Grid");
 
         return Task.CompletedTask;
     }
@@ -73,9 +71,10 @@ public class ContainerModuleTests
     [Trait("Pattern", "NoParentFallback")]
     public Task Grid_DoesNotReachOtherContainersChildren()
     {
-        // BorderChildLabel is real, but it lives in the Border, not the Grid.
-        Assert.NotNull(Page.TestBorder.TryFindElement(Locator.ByAutomationId("BorderChildLabel")));
-        Assert.Null(Page.TestGrid.TryFindElement(Locator.ByAutomationId("BorderChildLabel")));
+        // BorderChildLabel is real, but it lives in the Border, not the Grid. Asking the Grid
+        // for it must come back empty rather than falling back to the page.
+        Page.BorderChildLabel.AssertExists(true);
+        Page.TestGrid.Label("BorderChildLabel").AssertExists(false);
 
         return Task.CompletedTask;
     }
@@ -91,10 +90,10 @@ public class ContainerModuleTests
     {
         Page.TestBorder.AssertExists();
 
-        Assert.NotNull(Page.TestBorder.TryFindElement(Locator.ByAutomationId("BorderChildLabel")));
+        Page.BorderChildLabel.AssertExists();
 
-        new Button<Pages.ContainerTestPage>(Page, "BorderButton").Click();
-        Page.Status.AssertText("Border");
+        Page.BorderButton.Click()
+            .Parent.Status.AssertText("Border");
 
         return Task.CompletedTask;
     }
@@ -106,11 +105,10 @@ public class ContainerModuleTests
     {
         Page.TestContentView.AssertExists();
 
-        Assert.NotNull(
-            Page.TestContentView.TryFindElement(Locator.ByAutomationId("ContentViewChildLabel")));
+        Page.ContentViewChildLabel.AssertExists();
 
-        new Button<Pages.ContainerTestPage>(Page, "ContentViewButton").Click();
-        Page.Status.AssertText("ContentView");
+        Page.ContentViewButton.Click()
+            .Parent.Status.AssertText("ContentView");
 
         return Task.CompletedTask;
     }
@@ -126,8 +124,7 @@ public class ContainerModuleTests
     {
         Page.TestScrollView.AssertExists();
 
-        Assert.NotNull(
-            Page.TestScrollView.TryFindElement(Locator.ByAutomationId("ScrollFirstLabel")));
+        Page.ScrollFirstLabel.AssertExists();
 
         return Task.CompletedTask;
     }
@@ -143,11 +140,10 @@ public class ContainerModuleTests
 
         var returned = scrollView.ScrollTo("ScrollLastLabel");
 
+        // ScrollTo returns the container so the scroll can be chained onto what it revealed.
         Assert.Same(scrollView, returned);
 
-        var last = scrollView.TryFindElement(Locator.ByAutomationId("ScrollLastLabel"));
-        Assert.NotNull(last);
-        Assert.True(last!.Visible, "The last label was not visible after scrolling to it.");
+        returned.Label("ScrollLastLabel").AssertVisible(true);
 
         return Task.CompletedTask;
     }

@@ -23,7 +23,7 @@ public abstract partial class RangeControlBase<TScope> : FocusableControlBase<TS
         return RunGetWithElement(element => GetValueCore(element), timeoutMs);
     }
 
-    public bool? WaitValue(double? expected, int? timeoutMs = null)
+    public bool WaitValue(double? expected, int? timeoutMs = null)
     {
         return RunWaitWithElement(expected,
            element => GetValueCore(element) == expected,
@@ -53,7 +53,7 @@ public abstract partial class RangeControlBase<TScope> : FocusableControlBase<TS
         return RunGetWithElement(element => GetMinimumCore(element), timeoutMs);
     }
 
-    public bool? WaitMinimum(double? expected, int? timeoutMs = null)
+    public bool WaitMinimum(double? expected, int? timeoutMs = null)
     {
         return RunWaitWithElement(expected,
            element => GetMinimumCore(element) == expected,
@@ -75,7 +75,7 @@ public abstract partial class RangeControlBase<TScope> : FocusableControlBase<TS
         return RunGetWithElement(element => GetMaximumCore(element), timeoutMs);
     }
 
-    public bool? WaitMaximum(double? expected, int? timeoutMs = null)
+    public bool WaitMaximum(double? expected, int? timeoutMs = null)
     {
         return RunWaitWithElement(expected,
            element => GetMaximumCore(element) == expected,
@@ -97,7 +97,7 @@ public abstract partial class RangeControlBase<TScope> : FocusableControlBase<TS
         return RunGetWithElement(element => GetStepCore(element), timeoutMs);
     }
 
-    public bool? WaitStep(double? expected, int? timeoutMs = null)
+    public bool WaitStep(double? expected, int? timeoutMs = null)
     {
         return RunWaitWithElement(expected,
            element => GetStepCore(element) == expected,

@@ -25,7 +25,7 @@ public partial class Slider<TScope> : Base.RangeControlBase<TScope>
         return RunGetWithElement(element => GetPercentageCore(element), timeoutMs);
     }
 
-    public bool? WaitPercentage(double? expected, int? timeoutMs = null)
+    public bool WaitPercentage(double? expected, int? timeoutMs = null)
     {
         return RunWaitWithElement(expected,
            element => GetPercentageCore(element) == expected,

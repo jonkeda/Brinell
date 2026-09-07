@@ -47,7 +47,7 @@ public abstract partial class SelectorControlBase<TScope> : FocusableControlBase
         return RunGetWithElement(element => GetSelectedTextCore(element), timeoutMs);
     }
 
-    public bool? WaitSelectedText(string? expected, int? timeoutMs = null)
+    public bool WaitSelectedText(string? expected, int? timeoutMs = null)
     {
         return RunWaitWithElement(expected,
            element => GetSelectedTextCore(element) == expected,
@@ -69,7 +69,7 @@ public abstract partial class SelectorControlBase<TScope> : FocusableControlBase
         return RunGetWithElement(element => GetSelectedIndexCore(element), timeoutMs);
     }
 
-    public bool? WaitSelectedIndex(int? expected, int? timeoutMs = null)
+    public bool WaitSelectedIndex(int? expected, int? timeoutMs = null)
     {
         return RunWaitWithElement(expected,
            element => GetSelectedIndexCore(element) == expected,
@@ -91,7 +91,7 @@ public abstract partial class SelectorControlBase<TScope> : FocusableControlBase
         return RunGetWithElement(element => GetItemTextsCore(element), timeoutMs);
     }
 
-    public bool? WaitItemTexts(IReadOnlyList<string>? expected, int? timeoutMs = null)
+    public bool WaitItemTexts(IReadOnlyList<string>? expected, int? timeoutMs = null)
     {
         return RunWaitWithElement(expected,
            element => GetItemTextsCore(element)?.SequenceEqual(expected!) == true,
@@ -105,7 +105,7 @@ public abstract partial class SelectorControlBase<TScope> : FocusableControlBase
            message ?? $"Expected ItemTexts to be '{expected}'. Locator: {Locator}", timeoutMs);
     }
 
-    public bool? WaitItemTextsHasItem(string item, int? timeoutMs = null)
+    public bool WaitItemTextsHasItem(string item, int? timeoutMs = null)
     {
         return RunWaitWithElement(item,
            element => GetItemTextsCore(element)?.Contains(item!) == true,
@@ -119,7 +119,7 @@ public abstract partial class SelectorControlBase<TScope> : FocusableControlBase
            message ?? $"Expected ItemTextsHasItem to contain '{item}'. Locator: {Locator}", timeoutMs);
     }
 
-    public bool? WaitItemTextsCount(int? expected, int? timeoutMs = null)
+    public bool WaitItemTextsCount(int? expected, int? timeoutMs = null)
     {
         return RunWaitWithElement(expected,
            element => GetItemTextsCore(element)?.Count() == expected,
@@ -141,7 +141,7 @@ public abstract partial class SelectorControlBase<TScope> : FocusableControlBase
         return RunGetWithElement(element => GetItemCountCore(element), timeoutMs);
     }
 
-    public bool? WaitItemCount(int? expected, int? timeoutMs = null)
+    public bool WaitItemCount(int? expected, int? timeoutMs = null)
     {
         return RunWaitWithElement(expected,
            element => GetItemCountCore(element) == expected,

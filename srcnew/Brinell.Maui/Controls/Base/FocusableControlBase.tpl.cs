@@ -32,12 +32,25 @@ public abstract partial class FocusableControlBase<TScope> : ViewBase<TScope>, I
     #region Core Methods (Element-Aware, No Logging)
 
     /// <summary>
-    /// Sets focus to the control by clicking it.
+    /// Focuses the control, preferring the platform's own focus over a click.
     /// </summary>
+    /// <remarks>
+    /// Clicking to focus is a side effect standing in for the real operation: it also activates
+    /// the control, which is wrong for anything that opens on activation, and it needs the element
+    /// visible and unobstructed. UIA can focus directly, so it does. A WebDriver-backed element
+    /// cannot, and falls back to the click.
+    /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
     protected virtual void FocusCore(IMauiElement element, int? timeoutMs = null)
     {
+        if (element is IFocusPatternElement focusable
+            && focusable.SupportsSetFocus
+            && focusable.SetFocus())
+        {
+            return;
+        }
+
         element.Click();
     }
 

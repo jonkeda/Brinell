@@ -234,17 +234,17 @@ public class EntryTests
     {
         var page = GetPage();
 
-        var element = _fixture.Context.FindElement(Locator.ByAutomationId("ReadOnlyEntry"));
-        if (element is not IValuePatternElement { SupportsValuePattern: true })
+        // null means the platform publishes no editability, so there is nothing to assert. The
+        // tri-state answers the capability question directly - no need to reach for the element
+        // and ask it about its patterns.
+        var readOnly = page.ReadOnlyEntry.IsReadOnly();
+        if (readOnly == null)
         {
-            // This platform publishes no editability, so there is nothing to assert. A
-            // capability check rather than a platform check: the test asks what the element can
-            // answer, exactly as the control does.
             return Task.CompletedTask;
         }
 
-        Assert.True(page.ReadOnlyEntry.IsReadOnly());
-        Assert.False(page.TestEntry.IsReadOnly());
+        page.ReadOnlyEntry.AssertReadOnly(true)
+            .TestEntry.AssertReadOnly(false);
 
         return Task.CompletedTask;
     }
