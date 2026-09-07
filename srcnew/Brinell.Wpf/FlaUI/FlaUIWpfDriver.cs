@@ -84,30 +84,6 @@ public sealed class FlaUIWpfDriver : IWpfDriver, IDisposable
     internal UIA3Automation Automation => _automation;
 
     /// <summary>
-    /// Checks whether a screen point falls within the root window bounds.
-    /// </summary>
-    internal bool IsPointInsideRootWindow(Point point, int padding = 0)
-    {
-        try
-        {
-            var rect = _rootElement.BoundingRectangle;
-            if (rect.Width <= 0 || rect.Height <= 0)
-                return false;
-
-            var left = rect.Left + padding;
-            var right = rect.Right - padding;
-            var top = rect.Top + padding;
-            var bottom = rect.Bottom - padding;
-
-            return point.X >= left && point.X <= right && point.Y >= top && point.Y <= bottom;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    /// <summary>
     /// Ensures the root window is focused and activated before interaction.
     /// </summary>
     internal void EnsureRootWindowFocused()

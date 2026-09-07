@@ -2,6 +2,7 @@ using Brinell.Core.Exceptions;
 using Brinell.Core.Interfaces;
 using Brinell.Core.Utilities;
 using FlaUI.Core.Definitions;
+using FlaUI.Core.Input;
 using FlaUI.Core.WindowsAPI;
 using System.Drawing;
 using FlaUI.Core.Patterns;
@@ -264,9 +265,8 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
     /// </remarks>
     public void Click()
     {
-        var rect = _element.BoundingRectangle;
-        var center = new System.Drawing.Point(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
-        _driver.PointerClick(center, nameof(Click));
+        _driver.EnsureRootWindowFocused();
+        _element.Click();
     }
    
     /// <inheritdoc />
@@ -275,23 +275,20 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
         switch (method)
         {
             case TextInputMethod.Keys:
-                _driver.FocusForGlobalKeyboardInput(_element, nameof(SendKeys));
-                _driver.GlobalType(text, nameof(SendKeys));
+                FocusForKeyboardInput();
+                Keyboard.Type(text);
                 break;
             case TextInputMethod.Paste:
-                _driver.FocusForGlobalKeyboardInput(_element, nameof(SendKeys));
-                _driver.SetClipboardTextForInput(text, nameof(SendKeys));
-                _driver.GlobalTypeSimultaneously(
-                    nameof(SendKeys),
-                    VirtualKeyShort.CONTROL,
-                    VirtualKeyShort.KEY_V);
+                FocusForKeyboardInput();
+                System.Windows.Forms.Clipboard.SetText(text);
+                Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_V);
                 break;
             case TextInputMethod.SetValue:
                 if (TrySetTextValue(text))
                     return;
 
-                _driver.FocusForGlobalKeyboardInput(_element, nameof(SendKeys));
-                _driver.GlobalType(text, nameof(SendKeys));
+                FocusForKeyboardInput();
+                Keyboard.Type(text);
                 break;
         }
     }
@@ -303,24 +300,23 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
             return;
 
         // Select all and delete
-        _driver.FocusForGlobalKeyboardInput(_element, nameof(Clear));
-        _driver.GlobalTypeSimultaneously(
-            nameof(Clear),
-            VirtualKeyShort.CONTROL,
-            VirtualKeyShort.KEY_A);
-        _driver.GlobalType(VirtualKeyShort.DELETE, nameof(Clear));
+        FocusForKeyboardInput();
+        Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_A);
+        Keyboard.Type(VirtualKeyShort.DELETE);
     }
 
     /// <inheritdoc />
     public void DoubleClick()
     {
-        _driver.PointerDoubleClick(_element, nameof(DoubleClick));
+        _driver.EnsureRootWindowFocused();
+        _element.DoubleClick();
     }
 
     /// <inheritdoc />
     public void RightClick()
     {
-        _driver.PointerRightClick(_element, nameof(RightClick));
+        _driver.EnsureRootWindowFocused();
+        _element.RightClick();
     }
 
     /// <inheritdoc />
@@ -328,7 +324,8 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
     {
         var rect = _element.BoundingRectangle;
         var center = new System.Drawing.Point(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
-        _driver.PointerHover(center, nameof(Hover));
+        _driver.EnsureRootWindowFocused();
+        Mouse.MoveTo(center);
     }
 
     /// <inheritdoc />
@@ -336,7 +333,7 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
     {
         var rect = _element.BoundingRectangle;
         var center = new System.Drawing.Point(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
-        _driver.PointerLongPress(center, durationMs, nameof(LongPress));
+        _driver.PointerLongPress(center, durationMs);
     }
 
     /// <inheritdoc />
@@ -549,7 +546,9 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
                 _element.BoundingRectangle.Y + _element.BoundingRectangle.Height / 2);
             // deltaY < 0 means swipe up → scroll down → negative wheel
             var wheelClicks = deltaY < 0 ? -5 : 5;
-            _driver.PointerScroll(center, wheelClicks, nameof(Swipe));
+            _driver.EnsureRootWindowFocused();
+            Mouse.MoveTo(center);
+            Mouse.Scroll(wheelClicks);
             WaitHelper.Pause(200); // Wait for scroll to settle
             return;
         }
@@ -558,8 +557,7 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
         _driver.PointerDrag(
             new Point(startX, startY),
             new Point(endX, endY),
-            durationMs,
-            nameof(Swipe));
+            durationMs);
     }
 
     #endregion
@@ -709,8 +707,8 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
     public void Submit()
     {
         // Try to find and click a submit button, or press Enter
-        _driver.FocusForGlobalKeyboardInput(_element, nameof(Submit));
-        _driver.GlobalType(VirtualKeyShort.ENTER, nameof(Submit));
+        FocusForKeyboardInput();
+        Keyboard.Type(VirtualKeyShort.ENTER);
     }
 
     #endregion
@@ -721,6 +719,21 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
     /// Gets the underlying FlaUI AutomationElement for internal use.
     /// </summary>
     internal AutomationElement Element => _element;
+
+    /// <summary>
+    /// Brings the app to the front, then gives this element keyboard focus.
+    /// </summary>
+    /// <remarks>
+    /// Both halves are needed. FlaUI's <c>Focus()</c> only activates the window when the element
+    /// *is* a window; for a control it takes the <c>FocusNative</c> branch, which sets keyboard
+    /// focus without raising anything — so the global <c>Keyboard</c> input that follows would
+    /// reach whichever window is actually in front.
+    /// </remarks>
+    private void FocusForKeyboardInput()
+    {
+        _driver.EnsureRootWindowFocused();
+        _element.Focus();
+    }
 
     #endregion
 

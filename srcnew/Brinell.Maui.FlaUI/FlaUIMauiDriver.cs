@@ -19,8 +19,6 @@ namespace Brinell.Maui.FlaUI;
 /// </summary>
 public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
 {
-    private const int SwRestore = 9;
-
     private readonly UIA3Automation _automation;
     private readonly Application? _application;
     private readonly AutomationElement _rootElement;
@@ -112,169 +110,18 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     internal UIA3Automation Automation => _automation;
 
     /// <summary>
-    /// Gets the Windows interaction policy for this driver session.
-    /// </summary>
-    /// <summary>
-    /// Checks whether a screen point falls within the root window bounds.
-    /// </summary>
-    /// <param name="point">Screen point to validate.</param>
-    /// <param name="padding">Optional inset padding in pixels.</param>
-    /// <returns>True when point is within the root window rectangle.</returns>
-    internal bool IsPointInsideRootWindow(Point point, int padding = 0)
-    {
-        try
-        {
-            var rect = _rootElement.BoundingRectangle;
-            if (rect.Width <= 0 || rect.Height <= 0)
-            {
-                return false;
-            }
-
-            var left = rect.Left + padding;
-            var right = rect.Right - padding;
-            var top = rect.Top + padding;
-            var bottom = rect.Bottom - padding;
-
-            return point.X >= left && point.X <= right && point.Y >= top && point.Y <= bottom;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    /// <summary>
     /// Ensures the root window is focused and activated before physical input.
     /// </summary>
-    internal void EnsureRootWindowFocused(string action = "physical input")
+    /// <remarks>
+    /// Real input is positional and focus-relative, and FlaUI does not do this for you:
+    /// <c>AutomationElement.Click()</c> is clickable-point plus mouse, with no activation, and
+    /// <c>Keyboard.Type</c> reaches whichever window holds focus. Without this, keystrokes meant
+    /// for the app land in whatever the user is doing — which the launch-time
+    /// <see cref="RestoreForegroundWindow"/> makes a live possibility rather than a theoretical
+    /// one.
+    /// </remarks>
+    internal void EnsureRootWindowFocused()
     {
-        BringRootWindowToForeground();
-    }
-
-    internal void PointerClick(Point point, string action)
-    {
-        EnsureRootWindowFocused(action);
-        Mouse.MoveTo(point);
-        Mouse.Down(MouseButton.Left);
-        try
-        {
-            WaitHelper.Pause(120);
-        }
-        finally
-        {
-            Mouse.Up(MouseButton.Left);
-        }
-    }
-
-    internal void PointerDoubleClick(AutomationElement element, string action)
-    {
-        EnsureRootWindowFocused(action);
-        element.DoubleClick();
-    }
-
-    internal void PointerRightClick(AutomationElement element, string action)
-    {
-        EnsureRootWindowFocused(action);
-        element.RightClick();
-    }
-
-    internal void PointerHover(Point point, string action)
-    {
-        EnsureRootWindowFocused(action);
-        Mouse.MoveTo(point);
-    }
-
-    internal void PointerLongPress(Point point, int durationMs, string action)
-    {
-        EnsureRootWindowFocused(action);
-        Mouse.Position = point;
-        Mouse.Down(MouseButton.Left);
-        try
-        {
-            WaitHelper.Pause(durationMs);
-        }
-        finally
-        {
-            Mouse.Up(MouseButton.Left);
-        }
-    }
-
-    internal void PointerScroll(Point point, int wheelClicks, string action)
-    {
-        EnsureRootWindowFocused(action);
-        Mouse.MoveTo(point);
-        Mouse.Scroll(wheelClicks);
-    }
-
-    internal void PointerDrag(
-        Point start,
-        Point end,
-        int durationMs,
-        string action)
-    {
-        EnsureRootWindowFocused(action);
-        Mouse.MoveTo(start);
-        Mouse.Down(MouseButton.Left);
-        try
-        {
-            var steps = Math.Max(10, durationMs / 50);
-            var dx = (end.X - start.X) / (double)steps;
-            var dy = (end.Y - start.Y) / (double)steps;
-            var stepDelay = durationMs / steps;
-
-            for (var i = 1; i <= steps; i++)
-            {
-                var x = (int)(start.X + dx * i);
-                var y = (int)(start.Y + dy * i);
-                Mouse.MoveTo(new Point(x, y));
-                WaitHelper.Pause(stepDelay);
-            }
-        }
-        finally
-        {
-            Mouse.Up(MouseButton.Left);
-        }
-    }
-
-    internal void FocusForGlobalKeyboardInput(AutomationElement element, string action)
-    {
-        EnsureRootWindowFocused(action);
-        element.Focus();
-    }
-
-    internal void GlobalType(string text, string action)
-    {
-        Keyboard.Type(text);
-    }
-
-    internal void GlobalType(VirtualKeyShort key, string action)
-    {
-        Keyboard.Type(key);
-    }
-
-    internal void GlobalTypeSimultaneously(
-        string action,
-        params VirtualKeyShort[] keys)
-    {
-        Keyboard.TypeSimultaneously(keys);
-    }
-
-    internal void SetClipboardTextForInput(string text, string action)
-    {
-        System.Windows.Forms.Clipboard.SetText(text);
-    }
-
-    private void BringRootWindowToForeground()
-    {
-        var nativeWindowHandle = _rootElement.Properties.NativeWindowHandle.ValueOrDefault;
-        if (nativeWindowHandle != 0)
-        {
-            var handle = new IntPtr(nativeWindowHandle);
-            ShowWindow(handle, SwRestore);
-            SetForegroundWindow(handle);
-            WaitHelper.Pause(100);
-        }
-
         try
         {
             if (_rootElement.Patterns.Window.IsSupported)
@@ -309,11 +156,54 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
         }
     }
 
-    [DllImport("user32.dll")]
-    private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+    internal void PointerLongPress(Point point, int durationMs)
+    {
+        EnsureRootWindowFocused();
+        Mouse.Position = point;
+        Mouse.Down(MouseButton.Left);
+        try
+        {
+            WaitHelper.Pause(durationMs);
+        }
+        finally
+        {
+            Mouse.Up(MouseButton.Left);
+        }
+    }
 
-    [DllImport("user32.dll")]
-    private static extern bool SetForegroundWindow(IntPtr hWnd);
+    /// <remarks>
+    /// Steps the pointer by hand rather than calling <c>Mouse.Drag</c>, which assigns
+    /// <c>Mouse.Position</c> twice and so teleports. WinUI only recognises a drag when it receives
+    /// the moves in between, and <c>Mouse.Drag</c> has nowhere to put a duration either.
+    /// </remarks>
+    internal void PointerDrag(
+        Point start,
+        Point end,
+        int durationMs)
+    {
+        EnsureRootWindowFocused();
+        Mouse.MoveTo(start);
+        Mouse.Down(MouseButton.Left);
+        try
+        {
+            var steps = Math.Max(10, durationMs / 50);
+            var dx = (end.X - start.X) / (double)steps;
+            var dy = (end.Y - start.Y) / (double)steps;
+            var stepDelay = durationMs / steps;
+
+            for (var i = 1; i <= steps; i++)
+            {
+                var x = (int)(start.X + dx * i);
+                var y = (int)(start.Y + dy * i);
+                Mouse.MoveTo(new Point(x, y));
+                WaitHelper.Pause(stepDelay);
+            }
+        }
+        finally
+        {
+            Mouse.Up(MouseButton.Left);
+        }
+    }
 
     [DllImport("user32.dll")]
     private static extern IntPtr GetForegroundWindow();
@@ -342,7 +232,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
 
         try
         {
-            SetForegroundWindow(previousForeground);
+            User32.SetForegroundWindow(previousForeground);
         }
         catch
         {
@@ -704,11 +594,9 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
 
         try
         {
-            FocusForGlobalKeyboardInput(_rootElement, nameof(NavigateBack));
-            GlobalTypeSimultaneously(
-                nameof(NavigateBack),
-                VirtualKeyShort.ALT,
-                VirtualKeyShort.LEFT);
+            EnsureRootWindowFocused();
+            _rootElement.Focus();
+            Keyboard.TypeSimultaneously(VirtualKeyShort.ALT, VirtualKeyShort.LEFT);
         }
         catch (System.ComponentModel.Win32Exception)
         {
@@ -721,8 +609,9 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     public void Refresh()
     {
         // Try F5 refresh for desktop apps
-        FocusForGlobalKeyboardInput(_rootElement, nameof(Refresh));
-        GlobalType(VirtualKeyShort.F5, nameof(Refresh));
+        EnsureRootWindowFocused();
+        _rootElement.Focus();
+        Keyboard.Type(VirtualKeyShort.F5);
     }
     
     /// <inheritdoc />
