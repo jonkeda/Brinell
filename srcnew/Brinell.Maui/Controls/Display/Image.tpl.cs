@@ -30,20 +30,6 @@ public partial class Image<TScope> : Base.ViewBase<TScope>
 
     #region Source - Core Methods
 
-    /// <summary>
-    /// Gets the image source from pre-found element.
-    /// </summary>
-    /// <param name="element">The pre-found element (may be null).</param>
-    /// <returns>The image source path/URL, or null if not found.</returns>
-    protected virtual string? GetSourceCore(IMauiElement? element)
-    {
-        if (element == null) return null;
-
-        // Try various source attributes
-        return element.GetAttribute("Source")
-            ?? element.GetAttribute("source")
-            ?? element.GetAttribute("src");
-    }
 
     #endregion
 
@@ -51,7 +37,7 @@ public partial class Image<TScope> : Base.ViewBase<TScope>
 
     /// <summary>
     /// Checks if image is loaded using pre-found element.
-    /// An image is considered loaded if it has a source and positive dimensions.
+    /// An image is considered loaded if it occupies space.
     /// </summary>
     /// <param name="element">The pre-found element (may be null).</param>
     /// <returns>True if loaded, false otherwise, null if not found.</returns>
@@ -59,11 +45,9 @@ public partial class Image<TScope> : Base.ViewBase<TScope>
     {
         if (element == null) return null;
 
-        // Check if source is set
-        var source = GetSourceCore(element);
-        if (string.IsNullOrEmpty(source)) return false;
-
-        // Check if element has positive dimensions
+        // Rendered size is the whole of what can be observed: the source is app state that
+        // never reaches the accessibility tree, so an image that occupies space has loaded
+        // something and one that does not has not.
         var size = element.Size;
         return size.Width > 0 && size.Height > 0;
     }

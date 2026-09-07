@@ -43,17 +43,8 @@ public partial class DatePicker<TScope> : Base.ViewBase<TScope>
     protected virtual System.DateTime? GetDateValueCore(IMauiElement? element)
     {
         if (element == null) return null;
-
-        // Try Date attribute first (MAUI mobile)
-        var dateAttr = element.GetAttribute("Date")
-            ?? element.GetAttribute("SelectedDate")
-            ?? element.GetAttribute("Value")
-            ?? element.GetAttribute("value.value");
-
-        if (!string.IsNullOrEmpty(dateAttr) && System.DateTime.TryParse(dateAttr, out var dateValue))
-        {
-            return dateValue;
-        }
+        // No date or time property crosses into the accessibility tree; what follows reads
+        // the rendered value from the control's own parts.
 
         // Windows MAUI: DatePicker (CalendarDatePicker) has child Text with AutomationId="DateText"
         // whose Name contains the formatted date like "‎20‎-‎Jan‎-‎01" (with Unicode LTR marks)
@@ -61,7 +52,7 @@ public partial class DatePicker<TScope> : Base.ViewBase<TScope>
         var dateTextElements = element.FindElements(Locator.ByAutomationId("DateText"));
         if (dateTextElements.Count > 0)
         {
-            var dateTextName = dateTextElements[0].GetAttribute("Name");
+            var dateTextName = dateTextElements[0].Name;
             if (!string.IsNullOrEmpty(dateTextName) && TryParseDateString(dateTextName, out var dateTextValue))
             {
                 return dateTextValue;
@@ -76,7 +67,7 @@ public partial class DatePicker<TScope> : Base.ViewBase<TScope>
             foreach (var child in children)
             {
                 // Try child's Name attribute first (most reliable on Windows)
-                var childName = child.GetAttribute("Name");
+                var childName = child.Name;
                 if (!string.IsNullOrEmpty(childName) && TryParseDateString(childName, out var childNameDate))
                 {
                     return childNameDate;
@@ -96,7 +87,7 @@ public partial class DatePicker<TScope> : Base.ViewBase<TScope>
         }
 
         // Try element's own Name attribute (fallback)
-        var nameAttr = element.GetAttribute("Name");
+        var nameAttr = element.Name;
         if (!string.IsNullOrEmpty(nameAttr) && TryParseDateString(nameAttr, out var nameValue))
         {
             return nameValue;
@@ -112,41 +103,7 @@ public partial class DatePicker<TScope> : Base.ViewBase<TScope>
         return null;
     }
 
-    /// <summary>
-    /// Gets the minimum allowed date from the pre-found element.
-    /// </summary>
-    /// <param name="element">The pre-found element (may be null).</param>
-    /// <returns>The minimum date, or null if not available.</returns>
-    protected virtual System.DateTime? GetMinimumDateCore(IMauiElement? element)
-    {
-        if (element == null) return null;
 
-        var minAttr = element.GetAttribute("MinimumDate") ?? element.GetAttribute("Minimum");
-        if (!string.IsNullOrEmpty(minAttr) && System.DateTime.TryParse(minAttr, out var minValue))
-        {
-            return minValue;
-        }
-
-        return null;
-    }
-
-    /// <summary>
-    /// Gets the maximum allowed date from the pre-found element.
-    /// </summary>
-    /// <param name="element">The pre-found element (may be null).</param>
-    /// <returns>The maximum date, or null if not available.</returns>
-    protected virtual System.DateTime? GetMaximumDateCore(IMauiElement? element)
-    {
-        if (element == null) return null;
-
-        var maxAttr = element.GetAttribute("MaximumDate") ?? element.GetAttribute("Maximum");
-        if (!string.IsNullOrEmpty(maxAttr) && System.DateTime.TryParse(maxAttr, out var maxValue))
-        {
-            return maxValue;
-        }
-
-        return null;
-    }
 
     /// <summary>
     /// Sets the date on pre-found element.

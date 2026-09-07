@@ -15,27 +15,5 @@ namespace Brinell.Maui.Controls.Collection;
 public partial class TableView<TScope> : Base.ViewBase<TScope>
     where TScope : IMauiScope<TScope>
 {
-    #region Intent (GetIntent / WaitIntent / AssertIntent)
-
-    public string? GetIntent(int? timeoutMs = null)
-    {
-        return RunGetWithElement(element => GetIntentCore(element), timeoutMs);
-    }
-
-    public bool? WaitIntent(string? expected, int? timeoutMs = null)
-    {
-        return RunWaitWithElement(expected,
-           element => GetIntentCore(element) == expected,
-           timeoutMs);
-    }
-
-    public TScope AssertIntent(string? expected, string? message = null, int? timeoutMs = null)
-    {
-        return RunAssertWithElement(expected,
-           element => GetIntentCore(element), (actual, expected1) => (actual == expected1),
-           message ?? $"Expected Intent to be '{expected}'. Locator: {Locator}", timeoutMs);
-    }
-
-    #endregion
 
 }

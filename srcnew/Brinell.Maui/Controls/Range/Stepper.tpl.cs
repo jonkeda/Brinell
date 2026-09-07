@@ -188,7 +188,7 @@ public partial class Stepper<TScope> : Base.RangeControlBase<TScope>
             var label = TryFindValueLabel();
             if (label != null)
             {
-                var text = label.Text ?? label.GetAttribute("Name");
+                var text = label.Text ?? label.Name;
                 if (!string.IsNullOrEmpty(text))
                 {
                     // Parse value from text like "Quantity: 5" or just "5"

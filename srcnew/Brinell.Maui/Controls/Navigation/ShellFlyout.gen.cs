@@ -13,9 +13,15 @@ namespace Brinell.Maui.Controls.Navigation;
 /// affordance that reveals them.
 /// </summary>
 /// <remarks>
-/// The flyout's item host does not exist while the flyout is shut - on Windows the pane is
-/// created on opening, on Android the drawer is off-screen - so a shut flyout reports no items
-/// and <see cref="IsOpen"/> is answered by whether the host is there at all.
+/// A flyout is open when its host is visible <b>and</b> holds items. Neither half is enough on
+/// its own: Windows creates its pane on first opening and then keeps it hidden with its items
+/// still in the tree, so items alone would read as open forever; Android's host is the app's
+/// content frame, always visible, and it is the items that come and go. Each half was measured
+/// on the platform that needs it.
+/// <para>
+/// Asking whether the <i>items</i> are visible looks like the tidier rule and is not: Windows
+/// hosts an open pane in a window of its own, where its items report themselves off-screen.
+/// </para>
 /// </remarks>
 /// <typeparam name="TParent">The scope the shell belongs to.</typeparam>
 

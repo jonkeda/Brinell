@@ -25,9 +25,11 @@ namespace Brinell.Maui.Controls.Collection;
 /// }
 /// </code>
 /// <para>
-/// Position lives here rather than on <see cref="CollectionObjectBase{TParent, TSelf, TItem}"/>:
-/// only a carousel has a "current" item, so putting it on the shared base would give every
-/// collection a member most cannot honour.
+/// There is deliberately no <c>Position</c> or <c>IsLoopEnabled</c> here. Both were read from
+/// a MAUI bindable property through <c>GetAttribute</c>, and neither platform publishes those
+/// to automation: Windows maps seven attribute names and nothing else, Android raises for an
+/// unknown one. The members existed and answered a constant - 0 and false - whatever the app
+/// did. A carousel's position needs an automation source before it can be reported.
 /// </para>
 /// </remarks>
 /// <typeparam name="TParent">The parent scope type (a page or another container).</typeparam>
@@ -39,50 +41,6 @@ public abstract partial class CarouselView<TParent, TSelf, TItem> : CollectionOb
     where TSelf : CarouselView<TParent, TSelf, TItem>
     where TItem : class, IMauiItemContainer<TSelf, TItem>
 {
-    #region Position (GetPosition / WaitPosition / AssertPosition)
-
-    public int? GetPosition(int? timeoutMs = null)
-    {
-        return RunGetWithElement(element => GetPositionCore(element), timeoutMs);
-    }
-
-    public bool? WaitPosition(int? expected, int? timeoutMs = null)
-    {
-        return RunWaitWithElement(expected,
-           element => GetPositionCore(element) == expected,
-           timeoutMs);
-    }
-
-    public TSelf AssertPosition(int? expected, string? message = null, int? timeoutMs = null)
-    {
-        return RunAssertWithElement(expected,
-           element => GetPositionCore(element), (actual, expected1) => (actual == expected1),
-           message ?? $"Expected Position to be '{expected}'. Locator: {Locator}", timeoutMs);
-    }
-
-    #endregion
-    #region LoopEnabled (IsLoopEnabled / WaitLoopEnabled / AssertLoopEnabled)
-
-    public bool? IsLoopEnabled()
-    {
-        return IsLoopEnabledCore(TryFindElement()) == true;
-    }
-
-    public bool WaitLoopEnabled(bool? expected = true, int? timeoutMs = null)
-    {
-        return RunWaitWithOptionalElement(expected,
-           element => IsLoopEnabledCore(element) == expected!.Value,
-           timeoutMs);
-    }
-
-    public TSelf AssertLoopEnabled(bool? expected = true, string? message = null, int? timeoutMs = null)
-    {
-        return RunAssertWithOptionalElement(expected,
-           IsLoopEnabledCore, (actual, expected1) => (actual == expected1),
-           message ?? $"Expected LoopEnabled to be '{expected}'. Locator: {Locator}", timeoutMs);
-    }
-
-    #endregion
     #region SwipeNext
 
     public TSelf SwipeNext()

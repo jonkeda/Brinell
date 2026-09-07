@@ -37,27 +37,5 @@ public partial class ProgressBar<TScope> : Base.ViewBase<TScope>
     }
 
     #endregion
-    #region Indeterminate (IsIndeterminate / WaitIndeterminate / AssertIndeterminate)
-
-    public bool? IsIndeterminate()
-    {
-        return IsIndeterminateCore(TryFindElement()) == true;
-    }
-
-    public bool WaitIndeterminate(bool? expected = true, int? timeoutMs = null)
-    {
-        return RunWaitWithElement(expected,
-           element => IsIndeterminateCore(element) == expected!.Value,
-           timeoutMs);
-    }
-
-    public TScope AssertIndeterminate(bool? expected = true, string? message = null, int? timeoutMs = null)
-    {
-        return RunAssertWithElement(expected,
-           IsIndeterminateCore, (actual, expected1) => (actual == expected1),
-           message ?? $"Expected Indeterminate to be '{expected}'. Locator: {Locator}", timeoutMs);
-    }
-
-    #endregion
 
 }

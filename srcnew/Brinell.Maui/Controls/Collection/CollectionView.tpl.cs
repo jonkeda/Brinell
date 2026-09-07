@@ -59,29 +59,8 @@ public abstract partial class CollectionView<TParent, TSelf, TItem>
     {
     }
 
-    #region Core Methods (Element-Aware, No Logging)
-
-    /// <summary>
-    /// Gets the collection's selection mode.
-    /// </summary>
-    /// <param name="element">The collection's own element (may be null).</param>
-    /// <returns>The selection mode string, or null when the attribute is unavailable.</returns>
-    [AbsenceTolerant]
-    protected virtual string? GetSelectionModeCore(IMauiElement? element)
-        => element?.GetAttribute("SelectionMode");
-
-    /// <summary>
-    /// Whether multiple selection is enabled.
-    /// </summary>
-    /// <remarks>
-    /// Derived from <see cref="GetSelectionModeCore"/> rather than read separately: MAUI
-    /// reports one SelectionMode attribute, and "multiple" is a reading of it.
-    /// </remarks>
-    /// <param name="element">The collection's own element (may be null).</param>
-    /// <returns>True for multiple selection; false for single or none; null if unknown.</returns>
-    [AbsenceTolerant]
-    protected virtual bool? IsMultiSelectEnabledCore(IMauiElement? element)
-        => GetSelectionModeCore(element)?.Equals("Multiple", StringComparison.OrdinalIgnoreCase);
-
-    #endregion
+    // No SelectionMode or MultiSelectEnabled: both were read from a MAUI bindable property
+    // through GetAttribute, which neither platform publishes to automation, so they answered
+    // null and false for every app. Windows can supply the real thing through the selection
+    // pattern (CanSelectMultiple) once an element capability exposes it.
 }

@@ -53,39 +53,17 @@ public abstract partial class FocusableControlBase<TScope> : ViewBase<TScope>, I
     }
 
     /// <summary>
-    /// Gets focus state from pre-found element.
-    /// Reads from HasKeyboardFocus or focused attribute.
+    /// Gets focus state from the pre-found element.
     /// </summary>
+    /// <remarks>
+    /// Null when there is no element - unknown, rather than "not focused". This used to probe
+    /// three attribute names and return false when none answered, which on Windows was always:
+    /// none of them is a name UIA publishes, so a focused control reported itself unfocused.
+    /// </remarks>
     /// <param name="element">The pre-found element.</param>
-    /// <returns>True if focused, false if not, null if element is null.</returns>
+    /// <returns>True if focused, false if not, null if there is no element.</returns>
     protected virtual bool? IsFocusedCore(IMauiElement? element)
-    {
-        if (element == null) return null;
-
-        // Try HasKeyboardFocus attribute (Windows/MAUI)
-        var hasFocus = element.GetAttribute("HasKeyboardFocus");
-        if (!string.IsNullOrEmpty(hasFocus))
-        {
-            return hasFocus.Equals("true", StringComparison.OrdinalIgnoreCase);
-        }
-
-        // Try focused attribute
-        var focused = element.GetAttribute("focused");
-        if (!string.IsNullOrEmpty(focused))
-        {
-            return focused.Equals("true", StringComparison.OrdinalIgnoreCase);
-        }
-
-        // Try IsFocused attribute
-        var isFocused = element.GetAttribute("IsFocused");
-        if (!string.IsNullOrEmpty(isFocused))
-        {
-            return isFocused.Equals("true", StringComparison.OrdinalIgnoreCase);
-        }
-
-        // Default to false if no attribute found
-        return false;
-    }
+        => element?.Focused;
 
     #endregion
 }

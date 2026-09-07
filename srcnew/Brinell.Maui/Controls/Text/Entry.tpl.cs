@@ -114,13 +114,11 @@ public partial class Entry<TScope> : Base.FocusableControlBase<TScope>, IEditabl
     protected virtual string? GetPlaceholderCore(IMauiElement? element)
     {
         if (element == null) return null;
-        // Windows MAUI uses "Name" for placeholder when entry is empty
-        // Android uses hint, iOS uses placeholder
-        return element.GetAttribute("Name")
-            ?? element.GetAttribute("HelpText")
-            ?? element.GetAttribute("hint")
-            ?? element.GetAttribute("placeholderValue")
-            ?? element.GetAttribute("placeholder");
+
+        // The hint is what a field shows before it is filled in, and every platform publishes it.
+        // An empty MAUI Entry on Windows also reports its placeholder as the accessible name -
+        // a coincidence of that platform rather than a binding, so it is consulted second.
+        return element.Hint ?? element.Name;
     }
 
     #endregion
@@ -136,13 +134,11 @@ public partial class Entry<TScope> : Base.FocusableControlBase<TScope>, IEditabl
     {
         if (element == null) return null;
 
-        var readOnly = element.GetAttribute("readonly") ?? element.GetAttribute("isReadOnly");
-        if (readOnly != null) return readOnly.Equals("true", StringComparison.OrdinalIgnoreCase);
-
-        var editable = element.GetAttribute("editable");
-        if (editable != null) return !editable.Equals("true", StringComparison.OrdinalIgnoreCase);
-
-        return false;
+        // Read-only is the Value pattern's business. Windows answers it; Android publishes no
+        // editability at all, so it answers null - unknown - rather than "editable".
+        return element is IValuePatternElement { SupportsValuePattern: true } value
+            ? value.IsValuePatternReadOnly()
+            : null;
     }
 
     #endregion

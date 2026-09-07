@@ -37,7 +37,7 @@ namespace Brinell.Maui.Appium;
 /// stops here, at the element: no control object above this layer branches on platform.
 /// </para>
 /// </remarks>
-public sealed class AppiumMauiElement : IMauiElement, ITogglePatternElement, ISelectionItemPatternElement
+public sealed class AppiumMauiElement : IMauiElement, ITogglePatternElement, ISelectionItemPatternElement, IValuePatternElement
 {
     private readonly AppiumElement _element;
     private readonly AppiumMauiDriver _driver;
@@ -586,6 +586,42 @@ public sealed class AppiumMauiElement : IMauiElement, ITogglePatternElement, ISe
         MauiPlatform.iOS => Present(GetAttribute("name")),
         _ => null
     };
+
+    #region IValuePatternElement
+
+    /// <summary>
+    /// Not supported: neither UiAutomator2 nor XCUITest publishes a Value pattern, and an
+    /// element's text is not the same question. Reporting false here keeps a control's fallback
+    /// honest instead of answering with something that only looks like a value.
+    /// </summary>
+    public bool SupportsValuePattern => false;
+
+    /// <inheritdoc />
+    public string? GetValuePattern() => null;
+
+    /// <inheritdoc />
+    public bool? IsValuePatternReadOnly() => null;
+
+    #endregion
+
+    /// <inheritdoc />
+    public string? Hint => _driver.Platform switch
+    {
+        MauiPlatform.Android => Present(GetAttribute("hint")),
+        MauiPlatform.iOS => Present(GetAttribute("placeholderValue")),
+        _ => null
+    };
+
+    /// <inheritdoc />
+    public bool Focused => _driver.Platform switch
+    {
+        MauiPlatform.Android => IsTrue(GetAttribute("focused")),
+        MauiPlatform.iOS => IsTrue(GetAttribute("hasFocus")),
+        _ => false
+    };
+
+    private static bool IsTrue(string? value)
+        => string.Equals(value, "true", StringComparison.OrdinalIgnoreCase);
 
     /// <inheritdoc />
     /// <remarks>

@@ -15,28 +15,6 @@ namespace Brinell.Maui.Controls.Buttons;
 public partial class ImageButton<TScope> : Base.ClickableControlBase<TScope>
     where TScope : IMauiScope<TScope>
 {
-    #region Source (GetSource / WaitSource / AssertSource)
-
-    public string? GetSource(int? timeoutMs = null)
-    {
-        return RunGetWithElement(element => GetSourceCore(element), timeoutMs);
-    }
-
-    public bool? WaitSource(string? expected, int? timeoutMs = null)
-    {
-        return RunWaitWithElement(expected,
-           element => GetSourceCore(element) == expected,
-           timeoutMs);
-    }
-
-    public TScope AssertSource(string? expected, string? message = null, int? timeoutMs = null)
-    {
-        return RunAssertWithElement(expected,
-           element => GetSourceCore(element), (actual, expected1) => (actual == expected1),
-           message ?? $"Expected Source to be '{expected}'. Locator: {Locator}", timeoutMs);
-    }
-
-    #endregion
     #region Aspect (GetAspect / WaitAspect / AssertAspect)
 
     public string? GetAspect(int? timeoutMs = null)

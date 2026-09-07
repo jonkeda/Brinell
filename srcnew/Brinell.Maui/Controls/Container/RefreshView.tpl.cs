@@ -61,18 +61,14 @@ public partial class RefreshView<TScope> : Base.ViewBase<TScope>, IRefreshableCo
     [AbsenceTolerant]
     protected virtual bool? IsRefreshingCore(IMauiElement? element)
     {
-        if (element == null) return null;
-
-        foreach (var name in new[] { "IsRefreshing", "Refreshing" })
-        {
-            var value = element.GetAttribute(name);
-            if (!string.IsNullOrEmpty(value))
-            {
-                return value.Equals("true", StringComparison.OrdinalIgnoreCase);
-            }
-        }
-
-        return false;
+        // Unknown, not false. No platform publishes a refreshing state: it was read as an
+        // attribute named "IsRefreshing" or "Refreshing", which neither Windows nor Android has,
+        // so the honest answer is that nothing was observed. The member stays because
+        // IRefreshableControlObject requires it and other platforms can answer it.
+        //
+        // To make this real on MAUI, watch the refresh indicator the way ActivityIndicator does
+        // - that is a child element, and children are observable.
+        return null;
     }
 
     #endregion

@@ -50,21 +50,8 @@ public abstract partial class RangeControlBase<TScope> : FocusableControlBase<TS
                 return value.Value;
         }
 
-        // Try RangeValue.Value attribute first (Windows/MAUI)
-        var rangeValue = element.GetAttribute("RangeValue.Value");
-        if (!string.IsNullOrEmpty(rangeValue) && double.TryParse(rangeValue, out var rv))
-        {
-            return rv;
-        }
-
-        // Try Value attribute
-        var valueAttr = element.GetAttribute("Value");
-        if (!string.IsNullOrEmpty(valueAttr) && double.TryParse(valueAttr, out var v))
-        {
-            return v;
-        }
-
-        // Try text content as fallback
+        // Text is the only other place a value can be read: Android publishes no range pattern,
+        // so a seek bar answers through whatever text it shows.
         var text = element.Text;
         if (!string.IsNullOrEmpty(text) && double.TryParse(text, out var t))
         {
@@ -118,18 +105,8 @@ public abstract partial class RangeControlBase<TScope> : FocusableControlBase<TS
                 return min.Value;
         }
 
-        var minAttr = element.GetAttribute("RangeValue.Minimum");
-        if (!string.IsNullOrEmpty(minAttr) && double.TryParse(minAttr, out var min2))
-        {
-            return min2;
-        }
-
-        var minAttr2 = element.GetAttribute("Minimum");
-        if (!string.IsNullOrEmpty(minAttr2) && double.TryParse(minAttr2, out var min3))
-        {
-            return min3;
-        }
-
+        // No attribute fallback: a range's bounds are published by the range pattern or not at
+        // all, and Android publishes neither.
         return null;
     }
 
@@ -150,18 +127,7 @@ public abstract partial class RangeControlBase<TScope> : FocusableControlBase<TS
             if (max.HasValue)
                 return max.Value;
         }
-
-        var maxAttr = element.GetAttribute("RangeValue.Maximum");
-        if (!string.IsNullOrEmpty(maxAttr) && double.TryParse(maxAttr, out var max2))
-        {
-            return max2;
-        }
-
-        var maxAttr2 = element.GetAttribute("Maximum");
-        if (!string.IsNullOrEmpty(maxAttr2) && double.TryParse(maxAttr2, out var max3))
-        {
-            return max3;
-        }
+        // Published by the range pattern or not at all - see GetMinimumCore.
 
         return null;
     }
@@ -183,18 +149,7 @@ public abstract partial class RangeControlBase<TScope> : FocusableControlBase<TS
             if (step.HasValue)
                 return step.Value;
         }
-
-        var stepAttr = element.GetAttribute("RangeValue.SmallChange");
-        if (!string.IsNullOrEmpty(stepAttr) && double.TryParse(stepAttr, out var step2))
-        {
-            return step2;
-        }
-
-        var stepAttr2 = element.GetAttribute("Step");
-        if (!string.IsNullOrEmpty(stepAttr2) && double.TryParse(stepAttr2, out var step3))
-        {
-            return step3;
-        }
+        // Published by the range pattern or not at all - see GetMinimumCore.
 
         return 1.0; // Default step
     }

@@ -167,7 +167,7 @@ public abstract partial class ToggleControlBase<TScope> : ClickableControlBase<T
 
     /// <summary>
     /// Gets checked state from pre-found element.
-    /// Reads from various toggle state attributes used by different platforms.
+    /// Reads the toggle pattern, then selection - the two ways a platform publishes it.
     /// </summary>
     /// <param name="element">The pre-found element.</param>
     /// <returns>True if checked, false if unchecked, null if element is null.</returns>
@@ -175,65 +175,15 @@ public abstract partial class ToggleControlBase<TScope> : ClickableControlBase<T
     {
         if (element == null) return null;
 
-        if (element is ITogglePatternElement toggle && toggle.SupportsTogglePattern)
+        if (element is ITogglePatternElement { SupportsTogglePattern: true } toggle)
         {
             var checkedViaPattern = toggle.IsTogglePatternChecked();
             if (checkedViaPattern != null)
                 return checkedViaPattern;
         }
 
-        // Windows UIA patterns - try multiple attribute name formats
-        // Different Appium Windows driver versions may expose these differently
-        string[] toggleStateAttributes = {
-            "ToggleState",           // Standard Windows UIA
-            "Toggle.ToggleState",    // Namespaced format
-            "toggle",                // Lowercase variant
-        };
-
-        foreach (var attrName in toggleStateAttributes)
-        {
-            var toggleState = element.GetAttribute(attrName);
-            if (!string.IsNullOrEmpty(toggleState))
-            {
-                // Windows UIA ToggleState: 0=Off, 1=On, 2=Indeterminate
-                return toggleState.Equals("1", StringComparison.OrdinalIgnoreCase) ||
-                       toggleState.Equals("On", StringComparison.OrdinalIgnoreCase) ||
-                       toggleState.Equals("True", StringComparison.OrdinalIgnoreCase) ||
-                       toggleState.Equals("ToggleState_On", StringComparison.OrdinalIgnoreCase);
-            }
-        }
-
-        // Windows UIA SelectionItem pattern (used by RadioButton)
-        string[] selectionAttributes = {
-            "SelectionItem.IsSelected",  // Windows UIA SelectionItem pattern
-            "IsSelected",                // Shorthand
-        };
-
-        foreach (var attrName in selectionAttributes)
-        {
-            var selectedAttr = element.GetAttribute(attrName);
-            if (!string.IsNullOrEmpty(selectedAttr))
-            {
-                return selectedAttr.Equals("True", StringComparison.OrdinalIgnoreCase) ||
-                       selectedAttr.Equals("1", StringComparison.OrdinalIgnoreCase);
-            }
-        }
-
-        // Try checked/selected attributes (Android/iOS/Web)
-        string[] checkedAttributes = { "checked", "IsChecked", "Selected", "selected", "IsOn" };
-
-        foreach (var attrName in checkedAttributes)
-        {
-            var checkedAttr = element.GetAttribute(attrName);
-            if (!string.IsNullOrEmpty(checkedAttr))
-            {
-                return checkedAttr.Equals("true", StringComparison.OrdinalIgnoreCase) ||
-                       checkedAttr.Equals("1", StringComparison.OrdinalIgnoreCase);
-            }
-        }
-
-        // Try the Selenium Selected property as fallback
-        // This often works for toggle controls in Windows
+        // A radio button reports itself through selection rather than through a toggle, and
+        // Selected reads the selection pattern on Windows and the selected flag on Android.
         return element.Selected;
     }
 

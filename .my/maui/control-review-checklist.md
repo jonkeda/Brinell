@@ -303,17 +303,19 @@ appears in every control below.
 ### [ ] CollectionView ✅ 🔍
 `base: CollectionObjectBase<TParent, TSelf, TItem>` · self-referencing generic
 
-- [ ] `GetSelectionMode` / `WaitSelectionMode` / `AssertSelectionMode`
-- [ ] `IsMultiSelectEnabled` / `WaitMultiSelectEnabled` / `AssertMultiSelectEnabled`
+- [x] ~~`GetSelectionMode` / `WaitSelectionMode` / `AssertSelectionMode`~~ removed
+- [x] ~~`IsMultiSelectEnabled` / `WaitMultiSelectEnabled` / `AssertMultiSelectEnabled`~~ removed
+      — read a bindable property no platform publishes; answered a constant for every app.
+      `CanSelectMultiple` from the Windows selection pattern could back this for real.
 - [ ] Item scoping — rows with repeating AutomationIds stay distinct
 
 ### [ ] CarouselView ✅ 🔍
 `base: CollectionObjectBase<TParent, TSelf, TItem>`
 
-- [ ] `GetPosition` / `WaitPosition` / `AssertPosition`
-- [ ] `IsLoopEnabled` / `WaitLoopEnabled` / `AssertLoopEnabled`
+- [x] ~~`GetPosition` / `WaitPosition` / `AssertPosition`~~ removed — always answered 0
+- [x] ~~`IsLoopEnabled` / `WaitLoopEnabled` / `AssertLoopEnabled`~~ removed — always false
 - [ ] `SwipeNext` / `SwipePrevious`
-- [ ] ✋ `GetCurrentItem`
+- [x] ~~✋ `GetCurrentItem`~~ removed — it was `TryItem(GetPosition())`, so always item 0
 
 ### [ ] ListView ✅ 🔍
 `base: CollectionObjectBase` — no members of its own
@@ -323,8 +325,8 @@ appears in every control below.
 ### [ ] TableView ✅ 🔍
 `base: ViewBase`
 
-- [ ] `GetIntent` / `WaitIntent` / `AssertIntent`
-- [ ] ✋ `HasIntent` — case-insensitive
+- [x] ~~`GetIntent` / `WaitIntent` / `AssertIntent`~~ removed — always null
+- [x] ~~✋ `HasIntent`~~ removed — always null
 
 ### [ ] IndicatorView ✅ 🔍
 `base: ViewBase` — no members of its own

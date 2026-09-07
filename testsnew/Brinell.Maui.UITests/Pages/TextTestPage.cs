@@ -21,6 +21,9 @@ public class TextTestPage : PageObjectBase<TextTestPage>
     /// </summary>
     public Entry<TextTestPage> TestEntry => new(this,"TestEntry");
 
+    /// <summary>An entry the app marked read-only.</summary>
+    public Entry<TextTestPage> ReadOnlyEntry => new(this,"ReadOnlyEntry");
+
     /// <summary>
     /// The Editor test control for multi-line text input.
     /// </summary>

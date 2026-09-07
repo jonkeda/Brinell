@@ -26,23 +26,6 @@ public partial class ImageButton<TScope> : Base.ClickableControlBase<TScope>
 
     #region Image Properties - Core Methods
 
-    /// <summary>
-    /// Gets the source/path of the image from the pre-found element.
-    /// </summary>
-    /// <param name="element">The pre-found element.</param>
-    /// <returns>The image source, or null if not available.</returns>
-    protected virtual string? GetSourceCore(IMauiElement element)
-    {
-        var source = element.GetAttribute("Source");
-        if (!string.IsNullOrEmpty(source))
-            return source;
-
-        source = element.GetAttribute("src");
-        if (!string.IsNullOrEmpty(source))
-            return source;
-
-        return null;
-    }
 
     /// <summary>
     /// Gets the aspect ratio of the image from the pre-found element.

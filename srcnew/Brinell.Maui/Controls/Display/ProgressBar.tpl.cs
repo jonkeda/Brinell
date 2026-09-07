@@ -53,15 +53,7 @@ public partial class ProgressBar<TScope> : Base.ViewBase<TScope>
             }
         }
 
-        var valueAttr = element.GetAttribute("Value")
-            ?? element.GetAttribute("Progress")
-            ?? element.GetAttribute("RangeValue.Value");
-
-        if (!string.IsNullOrEmpty(valueAttr) && double.TryParse(valueAttr, out var value))
-        {
-            return value;
-        }
-
+        // Nothing else to ask: a progress bar without the range pattern publishes no progress.
         return null;
     }
 
@@ -69,25 +61,6 @@ public partial class ProgressBar<TScope> : Base.ViewBase<TScope>
 
     #region Indeterminate - Core Methods
 
-    /// <summary>
-    /// Checks if progress bar is in indeterminate mode using pre-found element.
-    /// </summary>
-    /// <param name="element">The pre-found element (may be null).</param>
-    /// <returns>True if indeterminate, false otherwise, null if not found.</returns>
-    protected virtual bool? IsIndeterminateCore(IMauiElement? element)
-    {
-        if (element == null) return null;
-
-        var isIndeterminate = element.GetAttribute("IsIndeterminate")
-            ?? element.GetAttribute("isIndeterminate");
-
-        if (!string.IsNullOrEmpty(isIndeterminate))
-        {
-            return isIndeterminate.Equals("true", StringComparison.OrdinalIgnoreCase);
-        }
-
-        return false;
-    }
 
     #endregion
 
@@ -135,15 +108,6 @@ public partial class ProgressBar<TScope> : Base.ViewBase<TScope>
             (actual, exp) => actual.HasValue && exp.HasValue && Math.Abs(actual.Value - exp.Value) <= tolerance,
             message ?? $"Expected progress {expected} (±{tolerance}). Locator: {Locator}", timeoutMs);
     }
-
-    /// <summary>
-    /// Asserts progress bar is indeterminate.
-    /// </summary>
-    /// <param name="message">Optional assertion message.</param>
-    /// <param name="timeoutMs">Optional timeout.</param>
-    /// <returns>The containing scope for fluent chaining.</returns>
-    public TScope AssertIndeterminate(string? message, int? timeoutMs = null)
-        => AssertIndeterminate(true, message, timeoutMs);
 
     #endregion
 }

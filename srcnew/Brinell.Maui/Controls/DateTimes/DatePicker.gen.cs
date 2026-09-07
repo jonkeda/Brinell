@@ -37,50 +37,6 @@ public partial class DatePicker<TScope> : Base.ViewBase<TScope>
     }
 
     #endregion
-    #region MinimumDate (GetMinimumDate / WaitMinimumDate / AssertMinimumDate)
-
-    public System.DateTime? GetMinimumDate(int? timeoutMs = null)
-    {
-        return RunGetWithElement(element => GetMinimumDateCore(element), timeoutMs);
-    }
-
-    public bool? WaitMinimumDate(System.DateTime? expected, int? timeoutMs = null)
-    {
-        return RunWaitWithElement(expected,
-           element => GetMinimumDateCore(element) == expected,
-           timeoutMs);
-    }
-
-    public TScope AssertMinimumDate(System.DateTime? expected, string? message = null, int? timeoutMs = null)
-    {
-        return RunAssertWithElement(expected,
-           element => GetMinimumDateCore(element), (actual, expected1) => (actual == expected1),
-           message ?? $"Expected MinimumDate to be '{expected}'. Locator: {Locator}", timeoutMs);
-    }
-
-    #endregion
-    #region MaximumDate (GetMaximumDate / WaitMaximumDate / AssertMaximumDate)
-
-    public System.DateTime? GetMaximumDate(int? timeoutMs = null)
-    {
-        return RunGetWithElement(element => GetMaximumDateCore(element), timeoutMs);
-    }
-
-    public bool? WaitMaximumDate(System.DateTime? expected, int? timeoutMs = null)
-    {
-        return RunWaitWithElement(expected,
-           element => GetMaximumDateCore(element) == expected,
-           timeoutMs);
-    }
-
-    public TScope AssertMaximumDate(System.DateTime? expected, string? message = null, int? timeoutMs = null)
-    {
-        return RunAssertWithElement(expected,
-           element => GetMaximumDateCore(element), (actual, expected1) => (actual == expected1),
-           message ?? $"Expected MaximumDate to be '{expected}'. Locator: {Locator}", timeoutMs);
-    }
-
-    #endregion
     #region SetDate
 
     public TScope SetDate(System.DateTime? date, int? timeoutMs = null)

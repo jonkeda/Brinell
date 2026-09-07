@@ -42,20 +42,9 @@ public partial class WebView<TScope> : Base.ViewBase<TScope>
     {
         if (element == null) return null;
 
-        var url = element.GetAttribute("url");
-        if (!string.IsNullOrEmpty(url))
-            return url;
-
-        url = element.GetAttribute("Source");
-        if (!string.IsNullOrEmpty(url))
-            return url;
-
-        // Fallback: ValuePattern or Name (on Windows, WebView2 may expose URL here)
-        var text = element.Text;
-        if (!string.IsNullOrEmpty(text))
-            return text;
-
-        return null;
+        // A web view publishes no url of its own; on Windows WebView2 surfaces it as the
+        // element's text. In a web context the honest way to ask is a script, not an element.
+        return element.Text;
     }
 
     /// <summary>
@@ -69,54 +58,13 @@ public partial class WebView<TScope> : Base.ViewBase<TScope>
     {
         if (element == null) return null;
 
-        var title = element.GetAttribute("title");
+        var title = element.Name;
         if (!string.IsNullOrEmpty(title)) return title;
 
         return element.Text;
     }
 
-    /// <summary>
-    /// Checks if the WebView can navigate back.
-    /// </summary>
-    /// <remarks>
-    /// Returns null rather than false when the attribute is absent: "this platform does not
-    /// report it" is not the same answer as "there is no history", and a test asserting the
-    /// latter should not pass on the former.
-    /// </remarks>
-    /// <param name="element">The pre-found element (may be null).</param>
-    /// <returns>True if it can go back, false if not, null if unknown.</returns>
-    [AbsenceTolerant]
-    protected virtual bool? IsCanGoBackCore(IMauiElement? element)
-    {
-        if (element == null) return null;
 
-        var attr = element.GetAttribute("CanGoBack");
-        if (!string.IsNullOrEmpty(attr))
-        {
-            return attr.Equals("true", StringComparison.OrdinalIgnoreCase);
-        }
-
-        return null;
-    }
-
-    /// <summary>
-    /// Checks if the WebView can navigate forward.
-    /// </summary>
-    /// <param name="element">The pre-found element (may be null).</param>
-    /// <returns>True if it can go forward, false if not, null if unknown.</returns>
-    [AbsenceTolerant]
-    protected virtual bool? IsCanGoForwardCore(IMauiElement? element)
-    {
-        if (element == null) return null;
-
-        var attr = element.GetAttribute("CanGoForward");
-        if (!string.IsNullOrEmpty(attr))
-        {
-            return attr.Equals("true", StringComparison.OrdinalIgnoreCase);
-        }
-
-        return null;
-    }
 
     #endregion
 

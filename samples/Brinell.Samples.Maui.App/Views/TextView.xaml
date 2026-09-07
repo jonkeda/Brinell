@@ -36,6 +36,13 @@
                 AutomationId="TestEntry"
                 PlaceholderColor="{AppThemeBinding Light=LightGray, Dark=Gray}" />
 
+            <!-- Read-only, so IsReadOnly has something to report. Windows publishes it through
+                 the Value pattern; Android publishes no editability at all. -->
+            <Entry
+                AutomationId="ReadOnlyEntry"
+                Text="Read only"
+                IsReadOnly="True" />
+
             <Label 
                 Text="{Binding EntryStatusMessage}" 
                 AutomationId="EntryStatusLabel"

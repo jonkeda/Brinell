@@ -37,6 +37,27 @@ public interface IMauiElement : IElement<IMauiElement>
     /// </remarks>
     string? Name { get; }
 
+    /// <summary>
+    /// Whether the element currently has keyboard focus.
+    /// </summary>
+    /// <remarks>
+    /// A property rather than an attribute lookup because focus is one of the things every
+    /// accessibility tree publishes first-class: UIA as <c>HasKeyboardFocus</c>, Android as
+    /// <c>focused</c>, iOS as <c>hasFocus</c>. Asking for it by string worked on Android by
+    /// coincidence of naming and returned null on Windows, where the control was focused all
+    /// along - see .my/GetAttribute/audit-what-getattribute-can-answer.md.
+    /// </remarks>
+    bool Focused { get; }
+
+    /// <summary>
+    /// The element's hint text - what a field shows before it is filled in.
+    /// </summary>
+    /// <remarks>
+    /// Published by every platform under its own name: UIA <c>HelpText</c>, Android <c>hint</c>,
+    /// iOS <c>placeholderValue</c>. Null when the element has none.
+    /// </remarks>
+    string? Hint { get; }
+
     #endregion
 
     #region DOM Access (Hybrid Apps)

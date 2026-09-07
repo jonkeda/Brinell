@@ -40,17 +40,10 @@ public partial class Picker<TScope> : Base.SelectorControlBase<TScope>
     {
         if (element == null) return null;
 
-        // Try Title attribute first
-        var title = element.GetAttribute("Title");
-        if (!string.IsNullOrEmpty(title))
-            return title;
-
-        // Try Name attribute
-        var name = element.GetAttribute("Name");
-        if (!string.IsNullOrEmpty(name))
-            return name;
-
-        return null;
+        // The accessible name, which is what a picker's Title becomes once rendered. Not the
+        // MAUI Title property - nothing publishes that - so a picker whose name is set from
+        // something else reports that instead.
+        return element.Name;
     }
 
     #endregion

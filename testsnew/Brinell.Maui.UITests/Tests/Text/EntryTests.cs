@@ -197,4 +197,55 @@ public class EntryTests
         page.EntryStatusLabel.AssertTextContains("Ready");
         return Task.CompletedTask;
     }
+
+    /// <summary>
+    /// Focusing the entry is observable through IsFocused.
+    /// </summary>
+    /// <remarks>
+    /// The test that was missing. <c>IsFocused</c> read three attribute names that Windows does
+    /// not publish and returned false when none answered, so it reported "not focused" for a
+    /// focused control on every Windows run - and nothing failed, because nothing asked.
+    /// See .my/GetAttribute/audit-what-getattribute-can-answer.md.
+    /// </remarks>
+    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [Trait("Method", "IsFocused")]
+    public Task Entry_Focus_IsReported()
+    {
+        var page = GetPage();
+
+        page.TestEntry.Focus();
+
+        page.TestEntry.AssertFocused();
+
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// A read-only entry reports itself read-only, and an ordinary one does not.
+    /// </summary>
+    /// <remarks>
+    /// Windows answers through the Value pattern. Android publishes no editability, so the test
+    /// asks the element whether the pattern is there at all and asserts nothing when it is not -
+    /// what each platform can actually know, rather than a platform branch.
+    /// </remarks>
+    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [Trait("Method", "IsReadOnly")]
+    public Task Entry_ReadOnly_IsReported()
+    {
+        var page = GetPage();
+
+        var element = _fixture.Context.FindElement(Locator.ByAutomationId("ReadOnlyEntry"));
+        if (element is not IValuePatternElement { SupportsValuePattern: true })
+        {
+            // This platform publishes no editability, so there is nothing to assert. A
+            // capability check rather than a platform check: the test asks what the element can
+            // answer, exactly as the control does.
+            return Task.CompletedTask;
+        }
+
+        Assert.True(page.ReadOnlyEntry.IsReadOnly());
+        Assert.False(page.TestEntry.IsReadOnly());
+
+        return Task.CompletedTask;
+    }
 }

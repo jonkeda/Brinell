@@ -706,6 +706,31 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
     #endregion
     #region Attributes
 
+    /// <summary>
+    /// Reads a named attribute straight from the platform.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The deliberate escape hatch, and the only place in the control library that asks for an
+    /// attribute by name. You are asking <b>one platform a question in its own vocabulary</b>:
+    /// Windows answers twelve names (automation id, name, class, control type, enabled, visible,
+    /// help text and the scroll percentages) and null to everything else; Android answers
+    /// UiAutomator2's accessibility attributes - <c>text</c>, <c>content-desc</c>,
+    /// <c>resource-id</c>, <c>checked</c>, <c>selected</c>, <c>focused</c>, <c>hint</c> and
+    /// friends - and null to the rest.
+    /// </para>
+    /// <para>
+    /// A null answer therefore means either "empty" or "this platform has no such attribute",
+    /// and nothing here can tell you which. That is why controls do not use it: a MAUI
+    /// bindable property is not an automation attribute, so asking for <c>Value</c> or
+    /// <c>Source</c> by name returns null on every device and reads as data. Everything a
+    /// control needs comes from a member on <c>IMauiElement</c> or a pattern capability
+    /// instead - see <c>.my/GetAttribute/</c>.
+    /// </para>
+    /// </remarks>
+    /// <param name="element">The pre-found element.</param>
+    /// <param name="name">The platform's own attribute name.</param>
+    /// <returns>The value, or null when absent - or unsupported.</returns>
     protected virtual string? GetAttributeCore(IMauiElement element, string? name)
     {
         if (string.IsNullOrEmpty(name))

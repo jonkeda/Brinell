@@ -43,23 +43,8 @@ public partial class TimePicker<TScope> : Base.ViewBase<TScope>
     protected virtual TimeSpan? GetTimeValueCore(IMauiElement? element)
     {
         if (element == null) return null;
-
-        // Try Time attribute first (MAUI mobile)
-        var timeAttr = element.GetAttribute("Time")
-            ?? element.GetAttribute("SelectedTime")
-            ?? element.GetAttribute("Value")
-            ?? element.GetAttribute("value.value");
-
-        if (!string.IsNullOrEmpty(timeAttr) && TimeSpan.TryParse(timeAttr, out var timeValue))
-        {
-            return timeValue;
-        }
-
-        // Try parsing from DateTime attribute
-        if (!string.IsNullOrEmpty(timeAttr) && System.DateTime.TryParse(timeAttr, out var dateTimeValue))
-        {
-            return dateTimeValue.TimeOfDay;
-        }
+        // No date or time property crosses into the accessibility tree; what follows reads
+        // the rendered value from the control's own parts.
 
         // Windows MAUI: TimePicker has child Button with AutomationId="FlyoutButton"
         // whose Name contains the formatted time like " 9:00 AM time picker"
@@ -67,7 +52,7 @@ public partial class TimePicker<TScope> : Base.ViewBase<TScope>
         var flyoutButton = element.FindElements(Locator.ByAutomationId("FlyoutButton"));
         if (flyoutButton.Count > 0)
         {
-            var buttonName = flyoutButton[0].GetAttribute("Name");
+            var buttonName = flyoutButton[0].Name;
             if (!string.IsNullOrEmpty(buttonName) && TryParseTimeString(buttonName, out var buttonTime))
             {
                 return buttonTime;
@@ -81,7 +66,7 @@ public partial class TimePicker<TScope> : Base.ViewBase<TScope>
             var children = element.FindElements(Locator.ByXPath(".//*"));
             foreach (var child in children)
             {
-                var childName = child.GetAttribute("Name");
+                var childName = child.Name;
                 if (!string.IsNullOrEmpty(childName) && TryParseTimeString(childName, out var childNameTime))
                 {
                     return childNameTime;
@@ -100,7 +85,7 @@ public partial class TimePicker<TScope> : Base.ViewBase<TScope>
         }
 
         // Try element's own Name attribute (fallback)
-        var nameAttr = element.GetAttribute("Name");
+        var nameAttr = element.Name;
         if (!string.IsNullOrEmpty(nameAttr) && TryParseTimeString(nameAttr, out var nameTimeValue))
         {
             return nameTimeValue;

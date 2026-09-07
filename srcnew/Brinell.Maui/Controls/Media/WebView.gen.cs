@@ -87,49 +87,5 @@ public partial class WebView<TScope> : Base.ViewBase<TScope>
     }
 
     #endregion
-    #region CanGoBack (IsCanGoBack / WaitCanGoBack / AssertCanGoBack)
-
-    public bool? IsCanGoBack()
-    {
-        return IsCanGoBackCore(TryFindElement()) == true;
-    }
-
-    public bool WaitCanGoBack(bool? expected = true, int? timeoutMs = null)
-    {
-        return RunWaitWithOptionalElement(expected,
-           element => IsCanGoBackCore(element) == expected!.Value,
-           timeoutMs);
-    }
-
-    public TScope AssertCanGoBack(bool? expected = true, string? message = null, int? timeoutMs = null)
-    {
-        return RunAssertWithOptionalElement(expected,
-           IsCanGoBackCore, (actual, expected1) => (actual == expected1),
-           message ?? $"Expected CanGoBack to be '{expected}'. Locator: {Locator}", timeoutMs);
-    }
-
-    #endregion
-    #region CanGoForward (IsCanGoForward / WaitCanGoForward / AssertCanGoForward)
-
-    public bool? IsCanGoForward()
-    {
-        return IsCanGoForwardCore(TryFindElement()) == true;
-    }
-
-    public bool WaitCanGoForward(bool? expected = true, int? timeoutMs = null)
-    {
-        return RunWaitWithOptionalElement(expected,
-           element => IsCanGoForwardCore(element) == expected!.Value,
-           timeoutMs);
-    }
-
-    public TScope AssertCanGoForward(bool? expected = true, string? message = null, int? timeoutMs = null)
-    {
-        return RunAssertWithOptionalElement(expected,
-           IsCanGoForwardCore, (actual, expected1) => (actual == expected1),
-           message ?? $"Expected CanGoForward to be '{expected}'. Locator: {Locator}", timeoutMs);
-    }
-
-    #endregion
 
 }

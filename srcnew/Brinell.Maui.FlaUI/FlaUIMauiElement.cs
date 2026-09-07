@@ -14,7 +14,7 @@ namespace Brinell.Maui.FlaUI;
 /// Provides native Windows UI Automation support for MAUI desktop apps.
 /// Also implements pattern-based interfaces for enhanced Windows Automation support.
 /// </summary>
-public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISelectionItemPatternElement, ILegacyIAccessiblePatternElement, IRangePatternElement, IExpandCollapsePatternElement<IMauiElement>, ITogglePatternElement
+public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISelectionItemPatternElement, ILegacyIAccessiblePatternElement, IRangePatternElement, IExpandCollapsePatternElement<IMauiElement>, ITogglePatternElement, IValuePatternElement
 {
     private readonly AutomationElement _element;
     private readonly FlaUIMauiDriver _driver;
@@ -87,6 +87,93 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
             catch
             {
                 return null;
+            }
+        }
+    }
+
+    #region IValuePatternElement
+
+    /// <summary>
+    /// The element carrying the Value pattern: this element, or the Edit that MAUI nests
+    /// inside it. The nesting is the same one <see cref="Text"/> reads through.
+    /// </summary>
+    private AutomationElement? ValuePatternElement
+    {
+        get
+        {
+            try
+            {
+                if (_element.Patterns.Value.IsSupported) return _element;
+
+                var nested = FindNestedTextBoxElement();
+                return nested?.Patterns.Value.IsSupported == true ? nested : null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+    }
+
+    /// <inheritdoc />
+    public bool SupportsValuePattern => ValuePatternElement != null;
+
+    /// <inheritdoc />
+    public string? GetValuePattern()
+    {
+        try
+        {
+            return ValuePatternElement?.Patterns.Value.Pattern.Value.Value;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <inheritdoc />
+    public bool? IsValuePatternReadOnly()
+    {
+        try
+        {
+            return ValuePatternElement?.Patterns.Value.Pattern.IsReadOnly.Value;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    #endregion
+
+    /// <inheritdoc />
+    public string? Hint
+    {
+        get
+        {
+            try
+            {
+                return _element.Properties.HelpText.ValueOrDefault;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+    }
+
+    /// <inheritdoc />
+    public bool Focused
+    {
+        get
+        {
+            try
+            {
+                return _element.Properties.HasKeyboardFocus.ValueOrDefault;
+            }
+            catch
+            {
+                return false;
             }
         }
     }

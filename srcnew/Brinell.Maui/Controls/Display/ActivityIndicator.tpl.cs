@@ -39,16 +39,9 @@ public partial class ActivityIndicator<TScope> : Base.ViewBase<TScope>
     {
         if (element == null) return null;
 
-        // Try IsRunning attribute (MAUI property)
-        var isRunning = element.GetAttribute("IsRunning")
-            ?? element.GetAttribute("isRunning");
-
-        if (!string.IsNullOrEmpty(isRunning))
-        {
-            return isRunning.Equals("true", StringComparison.OrdinalIgnoreCase);
-        }
-
-        // Fallback: check if visible (running indicators are typically visible)
+        // No platform publishes IsRunning: a spinner is a view, not a state machine. Being on
+        // screen is the only observable form of the question, and MAUI hides the indicator when
+        // it stops.
         return element.Visible;
     }
 

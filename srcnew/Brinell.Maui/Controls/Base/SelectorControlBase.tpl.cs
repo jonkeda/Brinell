@@ -141,11 +141,7 @@ public abstract partial class SelectorControlBase<TScope> : FocusableControlBase
             return comboBox.GetSelectedItemText();
         }
 
-        // Try common selection attributes
-        var selectedText = element.GetAttribute("Selection.Item.Name");
-        if (!string.IsNullOrEmpty(selectedText)) return selectedText;
-
-        // Try text content
+        // Otherwise whatever the control renders as its current choice.
         return element.Text;
     }
 
@@ -158,19 +154,8 @@ public abstract partial class SelectorControlBase<TScope> : FocusableControlBase
     {
         if (element == null) return null;
 
-        var indexAttr = element.GetAttribute("Selection.SelectedIndex");
-        if (!string.IsNullOrEmpty(indexAttr) && int.TryParse(indexAttr, out var index))
-        {
-            return index;
-        }
-
-        var indexAttr2 = element.GetAttribute("SelectedIndex");
-        if (!string.IsNullOrEmpty(indexAttr2) && int.TryParse(indexAttr2, out var index2))
-        {
-            return index2;
-        }
-
-        // Fallback: derive index by matching selected text against item texts
+        // No platform publishes a selected index. It is derived: find the selected text, then
+        // its position among the item texts. Both halves are read from real elements.
         var selectedText = GetSelectedTextCore(element);
         if (!string.IsNullOrEmpty(selectedText))
         {
@@ -233,12 +218,7 @@ public abstract partial class SelectorControlBase<TScope> : FocusableControlBase
     {
         if (element == null) return null;
 
-        var countAttr = element.GetAttribute("ItemCount");
-        if (!string.IsNullOrEmpty(countAttr) && int.TryParse(countAttr, out var count))
-        {
-            return count;
-        }
-
+        // Counted, not asked: no platform publishes an item count, so the items are found.
         var items = GetItemElementsCore(element);
         return items?.Count;
     }

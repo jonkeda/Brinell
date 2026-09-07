@@ -41,49 +41,5 @@ public abstract partial class CollectionView<TParent, TSelf, TItem> : Collection
     where TSelf : CollectionView<TParent, TSelf, TItem>
     where TItem : class, IMauiItemContainer<TSelf, TItem>
 {
-    #region SelectionMode (GetSelectionMode / WaitSelectionMode / AssertSelectionMode)
-
-    public string? GetSelectionMode(int? timeoutMs = null)
-    {
-        return RunGetWithElement(element => GetSelectionModeCore(element), timeoutMs);
-    }
-
-    public bool? WaitSelectionMode(string? expected, int? timeoutMs = null)
-    {
-        return RunWaitWithElement(expected,
-           element => GetSelectionModeCore(element) == expected,
-           timeoutMs);
-    }
-
-    public TSelf AssertSelectionMode(string? expected, string? message = null, int? timeoutMs = null)
-    {
-        return RunAssertWithElement(expected,
-           element => GetSelectionModeCore(element), (actual, expected1) => (actual == expected1),
-           message ?? $"Expected SelectionMode to be '{expected}'. Locator: {Locator}", timeoutMs);
-    }
-
-    #endregion
-    #region MultiSelectEnabled (IsMultiSelectEnabled / WaitMultiSelectEnabled / AssertMultiSelectEnabled)
-
-    public bool? IsMultiSelectEnabled()
-    {
-        return IsMultiSelectEnabledCore(TryFindElement()) == true;
-    }
-
-    public bool WaitMultiSelectEnabled(bool? expected = true, int? timeoutMs = null)
-    {
-        return RunWaitWithOptionalElement(expected,
-           element => IsMultiSelectEnabledCore(element) == expected!.Value,
-           timeoutMs);
-    }
-
-    public TSelf AssertMultiSelectEnabled(bool? expected = true, string? message = null, int? timeoutMs = null)
-    {
-        return RunAssertWithOptionalElement(expected,
-           IsMultiSelectEnabledCore, (actual, expected1) => (actual == expected1),
-           message ?? $"Expected MultiSelectEnabled to be '{expected}'. Locator: {Locator}", timeoutMs);
-    }
-
-    #endregion
 
 }

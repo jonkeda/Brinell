@@ -79,13 +79,8 @@ public partial class Toolbar<TParent>
     {
         if (element == null) return null;
 
-        // Try common attributes for toolbar title
-        var title = element.GetAttribute("Title");
-        if (!string.IsNullOrEmpty(title)) return title;
-
-        title = element.GetAttribute("text");
-        if (!string.IsNullOrEmpty(title)) return title;
-
+        // A toolbar's caption is whatever it renders: no platform publishes a Title property for
+        // a container, and a layout with no text of its own answers null, which is the truth.
         return element.Text;
     }
 
