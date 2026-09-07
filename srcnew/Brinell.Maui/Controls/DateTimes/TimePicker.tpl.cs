@@ -1,3 +1,7 @@
+using Brinell.Core;
+using Brinell.Core.Utilities;
+using System.Linq;
+
 namespace Brinell.Maui.Controls.DateTimes;
 
 /// <summary>
@@ -28,6 +32,66 @@ public partial class TimePicker<TScope> : Base.ViewBase<TScope>
     {
     }
 
+    #region Format
+
+    private string? _format;
+    private System.Globalization.CultureInfo? _culture;
+
+    /// <summary>
+    /// Declares the format this control's time is rendered and entered in.
+    /// </summary>
+    /// <param name="format">A .NET time format string, e.g. <c>h:mm tt</c>.</param>
+    /// <param name="culture">Culture for the format. Defaults to <see cref="DateTimeFormats.Culture"/>.</param>
+    public TimePicker<TScope> WithFormat(string format, System.Globalization.CultureInfo? culture = null)
+    {
+        _format = format ?? throw new ArgumentNullException(nameof(format));
+        _culture = culture;
+        return this;
+    }
+
+    /// <summary>Gets the format in force: the control's own, else the suite default.</summary>
+    protected string Format => _format ?? DateTimeFormats.Time;
+
+    /// <summary>Gets the culture in force: the control's own, else the suite default.</summary>
+    protected System.Globalization.CultureInfo Culture => _culture ?? DateTimeFormats.Culture;
+
+    /// <summary>
+    /// Parses a rendered time using the declared format.
+    /// </summary>
+    /// <remarks>
+    /// WinUI appends ' time picker' to the flyout button's name, so the accessible string reads
+    /// ' 3:06 PM time picker' where the screen shows 3:06 PM. That suffix comes off before parsing.
+    /// A declared format is the only one tried; without one the suite default is tried first and
+    /// the culture's own patterns second.
+    /// </remarks>
+    protected TimeSpan? ParseTime(string? text)
+    {
+        var cleaned = DateTimeFormats.Clean(text);
+        cleaned = System.Text.RegularExpressions.Regex.Replace(
+            cleaned, @"\s*time\s*picker\s*$", string.Empty,
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase).Trim();
+
+        if (cleaned.Length == 0) return null;
+
+        if (System.DateTime.TryParseExact(cleaned, Format, Culture,
+                System.Globalization.DateTimeStyles.None, out var exact))
+            return exact.TimeOfDay;
+
+        if (_format != null)
+        {
+            throw new BrinellException(
+                $"Could not read a time from '{cleaned}' using format '{Format}' " +
+                $"({Culture.Name}). Locator: {Locator}");
+        }
+
+        return System.DateTime.TryParse(cleaned, Culture,
+            System.Globalization.DateTimeStyles.None, out var loose)
+            ? loose.TimeOfDay
+            : null;
+    }
+
+    #endregion
+
     #region Time - Core Methods
 
     // Named GetTimeValueCore rather than GetTimeCore so the generated exact-equality
@@ -36,159 +100,173 @@ public partial class TimePicker<TScope> : Base.ViewBase<TScope>
     // and keep their original signatures (including the defaulted toleranceSeconds).
 
     /// <summary>
-    /// Gets the time value from pre-found element.
+    /// Reads the time the control is showing.
     /// </summary>
-    /// <param name="element">The pre-found element (may be null).</param>
-    /// <returns>The time value, or null if not found or unparseable.</returns>
+    /// <remarks>
+    /// The TimePicker root publishes no patterns at all on Windows - the value lives on its
+    /// FlyoutButton child, which is why this reads through to it rather than asking the root.
+    /// </remarks>
     protected virtual TimeSpan? GetTimeValueCore(IMauiElement? element)
     {
         if (element == null) return null;
-        // No date or time property crosses into the accessibility tree; what follows reads
-        // the rendered value from the control's own parts.
 
-        // Windows MAUI: TimePicker has child Button with AutomationId="FlyoutButton"
-        // whose Name contains the formatted time like " 9:00 AM time picker"
-        // Try finding the FlyoutButton child
-        var flyoutButton = element.FindElements(Locator.ByAutomationId("FlyoutButton"));
-        if (flyoutButton.Count > 0)
+        foreach (var child in element.FindElements(Locator.ByAutomationId("FlyoutButton")))
         {
-            var buttonName = flyoutButton[0].Name;
-            if (!string.IsNullOrEmpty(buttonName) && TryParseTimeString(buttonName, out var buttonTime))
-            {
-                return buttonTime;
-            }
+            var childTime = ParseTime(child.Name) ?? ParseTime(child.Text);
+            if (childTime != null) return childTime;
         }
 
-        // Fallback: search all descendants for parseable time
-        // XPath may not be supported by all drivers, so catch only WebDriverException
-        try
-        {
-            var children = element.FindElements(Locator.ByXPath(".//*"));
-            foreach (var child in children)
-            {
-                var childName = child.Name;
-                if (!string.IsNullOrEmpty(childName) && TryParseTimeString(childName, out var childNameTime))
-                {
-                    return childNameTime;
-                }
-
-                var childText = child.Text;
-                if (!string.IsNullOrEmpty(childText) && TryParseTimeString(childText, out var childTextTime))
-                {
-                    return childTextTime;
-                }
-            }
-        }
-        catch (WebDriverException)
-        {
-            // XPath not supported by this driver - fall through to Name/Text fallbacks
-        }
-
-        // Try element's own Name attribute (fallback)
-        var nameAttr = element.Name;
-        if (!string.IsNullOrEmpty(nameAttr) && TryParseTimeString(nameAttr, out var nameTimeValue))
-        {
-            return nameTimeValue;
-        }
-
-        // Try text content
-        var text = element.Text;
-        if (!string.IsNullOrEmpty(text) && TryParseTimeString(text, out var textTimeValue))
-        {
-            return textTimeValue;
-        }
-
-        return null;
+        return ParseTime(element.Name) ?? ParseTime(element.Text);
     }
 
     /// <summary>
-    /// Sets the time on pre-found element.
-    /// Platform-specific implementation may need adjustment.
+    /// Sets the time without using the pointer.
     /// </summary>
-    /// <param name="element">The time picker element.</param>
-    /// <param name="time">The time to set. Null skips the operation.</param>
-    /// <param name="timeoutMs">Optional timeout.</param>
+    /// <remarks>
+    /// Opens the flyout by Invoke, sets hour, minute and period by their SelectionItem patterns,
+    /// and commits with Accept. No coordinates at any step.
+    /// </remarks>
     protected virtual void SetTimeCore(IMauiElement element, TimeSpan? time, int? timeoutMs = null)
     {
         if (time == null) return;
 
         Scope.WaitReady(timeoutMs ?? DefaultTimeoutMs);
 
-        // Click to open the picker
-        element.Click();
+        var failure = TrySetByFlyout(element, time.Value, timeoutMs);
+        if (failure == null) return;
 
-        // Platform-specific time entry
-        // For text-based input, clear and send formatted time
-        element.Clear();
-        element.SendKeys(time.Value.ToString(@"hh\:mm"));
-
-        // Close by pressing Enter or clicking elsewhere
-        element.SendKeys(OpenQA.Selenium.Keys.Enter);
+        throw new BrinellException(
+            $"Could not set time {time.Value} without the pointer: {failure}. Locator: {Locator}");
     }
 
     /// <summary>
-    /// Attempts to parse a time string in various formats.
+    /// Opens the time flyout by pattern and picks hour, minute and period.
     /// </summary>
-    /// <param name="text">The text to parse.</param>
-    /// <param name="result">The parsed TimeSpan if successful.</param>
-    /// <returns>True if parsing succeeded.</returns>
-    private static bool TryParseTimeString(string text, out TimeSpan result)
+    /// <remarks>
+    /// Measured against WinUI's TimePicker: the flyout carries HourLoopingSelector,
+    /// MinuteLoopingSelector and PeriodLoopingSelector - each a List of ListItems with a
+    /// SelectionItem pattern - plus AcceptButton and DismissButton, both Invoke-able. The hour
+    /// list is a 12-hour clock named 12, 1 .. 11, so the hour has to be converted.
+    /// </remarks>
+    private string? TrySetByFlyout(IMauiElement element, TimeSpan time, int? timeoutMs)
     {
-        result = default;
-        if (string.IsNullOrEmpty(text)) return false;
+        var button = element.FindElements(Locator.ByAutomationId("FlyoutButton")).FirstOrDefault()
+                     ?? element;
 
-        // Clean up text: strip Unicode control characters (like LTR marks U+200E)
-        // Windows MAUI embeds these in time strings like " ‎9‎:‎00‎ ‎AM time picker"
-        var cleaned = System.Text.RegularExpressions.Regex.Replace(text, @"\p{Cf}", "");
+        if (button is not IInvokePatternElement invoke || !invoke.SupportsInvokePattern)
+            return "the flyout button advertises no Invoke pattern";
 
-        // Remove "time picker" suffix if present (Windows MAUI adds this)
-        cleaned = System.Text.RegularExpressions.Regex.Replace(cleaned, @"\s*time\s*picker\s*$", "",
-            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-        cleaned = cleaned.Trim();
+        if (!invoke.InvokePattern())
+            return "Invoke on the flyout button was refused";
 
-        if (string.IsNullOrEmpty(cleaned)) return false;
+        if (!WaitForFlyout(timeoutMs))
+            return "the flyout did not open";
 
-        // Try standard TimeSpan parsing
-        if (TimeSpan.TryParse(cleaned, out result))
-            return true;
+        var hour12 = time.Hours % 12 == 0 ? 12 : time.Hours % 12;
+        var period = time.Hours < 12 ? 0 : 1;
 
-        // Try DateTime parsing and extract TimeOfDay
-        if (System.DateTime.TryParse(cleaned, out var dateTime))
+        if (!SelectInLooper("HourLoopingSelector", n => n == hour12))
+            return $"no selectable hour '{hour12}' in the flyout";
+
+        if (!SelectInLooper("MinuteLoopingSelector", n => n == time.Minutes))
+            return $"no selectable minute '{time.Minutes}' in the flyout";
+
+        // A 24-hour locale renders no period list; its absence is not a failure.
+        SelectPeriod(period);
+
+        var accept = Context.TryFindElement(Locator.ByAutomationId("AcceptButton"));
+        if (accept is not IInvokePatternElement acceptInvoke || !acceptInvoke.InvokePattern())
+            return "Accept was not available or was refused";
+
+        WaitHelper.Pause(PollingIntervalMs);
+
+        if (WaitForTime(time)) return null;
+
+        var actual = MauiScope.TryFindElement(Locator) is { } e ? GetTimeValueCore(e) : null;
+        var seconds = time.Seconds != 0
+            ? " The requested time carries seconds, and the WinUI flyout selects hours and minutes only."
+            : string.Empty;
+        return $"the control reports '{actual}' after Accept, not {time}.{seconds}";
+    }
+
+    private bool WaitForFlyout(int? timeoutMs)
+    {
+        var deadline = System.DateTime.UtcNow.AddMilliseconds(timeoutMs ?? DefaultTimeoutMs);
+        while (System.DateTime.UtcNow < deadline)
         {
-            result = dateTime.TimeOfDay;
-            return true;
-        }
-
-        // Try common Windows time formats (e.g., "10:30 AM", "2:45 PM")
-        var formats = new[]
-        {
-            "h:mm tt",      // 2:30 PM
-            "hh:mm tt",     // 02:30 PM
-            "H:mm",         // 14:30
-            "HH:mm",        // 14:30
-            "h:mm:ss tt",   // 2:30:00 PM
-            "HH:mm:ss"      // 14:30:00
-        };
-
-        foreach (var format in formats)
-        {
-            if (System.DateTime.TryParseExact(cleaned, format,
-                System.Globalization.CultureInfo.InvariantCulture,
-                System.Globalization.DateTimeStyles.None, out var parsed))
-            {
-                result = parsed.TimeOfDay;
+            if (Context.TryFindElement(Locator.ByAutomationId("AcceptButton")) != null)
                 return true;
-            }
-        }
-
-        // Try current culture
-        if (System.DateTime.TryParse(cleaned, System.Globalization.CultureInfo.CurrentCulture, out var cultureParsed))
-        {
-            result = cultureParsed.TimeOfDay;
-            return true;
+            WaitHelper.Pause(PollingIntervalMs);
         }
 
         return false;
+    }
+
+    private bool SelectInLooper(string automationId, Func<int, bool> matches)
+    {
+        var looper = Context.TryFindElement(Locator.ByAutomationId(automationId));
+        if (looper == null) return false;
+
+        foreach (var item in looper.FindElements(Locator.ByControlType("ListItem")))
+        {
+            var name = DateTimeFormats.Clean(item.Name);
+            if (!int.TryParse(name, System.Globalization.NumberStyles.Integer, Culture, out var number))
+                continue;
+            if (!matches(number)) continue;
+
+            return item is ISelectionItemPatternElement selectable
+                   && selectable.SupportsSelectionItemPattern
+                   && selectable.SelectItemPattern();
+        }
+
+        return false;
+    }
+
+    private void SelectPeriod(int index)
+    {
+        var looper = Context.TryFindElement(Locator.ByAutomationId("PeriodLoopingSelector"));
+        if (looper == null) return;
+
+        var items = looper.FindElements(Locator.ByControlType("ListItem"));
+        if (index >= items.Count) return;
+
+        if (items[index] is ISelectionItemPatternElement selectable
+            && selectable.SupportsSelectionItemPattern)
+        {
+            selectable.SelectItemPattern();
+        }
+    }
+
+    /// <summary>
+    /// Polls until the control reports the time to the minute, or the wait runs out.
+    /// </summary>
+    /// <remarks>
+    /// A value that disagrees is a failure. A value that cannot be read is not: at midnight the
+    /// WinUI flyout button's name comes back as ' time picker' with no time in it and no text
+    /// descendants to fall back on, so the control publishes nothing to check against even though
+    /// the set worked. Treating unreadable as failure turned a working midnight set into an error.
+    /// </remarks>
+    private bool WaitForTime(TimeSpan time)
+    {
+        var deadline = System.DateTime.UtcNow.AddMilliseconds(DefaultTimeoutMs);
+        var everRead = false;
+
+        do
+        {
+            var element = MauiScope.TryFindElement(Locator);
+            var actual = element == null ? null : GetTimeValueCore(element);
+            if (actual != null)
+            {
+                everRead = true;
+                if (actual.Value.Hours == time.Hours && actual.Value.Minutes == time.Minutes)
+                    return true;
+            }
+
+            WaitHelper.Pause(PollingIntervalMs);
+        }
+        while (System.DateTime.UtcNow < deadline);
+
+        return !everRead;
     }
 
     #endregion

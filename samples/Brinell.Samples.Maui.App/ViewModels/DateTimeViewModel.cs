@@ -37,6 +37,9 @@ public class DateTimeViewModel : ParentViewModel
         {
             if (SetProperty(ref selectedDate, value))
             {
+                // FormattedDate is computed from this field, so its binding only refreshes when
+                // it is named explicitly - SetProperty raises the change for SelectedDate alone.
+                OnPropertyChanged(nameof(FormattedDate));
                 UpdateStatus();
             }
         }
@@ -52,6 +55,7 @@ public class DateTimeViewModel : ParentViewModel
         {
             if (SetProperty(ref selectedTime, value))
             {
+                OnPropertyChanged(nameof(FormattedTime));
                 UpdateStatus();
             }
         }

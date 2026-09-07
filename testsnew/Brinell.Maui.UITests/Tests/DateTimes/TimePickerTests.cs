@@ -86,12 +86,17 @@ public class TimePickerTests
     /// <summary>
     /// Verifies that time value is correctly formatted (hh:mm:ss).
     /// </summary>
+    /// <remarks>
+    /// Whole minutes, because the WinUI flyout offers hour, minute and period selectors and no
+    /// seconds. A time carrying seconds cannot be set through the control at all, so asserting
+    /// one would test the test rather than the control.
+    /// </remarks>
     [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Method", "Format")]
     public Task TimePicker_TimeFormat_DisplaysCorrectly()
     {
         var page = GetPage();
-        var testTime = new TimeSpan(9, 45, 30); // 9:45:30 AM
+        var testTime = new TimeSpan(9, 45, 0); // 9:45 AM
 
         // Act & Assert
         page.TestTimePicker.SetTime(testTime)
@@ -141,18 +146,22 @@ public class TimePickerTests
     }
 
     /// <summary>
-    /// Verifies that end-of-day (23:59:59) is handled correctly.
+    /// Verifies that end-of-day is handled correctly.
     /// </summary>
+    /// <remarks>
+    /// 23:59, not 23:59:59 - the flyout has no seconds selector. This still covers what the case
+    /// is for: the last minute of the day, and the PM end of the 12-hour conversion.
+    /// </remarks>
     [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Method", "SetTime")]
     public Task TimePicker_EndOfDay_DisplaysCorrectly()
     {
         var page = GetPage();
-        var endOfDay = new TimeSpan(23, 59, 59);
+        var endOfDay = new TimeSpan(23, 59, 0);
 
         // Act & Assert
         page.TestTimePicker.SetTime(endOfDay)
-            .TimeStatusLabel.AssertTextContains("23:59:59");
+            .TimeStatusLabel.AssertTextContains("23:59:00");
 
         return Task.CompletedTask;
     }

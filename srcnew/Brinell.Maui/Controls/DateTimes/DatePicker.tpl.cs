@@ -1,3 +1,7 @@
+using Brinell.Core;
+using Brinell.Core.Utilities;
+using System.Linq;
+
 namespace Brinell.Maui.Controls.DateTimes;
 
 /// <summary>
@@ -28,6 +32,69 @@ public partial class DatePicker<TScope> : Base.ViewBase<TScope>
     {
     }
 
+    #region Format
+
+    private string? _format;
+    private System.Globalization.CultureInfo? _culture;
+
+    /// <summary>
+    /// Declares the format this control's date is rendered and entered in.
+    /// </summary>
+    /// <remarks>
+    /// Overrides <see cref="DateTimeFormats.Date"/> for this control only. When a format is
+    /// declared, reads parse with it exactly and a string that does not match is an error rather
+    /// than a null - see <see cref="ParseDate"/>.
+    /// </remarks>
+    /// <param name="format">A .NET date format string, e.g. <c>dd-MMM-yy</c>.</param>
+    /// <param name="culture">Culture for the format. Defaults to <see cref="DateTimeFormats.Culture"/>.</param>
+    /// <returns>This control, for chaining onto a locator expression.</returns>
+    public DatePicker<TScope> WithFormat(string format, System.Globalization.CultureInfo? culture = null)
+    {
+        _format = format ?? throw new ArgumentNullException(nameof(format));
+        _culture = culture;
+        return this;
+    }
+
+    /// <summary>Gets the format in force: the control's own, else the suite default.</summary>
+    protected string Format => _format ?? DateTimeFormats.Date;
+
+    /// <summary>Gets the culture in force: the control's own, else the suite default.</summary>
+    protected System.Globalization.CultureInfo Culture => _culture ?? DateTimeFormats.Culture;
+
+    /// <summary>
+    /// Parses a rendered date using the declared format.
+    /// </summary>
+    /// <remarks>
+    /// When the control declares a format through <see cref="WithFormat"/>, that format is the
+    /// only one tried, and a mismatch throws naming both what was expected and what arrived. When
+    /// no format is declared the suite default is tried first and the culture's own patterns
+    /// second, which keeps an unconfigured suite working without ever falling back to the
+    /// locale-ambiguous guessing this replaced.
+    /// </remarks>
+    protected System.DateTime? ParseDate(string? text)
+    {
+        var cleaned = DateTimeFormats.Clean(text);
+        if (cleaned.Length == 0) return null;
+
+        if (System.DateTime.TryParseExact(cleaned, Format, Culture,
+                System.Globalization.DateTimeStyles.None, out var exact))
+            return exact;
+
+        if (_format != null)
+        {
+            throw new BrinellException(
+                $"Could not read a date from '{cleaned}' using format '{Format}' " +
+                $"({Culture.Name}). Locator: {Locator}");
+        }
+
+        return System.DateTime.TryParse(cleaned, Culture,
+            System.Globalization.DateTimeStyles.None, out var loose)
+            ? loose
+            : null;
+    }
+
+    #endregion
+
     #region Date - Core Methods
 
     // Named GetDateValueCore rather than GetDateCore so the generated exact-equality
@@ -36,165 +103,274 @@ public partial class DatePicker<TScope> : Base.ViewBase<TScope>
     // and keep their original signatures.
 
     /// <summary>
-    /// Gets the date value from pre-found element.
+    /// Reads the date the control is showing.
     /// </summary>
-    /// <param name="element">The pre-found element (may be null).</param>
-    /// <returns>The date value, or null if not found or unparseable.</returns>
+    /// <remarks>
+    /// The Value pattern is the authoritative source on Windows: it answers '07-Sep-26' on the
+    /// picker itself, so there is nothing to search for. It is read-only there, which is why it
+    /// appears here and not in <see cref="SetDateCore"/>. The DateText child is the fallback for
+    /// platforms that publish no Value pattern.
+    /// </remarks>
     protected virtual System.DateTime? GetDateValueCore(IMauiElement? element)
     {
         if (element == null) return null;
-        // No date or time property crosses into the accessibility tree; what follows reads
-        // the rendered value from the control's own parts.
 
-        // Windows MAUI: DatePicker (CalendarDatePicker) has child Text with AutomationId="DateText"
-        // whose Name contains the formatted date like "‎20‎-‎Jan‎-‎01" (with Unicode LTR marks)
-        // Try finding the DateText child first (most reliable)
-        var dateTextElements = element.FindElements(Locator.ByAutomationId("DateText"));
-        if (dateTextElements.Count > 0)
+        if (element is IValuePatternElement value && value.SupportsValuePattern)
         {
-            var dateTextName = dateTextElements[0].Name;
-            if (!string.IsNullOrEmpty(dateTextName) && TryParseDateString(dateTextName, out var dateTextValue))
-            {
-                return dateTextValue;
-            }
+            var patternDate = ParseDate(value.GetValuePattern());
+            if (patternDate != null) return patternDate;
         }
 
-        // Fallback: search all descendants for parseable date
-        // XPath may not be supported by all drivers, so catch only WebDriverException
+        foreach (var child in element.FindElements(Locator.ByAutomationId("DateText")))
+        {
+            var childDate = ParseDate(child.Name) ?? ParseDate(child.Text);
+            if (childDate != null) return childDate;
+        }
+
+        return ParseDate(element.Name) ?? ParseDate(element.Text);
+    }
+
+    /// <summary>
+    /// Sets the date without using the pointer.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A ladder, tried in order, each rung guarded by what the platform advertises:
+    /// </para>
+    /// <list type="number">
+    /// <item>a writable Value pattern - the right rung for an editable date field;</item>
+    /// <item>Invoke to open the calendar, then pick the day by its SelectionItem pattern;</item>
+    /// <item>focus and type, for a control that genuinely hosts text.</item>
+    /// </list>
+    /// <para>
+    /// The pointer is on none of them. On WinUI the Value pattern is advertised but reports
+    /// IsReadOnly, so rung 1 declines and rung 2 does the work.
+    /// </para>
+    /// </remarks>
+    protected virtual void SetDateCore(IMauiElement element, System.DateTime? date, int? timeoutMs = null)
+    {
+        if (date == null) return;
+
+        if (TrySetByValuePattern(element, date.Value)) return;
+        if (TrySetByCalendar(element, date.Value, timeoutMs)) return;
+        if (TrySetByTyping(element, date.Value)) return;
+
+        throw new BrinellException(
+            $"Could not set date {date.Value:yyyy-MM-dd} without the pointer. Tried the Value " +
+            $"pattern, the calendar flyout and typed text. Locator: {Locator}");
+    }
+
+    /// <summary>Rung 1: a Value pattern that accepts a write.</summary>
+    private bool TrySetByValuePattern(IMauiElement element, System.DateTime date)
+    {
+        if (element is not IValuePatternElement value || !value.SupportsValuePattern)
+            return false;
+
+        // WinUI advertises the pattern and refuses the write; asking first is what keeps this
+        // rung from silently doing nothing, which is how the previous implementation failed.
+        if (value.IsValuePatternReadOnly() != false)
+            return false;
+
+        element.SendKeys(date.ToString(Format, Culture), TextInputMethod.SetValue);
+        return GetDateValueCore(element)?.Date == date.Date;
+    }
+
+    /// <summary>Rung 3: type into a control that really hosts text.</summary>
+    private bool TrySetByTyping(IMauiElement element, System.DateTime date)
+    {
         try
         {
-            var children = element.FindElements(Locator.ByXPath(".//*"));
-            foreach (var child in children)
-            {
-                // Try child's Name attribute first (most reliable on Windows)
-                var childName = child.Name;
-                if (!string.IsNullOrEmpty(childName) && TryParseDateString(childName, out var childNameDate))
-                {
-                    return childNameDate;
-                }
-
-                // Try child's Text property
-                var childText = child.Text;
-                if (!string.IsNullOrEmpty(childText) && TryParseDateString(childText, out var childTextDate))
-                {
-                    return childTextDate;
-                }
-            }
+            element.SendKeys(date.ToString(Format, Culture), TextInputMethod.Keys);
         }
-        catch (WebDriverException)
+        catch
         {
-            // XPath not supported by this driver - fall through to Name/Text fallbacks
+            return false;
         }
 
-        // Try element's own Name attribute (fallback)
-        var nameAttr = element.Name;
-        if (!string.IsNullOrEmpty(nameAttr) && TryParseDateString(nameAttr, out var nameValue))
+        return GetDateValueCore(element)?.Date == date.Date;
+    }
+
+    #endregion
+
+    #region Calendar flyout navigation
+
+    /// <summary>
+    /// Rung 2: open the calendar by Invoke and select the day by pattern.
+    /// </summary>
+    /// <remarks>
+    /// Measured against WinUI's CalendarDatePicker: Invoke opens a CalendarView carrying a header
+    /// button ('September 2026'), Previous and Next buttons - all Invoke-able - and one DataItem
+    /// per day, each with a SelectionItem pattern. No coordinates are involved at any step.
+    /// </remarks>
+    private bool TrySetByCalendar(IMauiElement element, System.DateTime date, int? timeoutMs)
+    {
+        if (element is not IInvokePatternElement invoke || !invoke.SupportsInvokePattern)
+            return false;
+
+        if (!invoke.InvokePattern())
+            return false;
+
+        var calendar = WaitForCalendar(timeoutMs);
+        if (calendar == null)
+            return false;
+
+        try
         {
-            return nameValue;
+            if (!NavigateToMonth(calendar, date))
+                return false;
+
+            var day = FindDayItem(calendar, date);
+            if (day is not ISelectionItemPatternElement selectable
+                || !selectable.SupportsSelectionItemPattern)
+                return false;
+
+            if (!selectable.SelectItemPattern())
+                return false;
+        }
+        finally
+        {
+            WaitHelper.Pause(PollingIntervalMs);
         }
 
-        // Try text content
-        var text = element.Text;
-        if (!string.IsNullOrEmpty(text) && TryParseDateString(text, out var textValue))
+        // Selecting reports success even when the control declines to take the value, so the rung
+        // is only honest if it reads the date back. A picker constrained by MinimumDate or
+        // MaximumDate is the case that matters: the cell can exist and still not commit.
+        return WaitForDate(date);
+    }
+
+    /// <summary>Polls until the control reports the date, or the wait runs out.</summary>
+    private bool WaitForDate(System.DateTime date)
+    {
+        var deadline = System.DateTime.UtcNow.AddMilliseconds(DefaultTimeoutMs);
+        do
         {
-            return textValue;
+            var element = MauiScope.TryFindElement(Locator);
+            if (element != null && GetDateValueCore(element)?.Date == date.Date)
+                return true;
+
+            WaitHelper.Pause(PollingIntervalMs);
+        }
+        while (System.DateTime.UtcNow < deadline);
+
+        return false;
+    }
+
+    private IMauiElement? WaitForCalendar(int? timeoutMs)
+    {
+        var deadline = System.DateTime.UtcNow.AddMilliseconds(timeoutMs ?? DefaultTimeoutMs);
+        while (System.DateTime.UtcNow < deadline)
+        {
+            var calendar = Context.TryFindElement(Locator.ByAutomationId("CalendarView"));
+            if (calendar != null) return calendar;
+            WaitHelper.Pause(PollingIntervalMs);
         }
 
         return null;
     }
 
-
-
     /// <summary>
-    /// Sets the date on pre-found element.
-    /// Platform-specific implementation may need adjustment.
+    /// Walks the calendar to the month holding <paramref name="date"/> using Previous/Next.
     /// </summary>
-    /// <param name="element">The date picker element.</param>
-    /// <param name="date">The date to set. Null skips the operation.</param>
-    /// <param name="timeoutMs">Optional timeout.</param>
-    protected virtual void SetDateCore(IMauiElement element, System.DateTime? date, int? timeoutMs = null)
+    /// <remarks>
+    /// The header button doubles as the month label, so the current month is read from its Name
+    /// rather than tracked. The loop stops when the header stops changing, which is how a picker
+    /// constrained by MinimumDate/MaximumDate reports that it will not go further - Next simply
+    /// does nothing at the boundary.
+    /// </remarks>
+    private bool NavigateToMonth(IMauiElement calendar, System.DateTime date)
     {
-        if (date == null) return;
+        var target = new System.DateTime(date.Year, date.Month, 1);
 
-        // Click to open the picker
-        element.Click();
-
-        // Platform-specific date entry
-        // Clear can throw on WinUI CalendarDatePicker (non-text host), so treat as best effort.
-        try
+        for (var guard = 0; guard < 120; guard++)
         {
-            element.Clear();
-        }
-        catch
-        {
-            // Continue with direct input attempt.
-        }
+            var header = ReadHeaderMonth(calendar);
+            if (header == null) return true; // Unreadable header: let the day search decide.
+            if (header.Value == target) return true;
 
-        element.SendKeys(date.Value.ToString("yyyy-MM-dd"));
+            var button = FindCalendarButton(calendar, header.Value < target ? "Next" : "Previous");
+            if (button is not IInvokePatternElement step || !step.InvokePattern())
+                return false;
 
-        // Close by pressing Enter or clicking elsewhere
-        element.SendKeys(OpenQA.Selenium.Keys.Enter);
-    }
-
-    /// <summary>
-    /// Attempts to parse a date string in various formats.
-    /// </summary>
-    /// <param name="text">The text to parse.</param>
-    /// <param name="result">The parsed DateTime if successful.</param>
-    /// <returns>True if parsing succeeded.</returns>
-    private static bool TryParseDateString(string text, out System.DateTime result)
-    {
-        result = default;
-        if (string.IsNullOrEmpty(text)) return false;
-
-        // Clean up text: strip Unicode control characters (like LTR marks U+200E)
-        // Windows MAUI embeds these in date strings like "‎20‎-‎Jan‎-‎01"
-        var cleaned = System.Text.RegularExpressions.Regex.Replace(text, @"\p{Cf}", "");
-        cleaned = cleaned.Trim();
-
-        if (string.IsNullOrEmpty(cleaned)) return false;
-
-        // Try standard DateTime parsing
-        if (System.DateTime.TryParse(cleaned, out result))
-            return true;
-
-        // Try common date formats
-        var formats = new[]
-        {
-            "yyyy-MM-dd",           // ISO format
-            "MM/dd/yyyy",           // US format
-            "dd/MM/yyyy",           // UK/EU format
-            "dd-MMM-yy",            // 20-Jan-01 (Windows MAUI format)
-            "d-MMM-yy",             // 1-Jan-01
-            "dd-MMM-yyyy",          // 20-Jan-2001
-            "d-MMM-yyyy",           // 1-Jan-2001
-            "MMMM d, yyyy",         // March 20, 1985
-            "MMMM dd, yyyy",        // March 20, 1985
-            "d MMMM yyyy",          // 20 March 1985
-            "dd MMMM yyyy",         // 20 March 1985
-            "M/d/yyyy",             // 3/20/1985
-            "d/M/yyyy"              // 20/3/1985
-        };
-
-        foreach (var format in formats)
-        {
-            if (System.DateTime.TryParseExact(cleaned, format,
-                System.Globalization.CultureInfo.InvariantCulture,
-                System.Globalization.DateTimeStyles.None, out var parsed))
-            {
-                result = parsed;
-                return true;
-            }
-        }
-
-        // Try current culture
-        if (System.DateTime.TryParse(cleaned, System.Globalization.CultureInfo.CurrentCulture, out var cultureParsed))
-        {
-            result = cultureParsed;
-            return true;
+            WaitHelper.Pause(PollingIntervalMs);
+            if (ReadHeaderMonth(calendar) == header)
+                return false; // Refused to move - the target is outside Minimum/MaximumDate.
         }
 
         return false;
+    }
+
+    private System.DateTime? ReadHeaderMonth(IMauiElement calendar)
+    {
+        foreach (var button in calendar.FindElements(Locator.ByControlType("Button")))
+        {
+            var name = DateTimeFormats.Clean(button.Name);
+            if (name.Length == 0 || name == "Previous" || name == "Next") continue;
+
+            if (System.DateTime.TryParse("1 " + name, Culture,
+                    System.Globalization.DateTimeStyles.None, out var month))
+                return new System.DateTime(month.Year, month.Month, 1);
+        }
+
+        return null;
+    }
+
+    private static IMauiElement? FindCalendarButton(IMauiElement calendar, string name)
+    {
+        foreach (var button in calendar.FindElements(Locator.ByControlType("Button")))
+        {
+            if (string.Equals(DateTimeFormats.Clean(button.Name), name, StringComparison.OrdinalIgnoreCase))
+                return button;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Finds the cell for <paramref name="date"/> among the calendar's day items.
+    /// </summary>
+    /// <remarks>
+    /// Day cells are named by number alone ('8'), or '7, today' for today, and the grid spans two
+    /// months - a measured September view ran 7..30 then 1..7 of October, so '7' appeared twice.
+    /// Matching on the number alone would pick the wrong month. The cells are in chronological
+    /// order, so each descent in the sequence is a month boundary; counting those identifies which
+    /// run a cell belongs to.
+    /// </remarks>
+    private static IMauiElement? FindDayItem(IMauiElement calendar, System.DateTime date)
+    {
+        var items = calendar.FindElements(Locator.ByControlType("DataItem"));
+        if (items.Count == 0) return null;
+
+        var run = 0;
+        var previousDay = 0;
+        IMauiElement? firstRunMatch = null;
+
+        foreach (var item in items)
+        {
+            if (!TryReadDayNumber(item, out var day)) continue;
+
+            if (day < previousDay) run++;
+            previousDay = day;
+
+            if (day != date.Day) continue;
+
+            // Run 0 is the header month; the calendar opens on the month being displayed, which
+            // NavigateToMonth has already made the target month.
+            if (run == 0) return item;
+            firstRunMatch ??= item;
+        }
+
+        return firstRunMatch;
+    }
+
+    private static bool TryReadDayNumber(IMauiElement item, out int day)
+    {
+        day = 0;
+        var name = DateTimeFormats.Clean(item.Name);
+        if (name.Length == 0) return false;
+
+        // '7, today' and '8' both start with the number.
+        var digits = new string(name.TakeWhile(char.IsDigit).ToArray());
+        return digits.Length > 0 && int.TryParse(digits, out day);
     }
 
     #endregion

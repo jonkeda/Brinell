@@ -1,3 +1,4 @@
+using Brinell.Core.Exceptions;
 using System;
 using Brinell.Maui.UITests.Pages;
 using DateTimeType = System.DateTime;
@@ -77,43 +78,50 @@ public class DatePickerTests
     {
         var page = GetPage();
 
-        // Act & Assert
-        page.TestDatePicker.SetDate(DateTimeType.Now.Date.AddDays(5))
-            .DateStatusLabel.AssertTextContains("Selected Date");
+        // The label carries "Selected Date: {0}" from its StringFormat, so asserting that literal
+        // passes whether or not the date changed. Assert the date the control reports back.
+        var target = DateTimeType.Now.Date.AddDays(5);
+        page.TestDatePicker.SetDate(target)
+            .TestDatePicker.AssertDate(target);
 
         return Task.CompletedTask;
     }
 
     /// <summary>
-    /// Verifies that an out-of-range date (before minimum) is rejected.
+    /// Verifies that a date before MinimumDate is refused rather than silently ignored.
     /// </summary>
+    /// <remarks>
+    /// The app's "before minimum" validation branch is unreachable on Windows: MinimumDate keeps
+    /// the day out of the calendar entirely, so there is no way to select it and nothing for the
+    /// view model to reject. What the control can be held to is that it says so, instead of
+    /// reporting a set that did not happen - which is what it used to do.
+    /// </remarks>
     [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Method", "Constraints")]
-    public Task DatePicker_DateBeforeMinimum_ShowsValidationError()
+    public Task DatePicker_DateBeforeMinimum_IsRefused()
     {
         var page = GetPage();
         var pastDate = DateTimeType.Now.Date.AddDays(-1); // Yesterday (before minimum of today)
 
-        // Act & Assert
-        page.TestDatePicker.SetDate(pastDate)
-            .StatusLabel.AssertTextContains("before minimum");
+        var error = Assert.Throws<BrinellException>(() => page.TestDatePicker.SetDate(pastDate));
+        Assert.Contains("Could not set date", error.Message);
 
         return Task.CompletedTask;
     }
 
     /// <summary>
-    /// Verifies that an out-of-range date (after maximum) is rejected.
+    /// Verifies that a date after MaximumDate is refused rather than silently ignored.
     /// </summary>
+    /// <remarks>See <see cref="DatePicker_DateBeforeMinimum_IsRefused"/>.</remarks>
     [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Method", "Constraints")]
-    public Task DatePicker_DateAfterMaximum_ShowsValidationError()
+    public Task DatePicker_DateAfterMaximum_IsRefused()
     {
         var page = GetPage();
         var futureDate = DateTimeType.Now.Date.AddDays(31); // 31 days from now (max is 30)
 
-        // Act & Assert
-        page.TestDatePicker.SetDate(futureDate)
-            .StatusLabel.AssertTextContains("after maximum");
+        var error = Assert.Throws<BrinellException>(() => page.TestDatePicker.SetDate(futureDate));
+        Assert.Contains("Could not set date", error.Message);
 
         return Task.CompletedTask;
     }
