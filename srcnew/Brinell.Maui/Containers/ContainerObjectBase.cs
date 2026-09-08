@@ -498,6 +498,18 @@ public abstract class ContainerObjectBase<TParent, TSelf>
         return value;
     }
 
+    /// <summary>Sets a value on the container, returning the parent scope.</summary>
+    protected TParent RunSetWithElement<T>(T? value, Action<IMauiElement> coreOperation,
+        int? timeoutMs = null, [CallerMemberName] string? caller = null)
+    {
+        if (value == null)
+        {
+            return Parent;
+        }
+        RunPoll(null, () => { coreOperation(ContainerRoot); return true; }, timeoutMs, caller);
+        return Parent;
+    }
+
     /// <summary>
     /// Polls a predicate that is meaningful when the container root is absent.
     /// </summary>
