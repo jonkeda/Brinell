@@ -34,6 +34,11 @@ public abstract class HtmlPageObjectBase<TSelf> : ObjectBase, IHtmlPage<TSelf>
 
     protected virtual bool CompareUrl()
     {
+        if (Url is null)
+        {
+            return true;
+        }
+
         var uri = new Uri(_context.CurrentUrl);
 
         return uri.LocalPath == Url;

@@ -81,9 +81,13 @@ public sealed class DefaultTestArtifactPathProvider : ITestArtifactPathProvider
     /// </summary>
     public static DefaultTestArtifactPathProvider Create(string? suiteName = null)
     {
-        var root = Path.Combine(FindRepositoryRoot(Environment.CurrentDirectory), "TestResults");
-        var runId = LocalRunId.Value;
-        var suite = suiteName ?? InferSuiteName();
+        var root = Environment.GetEnvironmentVariable(TestArtifactOptions.RootDirectoryEnvironmentVariable)
+            ?? Path.Combine(FindRepositoryRoot(Environment.CurrentDirectory), "TestResults");
+        var runId = Environment.GetEnvironmentVariable(TestArtifactOptions.RunIdEnvironmentVariable)
+            ?? LocalRunId.Value;
+        var suite = Environment.GetEnvironmentVariable(TestArtifactOptions.SuiteEnvironmentVariable)
+            ?? suiteName
+            ?? InferSuiteName();
 
         return new DefaultTestArtifactPathProvider(new TestArtifactOptions(root, runId, suite));
     }

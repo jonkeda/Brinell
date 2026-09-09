@@ -8,7 +8,7 @@ modern browser automation.
 - `srcnew/Brinell.Html`
 - `srcnew/Brinell.Html.Playwright`
 - `srcnew/Brinell.Blazor`
-- `testsnew/Brinell.Html.Tests`
+- `testsnew/Brinell.Blazor.Tests`
 - `testsnew/Brinell.Html.UITests`
 - `testsnew/Brinell.Blazor.UITests`
 

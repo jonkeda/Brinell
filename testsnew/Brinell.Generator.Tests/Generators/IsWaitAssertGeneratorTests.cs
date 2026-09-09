@@ -269,7 +269,7 @@ public class Test<TScope> {
 
         Assert.Contains("public string? GetText(int? timeoutMs = null)", generated);
         Assert.Contains("return RunGetWithElement(element => GetTextCore(element), timeoutMs);", generated);
-        Assert.Contains("public bool? WaitText(string? expected, int? timeoutMs = null)", generated);
+        Assert.Contains("public bool WaitText(string? expected, int? timeoutMs = null)", generated);
         Assert.Contains("public TScope AssertText(string? expected, string? message = null, int? timeoutMs = null)", generated);
     }
 
@@ -288,7 +288,7 @@ public class Test {
 
         Assert.Contains("public string? GetAttribute(string? name, int? timeoutMs = null)", generated);
         Assert.Contains("GetAttributeCore(element, name)", generated);
-        Assert.Contains("public bool? WaitAttribute(string? name, string? expected, int? timeoutMs = null)", generated);
+        Assert.Contains("public bool WaitAttribute(string? name, string? expected, int? timeoutMs = null)", generated);
     }
 
     #endregion

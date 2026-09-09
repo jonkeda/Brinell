@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <RootNamespace>Brinell.Stride.Tests</RootNamespace>
+    <IsTestProject>false</IsTestProject>
   </PropertyGroup>
 
   <ItemGroup>

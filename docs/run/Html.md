@@ -9,11 +9,14 @@ dotnet build srcnew\Brinell.Html\Brinell.Html.csproj -v:minimal /nr:false
 dotnet build srcnew\Brinell.Html.Playwright\Brinell.Html.Playwright.csproj -v:minimal /nr:false
 ```
 
-## Unit Tests
+## Unit Coverage
 
 ```powershell
-dotnet test testsnew\Brinell.Html.Tests\Brinell.Html.Tests.csproj -v:minimal /nr:false
+dotnet test testsnew\Brinell.Blazor.Tests\Brinell.Blazor.Tests.csproj -v:minimal /nr:false
 ```
+
+`Brinell.Html.Tests` is currently a compile-only placeholder and is not a test
+suite.
 
 ## UI Tests
 

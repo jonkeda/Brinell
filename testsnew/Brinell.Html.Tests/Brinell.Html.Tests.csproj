@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <RootNamespace>Brinell.Html.Tests</RootNamespace>
+    <IsTestProject>false</IsTestProject>
   </PropertyGroup>
 
   <ItemGroup>

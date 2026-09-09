@@ -149,7 +149,7 @@ public abstract class S<TScope> where TScope : IScope<TScope>
 
         Assert.Contains("public TScope AssertText(", generated);
         Assert.Contains("public TScope AssertTextContains(", generated);
-        Assert.Contains("public bool? WaitTextContains(", generated);
+        Assert.Contains("public bool WaitTextContains(", generated);
         Assert.Contains("public TScope AssertTextStartsWith(", generated);
         // Not requested.
         Assert.DoesNotContain("AssertTextEndsWith", generated);

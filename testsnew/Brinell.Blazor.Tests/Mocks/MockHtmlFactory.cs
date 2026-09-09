@@ -13,6 +13,7 @@ public static class MockHtmlFactory
         mock.Setup(c => c.DefaultLocatorStrategy).Returns(LocatorStrategy.Css);
         mock.Setup(c => c.Context).Returns(() => mock.Object);
         mock.Setup(c => c.Logger).Returns(Mock.Of<ITestLogger>());
+        mock.Setup(c => c.IsIdle()).Returns(true);
         return mock;
     }
 
