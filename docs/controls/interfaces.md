@@ -14,6 +14,24 @@ drivers use across platforms.
 | Driver | Platform-specific element discovery and action backend |
 | Artifact service | Screenshots, manifests, summaries, and diagnostics |
 
+## MAUI Rooted Scopes
+
+MAUI pages and container objects share rooted-scope behavior without sharing a
+parent contract:
+
+- `RootedScopeBase<TSelf, TSetResult>` owns root caching, stale recovery,
+  strict descendant lookup, typed child factories, state, and readiness hooks.
+- `PageObjectBase<TSelf>` locates its root from the driver and has no `Parent`.
+- `ContainerObjectBase<TParent, TSelf>` locates its root inside its parent and
+  implements `IMauiContainerObject<TParent, TSelf>` with an explicit `Parent`.
+- `DriverRootScope<TScope>` is an explicit escape for application or platform
+  chrome outside the current page subtree. Ordinary controls do not fall back
+  to it.
+
+Rooted scopes must provide a root locator and root-resolution implementation.
+A page also validates cached roots through visible, usable bounds so navigating
+away and back can replace a detached page instance.
+
 ## Interface Rules
 
 - Add shared capability contracts to `Brinell.Core`.

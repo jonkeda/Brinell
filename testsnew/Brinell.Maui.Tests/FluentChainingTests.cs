@@ -22,6 +22,15 @@ public class FluentChainingTests
         };
         _mockContext.Setup(c => c.Timeouts).Returns(timeouts);
         _mockContext.Setup(c => c.DefaultLocatorStrategy).Returns(LocatorStrategy.AutomationId);
+
+        var pageRoot = new Mock<IMauiElement>();
+        pageRoot.Setup(e => e.Visible).Returns(true);
+        pageRoot.Setup(e => e.TagName).Returns("Page");
+        pageRoot.Setup(e => e.Rect).Returns(new System.Drawing.Rectangle(0, 0, 400, 800));
+        pageRoot.Setup(e => e.FindElement(It.IsAny<Locator>(), 0))
+            .Returns((Locator locator, int _) => _mockContext.Object.FindElement(locator));
+        _mockContext.Setup(c => c.FindElements(It.Is<Locator>(l => l.Value == "Test Page")))
+            .Returns([pageRoot.Object]);
         
         _testPage = new TestPage(_mockContext.Object);
     }
@@ -340,7 +349,6 @@ public class FluentChainingTests
         public TestPage(IMauiTestContext context) : base(context) { }
         
         public override string Name => "Test Page";
-        
         public override bool IsLoaded(int? timeoutMs = null) => true;
         
         // Controls with fluent chaining - return TestPage

@@ -1,19 +1,22 @@
 using Brinell.Maui.Controls;
 using Brinell.Maui.Controls.Display;
+using Brinell.Maui.Containers;
+using Brinell.Maui.Scopes;
 
 namespace Brinell.Maui.Pages;
 
 /// <summary>
 /// Base class for MAUI page objects with fluent method chaining support.
 /// Uses CRTP (Curiously Recurring Template Pattern) for strongly-typed fluent returns.
-/// Pages delegate element finding to the test context (driver root search).
-/// Implements IMauiPage so pages can be used as scopes for child controls.
+/// Pages are root containers: their root is found from the driver and all child controls
+/// resolve strictly within that root.
 /// </summary>
 /// <typeparam name="TSelf">The concrete page type (CRTP pattern).</typeparam>
-public abstract class PageObjectBase<TSelf> : ObjectBase, IMauiPage<TSelf>
+public abstract class PageObjectBase<TSelf> : RootedScopeBase<TSelf, TSelf>, IMauiPage<TSelf>
     where TSelf : PageObjectBase<TSelf>
 {
     private readonly IMauiTestContext _context;
+    private readonly IMauiScope<TSelf> _driverRootScope;
     
     /// <summary>
     /// Creates a new page object with the specified context.
@@ -22,67 +25,50 @@ public abstract class PageObjectBase<TSelf> : ObjectBase, IMauiPage<TSelf>
     protected PageObjectBase(IMauiTestContext context)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
+        _driverRootScope = new DriverRootScope<TSelf>(this);
     }
-    
+
     /// <inheritdoc />
     public override IMauiTestContext Context => _context;
-    
-    /// <summary>
-    /// Gets this page as the typed page reference (for fluent chaining).
-    /// </summary>
-    public TSelf Self => (TSelf)this;
     
     #region IPageObject Implementation
     
     /// <inheritdoc />
     public virtual string Name => GetType().Name;
+
+    protected override Locator Locator => new(LocatorStrategy.AutomationId, Name);
+
+    public override IPageObject? Page => this;
+
+    protected override IMauiElement FindContainerRootElement()
+        => Context.FindElements(Locator).FirstOrDefault(element => element.HasUsableBounds())
+            ?? throw new ElementNotFoundException($"Page root not found. Locator: {Locator}");
+
+    protected override bool IsCachedRootValid(IMauiElement root)
+        => root.HasUsableBounds();
+
+    protected override TSelf SetResult => Self;
     
     /// <inheritdoc />
-    public LocatorStrategy DefaultLocatorStrategy => _context.DefaultLocatorStrategy;
-    
-    /// <inheritdoc />
-    public Label<TSelf> BusySentinel => new (this, "UITest_IsBusy");
+    public Label<TSelf> BusySentinel => new (_driverRootScope, "UITest_IsBusy");
 
     /// <summary>
-    /// Whether element lookups on this page require the page to be loaded first.
+    /// Whether child resolution requires this page root to be loaded first.
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// True by default: an element cannot be inside a page that is not on screen, so looking
-    /// for one is a guaranteed timeout and the wait tells the reader nothing.
-    /// </para>
-    /// <para>
-    /// Override to <c>false</c> for a page that deliberately resolves elements outside its own
-    /// root — a dialog host, for instance, where a WinUI3 <c>ContentDialog</c> renders in a
-    /// separate popup window that is not a descendant of the page.
-    /// </para>
-    /// </remarks>
     protected virtual bool RequiresLoadedPage => true;
 
-    private bool _ensuringLoad = false;
+    private bool _ensuringLoad;
 
-    /// <summary>
-    /// Whether the page is loaded, guarding against re-entry.
-    /// </summary>
-    /// <remarks>
-    /// <see cref="IsLoaded()"/> resolves elements through this same scope, so without the
-    /// guard the load check would recurse into itself. During that inner call the answer is
-    /// reported as true, which lets the check complete rather than deadlock.
-    /// </remarks>
     private bool EnsureLoaded(bool wait = false)
     {
         if (_ensuringLoad) return true;
+
         try
         {
             _ensuringLoad = true;
-
-            if (!wait) return IsLoaded();
-
-            // Polls the no-argument form rather than passing a timeout to IsLoaded. Page
-            // objects routinely override IsLoaded to check for a signature control - "loaded
-            // means the status label exists" - and those overrides ignore the timeout
-            // parameter, so delegating the wait to them would silently do nothing.
-            return IsLoaded() || Poll(() => IsLoaded(), _context.Timeouts.PageLoad);
+            return wait
+                ? IsLoaded() || Poll(() => IsLoaded(), Context.Timeouts.PageLoad)
+                : IsLoaded();
         }
         finally
         {
@@ -90,30 +76,12 @@ public abstract class PageObjectBase<TSelf> : ObjectBase, IMauiPage<TSelf>
         }
     }
 
-    /// <summary>
-    /// Whether an element lookup may proceed.
-    /// </summary>
-    /// <remarks>
-    /// Kept separate from <see cref="EnsureLoaded"/> so the re-entrancy guard stays the only
-    /// thing that method does, and so an opted-out page skips the load check entirely rather
-    /// than paying for it and ignoring the result.
-    /// </remarks>
-    private bool CanResolveElements(bool wait = false)
+    protected override bool CanResolveElements(bool wait = false)
         => !RequiresLoadedPage || EnsureLoaded(wait);
 
-    /// <summary>
-    /// The exception thrown when a lookup is attempted on a page that is not loaded.
-    /// </summary>
-    /// <remarks>
-    /// Names the page as well as the element: the element name alone describes a symptom of
-    /// being on the wrong page rather than the cause.
-    /// </remarks>
-    private ElementNotFoundException PageNotLoaded(Locator locator)
+    protected override ElementNotFoundException CreateScopeNotReadyException(Locator locator)
         => new($"Page '{Name}' is not loaded, so '{locator}' cannot be found in it. " +
-               $"The page root is located by AutomationId:{Name}. " +
-               "Navigate to the page first, or override RequiresLoadedPage if this page " +
-               "resolves elements outside its own root.");
-    
+               $"The page root is located by AutomationId:{Name}.");
     /// <inheritdoc />
     public virtual bool IsLoaded(int? timeoutMs = null)
     {
@@ -124,9 +92,7 @@ public abstract class PageObjectBase<TSelf> : ObjectBase, IMauiPage<TSelf>
     }
 
     private bool IsVisiblePageRootLoaded()
-        => _context
-            .FindElements(Locator.ByAutomationId(Name))
-            .Any(element => element.HasUsableBounds());
+        => TryGetContainerRoot() is { } root && root.HasUsableBounds();
 
     /// <summary>
     /// Waits for the page to finish loading.
@@ -135,7 +101,7 @@ public abstract class PageObjectBase<TSelf> : ObjectBase, IMauiPage<TSelf>
     /// <returns>True when page becomes idle; otherwise false.</returns>
     public bool WaitIdle(int? timeoutMs = null)
     {
-        var timeout = timeoutMs ?? _context.Timeouts.PageLoad;
+        var timeout = timeoutMs ?? Context.Timeouts.PageLoad;
         return Poll(() => BusySentinel.GetText() == "False", timeout);
     }
 
@@ -161,7 +127,7 @@ public abstract class PageObjectBase<TSelf> : ObjectBase, IMauiPage<TSelf>
         // Nullable skip pattern
         if (expected == null) return true;
         
-        var timeout = timeoutMs ?? _context.Timeouts.PageLoad;
+        var timeout = timeoutMs ?? Context.Timeouts.PageLoad;
         return Poll(
             () => IsLoaded() == expected.Value,
             timeout);
@@ -195,7 +161,7 @@ public abstract class PageObjectBase<TSelf> : ObjectBase, IMauiPage<TSelf>
         // Nullable skip pattern
         if (expected == null) return true;
         
-        var timeout = timeoutMs ?? _context.Timeouts.DefaultWait;
+        var timeout = timeoutMs ?? Context.Timeouts.DefaultWait;
         return Poll(
             () => GetTitle() == expected,
             timeout);
@@ -219,7 +185,7 @@ public abstract class PageObjectBase<TSelf> : ObjectBase, IMauiPage<TSelf>
     public void TakeScreenshot(string? filename = null, int? timeoutMs = null)
     {
         var path = filename ?? $"{Name}_{DateTime.Now:yyyyMMdd_HHmmss}.png";
-        _context.SaveScreenshot(path);
+        Context.SaveScreenshot(path);
     }
     
     #endregion
@@ -227,74 +193,18 @@ public abstract class PageObjectBase<TSelf> : ObjectBase, IMauiPage<TSelf>
     #region IMauiElementScope Implementation
     
     /// <inheritdoc />
-    public IPageObject? Page => this;
-    
-    /// <inheritdoc />
-    public bool IsReady(int? timeoutMs = null)
+    public override bool IsReady(int? timeoutMs = null)
     {
         // For pages, ready means loaded
         return IsLoaded(timeoutMs);
     }
     
     /// <inheritdoc />
-    public bool WaitReady(int? timeoutMs = null)
+    public override bool WaitReady(int? timeoutMs = null)
     {
         // For pages, wait ready means wait loaded
         return WaitLoaded(true, timeoutMs);
     }
     
-    /// <inheritdoc />
-    /// <inheritdoc />
-    /// <remarks>
-    /// <para>
-    /// Waits for the page, unlike <see cref="FindElement"/>. The difference is who does the
-    /// polling: an action resolves through <c>FindElement</c>, which throws and lets the
-    /// caller's <c>RunPoll</c> retry, so a wait here would nest one poll inside another. A
-    /// query has no loop above it — <c>IsExists()</c> asks once and returns — so if it does
-    /// not wait, nothing does.
-    /// </para>
-    /// <para>
-    /// It waits for the <em>page</em> only, never for the element. "Is this element present?"
-    /// must stay cheap to answer with "no", or <c>AssertExists(false)</c> costs a full timeout
-    /// on every call. Being on the page is a precondition for the question being meaningful;
-    /// the element's absence is the answer.
-    /// </para>
-    /// </remarks>
-    IMauiElement? IElementScope<IMauiElement>.TryFindElement(Locator locator)
-    {
-        if (!CanResolveElements(wait: true)) return null;
-
-        return _context.TryFindElement(locator);
-    }
-
-    /// <inheritdoc />
-    IMauiElement? IMauiElementScope.TryFindElementAfterScroll(Locator locator)
-    {
-        if (!CanResolveElements(wait: true)) return null;
-
-        return _context.TryFindElementAfterScroll(locator);
-    }
-
-    /// <inheritdoc />
-    /// <remarks>
-    /// Throws immediately when the page is not loaded rather than searching for an element
-    /// that cannot be there. The search would spend the full <c>ElementFind</c> timeout and
-    /// then report a missing element, which describes the symptom rather than the cause.
-    /// </remarks>
-    IMauiElement IElementScope<IMauiElement>.FindElement(Locator locator)
-    {
-        if (!CanResolveElements()) throw PageNotLoaded(locator);
-
-        return _context.FindElement(locator);
-    }
-
-    /// <inheritdoc />
-    IReadOnlyList<IMauiElement> IElementScope<IMauiElement>.FindElements(Locator locator)
-    {
-        if (!CanResolveElements()) return [];
-
-        return _context.FindElements(locator);
-    }
-
     #endregion
 }

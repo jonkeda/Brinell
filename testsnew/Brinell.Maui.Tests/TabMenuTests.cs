@@ -27,6 +27,15 @@ public class TabMenuTests
             PollingInterval = 20
         });
         _context.Setup(c => c.DefaultLocatorStrategy).Returns(LocatorStrategy.AutomationId);
+
+        var pageRoot = new Mock<IMauiElement>();
+        pageRoot.Setup(e => e.Visible).Returns(true);
+        pageRoot.Setup(e => e.TagName).Returns("Page");
+        pageRoot.Setup(e => e.Rect).Returns(new System.Drawing.Rectangle(0, 0, 400, 800));
+        pageRoot.Setup(e => e.FindElement(It.IsAny<Locator>(), 0))
+            .Returns((Locator locator, int _) => _context.Object.FindElement(locator));
+        _context.Setup(c => c.FindElements(It.Is<Locator>(l => l.Value == "TestPage")))
+            .Returns([pageRoot.Object]);
     }
 
     [Fact]

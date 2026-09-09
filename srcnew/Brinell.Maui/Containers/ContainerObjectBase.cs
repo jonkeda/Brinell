@@ -4,15 +4,12 @@ using Brinell.Core.Utilities;
 namespace Brinell.Maui.Containers;
 
 /// <summary>
-/// Base class for container objects: scopes rooted at an element rather than at the
-/// driver, holding controls and other containers.
+/// Shared behavior for scopes rooted at an element rather than at the driver.
 /// </summary>
 /// <remarks>
 /// <para>
-/// A container object is a peer of <see cref="Pages.PageObjectBase{TSelf}"/>, not a
-/// control. It deliberately does <b>not</b> derive from a control base, because a
-/// control base would make the container's own members return the parent scope and eject
-/// the caller from the container mid-chain.
+/// Pages and child containers both inherit this behavior. Parent navigation belongs only
+/// to <see cref="ContainerObjectBase{TParent, TSelf}"/>.
 /// </para>
 /// <para>
 /// Searches are scoped strictly to <see cref="ContainerRoot"/>: when a child is not
@@ -20,59 +17,25 @@ namespace Brinell.Maui.Containers;
 /// Container scoping means elements must be within the container.
 /// </para>
 /// </remarks>
-/// <typeparam name="TParent">The parent scope type (a page or another container).</typeparam>
 /// <typeparam name="TSelf">The container type itself (self-referencing for fluent returns).</typeparam>
-public abstract class ContainerObjectBase<TParent, TSelf>
-    : ObjectBase, IMauiContainerObject<TParent, TSelf>
-    where TParent : IMauiScope<TParent>
-    where TSelf : ContainerObjectBase<TParent, TSelf>
+/// <typeparam name="TSetResult">The scope returned by generated set operations.</typeparam>
+public abstract class RootedScopeBase<TSelf, TSetResult>
+    : ObjectBase, IMauiScope<TSelf>, IContainerObject<IMauiElement>
+    where TSelf : RootedScopeBase<TSelf, TSetResult>
 {
-    private readonly IMauiScope<TParent> _parentScope;
     private IMauiElement? _cachedRoot;
     private bool _rootCacheValid;
 
     /// <summary>
-    /// Creates a container within the given parent scope.
+    /// The locator that finds this scope's root element.
     /// </summary>
-    /// <param name="parentScope">The parent scope (page or container).</param>
-    /// <param name="locator">The locator for the container's root element.</param>
-    protected ContainerObjectBase(IMauiScope<TParent> parentScope, Locator locator)
-    {
-        _parentScope = parentScope ?? throw new ArgumentNullException(nameof(parentScope));
-        Locator = locator ?? throw new ArgumentNullException(nameof(locator));
-    }
-
-    /// <summary>
-    /// Creates a container using the parent scope's default locator strategy.
-    /// </summary>
-    /// <param name="parentScope">The parent scope (page or container).</param>
-    /// <param name="locatorValue">The locator value (e.g., automation ID).</param>
-    protected ContainerObjectBase(IMauiScope<TParent> parentScope, string locatorValue)
-        : this(parentScope,
-               new Locator(
-                   parentScope?.DefaultLocatorStrategy ?? LocatorStrategy.AutomationId,
-                   locatorValue ?? throw new ArgumentNullException(nameof(locatorValue))))
-    {
-        if (locatorValue.Length == 0)
-            throw new ArgumentException("Locator value must not be empty.", nameof(locatorValue));
-    }
-
-    /// <summary>
-    /// The locator that finds this container's root element.
-    /// </summary>
-    protected Locator Locator { get; }
+    protected abstract Locator Locator { get; }
 
     /// <inheritdoc />
     public TSelf Self => (TSelf)this;
 
     /// <inheritdoc />
-    public TParent Parent => _parentScope.Self;
-
-    /// <inheritdoc />
-    public override IMauiTestContext Context => _parentScope.Context;
-
-    /// <inheritdoc />
-    public IPageObject? Page => _parentScope.Page;
+    public abstract IPageObject? Page { get; }
 
     /// <inheritdoc />
     public LocatorStrategy DefaultLocatorStrategy => LocatorStrategy.AutomationId;
@@ -81,6 +44,13 @@ public abstract class ContainerObjectBase<TParent, TSelf>
     /// Whether this container keeps its resolved root between operations.
     /// </summary>
     protected virtual bool CacheContainerRoot => true;
+
+    /// <summary>Checks whether a cached root still represents this scope.</summary>
+    protected virtual bool IsCachedRootValid(IMauiElement root)
+    {
+        _ = root.TagName;
+        return true;
+    }
 
     #region Container root
 
@@ -96,16 +66,16 @@ public abstract class ContainerObjectBase<TParent, TSelf>
             {
                 try
                 {
-                    // Touch a property to detect a dead reference. Adapters differ in how
-                    // they report one - a typed stale exception, a raw automation error -
-                    // so any failure invalidates the cache.
-                    _ = _cachedRoot.TagName;
-                    return _cachedRoot;
+                    if (IsCachedRootValid(_cachedRoot))
+                    {
+                        return _cachedRoot;
+                    }
+
+                    InvalidateCache();
                 }
                 catch
                 {
-                    _rootCacheValid = false;
-                    _cachedRoot = null;
+                    InvalidateCache();
                 }
             }
 
@@ -120,8 +90,7 @@ public abstract class ContainerObjectBase<TParent, TSelf>
     /// popup window for a dialog that lives outside the normal scope chain.
     /// </summary>
     /// <exception cref="ElementNotFoundException">Thrown when the root is not found.</exception>
-    protected virtual IMauiElement FindContainerRootElement()
-        => _parentScope.FindElement(Locator);
+    protected abstract IMauiElement FindContainerRootElement();
 
     /// <inheritdoc />
     public void InvalidateCache()
@@ -210,6 +179,17 @@ public abstract class ContainerObjectBase<TParent, TSelf>
 
     #region Element finding (scoped to the container root)
 
+    /// <summary>
+    /// Whether this scope may resolve children now.
+    /// </summary>
+    protected virtual bool CanResolveElements(bool wait = false) => true;
+
+    /// <summary>
+    /// Creates the error raised when child resolution is blocked by scope readiness.
+    /// </summary>
+    protected virtual ElementNotFoundException CreateScopeNotReadyException(Locator locator)
+        => new($"Container is not ready. Container locator: {Locator}, Child locator: {locator}");
+
     /// <inheritdoc />
     /// <inheritdoc />
     /// <remarks>
@@ -223,6 +203,7 @@ public abstract class ContainerObjectBase<TParent, TSelf>
     public IMauiElement? TryFindElement(Locator locator)
     {
         ArgumentNullException.ThrowIfNull(locator);
+        if (!CanResolveElements(wait: true)) return null;
 
         var root = TryGetContainerRoot();
         if (root == null) return null;
@@ -259,6 +240,7 @@ public abstract class ContainerObjectBase<TParent, TSelf>
     public IMauiElement FindElement(Locator locator)
     {
         ArgumentNullException.ThrowIfNull(locator);
+        if (!CanResolveElements()) throw CreateScopeNotReadyException(locator);
 
         return TryFindElement(locator)
             ?? throw new ElementNotFoundException(
@@ -269,6 +251,7 @@ public abstract class ContainerObjectBase<TParent, TSelf>
     public IReadOnlyList<IMauiElement> FindElements(Locator locator)
     {
         ArgumentNullException.ThrowIfNull(locator);
+        if (!CanResolveElements()) return [];
 
         var root = TryGetContainerRoot();
         if (root == null) return [];
@@ -291,22 +274,28 @@ public abstract class ContainerObjectBase<TParent, TSelf>
     #region Readiness
 
     /// <inheritdoc />
-    public bool IsReady(int? timeoutMs = null)
+    public virtual bool IsReady(int? timeoutMs = null)
     {
-        if (!_parentScope.IsReady(timeoutMs)) return false;
+        if (!IsParentReady(timeoutMs)) return false;
         if (TryGetContainerRoot() == null) return false;
 
         return WaitContentReadyCore(timeoutMs);
     }
 
     /// <inheritdoc />
-    public bool WaitReady(int? timeoutMs = null)
+    public virtual bool WaitReady(int? timeoutMs = null)
     {
-        if (!_parentScope.WaitReady(timeoutMs)) return false;
+        if (!WaitParentReady(timeoutMs)) return false;
         if (!WaitExists(true, timeoutMs)) return false;
 
         return WaitContentReady(timeoutMs);
     }
+
+    /// <summary>Checks readiness outside this rooted scope.</summary>
+    protected virtual bool IsParentReady(int? timeoutMs = null) => true;
+
+    /// <summary>Waits for readiness outside this rooted scope.</summary>
+    protected virtual bool WaitParentReady(int? timeoutMs = null) => true;
 
     /// <summary>
     /// Waits for readiness beyond the root element merely existing.
@@ -499,16 +488,19 @@ public abstract class ContainerObjectBase<TParent, TSelf>
     }
 
     /// <summary>Sets a value on the container, returning the parent scope.</summary>
-    protected TParent RunSetWithElement<T>(T? value, Action<IMauiElement> coreOperation,
+    protected TSetResult RunSetWithElement<T>(T? value, Action<IMauiElement> coreOperation,
         int? timeoutMs = null, [CallerMemberName] string? caller = null)
     {
         if (value == null)
         {
-            return Parent;
+            return SetResult;
         }
         RunPoll(null, () => { coreOperation(ContainerRoot); return true; }, timeoutMs, caller);
-        return Parent;
+        return SetResult;
     }
+
+    /// <summary>The scope returned by a generated set operation.</summary>
+    protected abstract TSetResult SetResult { get; }
 
     /// <summary>
     /// Polls a predicate that is meaningful when the container root is absent.
@@ -606,4 +598,57 @@ public abstract class ContainerObjectBase<TParent, TSelf>
     private ITestLogger? Logger => Context.Logger;
 
     #endregion
+}
+
+/// <summary>
+/// A rooted scope with an explicit parent. Pages inherit <see cref="RootedScopeBase{TSelf, TSetResult}"/>
+/// directly because a root page has no parent relationship.
+/// </summary>
+public abstract class ContainerObjectBase<TParent, TSelf>
+    : RootedScopeBase<TSelf, TParent>, IMauiContainerObject<TParent, TSelf>
+    where TParent : IMauiScope<TParent>
+    where TSelf : ContainerObjectBase<TParent, TSelf>
+{
+    private readonly IMauiScope<TParent> _parentScope;
+    private readonly Locator _locator;
+
+    /// <summary>Creates a container within the given parent scope.</summary>
+    protected ContainerObjectBase(IMauiScope<TParent> parentScope, Locator locator)
+    {
+        _parentScope = parentScope ?? throw new ArgumentNullException(nameof(parentScope));
+        _locator = locator ?? throw new ArgumentNullException(nameof(locator));
+    }
+
+    /// <summary>Creates a container using the parent scope's default locator strategy.</summary>
+    protected ContainerObjectBase(IMauiScope<TParent> parentScope, string locatorValue)
+        : this(parentScope,
+               new Locator(
+                   parentScope?.DefaultLocatorStrategy ?? LocatorStrategy.AutomationId,
+                   locatorValue ?? throw new ArgumentNullException(nameof(locatorValue))))
+    {
+        if (locatorValue.Length == 0)
+            throw new ArgumentException("Locator value must not be empty.", nameof(locatorValue));
+    }
+
+    protected override Locator Locator => _locator;
+
+    /// <inheritdoc />
+    public TParent Parent => _parentScope.Self;
+
+    /// <inheritdoc />
+    public override IMauiTestContext Context => _parentScope.Context;
+
+    /// <inheritdoc />
+    public override IPageObject? Page => _parentScope.Page;
+
+    protected override IMauiElement FindContainerRootElement()
+        => _parentScope.FindElement(Locator);
+
+    protected override bool IsParentReady(int? timeoutMs = null)
+        => _parentScope.IsReady(timeoutMs);
+
+    protected override bool WaitParentReady(int? timeoutMs = null)
+        => _parentScope.WaitReady(timeoutMs);
+
+    protected override TParent SetResult => Parent;
 }

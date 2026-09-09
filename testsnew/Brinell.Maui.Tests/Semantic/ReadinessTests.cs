@@ -13,6 +13,7 @@ namespace Brinell.Maui.Tests.Semantic;
 public class ReadinessTests
 {
     private readonly Mock<IMauiTestContext> _context = new();
+    private readonly Mock<IMauiElement> _pageRoot = new();
 
     public ReadinessTests()
     {
@@ -24,6 +25,11 @@ public class ReadinessTests
             PollingInterval = 1
         });
         _context.Setup(c => c.DefaultLocatorStrategy).Returns(LocatorStrategy.AutomationId);
+        _pageRoot.Setup(e => e.Visible).Returns(true);
+        _pageRoot.Setup(e => e.TagName).Returns("Page");
+        _pageRoot.Setup(e => e.Rect).Returns(new System.Drawing.Rectangle(0, 0, 400, 800));
+        _context.Setup(c => c.FindElements(It.Is<Locator>(l => l.Value == "GatedPage")))
+            .Returns([_pageRoot.Object]);
     }
 
     /// <summary>
@@ -53,9 +59,8 @@ public class ReadinessTests
         element.Setup(e => e.Enabled).Returns(true);
         element.Setup(e => e.Rect).Returns(new System.Drawing.Rectangle(0, 0, 40, 20));
 
-        _context.Setup(c => c.FindElement(It.IsAny<Locator>())).Returns(element.Object);
-        _context.Setup(c => c.TryFindElement(It.IsAny<Locator>())).Returns(element.Object);
-        _context.Setup(c => c.TryFindElementAfterScroll(It.IsAny<Locator>())).Returns(element.Object);
+        _pageRoot.Setup(e => e.FindElement(It.Is<Locator>(l => l.Value == "Target"), 0))
+            .Returns(element.Object);
 
         return element;
     }
