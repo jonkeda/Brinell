@@ -254,6 +254,9 @@ public class ReadinessTests
         Assert.Contains("Click", exception.Message);
         Assert.Contains("GatedPage", exception.Message);
         Assert.Contains("Busy", exception.Message);
+        Assert.Contains("AutomationId:Target", exception.Message);
+        Assert.Contains("10 ms", exception.Message);
+        Assert.Contains("busy value: 'True'", exception.Message);
         element.Verify(e => e.Click(), Times.Never);
     }
 

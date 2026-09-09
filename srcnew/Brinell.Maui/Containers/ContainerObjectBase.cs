@@ -414,7 +414,7 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
         {
             var snapshot = Page.ProbeReadiness();
             throw new PageLoadException(
-                $"Page '{Page.Name}' did not become ready for {caller ?? "operation"} within {timeout} ms. " +
+                $"Page '{Page.Name}' did not become ready for {caller ?? "operation"} on container '{Locator}' within {timeout} ms. " +
                 $"Last readiness state: {snapshot.State}; busy value: '{snapshot.BusySignalValue ?? "(none)"}'.");
         }
 
@@ -481,8 +481,14 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     protected TSelf RunDo(Action operation, int? timeoutMs = null,
         [CallerMemberName] string? caller = null)
     {
-        if (Page != null && !Page.WaitReady(timeoutMs ?? DefaultTimeoutMs))
-            throw new PageLoadException($"Page '{Page.Name}' did not become ready for {caller}.");
+        var timeout = timeoutMs ?? DefaultTimeoutMs;
+        if (Page != null && !Page.WaitReady(timeout))
+        {
+            var snapshot = Page.ProbeReadiness();
+            throw new PageLoadException(
+                $"Page '{Page.Name}' did not become ready for {caller ?? "operation"} on container '{Locator}' within {timeout} ms. " +
+                $"Last readiness state: {snapshot.State}; busy value: '{snapshot.BusySignalValue ?? "(none)"}'.");
+        }
         operation();
         return Self;
     }

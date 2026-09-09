@@ -89,7 +89,7 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
         {
             var snapshot = Page.ProbeReadiness();
             throw new PageLoadException(
-                $"Page '{Page.Name}' did not become ready for {caller ?? "operation"} within {timeout} ms. " +
+                $"Page '{Page.Name}' did not become ready for {caller ?? "operation"} on control '{Locator}' within {timeout} ms. " +
                 $"Last readiness state: {snapshot.State}; busy value: '{snapshot.BusySignalValue ?? "(none)"}'.");
         }
 
@@ -149,8 +149,14 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
         Func<TResult> operation,
         int? timeoutMs = null)
     {
-        if (Page != null && !Page.WaitReady(timeoutMs ?? DefaultTimeoutMs))
-            throw new PageLoadException($"Page '{Page.Name}' did not become ready for {action}.");
+        var timeout = timeoutMs ?? DefaultTimeoutMs;
+        if (Page != null && !Page.WaitReady(timeout))
+        {
+            var snapshot = Page.ProbeReadiness();
+            throw new PageLoadException(
+                $"Page '{Page.Name}' did not become ready for {action} on control '{Locator}' within {timeout} ms. " +
+                $"Last readiness state: {snapshot.State}; busy value: '{snapshot.BusySignalValue ?? "(none)"}'.");
+        }
 
         var stopwatch = Stopwatch.StartNew();
         Logger?.LogEntry(TestName, PageName, ControlId, action, value?.ToString());
