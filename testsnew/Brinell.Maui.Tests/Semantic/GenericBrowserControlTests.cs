@@ -2,6 +2,14 @@ namespace Brinell.Maui.Tests.Semantic;
 
 public class GenericBrowserControlTests : SemanticControlTestsBase
 {
+    public GenericBrowserControlTests()
+    {
+        var browserRoot = CreateElement("GenericBrowser", 0, 80, 560, 520);
+        Context
+            .Setup(c => c.TryFindElement(It.Is<Locator>(l => l.Value == "GenericBrowser")))
+            .Returns(browserRoot.Object);
+    }
+
     [Fact]
     public void GenericBrowser_SelectItem_InvokesNativeItemButtonBeforeRowClick()
     {
@@ -25,9 +33,8 @@ public class GenericBrowserControlTests : SemanticControlTestsBase
                 l.Strategy == LocatorStrategy.ControlType && l.Value == "ListItem")))
             .Returns(new[] { row.Object });
 
-        var result = Page.Browser.TrySelectItem("801");
+        Page.Browser.SelectItem("801");
 
-        Assert.True(result);
         nativeButton.As<IInvokePatternElement>().Verify(e => e.InvokePattern(), Times.Once);
         row.As<ISelectionItemPatternElement>().Verify(e => e.SelectItemPattern(), Times.Never);
         child.Verify(e => e.Click(), Times.Never);
@@ -50,9 +57,8 @@ public class GenericBrowserControlTests : SemanticControlTestsBase
             .Setup(c => c.FindElements(It.Is<Locator>(l => l.Value == "GenericBrowserItem_0_3555")))
             .Returns(() => selected ? Array.Empty<IMauiElement>() : new[] { CreateElement("GenericBrowserItem_0_3555", 50, 50, 80, 20).Object });
 
-        var result = Page.Browser.TrySelectItem("0:3555");
+        Page.Browser.SelectItem("0:3555");
 
-        Assert.True(result);
         nativeButton.As<IInvokePatternElement>().Verify(e => e.InvokePattern(), Times.Once);
     }
 
@@ -66,9 +72,9 @@ public class GenericBrowserControlTests : SemanticControlTestsBase
                 l.Strategy == LocatorStrategy.Name && l.Value == "Mock labour")))
             .Returns(new[] { pageLabel.Object });
 
-        var result = Page.Browser.TrySelectItem("602", "Mock labour", timeoutMs: 1);
+        Assert.Throws<ElementNotFoundException>(
+            () => Page.Browser.SelectItem("602", "Mock labour", timeoutMs: 1));
 
-        Assert.False(result);
         pageLabel.Verify(e => e.Click(), Times.Never);
     }
 
@@ -92,9 +98,8 @@ public class GenericBrowserControlTests : SemanticControlTestsBase
             .Setup(c => c.FindElements(It.Is<Locator>(l => l.Value == "GenericBrowserItem_602")))
             .Returns(Array.Empty<IMauiElement>());
 
-        var result = Page.Browser.TrySelectItem("602", "Mock labour", timeoutMs: 1);
+        Page.Browser.SelectItem("602", "Mock labour", timeoutMs: 1);
 
-        Assert.True(result);
         browserLabel.Verify(e => e.Click(), Times.Once);
     }
 
@@ -109,9 +114,8 @@ public class GenericBrowserControlTests : SemanticControlTestsBase
             .Setup(c => c.FindElements(It.Is<Locator>(l => l.Value == "GenericBrowserItem_0_3555")))
             .Returns(new[] { CreateElement("GenericBrowserItem_0_3555", 50, 50, 80, 20).Object });
 
-        var result = Page.Browser.TryToggleItem("0:3555");
+        Page.Browser.ToggleItem("0:3555");
 
-        Assert.True(result);
         nativeButton.As<IInvokePatternElement>().Verify(e => e.InvokePattern(), Times.Once);
     }
 
@@ -137,9 +141,8 @@ public class GenericBrowserControlTests : SemanticControlTestsBase
             .Setup(c => c.FindElements(It.Is<Locator>(l => l.Value == "GenericBrowser")))
             .Returns(() => closed ? Array.Empty<IMauiElement>() : new[] { browserRoot.Object });
 
-        var result = Page.Browser.TryClose();
+        Page.Browser.Close();
 
-        Assert.True(result);
         nativeClose.As<IInvokePatternElement>().Verify(e => e.InvokePattern(), Times.Once);
         gestureClose.Verify(e => e.Click(), Times.Never);
     }
@@ -159,9 +162,8 @@ public class GenericBrowserControlTests : SemanticControlTestsBase
                 l.Strategy == LocatorStrategy.ControlType && l.Value == "ListItem")))
             .Returns(new[] { row.Object });
 
-        var result = Page.Browser.TrySelectItem("801");
+        Page.Browser.SelectItem("801");
 
-        Assert.True(result);
         row.As<ISelectionItemPatternElement>().Verify(e => e.SelectItemPattern(), Times.Once);
         child.Verify(e => e.Click(), Times.Never);
     }

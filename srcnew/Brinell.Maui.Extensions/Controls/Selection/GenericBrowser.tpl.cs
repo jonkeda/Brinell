@@ -35,35 +35,23 @@ public partial class GenericBrowser<TScope> : Brinell.Maui.Controls.Base.ViewBas
     protected virtual void SelectItemCore(
         IMauiElement element, string identifier, string? visibleText = null, int? timeoutMs = null)
     {
-        if (!TrySelectItem(identifier, visibleText, timeoutMs))
+        ArgumentException.ThrowIfNullOrWhiteSpace(identifier);
+
+        var automationId = BuildItemAutomationId(identifier);
+        var candidate = WaitForSelectionCandidate(
+            BuildItemButtonAutomationId(identifier),
+            automationId,
+            visibleText,
+            timeoutMs);
+
+        if (candidate is not { } found
+            || !(found.ActivateDirectly
+                ? TryActivateElementAndWait(found.Element, automationId, timeoutMs)
+                : TryActivateAndWait(found.Element, automationId, timeoutMs)))
         {
             throw new ElementNotFoundException(
                 $"Could not select GenericBrowser item '{identifier}'{(visibleText == null ? string.Empty : $" / '{visibleText}'")}.");
         }
-    }
-
-    /// <summary>
-    /// Attempts to select an item by identifier, optionally falling back to visible text.
-    /// </summary>
-    public bool TrySelectItem(string identifier, string? visibleText = null, int? timeoutMs = null)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(identifier);
-
-        return Run(nameof(TrySelectItem), identifier, () =>
-        {
-            var automationId = BuildItemAutomationId(identifier);
-            var invokeAutomationId = BuildItemButtonAutomationId(identifier);
-            var candidate = WaitForSelectionCandidate(
-                invokeAutomationId,
-                automationId,
-                visibleText,
-                timeoutMs);
-
-            return candidate is { } found
-                && (found.ActivateDirectly
-                    ? TryActivateElementAndWait(found.Element, automationId, timeoutMs)
-                    : TryActivateAndWait(found.Element, automationId, timeoutMs));
-        }, timeoutMs);
     }
 
     /// <summary>
@@ -77,33 +65,22 @@ public partial class GenericBrowser<TScope> : Brinell.Maui.Controls.Base.ViewBas
     protected virtual void ToggleItemCore(
         IMauiElement element, string identifier, string? visibleText = null, int? timeoutMs = null)
     {
-        if (!TryToggleItem(identifier, visibleText, timeoutMs))
+        ArgumentException.ThrowIfNullOrWhiteSpace(identifier);
+
+        var candidate = WaitForSelectionCandidate(
+            BuildItemButtonAutomationId(identifier),
+            BuildItemAutomationId(identifier),
+            visibleText,
+            timeoutMs);
+
+        if (candidate is not { } found
+            || !(found.ActivateDirectly
+                ? TryActivate(found.Element)
+                : ActivateRowCore(found.Element)))
         {
             throw new ElementNotFoundException(
                 $"Could not toggle GenericBrowser item '{identifier}'{(visibleText == null ? string.Empty : $" / '{visibleText}'")}.");
         }
-    }
-
-    /// <summary>
-    /// Attempts to toggle an item in a multiple-selection GenericBrowser.
-    /// </summary>
-    public bool TryToggleItem(string identifier, string? visibleText = null, int? timeoutMs = null)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(identifier);
-
-        return Run(nameof(TryToggleItem), identifier, () =>
-        {
-            var candidate = WaitForSelectionCandidate(
-                BuildItemButtonAutomationId(identifier),
-                BuildItemAutomationId(identifier),
-                visibleText,
-                timeoutMs);
-
-            return candidate is { } found
-                && (found.ActivateDirectly
-                    ? TryActivate(found.Element)
-                    : ActivateRowCore(found.Element));
-        }, timeoutMs);
     }
 
     /// <summary>
@@ -113,29 +90,18 @@ public partial class GenericBrowser<TScope> : Brinell.Maui.Controls.Base.ViewBas
     /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
     protected virtual void CloseCore(IMauiElement element, int? timeoutMs = null)
     {
-        if (!TryClose(timeoutMs))
+        var closeButton = WaitForAnyAutomationId(timeoutMs,
+            DrawerNativeCloseAutomationId,
+            DrawerCloseAutomationId,
+            FlyoutNativeCloseAutomationId,
+            FlyoutCloseAutomationId);
+
+        if (closeButton == null
+            || !TryActivate(closeButton)
+            || !WaitForCloseSurfaceToDismiss(timeoutMs))
         {
             throw new ElementNotFoundException("Could not close GenericBrowser.");
         }
-    }
-
-    /// <summary>
-    /// Attempts to close the GenericBrowser drawer/flyout and waits until it is dismissed.
-    /// </summary>
-    public bool TryClose(int? timeoutMs = null)
-    {
-        return Run(nameof(TryClose), (string?)null, () =>
-        {
-            var closeButton = WaitForAnyAutomationId(timeoutMs,
-                DrawerNativeCloseAutomationId,
-                DrawerCloseAutomationId,
-                FlyoutNativeCloseAutomationId,
-                FlyoutCloseAutomationId);
-
-            return closeButton != null
-                && TryActivate(closeButton)
-                && WaitForCloseSurfaceToDismiss(timeoutMs);
-            }, timeoutMs);
     }
 
     private bool TryActivateAndWait(IMauiElement? element, string itemAutomationId, int? timeoutMs)

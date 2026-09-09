@@ -62,7 +62,7 @@ public class EditableFieldControlTests : SemanticControlTestsBase
     }
 
     [Fact]
-    public void EditableField_SetText_UsesTextEditorDrawerWhenInlineEntryIsMissing()
+    public void EditableField_SetText_UsesTextEditorAutomationIdWhenInlineEntryIsMissing()
     {
         var drawerOpen = false;
         var drawerClosed = false;
@@ -70,7 +70,7 @@ public class EditableFieldControlTests : SemanticControlTestsBase
         fieldRoot
             .Setup(e => e.Click())
             .Callback(() => drawerOpen = true);
-        var editor = CreateElement("TextEditor", 0, 50, 420, 300);
+        var editor = CreateElement("TextEditorView_Editor", 0, 50, 420, 300);
         var okButton = CreateInvokableElement("IconButton_btnIcon", 360, 0, 48, 48);
         okButton.As<IInvokePatternElement>()
             .Setup(e => e.InvokePattern())
@@ -81,8 +81,7 @@ public class EditableFieldControlTests : SemanticControlTestsBase
             .Setup(c => c.TryFindElement(It.Is<Locator>(l => l.Value == "TestField")))
             .Returns(fieldRoot.Object);
         Context
-            .Setup(c => c.FindElements(It.Is<Locator>(l =>
-                l.Strategy == LocatorStrategy.ControlType && l.Value == "Edit")))
+            .Setup(c => c.FindElements(It.Is<Locator>(l => l.Value == "TextEditorView_Editor")))
             .Returns(() => drawerOpen && !drawerClosed ? new[] { editor.Object } : Array.Empty<IMauiElement>());
         Context
             .Setup(c => c.FindElements(It.Is<Locator>(l => l.Value == "IconButton_btnIcon")))
@@ -95,6 +94,29 @@ public class EditableFieldControlTests : SemanticControlTestsBase
         editor.Verify(e => e.Clear(), Times.Once);
         editor.Verify(e => e.SendKeys("Journal note", TextInputMethod.SetValue), Times.Once);
         okButton.As<IInvokePatternElement>().Verify(e => e.InvokePattern(), Times.Once);
+    }
+
+    [Fact]
+    public void EditableField_SetText_DoesNotUseUnnamedEditControl()
+    {
+        var fieldRoot = CreateElement("FieldRoot", 0, 0, 200, 40);
+        var unnamedEditor = CreateElement(string.Empty, 0, 50, 420, 300);
+
+        Context
+            .Setup(c => c.TryFindElement(It.Is<Locator>(l => l.Value == "TestField")))
+            .Returns(fieldRoot.Object);
+        Context
+            .Setup(c => c.FindElements(It.Is<Locator>(l =>
+                l.Strategy == LocatorStrategy.ControlType && l.Value == "Edit")))
+            .Returns(new[] { unnamedEditor.Object });
+
+        var result = Page.TestField.TrySetText("Must not be entered", timeoutMs: 1);
+
+        Assert.False(result);
+        unnamedEditor.Verify(e => e.Clear(), Times.Never);
+        unnamedEditor.Verify(
+            e => e.SendKeys(It.IsAny<string>(), It.IsAny<TextInputMethod>()),
+            Times.Never);
     }
 
     [Fact]

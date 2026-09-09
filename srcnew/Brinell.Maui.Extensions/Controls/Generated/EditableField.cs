@@ -37,6 +37,11 @@ public class EditableField<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope>
     }
 
     /// <summary>
+    /// Locates the editor opened for a multiline generated field.
+    /// </summary>
+    protected virtual Locator TextEditorLocator => Locator.ByAutomationId(TextEditorId);
+
+    /// <summary>
     /// Opens the field editor or picker.
     /// </summary>
     public TScope Open(int? timeoutMs = null)
@@ -216,8 +221,7 @@ public class EditableField<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope>
     {
         IMauiElement? result = null;
         RunWait(
-            () => (result = MauiScope.FindVisibleByAutomationId(TextEditorId)
-                            ?? FindLargestEditControl()) != null,
+            () => (result = MauiScope.FindVisibleElements(TextEditorLocator).FirstOrDefault()) != null,
             timeoutMs);
         return result;
     }
@@ -231,17 +235,6 @@ public class EditableField<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope>
             timeoutMs);
         return result;
     }
-
-    private IMauiElement? FindLargestEditControl()
-        => MauiScope
-            .FindElements(Locator.ByControlType("Edit"))
-            .Where(element => element.HasUsableBounds())
-            .Where(element => !string.Equals(
-                element.GetAttribute("AutomationId"),
-                TextEntryId,
-                StringComparison.Ordinal))
-            .OrderByDescending(element => element.Rect.Width * element.Rect.Height)
-            .FirstOrDefault();
 
     private static void SetElementText(IMauiElement element, string text)
     {
