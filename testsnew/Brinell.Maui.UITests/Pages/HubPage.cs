@@ -61,8 +61,6 @@ public class HubPage : PageObjectBase<HubPage>
     /// only control that gets back to it — the hub reports not-loaded precisely when the back
     /// button is needed.
     /// </remarks>
-    protected override bool RequiresLoadedPage => false;
-
     /// <summary>The hub's title label.</summary>
     public Label<HubPage> Title => new(this, "PageHubTitle");
 

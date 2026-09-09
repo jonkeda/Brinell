@@ -90,19 +90,108 @@ public sealed class PageScopingTests
     }
 
     [Fact]
-    public void BusySentinel_UsesExplicitDriverRootScope()
+    public void Readiness_UsesPageLocalBusySignal_AndIgnoresGlobalDuplicate()
     {
         var context = CreateContext();
+        var pageRoot = CreateUsableElement();
         var sentinel = CreateUsableElement();
         sentinel.Setup(e => e.Text).Returns("False");
-        context.Setup(c => c.FindElement(It.Is<Locator>(l => l.Value == "UITest_IsBusy")))
+        context.Setup(c => c.FindElements(It.Is<Locator>(l => l.Value == "ScopedPage")))
+            .Returns([pageRoot.Object]);
+        pageRoot.Setup(e => e.FindElement(It.Is<Locator>(l => l.Value == "Busy"), 0))
             .Returns(sentinel.Object);
 
-        var actual = new ScopedPage(context.Object).BusySentinel.GetText();
+        var actual = new RequiredBusyPage(context.Object).ProbeReadiness();
 
-        Assert.Equal("False", actual);
-        context.Verify(c => c.FindElement(It.Is<Locator>(l => l.Value == "UITest_IsBusy")), Times.Once);
-        context.Verify(c => c.FindElements(It.Is<Locator>(l => l.Value == "ScopedPage")), Times.Never);
+        Assert.Equal(PageReadinessState.Ready, actual.State);
+        context.Verify(c => c.FindElement(It.Is<Locator>(l => l.Value == "Busy")), Times.Never);
+        pageRoot.Verify(e => e.FindElement(It.Is<Locator>(l => l.Value == "Busy"), 0), Times.Once);
+    }
+
+    [Fact]
+    public void MissingRequiredBusySignal_IsConfigurationFailure()
+    {
+        var context = CreateContext();
+        var pageRoot = CreateUsableElement();
+        context.Setup(c => c.FindElements(It.Is<Locator>(l => l.Value == "ScopedPage")))
+            .Returns([pageRoot.Object]);
+        pageRoot.Setup(e => e.FindElement(It.IsAny<Locator>(), 0))
+            .Throws(new ElementNotFoundException("missing"));
+
+        var exception = Assert.Throws<PageLoadException>(
+            () => new RequiredBusyPage(context.Object).IsBusy());
+
+        Assert.Contains("requires a page-local busy signal", exception.Message);
+    }
+
+    [Fact]
+    public void DisabledBusyPolicy_UsesRootReadinessOnly()
+    {
+        var context = CreateContext();
+        context.Setup(c => c.FindElements(It.Is<Locator>(l => l.Value == "ScopedPage")))
+            .Returns([CreateUsableElement().Object]);
+
+        var snapshot = new ScopedPage(context.Object).ProbeReadiness();
+
+        Assert.Equal(PageReadinessState.Ready, snapshot.State);
+    }
+
+    [Fact]
+    public void IsLoaded_WithTimeout_RemainsAnInstantaneousRootProbe()
+    {
+        var context = CreateContext();
+        context.Setup(c => c.FindElements(It.Is<Locator>(l => l.Value == "ScopedPage")))
+            .Returns([]);
+
+        var loaded = new ScopedPage(context.Object).IsLoaded(timeoutMs: 10_000);
+
+        Assert.False(loaded);
+        context.Verify(
+            c => c.FindElements(It.Is<Locator>(l => l.Value == "ScopedPage")),
+            Times.Once);
+    }
+
+    [Fact]
+    public void WaitBusy_ObservesBusyStartingAndCompleting()
+    {
+        var context = CreateContext();
+        var pageRoot = CreateUsableElement();
+        var signal = CreateUsableElement();
+        var values = new Queue<string>(["False", "True", "True", "False"]);
+        signal.Setup(e => e.Text).Returns(() => values.Count > 0 ? values.Dequeue() : "False");
+        context.Setup(c => c.FindElements(It.Is<Locator>(l => l.Value == "ScopedPage")))
+            .Returns([pageRoot.Object]);
+        pageRoot.Setup(e => e.FindElement(It.Is<Locator>(l => l.Value == "Busy"), 0))
+            .Returns(signal.Object);
+        var page = new RequiredBusyPage(context.Object);
+
+        Assert.True(page.WaitBusy(true));
+        Assert.True(page.WaitBusy(false));
+    }
+
+    [Fact]
+    public void StaleBusySignal_ReacquiresCurrentPageRootOnce()
+    {
+        var context = CreateContext();
+        var firstRoot = CreateUsableElement();
+        var secondRoot = CreateUsableElement();
+        var currentSignal = CreateUsableElement();
+        currentSignal.Setup(e => e.Text).Returns("False");
+        context.SetupSequence(c => c.FindElements(It.Is<Locator>(l => l.Value == "ScopedPage")))
+            .Returns([firstRoot.Object])
+            .Returns([secondRoot.Object]);
+        firstRoot.Setup(e => e.FindElement(It.IsAny<Locator>(), 0))
+            .Throws(new StaleElementReferenceException("stale"));
+        secondRoot.Setup(e => e.FindElement(It.Is<Locator>(l => l.Value == "Busy"), 0))
+            .Returns(currentSignal.Object);
+
+        var snapshot = new RequiredBusyPage(context.Object).ProbeReadiness();
+
+        Assert.Equal(PageReadinessState.Ready, snapshot.State);
+        Assert.True(snapshot.RootReacquired);
+        context.Verify(
+            c => c.FindElements(It.Is<Locator>(l => l.Value == "ScopedPage")),
+            Times.Exactly(2));
     }
 
     [Fact]
@@ -150,6 +239,13 @@ public sealed class PageScopingTests
         public override string Name => "ScopedPage";
 
         public Button<ScopedPage> Save => new(this, "Save");
+    }
+
+    private sealed class RequiredBusyPage(IMauiTestContext context) : PageObjectBase<RequiredBusyPage>(context)
+    {
+        public override string Name => "ScopedPage";
+
+        protected override BusySignalPolicy BusySignalPolicy => BusySignalPolicy.Required;
     }
 
     private sealed class PopupPage(IMauiTestContext context) : PageObjectBase<PopupPage>(context)

@@ -14,9 +14,29 @@ public interface IPageObject : IElementScope
     // Page state
     
     /// <summary>
-    /// Check if the page is currently loaded and ready.
+    /// Check instantaneously whether the current usable page root exists.
     /// </summary>
     bool IsLoaded(int? timeoutMs = null);
+
+    /// <summary>
+    /// Probe page identity and activity instantaneously without normal control APIs.
+    /// </summary>
+    PageReadinessSnapshot ProbeReadiness()
+        => new(
+            Name,
+            IsLoaded() ? PageReadinessState.Ready : PageReadinessState.MissingRoot,
+            BusySignalPolicy.Disabled);
+
+    /// <summary>
+    /// Check instantaneously whether the current page reports active work.
+    /// </summary>
+    bool IsBusy() => false;
+
+    /// <summary>
+    /// Wait until page busy state matches expected value.
+    /// </summary>
+    bool WaitBusy(bool? expected, int? timeoutMs = null)
+        => expected == null || expected == false;
     
     /// <summary>
     /// Wait until page loaded state matches expected value.

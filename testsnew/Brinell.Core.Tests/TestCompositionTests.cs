@@ -68,6 +68,14 @@ public sealed class TestCompositionTests
 
         public bool IsLoaded(int? timeoutMs = null) => true;
 
+        public PageReadinessSnapshot ProbeReadiness()
+            => new(Name, PageReadinessState.Ready, BusySignalPolicy.Disabled);
+
+        public bool IsBusy() => false;
+
+        public bool WaitBusy(bool? expected, int? timeoutMs = null)
+            => expected == null || expected == false;
+
         public bool WaitLoaded(bool? expected, int? timeoutMs = null) => true;
 
         public void AssertLoaded(bool? expected, string? message = null, int? timeoutMs = null)
