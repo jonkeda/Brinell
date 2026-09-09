@@ -80,15 +80,24 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
         int? timeoutMs = null, [CallerMemberName] string? caller = null)
     {
         var stopwatch = Stopwatch.StartNew();
+        var timeout = timeoutMs ?? DefaultTimeoutMs;
         Logger?.LogEntry(TestName, PageName, ControlId, caller ?? string.Empty, value);
 
         var ok = false;
         Exception? lastException = null;
-        while (stopwatch.ElapsedMilliseconds < (timeoutMs ?? DefaultTimeoutMs))
+        if (Page != null && !Page.WaitReady(timeout))
+        {
+            var snapshot = Page.ProbeReadiness();
+            throw new PageLoadException(
+                $"Page '{Page.Name}' did not become ready for {caller ?? "operation"} within {timeout} ms. " +
+                $"Last readiness state: {snapshot.State}; busy value: '{snapshot.BusySignalValue ?? "(none)"}'.");
+        }
+
+        do
         {
             try
             {
-                if (condition())
+                if ((Page == null || Page.IsReady()) && condition())
                 {
                     ok = true;
                     break;
@@ -100,8 +109,12 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
                 // Polling expects transient failures (stale elements, not-yet-rendered)
             }
 
+            if (stopwatch.ElapsedMilliseconds >= timeout)
+                break;
+
             WaitHelper.Pause(PollingIntervalMs);
         }
+        while (stopwatch.ElapsedMilliseconds < timeout);
         stopwatch.Stop();
         if (ok)
         {
@@ -130,8 +143,15 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
     /// element — the operation owns both. Controls whose logic spans several elements use
     /// it to get one logged unit of work rather than one per lookup.
     /// </remarks>
-    protected TResult Run<TValue, TResult>(string action, TValue? value, Func<TResult> operation)
+    protected TResult Run<TValue, TResult>(
+        string action,
+        TValue? value,
+        Func<TResult> operation,
+        int? timeoutMs = null)
     {
+        if (Page != null && !Page.WaitReady(timeoutMs ?? DefaultTimeoutMs))
+            throw new PageLoadException($"Page '{Page.Name}' did not become ready for {action}.");
+
         var stopwatch = Stopwatch.StartNew();
         Logger?.LogEntry(TestName, PageName, ControlId, action, value?.ToString());
 
@@ -196,6 +216,7 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
             return true;
         }
 
+
         return RunPoll(null, () => coreOperation((resolve ?? TryFindElement)()), timeoutMs, caller);
     }
 
@@ -216,6 +237,7 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
         {
             return ContainingScope;
         }
+
 
         RunPoll(null, () =>
         {

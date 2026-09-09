@@ -222,7 +222,7 @@ public class Test<TScope> {
     }
 
     [Fact]
-    public void Generate_IsMethod_CallsTryFindElement()
+    public void Generate_IsMethod_ObservesStateImmediately()
     {
         var code = @"
 public class Test {
@@ -234,7 +234,10 @@ public class Test {
 
         var generated = _generator.Generate(info, context);
 
-        Assert.Contains("return IsVisibleCore(TryFindElement()) == true;", generated);
+        Assert.Contains(
+            "return IsVisibleCore(TryFindElement()) == true;",
+            generated);
+        Assert.DoesNotContain("RunWait", generated[..generated.IndexOf("public bool WaitVisible")]);
     }
 
     [Fact]

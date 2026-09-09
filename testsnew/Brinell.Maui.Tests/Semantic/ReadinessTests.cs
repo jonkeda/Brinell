@@ -1,3 +1,5 @@
+using Brinell.Maui.Controls.Base;
+
 namespace Brinell.Maui.Tests.Semantic;
 
 /// <summary>
@@ -52,6 +54,27 @@ public class ReadinessTests
         public Button<GatedPage> Target => new(this, "Target");
     }
 
+    private sealed class BusyGatedPage(IMauiTestContext context) : PageObjectBase<BusyGatedPage>(context)
+    {
+        public override string Name => "GatedPage";
+
+        protected override BusySignalPolicy BusySignalPolicy => BusySignalPolicy.Required;
+
+        public Button<BusyGatedPage> Target => new(this, "Target");
+        public Label<BusyGatedPage> Status => new(this, "Target");
+        public CompoundProbe Compound => new(this, "Target");
+    }
+
+    private sealed class CompoundProbe(IMauiScope<BusyGatedPage> scope, string locatorValue)
+        : ViewBase<BusyGatedPage>(scope, locatorValue)
+    {
+        public string? ReadText()
+            => Run<string?, string?>(
+                "CompoundRead",
+                null,
+                () => RunGetWithElement(element => element.Text));
+    }
+
     private Mock<IMauiElement> GivenElement()
     {
         var element = new Mock<IMauiElement>();
@@ -63,6 +86,15 @@ public class ReadinessTests
             .Returns(element.Object);
 
         return element;
+    }
+
+    private Mock<IMauiElement> GivenBusySignal(Func<string> readValue)
+    {
+        var signal = new Mock<IMauiElement>();
+        signal.Setup(e => e.Text).Returns(readValue);
+        _pageRoot.Setup(e => e.FindElement(It.Is<Locator>(l => l.Value == "Busy"), 0))
+            .Returns(signal.Object);
+        return signal;
     }
 
     #region Scope readiness
@@ -105,6 +137,141 @@ public class ReadinessTests
 
         Assert.Contains("GatedPage", ex.Message);
         Assert.Contains("not loaded", ex.Message);
+    }
+
+    #endregion
+
+    #region Automatic page readiness gate
+
+    [Fact]
+    public void Click_WaitsForPageIdle_ThenExecutesExactlyOnce()
+    {
+        var busyReads = 0;
+        GivenBusySignal(() => ++busyReads < 3 ? "True" : "False");
+        var element = GivenElement();
+        element.Setup(e => e.Click()).Callback(() => Assert.True(busyReads >= 3));
+
+        new BusyGatedPage(_context.Object).Target.Click();
+
+        element.Verify(e => e.Click(), Times.Once);
+    }
+
+    [Fact]
+    public void Getter_DoesNotReadControlWhilePageIsBusy()
+    {
+        var busyValues = new Queue<string>(["False", "True", "True", "False"]);
+        var busy = true;
+        GivenBusySignal(() =>
+        {
+            var value = busyValues.Count > 0 ? busyValues.Dequeue() : "False";
+            busy = bool.Parse(value);
+            return value;
+        });
+        var element = GivenElement();
+        element.Setup(e => e.Text).Returns(() =>
+        {
+            Assert.False(busy);
+            return "Ready";
+        });
+
+        var actual = new BusyGatedPage(_context.Object).Status.GetText();
+
+        Assert.Equal("Ready", actual);
+        element.VerifyGet(e => e.Text, Times.Once);
+    }
+
+    [Fact]
+    public void Wait_DoesNotEvaluateControlConditionWhilePageIsBusy()
+    {
+        var busyValues = new Queue<string>(["False", "True", "True", "False"]);
+        var busy = true;
+        GivenBusySignal(() =>
+        {
+            var value = busyValues.Count > 0 ? busyValues.Dequeue() : "False";
+            busy = bool.Parse(value);
+            return value;
+        });
+        var element = GivenElement();
+        element.Setup(e => e.Text).Returns(() =>
+        {
+            Assert.False(busy);
+            return "Ready";
+        });
+
+        Assert.True(new BusyGatedPage(_context.Object).Status.WaitText("Ready"));
+        element.VerifyGet(e => e.Text, Times.Once);
+    }
+
+    [Fact]
+    public void Assert_DoesNotEvaluateControlConditionWhilePageIsBusy()
+    {
+        var busyValues = new Queue<string>(["False", "True", "False"]);
+        var busy = true;
+        GivenBusySignal(() =>
+        {
+            var value = busyValues.Count > 0 ? busyValues.Dequeue() : "False";
+            busy = bool.Parse(value);
+            return value;
+        });
+        var element = GivenElement();
+        element.Setup(e => e.Text).Returns(() =>
+        {
+            Assert.False(busy);
+            return "Ready";
+        });
+
+        new BusyGatedPage(_context.Object).Status.AssertText("Ready");
+        element.VerifyGet(e => e.Text, Times.Once);
+    }
+
+    [Fact]
+    public void NestedCompoundHelper_UsesTheOwningPageReadiness()
+    {
+        var busyReads = 0;
+        GivenBusySignal(() =>
+        {
+            busyReads++;
+            return "False";
+        });
+        var element = GivenElement();
+        element.Setup(e => e.Text).Returns("Ready");
+
+        var actual = new BusyGatedPage(_context.Object).Compound.ReadText();
+
+        Assert.Equal("Ready", actual);
+        Assert.True(busyReads >= 2);
+    }
+
+    [Fact]
+    public void BusyTimeout_ReportsOperationAndLastPageState()
+    {
+        GivenBusySignal(() => "True");
+        var element = GivenElement();
+
+        var exception = Assert.Throws<PageLoadException>(
+            () => new BusyGatedPage(_context.Object).Target.Click(timeoutMs: 10));
+
+        Assert.Contains("Click", exception.Message);
+        Assert.Contains("GatedPage", exception.Message);
+        Assert.Contains("Busy", exception.Message);
+        element.Verify(e => e.Click(), Times.Never);
+    }
+
+    [Fact]
+    public void WaitLoadedFalse_BypassesBusyReadinessGate()
+    {
+        var signal = GivenBusySignal(() => "True");
+        _pageRoot.SetupSequence(e => e.Visible)
+            .Returns(true)
+            .Returns(false);
+        _context.SetupSequence(c => c.FindElements(It.Is<Locator>(l => l.Value == "GatedPage")))
+            .Returns([_pageRoot.Object])
+            .Returns([]);
+
+        var unloaded = new BusyGatedPage(_context.Object).WaitLoaded(false);
+
+        Assert.True(unloaded);
+        signal.VerifyGet(e => e.Text, Times.Never);
     }
 
     #endregion
@@ -156,11 +323,8 @@ public class ReadinessTests
     /// <c>IsExists()</c> answers immediately when the page is loaded and the element is not.
     /// </summary>
     /// <remarks>
-    /// The constraint that keeps this design from becoming "wait everywhere". The query waits
-    /// for the <em>page</em>, because being on the page is a precondition for the question
-    /// meaning anything — but never for the <em>element</em>, because the element's absence is
-    /// the answer. If it waited for the element, every <c>AssertExists(false)</c> would cost a
-    /// full timeout.
+    /// The constraint that keeps this design from becoming "wait everywhere". An Is query
+    /// observes once; callers that need eventual state use the corresponding Wait method.
     /// </remarks>
     [Fact]
     public void IsExists_ReturnsFalseImmediately_WhenThePageIsLoadedAndTheElementIsNot()
@@ -178,21 +342,35 @@ public class ReadinessTests
     }
 
     /// <summary>
-    /// <c>IsExists()</c> waits for a page that arrives late, then reports the element.
+    /// <c>IsExists()</c> does not wait for a page that has not arrived yet.
     /// </summary>
     /// <remarks>
-    /// A query issued straight after navigation is the ordinary case. Nothing polls above a
-    /// query — <c>IsExists</c> asks once and returns — so the wait has to happen inside the
-    /// scope resolution or not at all.
+    /// A query issued straight after navigation is one observation. Use
+    /// <c>WaitExists()</c> when arrival is the expected behavior.
     /// </remarks>
     [Fact]
-    public void IsExists_WaitsForThePage_WhenItArrivesLate()
+    public void IsExists_DoesNotWaitForThePage_WhenItHasNotArrived()
     {
         var checks = 0;
-        var page = new GatedPage(_context.Object, () => ++checks >= 3);
-        GivenElement();
+        var page = new GatedPage(_context.Object, () => { checks++; return false; });
+        _context.Setup(c => c.TryFindElement(It.IsAny<Locator>())).Returns((IMauiElement?)null);
 
-        Assert.True(page.Target.IsExists());
+        Assert.False(page.Target.IsExists());
+        Assert.Equal(1, checks);
+    }
+
+    [Fact]
+    public void IsVisible_ObservesPageAndElementOnce()
+    {
+        var pageChecks = 0;
+        var visibleReads = 0;
+        var page = new GatedPage(_context.Object, () => { pageChecks++; return true; });
+        var element = GivenElement();
+        element.Setup(e => e.Visible).Returns(() => { visibleReads++; return true; });
+
+        Assert.True(page.Target.IsVisible());
+        Assert.Equal(1, pageChecks);
+        Assert.Equal(1, visibleReads);
     }
 
     #endregion

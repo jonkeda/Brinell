@@ -11,7 +11,7 @@ public sealed class DriverRootScope<TScope>(IMauiScope<TScope> owner) : IMauiSco
 
     public TScope Self => _owner.Self;
     public LocatorStrategy DefaultLocatorStrategy => Context.DefaultLocatorStrategy;
-    public IPageObject? Page => _owner.Page;
+    public IPageObject? Page => null;
     public IMauiTestContext Context => _owner.Context;
     public bool IsReady(int? timeoutMs = null) => true;
     public bool WaitReady(int? timeoutMs = null) => true;

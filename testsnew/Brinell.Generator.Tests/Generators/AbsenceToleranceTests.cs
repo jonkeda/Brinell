@@ -128,17 +128,18 @@ public class AbsenceToleranceTests
     }
 
     /// <summary>
-    /// The Is* member is unaffected — it already used the null-tolerant lookup, which is
-    /// the asymmetry that made this defect visible in the first place.
+    /// The Is* member keeps its null-tolerant lookup without polling.
     /// </summary>
     [Fact]
-    public void Generate_WhenTolerant_LeavesTheIsMemberUnchanged()
+    public void Generate_WhenTolerant_ObservesTheNullTolerantIsMemberImmediately()
     {
         var info = _generator.Extract(FirstMethod(ToleratedClass));
 
         var output = _generator.Generate(info, ContextFor(ToleratedClass));
 
-        Assert.Contains("IsVisibleCore(TryFindElement())", output);
+        Assert.Contains(
+            "return IsVisibleCore(TryFindElement()) == true;",
+            output);
     }
 
     /// <summary>Tolerance composes with the resolved fluent return type.</summary>

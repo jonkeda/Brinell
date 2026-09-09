@@ -203,7 +203,7 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     public IMauiElement? TryFindElement(Locator locator)
     {
         ArgumentNullException.ThrowIfNull(locator);
-        if (!CanResolveElements(wait: true)) return null;
+        if (!CanResolveElements()) return null;
 
         var root = TryGetContainerRoot();
         if (root == null) return null;
@@ -405,15 +405,24 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
         int? timeoutMs = null, [CallerMemberName] string? caller = null)
     {
         var stopwatch = Stopwatch.StartNew();
+        var timeout = timeoutMs ?? DefaultTimeoutMs;
         Logger?.LogEntry(TestName, PageName, ControlId, caller ?? string.Empty, value);
 
         var ok = false;
         Exception? lastException = null;
-        while (stopwatch.ElapsedMilliseconds < (timeoutMs ?? DefaultTimeoutMs))
+        if (Page != null && !Page.WaitReady(timeout))
+        {
+            var snapshot = Page.ProbeReadiness();
+            throw new PageLoadException(
+                $"Page '{Page.Name}' did not become ready for {caller ?? "operation"} within {timeout} ms. " +
+                $"Last readiness state: {snapshot.State}; busy value: '{snapshot.BusySignalValue ?? "(none)"}'.");
+        }
+
+        do
         {
             try
             {
-                if (condition())
+                if ((Page == null || Page.IsReady()) && condition())
                 {
                     ok = true;
                     break;
@@ -425,8 +434,12 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
                 // Polling expects transient failures (stale elements, not-yet-rendered)
             }
 
+            if (stopwatch.ElapsedMilliseconds >= timeout)
+                break;
+
             WaitHelper.Pause(PollingIntervalMs);
         }
+        while (stopwatch.ElapsedMilliseconds < timeout);
         stopwatch.Stop();
 
         if (ok)
@@ -451,7 +464,9 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     /// <summary>Polls an arbitrary condition.</summary>
     protected bool RunWait(Func<bool> operation, int? timeoutMs = null,
         [CallerMemberName] string? caller = null)
-        => RunPoll(null, operation, timeoutMs, caller);
+    {
+        return RunPoll(null, operation, timeoutMs, caller);
+    }
 
     /// <summary>Polls a condition evaluated against the container root.</summary>
     protected bool RunWaitWithElement<T>(T? expected, Func<IMauiElement, bool> coreOperation,
@@ -466,7 +481,9 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     protected TSelf RunDo(Action operation, int? timeoutMs = null,
         [CallerMemberName] string? caller = null)
     {
-        RunPoll(null, () => { operation(); return true; }, timeoutMs, caller);
+        if (Page != null && !Page.WaitReady(timeoutMs ?? DefaultTimeoutMs))
+            throw new PageLoadException($"Page '{Page.Name}' did not become ready for {caller}.");
+        operation();
         return Self;
     }
 
@@ -474,7 +491,8 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     protected TSelf RunDoWithElement(Action<IMauiElement> coreOperation,
         int? timeoutMs = null, [CallerMemberName] string? caller = null)
     {
-        RunPoll(null, () => { coreOperation(ContainerRoot); return true; }, timeoutMs, caller);
+        var root = ResolveReadyRoot(timeoutMs, caller);
+        coreOperation(root);
         return Self;
     }
 
@@ -495,7 +513,8 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
         {
             return SetResult;
         }
-        RunPoll(null, () => { coreOperation(ContainerRoot); return true; }, timeoutMs, caller);
+        var root = ResolveReadyRoot(timeoutMs, caller);
+        coreOperation(root);
         return SetResult;
     }
 
@@ -586,6 +605,18 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
         }, timeoutMs, caller);
 
         return Self;
+    }
+
+    private IMauiElement ResolveReadyRoot(int? timeoutMs, string? caller)
+    {
+        IMauiElement? ready = null;
+        RunPoll(null, () =>
+        {
+            ready = ContainerRoot;
+            return true;
+        }, timeoutMs, caller);
+
+        return ready ?? ContainerRoot;
     }
 
     #endregion

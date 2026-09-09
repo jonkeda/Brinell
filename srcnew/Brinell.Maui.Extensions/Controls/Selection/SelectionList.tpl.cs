@@ -44,7 +44,7 @@ public partial class SelectionList<TScope> : Brinell.Maui.Controls.Base.ViewBase
         {
             var item = WaitForAutomationId(automationId, timeoutMs);
             return ActivateRowCore(item);
-        });
+        }, timeoutMs);
     }
 
     /// <summary>
@@ -58,7 +58,7 @@ public partial class SelectionList<TScope> : Brinell.Maui.Controls.Base.ViewBase
         {
             var item = WaitForName(text, timeoutMs);
             return ActivateRowCore(item);
-        });
+        }, timeoutMs);
     }
 
     /// <summary>

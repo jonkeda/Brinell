@@ -1,4 +1,5 @@
 using Brinell.Maui.Containers;
+using Brinell.Maui.Scopes;
 
 namespace Brinell.Maui.Tests;
 
@@ -32,6 +33,28 @@ public class ContainerCollectionTests
     }
 
     #region Container scoping
+
+    [Fact]
+    [Trait("Pattern", "DriverRootScope")]
+    public void DriverRootScope_DoesNotUseOwnerPageReadiness()
+    {
+        var page = new TestPage(_context.Object);
+
+        var element = new Mock<IMauiElement>();
+        element.Setup(e => e.Visible).Returns(true);
+        element.Setup(e => e.Enabled).Returns(true);
+        _context.Setup(c => c.TryFindElement(It.Is<Locator>(l => l.Value == "GlobalButton")))
+            .Returns(element.Object);
+        _context.Setup(c => c.FindElement(It.Is<Locator>(l => l.Value == "GlobalButton")))
+            .Returns(element.Object);
+
+        var driverScope = new DriverRootScope<TestPage>(page);
+        Assert.Null(driverScope.Page);
+
+        new Button<TestPage>(driverScope, "GlobalButton").Click();
+
+        element.Verify(e => e.Click(), Times.Once);
+    }
 
     [Fact]
     [Trait("Pattern", "Scoping")]

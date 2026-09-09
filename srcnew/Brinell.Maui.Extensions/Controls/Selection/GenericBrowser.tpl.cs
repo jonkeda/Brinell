@@ -53,29 +53,17 @@ public partial class GenericBrowser<TScope> : Brinell.Maui.Controls.Base.ViewBas
         {
             var automationId = BuildItemAutomationId(identifier);
             var invokeAutomationId = BuildItemButtonAutomationId(identifier);
-            var invokeButton = WaitForAutomationId(invokeAutomationId, timeoutMs);
-            if (TryActivateElementAndWait(invokeButton, automationId, timeoutMs))
-            {
-                return true;
-            }
+            var candidate = WaitForSelectionCandidate(
+                invokeAutomationId,
+                automationId,
+                visibleText,
+                timeoutMs);
 
-            var item = WaitForAutomationId(automationId, timeoutMs);
-            if (TryActivateAndWait(item, automationId, timeoutMs))
-            {
-                return true;
-            }
-
-            if (!string.IsNullOrWhiteSpace(visibleText))
-            {
-                var label = WaitForNameInOpenBrowser(visibleText, timeoutMs);
-                if (TryActivateAndWait(label, automationId, timeoutMs))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        });
+            return candidate is { } found
+                && (found.ActivateDirectly
+                    ? TryActivateElementAndWait(found.Element, automationId, timeoutMs)
+                    : TryActivateAndWait(found.Element, automationId, timeoutMs));
+        }, timeoutMs);
     }
 
     /// <summary>
@@ -105,26 +93,17 @@ public partial class GenericBrowser<TScope> : Brinell.Maui.Controls.Base.ViewBas
 
         return Run(nameof(TryToggleItem), identifier, () =>
         {
-            var invokeButton = WaitForAutomationId(BuildItemButtonAutomationId(identifier), timeoutMs);
-            if (invokeButton != null && TryActivate(invokeButton))
-            {
-                return true;
-            }
+            var candidate = WaitForSelectionCandidate(
+                BuildItemButtonAutomationId(identifier),
+                BuildItemAutomationId(identifier),
+                visibleText,
+                timeoutMs);
 
-            var item = WaitForAutomationId(BuildItemAutomationId(identifier), timeoutMs);
-            if (ActivateRowCore(item))
-            {
-                return true;
-            }
-
-            if (!string.IsNullOrWhiteSpace(visibleText))
-            {
-                var label = WaitForNameInOpenBrowser(visibleText, timeoutMs);
-                return ActivateRowCore(label);
-            }
-
-            return false;
-        });
+            return candidate is { } found
+                && (found.ActivateDirectly
+                    ? TryActivate(found.Element)
+                    : ActivateRowCore(found.Element));
+        }, timeoutMs);
     }
 
     /// <summary>
@@ -156,7 +135,7 @@ public partial class GenericBrowser<TScope> : Brinell.Maui.Controls.Base.ViewBas
             return closeButton != null
                 && TryActivate(closeButton)
                 && WaitForCloseSurfaceToDismiss(timeoutMs);
-        });
+            }, timeoutMs);
     }
 
     private bool TryActivateAndWait(IMauiElement? element, string itemAutomationId, int? timeoutMs)
@@ -172,10 +151,34 @@ public partial class GenericBrowser<TScope> : Brinell.Maui.Controls.Base.ViewBas
             && WaitForItemToClose(itemAutomationId, timeoutMs);
     }
 
-    private IMauiElement? WaitForAutomationId(string automationId, int? timeoutMs)
+    private (IMauiElement Element, bool ActivateDirectly)? WaitForSelectionCandidate(
+        string directAutomationId,
+        string itemAutomationId,
+        string? visibleText,
+        int? timeoutMs)
     {
-        IMauiElement? result = null;
-        RunWait(() => (result = MauiScope.FindVisibleByAutomationId(automationId)) != null, timeoutMs);
+        (IMauiElement Element, bool ActivateDirectly)? result = null;
+        RunWait(
+            () =>
+            {
+                var direct = MauiScope.FindVisibleByAutomationId(directAutomationId);
+                if (direct != null)
+                {
+                    result = (direct, true);
+                    return true;
+                }
+
+                var item = MauiScope.FindVisibleByAutomationId(itemAutomationId)
+                           ?? (string.IsNullOrWhiteSpace(visibleText)
+                               ? null
+                               : FindVisibleByNameInOpenBrowser(visibleText));
+                if (item == null)
+                    return false;
+
+                result = (item, false);
+                return true;
+            },
+            timeoutMs);
         return result;
     }
 
@@ -197,13 +200,6 @@ public partial class GenericBrowser<TScope> : Brinell.Maui.Controls.Base.ViewBas
                 return false;
             },
             timeoutMs);
-        return result;
-    }
-
-    private IMauiElement? WaitForNameInOpenBrowser(string name, int? timeoutMs)
-    {
-        IMauiElement? result = null;
-        RunWait(() => (result = FindVisibleByNameInOpenBrowser(name)) != null, timeoutMs);
         return result;
     }
 

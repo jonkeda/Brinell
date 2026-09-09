@@ -268,7 +268,11 @@ public abstract class PageObjectBase<TSelf> : RootedScopeBase<TSelf, TSelf>, IMa
     
     /// <inheritdoc />
     public override bool IsReady(int? timeoutMs = null)
-        => ProbeReadiness().IsReady;
+    {
+        var snapshot = ProbeReadiness();
+        ThrowIfInvalidReadiness(snapshot);
+        return snapshot.IsReady;
+    }
     
     /// <inheritdoc />
     public override bool WaitReady(int? timeoutMs = null)

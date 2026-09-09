@@ -66,7 +66,7 @@ public class EditableField<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope>
                 ?? root;
 
             return TryActivate(target);
-        });
+        }, timeoutMs);
     }
 
     /// <summary>
@@ -100,7 +100,7 @@ public class EditableField<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope>
             }
 
             return TrySetTextEditor(root, text, timeoutMs);
-        });
+        }, timeoutMs);
     }
 
     /// <summary>
@@ -112,7 +112,7 @@ public class EditableField<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope>
         {
             var root = TryFindElement();
             return root == null ? null : FindChild(root, TextEntryId)?.Text;
-        });
+        }, timeoutMs);
     }
 
     private IMauiElement? FindChild(IMauiElement root, string automationId)
@@ -213,41 +213,35 @@ public class EditableField<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope>
            && WaitForTextEditorConfirmButton(timeoutMs) != null;
 
     private IMauiElement? WaitForTextEditor(int? timeoutMs)
-        => WaitForAutomationId(TextEditorId, timeoutMs)
-           ?? WaitForLargestEditControl(timeoutMs);
-
-    private IMauiElement? WaitForTextEditorConfirmButton(int? timeoutMs)
-        => WaitForAutomationId(TextEditorOkNativeButtonId, timeoutMs)
-           ?? WaitForAutomationId(TextEditorOkButtonId, timeoutMs);
-
-    private IMauiElement? WaitForLargestEditControl(int? timeoutMs)
     {
         IMauiElement? result = null;
         RunWait(
-            () =>
-            {
-                result = MauiScope
-                    .FindElements(Locator.ByControlType("Edit"))
-                    .Where(element => element.HasUsableBounds())
-                    .Where(element => !string.Equals(
-                        element.GetAttribute("AutomationId"),
-                        TextEntryId,
-                        StringComparison.Ordinal))
-                    .OrderByDescending(element => element.Rect.Width * element.Rect.Height)
-                    .FirstOrDefault();
-                return result != null;
-            },
+            () => (result = MauiScope.FindVisibleByAutomationId(TextEditorId)
+                            ?? FindLargestEditControl()) != null,
             timeoutMs);
-
         return result;
     }
 
-    private IMauiElement? WaitForAutomationId(string automationId, int? timeoutMs)
+    private IMauiElement? WaitForTextEditorConfirmButton(int? timeoutMs)
     {
         IMauiElement? result = null;
-        RunWait(() => (result = MauiScope.FindVisibleByAutomationId(automationId)) != null, timeoutMs);
+        RunWait(
+            () => (result = MauiScope.FindVisibleByAutomationId(TextEditorOkNativeButtonId)
+                            ?? MauiScope.FindVisibleByAutomationId(TextEditorOkButtonId)) != null,
+            timeoutMs);
         return result;
     }
+
+    private IMauiElement? FindLargestEditControl()
+        => MauiScope
+            .FindElements(Locator.ByControlType("Edit"))
+            .Where(element => element.HasUsableBounds())
+            .Where(element => !string.Equals(
+                element.GetAttribute("AutomationId"),
+                TextEntryId,
+                StringComparison.Ordinal))
+            .OrderByDescending(element => element.Rect.Width * element.Rect.Height)
+            .FirstOrDefault();
 
     private static void SetElementText(IMauiElement element, string text)
     {
