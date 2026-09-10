@@ -1,3 +1,4 @@
+using Brinell.Core.Utilities;
 using Brinell.Maui.Configuration;
 using Brinell.Maui.Enums;
 using Brinell.Maui.Testing;
@@ -109,25 +110,32 @@ public class MauiFixture : MauiTestFixtureBase
     /// </para>
     /// <para>
     /// Polls rather than looking once: <c>TryFindElement</c> is a single driver call, and a page
-    /// caught mid-transition has not attached its toolbar yet. Each attempt is a driver round
-    /// trip, which paces the loop without a sleep.
+    /// caught mid-transition has not attached its toolbar yet. The interval is deliberate — an
+    /// unpaced loop puts thousands of UI Automation round trips through the app's provider over
+    /// the timeout, which is a poor way to ask a busy app a question.
     /// </para>
     /// </remarks>
     private IMauiElement? FindBackToHub(int timeoutMs)
     {
+        const int PollingIntervalMs = 50;
+
         var backToHub = Locator.ByAccessibilityId("BackToHub");
         var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
 
-        do
+        while (true)
         {
             if (Context.TryFindElement(backToHub) is { } back)
             {
                 return back;
             }
-        }
-        while (DateTime.UtcNow < deadline);
 
-        return null;
+            if (DateTime.UtcNow >= deadline)
+            {
+                return null;
+            }
+
+            WaitHelper.Pause(PollingIntervalMs);
+        }
     }
 
     /// <summary>

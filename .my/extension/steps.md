@@ -32,7 +32,7 @@ dotnet build testsnew\Brinell.Maui.UITests.Mobile\Brinell.Maui.UITests.Mobile.cs
 | # | Step | Stage | Depends on | Status |
 |---|---|---|---|---|
 | 1 | Occluded-window screenshots | 0 | — | **done** |
-| 2 | Off-screen window placement | 0 | — | todo |
+| 2 | Off-screen window placement | 0 | — | **done** (`offscreen` needs 13/14) |
 | 3 | Background-mode guard + inventory | 0 | — | todo |
 | 4 | Spike: child HWND raw provider | A | — | todo |
 | 5 | Spike: pattern round-trip, int **and string** | A | — | todo |
@@ -135,6 +135,52 @@ suite must behave identically in all of them.
 
 **Done when** the app can be placed off-screen and the probe tests still pass — proving layout
 survives.
+
+#### Result — placement done; `offscreen` gated on Stage B
+
+`BRINELL_AUT_PLACE=right|offscreen|secondary` is implemented, with `BRINELL_AUT_PLACE_RIGHT=1`
+still honoured. The report now names the placement and states `moved` or `clamped` by comparing
+actual bounds against requested, rather than assuming the move took.
+
+| Mode | Places correctly | Suite usable |
+|---|---|---|
+| `right` | yes | **yes** |
+| `secondary` | yes — degrades to `right` on one monitor, and says so | **yes** |
+| `offscreen` | yes | **not yet** — see below |
+| unknown value | reported, nothing moved | n/a |
+
+**Three findings, all measured.**
+
+1. **UIA's Transform pattern refuses to move a window off the desktop.** It clamps, silently: a
+   request for `x=-1216` came back at `x=0`. Transform is a semantic API and deliberately keeps
+   elements reachable. Positioning the app under test is harness business, so the code falls back
+   to `SetWindowPos`, which holds no such opinion. The verify-then-correct step is what caught it
+   — the original code reported `moved` for a window that had not moved.
+
+2. **A window entirely outside the desktop stops publishing its UIA tree** — `MissingRoot`
+   everywhere, exactly as if minimized. An 8px sliver left intersecting the desktop keeps it
+   composed and the tree alive. This is why the plan says *move it, don't minimize it*; it turns
+   out "fully off-screen" is the same thing as minimized as far as WinUI is concerned.
+
+3. **`offscreen` is blocked by physical input, not by placement.** `MauiFixture.ReturnToHub`
+   activates the back button with `IMauiElement.Click`, a real mouse click at the element's
+   clickable point. Off-screen there is no such point, so it clicks empty desktop and every test
+   after the first is stranded. Probe tests: 1 of 3 off-screen, 3 of 3 on-screen.
+
+**`InvokePattern` is not a safe drop-in** — worth recording, because it is the obvious fix.
+Substituting it for the click made the off-screen combined filter pass 4 of 4 and the *on-screen*
+one fail 4 of 4. Adding a click as a fallback after a failed invoke was worse again (3 failures in
+4): once the invoke lands, the element is on its way out, and clicking it again hits whatever
+replaced it. Reverted. Whatever replaces that click has to be the real semantic path — which is
+what steps 13 and 14 build.
+
+So `offscreen` waits on Stage B, and that is the expected shape rather than a surprise: **step 3
+exists to inventory exactly these physical-input paths, and this is the first one, found before
+step 3 has even run.** `right` and `secondary` are usable today and already keep the app out of
+the way.
+
+Also fixed here: `FindBackToHub` polled in an unpaced loop, putting thousands of UIA round trips
+through the app over its timeout. It now paces at 50 ms.
 
 ---
 

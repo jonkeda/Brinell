@@ -240,36 +240,98 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
         }
     }
 
-    private void TryApplyRequestedWindowPlacement()
+    /// <summary>
+    /// Where the harness wants the app under test put once it has launched.
+    /// </summary>
+    /// <remarks>
+    /// All of these keep the window <b>composed</b>. Minimizing is not among them and must not
+    /// be: a minimized WinUI window can stop laying out, and virtualized content may never
+    /// realize, so a suite driving a minimized app fails on elements that genuinely are not
+    /// there. Out of the way is fine; not rendered is not.
+    /// </remarks>
+    private enum AutPlacement
     {
-        if (!string.Equals(
+        /// <summary>Leave the window wherever Windows put it.</summary>
+        Default,
+
+        /// <summary>The right of the primary work area, leaving a column for a presenter.</summary>
+        Right,
+
+        /// <summary>Beyond every monitor: driveable, screenshotable, and not in anyone's way.</summary>
+        OffScreen,
+
+        /// <summary>A non-primary monitor, falling back to <see cref="Right"/> when there is none.</summary>
+        Secondary,
+    }
+
+    /// <summary>
+    /// Reads the requested placement, honouring the original switch as well as the current one.
+    /// </summary>
+    /// <remarks>
+    /// <c>BRINELL_AUT_PLACE_RIGHT=1</c> predates <c>BRINELL_AUT_PLACE</c> and is still set by
+    /// existing scripts, so it keeps working and means <see cref="AutPlacement.Right"/>. The
+    /// newer variable wins when both are set.
+    /// </remarks>
+    private static AutPlacement ReadRequestedPlacement(out string? unknownValue)
+    {
+        unknownValue = null;
+
+        var requested = Environment.GetEnvironmentVariable("BRINELL_AUT_PLACE");
+        if (!string.IsNullOrWhiteSpace(requested))
+        {
+            switch (requested.Trim().ToLowerInvariant())
+            {
+                case "right": return AutPlacement.Right;
+                case "offscreen": return AutPlacement.OffScreen;
+                case "secondary": return AutPlacement.Secondary;
+                default:
+                    // A typo should not silently leave the window where it was, and should not
+                    // end the run either. Record it and place nothing.
+                    unknownValue = requested;
+                    return AutPlacement.Default;
+            }
+        }
+
+        return string.Equals(
                 Environment.GetEnvironmentVariable("BRINELL_AUT_PLACE_RIGHT"),
                 "1",
-                StringComparison.Ordinal))
+                StringComparison.Ordinal)
+            ? AutPlacement.Right
+            : AutPlacement.Default;
+    }
+
+    private void TryApplyRequestedWindowPlacement()
+    {
+        var placement = ReadRequestedPlacement(out var unknownValue);
+
+        if (unknownValue != null)
+        {
+            WriteAutPlacementReport(
+                Rectangle.Empty, Rectangle.Empty, AutPlacement.Default, "not supported",
+                $"BRINELL_AUT_PLACE='{unknownValue}' is not one of right, offscreen, secondary.");
+            return;
+        }
+
+        if (placement == AutPlacement.Default)
         {
             return;
         }
 
         var workArea = GetPrimaryWorkArea();
-        var presenterWidth = Math.Max(320, workArea.Width / 4);
-        var gap = 20;
-        var requestedLeft = Math.Min(workArea.Right - 320, workArea.Left + presenterWidth + gap);
-        var requestedWidth = Math.Max(320, workArea.Right - requestedLeft);
-        var requested = new Rectangle(requestedLeft, workArea.Top, requestedWidth, workArea.Height);
-        var presenter = new Rectangle(workArea.Left, workArea.Top, presenterWidth, workArea.Height);
+        var requested = ComputeRequestedBounds(placement, workArea, out var presenter, out var effective);
 
         try
         {
             if (!_rootElement.Patterns.Transform.IsSupported)
             {
-                WriteAutPlacementReport(presenter, requested, "not supported", "Transform pattern is not supported.");
+                WriteAutPlacementReport(presenter, requested, effective, "not supported", "Transform pattern is not supported.");
                 return;
             }
 
             var transform = _rootElement.Patterns.Transform.Pattern;
             if (!transform.CanMove.Value)
             {
-                WriteAutPlacementReport(presenter, requested, "not supported", "Window cannot be moved.");
+                WriteAutPlacementReport(presenter, requested, effective, "not supported", "Window cannot be moved.");
                 return;
             }
 
@@ -279,12 +341,114 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
             }
 
             transform.Move(requested.Left, requested.Top);
-            WriteAutPlacementReport(presenter, requested, "moved", actual: _rootElement.BoundingRectangle);
+
+            var actual = _rootElement.BoundingRectangle;
+            if (!LandedWhereAsked(actual, requested))
+            {
+                // UIA's Transform pattern keeps an element reachable on screen, so WinUI clamps a
+                // move that would put the window past the desktop edge: an off-screen request
+                // lands back at the origin, and the window is still in the user's way. Measured,
+                // not assumed — the placement report is what caught it.
+                //
+                // Positioning the app under test is harness business rather than app automation,
+                // so drop to the Win32 call, which holds no such opinion.
+                if (TryMoveWindowDirectly(requested))
+                {
+                    actual = _rootElement.BoundingRectangle;
+                }
+            }
+
+            WriteAutPlacementReport(
+                presenter, requested, effective,
+                LandedWhereAsked(actual, requested) ? "moved" : "clamped",
+                LandedWhereAsked(actual, requested) ? null : "The window was not allowed to move where asked.",
+                actual);
         }
         catch (Exception ex)
         {
-            WriteAutPlacementReport(presenter, requested, $"failed: {ex.Message}");
+            WriteAutPlacementReport(presenter, requested, effective, $"failed: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// Works out where the window should go, and where a presenter could sit beside it.
+    /// </summary>
+    /// <param name="effective">
+    /// What was actually chosen. <see cref="AutPlacement.Secondary"/> degrades to
+    /// <see cref="AutPlacement.Right"/> on a single-monitor desktop, and the report should say so
+    /// rather than claim a placement that did not happen.
+    /// </param>
+    private Rectangle ComputeRequestedBounds(
+        AutPlacement placement,
+        Rectangle workArea,
+        out Rectangle presenter,
+        out AutPlacement effective)
+    {
+        if (placement == AutPlacement.OffScreen)
+        {
+            effective = AutPlacement.OffScreen;
+            presenter = workArea;   // the whole primary screen is left to the user
+            return ComputeOffScreenBounds();
+        }
+
+        if (placement == AutPlacement.Secondary && TryGetSecondaryWorkArea(out var secondary))
+        {
+            effective = AutPlacement.Secondary;
+            presenter = workArea;
+            return secondary;
+        }
+
+        effective = AutPlacement.Right;
+
+        const int Gap = 20;
+        const int MinimumWidth = 320;
+
+        var presenterWidth = Math.Max(MinimumWidth, workArea.Width / 4);
+        presenter = new Rectangle(workArea.Left, workArea.Top, presenterWidth, workArea.Height);
+
+        var left = Math.Min(workArea.Right - MinimumWidth, workArea.Left + presenterWidth + Gap);
+        var width = Math.Max(MinimumWidth, workArea.Right - left);
+
+        return new Rectangle(left, workArea.Top, width, workArea.Height);
+    }
+
+    /// <summary>
+    /// Puts the window off the left of every monitor bar a sliver, at the size it already has.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>A sliver, not the whole window.</b> Moved entirely outside the desktop, a WinUI window
+    /// stops publishing its UI Automation tree — the page root is simply not there, and every
+    /// test fails with <c>MissingRoot</c> exactly as if the app were minimized. Measured, not
+    /// assumed. Leaving a few pixels intersecting the desktop keeps the window composed and the
+    /// tree alive, which is the whole point of preferring this over minimizing.
+    /// </para>
+    /// <para>
+    /// Off the <i>virtual</i> screen rather than the primary one: on a multi-monitor desktop the
+    /// space beside the primary is usually another screen, and "off the primary" would park the
+    /// app in the middle of it.
+    /// </para>
+    /// <para>
+    /// Keeps the current size. Resizing to fill a work area would change how the app lays out,
+    /// and a suite that only passes at one window size is not a suite anyone can trust.
+    /// </para>
+    /// </remarks>
+    private Rectangle ComputeOffScreenBounds()
+    {
+        // How much of the window stays on the desktop.
+        const int Sliver = 8;
+
+        var virtualScreen = GetVirtualScreen();
+        var current = _rootElement.BoundingRectangle;
+        var size = current is { Width: > 0, Height: > 0 }
+            ? current.Size
+            : new Size(1024, 768);
+
+        return new Rectangle(
+            virtualScreen.Left - size.Width + Sliver,
+            virtualScreen.Top,
+            size.Width,
+            size.Height);
     }
 
     private static Rectangle GetPrimaryWorkArea()
@@ -294,7 +458,78 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
             return workArea;
         }
 
-        return new Rectangle(0, 0, GetSystemMetrics(0), GetSystemMetrics(1));
+        return new Rectangle(0, 0, GetSystemMetrics(SmCxScreen), GetSystemMetrics(SmCyScreen));
+    }
+
+    /// <summary>
+    /// Whether the window ended up at the requested origin, allowing for frame differences.
+    /// </summary>
+    /// <remarks>
+    /// Origin only. A window that declines to resize is still correctly placed, and reporting
+    /// that as a failure would hide the one case that matters — a move that did not happen.
+    /// </remarks>
+    private static bool LandedWhereAsked(Rectangle actual, Rectangle requested)
+    {
+        const int Tolerance = 16;
+
+        return Math.Abs(actual.Left - requested.Left) <= Tolerance
+               && Math.Abs(actual.Top - requested.Top) <= Tolerance;
+    }
+
+    /// <summary>
+    /// Moves and sizes the window through Win32, bypassing the Transform pattern's clamping.
+    /// </summary>
+    private bool TryMoveWindowDirectly(Rectangle bounds)
+    {
+        if (_rootWindowHandle == 0)
+        {
+            return false;
+        }
+
+        return SetWindowPos(
+            _rootWindowHandle, IntPtr.Zero,
+            bounds.Left, bounds.Top, bounds.Width, bounds.Height,
+            SwpNoZOrder | SwpNoActivate);
+    }
+
+    /// <summary>The bounding box of every monitor together.</summary>
+    private static Rectangle GetVirtualScreen()
+        => new(
+            GetSystemMetrics(SmXVirtualScreen),
+            GetSystemMetrics(SmYVirtualScreen),
+            GetSystemMetrics(SmCxVirtualScreen),
+            GetSystemMetrics(SmCyVirtualScreen));
+
+    /// <summary>
+    /// Finds the work area of the first non-primary monitor, if the desktop has one.
+    /// </summary>
+    /// <remarks>
+    /// Work area rather than full bounds, so the window does not sit under the taskbar when that
+    /// monitor has one.
+    /// </remarks>
+    private static bool TryGetSecondaryWorkArea(out Rectangle workArea)
+    {
+        Rectangle? secondary = null;
+
+        MonitorEnumProc callback = (nint monitor, nint _, ref NativeRect _, nint _) =>
+        {
+            var info = new MonitorInfo { Size = Marshal.SizeOf<MonitorInfo>() };
+
+            if (!GetMonitorInfo(monitor, ref info) || (info.Flags & MonitorInfoPrimary) != 0)
+            {
+                return true;    // keep looking
+            }
+
+            secondary = Rectangle.FromLTRB(
+                info.WorkArea.Left, info.WorkArea.Top, info.WorkArea.Right, info.WorkArea.Bottom);
+
+            return false;       // first one will do
+        };
+
+        EnumDisplayMonitors(IntPtr.Zero, IntPtr.Zero, callback, IntPtr.Zero);
+
+        workArea = secondary ?? Rectangle.Empty;
+        return secondary is not null;
     }
 
     private static bool TryGetPrimaryWorkArea(out Rectangle workArea)
@@ -316,6 +551,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     private static void WriteAutPlacementReport(
         Rectangle presenter,
         Rectangle requested,
+        AutPlacement placement,
         string result,
         string? reason = null,
         Rectangle? actual = null)
@@ -331,6 +567,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
             List<string> lines =
             [
                 "AUT placement:",
+                $"Placement: {placement}",
                 $"Presenter bounds: {FormatRectangle(presenter)}",
                 $"Requested AUT bounds: {FormatRectangle(requested)}",
                 $"Result: {result}"
@@ -359,8 +596,45 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
         return $"x={rectangle.X} y={rectangle.Y} w={rectangle.Width} h={rectangle.Height}";
     }
 
+    private const int SmCxScreen = 0;
+    private const int SmCyScreen = 1;
+    private const int SmXVirtualScreen = 76;
+    private const int SmYVirtualScreen = 77;
+    private const int SmCxVirtualScreen = 78;
+    private const int SmCyVirtualScreen = 79;
+
+    /// <summary>MONITORINFOF_PRIMARY.</summary>
+    private const uint MonitorInfoPrimary = 0x1;
+
+    private const uint SwpNoZOrder = 0x0004;
+    private const uint SwpNoActivate = 0x0010;
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool SetWindowPos(
+        nint hwnd, nint insertAfter, int x, int y, int width, int height, uint flags);
+
     [DllImport("user32.dll")]
     private static extern int GetSystemMetrics(int nIndex);
+
+    private delegate bool MonitorEnumProc(nint monitor, nint deviceContext, ref NativeRect clip, nint data);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool EnumDisplayMonitors(nint deviceContext, nint clip, MonitorEnumProc callback, nint data);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetMonitorInfo(nint monitor, ref MonitorInfo info);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MonitorInfo
+    {
+        public int Size;
+        public NativeRect Monitor;
+        public NativeRect WorkArea;
+        public uint Flags;
+    }
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern bool SystemParametersInfo(
