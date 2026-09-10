@@ -2,6 +2,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.Globalization;
 using System.Runtime.InteropServices;
+using Brinell.Maui.UITests.Pages;
 using Xunit.Abstractions;
 
 // Brinell.Maui's global usings bring in Microsoft.Maui.Graphics, which has its own Color.
@@ -62,32 +63,56 @@ public class OccludedScreenshotTests
     [Fact]
     public void Screenshot_OfOccludedWindow_ShowsTheApp()
     {
+        // Two waits, and both are load-bearing. NavigateToMain only clicks — it does not wait
+        // for the page it opens — so without the marker the captures race the navigation and
+        // compare two different pages. And a marker appearing in the UIA tree does not mean the
+        // frame is painted, which for a test about pixels is the state that actually matters.
         _fixture.NavigateToMain();
+        Assert.True(
+            new ButtonsTestPage(_fixture.Context).StatusLabel.WaitExists(),
+            "The page did not open, so the captures below would be racing navigation.");
 
-        using var frontmost = Decode(_fixture.Context.TakeScreenshot());
-        ReportScreenAgreement(frontmost);
+        Bitmap occluded;
 
         using (ScreenOccluder.CoverPrimaryScreen())
         {
             // The instrument check. Without this, a covering window that never appeared would
             // make every assertion below pass for the wrong reason.
+            //
+            // Waited for rather than asserted outright: painting the occluder and DWM presenting
+            // it are separate events, so reading the screen immediately after CreateWindowEx
+            // races composition and reports a cover that is on its way.
             Assert.True(
-                PrimaryScreenIsMostlyDark(),
+                WaitUntilScreenIsDark(),
                 "The occluding window did not cover the screen, so this test proves nothing.");
 
-            using var occluded = Decode(_fixture.Context.TakeScreenshot());
+            occluded = CaptureWhenSettled();
 
-            Assert.Equal(frontmost.Size, occluded.Size);
-
+            // The load-bearing assertion, and it stands on its own: every pixel of the screen is
+            // black, yet the capture is a detailed image. There is nowhere for that image to have
+            // come from except the window rendering itself on request.
             Assert.False(
                 IsUniformlyDark(occluded),
                 "The occluded capture came back black: the window declined to render itself and " +
                 "the screen-reading fallback captured the occluder instead.");
+        }
 
-            var similarity = Similarity(frontmost, occluded);
+        using (occluded)
+        {
+            // Corroboration: the same app, captured normally, is the same picture. Taken after
+            // the occluded one deliberately — a capture during the first moments of a freshly
+            // opened page catches the chrome painted and the content not, which is a property of
+            // the app's rendering, not of the capture, and it made the earlier ordering compare
+            // an empty page against a full one.
+            using var visible = CaptureWhenSettled();
+            ReportScreenAgreement(visible);
+
+            Assert.Equal(visible.Size, occluded.Size);
+
+            var similarity = Similarity(visible, occluded);
             Assert.True(
                 similarity >= SameImageThreshold,
-                $"Occluded capture matched the frontmost capture only {similarity:P1} " +
+                $"Occluded capture matched the uncovered capture only {similarity:P1} " +
                 $"(needed {SameImageThreshold:P0}). The screenshot is of something other than the app.");
         }
     }
@@ -96,11 +121,18 @@ public class OccludedScreenshotTests
     /// Reports how closely the rendered capture matches what is physically on screen.
     /// </summary>
     /// <remarks>
-    /// Reported rather than asserted, in the same spirit as the layout probes: a low reading
-    /// here means <c>PrintWindow</c> rendered at an unexpected size or offset — worth knowing,
-    /// and the first thing to look at if the occluded assertions start failing — but
-    /// <c>GetWindowRect</c> includes the DWM resize border while the rendered content does not,
-    /// so a benign offset is expected and there is no calibrated threshold to gate on yet.
+    /// <para>
+    /// Reported rather than asserted, in the same spirit as the layout probes. A settled window
+    /// measured around 90%: the rendered capture and the screen agree, with the shortfall coming
+    /// from <c>GetWindowRect</c> including the DWM resize border that the rendered content does
+    /// not fill. So this is a sanity reading on <c>PrintWindow</c> rendering the right thing at
+    /// the right size, and there is no calibrated threshold to gate on.
+    /// </para>
+    /// <para>
+    /// A <i>low</i> reading almost always means the capture was taken before the app finished
+    /// painting rather than that the capture is wrong — see <see cref="CaptureWhenSettled"/>,
+    /// which exists because of exactly that. Check the timing before suspecting the mechanism.
+    /// </para>
     /// </remarks>
     private void ReportScreenAgreement(Bitmap rendered)
     {
@@ -128,6 +160,53 @@ public class OccludedScreenshotTests
         _output.WriteLine(
             $"Screen agreement: rendered {rendered.Width}x{rendered.Height}, " +
             $"screen {width}x{height}, similarity {Similarity(rendered, fromScreen):P1}.");
+    }
+
+    /// <summary>
+    /// Captures once the rendered output has stopped changing.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A concrete condition, not a sleep — but "two captures agree" is not enough on its own.
+    /// A page that has not begun painting is perfectly stable at empty, and that is exactly what
+    /// an earlier version of this test captured: chrome drawn, client area blank, two frames
+    /// running identical. Element presence does not help either; a control joins the UIA tree
+    /// before its pixels exist.
+    /// </para>
+    /// <para>
+    /// So settling requires a change to have been seen first, then stability. Painting is the
+    /// change; there is no need to guess how long it takes.
+    /// </para>
+    /// </remarks>
+    private Bitmap CaptureWhenSettled(int timeoutMs = 5000, int graceMs = 1000)
+    {
+        var started = DateTime.UtcNow;
+        var deadline = started.AddMilliseconds(timeoutMs);
+        var previous = Decode(_fixture.Context.TakeScreenshot());
+        var sawChange = false;
+
+        while (DateTime.UtcNow < deadline)
+        {
+            var current = Decode(_fixture.Context.TakeScreenshot());
+            var unchanged = previous.Size == current.Size
+                            && Similarity(previous, current) >= SameImageThreshold;
+
+            // Stable after a change means painting finished. Stable for the whole grace period
+            // without any change means it had already finished before the first capture — the
+            // common case for a page that has been up a while, and not worth waiting out.
+            if (unchanged && (sawChange || DateTime.UtcNow - started >= TimeSpan.FromMilliseconds(graceMs)))
+            {
+                previous.Dispose();
+                return current;
+            }
+
+            sawChange |= !unchanged;
+            previous.Dispose();
+            previous = current;
+        }
+
+        _output.WriteLine($"Capture never settled within {timeoutMs} ms; using the last frame.");
+        return previous;
     }
 
     private static Bitmap Decode(byte[] png)
@@ -183,6 +262,27 @@ public class OccludedScreenshotTests
         }
 
         return true;
+    }
+
+    /// <summary>
+    /// Waits until the primary screen reads as covered, or gives up.
+    /// </summary>
+    /// <remarks>
+    /// Each poll is a full screen capture, which paces the loop on its own — there is no sleep
+    /// here, and the condition is the concrete state the caller actually depends on.
+    /// </remarks>
+    private static bool WaitUntilScreenIsDark(int timeoutMs = 3000)
+    {
+        var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+
+        do
+        {
+            if (PrimaryScreenIsMostlyDark())
+                return true;
+        }
+        while (DateTime.UtcNow < deadline);
+
+        return false;
     }
 
     private static bool PrimaryScreenIsMostlyDark()
@@ -268,9 +368,45 @@ public class OccludedScreenshotTests
                 throw new InvalidOperationException("Could not create the occluding window.");
 
             ShowWindow(handle, SwShowNoActivate);
+
+            // Force it to the top of the topmost band. WS_EX_TOPMOST alone only puts it in that
+            // band; where it lands relative to another topmost window depends on activation
+            // order, and SW_SHOWNOACTIVATE deliberately declines to activate.
+            SetWindowPos(handle, HwndTopmost, 0, 0, 0, 0,
+                (uint)(SwpNoMove | SwpNoSize | SwpNoActivate | SwpShowWindow));
+
             UpdateWindow(handle);
 
+            // Paint it black directly rather than trusting WM_PAINT. This thread runs no message
+            // loop, and SS_BLACKRECT alone left the window unpainted — which made the occluder
+            // silently transparent and the instrument check fail, correctly.
+            PaintBlack(handle);
+
             return new ScreenOccluder(handle);
+        }
+
+        private static void PaintBlack(nint handle)
+        {
+            var deviceContext = GetDC(handle);
+            if (deviceContext == 0)
+                throw new InvalidOperationException("Could not get a device context for the occluder.");
+
+            try
+            {
+                var area = new ScreenRect
+                {
+                    Left = 0,
+                    Top = 0,
+                    Right = GetSystemMetrics(SmCxScreen),
+                    Bottom = GetSystemMetrics(SmCyScreen),
+                };
+
+                FillRect(deviceContext, ref area, GetStockObject(BlackBrush));
+            }
+            finally
+            {
+                ReleaseDC(handle, deviceContext);
+            }
         }
 
         public void Dispose()
@@ -299,5 +435,29 @@ public class OccludedScreenshotTests
         [DllImport("user32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool DestroyWindow(nint hwnd);
+
+        private const int BlackBrush = 4;
+        private static readonly nint HwndTopmost = -1;
+        private const int SwpNoSize = 0x0001;
+        private const int SwpNoMove = 0x0002;
+        private const int SwpNoActivate = 0x0010;
+        private const int SwpShowWindow = 0x0040;
+
+        [DllImport("user32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool SetWindowPos(
+            nint hwnd, nint insertAfter, int x, int y, int width, int height, uint flags);
+
+        [DllImport("user32.dll")]
+        private static extern nint GetDC(nint hwnd);
+
+        [DllImport("user32.dll")]
+        private static extern int ReleaseDC(nint hwnd, nint deviceContext);
+
+        [DllImport("user32.dll")]
+        private static extern int FillRect(nint deviceContext, ref ScreenRect rect, nint brush);
+
+        [DllImport("gdi32.dll")]
+        private static extern nint GetStockObject(int index);
     }
 }

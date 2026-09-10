@@ -53,13 +53,12 @@ public class HubPage : PageObjectBase<HubPage>
     /// you are on another page, and scrolling cannot change that.
     /// </remarks>
 
-    /// <inheritdoc />
     /// <remarks>
-    /// This page object resolves one element that is deliberately <em>not</em> on the hub:
-    /// <see cref="BackToHub"/>, which lives on whichever page is currently open. Gating
-    /// lookups on the hub being loaded would make <see cref="TryGoBack"/> unable to find the
-    /// only control that gets back to it — the hub reports not-loaded precisely when the back
-    /// button is needed.
+    /// Every control here is genuinely on the hub, so all of them resolve only while the hub is
+    /// loaded. The back button that returns to the hub used to live here too, and did not belong:
+    /// it is attached to whichever page is open, so the hub reports not-loaded at exactly the
+    /// moment it was wanted. It now resolves from the app root in <c>MauiFixture</c> — see
+    /// <c>.my/fix/rca-page-readiness-gate.md</c>.
     /// </remarks>
     /// <summary>The hub's title label.</summary>
     public Label<HubPage> Title => new(this, "PageHubTitle");
@@ -77,39 +76,4 @@ public class HubPage : PageObjectBase<HubPage>
     /// The button that opens the given page.
     /// </summary>
     public Button<HubPage> OpenButton(SamplePage page) => new(this, AutomationIdFor(page));
-
-    /// <summary>
-    /// The "back to hub" toolbar item the hub adds to every page it opens.
-    /// </summary>
-    /// <remarks>
-    /// Located by accessibility id, not automation id. A <c>ToolbarItem</c> is rendered into
-    /// native chrome rather than page content, and MAUI surfaces its AutomationId there as the
-    /// accessibility label — on Android the node's <c>resource-id</c> is empty and the value
-    /// appears in <c>content-desc</c>. AutomationId maps to <c>resource-id</c> on Android, so
-    /// looking it up that way finds nothing. AccessibilityId is the same string on both
-    /// platforms, so one locator serves all three.
-    /// </remarks>
-    public Button<HubPage> BackToHub => new(this, Locator.ByAccessibilityId("BackToHub"));
-
-    /// <summary>
-    /// Clicks "back to hub" if it is present.
-    /// </summary>
-    /// <remarks>
-    /// Reports absence rather than throwing: the caller is unwinding to a known state and
-    /// "there is nothing to go back from" is an answer, not a failure. Preferred over
-    /// <c>IMauiDriver.NavigateBack</c>, whose Windows fallback is Alt+Left — global keyboard
-    /// input, which the interaction policy blocks by default.
-    /// </remarks>
-    /// <param name="timeoutMs">How long to wait for the item to be present.</param>
-    /// <returns>True when the item was found and clicked.</returns>
-    public bool TryGoBack(int? timeoutMs = null)
-    {
-        if (!BackToHub.WaitExists(true, timeoutMs))
-        {
-            return false;
-        }
-
-        BackToHub.Click();
-        return true;
-    }
 }

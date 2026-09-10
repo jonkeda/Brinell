@@ -31,7 +31,7 @@ dotnet build testsnew\Brinell.Maui.UITests.Mobile\Brinell.Maui.UITests.Mobile.cs
 
 | # | Step | Stage | Depends on | Status |
 |---|---|---|---|---|
-| 1 | Occluded-window screenshots | 0 | — | todo |
+| 1 | Occluded-window screenshots | 0 | — | **done** |
 | 2 | Off-screen window placement | 0 | — | todo |
 | 3 | Background-mode guard + inventory | 0 | — | todo |
 | 4 | Spike: child HWND raw provider | A | — | todo |
@@ -87,6 +87,31 @@ methods file.
 the image is not uniform and matches a control capture taken while frontmost.
 
 **Done when** a screenshot of a fully occluded app window shows the app.
+
+#### Result — done
+
+`PrintWindow` with `PW_RENDERFULLCONTENT` **works on WinUI 3**, with no black-frame problem and
+no need for `Windows.Graphics.Capture`. Verified by capturing the app under a full-screen black
+topmost window: the capture is a complete, correct render of the page. `Capture.Element` is kept
+as the fallback for minimized windows and any future GPU-composed content that returns blank.
+
+Delivered: `srcnew/Brinell.Maui.FlaUI/WindowCapture.cs`, the `GetScreenshot` path in
+`FlaUIMauiDriver`, and `testsnew/Brinell.Maui.UITests/Tests/Diagnostics/OccludedScreenshotTests.cs`
+(excluded by name from the mobile head — the first such exclusion, and the mechanism step 10 will
+reuse). Green three runs in a row.
+
+Two things the spike taught, both now encoded in the test:
+
+- **A settled-looking frame is not a rendered frame.** A freshly opened page paints its chrome
+  before its content, and two consecutive captures of the unpainted state agree perfectly. The
+  first version of this test compared an empty page against a full one and blamed the capture.
+  `CaptureWhenSettled` therefore waits for a *change* and then stability, never stability alone.
+- **A UIA element exists before its pixels do.** `WaitExists` on a control returned true while the
+  client area was still blank, so element presence cannot gate a screenshot.
+
+Also measured: with the window settled and visible, the rendered capture and the screen agree to
+~91%, the shortfall being the DWM resize border that `GetWindowRect` includes and the content does
+not. That number is reported by the test, not asserted.
 
 ---
 

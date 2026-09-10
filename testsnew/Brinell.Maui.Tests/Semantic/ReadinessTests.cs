@@ -54,6 +54,16 @@ public class ReadinessTests
         public Button<GatedPage> Target => new(this, "Target");
     }
 
+    /// <summary>
+    /// A page whose root is not in the tree at all — the app is somewhere else entirely.
+    /// </summary>
+    private sealed class AbsentPage(IMauiTestContext context) : PageObjectBase<AbsentPage>(context)
+    {
+        public override string Name => "AbsentPage";
+
+        public Button<AbsentPage> Target => new(this, "Target");
+    }
+
     private sealed class BusyGatedPage(IMauiTestContext context) : PageObjectBase<BusyGatedPage>(context)
     {
         public override string Name => "GatedPage";
@@ -142,6 +152,39 @@ public class ReadinessTests
     #endregion
 
     #region Automatic page readiness gate
+
+    /// <summary>
+    /// A control resolves only within its own page: a page that is not on screen refuses,
+    /// naming the missing root.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Pinned because it was never covered and the gap cost a suite. Every page object in these
+    /// tests holds controls that are genuinely inside it, so nothing exercised the arrangement
+    /// where a control is scoped to a page it does not belong to. The sample-app fixture had
+    /// exactly that — the hub's own back button, which is attached to whichever page the hub
+    /// opened — and once <c>3784e70</c> began enforcing readiness, every UI test after the first
+    /// died here. See <c>.my/fix/rca-page-readiness-gate.md</c>.
+    /// </para>
+    /// <para>
+    /// The behaviour asserted below is the correct one and the fix was to stop asking a page for
+    /// a control it does not own. This test exists so that anyone tempted to relax the gate
+    /// instead has to say so explicitly.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void ControlScopedToAnAbsentPage_RefusesAndNamesTheMissingRoot()
+    {
+        _context.Setup(c => c.FindElements(It.Is<Locator>(l => l.Value == "AbsentPage")))
+            .Returns([]);
+
+        var page = new AbsentPage(_context.Object);
+
+        var ex = Assert.Throws<PageLoadException>(() => page.Target.Click());
+
+        Assert.Contains("AbsentPage", ex.Message);
+        Assert.Contains(nameof(PageReadinessState.MissingRoot), ex.Message);
+    }
 
     [Fact]
     public void Click_WaitsForPageIdle_ThenExecutesExactlyOnce()

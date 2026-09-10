@@ -73,16 +73,61 @@ public class MauiFixture : MauiTestFixtureBase
 
         for (var pop = 0; pop < MaxPops && !_hub.IsLoaded(); pop++)
         {
-            if (!_hub.TryGoBack(TestConstants.ShortTestTimeoutMs))
+            var back = FindBackToHub(TestConstants.ShortTestTimeoutMs);
+            if (back == null)
             {
                 break;
             }
+
+            back.Click();
 
             // Wait for the hub before deciding whether to pop again. Testing IsLoaded straight
             // after the click reads the page mid-transition, so the loop goes round and spends a
             // full timeout waiting for a Back button that has already gone.
             _hub.WaitLoaded(true, TestConstants.ShortTestTimeoutMs);
         }
+    }
+
+    /// <summary>
+    /// Finds the hub's back button on whatever page is currently open.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Resolved from the app root rather than through <see cref="HubPage"/>. The hub attaches
+    /// this toolbar item to the page it opens, so the button lives on <i>that</i> page — and the
+    /// hub is by definition not loaded at the moment the button is needed. Scoping it to
+    /// <c>HubPage</c> asked a page object for a control that is not in it, which the page
+    /// readiness gates correctly refused: every test after the first died with
+    /// <c>MissingRoot</c> on <c>PageHub</c>. See <c>.my/fix/rca-page-readiness-gate.md</c>.
+    /// </para>
+    /// <para>
+    /// Located by accessibility id, not automation id. A <c>ToolbarItem</c> is rendered into
+    /// native chrome rather than page content, and MAUI surfaces its AutomationId there as the
+    /// accessibility label — on Android the node's <c>resource-id</c> is empty and the value
+    /// appears in <c>content-desc</c>. AccessibilityId is the same string on both platforms, so
+    /// one locator serves all three.
+    /// </para>
+    /// <para>
+    /// Polls rather than looking once: <c>TryFindElement</c> is a single driver call, and a page
+    /// caught mid-transition has not attached its toolbar yet. Each attempt is a driver round
+    /// trip, which paces the loop without a sleep.
+    /// </para>
+    /// </remarks>
+    private IMauiElement? FindBackToHub(int timeoutMs)
+    {
+        var backToHub = Locator.ByAccessibilityId("BackToHub");
+        var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+
+        do
+        {
+            if (Context.TryFindElement(backToHub) is { } back)
+            {
+                return back;
+            }
+        }
+        while (DateTime.UtcNow < deadline);
+
+        return null;
     }
 
     /// <summary>
