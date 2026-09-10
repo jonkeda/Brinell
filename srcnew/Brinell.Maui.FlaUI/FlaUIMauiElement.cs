@@ -1,3 +1,4 @@
+using Brinell.Core.Diagnostics;
 using Brinell.Core.Exceptions;
 using Brinell.Core.Interfaces;
 using Brinell.Core.Utilities;
@@ -265,6 +266,7 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
     /// </remarks>
     public void Click()
     {
+        PhysicalInput.Used("FlaUIMauiElement.Click", "the Invoke pattern, or the bridge's Tap verb (step 18)");
         _driver.EnsureRootWindowFocused();
         _element.Click();
     }
@@ -275,10 +277,12 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
         switch (method)
         {
             case TextInputMethod.Keys:
+                PhysicalInput.Used("FlaUIMauiElement.SendKeys(Keys)", "the SetText verb (step 14)");
                 FocusForKeyboardInput();
                 Keyboard.Type(text);
                 break;
             case TextInputMethod.Paste:
+                PhysicalInput.Used("FlaUIMauiElement.SendKeys(Paste)", "the SetText verb (step 14) - this one also destroys the user's clipboard");
                 FocusForKeyboardInput();
                 System.Windows.Forms.Clipboard.SetText(text);
                 Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_V);
@@ -287,6 +291,7 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
                 if (TrySetTextValue(text))
                     return;
 
+                PhysicalInput.Used("FlaUIMauiElement.SendKeys(SetValue fallback)", "the SetText verb (step 14)");
                 FocusForKeyboardInput();
                 Keyboard.Type(text);
                 break;
@@ -300,6 +305,7 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
             return;
 
         // Select all and delete
+        PhysicalInput.Used("FlaUIMauiElement.Clear(Ctrl+A,Delete)", "the ClearText verb (step 14)");
         FocusForKeyboardInput();
         Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_A);
         Keyboard.Type(VirtualKeyShort.DELETE);
@@ -308,6 +314,7 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
     /// <inheritdoc />
     public void DoubleClick()
     {
+        PhysicalInput.Used("FlaUIMauiElement.DoubleClick", "the DoubleTap gesture verb (step 18)");
         _driver.EnsureRootWindowFocused();
         _element.DoubleClick();
     }
@@ -315,6 +322,7 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
     /// <inheritdoc />
     public void RightClick()
     {
+        PhysicalInput.Used("FlaUIMauiElement.RightClick", "the InvokeMenuItem verb (step 26)");
         _driver.EnsureRootWindowFocused();
         _element.RightClick();
     }
@@ -324,6 +332,7 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
     {
         var rect = _element.BoundingRectangle;
         var center = new System.Drawing.Point(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
+        PhysicalInput.Used("FlaUIMauiElement.Hover", "a pointer-enter verb (not yet planned)");
         _driver.EnsureRootWindowFocused();
         Mouse.MoveTo(center);
     }
@@ -546,6 +555,7 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
                 _element.BoundingRectangle.Y + _element.BoundingRectangle.Height / 2);
             // deltaY < 0 means swipe up → scroll down → negative wheel
             var wheelClicks = deltaY < 0 ? -5 : 5;
+            PhysicalInput.Used("FlaUIMauiElement.Swipe(wheel)", "the ScrollTo verb (step 21)");
             _driver.EnsureRootWindowFocused();
             Mouse.MoveTo(center);
             Mouse.Scroll(wheelClicks);
@@ -707,6 +717,7 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
     public void Submit()
     {
         // Try to find and click a submit button, or press Enter
+        PhysicalInput.Used("FlaUIMauiElement.Submit(Enter)", "the Submit verb (step 14)");
         FocusForKeyboardInput();
         Keyboard.Type(VirtualKeyShort.ENTER);
     }

@@ -1,3 +1,5 @@
+using Brinell.Core.Diagnostics;
+using Brinell.Maui.Containers;
 using Brinell.Core.Utilities;
 using Brinell.Maui.Configuration;
 using Brinell.Maui.Enums;
@@ -80,6 +82,19 @@ public class MauiFixture : MauiTestFixtureBase
                 break;
             }
 
+            // A real click, deliberately, and the suite's entire physical-input footprint.
+            //
+            // Invoke is the obvious replacement and does not work here. Measured twice, with two
+            // independent implementations: driving this ToolbarItem through the Invoke pattern
+            // reports success and does not reliably raise the command, so navigation silently
+            // does not happen and the run degrades from 5s to ~60s with intermittent failures.
+            // Every control-object click in the suite already goes through the pattern ladder
+            // successfully — an audit run recorded zero of them falling back — so this is
+            // specific to the toolbar item, not to the ladder.
+            //
+            // Recorded rather than hidden: this is the one path an audit should keep showing
+            // until the gesture bridge can activate it properly.
+            PhysicalInput.Used("MauiFixture.ReturnToHub", "a working activation route for ToolbarItem");
             back.Click();
 
             // Wait for the hub before deciding whether to pop again. Testing IsLoaded straight

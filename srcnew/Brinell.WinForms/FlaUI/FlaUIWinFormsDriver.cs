@@ -1,3 +1,4 @@
+using Brinell.Core.Diagnostics;
 using System.Drawing;
 using Brinell.Core;
 using Brinell.Core.Exceptions;
@@ -229,10 +230,17 @@ public sealed class FlaUIWinFormsDriver : IWinFormsDriver, IDisposable
     public void NavigateTo(string destination) =>
         throw new NotSupportedException("URL navigation not supported for WinForms");
 
-    public void NavigateBack() =>
+    public void NavigateBack()
+    {
+        PhysicalInput.Used("FlaUIWinFormsDriver.NavigateBack(Alt+Left)", "a NavigateBack verb");
         Keyboard.TypeSimultaneously(VirtualKeyShort.ALT, VirtualKeyShort.LEFT);
+    }
 
-    public void Refresh() => Keyboard.Type(VirtualKeyShort.F5);
+    public void Refresh()
+    {
+        PhysicalInput.Used("FlaUIWinFormsDriver.Refresh(F5)", "a NavigateTo verb");
+        Keyboard.Type(VirtualKeyShort.F5);
+    }
 
     public void ResetAppState() => _application?.Close();
 

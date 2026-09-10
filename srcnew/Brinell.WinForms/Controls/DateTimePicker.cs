@@ -1,3 +1,4 @@
+using Brinell.Core.Diagnostics;
 using Brinell.Core.Utilities;
 using Brinell.WinForms.FlaUI;
 using FlaUI.Core.Input;
@@ -29,6 +30,7 @@ public sealed class DateTimePicker<TScope> : ControlBase<TScope>
 
             // Keyboard fallback: select all, type, enter
             e.Click();
+            PhysicalInput.Used("WinForms.DateTimePicker.SetText", "a SetDate verb");
             Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_A);
             Keyboard.Type(value);
             Keyboard.Type(VirtualKeyShort.ENTER);
@@ -48,6 +50,7 @@ public sealed class DateTimePicker<TScope> : ControlBase<TScope>
             // Navigate to the start (Home) and use arrow keys for segments.
             // Typical WinForms DTP format: MM/dd/yyyy
             // Home → Month segment, Right → Day, Right → Year
+            PhysicalInput.Used("WinForms.DateTimePicker.SetDate(keys)", "a SetDate verb");
             Keyboard.Type(VirtualKeyShort.HOME);
 
             // Set in Year→Month→Day order to avoid clamping:

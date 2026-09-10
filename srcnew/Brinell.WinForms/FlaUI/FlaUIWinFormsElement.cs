@@ -1,3 +1,4 @@
+using Brinell.Core.Diagnostics;
 using System.Drawing;
 using Brinell.Core;
 using Brinell.Core.Exceptions;
@@ -96,6 +97,7 @@ public sealed class FlaUIWinFormsElement : IWinFormsElement, IRangePatternElemen
         if (rect.Width > 0 && rect.Height > 0)
         {
             var center = new Point(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
+            PhysicalInput.Used("FlaUIWinFormsElement.Click(pointer fallback)", "an activation pattern");
             Mouse.Position = center;
             Mouse.Click(MouseButton.Left);
             return;
@@ -109,15 +111,18 @@ public sealed class FlaUIWinFormsElement : IWinFormsElement, IRangePatternElemen
         switch (method)
         {
             case TextInputMethod.Keys:
+                PhysicalInput.Used("FlaUIWinFormsElement.SendKeys(Keys)", "a SetText verb");
                 _element.Focus();
                 Keyboard.Type(text);
                 break;
             case TextInputMethod.Paste:
+                PhysicalInput.Used("FlaUIWinFormsElement.SendKeys(Paste)", "a SetText verb - also destroys the user's clipboard");
                 _element.Focus();
                 System.Windows.Forms.Clipboard.SetText(text);
                 Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_V);
                 break;
             case TextInputMethod.SetValue:
+                PhysicalInput.Used("FlaUIWinFormsElement.SendKeys(SetValue)", "a SetText verb");
                 if (_element.Patterns.Value.IsSupported)
                     _element.Patterns.Value.Pattern.SetValue(text);
                 else
@@ -131,6 +136,7 @@ public sealed class FlaUIWinFormsElement : IWinFormsElement, IRangePatternElemen
 
     public void Clear()
     {
+        PhysicalInput.Used("FlaUIWinFormsElement.Clear", "a ValuePattern write");
         if (_element.Patterns.Value.IsSupported)
             _element.Patterns.Value.Pattern.SetValue(string.Empty);
         else
@@ -146,6 +152,7 @@ public sealed class FlaUIWinFormsElement : IWinFormsElement, IRangePatternElemen
 
     public void Hover()
     {
+        PhysicalInput.Used("FlaUIWinFormsElement.Hover", "a pointer-enter verb");
         var rect = _element.BoundingRectangle;
         var center = new Point(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
         Mouse.MoveTo(center);

@@ -1,3 +1,4 @@
+using Brinell.Core.Diagnostics;
 using System.Drawing;
 using Brinell.Core;
 using Brinell.Core.Exceptions;
@@ -124,6 +125,7 @@ public sealed class FlaUIWpfElement : IWpfElement, IRangePatternElement, IExpand
         if (rect.Width > 0 && rect.Height > 0)
         {
             var center = new Point(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
+            PhysicalInput.Used("FlaUIWpfElement.Click(pointer fallback)", "an activation pattern");
             Mouse.Position = center;
             Mouse.Click(MouseButton.Left);
             return;
@@ -139,15 +141,18 @@ public sealed class FlaUIWpfElement : IWpfElement, IRangePatternElement, IExpand
         switch (method)
         {
             case TextInputMethod.Keys:
+                PhysicalInput.Used("FlaUIWpfElement.SendKeys(Keys)", "a SetText verb");
                 _element.Focus();
                 Keyboard.Type(text);
                 break;
             case TextInputMethod.Paste:
+                PhysicalInput.Used("FlaUIWpfElement.SendKeys(Paste)", "a SetText verb - also destroys the user's clipboard");
                 _element.Focus();
                 System.Windows.Forms.Clipboard.SetText(text);
                 Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_V);
                 break;
             case TextInputMethod.SetValue:
+                PhysicalInput.Used("FlaUIWpfElement.SendKeys(SetValue)", "a SetText verb");
                 if (_element.Patterns.Value.IsSupported)
                 {
                     _element.Patterns.Value.Pattern.SetValue(text);
@@ -164,6 +169,7 @@ public sealed class FlaUIWpfElement : IWpfElement, IRangePatternElement, IExpand
     /// <inheritdoc />
     public void Clear()
     {
+        PhysicalInput.Used("FlaUIWpfElement.Clear", "a ValuePattern write");
         if (_element.Patterns.Value.IsSupported)
         {
             _element.Patterns.Value.Pattern.SetValue(string.Empty);
@@ -179,18 +185,21 @@ public sealed class FlaUIWpfElement : IWpfElement, IRangePatternElement, IExpand
     /// <inheritdoc />
     public void DoubleClick()
     {
+        PhysicalInput.Used("FlaUIWpfElement.DoubleClick", "a DoubleTap verb");
         _element.DoubleClick();
     }
 
     /// <inheritdoc />
     public void RightClick()
     {
+        PhysicalInput.Used("FlaUIWpfElement.RightClick", "an InvokeMenuItem verb");
         _element.RightClick();
     }
 
     /// <inheritdoc />
     public void Hover()
     {
+        PhysicalInput.Used("FlaUIWpfElement.Hover", "a pointer-enter verb");
         var rect = _element.BoundingRectangle;
         var center = new Point(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
         Mouse.MoveTo(center);
@@ -199,6 +208,7 @@ public sealed class FlaUIWpfElement : IWpfElement, IRangePatternElement, IExpand
     /// <inheritdoc />
     public void LongPress(int durationMs = 1000)
     {
+        PhysicalInput.Used("FlaUIWpfElement.LongPress", "a LongPress verb");
         var rect = _element.BoundingRectangle;
         var center = new Point(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
         Mouse.Position = center;

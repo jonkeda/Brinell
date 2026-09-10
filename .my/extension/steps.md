@@ -32,8 +32,8 @@ dotnet build testsnew\Brinell.Maui.UITests.Mobile\Brinell.Maui.UITests.Mobile.cs
 | # | Step | Stage | Depends on | Status |
 |---|---|---|---|---|
 | 1 | Occluded-window screenshots | 0 | — | **done** |
-| 2 | Off-screen window placement | 0 | — | **done** (`offscreen` needs 13/14) |
-| 3 | Background-mode guard + inventory | 0 | — | todo |
+| 2 | Off-screen window placement | 0 | — | **done** (`offscreen` needs ToolbarItem activation — see step 3) |
+| 3 | Background-mode guard + inventory | 0 | — | **done** |
 | 4 | Spike: child HWND raw provider | A | — | todo |
 | 5 | Spike: pattern round-trip, int **and string** | A | — | todo |
 | 6 | Spike: raw-view findability | A | 4 | todo |
@@ -174,10 +174,11 @@ one fail 4 of 4. Adding a click as a fallback after a failed invoke was worse ag
 replaced it. Reverted. Whatever replaces that click has to be the real semantic path — which is
 what steps 13 and 14 build.
 
-So `offscreen` waits on Stage B, and that is the expected shape rather than a surprise: **step 3
-exists to inventory exactly these physical-input paths, and this is the first one, found before
-step 3 has even run.** `right` and `secondary` are usable today and already keep the app out of
-the way.
+So `offscreen` waits on a semantic route for this one button. Step 3 then measured it precisely:
+that click is the suite's *entire* physical-input footprint, and the Invoke pattern does not
+work on a `ToolbarItem` — see [physical-input-inventory.md](physical-input-inventory.md). It is
+nearer to steps 18 and 26 than to Stage B. `right` and `secondary` are usable today and already
+keep the app out of the way.
 
 Also fixed here: `FindBackToHub` polled in an unpaced loop, putting thousands of UIA round trips
 through the app over its timeout. It now paces at 50 ms.
@@ -207,6 +208,42 @@ Expect **many failures**. That is the deliverable.
 
 **Done when** the run produces a written inventory — which tests, which call sites, which verbs
 — committed alongside this document. Nothing is fixed in this step.
+
+#### Result — instrument done; inventory is a calibration run only
+
+Instrument: `PhysicalInput` in `Brinell.Core`, guarding the Windows drivers — MAUI (15 entry
+points), WPF (11), WinForms (10, including the keyboard-driven `DateTimePicker`). Covered by 16
+platform-neutral tests in `Brinell.Core.Tests`, which exercise `Allowed`, `Audited` and `Refused`
+through a scoped policy override; the gate spans three drivers, so testing it through any one
+platform's UI suite would test the least of it.
+
+`BRINELL_BACKGROUND_MODE` has two settings rather than the one specified here. `audit` records and
+lets input proceed — verified not to change outcomes (183/24 either way) — so one pass gives
+complete data. `1`/`strict` throws, which is the enforcement step 15 needs but aborts each test at
+its first offending call. Auditing is the instrument; refusing is the gate.
+
+**The inventory itself proves less than it first appeared.** It measures
+`Brinell.Samples.Maui.App`: an app built to be automated, with an `AutomationId` on everything and
+the automation handlers registered. Within that best case the suite reaches only four call sites,
+396 of 400 uses trace to one raw click, and eleven entry points are never touched — including the
+clipboard. **None of that generalises**, and an earlier version of this section wrongly used it to
+downgrade steps 13 and 14. A real app has controls with no `AutomationId`, `ValuePattern`
+implementations that refuse writes, context menus and hover-dependent UI; the eleven paths that
+scored zero here are the ones it is most likely to hit. Steps 13, 14 and 20-26 keep the priority
+the capability catalogue gave them until a real suite has been audited.
+
+Two things the run does establish, because both are about Brinell rather than the app:
+
+- **The activation ladder works.** Every control-object click went through a pattern; none fell
+  back to the mouse.
+- **A blocker no step covers: activating a MAUI `ToolbarItem` without the mouse.** Measured four
+  ways — Invoke alone, Invoke with a click fallback, and the shared `ActivationHelper` ladder that
+  works for every other control — all fail identically: Invoke reports success and does not raise
+  the command, so navigation silently does not happen and the run degrades from 9 s to ~60 s. This
+  is what keeps `BRINELL_AUT_PLACE=offscreen` unusable. Nearest existing steps are 18 and 26.
+
+Full inventory, and the recipe for auditing a real app:
+[physical-input-inventory.md](physical-input-inventory.md).
 
 ---
 

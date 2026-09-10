@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Runtime.InteropServices;
 using Brinell.Core;
+using Brinell.Core.Diagnostics;
 using Brinell.Core.Exceptions;
 using Brinell.Core.Utilities;
 using Brinell.Maui.Configuration;
@@ -138,6 +139,10 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
             // Ignore window visual state failures and continue with focus fallback.
         }
 
+        // Outside the try: the catch below swallows everything, and a refusal that gets
+        // swallowed is not a refusal.
+        PhysicalInput.Used("FlaUIMauiDriver.EnsureRootWindowFocused", "the Focus verb (step 13)");
+
         try
         {
             _rootElement.SetForeground();
@@ -158,6 +163,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
 
     internal void PointerLongPress(Point point, int durationMs)
     {
+        PhysicalInput.Used("FlaUIMauiDriver.PointerLongPress", "the LongPress gesture verb (step 18)");
         EnsureRootWindowFocused();
         Mouse.Position = point;
         Mouse.Down(MouseButton.Left);
@@ -181,6 +187,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
         Point end,
         int durationMs)
     {
+        PhysicalInput.Used("FlaUIMauiDriver.PointerDrag", "a swipe gesture verb (step 18)");
         EnsureRootWindowFocused();
         Mouse.MoveTo(start);
         Mouse.Down(MouseButton.Left);
@@ -912,6 +919,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
 
         try
         {
+            PhysicalInput.Used("FlaUIMauiDriver.NavigateBack(Alt+Left)", "the NavigateBack verb (step 22)");
             EnsureRootWindowFocused();
             _rootElement.Focus();
             Keyboard.TypeSimultaneously(VirtualKeyShort.ALT, VirtualKeyShort.LEFT);
@@ -927,6 +935,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     public void Refresh()
     {
         // Try F5 refresh for desktop apps
+        PhysicalInput.Used("FlaUIMauiDriver.Refresh(F5)", "the NavigateTo verb (step 22)");
         EnsureRootWindowFocused();
         _rootElement.Focus();
         Keyboard.Type(VirtualKeyShort.F5);

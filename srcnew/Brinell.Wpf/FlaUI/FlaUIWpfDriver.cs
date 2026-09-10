@@ -1,3 +1,4 @@
+using Brinell.Core.Diagnostics;
 using System.Drawing;
 using Brinell.Core;
 using Brinell.Core.Exceptions;
@@ -300,12 +301,14 @@ public sealed class FlaUIWpfDriver : IWpfDriver, IDisposable
     /// <inheritdoc />
     public void NavigateBack()
     {
+        PhysicalInput.Used("FlaUIWpfDriver.NavigateBack(Alt+Left)", "a NavigateBack verb");
         Keyboard.TypeSimultaneously(VirtualKeyShort.ALT, VirtualKeyShort.LEFT);
     }
 
     /// <inheritdoc />
     public void Refresh()
     {
+        PhysicalInput.Used("FlaUIWpfDriver.Refresh(F5)", "a NavigateTo verb");
         Keyboard.Type(VirtualKeyShort.F5);
     }
 
