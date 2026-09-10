@@ -491,12 +491,56 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     #region Screenshots
     
     /// <inheritdoc />
+    /// <remarks>
+    /// <para>
+    /// Asks the window to render itself first, so a screenshot is of the app even when the app
+    /// is behind something else. The fallback — FlaUI's <c>Capture.Element</c> — reads the
+    /// screen at the element's bounding rectangle, and with the app occluded that is a picture
+    /// of whatever is on top. A failure diagnostic showing the wrong application is worse than
+    /// none, because nothing about it looks wrong.
+    /// </para>
+    /// <para>
+    /// The fallback is kept rather than replaced: <c>PW_RENDERFULLCONTENT</c> returns black for
+    /// some GPU-composed content, and a minimized window has nothing to render. Reading the
+    /// screen is wrong only when the window is covered, and right the rest of the time.
+    /// </para>
+    /// </remarks>
     public byte[] GetScreenshot()
     {
-        var capture = Capture.Element(_rootElement);
-        using var ms = new MemoryStream();
-        capture.Bitmap.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
-        return ms.ToArray();
+        var windowContent = TryCaptureWindowContent();
+        if (windowContent != null)
+        {
+            using (windowContent)
+                return ToPng(windowContent);
+        }
+
+        using var capture = Capture.Element(_rootElement);
+        return ToPng(capture.Bitmap);
+    }
+
+    /// <summary>
+    /// Captures the app window's own content, or null when it declined to render.
+    /// </summary>
+    private System.Drawing.Bitmap? TryCaptureWindowContent()
+    {
+        var bitmap = WindowCapture.TryCapture(_rootWindowHandle);
+        if (bitmap == null)
+            return null;
+
+        if (!WindowCapture.LooksBlank(bitmap))
+            return bitmap;
+
+        // Rendered, but empty: the GPU-composition failure mode. Reading the screen is the
+        // better answer even though it may catch an overlapping window.
+        bitmap.Dispose();
+        return null;
+    }
+
+    private static byte[] ToPng(System.Drawing.Bitmap bitmap)
+    {
+        using var stream = new MemoryStream();
+        bitmap.Save(stream, System.Drawing.Imaging.ImageFormat.Png);
+        return stream.ToArray();
     }
     
     #endregion

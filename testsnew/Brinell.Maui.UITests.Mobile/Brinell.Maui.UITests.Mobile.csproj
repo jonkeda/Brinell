@@ -21,9 +21,17 @@
     Linking rather than moving keeps the Windows project's layout untouched, so the existing
     suite and its tooling carry on working exactly as before.
   -->
+  <!--
+    Tests\Diagnostics is excluded, and it is the only exclusion that is not build output.
+
+    Those tests are about the Windows driver's own screenshot mechanism, so they use
+    System.Drawing and user32 directly - neither of which exists on this plain net10.0 head.
+    Excluding them by name keeps the break visible: a shared test that stops being shared
+    should say so here rather than hide behind a platform #if.
+  -->
   <ItemGroup>
     <Compile Include="..\Brinell.Maui.UITests\**\*.cs"
-             Exclude="..\Brinell.Maui.UITests\bin\**;..\Brinell.Maui.UITests\obj\**"
+             Exclude="..\Brinell.Maui.UITests\bin\**;..\Brinell.Maui.UITests\obj\**;..\Brinell.Maui.UITests\Tests\Diagnostics\**"
              Link="%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 
