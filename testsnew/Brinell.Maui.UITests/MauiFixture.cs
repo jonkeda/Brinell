@@ -36,6 +36,10 @@ public class MauiFixture : MauiTestFixtureBase
         _appRoot = new AppRoot(Context);
         Composition = TestComposition.ForFixture(this, services =>
             services.AddSingleton<IMauiTestContext>(Context));
+
+        // The app is up by now - the base constructor launched it - so this is the first moment
+        // the other collection could truthfully be told there are two. See ParallelismProbe.
+        ParallelismProbe.Enter(ParallelismProbe.Hub, Context.Driver.CurrentWindowHandle);
     }
 
     public TestComposition Composition { get; }
@@ -70,7 +74,9 @@ public class MauiFixture : MauiTestFixtureBase
 
         if (disposing)
         {
-            // After the base, so the app is gone before the next collection is let in.
+            // Both after the base, so the app is gone before either the next collection is let
+            // in or anyone is told this one is still running.
+            ParallelismProbe.Leave(ParallelismProbe.Hub);
             _desktop.Dispose();
         }
     }
@@ -127,6 +133,13 @@ public class MauiFixture : MauiTestFixtureBase
                 attempts.Add("no 'BackToHub' item on this page either");
             }
         }
+
+        // The hub page object lives for the whole run and caches the root element it resolved.
+        // Navigation replaces that element, and a cached one belonging to an earlier incarnation
+        // fails the readiness check in a way that reads as "not loaded yet" rather than "wrong
+        // element" - which is what this postcondition then reports, intermittently and against
+        // whichever test navigated next.
+        _hub.InvalidateCache();
 
         if (!_hub.WaitLoaded(true, TestConstants.ShortTestTimeoutMs))
         {

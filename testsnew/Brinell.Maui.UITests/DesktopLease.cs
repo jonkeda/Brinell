@@ -35,8 +35,6 @@ namespace Brinell.Maui.UITests;
 /// </remarks>
 internal static class DesktopLease
 {
-    private static readonly SemaphoreSlim Gate = new(1, 1);
-
     /// <summary>
     /// How long a collection will wait for the other one to finish.
     /// </summary>
@@ -46,6 +44,46 @@ internal static class DesktopLease
     /// until the CI job is killed.
     /// </remarks>
     private const int WaitMs = 10 * 60 * 1000;
+
+    private static readonly DesktopGate Shared = new(WaitMs);
+
+    /// <summary>
+    /// Takes the desktop if this run needs it exclusively.
+    /// </summary>
+    /// <returns>
+    /// A token to dispose when the caller is finished with the desktop. Disposing it is always
+    /// safe, whether or not anything was actually taken.
+    /// </returns>
+    internal static IDisposable Acquire() => Shared.Acquire();
+}
+
+/// <summary>
+/// The lease's mechanism, as an object rather than a static.
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>Separated so it can be tested at all.</b> The only interesting behaviour here is what
+/// happens when two holders contend, and the one gate the suite runs on is held by whichever
+/// fixture is live - a test that took it would be queuing behind the run it belongs to, and a
+/// test that proved the queue works by blocking for ten minutes proves nothing anyone will wait
+/// for. A test with a gate of its own contends with itself, deliberately, in milliseconds.
+/// </para>
+/// <para>
+/// That matters more than it sounds: the serialising branch is the one that never runs in the
+/// mode this suite now uses. Background mode takes the <see cref="PhysicalInputPolicy.Allowed"/>
+/// path out of every ordinary run, so without <c>DesktopGateTests</c> the code protecting people
+/// who run the suite in the foreground would be shipped unexecuted.
+/// </para>
+/// </remarks>
+internal sealed class DesktopGate
+{
+    private readonly SemaphoreSlim _gate = new(1, 1);
+    private readonly int _waitMs;
+
+    /// <param name="waitMs">
+    /// How long <see cref="Acquire"/> waits before deciding a lease was leaked.
+    /// </param>
+    internal DesktopGate(int waitMs) => _waitMs = waitMs;
 
     /// <summary>
     /// Takes the desktop if this run needs it exclusively.
@@ -58,7 +96,7 @@ internal static class DesktopLease
     /// Another collection has held the desktop for longer than any collection should take, which
     /// means a fixture was not disposed.
     /// </exception>
-    internal static IDisposable Acquire()
+    internal IDisposable Acquire()
     {
         if (PhysicalInput.Policy != PhysicalInputPolicy.Allowed)
         {
@@ -67,19 +105,19 @@ internal static class DesktopLease
             return NullLease.Instance;
         }
 
-        if (!Gate.Wait(WaitMs))
+        if (!_gate.Wait(_waitMs))
         {
             throw new TimeoutException(
-                $"Waited {WaitMs / 1000}s for another test collection to release the desktop. "
+                $"Waited {_waitMs / 1000}s for another test collection to release the desktop. "
                 + "A fixture holding the lease was not disposed, or a collection ran longer than "
                 + "any collection should. Set BRINELL_BACKGROUND_MODE=1 to let collections run "
                 + "side by side instead of queuing.");
         }
 
-        return new HeldLease();
+        return new HeldLease(_gate);
     }
 
-    private sealed class HeldLease : IDisposable
+    private sealed class HeldLease(SemaphoreSlim gate) : IDisposable
     {
         private bool _released;
 
@@ -94,7 +132,7 @@ internal static class DesktopLease
             }
 
             _released = true;
-            Gate.Release();
+            gate.Release();
         }
     }
 

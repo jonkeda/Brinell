@@ -49,10 +49,9 @@ public abstract partial class ClickableItemBase<TCollection, TSelf>
     {
         EnsureClickableCore(element);
 
-        if (ActivationHelper.TryActivateByPattern(element))
-            return;
-
-        element.Click();
+        // Invoked: a plain item is activated, the way a menu entry is. An item that is chosen
+        // from a group rather than activated overrides this - see SelectableItemBase.
+        element.Invoke();
     }
 
     /// <summary>

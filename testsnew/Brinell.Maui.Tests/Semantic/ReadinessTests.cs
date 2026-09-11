@@ -126,7 +126,7 @@ public class ReadinessTests
 
         page.Target.Click();
 
-        element.Verify(e => e.Click(), Times.Once);
+        element.Verify(e => e.Invoke(), Times.Once);
         Assert.True(checks >= 3, "the page should have been re-checked until it was loaded");
     }
 
@@ -192,11 +192,11 @@ public class ReadinessTests
         var busyReads = 0;
         GivenBusySignal(() => ++busyReads < 3 ? "True" : "False");
         var element = GivenElement();
-        element.Setup(e => e.Click()).Callback(() => Assert.True(busyReads >= 3));
+        element.Setup(e => e.Invoke()).Callback(() => Assert.True(busyReads >= 3));
 
         new BusyGatedPage(_context.Object).Target.Click();
 
-        element.Verify(e => e.Click(), Times.Once);
+        element.Verify(e => e.Invoke(), Times.Once);
     }
 
     [Fact]
@@ -300,7 +300,7 @@ public class ReadinessTests
         Assert.Contains("AutomationId:Target", exception.Message);
         Assert.Contains("10 ms", exception.Message);
         Assert.Contains("busy value: 'True'", exception.Message);
-        element.Verify(e => e.Click(), Times.Never);
+        element.Verify(e => e.Invoke(), Times.Never);
     }
 
     [Fact]
@@ -342,7 +342,7 @@ public class ReadinessTests
 
         page.Target.Click();
 
-        element.Verify(e => e.Click(), Times.Once);
+        element.Verify(e => e.Invoke(), Times.Once);
     }
 
     /// <summary>
@@ -358,7 +358,7 @@ public class ReadinessTests
         var ex = Assert.Throws<TimeoutException>(() => page.Target.Click());
 
         Assert.Contains("Target", ex.Message);
-        element.Verify(e => e.Click(), Times.Never);
+        element.Verify(e => e.Invoke(), Times.Never);
     }
 
     #endregion
@@ -451,7 +451,7 @@ public class ReadinessTests
         var element = GivenElement();
 
         var clicks = 0;
-        element.Setup(e => e.Click()).Callback(() =>
+        element.Setup(e => e.Invoke()).Callback(() =>
         {
             clicks++;
             throw new InvalidOperationException("stale after navigation");

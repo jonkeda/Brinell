@@ -84,28 +84,6 @@ public interface IMauiDriver : IDriver<IMauiElement>, IDiagnosticDriver
             + "the Brinell UI Automation bridge, which the app under test must opt into; on "
             + "Android and iOS they are synthetic touch input.");
 
-    /// <summary>Performs a gesture if it can, and says whether it did.</summary>
-    /// <param name="automationId">The MAUI <c>AutomationId</c> of the target element.</param>
-    /// <param name="gesture">The gesture to perform.</param>
-    /// <returns>Whether the gesture was performed.</returns>
-    bool TryPerformGesture(string automationId, MauiGesture gesture)
-    {
-        if (!SupportsGesture(automationId, gesture))
-        {
-            return false;
-        }
-
-        try
-        {
-            PerformGesture(automationId, gesture);
-            return true;
-        }
-        catch (NotSupportedException)
-        {
-            return false;
-        }
-    }
-
     #endregion
 
     #region Navigation

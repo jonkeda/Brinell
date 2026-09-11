@@ -76,8 +76,19 @@ public class TabMenuTests
     /// A tab's root is a layout with no command, so the click must reach the button inside it.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// Carried over from the test that covered the old parallel-list matching, which asserted
     /// the same thing about the surface it picked.
+    /// </para>
+    /// <para>
+    /// <b>Invoked, not selected</b>, even though a tab is conceptually one of a group and
+    /// <c>TabItem</c> derives from <c>SelectableItemBase</c>. This tab bar is built from plain
+    /// buttons, and a button exposes Invoke and no SelectionItem - measured, when inheriting
+    /// <c>Select</c> failed against the real app with "'TabMenuView_Button' does not expose the
+    /// UI Automation SelectionItemPattern". Under the old activation ladder this control worked
+    /// by falling through from SelectionItem to Invoke, so the mismatch was always there and
+    /// never said so.
+    /// </para>
     /// </remarks>
     [Fact]
     [Trait("Method", "Click")]
@@ -87,7 +98,7 @@ public class TabMenuTests
 
         tabs["Search"].Click();
 
-        _buttons["Search"].As<IInvokePatternElement>().Verify(e => e.InvokePattern(), Times.Once);
+        _buttons["Search"].Verify(e => e.Invoke(), Times.Once);
         _buttons["Search"].Verify(e => e.Click(), Times.Never);
         _tabRoots["Search"].Verify(e => e.Click(), Times.Never);
     }

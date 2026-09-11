@@ -59,6 +59,9 @@ public abstract class SemanticControlTestsBase
         element.As<IInvokePatternElement>()
             .Setup(e => e.InvokePattern())
             .Returns(true);
+
+        element.Setup(e => e.Invoke());
+
         return element;
     }
 
@@ -78,6 +81,10 @@ public abstract class SemanticControlTestsBase
             .Setup(e => e.SelectItemPattern())
             .Callback(() => onSelect?.Invoke())
             .Returns(true);
+
+        // The operation a control asks for. FlaUIMauiElement.Select runs the SelectionItem
+        // pattern behind it; AppiumMauiElement taps.
+        element.Setup(e => e.Select()).Callback(() => onSelect?.Invoke());
         return element;
     }
 
@@ -106,6 +113,11 @@ public abstract class SemanticControlTestsBase
             .Setup(e => e.SetToggleStatePattern(It.IsAny<bool>()))
             .Callback<bool>(value => isChecked = value)
             .Returns(true);
+
+        // What the control actually asks for. FlaUIMauiElement.Toggle runs the Toggle pattern
+        // and throws if it is absent or refuses; the mock stands in for the working case.
+        element.Setup(e => e.Toggle()).Callback(() => isChecked = !isChecked);
+
         return element;
     }
 

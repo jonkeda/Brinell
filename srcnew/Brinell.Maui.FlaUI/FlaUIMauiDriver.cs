@@ -231,12 +231,33 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// unfocused, so its layout and bounding rectangles remain valid.
     /// </para>
     /// <para>
-    /// Best effort by nature: Windows only permits a foreground change from a process that
-    /// currently holds it, so this can legitimately fail and is not worth failing a run over.
+    /// <b>Asking for the foreground back usually does not work, and that is the point of the
+    /// first half below.</b> Windows only permits a foreground change from the process that
+    /// currently holds it, so a test process calling <c>SetForegroundWindow</c> on someone
+    /// else's window is normally refused outright - silently. Relying on it alone is why a run
+    /// still appeared over whatever the person at the machine was using.
+    /// </para>
+    /// <para>
+    /// Pushing the app <i>down</i> the z-order needs no such permission: it is this process's own
+    /// window handle, and <c>SWP_NOACTIVATE</c> moves it without focusing anything. So the app is
+    /// sent behind, and the foreground is then asked for politely - if that request is refused,
+    /// the app is still out of the way.
+    /// </para>
+    /// <para>
+    /// <b>Only when nothing is going to click.</b> A pointer click is positional: with the app
+    /// behind another window, a click at the right coordinates lands on the wrong window
+    /// entirely. So the demotion happens only where physical input is refused or audited, which
+    /// is exactly where it is safe and exactly where somebody is trying to work at the same
+    /// machine.
     /// </para>
     /// </remarks>
     private void RestoreForegroundWindow(IntPtr previousForeground)
     {
+        if (PhysicalInput.Policy != PhysicalInputPolicy.Allowed)
+        {
+            SendAppBehind();
+        }
+
         if (previousForeground == IntPtr.Zero)
         {
             return;
@@ -249,6 +270,36 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
         catch
         {
             // Losing this race only means the app keeps focus; it changes no test outcome.
+        }
+    }
+
+    /// <summary>
+    /// Puts the app under test at the bottom of the z-order without activating it.
+    /// </summary>
+    /// <remarks>
+    /// Behind, not minimized and not hidden. A minimized WinUI window can stop laying out and may
+    /// never realize virtualized content, so the suite would start failing on elements that
+    /// genuinely are not there - the same reason <c>AutPlacement</c> refuses to minimize. Behind
+    /// is invisible to the person using the machine and fully composed to UI Automation.
+    /// </remarks>
+    private void SendAppBehind()
+    {
+        if (_rootWindowHandle == IntPtr.Zero)
+        {
+            return;
+        }
+
+        try
+        {
+            SetWindowPos(
+                _rootWindowHandle,
+                HwndBottom,
+                0, 0, 0, 0,
+                SwpNoMove | SwpNoSize | SwpNoActivate);
+        }
+        catch
+        {
+            // Out of the way is a courtesy, not a requirement. It changes no test outcome.
         }
     }
 
@@ -620,6 +671,11 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
 
     private const uint SwpNoZOrder = 0x0004;
     private const uint SwpNoActivate = 0x0010;
+    private const uint SwpNoSize = 0x0001;
+    private const uint SwpNoMove = 0x0002;
+
+    /// <summary>HWND_BOTTOM: behind every other window, without being minimized.</summary>
+    private static readonly IntPtr HwndBottom = new(1);
 
     [DllImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
@@ -970,12 +1026,54 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// </para>
     /// </remarks>
     public bool TryNavigateBack()
+    {
         // S_OK and not merely success. The verb answers S_FALSE when there was nothing on the
         // stack to pop, which is a true statement about the app and not a navigation - and a
         // caller told "yes" for it would wait for a page change that is never coming.
-        => Bridge.BridgeVerbRunner
+        if (Ask() == HResults.S_OK)
+        {
+            return true;
+        }
+
+        // An app with no bridge has given its final answer, and the caller should get on with
+        // whatever it does instead.
+        if (!Bridge.BrinellBridgeLookup.HasBridge(RootElement, Automation))
+        {
+            return false;
+        }
+
+        // An app *with* a bridge may simply not have published this page yet: a page registers
+        // its target when it loads, which is a different moment from the page appearing in the
+        // automation tree, so there is a window in which the app truthfully reports nothing to
+        // pop about a page that is on its way in.
+        //
+        // Telling those apart matters because the answers differ. "No bridge" means fall back to
+        // clicking the affordance; "not yet" means wait, and falling back instead would take
+        // real input the caller may have forbidden - which is exactly how this was found, as a
+        // PhysicalInputRefusedException in background mode.
+        var deadline = DateTime.UtcNow.AddMilliseconds(BridgePublishGraceMs);
+
+        while (DateTime.UtcNow < deadline)
+        {
+            WaitHelper.Pause(BridgePollIntervalMs);
+
+            if (Ask() == HResults.S_OK)
+            {
+                return true;
+            }
+        }
+
+        return false;
+
+        int Ask() => Bridge.BridgeVerbRunner
             .InvokeAnywhere(RootElement, Automation, BrinellVerb.NavigateBack)
-            .HResult == HResults.S_OK;
+            .HResult;
+    }
+
+    /// <summary>How long to let an app that has a bridge finish publishing the current page.</summary>
+    private const int BridgePublishGraceMs = 2000;
+
+    private const int BridgePollIntervalMs = 50;
 
     #endregion
 

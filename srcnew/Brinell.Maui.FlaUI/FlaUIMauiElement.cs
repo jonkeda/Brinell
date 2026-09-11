@@ -294,6 +294,55 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
         _driver.EnsureRootWindowFocused();
         _element.Click();
     }
+
+    #region Activation
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// The Invoke pattern, and nothing else. Where a control genuinely cannot be invoked - a
+    /// MAUI <c>ToolbarItem</c> is the known case - the control says <c>Click</c> instead; it is
+    /// not this method's job to guess a substitute.
+    /// </remarks>
+    public void Invoke() => Perform(
+        nameof(Invoke), SupportsInvokePattern, InvokePattern, "InvokePattern");
+
+    /// <inheritdoc />
+    public void Toggle() => Perform(
+        nameof(Toggle), SupportsTogglePattern, TogglePattern, "TogglePattern");
+
+    /// <inheritdoc />
+    public void Select() => Perform(
+        nameof(Select), SupportsSelectionItemPattern, SelectItemPattern, "SelectionItemPattern");
+
+    /// <summary>
+    /// Runs one automation pattern, or explains which half of it was missing.
+    /// </summary>
+    /// <remarks>
+    /// Absent and present-but-refused are told apart deliberately. The first means the control
+    /// object named the wrong operation for this element; the second means the platform accepted
+    /// the call and did not do the thing, which is a fault further down. The old ladder reported
+    /// neither - it moved on to the next rung and, if that worked, said nothing at all.
+    /// </remarks>
+    private void Perform(string operation, bool supported, Func<bool> run, string pattern)
+    {
+        var name = AutomationId ?? Name ?? "(unnamed)";
+
+        if (!supported)
+        {
+            throw new NotSupportedException(
+                $"'{name}' does not expose the UI Automation {pattern}, so it cannot be asked to "
+                + $"{operation}. Either the control object names the wrong operation for this "
+                + "element, or this is not the element that was intended.");
+        }
+
+        if (!run())
+        {
+            throw new InvalidOperationException(
+                $"The UI Automation {pattern} on '{name}' was available but refused to {operation}.");
+        }
+    }
+
+    #endregion
    
     /// <inheritdoc />
     /// <remarks>

@@ -23,7 +23,7 @@ namespace Brinell.Maui.Controls.Buttons;
 /// <item><description>Invoke alone - 4 failures in 4.</description></item>
 /// <item><description>Invoke, then click if it returned false - 3 failures in 4. The fallback
 /// never fires, because Invoke said it worked.</description></item>
-/// <item><description>The shared <c>ActivationHelper</c> ladder, which works for every other
+/// <item><description>The shared activation ladder, which worked for every other
 /// control in the suite - 1 failure in 3, and the run went from 5 s to 58 s.</description></item>
 /// <item><description>A plain click - stable.</description></item>
 /// </list>
@@ -68,8 +68,13 @@ public class ToolbarButton<TScope> : Button<TScope>
 
     /// <inheritdoc />
     /// <remarks>
-    /// Always false. See the type's remarks: the pattern reports success without raising the
-    /// command, so trying it first is not a free optimisation - it is a way of never clicking.
+    /// A real pointer click, named outright. See the type remarks: the Invoke pattern reports
+    /// success and raises nothing on this control, so asking for it would be a way of never
+    /// clicking.
     /// </remarks>
-    protected override bool TryActivateByPattern(IMauiElement element) => false;
+    protected override void ClickCore(IMauiElement element, int? timeoutMs = null)
+    {
+        EnsureClickableCore(element);
+        element.Click();
+    }
 }

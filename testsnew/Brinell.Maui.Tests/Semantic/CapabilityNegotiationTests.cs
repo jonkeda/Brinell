@@ -50,37 +50,55 @@ public class CapabilityNegotiationTests : SemanticControlTestsBase
         element.Setup(e => e.GetAttribute("checked"))
             .Returns(() => isChecked ? "true" : "false");
         element.Setup(e => e.Selected).Returns(() => isChecked);
-        element.Setup(e => e.Click()).Callback(() => isChecked = !isChecked);
+        // Toggling is what the control asks for; on this platform the element performs it with a
+        // tap, which is why AppiumMauiElement implements Toggle as Click. The mock mirrors that:
+        // the operation exists and works, without any Toggle pattern behind it.
+        element.Setup(e => e.Toggle()).Callback(() => isChecked = !isChecked);
 
         return element;
     }
 
     #region Toggle
 
+    /// <summary>
+    /// A toggle control asks to be toggled, whatever the platform has underneath.
+    /// </summary>
+    /// <remarks>
+    /// This used to assert that the Toggle <i>pattern</i> was called, which made the control
+    /// responsible for a platform detail. It now asks for the operation and the element chooses
+    /// the mechanism - the pattern on Windows, a tap on mobile - so the same assertion holds on
+    /// both and the next test is the same scenario with the other platform underneath.
+    /// </remarks>
     [Fact]
-    public void Toggle_UsesTogglePattern_WhenCapabilityIsPresent()
+    public void Toggle_AsksTheElementToToggle()
     {
         var element = CreateToggleElement(ToggleId, 0, 0, 32, 32, initialState: false);
         GivenElement(element);
 
         Page.IncludeProblemReports.Toggle();
 
-        element.As<ITogglePatternElement>().Verify(e => e.TogglePattern(), Times.Once);
+        element.Verify(e => e.Toggle(), Times.Once);
+        element.As<ITogglePatternElement>().Verify(e => e.TogglePattern(), Times.Never);
         element.Verify(e => e.Click(), Times.Never);
     }
 
     /// <summary>
-    /// The mobile path: no Toggle capability, so the control falls through to a tap.
+    /// The mobile path: the same request, served by a tap inside the element.
     /// </summary>
+    /// <remarks>
+    /// The control is identical here - it asks to toggle and checks the state moved. What
+    /// differs is entirely below the interface, which is the point of the split: no branch in
+    /// any control object depends on which platform it is running on.
+    /// </remarks>
     [Fact]
-    public void Toggle_FallsBackToClick_WhenCapabilityIsAbsent()
+    public void Toggle_WorksWithoutATogglePattern()
     {
         var element = CreateAttributeBackedToggle(initialState: false);
         GivenElement(element);
 
         Page.IncludeProblemReports.Toggle();
 
-        element.Verify(e => e.Click(), Times.Once);
+        element.Verify(e => e.Toggle(), Times.Once);
         Assert.True(Page.IncludeProblemReports.IsChecked());
     }
 
@@ -97,31 +115,38 @@ public class CapabilityNegotiationTests : SemanticControlTestsBase
     }
 
     /// <summary>
-    /// A capability that is advertised but declines does not end the ladder.
+    /// A toggle that accepts the call and does not move is reported, not worked around.
     /// </summary>
     /// <remarks>
-    /// <c>SupportsTogglePattern</c> true with <c>TogglePattern()</c> false is the shape of a
-    /// pattern that is present but ineffective. Treating that as success is what made
-    /// LegacyIAccessible unusable for clicking a Switch (see <see cref="ClickLadderTests"/>);
-    /// the control must carry on to the next rung.
+    /// <para>
+    /// This is the case the whole design exists for, kept from the test it replaces but with the
+    /// opposite expectation. An operation that reports success without changing anything was
+    /// measured twice in this codebase - <c>LegacyIAccessible.DoDefaultAction</c> on a Switch,
+    /// and Invoke on a <c>ToolbarItem</c> - and it is undetectable from inside a ladder, because
+    /// the rung never admits failure.
+    /// </para>
+    /// <para>
+    /// The old behaviour was to notice the state had not moved and quietly click instead. That
+    /// worked, and it meant the suite drove the app by a route it never reported. Checking the
+    /// outcome stays; trying something else afterwards does not.
+    /// </para>
     /// </remarks>
     [Fact]
-    public void Toggle_ContinuesToClick_WhenTogglePatternDeclines()
+    public void Toggle_ReportsAToggleThatDidNothing()
     {
-        var isChecked = false;
         var element = CreateElement(ToggleId, 0, 0, 32, 32);
-        element.Setup(e => e.GetAttribute("checked")).Returns(() => isChecked ? "true" : "false");
-        element.Setup(e => e.Selected).Returns(() => isChecked);
-        element.Setup(e => e.Click()).Callback(() => isChecked = !isChecked);
-        element.As<ITogglePatternElement>().Setup(e => e.SupportsTogglePattern).Returns(true);
-        element.As<ITogglePatternElement>().Setup(e => e.IsTogglePatternChecked()).Returns(() => isChecked);
-        element.As<ITogglePatternElement>().Setup(e => e.TogglePattern()).Returns(false);
+        element.Setup(e => e.GetAttribute("checked")).Returns("false");
+        element.Setup(e => e.Selected).Returns(false);
+
+        // Accepts the call, changes nothing - exactly what a lying pattern looks like.
+        element.Setup(e => e.Toggle());
         GivenElement(element);
 
-        Page.IncludeProblemReports.Toggle();
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => Page.IncludeProblemReports.Toggle());
 
-        element.Verify(e => e.Click(), Times.Once);
-        Assert.True(Page.IncludeProblemReports.IsChecked());
+        Assert.Contains("did not change", ex.Message);
+        element.Verify(e => e.Click(), Times.Never);
     }
 
     #endregion
@@ -136,7 +161,7 @@ public class CapabilityNegotiationTests : SemanticControlTestsBase
 
         Page.IncludeProblemReports.Check();
 
-        element.Verify(e => e.Click(), Times.Never);
+        element.Verify(e => e.Toggle(), Times.Never);
     }
 
     /// <summary>
@@ -151,7 +176,7 @@ public class CapabilityNegotiationTests : SemanticControlTestsBase
         Page.IncludeProblemReports.Check();
 
         Assert.True(Page.IncludeProblemReports.IsChecked());
-        element.Verify(e => e.Click(), Times.Once);
+        element.Verify(e => e.Toggle(), Times.Once);
     }
 
     #endregion

@@ -36,7 +36,7 @@ public class TypedListControlTests : SemanticControlTestsBase
         var result = Page.TypedList.TrySelectItem(0);
 
         Assert.True(result);
-        row.As<ISelectionItemPatternElement>().Verify(e => e.SelectItemPattern(), Times.Once);
+        row.Verify(e => e.Select(), Times.Once);
         row.Verify(e => e.Click(), Times.Never);
     }
 

@@ -86,6 +86,27 @@ public sealed class AppiumMauiElement : IMauiElement, ITogglePatternElement, ISe
     
     /// <inheritdoc />
     public void Click() => _element.Click();
+
+    #region Activation
+
+    // All three are a tap, and that is not a fallback - it is how a touch platform performs
+    // these semantics. Android and iOS have no automation patterns to invoke, toggle or select
+    // through; a user does all three with one finger, and so does the driver.
+    //
+    // Writing it here, once, is the point of the design. The shared ladder used to reach the
+    // same conclusion by probing three patterns that are never present on this platform, on
+    // every control, on every call. See .my/fix/design-controls-know-how-to-click.md.
+
+    /// <inheritdoc />
+    public void Invoke() => Click();
+
+    /// <inheritdoc />
+    public void Toggle() => Click();
+
+    /// <inheritdoc />
+    public void Select() => Click();
+
+    #endregion
     
     /// <inheritdoc />
     public void SendKeys(string text, TextInputMethod method = TextInputMethod.Keys)

@@ -180,8 +180,11 @@ public class GestureBridgeTests
     {
         var driver = _fixture.Context.Driver;
 
+        // The question and the command, in that order and kept apart. Asking is allowed to
+        // answer no; performing is not - it throws. There used to be a TryPerformGesture that
+        // was the two glued together, and gluing them is what let a caller carry on as though
+        // the gesture had happened. See .my/fix/design-actions-do-not-try.md.
         Assert.False(driver.SupportsGesture("TestSwipeView", MauiGesture.Pinch));
-        Assert.False(driver.TryPerformGesture("TestSwipeView", MauiGesture.Pinch));
 
         var failure = Assert.ThrowsAny<NotSupportedException>(
             () => driver.PerformGesture("TestSwipeView", MauiGesture.Pinch));

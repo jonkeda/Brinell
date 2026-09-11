@@ -40,9 +40,6 @@ public class RoundButton<TScope> : Brinell.Maui.Controls.Base.ClickableControlBa
             ?? FindChildCore(element, LegacyClickableContainerId)
             ?? element;
 
-        if (!TryActivateByPattern(target))
-        {
-            target.Click();
-        }
+        target.Invoke();
     }
 }

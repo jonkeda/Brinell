@@ -99,6 +99,22 @@ public class NavigationVerbTests
 
         Assert.True(popped, "The app never published a route back from the page that was opened.");
 
+        // Settle before asserting, and the assertion is about staying settled.
+        //
+        // A pop is started, not completed, when the verb returns - it is deliberately not
+        // awaited, so the navigation stack reads one page deeper for a moment afterwards.
+        // Asserting immediately therefore times the transition rather than the contract, which
+        // is what made this test fail about one run in three.
+        //
+        // What the fixture actually depends on is that once the app is at its root, asking again
+        // keeps saying no. So: wait for the first no, then require the next one to agree.
+        Assert.True(
+            WaitHelper.WaitFor(
+                () => !_fixture.Context.Driver.TryNavigateBack(),
+                timeoutMs: TestConstants.ShortTestTimeoutMs,
+                pollingIntervalMs: 100),
+            "The app never settled at its root: it kept reporting that something was popped.");
+
         Assert.False(
             _fixture.Context.Driver.TryNavigateBack(),
             "Going back from the hub reported success, but there was nothing on the stack.");

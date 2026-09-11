@@ -100,10 +100,7 @@ public partial class Menu<TParent>
             ? element
             : element.FindElement(_triggerLocator, timeoutMs ?? DefaultTimeoutMs);
 
-        if (ActivationHelper.TryActivateByPattern(trigger))
-            return;
-
-        trigger.Click();
+        trigger.Invoke();
     }
 
     /// <summary>

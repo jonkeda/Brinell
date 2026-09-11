@@ -32,6 +32,50 @@ public partial class RadioButton<TScope> : Base.ToggleControlBase<TScope>
     #region Core Methods (Element-Aware, No Logging)
 
     /// <summary>
+    /// A radio button is chosen from a group, not flipped.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The distinction is real and not pedantry: selecting one member deselects the rest, and
+    /// toggling does not. A radio button driven through Toggle can end up as the second one
+    /// checked in a group where only one may be.
+    /// </para>
+    /// <para>
+    /// This used to be expressed as an ordering constraint inside a shared ladder -
+    /// <c>ToggleControlBase</c> appended its Toggle rung <i>after</i> SelectionItem, with a
+    /// comment in that file explaining that a radio button in this file depended on the order.
+    /// Naming the operation here removes the dependency along with the comment.
+    /// </para>
+    /// </remarks>
+    /// <param name="element">The pre-found element.</param>
+    /// <param name="timeoutMs">Optional timeout for clickable check.</param>
+    protected override void ClickCore(IMauiElement element, int? timeoutMs = null)
+    {
+        EnsureClickableCore(element);
+        element.Select();
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Selecting, for the reason above. A radio button cannot be unselected by acting on it, so
+    /// there is no state to flip - the base's "did the state change" check still applies and is
+    /// what catches a selection that did not take.
+    /// </remarks>
+    protected override void ToggleCore(IMauiElement element, int? timeoutMs = null)
+    {
+        var before = IsCheckedCore(element);
+        EnsureVisible(element, timeoutMs ?? DefaultTimeoutMs);
+
+        element.Select();
+
+        if (before != true && IsCheckedCore(element) != true)
+        {
+            throw new InvalidOperationException(
+                $"The radio button accepted Select and did not become selected. Locator: {Locator}");
+        }
+    }
+
+    /// <summary>
     /// Reads the selected state from the pre-found element.
     /// RadioButton terminology for the underlying checked state.
     /// </summary>

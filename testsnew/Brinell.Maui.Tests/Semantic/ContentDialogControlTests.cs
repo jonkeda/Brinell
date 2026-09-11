@@ -72,10 +72,7 @@ public class ContentDialogControlTests : SemanticControlTestsBase
         var driver = new Mock<IMauiDriver>();
         var dialogRoot = CreateElement("ContentDialog", 0, 0, 300, 200);
         var okButton = CreateInvokableElement("DialogOk", 10, 150, 80, 40);
-        okButton.As<IInvokePatternElement>()
-            .Setup(e => e.InvokePattern())
-            .Callback(() => dismissed = true)
-            .Returns(true);
+        okButton.Setup(e => e.Invoke()).Callback(() => dismissed = true);
 
         dialogRoot.Setup(e => e.TagName).Returns("ContentDialog");
         dialogRoot.Setup(e => e.FindElement(It.IsAny<Locator>(), 0)).Returns(okButton.Object);

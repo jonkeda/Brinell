@@ -786,12 +786,13 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
 
         try
         {
-            if (ActivationHelper.TryActivateByPattern(element))
-            {
-                return true;
-            }
-
-            element.Click();
+            // The one place a catch is still right, and it is worth saying why it survived the
+            // removal of the activation ladder. This catches because the *element* may be the
+            // wrong candidate, not because the *route* may be wrong - a different question, with
+            // a different answer. Everywhere else, catching an activation failure and trying
+            // something else is the thing that was deleted.
+            // Selected, not invoked: this is choosing a row in a collection.
+            element.Select();
             return true;
         }
         catch

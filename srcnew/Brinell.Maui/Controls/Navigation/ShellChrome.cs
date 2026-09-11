@@ -99,10 +99,7 @@ internal static class ShellChrome
                 // Through the pattern, not a pointer: the dismiss layer covers the page and a
                 // click aimed at it can land on whatever it is covering.
                 var dismiss = context.FindElement(Locator.ByAutomationId("LightDismiss"));
-                if (!Containers.ActivationHelper.TryActivateByPattern(dismiss))
-                {
-                    dismiss.Click();
-                }
+                dismiss.Invoke();
                 break;
 
             case MauiPlatform.Android:

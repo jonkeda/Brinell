@@ -35,31 +35,39 @@ public abstract partial class ToggleControlBase<TScope> : ClickableControlBase<T
     #region Core Methods (Element-Aware, No Logging)
 
     /// <summary>
-    /// Adds the toggle command to the inherited activation ladder.
+    /// A toggle is toggled, not invoked.
     /// </summary>
     /// <remarks>
-    /// MAUI's <c>Switch</c> and <c>CheckBox</c> expose <c>Toggle</c> and neither <c>Invoke</c>
-    /// nor <c>SelectionItem</c>, so without this rung a click falls through to a pointer click
-    /// that does not reliably reach a XAML toggle. Deliberately last: <c>RadioButton</c> shares
-    /// this base and activates through <c>SelectionItem</c>, which carries the "one of a group"
-    /// meaning a bare toggle does not.
+    /// MAUI's <c>Switch</c> and <c>CheckBox</c> expose Toggle and neither Invoke nor
+    /// SelectionItem, so the inherited <see cref="IMauiElement.Invoke"/> would be the wrong
+    /// question to ask. <c>RadioButton</c> shares this base and overrides again, because being
+    /// chosen from a group is not the same operation as being flipped.
     /// </remarks>
     /// <param name="element">The pre-found element.</param>
-    /// <returns>True when a pattern was available and reported success.</returns>
-    protected override bool TryActivateByPattern(IMauiElement element)
+    /// <param name="timeoutMs">Optional timeout for clickable check.</param>
+    protected override void ClickCore(IMauiElement element, int? timeoutMs = null)
     {
-        if (base.TryActivateByPattern(element))
-        {
-            return true;
-        }
-
-        return element is ITogglePatternElement { SupportsTogglePattern: true } toggle
-               && toggle.TogglePattern();
+        EnsureClickableCore(element);
+        element.Toggle();
     }
 
     /// <summary>
-    /// Performs toggle on pre-found element with state verification and retry.
+    /// Performs toggle on pre-found element, and confirms the state actually changed.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// One operation and one check, where this used to be three rungs - the Toggle pattern, then
+    /// the activation ladder, then a Space keystroke - each tried in turn until the state moved.
+    /// </para>
+    /// <para>
+    /// <b>The check stays and the rungs go, and the difference matters.</b> Verifying the
+    /// outcome is not a fallback: it is how this control catches a platform that accepts the
+    /// call and does nothing, which is exactly what <c>LegacyIAccessible</c> did to a Switch and
+    /// what a <c>ToolbarItem</c> does to Invoke. Trying a different route afterwards is what made
+    /// it a ladder, and that part is gone: if a toggle does not toggle, that is a fact worth
+    /// reporting rather than working around.
+    /// </para>
+    /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
     protected virtual void ToggleCore(IMauiElement element, int? timeoutMs = null)
@@ -67,50 +75,19 @@ public abstract partial class ToggleControlBase<TScope> : ClickableControlBase<T
         var beforeState = IsCheckedCore(element);
         EnsureVisible(element, timeoutMs ?? DefaultTimeoutMs);
 
-        if (TryToggleByPattern(element, beforeState, timeoutMs)
-            || TryToggleByActivation(element, beforeState, timeoutMs)
-            || TryToggleByKeyboard(element, beforeState, timeoutMs))
-            return;
+        element.Toggle();
 
-        throw new InvalidOperationException(
-            $"Could not toggle element without pointer input. Locator: {Locator}");
-    }
-
-    private bool TryToggleByPattern(IMauiElement element, bool? beforeState, int? timeoutMs = null)
-    {
-        return element is ITogglePatternElement toggle
-               && toggle.SupportsTogglePattern
-               && toggle.TogglePattern()
-               && WaitForStateChange(element, beforeState, timeoutMs);
-    }
-
-    /// <remarks>
-    /// Uses the inherited activation ladder rather than a shared click helper, so a toggle
-    /// control that activates through a different child (a template's inner checkbox, say)
-    /// overrides <c>TryActivateByPattern</c> once and both click and toggle follow it.
-    /// </remarks>
-    private bool TryToggleByActivation(IMauiElement element, bool? beforeState, int? timeoutMs = null)
-    {
-        if (!TryActivateByPattern(element))
+        if (!WaitForStateChange(element, beforeState, timeoutMs))
         {
-            element.Click();
-        }
-
-        return WaitForStateChange(element, beforeState, timeoutMs);
-    }
-
-    private bool TryToggleByKeyboard(IMauiElement element, bool? beforeState, int? timeoutMs = null)
-    {
-        try
-        {
-            element.SendKeys(OpenQA.Selenium.Keys.Space);
-            return WaitForStateChange(element, beforeState, timeoutMs);
-        }
-        catch (Exception)
-        {
-            return false;
+            throw new InvalidOperationException(
+                $"The element accepted Toggle and its checked state did not change, so nothing "
+                + $"the test asked for happened. It was {Describe(beforeState)} before and after. "
+                + $"Locator: {Locator}");
         }
     }
+
+    private static string Describe(bool? state)
+        => state switch { true => "checked", false => "unchecked", _ => "in an unknown state" };
 
     private bool WaitForStateChange(IMauiElement element, bool? beforeState, int? timeoutMs = null)
     {

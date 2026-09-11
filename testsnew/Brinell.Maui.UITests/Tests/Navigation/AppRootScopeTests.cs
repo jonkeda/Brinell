@@ -59,6 +59,7 @@ public class AppRootScopeTests
     /// that is always ready must still report an element that is genuinely not there, or the
     /// fixture's fallback loop cannot tell "no button" from "not yet".
     /// </remarks>
+    [Trait(PhysicalInputTrait.Name, PhysicalInputTrait.Deliberate)]
     [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     public Task BackToHub_IsAbsentAtTheHub()
     {
@@ -81,6 +82,7 @@ public class AppRootScopeTests
     /// invoking a pattern, deliberately: see <c>ToolbarButton</c> for the four measurements
     /// behind that, the worst of which is that Invoke reports success and does nothing.
     /// </remarks>
+    [Trait(PhysicalInputTrait.Name, PhysicalInputTrait.Deliberate)]
     [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     public Task BackToHub_Click_ReturnsToTheHub()
     {

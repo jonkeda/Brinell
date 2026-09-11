@@ -29,6 +29,9 @@ public class ShellFixture : MauiTestFixtureBase
     public ShellFixture()
     {
         _page = new ShellSamplePage(Context);
+
+        // See MauiFixture for why this is here and not in a test body.
+        ParallelismProbe.Enter(ParallelismProbe.Shell, Context.Driver.CurrentWindowHandle);
     }
 
     /// <inheritdoc />
@@ -38,6 +41,7 @@ public class ShellFixture : MauiTestFixtureBase
 
         if (disposing)
         {
+            ParallelismProbe.Leave(ParallelismProbe.Shell);
             _desktop.Dispose();
         }
     }

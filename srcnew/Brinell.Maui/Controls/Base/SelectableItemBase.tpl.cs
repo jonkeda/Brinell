@@ -24,6 +24,23 @@ public abstract partial class SelectableItemBase<TCollection, TSelf>
     {
     }
 
+    /// <summary>
+    /// A selectable item is chosen, not activated.
+    /// </summary>
+    /// <remarks>
+    /// The distinction this class is named for, now expressed in what it does rather than only
+    /// in what it reads: choosing one member of a group unchooses the others, and invoking does
+    /// not. A tab, a list row and a radio button are all selected; a menu entry is invoked, which
+    /// is what <see cref="ClickableItemBase{TCollection, TSelf}"/> does.
+    /// </remarks>
+    /// <param name="element">The item's root element.</param>
+    /// <param name="timeoutMs">Optional timeout.</param>
+    protected override void ClickCore(IMauiElement element, int? timeoutMs = null)
+    {
+        EnsureClickableCore(element);
+        element.Select();
+    }
+
     #region Core Methods (Element-Aware, No Logging)
 
     /// <summary>

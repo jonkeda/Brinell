@@ -356,13 +356,70 @@ internal static class MauiCapabilities
             return false;
         }
 
+        // A pop already under way is not another pop to report.
+        //
+        // PopAsync is deliberately not awaited - see the remarks - so the stack still reads two
+        // deep for a moment afterwards. Without this, a caller that asks twice in quick
+        // succession is told "yes" twice: it pops a second page it never meant to, or, at the
+        // root, hears that something was popped when nothing was. Both were observed.
+        if (!PopsInFlight.Add(page))
+        {
+            BridgeDiagnostics.Report("NavigateBack: a pop is already in flight");
+            return false;
+        }
+
         BridgeDiagnostics.Report("NavigateBack: popping");
 
         _ = navigation!.PopAsync().ContinueWith(
-            popped => BridgeDiagnostics.Report($"PopAsync failed: {popped.Exception}"),
-            TaskContinuationOptions.OnlyOnFaulted);
+            popped =>
+            {
+                PopsInFlight.Remove(page);
+
+                if (popped.IsFaulted)
+                {
+                    BridgeDiagnostics.Report($"PopAsync failed: {popped.Exception}");
+                }
+            },
+            TaskScheduler.Default);
 
         return true;
+    }
+
+    /// <summary>
+    /// Pages whose pop has been started and has not yet finished.
+    /// </summary>
+    /// <remarks>
+    /// A conditional weak table rather than a set, so a page that is popped and dropped is not
+    /// kept alive by the bookkeeping that tracked its own removal.
+    /// </remarks>
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<Page, object>
+        InFlight = new();
+
+    private static class PopsInFlight
+    {
+        internal static bool Add(Page page)
+        {
+            lock (InFlight)
+            {
+                if (InFlight.TryGetValue(page, out _))
+                {
+                    return false;
+                }
+
+                InFlight.Add(page, Marker);
+                return true;
+            }
+        }
+
+        internal static void Remove(Page page)
+        {
+            lock (InFlight)
+            {
+                InFlight.Remove(page);
+            }
+        }
+
+        private static readonly object Marker = new();
     }
 
     /// <summary>Runs a bound command if it will accept the call.</summary>

@@ -60,6 +60,73 @@ public interface IMauiElement : IElement<IMauiElement>
 
     #endregion
 
+    #region Activation
+
+    // The control says what it is doing; the element says how this platform does that.
+    //
+    // These replaced a shared ladder that tried SelectionItem, then Invoke, then a pointer click,
+    // and took the first that reported success. It was cross-platform only by accident of that
+    // last rung - on Appium every pattern probe reports unsupported, so the fall-through to a tap
+    // is what made mobile work. That answer never varies, so the ladder was rediscovering a
+    // compile-time fact at run time, once per control, once per call.
+    //
+    // Worse, a ladder can only fall back from a rung that admits failure, and two have been
+    // measured lying: LegacyIAccessible's DoDefaultAction reports success without changing a
+    // Switch, and a MAUI ToolbarItem accepts Invoke and raises nothing. Neither is detectable
+    // from inside a ladder; both are trivial when the control simply names its operation.
+    //
+    // See .my/fix/design-controls-know-how-to-click.md.
+
+    /// <summary>
+    /// Performs the control's primary action.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// What a button does when pressed. On Windows this is the Invoke pattern; on a touch
+    /// platform it is a tap, because that is how a touch platform invokes something - not because
+    /// the pattern was tried first and declined.
+    /// </para>
+    /// <para>
+    /// <b>Throws rather than clicking</b> when the platform cannot. A control that reaches here
+    /// and finds no route has been declared wrong, and saying so is the point: the alternative is
+    /// a suite that quietly changes how it drives the app and passes anyway.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="NotSupportedException">This platform cannot invoke this element.</exception>
+    void Invoke()
+        => throw new NotSupportedException(
+            $"{GetType().Name} does not implement Invoke. A control asked to perform its primary "
+            + "action and this platform offers no route to it.");
+
+    /// <summary>
+    /// Flips a two- or three-state control.
+    /// </summary>
+    /// <remarks>
+    /// A <c>Switch</c> and a <c>CheckBox</c> are toggled, never invoked: MAUI maps both to WinUI
+    /// controls that expose Toggle and neither Invoke nor SelectionItem.
+    /// </remarks>
+    /// <exception cref="NotSupportedException">This platform cannot toggle this element.</exception>
+    void Toggle()
+        => throw new NotSupportedException(
+            $"{GetType().Name} does not implement Toggle. A control asked to change its checked "
+            + "state and this platform offers no route to it.");
+
+    /// <summary>
+    /// Chooses this element, as one of a group or as an item in a list.
+    /// </summary>
+    /// <remarks>
+    /// Carries the "one of several" meaning that <see cref="Invoke"/> and <see cref="Toggle"/> do
+    /// not, which is what separates a <c>RadioButton</c> from a <c>CheckBox</c>. Selecting one
+    /// member deselects the rest; toggling one does not.
+    /// </remarks>
+    /// <exception cref="NotSupportedException">This platform cannot select this element.</exception>
+    void Select()
+        => throw new NotSupportedException(
+            $"{GetType().Name} does not implement Select. A control asked to be chosen and this "
+            + "platform offers no route to it.");
+
+    #endregion
+
     #region Gestures
 
     /// <summary>
@@ -98,33 +165,6 @@ public interface IMauiElement : IElement<IMauiElement>
             $"Gestures are not implemented for {GetType().Name}. On Windows they are carried by "
             + "the Brinell UI Automation bridge, which the app under test must opt into; on "
             + "Android and iOS they are synthetic touch input.");
-
-    /// <summary>
-    /// Performs the gesture if it can, and says whether it did.
-    /// </summary>
-    /// <remarks>
-    /// The form to use when the gesture is arrangement rather than the subject - setting a
-    /// swipe view open so the test can get at what is behind it - and a fallback exists.
-    /// </remarks>
-    /// <param name="gesture">The gesture to perform.</param>
-    /// <returns>Whether the gesture was performed.</returns>
-    bool TryPerformGesture(MauiGesture gesture)
-    {
-        if (!SupportsGesture(gesture))
-        {
-            return false;
-        }
-
-        try
-        {
-            PerformGesture(gesture);
-            return true;
-        }
-        catch (NotSupportedException)
-        {
-            return false;
-        }
-    }
 
     #endregion
 

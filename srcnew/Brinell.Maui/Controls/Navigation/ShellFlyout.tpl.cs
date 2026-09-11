@@ -107,9 +107,7 @@ public partial class ShellFlyout<TParent>
     /// </remarks>
     private static void Activate(IMauiElement element)
     {
-        if (ActivationHelper.TryActivateByPattern(element)) return;
-
-        element.Click();
+        element.Invoke();
     }
 
     #region Core Methods (Element-Aware, No Logging)

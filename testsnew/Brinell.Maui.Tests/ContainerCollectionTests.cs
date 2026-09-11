@@ -53,7 +53,7 @@ public class ContainerCollectionTests
 
         new Button<TestPage>(driverScope, "GlobalButton").Click();
 
-        element.Verify(e => e.Click(), Times.Once);
+        element.Verify(e => e.Invoke(), Times.Once);
     }
 
     [Fact]

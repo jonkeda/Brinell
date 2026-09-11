@@ -41,9 +41,6 @@ public class IconCommandButton<TScope> : Brinell.Maui.Controls.Base.ClickableCon
             ?? FindChildCore(element, IconButtonId)
             ?? element;
 
-        if (!TryActivateByPattern(target))
-        {
-            target.Click();
-        }
+        target.Invoke();
     }
 }

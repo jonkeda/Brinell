@@ -37,34 +37,24 @@ public abstract partial class ClickableControlBase<TScope> : FocusableControlBas
     /// Performs click on pre-found element. No logging - caller handles logging.
     /// </summary>
     /// <remarks>
-    /// Walks the activation ladder (<see cref="TryActivateByPattern"/>) before falling back to
-    /// a pointer click. A control whose view activates differently overrides this or the
-    /// ladder, rather than a shared helper deciding for every control.
+    /// <para>
+    /// Invokes, because a plain command control is invoked. A control that activates some other
+    /// way says so by overriding this - <c>ToggleControlBase</c> toggles, <c>RadioButton</c>
+    /// selects, <c>ToolbarButton</c> clicks - and each states its own operation rather than a
+    /// shared helper trying several and taking the first that answers.
+    /// </para>
+    /// <para>
+    /// <see cref="IMauiElement.Invoke"/> is platform-neutral: the Invoke pattern on Windows, a
+    /// tap on Android and iOS. See <c>.my/fix/design-controls-know-how-to-click.md</c>.
+    /// </para>
     /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <param name="timeoutMs">Optional timeout for clickable check.</param>
     protected virtual void ClickCore(IMauiElement element, int? timeoutMs = null)
     {
         EnsureClickableCore(element);
-
-        if (TryActivateByPattern(element))
-            return;
-
-        element.Click();
+        element.Invoke();
     }
-
-    /// <summary>
-    /// Activates the element through an automation pattern, when the platform exposes one.
-    /// </summary>
-    /// <remarks>
-    /// The ladder itself lives in <see cref="Containers.ActivationHelper"/>, shared with the
-    /// collection and item bases. Controls that need a different rung - a toggle, say -
-    /// override this method rather than changing the shared ladder.
-    /// </remarks>
-    /// <param name="element">The pre-found element.</param>
-    /// <returns>True when a pattern was available and reported success.</returns>
-    protected virtual bool TryActivateByPattern(IMauiElement element)
-        => Containers.ActivationHelper.TryActivateByPattern(element);
 
     /// <summary>
     /// Performs double-click on pre-found element. No logging - caller handles logging.
