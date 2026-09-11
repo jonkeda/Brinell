@@ -203,6 +203,138 @@ public interface IMauiElement : IElement<IMauiElement>
 
     #endregion
 
+    #region Scrolling
+
+    /// <summary>
+    /// Whether this element can be asked to scroll semantically.
+    /// </summary>
+    /// <remarks>
+    /// A question, so a caller takes one route rather than trying one. See
+    /// <see cref="SupportsSetDate"/> for why that distinction is the whole point.
+    /// </remarks>
+    bool SupportsScrollVerbs => false;
+
+    /// <summary>
+    /// Brings a named descendant into view.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>What this replaces is a loop of mouse-wheel clicks.</b> A wheel click is an
+    /// unquantified unit - it means whatever the OS and the control decide it means - and there
+    /// is no signal saying the content arrived, so the old route scrolled a bit, polled a scroll
+    /// percentage, and guessed when it had stopped moving. <c>ScrollToAsync</c> is a
+    /// cross-platform MAUI API, so the same call does the same thing on Windows, Android and
+    /// iOS.
+    /// </para>
+    /// <para>
+    /// Never animated: an animated scroll finishes after the call returns, which is a sleep or a
+    /// race in every caller.
+    /// </para>
+    /// </remarks>
+    /// <param name="automationId">The descendant to reveal.</param>
+    /// <exception cref="NotSupportedException">This platform offers no route.</exception>
+    void ScrollTo(string automationId)
+        => throw new NotSupportedException(
+            $"{GetType().Name} does not implement ScrollTo.");
+
+    /// <summary>
+    /// Whether this element can be asked to scroll to an item index.
+    /// </summary>
+    /// <remarks>
+    /// Separate from <see cref="SupportsScrollVerbs"/> because the two are declared separately
+    /// and by different controls: a <c>ScrollView</c> answers <c>ScrollTo</c> and
+    /// <c>ScrollPosition</c> and has no items; a <c>CollectionView</c> answers this and has no
+    /// scroll offset of its own to report.
+    /// </remarks>
+    bool SupportsScrollToIndex => false;
+
+    /// <summary>Brings the item at an index into view.</summary>
+    /// <remarks>
+    /// An index past the end is not an error: it is how a caller walking a virtualized list
+    /// finds out it has reached the end. Nothing moves and nothing throws.
+    /// </remarks>
+    /// <param name="index">The item index.</param>
+    /// <exception cref="NotSupportedException">This platform offers no route.</exception>
+    void ScrollToIndex(int index)
+        => throw new NotSupportedException(
+            $"{GetType().Name} does not implement ScrollToIndex.");
+
+    /// <summary>
+    /// Where this scroller is, and how much there is to scroll.
+    /// </summary>
+    /// <remarks>
+    /// Offset and extent together, because neither means anything alone: a percentage - which is
+    /// what UI Automation offers - cannot distinguish a short page that cannot scroll from a long
+    /// one already at the end, and that is exactly the assertion a test wants to make.
+    /// </remarks>
+    /// <returns>The scroller's position.</returns>
+    /// <exception cref="NotSupportedException">This platform offers no route.</exception>
+    ScrollPosition ReadScrollPosition()
+        => throw new NotSupportedException(
+            $"{GetType().Name} does not implement ReadScrollPosition.");
+
+    #endregion
+
+    #region Dates and times
+
+    /// <summary>
+    /// Whether <see cref="SetDate"/> has a semantic route on this element.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>A question, so that a control can choose a route without trying one.</b> A caller asks
+    /// this once and then takes exactly one path: the verb, or whatever the platform does for an
+    /// app that carries no bridge. That is the difference between this and the three-rung ladder
+    /// it replaced, which performed each rung to discover whether it was the right one - and
+    /// whose first rung, on WinUI, advertised a Value pattern and then refused the write.
+    /// </para>
+    /// <para>
+    /// On Windows the answer is whether the app under test declared <c>SetDate</c> on this
+    /// element, so a false is usually a missing line of markup rather than something impossible.
+    /// </para>
+    /// </remarks>
+    bool SupportsSetDate => false;
+
+    /// <summary>Whether <see cref="SetTime"/> has a semantic route. See <see cref="SupportsSetDate"/>.</summary>
+    bool SupportsSetTime => false;
+
+    /// <summary>
+    /// Sets a date picker's date.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The control names the operation; the element decides how the platform performs it</b> -
+    /// the same split as <see cref="Invoke"/> and <see cref="Toggle"/>. On Windows that is a verb
+    /// the app answers by setting <c>DatePicker.Date</c>, or, for an app carrying no bridge, the
+    /// calendar flyout walked by pattern. Neither is a rung of the other: the element asks the
+    /// app once whether it declares the verb, and takes one route.
+    /// </para>
+    /// <para>
+    /// Defaulted to a throw rather than to a no-op, for the reason the activation verbs are: a
+    /// default that quietly did nothing would be a test reporting a date it never set.
+    /// </para>
+    /// </remarks>
+    /// <param name="date">The date to set.</param>
+    /// <exception cref="NotSupportedException">This platform offers no route.</exception>
+    /// <seealso cref="SupportsSetDate"/>
+    void SetDate(DateTime date)
+        => throw new NotSupportedException(
+            $"{GetType().Name} does not implement SetDate. A control asked for a date to be set "
+            + "and this platform offers no route to it.");
+
+    /// <summary>
+    /// Sets a time picker's time.
+    /// </summary>
+    /// <remarks>See <see cref="SetDate"/>; the same split applies.</remarks>
+    /// <param name="time">The time to set.</param>
+    /// <exception cref="NotSupportedException">This platform offers no route.</exception>
+    void SetTime(TimeSpan time)
+        => throw new NotSupportedException(
+            $"{GetType().Name} does not implement SetTime. A control asked for a time to be set "
+            + "and this platform offers no route to it.");
+
+    #endregion
+
     #region DOM Access (Hybrid Apps)
     
     /// <summary>

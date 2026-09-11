@@ -79,11 +79,11 @@ stage rather than to develop against.
 | 14 | **Text input verbs** | B | 13 | **done** |
 | 15 | Background mode passes | B | 3, 13, 14 | **partly** — zero refusals; blocked on the flaky step 36, and the human check is not done |
 | 16 | Windows-only parallelism | B | 15 | **done** |
-| 17 | Gestures sample page | C | 11 | todo |
-| 18 | Full gesture vocabulary + ladder | C | 17 | todo |
-| 19 | Gesture control objects | C | 18 | todo |
-| 20 | Date and time verbs | D | 14 | todo |
-| 21 | Scroll verbs | D | 12 | todo |
+| 17 | Gestures sample page | C | 11 | **done** |
+| 18 | Full gesture vocabulary, bound at publish time | C | 17 | **done** |
+| 19 | Gesture control objects | C | 18 | **partly** - semantic verbs and the probe row landed; the id-addressed control object needs generator work |
+| 20 | Date and time verbs | D | 14 | **done** — also closes 37 |
+| 21 | Scroll verbs | D | 12 | **done** — and the two `Pending` traits are gone |
 | 22 | Navigation verbs | D | 12 | todo |
 | 23 | State-read verbs | D | 12 | todo |
 | 24 | Picker verbs | D | 21 | todo |
@@ -93,13 +93,13 @@ stage rather than to develop against.
 | 28 | Versioning and lifetime tests | E | 18 | todo |
 | 29 | Accessibility audit report | E | 18 | todo |
 | 30 | Documentation and AD-008 | E | 19 | todo |
-| 31 | Stepper: 11 failing before any of this work | G | — | **ignored** |
-| 32 | Shell app: 13 failing before any of this work | G | — | **ignored** |
+| 31 | Stepper: 11 failing before any of this work | G | — | **parked** — 11 of 13 carry a `Skip`; the other 2 pass and stay live |
+| 32 | Shell app: 13 failing before any of this work | G | — | **parked** — all 13 carry a `Skip` |
 | 33 | Navigation stall: a 2 s grace on the wrong question, and two 10 s negative assertions | G | — | **parked** |
 | 34 | Actions do not Try: remove `Try` from commands, keep it on searches | G | 33 | **started** — `TryPerformGesture` deleted; the rest parked |
 | 35 | Notice when the framework starts waiting | G | — | **parked** |
 | 36 | `ReturnToHub` intermittently reports the hub never arrived (flaky, 1-4 tests per run, both modes) | G | — | **parked** |
-| 37 | TimePicker reads back 12-hour in background mode (1 test) | G | 20 | **parked** |
+| 37 | TimePicker reads back 12-hour in background mode (1 test) | G | 20 | **fixed by 20** |
 | 38 | Clipboard canary asserts on a probe its own helper calls inconclusive (1 test) | G | — | **parked** |
 
 ---
@@ -792,18 +792,123 @@ wiring. Rows: `GestureSwipeTarget` (`SwipeGestureRecognizer`), `GestureDoubleTap
 
 **Verify.** The page opens on Windows **and** Android; mobile head builds.
 
+#### Result — done
+
+`GesturesPage` / `GesturesView` / `GesturesViewModel`, seven rows, opened from the hub. Both
+heads build; `GesturesPageTests` is green in 0.8s.
+
+Seven rows rather than the five planned, and the two extra are the ones that assert an absence:
+
+| Row | Answers | Why it is there |
+|---|---|---|
+| `GestureTapTarget` | `Tap` | one recognizer, one command - the simplest binding |
+| `GestureDoubleTapTarget` | `DoubleTap` | same recognizer *type*, different meaning |
+| `GestureSwipeTarget` | `SwipeLeft`, `SwipeRight` | one recognizer, two directions, flags enum |
+| `GestureLongPressTarget` | `LongPress` (sink) | MAUI has no long-press recognizer |
+| `GestureSinkTarget` | `Pan` (sink) | `SendPan` is internal; carries arguments |
+| `GestureNoDeclarationTarget` | nothing | has a working recognizer and declares nothing |
+| `GestureUnbindableTarget` | nothing | declares `DoubleTap`, carries a one-tap recognizer |
+
+The last row did not exist in the plan and is the one step 18 is verified by: it is the case where
+markup claims something the element cannot do.
+
+`EveryRow_StartsUntouched` reads all seven before anything is sent. That looks like ceremony and is
+not: two of the later assertions are *absence of change*, and an assertion like that passes just as
+well when the label was never found.
+
 ---
 
-### Step 18 — Full gesture vocabulary and dispatcher ladder
+### Step 18 — Full gesture vocabulary, bound at publish time
 
-**Do.** All seven verbs. `MauiCapabilities.cs` naming every public MAUI API used, so a
-MAUI upgrade is a compile error in one known file. Ladder: sink → public MAUI API →
-`TapGestureRecognizer.Command` → `UIA_E_NOTSUPPORTED`. Never reflect into `SendTapped`,
-`SendPinch` or `SendPan` — all internal in MAUI 10.
+**Rewritten.** This step used to say *"Ladder: sink -> public MAUI API ->
+`TapGestureRecognizer.Command` -> `UIA_E_NOTSUPPORTED`"*, which is the activation ladder again,
+one layer down and in the other process. See
+[design-gesture-dispatch-binds-at-publish.md](../fix/design-gesture-dispatch-binds-at-publish.md)
+for the whole design; the summary is that the app already declares what each element answers, and
+the dispatcher should use that declaration instead of re-deriving it at every call.
 
-**Verify.** Gestures filter; `dotnet test testsnew\Brinell.Maui.Tests`. Unit-test the inverted
-swipe-to-`OpenSwipeItem` mapping specifically — it is the thing most likely to be "fixed"
-backwards.
+**Do.**
+
+- `VerbBindings.Resolve(element, declaredVerbs, sink)`, called once from `Publish`: each declared
+  verb resolves to exactly one handler, or to nothing and is reported by name at startup.
+  Dispatch becomes a dictionary lookup, and `MauiVerbTarget.Capabilities` becomes the bound verbs
+  rather than the declared ones - so `GetCapabilities` stops being able to lie.
+- Delete the four rungs in `MauiVerbDispatcher.PerformInvoke`, **including the two `when` clauses
+  that perform a gesture in order to decide whether they match**. `case BrinellVerb.Tap when
+  MauiCapabilities.TryTap(element, 1):` runs the app's command as its own guard and falls through
+  on false, having already acted.
+- `IBrinellGestureSink` declares `Verbs` and owns them. No `bool`, no "first refusal" - that
+  return value is the `Try` that step 34 is about.
+- **Six of the nine gesture verbs bind**: `Tap`, `DoubleTap` and the four swipes. `Pan`, `Pinch`
+  and `LongPress` have no binding and are reachable only through a sink. `SendPan` and `SendPinch`
+  are internal in MAUI 10 and nothing here reflects into MAUI internals; `LongPress` has no MAUI
+  surface at all, and binding it to `PointerPressedCommand` would hand a test a press while
+  telling it that it got a hold. The table says so out loud instead of letting all three fall
+  through to a refusal that looks like a typo.
+- `MauiCapabilities.cs` still names every public MAUI API used, so a MAUI upgrade is a compile
+  error in one known file. **The `Try` prefix leaves it entirely** - `TryTap`,
+  `TrySwipeRecognizer`, `TryOpenSwipeView` and `TryStartRefresh` split into nullable-returning
+  questions asked once at bind time (`TapRecognizer`, `SwipeRecognizer`) and void-returning
+  commands at call time. Not one half wants the word: a nullable return already says "may be
+  absent", and `Try` is only earned where a throwing twin needs telling apart, as `FindElement`
+  does for `TryFindElement`.
+
+**Files.** `samples/Brinell.Maui.AppSupport/Uia/{VerbBindings,MauiVerbDispatcher,MauiVerbTarget,
+IBrinellGestureSink,BrinellBridgeHost,MauiCapabilities}.cs`.
+
+**Verify.** Gestures filter; `dotnet test testsnew\Brinell.Maui.Tests`. `Resolve` is a pure
+function of an element and a declaration, so the whole table is unit-testable with no window -
+including the inverted swipe-to-`OpenSwipeItem` mapping, which is the thing most likely to be
+"fixed" backwards. Check that a row declaring a verb it cannot perform is named on the debug
+output at startup, not by a failing test.
+
+#### Result — done
+
+19 tests green in the Gestures filter, and the report the whole redesign was for:
+
+```
+'GestureUnbindableTarget' [Border] declares DoubleTap but nothing can perform it:
+no TapGestureRecognizer with NumberOfTapsRequired=2 and a Command. The verb was not published.
+'GestureUnbindableTarget' declared 1 verb(s) and bound none, so it was not published.
+```
+
+**What landed.** `VerbBindings.Resolve` runs once from `Publish` and returns a `VerbPlan`;
+`MauiVerbTarget.Capabilities` is now the *bound* verbs, so `GetCapabilities` cannot advertise
+something the element will refuse. `MauiVerbDispatcher.PerformInvoke` is a lookup followed by a
+switch over the ranges that have not moved into the table yet - a switch on the verb is dispatch;
+it was the switch on *mechanism* that was the ladder. `IBrinellGestureSink` declares `Verbs` and
+owns them, with no `bool` anywhere.
+
+**Both `when` clauses are gone.** `case BrinellVerb.Tap when MauiCapabilities.TryTap(element, 1):`
+ran the app's command as its own guard and fell through on false, having already acted. That was
+the worst thing in the file and it is worth recording that it was found by writing the design
+document rather than by a failing test.
+
+**`Try` left `MauiCapabilities` entirely.** `TryTap`, `TrySwipeRecognizer`, `TryOpenSwipeView` and
+`TryStartRefresh` became nullable-returning questions asked at bind time (`TapCommand`,
+`SwipeCommand`, `SwipeItemFor`) and void commands at call time (`OpenSwipeView`, `StartRefresh`).
+Not one half wanted the prefix. `RefreshView`'s "already refreshing" case, which looked like the
+strongest argument for keeping a bool, is a call-time question the handler asks directly and
+answers with `S_FALSE`.
+
+**Commands are captured weakly**, and that is load-bearing rather than fastidious:
+`MauiVerbTarget` holds its element weakly so an unwithdrawn registration cannot pin a page and its
+view model for the life of the window, and a binding capturing a recognizer strongly would undo
+that through `Parent`.
+
+**Six verbs bind; three need a sink.** `LongPress` joined `Pan` and `Pinch` during implementation.
+MAUI has no long-press recognizer, and the obvious binding -
+`PointerGestureRecognizer.PointerPressedCommand` - is wrong: pressing is not holding, an app that
+starts a timer on press and cancels on release would never see a long press, and the test would be
+told it got one.
+
+**Not done: headless unit tests over `Resolve`.** The design document promised them and it was
+wrong to. `Resolve` takes MAUI types, and MAUI 10's `Microsoft.Maui.Controls` is a metapackage
+with no plain `net10.0` assembly at all - `Brinell.Maui` and `Brinell.Maui.Tests` both target
+plain `net10.0` and reference no MAUI, so there is nowhere in this repo such a test could live. It
+needs a `net10.0-windows10.0.19041.0` test project with `UseMaui`, which is its own piece of
+infrastructure. The table is verified through the page instead, which is slower and tests the real
+thing.
 
 ---
 
@@ -815,6 +920,42 @@ backwards.
 this step makes false. Add a gesture-bridge row to `AutomationProbeView`.
 
 **Verify.** Gestures filter; full MAUI UI suite against the established baseline.
+
+#### Result — partly
+
+**Done.** `SwipeView`'s four swipe Cores and `RefreshView.PullToRefreshCore` now name the gesture
+(`element.PerformGesture(MauiGesture.SwipeDown)`) instead of calling a pointer swipe - the same
+split as `Invoke`/`Toggle`/`Select`, where the control names the operation and the element decides
+how its platform performs it. `AppiumMauiElement` implements `PerformGesture`/`SupportsGesture`,
+so the mobile half of that split exists rather than being implied. `ISwipeableControlObject`'s
+"primarily used for mobile platforms" is corrected. `AutomationProbeView` has its gesture-bridge
+row, following the page's own `Probe{Type}` / `Probe{Type}Child` rule so a test can tell "the
+bridge element exists" from "the verb reached the app and did something".
+
+**And the `Try` prefix left the swipe extensions.** `TrySwipeLeft`, `TrySwipeRight`, `TrySwipeUp`,
+`TrySwipeDown`, `TrySwipeRelative` and the private `TrySwipe` returned a `bool` that was `true`
+whenever the element was non-null - a return value carrying no information at all, and the purest
+case the rule covers.
+
+**Not done: moving the gesture tests onto control-object members.** It cannot be done for
+`SwipeView` and `RefreshView` as the framework stands, and the reason is measured rather than
+assumed - `GestureAddressabilityTests` now pins both halves:
+
+- the gestures page's rows **are** findable on Windows (they are `Border`s, and the app registers
+  the Brinell automation handlers), so a control object is possible for them;
+- `TestSwipeView` is **not** findable and answers its verb anyway.
+
+Every generated member calls `RunDoWithElement`, which finds the element first, so a control
+object for an element nothing can find would have to be members that do not look for one. That is
+a change to what `Brinell.Generator` emits, not to any control file. The generator round-trips
+cleanly (`dotnet run --project tools/Brinell.Generator.Cli -- --input <file>.tpl.cs` reproduces a
+checked-in `.gen.cs` byte for byte), so the change is tractable - it is just not a five-minute one,
+and it wants its own step rather than being wedged into this one.
+
+**Where to start:** an attribute on the Core method - or a second Core shape - meaning "address
+this by id, do not find an element", emitting a member that calls
+`Scope.Context.Driver.PerformGesture(AutomationId, gesture)`. That is the one route that reaches a
+control Windows cannot see, and it is already the driver's documented purpose.
 
 ---
 
@@ -832,6 +973,45 @@ in "Could not set date without the pointer", and `TimePicker`'s flyout navigatio
 `TimePicker.Time`. Keep the ladder as the uninstrumented fallback. Both controls are in the
 known-failing baseline — **establish it before claiming a fix**.
 
+#### Result — done, and step 37 with it
+
+`Tests.DateTimes` is **20/20 green, nothing skipped**, from a baseline where both controls were
+known-failing and one test was parked under step 37.
+
+**The provider side is two properties.** `SetDate` sets `DatePicker.Date`, `SetTime` sets
+`TimePicker.Time`, both on Exchange, both returning what the control then holds. What that
+replaced on the client was roughly two hundred lines of WinUI calendar and clock navigation -
+open the flyout, read the header, page to the month, find the day, select it, accept. The app
+could always just say so.
+
+**`SetDateCore` is now one question and one route.** `element.SupportsSetDate` is asked once; if
+the app declares the verb it is used, and if not the calendar is walked. That is not the ladder
+with better manners - nothing is performed to find out which route is right. Two of the three
+old rungs were dead on the only platform that runs them: WinUI advertises a Value pattern and
+refuses the write, and a `CalendarDatePicker` hosts no text to type into. So every call paid for
+two failures to reach the one that worked, and a real breakage in the calendar route reported
+"could not set the date" with three suspects.
+
+**Step 37 is fixed by absence.** 15:30 read back as 03:30 because the WinUI hour list is a
+12-hour clock and the AM/PM half was lost walking it. Setting `TimePicker.Time` has no 12-hour
+clock in it to lose. `SetTime_KeepsTheAfternoonHalfOfTheClock` pins it, because a fix that
+consists of a mechanism no longer existing is exactly the kind that regresses unnoticed.
+
+**Two things worth writing down.**
+
+`DatePicker.Date` is `DateTime?` in MAUI 10, and `TimePicker.Time` is `TimeSpan?` — easy to miss,
+because the pickers always show something. An empty string is the wire reading for a picker
+holding no value.
+
+Two `DatePickerTests` broke and were right to: they asserted on the phrase `"Could not set date"`
+while the behaviour they were about — a clamped date is refused, not silently accepted — never
+changed. They now assert on the date and the clamp, which is what the test is for.
+
+**`OpenFlyout` / `CloseFlyout` are not implemented for the pickers.** MAUI exposes no public way
+to open either flyout, and nothing here reflects into internals — the same call the gesture table
+makes for `Pan` and `Pinch`. A test that genuinely means "the flyout opens" still drives the
+control through its own affordance.
+
 ### Step 21 — Scroll verbs
 
 `Swipe` currently substitutes mouse-wheel clicks, an unquantified unit, with a stuck-detection
@@ -839,6 +1019,40 @@ loop because there is no completion signal. Verbs `ScrollTo`, `ScrollToIndex`,
 `ScrollPosition`; provider calls `ScrollView.ScrollToAsync` / `CollectionView.ScrollTo`. Both
 are cross-platform MAUI APIs, so the same verb works on Android — the biggest parity win in the
 catalogue.
+
+#### Result — done
+
+6 tests green in `ScrollVerbTests`, and the two `Pending` physical-input traits step 15 opened
+against this step are removed - `ByName_DeletesTheRightRow` and `SearchByContent_FindsTheRightRow`
+now pass under `PhysicalInputPolicy.Refused`, which they could not do while the search was turning
+a wheel.
+
+**Three verbs, each bound where MAUI actually offers it.** `ScrollTo` and `ScrollPosition` are
+`ScrollView`; `ScrollToIndex` is `ItemsView` and `ListView`. Nothing is bound to a control that
+cannot honour it, so the step-18 report catches a misdeclaration here the same way it does a
+gesture.
+
+**`ScrollPosition` returns six numbers, not a percentage.** UI Automation offers a scroll percent,
+and a percent cannot answer what tests actually ask: *"are we at the bottom"* is true both for a
+long list scrolled to its end and for a page too short to scroll at all, and those are different
+facts about the app. Offset, viewport and content size together separate them, which is why
+`ScrollVerbTests` can assert `CanScrollVertically` as a precondition - a scroll page that had
+quietly become short would otherwise pass every test below it.
+
+**The stuck-detection loop is gone from the path that had it.**
+`CollectionObjectBase.TryMaterializeMore` now asks `SupportsScrollToIndex` once and takes one
+route. The old one scrolled a wheel click - an unquantified unit, meaning whatever the OS and the
+control between them decide - then re-read the realized item count and guessed whether anything
+had happened. An index is definite, and an index past the end is a quiet no rather than an error,
+so the loop terminates on an answer instead of on a lack of change.
+
+**One assertion was wrong before the code was.** `ScrollTo_PutsTheNamedElementOnScreen` first
+asserted that scrolling back to the page's first element returned the offset to zero. It does not:
+`ScrollToPosition.MakeVisible` scrolls the *minimum* needed, so the element lands at the top of the
+viewport rather than the viewport at the top of the content - short by the stack layout's padding.
+Visibility is what the verb promises, so visibility is what the test now asks.
+
+---
 
 ### Step 22 — Navigation verbs
 
@@ -1188,7 +1402,7 @@ question does not have to be answered to stop the test lying.
 
 ## Taking one out of Stage G
 
-For a skipped test (31-32): remove the `Skip`, run its area filter, and fix what it reports. For
+For a parked test (31-32): remove the `Skip`, run its area filter, and fix what it reports. For
 a written-up item (33-35): read its document first - each one records why it is parked, and in
 every case that reason is a dependency or a risk rather than a lack of time.
 

@@ -1,6 +1,6 @@
 ---
 title: Design — Actions do not Try; Brinell is a test framework, not a try framework
-description: Why TryPerformGesture, TryAppendText and TryClearFocus should not exist, what replaces them, and the one Try that stays
+description: Why TryPerformGesture, TryAppendText and TryClearFocus should not exist, what replaces them, and how little is left once questions stop needing the prefix too
 status: design
 ---
 
@@ -140,6 +140,29 @@ each new method:
 | Caller may branch | yes, that is the point | no, it should stop |
 
 **`Try` on a question is an answer. `Try` on a command is a shrug.**
+
+### And most questions do not need the word either
+
+The table above is about which *operations* may answer no. It is not a licence to put `Try` on
+every one of them, and the distinction matters because "it is a search" is about to become the
+reason a prefix survives review.
+
+`TryFindElement` earns the word for a specific reason: `FindElement` sits beside it and throws.
+The prefix tells a pair apart. Where there is no throwing twin, a nullable return type already
+says "may be absent", and the prefix adds nothing except the suggestion that a second branch
+exists somewhere.
+
+So: **`Try` is a disambiguator, not a category.** Write the question as `TapRecognizer(view,
+taps)` returning `TapGestureRecognizer?` and there is nothing left for the word to do. Keep it
+only where a throwing sibling needs telling apart, or where the language forces a `bool` plus
+`out` — which is the BCL's problem, not ours: `TryGetValue`, `TryParse` and
+`WeakReference.TryGetTarget` keep their names because they are not ours to rename, and
+`GetValueOrDefault` is usually the better call anyway.
+
+This came up while rewriting step 18, where four `Try` methods in the gesture surface
+(`TryTap`, `TrySwipeRecognizer`, `TryOpenSwipeView`, `TryStartRefresh`) split into questions and
+commands — and not one of the resulting halves wanted the prefix. See
+[design-gesture-dispatch-binds-at-publish.md](design-gesture-dispatch-binds-at-publish.md).
 
 One internal exception is worth naming so it is not mistaken for a violation:
 `CollectionObjectBase.TryActivate` walks a list of candidate rows and catches, because a given

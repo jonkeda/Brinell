@@ -1,10 +1,11 @@
+using System.Globalization;
 using Brinell.Uia;
 using Microsoft.Maui.Controls;
 
 namespace Brinell.Maui.AppSupport.Uia;
 
 /// <summary>
-/// Runs a verb against a MAUI element: on the UI thread, within a budget, down a fixed ladder.
+/// Runs a verb against a MAUI element: on the UI thread, within a budget, by lookup.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -21,10 +22,18 @@ namespace Brinell.Maui.AppSupport.Uia;
 /// machine.
 /// </para>
 /// <para>
-/// <b>The ladder.</b> Sink first, so an app can always override; then the public MAUI API for
-/// the control's own type; then a matching gesture recognizer's command; then refusal. Each
-/// rung is tried only if the one above declined, and refusal is a real answer - it is what
-/// tells a test to use another route rather than to retry.
+/// <b>No ladder.</b> There used to be one - sink, then the public MAUI API for the control's
+/// type, then a matching recognizer's command, then refusal - and two of its rungs performed a
+/// gesture inside the <c>when</c> clause that decided whether they matched, so a fall-through
+/// left the app changed with nothing recording it. What each verb does on each element is now
+/// settled when the element is published (<see cref="VerbBindings"/>), and this looks the answer
+/// up. Refusal is still a real answer: it tells a test that the element does not do this, rather
+/// than to retry.
+/// </para>
+/// <para>
+/// Verbs outside the gesture range are still dispatched by name below, and move into the table
+/// as their own steps land. A switch on the verb is dispatch; it was the switch on <i>mechanism</i>
+/// that was the ladder.
 /// </para>
 /// </remarks>
 internal static class MauiVerbDispatcher
@@ -39,9 +48,9 @@ internal static class MauiVerbDispatcher
     private const int TimeoutMs = 5_000;
 
     internal static int Invoke(
-        VisualElement element, IBrinellGestureSink? sink, BrinellVerb verb, int arg1, int arg2)
+        VisualElement element, VerbPlan plan, BrinellVerb verb, int arg1, int arg2)
     {
-        var hr = OnUiThread(element, () => PerformInvoke(element, sink, verb, arg1, arg2));
+        var hr = OnUiThread(element, () => PerformInvoke(element, plan, verb, arg1, arg2));
 
         // Reported from inside the app, because from the test side a verb that ran and had no
         // effect is indistinguishable from one that never arrived.
@@ -54,7 +63,7 @@ internal static class MauiVerbDispatcher
 
     internal static int Exchange(
         VisualElement element,
-        IBrinellGestureSink? sink,
+        VerbPlan plan,
         BrinellVerb verb,
         string argument,
         out string result)
@@ -63,55 +72,30 @@ internal static class MauiVerbDispatcher
 
         var hr = OnUiThread(
             element,
-            () => PerformExchange(element, sink, verb, argument, out captured));
+            () => PerformExchange(element, plan, verb, argument, out captured));
 
         result = captured ?? string.Empty;
         return hr;
     }
 
+    /// <summary>
+    /// Answers a numeric verb: the bound handler, or a name-dispatched one, or refusal.
+    /// </summary>
+    /// <remarks>
+    /// The lookup comes first and is the whole gesture story. What follows is the ranges that
+    /// have not moved into the table yet - each a plain switch on the verb, with no second
+    /// mechanism behind it to fall through to.
+    /// </remarks>
     private static int PerformInvoke(
-        VisualElement element, IBrinellGestureSink? sink, BrinellVerb verb, int arg1, int arg2)
+        VisualElement element, VerbPlan plan, BrinellVerb verb, int arg1, int arg2)
     {
-        // Rung 1: the app's own handling, which always wins.
-        if (sink is not null && sink.TryInvoke(element, verb, arg1, arg2))
+        if (plan.For(verb) is { } binding)
         {
-            return HResults.S_OK;
+            return binding.Perform(element, arg1, arg2);
         }
 
-        // Rung 2: the public MAUI API for this control type.
-        switch (element)
-        {
-            case SwipeView swipeView when MauiCapabilities.SwipeItemFor(verb) is not null:
-                return MauiCapabilities.TryOpenSwipeView(swipeView, verb)
-                    ? HResults.S_OK
-                    : HResults.UIA_E_NOTSUPPORTED;
-
-            case RefreshView refreshView when verb == BrinellVerb.SwipeDown:
-                // S_FALSE, not a failure: a refresh already running is a real state, and
-                // reporting it as success would let a test assert a refresh it did not cause.
-                return MauiCapabilities.TryStartRefresh(refreshView)
-                    ? HResults.S_OK
-                    : HResults.S_FALSE;
-        }
-
-        // Rung 3: a gesture recognizer on the element itself.
         switch (verb)
         {
-            case BrinellVerb.Tap when MauiCapabilities.TryTap(element, 1):
-            case BrinellVerb.DoubleTap when MauiCapabilities.TryTap(element, 2):
-                return HResults.S_OK;
-
-            case BrinellVerb.SwipeLeft:
-            case BrinellVerb.SwipeRight:
-            case BrinellVerb.SwipeUp:
-            case BrinellVerb.SwipeDown:
-                if (MauiCapabilities.TrySwipeRecognizer(element, verb))
-                {
-                    return HResults.S_OK;
-                }
-
-                break;
-
             case BrinellVerb.Focus:
                 return MauiCapabilities.TryFocus(element)
                     ? HResults.S_OK
@@ -125,30 +109,41 @@ internal static class MauiVerbDispatcher
                 MauiCapabilities.CloseSwipeView(openSwipeView);
                 return HResults.S_OK;
 
-            case BrinellVerb.NavigateBack:
-                // S_FALSE, not a failure: nothing to pop is a real state of the app, and
-                // reporting it as success would let a test believe it had navigated.
-                return MauiCapabilities.TryNavigateBack(element)
+            case BrinellVerb.ScrollToIndex:
+                // S_FALSE, not a refusal: a ListView whose ItemsSource is shorter than the index
+                // is a real state of the app, and the caller asked something answerable.
+                return MauiCapabilities.ScrollToIndex(element, arg1)
                     ? HResults.S_OK
                     : HResults.S_FALSE;
+
+            case BrinellVerb.NavigateBack:
+                // The verb's own answer, passed through rather than flattened. It distinguishes
+                // popped (S_OK) from nothing-to-pop (S_FALSE) from a stale target
+                // (UIA_E_ELEMENTNOTAVAILABLE) from not-a-page (UIA_E_NOTSUPPORTED), and the
+                // caller does something different for each. Collapsing all four into a bool is
+                // what made the client guess, and the guess was a two-second timeout that fired
+                // on the commonest answer of the four.
+                return MauiCapabilities.NavigateBack(element);
         }
 
-        // Rung 4. Not a crash and not a retry - a fact about this element.
+        // Not a crash and not a retry - a fact about this element.
         return HResults.UIA_E_NOTSUPPORTED;
     }
 
     private static int PerformExchange(
         VisualElement element,
-        IBrinellGestureSink? sink,
+        VerbPlan plan,
         BrinellVerb verb,
         string argument,
         out string? result)
     {
         result = null;
 
-        if (sink is not null && sink.TryExchange(element, verb, argument, out var handled))
+        // The sink owns what it named, on this path too. It is asked because the declaration
+        // says so, not to find out whether it wants the verb.
+        if (plan.ExchangesThroughSink(verb))
         {
-            result = handled;
+            result = plan.SinkExchange(element, verb, argument);
             return HResults.S_OK;
         }
 
@@ -195,6 +190,63 @@ internal static class MauiVerbDispatcher
                 return MauiCapabilities.TrySubmit(element)
                     ? HResults.S_OK
                     : HResults.UIA_E_NOTSUPPORTED;
+
+            case BrinellVerb.CurrentRoute:
+                result = MauiCapabilities.CurrentRoute(element);
+                return HResults.S_OK;
+
+            // Scrolling. The offset and the extent together, because neither means anything
+            // alone: a percentage cannot tell a short page that cannot scroll from a long one
+            // already at the end, and that is the assertion tests actually want to make.
+            case BrinellVerb.ScrollPosition when element is ScrollView positioned:
+                result = MauiCapabilities.ReadScrollPosition(positioned);
+                return HResults.S_OK;
+
+            case BrinellVerb.ScrollTo when element is ScrollView scroller:
+                // UIA_E_ELEMENTNOTAVAILABLE rather than a refusal: the scroller does this verb
+                // perfectly well, and what was missing is the descendant the caller named.
+                return MauiCapabilities.ScrollTo(scroller, argument)
+                    ? HResults.S_OK
+                    : HResults.UIA_E_ELEMENTNOTAVAILABLE;
+
+            // Dates and times. Two properties, replacing the calendar and clock flyout
+            // navigation the client used to have to perform.
+            //
+            // E_INVALIDARG separates "you sent me nonsense" from "I do not do this", which the
+            // old single refusal could not. A malformed date is the caller's bug; a DatePicker
+            // that cannot set a date would be ours.
+            case BrinellVerb.SetDate when element is DatePicker datePicker:
+                if (!DateTime.TryParseExact(
+                        argument,
+                        MauiCapabilities.DateFormat,
+                        CultureInfo.InvariantCulture,
+                        DateTimeStyles.None,
+                        out var date))
+                {
+                    return HResults.E_INVALIDARG;
+                }
+
+                MauiCapabilities.SetDate(datePicker, date);
+
+                // What the control now holds, not what was sent. A DatePicker with a
+                // MinimumDate or MaximumDate clamps, and the caller should see that here
+                // rather than discover it in an assertion about something else.
+                result = MauiCapabilities.ReadDate(datePicker);
+                return result == argument ? HResults.S_OK : HResults.S_FALSE;
+
+            case BrinellVerb.SetTime when element is TimePicker timePicker:
+                if (!TimeSpan.TryParseExact(
+                        argument,
+                        MauiCapabilities.TimeFormat,
+                        CultureInfo.InvariantCulture,
+                        out var time))
+                {
+                    return HResults.E_INVALIDARG;
+                }
+
+                MauiCapabilities.SetTime(timePicker, time);
+                result = MauiCapabilities.ReadTime(timePicker);
+                return result == argument ? HResults.S_OK : HResults.S_FALSE;
         }
 
         // Dates, routes and selection are steps 20 through 26. Refusing them by falling through
@@ -239,6 +291,10 @@ internal static class MauiVerbDispatcher
     private static string? ReadState(VisualElement element, string property) => property switch
     {
         "IsVisible" => element.IsVisible.ToString(),
+        "NavigationDepth" => MauiCapabilities.NavigationDepth(element)?
+            .ToString(CultureInfo.InvariantCulture),
+        "Date" when element is DatePicker datePicker => MauiCapabilities.ReadDate(datePicker),
+        "Time" when element is TimePicker timePicker => MauiCapabilities.ReadTime(timePicker),
         "IsEnabled" => element.IsEnabled.ToString(),
         "IsFocused" => element.IsFocused.ToString(),
         "AutomationId" => element.AutomationId ?? string.Empty,

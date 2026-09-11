@@ -40,12 +40,18 @@ public partial class RefreshView<TScope> : Base.ViewBase<TScope>, IRefreshableCo
     #region Core Methods (Element-Aware, No Logging)
 
     /// <summary>
-    /// Performs the pull-to-refresh gesture: a downward swipe from the element's top.
+    /// Performs the pull-to-refresh gesture.
     /// </summary>
+    /// <remarks>
+    /// Names the gesture and leaves the mechanism to the platform: a real downward touch swipe on
+    /// Appium, and on Windows a verb the app answers by setting <c>IsRefreshing</c>, which is
+    /// what the gesture itself does. It used to call the pointer swipe directly, which is a
+    /// choice a control object should not be making.
+    /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
     protected virtual void PullToRefreshCore(IMauiElement element, int? timeoutMs = null)
-        => element.TrySwipeDown();
+        => element.PerformGesture(MauiGesture.SwipeDown);
 
     /// <summary>
     /// Reads the refreshing state from the pre-found element.

@@ -108,7 +108,7 @@ public class TimePickerTests
     /// <summary>
     /// Verifies that changing time multiple times updates the display each time.
     /// </summary>
-    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs, Skip = "Stage G step 37: the TimePicker flyout ladder fails when the pointer rungs are refused - see .my/extension/steps.md.")]
+    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Method", "SetTime")]
     public Task TimePicker_MultipleTimeChanges_UpdatesEachTime()
     {

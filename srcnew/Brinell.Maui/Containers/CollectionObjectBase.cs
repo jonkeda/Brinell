@@ -614,6 +614,20 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
         var root = TryGetContainerRoot();
         if (root == null) return false;
 
+        // The semantic route, when the app under test declared it. One call with a definite
+        // unit - an item index - replacing a wheel click, which means whatever the OS and the
+        // control decide it means and reports nothing about whether the content arrived.
+        //
+        // Asked once rather than attempted: ScrollToIndex either moves the list or is a no-op
+        // because the index is past the end, and the caller's count check distinguishes those
+        // without anything needing to report failure.
+        var semantic = ScrollTarget ?? root;
+        if (semantic.SupportsScrollToIndex)
+        {
+            semantic.ScrollToIndex(countBefore);
+            return HasMoreThan(countBefore);
+        }
+
         // UI Automation first: pull the last realized row into view, which makes the
         // virtualizing panel realize the rows after it.
         if (TryScrollLastItemIntoView() && HasMoreThan(countBefore))

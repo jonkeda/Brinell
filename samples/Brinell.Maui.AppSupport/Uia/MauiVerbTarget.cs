@@ -22,26 +22,26 @@ namespace Brinell.Maui.AppSupport.Uia;
 internal sealed class MauiVerbTarget : IBrinellVerbTarget
 {
     private readonly WeakReference<VisualElement> _element;
-    private readonly WeakReference<IBrinellGestureSink>? _sink;
+    private readonly VerbPlan _plan;
 
-    internal MauiVerbTarget(
-        VisualElement element,
-        string automationId,
-        IReadOnlyCollection<BrinellVerb> capabilities,
-        IBrinellGestureSink? sink)
+    internal MauiVerbTarget(VisualElement element, string automationId, VerbPlan plan)
     {
         _element = new WeakReference<VisualElement>(element);
-        _sink = sink is null ? null : new WeakReference<IBrinellGestureSink>(sink);
+        _plan = plan;
 
         AutomationId = automationId;
-        Capabilities = capabilities;
     }
 
     /// <inheritdoc/>
     public string AutomationId { get; }
 
     /// <inheritdoc/>
-    public IReadOnlyCollection<BrinellVerb> Capabilities { get; }
+    /// <remarks>
+    /// The verbs that <b>bound</b>, not the verbs that were declared. Those were the same thing
+    /// until the bindings existed, which is why an element could once advertise a verb its
+    /// recognizers could not serve and then refuse it on use.
+    /// </remarks>
+    public IReadOnlyCollection<BrinellVerb> Capabilities => _plan.Capabilities;
 
     /// <inheritdoc/>
     /// <remarks>
@@ -60,7 +60,7 @@ internal sealed class MauiVerbTarget : IBrinellVerbTarget
             return HResults.UIA_E_ELEMENTNOTAVAILABLE;
         }
 
-        return MauiVerbDispatcher.Invoke(element, Sink(), verb, arg1, arg2);
+        return MauiVerbDispatcher.Invoke(element, _plan, verb, arg1, arg2);
     }
 
     /// <inheritdoc/>
@@ -73,7 +73,7 @@ internal sealed class MauiVerbTarget : IBrinellVerbTarget
             return HResults.UIA_E_ELEMENTNOTAVAILABLE;
         }
 
-        return MauiVerbDispatcher.Exchange(element, Sink(), verb, argument, out result);
+        return MauiVerbDispatcher.Exchange(element, _plan, verb, argument, out result);
     }
 
 
@@ -89,7 +89,4 @@ internal sealed class MauiVerbTarget : IBrinellVerbTarget
     /// <returns>Whether this target is for that element.</returns>
     internal bool Owns(VisualElement element)
         => _element.TryGetTarget(out var mine) && ReferenceEquals(mine, element);
-
-    private IBrinellGestureSink? Sink()
-        => _sink is not null && _sink.TryGetTarget(out var sink) ? sink : null;
 }

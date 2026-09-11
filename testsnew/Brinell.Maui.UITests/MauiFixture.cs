@@ -111,26 +111,47 @@ public class MauiFixture : MauiTestFixtureBase
     /// <summary>
     /// Returns to the hub if a page is open.
     /// </summary>
+    /// <remarks>
+    /// <b>Asks before acting, which is what stopped this costing two seconds a time.</b> Being at
+    /// the root already is the commonest case here - most tests open a page from the hub, having
+    /// arrived there a moment earlier - and it used to be indistinguishable from three real
+    /// failures, all of them reported as one <c>false</c>. The fixture then waited out a grace
+    /// period on every single reset to be told what the first call had already established.
+    /// </remarks>
     private void ReturnToHub()
     {
         var attempts = new List<string>();
 
-        if (Context.Driver.TryNavigateBack())
+        if (Context.Driver.IsAtNavigationRoot())
         {
-            attempts.Add("popped through the bridge");
+            // Nothing to pop, and nothing to check afterwards beyond the postcondition below.
+            attempts.Add("already at the navigation root");
         }
-        else if (!_hub.IsLoaded())
+        else
         {
-            attempts.Add("no bridge answered; falling back to the toolbar click");
-
-            if (BackToHub.WaitExists(true, TestConstants.ShortTestTimeoutMs))
+            try
             {
-                PhysicalInput.Used("MauiFixture.ReturnToHub", "a working activation route for ToolbarItem");
-                BackToHub.Click();
+                Context.Driver.NavigateBack();
+                attempts.Add("popped through the bridge");
             }
-            else
+            catch (BrinellException failure)
             {
-                attempts.Add("no 'BackToHub' item on this page either");
+                // The bridge gave a specific reason and it is worth carrying into the
+                // postcondition's message, because the two failures read identically from the
+                // outside: the hub did not arrive.
+                attempts.Add($"the bridge refused: {failure.Message}");
+
+                if (BackToHub.WaitExists(true, TestConstants.ShortTestTimeoutMs))
+                {
+                    PhysicalInput.Used(
+                        "MauiFixture.ReturnToHub",
+                        "a working activation route for ToolbarItem");
+                    BackToHub.Click();
+                }
+                else
+                {
+                    attempts.Add("no 'BackToHub' item on this page either");
+                }
             }
         }
 
@@ -157,6 +178,19 @@ public class MauiFixture : MauiTestFixtureBase
     public void NavigateToMain()
     {
         Open(SamplePage.Buttons);
+    }
+
+    /// <summary>
+    /// Opens the gestures page and returns its page object.
+    /// </summary>
+    /// <remarks>
+    /// Created per access for the same reason as the others: the hub pushes a fresh page on
+    /// every open, so a cached page object would hold the root of an instance that is gone.
+    /// </remarks>
+    public GesturesTestPage OpenGestures()
+    {
+        Open(SamplePage.Gestures);
+        return new GesturesTestPage(Context);
     }
 
     /// <summary>

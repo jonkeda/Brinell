@@ -15,6 +15,7 @@
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:controls="clr-namespace:Brinell.Samples.Maui.App.Controls"
+             xmlns:uia="clr-namespace:Brinell.Maui.AppSupport.Uia;assembly=Brinell.Maui.AppSupport"
              xmlns:viewModels="using:Brinell.Samples.Maui.App.ViewModels"
              x:Class="Brinell.Samples.Maui.App.Views2.TestViews.GridCollectionDemoView"
              x:DataType="viewModels:GridCollectionDemoViewModel"
@@ -105,8 +106,15 @@
                      MinimumHeightRequest keeps the seed rows materialized regardless of
                      window size; without it the third seed row can fall outside the
                      realized range on a short window. -->
+                <!--
+                    ScrollToIndex, declared: a virtualized CollectionView only materializes the
+                    rows near the viewport, so a search for a row further down used to advance
+                    the list with mouse-wheel clicks and re-read the realized items each time.
+                    CollectionView.ScrollTo(index) is the same call on every platform.
+                -->
                 <CollectionView Grid.Row="2"
                                 AutomationId="ProductCollectionView"
+                                uia:GestureAutomation.Verbs="ScrollToIndex"
                                 HeightRequest="320"
                                 MinimumHeightRequest="320"
                                 ItemsSource="{Binding Products}"

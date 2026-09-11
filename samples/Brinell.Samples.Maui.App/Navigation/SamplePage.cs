@@ -53,6 +53,9 @@ public enum SamplePage
     /// <summary>A long ScrollView used to test scrolling on its own.</summary>
     Scroll,
 
+    /// <summary>Tap, swipe and the verbs only the app itself can answer.</summary>
+    Gestures,
+
     /// <summary>Phase 0 probe measuring which layouts expose their AutomationId.</summary>
     AutomationProbe
 }

@@ -39,7 +39,7 @@
                 MinimumDate="{Binding MinimumDate}"
                 MaximumDate="{Binding MaximumDate}"
                 AutomationId="TestDatePicker"
-                uia:GestureAutomation.Verbs="Focus,Unfocus,IsFocused" />
+                uia:GestureAutomation.Verbs="Focus,Unfocus,IsFocused,SetDate,GetState" />
 
             <Label 
                 Text="{Binding FormattedDate, StringFormat='Selected Date: {0}'}" 
@@ -55,7 +55,8 @@
 
             <TimePicker 
                 Time="{Binding SelectedTime}"
-                AutomationId="TestTimePicker" />
+                AutomationId="TestTimePicker"
+                uia:GestureAutomation.Verbs="Focus,Unfocus,IsFocused,SetTime,GetState" />
 
             <Label 
                 Text="{Binding FormattedTime, StringFormat='Selected Time: {0}'}" 

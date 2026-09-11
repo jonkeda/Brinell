@@ -185,7 +185,6 @@ public class ProductCollectionTests
     #region Search by content
 
     /// <summary>10. FindItem, ItemWhere, and ByName search by row content.</summary>
-    [Trait(PhysicalInputTrait.Name, PhysicalInputTrait.Pending)]  // step 21: the ScrollTo verb
     [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Method", "ItemWhere")]
     public Task SearchByContent_FindsTheRightRow()
@@ -205,7 +204,6 @@ public class ProductCollectionTests
     }
 
     /// <summary>10b. ByName targets the right row for a mutation.</summary>
-    [Trait(PhysicalInputTrait.Name, PhysicalInputTrait.Pending)]  // step 21: the ScrollTo verb
     [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Pattern", "DomainHelper")]
     public Task ByName_DeletesTheRightRow()

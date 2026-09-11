@@ -104,7 +104,12 @@ public class DatePickerTests
         var pastDate = DateTimeType.Now.Date.AddDays(-1); // Yesterday (before minimum of today)
 
         var error = Assert.Throws<BrinellException>(() => page.TestDatePicker.SetDate(pastDate));
-        Assert.Contains("Could not set date", error.Message);
+
+        // Asserted on the two facts rather than on the wording. This used to look for the phrase
+        // "Could not set date", which broke in step 20 when the route changed and the behaviour
+        // did not - the refusal is still a refusal, and it now also says what the control holds.
+        Assert.Contains(pastDate.ToString("yyyy-MM-dd"), error.Message);
+        Assert.Contains("MinimumDate", error.Message);
 
         return Task.CompletedTask;
     }
@@ -121,7 +126,12 @@ public class DatePickerTests
         var futureDate = DateTimeType.Now.Date.AddDays(31); // 31 days from now (max is 30)
 
         var error = Assert.Throws<BrinellException>(() => page.TestDatePicker.SetDate(futureDate));
-        Assert.Contains("Could not set date", error.Message);
+
+        // Asserted on the two facts rather than on the wording. This used to look for the phrase
+        // "Could not set date", which broke in step 20 when the route changed and the behaviour
+        // did not - the refusal is still a refusal, and it now also says what the control holds.
+        Assert.Contains(futureDate.ToString("yyyy-MM-dd"), error.Message);
+        Assert.Contains("MinimumDate", error.Message);
 
         return Task.CompletedTask;
     }

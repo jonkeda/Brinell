@@ -70,14 +70,14 @@ public abstract partial class CarouselView<TParent, TSelf, TItem>
     /// </remarks>
     /// <param name="element">The carousel's own element.</param>
     protected virtual void SwipeNextCore(IMauiElement element)
-        => element.TrySwipeLeft();
+        => element.SwipeLeft();
 
     /// <summary>
     /// Swipes to the previous card.
     /// </summary>
     /// <param name="element">The carousel's own element.</param>
     protected virtual void SwipePreviousCore(IMauiElement element)
-        => element.TrySwipeRight();
+        => element.SwipeRight();
 
     #endregion
 

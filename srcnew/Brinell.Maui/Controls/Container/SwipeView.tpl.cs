@@ -11,11 +11,17 @@ namespace Brinell.Maui.Controls.Container;
 /// capability; composing interfaces keeps that open.
 /// </para>
 /// <para>
-/// <b>Not addressable on Windows.</b> SwipeView maps to the WinUI <c>SwipeControl</c>,
-/// whose automation peer must not be overridden — doing so collapses the entire UIA tree.
-/// Its <c>AutomationId</c> is therefore invisible and none of the members here can run in a
-/// Windows test. They exist for the planned Android/iOS phase, where swipe is a native
-/// gesture and the control is addressable.
+/// <b>Not addressable on Windows.</b> SwipeView maps to the WinUI <c>SwipeControl</c>, whose
+/// automation peer must not be overridden — doing so collapses the entire UIA tree. Its
+/// <c>AutomationId</c> is therefore invisible, and because every member here finds its element
+/// first, none of them can run in a Windows test.
+/// </para>
+/// <para>
+/// <b>The gesture still reaches it on Windows; the control object does not.</b> The bridge
+/// publishes a separate element carrying the verb and is addressed by <c>AutomationId</c>, so
+/// <c>IMauiDriver.PerformGesture(id, gesture)</c> works on a control nothing can find. Closing
+/// that gap means members that do not look for an element at all, which is a change to what the
+/// generator emits rather than to this file — see step 19 in <c>.my/extension/steps.md</c>.
 /// </para>
 /// </remarks>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
@@ -40,29 +46,34 @@ public partial class SwipeView<TScope> : Base.ViewBase<TScope>, ISwipeableContro
 
     #region Core Methods (Element-Aware, No Logging)
 
+    // The control names the gesture; the element decides how its platform performs it. On
+    // Appium that is a real touch swipe computed from the element's bounds; on Windows it is a
+    // verb carried to the app. Calling the pointer swipe from here, as these once did, made the
+    // control object state a mechanism it has no business choosing.
+
     /// <summary>Swipes right-to-left across the element.</summary>
     /// <param name="element">The pre-found element.</param>
     /// <param name="timeoutMs">Optional timeout.</param>
     protected virtual void SwipeLeftCore(IMauiElement element, int? timeoutMs = null)
-        => element.TrySwipeLeft();
+        => element.PerformGesture(MauiGesture.SwipeLeft);
 
     /// <summary>Swipes left-to-right across the element.</summary>
     /// <param name="element">The pre-found element.</param>
     /// <param name="timeoutMs">Optional timeout.</param>
     protected virtual void SwipeRightCore(IMauiElement element, int? timeoutMs = null)
-        => element.TrySwipeRight();
+        => element.PerformGesture(MauiGesture.SwipeRight);
 
     /// <summary>Swipes bottom-to-top across the element.</summary>
     /// <param name="element">The pre-found element.</param>
     /// <param name="timeoutMs">Optional timeout.</param>
     protected virtual void SwipeUpCore(IMauiElement element, int? timeoutMs = null)
-        => element.TrySwipeUp();
+        => element.PerformGesture(MauiGesture.SwipeUp);
 
     /// <summary>Swipes top-to-bottom across the element.</summary>
     /// <param name="element">The pre-found element.</param>
     /// <param name="timeoutMs">Optional timeout.</param>
     protected virtual void SwipeDownCore(IMauiElement element, int? timeoutMs = null)
-        => element.TrySwipeDown();
+        => element.PerformGesture(MauiGesture.SwipeDown);
 
     /// <summary>Swipes between two points relative to the element's top-left corner.</summary>
     /// <param name="element">The pre-found element.</param>
@@ -73,7 +84,7 @@ public partial class SwipeView<TScope> : Base.ViewBase<TScope>, ISwipeableContro
     /// <param name="timeoutMs">Optional timeout.</param>
     protected virtual void SwipeCore(IMauiElement element,
         int startX, int startY, int endX, int endY, int? timeoutMs = null)
-        => element.TrySwipeRelative(startX, startY, endX, endY);
+        => element.SwipeRelative(startX, startY, endX, endY);
 
     #endregion
 }

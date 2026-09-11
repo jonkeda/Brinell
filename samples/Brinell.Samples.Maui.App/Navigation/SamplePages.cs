@@ -75,6 +75,9 @@ public static class SamplePages
         new(SamplePage.Scroll, "Scroll", "A long page for scrolling tests",
             () => new ScrollPage()),
 
+        new(SamplePage.Gestures, "Gestures", "Tap, swipe, and verbs only a sink can answer",
+            () => new GesturesPage()),
+
         new(SamplePage.Toggle, "Toggle", "CheckBox, RadioButton and Switch",
             () => new TogglePage()),
 

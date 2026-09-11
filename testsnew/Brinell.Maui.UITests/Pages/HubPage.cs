@@ -26,6 +26,7 @@ public enum SamplePage
     Dialogs,
     Navigation,
     Scroll,
+    Gestures,
     AutomationProbe
 }
 

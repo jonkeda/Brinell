@@ -131,63 +131,42 @@ public partial class DatePicker<TScope> : Base.FocusableControlBase<TScope>
     }
 
     /// <summary>
-    /// Sets the date without using the pointer.
+    /// Sets the date.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// A ladder, tried in order, each rung guarded by what the platform advertises:
+    /// <b>One question, then one route.</b> If the app under test declares the <c>SetDate</c>
+    /// verb, it sets its own <c>DatePicker.Date</c> and says what the control then holds. If it
+    /// does not, the calendar is opened and the day selected by pattern - the route for an app
+    /// carrying no instrumentation, and still no pointer anywhere in it.
     /// </para>
-    /// <list type="number">
-    /// <item>a writable Value pattern - the right rung for an editable date field;</item>
-    /// <item>Invoke to open the calendar, then pick the day by its SelectionItem pattern;</item>
-    /// <item>focus and type, for a control that genuinely hosts text.</item>
-    /// </list>
     /// <para>
-    /// The pointer is on none of them. On WinUI the Value pattern is advertised but reports
-    /// IsReadOnly, so rung 1 declines and rung 2 does the work.
+    /// <b>This was a three-rung ladder</b>, and the rungs were tried in order until one appeared
+    /// to work: a writable Value pattern, then the calendar, then typing. Two of the three were
+    /// dead on the only platform that runs them - WinUI advertises the Value pattern and refuses
+    /// the write, and a <c>CalendarDatePicker</c> hosts no text to type into - so every call paid
+    /// for two failures to reach the one that worked, and a genuine breakage in the calendar
+    /// route would have been reported as "could not set the date" with three suspects. Asking
+    /// first costs one capability lookup and names the failure.
     /// </para>
     /// </remarks>
     protected virtual void SetDateCore(IMauiElement element, System.DateTime? date, int? timeoutMs = null)
     {
         if (date == null) return;
 
-        if (TrySetByValuePattern(element, date.Value)) return;
-        if (TrySetByCalendar(element, date.Value, timeoutMs)) return;
-        if (TrySetByTyping(element, date.Value)) return;
-
-        throw new BrinellException(
-            $"Could not set date {date.Value:yyyy-MM-dd} without the pointer. Tried the Value " +
-            $"pattern, the calendar flyout and typed text. Locator: {Locator}");
-    }
-
-    /// <summary>Rung 1: a Value pattern that accepts a write.</summary>
-    private bool TrySetByValuePattern(IMauiElement element, System.DateTime date)
-    {
-        if (element is not IValuePatternElement value || !value.SupportsValuePattern)
-            return false;
-
-        // WinUI advertises the pattern and refuses the write; asking first is what keeps this
-        // rung from silently doing nothing, which is how the previous implementation failed.
-        if (value.IsValuePatternReadOnly() != false)
-            return false;
-
-        element.SendKeys(date.ToString(Format, Culture), TextInputMethod.SetValue);
-        return ReadDate(element)?.Date == date.Date;
-    }
-
-    /// <summary>Rung 3: type into a control that really hosts text.</summary>
-    private bool TrySetByTyping(IMauiElement element, System.DateTime date)
-    {
-        try
+        if (element.SupportsSetDate)
         {
-            element.SendKeys(date.ToString(Format, Culture), TextInputMethod.Keys);
-        }
-        catch
-        {
-            return false;
+            element.SetDate(date.Value);
+            return;
         }
 
-        return ReadDate(element)?.Date == date.Date;
+        if (!TrySetByCalendar(element, date.Value, timeoutMs))
+        {
+            throw new BrinellException(
+                $"Could not set date {date.Value:yyyy-MM-dd}. The app under test does not declare "
+                + "the SetDate verb, and walking the calendar flyout did not reach the day. "
+                + $"Declaring the verb is one attribute in the app's markup. Locator: {Locator}");
+        }
     }
 
     #endregion

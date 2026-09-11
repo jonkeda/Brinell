@@ -107,6 +107,71 @@ public sealed class AppiumMauiElement : IMauiElement, ITogglePatternElement, ISe
     public void Select() => Click();
 
     #endregion
+
+    #region Gestures
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// <b>The honest list, not the optimistic one.</b> A touch platform could in principle
+    /// synthesise all nine gestures, and saying so would make this method a promise the next one
+    /// cannot keep. These five are what is implemented; the rest need W3C pointer action
+    /// sequences, which nothing here writes yet.
+    /// </remarks>
+    public bool SupportsGesture(MauiGesture gesture) => gesture is
+        MauiGesture.Tap
+        or MauiGesture.SwipeLeft
+        or MauiGesture.SwipeRight
+        or MauiGesture.SwipeUp
+        or MauiGesture.SwipeDown;
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// <para>
+    /// <b>This is where a swipe becomes a swipe on a touch device.</b> A control object names the
+    /// gesture and its element performs it however the platform does - on Windows by handing a
+    /// verb to the app, here by dragging across the element's own bounds. Both are written once,
+    /// per platform, which is the whole shape of the design: the control knows what, the element
+    /// knows how.
+    /// </para>
+    /// <para>
+    /// A gesture that is not in <see cref="SupportsGesture"/> throws rather than doing something
+    /// near enough. Delivering a press for a long press, or a tap for a pinch, would report a
+    /// gesture the app never received.
+    /// </para>
+    /// </remarks>
+    public void PerformGesture(MauiGesture gesture)
+    {
+        switch (gesture)
+        {
+            case MauiGesture.Tap:
+                Click();
+                return;
+
+            case MauiGesture.SwipeLeft:
+                this.SwipeLeft();
+                return;
+
+            case MauiGesture.SwipeRight:
+                this.SwipeRight();
+                return;
+
+            case MauiGesture.SwipeUp:
+                this.SwipeUp();
+                return;
+
+            case MauiGesture.SwipeDown:
+                this.SwipeDown();
+                return;
+
+            default:
+                throw new NotSupportedException(
+                    $"{nameof(AppiumMauiElement)} cannot perform {gesture}. It needs a W3C pointer "
+                    + "action sequence, which this driver does not write yet.");
+        }
+    }
+
+    #endregion
+
     
     /// <inheritdoc />
     public void SendKeys(string text, TextInputMethod method = TextInputMethod.Keys)

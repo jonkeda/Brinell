@@ -224,6 +224,58 @@ internal static class BridgeVerbRunner
     }
 
     /// <summary>
+    /// Asks any element on the app's bridge a question about the app itself.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The reading counterpart of <see cref="InvokeAnywhere"/>, and it can be simpler than that
+    /// method for a reason worth stating: <b>staleness does not matter here.</b> A popped page
+    /// that still answers will report the <i>live</i> navigation stack, because that is what its
+    /// <c>Navigation</c> property refers to - so the first target to answer gives the same answer
+    /// as the last. Going back is the opposite: a stale page agrees to pop and then pops nothing,
+    /// which is why that method has to keep walking past a refusal.
+    /// </para>
+    /// <para>
+    /// Only <see cref="HResults.S_OK"/> counts as an answer. Anything else means this target did
+    /// not know, and the next one is asked.
+    /// </para>
+    /// </remarks>
+    /// <param name="root">The app's top-level window.</param>
+    /// <param name="automation">The session.</param>
+    /// <param name="verb">The verb.</param>
+    /// <param name="argument">The argument, if the verb takes one.</param>
+    /// <returns>What was answered, including that nothing answered.</returns>
+    internal static BridgeVerbResult ExchangeAnywhere(
+        AutomationElement root,
+        UIA3Automation automation,
+        BrinellVerb verb,
+        string argument = "")
+    {
+        foreach (var target in BrinellBridgeLookup.Targets(root, automation))
+        {
+            if (!target.SupportedVerbs().Contains(verb)
+                || !target.TryGetBrinellPattern(out var pattern))
+            {
+                continue;
+            }
+
+            var hr = pattern!.Exchange((int)verb, argument, out var answer);
+
+            if (hr == HResults.S_OK)
+            {
+                return new BridgeVerbResult(
+                    true, hr, answer, BrinellVerbFailure.Describe(verb, hr));
+            }
+        }
+
+        return new BridgeVerbResult(
+            false,
+            HResults.UIA_E_NOTSUPPORTED,
+            string.Empty,
+            $"no element published on the app's bridge answers {verb}.");
+    }
+
+    /// <summary>
     /// Finds the pattern for an element, or explains which of the ways it was missing.
     /// </summary>
     /// <remarks>

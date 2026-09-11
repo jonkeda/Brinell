@@ -4,41 +4,63 @@ using Microsoft.Maui.Controls;
 namespace Brinell.Maui.AppSupport.Uia;
 
 /// <summary>
-/// Lets an app answer a verb itself, ahead of anything the bridge would do.
+/// Lets an app answer verbs the bridge has no MAUI API for.
 /// </summary>
 /// <remarks>
 /// <para>
-/// The escape hatch, and the first rung of the dispatcher ladder. A custom control whose
-/// gesture handling the bridge cannot see - a drawing surface, a chart, anything with its own
-/// hit-testing - implements this and gets the verb directly. Without it the only way to
-/// automate such a control is the pointer, which is the thing this whole programme exists to
+/// <b>It owns the verbs it names.</b> Not "first refusal" - ownership. A sink that lists
+/// <see cref="BrinellVerb.Pan"/> is what performs Pan on the elements it is attached to, and
+/// there is no second opinion behind it. This is the change that stopped the dispatcher being a
+/// ladder: the old interface returned <c>bool</c> from each method, meaning "I did not handle
+/// this, carry on", which is a sentence only a ladder needs and an invitation to write its
+/// <c>else</c>.
+/// </para>
+/// <para>
+/// <b>Three verbs cannot be delivered any other way.</b> <c>Pan</c> and <c>Pinch</c> need MAUI
+/// internals; <c>LongPress</c> has no MAUI recognizer at all. Without a sink the only remaining
+/// route to any of them is a real pointer, which is the thing the background-mode work exists to
 /// stop needing.
 /// </para>
 /// <para>
-/// <b>Implement it on the control, or on its view model, or on any object at all</b> - it is
+/// <b>Implement it on the control, on its view model, or on any object at all</b> - it is
 /// attached with <see cref="GestureAutomation.SinkProperty"/> and does not have to be the
 /// element itself.
 /// </para>
 /// <para>
-/// Called on the UI thread, inside the bridge's timeout budget. Returning false means "I did
-/// not handle this", and the bridge carries on down the ladder; it is not a failure.
+/// Called on the UI thread, inside the bridge's timeout budget. Throwing is a failure and is
+/// reported as one; it is not a way of declining.
 /// </para>
 /// </remarks>
 public interface IBrinellGestureSink
 {
-    /// <summary>Handles a numeric verb, or declines it.</summary>
+    /// <summary>
+    /// The verbs this sink performs.
+    /// </summary>
+    /// <remarks>
+    /// Read once, when an element carrying this sink is published. A verb named here is bound to
+    /// this sink for that element and nothing else is consulted for it; a verb not named here is
+    /// resolved as though the sink were absent.
+    /// </remarks>
+    IReadOnlyCollection<BrinellVerb> Verbs { get; }
+
+    /// <summary>Performs a numeric verb.</summary>
     /// <param name="element">The element the verb was aimed at.</param>
-    /// <param name="verb">The verb.</param>
+    /// <param name="verb">The verb, which this sink named in <see cref="Verbs"/>.</param>
     /// <param name="arg1">First argument, meaning defined per verb.</param>
     /// <param name="arg2">Second argument, meaning defined per verb.</param>
-    /// <returns>Whether this sink handled the verb.</returns>
-    bool TryInvoke(VisualElement element, BrinellVerb verb, int arg1, int arg2);
+    /// <returns>
+    /// An HRESULT. <c>S_OK</c> when it happened; <c>S_FALSE</c> when the app's own state meant
+    /// it could not, which is a fact about the app rather than a failure of the bridge.
+    /// </returns>
+    int Invoke(VisualElement element, BrinellVerb verb, int arg1, int arg2);
 
-    /// <summary>Handles a verb that takes or returns text, or declines it.</summary>
+    /// <summary>Performs a verb that takes or returns text.</summary>
     /// <param name="element">The element the verb was aimed at.</param>
-    /// <param name="verb">The verb.</param>
+    /// <param name="verb">The verb, which this sink named in <see cref="Verbs"/>.</param>
     /// <param name="argument">The argument, possibly empty.</param>
-    /// <param name="result">What to return, when this returns true.</param>
-    /// <returns>Whether this sink handled the verb.</returns>
-    bool TryExchange(VisualElement element, BrinellVerb verb, string argument, out string result);
+    /// <returns>The result, possibly empty.</returns>
+    string Exchange(VisualElement element, BrinellVerb verb, string argument)
+        => throw new NotSupportedException(
+            $"{GetType().Name} named {verb} but does not implement Exchange. A verb that carries "
+            + "a string needs it; one that does not is answered by Invoke.");
 }

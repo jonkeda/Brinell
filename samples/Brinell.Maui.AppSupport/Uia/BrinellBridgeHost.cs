@@ -73,13 +73,39 @@ public static class BrinellBridgeHost
 
         try
         {
+            // Resolved here, once, rather than per call. Everything it looks at - the element's
+            // type, its recognizers, the verbs the sink names - is fixed by the time the element
+            // is on screen, so the dispatch path holds a lookup and nothing else.
+            var plan = VerbBindings.Resolve(element, verbs, sink);
+
+            foreach (var refusal in plan.Refusals)
+            {
+                // The whole reason resolution moved here. A verb that binds to nothing used to
+                // be discovered by a test, as UIA_E_NOTSUPPORTED - which is also what a typo
+                // looks like, and what a verb this build has not implemented looks like. Said
+                // once, at startup, in the app author's terms, it is a markup bug with an
+                // address.
+                BridgeDiagnostics.Report(
+                    $"'{element.AutomationId}' [{element.GetType().Name}] declares {refusal.Verb} "
+                    + $"but nothing can perform it: {refusal.Reason}. The verb was not published.");
+            }
+
+            if (plan.Capabilities.Count == 0)
+            {
+                BridgeDiagnostics.Report(
+                    $"'{element.AutomationId}' declared {verbs.Count} verb(s) and bound none, so "
+                    + "it was not published. See the refusals above.");
+                return;
+            }
+
             BridgeDiagnostics.Report(
-                $"publishing '{element.AutomationId}' ({string.Join(",", verbs)}) on window 0x{hwnd:X}");
+                $"publishing '{element.AutomationId}' ({string.Join(",", plan.Capabilities)}) "
+                + $"on window 0x{hwnd:X}");
 
             var bridge = GetOrCreate(hwnd);
             BridgeDiagnostics.Report("bridge ready");
 
-            bridge.Register(new MauiVerbTarget(element, element.AutomationId, verbs, sink));
+            bridge.Register(new MauiVerbTarget(element, element.AutomationId, plan));
             BridgeDiagnostics.Report($"registered '{element.AutomationId}'");
 
             WatchForClose(element, hwnd);

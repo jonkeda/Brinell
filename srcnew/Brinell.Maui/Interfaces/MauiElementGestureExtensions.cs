@@ -17,8 +17,16 @@ namespace Brinell.Maui.Interfaces;
 /// <c>Brinell.Maui</c> could name. When a second platform needs swipes, move them.
 /// </para>
 /// <para>
-/// <b>Pointer input.</b> Swipes are real pointer gestures. They either happen or throw;
-/// nothing swallows a failure and reports it as an unperformed gesture.
+/// <b>Pointer input, and no <c>Try</c>.</b> Swipes are real pointer gestures. They either happen
+/// or throw - which is what the names now say. They were <c>TrySwipeLeft</c> and the rest, each
+/// returning a <c>bool</c> that was <c>true</c> whenever the element was non-null: a return value
+/// carrying no information, and an invitation to write the <c>else</c> that would make this a
+/// ladder. See <c>.my/fix/design-actions-do-not-try.md</c>.
+/// </para>
+/// <para>
+/// <b>Who calls these.</b> A control object asks its element to perform a gesture and the element
+/// decides how its platform does that; on Appium, that is these. They are not the route on
+/// Windows, where a gesture travels as a verb to the app itself.
 /// </para>
 /// <para>
 /// <b>Largely unexercised.</b> The controls that use these — <c>SwipeView</c> and
@@ -36,53 +44,45 @@ public static class MauiElementGestureExtensions
     private const double NearEdge = 0.2;
 
     /// <summary>Swipes right-to-left across the element's middle.</summary>
-    public static bool TrySwipeLeft(this IMauiElement? element)
+    public static void SwipeLeft(this IMauiElement element)
     {
-        if (element == null) return false;
-
         var rect = element.Rect;
         var centerY = rect.Y + (rect.Height / 2);
 
-        return element.TrySwipe(
+        element.Swipe(
             rect.X + (int)(rect.Width * FarEdge), centerY,
             rect.X + (int)(rect.Width * NearEdge), centerY);
     }
 
     /// <summary>Swipes left-to-right across the element's middle.</summary>
-    public static bool TrySwipeRight(this IMauiElement? element)
+    public static void SwipeRight(this IMauiElement element)
     {
-        if (element == null) return false;
-
         var rect = element.Rect;
         var centerY = rect.Y + (rect.Height / 2);
 
-        return element.TrySwipe(
+        element.Swipe(
             rect.X + (int)(rect.Width * NearEdge), centerY,
             rect.X + (int)(rect.Width * FarEdge), centerY);
     }
 
     /// <summary>Swipes bottom-to-top down the element's middle.</summary>
-    public static bool TrySwipeUp(this IMauiElement? element)
+    public static void SwipeUp(this IMauiElement element)
     {
-        if (element == null) return false;
-
         var rect = element.Rect;
         var centerX = rect.X + (rect.Width / 2);
 
-        return element.TrySwipe(
+        element.Swipe(
             centerX, rect.Y + (int)(rect.Height * FarEdge),
             centerX, rect.Y + (int)(rect.Height * NearEdge));
     }
 
     /// <summary>Swipes top-to-bottom down the element's middle.</summary>
-    public static bool TrySwipeDown(this IMauiElement? element)
+    public static void SwipeDown(this IMauiElement element)
     {
-        if (element == null) return false;
-
         var rect = element.Rect;
         var centerX = rect.X + (rect.Width / 2);
 
-        return element.TrySwipe(
+        element.Swipe(
             centerX, rect.Y + (int)(rect.Height * NearEdge),
             centerX, rect.Y + (int)(rect.Height * FarEdge));
     }
@@ -90,30 +90,18 @@ public static class MauiElementGestureExtensions
     /// <summary>
     /// Swipes between two points expressed relative to the element's top-left corner.
     /// </summary>
-    public static bool TrySwipeRelative(this IMauiElement? element,
+    /// <remarks>
+    /// The only one of these that takes coordinates, and the only one a test should reach for
+    /// when the four directions will not do. <c>IMauiElement.Swipe</c> takes absolute points;
+    /// this is the translation, and it is the whole reason the method exists.
+    /// </remarks>
+    public static void SwipeRelative(this IMauiElement element,
         int startX, int startY, int endX, int endY)
     {
-        if (element == null) return false;
-
         var rect = element.Rect;
 
-        return element.TrySwipe(
+        element.Swipe(
             rect.X + startX, rect.Y + startY,
             rect.X + endX, rect.Y + endY);
-    }
-
-    /// <summary>
-    /// Swipes between two absolute points, reporting whether the gesture was performed.
-    /// </summary>
-    /// <remarks>
-    /// Catches nothing. A swipe either happens or throws, which is the rule the click ladder
-    /// follows and for the same reason: a swallowed failure resurfaces later as an unrelated
-    /// assertion failure.
-    /// </remarks>
-    private static bool TrySwipe(this IMauiElement element,
-        int startX, int startY, int endX, int endY)
-    {
-        element.Swipe(startX, startY, endX, endY);
-        return true;
     }
 }

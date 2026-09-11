@@ -6,6 +6,7 @@ using FlaUI.Core.Definitions;
 using FlaUI.Core.Input;
 using FlaUI.Core.WindowsAPI;
 using System.Drawing;
+using System.Globalization;
 using FlaUI.Core.Patterns;
 using Brinell.Maui.Configuration;
 using Brinell.Maui.FlaUI.Bridge;
@@ -1519,7 +1520,171 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
     /// </remarks>
     /// <param name="verb">The verb to send.</param>
     /// <returns>Whether the app performed it.</returns>
+    #region Scrolling
+
+    /// <inheritdoc />
+    public bool SupportsScrollVerbs => BridgeDeclares(BrinellVerb.ScrollPosition);
+
+    /// <inheritdoc />
+    public void ScrollTo(string automationId)
+    {
+        if (!TryBridge(BrinellVerb.ScrollTo, automationId, out _))
+        {
+            throw new BrinellException(
+                $"'{AutomationId}' could not scroll to '{automationId}'. Either the scroller does "
+                + "not declare the ScrollTo verb, or nothing under it carries that AutomationId - "
+                + "the verb searches the whole subtree, so a miss means the id is wrong or the "
+                + "element is not in this scroller.");
+        }
+    }
+
+    /// <inheritdoc />
+    public bool SupportsScrollToIndex => BridgeDeclares(BrinellVerb.ScrollToIndex);
+
+    /// <inheritdoc />
+    public void ScrollToIndex(int index)
+    {
+        if (!TryBridge(BrinellVerb.ScrollToIndex, index, 0))
+        {
+            throw new BrinellException(
+                $"'{AutomationId}' could not scroll to index {index}. Either it does not declare "
+                + "the ScrollToIndex verb, or it is not a collection, or the index is past the "
+                + "end of its items.");
+        }
+    }
+
+    /// <inheritdoc />
+    public ScrollPosition ReadScrollPosition()
+    {
+        if (!TryBridge(BrinellVerb.ScrollPosition, string.Empty, out var reported))
+        {
+            throw new NotSupportedException(
+                $"'{AutomationId}' does not answer ScrollPosition. Declare it with "
+                + "uia:GestureAutomation.Verbs on the ScrollView in the app under test.");
+        }
+
+        var parts = reported.Split(',');
+        if (parts.Length != 6)
+        {
+            throw new BrinellException(
+                $"'{AutomationId}' answered ScrollPosition with '{reported}', which is not the "
+                + "six comma-separated numbers the verb returns. The two ends of the bridge "
+                + "disagree about the format.");
+        }
+
+        return new ScrollPosition(
+            Number(parts[0]), Number(parts[1]), Number(parts[2]),
+            Number(parts[3]), Number(parts[4]), Number(parts[5]));
+
+        static double Number(string value)
+            => double.Parse(value, CultureInfo.InvariantCulture);
+    }
+
+    #endregion
+
+    #region Dates and times
+
+    /// <inheritdoc />
+    public bool SupportsSetDate => BridgeDeclares(BrinellVerb.SetDate);
+
+    /// <inheritdoc />
+    public bool SupportsSetTime => BridgeDeclares(BrinellVerb.SetTime);
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// <para>
+    /// The app sets <c>DatePicker.Date</c> and reports what the control then holds, which is not
+    /// always what was sent: a picker with a <c>MinimumDate</c> or <c>MaximumDate</c> clamps. A
+    /// clamped write comes back as <c>S_FALSE</c> and is raised here rather than left for an
+    /// assertion about something else to discover.
+    /// </para>
+    /// <para>
+    /// Invariant format on the wire. The value is written by a test and read by an app that may
+    /// be running under any culture, and a date meaning one thing at each end is how this fails
+    /// in June and passes in July.
+    /// </para>
+    /// </remarks>
+    public void SetDate(DateTime date)
+    {
+        var wanted = date.ToString(BridgeDateFormat, CultureInfo.InvariantCulture);
+
+        if (!TryBridge(BrinellVerb.SetDate, wanted, out var landed))
+        {
+            throw new NotSupportedException(
+                $"'{AutomationId}' does not answer SetDate. Declare it with "
+                + "uia:GestureAutomation.Verbs on the DatePicker in the app under test, or drive "
+                + "the control through its calendar.");
+        }
+
+        if (landed != wanted)
+        {
+            throw new BrinellException(
+                $"'{AutomationId}' was set to {wanted} and now holds '{landed}'. A DatePicker "
+                + "clamps to its MinimumDate and MaximumDate, which is the usual cause.");
+        }
+    }
+
+    /// <inheritdoc />
+    /// <remarks>See <see cref="SetDate"/>; the same reporting applies.</remarks>
+    public void SetTime(TimeSpan time)
+    {
+        var wanted = time.ToString(BridgeTimeFormat, CultureInfo.InvariantCulture);
+
+        if (!TryBridge(BrinellVerb.SetTime, wanted, out var landed))
+        {
+            throw new NotSupportedException(
+                $"'{AutomationId}' does not answer SetTime. Declare it with "
+                + "uia:GestureAutomation.Verbs on the TimePicker in the app under test, or drive "
+                + "the control through its clock flyout.");
+        }
+
+        if (landed != wanted)
+        {
+            throw new BrinellException(
+                $"'{AutomationId}' was set to {wanted} and now holds '{landed}'.");
+        }
+    }
+
+    /// <summary>
+    /// The wire format for a date, which both ends must agree on exactly.
+    /// </summary>
+    /// <remarks>
+    /// Duplicated from the provider's <c>MauiCapabilities.DateFormat</c> rather than shared,
+    /// for the reason the whole contract project exists: the app under test is not always one
+    /// Brinell can add a reference to. A mismatch here is caught by <c>DateVerbTests</c>, which
+    /// round-trips a value through a real app.
+    /// </remarks>
+    private const string BridgeDateFormat = "yyyy-MM-dd";
+
+    /// <summary>The wire format for a time. See <see cref="BridgeDateFormat"/>.</summary>
+    private const string BridgeTimeFormat = @"hh\:mm\:ss";
+
+    #endregion
+
     private bool TryBridge(BrinellVerb verb) => TryBridge(verb, string.Empty, out _);
+
+    /// <summary>Sends a verb that carries two numbers, and says whether the app performed it.</summary>
+    /// <param name="verb">The verb to send.</param>
+    /// <param name="arg1">First argument, meaning defined per verb.</param>
+    /// <param name="arg2">Second argument, meaning defined per verb.</param>
+    /// <returns>Whether the app performed it.</returns>
+    private bool TryBridge(BrinellVerb verb, int arg1, int arg2)
+        => BridgeVerbRunner.Invoke(
+            _driver.RootElement, _driver.Automation, AutomationId, verb, arg1, arg2).Delivered;
+
+    /// <summary>
+    /// Whether the app under test declares this verb on this element.
+    /// </summary>
+    /// <remarks>
+    /// <b>A question asked before choosing a route, not a rung tried before another.</b> The
+    /// distinction is the whole of <c>design-controls-know-how-to-click.md</c>: nothing is
+    /// performed to find out, so no route can leave the app changed on its way past. The answer
+    /// comes from the app's own declaration and is the same every time it is asked.
+    /// </remarks>
+    /// <param name="verb">The verb.</param>
+    /// <returns>Whether the bridge would carry it.</returns>
+    private bool BridgeDeclares(BrinellVerb verb)
+        => BridgeVerbRunner.Supports(_driver.RootElement, _driver.Automation, AutomationId, verb);
 
     /// <summary>Sends a verb with an argument, and says whether the app performed it.</summary>
     /// <param name="verb">The verb to send.</param>

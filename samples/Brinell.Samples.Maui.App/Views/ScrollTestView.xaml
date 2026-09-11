@@ -2,6 +2,7 @@
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewModels="using:Brinell.Samples.Maui.App.ViewModels"
+             xmlns:uia="clr-namespace:Brinell.Maui.AppSupport.Uia;assembly=Brinell.Maui.AppSupport"
              x:Class="Brinell.Samples.Maui.App.Views2.TestViews.ScrollTestView"
              BackgroundColor="{AppThemeBinding Light=White, Dark=#1F1F1F}">
 
@@ -9,7 +10,12 @@
         <viewModels:ScrollViewModel />
     </ContentView.BindingContext>
 
-    <ScrollView>
+    <!--
+        The scroller declares its own verbs. ScrollTo searches this subtree by AutomationId, so
+        every button and label below is reachable by name without a wheel click anywhere.
+    -->
+    <ScrollView AutomationId="ScrollTestScroller"
+                uia:GestureAutomation.Verbs="ScrollTo,ScrollPosition">
         <VerticalStackLayout Padding="20" Spacing="15">
 
             <Label Text="Scroll Module Test" FontSize="20" FontAttributes="Bold" />

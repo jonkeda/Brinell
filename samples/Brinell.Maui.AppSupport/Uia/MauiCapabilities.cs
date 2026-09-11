@@ -1,3 +1,4 @@
+using System.Globalization;
 using Brinell.Uia;
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
@@ -23,10 +24,26 @@ namespace Brinell.Maui.AppSupport.Uia;
 internal static class MauiCapabilities
 {
     // ---- Gestures -----------------------------------------------------------------
+    //
+    // Every method below is either a question or a command, and none of them is both. That is
+    // what removed the Try prefix from this section: TryTap used to search for a recognizer and
+    // execute its command in one call, which is why it could not report which half had failed.
+    // The searches now happen once, when an element is published (see VerbBindings), and what is
+    // left here are plain actions that need no return value because the search already answered.
 
     /// <summary>
     /// Opens the swipe items a swipe in the given direction would reveal.
     /// </summary>
+    /// <remarks>
+    /// Opened without animation. A test that waits for an animation is a test with a sleep in
+    /// it, and the state the assertion is about is reached either way.
+    /// </remarks>
+    /// <param name="swipeView">The view to open.</param>
+    /// <param name="item">Which items to reveal, from <see cref="SwipeItemFor"/>.</param>
+    internal static void OpenSwipeView(SwipeView swipeView, OpenSwipeItem item)
+        => swipeView.Open(item, false);
+
+    /// <summary>Which swipe items a swipe in this direction uncovers.</summary>
     /// <remarks>
     /// <para>
     /// <b>The mapping is inverted, and that is correct.</b> Swiping your finger to the right
@@ -36,26 +53,10 @@ internal static class MauiCapabilities
     /// is why <c>SwipeMappingTests</c> pins it.
     /// </para>
     /// <para>
-    /// Opened without animation. A test that waits for an animation is a test with a sleep in
-    /// it, and the state the assertion is about is reached either way.
+    /// A question, and named like one: null means "that verb is not a swipe", which is an answer
+    /// rather than a failure.
     /// </para>
     /// </remarks>
-    /// <param name="swipeView">The view to open.</param>
-    /// <param name="verb">The swipe verb.</param>
-    /// <returns>Whether the verb named a direction.</returns>
-    internal static bool TryOpenSwipeView(SwipeView swipeView, BrinellVerb verb)
-    {
-        var item = SwipeItemFor(verb);
-        if (item is null)
-        {
-            return false;
-        }
-
-        swipeView.Open(item.Value, false);
-        return true;
-    }
-
-    /// <summary>Which swipe items a swipe in this direction uncovers.</summary>
     /// <param name="verb">The swipe verb.</param>
     /// <returns>The items revealed, or null if the verb is not a swipe.</returns>
     internal static OpenSwipeItem? SwipeItemFor(BrinellVerb verb) => verb switch
@@ -76,92 +77,206 @@ internal static class MauiCapabilities
     /// </summary>
     /// <remarks>
     /// Setting <c>IsRefreshing</c> is what the gesture itself does; the view raises
-    /// <c>Refreshing</c> and runs its command from the property change. Returning false when it
-    /// is already refreshing keeps a second call from being reported as a refresh that happened.
+    /// <c>Refreshing</c> and runs its command from the property change. Whether a refresh is
+    /// already running is the caller's question to ask - <c>RefreshView.IsRefreshing</c> answers
+    /// it - and asking it there is what lets the bridge report "already refreshing" as its own
+    /// state rather than as a failure to start one.
     /// </remarks>
     /// <param name="refreshView">The view to refresh.</param>
-    /// <returns>Whether a refresh was started.</returns>
-    internal static bool TryStartRefresh(RefreshView refreshView)
+    internal static void StartRefresh(RefreshView refreshView) => refreshView.IsRefreshing = true;
+
+    // ---- Dates and times ----------------------------------------------------------
+    //
+    // Two properties, and that is the entire feature. What it replaces on the client side is
+    // roughly two hundred lines of WinUI calendar navigation - open the flyout, read the header,
+    // page to the right month, find the day, select it - written because there was no other way
+    // to set a date without a pointer. The app has always been able to just say so.
+
+    /// <summary>
+    /// The one format a date crosses the wire in.
+    /// </summary>
+    /// <remarks>
+    /// Invariant and round-trippable, deliberately. The value is written by a test and read by an
+    /// app that may be running under any culture, and a date that means one thing on one side of
+    /// the wire and another on the other is the classic way for this to fail in June and pass in
+    /// July.
+    /// </remarks>
+    internal const string DateFormat = "yyyy-MM-dd";
+
+    /// <summary>The one format a time crosses the wire in. See <see cref="DateFormat"/>.</summary>
+    /// <remarks>
+    /// Twenty-four hour, and that is the point: <c>TimePicker</c> reading 15:30 back as 03:30 is
+    /// an open defect against the flyout route this verb exists to replace.
+    /// </remarks>
+    internal const string TimeFormat = @"hh\:mm\:ss";
+
+    /// <summary>Sets a date picker's date.</summary>
+    /// <param name="picker">The picker.</param>
+    /// <param name="date">The date, already parsed.</param>
+    internal static void SetDate(DatePicker picker, DateTime date) => picker.Date = date;
+
+    /// <summary>Sets a time picker's time.</summary>
+    /// <param name="picker">The picker.</param>
+    /// <param name="time">The time, already parsed.</param>
+    internal static void SetTime(TimePicker picker, TimeSpan time) => picker.Time = time;
+
+    /// <summary>Reads a date picker's date in the wire format.</summary>
+    /// <remarks>
+    /// <b>Both of these are nullable in MAUI 10</b> - <c>DatePicker.Date</c> is
+    /// <c>DateTime?</c> and <c>TimePicker.Time</c> is <c>TimeSpan?</c> - which is easy to miss
+    /// because the pickers always show something. An empty string is the honest reading of a
+    /// picker holding no value, and it is distinguishable from every real one.
+    /// </remarks>
+    /// <param name="picker">The picker.</param>
+    /// <returns>The date, or empty if it holds none.</returns>
+    internal static string ReadDate(DatePicker picker)
+        => picker.Date?.ToString(DateFormat, CultureInfo.InvariantCulture) ?? string.Empty;
+
+    /// <summary>Reads a time picker's time in the wire format.</summary>
+    /// <param name="picker">The picker.</param>
+    /// <returns>The time, or empty if it holds none.</returns>
+    internal static string ReadTime(TimePicker picker)
+        => picker.Time?.ToString(TimeFormat, CultureInfo.InvariantCulture) ?? string.Empty;
+
+    // ---- Scrolling ------------------------------------------------------------------
+    //
+    // ScrollToAsync and ScrollTo are cross-platform MAUI APIs, which makes this the largest
+    // parity win in the catalogue: the same verb does the same thing on Windows, Android and
+    // iOS. What it replaces on Windows is a loop of mouse-wheel clicks - an unquantified unit,
+    // with no completion signal, so the caller polled a scroll percentage and guessed when it
+    // had stopped moving.
+
+    /// <summary>
+    /// Brings a named descendant into view.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Never animated.</b> An animated scroll finishes some time after the call returns, so a
+    /// test either sleeps or races; unanimated, the layout is settled when the await completes
+    /// and the position the caller reads back is the real one.
+    /// </para>
+    /// <para>
+    /// The search is by <c>AutomationId</c> and covers the whole subtree, because the thing a
+    /// test wants to scroll to is usually nested several layouts deep inside the scroller.
+    /// </para>
+    /// </remarks>
+    /// <param name="scrollView">The scroller.</param>
+    /// <param name="automationId">The descendant to reveal.</param>
+    /// <returns>Whether a descendant with that id was found.</returns>
+    internal static bool ScrollTo(ScrollView scrollView, string automationId)
     {
-        if (refreshView.IsRefreshing)
+        var target = Descendants(scrollView)
+            .FirstOrDefault(child => child.AutomationId == automationId);
+
+        if (target is null)
         {
             return false;
         }
 
-        refreshView.IsRefreshing = true;
+        // Fire and forget is deliberate and safe here: with animation off, MAUI applies the
+        // scroll synchronously and the returned task completes on the next tick. Awaiting it
+        // would mean marshalling a result back through a verb that has nothing to report.
+        _ = scrollView.ScrollToAsync(target, ScrollToPosition.MakeVisible, false);
         return true;
     }
 
     /// <summary>
-    /// Raises the command of a tap recognizer expecting the given number of taps.
+    /// Brings the item at an index into view.
     /// </summary>
     /// <remarks>
-    /// The command, not the <c>Tapped</c> event: <c>SendTapped</c> is internal in MAUI 10 and
-    /// the event cannot be raised from outside. An element whose tap handling is an event
-    /// handler rather than a command needs an <see cref="IBrinellGestureSink"/>, and this
-    /// returns false so the ladder gets that far.
+    /// <c>ItemsView</c> covers <c>CollectionView</c> and <c>CarouselView</c>; <c>ListView</c> is
+    /// separate and scrolls to an <i>item</i> rather than an index, so its index has to be
+    /// resolved against <c>ItemsSource</c> first. That difference is MAUI's, not ours.
     /// </remarks>
-    /// <param name="element">The element to tap.</param>
-    /// <param name="taps">How many taps the gesture stands for.</param>
-    /// <returns>Whether a recognizer's command was raised.</returns>
-    internal static bool TryTap(VisualElement element, int taps)
+    /// <param name="element">The collection.</param>
+    /// <param name="index">The item index.</param>
+    /// <returns>Whether the element is a collection that could scroll.</returns>
+    internal static bool ScrollToIndex(VisualElement element, int index)
     {
-        // Gesture recognizers live on View, not on VisualElement. A Page or a Window can declare
-        // verbs but cannot carry a recognizer, so there is nothing here for them.
-        if (element is not View view)
+        switch (element)
         {
-            return false;
+            case ItemsView itemsView:
+                // Range-checked rather than left to MAUI. An index past the end is how a caller
+                // walking a virtualized list finds out it has reached the end, so it has to be a
+                // quiet no and not an exception crossing the bridge as a failure.
+                if (index < 0 || index >= Count(itemsView.ItemsSource))
+                {
+                    return false;
+                }
+
+                itemsView.ScrollTo(index, position: ScrollToPosition.MakeVisible, animate: false);
+                return true;
+
+            case ListView listView:
+                var item = listView.ItemsSource?.Cast<object>().ElementAtOrDefault(index);
+                if (item is null)
+                {
+                    return false;
+                }
+
+                listView.ScrollTo(item, ScrollToPosition.MakeVisible, animated: false);
+                return true;
+
+            default:
+                return false;
         }
-
-        foreach (var recognizer in view.GestureRecognizers.OfType<TapGestureRecognizer>())
-        {
-            if (recognizer.NumberOfTapsRequired != taps)
-            {
-                continue;
-            }
-
-            if (recognizer.Command is null || !recognizer.Command.CanExecute(recognizer.CommandParameter))
-            {
-                continue;
-            }
-
-            recognizer.Command.Execute(recognizer.CommandParameter);
-            return true;
-        }
-
-        return false;
     }
 
-    /// <summary>Raises the command of a swipe recognizer for the given direction.</summary>
-    /// <param name="element">The element to swipe.</param>
-    /// <param name="verb">The swipe verb.</param>
-    /// <returns>Whether a recognizer's command was raised.</returns>
-    internal static bool TrySwipeRecognizer(VisualElement element, BrinellVerb verb)
+    /// <summary>
+    /// Where a scroller is, and how much there is to scroll.
+    /// </summary>
+    /// <remarks>
+    /// <b>Offset and extent together, because neither means anything alone.</b> A test asserting
+    /// "we are at the bottom" needs the offset, the viewport and the content size to say so; a
+    /// percentage - which is what UI Automation offers - cannot distinguish a short page that
+    /// cannot scroll from a long one already at the end.
+    /// </remarks>
+    /// <param name="scrollView">The scroller.</param>
+    /// <returns>"x,y,viewportWidth,viewportHeight,contentWidth,contentHeight", invariant.</returns>
+    internal static string ReadScrollPosition(ScrollView scrollView)
+        => string.Format(
+            CultureInfo.InvariantCulture,
+            "{0},{1},{2},{3},{4},{5}",
+            scrollView.ScrollX,
+            scrollView.ScrollY,
+            scrollView.Width,
+            scrollView.Height,
+            scrollView.ContentSize.Width,
+            scrollView.ContentSize.Height);
+
+    /// <summary>How many items a source holds, without enumerating it if it can be asked.</summary>
+    /// <param name="source">The items source, possibly null.</param>
+    /// <returns>The count, or zero.</returns>
+    private static int Count(System.Collections.IEnumerable? source) => source switch
     {
-        var direction = SwipeDirectionFor(verb);
-        if (direction is null || element is not View view)
-        {
-            return false;
-        }
+        null => 0,
+        System.Collections.ICollection collection => collection.Count,
+        _ => source.Cast<object>().Count(),
+    };
 
-        foreach (var recognizer in view.GestureRecognizers.OfType<SwipeGestureRecognizer>())
+    /// <summary>Every element below this one, depth first.</summary>
+    /// <remarks>
+    /// <c>IVisualTreeElement</c> rather than <c>LogicalChildrenInternal</c>, which is internal in
+    /// MAUI 10 - and this file does not reflect into MAUI internals, for the reason stated at the
+    /// top of it. The visual tree is also the more correct one to walk here: a test scrolls to
+    /// something it can see.
+    /// </remarks>
+    /// <param name="root">Where to start. Not included in the result.</param>
+    /// <returns>The descendants.</returns>
+    private static IEnumerable<VisualElement> Descendants(IVisualTreeElement root)
+    {
+        foreach (var child in root.GetVisualChildren())
         {
-            // Direction is a flags enum: one recognizer commonly declares several.
-            if (!recognizer.Direction.HasFlag(direction.Value))
+            if (child is VisualElement visual)
             {
-                continue;
+                yield return visual;
             }
 
-            if (recognizer.Command is null || !recognizer.Command.CanExecute(recognizer.CommandParameter))
+            foreach (var deeper in Descendants(child))
             {
-                continue;
+                yield return deeper;
             }
-
-            recognizer.Command.Execute(recognizer.CommandParameter);
-            return true;
         }
-
-        return false;
     }
 
     /// <summary>MAUI's name for the direction a swipe verb travels in.</summary>
@@ -314,14 +429,14 @@ internal static class MauiCapabilities
     /// </remarks>
     /// <param name="element">Any element on the page to leave.</param>
     /// <returns>Whether there was something to pop.</returns>
-    internal static bool TryNavigateBack(VisualElement element)
+    internal static int NavigateBack(VisualElement element)
     {
         if (element is not Page page)
         {
             // Only a page can pop itself. Nothing else declares this verb today, and an element
             // inside a page that did would be asking on the page's behalf without being able to
             // check the one thing that makes the answer safe.
-            return false;
+            return HResults.UIA_E_NOTSUPPORTED;
         }
 
         var navigation = page.Navigation;
@@ -335,7 +450,11 @@ internal static class MauiCapabilities
 
         if (stack is null || stack.Count <= 1)
         {
-            return false;
+            // S_FALSE: we are at the root and there is nothing to pop. A true statement about
+            // the app, and the commonest answer of all - every fixture reset that starts at the
+            // hub gets it. It used to be indistinguishable from the three below, which is what
+            // made the caller wait two seconds to find out something it was told immediately.
+            return HResults.S_FALSE;
         }
 
         // A page may only pop itself, and only while it is the one on top.
@@ -353,7 +472,10 @@ internal static class MauiCapabilities
         // navigation.
         if (!ReferenceEquals(stack[^1], page))
         {
-            return false;
+            // UIA_E_ELEMENTNOTAVAILABLE: this target is stale. Distinct from S_FALSE because the
+            // caller should do something different - ask another target, not give up - and
+            // because a stale page agreeing to pop is the defect described above.
+            return HResults.UIA_E_ELEMENTNOTAVAILABLE;
         }
 
         // A pop already under way is not another pop to report.
@@ -365,7 +487,7 @@ internal static class MauiCapabilities
         if (!PopsInFlight.Add(page))
         {
             BridgeDiagnostics.Report("NavigateBack: a pop is already in flight");
-            return false;
+            return HResults.S_FALSE;
         }
 
         BridgeDiagnostics.Report("NavigateBack: popping");
@@ -382,7 +504,50 @@ internal static class MauiCapabilities
             },
             TaskScheduler.Default);
 
-        return true;
+        return HResults.S_OK;
+    }
+
+    /// <summary>
+    /// How deep the app's navigation stack is.
+    /// </summary>
+    /// <remarks>
+    /// <b>Any live target answers this correctly, stale or not</b>, which is what makes it usable
+    /// as a whole-app question. A page's <c>Navigation</c> reports the <i>current</i> stack
+    /// whoever is asked, so unlike <see cref="NavigateBack"/> - where a popped page will happily
+    /// agree to pop and then not - there is no wrong element to reach here.
+    /// </remarks>
+    /// <param name="element">Any element that can see the navigation stack.</param>
+    /// <returns>The depth, or null if this element has no navigation.</returns>
+    internal static int? NavigationDepth(VisualElement element)
+        => element is Page page ? page.Navigation?.NavigationStack.Count : null;
+
+    /// <summary>
+    /// Where the app is, in whatever terms its navigation model uses.
+    /// </summary>
+    /// <remarks>
+    /// Shell has a route and says so. A <c>NavigationPage</c> app has no such thing, so the
+    /// honest answer is the identity of the page on top - which is what a test asserting "we are
+    /// on the hub" actually means. Returning a fabricated route for the second case would make
+    /// the two look alike when they are not.
+    /// </remarks>
+    /// <param name="element">Any element that can see the navigation stack.</param>
+    /// <returns>The Shell route, or the top page's AutomationId, or empty.</returns>
+    internal static string CurrentRoute(VisualElement element)
+    {
+        if (Shell.Current is { } shell)
+        {
+            return shell.CurrentState?.Location?.ToString() ?? string.Empty;
+        }
+
+        if (element is not Page page)
+        {
+            return string.Empty;
+        }
+
+        var stack = page.Navigation?.NavigationStack;
+        var top = stack is { Count: > 0 } ? stack[^1] : null;
+
+        return top?.AutomationId ?? top?.GetType().Name ?? string.Empty;
     }
 
     /// <summary>

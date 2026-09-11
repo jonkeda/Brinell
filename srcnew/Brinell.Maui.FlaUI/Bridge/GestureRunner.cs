@@ -50,10 +50,17 @@ internal static class GestureRunner
     /// <param name="automationId">The MAUI <c>AutomationId</c> of the target.</param>
     /// <param name="gesture">The gesture.</param>
     /// <exception cref="GestureUnavailableException">The gesture could not be performed.</exception>
+    /// <param name="arg1">First argument, meaning defined per gesture; zero for most.</param>
+    /// <param name="arg2">Second argument, meaning defined per gesture; zero for most.</param>
     internal static void Perform(
-        AutomationElement root, UIA3Automation automation, string? automationId, MauiGesture gesture)
+        AutomationElement root,
+        UIA3Automation automation,
+        string? automationId,
+        MauiGesture gesture,
+        int arg1 = 0,
+        int arg2 = 0)
     {
-        var result = BridgeVerbRunner.Invoke(root, automation, automationId, gesture.ToVerb());
+        var result = BridgeVerbRunner.Invoke(root, automation, automationId, gesture.ToVerb(), arg1, arg2);
 
         if (!result.Delivered)
         {

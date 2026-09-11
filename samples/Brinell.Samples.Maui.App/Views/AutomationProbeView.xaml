@@ -24,6 +24,7 @@
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:controls="clr-namespace:Brinell.Samples.Maui.App.Controls"
+             xmlns:uia="clr-namespace:Brinell.Maui.AppSupport.Uia;assembly=Brinell.Maui.AppSupport"
              x:Class="Brinell.Samples.Maui.App.Views2.TestViews.AutomationProbeView"
              BackgroundColor="{AppThemeBinding Light=White, Dark=#1F1F1F}">
 
@@ -92,6 +93,30 @@
             <AbsoluteLayout AutomationId="ProbeAbsoluteLayout" HeightRequest="30">
                 <Label AutomationId="ProbeAbsoluteLayoutChild" Text="AbsoluteLayout" />
             </AbsoluteLayout>
+
+            <!-- ============ Gesture bridge ============ -->
+
+            <!--
+                The probe's other axis. Every row above asks whether Windows automation can SEE
+                a container; this one asks whether the Brinell bridge can REACH one, which is a
+                different question with a different answer - SwipeView below is invisible to UIA
+                and answers verbs perfectly well.
+
+                It follows the page's rule: the container carries "Probe{Type}" and holds one
+                Label carrying "Probe{Type}Child", so a test can tell "the bridge element exists"
+                from "the verb reached the app and did something". The child's text changes only
+                when the tap command runs.
+            -->
+            <Border AutomationId="ProbeGestureBridge"
+                    uia:GestureAutomation.Verbs="Tap"
+                    Padding="4">
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer NumberOfTapsRequired="1"
+                                          Command="{Binding ProbeTapCommand}" />
+                </Border.GestureRecognizers>
+                <Label AutomationId="ProbeGestureBridgeChild"
+                       Text="{Binding ProbeTapStatus}" />
+            </Border>
 
             <!-- ============ Content / decoration containers ============ -->
 

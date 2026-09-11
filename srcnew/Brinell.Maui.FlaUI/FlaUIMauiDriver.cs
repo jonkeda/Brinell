@@ -986,6 +986,13 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     public void PerformGesture(string automationId, MauiGesture gesture)
         => GestureRunner.Perform(RootElement, Automation, automationId, gesture);
 
+    /// <inheritdoc />
+    /// <exception cref="Bridge.GestureUnavailableException">
+    /// The app publishes no bridge, the element was not declared, or the verb was refused.
+    /// </exception>
+    public void PerformGesture(string automationId, MauiGesture gesture, int arg1, int arg2)
+        => GestureRunner.Perform(RootElement, Automation, automationId, gesture, arg1, arg2);
+
     /// <summary>
     /// Whether the app under test publishes a Brinell bridge at all.
     /// </summary>
@@ -1025,104 +1032,116 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// Never falls back to real input; see the interface.
     /// </para>
     /// </remarks>
-    public bool TryNavigateBack()
+    public bool IsAtNavigationRoot()
     {
-        // S_OK and not merely success. The verb answers S_FALSE when there was nothing on the
-        // stack to pop, which is a true statement about the app and not a navigation - and a
-        // caller told "yes" for it would wait for a page change that is never coming.
-        if (Ask() == HResults.S_OK)
+        var answer = Bridge.BridgeVerbRunner.ExchangeAnywhere(
+            RootElement, Automation, BrinellVerb.GetState, "NavigationDepth");
+
+        if (!answer.Delivered
+            || !int.TryParse(answer.Value, System.Globalization.CultureInfo.InvariantCulture, out var depth))
         {
-            return true;
+            throw new NotSupportedException(
+                "The app under test cannot say how deep its navigation stack is, so whether it is "
+                + "at the root is not knowable. Declare GetState on the app's pages - see "
+                + "GestureAutomation.Verbs - or drive the back affordance as a control instead. "
+                + $"The bridge said: {answer.Reason}");
         }
 
-        // An app with no bridge has given its final answer, and the caller should get on with
-        // whatever it does instead.
-        if (!Bridge.BrinellBridgeLookup.HasBridge(RootElement, Automation))
-        {
-            return false;
-        }
-
-        // An app *with* a bridge may simply not have published this page yet: a page registers
-        // its target when it loads, which is a different moment from the page appearing in the
-        // automation tree, so there is a window in which the app truthfully reports nothing to
-        // pop about a page that is on its way in.
-        //
-        // Telling those apart matters because the answers differ. "No bridge" means fall back to
-        // clicking the affordance; "not yet" means wait, and falling back instead would take
-        // real input the caller may have forbidden - which is exactly how this was found, as a
-        // PhysicalInputRefusedException in background mode.
-        var deadline = DateTime.UtcNow.AddMilliseconds(BridgePublishGraceMs);
-
-        while (DateTime.UtcNow < deadline)
-        {
-            WaitHelper.Pause(BridgePollIntervalMs);
-
-            if (Ask() == HResults.S_OK)
-            {
-                return true;
-            }
-        }
-
-        return false;
-
-        int Ask() => Bridge.BridgeVerbRunner
-            .InvokeAnywhere(RootElement, Automation, BrinellVerb.NavigateBack)
-            .HResult;
+        return depth <= 1;
     }
 
-    /// <summary>How long to let an app that has a bridge finish publishing the current page.</summary>
-    private const int BridgePublishGraceMs = 2000;
+    /// <inheritdoc />
+    /// <remarks>
+    /// <para>
+    /// <b>No grace period, and that is the fix.</b> This used to poll for two seconds whenever
+    /// the verb did not answer <c>S_OK</c>, guarded on "does this app have a bridge" - which is
+    /// always true for the app under test. So it fired on the commonest answer of all, *we are
+    /// already at the root*, and every fixture reset that started at the hub paid two seconds to
+    /// be told something it had been told immediately. See
+    /// <c>.my/fix/rca-navigation-tests-stall.md</c>.
+    /// </para>
+    /// <para>
+    /// <b>The race the grace period was added for is real, and is handled properly now.</b> A
+    /// page publishes its bridge target on <c>Loaded</c>, which is later than its root appearing
+    /// in the automation tree, so there is a window in which no live page answers. That window
+    /// is now distinguishable: the verb says <c>UIA_E_ELEMENTNOTAVAILABLE</c> for a stale target
+    /// and <c>S_FALSE</c> for the root, where before both were <c>false</c> and the caller had to
+    /// guess which it was looking at. Waiting is the answer to one of those and wrong for the
+    /// other.
+    /// </para>
+    /// </remarks>
+    public void NavigateBack()
+    {
+        var result = Bridge.BridgeVerbRunner.InvokeAnywhere(
+            RootElement, Automation, BrinellVerb.NavigateBack);
 
-    private const int BridgePollIntervalMs = 50;
+        if (result.Delivered)
+        {
+            return;
+        }
+
+        throw new BrinellException(
+            "The app under test did not go back. This is a navigation failure with a specific "
+            + $"cause, not something to retry: {result.Reason}");
+    }
+
 
     #endregion
 
     #region Navigation
     
     /// <inheritdoc />
+    /// <remarks>
+    /// A Shell route, handed to the app's own <c>GoToAsync</c>. It used to say desktop apps have
+    /// no URLs, which is true of desktop apps in general and not of this one: a MAUI Shell app
+    /// navigates by route on every platform it runs on, and the bridge is how that route reaches
+    /// it without a pointer.
+    /// </remarks>
     public void NavigateTo(string destination)
     {
-        // FlaUI desktop apps don't support URL navigation
-        throw new NotSupportedException("URL navigation is not supported by FlaUI driver for desktop apps");
+        var result = Bridge.BridgeVerbRunner.ExchangeAnywhere(
+            RootElement, Automation, BrinellVerb.NavigateTo, destination);
+
+        if (!result.Delivered)
+        {
+            throw new BrinellException(
+                $"The app under test did not navigate to '{destination}'. Routes are a Shell "
+                + "concept, so an app using a NavigationPage has none to go to. "
+                + $"The bridge said: {result.Reason}");
+        }
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Shell answers with its route. An app built on <c>NavigationPage</c> has no such thing, so
+    /// it answers with the identity of the page on top - which is what a test asserting "we are
+    /// on the hub" means anyway. Inventing a route for the second case would make two different
+    /// navigation models look alike.
+    /// </remarks>
+    public string CurrentRoute()
+    {
+        var result = Bridge.BridgeVerbRunner.ExchangeAnywhere(
+            RootElement, Automation, BrinellVerb.CurrentRoute);
+
+        if (!result.Delivered)
+        {
+            throw new NotSupportedException(
+                "The app under test cannot say where it is. Declare CurrentRoute on its pages - "
+                + $"see GestureAutomation.Verbs. The bridge said: {result.Reason}");
+        }
+
+        return result.Value;
     }
     
     /// <inheritdoc />
     /// <remarks>
-    /// The bridge first, then the back button a user would click, then Alt+Left. The last rung
-    /// is desktop-wide keyboard input that lands wherever the foreground happens to be, so it is
-    /// where the ladder ends rather than where it starts.
+    /// <b>Re-navigates to where the app already is</b>, rather than sending F5. A MAUI app has no
+    /// refresh key: F5 was desktop-wide keyboard input landing wherever the foreground happened
+    /// to be, swallowing its own failure, and doing nothing at all in the common case. Asking the
+    /// app to go to its current route is the nearest thing that is actually defined - and it
+    /// fails loudly on an app that has no routes, rather than silently on every app.
     /// </remarks>
-    public void NavigateBack()
-    {
-        if (TryNavigateBack())
-            return;
-
-        if (TryInvokeBackButton())
-            return;
-
-        try
-        {
-            PhysicalInput.Used("FlaUIMauiDriver.NavigateBack(Alt+Left)", "the NavigateBack verb");
-            EnsureRootWindowFocused();
-            _rootElement.Focus();
-            Keyboard.TypeSimultaneously(VirtualKeyShort.ALT, VirtualKeyShort.LEFT);
-        }
-        catch (System.ComponentModel.Win32Exception)
-        {
-            // Some locked-down desktops deny SendInput. Keep recovery best-effort
-            // and avoid turning a completed test into a teardown failure.
-        }
-    }
-    
-    /// <inheritdoc />
-    public void Refresh()
-    {
-        // Try F5 refresh for desktop apps
-        PhysicalInput.Used("FlaUIMauiDriver.Refresh(F5)", "the NavigateTo verb (step 22)");
-        EnsureRootWindowFocused();
-        _rootElement.Focus();
-        Keyboard.Type(VirtualKeyShort.F5);
-    }
+    public void Refresh() => NavigateTo(CurrentRoute());
     
     /// <inheritdoc />
     public byte[] TakeScreenshot() => GetScreenshot();
