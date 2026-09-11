@@ -389,7 +389,7 @@ violation of the "maintainable across future MAUI releases" requirement. So:
 4. **Refuse** with `UIA_E_NOTSUPPORTED`, and let the client ladder (§3.3) decide whether to
    fall back to pointer input.
 
-Every public MAUI API used is named in one file, `MauiGestureCapabilities.cs`, so a MAUI
+Every public MAUI API used is named in one file, `MauiCapabilities.cs`, so a MAUI
 upgrade that breaks one is a **compile error in a single known place** rather than a
 mysterious test failure.
 
@@ -1412,7 +1412,7 @@ provider reads `SupportedGestures`, sees the bit unset, and reports `NotSupporte
 a clean, actionable failure. An old client against a new provider is unaffected.
 
 **MAUI itself.** Every public MAUI API the dispatcher calls is listed in
-`MauiGestureCapabilities.cs`. A MAUI upgrade that changes one is a compile error there. The
+`MauiCapabilities.cs`. A MAUI upgrade that changes one is a compile error there. The
 internal APIs (`SendTapped`, `SendPinch`, `SendPan`) are never touched, so a MAUI servicing
 release cannot break the bridge silently, and `IBrinellGestureSink` absorbs whatever MAUI
 takes away.

@@ -362,7 +362,7 @@ builds.
 **Deliverable.** All six gestures from the requirement — `SwipeLeft`, `SwipeRight`, `SwipeUp`,
 `SwipeDown`, `LongPress`, `DoubleTap` — plus `Tap`.
 
-- `MauiGestureCapabilities.cs` — the single file naming every public MAUI API the dispatcher
+- `MauiCapabilities.cs` — the single file naming every public MAUI API the dispatcher
   calls. A MAUI upgrade that breaks one is a compile error here (D-4, §7.2).
 - Ladder in order: sink, then public MAUI API, then `TapGestureRecognizer.Command`, then
   `UIA_E_NOTSUPPORTED`.
@@ -531,7 +531,7 @@ first.
 | A gesture test names a FlaUI type and breaks the Android build | 2, 4 | `Brinell.Maui.UITests.Mobile` fails to compile; the Windows suite is green | Tests go through control objects (`AD-003`); the one FlaUI-typed test is excluded by name with a comment |
 | A new sample page breaks the mobile suite it also feeds | 4 | Android run fails on a page it never opened | The `Gestures` page must render on Android; verify with a mobile smoke run before closing the phase |
 | GUIDs regenerated during a refactor | any | Integration tests report "app not instrumented" | `Guids_AreStable` from Phase 1 catches it at unit-test speed |
-| MAUI makes a used public API internal | 6, 7 | `MauiGestureCapabilities.cs` fails to compile | The sink absorbs it; that is what it is for |
+| MAUI makes a used public API internal | 6, 7 | `MauiCapabilities.cs` fails to compile | The sink absorbs it; that is what it is for |
 
 ## Working rules for this piece of work
 

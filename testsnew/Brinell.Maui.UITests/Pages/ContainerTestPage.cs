@@ -1,3 +1,4 @@
+using Brinell.Core.Utilities;
 using Brinell.Maui.Containers;
 
 namespace Brinell.Maui.UITests.Pages;
@@ -6,11 +7,19 @@ namespace Brinell.Maui.UITests.Pages;
 /// Page object for the container module test view.
 /// </summary>
 /// <remarks>
+/// <para>
 /// Only the containers that are addressable on Windows get typed container objects.
 /// <c>Frame</c>, <c>SwipeView</c>, and <c>RefreshView</c> are declared in the markup for
 /// the planned Android/iOS phase but expose no <c>AutomationId</c> here, so they are
 /// reached through <see cref="TryFindByAutomationId"/> and reported by the probe rather
 /// than modelled as containers that would never resolve.
+/// </para>
+/// <para>
+/// <b>Their gestures are reachable even so.</b> <c>SwipeView</c> and <c>RefreshView</c> declare
+/// verbs for the Brinell UI Automation bridge, which publishes a separate element carrying them
+/// - so a test drives them by <c>AutomationId</c> through the driver without either control
+/// being addressable. See <c>Tests/Gestures</c>.
+/// </para>
 /// </remarks>
 public class ContainerTestPage : PageObjectBase<ContainerTestPage>
 {
@@ -62,6 +71,10 @@ public class ContainerTestPage : PageObjectBase<ContainerTestPage>
     /// <summary>A bounded ScrollView that owns its own scrolling.</summary>
     public ScrollView<ContainerTestPage> TestScrollView { get; }
 
+    /// <summary>The label inside <c>TestSwipeView</c>, which is addressable even though the
+    /// swipe view itself is not.</summary>
+    public Label<ContainerTestPage> SwipeContentLabel => new(this, "SwipeContentLabel");
+
     /// <summary>The BoxView, which has no children by design.</summary>
     public Label<ContainerTestPage> TestBoxView => new(this, "TestBoxView");
 
@@ -108,6 +121,42 @@ public class ContainerTestPage : PageObjectBase<ContainerTestPage>
         => TestScrollView.Label("ScrollLastLabel");
 
     #endregion
+
+    /// <summary>
+    /// Waits for the swipe item behind <c>TestSwipeView</c> to be revealed.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The item exists in the markup from the start but is not in the automation tree until the
+    /// swipe view is open, so this polls rather than resolving once. It is the observable
+    /// outcome of a swipe: the <c>SwipeView</c> itself publishes no <c>AutomationId</c> on
+    /// Windows, and "is it open" has to be asked about its contents instead.
+    /// </para>
+    /// <para>
+    /// Paced, not spun. An unpaced retry loop here puts thousands of cross-process automation
+    /// calls through the app in a couple of seconds and slows down the thing it is waiting for.
+    /// </para>
+    /// </remarks>
+    /// <param name="timeoutMs">How long to wait.</param>
+    /// <returns>The revealed item, or null if it never appeared.</returns>
+    public IMauiElement? WaitForSwipeItem(int timeoutMs)
+    {
+        var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+
+        do
+        {
+            var item = TryFindByAutomationId("SwipeDeleteItem");
+            if (item is not null)
+            {
+                return item;
+            }
+
+            WaitHelper.Pause(50);
+        }
+        while (DateTime.UtcNow < deadline);
+
+        return null;
+    }
 
     /// <summary>
     /// Resolves an element by automation id from page scope, or null.

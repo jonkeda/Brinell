@@ -80,6 +80,20 @@ public partial class Entry<TScope> : Base.FocusableControlBase<TScope>, IEditabl
     /// Core implementation of Append using pre-found element.
     /// Appends text without clearing existing content.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The semantic route first. Appending is the one text operation with no
+    /// <c>TextInputMethod</c> that fits: <c>SetValue</c> replaces rather than appends, and
+    /// reading the field and writing the concatenation from out here leaves a window in which
+    /// the app can change it. So this typed, which made it the last routine keyboard input in
+    /// the suite.
+    /// </para>
+    /// <para>
+    /// Typing remains the fallback and is still correct - it is what a user does. A test that is
+    /// specifically about per-keystroke behaviour should call <c>SendKeys</c> with
+    /// <see cref="TextInputMethod.Keys"/> and say so.
+    /// </para>
+    /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <param name="text">The text to append.</param>
     /// <param name="timeoutMs">Optional timeout for enabled check.</param>
@@ -87,19 +101,26 @@ public partial class Entry<TScope> : Base.FocusableControlBase<TScope>, IEditabl
     {
         if (text == null) return;
 
+        if (element.TryAppendText(text)) return;
+
         element.SendKeys(text);
     }
 
     /// <summary>
     /// Core implementation of Submit using pre-found element.
-    /// Sends Enter to the edit element, driving MAUI Entry.Completed command paths
-    /// such as search boxes.
+    /// Drives MAUI Entry.Completed command paths such as search boxes.
     /// </summary>
+    /// <remarks>
+    /// Through the element's own <c>Submit</c> rather than an Enter keystroke, so a platform
+    /// with a semantic route to the control's completion command can take it. Enter remains
+    /// what happens underneath where there is no such route - and for an app that handles
+    /// <c>Completed</c> as an event rather than a bound command, there genuinely is none.
+    /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <param name="timeoutMs">Optional timeout for enabled check.</param>
     protected virtual void SubmitCore(IMauiElement element, int? timeoutMs = null)
     {
-        element.SendKeys(Keys.Enter, TextInputMethod.Keys);
+        element.Submit();
     }
 
     #endregion

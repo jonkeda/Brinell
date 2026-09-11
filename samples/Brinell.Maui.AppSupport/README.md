@@ -85,3 +85,88 @@ It prints a table and is the regression test for any change to these handlers. N
 that it carries a **control group** (`AutomationContainer`): if that entry ever
 reports "NO", the probe itself is broken and no other reading on the page can be
 trusted. That check is what caught the SwipeView/RefreshView tree collapse.
+
+---
+
+# Gestures and semantic verbs: the UI Automation bridge
+
+The handlers above make an element *findable*. The bridge makes it *drivable* — a test can
+swipe, tap, focus or refresh a control without a mouse, without the foreground window, and
+without the control being addressable at all.
+
+## Why this is separate from the handlers
+
+A gesture cannot be expressed as a UI Automation pattern from XAML. `AutomationPeer.GetPatternCore`
+takes a closed enum, so a custom pattern is not reachable through WinUI at any level. The only
+supported route is a native provider returned from `WM_GETOBJECT` on a window you own.
+
+So the bridge creates a 1×1 child window that draws nothing, takes no input, and exists solely to
+carry the provider. **It does not touch the app's automation tree**: no handler is replaced and no
+peer is overridden, which is exactly the mistake recorded above.
+
+## Using it
+
+One attached property per element. An `AutomationId` is required — it is the only join between
+the element a test names and the bridge element that acts for it.
+
+```xml
+<ContentView xmlns:uia="clr-namespace:Brinell.Maui.AppSupport.Uia;assembly=Brinell.Maui.AppSupport">
+
+    <SwipeView AutomationId="TestSwipeView"
+               uia:GestureAutomation.Verbs="SwipeRight,CloseFlyout" />
+
+    <RefreshView AutomationId="TestRefreshView"
+                 uia:GestureAutomation.Verbs="SwipeDown" />
+
+</ContentView>
+```
+
+**The xmlns depends on how you took this project, and getting it wrong crashes the app at
+runtime with no build warning:**
+
+| How you took AppSupport | xmlns |
+|---|---|
+| Referenced as a project | `clr-namespace:Brinell.Maui.AppSupport.Uia;assembly=Brinell.Maui.AppSupport` |
+| Copied the sources in | `using:Brinell.Maui.AppSupport.Uia` |
+
+`using:` without an assembly means *this* assembly. With a project reference it resolves to
+nothing, XAML compilation reports no warning, and the page throws `XamlParseException` the first
+time it is shown — which reaches a test as every element on the page disappearing at once.
+
+Nothing else is needed. No builder call, no registration: the first element that declares a verb
+creates the bridge, and an app with no declarations behaves exactly as if these files were absent.
+
+## From a test
+
+```csharp
+driver.PerformGesture("TestRefreshView", MauiGesture.SwipeDown);   // throws if refused
+driver.TryPerformGesture("TestSwipeView", MauiGesture.SwipeRight); // returns false if refused
+driver.SupportsGesture("TestSwipeView", MauiGesture.Pinch);        // asks first
+```
+
+Addressed by `AutomationId` rather than by element, because the controls that most need a gesture
+are the ones Windows automation cannot see.
+
+## When a gesture is not found
+
+```
+$env:BRINELL_UIA_LOG = "bridge.log"      # every publish, registration and verb, with its HRESULT
+$env:BRINELL_APP_CRASH_LOG = "crash.log" # unhandled exceptions in the app under test
+```
+
+and from a test, `FlaUIMauiDriver.DescribeGestureBridge()` prints the raw tree below the app
+window. Between them they separate the three failures that otherwise look identical: no bridge
+window (the app was built without these sources), a bridge window whose provider never answered
+`WM_GETOBJECT`, or a fragment root with nothing registered on it.
+
+## What it copies
+
+Copying this project into an app means copying `srcnew/Brinell.Uia.Contracts` alongside it and
+adjusting the `Compile Include` path in the csproj. Both ends of the bridge — the app and the
+test assembly — must compile the same GUIDs, verb numbers and method table, or they do not speak
+to each other.
+
+## Shipping
+
+These sources have no place in a shipping build. UI Automation has no per-caller authentication,
+so the only real control is absence.

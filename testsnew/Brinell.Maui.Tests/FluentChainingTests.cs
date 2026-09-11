@@ -147,8 +147,15 @@ public class FluentChainingTests
         _mockContext.Verify(c => c.TryFindElement(It.IsAny<Locator>()), Times.Never);
     }
 
+    /// <remarks>
+    /// Submitting goes through the element's own <c>Submit</c>, not through an Enter keystroke.
+    /// The distinction is the point rather than an implementation detail: a platform that can
+    /// raise the control's completion command does so, and only falls back to Enter where it
+    /// cannot. Asserting on <c>SendKeys(Keys.Enter)</c> here would pin the fallback as the
+    /// contract and make the semantic route a regression.
+    /// </remarks>
     [Fact]
-    public void Submit_ReturnsPageInstanceAndSendsEnterWithoutClick()
+    public void Submit_ReturnsPageInstanceAndSubmitsWithoutClick()
     {
         // Arrange
         var mockElement = SetupMockElement("TestEntry");
@@ -158,7 +165,7 @@ public class FluentChainingTests
 
         // Assert
         Assert.Same(_testPage, result);
-        mockElement.Verify(e => e.SendKeys(Keys.Enter, TextInputMethod.Keys), Times.Once);
+        mockElement.Verify(e => e.Submit(), Times.Once);
         mockElement.Verify(e => e.Click(), Times.Never);
     }
 

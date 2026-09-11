@@ -44,9 +44,70 @@ public interface IMauiDriver : IDriver<IMauiElement>, IDiagnosticDriver
     /// Gets all window handles.
     /// </summary>
     IReadOnlyCollection<string> WindowHandles { get; }
-    
+
     #endregion
-    
+
+    #region Gestures
+
+    /// <summary>
+    /// Whether a gesture can be performed semantically on the element with this
+    /// <c>AutomationId</c>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Addressed by id, not by element, deliberately.</b> The controls that most need a
+    /// gesture are the ones Windows automation cannot see: a MAUI <c>SwipeView</c> publishes no
+    /// <c>AutomationId</c> at all on Windows, because its WinUI peer must not be overridden -
+    /// doing so collapses the app's entire automation tree. There is therefore no element to
+    /// hang the call on, and requiring one would exclude exactly the cases the bridge exists
+    /// for.
+    /// </para>
+    /// <para>
+    /// The element-level <see cref="IMauiElement.SupportsGesture"/> remains, for the elements
+    /// that are addressable.
+    /// </para>
+    /// </remarks>
+    /// <param name="automationId">The MAUI <c>AutomationId</c> of the target element.</param>
+    /// <param name="gesture">The gesture to ask about.</param>
+    /// <returns>Whether <see cref="PerformGesture"/> would work.</returns>
+    bool SupportsGesture(string automationId, MauiGesture gesture) => false;
+
+    /// <summary>Performs a gesture on the element with this <c>AutomationId</c>, or throws.</summary>
+    /// <param name="automationId">The MAUI <c>AutomationId</c> of the target element.</param>
+    /// <param name="gesture">The gesture to perform.</param>
+    /// <exception cref="NotSupportedException">
+    /// This platform cannot perform the gesture on that element.
+    /// </exception>
+    void PerformGesture(string automationId, MauiGesture gesture)
+        => throw new NotSupportedException(
+            $"Gestures are not implemented for {GetType().Name}. On Windows they are carried by "
+            + "the Brinell UI Automation bridge, which the app under test must opt into; on "
+            + "Android and iOS they are synthetic touch input.");
+
+    /// <summary>Performs a gesture if it can, and says whether it did.</summary>
+    /// <param name="automationId">The MAUI <c>AutomationId</c> of the target element.</param>
+    /// <param name="gesture">The gesture to perform.</param>
+    /// <returns>Whether the gesture was performed.</returns>
+    bool TryPerformGesture(string automationId, MauiGesture gesture)
+    {
+        if (!SupportsGesture(automationId, gesture))
+        {
+            return false;
+        }
+
+        try
+        {
+            PerformGesture(automationId, gesture);
+            return true;
+        }
+        catch (NotSupportedException)
+        {
+            return false;
+        }
+    }
+
+    #endregion
+
     #region Navigation
     
     /// <summary>
@@ -58,6 +119,29 @@ public interface IMauiDriver : IDriver<IMauiElement>, IDiagnosticDriver
     /// Navigates back in the navigation history.
     /// </summary>
     void NavigateBack();
+
+    /// <summary>
+    /// Navigates back without using real input, if the platform can.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Separate from <see cref="NavigateBack"/> because the answer matters. On Windows
+    /// <c>NavigateBack</c> ends in a desktop-wide Alt+Left, which lands wherever the foreground
+    /// happens to be and which several drivers swallow when <c>SendInput</c> is denied; a caller
+    /// that needs to know whether it actually navigated cannot find out. This one says.
+    /// </para>
+    /// <para>
+    /// <b>It never falls back to real input.</b> A false means the app published no semantic
+    /// route to going back, which is a fact the caller may want to act on - by clicking the
+    /// affordance a user would click, or by failing with something more useful than a test that
+    /// silently stayed on the same page.
+    /// </para>
+    /// <para>
+    /// Defaulted to false so a platform without a semantic route compiles and answers honestly.
+    /// </para>
+    /// </remarks>
+    /// <returns>Whether the app navigated back.</returns>
+    bool TryNavigateBack() => false;
     
     /// <summary>
     /// Refreshes the current page/view.

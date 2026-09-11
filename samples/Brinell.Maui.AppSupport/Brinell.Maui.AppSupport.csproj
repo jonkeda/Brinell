@@ -46,4 +46,34 @@
     <Compile Remove="Handlers\**" />
   </ItemGroup>
 
+  <!--
+    Uia\ is NOT excluded off Windows, unlike Handlers\.
+
+    The attached property that declares an element's verbs is written in shared XAML, so the
+    type has to exist on every platform the app builds for or the Android and iOS heads stop
+    compiling. Everything under Uia\ is therefore ordinary MAUI code, with two files - the two
+    that reach into WinUI - carrying a #if for their platform half. Off Windows they report no
+    window, nothing is published, and the bridge is inert. That is the right answer rather than
+    a stub: Android and iOS drive gestures with real touch input, which needs no bridge.
+  -->
+
+  <!--
+    The UI Automation contract, LINKED rather than referenced.
+
+    Both ends of the bridge have to compile the same GUIDs, the same verb numbers and the same
+    method table, or they do not speak to each other. The test assembly gets them from the
+    Brinell.Uia.Contracts project; the app under test gets them from here.
+
+    Linked, because a ProjectReference would break the property the whole project exists to
+    have: that an app Brinell cannot add a dependency to - third-party, legacy, or otherwise
+    outside our control - can still carry the bridge by copying source files in. Copying this
+    project means copying srcnew\Brinell.Uia.Contracts alongside it and adjusting the path
+    below; nothing else.
+  -->
+  <ItemGroup>
+    <Compile Include="..\..\srcnew\Brinell.Uia.Contracts\**\*.cs"
+             Exclude="..\..\srcnew\Brinell.Uia.Contracts\bin\**;..\..\srcnew\Brinell.Uia.Contracts\obj\**"
+             Link="Uia\Contract\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
 </Project>

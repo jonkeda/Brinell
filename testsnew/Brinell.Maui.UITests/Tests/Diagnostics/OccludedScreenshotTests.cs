@@ -72,6 +72,22 @@ public class OccludedScreenshotTests
             new ButtonsTestPage(_fixture.Context).StatusLabel.WaitExists(),
             "The page did not open, so the captures below would be racing navigation.");
 
+        // A third wait, and it is the one the other two cannot cover: let the page finish
+        // painting before anything is captured, and throw the result away.
+        //
+        // CaptureWhenSettled gives up waiting after its grace period if nothing has changed, and
+        // an unpainted page is perfectly stable - so a capture taken soon enough after navigation
+        // returns chrome with no content, twice, in agreement. Doing it here means the first
+        // frame this samples is the unpainted one, so the paint that follows registers as a
+        // change and the settle waits for it properly.
+        //
+        // This became necessary when the suite got faster: stage B replaced the toolbar click in
+        // ReturnToHub with a bridge call, navigation stopped costing seconds, and the captures
+        // moved inside the window where the page is realised but not yet drawn. The test was
+        // relying on incidental slowness, which is the kind of dependency that only shows up when
+        // something unrelated improves.
+        CaptureWhenSettled().Dispose();
+
         Bitmap occluded;
 
         using (ScreenOccluder.CoverPrimaryScreen())

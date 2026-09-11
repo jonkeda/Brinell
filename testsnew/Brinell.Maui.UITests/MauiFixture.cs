@@ -16,16 +16,64 @@ namespace Brinell.Maui.UITests;
 [TestModuleScan(typeof(HubPage), NamespacePrefix = "Brinell.Maui.UITests.Pages")]
 public class MauiFixture : MauiTestFixtureBase
 {
+    /// <summary>
+    /// Held for as long as this fixture's app is running. See <see cref="DesktopLease"/>.
+    /// </summary>
+    /// <remarks>
+    /// <b>A field initializer, and it has to be.</b> These run before the base constructor,
+    /// which is where the app is launched - so the desktop is taken before anything appears on
+    /// it. Acquiring in the constructor body would take the lease after the window was already
+    /// up, which is a lease over the wrong interval.
+    /// </remarks>
+    private readonly IDisposable _desktop = DesktopLease.Acquire();
+
     private readonly HubPage _hub;
+    private readonly AppRoot _appRoot;
 
     public MauiFixture()
     {
         _hub = new HubPage(Context);
+        _appRoot = new AppRoot(Context);
         Composition = TestComposition.ForFixture(this, services =>
             services.AddSingleton<IMauiTestContext>(Context));
     }
 
     public TestComposition Composition { get; }
+
+    /// <summary>
+    /// The "back to hub" toolbar item, which the hub attaches to every page it opens.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Scoped to the app, not to a page</b>, because that is where it is: MAUI draws a
+    /// <c>ToolbarItem</c> into the window's chrome. It was once a <c>Button&lt;HubPage&gt;</c>,
+    /// which is a contradiction - the hub is not loaded precisely when the way back to it is
+    /// needed - and the readiness gates correctly refused, taking the whole suite down with them.
+    /// The fix at the time replaced the control object with a hand-rolled lookup, which cost the
+    /// activation ladder, the logging and the failure messages that come with one; see
+    /// <c>.my/fix/rca-backtohub-is-not-a-control-object.md</c>. <see cref="AppRoot"/> is the
+    /// scope that was missing.
+    /// </para>
+    /// <para>
+    /// Located by accessibility id rather than automation id: MAUI surfaces a toolbar item's
+    /// <c>AutomationId</c> as the platform accessibility label, and that one locator is the same
+    /// string on Windows, Android and iOS.
+    /// </para>
+    /// </remarks>
+    public ToolbarButton<AppRoot> BackToHub
+        => new(_appRoot, Locator.ByAccessibilityId("BackToHub"));
+
+    /// <inheritdoc />
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+
+        if (disposing)
+        {
+            // After the base, so the app is gone before the next collection is let in.
+            _desktop.Dispose();
+        }
+    }
 
     /// <summary>
     /// Gets the hub page object: the app's flat page list.
@@ -57,101 +105,38 @@ public class MauiFixture : MauiTestFixtureBase
     /// <summary>
     /// Returns to the hub if a page is open.
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Uses the page's own Back button rather than <c>IMauiDriver.NavigateBack</c>. On Windows
-    /// that method falls back to Alt+Left — a global keystroke that lands wherever the focus
-    /// happens to be, which is not necessarily the app. Clicking the button the user would
-    /// click needs no focus at all and is the same gesture on every platform.
-    /// </para>
-    /// <para>
-    /// The stack is one deep by construction — the hub pushes a page, a page never pushes
-    /// another — so one press suffices. The loop guards against a page that pushes
-    /// internally, not an expectation that any does.
-    /// </para>
-    /// </remarks>
     private void ReturnToHub()
     {
-        const int MaxPops = 3;
+        var attempts = new List<string>();
 
-        for (var pop = 0; pop < MaxPops && !_hub.IsLoaded(); pop++)
+        if (Context.Driver.TryNavigateBack())
         {
-            var back = FindBackToHub(TestConstants.ShortTestTimeoutMs);
-            if (back == null)
+            attempts.Add("popped through the bridge");
+        }
+        else if (!_hub.IsLoaded())
+        {
+            attempts.Add("no bridge answered; falling back to the toolbar click");
+
+            if (BackToHub.WaitExists(true, TestConstants.ShortTestTimeoutMs))
             {
-                break;
+                PhysicalInput.Used("MauiFixture.ReturnToHub", "a working activation route for ToolbarItem");
+                BackToHub.Click();
             }
+            else
+            {
+                attempts.Add("no 'BackToHub' item on this page either");
+            }
+        }
 
-            // A real click, deliberately, and the suite's entire physical-input footprint.
-            //
-            // Invoke is the obvious replacement and does not work here. Measured twice, with two
-            // independent implementations: driving this ToolbarItem through the Invoke pattern
-            // reports success and does not reliably raise the command, so navigation silently
-            // does not happen and the run degrades from 5s to ~60s with intermittent failures.
-            // Every control-object click in the suite already goes through the pattern ladder
-            // successfully — an audit run recorded zero of them falling back — so this is
-            // specific to the toolbar item, not to the ladder.
-            //
-            // Recorded rather than hidden: this is the one path an audit should keep showing
-            // until the gesture bridge can activate it properly.
-            PhysicalInput.Used("MauiFixture.ReturnToHub", "a working activation route for ToolbarItem");
-            back.Click();
-
-            // Wait for the hub before deciding whether to pop again. Testing IsLoaded straight
-            // after the click reads the page mid-transition, so the loop goes round and spends a
-            // full timeout waiting for a Back button that has already gone.
-            _hub.WaitLoaded(true, TestConstants.ShortTestTimeoutMs);
+        if (!_hub.WaitLoaded(true, TestConstants.ShortTestTimeoutMs))
+        {
+            throw new InvalidOperationException(
+                "Could not get back to the hub, so the next page cannot be opened. This is a "
+                + "navigation failure, not a fault in whatever is opened next.\n  "
+                + string.Join("\n  ", attempts));
         }
     }
 
-    /// <summary>
-    /// Finds the hub's back button on whatever page is currently open.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Resolved from the app root rather than through <see cref="HubPage"/>. The hub attaches
-    /// this toolbar item to the page it opens, so the button lives on <i>that</i> page — and the
-    /// hub is by definition not loaded at the moment the button is needed. Scoping it to
-    /// <c>HubPage</c> asked a page object for a control that is not in it, which the page
-    /// readiness gates correctly refused: every test after the first died with
-    /// <c>MissingRoot</c> on <c>PageHub</c>. See <c>.my/fix/rca-page-readiness-gate.md</c>.
-    /// </para>
-    /// <para>
-    /// Located by accessibility id, not automation id. A <c>ToolbarItem</c> is rendered into
-    /// native chrome rather than page content, and MAUI surfaces its AutomationId there as the
-    /// accessibility label — on Android the node's <c>resource-id</c> is empty and the value
-    /// appears in <c>content-desc</c>. AccessibilityId is the same string on both platforms, so
-    /// one locator serves all three.
-    /// </para>
-    /// <para>
-    /// Polls rather than looking once: <c>TryFindElement</c> is a single driver call, and a page
-    /// caught mid-transition has not attached its toolbar yet. The interval is deliberate — an
-    /// unpaced loop puts thousands of UI Automation round trips through the app's provider over
-    /// the timeout, which is a poor way to ask a busy app a question.
-    /// </para>
-    /// </remarks>
-    private IMauiElement? FindBackToHub(int timeoutMs)
-    {
-        const int PollingIntervalMs = 50;
-
-        var backToHub = Locator.ByAccessibilityId("BackToHub");
-        var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
-
-        while (true)
-        {
-            if (Context.TryFindElement(backToHub) is { } back)
-            {
-                return back;
-            }
-
-            if (DateTime.UtcNow >= deadline)
-            {
-                return null;
-            }
-
-            WaitHelper.Pause(PollingIntervalMs);
-        }
-    }
 
     /// <summary>
     /// Navigates to the Buttons page.

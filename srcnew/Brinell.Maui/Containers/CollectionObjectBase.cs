@@ -547,11 +547,21 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
 
         // Scroll pattern first; repeat until it stops making progress, since one step is
         // one viewport.
+        var scrolled = false;
         while (ScrollHelper.TryScrollBack(target))
         {
+            scrolled = true;
         }
 
-        ScrollHelper.TrySwipeBack(target);
+        // Only if the pattern never moved anything. The loop above ends at the top by
+        // definition, so a swipe after it was a pointer action taken every single time this ran
+        // and could not change the outcome - the largest remaining source of physical input in
+        // the suite, spent confirming something already true.
+        if (!scrolled)
+        {
+            ScrollHelper.TrySwipeBack(target);
+        }
+
         return Self;
     }
 

@@ -8,6 +8,9 @@ using FlaUI.Core.WindowsAPI;
 using System.Drawing;
 using FlaUI.Core.Patterns;
 using Brinell.Maui.Configuration;
+using Brinell.Maui.FlaUI.Bridge;
+using Brinell.Maui.Interfaces;
+using Brinell.Uia;
 
 namespace Brinell.Maui.FlaUI;
 
@@ -165,18 +168,39 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// <para>
+    /// <b>UI Automation first, and the app itself only if UI Automation says no.</b> Windows
+    /// keyboard focus is a property of the foreground thread: a window that is not in front has
+    /// no focused control as far as <c>HasKeyboardFocus</c> is concerned, however the app sees
+    /// it. So on an occluded or off-screen app - the whole point of stage B - a field that MAUI
+    /// considers focused reports false here, and every assertion about focus would be wrong in
+    /// the one configuration this work exists to support.
+    /// </para>
+    /// <para>
+    /// Asking the app costs a walk of the bridge, so it is asked only on the false path. A true
+    /// from UI Automation is already the answer, and it is the answer on nearly every read.
+    /// </para>
+    /// </remarks>
     public bool Focused
     {
         get
         {
             try
             {
-                return _element.Properties.HasKeyboardFocus.ValueOrDefault;
+                if (_element.Properties.HasKeyboardFocus.ValueOrDefault)
+                {
+                    return true;
+                }
             }
             catch
             {
-                return false;
+                // Fall through to the app's own answer, which is the better one anyway.
             }
+
+            return TryBridge(BrinellVerb.IsFocused, string.Empty, out var reported)
+                   && bool.TryParse(reported, out var focused)
+                   && focused;
         }
     }
 
@@ -272,26 +296,55 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
     }
    
     /// <inheritdoc />
+    /// <remarks>
+    /// <para>
+    /// <b><see cref="TextInputMethod.Keys"/> still types, and that is deliberate.</b> A keyboard
+    /// raises <c>TextChanged</c> per character, applies <c>MaxLength</c> as it goes and lets a
+    /// numeric keyboard refuse a letter; setting the text raises one change for the whole value.
+    /// A test <i>of</i> input behaviour needs the former, so this method keeps meaning "type
+    /// it", and the bridge becomes the default for the other two - which are about
+    /// <i>arranging</i> a field's contents, not about the input pipeline.
+    /// </para>
+    /// <para>
+    /// <b><see cref="TextInputMethod.Paste"/> no longer reaches the clipboard when the bridge
+    /// can take it.</b> The physical route writes the machine-wide clipboard and sends Ctrl+V:
+    /// it destroys whatever the person at the keyboard had copied, and two runs on one machine
+    /// corrupt each other. It stays as the fallback because an uninstrumented app has nothing
+    /// else.
+    /// </para>
+    /// </remarks>
     public void SendKeys(string text, TextInputMethod method = TextInputMethod.Keys)
     {
         switch (method)
         {
             case TextInputMethod.Keys:
-                PhysicalInput.Used("FlaUIMauiElement.SendKeys(Keys)", "the SetText verb (step 14)");
+                PhysicalInput.Used("FlaUIMauiElement.SendKeys(Keys)", "nothing, when the test is of the input pipeline; the SetText verb otherwise");
                 FocusForKeyboardInput();
                 Keyboard.Type(text);
                 break;
             case TextInputMethod.Paste:
-                PhysicalInput.Used("FlaUIMauiElement.SendKeys(Paste)", "the SetText verb (step 14) - this one also destroys the user's clipboard");
+                if (TryBridge(BrinellVerb.SetText, text, out _))
+                    return;
+
+                PhysicalInput.Used("FlaUIMauiElement.SendKeys(Paste)", "the SetText verb - this one also destroys the user's clipboard");
                 FocusForKeyboardInput();
                 System.Windows.Forms.Clipboard.SetText(text);
                 Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_V);
                 break;
             case TextInputMethod.SetValue:
+                // The Value pattern first, and the bridge second. Both are semantic, so the
+                // ordering is not about avoiding physical input at all - it is that the pattern
+                // is two cross-process calls against an element already in hand, where the
+                // bridge is a raw walk of the window's children before it can even start. The
+                // bridge earns its place on the elements the pattern refuses: a read-only
+                // wrapper, or a control that publishes no Value pattern at all.
                 if (TrySetTextValue(text))
                     return;
 
-                PhysicalInput.Used("FlaUIMauiElement.SendKeys(SetValue fallback)", "the SetText verb (step 14)");
+                if (TryBridge(BrinellVerb.SetText, text, out _))
+                    return;
+
+                PhysicalInput.Used("FlaUIMauiElement.SendKeys(SetValue fallback)", "the SetText verb");
                 FocusForKeyboardInput();
                 Keyboard.Type(text);
                 break;
@@ -304,8 +357,11 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
         if (TrySetTextValue(string.Empty))
             return;
 
+        if (TryBridge(BrinellVerb.ClearText))
+            return;
+
         // Select all and delete
-        PhysicalInput.Used("FlaUIMauiElement.Clear(Ctrl+A,Delete)", "the ClearText verb (step 14)");
+        PhysicalInput.Used("FlaUIMauiElement.Clear(Ctrl+A,Delete)", "the ClearText verb");
         FocusForKeyboardInput();
         Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_A);
         Keyboard.Type(VirtualKeyShort.DELETE);
@@ -714,10 +770,23 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// The bridge raises the control's own completion command, which is what Enter would have
+    /// caused. It refuses when the app handles completion with an event handler rather than a
+    /// bound command - <c>Entry.SendCompleted</c> is internal in MAUI, so there is genuinely no
+    /// public route - and then the real Enter below is the only way to reach the app's
+    /// behaviour.
+    /// </remarks>
     public void Submit()
     {
-        // Try to find and click a submit button, or press Enter
-        PhysicalInput.Used("FlaUIMauiElement.Submit(Enter)", "the Submit verb (step 14)");
+        // Exchange, not Invoke, even though it carries no strings. Submit lives in the text
+        // range and the provider answers the whole range on one path; splitting a range across
+        // both methods is how a verb ends up reaching the app down a route that has never heard
+        // of it, and being refused for a reason that has nothing to do with the element.
+        if (TryBridge(BrinellVerb.Submit))
+            return;
+
+        PhysicalInput.Used("FlaUIMauiElement.Submit(Enter)", "the Submit verb");
         FocusForKeyboardInput();
         Keyboard.Type(VirtualKeyShort.ENTER);
     }
@@ -738,8 +807,25 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
     public bool SupportsSetFocus => true;
 
     /// <inheritdoc />
+    /// <remarks>
+    /// <para>
+    /// <b>The bridge first, and this is the difference the whole of stage B turns on.</b>
+    /// Focus and the desktop foreground window are separate things that the physical path had
+    /// to conflate: it calls <c>SetForeground</c> because the global keystrokes that usually
+    /// follow go wherever the foreground is. Asking for focus on its own needs none of that, so
+    /// the bridge route leaves the machine with whoever is sitting at it — the app can be
+    /// occluded, or off to one side, and the caret still lands in the right field.
+    /// </para>
+    /// <para>
+    /// The fallback is the old path in full, because an app without the bridge must keep
+    /// working exactly as it did.
+    /// </para>
+    /// </remarks>
     public bool SetFocus()
     {
+        if (TryBridge(BrinellVerb.Focus))
+            return true;
+
         try
         {
             FocusForKeyboardInput();
@@ -757,10 +843,18 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
     /// Brings the app to the front, then gives this element keyboard focus.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// Both halves are needed. FlaUI's <c>Focus()</c> only activates the window when the element
     /// *is* a window; for a control it takes the <c>FocusNative</c> branch, which sets keyboard
     /// focus without raising anything — so the global <c>Keyboard</c> input that follows would
     /// reach whichever window is actually in front.
+    /// </para>
+    /// <para>
+    /// <b>Not routed through the bridge, deliberately.</b> Every caller of this is about to send
+    /// real keystrokes, and those need the foreground however the focus was obtained. The bridge
+    /// belongs one level up, in <see cref="SetFocus"/> and in the text verbs, where focus is the
+    /// whole request rather than the setup for a keystroke.
+    /// </para>
     /// </remarks>
     private void FocusForKeyboardInput()
     {
@@ -1320,6 +1414,77 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
         }
     }
 
+
+    #endregion
+
+    #region Gestures (Brinell UI Automation bridge)
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Answered by asking the app under test what it declared for this element, not by
+    /// inspecting the control. A <c>SwipeView</c> that has not opted in reports false, which is
+    /// correct: nothing can drive it semantically until the app says so.
+    /// </remarks>
+    public bool SupportsGesture(MauiGesture gesture)
+        => GestureRunner.Supports(_driver.RootElement, _driver.Automation, AutomationId, gesture);
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Nothing is cached between calls. A page can be navigated away from and back, and its
+    /// bridge elements are republished each time with new runtime ids; an answer cached against
+    /// this element would be about the previous incarnation.
+    /// </remarks>
+    /// <exception cref="GestureUnavailableException">
+    /// The app publishes no bridge, this element was not declared, or the verb was refused.
+    /// </exception>
+    public void PerformGesture(MauiGesture gesture)
+        => GestureRunner.Perform(_driver.RootElement, _driver.Automation, AutomationId, gesture);
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Appending is the one text operation that cannot be assembled out of a read and a write
+    /// from this side: between the two calls the app is still running, and anything it does to
+    /// the field lands in the middle. The bridge does both on one pass of the app's UI thread,
+    /// which is why this is a verb of its own rather than sugar over <c>GetText</c> and
+    /// <c>SetText</c>.
+    /// </remarks>
+    public bool TryAppendText(string text)
+        => TryBridge(BrinellVerb.AppendText, text, out _);
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// The physical route for this is a Tab keystroke, which does not so much clear focus as
+    /// move it to whatever happens to be next - a different operation with a visible side
+    /// effect, and one that needs the app in front. The verb removes focus and does nothing
+    /// else.
+    /// </remarks>
+    public bool TryClearFocus() => TryBridge(BrinellVerb.Unfocus);
+
+    /// <summary>
+    /// Sends a verb to this element, and says whether the app performed it.
+    /// </summary>
+    /// <remarks>
+    /// The bridge rung of every ladder in this class. False covers all the ordinary negatives -
+    /// the app has no bridge, this element was never declared, the element refused the verb -
+    /// because at this level they call for the same response: try the next rung.
+    /// </remarks>
+    /// <param name="verb">The verb to send.</param>
+    /// <returns>Whether the app performed it.</returns>
+    private bool TryBridge(BrinellVerb verb) => TryBridge(verb, string.Empty, out _);
+
+    /// <summary>Sends a verb with an argument, and says whether the app performed it.</summary>
+    /// <param name="verb">The verb to send.</param>
+    /// <param name="argument">Its argument.</param>
+    /// <param name="result">What the app returned.</param>
+    /// <returns>Whether the app performed it.</returns>
+    private bool TryBridge(BrinellVerb verb, string argument, out string result)
+    {
+        var outcome = BridgeVerbRunner.Send(
+            _driver.RootElement, _driver.Automation, AutomationId, verb, argument);
+
+        result = outcome.Value;
+        return outcome.Delivered;
+    }
 
     #endregion
 }

@@ -31,18 +31,18 @@ dotnet build testsnew\Brinell.Maui.UITests.Mobile\Brinell.Maui.UITests.Mobile.cs
 
 | # | Step | Stage | Depends on | Status |
 |---|---|---|---|---|
-| 1 | Occluded-window screenshots | 0 | — | **done** |
+| 1 | Occluded-window screenshots | 0 | — | **done** — but see the follow-up below: the test became order-dependent in stage B |
 | 2 | Off-screen window placement | 0 | — | **done** (`offscreen` needs ToolbarItem activation — see step 3) |
 | 3 | Background-mode guard + inventory | 0 | — | **done** |
-| 4 | Spike: child HWND raw provider | A | — | todo |
-| 5 | Spike: pattern round-trip, int **and string** | A | — | todo |
-| 6 | Spike: raw-view findability | A | 4 | todo |
-| 7 | Freeze the contract shape | A | 5, 6 | todo |
-| 8 | `Brinell.Uia.Contracts` + unit tests | A | 7 | todo |
-| 9 | Provider skeleton | A | 8 | todo |
-| 10 | Walking skeleton: one gesture end to end | A | 9 | todo |
-| 11 | Registry + attached property | A | 10 | todo |
-| 12 | FlaUI client extensions | A | 10 | todo |
+| 4 | Spike: child HWND raw provider | A | — | **done** |
+| 5 | Spike: pattern round-trip, int **and string** | A | — | **done** |
+| 6 | Spike: raw-view findability | A | 4 | **done** |
+| 7 | Freeze the contract shape | A | 5, 6 | **done** |
+| 8 | `Brinell.Uia.Contracts` + unit tests | A | 7 | **done** |
+| 9 | Provider skeleton | A | 8 | **done** (folded into 11) |
+| 10 | Walking skeleton: one gesture end to end | A | 9 | **done** |
+| 11 | Registry + attached property | A | 10 | **done** |
+| 12 | FlaUI client extensions | A | 10 | **done** |
 | 13 | **Focus verb** | B | 12 | todo |
 | 14 | **Text input verbs** | B | 13 | todo |
 | 15 | Background mode passes | B | 3, 13, 14 | todo |
@@ -112,6 +112,34 @@ Two things the spike taught, both now encoded in the test:
 Also measured: with the window settled and visible, the rendered capture and the screen agree to
 ~91%, the shortfall being the DWM resize border that `GetWindowRect` includes and the content does
 not. That number is reported by the test, not asserted.
+
+#### Follow-up — the test became order-dependent in stage B. **Not yet fixed.**
+
+`Screenshot_OfOccludedWindow_ShowsTheApp` now **passes alone and fails when run after other
+tests**, reproducibly: the occluded capture matches the uncovered one by 16-18% where it needs
+95%.
+
+**Nothing about the capture mechanism changed.** What changed is the clock. `CaptureWhenSettled`
+returns early if two consecutive frames agree for its one-second grace period, and *an unpainted
+page is perfectly stable* — the step 1 result above records exactly this trap ("a settled-looking
+frame is not a rendered frame", "a UIA element exists before its pixels do"). Stage B removed the
+toolbar click from `MauiFixture.ReturnToHub`, navigation stopped costing seconds, and the captures
+moved inside the window where the page is realised but not yet drawn. The test had been relying on
+incidental slowness.
+
+One fix was attempted and **did not work**: a discarded `CaptureWhenSettled()` after the page's
+marker appears and before the occluder goes up, on the theory that it would sample the unpainted
+frame first and so register the paint as a change. It still fails. So the diagnosis above is
+consistent with the evidence but not confirmed, and the next person should re-establish it rather
+than trust it.
+
+Worth noting for whoever picks it up: the test's own remarks already explain why the visible
+capture is taken *after* the occluded one, and the reasoning there is the same problem seen from
+the other side. A fix probably needs a real "the content is painted" signal rather than another
+ordering.
+
+This is a defect in the test, not in `PrintWindow` or in the driver. It is recorded here rather
+than fixed inline because it surfaced during stage B and is unrelated to it.
 
 ---
 
@@ -248,6 +276,37 @@ Full inventory, and the recipe for auditing a real app:
 ---
 
 # Stage A — The bridge exists
+
+## Result — done, and the architecture is proven
+
+Full account, including the code that was written and the numbers behind each answer:
+[stage-a-results.md](stage-a-results.md). The short version:
+
+| Step | Answer |
+|---|---|
+| 4 | **Yes.** A child-HWND raw provider joins the tree, in a bare Win32 host and inside MAUI on WinUI, without disturbing the app's own tree. D-6 not needed. |
+| 5 | **Yes, both.** Ints and UTF-16 strings round-trip out of process, surrogate pairs included. Two of seven hand-declared IIDs were wrong; they are now read off the registry. |
+| 6 | **Raw yes, control no, content no.** D-5 stands. **`FindFirstDescendant` does not reach raw-view-only elements** — the client walks raw explicitly. |
+| 7 | Frozen: `Invoke` at 0, `Exchange` at 1, no custom properties or events, verbs in append-only ranges of a hundred. Pinned by literal assertions in `ContractTests`. |
+| 8 | `Brinell.Uia.Contracts` + `Brinell.Uia.Tests` — 43 tests, 0.9 s. |
+| 9 | Folded into 11. The "single hardcoded child" would have been deleted by the next step. |
+| 10 | **7 end-to-end tests green.** `SwipeDown` on `RefreshView` runs the full circuit; `Bridge_DoesNotDisturbTheExistingTree` passes. |
+| 11 | `GestureAutomation.Verbs` / `.Sink`, weak-referenced registry keyed by window handle, two elements working independently. |
+| 12 | `IMauiDriver.PerformGesture(automationId, gesture)`, `MauiGesture`, `GestureUnavailableException`, and `DescribeGestureBridge()`. Mobile head builds. |
+
+**Four findings change later steps**, all in the results document:
+
+1. `using:` in shared XAML does not reach a **referenced** assembly — an app that references
+   AppSupport needs `clr-namespace:...;assembly=...`, one that copies it does not. Step 30.
+2. Provider **property getters** must marshal to the UI thread, not only verb dispatch. Reading
+   WinUI layout off-thread kills the app rather than throwing.
+3. The **incoming page loads before the outgoing page unloads**, so an unregister must prove it
+   is removing its own registration and not its successor's.
+4. **`SwipeView.Open` reveals nothing to UI Automation.** Step 18's gesture surface must be
+   backed by a `SwipeGestureRecognizer` with a command.
+
+And the bridge found a real defect on its first run: a single pull-to-refresh counted twice in
+`ContainerViewModel`, invisible until now because nothing on Windows could drive that gesture.
 
 ### Step 4 — Spike: child HWND raw provider
 
@@ -521,7 +580,7 @@ wiring. Rows: `GestureSwipeTarget` (`SwipeGestureRecognizer`), `GestureDoubleTap
 
 ### Step 18 — Full gesture vocabulary and dispatcher ladder
 
-**Do.** All seven verbs. `MauiGestureCapabilities.cs` naming every public MAUI API used, so a
+**Do.** All seven verbs. `MauiCapabilities.cs` naming every public MAUI API used, so a
 MAUI upgrade is a compile error in one known file. Ladder: sink → public MAUI API →
 `TapGestureRecognizer.Command` → `UIA_E_NOTSUPPORTED`. Never reflect into `SendTapped`,
 `SendPinch` or `SendPan` — all internal in MAUI 10.

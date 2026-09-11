@@ -2,6 +2,7 @@
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewModels="using:Brinell.Samples.Maui.App.ViewModels"
+             xmlns:uia="clr-namespace:Brinell.Maui.AppSupport.Uia;assembly=Brinell.Maui.AppSupport"
              x:Class="Brinell.Samples.Maui.App.Views2.TestViews.TextView"
              BackgroundColor="{AppThemeBinding Light=White, Dark=#1F1F1F}">
 
@@ -30,17 +31,28 @@
             <Label Text="Entry - Single Line Text Input" FontSize="16" FontAttributes="Bold" TextColor="{AppThemeBinding Light=Black, Dark=White}" />
             <Label Text="Type text and press return to confirm" FontSize="12" TextColor="{AppThemeBinding Light=Gray, Dark=LightGray}" />
 
-            <Entry 
+            <!-- The declared verbs are what a test can reach without the keyboard or the
+                 foreground window. Named individually rather than by range: which of them an
+                 element actually answers is the app author's statement about that element, and
+                 a range would make it the framework's guess. -->
+            <Entry
                 Placeholder="Enter text here"
                 Text="{Binding EntryText}"
                 AutomationId="TestEntry"
+                uia:GestureAutomation.Verbs="Focus,Unfocus,IsFocused,GetText,SetText,AppendText,ClearText,Submit"
                 PlaceholderColor="{AppThemeBinding Light=LightGray, Dark=Gray}" />
 
             <!-- Read-only, so IsReadOnly has something to report. Windows publishes it through
-                 the Value pattern; Android publishes no editability at all. -->
+                 the Value pattern; Android publishes no editability at all.
+
+                 It declares the write verbs deliberately. Declaring a verb says the element is
+                 asked, not that it will agree - and a bridge that could write to a read-only
+                 field would be a way of passing a test no user could pass. See
+                 ReadOnlyEntry_RefusesTheBridge. -->
             <Entry
                 AutomationId="ReadOnlyEntry"
                 Text="Read only"
+                uia:GestureAutomation.Verbs="Focus,GetText,SetText,ClearText"
                 IsReadOnly="True" />
 
             <Label 
@@ -58,10 +70,11 @@
             <Label Text="Editor - Multi-Line Text Input" FontSize="16" FontAttributes="Bold" TextColor="{AppThemeBinding Light=Black, Dark=White}" />
             <Label Text="Type multiple lines of text" FontSize="12" TextColor="{AppThemeBinding Light=Gray, Dark=LightGray}" />
 
-            <Editor 
+            <Editor
                 Placeholder="Enter multi-line text here"
                 Text="{Binding EditorText}"
                 AutomationId="TestEditor"
+                uia:GestureAutomation.Verbs="Focus,Unfocus,IsFocused,GetText,SetText,AppendText,ClearText"
                 HeightRequest="100"
                 PlaceholderColor="{AppThemeBinding Light=LightGray, Dark=Gray}" />
 
@@ -80,11 +93,12 @@
             <Label Text="SearchBar - Search Input" FontSize="16" FontAttributes="Bold" TextColor="{AppThemeBinding Light=Black, Dark=White}" />
             <Label Text="Type to search and press search button" FontSize="12" TextColor="{AppThemeBinding Light=Gray, Dark=LightGray}" />
 
-            <SearchBar 
+            <SearchBar
                 Placeholder="Search here"
                 Text="{Binding SearchText}"
                 SearchCommand="{Binding SearchCommand}"
                 AutomationId="TestSearchBar"
+                uia:GestureAutomation.Verbs="Focus,Unfocus,IsFocused,GetText,SetText,AppendText,ClearText,Submit"
                 PlaceholderColor="{AppThemeBinding Light=LightGray, Dark=Gray}" />
 
             <Label 

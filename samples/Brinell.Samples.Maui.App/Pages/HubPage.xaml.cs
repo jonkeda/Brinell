@@ -1,3 +1,5 @@
+using Brinell.Maui.AppSupport.Uia;
+using Brinell.Uia;
 using Brinell.Samples.Maui.App.Navigation;
 
 namespace Brinell.Samples.Maui.App;
@@ -77,6 +79,15 @@ public partial class HubPage : ContentPage
     /// interaction policy — and a synthesized shortcut is not what a user does anyway. A
     /// toolbar item carrying an AutomationId is one addressable element on every platform.
     /// </para>
+    /// <para>
+    /// <b>The click cannot be made semantic, so the page is given its own route instead.</b>
+    /// A MAUI <c>ToolbarItem</c> renders into native chrome, and driving it through the Invoke
+    /// pattern reports success without raising the command — measured four ways, including the
+    /// activation ladder that works for every other control in the app. That one mouse click was
+    /// the whole suite's physical-input footprint and the only thing keeping the app from being
+    /// automated off-screen. The <c>NavigateBack</c> declaration below is what replaces it: the
+    /// page answers for itself, because the affordance cannot.
+    /// </para>
     /// </remarks>
     private void AddBackToHub(ContentPage page)
     {
@@ -92,6 +103,17 @@ public partial class HubPage : ContentPage
                 }
             })
         });
+
+        // Declared here rather than in each page's XAML for the same reason the toolbar item is:
+        // a page stays unaware of how it was reached, and a page added later gets this for free.
+        // An AutomationId is what joins an element to its bridge target, so pages that brought
+        // their own keep it and the rest are named after the type.
+        if (string.IsNullOrWhiteSpace(page.AutomationId))
+        {
+            page.AutomationId = page.GetType().Name;
+        }
+
+        GestureAutomation.SetVerbs(page, nameof(BrinellVerb.NavigateBack));
     }
 
     /// <summary>

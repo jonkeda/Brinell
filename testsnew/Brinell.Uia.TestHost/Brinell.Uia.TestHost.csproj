@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!--
+      A window and a message loop, and nothing else. The bridge spikes measure the UI
+      Automation mechanism; running them through MAUI would add a minute of build time
+      and a second explanation for every negative result.
+    -->
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <TargetFrameworks></TargetFrameworks>
+    <RootNamespace>Brinell.Uia.TestHost</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>false</IsTestProject>
+
+    <!-- A console attached to a WinExe, so the harness can read what this reports. -->
+    <DisableWinExeOutputInference>true</DisableWinExeOutputInference>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\srcnew\Brinell.Uia.Contracts\Brinell.Uia.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Not a test project: the shared test props add xunit and a test SDK to everything here. -->
+    <PackageReference Remove="Microsoft.NET.Test.Sdk" />
+    <PackageReference Remove="xunit" />
+    <PackageReference Remove="xunit.runner.visualstudio" />
+    <PackageReference Remove="coverlet.collector" />
+  </ItemGroup>
+
+</Project>

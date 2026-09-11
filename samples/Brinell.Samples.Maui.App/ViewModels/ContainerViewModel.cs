@@ -43,13 +43,16 @@ public class ContainerViewModel : ParentViewModel
     public bool IsRefreshing
     {
         get => _isRefreshing;
-        set
-        {
-            if (SetProperty(ref _isRefreshing, value) && value)
-            {
-                Refresh();
-            }
-        }
+
+        // Stores the value and nothing else. RefreshView already runs its Command whenever
+        // IsRefreshing becomes true - whether from a real pull, from the automation bridge, or
+        // from code - so refreshing here as well counted every refresh twice.
+        //
+        // That went unnoticed because no test could reach the gesture: the RefreshView is not
+        // addressable on Windows, and the only route to a refresh was TriggerRefreshButton,
+        // which runs the command directly and so fired once. The first gesture that reached this
+        // control reported "refreshed 2" from a single pull.
+        set => SetProperty(ref _isRefreshing, value);
     }
 
     /// <summary>Text reflecting how many refreshes have completed.</summary>

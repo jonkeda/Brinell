@@ -22,16 +22,28 @@
     suite and its tooling carry on working exactly as before.
   -->
   <!--
-    Tests\Diagnostics is excluded, and it is the only exclusion that is not build output.
+    Two folders are excluded, and they are the only exclusions that are not build output.
 
-    Those tests are about the Windows driver's own screenshot mechanism, so they use
+    Tests\Diagnostics is about the Windows driver's own screenshot mechanism, so it uses
     System.Drawing and user32 directly - neither of which exists on this plain net10.0 head.
+
+    Tests\Background is about running the suite without touching the machine: real mouse,
+    keyboard, clipboard and foreground window. All four are desktop concepts, and the tests
+    assert on them directly - the foreground window through user32, the clipboard through
+    System.Windows.Forms. The behaviour they cover is Windows-only too: on Android and iOS
+    there is no bridge, because there is no shared desktop to protect.
+
     Excluding them by name keeps the break visible: a shared test that stops being shared
     should say so here rather than hide behind a platform #if.
+
+    AssemblyInfo.cs is excluded too, and this project has its own. The two heads genuinely
+    disagree about test parallelism - the Windows one is limited by the desktop, which stage B
+    freed, and this one by an emulator that two Appium sessions still have to share. See both
+    files.
   -->
   <ItemGroup>
     <Compile Include="..\Brinell.Maui.UITests\**\*.cs"
-             Exclude="..\Brinell.Maui.UITests\bin\**;..\Brinell.Maui.UITests\obj\**;..\Brinell.Maui.UITests\Tests\Diagnostics\**"
+             Exclude="..\Brinell.Maui.UITests\bin\**;..\Brinell.Maui.UITests\obj\**;..\Brinell.Maui.UITests\Tests\Diagnostics\**;..\Brinell.Maui.UITests\Tests\Background\**;..\Brinell.Maui.UITests\AssemblyInfo.cs"
              Link="%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 

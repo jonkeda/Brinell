@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!--
+      Single-targeted, unlike the rest of srcnew. Everything here is Win32/COM interop
+      against UIAutomationCore, so a net8.0 or net9.0 flavour would have no meaning.
+    -->
+    <TargetFrameworks>net10.0-windows</TargetFrameworks>
+    <RootNamespace>Brinell.Uia</RootNamespace>
+    <Description>The wire contract for Brinell's custom UI Automation pattern: ids, verbs, and the registrar interop shared by the app under test and the test assembly.</Description>
+    <PackageId>Brinell.Uia.Contracts</PackageId>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <!--
+    DELIBERATELY NO ProjectReference TO ANYTHING IN THIS REPO.
+
+    Both ends of the contract compile these files: the test assembly references this
+    project, and the app under test links the same sources through
+    Brinell.Maui.AppSupport (which is designed to be copied, not referenced - see its
+    csproj). A dependency on Brinell.Core would break the copy route silently.
+
+    The framework only. Keep it that way.
+  -->
+
+</Project>

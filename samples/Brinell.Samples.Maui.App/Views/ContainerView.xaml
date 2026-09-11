@@ -18,6 +18,7 @@
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewModels="using:Brinell.Samples.Maui.App.ViewModels"
+             xmlns:uia="clr-namespace:Brinell.Maui.AppSupport.Uia;assembly=Brinell.Maui.AppSupport"
              x:Class="Brinell.Samples.Maui.App.Views2.TestViews.ContainerView"
              x:DataType="viewModels:ContainerViewModel"
              BackgroundColor="{AppThemeBinding Light=White, Dark=#1F1F1F}">
@@ -118,12 +119,18 @@
             </Frame>
 
             <!-- ===================== SwipeView =====================
-                 The swipe gesture is the scenario, and it is a mobile interaction. On
-                 Windows the root is not addressable at all.
-            -->
-            <Label Text="SwipeView (gesture; mobile)" FontSize="16" FontAttributes="Bold" />
+                 The swipe gesture is the scenario. On Windows the SwipeView's own root is
+                 still not addressable - its WinUI peer must not be overridden - but the
+                 gesture itself no longer needs it: GestureAutomation.Verbs publishes a
+                 separate bridge element that carries the verb, leaving this tree untouched.
 
-            <SwipeView AutomationId="TestSwipeView">
+                 SwipeRight, not SwipeLeft. The items are in SwipeView.LeftItems, and a swipe
+                 to the right is what uncovers them.
+            -->
+            <Label Text="SwipeView (gesture)" FontSize="16" FontAttributes="Bold" />
+
+            <SwipeView AutomationId="TestSwipeView"
+                       uia:GestureAutomation.Verbs="SwipeRight,CloseFlyout">
                 <SwipeView.LeftItems>
                     <SwipeItems>
                         <SwipeItem AutomationId="SwipeDeleteItem"
@@ -141,12 +148,17 @@
             </SwipeView>
 
             <!-- ===================== RefreshView =====================
-                 Pull-to-refresh is likewise a mobile gesture. IsRefreshing is bound so a
-                 test can drive it through the view model where the gesture is unavailable.
+                 Pull-to-refresh, driven by the same mechanism. The second bridge element on
+                 this page, and deliberately a different control type answering a different
+                 verb - one element working proves the plumbing, two prove the registry.
+
+                 IsRefreshing stays bound: a test that wants to assert the view model rather
+                 than the gesture should not have to go through automation at all.
             -->
-            <Label Text="RefreshView (gesture; mobile)" FontSize="16" FontAttributes="Bold" />
+            <Label Text="RefreshView (gesture)" FontSize="16" FontAttributes="Bold" />
 
             <RefreshView AutomationId="TestRefreshView"
+                         uia:GestureAutomation.Verbs="SwipeDown"
                          IsRefreshing="{Binding IsRefreshing}"
                          Command="{Binding RefreshCommand}"
                          HeightRequest="80">

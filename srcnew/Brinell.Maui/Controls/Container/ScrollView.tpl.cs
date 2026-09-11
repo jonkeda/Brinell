@@ -51,16 +51,30 @@ public partial class ScrollView<TParent, TSelf> : ContainerObjectBase<TParent, T
     /// <summary>
     /// Scrolls one viewport toward the end of the content.
     /// </summary>
+    /// <remarks>
+    /// The scroll pattern first, the pointer only if there is none. This used to swipe
+    /// unconditionally, which made a <c>ScrollView</c> the one container that reached for the
+    /// mouse where every other one asked UI Automation - the ladder existed in
+    /// <see cref="ScrollHelper"/> and this simply did not climb it.
+    /// </remarks>
     /// <param name="element">The container's own element.</param>
     protected virtual void ScrollForwardCore(IMauiElement element)
-        => ScrollHelper.TrySwipeForward(element);
+    {
+        if (ScrollHelper.TryScrollForward(element)) return;
+
+        ScrollHelper.TrySwipeForward(element);
+    }
 
     /// <summary>
     /// Scrolls one viewport back toward the start of the content.
     /// </summary>
     /// <param name="element">The container's own element.</param>
     protected virtual void ScrollBackCore(IMauiElement element)
-        => ScrollHelper.TrySwipeBack(element);
+    {
+        if (ScrollHelper.TryScrollBack(element)) return;
+
+        ScrollHelper.TrySwipeBack(element);
+    }
 
     #endregion
 

@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Overrides the shared net10.0 for tests: everything here is Win32 COM interop. -->
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <TargetFrameworks></TargetFrameworks>
+    <RootNamespace>Brinell.Uia.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\srcnew\Brinell.Uia.Contracts\Brinell.Uia.Contracts.csproj" />
+
+    <!--
+      Referenced for its output, not its API: this copies Brinell.Uia.TestHost.exe next to the
+      test assembly so the fixture can launch it without guessing at a relative path, and makes
+      the host rebuild whenever these tests do.
+    -->
+    <ProjectReference Include="..\Brinell.Uia.TestHost\Brinell.Uia.TestHost.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FlaUI.Core" />
+    <PackageReference Include="FlaUI.UIA3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="coverlet.collector">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

@@ -6,6 +6,8 @@ using Brinell.Core.Diagnostics;
 using Brinell.Core.Exceptions;
 using Brinell.Core.Utilities;
 using Brinell.Maui.Configuration;
+using Brinell.Maui.FlaUI.Bridge;
+using Brinell.Uia;
 using Brinell.Maui.Enums;
 using FlaUI.Core.Capturing;
 using FlaUI.Core.Definitions;
@@ -110,6 +112,9 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// </summary>
     internal UIA3Automation Automation => _automation;
 
+    /// <summary>The app's top-level window. Where a bridge lookup starts.</summary>
+    internal AutomationElement RootElement => _rootElement;
+
     /// <summary>
     /// Ensures the root window is focused and activated before physical input.
     /// </summary>
@@ -141,7 +146,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
 
         // Outside the try: the catch below swallows everything, and a refusal that gets
         // swallowed is not a refusal.
-        PhysicalInput.Used("FlaUIMauiDriver.EnsureRootWindowFocused", "the Focus verb (step 13)");
+        PhysicalInput.Used("FlaUIMauiDriver.EnsureRootWindowFocused", "the Focus verb");
 
         try
         {
@@ -899,9 +904,81 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
         sb.AppendLine($"{indent}</{controlType}>");
         return sb.ToString();
     }
-    
+
     #endregion
-    
+
+    #region Gestures (Brinell UI Automation bridge)
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Answered by asking the app under test what it declared, not by inspecting the control.
+    /// False for a control that could obviously be swiped means the app has not opted that
+    /// element in, which is a change to the app's markup rather than to the test.
+    /// </remarks>
+    public bool SupportsGesture(string automationId, MauiGesture gesture)
+        => GestureRunner.Supports(RootElement, Automation, automationId, gesture);
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Works on elements this driver cannot find at all. A MAUI <c>SwipeView</c> publishes no
+    /// <c>AutomationId</c> on Windows, so <c>FindElement</c> will never return it - but its
+    /// bridge element is addressable, and that is what carries the verb.
+    /// </remarks>
+    /// <exception cref="Bridge.GestureUnavailableException">
+    /// The app publishes no bridge, the element was not declared, or the verb was refused.
+    /// </exception>
+    public void PerformGesture(string automationId, MauiGesture gesture)
+        => GestureRunner.Perform(RootElement, Automation, automationId, gesture);
+
+    /// <summary>
+    /// Whether the app under test publishes a Brinell bridge at all.
+    /// </summary>
+    /// <remarks>
+    /// The one call that distinguishes "this app has no instrumentation" from "this element was
+    /// not declared". Worth checking once in a fixture rather than inferring it from a failure.
+    /// </remarks>
+    /// <returns>Whether a bridge window is present.</returns>
+    public bool HasGestureBridge()
+        => Bridge.BrinellBridgeLookup.HasBridge(RootElement, Automation);
+
+    /// <summary>
+    /// Describes the raw automation tree just below the app window.
+    /// </summary>
+    /// <remarks>
+    /// A diagnostic, for when a gesture is not found. The three causes present identically -
+    /// no bridge window, a bridge window whose provider never answered, or a fragment root with
+    /// nothing registered on it - and this is what tells them apart.
+    /// </remarks>
+    /// <param name="maxDepth">How far below the window to walk.</param>
+    /// <returns>One line per element, indented by depth.</returns>
+    public string DescribeGestureBridge(int maxDepth = 3)
+        => Bridge.BrinellBridgeLookup.Describe(RootElement, Automation, maxDepth);
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// <para>
+    /// Asks whichever element the app published for the job, without naming one, because there
+    /// is nothing to name: going back is about the app rather than about a control, and on
+    /// Windows the affordance that would carry an <c>AutomationId</c> for it is a
+    /// <c>ToolbarItem</c> - drawn into native chrome, and measured four separate ways not to be
+    /// activatable through any automation pattern at all. That measurement is what makes this
+    /// method necessary rather than convenient: without it, returning to a previous page is the
+    /// one thing in the suite that has to be a real mouse click.
+    /// </para>
+    /// <para>
+    /// Never falls back to real input; see the interface.
+    /// </para>
+    /// </remarks>
+    public bool TryNavigateBack()
+        // S_OK and not merely success. The verb answers S_FALSE when there was nothing on the
+        // stack to pop, which is a true statement about the app and not a navigation - and a
+        // caller told "yes" for it would wait for a page change that is never coming.
+        => Bridge.BridgeVerbRunner
+            .InvokeAnywhere(RootElement, Automation, BrinellVerb.NavigateBack)
+            .HResult == HResults.S_OK;
+
+    #endregion
+
     #region Navigation
     
     /// <inheritdoc />
@@ -912,14 +989,22 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     }
     
     /// <inheritdoc />
+    /// <remarks>
+    /// The bridge first, then the back button a user would click, then Alt+Left. The last rung
+    /// is desktop-wide keyboard input that lands wherever the foreground happens to be, so it is
+    /// where the ladder ends rather than where it starts.
+    /// </remarks>
     public void NavigateBack()
     {
+        if (TryNavigateBack())
+            return;
+
         if (TryInvokeBackButton())
             return;
 
         try
         {
-            PhysicalInput.Used("FlaUIMauiDriver.NavigateBack(Alt+Left)", "the NavigateBack verb (step 22)");
+            PhysicalInput.Used("FlaUIMauiDriver.NavigateBack(Alt+Left)", "the NavigateBack verb");
             EnsureRootWindowFocused();
             _rootElement.Focus();
             Keyboard.TypeSimultaneously(VirtualKeyShort.ALT, VirtualKeyShort.LEFT);

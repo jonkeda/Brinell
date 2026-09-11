@@ -10,6 +10,13 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Brinell.Maui\Brinell.Maui.csproj" />
+
+    <!--
+      The wire contract for the UI Automation bridge. Referenced here rather than linked,
+      because unlike the app under test this assembly is ours and a dependency costs nothing.
+      The app under test links the same sources instead - see Brinell.Maui.AppSupport.
+    -->
+    <ProjectReference Include="..\Brinell.Uia.Contracts\Brinell.Uia.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>

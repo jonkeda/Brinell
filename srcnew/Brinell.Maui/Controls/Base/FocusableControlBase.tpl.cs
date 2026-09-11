@@ -57,10 +57,21 @@ public abstract partial class FocusableControlBase<TScope> : ViewBase<TScope>, I
     /// <summary>
     /// Removes focus by sending Tab key or clicking elsewhere.
     /// </summary>
+    /// <remarks>
+    /// Tab is a stand-in, not the operation: it moves focus on to the next control rather than
+    /// removing it, so a control with a focus-out handler and the control after it both see
+    /// something the test did not ask for. Where the platform can simply drop focus it does,
+    /// and Tab remains for where it cannot.
+    /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
     protected virtual void BlurCore(IMauiElement element, int? timeoutMs = null)
     {
+        if (element.TryClearFocus())
+        {
+            return;
+        }
+
         // Send Tab key to move focus away
         element.SendKeys(OpenQA.Selenium.Keys.Tab);
     }
