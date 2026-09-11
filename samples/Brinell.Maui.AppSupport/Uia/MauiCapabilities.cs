@@ -279,6 +279,266 @@ internal static class MauiCapabilities
         }
     }
 
+    // ---- State the platform cannot be asked for ------------------------------------
+    //
+    // Each of these replaces an assertion that passed for the wrong reason. That is a worse
+    // failure than one that does not pass at all: a green test is a claim nobody re-examines.
+
+    /// <summary>
+    /// Where an image's bitmap comes from, as the app declared it.
+    /// </summary>
+    /// <remarks>
+    /// <b>What the client had instead was rendered size.</b> "An image is loaded if it occupies
+    /// space" - and a broken one occupies exactly as much space as a working one, because the
+    /// layout reserves it either way. The test that asserted an image had loaded was therefore
+    /// asserting that MAUI had done arithmetic. The source is app state and never reaches the
+    /// accessibility tree, which is why the old comment was right that nothing else could be
+    /// observed - from outside the app.
+    /// </remarks>
+    /// <param name="image">The image.</param>
+    /// <returns>The source, in a form a test can compare, or empty when there is none.</returns>
+    internal static string ReadImageSource(Image image) => image.Source switch
+    {
+        null => string.Empty,
+        FileImageSource file => file.File ?? string.Empty,
+        UriImageSource uri => uri.Uri?.ToString() ?? string.Empty,
+
+        // Stream and font sources have nothing stable to compare, so they report their kind
+        // rather than a fabricated identity. A test asserting on those wants IsLoading anyway.
+        _ => image.Source.GetType().Name,
+    };
+
+    /// <summary>Whether an image is still fetching its bitmap.</summary>
+    /// <remarks>
+    /// The other half of the same problem: <c>IsLoading</c> is how an image says it has not
+    /// finished, and a size check cannot distinguish "still fetching" from "failed" from "done".
+    /// </remarks>
+    /// <param name="image">The image.</param>
+    /// <returns>Whether a load is in flight.</returns>
+    internal static bool IsImageLoading(Image image) => image.IsLoading;
+
+    /// <summary>
+    /// A progress bar's progress, in MAUI's own units.
+    /// </summary>
+    /// <remarks>
+    /// <b>0 to 1, with no normalising.</b> The client reads this through the UIA range pattern,
+    /// where WinUI reports 0-100, and rescales it against the reported minimum and maximum. That
+    /// arithmetic is correct and is also a second place for the definition of "progress" to live
+    /// - so a platform that reported a different range, or none, would quietly change what the
+    /// number meant. The app holds one number and this is it.
+    /// </remarks>
+    /// <param name="bar">The progress bar.</param>
+    /// <returns>Progress from 0 to 1.</returns>
+    internal static double ReadProgress(ProgressBar bar) => bar.Progress;
+
+    /// <summary>
+    /// Whether the app has finished the work it had queued.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>A real drained-dispatcher signal, which is what <c>AD-004</c> asks for.</b> "No
+    /// arbitrary sleeps" is only followable if there is something to wait *on*; without one, a
+    /// test that needs the UI to settle either sleeps or invents a sentinel element whose
+    /// appearance approximates settling.
+    /// </para>
+    /// <para>
+    /// Posting to the dispatcher and waiting for the callback establishes that everything queued
+    /// before the call has run - which is the definition of idle that matters to a test, and the
+    /// only one obtainable from inside. It does not promise that nothing new will be queued:
+    /// an app with a running animation or a timer is never idle by any definition, and saying so
+    /// is better than a number that hides it.
+    /// </para>
+    /// </remarks>
+    /// <param name="element">Any element, for its dispatcher.</param>
+    /// <param name="timeoutMs">How long to wait for the queue to drain.</param>
+    /// <returns>Whether the queue drained within the budget.</returns>
+    internal static bool IsIdle(VisualElement element, int timeoutMs)
+    {
+        var dispatcher = element.Dispatcher;
+        if (dispatcher is null)
+        {
+            return true;
+        }
+
+        using var drained = new ManualResetEventSlim(false);
+
+        // Queued at the back, so it runs after everything already waiting. Whether it runs at
+        // all within the budget is the answer.
+        if (!dispatcher.Dispatch(() => drained.Set()))
+        {
+            return false;
+        }
+
+        return drained.Wait(timeoutMs);
+    }
+
+    // ---- Selection ------------------------------------------------------------------
+    //
+    // A picker's items are the app's own list, and every question about them was answered from
+    // outside by opening the dropdown and reading the popup. That read moves the app - the
+    // flyout opens, the items render, the flyout closes - so asking what a picker holds changed
+    // what a user would see, and two identical questions in a row were two different journeys.
+    // Selecting had the same shape, plus a two-second poll waiting for the popup's items to
+    // appear in the tree.
+    //
+    // OpenFlyout is deliberately absent. MAUI has no public API to open a Picker's dropdown; it
+    // belongs to the platform control, and an app cannot answer that verb honestly without
+    // reaching into WinUI. The client opens it through the ExpandCollapse pattern instead, which
+    // is what that pattern is for. A test that means "the flyout opens and shows these items"
+    // still says exactly that - it is only selecting and reading that no longer have to.
+
+    /// <summary>
+    /// Selects a picker's item by position.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Four answers, not two.</b> A negative index is nonsense the caller can never be right
+    /// about (<see cref="HResults.E_INVALIDARG"/>). An index past the end is well formed and
+    /// names nothing - which for a picker bound to a source still filling is worth retrying, so
+    /// it is <see cref="HResults.UIA_E_ELEMENTNOTAVAILABLE"/> rather than a refusal. A control
+    /// that is not a picker refuses. Only a landed selection is
+    /// <see cref="HResults.S_OK"/>, and a two-way binding that declines the value reports
+    /// <see cref="HResults.S_FALSE"/> rather than letting the caller assume.
+    /// </para>
+    /// <para>
+    /// <c>Picker.Items</c> is the display strings, kept in step with <c>ItemsSource</c> by MAUI
+    /// itself - so this counts what the user can see rather than what the view model holds.
+    /// </para>
+    /// </remarks>
+    /// <param name="element">The element the verb arrived on.</param>
+    /// <param name="index">The item position.</param>
+    /// <returns>The HRESULT to answer with.</returns>
+    internal static int SelectIndex(VisualElement element, int index)
+    {
+        if (element is not Picker picker)
+        {
+            return HResults.UIA_E_NOTSUPPORTED;
+        }
+
+        if (index < 0)
+        {
+            return HResults.E_INVALIDARG;
+        }
+
+        if (index >= picker.Items.Count)
+        {
+            return HResults.UIA_E_ELEMENTNOTAVAILABLE;
+        }
+
+        // Refused rather than attempted, because attempting it hangs the app.
+        //
+        // MAUI keeps SelectedIndex and SelectedItem in step by setting each from the other:
+        // SelectedIndex sets SelectedItem to the item at that position, and SelectedItem sets
+        // SelectedIndex back to IndexOf(item). Where IndexOf cannot return the index it was
+        // given - the item is equal to an earlier one - the two never agree, and the pair
+        // ping-pongs forever on the UI thread. Measured: one core at 100%, the window stops
+        // responding, and every later verb times out. It is MAUI's, not the bridge's; the app's
+        // own code doing the same assignment freezes it identically, with no automation running.
+        //
+        // SelectByText needs no such guard: it selects the position IndexOf gives it, so the two
+        // already agree.
+        if (FirstEqualPosition(picker, index) != index)
+        {
+            return HResults.UIA_E_NOTSUPPORTED;
+        }
+
+        picker.SelectedIndex = index;
+        return picker.SelectedIndex == index ? HResults.S_OK : HResults.S_FALSE;
+    }
+
+    /// <summary>
+    /// Where MAUI would find the item at this position when asked to look it up.
+    /// </summary>
+    /// <remarks>
+    /// Matched to what MAUI itself does: it searches <c>ItemsSource</c> when there is one, which
+    /// compares items rather than the text they render - so two distinct objects displaying the
+    /// same string are fine, and two equal entries are not.
+    /// </remarks>
+    /// <param name="picker">The picker.</param>
+    /// <param name="index">The position being selected.</param>
+    /// <returns>The position MAUI's own lookup would return.</returns>
+    private static int FirstEqualPosition(Picker picker, int index)
+    {
+        if (picker.ItemsSource is { } source)
+        {
+            return index < source.Count ? source.IndexOf(source[index]) : index;
+        }
+
+        return picker.Items.IndexOf(picker.Items[index]);
+    }
+
+    /// <summary>
+    /// Selects a picker's item by the text it shows.
+    /// </summary>
+    /// <remarks>
+    /// <b>Ordinal, and the first match wins.</b> Two items may read alike - the sample has a
+    /// picker where they do - and this verb cannot tell them apart, which is not a defect but
+    /// the reason <see cref="SelectIndex"/> exists beside it. What it will not do is guess: the
+    /// text now selected comes back, so a caller that asked for an ambiguous one can see which
+    /// it got without a second round trip.
+    /// </remarks>
+    /// <param name="element">The element the verb arrived on.</param>
+    /// <param name="text">The item text to select.</param>
+    /// <param name="selected">The text the picker now shows.</param>
+    /// <returns>The HRESULT to answer with.</returns>
+    internal static int SelectByText(VisualElement element, string text, out string selected)
+    {
+        selected = string.Empty;
+
+        if (element is not Picker picker)
+        {
+            return HResults.UIA_E_NOTSUPPORTED;
+        }
+
+        var index = picker.Items.IndexOf(text);
+        if (index < 0)
+        {
+            selected = ReadSelectedItem(picker);
+            return HResults.UIA_E_ELEMENTNOTAVAILABLE;
+        }
+
+        picker.SelectedIndex = index;
+        selected = ReadSelectedItem(picker);
+
+        return selected == text ? HResults.S_OK : HResults.S_FALSE;
+    }
+
+    /// <summary>The text a picker is showing, or empty when it holds no selection.</summary>
+    /// <remarks>
+    /// Read out of <c>Items</c> by index rather than from <c>SelectedItem</c>, which is the
+    /// source object and not what the control renders when <c>ItemDisplayBinding</c> is set.
+    /// </remarks>
+    /// <param name="picker">The picker.</param>
+    /// <returns>The displayed text, or empty.</returns>
+    internal static string ReadSelectedItem(Picker picker)
+        => picker.SelectedIndex >= 0 && picker.SelectedIndex < picker.Items.Count
+            ? picker.Items[picker.SelectedIndex]
+            : string.Empty;
+
+    /// <summary>
+    /// Everything a picker offers, as a count and then one item per line.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The count is on the wire so that a lie is detectable.</b> Items are arbitrary user
+    /// text and one of them may contain a newline, which would silently split into two - and a
+    /// test comparing item lists would then be comparing a different list without being told.
+    /// Sending the count the app counted lets the far end notice the disagreement and say so,
+    /// the way <c>ScrollPosition</c>'s fixed six numbers do.
+    /// </para>
+    /// <para>
+    /// One read rather than one per item: the alternative was opening the dropdown and walking
+    /// the popup, which is a read that changes what it reads.
+    /// </para>
+    /// </remarks>
+    /// <param name="picker">The picker.</param>
+    /// <returns>The count, then the items, newline separated.</returns>
+    internal static string ReadItems(Picker picker)
+        => string.Join(
+            "\n",
+            new[] { picker.Items.Count.ToString(CultureInfo.InvariantCulture) }
+                .Concat(picker.Items));
+
     /// <summary>MAUI's name for the direction a swipe verb travels in.</summary>
     /// <param name="verb">The swipe verb.</param>
     /// <returns>The direction, or null if the verb is not a swipe.</returns>

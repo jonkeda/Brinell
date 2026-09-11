@@ -53,10 +53,9 @@ public class NavigationVerbTests
 
         using (PhysicalInput.OverridePolicy(PhysicalInputPolicy.Refused))
         {
-            Assert.True(
-                _fixture.Context.Driver.TryNavigateBack(),
-                "The app under test published no semantic route back. Without one the suite "
-                + "cannot run in background mode: see HubPage.AddBackToHub.");
+            // Throws with the app's own reason if it did not. There is nothing to assert on the
+            // call itself any more, which is the point of it no longer returning a bool.
+            _fixture.Context.Driver.NavigateBack();
         }
 
         Assert.True(
@@ -67,57 +66,71 @@ public class NavigationVerbTests
     }
 
     /// <summary>
-    /// Asked from the hub, with nothing to pop, it reports that rather than claiming success.
+    /// The app can say whether it has anywhere to go back to, and it is right both times.
     /// </summary>
     /// <remarks>
-    /// The distinction the return value exists for. The verb answers <c>S_FALSE</c> - succeeded
-    /// and did nothing - and the client reports false, so a caller does not go on to wait for a
-    /// page change that was never going to come. Reporting plain success here would turn an
-    /// immediate, accurate answer into a timeout somewhere else.
+    /// <para>
+    /// <b>This test used to be forty lines of polling, and the polling was load-bearing.</b> The
+    /// same fact had to be established by <i>going back</i> and seeing what came out, so every
+    /// reading changed what was being read: a pop is started rather than completed when the verb
+    /// returns, so an immediate second ask timed the transition rather than the contract, and the
+    /// test failed about one run in three. Two earlier versions waited on the wrong thing
+    /// entirely - the hub, which stays findable underneath an open page, and the page root, which
+    /// appears before the page publishes itself.
+    /// </para>
+    /// <para>
+    /// A question has no such window. Asking twice gives the same answer, asking does not move
+    /// the app, and the assertion is the fact rather than a side effect of establishing it.
+    /// </para>
     /// </remarks>
     [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
-    public Task NavigateBack_AtTheHub_ReportsNothingToPop()
+    public Task IsAtNavigationRoot_KnowsWhichEndOfTheStackTheAppIsOn()
     {
         _fixture.Open(SamplePage.Text);
 
-        // Polled until the app answers, rather than asked once.
-        //
-        // A page publishes its bridge target on Loaded, and that is a different event from its
-        // root appearing in the automation tree - so there is a window just after Open in which
-        // the app truthfully reports nothing to pop about a page that is on its way in. Two
-        // earlier versions of this test read that window: one waited for the hub (which stays
-        // findable underneath an open page and so proves nothing), one waited for the page root
-        // (which happens first). Both passed alone and failed in a suite, which is the signature
-        // of an arrangement racing the thing it is arranging.
-        //
-        // Waiting for the verb itself to succeed has no such window: it is the same question the
-        // assertion is about.
-        var popped = WaitHelper.WaitFor(
-            () => _fixture.Context.Driver.TryNavigateBack(),
-            timeoutMs: TestConstants.ShortTestTimeoutMs,
-            pollingIntervalMs: 100);
-
-        Assert.True(popped, "The app never published a route back from the page that was opened.");
-
-        // Settle before asserting, and the assertion is about staying settled.
-        //
-        // A pop is started, not completed, when the verb returns - it is deliberately not
-        // awaited, so the navigation stack reads one page deeper for a moment afterwards.
-        // Asserting immediately therefore times the transition rather than the contract, which
-        // is what made this test fail about one run in three.
-        //
-        // What the fixture actually depends on is that once the app is at its root, asking again
-        // keeps saying no. So: wait for the first no, then require the next one to agree.
-        Assert.True(
-            WaitHelper.WaitFor(
-                () => !_fixture.Context.Driver.TryNavigateBack(),
-                timeoutMs: TestConstants.ShortTestTimeoutMs,
-                pollingIntervalMs: 100),
-            "The app never settled at its root: it kept reporting that something was popped.");
-
         Assert.False(
-            _fixture.Context.Driver.TryNavigateBack(),
-            "Going back from the hub reported success, but there was nothing on the stack.");
+            _fixture.Context.Driver.IsAtNavigationRoot(),
+            "A page is open, so there is something to go back to - but the app said it was at "
+            + "its root. A caller believing that would never return to the hub.");
+
+        using (PhysicalInput.OverridePolicy(PhysicalInputPolicy.Refused))
+        {
+            _fixture.Context.Driver.NavigateBack();
+        }
+
+        Assert.True(
+            _fixture.Hub.WaitLoaded(true, TestConstants.DefaultTestTimeoutMs),
+            "The pop was accepted but the hub never appeared.");
+
+        Assert.True(
+            _fixture.Context.Driver.IsAtNavigationRoot(),
+            "Back at the hub with an empty stack, the app still reported something to pop. That "
+            + "is the answer that used to cost every fixture reset a two-second wait.");
+
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Going back from the root fails with a reason, rather than quietly doing nothing.
+    /// </summary>
+    /// <remarks>
+    /// The command's half of the split. A caller that has not asked the question first should not
+    /// be told a pop happened - that is how a test comes to wait for a page change that was never
+    /// coming - so the command is explicit about having done nothing, and says why.
+    /// </remarks>
+    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    public Task NavigateBack_AtTheHub_FailsWithTheReason()
+    {
+        _fixture.Open(SamplePage.Text);
+
+        using (PhysicalInput.OverridePolicy(PhysicalInputPolicy.Refused))
+        {
+            _fixture.Context.Driver.NavigateBack();
+        }
+
+        _fixture.Hub.WaitLoaded(true, TestConstants.DefaultTestTimeoutMs);
+
+        Assert.Throws<BrinellException>(() => _fixture.Context.Driver.NavigateBack());
 
         return Task.CompletedTask;
     }

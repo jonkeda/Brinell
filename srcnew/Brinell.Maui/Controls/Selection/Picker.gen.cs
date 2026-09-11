@@ -15,6 +15,66 @@ namespace Brinell.Maui.Controls.Selection;
 public partial class Picker<TScope> : Base.SelectorControlBase<TScope>
     where TScope : IMauiScope<TScope>
 {
+    #region OpenFlyout
+
+    public TScope OpenFlyout(int? timeoutMs = null)
+    {
+        return RunDoWithElement(element => { OpenFlyoutCore(element, timeoutMs); }, timeoutMs);
+    }
+
+    #endregion
+    #region CloseFlyout
+
+    public TScope CloseFlyout(int? timeoutMs = null)
+    {
+        return RunDoWithElement(element => { CloseFlyoutCore(element, timeoutMs); }, timeoutMs);
+    }
+
+    #endregion
+    #region FlyoutOpen (IsFlyoutOpen / WaitFlyoutOpen / AssertFlyoutOpen)
+
+    public bool? IsFlyoutOpen()
+    {
+        return IsFlyoutOpenCore(TryFindElement()) == true;
+    }
+
+    public bool WaitFlyoutOpen(bool? expected = true, int? timeoutMs = null)
+    {
+        return RunWaitWithElement(expected,
+           element => IsFlyoutOpenCore(element) == expected!.Value,
+           timeoutMs);
+    }
+
+    public TScope AssertFlyoutOpen(bool? expected = true, string? message = null, int? timeoutMs = null)
+    {
+        return RunAssertWithElement(expected,
+           IsFlyoutOpenCore, (actual, expected1) => (actual == expected1),
+           message ?? $"Expected FlyoutOpen to be '{expected}'. Locator: {Locator}", timeoutMs);
+    }
+
+    #endregion
+    #region DropdownItemTexts (GetDropdownItemTexts / WaitDropdownItemTexts / AssertDropdownItemTexts)
+
+    public IReadOnlyList<string>? GetDropdownItemTexts(int? timeoutMs = null)
+    {
+        return RunGetWithElement(element => GetDropdownItemTextsCore(element), timeoutMs);
+    }
+
+    public bool WaitDropdownItemTexts(IReadOnlyList<string>? expected, int? timeoutMs = null)
+    {
+        return RunWaitWithElement(expected,
+           element => GetDropdownItemTextsCore(element) == expected,
+           timeoutMs);
+    }
+
+    public TScope AssertDropdownItemTexts(IReadOnlyList<string>? expected, string? message = null, int? timeoutMs = null)
+    {
+        return RunAssertWithElement(expected,
+           element => GetDropdownItemTextsCore(element), (actual, expected1) => (actual == expected1),
+           message ?? $"Expected DropdownItemTexts to be '{expected}'. Locator: {Locator}", timeoutMs);
+    }
+
+    #endregion
     #region Title (GetTitle / WaitTitle / AssertTitle)
 
     public string? GetTitle(int? timeoutMs = null)

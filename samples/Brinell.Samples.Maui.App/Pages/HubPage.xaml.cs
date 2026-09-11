@@ -13,6 +13,19 @@ public partial class HubPage : ContentPage
     {
         InitializeComponent();
         BuildPageList();
+
+        // The hub answers questions about the app, and it is the only page that can answer them
+        // from the root.
+        //
+        // Every page the hub opens declares NavigateBack (see AddBackToHub), so while one is open
+        // something is on the bridge. At the root there is nothing but this page - and "are we at
+        // the root" is precisely the question a caller asks there. Without this, the honest
+        // answer to it was unobtainable at the one moment it mattered, which is what the
+        // navigation RCA left open.
+        GestureAutomation.SetVerbs(
+            this,
+            $"{nameof(BrinellVerb.GetState)},{nameof(BrinellVerb.CurrentRoute)},"
+            + $"{nameof(BrinellVerb.IsIdle)}");
     }
 
     /// <summary>
@@ -113,7 +126,14 @@ public partial class HubPage : ContentPage
             page.AutomationId = page.GetType().Name;
         }
 
-        GestureAutomation.SetVerbs(page, nameof(BrinellVerb.NavigateBack));
+        // GetState and CurrentRoute alongside going back, because a caller needs to ask before it
+        // acts. NavigateBack answers four different things and only one of them is a failure;
+        // "how deep is the stack" separates them in one round trip, where the client used to
+        // separate them by waiting.
+        GestureAutomation.SetVerbs(
+            page,
+            $"{nameof(BrinellVerb.NavigateBack)},{nameof(BrinellVerb.GetState)},"
+            + $"{nameof(BrinellVerb.CurrentRoute)},{nameof(BrinellVerb.IsIdle)}");
     }
 
     /// <summary>

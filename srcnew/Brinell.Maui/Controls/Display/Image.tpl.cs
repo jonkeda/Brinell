@@ -36,21 +36,53 @@ public partial class Image<TScope> : Base.ViewBase<TScope>
     #region IsLoaded - Core Methods
 
     /// <summary>
-    /// Checks if image is loaded using pre-found element.
-    /// An image is considered loaded if it occupies space.
+    /// Whether the image has finished loading a bitmap.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>This used to be "it occupies space", and that assertion passed for the wrong
+    /// reason.</b> A broken image occupies exactly as much space as a working one, because the
+    /// layout reserves it either way - so a test asserting an image had loaded was asserting
+    /// that MAUI had done arithmetic. The old comment was right that nothing else was
+    /// observable; it was observing from outside the app, where the source does not reach.
+    /// </para>
+    /// <para>
+    /// The app answers now where it can. The size check remains for platforms with no bridge,
+    /// stated as the weaker thing it is rather than as the definition.
+    /// </para>
+    /// </remarks>
     /// <param name="element">The pre-found element (may be null).</param>
     /// <returns>True if loaded, false otherwise, null if not found.</returns>
     protected virtual bool? IsLoadedCore(IMauiElement? element)
     {
         if (element == null) return null;
 
-        // Rendered size is the whole of what can be observed: the source is app state that
-        // never reaches the accessibility tree, so an image that occupies space has loaded
-        // something and one that does not has not.
+        if (element.SupportsStateReads)
+        {
+            // Loaded means: a source to load, and not still loading it. Either alone is the
+            // wrong question - an image with no source is never loading and never loaded.
+            var hasSource = !string.IsNullOrEmpty(element.ReadState("Source"));
+            var loading = bool.TryParse(element.ReadState("IsLoading"), out var busy) && busy;
+
+            return hasSource && !loading;
+        }
+
         var size = element.Size;
         return size.Width > 0 && size.Height > 0;
     }
+
+    /// <summary>
+    /// Where the image's bitmap comes from, as the app declared it.
+    /// </summary>
+    /// <remarks>
+    /// Only the app can answer this: an image source never reaches the accessibility tree on any
+    /// platform. Null rather than empty where there is no bridge, so "no source" and "cannot
+    /// tell" stay distinguishable.
+    /// </remarks>
+    /// <param name="element">The pre-found element (may be null).</param>
+    /// <returns>The source, or null when it cannot be read.</returns>
+    protected virtual string? GetSourceCore(IMauiElement? element)
+        => element is { SupportsStateReads: true } ? element.ReadState("Source") : null;
 
     #endregion
 

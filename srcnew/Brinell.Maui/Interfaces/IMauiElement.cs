@@ -203,6 +203,45 @@ public interface IMauiElement : IElement<IMauiElement>
 
     #endregion
 
+    #region State the platform cannot be asked for
+
+    /// <summary>
+    /// Whether this element can be asked what the app holds, rather than what it renders.
+    /// </summary>
+    /// <remarks>
+    /// A question, so a control object takes one route rather than trying one. Where it answers
+    /// false the control falls back to what the accessibility tree can see, which is what every
+    /// one of these reads used to do exclusively - and is why several of them were true for the
+    /// wrong reason.
+    /// </remarks>
+    bool SupportsStateReads => false;
+
+    /// <summary>
+    /// Reads a named piece of app state.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Named properties, not reflection.</b> The boundary is deliberate and is stated in step
+    /// 23: this reads what a user could perceive - a source, a progress, an enabled flag - and
+    /// not the view model behind it. An assertion that needs the view model is a unit test, and
+    /// arbitrary property access would turn a UI test framework into a slower one.
+    /// </para>
+    /// <para>
+    /// Each name is a case in the app's own provider, so an unknown one is refused rather than
+    /// silently answered with an empty string.
+    /// </para>
+    /// </remarks>
+    /// <param name="property">The property name, as the provider spells it.</param>
+    /// <returns>The value, as the app formatted it.</returns>
+    /// <exception cref="NotSupportedException">
+    /// This platform, or this element, does not answer that.
+    /// </exception>
+    string ReadState(string property)
+        => throw new NotSupportedException(
+            $"{GetType().Name} does not implement ReadState.");
+
+    #endregion
+
     #region Scrolling
 
     /// <summary>
@@ -272,6 +311,54 @@ public interface IMauiElement : IElement<IMauiElement>
     ScrollPosition ReadScrollPosition()
         => throw new NotSupportedException(
             $"{GetType().Name} does not implement ReadScrollPosition.");
+
+    #endregion
+
+    #region Selection
+
+    /// <summary>
+    /// Whether this element can be asked to select an item by position.
+    /// </summary>
+    /// <remarks>
+    /// A question, so a control object takes one route rather than trying one. Where it answers
+    /// false the selector falls back to the dropdown - open it, wait for its items to appear in
+    /// the accessibility tree, select one, close it - which is the route this replaces.
+    /// </remarks>
+    bool SupportsSelectIndex => false;
+
+    /// <summary>Whether this element can be asked to select an item by its text.</summary>
+    /// <remarks>
+    /// Separate from <see cref="SupportsSelectIndex"/> because the two are declared separately in
+    /// the app's markup, the same way <see cref="SupportsSetDate"/> and
+    /// <see cref="SupportsSetTime"/> are. An app may well publish one and not the other.
+    /// </remarks>
+    bool SupportsSelectByText => false;
+
+    /// <summary>
+    /// Selects the item at a position, or throws saying why it could not.
+    /// </summary>
+    /// <remarks>
+    /// <b>Nothing opens.</b> The dropdown route had a visible side effect - the popup appears and
+    /// goes again - and a two-second poll waiting for its items to reach the accessibility tree.
+    /// The app moves its own selection instead, so the only thing a user would see is the value
+    /// changing, which is what the test is about.
+    /// </remarks>
+    /// <param name="index">The zero-based item position.</param>
+    /// <exception cref="NotSupportedException">This platform offers no route.</exception>
+    void SelectIndex(int index)
+        => throw new NotSupportedException(
+            $"{GetType().Name} does not implement SelectIndex.");
+
+    /// <summary>Selects the item showing this text, or throws saying why it could not.</summary>
+    /// <remarks>
+    /// Where two items read alike this takes the first, and cannot do otherwise - that is what
+    /// <see cref="SelectIndex"/> is for. The app reports which one it landed on.
+    /// </remarks>
+    /// <param name="text">The item text.</param>
+    /// <exception cref="NotSupportedException">This platform offers no route.</exception>
+    void SelectByText(string text)
+        => throw new NotSupportedException(
+            $"{GetType().Name} does not implement SelectByText.");
 
     #endregion
 

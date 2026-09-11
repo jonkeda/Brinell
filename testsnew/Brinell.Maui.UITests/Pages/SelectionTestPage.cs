@@ -30,6 +30,24 @@ public class SelectionTestPage : PageObjectBase<SelectionTestPage>
     /// </summary>
     public Picker<SelectionTestPage> TestPicker => new(this, "TestPicker");
 
+    /// <summary>
+    /// A picker holding two items that read alike.
+    /// </summary>
+    /// <remarks>
+    /// Selecting the second of them freezes MAUI, so the verb refuses it. Nothing but the
+    /// refusal test should drive this control - see the warning in SelectionView.xaml.
+    /// </remarks>
+    public Picker<SelectionTestPage> DuplicatePicker => new(this, "DuplicatePicker");
+
+    /// <summary>
+    /// A picker holding more items than its dropdown renders at once.
+    /// </summary>
+    /// <remarks>
+    /// It exists so that "what does this picker hold" has a wrong answer available: reading the
+    /// items out of the open popup returns only the ones it has realized.
+    /// </remarks>
+    public Picker<SelectionTestPage> LongPicker => new(this, "LongPicker");
+
     #endregion
 
     #region Labels

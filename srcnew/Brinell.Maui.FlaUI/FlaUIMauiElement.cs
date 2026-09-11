@@ -1520,6 +1520,27 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
     /// </remarks>
     /// <param name="verb">The verb to send.</param>
     /// <returns>Whether the app performed it.</returns>
+    #region State the platform cannot be asked for
+
+    /// <inheritdoc />
+    public bool SupportsStateReads => BridgeDeclares(BrinellVerb.GetState);
+
+    /// <inheritdoc />
+    public string ReadState(string property)
+    {
+        if (!TryBridge(BrinellVerb.GetState, property, out var value))
+        {
+            throw new NotSupportedException(
+                $"'{AutomationId}' does not answer GetState('{property}'). Either the app has not "
+                + "declared GetState on it, or its provider has no case for that name - the two "
+                + "read alike from here, and both are changes to the app under test.");
+        }
+
+        return value;
+    }
+
+    #endregion
+
     #region Scrolling
 
     /// <inheritdoc />
@@ -1578,6 +1599,76 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
 
         static double Number(string value)
             => double.Parse(value, CultureInfo.InvariantCulture);
+    }
+
+    #endregion
+
+    #region Selection
+
+    /// <inheritdoc />
+    public bool SupportsSelectIndex => BridgeDeclares(BrinellVerb.SelectIndex);
+
+    /// <inheritdoc />
+    public bool SupportsSelectByText => BridgeDeclares(BrinellVerb.SelectByText);
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// The app range-checks against its own item list, so an index past the end is refused by
+    /// the only party that knows how many items there are. The dropdown route counted the items
+    /// the popup had rendered, which is a different number while a virtualized list is filling.
+    /// </remarks>
+    public void SelectIndex(int index)
+    {
+        var outcome = BridgeVerbRunner.Invoke(
+            _driver.RootElement, _driver.Automation, AutomationId, BrinellVerb.SelectIndex, index);
+
+        if (outcome.Delivered)
+        {
+            return;
+        }
+
+        // Named per answer rather than as one list of suspects. The verb distinguishes four
+        // things and they call for four different fixes, so collapsing them here would undo
+        // the reason the app bothers to distinguish them.
+        var reason = outcome.HResult switch
+        {
+            HResults.E_INVALIDARG => "the index is negative",
+
+            HResults.UIA_E_ELEMENTNOTAVAILABLE =>
+                "the index is past the end of its items, or its list has not filled yet",
+
+            HResults.UIA_E_NOTSUPPORTED =>
+                "it does not declare the SelectIndex verb, it is not a picker, or an earlier "
+                + "item is equal to this one - MAUI cannot hold that selection, because it "
+                + "resolves SelectedItem back to the first equal entry and the two never agree",
+
+            _ => outcome.Reason,
+        };
+
+        throw new BrinellException($"'{AutomationId}' could not select index {index}: {reason}.");
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// The app answers with the text it landed on, which is checked here rather than left to a
+    /// later assertion: a picker whose selection is two-way bound can decline a value, and the
+    /// old route would have reported that as a successful selection.
+    /// </remarks>
+    public void SelectByText(string text)
+    {
+        if (!TryBridge(BrinellVerb.SelectByText, text, out var landed))
+        {
+            throw new BrinellException(
+                $"'{AutomationId}' could not select '{text}'. Either it does not declare the "
+                + "SelectByText verb, or it is not a picker, or no item shows that text.");
+        }
+
+        if (landed != text)
+        {
+            throw new BrinellException(
+                $"'{AutomationId}' was asked for '{text}' and now shows '{landed}'. The picker "
+                + "declined the value, which a two-way bound SelectedItem can do.");
+        }
     }
 
     #endregion

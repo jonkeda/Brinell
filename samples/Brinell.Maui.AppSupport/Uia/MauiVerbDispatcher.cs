@@ -68,6 +68,24 @@ internal static class MauiVerbDispatcher
         string argument,
         out string result)
     {
+        // Answered before marshalling, and it has to be.
+        //
+        // IsIdle works by posting to the dispatcher and waiting for the callback to run: that is
+        // what "everything queued before now has finished" means. Run on the UI thread - which is
+        // where every other verb runs - it would be waiting for a post it is itself blocking, and
+        // it deadlocked until its budget expired. The dispatch has to be started from the calling
+        // thread, so this branch sits above the marshalling rather than inside it.
+        if (verb == BrinellVerb.IsIdle)
+        {
+            var budget = int.TryParse(
+                argument, NumberStyles.Integer, CultureInfo.InvariantCulture, out var asked)
+                ? asked
+                : DefaultIdleBudgetMs;
+
+            result = MauiCapabilities.IsIdle(element, budget).ToString();
+            return HResults.S_OK;
+        }
+
         string? captured = null;
 
         var hr = OnUiThread(
@@ -115,6 +133,12 @@ internal static class MauiVerbDispatcher
                 return MauiCapabilities.ScrollToIndex(element, arg1)
                     ? HResults.S_OK
                     : HResults.S_FALSE;
+
+            case BrinellVerb.SelectIndex:
+                // Its own four answers, passed through. A negative index is the caller's bug, an
+                // index past the end is a list that may still be filling, a control that is not a
+                // picker is a refusal, and a binding that declines the value is none of those.
+                return MauiCapabilities.SelectIndex(element, arg1);
 
             case BrinellVerb.NavigateBack:
                 // The verb's own answer, passed through rather than flattened. It distinguishes
@@ -209,6 +233,15 @@ internal static class MauiVerbDispatcher
                     ? HResults.S_OK
                     : HResults.UIA_E_ELEMENTNOTAVAILABLE;
 
+            // Selection. The item now shown comes back with the answer, so a caller that asked
+            // for a text two items share can see which one it got without asking again.
+            case BrinellVerb.SelectByText:
+            {
+                var hr = MauiCapabilities.SelectByText(element, argument, out var landed);
+                result = landed;
+                return hr;
+            }
+
             // Dates and times. Two properties, replacing the calendar and clock flyout
             // navigation the client used to have to perform.
             //
@@ -288,12 +321,38 @@ internal static class MauiVerbDispatcher
     /// needs the view model then it is a view-model test and belongs in
     /// <c>Brinell.Maui.Tests</c>, where it runs in milliseconds without a window.
     /// </remarks>
+    /// <summary>How long <c>IsIdle</c> waits for the dispatcher when the caller says nothing.</summary>
+    /// <remarks>
+    /// Long enough for a page's own layout and bindings to run, short enough that asking is not
+    /// itself a sleep. A caller that needs longer says so.
+    /// </remarks>
+    private const int DefaultIdleBudgetMs = 2000;
+
     private static string? ReadState(VisualElement element, string property) => property switch
     {
         "IsVisible" => element.IsVisible.ToString(),
         "NavigationDepth" => MauiCapabilities.NavigationDepth(element)?
             .ToString(CultureInfo.InvariantCulture),
+        // Each of these replaces a client-side inference that could be true for the wrong
+        // reason. See MauiCapabilities for what each one was inferring from.
+        "Source" when element is Image image => MauiCapabilities.ReadImageSource(image),
+        "IsLoading" when element is Image loading
+            => MauiCapabilities.IsImageLoading(loading).ToString(),
+        "Progress" when element is ProgressBar bar
+            => MauiCapabilities.ReadProgress(bar).ToString(CultureInfo.InvariantCulture),
         "Date" when element is DatePicker datePicker => MauiCapabilities.ReadDate(datePicker),
+
+        // A picker's own list and its own position in it. Read from outside, both meant opening
+        // the dropdown and walking the popup - and the index was then derived by matching the
+        // selected text against the item texts, which is wrong for any picker holding two items
+        // that read alike. The app has the number.
+        "SelectedIndex" when element is Picker selected
+            => selected.SelectedIndex.ToString(CultureInfo.InvariantCulture),
+        "SelectedItem" when element is Picker showing
+            => MauiCapabilities.ReadSelectedItem(showing),
+        "ItemCount" when element is Picker counted
+            => counted.Items.Count.ToString(CultureInfo.InvariantCulture),
+        "Items" when element is Picker listed => MauiCapabilities.ReadItems(listed),
         "Time" when element is TimePicker timePicker => MauiCapabilities.ReadTime(timePicker),
         "IsEnabled" => element.IsEnabled.ToString(),
         "IsFocused" => element.IsFocused.ToString(),

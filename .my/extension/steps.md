@@ -84,9 +84,9 @@ stage rather than to develop against.
 | 19 | Gesture control objects | C | 18 | **partly** - semantic verbs and the probe row landed; the id-addressed control object needs generator work |
 | 20 | Date and time verbs | D | 14 | **done** — also closes 37 |
 | 21 | Scroll verbs | D | 12 | **done** — and the two `Pending` traits are gone |
-| 22 | Navigation verbs | D | 12 | todo |
-| 23 | State-read verbs | D | 12 | todo |
-| 24 | Picker verbs | D | 21 | todo |
+| 22 | Navigation verbs | D | 12 | **done** — and closes 33A |
+| 23 | State-read verbs | D | 12 | **done** |
+| 24 | Picker verbs | D | 21 | **done** — and found 39 |
 | 25 | Dialog reads | D | 23 | todo |
 | 26 | Menu and flyout verbs | D | 13 | todo |
 | 27 | Security gating | E | 18 | todo |
@@ -95,12 +95,13 @@ stage rather than to develop against.
 | 30 | Documentation and AD-008 | E | 19 | todo |
 | 31 | Stepper: 11 failing before any of this work | G | — | **parked** — 11 of 13 carry a `Skip`; the other 2 pass and stay live |
 | 32 | Shell app: 13 failing before any of this work | G | — | **parked** — all 13 carry a `Skip` |
-| 33 | Navigation stall: a 2 s grace on the wrong question, and two 10 s negative assertions | G | — | **parked** |
+| 33 | Navigation stall: a 2 s grace on the wrong question, and two 10 s negative assertions | G | — | **A fixed by step 22**; B still parked |
 | 34 | Actions do not Try: remove `Try` from commands, keep it on searches | G | 33 | **started** — `TryPerformGesture` deleted; the rest parked |
 | 35 | Notice when the framework starts waiting | G | — | **parked** |
 | 36 | `ReturnToHub` intermittently reports the hub never arrived (flaky, 1-4 tests per run, both modes) | G | — | **parked** |
 | 37 | TimePicker reads back 12-hour in background mode (1 test) | G | 20 | **fixed by 20** |
 | 38 | Clipboard canary asserts on a probe its own helper calls inconclusive (1 test) | G | — | **parked** |
+| 39 | Selecting a repeated Picker item freezes MAUI (upstream) | G | 24 | **guarded by 24** — the verb refuses; a person clicking it still hangs the app |
 
 ---
 
@@ -1060,6 +1061,53 @@ Visibility is what the verb promises, so visibility is what the test now asks.
 `Win32Exception` and may silently no-op. Verbs `NavigateBack`, `NavigateTo`, `CurrentRoute` →
 `Shell.Current.GoToAsync` / `Navigation.PopAsync`.
 
+#### Result — done
+
+4 tests green in `NavigationVerbTests`, in 2 s. Verbs `NavigateBack`, `NavigateTo`,
+`CurrentRoute`, plus `GetState("NavigationDepth")`.
+
+**The bool became four answers.** `NavigateBack` now returns `S_OK` (popped), `S_FALSE` (at the
+root, nothing to pop), `UIA_E_ELEMENTNOTAVAILABLE` (this target is a page that was popped long
+ago) and `UIA_E_NOTSUPPORTED` (not a page). The client acts differently on each. That is step
+34's rule applied to the one case where the bool provably *caused* a defect rather than merely
+permitting one.
+
+**Step 33A is fixed, and the 2 s grace is deleted.** It polled whenever the verb did not answer
+`S_OK`, guarded on "does this app have a bridge" - always true - so it fired on the commonest
+answer of the four, *we are already at the root*. Every fixture reset starting at the hub paid
+it. The race it was added for is real and is now distinguishable: a stale target says
+`UIA_E_ELEMENTNOTAVAILABLE`, the root says `S_FALSE`, and waiting is the right answer to one and
+wrong for the other.
+
+**The hub now publishes itself.** It declared nothing, so at the root - the exact moment "are we
+at the root" is asked - nothing could answer. That was the open item at the end of
+`rca-navigation-tests-stall.md`.
+
+**`Refresh` stopped sending F5.** It was desktop-wide keyboard input landing wherever the
+foreground happened to be, swallowing its own failure, and doing nothing at all in the common
+case. It re-navigates to the current route, and fails loudly on an app that has no routes rather
+than silently on every app.
+
+**A test lost forty lines of polling, and the polling was load-bearing.** The old
+`NavigateBack_AtTheHub_ReportsNothingToPop` had to establish a fact by *going back* and seeing
+what came out, so every reading changed what was being read - it failed about one run in three.
+A question does not move the app, so `IsAtNavigationRoot_KnowsWhichEndOfTheStackTheAppIsOn`
+asserts the fact directly.
+
+**Step 36 is NOT fixed, and I said it was.** Seven of its tests passed three narrow runs in a row
+with the skips removed, which I took as sufficient; a wider run failed a different test each
+time. The skips are back. What this step did remove is one *contributor* - the fixture could not
+previously tell "nothing to pop" from three real failures - but the flake outlives it.
+
+**Not attempted: unwinding a deeper stack in `ReturnToHub`.** A stack deeper than two leaves a
+page open after one pop, and the next `Open` clicks a hub button still findable *underneath* it,
+pushing another page - so one failure deepens the stack and guarantees the next. A pop-until-root
+loop was written and made things worse, and it was reverted. It is a test helper, and it has
+already had more time than it is worth; whoever picks up 36 should start from the app's reported
+depth rather than from this.
+
+---
+
 ### Step 23 — State-read verbs
 
 The assertions that currently pass for the wrong reason. `Image` — "loaded if it occupies
@@ -1072,11 +1120,75 @@ space", though a failed image still occupies space; expose `Source` and `IsLoadi
 **Boundary.** `BindingContext` and arbitrary property reflection stay out. Read what a user
 could perceive; if the assertion needs the view model, it belongs in `Brinell.Maui.Tests`.
 
+#### Result — done
+
+4 tests green in `StateReadTests`; Display 15/15. Reads `Source`, `IsLoading`, `Progress`, and a
+whole-app `IsIdle`.
+
+**The headline is an assertion that was true for the wrong reason.** `Image.IsLoadedCore` was "the
+element occupies space", and the layout reserves that box whether the bitmap arrives or not - so
+it was equally true of an image whose source names a file that does not exist. The test asserting
+an image had loaded was asserting that MAUI had done arithmetic. `DisplayView` now carries a
+`BrokenImage` row for exactly this, and `ImageSource_SeparatesABrokenImageFromAWorkingOne` asserts
+both that the two are now distinguishable *and* that they still occupy space alike - so the test
+keeps demonstrating why the old check could not work.
+
+**`Progress` lost its second definition.** The client read the UIA range pattern, where WinUI
+reports 0-100, and rescaled against the reported minimum and maximum. The arithmetic is right and
+is also a second home for what "progress" means: a platform reporting a different range, or none,
+quietly changes the number. The app holds one value and now hands it over.
+
+**`IsIdle` is on the driver, not on an element**, and the first attempt had it on the element -
+which meant every control that wanted to be waited on had to declare a verb about the app's
+dispatcher. A dispatcher belongs to the app and every element gives the same answer.
+
+**A deadlock I wrote and then measured.** `IsIdle` posts to the dispatcher and waits for the
+callback - that is what "everything queued before now has finished" means. Run where every other
+verb runs, on the UI thread, it was waiting for a post it was itself blocking, and it hung until
+its budget expired. It presented as *"no element published on the app's bridge answers IsIdle"*,
+which is a plausible-looking declaration problem, and the bridge log disproved that in one line by
+showing the verb published. The dispatch is now started from the calling thread, above the
+marshalling.
+
+**The boundary held.** `ReadState` takes named properties that the provider has cases for, so
+`BindingContext` is refused rather than answered with an empty string - a read that returned blank
+for an unimplemented name would let an assertion compare two blanks and pass.
+
+**One caveat.** In a wide filter, `ProgressBar_DecreaseProgress_UpdatesValue` fails at 1 ms while
+passing in its own area 15/15. That is step 36 again - a different test each run - and it is
+parked.
+
+---
+
 ### Step 24 — Picker verbs
 
 Picker tests are 0/8 on Android before any change — one root failure and seven cascades. Verbs
 `SelectIndex`, `SelectByText`, plus a separate `OpenFlyout` so a test that genuinely means "the
 flyout opens and shows these items" can still say so.
+
+**Result.** `SelectIndex` and `SelectByText` on the app side; `SelectedIndex`, `SelectedItem`,
+`ItemCount` and `Items` added to `GetState`. `SelectorControlBase` asks
+`SupportsSelectIndex` / `SupportsSelectByText` before choosing a route, and `Picker` overrides the
+four reads. 15 passed in the Selection area, 44 in the whole Background stage.
+
+**What the dropdown route was costing.** Every question a test asked a picker was answered by
+opening its popup: expand, poll up to two seconds for the popup's items to reach the
+accessibility tree, act, collapse. Selecting a value therefore performed a flyout journey on the
+way past, and a test that genuinely meant "the flyout opens and shows these items" could not be
+told apart from one that only wanted the value changed. `OpenFlyout` / `CloseFlyout` /
+`IsFlyoutOpen` on the control object are what that half becomes; they stay on the ExpandCollapse
+pattern rather than becoming verbs, because MAUI has no public API to open a Picker's dropdown
+and an app could only answer such a verb by reaching into WinUI.
+
+**A read that changed what it read.** `GetItemTexts` expanded the popup to count what was in it,
+so asking twice in a row was two different journeys through the app. Worse, the popup realizes
+only the items it is showing: on a picker of two hundred, the item list came back as the visible
+handful and the selected index — derived by finding the selected text in that short list — was
+wrong or null for anything below the fold. Neither read failed. `LongPicker` in the sample makes
+that concrete, and the test asserts the contrast rather than describing it: it opens the dropdown,
+counts what the popup realized, and fails if a platform ever renders all two hundred.
+
+**`OpenFlyout` is deliberately not a verb**, and the plan's wording above assumed it would be.
 
 ### Step 25 — Dialog reads
 
@@ -1399,6 +1511,40 @@ which is the one thing the remarks set out to avoid.
 desktop's clipboard is not available and there is nothing to canary. Roughly three lines. The
 interesting question is what holds it - a clipboard manager, an editor, RDP redirection - but that
 question does not have to be answered to stop the test lying.
+
+### Step 39 — Selecting a repeated item freezes MAUI
+
+Found while building a picker whose two identical items would prove the derived index wrong. The
+demonstration worked rather too well.
+
+Setting `Picker.SelectedIndex` to the second of two identically-displayed items hangs the app.
+MAUI keeps the pair in step by setting each from the other — `SelectedIndex` sets `SelectedItem`
+to the item at that position, `SelectedItem` sets `SelectedIndex` back to `IndexOf(item)` — and
+where `IndexOf` cannot return the index it was given, the two never agree.
+
+**Measured, not inferred**, because "the app stopped answering" has four plausible causes and
+three of them would have been ours:
+
+- The bridge log showed the verb arriving and timing out: `Invoke SelectIndex(1,0) on
+  'DuplicatePicker' -> 0x80131505`.
+- Sampling the app process showed CPU climbing 0.72 s per 0.72 s of wall clock with
+  `Responding = False` — one core pinned, so a spin rather than a block.
+- The app's own `Loaded` handler doing the same assignment, with no automation running at all,
+  froze it identically. That is what makes it MAUI's rather than the bridge's.
+
+Every test after it in the collection then failed with "no element published on the app's bridge
+answers GetState", which reads exactly like a missing declaration.
+
+**Not parked — guarded.** The app compares the position MAUI's own lookup would return against
+the one it was given, before it assigns, and refuses with `UIA_E_NOTSUPPORTED` when they differ.
+A verb that reproduced this would take down the app under test and everything after it, and the
+comparison costs nothing. `SelectByText` needs no guard: it selects the position `IndexOf` gives
+it, so the two already agree. `DuplicatePicker` stays in the sample, carrying a warning, so the
+refusal is exercised rather than believed in.
+
+**Still live for a person.** Clicking the second `Repeat` in that picker freezes the sample app,
+because it is the same code path. Worth an upstream report; not worth working around further
+here.
 
 ## Taking one out of Stage G
 

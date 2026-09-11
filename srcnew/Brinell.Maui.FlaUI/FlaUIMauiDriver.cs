@@ -1032,7 +1032,30 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// Never falls back to real input; see the interface.
     /// </para>
     /// </remarks>
-    public bool IsAtNavigationRoot()
+    public bool IsAtNavigationRoot() => NavigationDepth() <= 1;
+
+    /// <inheritdoc />
+    public bool IsIdle(int timeoutMs = 2000)
+    {
+        var answer = Bridge.BridgeVerbRunner.ExchangeAnywhere(
+            RootElement,
+            Automation,
+            BrinellVerb.IsIdle,
+            timeoutMs.ToString(System.Globalization.CultureInfo.InvariantCulture));
+
+        if (!answer.Delivered)
+        {
+            throw new NotSupportedException(
+                "The app under test cannot say whether it is idle, so there is nothing to wait on "
+                + "and every such wait has to go back to being a sleep. Declare IsIdle on its "
+                + $"pages - see GestureAutomation.Verbs. The bridge said: {answer.Reason}");
+        }
+
+        return bool.TryParse(answer.Value, out var idle) && idle;
+    }
+
+    /// <inheritdoc />
+    public int NavigationDepth()
     {
         var answer = Bridge.BridgeVerbRunner.ExchangeAnywhere(
             RootElement, Automation, BrinellVerb.GetState, "NavigationDepth");
@@ -1047,7 +1070,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
                 + $"The bridge said: {answer.Reason}");
         }
 
-        return depth <= 1;
+        return depth;
     }
 
     /// <inheritdoc />

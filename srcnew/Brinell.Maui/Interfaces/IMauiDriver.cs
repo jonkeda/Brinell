@@ -158,7 +158,52 @@ public interface IMauiDriver : IDriver<IMauiElement>, IDiagnosticDriver
     /// </para>
     /// </remarks>
     /// <returns>Whether there is nothing to go back to.</returns>
-    bool IsAtNavigationRoot() => true;
+    bool IsAtNavigationRoot() => NavigationDepth() <= 1;
+
+    /// <summary>
+    /// How many pages are on the app's navigation stack.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>A number rather than a flag, because callers pop in a loop.</b> "Are we at the root" is
+    /// enough to decide whether to pop at all, and not enough to wait for a pop to finish: the
+    /// pop is started rather than awaited, so a caller unwinding a stack three deep has to be
+    /// able to see the depth fall to know the first one landed. With only the flag it would wait
+    /// out a timeout per pop, which is the shape of the defect this whole change removes.
+    /// </para>
+    /// <para>
+    /// Answered by any live element on the app's bridge: a page's navigation stack is the app's,
+    /// not that page's.
+    /// </para>
+    /// </remarks>
+    /// <returns>The number of pages, where 1 means only the root.</returns>
+    int NavigationDepth() => 1;
+
+    /// <summary>
+    /// Whether the app has finished the work it had queued.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>What <c>AD-004</c> needs in order to be a followable rule.</b> "No arbitrary sleeps" is
+    /// only obeyable if there is something to wait <i>on</i>; without one, a test that needs the
+    /// UI to settle either sleeps or invents a sentinel element whose appearance approximates
+    /// settling.
+    /// </para>
+    /// <para>
+    /// <b>On the driver, not on an element</b>, because it is a question about the app: a
+    /// dispatcher belongs to the app and every element would give the same answer. Putting it on
+    /// an element would also mean every control that wanted to be waited on had to declare a verb
+    /// that has nothing to do with that control.
+    /// </para>
+    /// <para>
+    /// It does not promise that nothing new will be queued. An app with a running animation or a
+    /// live timer is never idle by any definition, and reporting that is better than a number
+    /// that hides it.
+    /// </para>
+    /// </remarks>
+    /// <param name="timeoutMs">How long to give the queue to drain.</param>
+    /// <returns>Whether it drained within the budget.</returns>
+    bool IsIdle(int timeoutMs = 2000) => true;
 
     /// <summary>
     /// Where the app currently is, in the terms its own navigation model uses.

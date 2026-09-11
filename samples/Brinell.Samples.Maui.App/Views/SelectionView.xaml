@@ -2,6 +2,7 @@
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewModels="using:Brinell.Samples.Maui.App.ViewModels"
+             xmlns:uia="clr-namespace:Brinell.Maui.AppSupport.Uia;assembly=Brinell.Maui.AppSupport"
              x:Class="Brinell.Samples.Maui.App.Views2.TestViews.SelectionView"
              BackgroundColor="{AppThemeBinding Light=White, Dark=#1F1F1F}">
 
@@ -37,12 +38,48 @@
                 FontSize="12"
                 TextColor="{AppThemeBinding Light=Gray, Dark=LightGray}" />
 
+            <!-- Selecting and reading are the app's own answers. Without the verbs, both go
+                 through the dropdown: open the popup, wait for its items to reach the
+                 accessibility tree, act, close it again - so a read moved the app. -->
             <Picker 
                 ItemsSource="{Binding PickerItems}"
                 SelectedItem="{Binding SelectedItem}"
                 SelectedIndex="{Binding SelectedIndex}"
                 AutomationId="TestPicker"
                 Title="Choose an item..."
+                uia:GestureAutomation.Verbs="SelectIndex,SelectByText,GetState"
+                BackgroundColor="{AppThemeBinding Light=White, Dark=#2F2F2F}"
+                TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+
+            <!-- More items than the dropdown renders at once. That is what the old reads got
+                 wrong: they came from the popup, which realizes only the items it is showing,
+                 so the item list was short and the index derived from it was wrong for
+                 anything below the fold. -->
+            <Label Text="Picker with more items than the dropdown shows" FontSize="16" FontAttributes="Bold" TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+
+            <Picker
+                ItemsSource="{Binding ManyItems}"
+                AutomationId="LongPicker"
+                Title="Two hundred of them..."
+                uia:GestureAutomation.Verbs="SelectIndex,SelectByText,GetState"
+                BackgroundColor="{AppThemeBinding Light=White, Dark=#2F2F2F}"
+                TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+
+            <!-- Two items that read alike.
+
+                 DO NOT SELECT THE SECOND ONE. Doing so freezes the app: MAUI resolves
+                 SelectedItem back to the first equal entry, sets SelectedIndex from it, and the
+                 pair never converges - one core at 100% and a window that stops responding.
+                 That is MAUI's own behaviour and a person clicking the second 'Repeat' hits it
+                 too; the SelectIndex verb refuses rather than reproducing it, which is what
+                 SelectionVerbTests pins. -->
+            <Label Text="Picker with repeated item texts" FontSize="16" FontAttributes="Bold" TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+
+            <Picker
+                ItemsSource="{Binding DuplicateItems}"
+                AutomationId="DuplicatePicker"
+                Title="Two of these read alike..."
+                uia:GestureAutomation.Verbs="SelectIndex,SelectByText,GetState"
                 BackgroundColor="{AppThemeBinding Light=White, Dark=#2F2F2F}"
                 TextColor="{AppThemeBinding Light=Black, Dark=White}" />
 

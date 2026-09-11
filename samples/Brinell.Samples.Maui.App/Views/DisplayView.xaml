@@ -2,6 +2,7 @@
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewModels="using:Brinell.Samples.Maui.App.ViewModels"
+             xmlns:uia="clr-namespace:Brinell.Maui.AppSupport.Uia;assembly=Brinell.Maui.AppSupport"
              x:Class="Brinell.Samples.Maui.App.Views.DisplayView"
              BackgroundColor="{AppThemeBinding Light=White, Dark=#1F1F1F}">
 
@@ -61,8 +62,24 @@
                 <Image 
                     Source="testimage.png" 
                     Aspect="AspectFit"
+                    uia:GestureAutomation.Verbs="GetState"
                     AutomationId="TestImage" />
             </Frame>
+
+            <!--
+                A source that does not exist, and the reason this row is here.
+
+                "An image is loaded if it occupies space" was true of this one: the layout
+                reserves the same box whether the bitmap arrives or not, so the old check could
+                not tell it from TestImage above. Asking the app separates them - it has a source
+                and is not loading, but the source names nothing.
+            -->
+            <Image
+                Source="this-file-does-not-exist.png"
+                HeightRequest="40"
+                WidthRequest="40"
+                uia:GestureAutomation.Verbs="GetState"
+                AutomationId="BrokenImage" />
 
             <BoxView Color="{AppThemeBinding Light=LightGray, Dark=Gray}" HeightRequest="1" />
 
@@ -103,6 +120,7 @@
                 ProgressColor="#007AFF"
                 BackgroundColor="#E0E0E0"
                 HeightRequest="10"
+                uia:GestureAutomation.Verbs="GetState"
                 AutomationId="TestProgressBar" />
 
             <HorizontalStackLayout Spacing="10" HorizontalOptions="Center">

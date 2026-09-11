@@ -39,6 +39,22 @@ public partial class ProgressBar<TScope> : Base.ViewBase<TScope>
     {
         if (element == null) return null;
 
+        // The app's own number first, in MAUI's units, with no arithmetic in between.
+        //
+        // The rescaling below is correct and is also a second home for the definition of
+        // "progress": it infers the scale from whatever minimum and maximum the platform
+        // reports, so a platform reporting a different range - or none - quietly changes what
+        // the returned number means. Asking the app removes the inference rather than tuning it.
+        if (element.SupportsStateReads
+            && double.TryParse(
+                element.ReadState("Progress"),
+                System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture,
+                out var reported))
+        {
+            return reported;
+        }
+
         // A progress bar reports its value through the range pattern, and reports it in its own
         // units: WinUI uses 0-100 where MAUI's Progress is 0-1. Normalising against the reported
         // minimum and maximum is what makes the returned value mean the same thing everywhere.

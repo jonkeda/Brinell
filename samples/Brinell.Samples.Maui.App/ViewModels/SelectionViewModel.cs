@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows.Input;
 
 namespace Brinell.Samples.Maui.App.ViewModels;
@@ -43,6 +44,28 @@ public class SelectionViewModel : ParentViewModel
             }
         }
     }
+
+    /// <summary>
+    /// Items where two read alike, which MAUI cannot hold a selection on.
+    /// </summary>
+    /// <remarks>
+    /// See the warning beside this picker in SelectionView.xaml: selecting the second of the two
+    /// freezes the app, so the bridge refuses it. This list exists so that the refusal is
+    /// exercised rather than believed in.
+    /// </remarks>
+    public ObservableCollection<string> DuplicateItems { get; } = ["Repeat", "Repeat", "Unique"];
+
+    /// <summary>
+    /// More items than a dropdown renders at once.
+    /// </summary>
+    /// <remarks>
+    /// So that "what does this picker hold" has a wrong answer available. Reading the items out
+    /// of the open popup returns only what the popup has realized, which is the visible handful;
+    /// the count and the selected index derived from that list are then wrong for anything
+    /// further down.
+    /// </remarks>
+    public ObservableCollection<string> ManyItems { get; }
+        = new(Enumerable.Range(1, 200).Select(n => $"Item {n}"));
 
     public string StatusMessage
     {

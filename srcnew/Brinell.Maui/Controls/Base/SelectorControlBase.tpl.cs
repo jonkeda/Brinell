@@ -43,6 +43,16 @@ public abstract partial class SelectorControlBase<TScope> : FocusableControlBase
     {
         if (text == null) return;
 
+        // One question, then one route. The dropdown below opens the popup, waits up to two
+        // seconds for its items to reach the accessibility tree, selects one and closes it
+        // again - a visible journey standing in for a property assignment the app can make
+        // directly. Asked, never tried: nothing here performs anything to find out.
+        if (element.SupportsSelectByText)
+        {
+            element.SelectByText(text);
+            return;
+        }
+
         // For ComboBox with ExpandCollapse pattern, use SelectItemByText for reliable selection
         if (element is IExpandCollapsePatternElement<IMauiElement> comboBox && comboBox.SupportsExpandCollapse)
         {
@@ -79,6 +89,15 @@ public abstract partial class SelectorControlBase<TScope> : FocusableControlBase
     protected virtual void SelectByIndexCore(IMauiElement element, int? index, int? timeoutMs = null)
     {
         if (index == null) return;
+
+        // See SelectByTextCore. The app also range-checks against its own item list, which the
+        // dropdown route could not: it counted the items the popup had rendered, and that is a
+        // different number while a virtualized list is still filling.
+        if (element.SupportsSelectIndex)
+        {
+            element.SelectIndex(index.Value);
+            return;
+        }
 
         // For ComboBox with ExpandCollapse pattern, use SelectItemByIndex for reliable selection
         if (element is IExpandCollapsePatternElement<IMauiElement> comboBox && comboBox.SupportsExpandCollapse)
