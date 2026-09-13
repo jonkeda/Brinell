@@ -25,6 +25,12 @@ public class NavigationDemoViewModel : ParentViewModel
     {
         ToolbarCommand = new RelayCommand<string>(RecordAction);
         MenuCommand = new RelayCommand<string>(SelectMenuItem);
+
+        // Records like the others if it ever runs, and cannot run. MAUI drives a MenuItem's
+        // enabled state from its command, so this - not IsEnabled in the markup - is what makes
+        // the entry genuinely disabled; and because it would record, a test can tell "refused"
+        // from "ran and had no visible effect".
+        UnavailableMenuCommand = new RelayCommand<string>(SelectMenuItem, _ => false);
         TabCommand = new RelayCommand<string>(SelectTab);
         ToggleMenuCommand = new RelayCommand(() => IsMenuOpen = !IsMenuOpen);
         ResetCommand = new RelayCommand(Reset);
@@ -78,6 +84,9 @@ public class NavigationDemoViewModel : ParentViewModel
 
     /// <summary>Records a menu item activation and closes the menu.</summary>
     public ICommand MenuCommand { get; }
+
+    /// <summary>The same, for an entry a user is not allowed to pick.</summary>
+    public ICommand UnavailableMenuCommand { get; }
 
     /// <summary>Records a tab selection.</summary>
     public ICommand TabCommand { get; }

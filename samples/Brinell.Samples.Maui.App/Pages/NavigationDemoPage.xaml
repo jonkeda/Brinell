@@ -22,10 +22,10 @@
 
     <ContentPage.MenuBarItems>
         <MenuBarItem AutomationId="PageMenuFile" Text="File">
-            <MenuFlyoutItem AutomationId="PageMenuFileNew" Text="New" />
-            <MenuFlyoutItem AutomationId="PageMenuFileExit" Text="Exit" />
+            <MenuFlyoutItem AutomationId="PageMenuFileNew" Text="New" Clicked="OnMenuNew" />
+            <MenuFlyoutItem AutomationId="PageMenuFileExit" Text="Exit" Clicked="OnMenuExit" />
         </MenuBarItem>
     </ContentPage.MenuBarItems>
 
-    <testViews:NavigationDemoView />
+    <testViews:NavigationDemoView x:Name="DemoView" />
 </ContentPage>

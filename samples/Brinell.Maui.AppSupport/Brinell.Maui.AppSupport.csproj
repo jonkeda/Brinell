@@ -1,5 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <!--
+    Decides whether this build contains the bridge. Read it: it is a security gate, and it
+    is imported from the contracts project so that both ends of the wire cannot disagree
+    about whether the provider exists.
+
+    Copying this project into an app means copying that file too, or defining
+    BRINELL_UIA_BRIDGE some other way. Doing neither gives an app with no bridge, which is
+    the right way for a gate to fail.
+  -->
+  <Import Project="..\..\srcnew\Brinell.Uia.Contracts\Brinell.Uia.Bridge.props" />
+
   <PropertyGroup>
     <!--
       Multi-targeted so an app under test can reference this from any platform head.
@@ -74,6 +85,41 @@
     <Compile Include="..\..\srcnew\Brinell.Uia.Contracts\**\*.cs"
              Exclude="..\..\srcnew\Brinell.Uia.Contracts\bin\**;..\..\srcnew\Brinell.Uia.Contracts\obj\**"
              Link="Uia\Contract\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <!--
+    Step 27: what an uninstrumented build does not contain.
+
+    Removed by file rather than wrapped in #if, following the Handlers precedent above -
+    these are files an app author reads and copies, and eight of them under preprocessor
+    directives would be worse to read than a list of what is in the build.
+
+    Two groups, and the difference between them is the point:
+
+      REMOVED - the provider, and everything that only exists to serve it. The dispatcher
+      and MauiCapabilities are here even though neither touches UI Automation: they are a
+      thousand lines whose whole purpose is to drive the app's own controls from outside,
+      and code like that has no business in a shipping binary just because nothing calls
+      it today.
+
+      KEPT - GestureAutomation, because its attached property is named in shared XAML and
+      the app stops compiling without it; BrinellAlerts, because the app's own pages call
+      it; IBrinellGestureSink, because an app implements it; BridgeDiagnostics and
+      WindowHandles, which say and find things rather than doing any. What remains is a
+      declaration that nothing reads and a log nobody writes to.
+
+    BrinellBridgeHost is the seam between the two and is the one file carrying an #if.
+  -->
+  <ItemGroup Condition="'$(BrinellUiaBridge)' != 'true'">
+    <Compile Remove="Uia\Contract\Provider\**" />
+    <Compile Remove="..\..\srcnew\Brinell.Uia.Contracts\Provider\**" />
+    <Compile Remove="Uia\ElementBounds.cs" />
+    <Compile Remove="Uia\MauiCapabilities.cs" />
+    <Compile Remove="Uia\MauiVerbDispatcher.cs" />
+    <Compile Remove="Uia\MauiVerbTarget.cs" />
+    <Compile Remove="Uia\VerbBinding.cs" />
+    <Compile Remove="Uia\VerbBindings.cs" />
+    <Compile Remove="Uia\VerbPlan.cs" />
   </ItemGroup>
 
 </Project>

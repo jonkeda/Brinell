@@ -24,10 +24,14 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
 {
     private readonly UIA3Automation _automation;
     private readonly Application? _application;
-    private readonly AutomationElement _rootElement;
+    private AutomationElement _rootElement;
+    private readonly Lock _rootGate = new();
     private readonly ConditionFactory _conditionFactory;
     private readonly nint _rootWindowHandle;
     private bool _disposed;
+    private CancellationTokenSource? _watchdog;
+    private int _foregroundGrabs;
+
     
     /// <summary>
     /// Creates a new FlaUIMauiDriver for an existing window.
@@ -36,7 +40,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     public FlaUIMauiDriver(IntPtr windowHandle)
     {
         _automation = new UIA3Automation();
-        _rootElement = _automation.FromHandle(windowHandle);
+        _rootElement = AttachToWindow(_automation, windowHandle);
         _conditionFactory = new ConditionFactory(_automation.PropertyLibrary);
         _rootWindowHandle = windowHandle;
     }
@@ -53,8 +57,26 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
         var processStartInfo = new ProcessStartInfo(executablePath)
         {
             Arguments = arguments ?? string.Empty,
-            UseShellExecute = true
+
+            // FALSE, AND THIS MATTERS MORE THAN IT LOOKS.
+            //
+            // With UseShellExecute the launch goes through the shell, and what the child
+            // inherits is not reliably this process's environment. Measured: roughly one run in
+            // six came up with no bridge at all - every test failing with "no element published
+            // on the app's bridge", for seventeen seconds at a time, against an app that was
+            // running perfectly well and had simply never been told to instrument itself. It
+            // looked like flakiness in the bridge and was a launch that lost a variable.
+            //
+            // False also lets the environment be stated per launch instead of being smuggled
+            // through this process's own, which was always a wart: the driver used to set
+            // BRINELL_UIA_BRIDGE on itself and hope.
+            UseShellExecute = false,
         };
+
+        // Ask the app to turn its gesture bridge on. Asking is all this is: an app that was not
+        // built with a bridge has nothing to turn on, which is the gate that actually controls
+        // anything - see BrinellBridgeGate. An uninstrumented app is unaffected.
+        processStartInfo.Environment[BrinellBridgeGate.EnableVariable] = "1";
 
         // Whoever the user was working in before the run. Windows hands a freshly launched
         // process the foreground, so without this the app steals focus and keeps it for the
@@ -63,6 +85,11 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
 
         var process = Process.Start(processStartInfo)
             ?? throw new InvalidOperationException($"Failed to start process: {executablePath}");
+
+        // Before anything waits on the app: launch is when it is certain to grab the foreground,
+        // and the wait for its main window below takes seconds. Started any later, the watchdog
+        // only cleans up after the flash the person at the machine has already seen.
+        StartForegroundWatchdog(process.Id, previousForeground);
         
         // Give the process time to initialize before attaching
         process.WaitForInputIdle();
@@ -75,6 +102,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
         _conditionFactory = new ConditionFactory(_automation.PropertyLibrary);
         _rootWindowHandle = _rootElement.Properties.NativeWindowHandle.ValueOrDefault;
         TryApplyRequestedWindowPlacement();
+        RefuseActivation();
         RestoreForegroundWindow(previousForeground);
     }
     
@@ -93,6 +121,54 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
         _rootWindowHandle = _rootElement.Properties.NativeWindowHandle.ValueOrDefault;
     }
     
+    /// <summary>
+    /// Attaches to a window, waiting for UI Automation to be willing to resolve it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>A window that exists is not always a window UI Automation will hand you.</b>
+    /// <c>FromHandle</c> throws <c>Win32Exception: "Unexpected HRESULT has been returned from a
+    /// call to a COM component"</c> for a handle it cannot resolve yet - not a null, so there is
+    /// nothing to test for and nothing that reads as "not ready".
+    /// </para>
+    /// <para>
+    /// <b>It fails in a constructor, which is what makes it worth handling here.</b> A fixture
+    /// that cannot build takes its whole collection down at once, and the report is a COM error
+    /// with no mention of a window - it reads as the automation stack being broken rather than a
+    /// window being a few milliseconds young.
+    /// </para>
+    /// </remarks>
+    /// <param name="automation">The client session.</param>
+    /// <param name="windowHandle">The window to attach to.</param>
+    /// <returns>The window as an automation element.</returns>
+    private static AutomationElement AttachToWindow(UIA3Automation automation, IntPtr windowHandle)
+    {
+        const int timeoutMs = 10_000;
+        const int pollMs = 20;
+
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        Exception? last = null;
+
+        while (clock.ElapsedMilliseconds < timeoutMs)
+        {
+            try
+            {
+                return automation.FromHandle(windowHandle);
+            }
+            catch (Exception attaching)
+            {
+                last = attaching;
+                Thread.Sleep(pollMs);
+            }
+        }
+
+        throw new InvalidOperationException(
+            $"UI Automation would not resolve window 0x{windowHandle:X} within {timeoutMs} ms. "
+            + "The window exists but the automation stack will not hand it over, which is not "
+            + "the same as the app being absent.",
+            last);
+    }
+
     #region Platform
     
     /// <inheritdoc />
@@ -113,7 +189,68 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     internal UIA3Automation Automation => _automation;
 
     /// <summary>The app's top-level window. Where a bridge lookup starts.</summary>
-    internal AutomationElement RootElement => _rootElement;
+    /// <remarks>
+    /// <para>
+    /// <b>Re-resolved when UI Automation has invalidated it, and that is the fix for what looked
+    /// like an app freeze.</b> Two of eight full runs, and a stress probe within forty page
+    /// changes, ended with every later test failing in milliseconds: bridge silent, window
+    /// "unreadable". Captured in the act, the app was idle and responding, its window handle
+    /// unchanged - and the element this driver had held since launch answered
+    /// <c>UIA_E_ELEMENTNOTAVAILABLE</c>, while a fresh attach to the same handle worked at once,
+    /// bridge and all. UI Automation had retired the element; the driver never asked again, so one
+    /// invalidation blinded it for the rest of the run.
+    /// </para>
+    /// <para>
+    /// <b>The window handle is the identity, not the element.</b> The check is one property read,
+    /// cheap next to the tree searches every caller of this goes on to do, and the re-attach is
+    /// taken under a lock because the verb runners and the test thread can reach it together.
+    /// See <c>.my/fix/rca-app-freeze-was-a-stale-root.md</c>.
+    /// </para>
+    /// </remarks>
+    internal AutomationElement RootElement
+    {
+        get
+        {
+            var root = _rootElement;
+
+            if (IsStillAvailable(root) || _rootWindowHandle == IntPtr.Zero)
+            {
+                return root;
+            }
+
+            lock (_rootGate)
+            {
+                if (!ReferenceEquals(root, _rootElement) && IsStillAvailable(_rootElement))
+                {
+                    return _rootElement;
+                }
+
+                _rootElement = AttachToWindow(_automation, _rootWindowHandle);
+                Interlocked.Increment(ref _rootReattachments);
+                return _rootElement;
+            }
+        }
+    }
+
+    /// <summary>How many times the root element had gone stale and was attached again.</summary>
+    /// <remarks>Diagnostics. A number that grows during a run is the invalidation happening.</remarks>
+    public int RootReattachments => Volatile.Read(ref _rootReattachments);
+
+    private int _rootReattachments;
+
+    private static bool IsStillAvailable(AutomationElement element)
+    {
+        try
+        {
+            _ = element.Properties.ProcessId.Value;
+            return true;
+        }
+        catch (System.Runtime.InteropServices.COMException stale)
+            when (stale.HResult == unchecked((int)0x80040201))
+        {
+            return false;
+        }
+    }
 
     /// <summary>
     /// Ensures the root window is focused and activated before physical input.
@@ -130,9 +267,9 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     {
         try
         {
-            if (_rootElement.Patterns.Window.IsSupported)
+            if (RootElement.Patterns.Window.IsSupported)
             {
-                var windowPattern = _rootElement.Patterns.Window.Pattern;
+                var windowPattern = RootElement.Patterns.Window.Pattern;
                 if (windowPattern.WindowVisualState.Value == WindowVisualState.Minimized)
                 {
                     windowPattern.SetWindowVisualState(WindowVisualState.Normal);
@@ -150,14 +287,14 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
 
         try
         {
-            _rootElement.SetForeground();
+            RootElement.SetForeground();
         }
         catch
         {
             // SetForeground can fail if the window is not top-level; fall back to Focus.
             try
             {
-                _rootElement.Focus();
+                RootElement.Focus();
             }
             catch
             {
@@ -355,6 +492,13 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
             }
         }
 
+        // NOT off-screen by default, though it was tried for exactly the reason it is tempting: a
+        // window on no monitor cannot appear over anyone's editor. Measured, it breaks visibility.
+        // UI Automation's IsOffscreen counts the desktop, not just the scroll viewport, so with the
+        // window at x=-1144 a button plainly inside its page reported visible=False, and every
+        // "scroll into view, then wait for visible" in the suite could time out on it. Keeping the
+        // app out of the way is the foreground watchdog's job, by z-order, which leaves geometry
+        // alone. BRINELL_AUT_PLACE=offscreen still exists for a run that asks for it knowingly.
         return string.Equals(
                 Environment.GetEnvironmentVariable("BRINELL_AUT_PLACE_RIGHT"),
                 "1",
@@ -385,13 +529,13 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
 
         try
         {
-            if (!_rootElement.Patterns.Transform.IsSupported)
+            if (!RootElement.Patterns.Transform.IsSupported)
             {
                 WriteAutPlacementReport(presenter, requested, effective, "not supported", "Transform pattern is not supported.");
                 return;
             }
 
-            var transform = _rootElement.Patterns.Transform.Pattern;
+            var transform = RootElement.Patterns.Transform.Pattern;
             if (!transform.CanMove.Value)
             {
                 WriteAutPlacementReport(presenter, requested, effective, "not supported", "Window cannot be moved.");
@@ -405,7 +549,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
 
             transform.Move(requested.Left, requested.Top);
 
-            var actual = _rootElement.BoundingRectangle;
+            var actual = RootElement.BoundingRectangle;
             if (!LandedWhereAsked(actual, requested))
             {
                 // UIA's Transform pattern keeps an element reachable on screen, so WinUI clamps a
@@ -417,7 +561,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
                 // so drop to the Win32 call, which holds no such opinion.
                 if (TryMoveWindowDirectly(requested))
                 {
-                    actual = _rootElement.BoundingRectangle;
+                    actual = RootElement.BoundingRectangle;
                 }
             }
 
@@ -502,7 +646,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
         const int Sliver = 8;
 
         var virtualScreen = GetVirtualScreen();
-        var current = _rootElement.BoundingRectangle;
+        var current = RootElement.BoundingRectangle;
         var size = current is { Width: > 0, Height: > 0 }
             ? current.Size
             : new Size(1024, 768);
@@ -734,7 +878,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
         
         while (DateTime.UtcNow - startTime < timeout)
         {
-            var found = _rootElement.FindFirstDescendant(condition);
+            var found = RootElement.FindFirstDescendant(condition);
             if (found != null)
             {
                 return new FlaUIMauiElement(found, this);
@@ -759,7 +903,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
             
             while (DateTime.UtcNow - startTime < timeout)
             {
-                var found = _rootElement.FindAllDescendants(condition);
+                var found = RootElement.FindAllDescendants(condition);
                 if (found.Length > 0)
                 {
                     return found.Select(e => new FlaUIMauiElement(e, this)).ToList();
@@ -768,7 +912,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
             }
         }
         
-        var elements = _rootElement.FindAllDescendants(condition);
+        var elements = RootElement.FindAllDescendants(condition);
         return elements.Select(e => new FlaUIMauiElement(e, this)).ToList();
     }
     
@@ -792,7 +936,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     #region Window Management
     
     /// <inheritdoc />
-    public string CurrentWindowHandle => _rootElement.Properties.NativeWindowHandle.Value.ToString();
+    public string CurrentWindowHandle => RootElement.Properties.NativeWindowHandle.Value.ToString();
     
     /// <inheritdoc />
     public IReadOnlyCollection<string> WindowHandles
@@ -822,14 +966,173 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// <inheritdoc />
     public void Close()
     {
-        if (_rootElement.Patterns.Window.IsSupported)
+        if (RootElement.Patterns.Window.IsSupported)
         {
-            _rootElement.Patterns.Window.Pattern.Close();
+            RootElement.Patterns.Window.Pattern.Close();
         }
     }
     
     #endregion
     
+    /// <summary>
+    /// How many times the app under test took the foreground and had to be put back.
+    /// </summary>
+    /// <remarks>
+    /// <b>Zero is the claim this framework makes.</b> A run that never takes the keyboard or the
+    /// pointer but puts its window over what somebody is reading has still taken the machine.
+    /// This is the number that says whether that happened, rather than a person watching for it -
+    /// which was the previous state of the art and cannot be done in CI.
+    /// </remarks>
+    public int ForegroundGrabs => Volatile.Read(ref _foregroundGrabs);
+
+    /// <summary>
+    /// Watches for the app raising itself, and puts it back.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Placement is not enough on its own, and demoting once is not either.</b> The window is
+    /// put out of the way after it exists, and a window can raise itself afterwards - at launch,
+    /// on a dialog, on a page transition. Reported from a real desktop as "the screen still pops
+    /// over the editor", which is the whole thing this framework is trying not to do.
+    /// </para>
+    /// <para>
+    /// <b>A polling thread rather than <c>SetWinEventHook</c>.</b> The hook is the precise
+    /// instrument and it delivers through a message queue; a test runner's threads do not pump
+    /// one, so the events would arrive when nobody is listening. Polling needs nothing from the
+    /// host and misses nothing that lasts longer than its interval.
+    /// </para>
+    /// <para>
+    /// <b>Fast at first, then slow.</b> Launch is the one moment the app is certain to grab the
+    /// foreground, so the first second is checked every few milliseconds to make that flash as
+    /// short as it can be; after that a raise is unexpected and a slower cadence is enough to
+    /// catch it and to count it.
+    /// </para>
+    /// <para>
+    /// <b>Only when physical input is refused.</b> With input allowed the run is clicking at
+    /// coordinates, and a window pushed behind another would take those clicks somewhere else.
+    /// </para>
+    /// </remarks>
+    /// <param name="processId">The app under test, whose windows are watched.</param>
+    /// <param name="previousForeground">The window the person was using, to hand back.</param>
+    private void StartForegroundWatchdog(int processId, IntPtr previousForeground)
+    {
+        if (PhysicalInput.Policy == PhysicalInputPolicy.Allowed)
+        {
+            return;
+        }
+
+        var cancellation = new CancellationTokenSource();
+        _watchdog = cancellation;
+
+        var thread = new Thread(() => WatchTheForeground(processId, previousForeground, cancellation.Token))
+        {
+            IsBackground = true,
+            Name = "Brinell foreground watchdog",
+        };
+
+        thread.Start();
+    }
+
+    /// <remarks>
+    /// <b>By process, not by window handle.</b> The handle is not known until the main window has
+    /// been found, seconds after launch - which is precisely the stretch in which the app takes
+    /// the foreground. Any window of the app's process that becomes foreground is the app raising
+    /// itself, whichever window it is: the main one, a splash, a dialog.
+    /// </remarks>
+    private void WatchTheForeground(int processId, IntPtr previousForeground, CancellationToken cancellation)
+    {
+        const int eagerMs = 5;
+        const int settledMs = 100;
+        const int eagerForMs = 15_000;
+
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+
+        while (!cancellation.IsCancellationRequested)
+        {
+            try
+            {
+                var foreground = GetForegroundWindow();
+
+                if (foreground != IntPtr.Zero
+                    && GetWindowThreadProcessId(foreground, out var owner) != 0
+                    && owner == processId)
+                {
+                    Interlocked.Increment(ref _foregroundGrabs);
+
+                    SetWindowPos(
+                        foreground, HwndBottom, 0, 0, 0, 0,
+                        SwpNoMove | SwpNoSize | SwpNoActivate);
+
+                    if (previousForeground != IntPtr.Zero)
+                    {
+                        User32.SetForegroundWindow(previousForeground);
+                    }
+                }
+            }
+            catch
+            {
+                // The app has gone, or the handle is stale. Neither is worth taking a test run
+                // down over: this is a courtesy thread.
+            }
+
+            // Eager for as long as launch can take, then settled.
+            Thread.Sleep(clock.ElapsedMilliseconds < eagerForMs ? eagerMs : settledMs);
+        }
+    }
+
+    [DllImport("user32.dll")]
+    private static extern uint GetWindowThreadProcessId(IntPtr hwnd, out int processId);
+
+    /// <summary>
+    /// Marks the app's window as one that does not become the foreground window.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Measured, not supposed: every button click raised the app over the person's work.</b>
+    /// The watchdog counted two foreground grabs per <c>Click</c>, navigating or not, and none for
+    /// a read. <c>Click</c> is <c>InvokePattern.Invoke</c> - not physical input, and never refused
+    /// as such - and WinUI answers it by activating the window, presumably through the focus the
+    /// button takes when it is clicked. Refusing input could never catch it, because no input was
+    /// ever sent.
+    /// </para>
+    /// <para>
+    /// <b><c>WS_EX_NOACTIVATE</c> refuses it at the source.</b> The window keeps working and keeps
+    /// answering UI Automation; it simply is not made the foreground window when something inside
+    /// it asks. Set from here, on the app's own handle, so it needs nothing from the app under test.
+    /// </para>
+    /// <para>
+    /// <b>Only with input refused.</b> A run that clicks at coordinates needs the window to take
+    /// the foreground, or its keystrokes land in whatever else is in front.
+    /// </para>
+    /// </remarks>
+    private void RefuseActivation()
+    {
+        if (PhysicalInput.Policy == PhysicalInputPolicy.Allowed || _rootWindowHandle == IntPtr.Zero)
+        {
+            return;
+        }
+
+        try
+        {
+            var style = GetWindowLongPtr(_rootWindowHandle, GwlExStyle);
+            SetWindowLongPtr(_rootWindowHandle, GwlExStyle, style | WsExNoActivate);
+        }
+        catch
+        {
+            // Out of the way is a courtesy; the watchdog still pushes the window back if this
+            // could not be applied.
+        }
+    }
+
+    private const int GwlExStyle = -20;
+    private const nint WsExNoActivate = 0x08000000;
+
+    [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW", SetLastError = true)]
+    private static extern nint GetWindowLongPtr(IntPtr hwnd, int index);
+
+    [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW", SetLastError = true)]
+    private static extern nint SetWindowLongPtr(IntPtr hwnd, int index, nint value);
+
     #region Screenshots
     
     /// <inheritdoc />
@@ -856,7 +1159,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
                 return ToPng(windowContent);
         }
 
-        using var capture = Capture.Element(_rootElement);
+        using var capture = Capture.Element(RootElement);
         return ToPng(capture.Bitmap);
     }
 
@@ -918,13 +1221,13 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     public string GetPageSource()
     {
         // Build an XML representation of the automation tree
-        return BuildAutomationTree(_rootElement);
+        return BuildAutomationTree(RootElement);
     }
     
     /// <inheritdoc />
     public string GetAutomationTree()
     {
-        return BuildAutomationTree(_rootElement);
+        return BuildAutomationTree(RootElement);
     }
     
     private static string BuildAutomationTree(AutomationElement element, int depth = 0)
@@ -1017,6 +1320,28 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     public string DescribeGestureBridge(int maxDepth = 3)
         => Bridge.BrinellBridgeLookup.Describe(RootElement, Automation, maxDepth);
 
+    /// <summary>
+    /// Reports what each instrumented element offers somebody who is not using a pointer.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>An accessibility backlog, not a diagnostic.</b> Instrumenting an element for gestures
+    /// is the moment to ask whether it is gesture-<i>only</i>, and this is what asks: for every
+    /// element the app published, it finds the real control in the accessibility tree and reports
+    /// whether a keyboard reaches it and whether it carries <c>InvokePattern</c>. The bridge does
+    /// not fix a gesture-only control; it only lets Brinell drive one. This list is what keeps
+    /// that honest.
+    /// </para>
+    /// <para>
+    /// <b>Covers what is published now</b>, which is the pages that are open - elements publish
+    /// on load and withdraw on unload. Call it as the app is walked and merge the passes.
+    /// </para>
+    /// </remarks>
+    /// <param name="page">Where the app is, so a merged report says where each element was seen.</param>
+    /// <returns>One finding per published element.</returns>
+    public Bridge.AccessibilityAuditReport AuditGestureAccessibility(string page = "")
+        => Bridge.AccessibilityAudit.Run(RootElement, Automation, page);
+
     /// <inheritdoc />
     /// <remarks>
     /// <para>
@@ -1055,22 +1380,87 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// <b>Retries briefly, because every way of getting no answer here is also a moment in a page
+    /// transition.</b> The obvious reading - nobody declares <c>GetState</c>, so waiting cannot
+    /// help - was tried and is wrong: between one page withdrawing and the next publishing, the
+    /// bridge is briefly empty and there is nobody to ask at all. An app that genuinely declares
+    /// none pays the budget once and then gets a message naming the fix.
+    /// <para>
+    /// Neither case existed until step 43 stopped a page answering for a stack it is no longer
+    /// part of. Before that a page mid-teardown answered with a depth of its own, which is how a
+    /// suite came to be told it was at the hub while looking at another page.
+    /// </para>
+    /// </remarks>
     public int NavigationDepth()
     {
-        var answer = Bridge.BridgeVerbRunner.ExchangeAnywhere(
-            RootElement, Automation, BrinellVerb.GetState, "NavigationDepth");
+        const int transitionBudgetMs = 2_000;
+        const int pollMs = 25;
+
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        Bridge.BridgeVerbResult answer;
+        int depth;
+
+        while (true)
+        {
+            answer = Bridge.BridgeVerbRunner.ExchangeAnywhere(
+                RootElement, Automation, BrinellVerb.GetState, "NavigationDepth");
+
+            if (answer.Delivered
+                && int.TryParse(
+                    answer.Value, System.Globalization.CultureInfo.InvariantCulture, out depth))
+            {
+                break;
+            }
+
+            // Any non-delivery is retried, including "nothing published answers GetState at all".
+            //
+            // That case looks like a configuration error and usually is one - but measured, it is
+            // also what a page transition produces: the outgoing page has withdrawn and the
+            // incoming one has not published yet, so for a few milliseconds the bridge is empty
+            // and there is nobody to ask. Distinguishing them by the count was tried and is
+            // wrong. An app that really declares no GetState pays the budget once and then gets
+            // the message below, which names the fix.
+            if (clock.ElapsedMilliseconds >= transitionBudgetMs)
+            {
+                break;
+            }
+
+            Thread.Sleep(pollMs);
+        }
 
         if (!answer.Delivered
-            || !int.TryParse(answer.Value, System.Globalization.CultureInfo.InvariantCulture, out var depth))
+            || !int.TryParse(answer.Value, System.Globalization.CultureInfo.InvariantCulture, out depth))
         {
             throw new NotSupportedException(
                 "The app under test cannot say how deep its navigation stack is, so whether it is "
                 + "at the root is not knowable. Declare GetState on the app's pages - see "
                 + "GestureAutomation.Verbs - or drive the back affordance as a control instead. "
-                + $"The bridge said: {answer.Reason}");
+                + $"The bridge said: {answer.Reason}" + Environment.NewLine
+                + "What is below the app window, so an empty bridge can be told from no bridge:"
+                + Environment.NewLine
+                + DescribeBridgeSafely());
         }
 
         return depth;
+    }
+
+    /// <summary>The raw tree under the window, or why it could not be read.</summary>
+    /// <remarks>
+    /// For failure messages only. "Nothing answered" has three causes that read identically -
+    /// no bridge window, a bridge window whose provider is gone, a bridge with nobody published -
+    /// and the tree is what separates them. It must never throw on the way to describing a failure.
+    /// </remarks>
+    private string DescribeBridgeSafely()
+    {
+        try
+        {
+            return DescribeGestureBridge(maxDepth: 2);
+        }
+        catch (Exception describing)
+        {
+            return $"(the tree could not be read: {describing.Message})";
+        }
     }
 
     /// <inheritdoc />
@@ -1084,23 +1474,49 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// <c>.my/fix/rca-navigation-tests-stall.md</c>.
     /// </para>
     /// <para>
-    /// <b>The race the grace period was added for is real, and is handled properly now.</b> A
-    /// page publishes its bridge target on <c>Loaded</c>, which is later than its root appearing
-    /// in the automation tree, so there is a window in which no live page answers. That window
-    /// is now distinguishable: the verb says <c>UIA_E_ELEMENTNOTAVAILABLE</c> for a stale target
-    /// and <c>S_FALSE</c> for the root, where before both were <c>false</c> and the caller had to
-    /// guess which it was looking at. Waiting is the answer to one of those and wrong for the
-    /// other.
+    /// <b>The race the grace period was added for is real, and the answers now say which is
+    /// which.</b> A page publishes its bridge target on <c>Loaded</c>, later than its root
+    /// appearing in the automation tree, so there is a window in which no live page answers -
+    /// milliseconds after any navigation. Since step 43 the app distinguishes the three:
+    /// <c>UIA_E_ELEMENTNOTAVAILABLE</c> for a stale target, <c>BRINELL_E_DECLINED</c> for the
+    /// root with nothing to pop, and <c>S_OK</c> for a pop. All three cross the wire, which the
+    /// old <c>S_FALSE</c> did not.
+    /// </para>
+    /// <para>
+    /// <b>So the wait is back, bounded and only for the window it was meant for.</b> Not a grace
+    /// period on every call - the two answers that mean something is genuinely wrong return at
+    /// once, and only "nobody is published yet" is retried. A caller that commands without
+    /// asking pays it once at the root, which is what <see cref="IsAtNavigationRoot"/> is for.
     /// </para>
     /// </remarks>
     public void NavigateBack()
     {
-        var result = Bridge.BridgeVerbRunner.InvokeAnywhere(
-            RootElement, Automation, BrinellVerb.NavigateBack);
+        const int publishWindowMs = 1_000;
+        const int pollMs = 25;
 
-        if (result.Delivered)
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        Bridge.BridgeVerbResult result;
+
+        while (true)
         {
-            return;
+            result = Bridge.BridgeVerbRunner.InvokeAnywhere(
+                RootElement, Automation, BrinellVerb.NavigateBack);
+
+            if (result.Delivered)
+            {
+                return;
+            }
+
+            // Something was asked and refused: the app has answered, and the answer is no.
+            // Nothing was asked at all means no page has published yet, which a page transition
+            // produces for a few milliseconds and a misconfigured app produces forever - the
+            // budget tells them apart without needing to know which.
+            if (result.Declined > 0 || clock.ElapsedMilliseconds >= publishWindowMs)
+            {
+                break;
+            }
+
+            Thread.Sleep(pollMs);
         }
 
         throw new BrinellException(
@@ -1186,8 +1602,8 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     {
         try
         {
-            var rootBounds = _rootElement.BoundingRectangle;
-            var buttons = _rootElement.FindAllDescendants(_conditionFactory.ByControlType(ControlType.Button));
+            var rootBounds = RootElement.BoundingRectangle;
+            var buttons = RootElement.FindAllDescendants(_conditionFactory.ByControlType(ControlType.Button));
 
             var candidate = buttons
                 .Where(IsBackButtonCandidate)
@@ -1259,6 +1675,152 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     #region Dialogs
 
     /// <inheritdoc />
+    public void InvokeMenuItem(string automationId)
+    {
+        var answer = Bridge.BridgeVerbRunner.ExchangeAnywhere(
+            RootElement, Automation, BrinellVerb.InvokeMenuItem, automationId);
+
+        // The outcome is in the payload, not in the HRESULT, and that is not a style choice.
+        // A success HRESULT does not survive UI Automation's custom-pattern marshalling: the app
+        // returning S_FALSE - "I found it and did nothing" - reaches this side as S_OK, measured
+        // both ways round. Anything a caller must be able to tell apart from success therefore
+        // has to travel as a value or as a failure HRESULT.
+        if (answer.Delivered)
+        {
+            if (answer.Value != MenuItemDisabled)
+            {
+                return;
+            }
+
+            throw new BrinellException(
+                $"Could not invoke menu item '{automationId}': it is disabled, so a user could "
+                + "not have picked it either.");
+        }
+
+        var reason = answer.HResult switch
+        {
+            HResults.E_INVALIDARG => "no AutomationId was given",
+
+            HResults.UIA_E_ELEMENTNOTAVAILABLE =>
+                "no menu item on any open page carries that AutomationId. Menu items are matched "
+                + "by the id in the app's markup, not by their text",
+
+            _ => answer.Reason,
+        };
+
+        throw new BrinellException($"Could not invoke menu item '{automationId}': {reason}.");
+    }
+
+    /// <summary>
+    /// What <c>InvokeMenuItem</c> answers with when it declined to raise the item.
+    /// </summary>
+    /// <remarks>
+    /// Duplicated from the provider rather than shared, like the date formats above and for the
+    /// same reason: the app under test is not always one Brinell can add a reference to. A
+    /// mismatch is caught by <c>MenuVerbTests</c>, which drives a real disabled entry.
+    /// </remarks>
+    private const string MenuItemDisabled = "disabled";
+
+    /// <inheritdoc />
+    public void OpenFlyout() => PresentFlyout(BrinellVerb.OpenFlyout, "open");
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// All three - open, close, and the read that says which - because a caller that can open
+    /// through the app but has to check through the chrome has not escaped the chrome.
+    /// </remarks>
+    public bool SupportsFlyoutVerbs
+        => Bridge.BrinellBridgeLookup.Targets(RootElement, Automation).Any(target =>
+        {
+            var verbs = target.SupportedVerbs();
+            return verbs.Contains(BrinellVerb.OpenFlyout)
+                   && verbs.Contains(BrinellVerb.CloseFlyout)
+                   && verbs.Contains(BrinellVerb.GetState);
+        });
+
+    /// <inheritdoc />
+    public void CloseFlyout() => PresentFlyout(BrinellVerb.CloseFlyout, "close");
+
+    /// <summary>
+    /// Sends one of the two flyout verbs, and reports what came back.
+    /// </summary>
+    /// <remarks>
+    /// <c>S_FALSE</c> - the flyout was already in the state asked for - is success here rather
+    /// than a failure. The caller asked for a state, not for a transition, and a test that had
+    /// to know which of the two happened would be asserting the order of the tests before it.
+    /// </remarks>
+    private void PresentFlyout(BrinellVerb verb, string what)
+    {
+        var answer = Bridge.BridgeVerbRunner.InvokeAnywhere(RootElement, Automation, verb);
+
+        // A flyout already in the state asked for is success: the caller asked for a state, not
+        // for a transition. The app does answer S_FALSE for it, which shows in the bridge log,
+        // but that never reaches here - UI Automation reports every success HRESULT as S_OK - so
+        // this deliberately does not pretend to tell the two apart.
+        if (answer.Delivered)
+        {
+            return;
+        }
+
+        throw new BrinellException(
+            $"Could not {what} the app's flyout. Either the app has no Shell - only a Shell has a "
+            + "flyout - or no element declares the verb. The bridge said: " + answer.Reason);
+    }
+
+    /// <inheritdoc />
+    public bool IsFlyoutOpen()
+    {
+        var answer = Bridge.BridgeVerbRunner.ExchangeAnywhere(
+            RootElement, Automation, BrinellVerb.GetState, "FlyoutIsPresented");
+
+        if (!answer.Delivered)
+        {
+            throw new NotSupportedException(
+                "The app under test cannot say whether its flyout is open. Declare GetState on "
+                + "its Shell - see GestureAutomation.Verbs - or ask the flyout's own elements, "
+                + "remembering that Windows leaves them in the tree once it has been opened. "
+                + $"The bridge said: {answer.Reason}");
+        }
+
+        return bool.TryParse(answer.Value, out var presented) && presented;
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// <b>Null covers two different things on purpose here</b>, and that is unusual enough to
+    /// say: no dialog is on screen, and no app-side declaration. Both mean "there is no question
+    /// to read", both are ordinary rather than exceptional, and a test that wants to distinguish
+    /// them asks <see cref="TryFindActiveDialogRoot"/> - a dialog on screen with no readable
+    /// question is exactly the app that has not declared <c>CurrentAlert</c>.
+    /// </remarks>
+    public AlertContents? CurrentAlert()
+    {
+        // The screen decides whether there is an alert; the app only says what it asks.
+        //
+        // Without this the two could disagree, and did: the app clears its record when
+        // DisplayAlert's await resumes, which is a continuation queued on the UI thread and
+        // therefore some moments after the dialog has already left the tree. A test that
+        // dismissed a prompt and immediately asked was told about the prompt it had just closed.
+        // Each end answering only what it can see removes the window rather than narrowing it.
+        if (TryFindActiveDialogRoot() is null)
+        {
+            return null;
+        }
+
+        var answer = Bridge.BridgeVerbRunner.ExchangeAnywhere(
+            RootElement, Automation, BrinellVerb.CurrentAlert);
+
+        if (!answer.Delivered
+            || !AlertPayload.TryParse(
+                answer.Value, out var title, out var message, out var accept, out var cancel))
+        {
+            return null;
+        }
+
+        return new AlertContents(title, message, accept, cancel);
+    }
+
+    /// <inheritdoc />
     public IMauiElement? TryFindActiveDialogRoot()
     {
         var popupCondition = _conditionFactory.ByControlType(ControlType.Window)
@@ -1272,8 +1834,8 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
         // process, so it grows with whatever else the machine has open — against about 15 ms
         // here.
         var inRootWindow = TryFindDialogRoot(
-            _rootElement, popupCondition, contentDialogCondition, buttonCondition);
-        if (inRootWindow != null && !ReferenceEquals(inRootWindow, _rootElement))
+            RootElement, popupCondition, contentDialogCondition, buttonCondition);
+        if (inRootWindow != null && !ReferenceEquals(inRootWindow, RootElement))
         {
             return new FlaUIMauiElement(inRootWindow, this);
         }
@@ -1332,6 +1894,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     {
         if (!_disposed)
         {
+            _watchdog?.Cancel();
             _application?.Close();
             _automation.Dispose();
             _disposed = true;

@@ -1,5 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <!-- Decides whether this build contains the provider. Read it: it is a security gate. -->
+  <Import Project="Brinell.Uia.Bridge.props" />
+
   <PropertyGroup>
     <!--
       Single-targeted, unlike the rest of srcnew. Everything here is Win32/COM interop
@@ -23,5 +26,25 @@
 
     The framework only. Keep it that way.
   -->
+
+  <!--
+    The provider half, removed rather than #if'd out.
+
+    Same reasoning as Brinell.Maui.AppSupport's Handlers folder: a reader should not have
+    to mentally strip preprocessor directives from four files to see what the provider
+    does, and "which files are in this build" is a question MSBuild answers plainly.
+    The effect is what step 27 asks for either way - the code is absent, not disabled.
+
+    Removed rather than merely unreferenced, so drift is a build error: anything left
+    calling BrinellUiaBridge in an uninstrumented build fails to compile, here and in
+    every project that links these sources.
+
+    Provider\ ONLY. BrinellUiaClient and the ids, verbs and pattern registration stay in
+    every build - they are the test side of the contract, and a client that cannot find a
+    provider is exactly the outcome this gate exists to produce.
+  -->
+  <ItemGroup Condition="'$(BrinellUiaBridge)' != 'true'">
+    <Compile Remove="Provider\**" />
+  </ItemGroup>
 
 </Project>

@@ -20,6 +20,16 @@ namespace Brinell.Maui.UITests.Tests.Navigation;
 [Trait("Pattern", "Navigation")]
 public class NavigationControlTests
 {
+    /// <summary>
+    /// How long to wait when the point is to prove something is absent.
+    /// </summary>
+    /// <remarks>
+    /// Absence costs the whole timeout by construction, so the timeout is chosen for what the
+    /// assertion is about - which exception - rather than for how long a present element might
+    /// take to appear. These two tests were 20 s of this class's 24 s.
+    /// </remarks>
+    private const int NegativeAssertionTimeoutMs = 500;
+
     private readonly MauiFixture _fixture;
 
     public NavigationControlTests(MauiFixture fixture)
@@ -109,8 +119,12 @@ public class NavigationControlTests
         // TryItem answers now; Item waits, so it is given a short timeout rather than the
         // full one it would otherwise spend confirming an absence the line above proved.
         Assert.Null(Page.SecondaryToolbar.TryItem("Back"));
+        // Stage G step 33B. The assertion is about which exception, not about how long Item
+        // waits before throwing it - and it waits the whole timeout, correctly, because an
+        // absence can only be proven by running out of time. Ten seconds proved nothing half a
+        // second does not.
         Assert.Throws<ElementNotFoundException>(
-            () => Page.SecondaryToolbar.Item("Back", TestConstants.ShortTestTimeoutMs));
+            () => Page.SecondaryToolbar.Item("Back", NegativeAssertionTimeoutMs));
 
         return Task.CompletedTask;
     }
@@ -336,8 +350,9 @@ public class NavigationControlTests
     [Trait("Method", "Item")]
     public Task TabMenu_UnknownCaption_Throws()
     {
+        // Step 33B, as above: a short timeout proves the same exception.
         Assert.Throws<ElementNotFoundException>(
-            () => Page.Tabs.Item("Nonexistent", TestConstants.ShortTestTimeoutMs));
+            () => Page.Tabs.Item("Nonexistent", NegativeAssertionTimeoutMs));
 
         return Task.CompletedTask;
     }

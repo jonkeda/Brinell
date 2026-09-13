@@ -1,0 +1,44 @@
+<Project>
+
+  <!--
+    Whether this build contains the UI Automation bridge at all.
+
+    THE BRIDGE IS A REMOTELY INVOCABLE COMMAND CHANNEL INTO APPLICATION LOGIC.
+
+    UI Automation has no per-caller authentication: any process at the same or higher
+    integrity level on the same desktop can enumerate the tree, find the fragment root
+    and call the pattern. There is no permission to check and no caller to identify, so
+    absence is the only control that actually holds. A shipping build must therefore
+    contain no bridge code - not disabled code, absent code.
+
+    ON FOR Debug, OFF FOR EVERYTHING ELSE.
+
+    Debug is the configuration the UI test suite builds and runs, and Release is what
+    ships; inventing a third configuration would mean teaching every tool in the repo
+    about it to express a distinction those two already draw. Override deliberately with
+    -p:BrinellUiaBridge=true|false, which is how the gating test builds an uninstrumented
+    host without leaving Debug.
+
+    IMPORTED, NOT COPIED, ON PURPOSE.
+
+    Both ends of the bridge compile the provider sources - the app under test through
+    Brinell.Maui.AppSupport, the bridge's own host through a project reference - and the
+    two must agree about whether the provider exists. Two copies of this rule would
+    eventually disagree, and the symptom would be a runtime "nothing answers" rather than
+    a build error.
+
+    COPYING BrinellMauiAppSupport INTO AN APP: the constant does not come with the files.
+    An app that copies the sources in gets no bridge until it defines BRINELL_UIA_BRIDGE
+    itself, which is the safe direction for a gate to fail in.
+  -->
+
+  <PropertyGroup>
+    <BrinellUiaBridge Condition="'$(BrinellUiaBridge)' == '' AND '$(Configuration)' == 'Debug'">true</BrinellUiaBridge>
+    <BrinellUiaBridge Condition="'$(BrinellUiaBridge)' == ''">false</BrinellUiaBridge>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(BrinellUiaBridge)' == 'true'">
+    <DefineConstants>$(DefineConstants);BRINELL_UIA_BRIDGE</DefineConstants>
+  </PropertyGroup>
+
+</Project>

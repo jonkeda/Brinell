@@ -248,6 +248,107 @@ public interface IMauiDriver : IDriver<IMauiElement>, IDiagnosticDriver
     #region Dialogs
 
     /// <summary>
+    /// Raises a menu item by its <c>AutomationId</c>, without opening any menu.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The item is not in the tree this client can search.</b> MAUI does not propagate
+    /// <c>AutomationId</c> to menu chrome on Windows (dotnet/maui#3996), which the navigation
+    /// probe measures rather than assumes: <c>PageMenuFile</c> and <c>PageMenuFileNew</c> are
+    /// findable by neither id nor name. A context flyout is further out of reach still - it does
+    /// not exist until someone right-clicks. So the app is asked by id, because the app is the
+    /// only party that has the id.
+    /// </para>
+    /// <para>
+    /// <b>What this replaces is the suite's remaining positional input.</b> Reaching a context
+    /// menu item meant a right-click at one coordinate followed by a click at another, with the
+    /// app holding the foreground throughout. Both coordinates are guesses about where the
+    /// platform drew something.
+    /// </para>
+    /// <para>
+    /// Nothing opens. A test that means "the menu opens and shows these items" is a test about
+    /// the menu and still needs the pointer - see <see cref="IMauiElement.RightClick"/>.
+    /// </para>
+    /// </remarks>
+    /// <param name="automationId">The menu item's <c>AutomationId</c>.</param>
+    /// <exception cref="Brinell.Core.Exceptions.BrinellException">
+    /// No such item, or the app offers no menu verbs.
+    /// </exception>
+    void InvokeMenuItem(string automationId)
+        => throw new NotSupportedException(
+            $"Menu items are not implemented for {GetType().Name}.");
+
+    /// <summary>Opens a Shell's flyout.</summary>
+    /// <remarks>
+    /// <b>One property on the app, replacing a hamburger button nothing can find.</b> Shell
+    /// draws that button as chrome with no <c>AutomationId</c>, so every previous route to it was
+    /// a guess: by name, by control type, or by clicking where it usually is.
+    /// </remarks>
+    /// <exception cref="Brinell.Core.Exceptions.BrinellException">
+    /// The app has no Shell, or does not declare the verb.
+    /// </exception>
+    void OpenFlyout()
+        => throw new NotSupportedException(
+            $"Flyouts are not implemented for {GetType().Name}.");
+
+    /// <summary>
+    /// Whether the app offers the flyout verbs, so a caller can take that route rather than the
+    /// chrome.
+    /// </summary>
+    /// <remarks>
+    /// A question, asked before commanding - not a command that returns false. Stage G step 32:
+    /// the Shell control object dismissed its flyout by tapping a light-dismiss layer that does not
+    /// support Invoke, and two tests failed on it; where the app declares the verbs, there is no
+    /// chrome to guess at.
+    /// </remarks>
+    bool SupportsFlyoutVerbs => false;
+
+    /// <summary>Closes a Shell's flyout. See <see cref="OpenFlyout"/>.</summary>
+    /// <exception cref="Brinell.Core.Exceptions.BrinellException">
+    /// The app has no Shell, or does not declare the verb.
+    /// </exception>
+    void CloseFlyout()
+        => throw new NotSupportedException(
+            $"Flyouts are not implemented for {GetType().Name}.");
+
+    /// <summary>
+    /// Whether a Shell's flyout is showing.
+    /// </summary>
+    /// <remarks>
+    /// The question, so a caller does not have to establish it by opening the flyout and seeing
+    /// what changes. Windows keeps the pane's items in the tree once it has been opened, hidden
+    /// rather than removed, so counting them answers differently on a fresh launch than on the
+    /// second test in a run - which is what asking the app avoids.
+    /// </remarks>
+    /// <returns>Whether it is presented.</returns>
+    /// <exception cref="NotSupportedException">The app does not declare the read.</exception>
+    bool IsFlyoutOpen()
+        => throw new NotSupportedException(
+            $"Flyouts are not implemented for {GetType().Name}.");
+
+    /// <summary>
+    /// What the alert on screen is asking, or null when none is open.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Only the app can answer this, and only if it says so.</b> On Windows the popup
+    /// publishes its title and its buttons, and those are read straight off the platform through
+    /// <c>ContentDialog</c>. The message is the exception: WinUI puts it in the dialog's content
+    /// area beside a second copy of the title, so from outside it can only be identified as "the
+    /// text that is not the title" - which is wrong for an alert whose message and title read
+    /// alike, and wrong quietly.
+    /// </para>
+    /// <para>
+    /// There is no supported way to observe <c>DisplayAlert</c> either: MAUI signals its own
+    /// platform layer through <c>MessagingCenter</c>, which is internal in MAUI 10. So the app
+    /// under test raises its alerts through <c>BrinellAlerts</c> and this reports what they were
+    /// given. An app that does not answers null, and its title and buttons are still readable.
+    /// </para>
+    /// </remarks>
+    /// <returns>The alert's four strings, or null when nothing is open or nothing declares it.</returns>
+    AlertContents? CurrentAlert() => null;
+
+    /// <summary>
     /// Gets the active native dialog root, or null when no dialog is open.
     /// </summary>
     /// <remarks>

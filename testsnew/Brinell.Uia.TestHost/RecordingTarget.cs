@@ -50,6 +50,12 @@ internal sealed class RecordingTarget : IBrinellVerbTarget
 
     public int Invoke(BrinellVerb verb, int arg1, int arg2)
     {
+        // Before the log, so a probe for a particular HRESULT does not also count as a gesture.
+        if (arg1 == HostTargets.ReturnThisHResult)
+        {
+            return arg2;
+        }
+
         lock (_gate)
         {
             _log.Add(string.Create(
@@ -62,6 +68,18 @@ internal sealed class RecordingTarget : IBrinellVerbTarget
     public int Exchange(BrinellVerb verb, string argument, out string result)
     {
         result = string.Empty;
+
+        // The provider substitutes an empty string for null before it gets here.
+        if (argument.StartsWith(HostTargets.ReturnHResultPrefix, StringComparison.Ordinal)
+            && int.TryParse(
+                argument[HostTargets.ReturnHResultPrefix.Length..],
+                NumberStyles.Integer,
+                CultureInfo.InvariantCulture,
+                out var chosen))
+        {
+            result = "answered";
+            return chosen;
+        }
 
         switch (verb)
         {

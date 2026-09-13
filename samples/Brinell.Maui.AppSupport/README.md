@@ -133,8 +133,19 @@ runtime with no build warning:**
 nothing, XAML compilation reports no warning, and the page throws `XamlParseException` the first
 time it is shown — which reaches a test as every element on the page disappearing at once.
 
-Nothing else is needed. No builder call, no registration: the first element that declares a verb
-creates the bridge, and an app with no declarations behaves exactly as if these files were absent.
+And one line during startup, before the first page loads:
+
+```csharp
+builder.UseBrinellGestureBridge();
+```
+
+Write it unconditionally. It is a no-op unless this build has a bridge *and* the launcher asked
+for one — see [Shipping](#shipping) — so the same line is correct in a release build, where it
+does nothing, as under test. Put it in `CreateMauiApp`: elements publish themselves on `Loaded`,
+and one that loads before this runs finds the bridge off and stays unpublished.
+
+Nothing else is needed. No registration: the first element that declares a verb creates the
+bridge, and an app with no declarations behaves exactly as if these files were absent.
 
 ## From a test
 
@@ -168,5 +179,43 @@ to each other.
 
 ## Shipping
 
-These sources have no place in a shipping build. UI Automation has no per-caller authentication,
-so the only real control is absence.
+**The bridge is a remotely invocable command channel into application logic.** UI Automation has
+no per-caller authentication: any process at the same or higher integrity level on the same
+desktop can enumerate the tree, find the fragment root and call the pattern. There is no
+permission to check and no caller to identify, so the only control that holds is that a shipping
+build has nothing to find.
+
+Two gates, and only the first one controls anything.
+
+| | What it does | How to set it |
+|---|---|---|
+| **Compile time** | Decides whether the provider is in the build at all | `BRINELL_UIA_BRIDGE` defined — on in `Debug`, off otherwise, `-p:BrinellUiaBridge=true\|false` to override |
+| **Run time** | Decides whether an instrumented build turns it on | `BRINELL_UIA_BRIDGE=1` in the app's environment, which the test driver sets on the app it launches |
+
+The second exists so one build can serve development and testing. It protects nobody on its own —
+anything that can set an environment variable on the app could have launched a different build of
+it — and it is in the tree here because a gate that never says no looks exactly like a gate that
+works.
+
+**What a Release build actually contains.** Measured, not asserted:
+
+| | Debug | Release |
+|---|---|---|
+| `BridgeFragmentRoot`, `BridgeTargetProvider`, `BrinellUiaBridge` | present | **absent** |
+| `MauiVerbDispatcher`, `MauiCapabilities`, the verb bindings | present | **absent** |
+| `GestureAutomation` and its attached property | present | present |
+
+The declaration survives because shared XAML names it and the app would not compile without it.
+It reads a property nothing acts on. Everything behind it is removed from the build by
+`Brinell.Maui.AppSupport.csproj` rather than wrapped in `#if` — the same choice the `Handlers`
+folder makes, and for the same reason: these are files people read and copy. One file,
+`BrinellBridgeHost.cs`, carries the `#if`, because it is the seam `GestureAutomation` calls into.
+
+**Copying the sources in does not copy the gate.** `BRINELL_UIA_BRIDGE` comes from
+`Brinell.Uia.Bridge.props`, which the csproj imports. An app that copies these files in and
+imports nothing gets no bridge at all until it defines the constant itself — which is the
+direction a gate should fail in, and worth knowing before spending an afternoon on an app that
+publishes nothing.
+
+`Brinell.Uia.Tests.BridgeGatingTests` measures both gates from outside: it builds the bridge's
+host in Release, launches it *asking* for the bridge, and fails if a fragment root appears.

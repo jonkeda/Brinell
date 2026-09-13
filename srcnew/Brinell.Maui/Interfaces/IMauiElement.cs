@@ -184,10 +184,23 @@ public interface IMauiElement : IElement<IMauiElement>
     /// Defaulted to false so a platform without a semantic route compiles and answers honestly.
     /// The caller then types, which is what it always did.
     /// </para>
+    /// <para>
+    /// <b>A question and a command, not one call answering both.</b> This was
+    /// <c>TryAppendText</c>, whose <c>false</c> meant both "this platform has no semantic route"
+    /// and "the app refused" - so a caller that fell back to typing on <c>false</c> typed into a
+    /// read-only field the app had just declined to change. Stage G step 34.
+    /// </para>
+    /// </remarks>
+    bool SupportsAppendText => false;
+
+    /// <summary>Appends text through the platform's semantic route.</summary>
+    /// <remarks>
+    /// Performs or throws. Ask <see cref="SupportsAppendText"/> first; a refusal from the app is
+    /// an exception carrying its reason, never a quiet fallback.
     /// </remarks>
     /// <param name="text">The text to append.</param>
-    /// <returns>Whether the text was appended.</returns>
-    bool TryAppendText(string text) => false;
+    void AppendText(string text)
+        => throw new NotSupportedException("This platform has no semantic route for appending text.");
 
     /// <summary>
     /// Removes focus from the element without moving it elsewhere, if the platform can.
@@ -197,9 +210,16 @@ public interface IMauiElement : IElement<IMauiElement>
     /// name: it moves focus to whatever is next in the tab order, with whatever side effects
     /// that has, and it needs the app in front to receive the key at all. A platform that can
     /// simply drop focus should say so here.
+    /// <para>
+    /// Split into this question and <see cref="ClearFocus"/> for the reason given on
+    /// <see cref="SupportsAppendText"/>.
+    /// </para>
     /// </remarks>
-    /// <returns>Whether focus was cleared.</returns>
-    bool TryClearFocus() => false;
+    bool SupportsClearFocus => false;
+
+    /// <summary>Removes focus without moving it elsewhere. Performs or throws.</summary>
+    void ClearFocus()
+        => throw new NotSupportedException("This platform has no semantic route for clearing focus.");
 
     #endregion
 

@@ -19,7 +19,13 @@ public class ShellSamplePage : PageObjectBase<ShellSamplePage>
     }
 
     /// <inheritdoc />
-    public override string Name => "ShellSamplePage";
+    /// <remarks>
+    /// The Shell itself, not a page: its tab strip, its flyout and whichever page is showing all
+    /// sit under it. This used to name <c>ShellSamplePage</c>, an id nothing in the app carried, so
+    /// every lookup scoped under it failed before any Shell test began - stage G step 32. The app
+    /// now copies the Shell's own id onto the view that draws it.
+    /// </remarks>
+    public override string Name => "AppShell";
 
     /// <summary>
     /// The shell is up once its tab strip is there.

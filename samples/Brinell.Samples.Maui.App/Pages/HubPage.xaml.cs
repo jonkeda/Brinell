@@ -25,7 +25,7 @@ public partial class HubPage : ContentPage
         GestureAutomation.SetVerbs(
             this,
             $"{nameof(BrinellVerb.GetState)},{nameof(BrinellVerb.CurrentRoute)},"
-            + $"{nameof(BrinellVerb.IsIdle)}");
+            + $"{nameof(BrinellVerb.IsIdle)},{nameof(BrinellVerb.CurrentAlert)}");
     }
 
     /// <summary>
@@ -127,13 +127,16 @@ public partial class HubPage : ContentPage
         }
 
         // GetState and CurrentRoute alongside going back, because a caller needs to ask before it
-        // acts. NavigateBack answers four different things and only one of them is a failure;
+        // acts. CurrentAlert is here for the same reason IsIdle is: it asks about the app rather
+        // than about this page, so any live element can answer it and the client does not have to
+        // know which one to address. NavigateBack answers four different things and only one of them is a failure;
         // "how deep is the stack" separates them in one round trip, where the client used to
         // separate them by waiting.
         GestureAutomation.SetVerbs(
             page,
             $"{nameof(BrinellVerb.NavigateBack)},{nameof(BrinellVerb.GetState)},"
-            + $"{nameof(BrinellVerb.CurrentRoute)},{nameof(BrinellVerb.IsIdle)}");
+            + $"{nameof(BrinellVerb.CurrentRoute)},{nameof(BrinellVerb.IsIdle)},"
+            + $"{nameof(BrinellVerb.CurrentAlert)},{nameof(BrinellVerb.InvokeMenuItem)}");
     }
 
     /// <summary>

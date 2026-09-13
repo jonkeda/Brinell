@@ -101,7 +101,13 @@ public partial class Entry<TScope> : Base.FocusableControlBase<TScope>, IEditabl
     {
         if (text == null) return;
 
-        if (element.TryAppendText(text)) return;
+        // Asked, then commanded. A refusal from the app now throws with its reason instead of
+        // falling through to typing into a field the app just declined to change.
+        if (element.SupportsAppendText)
+        {
+            element.AppendText(text);
+            return;
+        }
 
         element.SendKeys(text);
     }

@@ -27,4 +27,12 @@
     <Folder Include="Pages\ViewPages\" />
   </ItemGroup>
 
+  <!--
+    Step 35: the per-class timing baseline the report compares against. Refresh it by copying a good
+    run's TestResults/.../attachments/test-timings-baseline-candidate.json over this file.
+  -->
+  <ItemGroup>
+    <None Include="timing-baseline.json" CopyToOutputDirectory="PreserveNewest" Condition="Exists('timing-baseline.json')" />
+  </ItemGroup>
+
 </Project>

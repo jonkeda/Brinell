@@ -428,7 +428,14 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
     /// <inheritdoc />
     public void RightClick()
     {
-        PhysicalInput.Used("FlaUIMauiElement.RightClick", "the InvokeMenuItem verb (step 26)");
+        // Still physical, and still right for what it is. A right-click means "show me the
+        // context menu", and no verb can stand in for a test about the menu appearing. What
+        // step 26 removed is the commoner case behind it: reaching a menu *item*, which used to
+        // require this click plus a second one at a guessed coordinate, and now goes through
+        // IMauiDriver.InvokeMenuItem without the app taking the foreground.
+        PhysicalInput.Used(
+            "FlaUIMauiElement.RightClick",
+            "IMauiDriver.InvokeMenuItem, where the aim is the item rather than the menu");
         _driver.EnsureRootWindowFocused();
         _element.RightClick();
     }
@@ -1498,8 +1505,19 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
     /// which is why this is a verb of its own rather than sugar over <c>GetText</c> and
     /// <c>SetText</c>.
     /// </remarks>
-    public bool TryAppendText(string text)
-        => TryBridge(BrinellVerb.AppendText, text, out _);
+    public bool SupportsAppendText => BridgeDeclares(BrinellVerb.AppendText);
+
+    /// <inheritdoc />
+    public void AppendText(string text)
+    {
+        if (!TryBridge(BrinellVerb.AppendText, text, out _))
+        {
+            throw new BrinellException(
+                $"'{AutomationId}' did not append the text. Either it does not declare AppendText, "
+                + "or the app refused - a read-only or disabled field refuses the bridge as it "
+                + "refuses a keyboard.");
+        }
+    }
 
     /// <inheritdoc />
     /// <remarks>
@@ -1508,7 +1526,18 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
     /// effect, and one that needs the app in front. The verb removes focus and does nothing
     /// else.
     /// </remarks>
-    public bool TryClearFocus() => TryBridge(BrinellVerb.Unfocus);
+    public bool SupportsClearFocus => BridgeDeclares(BrinellVerb.Unfocus);
+
+    /// <inheritdoc />
+    public void ClearFocus()
+    {
+        if (!TryBridge(BrinellVerb.Unfocus))
+        {
+            throw new BrinellException(
+                $"'{AutomationId}' did not give up focus. Either it does not declare Unfocus, or "
+                + "the app refused.");
+        }
+    }
 
     /// <summary>
     /// Sends a verb to this element, and says whether the app performed it.
@@ -1547,6 +1576,18 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
     public bool SupportsScrollVerbs => BridgeDeclares(BrinellVerb.ScrollPosition);
 
     /// <inheritdoc />
+    /// <remarks>
+    /// <b>Returns when the viewport has stopped moving, not when the request was accepted.</b>
+    /// MAUI's <c>ScrollToAsync</c> is asynchronous even with animation off - the app fires it and
+    /// cannot await it, because the continuation needs the UI thread the verb is already holding.
+    /// So the settling is done from this side, where waiting costs nothing.
+    /// <para>
+    /// Measured: without this, a scroll followed immediately by <c>ReadScrollPosition</c> returns
+    /// the offset from before the scroll. It survived alone and failed under a full run, which is
+    /// the shape that gets blamed on whatever else is going wrong at the time - in this case it
+    /// spent months inside step 36's noise.
+    /// </para>
+    /// </remarks>
     public void ScrollTo(string automationId)
     {
         if (!TryBridge(BrinellVerb.ScrollTo, automationId, out _))
@@ -1557,12 +1598,64 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
                 + "the verb searches the whole subtree, so a miss means the id is wrong or the "
                 + "element is not in this scroller.");
         }
+
+        WaitForTheViewportToSettle();
+    }
+
+    /// <summary>
+    /// Blocks until two consecutive reads of the scroll offset agree.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Settled, not arrived.</b> Waiting for a particular offset would mean predicting what
+    /// <c>MakeVisible</c> decides is enough, which is a MAUI layout question this side cannot
+    /// answer. Two equal readings is the weakest claim that is still the one the caller needs.
+    /// </para>
+    /// <para>
+    /// <b>Returns rather than throws when it never settles.</b> A scroller that is still moving
+    /// after the budget is a real thing - an inertia animation, a slow list - and the caller's own
+    /// assertion is a better place to fail than a helper that cannot know what was wanted. The
+    /// budget is generous because it is only ever paid in full when something is wrong.
+    /// </para>
+    /// </remarks>
+    private void WaitForTheViewportToSettle()
+    {
+        if (!SupportsScrollVerbs)
+        {
+            return;
+        }
+
+        const int budgetMs = 2_000;
+        const int pollMs = 25;
+
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        var previous = ReadScrollPosition();
+
+        while (clock.ElapsedMilliseconds < budgetMs)
+        {
+            Thread.Sleep(pollMs);
+
+            var current = ReadScrollPosition();
+
+            if (current.X == previous.X && current.Y == previous.Y)
+            {
+                return;
+            }
+
+            previous = current;
+        }
     }
 
     /// <inheritdoc />
     public bool SupportsScrollToIndex => BridgeDeclares(BrinellVerb.ScrollToIndex);
 
     /// <inheritdoc />
+    /// <remarks>
+    /// Settles like <see cref="ScrollTo(string)"/>, and for the same measured reason: MAUI's
+    /// scroll is asynchronous whatever the animation setting says, so "the request was accepted"
+    /// and "the rows have moved" are different moments. A collection has the further wrinkle that
+    /// the row a caller is about to look for does not exist until the scroll lands.
+    /// </remarks>
     public void ScrollToIndex(int index)
     {
         if (!TryBridge(BrinellVerb.ScrollToIndex, index, 0))
@@ -1572,6 +1665,8 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
                 + "the ScrollToIndex verb, or it is not a collection, or the index is past the "
                 + "end of its items.");
         }
+
+        WaitForTheViewportToSettle();
     }
 
     /// <inheritdoc />

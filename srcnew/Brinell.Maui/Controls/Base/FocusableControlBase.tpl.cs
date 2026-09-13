@@ -67,8 +67,9 @@ public abstract partial class FocusableControlBase<TScope> : ViewBase<TScope>, I
     /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
     protected virtual void BlurCore(IMauiElement element, int? timeoutMs = null)
     {
-        if (element.TryClearFocus())
+        if (element.SupportsClearFocus)
         {
+            element.ClearFocus();
             return;
         }
 

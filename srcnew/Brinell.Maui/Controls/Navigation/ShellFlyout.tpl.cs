@@ -66,6 +66,15 @@ public partial class ShellFlyout<TParent>
     /// <returns>The flyout, for chaining.</returns>
     public ShellFlyout<TParent> Open(int? timeoutMs = null)
     {
+        if (Context.Driver.SupportsFlyoutVerbs)
+        {
+            // The app's own route: one property on the Shell, and no chrome to find.
+            Context.Driver.OpenFlyout();
+            InvalidateCache();
+            WaitOpen(true, timeoutMs);
+            return Self;
+        }
+
         if (IsOpen() == true) return Self;
 
         Activate(_scope.FindElement(ShellChrome.FlyoutOpener(_platform)));
@@ -87,6 +96,16 @@ public partial class ShellFlyout<TParent>
     /// <returns>The flyout, for chaining.</returns>
     public ShellFlyout<TParent> Close(int? timeoutMs = null)
     {
+        if (Context.Driver.SupportsFlyoutVerbs)
+        {
+            // Stage G step 32. The chrome route taps a light-dismiss layer that does not support
+            // Invoke, which failed two tests; the app can simply be told.
+            Context.Driver.CloseFlyout();
+            InvalidateCache();
+            WaitOpen(false, timeoutMs);
+            return Self;
+        }
+
         if (IsOpen() != true) return Self;
 
         ShellChrome.DismissFlyout(Context, _platform);
@@ -119,6 +138,13 @@ public partial class ShellFlyout<TParent>
     [AbsenceTolerant]
     protected virtual bool? IsOpenCore(IMauiElement? element)
     {
+        // Asked of the app where it can say. Counting the pane's items answers differently on a
+        // fresh launch than later in a run, because Windows hides them rather than removing them.
+        if (Context.Driver.SupportsFlyoutVerbs)
+        {
+            return Context.Driver.IsFlyoutOpen();
+        }
+
         if (element == null) return false;
 
         return element.Visible && TryGetItemRoots().Count > 0;

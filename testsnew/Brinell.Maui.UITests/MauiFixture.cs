@@ -106,6 +106,67 @@ public class MauiFixture : MauiTestFixtureBase
     {
         ReturnToHub();
         _hub.OpenButton(page).Click();
+        WaitForThePageToArrive();
+    }
+
+    /// <summary>
+    /// Blocks until the pushed page is on top, in the automation tree, and settled.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Clicking the hub's button starts a navigation; it does not finish one.</b> A test whose
+    /// first line looked a control up directly raced the page arriving and lost occasionally -
+    /// "'X' was not found", against a control that is unquestionably on that page.
+    /// </para>
+    /// <para>
+    /// <b>"The stack is deeper than the root" was tried first and is too weak.</b> It becomes true
+    /// the moment the push starts, before the page is in the tree. So the app is asked which page
+    /// is on top - it can name it, by <c>AutomationId</c> - and the wait is for that page's own
+    /// root to be findable, which is the thing a test's first lookup actually needs.
+    /// </para>
+    /// <para>
+    /// <b>Neither step is asserted.</b> This is a wait, not a check: whatever the test does next
+    /// has its own idea of what should be there and a better error message for it.
+    /// </para>
+    /// </remarks>
+    private void WaitForThePageToArrive()
+    {
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        var hub = _hub.Name;
+
+        while (clock.ElapsedMilliseconds < TestConstants.ShortTestTimeoutMs)
+        {
+            string top;
+
+            try
+            {
+                top = Context.Driver.CurrentRoute();
+            }
+            catch (NotSupportedException)
+            {
+                // Nothing on the bridge can answer yet - the state this is waiting out.
+                Thread.Sleep(25);
+                continue;
+            }
+
+            if (!string.IsNullOrEmpty(top)
+                && top != hub
+                && Context.TryFindElement(Locator.ByAutomationId(top)) is not null)
+            {
+                break;
+            }
+
+            Thread.Sleep(25);
+        }
+
+        try
+        {
+            Context.Driver.IsIdle();
+        }
+        catch (NotSupportedException)
+        {
+            // An app mid-transition has nobody to ask.
+        }
     }
 
     /// <summary>

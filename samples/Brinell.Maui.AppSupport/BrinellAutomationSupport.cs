@@ -1,14 +1,15 @@
 #if WINDOWS
 using Brinell.Maui.AppSupport.Handlers;
 #endif
+using Brinell.Maui.AppSupport.Uia;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Hosting;
 
 namespace Brinell.Maui.AppSupport;
 
 /// <summary>
-/// Registers the Windows automation handlers that make MAUI layout and content
-/// containers addressable by <c>AutomationId</c>.
+/// The two lines an app under test adds: automation handlers that make MAUI containers
+/// addressable, and the switch that turns the gesture bridge on.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -79,5 +80,62 @@ public static class BrinellAutomationSupport
 #endif
 
         return handlers;
+    }
+
+    /// <summary>
+    /// Turns on the UI Automation gesture bridge, if this build has one and the harness asked.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The bridge is a remotely invocable command channel into application logic</b>, and it
+    /// is off unless two separate things say otherwise. UI Automation has no per-caller
+    /// authentication: any process at the same or higher integrity level on the desktop can
+    /// enumerate the tree, find the fragment root and call the pattern. There is nothing to
+    /// authenticate and nobody to ask, so the only control that holds is that a shipping build
+    /// has nothing to find.
+    /// </para>
+    /// <list type="number">
+    /// <item>
+    /// <b>Compile time.</b> The provider and everything serving it are in the build only when
+    /// <c>BRINELL_UIA_BRIDGE</c> is defined - Debug, or an explicit
+    /// <c>-p:BrinellUiaBridge=true</c>. A Release build does not contain disabled bridge code;
+    /// it contains no bridge code.
+    /// </item>
+    /// <item>
+    /// <b>Run time.</b> This call is a no-op unless the environment variable
+    /// <c>BRINELL_UIA_BRIDGE</c> is <c>1</c>, which the test harness sets on the app it
+    /// launches. One build can then serve development and testing without the decision to
+    /// instrument leaking into an ordinary run of the app.
+    /// </item>
+    /// </list>
+    /// <para>
+    /// <b>Safe to call unconditionally</b>, and meant to be: an app writes this line once and
+    /// the two gates decide, rather than the app growing its own <c>#if</c> around it. In an
+    /// uninstrumented build the method is still here and still does nothing, so the line
+    /// compiles and reads the same in both.
+    /// </para>
+    /// <para>
+    /// <b>Call it before the first page loads.</b> Elements publish themselves on
+    /// <c>Loaded</c>, and one that loads before this runs finds the bridge off and stays
+    /// unpublished. <c>CreateMauiApp</c> is early enough; a page constructor is not.
+    /// </para>
+    /// <example>
+    /// <code>
+    /// builder.UseBrinellGestureBridge();
+    /// </code>
+    /// </example>
+    /// </remarks>
+    /// <param name="builder">The app builder.</param>
+    /// <returns>The same builder, for chaining.</returns>
+    public static MauiAppBuilder UseBrinellGestureBridge(this MauiAppBuilder builder)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+
+        // The decision, its reasons and the variable's name go to the bridge log rather than
+        // to a return value nobody would read. An app whose tests all fail with "nothing
+        // answers" is the case this line exists for, and BRINELL_UIA_LOG is where that is read.
+        BrinellBridgeHost.Enable();
+
+        return builder;
     }
 }

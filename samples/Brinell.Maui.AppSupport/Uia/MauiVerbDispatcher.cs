@@ -93,6 +93,14 @@ internal static class MauiVerbDispatcher
             () => PerformExchange(element, plan, verb, argument, out captured));
 
         result = captured ?? string.Empty;
+
+        // Logged like Invoke, and for the same reason: from the test side a verb that ran and
+        // decided something is indistinguishable from one that never arrived. Reads outnumber
+        // actions on this path, so leaving it out left the busier half of the bridge silent.
+        BridgeDiagnostics.Report(
+            $"Exchange {verb}('{argument}') on '{element.AutomationId}' "
+            + $"[{element.GetType().Name}] -> 0x{hr:X8} '{result}'");
+
         return hr;
     }
 
@@ -127,6 +135,14 @@ internal static class MauiVerbDispatcher
                 MauiCapabilities.CloseSwipeView(openSwipeView);
                 return HResults.S_OK;
 
+            // A Shell's flyout, which is one public property and a chrome button nothing can
+            // find. Both answers matter: S_OK opened it, S_FALSE means it was already like that.
+            case BrinellVerb.OpenFlyout:
+                return MauiCapabilities.PresentFlyout(element, presented: true);
+
+            case BrinellVerb.CloseFlyout:
+                return MauiCapabilities.PresentFlyout(element, presented: false);
+
             case BrinellVerb.ScrollToIndex:
                 // S_FALSE, not a refusal: a ListView whose ItemsSource is shorter than the index
                 // is a real state of the app, and the caller asked something answerable.
@@ -142,7 +158,7 @@ internal static class MauiVerbDispatcher
 
             case BrinellVerb.NavigateBack:
                 // The verb's own answer, passed through rather than flattened. It distinguishes
-                // popped (S_OK) from nothing-to-pop (S_FALSE) from a stale target
+                // popped (S_OK) from nothing-to-pop (BRINELL_E_DECLINED) from a stale target
                 // (UIA_E_ELEMENTNOTAVAILABLE) from not-a-page (UIA_E_NOTSUPPORTED), and the
                 // caller does something different for each. Collapsing all four into a bool is
                 // what made the client guess, and the guess was a two-second timeout that fired
@@ -217,7 +233,7 @@ internal static class MauiVerbDispatcher
 
             case BrinellVerb.CurrentRoute:
                 result = MauiCapabilities.CurrentRoute(element);
-                return HResults.S_OK;
+                return result is null ? HResults.UIA_E_NOTSUPPORTED : HResults.S_OK;
 
             // Scrolling. The offset and the extent together, because neither means anything
             // alone: a percentage cannot tell a short page that cannot scroll from a long one
@@ -232,6 +248,25 @@ internal static class MauiVerbDispatcher
                 return MauiCapabilities.ScrollTo(scroller, argument)
                     ? HResults.S_OK
                     : HResults.UIA_E_ELEMENTNOTAVAILABLE;
+
+            // A menu item, raised by id without opening the menu. The only route there is: MAUI
+            // publishes no AutomationId for menu chrome on Windows, so the item is not in the
+            // tree the client is searching.
+            case BrinellVerb.InvokeMenuItem:
+            {
+                // The outcome travels as a value: a success HRESULT cannot carry it, because UI
+                // Automation reports every one of them to the client as S_OK.
+                var hr = MauiCapabilities.InvokeMenuItem(element, argument, out var outcome);
+                result = outcome;
+                return hr;
+            }
+
+            // What the alert on screen is asking. Answered by any published element, because it
+            // is a question about the app rather than about a control - and answered with an
+            // empty payload when nothing is open, which is a fact rather than a refusal.
+            case BrinellVerb.CurrentAlert:
+                result = BrinellAlerts.Current();
+                return HResults.S_OK;
 
             // Selection. The item now shown comes back with the answer, so a caller that asked
             // for a text two items share can see which one it got without asking again.
@@ -354,6 +389,7 @@ internal static class MauiVerbDispatcher
             => counted.Items.Count.ToString(CultureInfo.InvariantCulture),
         "Items" when element is Picker listed => MauiCapabilities.ReadItems(listed),
         "Time" when element is TimePicker timePicker => MauiCapabilities.ReadTime(timePicker),
+        "FlyoutIsPresented" => MauiCapabilities.IsFlyoutPresented(element)?.ToString(),
         "IsEnabled" => element.IsEnabled.ToString(),
         "IsFocused" => element.IsFocused.ToString(),
         "AutomationId" => element.AutomationId ?? string.Empty,

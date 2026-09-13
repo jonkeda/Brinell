@@ -159,6 +159,39 @@
             <Label AutomationId="SelectedTabLabel"
                    Text="{Binding SelectedTab}" />
 
+            <!-- ============ Context menu ============
+
+                 The one surface in the app that could previously only be reached with the
+                 pointer, twice: a right-click at one coordinate to open the flyout, then a
+                 click at another to pick an entry - with the app holding the foreground for
+                 both. The entries are unreachable by any other means, because a context
+                 flyout does not exist in the accessibility tree until it is opened, and MAUI
+                 gives menu chrome no AutomationId even then.
+
+                 Delete is disabled on purpose: an item a user could not pick must not report
+                 that it ran. It is disabled through its command rather than through IsEnabled,
+                 because MAUI drives a MenuItem's enabled state from the command's CanExecute
+                 and overwrites the markup - measured, after IsEnabled="False" was activated
+                 quite happily.
+            -->
+            <Label Text="Context menu" FontAttributes="Bold" />
+
+            <Label AutomationId="ContextMenuTarget"
+                   Text="Right-click me">
+                <FlyoutBase.ContextFlyout>
+                    <MenuFlyout>
+                        <MenuFlyoutItem AutomationId="ContextMenuCopy"
+                                        Text="Copy"
+                                        Command="{Binding MenuCommand}"
+                                        CommandParameter="Context/Copy" />
+                        <MenuFlyoutItem AutomationId="ContextMenuDelete"
+                                        Text="Delete"
+                                        Command="{Binding UnavailableMenuCommand}"
+                                        CommandParameter="Context/Delete" />
+                    </MenuFlyout>
+                </FlyoutBase.ContextFlyout>
+            </Label>
+
             <!-- ============ Reset ============ -->
 
             <Button AutomationId="NavigationResetButton"

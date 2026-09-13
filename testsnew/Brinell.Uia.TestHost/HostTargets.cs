@@ -12,4 +12,25 @@ public static class HostTargets
 
     /// <summary>A second target, so the fragment has siblings to navigate between.</summary>
     public const string Secondary = "SpikeSecondTarget";
+
+    /// <summary>
+    /// Passed as <c>arg1</c> to any invoked verb, makes the target return <c>arg2</c> as its
+    /// HRESULT.
+    /// </summary>
+    /// <remarks>
+    /// <b>So a test can ask which HRESULTs survive the wire rather than assuming.</b> Step 26
+    /// found that every success code arrives as <c>S_OK</c>; step 43 needed to know whether a
+    /// customer-defined failure code crosses intact before giving one a meaning. Neither question
+    /// can be answered without a provider that will return an arbitrary value on demand.
+    /// </remarks>
+    public const int ReturnThisHResult = unchecked((int)0xB121DE11);
+
+    /// <summary>
+    /// An <c>Exchange</c> argument of this form makes the target return that HRESULT.
+    /// </summary>
+    /// <remarks>
+    /// The same question on the other method. The two are marshalled by different code inside UI
+    /// Automation, which is why step 26 measured both and found them to agree.
+    /// </remarks>
+    public const string ReturnHResultPrefix = "return-hresult:";
 }

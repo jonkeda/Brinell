@@ -45,6 +45,12 @@ public sealed class BrinellUiaBridge : IDisposable
     /// </remarks>
     private static Win32.WndProc? _classWndProc;
 
+    /// <summary>Counted by <see cref="Disconnect"/>; read through <see cref="DisconnectFailures"/>.</summary>
+    private static int _disconnectFailures;
+
+    /// <summary>Recorded by <see cref="Disconnect"/>; read through <see cref="LastDisconnectHResult"/>.</summary>
+    private static int _lastDisconnectHResult;
+
     private readonly BridgeFragmentRoot _root;
     private readonly Lock _gate = new();
     private readonly uint _ownerThreadId;
@@ -140,7 +146,8 @@ public sealed class BrinellUiaBridge : IDisposable
         {
             if (_targets.TryGetValue(target.AutomationId, out var existing))
             {
-                Disconnect(existing);
+                // Retired, not disconnected - see Unregister.
+                existing.Retire();
             }
 
             _targets[target.AutomationId] = new BridgeTargetProvider(_root, target, _nextRuntimeId++);
@@ -195,7 +202,23 @@ public sealed class BrinellUiaBridge : IDisposable
             }
 
             _targets.Remove(automationId);
-            Disconnect(published);
+
+            // RETIRED, NOT DISCONNECTED - and this is the root cause of the "app freeze".
+            //
+            // UiaDisconnectProvider was called here, on every page unload. Measured under a
+            // stress walk of 150 page changes: with it, UI Automation retired the client's element
+            // for the app's top-level window seven or eight times - every later lookup through
+            // that element answered UIA_E_ELEMENTNOTAVAILABLE and the driver, which held it for
+            // the whole run, went blind. Without it: zero. A disconnect evidently invalidates more
+            // than the one provider it names.
+            //
+            // What the disconnect was for still matters, so it is kept where it matters: when the
+            // bridge itself goes, a provider left connected to a dead window is what hangs clients
+            // (step 28), and Teardown still disconnects. A target withdrawn while its window lives
+            // is a different case - its provider is still hosted and still answers, so retiring it
+            // makes a stale reference fail promptly without touching UI Automation's connection.
+            // See .my/fix/rca-app-freeze-was-a-stale-root.md.
+            published.Retire();
             PublishChildren();
             return true;
         }
@@ -222,7 +245,73 @@ public sealed class BrinellUiaBridge : IDisposable
     /// times out rather than failing - so a leaked provider stalls every accessibility client
     /// on the desktop, not only the test that caused it.
     /// </remarks>
-    public void Dispose()
+    public void Dispose() => Teardown(destroyWindow: true);
+
+    /// <summary>
+    /// How many bridges are live in this process. Diagnostics and lifetime tests.
+    /// </summary>
+    /// <remarks>
+    /// <b>A leaked provider is not a quiet leak.</b> UI Automation caches provider pointers
+    /// across the process boundary, and a client holding a stale one blocks until its
+    /// transaction times out rather than failing - so this number failing to come back down is
+    /// a denial of service against every accessibility client on the desktop, not only against
+    /// the test that caused it. It is exposed so a soak test can watch it rather than infer it.
+    /// </remarks>
+    public static int ActiveCount => Registry.Count;
+
+    /// <summary>
+    /// How many times <c>UiaDisconnectProvider</c> has refused, process-wide.
+    /// </summary>
+    /// <remarks>
+    /// Should be zero. Anything else means providers were left connected during a teardown that
+    /// reported no trouble, which is the failure the disconnect exists to prevent and the one
+    /// that used to be invisible.
+    /// </remarks>
+    public static int DisconnectFailures => Volatile.Read(ref _disconnectFailures);
+
+    /// <summary>What <c>UiaDisconnectProvider</c> returned last.</summary>
+    /// <remarks>
+    /// The count says a disconnect failed; this says why, which is the difference between
+    /// "UI Automation does not track this provider" and "the call was made too late".
+    /// </remarks>
+    public static int LastDisconnectHResult => Volatile.Read(ref _lastDisconnectHResult);
+
+    /// <summary>
+    /// Tears the bridge down because its window has already been destroyed.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The window can go without anyone disposing the bridge, and it usually does.</b>
+    /// Destroying a parent destroys its children, so an app window closing takes this window
+    /// with it - and the framework event a host hangs its teardown off is not guaranteed to
+    /// arrive first, or at all. Without this the providers are never disconnected and the
+    /// registry keeps a strong reference keyed on a handle Windows is free to hand to somebody
+    /// else, so the next window to receive that number would be answered by a dead bridge.
+    /// </para>
+    /// <para>
+    /// Called from the window procedure on <c>WM_DESTROY</c>, which is the one notification
+    /// that arrives however the window died.
+    /// </para>
+    /// </remarks>
+    private void OnWindowDestroyed() => Teardown(destroyWindow: false);
+
+    /// <remarks>
+    /// <para>
+    /// <b>Reentrant on purpose.</b> The disposing path calls <c>DestroyWindow</c>, which sends
+    /// <c>WM_DESTROY</c> synchronously on the same thread, which lands back here. <c>_disposed</c>
+    /// is set before the destroy, so the inner call returns immediately and the work happens
+    /// once whichever way the teardown started.
+    /// </para>
+    /// <para>
+    /// <b>Order matters and the disconnect is not optional.</b> Providers first, then the root,
+    /// then the window: a provider disconnected after its window has gone is a provider nobody
+    /// can reach to disconnect.
+    /// </para>
+    /// </remarks>
+    /// <param name="destroyWindow">
+    /// False when the window is already being destroyed and this is the notification.
+    /// </param>
+    private void Teardown(bool destroyWindow)
     {
         lock (_gate)
         {
@@ -242,28 +331,51 @@ public sealed class BrinellUiaBridge : IDisposable
             _root.SetChildren([]);
             Disconnect(_root);
 
-            if (_hwnd != IntPtr.Zero)
+            if (_hwnd == IntPtr.Zero)
             {
-                Registry.Remove(_hwnd);
-
-                // Destroying a window from a thread that does not own it is a no-op that
-                // reports success, which would leave the window and its provider alive with
-                // nothing referencing them.
-                if (Win32.GetCurrentThreadId() == _ownerThreadId)
-                {
-                    Win32.DestroyWindow(_hwnd);
-                }
-
-                _hwnd = IntPtr.Zero;
+                return;
             }
+
+            Registry.Remove(_hwnd);
+
+            // Destroying a window from a thread that does not own it is a no-op that
+            // reports success, which would leave the window and its provider alive with
+            // nothing referencing them.
+            if (destroyWindow && Win32.GetCurrentThreadId() == _ownerThreadId)
+            {
+                Win32.DestroyWindow(_hwnd);
+            }
+
+            _hwnd = IntPtr.Zero;
         }
     }
 
+    /// <summary>
+    /// Severs a provider from UI Automation, counting the times it could not be done.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The HRESULT used to be discarded, which made "the disconnect is not optional" a claim
+    /// nothing checked.</b> A disconnect that quietly fails is exactly the leak the call exists
+    /// to prevent, and it would have looked identical to one that worked.
+    /// </para>
+    /// <para>
+    /// <b>Counted rather than thrown.</b> This runs during teardown, often from a window
+    /// procedure, where an exception would take the app down over a cleanup problem. A number a
+    /// test can read is the useful shape.
+    /// </para>
+    /// </remarks>
     private static void Disconnect(IRawElementProviderSimple provider)
     {
         try
         {
-            UiaNativeMethods.UiaDisconnectProvider(provider);
+            var hr = UiaNativeMethods.UiaDisconnectProvider(provider);
+            Volatile.Write(ref _lastDisconnectHResult, hr);
+
+            if (hr < 0)
+            {
+                Interlocked.Increment(ref _disconnectFailures);
+            }
         }
         catch (COMException)
         {
@@ -344,6 +456,14 @@ public sealed class BrinellUiaBridge : IDisposable
             return UiaNativeMethods.UiaReturnRawElementProvider(hwnd, wParam, lParam, bridge!._root);
         }
 
+        // However the window died - disposed, parent closed, or the app torn down around it -
+        // this is the notification that arrives. Disconnecting here rather than only in Dispose
+        // is what stops a closed window leaving live providers behind it.
+        if (message == Win32.WM_DESTROY && Registry.TryGet(hwnd, out var closing))
+        {
+            closing!.OnWindowDestroyed();
+        }
+
         return Win32.DefWindowProc(hwnd, message, wParam, lParam);
     }
 
@@ -374,6 +494,17 @@ public sealed class BrinellUiaBridge : IDisposable
             lock (Gate)
             {
                 Bridges.Remove(hwnd);
+            }
+        }
+
+        internal static int Count
+        {
+            get
+            {
+                lock (Gate)
+                {
+                    return Bridges.Count;
+                }
             }
         }
 

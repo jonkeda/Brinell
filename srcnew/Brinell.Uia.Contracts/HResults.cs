@@ -14,8 +14,54 @@ public static class HResults
     /// <summary>The call succeeded.</summary>
     public const int S_OK = 0;
 
-    /// <summary>The call succeeded but did nothing. Used where "no such element" is not an error.</summary>
+    /// <summary>
+    /// The call succeeded but did nothing.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>THIS DOES NOT REACH THE CLIENT. Never give it a meaning.</b> UI Automation's marshalling
+    /// of a custom pattern reports every <i>success</i> HRESULT as <see cref="S_OK"/>; failure
+    /// HRESULTs cross intact. Measured from both ends at once through the bridge log at step 26,
+    /// on both <c>Invoke</c> and <c>Exchange</c>, after a test that would not go red.
+    /// </para>
+    /// <para>
+    /// So a verb whose caller must be able to tell "did it" from "declined" cannot say so with
+    /// this. Use <see cref="BRINELL_E_DECLINED"/>, or have the verb report what landed and let
+    /// the caller compare - the second is why <c>SetDate</c>, <c>SetText</c> and
+    /// <c>SelectByText</c> were never harmed by this while <c>NavigateBack</c> was.
+    /// </para>
+    /// <para>
+    /// It remains for the cases where nothing depends on the difference and the app's own log is
+    /// the only reader: a flyout asked to open twice, a scroll past the end of a list.
+    /// </para>
+    /// </remarks>
     public const int S_FALSE = 1;
+
+    /// <summary>
+    /// The verb was understood, refused, and nothing changed.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b><see cref="S_FALSE"/>'s meaning, in a code that survives the wire.</b> A binding that
+    /// declines an index, a command whose <c>CanExecute</c> is false, a page asked to go back
+    /// when there is nothing to pop. All of these were <c>S_FALSE</c> and all of them arrived as
+    /// success, which let a test assert an action the app had refused to perform.
+    /// </para>
+    /// <para>
+    /// <b>A failure code for something that is not a fault.</b> That is the trade: the severity
+    /// bit is what carries it across the boundary, and reporting a refusal as an error the caller
+    /// must handle is better than reporting it as a success the caller believes. The
+    /// customer-defined bit keeps it out of Microsoft's numbering space.
+    /// </para>
+    /// <para>
+    /// <b>Distinct from <see cref="UIA_E_NOTSUPPORTED"/>, which means never.</b> This one means
+    /// not now, and not because of the request: ask again in another state and it may well work.
+    /// And distinct from <see cref="UIA_E_ELEMENTNOTAVAILABLE"/>, which says ask somebody else -
+    /// a whole-app verb walking its candidates treats that as "try the next" and this as an
+    /// answer.
+    /// </para>
+    /// </remarks>
+    public const int BRINELL_E_DECLINED = unchecked((int)0xA0040001);
 
     /// <summary>Generic failure. Avoid: it tells the caller nothing.</summary>
     public const int E_FAIL = unchecked((int)0x80004005);

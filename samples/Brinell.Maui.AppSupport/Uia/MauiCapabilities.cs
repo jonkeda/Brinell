@@ -443,7 +443,11 @@ internal static class MauiCapabilities
         }
 
         picker.SelectedIndex = index;
-        return picker.SelectedIndex == index ? HResults.S_OK : HResults.S_FALSE;
+        // BRINELL_E_DECLINED rather than S_FALSE: a binding that refuses the index is a refusal
+        // the caller has to be able to hear, and a success code cannot carry it across the wire.
+        return picker.SelectedIndex == index
+            ? HResults.S_OK
+            : HResults.BRINELL_E_DECLINED;
     }
 
     /// <summary>
@@ -538,6 +542,212 @@ internal static class MauiCapabilities
             "\n",
             new[] { picker.Items.Count.ToString(CultureInfo.InvariantCulture) }
                 .Concat(picker.Items));
+
+    // ---- Menus and flyouts ----------------------------------------------------------
+    //
+    // The menu range exists because of a measurement: NavigationProbeTests reports that
+    // 'PageMenuFile' and 'PageMenuFileNew' are addressable neither by AutomationId nor by name
+    // on Windows. MAUI does not propagate AutomationId to menu chrome (dotnet/maui#3996), so a
+    // menu item is not a control a test can find and press - it is invisible to the very tree
+    // the test is looking at. That is the SwipeView situation again, and it has the same answer:
+    // ask the app by id, because the app is the only party that has the id.
+    //
+    // What it replaces is worse than a wrong route. A context menu could only be reached by
+    // right-clicking at a coordinate and then clicking a popup entry at another coordinate -
+    // physical, positional, and requiring the app to hold the foreground, which is the thing
+    // stage B exists to stop.
+
+    /// <summary>
+    /// Raises a menu item by its <c>AutomationId</c>, without opening any menu.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b><c>IMenuItemController.Activate</c> is MAUI's own entry point for "the user picked
+    /// this".</b> It is what each platform's handler calls when a menu entry is clicked, so the
+    /// app cannot tell this apart from the real thing: the same <c>Command</c> runs and the same
+    /// <c>Clicked</c> fires. Setting properties by hand, or driving the popup, would both be
+    /// imitations of it.
+    /// </para>
+    /// <para>
+    /// Opening the menu is deliberately not part of this. An open menu is a different state of
+    /// the app - it takes focus and covers the page - and a verb that opened one on the way past
+    /// would leave a test asserting about a screen it never asked for. A test that means "the
+    /// menu opens and shows these items" is a test about the menu, and needs the pointer.
+    /// </para>
+    /// </remarks>
+    /// <param name="element">The element the verb arrived on; its page is searched.</param>
+    /// <param name="automationId">The menu item's id.</param>
+    /// <returns>The HRESULT to answer with.</returns>
+    /// <summary>
+    /// What <see cref="InvokeMenuItem"/> answers with when it declined to raise the item.
+    /// </summary>
+    /// <remarks>
+    /// <b>A value rather than <c>S_FALSE</c>, because <c>S_FALSE</c> does not survive the
+    /// bridge.</b> UI Automation reports every success HRESULT from a custom pattern as
+    /// <c>S_OK</c>, measured from both ends: the app returns 1, the client reads 0. Anything a
+    /// caller has to tell apart from plain success must therefore travel as a value or as a
+    /// failure HRESULT.
+    /// </remarks>
+    internal const string MenuItemDisabled = "disabled";
+
+    internal static int InvokeMenuItem(
+        VisualElement element, string automationId, out string outcome)
+    {
+        outcome = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(automationId))
+        {
+            return HResults.E_INVALIDARG;
+        }
+
+        var item = MenuItems(element)
+            .FirstOrDefault(candidate => candidate is Element named
+                                         && named.AutomationId == automationId);
+
+        // Not a refusal: this element does menu items perfectly well, and the one named was not
+        // among them. It may belong to another page, or to a flyout the app has not built yet.
+        if (item is not IMenuItemController controller)
+        {
+            return HResults.UIA_E_ELEMENTNOTAVAILABLE;
+        }
+
+        // Refused for an item a user could not have picked. A disabled entry reporting success
+        // would let a test assert an action the app refuses to perform, which is exactly the
+        // assertion a disabled entry exists to make false.
+        //
+        // Note that a MenuItem's IsEnabled follows its command: MAUI overwrites the markup from
+        // CanExecute, so an entry disabled with IsEnabled="False" beside a runnable command is
+        // enabled again by the time this reads it. Measured, in the sample.
+        if (item is MenuItem { IsEnabled: false })
+        {
+            outcome = MenuItemDisabled;
+            return HResults.S_OK;
+        }
+
+        controller.Activate();
+        return HResults.S_OK;
+    }
+
+    /// <summary>
+    /// Every menu entry reachable from this element's page, submenus included.
+    /// </summary>
+    /// <remarks>
+    /// Two sources, because MAUI has two: the page's own <c>MenuBarItems</c>, which render into
+    /// the window's menu bar, and the context flyouts attached to individual views, which render
+    /// only once someone right-clicks. The second is why this walks the visual tree at all - an
+    /// unopened context flyout exists in the app and nowhere else.
+    /// </remarks>
+    /// <param name="element">Any element on the page.</param>
+    /// <returns>The menu entries.</returns>
+    private static IEnumerable<IMenuElement> MenuItems(VisualElement element)
+    {
+        var page = PageOf(element);
+
+        if (page is not null)
+        {
+            foreach (var bar in page.MenuBarItems)
+            {
+                foreach (var entry in Flatten(bar))
+                {
+                    yield return entry;
+                }
+            }
+        }
+
+        var root = (VisualElement?)page ?? element;
+
+        foreach (var view in new[] { root }.Concat(Descendants(root)))
+        {
+            if (FlyoutBase.GetContextFlyout(view) is not MenuFlyout flyout)
+            {
+                continue;
+            }
+
+            foreach (var entry in Flatten(flyout))
+            {
+                yield return entry;
+            }
+        }
+    }
+
+    /// <summary>Flattens a menu, including its submenus.</summary>
+    /// <param name="entries">The menu's own entries.</param>
+    /// <returns>Every entry beneath it.</returns>
+    private static IEnumerable<IMenuElement> Flatten(IEnumerable<IMenuElement> entries)
+    {
+        foreach (var entry in entries)
+        {
+            yield return entry;
+
+            if (entry is MenuFlyoutSubItem submenu)
+            {
+                foreach (var deeper in Flatten(submenu))
+                {
+                    yield return deeper;
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Opens or closes a Shell's flyout.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>One public property, replacing a hamburger button nothing can find.</b> Shell's flyout
+    /// is opened by chrome MAUI gives no <c>AutomationId</c>, so a client reached it by name, by
+    /// control type, or by clicking where it usually is - and each of those is a guess about a
+    /// control the platform draws.
+    /// </para>
+    /// <para>
+    /// Answered by any element in a Shell app: the flyout belongs to the Shell, not to the page
+    /// the verb happened to arrive on, so <c>Shell.Current</c> is consulted when the element is
+    /// not itself one. An app with no Shell has no flyout, and refuses rather than pretending.
+    /// </para>
+    /// </remarks>
+    /// <param name="element">The element the verb arrived on.</param>
+    /// <param name="presented">Whether the flyout should be showing.</param>
+    /// <returns>The HRESULT to answer with.</returns>
+    internal static int PresentFlyout(VisualElement element, bool presented)
+    {
+        if (ShellOf(element) is not { } shell)
+        {
+            return HResults.UIA_E_NOTSUPPORTED;
+        }
+
+        // S_FALSE for a flyout already in the state asked for: nothing happened, and saying so
+        // lets a caller tell "it was already open" from "I opened it".
+        if (shell.FlyoutIsPresented == presented)
+        {
+            return HResults.S_FALSE;
+        }
+
+        shell.FlyoutIsPresented = presented;
+        return HResults.S_OK;
+    }
+
+    /// <summary>Whether a Shell's flyout is showing, or null in an app without one.</summary>
+    /// <param name="element">The element the read arrived on.</param>
+    /// <returns>The state, or null.</returns>
+    internal static bool? IsFlyoutPresented(VisualElement element)
+        => ShellOf(element)?.FlyoutIsPresented;
+
+    /// <summary>The Shell this element belongs to, if the app has one.</summary>
+    private static Shell? ShellOf(VisualElement element)
+        => element as Shell ?? Shell.Current;
+
+    /// <summary>The page this element sits on, walking up its parents.</summary>
+    private static Page? PageOf(VisualElement element)
+    {
+        Element? walker = element;
+
+        while (walker is not null and not Page)
+        {
+            walker = walker.Parent;
+        }
+
+        return walker as Page;
+    }
 
     /// <summary>MAUI's name for the direction a swipe verb travels in.</summary>
     /// <param name="verb">The swipe verb.</param>
@@ -708,13 +918,30 @@ internal static class MauiCapabilities
             + $"'{(stack is { Count: > 0 } ? stack[^1]?.GetType().Name : "none")}', "
             + $"modal depth {navigation?.ModalStack.Count ?? -1}");
 
-        if (stack is null || stack.Count <= 1)
+        if (stack is null)
         {
-            // S_FALSE: we are at the root and there is nothing to pop. A true statement about
-            // the app, and the commonest answer of all - every fixture reset that starts at the
-            // hub gets it. It used to be indistinguishable from the three below, which is what
-            // made the caller wait two seconds to find out something it was told immediately.
-            return HResults.S_FALSE;
+            // UIA_E_ELEMENTNOTAVAILABLE: this page has no navigation at all, so it is detached -
+            // popped long ago and still answering because its handler has not gone yet. Ask
+            // somebody else.
+            //
+            // THIS LINE IS STEP 36. It used to share a branch with "we are at the root" and
+            // return S_FALSE, which arrives at the client as S_OK (see HResults.S_FALSE). So a
+            // detached page ended InvokeAnywhere's walk with a reported success, the live page
+            // was never asked, nothing popped, and the fixture waited out its timeout for a hub
+            // that was never coming - then blamed whichever test navigated next.
+            return HResults.UIA_E_ELEMENTNOTAVAILABLE;
+        }
+
+        if (stack.Count <= 1)
+        {
+            // BRINELL_E_DECLINED: we are at the root and there is nothing to pop. A true
+            // statement about the app, and one the caller must be able to hear - it was S_FALSE,
+            // which does not survive the wire, so "go back" at the root reported success.
+            //
+            // A failure code for something that is not a fault, deliberately. IsAtNavigationRoot
+            // exists so a caller can ask before commanding; one that commands anyway is asking
+            // for something the app cannot do.
+            return HResults.BRINELL_E_DECLINED;
         }
 
         // A page may only pop itself, and only while it is the one on top.
@@ -746,8 +973,14 @@ internal static class MauiCapabilities
         // root, hears that something was popped when nothing was. Both were observed.
         if (!PopsInFlight.Add(page))
         {
+            // S_OK, and not a second pop. The caller asked for this page to go back and this page
+            // is going back; saying so is true, and starting another pop is what the guard is
+            // here to prevent.
+            //
+            // It returned S_FALSE, which the client read as S_OK anyway - so this is the same
+            // behaviour, now stated rather than arrived at by a marshalling accident.
             BridgeDiagnostics.Report("NavigateBack: a pop is already in flight");
-            return HResults.S_FALSE;
+            return HResults.S_OK;
         }
 
         BridgeDiagnostics.Report("NavigateBack: popping");
@@ -768,18 +1001,52 @@ internal static class MauiCapabilities
     }
 
     /// <summary>
-    /// How deep the app's navigation stack is.
+    /// How deep the app's navigation stack is, answered only by a page that is in it.
     /// </summary>
     /// <remarks>
-    /// <b>Any live target answers this correctly, stale or not</b>, which is what makes it usable
-    /// as a whole-app question. A page's <c>Navigation</c> reports the <i>current</i> stack
-    /// whoever is asked, so unlike <see cref="NavigateBack"/> - where a popped page will happily
-    /// agree to pop and then not - there is no wrong element to reach here.
+    /// <para>
+    /// <b>This used to say that any target answers correctly, stale or not. That was measured to
+    /// be false, and it was step 36.</b> A page part-way through being torn down still answers -
+    /// its handler outlives its registration - and its <c>Navigation</c> reports a stack it is no
+    /// longer part of. Caught in the bridge log with a page count of <c>0</c> returned while the
+    /// app was two deep on another page:
+    /// </para>
+    /// <code>
+    /// 14:03:21.943  withdraw 'PageHub' -> True                       (the next page was pushed)
+    /// 14:03:21.967  GetState('NavigationDepth') on 'ContainerPage' -> '0'
+    /// 14:03:22.023  withdraw 'ContainerPage' -> True                 (the stale page, finally)
+    /// </code>
+    /// <para>
+    /// The caller asks any target and takes the first answer, so <c>0</c> won: the fixture
+    /// concluded it was already at the root, did nothing, and waited out its timeout for a hub
+    /// that was on nobody's screen - then failed whichever test had asked to navigate. Order
+    /// dependent, and it landed on a different test every run.
+    /// </para>
+    /// <para>
+    /// <b>So the same rule as <see cref="NavigateBack"/>, one notch looser.</b> That verb requires
+    /// the page to be on top, because only the top page may pop itself. This one requires only
+    /// that the page is <i>in</i> the stack, because every page in it can see the same depth - the
+    /// hub answers correctly while a page is open above it, and should. A page in no stack knows
+    /// nothing and says so.
+    /// </para>
     /// </remarks>
-    /// <param name="element">Any element that can see the navigation stack.</param>
-    /// <returns>The depth, or null if this element has no navigation.</returns>
+    /// <param name="element">Any page that is part of the live navigation stack.</param>
+    /// <returns>The depth, or null if this element cannot answer for the app.</returns>
     internal static int? NavigationDepth(VisualElement element)
-        => element is Page page ? page.Navigation?.NavigationStack.Count : null;
+    {
+        if (element is not Page page)
+        {
+            return null;
+        }
+
+        var stack = page.Navigation?.NavigationStack;
+
+        // Not in the stack it is reporting on, so it is being torn down and its answer is about
+        // an app state that no longer includes it. Null reaches the client as
+        // UIA_E_NOTSUPPORTED, which makes the walk ask the next target instead of believing this
+        // one.
+        return stack is not null && stack.Contains(page) ? stack.Count : null;
+    }
 
     /// <summary>
     /// Where the app is, in whatever terms its navigation model uses.
@@ -791,8 +1058,11 @@ internal static class MauiCapabilities
     /// the two look alike when they are not.
     /// </remarks>
     /// <param name="element">Any element that can see the navigation stack.</param>
-    /// <returns>The Shell route, or the top page's AutomationId, or empty.</returns>
-    internal static string CurrentRoute(VisualElement element)
+    /// <returns>
+    /// The Shell route, or the top page's AutomationId, or null when this element cannot answer
+    /// for the app - which the dispatcher turns into a refusal, so the caller asks another page.
+    /// </returns>
+    internal static string? CurrentRoute(VisualElement element)
     {
         if (Shell.Current is { } shell)
         {
@@ -801,13 +1071,22 @@ internal static class MauiCapabilities
 
         if (element is not Page page)
         {
-            return string.Empty;
+            return null;
         }
 
         var stack = page.Navigation?.NavigationStack;
-        var top = stack is { Count: > 0 } ? stack[^1] : null;
 
-        return top?.AutomationId ?? top?.GetType().Name ?? string.Empty;
+        // The same rule as NavigationDepth, and for the same measured reason: a page being torn
+        // down still answers, about a stack it has left. Null reaches the client as
+        // UIA_E_NOTSUPPORTED, so the walk asks the next page instead of believing this one.
+        if (stack is null || !stack.Contains(page))
+        {
+            return null;
+        }
+
+        var top = stack[^1];
+
+        return top.AutomationId ?? top.GetType().Name;
     }
 
     /// <summary>

@@ -1,3 +1,5 @@
+using Brinell.Maui.AppSupport.Uia;
+
 namespace Brinell.Samples.Maui.App.Views2.TestViews;
 
 /// <summary>
@@ -8,6 +10,11 @@ namespace Brinell.Samples.Maui.App.Views2.TestViews;
 /// DisplayPromptAsync are Page methods - a view model has no Page to raise them on. The
 /// result is pushed back into the view model so tests observe it the same way as every
 /// other module.
+///
+/// They go through BrinellAlerts rather than calling the page directly, which is the one line
+/// an app adds so that a test can assert what it asked rather than only that something opened.
+/// Nothing about the dialogs changes: BrinellAlerts raises the same page methods with the same
+/// arguments, and records them for the length of the await.
 /// </remarks>
 public partial class DialogsView : ContentView
 {
@@ -23,7 +30,7 @@ public partial class DialogsView : ContentView
         var page = GetPage();
         if (page == null) return;
 
-        await page.DisplayAlertAsync("Alert", "This is an alert.", "OK");
+        await BrinellAlerts.DisplayAlertAsync(page, "Alert", "This is an alert.", "OK");
         ViewModel?.Record("alert dismissed");
     }
 
@@ -32,7 +39,8 @@ public partial class DialogsView : ContentView
         var page = GetPage();
         if (page == null) return;
 
-        var accepted = await page.DisplayAlertAsync("Confirm", "Proceed?", "Yes", "No");
+        var accepted = await BrinellAlerts.DisplayAlertAsync(
+            page, "Confirm", "Proceed?", "Yes", "No");
         ViewModel?.Record(accepted ? "confirmed" : "declined");
     }
 
@@ -41,7 +49,8 @@ public partial class DialogsView : ContentView
         var page = GetPage();
         if (page == null) return;
 
-        var answer = await page.DisplayPromptAsync("Prompt", "Enter a value", "OK", "Cancel");
+        var answer = await BrinellAlerts.DisplayPromptAsync(
+            page, "Prompt", "Enter a value", "OK", "Cancel");
         ViewModel?.Record(answer == null ? "prompt cancelled" : $"prompt: {answer}");
     }
 

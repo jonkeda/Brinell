@@ -1,8 +1,6 @@
 using Microsoft.Extensions.Logging;
 
-#if WINDOWS
 using Brinell.Maui.AppSupport;
-#endif
 
 namespace Brinell.Samples.Maui.ShellApp;
 
@@ -22,6 +20,11 @@ public static class MauiProgram
                 handlers.AddBrinellAutomationHandlers();
 #endif
             });
+
+        // The gesture bridge's run-time switch (step 27). Without this line the bridge compiles in
+        // and publishes nothing - which is how this app's flyout verbs went silent: the gate was
+        // added to the hub app and not here, and nothing noticed until this app was rebuilt.
+        builder.UseBrinellGestureBridge();
 
 #if DEBUG
         builder.Logging.AddDebug();

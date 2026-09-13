@@ -176,8 +176,16 @@ internal static class BridgeVerbRunner
     /// </para>
     /// <para>
     /// So a refusal moves on to the next candidate, and only <see cref="HResults.S_OK"/> ends
-    /// the loop. <see cref="HResults.S_FALSE"/> - succeeded and did nothing - is a refusal for
-    /// this purpose: it is exactly what a stale page says.
+    /// the loop.
+    /// </para>
+    /// <para>
+    /// <b>That rule was written when a refusal could not be heard, and step 43 fixed the other
+    /// end.</b> A stale page used to answer <see cref="HResults.S_FALSE"/>, which UI Automation
+    /// delivers as <c>S_OK</c> - so the walk stopped at the first stale page it found, reported a
+    /// pop that never happened, and left the caller waiting for a page change that was never
+    /// coming. That was step 36, and it looked like flakiness scattered across unrelated areas.
+    /// A declining target now says <see cref="HResults.UIA_E_ELEMENTNOTAVAILABLE"/> - ask somebody
+    /// else - or <see cref="HResults.BRINELL_E_DECLINED"/>, and both cross intact.
     /// </para>
     /// </remarks>
     /// <param name="root">The app's top-level window.</param>
@@ -217,10 +225,11 @@ internal static class BridgeVerbRunner
                 $"no element published on the app's bridge answers {verb}.")
             : new BridgeVerbResult(
                 false,
-                HResults.S_FALSE,
+                HResults.BRINELL_E_DECLINED,
                 string.Empty,
                 $"{declined} element(s) on the app's bridge were asked to {verb} and none did. "
-                + $"The last said: {lastReason}");
+                + $"The last said: {lastReason}",
+                declined);
     }
 
     /// <summary>
@@ -251,6 +260,9 @@ internal static class BridgeVerbRunner
         BrinellVerb verb,
         string argument = "")
     {
+        var declinedHr = HResults.UIA_E_NOTSUPPORTED;
+        var declined = 0;
+
         foreach (var target in BrinellBridgeLookup.Targets(root, automation))
         {
             if (!target.SupportedVerbs().Contains(verb)
@@ -266,13 +278,24 @@ internal static class BridgeVerbRunner
                 return new BridgeVerbResult(
                     true, hr, answer, BrinellVerbFailure.Describe(verb, hr));
             }
+
+            // Remembered, not discarded. A target that answered something other than S_OK said
+            // something about the app - the item is disabled, the argument was nonsense - and
+            // reporting all of those as "nothing answers" sends the caller looking for a missing
+            // declaration, which is the one explanation that has already been ruled out.
+            declined++;
+            declinedHr = hr;
         }
 
         return new BridgeVerbResult(
             false,
-            HResults.UIA_E_NOTSUPPORTED,
+            declinedHr,
             string.Empty,
-            $"no element published on the app's bridge answers {verb}.");
+            declined == 0
+                ? $"no element published on the app's bridge answers {verb}."
+                : $"{declined} element(s) were asked and none answered. The last said: "
+                  + BrinellVerbFailure.Describe(verb, declinedHr),
+            declined);
     }
 
     /// <summary>
@@ -351,5 +374,20 @@ internal static class BridgeVerbRunner
 /// <param name="HResult">What the provider returned, for the cases that want the exact value.</param>
 /// <param name="Value">What the app returned, for <c>Exchange</c>; empty otherwise.</param>
 /// <param name="Reason">A sentence naming the verb, the outcome and what to do about it.</param>
+/// <summary>What a verb did, and how many targets were asked before this was the answer.</summary>
+/// <param name="Delivered">Whether the app performed the verb.</param>
+/// <param name="HResult">What the app answered, or what the client concluded.</param>
+/// <param name="Value">The payload, for the verbs that return one.</param>
+/// <param name="Reason">A sentence naming the cause and the remedy.</param>
+/// <param name="Declined">
+/// How many published targets were asked and refused.
+/// <para>
+/// <b>Zero and non-zero mean opposite things and used to be told apart only by reading the
+/// sentence.</b> Zero says nothing on the app's bridge implements this verb - a configuration
+/// error that waiting cannot fix. Non-zero says targets that could have answered did not, which
+/// during a page transition is a state that lasts milliseconds. A caller that cannot tell them
+/// apart either throws on a transient or hangs on a permanent one.
+/// </para>
+/// </param>
 internal readonly record struct BridgeVerbResult(
-    bool Delivered, int HResult, string Value, string Reason);
+    bool Delivered, int HResult, string Value, string Reason, int Declined = 0);

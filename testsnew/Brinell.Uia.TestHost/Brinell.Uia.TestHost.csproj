@@ -1,5 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <!--
+    The same gate the app under test uses, so that building this host without the bridge
+    produces the same kind of binary a shipping app would be - which is the only reason
+    step 27's test can prove anything with it. DefineConstants do not travel across a
+    project reference, so importing here is what keeps this project and the contracts it
+    references agreeing about whether the provider exists.
+  -->
+  <Import Project="..\..\srcnew\Brinell.Uia.Contracts\Brinell.Uia.Bridge.props" />
+
   <PropertyGroup>
     <!--
       A window and a message loop, and nothing else. The bridge spikes measure the UI
@@ -19,6 +28,16 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\srcnew\Brinell.Uia.Contracts\Brinell.Uia.Contracts.csproj" />
+  </ItemGroup>
+
+  <!--
+    The target implements IBrinellVerbTarget, which is part of the provider and therefore
+    absent from an uninstrumented build. Removed by file for the same reason the provider
+    is: nothing is left disabled. HostTargets stays, because the ids it names are what the
+    gating test asks the tree for and then does not find.
+  -->
+  <ItemGroup Condition="'$(BrinellUiaBridge)' != 'true'">
+    <Compile Remove="RecordingTarget.cs" />
   </ItemGroup>
 
   <ItemGroup>

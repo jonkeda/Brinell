@@ -42,11 +42,26 @@ public sealed class BridgeHostFixture : IDisposable
                 + "The project reference in Brinell.Uia.Tests.csproj is what puts it there.");
         }
 
-        _process = Process.Start(new ProcessStartInfo(executable)
+        var start = new ProcessStartInfo(executable)
         {
             ArgumentList = { WindowTitle, _readyFile },
             UseShellExecute = false,
-        }) ?? throw new InvalidOperationException("The bridge host did not start.");
+        };
+
+        // Step 27's run-time gate, from the asking side. Every test in this collection depends
+        // on it: the host publishes nothing without it, so if the gate ever stopped being read
+        // these eight tests would say so immediately. The compile-time half - the one that
+        // actually controls anything - is measured by BridgeGatingTests.
+        start.Environment[BrinellBridgeGate.EnableVariable] = "1";
+
+        // Redirected and never read. The host writes its report to stdout as well as to the
+        // ready file, and an inherited pipe outlives a process that escapes cleanup - which
+        // leaves the whole test run apparently hung, waiting on a handle nobody holds any more.
+        start.RedirectStandardOutput = true;
+        start.RedirectStandardError = true;
+
+        _process = Process.Start(start)
+            ?? throw new InvalidOperationException("The bridge host did not start.");
 
         var report = WaitForReady();
 
@@ -55,7 +70,7 @@ public sealed class BridgeHostFixture : IDisposable
         HostPatternId = (int)ReadValue(report, "PATTERNID");
 
         Automation = new UIA3Automation();
-        HostWindow = Automation.FromHandle(HostWindowHandle);
+        HostWindow = BridgeClient.AttachToWindow(Automation, HostWindowHandle);
     }
 
     /// <summary>The unique title of the host window, so parallel runs cannot collide.</summary>
@@ -123,10 +138,14 @@ public sealed class BridgeHostFixture : IDisposable
             $"The bridge host reported no '{key}'. What it did report was: {report}");
     }
 
+    /// <remarks>
+    /// <b>The process first, and every step guarded.</b> Disposing the automation session used
+    /// to come first, and it can throw when the window it was attached to has gone - which left
+    /// the host running, one per run. A stray host is not tidy-up debt: it holds the inherited
+    /// stdout pipe and the run that started it appears to hang.
+    /// </remarks>
     public void Dispose()
     {
-        Automation.Dispose();
-
         try
         {
             if (!_process.HasExited)
@@ -138,6 +157,15 @@ public sealed class BridgeHostFixture : IDisposable
         catch (InvalidOperationException)
         {
             // Already gone.
+        }
+
+        try
+        {
+            Automation.Dispose();
+        }
+        catch (Exception)
+        {
+            // The session's window is already dead; there is nothing left to release cleanly.
         }
 
         _process.Dispose();

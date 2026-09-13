@@ -153,8 +153,48 @@ public enum BrinellVerb
     /// <summary>Dismisses the current alert with the named result.</summary>
     DismissAlert = 901,
 
-    /// <summary>Invokes a menu item by id without opening the popup.</summary>
+    /// <summary>
+    /// Invokes a menu item by id without opening the popup.
+    /// </summary>
+    /// <remarks>
+    /// The argument is the item's <c>AutomationId</c>. Answers with an empty string when the item
+    /// was raised and <c>"disabled"</c> when it was found and declined - an outcome that cannot
+    /// travel as <see cref="HResults.S_FALSE"/>, because UI Automation reports every success
+    /// HRESULT from a custom pattern to the client as <see cref="HResults.S_OK"/>.
+    /// </remarks>
     InvokeMenuItem = 902,
+}
+
+/// <summary>What a verb asks for: a reading, an act on the element, or an act on the app.</summary>
+/// <remarks>
+/// Not derivable from the number, unlike <see cref="BrinellVerbRange"/> - the ranges group verbs
+/// by subject area, and this cuts across them. <c>NavigateBack</c> and <c>ScrollTo</c> are both
+/// actions in different ranges; <c>CurrentRoute</c> and <c>ScrollPosition</c> are both reads in
+/// those same two.
+/// </remarks>
+public enum BrinellVerbKind
+{
+    /// <summary>Answers a question and changes nothing.</summary>
+    Read = 0,
+
+    /// <summary>
+    /// Something a person does to the element the verb is declared on.
+    /// </summary>
+    /// <remarks>
+    /// The only kind the accessibility audit examines, because it is the only kind where "can a
+    /// keyboard reach this element" is a question with a meaning.
+    /// </remarks>
+    ElementAction = 1,
+
+    /// <summary>
+    /// Something a person does to the app, posted through whichever element carries the verb.
+    /// </summary>
+    /// <remarks>
+    /// Going back, invoking a menu item, dismissing an alert. The element is an address: a page
+    /// declares <c>NavigateBack</c> because a page is somewhere to send the request, not because
+    /// the page is what the user presses.
+    /// </remarks>
+    AppAction = 2,
 }
 
 /// <summary>The capability area a verb belongs to, derived from its numeric range.</summary>
@@ -282,6 +322,82 @@ public static class BrinellVerbs
         // Everything else is ints or nothing: the gestures, Focus and Unfocus, the flyouts,
         // going back, scrolling to an index, selecting by index.
         _ => BrinellVerbTransport.Invoke,
+    };
+
+    /// <summary>
+    /// What kind of thing a verb is: a read, something a person does to the element, or
+    /// something a person does to the app.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>For the accessibility audit, and it is the line the audit turns on.</b> An element that
+    /// can only be swiped is an accessibility defect; an element a test reads the state of is not;
+    /// and a page carrying <c>NavigateBack</c> is neither, because the page is an address rather
+    /// than the thing being acted on.
+    /// </para>
+    /// <para>
+    /// <b>The third case was measured, not anticipated.</b> The first audit reported eight of the
+    /// sample app's fifteen "defects" as pages with no keyboard route - true, meaningless, and
+    /// more than half the list. A backlog that is mostly noise is one nobody reads, so the
+    /// distinction that removes it belongs in the vocabulary rather than in a filter somewhere
+    /// downstream.
+    /// </para>
+    /// <para>
+    /// <b><c>OpenFlyout</c> and <c>CloseFlyout</c> are app-level here, though they are genuinely
+    /// ambiguous.</b> On a <c>Picker</c> the subject is the picker; on a <c>Shell</c> it is the
+    /// app's own chrome, and asking whether a keyboard can focus the <c>Shell</c> answers nothing.
+    /// Calling them app-level gets both right in practice: a picker is audited through the
+    /// selection verbs it also declares, and a shell drops out. An element declaring nothing but
+    /// a flyout verb would escape the audit, which is the known cost.
+    /// </para>
+    /// <para>
+    /// <b>Reads and app actions are listed; everything else acts on its element.</b> That way
+    /// round on purpose - a verb added without a thought here shows up in the audit as a possible
+    /// defect, which someone will query. The other default would drop it silently out of an
+    /// accessibility report, which is the failure nobody notices.
+    /// </para>
+    /// <para>
+    /// <b><c>Focus</c> acts on the element</b>, though it looks like plumbing. An element
+    /// declaring <c>Focus</c> that no keyboard can reach is precisely the finding worth having.
+    /// </para>
+    /// <para>
+    /// Every verb is pinned by name in <c>ContractTests</c>, so adding one to the enum without
+    /// deciding this fails a test rather than quietly taking the default.
+    /// </para>
+    /// </remarks>
+    /// <param name="verb">The verb.</param>
+    /// <returns>What kind of verb it is.</returns>
+    public static BrinellVerbKind KindOf(BrinellVerb verb) => verb switch
+    {
+        // Not a verb.
+        BrinellVerb.None => BrinellVerbKind.Read,
+
+        // Meta: discovery and liveness, asked of the bridge rather than of the app.
+        BrinellVerb.GetCapabilities => BrinellVerbKind.Read,
+        BrinellVerb.GetProtocolVersion => BrinellVerbKind.Read,
+        BrinellVerb.Ping => BrinellVerbKind.Read,
+
+        // Reads. Each names a question about current state; none of them changes it.
+        BrinellVerb.IsFocused => BrinellVerbKind.Read,
+        BrinellVerb.GetText => BrinellVerbKind.Read,
+        BrinellVerb.ScrollPosition => BrinellVerbKind.Read,
+        BrinellVerb.CurrentRoute => BrinellVerbKind.Read,
+        BrinellVerb.GetState => BrinellVerbKind.Read,
+        BrinellVerb.IsIdle => BrinellVerbKind.Read,
+        BrinellVerb.CurrentAlert => BrinellVerbKind.Read,
+
+        // App actions. Real things a person does, but not to the element carrying the verb -
+        // that element is where the request is posted, not what it acts on.
+        BrinellVerb.NavigateBack => BrinellVerbKind.AppAction,
+        BrinellVerb.NavigateTo => BrinellVerbKind.AppAction,
+        BrinellVerb.InvokeMenuItem => BrinellVerbKind.AppAction,
+        BrinellVerb.DismissAlert => BrinellVerbKind.AppAction,
+        BrinellVerb.OpenFlyout => BrinellVerbKind.AppAction,
+        BrinellVerb.CloseFlyout => BrinellVerbKind.AppAction,
+
+        // Everything else acts on the element it is declared on: the gestures, focusing and
+        // unfocusing, editing text, scrolling, setting a date or a time, selecting.
+        _ => BrinellVerbKind.ElementAction,
     };
 
     /// <summary>The capability area <paramref name="verb"/> falls in.</summary>

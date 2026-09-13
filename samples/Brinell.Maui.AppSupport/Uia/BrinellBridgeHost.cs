@@ -1,5 +1,7 @@
 using Brinell.Uia;
+#if BRINELL_UIA_BRIDGE
 using Brinell.Uia.Provider;
+#endif
 using Microsoft.Maui.Controls;
 
 namespace Brinell.Maui.AppSupport.Uia;
@@ -16,19 +18,37 @@ namespace Brinell.Maui.AppSupport.Uia;
 /// <para>
 /// <b>Nothing here starts a bridge on its own.</b> The first element that declares a verb
 /// creates one; an app with no declarations never registers a pattern, never creates a window,
-/// and is indistinguishable from an app without the bridge compiled in. That is what makes
-/// leaving <c>UseBrinellUiaBridge</c> in a build a smaller decision than it sounds - though
-/// step 27 removes the code from a shipping build regardless, because absence is the only real
-/// control UI Automation offers.
+/// and is indistinguishable from an app without the bridge compiled in.
+/// </para>
+/// <para>
+/// <b>This is the seam the security gate runs through, and the one file carrying an
+/// <c>#if</c>.</b> Everything the gate removes is removed from the build by
+/// <c>Brinell.Maui.AppSupport.csproj</c>; this file has to survive it, because
+/// <see cref="GestureAutomation"/> calls into it and that has to compile in an app whose XAML
+/// still names the attached property. What is left when the bridge is compiled out is these
+/// signatures and nothing behind them.
+/// </para>
+/// <para>
+/// <b>Two gates, and both must be open.</b> <c>BRINELL_UIA_BRIDGE</c> defined at compile time
+/// puts the code in the build; <see cref="Enable"/> - reached from
+/// <c>UseBrinellGestureBridge()</c> - turns it on at run time, and only when the environment
+/// variable of the same name is set to <c>1</c>. Neither is a permission check, because UI
+/// Automation offers nothing to check against: any process at the same integrity level on the
+/// desktop can call a pattern it can find. The control is that there is nothing to find.
 /// </para>
 /// </remarks>
 public static class BrinellBridgeHost
 {
+    private static bool _enabled;
+    private static bool _refusalReported;
+
+#if BRINELL_UIA_BRIDGE
     private static readonly Lock Gate = new();
     private static readonly Dictionary<IntPtr, BrinellUiaBridge> Bridges = [];
 
     /// <summary>Windows whose teardown is already subscribed, so it happens once.</summary>
     private static readonly HashSet<IntPtr> Watched = [];
+#endif
 
     /// <summary>Whether any bridge exists in this process. Diagnostics and tests.</summary>
     [System.Runtime.Versioning.SupportedOSPlatform("windows")]
@@ -36,11 +56,39 @@ public static class BrinellBridgeHost
     {
         get
         {
+#if BRINELL_UIA_BRIDGE
             lock (Gate)
             {
                 return Bridges.Count > 0;
             }
+#else
+            return false;
+#endif
         }
+    }
+
+    /// <summary>
+    /// Turns the bridge on for this process, if this build has one and the harness asked.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The decision is <see cref="BrinellBridgeGate"/>'s, not this file's.</b> The same lines
+    /// decide it in the bridge's own test host, which is what makes a test of the gate a test of
+    /// this app's behaviour rather than of a lookalike.
+    /// </para>
+    /// <para>
+    /// <b>Read once, deliberately.</b> The answer is settled at startup and does not change
+    /// afterwards, so nothing can half-enable the bridge by setting the variable partway through
+    /// a run.
+    /// </para>
+    /// </remarks>
+    /// <returns>Whether the bridge is on, so the caller can say so.</returns>
+    internal static bool Enable()
+    {
+        _enabled = BrinellBridgeGate.IsOpen;
+        BridgeDiagnostics.Report(BrinellBridgeGate.Explain());
+
+        return _enabled;
     }
 
     /// <summary>
@@ -54,6 +102,23 @@ public static class BrinellBridgeHost
         IReadOnlyCollection<BrinellVerb> verbs,
         IBrinellGestureSink? sink)
     {
+        if (!_enabled)
+        {
+            // Once, not once per element. A page declaring a dozen verbs would otherwise bury
+            // the one line that explains the whole run, and the reader of this log is usually
+            // someone whose tests all failed the same way.
+            if (!_refusalReported)
+            {
+                _refusalReported = true;
+                BridgeDiagnostics.Report(
+                    $"'{element.AutomationId}' declares verbs but the bridge is off, so nothing "
+                    + "will be published for the life of this process. Call "
+                    + $"UseBrinellGestureBridge() during startup and set {BrinellBridgeGate.EnableVariable}=1.");
+            }
+
+            return;
+        }
+
         // The platform check the analyzer needs, and the one a reader needs too: everything
         // below this line is UI Automation, which exists only on Windows. Off Windows the
         // declaration is inert and gestures are real touch input.
@@ -62,6 +127,7 @@ public static class BrinellBridgeHost
             return;
         }
 
+#if BRINELL_UIA_BRIDGE
         var hwnd = WindowHandles.RootOf(element);
         if (hwnd == IntPtr.Zero)
         {
@@ -119,12 +185,14 @@ public static class BrinellBridgeHost
             // Test-only code must never be able to break the thing it is meant to observe.
             BridgeDiagnostics.Report($"could not publish '{element.AutomationId}': {ex}");
         }
+#endif
     }
 
     /// <summary>Removes an element from its window's bridge.</summary>
     /// <param name="element">The element being unloaded.</param>
     internal static void Withdraw(VisualElement element)
     {
+#if BRINELL_UIA_BRIDGE
         var automationId = element.AutomationId;
         if (string.IsNullOrWhiteSpace(automationId))
         {
@@ -153,6 +221,7 @@ public static class BrinellBridgeHost
                 BridgeDiagnostics.Report($"withdraw '{automationId}' -> {removed}");
             }
         }
+#endif
     }
 
     /// <summary>
@@ -164,6 +233,7 @@ public static class BrinellBridgeHost
     /// </remarks>
     public static void Shutdown()
     {
+#if BRINELL_UIA_BRIDGE
         if (!OperatingSystem.IsWindows())
         {
             return;
@@ -179,7 +249,10 @@ public static class BrinellBridgeHost
             Bridges.Clear();
             Watched.Clear();
         }
+#endif
     }
+
+#if BRINELL_UIA_BRIDGE
 
     /// <summary>
     /// Arranges for the window's bridge to be disposed when the window goes away.
@@ -233,7 +306,14 @@ public static class BrinellBridgeHost
     {
         lock (Gate)
         {
-            if (Bridges.TryGetValue(hwnd, out var existing))
+            // Not merely "is it in the dictionary". A bridge whose window has gone clears its
+            // own handle, and it can go without this dictionary hearing about it: teardown is
+            // hung off the MAUI window's Destroying event, and Windows destroys child windows
+            // with their parent whether or not that event ever fires. A stale entry here would
+            // be handed back for a handle Windows has since reissued, and Register on a
+            // disposed bridge throws - reaching the app as "could not publish", which names
+            // neither the window nor the reason.
+            if (Bridges.TryGetValue(hwnd, out var existing) && existing.Handle != IntPtr.Zero)
             {
                 return existing;
             }
@@ -267,4 +347,5 @@ public static class BrinellBridgeHost
             }
         }
     }
+#endif
 }

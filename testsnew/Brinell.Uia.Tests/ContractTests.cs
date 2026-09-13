@@ -220,6 +220,92 @@ public class ContractTests
         }
     }
 
+    /// <summary>
+    /// Every verb is classified as a read, an act on its element, or an act on the app.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>A checklist that fails when the vocabulary grows.</b> <c>KindOf</c> falls through to
+    /// <c>ElementAction</c>, so a fall-through test could never fail; this compares the whole enum
+    /// against lists written out by hand, so adding a verb without deciding what it is breaks here
+    /// rather than quietly changing an accessibility report.
+    /// </para>
+    /// <para>
+    /// The decision matters because it decides what step 29's audit calls a defect. Getting a
+    /// read wrong puts a label on an accessibility backlog; getting an element action wrong takes
+    /// a gesture-only control off it; getting an app action wrong fills the backlog with pages,
+    /// which is what the first audit actually did.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void EveryVerb_IsClassifiedByKind()
+    {
+        // Reads: answer a question, change nothing.
+        BrinellVerb[] reads =
+        [
+            BrinellVerb.None,
+            BrinellVerb.GetCapabilities,
+            BrinellVerb.GetProtocolVersion,
+            BrinellVerb.Ping,
+            BrinellVerb.IsFocused,
+            BrinellVerb.GetText,
+            BrinellVerb.ScrollPosition,
+            BrinellVerb.CurrentRoute,
+            BrinellVerb.GetState,
+            BrinellVerb.IsIdle,
+            BrinellVerb.CurrentAlert,
+        ];
+
+        // App actions: real, but not done to the element carrying the verb.
+        BrinellVerb[] appActions =
+        [
+            BrinellVerb.NavigateBack,
+            BrinellVerb.NavigateTo,
+            BrinellVerb.InvokeMenuItem,
+            BrinellVerb.DismissAlert,
+            BrinellVerb.OpenFlyout,
+            BrinellVerb.CloseFlyout,
+        ];
+
+        // Element actions: done to the element itself. The only kind the audit examines.
+        BrinellVerb[] elementActions =
+        [
+            BrinellVerb.Tap, BrinellVerb.DoubleTap, BrinellVerb.LongPress,
+            BrinellVerb.SwipeLeft, BrinellVerb.SwipeRight, BrinellVerb.SwipeUp,
+            BrinellVerb.SwipeDown, BrinellVerb.Pan, BrinellVerb.Pinch,
+            BrinellVerb.Focus, BrinellVerb.Unfocus,
+            BrinellVerb.SetText, BrinellVerb.AppendText, BrinellVerb.ClearText,
+            BrinellVerb.Submit,
+            BrinellVerb.ScrollTo, BrinellVerb.ScrollToIndex,
+            BrinellVerb.SetDate, BrinellVerb.SetTime,
+            BrinellVerb.SelectIndex, BrinellVerb.SelectByText,
+        ];
+
+        var classified = reads.Concat(appActions).Concat(elementActions).ToHashSet();
+        var missing = Enum.GetValues<BrinellVerb>().Where(verb => !classified.Contains(verb));
+
+        Assert.True(
+            !missing.Any(),
+            "These verbs are in the enum but in none of this test's lists, so nobody has decided "
+            + "what kind they are: " + string.Join(", ", missing) + ". KindOf will call them "
+            + "element actions by default, which puts whatever declares them on the "
+            + "accessibility backlog until someone says otherwise.");
+
+        AssertKind(reads, BrinellVerbKind.Read);
+        AssertKind(appActions, BrinellVerbKind.AppAction);
+        AssertKind(elementActions, BrinellVerbKind.ElementAction);
+    }
+
+    private static void AssertKind(IEnumerable<BrinellVerb> verbs, BrinellVerbKind expected)
+    {
+        foreach (var verb in verbs)
+        {
+            Assert.True(
+                BrinellVerbs.KindOf(verb) == expected,
+                $"{verb} is a {BrinellVerbs.KindOf(verb)}, expected {expected}.");
+        }
+    }
+
     /// <summary>A verb number from a future build reports its range rather than failing.</summary>
     [Fact]
     public void RangeOf_ClassifiesVerbsThisBuildDoesNotKnow()

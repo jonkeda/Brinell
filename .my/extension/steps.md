@@ -87,21 +87,31 @@ stage rather than to develop against.
 | 22 | Navigation verbs | D | 12 | **done** — and closes 33A |
 | 23 | State-read verbs | D | 12 | **done** |
 | 24 | Picker verbs | D | 21 | **done** — and found 39 |
-| 25 | Dialog reads | D | 23 | todo |
-| 26 | Menu and flyout verbs | D | 13 | todo |
-| 27 | Security gating | E | 18 | todo |
-| 28 | Versioning and lifetime tests | E | 18 | todo |
-| 29 | Accessibility audit report | E | 18 | todo |
+| 25 | Dialog reads | D | 23 | **done** — `DismissAlert` deliberately not built |
+| 26 | Menu and flyout verbs | D | 13 | **done** — and found 40 |
+| 27 | Security gating | E | 18 | **done** — the first draft of the test passed for the wrong reason; parked 41 |
+| 28 | Versioning and lifetime tests | E | 18 | **done** — two teardown gaps, three of them in the harness; parked 42 |
+| 29 | Accessibility audit report | E | 18 | **done** — 11 of 33 elements have no route but the pointer |
 | 30 | Documentation and AD-008 | E | 19 | todo |
-| 31 | Stepper: 11 failing before any of this work | G | — | **parked** — 11 of 13 carry a `Skip`; the other 2 pass and stay live |
-| 32 | Shell app: 13 failing before any of this work | G | — | **parked** — all 13 carry a `Skip` |
-| 33 | Navigation stall: a 2 s grace on the wrong question, and two 10 s negative assertions | G | — | **A fixed by step 22**; B still parked |
-| 34 | Actions do not Try: remove `Try` from commands, keep it on searches | G | 33 | **started** — `TryPerformGesture` deleted; the rest parked |
-| 35 | Notice when the framework starts waiting | G | — | **parked** |
-| 36 | `ReturnToHub` intermittently reports the hub never arrived (flaky, 1-4 tests per run, both modes) | G | — | **parked** |
-| 37 | TimePicker reads back 12-hour in background mode (1 test) | G | 20 | **fixed by 20** |
-| 38 | Clipboard canary asserts on a probe its own helper calls inconclusive (1 test) | G | — | **parked** |
-| 39 | Selecting a repeated Picker item freezes MAUI (upstream) | G | 24 | **guarded by 24** — the verb refuses; a person clicking it still hangs the app |
+| 31 | Stepper: 11 failing before any of this work | G | — | **parked** — a peer for `MauiStepper` was built and measured unworkable; see the section |
+| 32 | Shell app: 13 failing before any of this work | G | — | **closed** — the page object scoped under an id nothing carried; the Shell now publishes its id, and the flyout goes through the app's verbs. 15/15 Shell tests, three runs |
+| 33 | Navigation stall: a 2 s grace on the wrong question, and two 10 s negative assertions | G | — | **closed** — A by 22; B by J3 (negative assertions wait 500 ms, not 10 s) |
+| 34 | Actions do not Try: remove `Try` from commands, keep it on searches | G | 33 | **closed by 44** |
+| 35 | Notice when the framework starts waiting | G | — | **closed** — every test timed in-process; a per-class report with a baseline under `TestResults` per AD-007. A report, not a gate |
+| 36 | `ReturnToHub` intermittently reports the hub never arrived (flaky, 1-4 tests per run, both modes) | G | — | **closed by 43** — a detached page answered `NavigationDepth` for a stack it had left |
+| 37 | TimePicker reads back 12-hour in background mode (1 test) | G | 20 | **closed** — fixed by 20; the stale `Pending` trait is gone |
+| 38 | Clipboard canary asserts on a probe its own helper calls inconclusive (1 test) | G | — | **closed** — the canary is inconclusive, not failed, when another process holds the clipboard |
+| 39 | Selecting a repeated Picker item freezes MAUI (upstream) | G | 24 | **closed** — upstream, guarded by 24. Not ours to fix; recorded so nobody re-finds it |
+| 40 | `S_FALSE` does not survive the bridge; three verbs rely on it | G | 26 | **closed by 43** — `BRINELL_E_DECLINED` carries the meaning |
+| 41 | The bridge's run-time gate is measured on the test host, never on the app | G | 27 | **parked** — the gate that matters is measured; this is the other one |
+| 42 | A bridge cached against a closed window is guarded but not measured | G | 28 | **parked** — needs a MAUI window that closes mid-suite |
+| 43 | Outcomes travel as values, not as `S_FALSE` | H | 40 | **done** — closes 40; see [plan-the-quiet-run.md](plan-the-quiet-run.md) |
+| 44 | Actions do not Try: the remaining three | H | 43 | **done** — `TryAppendText`/`TryClearFocus` are now `Supports…` + a command that throws; no `Try` action remains |
+| 45 | `InvokeAnywhere` stops guessing; the seven step-36 skips come back | H | 44 | **done** — the seven step-36 skips are removed; readiness races fixed along the way |
+| 46 | Watch the foreground; make "it never took the machine" a test | I | 45 | **done** — `ForegroundGrabs` and `ForegroundWatchdogTests`: navigating must not take the foreground |
+| 47 | Launch without taking the foreground | I | 46 | **done** — explicit environment, watchdog from launch, and `WS_EX_NOACTIVATE` stops `InvokePattern` raising the window |
+| 48 | Keep the window behind, not just put it behind | I | 46 | **done** — watchdog pushes back any window of the app that becomes foreground; off-screen measured and rejected |
+| 49 | Make the quiet run the default | I | 48 | **done** — the MAUI FlaUI stack declares quiet by default; `BRINELL_BACKGROUND_MODE=0` asks for real input. Full suite with nothing set: 266 passed, 0 failed |
 
 ---
 
@@ -639,6 +649,10 @@ dotnet test testsnew\Brinell.Maui.UITests -v:minimal /nr:false
 
 **Done when** the suite passes at baseline in background mode, and you can type in Visual Studio
 throughout without the cursor moving or focus being taken. Test it by doing exactly that.
+
+> **That last check has never been performed, and a person cannot perform it in CI.** Step 46 in
+> [plan-the-quiet-run.md](plan-the-quiet-run.md) replaces it with a foreground watchdog, which is
+> the only part of this programme's claim still taken on trust.
 
 #### Result — the physical-input claim is proven; the suite is not yet stably green
 
@@ -1197,15 +1211,102 @@ asked* rather than that something was dismissed. `DismissAlert(result)` second, 
 sparingly: if the test is about a user confirming a destructive action, clicking the real button
 is the point.
 
+**Result.** `CurrentAlert` on the app side, `IMauiDriver.CurrentAlert()` returning an
+`AlertContents`, and `ContentDialog.GetTitle()` / `GetButtonTexts()` / `GetMessage()` on the
+control object. Six new tests; the Dialogs area is 9/9 across three consecutive runs.
+
+**Who knows what, measured before deciding.** A probe printed what a WinUI dialog publishes:
+
+```
+root Name='Confirm'
+  [text] Name='Confirm'          <- the title, again
+  [text] Name='Proceed?'         <- the message
+  [button] Name='Yes' Id='PrimaryButton'
+  [button] Name='No'  Id='SecondaryButton'
+  [pane] Id='ContentScrollViewer'
+```
+
+So the title is the dialog's own accessible name and each button carries its text - both read
+straight off the platform, with nothing required of the app. The message is the exception: it
+sits in the content area beside a second copy of the title, so from outside it can only be
+identified as *the text that is not the title*, which is silently wrong for an alert whose
+message and title read alike. **The split follows: the platform publishes who is asking and what
+the choices are; only the question itself needs the app.**
+
+**And the app has to be asked at the call site.** There is no supported way to observe
+`DisplayAlert` from outside it - MAUI signals its own platform layer through `MessagingCenter`,
+which is `internal` in MAUI 10 (checked by compiling against it, not assumed), and reflecting
+into it is the failure mode already ruled out for `Pan` and `Pinch`. So the app raises its alerts
+through `BrinellAlerts`, one line per call site, and that is a real cost: an app that cannot be
+modified keeps the title and the buttons and loses the message.
+
+**A race that only a wide run showed.** The first combined run reported a *prompt* while nothing
+was open. The app clears its record when `DisplayAlert`'s await resumes - a continuation queued
+on the UI thread, and therefore some moments after the dialog has already left the tree - so a
+test that dismissed one and immediately asked was told about the dialog it had just closed. The
+fix is the same boundary again: the client asks the screen whether a dialog is up before it asks
+the app what it says, and each end answers only what it can see. The test now asks with nothing
+in between, so it exercises the window rather than waiting it out.
+
+**`DismissAlert` was not built, and the plan half expected that.** It cannot be answered by the
+app: `DisplayAlert`'s task completes when the platform dialog closes, so the app cannot complete
+it without pressing the button, and pressing the button is what `ContentDialog.DialogButton(text)
+.Click()` already does through the Invoke pattern - no physical input, and the thing a user does.
+A verb would be a second name for it.
+
+**Not changed:** the three existing `ContentDialogTests`. They are about the dismissal routes and
+say so; the question is a separate concern and has its own class.
+
 ### Step 26 — Menu and flyout verbs
 
 Context menus need `RightClick()` — physical and positional. Verbs `OpenFlyout`, `CloseFlyout`,
 `InvokeMenuItem`; `Shell.FlyoutIsPresented` directly, and invoke a `MenuFlyoutItem` by id
 without opening the popup.
 
+**Result.** `InvokeMenuItem` and the two flyout verbs on the app side; `IMauiDriver` gains
+`InvokeMenuItem`, `OpenFlyout`, `CloseFlyout` and `IsFlyoutOpen`. Seven new tests. Across the
+four areas this step touches - Navigation, Shell, Dialogs, Background - 85 passed, 13 skipped
+(step 32's Shell suite), 0 failed.
+
+**The menu items were not hard to reach; they were absent.** `NavigationProbeTests` had already
+measured it and the new tests re-measure it rather than trusting the old reading:
+`PageMenuFileNew` is findable by neither `AutomationId` nor name, because MAUI does not propagate
+`AutomationId` to menu chrome on Windows (dotnet/maui#3996). A context flyout is further out of
+reach again - it does not exist in the tree until someone right-clicks it into being. So the two
+`MenuFlyoutItem`s in the sample had never had handlers: a handler on an unreachable control is
+untestable, and there was no reason to write one.
+
+`IMenuItemController.Activate` is MAUI's own entry point for "the user picked this" - it is what
+each platform handler calls - so the app cannot tell the verb apart from the real thing. Nothing
+opens: an open menu is a different state of the app, and a verb that opened one on the way past
+would leave a test asserting about a screen it never asked for.
+
+**`RightClick` stays physical, and stays.** A test that means "right-clicking shows this menu" is
+a test about the menu and no verb replaces it. What the verb removes is the commoner case behind
+it - reaching an *item*, which took a right-click at one guessed coordinate followed by a click
+at another, with the app holding the foreground throughout. `FlaUIMauiElement.RightClick` had
+been recording itself as a physical-input use with this step named as its replacement; its note
+now names the verb and says which half it does not replace.
+
+**The Shell flyout is one public property.** `FlyoutIsPresented`, against a hamburger button MAUI
+gives no `AutomationId` - so every earlier route to it was a guess about a control the platform
+draws: by name, by control type, or by clicking where it usually is. The two new tests are live
+while the other thirteen Shell tests stay skipped under step 32; they had to skip the fixture's
+own `OpenTab`, whose reset opens the flyout by hunting for a button named "Open Navigation" and
+throws before any test in the class runs. **A lead for step 32, not taken here:** that reset is
+one of the things the verb could now do properly.
+
 ---
 
 # Stage E — Hardening and rollout
+
+> **Steps 27-29 are done. What is left of this document - step 30, and the whole of stage G - is
+> re-ordered by [plan-the-quiet-run.md](plan-the-quiet-run.md), which also adds stages H and I.**
+> That plan states the end this work is for: a MAUI suite driven through FlaUI that never takes
+> the keyboard, the pointer or the foreground, and leaves the app under test behind whatever the
+> person at the machine is using. It carries the measurements this section is missing - the full
+> suite in background mode is 248 passed, 33 skipped, 11 failed, and the eleven are two problems
+> rather than eleven.
 
 ### Step 27 — Security gating
 
@@ -1215,6 +1316,90 @@ additionally checks `BRINELL_UIA_BRIDGE=1` at runtime. **Add a test asserting a 
 exposes no fragment root.** UIA has no per-caller authentication, so absence is the only real
 control.
 
+**Result.** Two gates on one decision, stated once in `BrinellBridgeGate` and read by both ends.
+`UseBrinellGestureBridge()` exists and the sample app calls it; the driver sets the variable on
+the app it launches. Two new tests in `Brinell.Uia.Tests`, 60/60 there. The Windows UI tiers are
+unchanged: 83 passed / 13 skipped / 2 failed across Navigation, Shell, Dialogs and Background,
+the same 98 as step 26, and a clean 57/57 on Background alone. Three combined runs failed three
+*different* pairs - `ScrollTo` + `IsAtNavigationRoot`, then `ImageSource` + `ScrollTo`, then
+`IsAtNavigationRoot` + `Fixture_NavigatesBetweenPages` - each of which passes alone. Step 36's
+signature, and more evidence for the reading step 40 gave it.
+
+**The first draft of the test passed for the wrong reason, which is the finding.** It built the
+host in Release and asserted no fragment root, and it went green - and it went green just as
+happily when the constant was forced back on, because it had also left
+`BRINELL_UIA_BRIDGE` unset and the *run-time* gate was doing the work. A test of the compile-time
+gate that never exercises the compile-time gate is worse than no test: it is a green light over
+the one control that actually holds. The test now asks for the bridge and fails if it gets one,
+so compile-time absence is the only thing left standing between it and a pass. Checked in both
+directions - green with the gate intact, red with the default flipped.
+
+**What is absent, measured on the built assemblies rather than argued:**
+
+| | Debug | Release |
+|---|---|---|
+| `BridgeFragmentRoot`, `BridgeTargetProvider`, `BrinellUiaBridge` | present | absent |
+| `MauiVerbDispatcher`, `MauiCapabilities`, the verb bindings | present | absent |
+| `GestureAutomation` and its attached property | present | present |
+
+**The declaration stays and the machinery goes, and that boundary is forced rather than
+chosen.** Shared XAML names `uia:GestureAutomation.Verbs`, so the type has to exist on every head
+in every configuration or the app stops compiling. What is left is an attached property that
+records a string nothing reads. The same applies to `BrinellAlerts`, which the sample's own pages
+call, and to `IBrinellGestureSink`, which an app implements.
+
+`MauiCapabilities` and the dispatcher are removed even though neither touches UI Automation and
+neither is reachable with the provider gone. A thousand lines whose only purpose is to drive the
+app's own controls from outside have no business in a shipping binary on the grounds that nothing
+calls them today.
+
+**Removed from the build, not wrapped in `#if`.** The plan said `#if`; the csproj does it by
+file, which produces the identical binary and follows the precedent already in this project - the
+`Handlers` folder is excluded the same way, with the reason written next to it: these are files
+people read and copy, and eight of them under preprocessor directives read worse than a list of
+what is in the build. One file carries an `#if`, `BrinellBridgeHost`, because it is the seam
+`GestureAutomation` calls into and it has to survive the gate.
+
+It also makes drift a build error rather than a runtime mystery. `RecordingTarget` and the test
+host's own `Attach` call both failed to compile the first time Release was tried, which is
+exactly the report wanted from a file that quietly stopped being gated.
+
+**The run-time gate is a convenience and is labelled as one.** Anything able to set an
+environment variable on the app could have launched a different build of it, so it protects
+nobody. It earns its test because a gate that never says no looks exactly like a gate that works
+- and because the whole UI suite now depends on it, so a gate broken shut is loud.
+
+**One rule, compiled at both ends.** `BrinellBridgeGate` went into `Brinell.Uia.Contracts`
+rather than into the app-side host, so the bridge's own test host reads the same lines the app
+under test does. The alternative was a lookalike in the test host, which would have let the test
+pass while the app did the opposite - the failure mode the contract project exists to prevent,
+applied to the gate instead of to the wire format.
+
+**Copying the sources does not copy the gate**, and that is written down in the README. The
+constant comes from `Brinell.Uia.Bridge.props`, which the csproj imports; an app that copies
+these files in and imports nothing has no bridge until it defines the constant itself. Silent,
+but in the safe direction, and now findable before rather than after an afternoon of an app that
+publishes nothing.
+
+**The security analysis it gates had gone stale, and is now corrected.** Section 8 of the design
+said "there is no string interpreted as a command" and "no new information is disclosed". Neither
+survived stage D. `InvokeMenuItem` takes an `AutomationId` and activates that item - including
+one in a context flyout nobody opened, which is the one place the bridge reaches *further* than
+the pointer rather than the same distance. `GetState`, `GetText` and `CurrentAlert` return
+application data: control values, field contents, and a dialog's title and message. The ceiling
+is still what the app's own UI offers, and every verb is still one the element declared in its
+own markup, but "no worse than a user with a mouse" is now "no worse than a user with a mouse and
+a few more steps", and reading is a second reason absence is the control rather than a nicety.
+
+Recorded in the design rather than quietly left, because a security section that overstates its
+bounds is worse than one that admits them - it is the paragraph someone will cite instead of
+re-checking.
+
+**What is not covered, parked as step 41.** The run-time gate is measured on the bridge's test
+host, not on the sample app. Proving it there would mean launching a second copy of the app under test while the
+shared fixture holds the first, and the flake that would buy is not worth the ground it covers -
+the compile-time gate is the control, and it is measured on a real build.
+
 ### Step 28 — Versioning and lifetime tests
 
 An unknown verb from a newer client yields `NotSupportedByElement`, never a crash or hang.
@@ -1222,12 +1407,170 @@ An unknown verb from a newer client yields `NotSupportedByElement`, never a cras
 repeatedly, asserting the provider count does not grow — a leaked provider hangs every
 accessibility client on the desktop, not just ours.
 
+**Result.** Three new tests and one revised, 63/63 in `Brinell.Uia.Tests` over six consecutive
+runs with no strays left behind. The Windows UI tiers are unchanged at 83 passed / 13 skipped /
+2 failed, the same 98 as steps 26 and 27, with step 36's wanderers accounting for the two; a
+clean 57/57 on Background alone. Both teardown fixes were checked by disabling them and watching
+the tests go red.
+
+**An unknown verb was answered with the wrong refusal, and the client already said so.** The
+vocabulary is append-only - numbers are never renumbered or reused - so a provider that meets a
+number above the ones it knows is meeting a client built against a later contract. That is
+`UIA_E_NOTSUPPORTED`: this element will never do that, take another route.
+`BrinellUiaClient.Describe` had been promising exactly that reading since step 5 - "the app was
+built against a contract that predates this verb" - while the provider returned `E_INVALIDARG`,
+which the same table reads as "the client and the app disagree about the contract" and sends the
+reader hunting a wire fault that is not there. Zero and negatives stay `E_INVALIDARG`, because no
+later contract can define them; that is a caller bug and worth naming as one.
+
+Refused by arithmetic, before the liveness check, before the capability lookup, and above all
+before any hop onto the app's UI thread. That is what makes "never a hang" structural rather than
+hoped for: a newer client cannot make an older app block on a request it cannot even name.
+
+### The teardown was half-built, and the half that was there was unverified
+
+**`UiaDisconnectProvider` ran only on `Dispose`.** Destroying a parent destroys its children, so
+an app window closing takes the bridge window with it - and the framework event a host hangs its
+teardown off is not guaranteed to arrive first, or at all. On that path nothing was disconnected
+and the registry kept a strong reference keyed on a handle Windows is free to reissue, so a later
+unrelated window would have been answered by a dead bridge. `WM_DESTROY` is the one notification
+that arrives however the window died, and the teardown now runs from there as well. It is
+reentrant on purpose: the disposing path calls `DestroyWindow`, which sends `WM_DESTROY`
+synchronously, which lands back in the same method.
+
+**And the HRESULT was thrown away.** The call site said "the disconnect is not optional" while
+discarding the answer, so a disconnect that quietly failed looked exactly like one that worked -
+which is the leak, arriving with a clean bill of health. `DisconnectFailures` counts them and the
+tests assert zero. That count is what caught the next thing.
+
+**The same gap on the app side.** `BrinellBridgeHost` caches one bridge per window handle and only
+removed it on MAUI's `Destroying`. A stale entry would be handed back for a reissued handle, and
+`Register` on a disposed bridge throws - reaching the app as "could not publish", naming neither
+the window nor the reason. It now checks the cached bridge still has a window. Reasoned, not
+measured, and parked as step 42: closing the app's window mid-suite is not something the MAUI
+tier can do to itself.
+
+### The soak found nothing, and the harness found three things
+
+The 25-cycle soak passes and always would have: `Dispose` was the one path that was already
+right. What the work around it turned up:
+
+**The harness manufactured the leak it was there to detect.** Driving teardown with
+`SendMessage` from the test process made every disconnect fail with
+`RPC_E_CANTCALLOUT_ININPUTSYNCCALL` - a cross-process `SendMessage` is an input-synchronous call,
+and COM refuses an outgoing call while one is being dispatched;
+`UiaDisconnectProvider` has to call out to the client to revoke its interface. Teardown reported
+success, every provider stayed connected, and a held pattern went on answering verbs at full
+speed. Commands are posted now, which is also the faithful arrangement - a real window closes
+from its own message loop - and only queries are sent. **With that fixed the design's claim holds
+as written**: `0` disconnect failures, and a stale call returns `0x8000FFFF` in 1 ms rather than
+blocking.
+
+**A stray host process hangs the run that started it.** A child inherits stdout, and a test run
+that is itself killed never reaches its cleanup, so the pipe stays open and the shell waits ten
+minutes on a handle nobody will write to - which looks like a hung suite and is not one. Three
+guards: the host's output is redirected, `MSBUILDDISABLENODEREUSE` stops step 27's in-test build
+leaving MSBuild worker nodes on the same pipe, and the host now exits on its own after five
+minutes. Then one host per run still leaked, because disposing the automation session came before
+killing the process and can throw when the window it was attached to has gone. Kill first, guard
+everything. Zero strays over four runs.
+
+**A window is not addressable the instant it exists.** `UIA3Automation.FromHandle` throws
+`Win32Exception: Unexpected HRESULT` for a handle it cannot resolve yet - not a null, so there is
+nothing to test for. Latent while a run had one host; with three it failed about one run in
+three, in a constructor, taking a whole class down at once and reading as a broken bridge rather
+than a young window. `BridgeClient.AttachToWindow` retries.
+
+**Worth stating plainly:** none of the three was a defect in the bridge, and all three would have
+been charged to it. Two of the four combinations of "is this ours" and "is this real" are traps,
+and this step spent most of its time in them.
+
 ### Step 29 — Accessibility audit report
 
 Enumerate every element declaring verbs that exposes neither a keyboard route nor
 `InvokePattern`; write it to `TestResults/<run-id>/suites/<suite>/` per `AD-007`. This is what
 makes the programme an accessibility improvement rather than a way to test around a defect —
 the list is a backlog.
+
+**Result.** `AccessibilityAudit` in `Brinell.Maui.FlaUI`, reached through
+`FlaUIMauiDriver.AuditGestureAccessibility()`, writing Markdown to
+`TestResults/<run-id>/suites/<suite>/attachments/accessibility-audit.md` per `AD-007`. Two UI
+tests and one contract test; `Brinell.Uia.Tests` 64/64. The Background tier is noisy this
+session - 2, 2 and 4 failures across three runs with the audit and 2 and 4 without it, all of
+them step 36's usual names - so the audit's eleven extra navigations are not the cause, and its
+own two tests passed every run.
+
+**The report, against the sample app: 33 instrumented elements, 11 with no route but the
+pointer.**
+
+| Verdict | Count | Which |
+|---|---|---|
+| Not in the accessibility tree | 2 | `TestSwipeView`, `TestRefreshView` |
+| Pointer only | 9 | the five `Gesture*Target` borders, `ProbeGestureBridge`, `ProductCollectionView`, `ScrollTestScroller`, `TestTimePicker` |
+| Reachable another way | 8 | the entries, the editor, the search bar, the three pickers, `TestDatePicker` |
+| An address, not an affordance | 10 | every instrumented page |
+| Read-only | 4 | the images, the progress bar, the hub |
+
+The first row is the sharper finding and it is the same fact that made this whole programme
+necessary: those two controls are not merely keyboard-unreachable, they are absent from the tree
+that assistive technology walks, which is why the bridge had to reach them by a route of its own.
+
+**And one surprise.** `TestDatePicker` is keyboard focusable and carries `InvokePattern`;
+`TestTimePicker`, three lines away in the same markup with the same shape of declaration, has
+neither. That is not a choice the sample app made, and it is exactly the kind of thing this
+report exists to surface - nobody would have gone looking.
+
+### The classification is the whole design, and the first version of it was wrong
+
+**Two kinds of verb turned out to be three.** The audit's question is "can a person reach this
+element's function without a pointer", and that only means something when the element is what is
+being acted on. Reads were the obvious exclusion - the sample declares `GetState` on labels and
+images, and calling those accessibility defects would be noise. The one I missed is the *app*
+action: a page declares `NavigateBack` and `InvokeMenuItem` because a page is somewhere to post
+the request, not because a page is what anybody presses.
+
+The first run reported it: **eight of fifteen findings were pages with no keyboard route.** True,
+meaningless, and more than half the list. A backlog that is mostly noise is one nobody reads, so
+the fix went into the vocabulary - `BrinellVerbKind` is `Read`, `ElementAction` or `AppAction` -
+rather than into a filter in the audit, because it is a fact about the verbs rather than about
+this report.
+
+`OpenFlyout` and `CloseFlyout` are genuinely ambiguous and are called app-level. On a `Picker`
+the subject is the picker; on a `Shell` it is the app's chrome, and asking whether a keyboard can
+focus a `Shell` answers nothing. App-level gets both right in practice - a picker is audited
+through the selection verbs it also declares, a shell drops out - and the cost is that an element
+declaring nothing but a flyout verb escapes the audit.
+
+**Every verb is pinned by name in `ContractTests`.** `KindOf` falls through to `ElementAction`, so
+a fall-through test could never fail; the checklist compares the whole enum against three lists
+written out by hand, so adding a verb without deciding what it is breaks a test rather than
+quietly changing an accessibility report. The default is the loud one: an unclassified verb puts
+its element on the backlog rather than dropping it silently out.
+
+**The audit asks the control view, not the raw view.** The bridge lives in the raw view where no
+screen reader will ever see it; the question is what assistive technology can reach, so the
+lookup is an ordinary `FindFirstDescendant`. An element only a raw walk can find is, for this
+purpose, not there - which is the `Unreachable` verdict rather than a gap in the audit.
+
+### Two things the walk taught
+
+**Publication is asynchronous and opening a page does not wait for it.** The first walk audited
+the Gestures page - six declarations, the most in the app - and found nothing at all, while the
+quicker pages after it looked fine. A silently short audit is the worst failure this report can
+have, because a missing element reads as an element with nothing wrong. The walk now waits for
+the finding count to stop moving rather than for the first finding, which is the difference
+between catching a whole page and catching half of one.
+
+**The backlog is not asserted empty and never will be.** The sample app contains gesture-only
+controls on purpose - they are what the bridge exists to reach. A test asserting emptiness would
+fail forever and teach everyone to ignore it. What is asserted instead is that the audit still
+tells its five cases apart, each pinned to a named element, so a classifier that answered the
+same thing everywhere would fail even though its report still looked plausible.
+
+**Coverage is the pages the walk visits**, because elements publish on load and withdraw on
+unload. The list is written out in the test; a declaration added to a page not on it narrows the
+audit silently. The report names the page each element was seen on, so a reader who notices a
+page missing knows what to add.
 
 ### Step 30 — Documentation and AD-008
 
@@ -1241,6 +1584,11 @@ tier table; link new pages from `docs/README.md`; note the contract-copying requ
 ---
 
 # Stage G — Known, diagnosed, parked
+
+> **Ordering now comes from [plan-the-quiet-run.md](plan-the-quiet-run.md).** Steps 34, 36 and 40
+> turned out to be one causal chain rather than three items, and are stage H there. The rest are
+> stage J, which blocks nothing. The accounts below stay here; they are what a reader needs
+> before picking one up.
 
 Where something real is understood and deliberately not being fixed yet. Two kinds live here:
 tests that were already failing before this programme started (steps 31-32), and defects or
@@ -1282,6 +1630,23 @@ on Windows. Run it against the Range page and find out whether the Stepper publi
 `AutomationId` at all — if it does not, this belongs with `SwipeView` and `RefreshView` as a
 control the bridge reaches rather than the tree does.
 
+**Tried in stage J, and ruled out - do not repeat it.** MAUI draws a Stepper as `MauiStepper`, a
+plain `Control` with no automation peer: that is why `TestStepper` never resolves while its buttons
+do. The obvious fix is a handler returning a subclass that overrides `OnCreateAutomationPeer`, the
+way the layout handlers work. Measured, it cannot work:
+
+- The subclass renders **empty** - zero bounds, no plus or minus button. `MauiStepper`'s template
+  is an implicit style keyed on its exact type, and a subclass does not match it.
+- Assigning that style explicitly **crashes the app**: *"Cannot apply a Style with TargetType
+  'Microsoft.Maui.Platform.MauiStepper' to an object of type 'Microsoft.UI.Xaml.Controls.Control'."*
+  WinUI's type system sees a C# subclass of a C# control only as its nearest native type.
+
+So the peer cannot be added from outside, and it was reverted in full. **Where to start instead:**
+leave the platform control alone and resolve from the side that is addressable - the control object
+finding `…Plus` and `…Minus` (MAUI names the template buttons after the Stepper's id), and reading
+the value through a bridge `GetState("Value")` declared on the Stepper. Both avoid touching WinUI's
+styling at all.
+
 ### Step 32 — Shell app: 13 tests
 
 `testsnew/Brinell.Maui.UITests/Tests/Shell/`
@@ -1303,7 +1668,27 @@ Step 16 added a fourteenth that is *not* skipped - `ShellCollectionParallelismTe
 asks nothing of the app's contents, only that it launched. So the Shell app does start, and a
 driver does attach to it: whatever is wrong here is above that line.
 
-**Where to start:** the Shell app is not instrumented with the automation bridge — it references
+#### Result — closed in stage J
+
+**All thirteen failed before their bodies ran, for one reason.** *"Page 'ShellSamplePage' is not
+loaded, so 'Name:Open Navigation' cannot be found in it."* `ShellSamplePage` scoped every lookup
+under a root with that `AutomationId`, and measured, no element in the Shell app carried it - nor
+`AppShell`, though the Shell sets that id in code. MAUI does not copy a Shell's `AutomationId` to
+the WinUI view that draws it. The tab strip, the flyout and every page were findable from the window,
+and none from the root the page object asked for.
+
+- **The Shell app copies its id onto its platform view** (`AppShell.PublishAutomationIdToThePlatformView`)
+  and the page object's root is `AppShell`. The view already has a peer; only the id was missing, so
+  nothing is replaced - the move that collapses trees.
+- **That left two**, both dismissing the flyout by tapping a light-dismiss layer that does not support
+  Invoke. `IMauiDriver.SupportsFlyoutVerbs` is now a question the Shell control object asks, and where
+  the app declares the verbs it opens, closes and reads the flyout through them - step 26's lead, taken.
+- **Also found on the way:** the Shell app never called `UseBrinellGestureBridge()` after step 27, so
+  it had published nothing at all.
+
+15 of 15 Shell tests, three consecutive runs, the 13 skips removed.
+
+**Where it had started:** the Shell app is not instrumented with the automation bridge — it references
 `Brinell.Maui.AppSupport` but declares no verbs, so it never creates one. Several of these are
 about chrome the app did not draw (a flyout, a tab strip), which is exactly the category the
 bridge exists for. Check whether the failures are addressability or behaviour before assuming
@@ -1391,6 +1776,22 @@ before it is worth a fix.
 a threshold that fails a run, or simply a documented habit — is a real decision and a small one,
 and it should not be made in passing while chasing something else.
 
+#### Result — closed in stage J: a report, not a gate
+
+`TestTimingAttribute`, applied to the whole assembly, times every test with nothing added to any test.
+As the run goes it appends `test-timings.csv`; at the end it writes `test-timings.md` to
+`TestResults/<run-id>/suites/<suite>/attachments/` per `AD-007` - every class with its count, total,
+mean and slowest test, set against `timing-baseline.json`, with classes more than twice their baseline
+mean *and* at least 250 ms slower per test listed first and marked. It also writes
+`test-timings-baseline-candidate.json`; refreshing the baseline is copying a good run's candidate over
+the checked-in file.
+
+**Not a gate, deliberately.** A threshold that fails a run fails it on a slower machine, a busy agent,
+or a first run paying for JIT, and a gate that trips for reasons unrelated to the change teaches
+everyone to ignore it. Step 33 needed the slowdown to be *visible*; a marked row at the top of a report
+is. `TestTimingReportTests` replays step 33's regression - a class that went from 550 ms to 2.5 s per
+test is flagged - and checks a 40 ms test that doubles is not.
+
 ### Step 36 — `ReturnToHub` intermittently reports the hub never arrived
 
 In a full run, **one to four tests fail** with the same message:
@@ -1410,6 +1811,12 @@ the **default** configuration, not under background mode. Every area passes on i
 
 So it lands on whichever test navigates next. An earlier attempt to park three named tests was
 removed: naming arbitrary victims makes a moving fault look like a fixed one.
+
+**Seven named skips have since been added back, and they should come out.** Measured while
+planning stage H: `ButtonTests`, `ImageButtonTests` (two), `ScrollTests` (two) and `PickerTests`
+(two) all carry `Skip = "Stage G step 36..."`. In the same run the fault took down **nine other
+tests anyway** - which is this paragraph, demonstrated. They make the suite look healthier than it
+is, they protect nothing, and step 45 removes them as part of proving the fix.
 
 #### What is actually failing
 
@@ -1545,6 +1952,109 @@ refusal is exercised rather than believed in.
 **Still live for a person.** Clicking the second `Repeat` in that picker freezes the sample app,
 because it is the same code path. Worth an upstream report; not worth working around further
 here.
+
+### Step 40 — `S_FALSE` does not survive the bridge
+
+Found by a test that would not go red. The app answered "I found the menu item and did nothing"
+and the client read plain success.
+
+```
+app     Exchange InvokeMenuItem('ContextMenuDelete') -> 0x00000001   (S_FALSE)
+client  delivered=True hr=0x00000000                                 (S_OK)
+```
+
+Confirmed on the other method too, with a verb that has nothing to do with menus:
+
+```
+app     Invoke ScrollToIndex(60,0) -> 0x00000001
+client  delivered=True hr=0x00000000
+```
+
+**Not our bug, and worth having ruled that out.** Both ends pass the value through faithfully -
+the provider returns the dispatcher's HRESULT, the client returns what `CallMethod` gave it, and
+both interfaces are `[PreserveSig]`. UI Automation's own marshalling of a custom pattern reports
+every *success* HRESULT to the client as `S_OK`. Failure HRESULTs cross intact, which is why
+`UIA_E_NOTSUPPORTED` and `UIA_E_ELEMENTNOTAVAILABLE` have been working all along and nobody
+noticed the other half was gone.
+
+**What it invalidates.** `S_FALSE` was chosen in several places to mean "succeeded, and
+truthfully did nothing", and that distinction has never reached a caller:
+
+| Verb | What `S_FALSE` meant | Harmed? |
+|---|---|---|
+| `SetDate`, `SetTime` | the picker clamped | no - the client compares the value that came back |
+| `SetText`, `AppendText` | the field altered the text | no - same |
+| `SelectByText` | the picker declined | no - same |
+| `SelectIndex` | a binding declined the index | **yes** - reported as success |
+| `ScrollToIndex` | index past the end | no - the interface documents this as "nothing moves and nothing throws", which is what happens |
+| `RefreshView` swipe | already refreshing | **yes** - a test can assert a refresh it did not cause |
+| `NavigateBack` | nothing to pop | **yes** - see below |
+| `OpenFlyout`, `CloseFlyout` | already in that state | no - the caller asked for a state |
+
+The pattern in the "no" column is worth naming: **every verb that reads back what landed is
+unharmed, and every verb that relies on the HRESULT alone is not.** That is an argument for the
+read-back shape rather than for a wire fix.
+
+**And a lead on step 36.** `InvokeAnywhere` walks past a declining target on purpose, because a
+page that was popped long ago answers `S_FALSE` to `NavigateBack` - agrees, pops nothing. Since
+`S_FALSE` arrives as `S_OK`, that walk now *stops* at the stale page and reports success, and the
+caller waits for a hub that was never coming. That is exactly the shape of "Could not get back to
+the hub / already at the navigation root", the flake that has been parked as step 36 and blamed
+on timing. It fits the evidence better than timing does: the failure is order-dependent, it needs
+a previously-visited page to exist, and it wanders because which stale target is walked first
+does.
+
+**Not fixed here.** Step 36 is parked and the fix is not a one-liner: the outcomes that matter
+have to travel as values or as failure HRESULTs, verb by verb, and `InvokeAnywhere`'s walk needs
+rethinking once they do. `InvokeMenuItem` is written that way already - its outcome is in the
+payload, which is why the disabled entry is now refused - and it is the pattern the rest should
+follow.
+
+### Step 41 - The run-time gate is measured on the test host, not on the app
+
+Step 27 put two gates on the bridge. The compile-time one is measured on a real build:
+`BridgeGatingTests` builds the bridge's host in Release, launches it *asking* for the bridge, and
+fails if a fragment root appears. The run-time one - `UseBrinellGestureBridge()` plus
+`BRINELL_UIA_BRIDGE=1` - is measured on that same host, which reads the decision from the same
+lines the app does (`BrinellBridgeGate`, in the contract, compiled at both ends). So the *rule*
+is measured on the real implementation; what is not measured is the app under test obeying it.
+
+**Why it was left.** Proving it on the sample app means launching a second copy while the shared
+fixture holds the first, and the flake that buys is not worth the ground it covers. The gate that
+actually controls anything is the compile-time one - the run-time half protects nobody, because
+anything able to set an environment variable on the app could have launched a different build of
+it.
+
+**What partly covers it anyway.** Every Windows UI test depends on the run-time gate being read:
+the driver sets the variable, and a gate broken *shut* fails the whole suite at once. The
+uncovered direction is a gate broken *open* - an app that instruments itself whether or not it
+was asked.
+
+**Where to start:** step 29 walks the app's published elements to write its audit. If that walk
+can be run against an app launched without the variable, "nothing was published" is the same
+assertion for free.
+
+### Step 42 - A bridge cached against a closed window is guarded but not measured
+
+`BrinellBridgeHost` keeps one bridge per window handle and removed it only when MAUI's
+`Destroying` fired. Step 28 found the matching gap in the provider - a window can be destroyed
+without anyone disposing the bridge - and fixed both: the provider tears down on `WM_DESTROY`,
+and the app-side cache now checks the bridge it is about to hand back still has a window.
+
+The provider half is measured, both directions. The app-side half is reasoned only.
+
+**Why it was left.** The failing case needs a MAUI window that closes while the suite keeps
+running, and closing the app under test mid-suite is not something the MAUI tier can do to
+itself - the fixture owns that window and every later test needs it.
+
+**What it would look like if it were wrong:** a stale entry handed back for a handle Windows had
+reissued, `Register` throwing `ObjectDisposedException` into `Publish`'s catch-all, and the app
+reporting "could not publish" without naming the window or the reason. Rare, and it would read as
+one of step 36's wanderers.
+
+**Where to start:** a second MAUI window rather than a second app. If the sample can open and
+close a secondary window on demand, the bridge for it is created and destroyed inside one test
+and the shared fixture never loses its own.
 
 ## Taking one out of Stage G
 

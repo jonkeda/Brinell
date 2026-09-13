@@ -68,6 +68,84 @@ internal static class BridgeClient
         return null;
     }
 
+    /// <summary>
+    /// Finds a direct child by <c>AutomationId</c>, using the given view.
+    /// </summary>
+    /// <remarks>
+    /// Children only, not descendants: the bridge is deliberately one level deep, so a
+    /// recursive search here would only be able to find something that should not exist.
+    /// </remarks>
+    /// <param name="walker">The view to walk.</param>
+    /// <param name="parent">The element whose children to search.</param>
+    /// <param name="automationId">The id to match, already in bridge form.</param>
+    /// <returns>The match, or null.</returns>
+    internal static AutomationElement? FindByAutomationId(
+        ITreeWalker walker, AutomationElement parent, string automationId)
+    {
+        var child = walker.GetFirstChild(parent);
+
+        while (child is not null)
+        {
+            if (string.Equals(
+                    child.Properties.AutomationId.ValueOrDefault,
+                    automationId,
+                    StringComparison.Ordinal))
+            {
+                return child;
+            }
+
+            child = walker.GetNextSibling(child);
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Attaches to a window that has only just been created, waiting for it to become one UI
+    /// Automation will resolve.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>A freshly created window is not immediately addressable, and the failure is not a
+    /// null.</b> <c>UIA3Automation.FromHandle</c> throws
+    /// <c>Win32Exception: "Unexpected HRESULT has been returned from a call to a COM
+    /// component"</c> for a handle it cannot resolve yet, so there is nothing to test for and
+    /// nothing that reads as "not ready".
+    /// </para>
+    /// <para>
+    /// <b>Latent until step 28 put three hosts in a run.</b> With one host per run it never
+    /// showed; with three it failed roughly one run in three, and it failed in the constructor,
+    /// so it took a whole class down at once and looked like the bridge being broken rather than
+    /// a window being young.
+    /// </para>
+    /// </remarks>
+    /// <param name="automation">The client session.</param>
+    /// <param name="hwnd">The window to attach to.</param>
+    /// <param name="timeoutMs">How long to keep trying.</param>
+    /// <returns>The window as an automation element.</returns>
+    internal static AutomationElement AttachToWindow(
+        UIA3Automation automation, IntPtr hwnd, int timeoutMs = 10_000)
+    {
+        var elapsed = System.Diagnostics.Stopwatch.StartNew();
+        Exception? last = null;
+
+        while (elapsed.ElapsedMilliseconds < timeoutMs)
+        {
+            try
+            {
+                return automation.FromHandle(hwnd);
+            }
+            catch (Exception ex)
+            {
+                last = ex;
+                Thread.Sleep(20);
+            }
+        }
+
+        throw new InvalidOperationException(
+            $"UI Automation would not resolve window 0x{hwnd:X} within {timeoutMs} ms.", last);
+    }
+
     /// <summary>Reads a class name without letting a vanished element fail the walk.</summary>
     internal static string SafeClassName(AutomationElement element)
     {

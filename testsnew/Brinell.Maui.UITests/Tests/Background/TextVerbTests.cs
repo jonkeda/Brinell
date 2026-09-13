@@ -144,6 +144,25 @@ public class TextVerbTests
         {
             WriteClipboard(sentinel);
 
+            // Stage G step 38. The helpers swallow a locked clipboard on purpose - any process on
+            // the desktop can hold it - and an unwritable clipboard makes this canary
+            // inconclusive, not failed. Asserting on the read-back without checking the write
+            // landed reported exactly that inconclusive probe as a framework regression.
+            if (ReadClipboard() != sentinel)
+            {
+                _output.WriteLine(
+                    "The clipboard would not take the sentinel - another process holds it - so "
+                    + "there is nothing to canary. The paste itself is still checked below.");
+
+                using (PhysicalInput.OverridePolicy(PhysicalInputPolicy.Refused))
+                {
+                    element.SendKeys("pasted without a clipboard", TextInputMethod.Paste);
+                }
+
+                Assert.Equal("pasted without a clipboard", page.TestEntry.GetText());
+                return Task.CompletedTask;
+            }
+
             using (PhysicalInput.OverridePolicy(PhysicalInputPolicy.Refused))
             {
                 element.SendKeys("pasted without a clipboard", TextInputMethod.Paste);

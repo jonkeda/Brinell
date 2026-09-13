@@ -15,6 +15,17 @@ internal static class HostNative
     internal const uint WM_DESTROY = 0x0002;
     internal const uint WM_CLOSE = 0x0010;
 
+    /// <summary>
+    /// The first message number Windows reserves for an application's own use.
+    /// </summary>
+    /// <remarks>
+    /// The host's lifetime commands are numbered from here. A window message rather than a file
+    /// or a pipe because <c>SendMessage</c> runs the command on the thread that owns the window
+    /// and does not return until it has finished - which is what a test asserting "and then the
+    /// count was zero" needs, and what a posted command could not give it.
+    /// </remarks>
+    internal const uint WM_APP = 0x8000;
+
     internal delegate IntPtr WndProc(IntPtr hwnd, uint message, IntPtr wParam, IntPtr lParam);
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
@@ -94,6 +105,10 @@ internal static class HostNative
 
     [DllImport("user32.dll", SetLastError = true)]
     internal static extern IntPtr LoadCursor(IntPtr instance, IntPtr cursorName);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool DestroyWindow(IntPtr hwnd);
 
     internal static readonly IntPtr IDC_ARROW = 32512;
 }

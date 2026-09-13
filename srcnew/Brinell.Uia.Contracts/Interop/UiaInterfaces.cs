@@ -216,6 +216,14 @@ internal static class UiaNativeMethods
     /// means a leaked provider hangs every accessibility client on the desktop, not just the
     /// test run.
     /// </remarks>
+    /// <remarks>
+    /// <b>It calls out to the client, so it cannot run inside an input-synchronous call.</b>
+    /// While a window procedure is dispatching a <c>SendMessage</c> sent from another process,
+    /// COM refuses outgoing calls and this returns <c>RPC_E_CANTCALLOUT_ININPUTSYNCCALL</c>
+    /// (0x8001010D) - having disconnected nothing. Measured at step 28, where a test harness
+    /// drove teardown that way and spent an afternoon looking at a leak it had created itself.
+    /// Read the HRESULT.
+    /// </remarks>
     [DllImport(UiaCore, ExactSpelling = true)]
     internal static extern int UiaDisconnectProvider(IRawElementProviderSimple provider);
 

@@ -1411,6 +1411,12 @@ never renumbered or reused. `ProtocolVersion` increments. A new client against a
 provider reads `SupportedGestures`, sees the bit unset, and reports `NotSupportedByElement` —
 a clean, actionable failure. An old client against a new provider is unaffected.
 
+*Step 28 made the provider agree when the client skips that check. A verb number it has never
+heard of is `UIA_E_NOTSUPPORTED`, not `E_INVALIDARG`: append-only numbering means an undefined
+positive number can only have come from a later contract. Zero and negatives stay
+`E_INVALIDARG`, which no later contract can rescue. Refused before any hop onto the app's UI
+thread, so a newer client cannot make an older app block.*
+
 **MAUI itself.** Every public MAUI API the dispatcher calls is listed in
 `MauiCapabilities.cs`. A MAUI upgrade that changes one is a compile error there. The
 internal APIs (`SendTapped`, `SendPinch`, `SendPan`) are never touched, so a MAUI servicing
@@ -1428,21 +1434,38 @@ treated as one.
 higher integrity level on the same desktop session can enumerate the tree, find the fragment
 child, and invoke the pattern. The bridge is therefore off by default and gated twice:
 
-1. **Compile time.** The provider lives inside `#if BRINELL_UIA_BRIDGE`, defined only in the
-   test-instrumented build configuration. A shipping build contains no bridge code at all —
-   not disabled code, absent code.
+1. **Compile time.** The provider is in the build only when `BRINELL_UIA_BRIDGE` is defined —
+   on in `Debug`, off otherwise. A shipping build contains no bridge code at all — not disabled
+   code, absent code. *Step 27 built this by removing the files in the csproj rather than
+   wrapping them in `#if`; the binary is the same and the sources stay readable. One seam file,
+   `BrinellBridgeHost`, carries the directive.*
 2. **Run time.** `UseBrinellGestureBridge()` is a no-op unless the harness sets
    `BRINELL_UIA_BRIDGE=1`. One build can then serve both purposes during development without
    the setting leaking into a release.
 
-**The blast radius is bounded by design.** The pattern's vocabulary is a closed enum of
-gestures. There is no string interpreted as a command, no reflection driven by client input,
-no route from the wire to arbitrary app code. The worst a hostile caller can do is what a
-user with a mouse could already do — invoke a gesture the UI already offers.
+**The blast radius is bounded, but less tightly than when this was written.** *Revised at step
+27; the original claim was "there is no string interpreted as a command" and it stopped being
+true at step 22.*
 
-**No new information is disclosed.** The only data flowing out is the target's `AutomationId`
-and the supported-gesture mask. `AutomationId` is already public in the UIA tree; the mask
-describes the UI, not its contents.
+The vocabulary is still a closed enum and there is still no reflection driven by client input
+and no route from the wire to arbitrary app code. What changed is that verbs now carry string
+arguments, and two of them use a string to choose what happens:
+
+- `InvokeMenuItem` takes an `AutomationId` and activates that menu item — including one in a
+  context flyout that has never been opened, which a user with a mouse could only reach by
+  opening it first. It refuses a disabled item, which is the one place the bridge is *narrower*
+  than the pointer.
+- `GetState` takes a key naming which piece of the element's state to read back.
+
+Both are bounded by what the element declared: an element publishes the verbs named in its
+markup and nothing else, and neither string reaches anything the app did not already put on
+screen. The ceiling is still "what the app's own UI offers", but it is no longer "what is
+reachable from the current screen".
+
+**Information does flow out, which the original text denied.** `GetState` returns control
+values, `GetText` returns the contents of a field, and `CurrentAlert` returns a dialog's title
+and message. That is application data, not tree metadata, and it is a second reason absence is
+the control: a caller that can reach the pattern can read what the app is showing.
 
 **Integrity levels still apply.** A medium-IL test process cannot drive a high-IL app —
 standard UIA behaviour, and the reason a bridge cannot be used to escalate.
@@ -1450,6 +1473,14 @@ standard UIA behaviour, and the reason a bridge cannot be used to escalate.
 **Teardown matters.** `UiaDisconnectProvider` before destroying the HWND. UIA caches provider
 pointers, and a client holding a stale one hangs rather than erroring — a leaked provider is a
 denial of service against every accessibility client on the desktop, not just ours.
+
+*Measured at step 28, and it holds as written: with the disconnect done, a call through a
+destroyed bridge returns in 1 ms; with it skipped, the client's pattern goes on answering verbs
+at full speed against a window that no longer exists. Two things learned. The disconnect must
+also run on `WM_DESTROY`, because a parent closing destroys the bridge window without anyone
+calling `Dispose`. And it cannot run inside a cross-process `SendMessage`: that is an
+input-synchronous call, the disconnect has to call out to the client, and COM refuses with
+`RPC_E_CANTCALLOUT_ININPUTSYNCCALL` — silently, unless the HRESULT is read.*
 
 ---
 
@@ -1469,6 +1500,18 @@ So the plan includes an audit output, not just a feature: the bridge can enumera
 element that declares gestures and report which of them expose no keyboard route and no
 `InvokePattern`. That list is an accessibility backlog. Making an element gesture-testable
 should be the moment someone asks whether it is gesture-*only*.
+
+*Built at step 29 and run against the sample app: 33 instrumented elements, 11 with no route but
+the pointer. Two of them — `TestSwipeView` and `TestRefreshView` — are not in the accessibility
+tree at all, which is worse than keyboard-unreachable and is the same fact that made the bridge
+necessary. One is a surprise worth chasing: `TestDatePicker` is focusable and carries
+`InvokePattern` while `TestTimePicker`, three lines away in the same markup, has neither.*
+
+*The audit needed a distinction this section did not anticipate. Verbs come in three kinds, not
+two: reads, things done to the element, and things done to the app through whatever element
+carries them. Without the third, every instrumented page reported as a defect for declaring
+`NavigateBack` — true, meaningless, and eight of the first run's fifteen findings. `BrinellVerbKind`
+now records it, and the audit examines only element actions.*
 
 The design constraint follows: **the bridge must never become the app's primary automation
 surface.** It is for gesture-only affordances, in the same spirit and for the same reason as

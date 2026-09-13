@@ -60,7 +60,7 @@ public class AppRootScopeTests
     /// fixture's fallback loop cannot tell "no button" from "not yet".
     /// </remarks>
     [Trait(PhysicalInputTrait.Name, PhysicalInputTrait.Deliberate)]
-    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [PhysicalInputFact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     public Task BackToHub_IsAbsentAtTheHub()
     {
         _fixture.Open(SamplePage.Buttons);
@@ -83,7 +83,7 @@ public class AppRootScopeTests
     /// behind that, the worst of which is that Invoke reports success and does nothing.
     /// </remarks>
     [Trait(PhysicalInputTrait.Name, PhysicalInputTrait.Deliberate)]
-    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [PhysicalInputFact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     public Task BackToHub_Click_ReturnsToTheHub()
     {
         _fixture.Open(SamplePage.Container);

@@ -210,14 +210,29 @@ public class BridgePatternRoundTripTests
         _output.WriteLine(BrinellVerbFailure.Describe(BrinellVerb.SwipeUp, hr));
     }
 
-    /// <summary>A verb number no build has ever defined is refused the same way.</summary>
+    /// <summary>
+    /// A verb number this build has never defined, and a number no build could.
+    /// </summary>
+    /// <remarks>
+    /// <b>Two different answers, changed at step 28.</b> Both used to be
+    /// <c>E_INVALIDARG</c>. The vocabulary is append-only, so an undefined *positive* number can
+    /// only have come from a client built against a later contract - which is
+    /// <c>UIA_E_NOTSUPPORTED</c>, "this element will never do that", and is what
+    /// <c>BrinellUiaClient.Describe</c> had been promising all along. Zero and negatives are the
+    /// case no later contract can rescue, so they stay a caller bug. The distinction matters to
+    /// whoever reads the failure: one says upgrade the app, the other says fix the call.
+    /// </remarks>
     [Fact]
-    public void UnknownVerbNumber_IsRejected()
+    public void UnknownVerbNumber_IsRefusedAsUnsupported_AndAMalformedOneAsInvalid()
     {
         Assert.True(BridgeClient.TryGetPattern(PrimaryTarget(), out var pattern));
 
-        Assert.Equal(HResults.E_INVALIDARG, pattern!.Invoke(999_999, 0, 0));
+        Assert.Equal(HResults.UIA_E_NOTSUPPORTED, pattern!.Invoke(999_999, 0, 0));
+        Assert.Equal(
+            HResults.UIA_E_NOTSUPPORTED, pattern.Exchange(999_999, "x", out _));
+
         Assert.Equal(HResults.E_INVALIDARG, pattern.Invoke((int)BrinellVerb.None, 0, 0));
+        Assert.Equal(HResults.E_INVALIDARG, pattern.Invoke(-7, 0, 0));
     }
 
     /// <summary>The two targets are independent, not two handles on one thing.</summary>
@@ -250,19 +265,8 @@ public class BridgePatternRoundTripTests
         Assert.True(bridge is not null, "The bridge window is not in the tree.");
 
         var wanted = BrinellUiaIds.TargetAutomationIdFor(automationId);
-        var child = raw.GetFirstChild(bridge!);
 
-        while (child is not null)
-        {
-            if (string.Equals(
-                    child.Properties.AutomationId.ValueOrDefault, wanted, StringComparison.Ordinal))
-            {
-                return child;
-            }
-
-            child = raw.GetNextSibling(child);
-        }
-
-        throw new InvalidOperationException($"No bridge element for '{automationId}'.");
+        return BridgeClient.FindByAutomationId(raw, bridge!, wanted)
+            ?? throw new InvalidOperationException($"No bridge element for '{automationId}'.");
     }
 }

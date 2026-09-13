@@ -18,7 +18,7 @@ public class PhysicalInputRefusedException : Exception
     public PhysicalInputRefusedException(string callSite, string replacement)
         : base($"'{callSite}' needs real mouse, keyboard or clipboard input, which background " +
                $"mode refuses: it is desktop-global and shared with whoever is at the keyboard. " +
-               $"Use {replacement} instead, or clear BRINELL_BACKGROUND_MODE to allow it.")
+               $"Use {replacement} instead, or set BRINELL_BACKGROUND_MODE=0 to allow it - a quiet stack refuses by default.")
     {
         CallSite = callSite;
         Replacement = replacement;

@@ -107,6 +107,12 @@ public static class BrinellVerbFailure
         HResults.S_OK => $"{verb} succeeded.",
         HResults.S_FALSE => $"{verb} succeeded but did nothing.",
 
+        HResults.BRINELL_E_DECLINED =>
+            $"{verb} was understood and refused: the app declined to do it and nothing changed. "
+            + "Not a fault and not a permanent no - the same request in another state may well "
+            + "succeed. Going back with nothing to pop, a disabled command, a binding that "
+            + "refuses a value.",
+
         HResults.UIA_E_NOTSUPPORTED =>
             $"{verb} is not supported by this element. Either the app under test declares no "
             + $"such capability for it, or the app was built against a contract that predates "

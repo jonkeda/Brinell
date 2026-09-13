@@ -36,7 +36,7 @@ namespace Brinell.Maui.Controls.Buttons;
 /// <para>
 /// <b>Prefer a semantic route where the app has one.</b> A click is real pointer input and is
 /// refused in background mode. Where the app under test publishes the Brinell automation bridge,
-/// ask it to navigate instead - <c>IMauiDriver.TryNavigateBack</c> - and keep this for the
+/// ask it to navigate instead - <c>IMauiDriver.NavigateBack</c> - and keep this for the
 /// platforms and apps that have no bridge.
 /// </para>
 /// </remarks>

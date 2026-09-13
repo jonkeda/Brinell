@@ -160,12 +160,13 @@ internal static class VerbBindings
                     {
                         var view = (RefreshView)target;
 
-                        // S_FALSE, not a failure: a refresh already running is a real state of
-                        // the app, and reporting it as success would let a test assert a refresh
-                        // it did not cause.
+                        // A refresh already running is a real state of the app, and reporting it
+                        // as success would let a test assert a refresh it did not cause. That was
+                        // the intent behind S_FALSE here, and S_FALSE never delivered it: the
+                        // client read S_OK and asserted the refresh anyway.
                         if (view.IsRefreshing)
                         {
-                            return HResults.S_FALSE;
+                            return HResults.BRINELL_E_DECLINED;
                         }
 
                         MauiCapabilities.StartRefresh(view);
@@ -234,9 +235,12 @@ internal static class VerbBindings
                 return HResults.UIA_E_ELEMENTNOTAVAILABLE;
             }
 
+            // A command whose CanExecute is false is the same case as a disabled menu item: the
+            // app is refusing to offer the action, and nothing should let a test prove it
+            // happened. S_FALSE said so to nobody.
             if (!live.CanExecute(parameter))
             {
-                return HResults.S_FALSE;
+                return HResults.BRINELL_E_DECLINED;
             }
 
             live.Execute(parameter);

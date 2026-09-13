@@ -188,7 +188,6 @@ public class TimePickerTests
     /// <summary>
     /// Verifies that date and time can be set together and form valid combined DateTime.
     /// </summary>
-    [Trait(PhysicalInputTrait.Name, PhysicalInputTrait.Pending)]  // Stage G step 37
     [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Method", "Combined")]
     public Task TimePicker_CombinedWithDate_WorksTogether()

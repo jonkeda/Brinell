@@ -1,7 +1,9 @@
 using System.Globalization;
 using System.Runtime.InteropServices;
 using Brinell.Uia;
+#if BRINELL_UIA_BRIDGE
 using Brinell.Uia.Provider;
+#endif
 
 namespace Brinell.Uia.TestHost;
 
@@ -19,13 +21,32 @@ namespace Brinell.Uia.TestHost;
 /// so that sibling navigation has something to navigate to, which is the part of the fragment
 /// contract a single child cannot exercise.
 /// </para>
+/// <para>
+/// <b>Built without <c>BRINELL_UIA_BRIDGE</c> it still runs, and shows a window with nothing
+/// on it.</b> That is step 27's negative case and it needs a live process to be worth anything:
+/// a test proving the fragment root is absent has to be able to tell "gated" from "the client
+/// could not see the app at all", and the only way to do that is to find the window and fail to
+/// find the bridge under it.
+/// </para>
 /// </remarks>
 internal static class Program
 {
     private const string WindowClassName = "BrinellUiaTestHostWindow";
 
     private static HostNative.WndProc? _windowProcedure;
+    private static System.Threading.Timer? _deadline;
+#if BRINELL_UIA_BRIDGE
     private static BrinellUiaBridge? _bridge;
+
+    /// <summary>
+    /// How many posted commands have run. The harness waits on this rather than on a reply.
+    /// </summary>
+    /// <remarks>
+    /// Only ever touched on the message-loop thread, so it needs no synchronisation of its own;
+    /// the SendMessage that reads it is dispatched on that same thread.
+    /// </remarks>
+    private static int _commandsHandled;
+#endif
 
     /// <param name="args">
     /// <c>args[0]</c> is the window title, unique per run so concurrent runs cannot find each
@@ -42,15 +63,27 @@ internal static class Program
 
         var hwnd = CreateHostWindow(title);
 
-        _bridge = BrinellUiaBridge.Attach(hwnd);
-        _bridge.Register(new RecordingTarget(HostTargets.Primary));
-        _bridge.Register(new RecordingTarget(HostTargets.Secondary));
+#if BRINELL_UIA_BRIDGE
+        // The same gate the app under test runs, from the same lines - this is why step 27's
+        // tests can claim anything about the app. An app calls it through
+        // UseBrinellGestureBridge(); here there is no builder to hang it off, so it is read
+        // directly, and the decision is identical either way.
+        if (BrinellBridgeGate.IsOpen)
+        {
+            _bridge = AttachBridge(hwnd);
+        }
+#endif
 
+        Console.Out.WriteLine(BrinellBridgeGate.Explain());
         Report(readyFile, hwnd);
+
+        StopEventually();
 
         RunMessageLoop();
 
-        _bridge.Dispose();
+#if BRINELL_UIA_BRIDGE
+        _bridge?.Dispose();
+#endif
         return 0;
     }
 
@@ -109,13 +142,31 @@ internal static class Program
     {
         var registration = BrinellPatternRegistration.Current;
 
-        var report = string.Join(
-            Environment.NewLine,
+        var lines = new List<string>
+        {
             $"HWND={hwnd.ToInt64().ToString(CultureInfo.InvariantCulture)}",
             $"PID={Environment.ProcessId.ToString(CultureInfo.InvariantCulture)}",
             $"PATTERNID={registration.PatternId.ToString(CultureInfo.InvariantCulture)}",
             $"AVAILABLEPROPID={registration.IsPatternAvailablePropertyId.ToString(CultureInfo.InvariantCulture)}",
-            $"BRIDGEHWND={_bridge!.Handle.ToInt64().ToString(CultureInfo.InvariantCulture)}");
+        };
+
+#if BRINELL_UIA_BRIDGE
+        if (_bridge is not null)
+        {
+            lines.Add("BRIDGE=on");
+            lines.Add(
+                $"BRIDGEHWND={_bridge.Handle.ToInt64().ToString(CultureInfo.InvariantCulture)}");
+        }
+        else
+#endif
+        {
+            // No BRIDGEHWND, because there is no bridge window - and reporting a zero would let
+            // a test read "gated" as "the handle was not filled in".
+            lines.Add("BRIDGE=off");
+            lines.Add($"BRIDGEWHY={BrinellBridgeGate.Explain()}");
+        }
+
+        var report = string.Join(Environment.NewLine, lines);
 
         Console.Out.WriteLine(report);
         Console.Out.Flush();
@@ -128,6 +179,54 @@ internal static class Program
             File.WriteAllText(temporary, report);
             File.Move(temporary, readyFile, overwrite: true);
         }
+    }
+
+#if BRINELL_UIA_BRIDGE
+    /// <summary>
+    /// One bridge with the host's two targets on it.
+    /// </summary>
+    /// <remarks>
+    /// Shared between startup and <see cref="HostCommands.CycleBridge"/> so a soak cycle
+    /// rebuilds exactly what it tore down. A cycle that produced a different bridge would make
+    /// "the client can still use it afterwards" a weaker claim than it looks.
+    /// </remarks>
+    private static BrinellUiaBridge AttachBridge(IntPtr hwnd)
+    {
+        var bridge = BrinellUiaBridge.Attach(hwnd);
+        bridge.Register(new RecordingTarget(HostTargets.Primary));
+        bridge.Register(new RecordingTarget(HostTargets.Secondary));
+        return bridge;
+    }
+#endif
+
+    /// <summary>
+    /// Ends the process if nobody has, well after any plausible test has finished.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>A stray host does not just linger, it hangs the run that started it.</b> The harness
+    /// kills its host in <c>Dispose</c>, but a test run that is itself killed never gets there -
+    /// and a surviving child holds the inherited stdout pipe open, so the shell waits on a
+    /// handle nobody is going to write to. That is a ten-minute silence that looks like a hung
+    /// test suite and is not one; it happened while step 28 was being written.
+    /// </para>
+    /// <para>
+    /// <b>Long enough not to be a timeout.</b> Five minutes is far past the slowest thing any
+    /// test here does, so this can never end a run that is still going - it only cleans up after
+    /// one that has already stopped.
+    /// </para>
+    /// </remarks>
+    private static void StopEventually()
+    {
+        var deadline = new System.Threading.Timer(
+            _ => Environment.Exit(0),
+            state: null,
+            dueTime: TimeSpan.FromMinutes(5),
+            period: Timeout.InfiniteTimeSpan);
+
+        // Rooted for the life of the process, because a collected timer never fires.
+        GC.KeepAlive(deadline);
+        _deadline = deadline;
     }
 
     private static void RunMessageLoop()
@@ -146,6 +245,49 @@ internal static class Program
             HostNative.PostQuitMessage(0);
             return IntPtr.Zero;
         }
+
+#if BRINELL_UIA_BRIDGE
+        // Step 28's lifetime commands. On this thread because it owns the window, and
+        // synchronously because the caller is about to measure the result - see HostCommands.
+        switch (message)
+        {
+            // Queries. Safe to answer inside a cross-process SendMessage, because none of them
+            // calls out of the process.
+            case HostCommands.CountBridges:
+                return BrinellUiaBridge.ActiveCount;
+
+            case HostCommands.CountDisconnectFailures:
+                return BrinellUiaBridge.DisconnectFailures;
+
+            case HostCommands.LastDisconnectHResult:
+                return BrinellUiaBridge.LastDisconnectHResult;
+
+            case HostCommands.CommandsHandled:
+                return _commandsHandled;
+
+            // Commands. Posted by the caller, never sent - UiaDisconnectProvider has to call out
+            // to the client, and COM refuses an outgoing call while an input-synchronous one is
+            // being dispatched. See HostCommands.
+            case HostCommands.CycleBridge:
+                _bridge?.Dispose();
+                _bridge = AttachBridge(hwnd);
+                _commandsHandled++;
+                return IntPtr.Zero;
+
+            case HostCommands.DestroyBridgeWindow:
+                if (_bridge is not null)
+                {
+                    // Deliberately not Dispose. The bridge has to notice its own window going
+                    // away, because in a real app that is how it usually goes: the parent closes
+                    // and Windows destroys the children without telling anybody in managed code.
+                    HostNative.DestroyWindow(_bridge.Handle);
+                    _bridge = null;
+                }
+
+                _commandsHandled++;
+                return IntPtr.Zero;
+        }
+#endif
 
         return HostNative.DefWindowProc(hwnd, message, wParam, lParam);
     }

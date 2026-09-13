@@ -8,7 +8,10 @@ namespace Brinell.Core.Diagnostics;
 /// </summary>
 public enum PhysicalInputPolicy
 {
-    /// <summary>Physical input is performed. The default, and the historical behaviour.</summary>
+    /// <summary>
+    /// Physical input is performed. The historical behaviour, and still the default for stacks
+    /// that have not declared themselves quiet.
+    /// </summary>
     Allowed,
 
     /// <summary>Physical input is performed, and every use is recorded.</summary>
@@ -38,13 +41,27 @@ public enum PhysicalInputPolicy
 /// it reports one finding per test rather than all of them.
 /// </para>
 /// <para>
-/// Set <c>BRINELL_BACKGROUND_MODE</c> to <c>audit</c> or <c>1</c>. Point
-/// <c>BRINELL_PHYSICAL_INPUT_LOG</c> at a file to have audited uses appended to it.
+/// <b>Resolution, in order.</b> An <see cref="OverridePolicy"/> scope wins. Then
+/// <c>BRINELL_BACKGROUND_MODE</c> if it is set at all: <c>audit</c> audits; <c>0</c>, <c>false</c>,
+/// <c>off</c> or <c>allow</c> allow; anything else refuses. Only when it is not set does the
+/// stack's default apply - <see cref="PhysicalInputPolicy.Allowed"/>, unless a driver has called
+/// <see cref="QuietByDefault"/>. Point <c>BRINELL_PHYSICAL_INPUT_LOG</c> at a file to have audited
+/// uses appended to it.
+/// </para>
+/// <para>
+/// <b>Quiet by default is a property of a stack, not of Brinell.</b> The MAUI FlaUI driver declares
+/// it, because every path it needs has a semantic route and a run that takes the machine is the
+/// thing it exists not to do. The WPF and WinForms drivers do not: they still fall back to real
+/// input with no verb layer behind them, and refusing it by default would fail their suites rather
+/// than quieten them.
 /// </para>
 /// </remarks>
 public static class PhysicalInput
 {
-    private static readonly Lazy<PhysicalInputPolicy> ResolvedPolicy = new(ReadPolicy);
+    private static readonly Lazy<PhysicalInputPolicy?> ExplicitPolicy = new(ReadExplicitPolicy);
+
+    /// <summary>What applies when nothing was asked for. Raised once, by a quiet stack.</summary>
+    private static int _defaultPolicy = (int)PhysicalInputPolicy.Allowed;
     private static readonly Lazy<string?> LogPath = new(
         () => Environment.GetEnvironmentVariable("BRINELL_PHYSICAL_INPUT_LOG"));
 
@@ -54,7 +71,28 @@ public static class PhysicalInput
     private static readonly AsyncLocal<PhysicalInputPolicy?> Override = new();
 
     /// <summary>The policy in force, an active <see cref="OverridePolicy"/> scope winning.</summary>
-    public static PhysicalInputPolicy Policy => Override.Value ?? ResolvedPolicy.Value;
+    public static PhysicalInputPolicy Policy
+        => Override.Value
+           ?? ExplicitPolicy.Value
+           ?? (PhysicalInputPolicy)Volatile.Read(ref _defaultPolicy);
+
+    /// <summary>
+    /// Makes refused the default for this process, where nobody set <c>BRINELL_BACKGROUND_MODE</c>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Called by a driver whose every path has a route that does not take the machine</b> - the
+    /// MAUI FlaUI driver, from its module initializer, so it applies before the first test is even
+    /// discovered. An explicit <c>BRINELL_BACKGROUND_MODE=0</c> still allows; this only decides what
+    /// silence means.
+    /// </para>
+    /// <para>
+    /// <b>One way only.</b> Nothing lowers it again. A default that could move in both directions
+    /// would let the order assemblies happen to load in decide whether a run took the keyboard.
+    /// </para>
+    /// </remarks>
+    public static void QuietByDefault()
+        => Volatile.Write(ref _defaultPolicy, (int)PhysicalInputPolicy.Refused);
 
     /// <summary>
     /// Applies a policy for the duration of the returned scope.
@@ -131,10 +169,15 @@ public static class PhysicalInput
     /// <summary>Forgets everything recorded. For tests of this type itself.</summary>
     public static void ResetRecorded() => Recorded.Clear();
 
-    private static PhysicalInputPolicy ReadPolicy()
+    /// <remarks>
+    /// Null means "not asked", which is different from "asked to allow" now that a stack can make
+    /// quiet the default - so an empty or missing variable no longer reads as <c>0</c>.
+    /// </remarks>
+    private static PhysicalInputPolicy? ReadExplicitPolicy()
         => Environment.GetEnvironmentVariable("BRINELL_BACKGROUND_MODE")?.Trim().ToLowerInvariant() switch
         {
-            null or "" or "0" or "false" or "off" => PhysicalInputPolicy.Allowed,
+            null or "" => null,
+            "0" or "false" or "off" or "allow" or "allowed" => PhysicalInputPolicy.Allowed,
             "audit" => PhysicalInputPolicy.Audited,
             _ => PhysicalInputPolicy.Refused,
         };

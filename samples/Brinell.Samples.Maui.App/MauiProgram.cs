@@ -6,8 +6,12 @@ using Microsoft.Maui.Controls.Hosting;
 using Microsoft.Maui.DevFlow.Agent;
 #endif
 
-#if WINDOWS
+// Not inside the #if WINDOWS below: UseBrinellGestureBridge is multi-targeted and the call is
+// unconditional, so that turning the bridge on reads the same on every head. Off Windows it
+// reports that there is no bridge and returns, which is the truth there - Android and iOS
+// drive gestures with real touch input.
 using Brinell.Maui.AppSupport;
+#if WINDOWS
 using Brinell.Samples.Maui.App.Platforms.Windows.Handlers;
 #endif
 
@@ -33,6 +37,15 @@ public static class MauiProgram
                 handlers.AddBrinellAutomationHandlers();
 #endif
             });
+
+        // The gesture bridge, off unless this build was compiled with BRINELL_UIA_BRIDGE and
+        // the launcher sets BRINELL_UIA_BRIDGE=1. Unconditional on purpose: the gates decide,
+        // not the call site, so this line reads the same in a shipping build - where it does
+        // nothing - as it does under test.
+        //
+        // Here rather than beside AddBrinellAutomationHandlers because it has to run before
+        // the first page loads: elements publish themselves on Loaded.
+        builder.UseBrinellGestureBridge();
 
         #if MAUI_DEVFLOW
             builder.AddMauiDevFlowAgent();
