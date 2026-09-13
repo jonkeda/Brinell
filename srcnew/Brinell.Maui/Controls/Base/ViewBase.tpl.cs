@@ -431,42 +431,69 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
     }
 
     /// <summary>
-    /// Resolves the element anywhere on the page, scrolling to it if it is not on screen.
+    /// Whether a lookup that finds nothing should scroll to look.
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// The difference from <see cref="TryFindElement"/> matters only on Android, which publishes
-    /// an accessibility node only for content inside the viewport: a control scrolled out of a
-    /// <c>ScrollView</c> still exists and is laid out, but a plain lookup answers "no such
-    /// element". Windows keeps the same element with <c>IsOffscreen=true</c> and answers yes.
-    /// </para>
-    /// <para>
-    /// The scope scrolls to it on Android and does nothing extra on Windows, so both platforms
-    /// give a test the same answer. It does not poll: the caller has already established that a
-    /// plain lookup finds nothing.
-    /// </para>
-    /// </remarks>
-    /// <returns>The element, or null when it is genuinely not on the page.</returns>
-    protected IMauiElement? TryFindElementAfterScroll()
+    protected enum ScrollLookup
     {
-        return _mauiScope.TryFindElementAfterScroll(Locator);
+        /// <summary>A plain lookup.</summary>
+        None,
+
+        /// <summary>
+        /// A plain lookup, then one sweep of the scope's scrolling element. Inside a poll, the
+        /// sweep happens on the first tick only.
+        /// </summary>
+        Once,
     }
 
     /// <summary>
-    /// A resolver that scrolls to look at most once, then falls back to plain lookups.
+    /// Resolves the element, scrolling to look for it if the plain lookup finds nothing.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// For use inside a poll, where resolving through <see cref="TryFindElementAfterScroll"/>
-    /// on every tick would sweep the container repeatedly — a sweep costs orders of magnitude
-    /// more than a plain lookup. One sweep answers the question it exists for: if the element is
-    /// on the page the sweep leaves it on screen, and if it is not, sweeping again will not
-    /// change that.
+    /// The difference from <see cref="TryFindElement()"/> matters only on Android, which publishes
+    /// an accessibility node only for content inside the viewport: a control scrolled out of a
+    /// <c>ScrollView</c> still exists and is laid out, but a plain lookup answers "no such
+    /// element". Windows keeps the same element with <c>IsOffscreen=true</c>, and its driver
+    /// scrolls nothing - so both platforms give a test the same answer.
+    /// </para>
+    /// <para>
+    /// <b>Done here, once, rather than by every scope.</b> Scopes used to implement
+    /// <c>TryFindElementAfterScroll</c>, and the one containers and pages inherited did not scroll -
+    /// so on Android nothing inside a container was ever scrolled to (step 100a). A scope now says
+    /// which element scrolls, <see cref="IMauiElementScope.ScrollingRoot"/>, and nothing else.
     /// </para>
     /// </remarks>
-    /// <returns>A resolver to hand to a polling helper.</returns>
-    protected Func<IMauiElement?> ScrollingOnceResolver()
+    /// <param name="lookup">Whether to scroll to look.</param>
+    /// <returns>The element, or null when it is genuinely not on the page.</returns>
+    protected IMauiElement? TryFindElement(ScrollLookup lookup)
     {
+        var element = TryFindElement();
+        if (element != null || lookup == ScrollLookup.None)
+        {
+            return element;
+        }
+
+        return Context.Driver?.TryFindByScrollingWithin(_mauiScope.ScrollingRoot, Locator);
+    }
+
+    /// <summary>
+    /// A resolver for a polling helper, applying <paramref name="lookup"/>.
+    /// </summary>
+    /// <remarks>
+    /// With <see cref="ScrollLookup.Once"/> the sweep happens on the first call and never again:
+    /// a sweep costs orders of magnitude more than a plain lookup, and one answers the question it
+    /// exists for. If the element is on the page the sweep leaves it on screen; if it is not,
+    /// sweeping again will not change that. This was <c>ScrollingOnceResolver</c> (step 100b).
+    /// </remarks>
+    /// <param name="lookup">Whether to scroll to look.</param>
+    /// <returns>A resolver to hand to a polling helper.</returns>
+    protected Func<IMauiElement?> Resolver(ScrollLookup lookup)
+    {
+        if (lookup == ScrollLookup.None)
+        {
+            return () => TryFindElement();
+        }
+
         var swept = false;
         return () =>
         {
@@ -476,91 +503,38 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
             }
 
             swept = true;
-            return TryFindElementAfterScroll();
+            return TryFindElement(ScrollLookup.Once);
         };
     }
 
     /// <summary>
-    /// Finds the element within the scope.
+    /// Finds the element within the scope, sweeping the scope's scroller once if it is not found.
     /// </summary>
+    /// <remarks>
+    /// The route every action takes, so it needs the sweep as much as <see cref="IsExists"/> does:
+    /// measured on Android at step 100a, a page's reset button below the fold failed every test
+    /// in the class with "not found within container" before the test body ran. The scope polls
+    /// for its find timeout first; the sweep is paid once, after that, and only on the way to
+    /// failing.
+    /// </remarks>
     /// <returns>The element.</returns>
     /// <exception cref="ElementNotFoundException">Thrown when element is not found.</exception>
     protected virtual IMauiElement FindElement()
     {
-        return _mauiScope.FindElement(Locator);
-    }
-
-    /// <summary>
-    /// Finds a descendant of this control's element by automation id.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// For compound controls whose template wraps a native child. The child is looked for
-    /// beneath the control's own element first; failing that, the scope is searched and
-    /// candidates filtered by position, because some MAUI handlers reparent the native child out
-    /// of the logical subtree.
-    /// </para>
-    /// <para>
-    /// <c>protected virtual</c> rather than a shared helper: which child a compound control
-    /// activates is knowledge about that control.
-    /// </para>
-    /// </remarks>
-    /// <param name="root">The control's own element.</param>
-    /// <param name="automationId">The automation id of the child to find.</param>
-    /// <returns>The child element, or null when no visible match exists.</returns>
-    protected virtual IMauiElement? FindChildCore(IMauiElement root, string automationId)
-    {
-        ArgumentNullException.ThrowIfNull(root);
-
-        var locator = Locator.ByAutomationId(automationId);
-
-        var directChild = root.FindElements(locator).FirstVisible();
-        if (directChild != null)
+        try
         {
-            return directChild;
+            return _mauiScope.FindElement(Locator);
         }
-
-        if (!root.HasUsableBounds())
+        catch (ElementNotFoundException)
         {
-            return null;
+            var swept = Context.Driver?.TryFindByScrollingWithin(_mauiScope.ScrollingRoot, Locator);
+            if (swept != null)
+            {
+                return swept;
+            }
+
+            throw;
         }
-
-        return MauiScope.FindVisibleElements(locator)
-            .FirstOrDefault(root.ContainsCenter);
-    }
-
-    /// <summary>
-    /// Finds a descendant of this control's element by control type.
-    /// </summary>
-    /// <remarks>
-    /// The by-id counterpart of <see cref="FindChildCore(IMauiElement, string)"/>, for templates
-    /// whose inner part carries no automation id. Among positional candidates the smallest is
-    /// taken, since a larger match is usually an ancestor that merely contains the control.
-    /// </remarks>
-    /// <param name="root">The control's own element.</param>
-    /// <param name="controlType">The control type of the child to find.</param>
-    /// <returns>The child element, or null when no visible match exists.</returns>
-    protected virtual IMauiElement? FindChildByControlTypeCore(IMauiElement root, string controlType)
-    {
-        ArgumentNullException.ThrowIfNull(root);
-
-        var locator = Locator.ByControlType(controlType);
-
-        var directChild = root.FindElements(locator).FirstVisible();
-        if (directChild != null)
-        {
-            return directChild;
-        }
-
-        if (!root.HasUsableBounds())
-        {
-            return null;
-        }
-
-        return MauiScope.FindVisibleElements(locator)
-            .Where(root.ContainsCenter)
-            .OrderBy(candidate => candidate.Area())
-            .FirstOrDefault();
     }
 
     #endregion
@@ -602,44 +576,62 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
     /// on screen.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// <c>IsVisible</c> answers "on screen right now"; this answers "could the user see it at
     /// all", which requires scrolling — no property distinguishes a control scrolled out of view
     /// from one that is not rendered. Prefer this when a test means "the page shows this
     /// control", since whether something sits above the fold depends on window size and so
     /// differs between platforms.
+    /// </para>
+    /// <para>
+    /// <b>Takes the element it is given, and resolves nothing.</b> It used to resolve a missing
+    /// element with <c>FindElement</c>, which polls for the whole find timeout before giving up -
+    /// so <c>AssertVisibleAfterScroll(false)</c> paid that on every tick of its own poll. The trio
+    /// below resolves with <see cref="ScrollLookup.Once"/> instead, the same lookup <c>Exists</c>
+    /// uses, which is what makes an absent element cheap and an Android one findable (step 100c).
+    /// </para>
+    /// <para>
+    /// Revealing is the element's business: on Windows its ScrollItem pattern, or the bridge's
+    /// <c>ScrollTo</c> verb on the scroll view that holds it.
+    /// </para>
     /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <returns>True when visible, scrolling to it first if needed; null when absent.</returns>
     [AbsenceTolerant]
+    [SkipGeneration("Hand-written below: the trio resolves with ScrollLookup.Once, which the generated trio cannot express.")]
     protected virtual bool? IsVisibleAfterScrollCore(IMauiElement? element)
     {
-        if (element != null && IsVisibleCore(element) == true)
+        if (element == null)
+        {
+            return null;
+        }
+
+        if (IsVisibleCore(element) == true)
         {
             return true;
         }
 
-        // A null element does not mean "not on the page". Android drops an off-screen view from
-        // the accessibility tree entirely, so the very control this method exists to reach is
-        // absent until something scrolls to it — and the plain lookup that produced this
-        // argument does not scroll. Resolving through FindElement does: it falls back to
-        // UiScrollable on Android, and is an ordinary lookup on Windows, where the element was
-        // in the tree all along.
-        var resolved = element;
-        if (resolved == null)
-        {
-            try
-            {
-                resolved = FindElement();
-            }
-            catch (ElementNotFoundException)
-            {
-                return null;
-            }
-        }
-
-        ScrollIntoViewCore(resolved);
-        return IsVisibleCore(resolved);
+        ScrollIntoViewCore(element);
+        return IsVisibleCore(element);
     }
+
+    /// <summary>Whether the user could see the control, scrolling to it if needed.</summary>
+    /// <returns>True when visible after scrolling; false when not, or absent.</returns>
+    public bool? IsVisibleAfterScroll()
+        => IsVisibleAfterScrollCore(TryFindElement(ScrollLookup.Once)) == true;
+
+    /// <summary>Waits until <see cref="IsVisibleAfterScroll"/> matches <paramref name="expected"/>.</summary>
+    public bool WaitVisibleAfterScroll(bool? expected = true, int? timeoutMs = null)
+        => RunWaitWithOptionalElement(expected,
+            element => IsVisibleAfterScrollCore(element) == expected!.Value,
+            timeoutMs, Resolver(ScrollLookup.Once));
+
+    /// <summary>Asserts <see cref="IsVisibleAfterScroll"/>, returning the scope for chaining.</summary>
+    public TScope AssertVisibleAfterScroll(bool? expected = true, string? message = null, int? timeoutMs = null)
+        => RunAssertWithOptionalElement(expected,
+            IsVisibleAfterScrollCore, (actual, expected1) => actual == expected1,
+            message ?? $"Expected VisibleAfterScroll to be '{expected}'. Locator: {Locator}", timeoutMs,
+            Resolver(ScrollLookup.Once));
 
     protected virtual void EnsureVisible(IMauiElement element, int timeout)
     {
@@ -698,7 +690,7 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
     /// </remarks>
     public bool IsExists()
     {
-        return IsExistsBase(TryFindElementAfterScroll()) == true;
+        return IsExistsBase(TryFindElement(ScrollLookup.Once)) == true;
     }
 
     /// <summary>
@@ -713,7 +705,7 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
     {
         return RunWaitWithOptionalElement(expected,
             element => IsExistsBase(element) == expected!.Value,
-            timeoutMs, ScrollingOnceResolver());
+            timeoutMs, Resolver(ScrollLookup.Once));
     }
 
     /// <summary>
@@ -728,7 +720,7 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
         return RunAssertWithOptionalElement(expected,
              IsExistsBase, (actual, expected1) => (actual == expected1),
             message ?? $"Expected Exists to be '{expected}'. Locator: {Locator}", timeoutMs,
-            ScrollingOnceResolver());
+            Resolver(ScrollLookup.Once));
     }
 
     #endregion

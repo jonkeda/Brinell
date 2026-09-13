@@ -3,7 +3,7 @@ namespace Brinell.Maui.Tests.Semantic;
 public class SelectionListControlTests : SemanticControlTestsBase
 {
     [Fact]
-    public void SelectionList_SelectByAutomationId_UsesContainingListItemPattern()
+    public void SelectionList_SelectByAutomationId_SelectsTheContainingListItem()
     {
         var child = CreateElement("EquipmentSelection_Item_2001", 50, 50, 80, 20);
         var row = CreateSelectableElement("ListItem", 40, 40, 220, 50);
@@ -19,7 +19,7 @@ public class SelectionListControlTests : SemanticControlTestsBase
         var result = Page.List.TrySelectByAutomationId("EquipmentSelection_Item_2001");
 
         Assert.True(result);
-        row.As<ISelectionItemPatternElement>().Verify(e => e.SelectItemPattern(), Times.Once);
+        row.Verify(e => e.Select(), Times.Once);
         child.Verify(e => e.Click(), Times.Never);
     }
 }

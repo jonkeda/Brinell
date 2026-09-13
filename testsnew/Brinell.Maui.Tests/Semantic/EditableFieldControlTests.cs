@@ -19,7 +19,7 @@ public class EditableFieldControlTests : SemanticControlTestsBase
         var result = Page.TestField.TryOpen();
 
         Assert.True(result);
-        nativeButton.As<IInvokePatternElement>().Verify(e => e.InvokePattern(), Times.Once);
+        nativeButton.Verify(e => e.Invoke(), Times.Once);
         fieldRoot.Verify(e => e.Click(), Times.Never);
     }
 
@@ -38,7 +38,7 @@ public class EditableFieldControlTests : SemanticControlTestsBase
         var result = Page.TestField.TryOpen();
 
         Assert.True(result);
-        nativeButton.As<IInvokePatternElement>().Verify(e => e.InvokePattern(), Times.Once);
+        nativeButton.Verify(e => e.Invoke(), Times.Once);
         fieldRoot.Verify(e => e.Click(), Times.Never);
     }
 
@@ -72,10 +72,7 @@ public class EditableFieldControlTests : SemanticControlTestsBase
             .Callback(() => drawerOpen = true);
         var editor = CreateElement("TextEditorView_Editor", 0, 50, 420, 300);
         var okButton = CreateInvokableElement("IconButton_btnIcon", 360, 0, 48, 48);
-        okButton.As<IInvokePatternElement>()
-            .Setup(e => e.InvokePattern())
-            .Callback(() => drawerClosed = true)
-            .Returns(true);
+        okButton.Setup(e => e.Invoke()).Callback(() => drawerClosed = true);
 
         Context
             .Setup(c => c.TryFindElement(It.Is<Locator>(l => l.Value == "TestField")))
@@ -93,7 +90,7 @@ public class EditableFieldControlTests : SemanticControlTestsBase
         fieldRoot.Verify(e => e.Click(), Times.Once);
         editor.Verify(e => e.Clear(), Times.Once);
         editor.Verify(e => e.SendKeys("Journal note", TextInputMethod.SetValue), Times.Once);
-        okButton.As<IInvokePatternElement>().Verify(e => e.InvokePattern(), Times.Once);
+        okButton.Verify(e => e.Invoke(), Times.Once);
     }
 
     [Fact]
@@ -126,19 +123,13 @@ public class EditableFieldControlTests : SemanticControlTestsBase
         var drawerClosed = false;
         var fieldRoot = CreateElement("FieldRoot", 0, 0, 200, 40);
         var textEditorButton = CreateInvokableElement("EditableFieldView_TextEditorNativeButton", 0, 0, 200, 40);
-        textEditorButton.As<IInvokePatternElement>()
-            .Setup(e => e.InvokePattern())
-            .Callback(() => drawerOpen = true)
-            .Returns(true);
+        textEditorButton.Setup(e => e.Invoke()).Callback(() => drawerOpen = true);
         fieldRoot
             .Setup(e => e.FindElements(It.Is<Locator>(l => l.Value == "EditableFieldView_TextEditorNativeButton"), It.IsAny<int>()))
             .Returns(new[] { textEditorButton.Object });
         var editor = CreateElement("TextEditorView_Editor", 0, 50, 420, 300);
         var nativeOkButton = CreateInvokableElement("IconButton_NativeButton", 360, 0, 48, 48);
-        nativeOkButton.As<IInvokePatternElement>()
-            .Setup(e => e.InvokePattern())
-            .Callback(() => drawerClosed = true)
-            .Returns(true);
+        nativeOkButton.Setup(e => e.Invoke()).Callback(() => drawerClosed = true);
 
         Context
             .Setup(c => c.TryFindElement(It.Is<Locator>(l => l.Value == "TestField")))
@@ -154,7 +145,7 @@ public class EditableFieldControlTests : SemanticControlTestsBase
 
         Assert.True(result);
         editor.Verify(e => e.SendKeys("Named journal note", TextInputMethod.SetValue), Times.Once);
-        nativeOkButton.As<IInvokePatternElement>().Verify(e => e.InvokePattern(), Times.Once);
+        nativeOkButton.Verify(e => e.Invoke(), Times.Once);
         fieldRoot.Verify(e => e.Click(), Times.Never);
     }
 

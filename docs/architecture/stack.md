@@ -49,8 +49,14 @@ Use xUnit `Assert`. FluentAssertions is banned in test projects by
 | `BRINELL_TEST_RESULTS_DIR` | Overrides the `TestResults` root |
 | `BRINELL_TEST_RUN_ID` | Reuses a run folder across projects |
 | `BRINELL_TEST_SUITE` | Overrides the artifact suite name |
-| `BRINELL_ALLOW_POINTER_INPUT` | Enables opt-in pointer actions for gesture-only cases |
-| `BRINELL_WINDOWS_INTERACTION_MODE` | Windows interaction mode: `semantic` or `interactive` |
+| `BRINELL_BACKGROUND_MODE` | Physical input policy - see [AD-005](decisions.md#ad-005-physical-input-is-opt-in). Unset: the stack's default (refused for MAUI on Windows). `1`: refused. `audit`: performed and recorded. `0`: performed |
+| `BRINELL_PHYSICAL_INPUT_LOG` | File that audited physical-input uses are appended to |
+| `BRINELL_AUT_PLACE` | Where to put the MAUI app window on launch: `right`, `offscreen`, `secondary`. `offscreen` breaks visibility checks - UI Automation counts the monitor - so leave it unset unless you know you need it |
+| `BRINELL_AUT_PLACEMENT_RESULT_FILE` | File the driver writes where the window was actually placed |
+| `BRINELL_UIA_BRIDGE` | Gesture bridge. As an MSBuild constant, puts the bridge in the build (Debug only by default). As a variable set to `1`, turns it on at run time; the FlaUI driver sets it on the app it launches |
+| `BRINELL_UIA_LOG` | File the app under test appends every bridge publish and verb call to. The first thing to read when a bridge verb "is not answered" |
+| `BRINELL_APP_CRASH_LOG` | File the MAUI sample app writes unhandled exceptions to |
+| `BRINELL_STRESS` | `1` runs the opt-in stress tests (`Pattern=Stress`) |
 
-Some older code paths may still mention `BRINELL_WINDOWS_ALLOW_*` variables.
-Prefer the current `BRINELL_ALLOW_*` names in new docs and examples.
+`BRINELL_ALLOW_POINTER_INPUT` and `BRINELL_WINDOWS_INTERACTION_MODE` were documented
+here previously; no code reads either of them. Use `BRINELL_BACKGROUND_MODE`.

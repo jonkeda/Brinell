@@ -87,6 +87,24 @@ public class Test {
     }
 
     [Fact]
+    public void Matches_CoreMethodReturningAValue_ReturnsFalse()
+    {
+        // Arrange - an action wrapper has nowhere to put a result (step 101b).
+        var code = @"
+public class Test {
+    protected virtual IMauiElement? FindChildCore(IMauiElement root, string automationId) => null;
+}";
+        var method = FirstMethod(code);
+        var generator = new ActionGenerator();
+
+        // Act
+        var result = generator.Matches(method);
+
+        // Assert
+        Assert.False(result, "A Core method returning a value must not become a Do-shaped action");
+    }
+
+    [Fact]
     public void Matches_GetCoreValueQuery_ReturnsFalse()
     {
         // Arrange - Get*Core belongs to the Is/Wait/Assert family, not actions.

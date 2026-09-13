@@ -91,8 +91,16 @@ public sealed class PhysicalInputFactAttribute : Xunit.FactAttribute
     {
         // Discovery can run before any driver type is touched, and the quiet default is declared
         // by the FlaUI assembly's module initializer - so make sure it has run before asking.
-        System.Runtime.CompilerServices.RuntimeHelpers.RunModuleConstructor(
-            typeof(Brinell.Maui.FlaUI.FlaUIMauiDriver).Module.ModuleHandle);
+        //
+        // By name, not typeof: these sources are also compiled into the mobile head, which
+        // references Appium and no FlaUI at all, and a typeof broke that build. There, the type is
+        // simply absent and nothing declares a quiet default.
+        var flaUiDriver = Type.GetType("Brinell.Maui.FlaUI.FlaUIMauiDriver, Brinell.Maui.FlaUI");
+        if (flaUiDriver != null)
+        {
+            System.Runtime.CompilerServices.RuntimeHelpers.RunModuleConstructor(
+                flaUiDriver.Module.ModuleHandle);
+        }
 
         if (Brinell.Core.Diagnostics.PhysicalInput.Policy
             == Brinell.Core.Diagnostics.PhysicalInputPolicy.Refused)

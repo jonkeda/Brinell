@@ -52,7 +52,7 @@ public class ClickActivationTests : SemanticControlTestsBase
     }
 
     /// <summary>
-    /// It does not probe patterns, on any platform.
+    /// It does not reach for another operation, even where the element offers one.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -70,15 +70,13 @@ public class ClickActivationTests : SemanticControlTestsBase
     public void Click_DoesNotReachPastInvokeToAPattern()
     {
         var element = CreateSelectableElement(ButtonId, 0, 0, 80, 24);
-        element.As<IInvokePatternElement>().Setup(e => e.SupportsInvokePattern).Returns(true);
-        element.As<IInvokePatternElement>().Setup(e => e.InvokePattern()).Returns(true);
+        element.Setup(e => e.SupportsInvoke).Returns(true);
         GivenElement(element);
 
         Page.PromptOk.Click();
 
         element.Verify(e => e.Invoke(), Times.Once);
-        element.As<IInvokePatternElement>().Verify(e => e.InvokePattern(), Times.Never);
-        element.As<ISelectionItemPatternElement>().Verify(e => e.SelectItemPattern(), Times.Never);
+        element.Verify(e => e.Select(), Times.Never);
         element.Verify(e => e.Click(), Times.Never);
     }
 

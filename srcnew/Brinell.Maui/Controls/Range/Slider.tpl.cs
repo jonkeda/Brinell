@@ -61,11 +61,10 @@ public partial class Slider<TScope> : Base.RangeControlBase<TScope>
         // Clamp value to valid range
         var target = Math.Clamp(value.Value, min, max);
 
-        // Try RangeValue pattern first (Windows/FlaUI) - most reliable
-        if (element is IRangePatternElement rangeElement && rangeElement.SupportsRangeValue)
+        if (element.SupportsSetRangeValue)
         {
-            if (rangeElement.SetRangeValue(target))
-                return;
+            element.SetRangeValue(target);
+            return;
         }
 
         // Try using windows: click extension (bypasses W3C Actions)

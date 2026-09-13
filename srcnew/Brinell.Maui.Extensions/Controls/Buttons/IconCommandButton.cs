@@ -1,11 +1,18 @@
+using Brinell.Maui.Containers;
+using Brinell.Maui.Controls.Buttons;
+
 namespace Brinell.Maui.Extensions.Controls.Buttons;
 
 /// <summary>
 /// Command button rendered with the shared IconLabelButtonView template.
-/// Activates the native button/icon child before falling back to the template root.
 /// </summary>
+/// <remarks>
+/// A container with named parts - the native button and the icon button the template hosts -
+/// rather than a clickable control that searched itself for them (step 101a). See
+/// <see cref="RoundButton{TScope}"/>.
+/// </remarks>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public class IconCommandButton<TScope> : Brinell.Maui.Controls.Base.ClickableControlBase<TScope>
+public class IconCommandButton<TScope> : ContainerObjectBase<TScope, IconCommandButton<TScope>>
     where TScope : IMauiScope<TScope>
 {
     private const string NativeButtonId = "IconLabelButtonView_NativeButton";
@@ -27,20 +34,25 @@ public class IconCommandButton<TScope> : Brinell.Maui.Controls.Base.ClickableCon
     {
     }
 
-    /// <inheritdoc />
+    /// <summary>The native button the template wraps, which carries the command.</summary>
+    public Button<IconCommandButton<TScope>> NativeButton => Button(NativeButtonId);
+
+    /// <summary>The icon button, for a version of the template without a native button.</summary>
+    public Button<IconCommandButton<TScope>> IconButton => Button(IconButtonId);
+
+    /// <summary>
+    /// Presses the button, through whichever part this version of the template has.
+    /// </summary>
     /// <remarks>
-    /// The template wraps a native button and an icon child; the root itself is not clickable.
-    /// Resolving the child here — rather than in a shared helper — is what keeps this control
-    /// responsible for its own view.
+    /// One question - does the native button exist - then one route. The template root is never
+    /// invoked: it is not clickable, which is why the parts exist.
     /// </remarks>
-    protected override void ClickCore(IMauiElement element, int? timeoutMs = null)
+    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
+    /// <returns>The containing scope, for chaining.</returns>
+    public TScope Click(int? timeoutMs = null)
     {
-        EnsureClickableCore(element);
-
-        var target = FindChildCore(element, NativeButtonId)
-            ?? FindChildCore(element, IconButtonId)
-            ?? element;
-
-        target.Invoke();
+        var part = NativeButton.IsExists() ? NativeButton : IconButton;
+        part.Click(timeoutMs);
+        return Parent;
     }
 }

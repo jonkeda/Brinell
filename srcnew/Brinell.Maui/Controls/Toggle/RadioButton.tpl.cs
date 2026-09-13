@@ -51,7 +51,7 @@ public partial class RadioButton<TScope> : Base.ToggleControlBase<TScope>
     /// <param name="timeoutMs">Optional timeout for clickable check.</param>
     protected override void ClickCore(IMauiElement element, int? timeoutMs = null)
     {
-        EnsureClickableCore(element);
+        EnsureEnabledCore(element);
         element.Select();
     }
 
@@ -82,6 +82,36 @@ public partial class RadioButton<TScope> : Base.ToggleControlBase<TScope>
     /// <param name="element">The pre-found element.</param>
     /// <returns>True if selected, false if not, null if element is null.</returns>
     protected virtual bool? IsSelectedCore(IMauiElement? element) => IsCheckedCore(element);
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Checked where the platform publishes it - Android's <c>checked</c>, Windows' Toggle
+    /// pattern - and chosen otherwise, because a radio button is fundamentally one of a group.
+    /// </remarks>
+    protected override bool? IsCheckedCore(IMauiElement? element)
+        => element == null ? null : element.Checked ?? element.Selected;
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Checking a radio button is selecting it. <b>Unchecking one is refused</b>: nothing a user can
+    /// do to a radio button unchecks it - they choose another - and the toggle this used to fall
+    /// through to did nothing and reported nothing, so a test asking for it passed without the
+    /// state it asked for (step 108).
+    /// </remarks>
+    protected override void SetCheckedCore(IMauiElement element, bool? @checked, int? timeoutMs = null)
+    {
+        if (@checked == null || IsCheckedCore(element) == @checked)
+            return;
+
+        if (@checked == false)
+        {
+            throw new NotSupportedException(
+                "A radio button cannot be unchecked; select another one in its group instead. "
+                + $"Locator: {Locator}");
+        }
+
+        ToggleCore(element, timeoutMs);
+    }
 
     #endregion
 

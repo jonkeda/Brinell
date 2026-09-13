@@ -12,7 +12,7 @@ namespace Brinell.Core.Interfaces;
 /// <para>
 /// Finding an element by structural position — the inner button of a compound control, the row
 /// containing a cell — is <em>not</em> here. That is control knowledge, and lives in the control
-/// object that owns the view (see <c>ViewBase.FindChildCore</c>).
+/// object that owns the view: a compound control is a container with named parts.
 /// </para>
 /// </remarks>
 public static class ElementScopeExtensions

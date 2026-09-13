@@ -125,6 +125,178 @@ public interface IMauiElement : IElement<IMauiElement>
             $"{GetType().Name} does not implement Select. A control asked to be chosen and this "
             + "platform offers no route to it.");
 
+    /// <summary>Whether <see cref="Invoke"/> has a route on this element.</summary>
+    /// <remarks>
+    /// <para>
+    /// For a control that has to <i>choose</i> between surfaces - a compound template whose
+    /// command may sit on any of several parts - and must ask rather than try. A control that
+    /// knows its own operation just calls it and lets the throw name a wrong declaration.
+    /// </para>
+    /// <para>
+    /// These three replaced casts to <c>IInvokePatternElement</c>, <c>ISelectionItemPatternElement</c>
+    /// and <c>ITogglePatternElement</c>, which put UI Automation's vocabulary into cross-platform
+    /// controls (step 107). Windows answers from the pattern; a touch platform answers true,
+    /// because a tap is how it does all three.
+    /// </para>
+    /// </remarks>
+    bool SupportsInvoke => false;
+
+    /// <summary>Whether <see cref="Toggle"/> has a route. See <see cref="SupportsInvoke"/>.</summary>
+    bool SupportsToggle => false;
+
+    /// <summary>Whether <see cref="Select"/> has a route. See <see cref="SupportsInvoke"/>.</summary>
+    bool SupportsSelect => false;
+
+    #endregion
+
+    #region Focus
+
+    /// <summary>Whether <see cref="Focus"/> has a route that is not a click.</summary>
+    /// <remarks>
+    /// False means the control's only way to focus is to activate the element, which for a date
+    /// picker opens its calendar. That is the control's decision to make, so it is asked here.
+    /// </remarks>
+    bool SupportsFocus => false;
+
+    /// <summary>Gives this element focus without activating it. Performs or throws.</summary>
+    /// <exception cref="NotSupportedException">This platform cannot focus this element.</exception>
+    void Focus()
+        => throw new NotSupportedException(
+            $"{GetType().Name} does not implement Focus.");
+
+    #endregion
+
+    #region Checked state
+
+    /// <summary>
+    /// Whether a two-state control is on: a <c>Switch</c> or a <c>CheckBox</c>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Not <see cref="IElement{TSelf}.Selected"/>, and step 105a is why they are two.</b>
+    /// Selected is "chosen, one of a group" - a tab, a list row, a radio button. Checked is "on".
+    /// Windows' <c>Selected</c> used to fall back to the Toggle pattern, so a checked CheckBox
+    /// reported itself selected, and a control reading both could not tell which one the platform
+    /// had actually published.
+    /// </para>
+    /// <para>
+    /// Null when the element publishes no checked state at all, which is different from false.
+    /// </para>
+    /// </remarks>
+    bool? Checked => null;
+
+    /// <summary>Whether the platform can set the checked state directly, rather than by toggling.</summary>
+    /// <remarks>
+    /// Asking for the state you want is idempotent; toggling depends on the state read beforehand
+    /// still being true when the toggle lands. Neither Android nor iOS has such a command.
+    /// </remarks>
+    bool SupportsSetChecked => false;
+
+    /// <summary>Sets the checked state. Performs or throws; a no-op when already there.</summary>
+    /// <exception cref="NotSupportedException">This platform offers no route.</exception>
+    void SetChecked(bool isChecked)
+        => throw new NotSupportedException(
+            $"{GetType().Name} does not implement SetChecked.");
+
+    #endregion
+
+    #region Text field state
+
+    /// <summary>
+    /// The value a field publishes, where the platform keeps it apart from what the field shows.
+    /// Null when it does not.
+    /// </summary>
+    /// <remarks>
+    /// Windows' Value pattern: a <c>CalendarDatePicker</c> answers '07-Sep-26' here while its
+    /// name and text say something else. Android and iOS publish no such thing, and their
+    /// <see cref="IElement{TSelf}.Text"/> is already the value.
+    /// </remarks>
+    string? Value => null;
+
+    /// <summary>Whether a text field refuses edits. Null when the platform does not say.</summary>
+    /// <remarks>
+    /// Windows publishes it on the Value pattern. Android publishes no editability at all, so it
+    /// answers null - unknown - rather than "editable".
+    /// </remarks>
+    bool? IsReadOnly => null;
+
+    #endregion
+
+    #region Range
+
+    /// <summary>A range control's current value, in the platform's own units. Null when not published.</summary>
+    /// <remarks>
+    /// The platform's units, deliberately: WinUI reports a progress bar as 0-100 where MAUI's
+    /// <c>Progress</c> is 0-1. Normalising is the control's job, against
+    /// <see cref="RangeMinimum"/> and <see cref="RangeMaximum"/>.
+    /// </remarks>
+    double? RangeValue => null;
+
+    /// <summary>The smallest value the range allows. Null when not published.</summary>
+    double? RangeMinimum => null;
+
+    /// <summary>The largest value the range allows. Null when not published.</summary>
+    double? RangeMaximum => null;
+
+    /// <summary>The range's small step. Null when not published.</summary>
+    double? RangeSmallChange => null;
+
+    /// <summary>Whether <see cref="SetRangeValue"/> has a route.</summary>
+    bool SupportsSetRangeValue => false;
+
+    /// <summary>Sets a range control's value. Performs or throws.</summary>
+    /// <exception cref="NotSupportedException">This platform offers no route.</exception>
+    void SetRangeValue(double value)
+        => throw new NotSupportedException(
+            $"{GetType().Name} does not implement SetRangeValue.");
+
+    #endregion
+
+    #region Dropdown
+
+    /// <summary>Whether this element is a dropdown that can be opened and read.</summary>
+    /// <remarks>
+    /// <para>
+    /// The Windows combo box, through ExpandCollapse. Replaces casts to
+    /// <c>IExpandCollapsePatternElement</c> in the selector controls (step 107).
+    /// </para>
+    /// <para>
+    /// Opening a dropdown is a visible journey, so a selector asks for its app-side verbs first
+    /// and uses this only where the app declares none.
+    /// </para>
+    /// </remarks>
+    bool SupportsDropdown => false;
+
+    /// <summary>Whether the dropdown is open. False where there is no dropdown.</summary>
+    bool IsDropdownOpen => false;
+
+    /// <summary>Opens the dropdown and waits for it to report open. Performs or throws.</summary>
+    /// <exception cref="NotSupportedException">This element has no dropdown.</exception>
+    void OpenDropdown()
+        => throw new NotSupportedException(
+            $"{GetType().Name} does not implement OpenDropdown.");
+
+    /// <summary>Closes the dropdown. A no-op when it is already closed.</summary>
+    /// <exception cref="NotSupportedException">This element has no dropdown.</exception>
+    void CloseDropdown()
+        => throw new NotSupportedException(
+            $"{GetType().Name} does not implement CloseDropdown.");
+
+    /// <summary>
+    /// The items the open dropdown has put into the accessibility tree, waiting briefly for them.
+    /// </summary>
+    /// <remarks>
+    /// Realized items, not every item the control holds: a long list publishes the visible
+    /// handful. Empty when the dropdown is closed or has nothing to show.
+    /// </remarks>
+    /// <exception cref="NotSupportedException">This element has no dropdown.</exception>
+    IReadOnlyList<IMauiElement> ReadDropdownItems()
+        => throw new NotSupportedException(
+            $"{GetType().Name} does not implement ReadDropdownItems.");
+
+    /// <summary>The text of the dropdown's selected item, read without opening it. Null when none.</summary>
+    string? SelectedItemText => null;
+
     #endregion
 
     #region Gestures
@@ -263,6 +435,40 @@ public interface IMauiElement : IElement<IMauiElement>
     #endregion
 
     #region Scrolling
+
+    /// <summary>
+    /// Whether this element, or the container it sits in, can be scrolled a viewport at a time
+    /// without pointer input.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Windows' Scroll pattern, on the element or its nearest scrolling ancestor - a MAUI
+    /// <c>CollectionView</c> is often wrapped, so the addressable element and the scrolling one
+    /// differ. A touch platform answers false: it scrolls by swiping, and the caller swipes.
+    /// </para>
+    /// <para>
+    /// This was <c>IElement.TryScrollContent</c>, whose <c>false</c> meant both "cannot scroll"
+    /// and "already at the end", so a caller that swiped on false swiped a list that had simply
+    /// finished (step 105c).
+    /// </para>
+    /// </remarks>
+    bool SupportsScrollContent => false;
+
+    /// <summary>
+    /// Scrolls the content one viewport step and reports whether it moved.
+    /// </summary>
+    /// <remarks>
+    /// False means the content was already at that end - an ordinary answer a caller uses to stop.
+    /// It never means "no route": that is <see cref="SupportsScrollContent"/>, and this throws.
+    /// Not to be confused with the bridge's <see cref="ScrollTo"/>, which reveals a named descendant.
+    /// </remarks>
+    /// <param name="verticalSteps">Positive towards the end, negative towards the start.</param>
+    /// <param name="horizontalSteps">Positive towards the end, negative towards the start.</param>
+    /// <returns>Whether the content moved.</returns>
+    /// <exception cref="NotSupportedException">This element has no scroll route.</exception>
+    bool ScrollContent(int verticalSteps, int horizontalSteps = 0)
+        => throw new NotSupportedException(
+            $"{GetType().Name} does not implement ScrollContent.");
 
     /// <summary>
     /// Whether this element can be asked to scroll semantically.

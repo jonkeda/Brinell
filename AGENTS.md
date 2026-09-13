@@ -39,8 +39,13 @@ archive, not the active source of truth.
   `WaitReady`, and assertions over raw driver operations.
 - Prefer UI Automation patterns before pointer or coordinate strategies.
 - Do not expose direct mouse movement as a normal public test API.
-- Pointer input is opt-in for gesture-only surfaces and remains gated by
-  `BRINELL_ALLOW_POINTER_INPUT`.
+- Physical input (mouse, keyboard, clipboard, foreground) goes through `PhysicalInput`
+  and is refused by default for MAUI on Windows; `BRINELL_BACKGROUND_MODE=0` allows it.
+  A test of real input declares itself with `[PhysicalInputFact]` and the
+  `PhysicalInput=Deliberate` trait. See AD-005.
+- An action with no UI Automation route goes through the app's gesture bridge
+  (`GestureAutomation.Verbs`), never through coordinates - and only after the three
+  admission tests in AD-008.
 
 ## Synchronization
 
@@ -92,7 +97,9 @@ genuinely broad.
 |---|---|---|
 | 1. One area | `--filter "FullyQualifiedName~AutomationProbeTests"` | ~7 s |
 | 2. Related areas | `--filter "FullyQualifiedName~Tests.Container\|FullyQualifiedName~Tests.Collection"` | ~11 s |
-| 3. Full suite | no filter | minutes |
+| 2b. Gesture bridge and background | `--filter "Stage=Background"` - bridge verbs, focus, text, scrolling, navigation, the foreground watchdog | ~20 s |
+| 3. Full suite | no filter | ~3 min |
+| Stress (opt-in) | `$env:BRINELL_STRESS = "1"` then `--filter "Pattern=Stress"` - reproduces UI Automation retiring the window element | 1-2 min |
 
 Use tier 3 only when finishing a phase of work, when the change touches shared
 infrastructure (fixture, navigation, `MauiProgram`, handler registration), or when a
@@ -102,9 +109,18 @@ Notes:
 
 - `dotnet test` takes **one** `--filter`; passing two silently drops the first. Use
   `|` for OR and `&` for AND inside a single filter string.
-- The suite has **pre-existing failures unrelated to container work** (DatePicker,
-  TimePicker, Image, ProgressBar, Stepper, Switch). Before reporting a regression,
-  establish the baseline — stash the change, rebuild, re-run the same filter — rather
-  than assuming a failure is yours.
+- The full suite is expected to be **green with nothing set**: 0 failed. The skips are
+  deliberate and each carries its reason - the Stepper (stage G step 31), two
+  CollectionView rows MAUI recycles, the tests of real input (skipped while input is
+  refused) and the opt-in stress test. A failure is a regression until shown otherwise;
+  still establish it against a rebuilt baseline before reporting it.
+- **Rebuild the sample app before a UI run** when anything under `samples/` changed.
+  `dotnet test` builds the test project, not the app it launches, and a stale app
+  binary passes or fails for reasons that no longer exist.
+- **One UI test process at a time**, and do not build while one is running: a build
+  overwrites binaries under a live run and every result after that is fiction.
+- Each run writes `test-timings.md` and `accessibility-audit.md` under
+  `TestResults/<run-id>/suites/<suite>/attachments/`. A class marked **slower** in the
+  timings report is the framework starting to wait for something.
 - A mechanical refactor (moving files, extracting a project) is verified by *the same
   tests passing identically*, not by running more of them.

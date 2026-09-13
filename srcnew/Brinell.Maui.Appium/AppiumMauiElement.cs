@@ -23,13 +23,11 @@ namespace Brinell.Maui.Appium;
 /// </para>
 /// <remarks>
 /// <para>
-/// Implements the two capability interfaces that mobile platforms can actually honour:
-/// <see cref="ITogglePatternElement"/> and <see cref="ISelectionItemPatternElement"/>. The
-/// UIA-shaped capabilities (<c>IInvokePatternElement</c>,
-/// <c>ILegacyIAccessiblePatternElement</c>, <c>IExpandCollapsePatternElement</c>) are
-/// deliberately <em>not</em> implemented: not
-/// implementing an interface is how this element reports "unsupported", and controls then
-/// fall through to <see cref="Click"/> or <see cref="Text"/>, which is correct on mobile.
+/// Answers <see cref="IMauiElement"/> in its own terms. It used to implement three UI Automation
+/// <c>*PatternElement</c> interfaces - toggle, selection item, value - so controls written against
+/// Windows could cast to them; controls now ask what they mean (<see cref="Checked"/>,
+/// <see cref="SupportsInvoke"/>) and a member this platform has no route for keeps the interface's
+/// default, which says so (step 107).
 /// </para>
 /// <para>
 /// Android and iOS express toggle and selection state through different attributes, so each
@@ -37,7 +35,7 @@ namespace Brinell.Maui.Appium;
 /// stops here, at the element: no control object above this layer branches on platform.
 /// </para>
 /// </remarks>
-public sealed class AppiumMauiElement : IMauiElement, ITogglePatternElement, ISelectionItemPatternElement, IValuePatternElement
+public sealed class AppiumMauiElement : IMauiElement
 {
     private readonly AppiumElement _element;
     private readonly AppiumMauiDriver _driver;
@@ -105,6 +103,16 @@ public sealed class AppiumMauiElement : IMauiElement, ITogglePatternElement, ISe
 
     /// <inheritdoc />
     public void Select() => Click();
+
+    /// <inheritdoc />
+    /// <remarks>True: a tap is how this platform invokes, toggles and selects alike.</remarks>
+    public bool SupportsInvoke => true;
+
+    /// <inheritdoc />
+    public bool SupportsToggle => true;
+
+    /// <inheritdoc />
+    public bool SupportsSelect => true;
 
     #endregion
 
@@ -673,23 +681,6 @@ public sealed class AppiumMauiElement : IMauiElement, ITogglePatternElement, ISe
         _ => null
     };
 
-    #region IValuePatternElement
-
-    /// <summary>
-    /// Not supported: neither UiAutomator2 nor XCUITest publishes a Value pattern, and an
-    /// element's text is not the same question. Reporting false here keeps a control's fallback
-    /// honest instead of answering with something that only looks like a value.
-    /// </summary>
-    public bool SupportsValuePattern => false;
-
-    /// <inheritdoc />
-    public string? GetValuePattern() => null;
-
-    /// <inheritdoc />
-    public bool? IsValuePatternReadOnly() => null;
-
-    #endregion
-
     /// <inheritdoc />
     public string? Hint => _driver.Platform switch
     {
@@ -777,7 +768,7 @@ public sealed class AppiumMauiElement : IMauiElement, ITogglePatternElement, ISe
     
     #endregion
 
-    #region ITogglePatternElement
+    #region Checked state
 
     /// <summary>
     /// The attribute carrying checked state, per platform.
@@ -785,7 +776,7 @@ public sealed class AppiumMauiElement : IMauiElement, ITogglePatternElement, ISe
     /// <remarks>
     /// Android surfaces <c>checked</c> ("true"/"false") on CheckBox and Switch. iOS surfaces
     /// <c>value</c> ("1"/"0") on a UISwitch. Anything else has no known attribute, so the
-    /// capability reports unsupported rather than guessing.
+    /// element reports no checked state rather than guessing.
     /// </remarks>
     private string? ToggleStateAttribute => _driver.Platform switch
     {
@@ -796,37 +787,40 @@ public sealed class AppiumMauiElement : IMauiElement, ITogglePatternElement, ISe
 
     /// <inheritdoc />
     /// <remarks>
-    /// Support is decided by whether the element actually reports the platform's toggle
-    /// attribute, not by its control type: a MAUI Switch and a CheckBox both surface it,
-    /// while a Label does not, and the attribute is the only reliable way to tell them apart
-    /// across drivers.
+    /// <para>
+    /// Null unless the element really has a checked state. Android reports <c>checked="false"</c>
+    /// on <i>every</i> view, a plain Button included, so the attribute being present cannot
+    /// distinguish a real toggle; <c>checkable</c> is the attribute that does.
+    /// </para>
+    /// <para>
+    /// <see cref="SupportsSetChecked"/> keeps its default, false: neither platform has a set-state
+    /// command, so a control toggles and verifies.
+    /// </para>
     /// </remarks>
-    public bool SupportsTogglePattern
+    public bool? Checked
     {
         get
         {
             var attribute = ToggleStateAttribute;
-            if (attribute == null) return false;
+            if (attribute == null) return null;
 
             try
             {
-                // Android reports checked="false" on EVERY view, a plain Button included, so
-                // "the attribute is present" cannot distinguish a real toggle. `checkable` is
-                // the attribute that actually says whether this control has a checked state
-                // at all. Without this gate the probe was true for everything, which is the
-                // same defect that made the SelectionItem probe fire on ordinary buttons.
-                if (_driver.Platform == MauiPlatform.Android
-                    && !IsAttributeTrue("checkable"))
+                if (_driver.Platform == MauiPlatform.Android && !IsAttributeTrue("checkable"))
                 {
-                    return false;
+                    return null;
                 }
 
-                return !string.IsNullOrEmpty(_element.GetAttribute(attribute));
+                var value = _element.GetAttribute(attribute);
+                if (string.IsNullOrEmpty(value)) return null;
+
+                return value.Equals("true", StringComparison.OrdinalIgnoreCase)
+                    || value.Equals("1", StringComparison.Ordinal);
             }
             catch
             {
                 // A driver may throw rather than return null for an absent attribute.
-                return false;
+                return null;
             }
         }
     }
@@ -847,105 +841,6 @@ public sealed class AppiumMauiElement : IMauiElement, ITogglePatternElement, ISe
             return false;
         }
     }
-
-    /// <inheritdoc />
-    public bool? IsTogglePatternChecked()
-    {
-        var attribute = ToggleStateAttribute;
-        if (attribute == null) return null;
-
-        try
-        {
-            var value = _element.GetAttribute(attribute);
-            if (string.IsNullOrEmpty(value)) return null;
-
-            return value.Equals("true", StringComparison.OrdinalIgnoreCase)
-                || value.Equals("1", StringComparison.Ordinal);
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    /// <inheritdoc />
-    /// <remarks>
-    /// Neither platform exposes a toggle command, only toggle state, so this taps the element
-    /// and confirms the state actually moved. Reporting success without that check would let a
-    /// tap that hit a disabled or mis-located control read as a successful toggle — the same
-    /// failure mode that made <c>LegacyIAccessible</c> unusable in the Windows click ladder.
-    /// </remarks>
-    public bool TogglePattern()
-    {
-        if (!SupportsTogglePattern) return false;
-
-        var before = IsTogglePatternChecked();
-
-        try
-        {
-            _element.Click();
-        }
-        catch
-        {
-            return false;
-        }
-
-        // A control that reports no state cannot be verified; treat the tap as done rather
-        // than claiming a transition that cannot be observed.
-        if (before == null) return true;
-
-        return IsTogglePatternChecked() != before;
-    }
-
-    /// <inheritdoc />
-    public bool SetToggleStatePattern(bool isChecked)
-    {
-        if (!SupportsTogglePattern) return false;
-
-        var current = IsTogglePatternChecked();
-        if (current == isChecked) return true;
-
-        return TogglePattern() && IsTogglePatternChecked() == isChecked;
-    }
-
-    #endregion
-
-    #region ISelectionItemPatternElement
-
-    /// <inheritdoc />
-    /// <remarks>
-    /// Mobile has no selection pattern distinct from tapping: a list row is selected by being
-    /// tapped. Support is therefore reported only when the element exposes selection state to
-    /// confirm the result with — otherwise the control's ladder falls through to its own
-    /// click, which is the same action without a false claim of pattern support.
-    /// </remarks>
-    public bool SupportsSelectionItemPattern
-    {
-        get
-        {
-            // Deliberately always false on mobile.
-            //
-            // The obvious probe - "does the element report a 'selected' attribute" - is wrong:
-            // every Android view reports selected="false", including a plain
-            // android.widget.Button. That made the probe true for everything, so
-            // SelectItemPattern clicked, saw Selected still false, reported failure, and the
-            // caller's ladder clicked AGAIN - two taps for one Click(). It is what made
-            // Button_MultipleTaps_IncrementsCount see "2 times" where it expected "1 time".
-            //
-            // There is no mobile equivalent of the UIA SelectionItem pattern: selecting a row
-            // IS tapping it. Reporting unsupported lets a control fall through to its own
-            // click, which performs exactly one tap and is the correct mobile behaviour.
-            return false;
-        }
-    }
-
-    /// <inheritdoc />
-    /// <remarks>
-    /// Always false, because <see cref="SupportsSelectionItemPattern"/> is. Kept rather than
-    /// throwing so the interface stays honest: a caller that asks is told "not available", the
-    /// same answer it gets from the probe, and the control falls through to its own click.
-    /// </remarks>
-    public bool SelectItemPattern() => false;
 
     #endregion
 

@@ -148,6 +148,36 @@ public class ContainerModuleTests
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// A child below the fold is found without the test scrolling to it first.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Step 100a, and the assertion is really about Android.</b> Android leaves content outside
+    /// a scroll view's viewport out of the accessibility tree, so a plain lookup says the label
+    /// does not exist. A control that finds nothing now asks the driver to sweep the element that
+    /// scrolls for its scope - here, this scroll view.
+    /// </para>
+    /// <para>
+    /// Before the step, a control inside any container never swept at all: the lookup lived on
+    /// the scope, and the container's version was a plain lookup. So this failed on Android while
+    /// the same label declared on the page would have been found. Windows keeps off-screen
+    /// elements in the tree and passes either way.
+    /// </para>
+    /// </remarks>
+    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [Trait("Method", "ScrollLookup")]
+    public Task ScrollView_FindsAChildBelowTheFold_WithoutBeingScrolledToIt()
+    {
+        // Back to the top, in case an earlier test left the last child on screen.
+        Page.TestScrollView.ScrollTo("ScrollFirstLabel");
+
+        Page.ScrollLastLabel.AssertExists();
+        Page.ScrollLastLabel.AssertVisibleAfterScroll();
+
+        return Task.CompletedTask;
+    }
+
     #endregion
 
     #region BoxView

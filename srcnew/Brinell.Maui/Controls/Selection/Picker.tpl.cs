@@ -46,19 +46,14 @@ public partial class Picker<TScope> : Base.SelectorControlBase<TScope>
     /// <param name="timeoutMs">Optional timeout.</param>
     protected virtual void OpenFlyoutCore(IMauiElement element, int? timeoutMs = null)
     {
-        if (element is not IExpandCollapsePatternElement<IMauiElement> flyout
-            || !flyout.SupportsExpandCollapse)
+        if (!element.SupportsDropdown)
         {
             throw new BrinellException(
-                $"This picker cannot be expanded: its platform element publishes no "
-                + $"ExpandCollapse pattern. Locator: {Locator}");
+                $"This picker cannot be expanded: its platform element publishes no dropdown. "
+                + $"Locator: {Locator}");
         }
 
-        if (!flyout.Expand())
-        {
-            throw new BrinellException(
-                $"The picker's dropdown did not open. Locator: {Locator}");
-        }
+        element.OpenDropdown();
     }
 
     /// <summary>Closes the picker's dropdown.</summary>
@@ -66,10 +61,9 @@ public partial class Picker<TScope> : Base.SelectorControlBase<TScope>
     /// <param name="timeoutMs">Optional timeout.</param>
     protected virtual void CloseFlyoutCore(IMauiElement element, int? timeoutMs = null)
     {
-        if (element is IExpandCollapsePatternElement<IMauiElement> flyout
-            && flyout.SupportsExpandCollapse)
+        if (element.SupportsDropdown)
         {
-            flyout.Collapse();
+            element.CloseDropdown();
         }
     }
 
@@ -81,7 +75,7 @@ public partial class Picker<TScope> : Base.SelectorControlBase<TScope>
     /// <param name="element">The pre-found element.</param>
     /// <returns>Whether the dropdown is open.</returns>
     protected virtual bool? IsFlyoutOpenCore(IMauiElement? element)
-        => element is IExpandCollapsePatternElement<IMauiElement> { SupportsExpandCollapse: true, IsExpanded: true };
+        => element is { SupportsDropdown: true, IsDropdownOpen: true };
 
     /// <summary>
     /// What the open dropdown is showing.
@@ -97,15 +91,13 @@ public partial class Picker<TScope> : Base.SelectorControlBase<TScope>
     /// <returns>The realized item texts, or null where the platform has no dropdown to read.</returns>
     protected virtual IReadOnlyList<string>? GetDropdownItemTextsCore(IMauiElement? element)
     {
-        if (element is not IExpandCollapsePatternElement<IMauiElement> flyout
-            || !flyout.SupportsExpandCollapse)
+        if (element is not { SupportsDropdown: true })
         {
             return null;
         }
 
-        return flyout.GetExpandedItems()?
-            .Select(item => item.Text ?? string.Empty)
-            .ToList();
+        return WithDropdownOpen(element,
+            () => element.ReadDropdownItems().Select(item => item.Text ?? string.Empty).ToList());
     }
 
     #endregion

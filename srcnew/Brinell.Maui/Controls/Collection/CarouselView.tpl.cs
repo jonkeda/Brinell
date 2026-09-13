@@ -65,19 +65,19 @@ public abstract partial class CarouselView<TParent, TSelf, TItem>
     /// Swipes to the next card.
     /// </summary>
     /// <remarks>
-    /// Pointer input, and therefore policy-gated on Windows. The swipe is a no-op rather
-    /// than a failure where pointer input is forbidden.
+    /// A gesture, not coordinates: the bridge's swipe verb on Windows, a real swipe on a touch
+    /// platform. Throws where the platform has no route, naming the declaration to add.
     /// </remarks>
     /// <param name="element">The carousel's own element.</param>
     protected virtual void SwipeNextCore(IMauiElement element)
-        => element.SwipeLeft();
+        => element.PerformGesture(MauiGesture.SwipeLeft);
 
     /// <summary>
     /// Swipes to the previous card.
     /// </summary>
     /// <param name="element">The carousel's own element.</param>
     protected virtual void SwipePreviousCore(IMauiElement element)
-        => element.SwipeRight();
+        => element.PerformGesture(MauiGesture.SwipeRight);
 
     #endregion
 

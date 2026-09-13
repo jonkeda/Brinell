@@ -1,3 +1,5 @@
+using Brinell.Maui.Containers;
+
 namespace Brinell.Maui.Controls.Container;
 
 /// <summary>
@@ -5,7 +7,12 @@ namespace Brinell.Maui.Controls.Container;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Swiping is declared as a capability (<see cref="ISwipeableControlObject{TScope}"/>) and
+/// <b>A container</b> (step 102, option B): it hosts content, so it is modelled the way
+/// <c>ScrollView</c> and <c>Border</c> are - its children are found under it. It used to be a
+/// view, which gave it no way to name what it holds.
+/// </para>
+/// <para>
+/// Swiping is declared as a capability (<see cref="ISwipeableControlObject{TSelf}"/>) and
 /// delegated to the element gesture extensions, rather than inherited from a swipeable base
 /// class. C# allows one base class, and a control may need swiping alongside another
 /// capability; composing interfaces keeps that open.
@@ -24,27 +31,37 @@ namespace Brinell.Maui.Controls.Container;
 /// generator emits rather than to this file — see step 19 in <c>.my/extension/steps.md</c>.
 /// </para>
 /// </remarks>
-/// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public partial class SwipeView<TScope> : Base.ViewBase<TScope>, ISwipeableControlObject<TScope>
-    where TScope : IMauiScope<TScope>
+/// <typeparam name="TParent">The parent scope type.</typeparam>
+/// <typeparam name="TSelf">The concrete container type.</typeparam>
+public partial class SwipeView<TParent, TSelf> : ContainerObjectBase<TParent, TSelf>,
+    ISwipeableControlObject<TSelf>
+    where TParent : IMauiScope<TParent>
+    where TSelf : SwipeView<TParent, TSelf>
 {
     /// <summary>
     /// Creates a new swipe view control within the specified scope.
     /// </summary>
-    public SwipeView(IMauiScope<TScope> scope, Locator locator)
-        : base(scope, locator)
+    public SwipeView(IMauiScope<TParent> parentScope, Locator locator)
+        : base(parentScope, locator)
     {
     }
 
     /// <summary>
     /// Creates a new swipe view control using the scope's default locator strategy.
     /// </summary>
-    public SwipeView(IMauiScope<TScope> scope, string locatorValue)
-        : base(scope, locatorValue)
+    public SwipeView(IMauiScope<TParent> parentScope, string locatorValue)
+        : base(parentScope, locatorValue)
     {
     }
 
     #region Core Methods (Element-Aware, No Logging)
+
+    /// <summary>Whether the container reports itself enabled.</summary>
+    /// <param name="element">The container's root, or null when absent.</param>
+    /// <returns>The enabled state, or null when absent.</returns>
+    [AbsenceTolerant]
+    protected virtual bool? IsEnabledCore(IMauiElement? element) => element?.Enabled;
+
 
     // The control names the gesture; the element decides how its platform performs it. On
     // Appium that is a real touch swipe computed from the element's bounds; on Windows it is a
@@ -87,4 +104,24 @@ public partial class SwipeView<TScope> : Base.ViewBase<TScope>, ISwipeableContro
         => element.SwipeRelative(startX, startY, endX, endY);
 
     #endregion
+}
+
+/// <summary>
+/// A <see cref="SwipeView{TParent, TSelf}"/> for use where no view-specific subclass is needed.
+/// </summary>
+/// <typeparam name="TParent">The parent scope type.</typeparam>
+public sealed partial class SwipeView<TParent> : SwipeView<TParent, SwipeView<TParent>>
+    where TParent : IMauiScope<TParent>
+{
+    /// <summary>Creates a SwipeView container within the specified scope.</summary>
+    public SwipeView(IMauiScope<TParent> parentScope, Locator locator)
+        : base(parentScope, locator)
+    {
+    }
+
+    /// <summary>Creates a SwipeView container using the scope's default locator strategy.</summary>
+    public SwipeView(IMauiScope<TParent> parentScope, string locatorValue)
+        : base(parentScope, locatorValue)
+    {
+    }
 }

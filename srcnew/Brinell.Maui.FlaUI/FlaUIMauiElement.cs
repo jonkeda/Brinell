@@ -18,9 +18,14 @@ namespace Brinell.Maui.FlaUI;
 /// <summary>
 /// FlaUI-based implementation of <see cref="IMauiElement"/> for Windows platform.
 /// Provides native Windows UI Automation support for MAUI desktop apps.
-/// Also implements pattern-based interfaces for enhanced Windows Automation support.
 /// </summary>
-public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISelectionItemPatternElement, ILegacyIAccessiblePatternElement, IRangePatternElement, IExpandCollapsePatternElement<IMauiElement>, ITogglePatternElement, IValuePatternElement, IFocusPatternElement
+/// <remarks>
+/// UI Automation patterns are this class's implementation detail, not its API. It used to
+/// implement eight <c>*PatternElement</c> interfaces that controls cast to; controls now ask
+/// <see cref="IMauiElement"/> in terms of what they do, and this class answers from the patterns
+/// (step 107).
+/// </remarks>
+public sealed class FlaUIMauiElement : IMauiElement
 {
     private readonly AutomationElement _element;
     private readonly FlaUIMauiDriver _driver;
@@ -62,22 +67,23 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
     public bool Enabled => _element.IsEnabled;
 
     /// <inheritdoc />
+    /// <remarks>
+    /// The SelectionItem pattern and nothing else. It used to fall back to the Toggle pattern, so
+    /// a checked CheckBox reported itself selected; checked state is <see cref="Checked"/> (step 105a).
+    /// </remarks>
     public bool Selected
     {
         get
         {
-            // Try SelectionItemPattern first
-            if (_element.Patterns.SelectionItem.IsSupported)
+            try
             {
-                return _element.Patterns.SelectionItem.Pattern.IsSelected.Value;
+                return _element.Patterns.SelectionItem.IsSupported
+                       && _element.Patterns.SelectionItem.Pattern.IsSelected.Value;
             }
-            // Fallback to Toggle pattern (for checkboxes)
-            if (_element.Patterns.Toggle.IsSupported)
+            catch
             {
-                return _element.Patterns.Toggle.Pattern.ToggleState.Value == 
-                       global::FlaUI.Core.Definitions.ToggleState.On;
+                return false;
             }
-            return false;
         }
     }
 
@@ -97,7 +103,7 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
         }
     }
 
-    #region IValuePatternElement
+    #region Text field state
 
     /// <summary>
     /// The element carrying the Value pattern: this element, or the Edit that MAUI nests
@@ -122,31 +128,34 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
     }
 
     /// <inheritdoc />
-    public bool SupportsValuePattern => ValuePatternElement != null;
-
-    /// <inheritdoc />
-    public string? GetValuePattern()
+    public string? Value
     {
-        try
+        get
         {
-            return ValuePatternElement?.Patterns.Value.Pattern.Value.Value;
-        }
-        catch
-        {
-            return null;
+            try
+            {
+                return ValuePatternElement?.Patterns.Value.Pattern.Value.Value;
+            }
+            catch
+            {
+                return null;
+            }
         }
     }
 
     /// <inheritdoc />
-    public bool? IsValuePatternReadOnly()
+    public bool? IsReadOnly
     {
-        try
+        get
         {
-            return ValuePatternElement?.Patterns.Value.Pattern.IsReadOnly.Value;
-        }
-        catch
-        {
-            return null;
+            try
+            {
+                return ValuePatternElement?.Patterns.Value.Pattern.IsReadOnly.Value;
+            }
+            catch
+            {
+                return null;
+            }
         }
     }
 
@@ -291,9 +300,7 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
     /// </remarks>
     public void Click()
     {
-        PhysicalInput.Used("FlaUIMauiElement.Click", "the Invoke pattern, or the bridge's Tap verb (step 18)");
-        _driver.EnsureRootWindowFocused();
-        _element.Click();
+        _driver.Pointer.Click(_element);
     }
 
     #region Activation
@@ -305,15 +312,24 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
     /// not this method's job to guess a substitute.
     /// </remarks>
     public void Invoke() => Perform(
-        nameof(Invoke), SupportsInvokePattern, InvokePattern, "InvokePattern");
+        nameof(Invoke), SupportsInvoke, RunInvokePattern, "InvokePattern");
 
     /// <inheritdoc />
     public void Toggle() => Perform(
-        nameof(Toggle), SupportsTogglePattern, TogglePattern, "TogglePattern");
+        nameof(Toggle), SupportsToggle, RunTogglePattern, "TogglePattern");
 
     /// <inheritdoc />
     public void Select() => Perform(
-        nameof(Select), SupportsSelectionItemPattern, SelectItemPattern, "SelectionItemPattern");
+        nameof(Select), SupportsSelect, RunSelectionItemPattern, "SelectionItemPattern");
+
+    /// <inheritdoc />
+    public bool SupportsInvoke => HasPattern(() => _element.Patterns.Invoke.IsSupported);
+
+    /// <inheritdoc />
+    public bool SupportsToggle => HasPattern(() => _element.Patterns.Toggle.IsSupported);
+
+    /// <inheritdoc />
+    public bool SupportsSelect => HasPattern(() => _element.Patterns.SelectionItem.IsSupported);
 
     /// <summary>
     /// Runs one automation pattern, or explains which half of it was missing.
@@ -368,16 +384,14 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
         switch (method)
         {
             case TextInputMethod.Keys:
-                PhysicalInput.Used("FlaUIMauiElement.SendKeys(Keys)", "nothing, when the test is of the input pipeline; the SetText verb otherwise");
-                FocusForKeyboardInput();
+                FocusForKeyboardInput("FlaUIMauiElement.SendKeys(Keys)", "nothing, when the test is of the input pipeline; the SetText verb otherwise");
                 Keyboard.Type(text);
                 break;
             case TextInputMethod.Paste:
                 if (TryBridge(BrinellVerb.SetText, text, out _))
                     return;
 
-                PhysicalInput.Used("FlaUIMauiElement.SendKeys(Paste)", "the SetText verb - this one also destroys the user's clipboard");
-                FocusForKeyboardInput();
+                FocusForKeyboardInput("FlaUIMauiElement.SendKeys(Paste)", "the SetText verb - this one also destroys the user's clipboard");
                 System.Windows.Forms.Clipboard.SetText(text);
                 Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_V);
                 break;
@@ -394,8 +408,7 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
                 if (TryBridge(BrinellVerb.SetText, text, out _))
                     return;
 
-                PhysicalInput.Used("FlaUIMauiElement.SendKeys(SetValue fallback)", "the SetText verb");
-                FocusForKeyboardInput();
+                FocusForKeyboardInput("FlaUIMauiElement.SendKeys(SetValue fallback)", "the SetText verb");
                 Keyboard.Type(text);
                 break;
         }
@@ -411,8 +424,7 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
             return;
 
         // Select all and delete
-        PhysicalInput.Used("FlaUIMauiElement.Clear(Ctrl+A,Delete)", "the ClearText verb");
-        FocusForKeyboardInput();
+        FocusForKeyboardInput("FlaUIMauiElement.Clear(Ctrl+A,Delete)", "the ClearText verb");
         Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_A);
         Keyboard.Type(VirtualKeyShort.DELETE);
     }
@@ -420,95 +432,89 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
     /// <inheritdoc />
     public void DoubleClick()
     {
-        PhysicalInput.Used("FlaUIMauiElement.DoubleClick", "the DoubleTap gesture verb (step 18)");
-        _driver.EnsureRootWindowFocused();
-        _element.DoubleClick();
+        _driver.Pointer.DoubleClick(_element);
     }
 
     /// <inheritdoc />
     public void RightClick()
     {
-        // Still physical, and still right for what it is. A right-click means "show me the
-        // context menu", and no verb can stand in for a test about the menu appearing. What
-        // step 26 removed is the commoner case behind it: reaching a menu *item*, which used to
-        // require this click plus a second one at a guessed coordinate, and now goes through
-        // IMauiDriver.InvokeMenuItem without the app taking the foreground.
-        PhysicalInput.Used(
-            "FlaUIMauiElement.RightClick",
-            "IMauiDriver.InvokeMenuItem, where the aim is the item rather than the menu");
-        _driver.EnsureRootWindowFocused();
-        _element.RightClick();
+        // Still physical, and still right for what it is - see PhysicalPointer.RightClick.
+        _driver.Pointer.RightClick(_element);
     }
 
     /// <inheritdoc />
     public void Hover()
     {
-        var rect = _element.BoundingRectangle;
-        var center = new System.Drawing.Point(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
-        PhysicalInput.Used("FlaUIMauiElement.Hover", "a pointer-enter verb (not yet planned)");
-        _driver.EnsureRootWindowFocused();
-        Mouse.MoveTo(center);
+        _driver.Pointer.Hover(_element);
     }
 
-    /// <inheritdoc />
-    public void LongPress(int durationMs = 1000)
-    {
-        var rect = _element.BoundingRectangle;
-        var center = new System.Drawing.Point(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
-        _driver.PointerLongPress(center, durationMs);
-    }
-
-    /// <inheritdoc />
     /// <inheritdoc />
     /// <remarks>
-    /// Drives the UIA Scroll pattern on this element, or on the nearest scrollable
-    /// ancestor when this element does not scroll itself — a MAUI CollectionView is often
-    /// wrapped, so the addressable element and the scrolling one differ.
+    /// <b>The bridge's <c>LongPress</c> verb where the app declares it, the real pointer where it
+    /// does not</b> - one question, then one route (step 103). The verb has no duration: the app
+    /// raises its own long-press handling, which is the thing a test of it wants. The pointer
+    /// route is refused under a quiet run, with a message naming the verb.
     /// </remarks>
-    public bool TryScrollContent(int verticalSteps, int horizontalSteps = 0)
+    public void LongPress(int durationMs = 1000)
     {
+        if (SupportsGesture(MauiGesture.LongPress))
+        {
+            PerformGesture(MauiGesture.LongPress);
+            return;
+        }
+
+        _driver.Pointer.LongPress(_element, durationMs);
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// The UIA Scroll pattern on this element, or on the nearest scrollable ancestor. The route
+    /// for an app that has not declared the bridge's scroll verbs; it is not pointer input.
+    /// </remarks>
+    public bool SupportsScrollContent => FindScrollPattern() != null;
+
+    /// <inheritdoc />
+    public bool ScrollContent(int verticalSteps, int horizontalSteps = 0)
+    {
+        var scroll = FindScrollPattern()
+            ?? throw new NotSupportedException(
+                $"'{AutomationId ?? Name ?? "(unnamed)"}' neither exposes the UI Automation Scroll "
+                + "pattern nor sits inside anything that does.");
+
         if (verticalSteps == 0 && horizontalSteps == 0)
             return false;
 
-        var scroll = FindScrollPattern();
-        if (scroll == null)
-            return false;
+        var before = (scroll.VerticalScrollPercent.ValueOrDefault, scroll.HorizontalScrollPercent.ValueOrDefault);
 
         try
         {
-            var before = scroll.VerticalScrollPercent.ValueOrDefault;
-
             scroll.Scroll(ToAmount(horizontalSteps), ToAmount(verticalSteps));
-
-            // The scroll percent does not update synchronously: read immediately it reports
-            // the pre-scroll value, making a successful scroll look like no progress.
-            return WaitForScrollChange(scroll, before);
         }
         catch (Exception)
         {
-            // A dead element or an unsupported combination is a negative answer, not a
-            // fault: the caller falls back or stops.
+            // UIA refuses a scroll past the end with an error rather than a no-op, and a dead
+            // element fails the same way. Both are "did not move", which is what is reported.
             return false;
         }
+
+        // The scroll percent does not update synchronously: read immediately it reports the
+        // pre-scroll value, making a successful scroll look like no progress.
+        return WaitForScrollChange(scroll, before);
     }
 
     /// <summary>
-    /// Polls until the scroll percent moves away from <paramref name="before"/>.
+    /// Polls until either scroll percent moves away from where it was.
     /// </summary>
     /// <returns>True if it moved; false if it stayed put for the whole window.</returns>
-    /// <remarks>
-    /// A false return legitimately means "already at the extreme". The window is short
-    /// because the caller polls the realized item count separately.
-    /// </remarks>
-    private static bool WaitForScrollChange(IScrollPattern scroll, double before)
+    private static bool WaitForScrollChange(IScrollPattern scroll, (double Vertical, double Horizontal) before)
     {
         const int budgetMs = 500;
         const int intervalMs = 25;
 
         for (var waited = 0; waited < budgetMs; waited += intervalMs)
         {
-            var now = scroll.VerticalScrollPercent.ValueOrDefault;
-            if (Math.Abs(now - before) > 0.01)
+            if (Math.Abs(scroll.VerticalScrollPercent.ValueOrDefault - before.Vertical) > 0.01
+                || Math.Abs(scroll.HorizontalScrollPercent.ValueOrDefault - before.Horizontal) > 0.01)
                 return true;
 
             Thread.Sleep(intervalMs);
@@ -532,155 +538,100 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
     /// </summary>
     private IScrollPattern? FindScrollPattern()
     {
-        if (_element.Patterns.Scroll.IsSupported)
-            return _element.Patterns.Scroll.Pattern;
-
-        var parent = _element.Parent;
-        while (parent != null)
+        try
         {
-            if (parent.Patterns.Scroll.IsSupported)
-                return parent.Patterns.Scroll.Pattern;
-
-            parent = parent.Parent;
+            for (var candidate = _element; candidate != null; candidate = candidate.Parent)
+            {
+                if (candidate.Patterns.Scroll.IsSupported)
+                    return candidate.Patterns.Scroll.Pattern;
+            }
+        }
+        catch
+        {
+            // A dead element, or one whose ancestors cannot be walked: no route.
         }
 
         return null;
     }
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// <para>
+    /// <b>Two routes, both semantic, and no guessing.</b> First the element's own ScrollItem
+    /// pattern, which a list item has. If that leaves it off screen - or there is none - the
+    /// nearest ancestor whose app-side element declares the bridge's <c>ScrollTo</c> verb is asked
+    /// to reveal this element by id, which is exactly what a <c>ScrollView</c> knows how to do.
+    /// </para>
+    /// <para>
+    /// <b>What went is a loop</b> that scrolled the nearest ancestor to the top, then down a large
+    /// step at a time until this element stopped reporting itself off screen, then down a small
+    /// step at a time - sleeping 50 ms between each, and giving up when the percentage stopped
+    /// changing. It is the "scroll a bit, poll a percentage, guess" pattern the <c>ScrollTo</c>
+    /// verb replaced (step 105c). An element neither route can reveal stays where it is, and the
+    /// caller's visibility check reports it.
+    /// </para>
+    /// </remarks>
     public void ScrollIntoView(int timeoutMs = 5000)
     {
-        if (_element.Patterns.ScrollItem.IsSupported)
+        try
         {
-            _element.Patterns.ScrollItem.Pattern.ScrollIntoView();
-        }
-
-        if (!_element.IsOffscreen)
-            return;
-
-        // Find scrollable parent
-        var parent = _element.Parent;
-        IScrollPattern? scroll = null;
-
-        while (parent != null)
-        {
-            if (parent.Patterns.Scroll.IsSupported)
+            if (_element.Patterns.ScrollItem.IsSupported)
             {
-                scroll = parent.Patterns.Scroll.Pattern;
-                break;
-            }
-            parent = parent.Parent;
-        }
-
-        if (scroll == null || parent == null)
-            return;
-
-        // If bounding rectangle is valid, try geometry-based scroll
-        var elementRect = _element.BoundingRectangle;
-        var parentRect = parent.BoundingRectangle;
-
-        var rectValid =
-            elementRect is { Bottom: > 0, Top: > 0, Height: > 0, Width: > 0 };
-
-        if (rectValid)
-        {
-            if (elementRect.Bottom > parentRect.Bottom)
-            {
-                scroll.Scroll(ScrollAmount.NoAmount, ScrollAmount.LargeIncrement);
-            }
-            else if (elementRect.Top < parentRect.Top)
-            {
-                scroll.Scroll(ScrollAmount.NoAmount, ScrollAmount.SmallDecrement);
+                _element.Patterns.ScrollItem.Pattern.ScrollIntoView();
             }
 
+            if (!_element.IsOffscreen)
+                return;
+        }
+        catch
+        {
+            // A ScrollItem that refuses is the same as none: try the container.
+        }
+
+        var id = AutomationId;
+        if (string.IsNullOrEmpty(id))
             return;
-        }
 
-        //
-        // FALLBACK: bounding rectangle invalid → use percent-based scrolling
-        //
-
-        // 1. Scroll to top
-        double last = -1;
-
-        scroll.Scroll(
-            ScrollAmount.NoAmount,
-            ScrollAmount.SmallDecrement);
-
-        Thread.Sleep(50);
-        while (scroll.VerticalScrollPercent > 0)
+        for (var ancestor = _element.Parent; ancestor != null; ancestor = ancestor.Parent)
         {
-            // Detect no movement → break
-            if (Math.Abs(scroll.VerticalScrollPercent - last) < 0.01)
-                break;
-
-            last = scroll.VerticalScrollPercent;
-
-            scroll.Scroll(
-                ScrollAmount.NoAmount,
-                ScrollAmount.LargeDecrement);  
-
-            Thread.Sleep(50); 
-        }
-
-        // 2. Scroll down until element becomes visible
-        last = -1;
-
-        while (_element.IsOffscreen && scroll.VerticalScrollPercent < 100)
-        {
-            if (Math.Abs(scroll.VerticalScrollPercent - last) < 0.01)
-                break; // stuck → stop
-
-            last = scroll.VerticalScrollPercent;
-
-            scroll.Scroll(ScrollAmount.NoAmount, ScrollAmount.LargeIncrement);
-            Thread.Sleep(50);
-        }
-
-        last = -1;
-        while (_element.IsOffscreen && scroll.VerticalScrollPercent < 100)
-        {
-            if (Math.Abs(scroll.VerticalScrollPercent - last) < 0.01)
-                break; // stuck → stop
-
-            last = scroll.VerticalScrollPercent;
-
-            scroll.Scroll(ScrollAmount.NoAmount, ScrollAmount.SmallIncrement);
-            Thread.Sleep(50);
+            var container = new FlaUIMauiElement(ancestor, _driver);
+            if (!string.IsNullOrEmpty(container.AutomationId) && container.SupportsScrollVerbs)
+            {
+                container.ScrollTo(id);
+                return;
+            }
         }
     }
 
-
-
     /// <inheritdoc />
+    /// <remarks>
+    /// <para>
+    /// <b>The bridge's swipe verb for the direction, where the app declares it; the real pointer
+    /// where it does not</b> (step 105b). The direction is the dominant axis of the two points.
+    /// </para>
+    /// <para>
+    /// <b>No mouse wheel.</b> A mostly-vertical swipe used to become five wheel clicks at the
+    /// element's centre, because a drag does not scroll a WinUI <c>ScrollViewer</c>. Scrolling has
+    /// its own routes now - <see cref="ScrollTo"/>, <see cref="ScrollToIndex"/> and
+    /// <see cref="ScrollContent"/> - and a swipe that is secretly a scroll hid which one ran.
+    /// </para>
+    /// </remarks>
     public void Swipe(int startX, int startY, int endX, int endY, int durationMs = 500)
     {
-        // On Windows desktop, vertical swipes should use mouse wheel
-        // since mouse drag doesn't scroll MAUI ScrollView controls.
-        var deltaY = endY - startY;
         var deltaX = endX - startX;
+        var deltaY = endY - startY;
 
-        // Detect vertical-only scroll gesture (typical swipe to scroll)
-        if (Math.Abs(deltaX) < 20 && Math.Abs(deltaY) > 20)
+        var direction = Math.Abs(deltaX) >= Math.Abs(deltaY)
+            ? (deltaX < 0 ? MauiGesture.SwipeLeft : MauiGesture.SwipeRight)
+            : (deltaY < 0 ? MauiGesture.SwipeUp : MauiGesture.SwipeDown);
+
+        if (SupportsGesture(direction))
         {
-            // Use mouse wheel at the element center — most reliable for MAUI ScrollView on WinUI3
-            var center = new Point(
-                _element.BoundingRectangle.X + _element.BoundingRectangle.Width / 2,
-                _element.BoundingRectangle.Y + _element.BoundingRectangle.Height / 2);
-            // deltaY < 0 means swipe up → scroll down → negative wheel
-            var wheelClicks = deltaY < 0 ? -5 : 5;
-            PhysicalInput.Used("FlaUIMauiElement.Swipe(wheel)", "the ScrollTo verb (step 21)");
-            _driver.EnsureRootWindowFocused();
-            Mouse.MoveTo(center);
-            Mouse.Scroll(wheelClicks);
-            WaitHelper.Pause(200); // Wait for scroll to settle
+            PerformGesture(direction);
             return;
         }
 
-        // Non-scroll gestures: simulate with mouse drag
-        _driver.PointerDrag(
-            new Point(startX, startY),
-            new Point(endX, endY),
-            durationMs);
+        _driver.Pointer.Drag(new Point(startX, startY), new Point(endX, endY), durationMs);
     }
 
     #endregion
@@ -843,8 +794,7 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
         if (TryBridge(BrinellVerb.Submit))
             return;
 
-        PhysicalInput.Used("FlaUIMauiElement.Submit(Enter)", "the Submit verb");
-        FocusForKeyboardInput();
+        FocusForKeyboardInput("FlaUIMauiElement.Submit(Enter)", "the Submit verb");
         Keyboard.Type(VirtualKeyShort.ENTER);
     }
 
@@ -857,11 +807,11 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
     /// </summary>
     internal AutomationElement Element => _element;
 
-    #region IFocusPatternElement Implementation
+    #region Focus
 
     /// <inheritdoc />
     /// <remarks>UIA can always focus an element; there is nothing to advertise.</remarks>
-    public bool SupportsSetFocus => true;
+    public bool SupportsFocus => true;
 
     /// <inheritdoc />
     /// <remarks>
@@ -870,28 +820,19 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
     /// Focus and the desktop foreground window are separate things that the physical path had
     /// to conflate: it calls <c>SetForeground</c> because the global keystrokes that usually
     /// follow go wherever the foreground is. Asking for focus on its own needs none of that, so
-    /// the bridge route leaves the machine with whoever is sitting at it — the app can be
-    /// occluded, or off to one side, and the caret still lands in the right field.
+    /// the bridge route leaves the machine with whoever is sitting at it.
     /// </para>
     /// <para>
     /// The fallback is the old path in full, because an app without the bridge must keep
-    /// working exactly as it did.
+    /// working exactly as it did - and like every physical route it is refused under a quiet run.
     /// </para>
     /// </remarks>
-    public bool SetFocus()
+    public void Focus()
     {
         if (TryBridge(BrinellVerb.Focus))
-            return true;
+            return;
 
-        try
-        {
-            FocusForKeyboardInput();
-            return true;
-        }
-        catch
-        {
-            return false;
-        }
+        FocusForKeyboardInput("FlaUIMauiElement.Focus", "the Focus verb");
     }
 
     #endregion
@@ -913,51 +854,57 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
     /// whole request rather than the setup for a keystroke.
     /// </para>
     /// </remarks>
-    private void FocusForKeyboardInput()
+    /// <param name="site">Who is about to send keystrokes, for the physical-input record.</param>
+    /// <param name="replacement">The semantic route that would avoid it, for the refusal message.</param>
+    private void FocusForKeyboardInput(string site, string replacement)
     {
-        _driver.EnsureRootWindowFocused();
+        // The one record for the keystrokes that follow: taking the foreground is what makes
+        // them physical, so it is recorded here rather than once by the caller and again here.
+        _driver.Pointer.BringAppToFront(site, replacement);
         _element.Focus();
     }
 
     #endregion
 
-    #region ITogglePatternElement Implementation
+    #region Checked state
 
     /// <inheritdoc />
-    public bool SupportsTogglePattern
+    /// <remarks>The Toggle pattern: <c>Switch</c> maps to ToggleSwitch, <c>CheckBox</c> to CheckBox.</remarks>
+    public bool? Checked
     {
         get
         {
             try
             {
-                return _element.Patterns.Toggle.IsSupported;
+                return _element.Patterns.Toggle.IsSupported
+                    ? _element.Patterns.Toggle.Pattern.ToggleState.Value == ToggleState.On
+                    : null;
             }
-            catch (Exception)
+            catch
             {
-                return false;
+                return null;
             }
         }
     }
 
     /// <inheritdoc />
-    public bool? IsTogglePatternChecked()
-    {
-        try
-        {
-            if (!_element.Patterns.Toggle.IsSupported)
-                return null;
-
-            return _element.Patterns.Toggle.Pattern.ToggleState.Value ==
-                   global::FlaUI.Core.Definitions.ToggleState.On;
-        }
-        catch (Exception)
-        {
-            return null;
-        }
-    }
+    /// <remarks>
+    /// UI Automation has no set-state call, but a state read and a toggle against the element in
+    /// hand is as close as the platform comes, and the read makes it idempotent. The control
+    /// verifies the outcome.
+    /// </remarks>
+    public bool SupportsSetChecked => SupportsToggle;
 
     /// <inheritdoc />
-    public bool TogglePattern()
+    public void SetChecked(bool isChecked)
+    {
+        if (Checked == isChecked)
+            return;
+
+        Toggle();
+    }
+
+    private bool RunTogglePattern()
     {
         try
         {
@@ -973,41 +920,23 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
         }
     }
 
-    /// <inheritdoc />
-    public bool SetToggleStatePattern(bool isChecked)
-    {
-        var current = IsTogglePatternChecked();
-        if (current == null)
-            return false;
-
-        if (current == isChecked)
-            return true;
-
-        return TogglePattern();
-    }
-
     #endregion
 
-    #region IInvokePatternElement Implementation
+    #region Activation patterns
 
-    /// <inheritdoc />
-    public bool SupportsInvokePattern
+    private bool HasPattern(Func<bool> probe)
     {
-        get
+        try
         {
-            try
-            {
-                return _element.Patterns.Invoke.IsSupported;
-            }
-            catch
-            {
-                return false;
-            }
+            return probe();
+        }
+        catch
+        {
+            return false;
         }
     }
 
-    /// <inheritdoc />
-    public bool InvokePattern()
+    private bool RunInvokePattern()
     {
         try
         {
@@ -1023,65 +952,7 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
         }
     }
 
-    #endregion
-
-    #region ILegacyIAccessiblePatternElement Implementation
-
-    /// <inheritdoc />
-    public bool SupportsLegacyIAccessiblePattern
-    {
-        get
-        {
-            try
-            {
-                return _element.Patterns.LegacyIAccessible.IsSupported;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-    }
-
-    /// <inheritdoc />
-    public bool DoDefaultActionPattern()
-    {
-        try
-        {
-            if (!_element.Patterns.LegacyIAccessible.IsSupported)
-                return false;
-
-            _element.Patterns.LegacyIAccessible.Pattern.DoDefaultAction();
-            return true;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    #endregion
-
-    #region ISelectionItemPatternElement Implementation
-
-    /// <inheritdoc />
-    public bool SupportsSelectionItemPattern
-    {
-        get
-        {
-            try
-            {
-                return _element.Patterns.SelectionItem.IsSupported;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-    }
-
-    /// <inheritdoc />
-    public bool SelectItemPattern()
+    private bool RunSelectionItemPattern()
     {
         try
         {
@@ -1099,101 +970,46 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
 
     #endregion
 
-    #region IRangePatternElement Implementation
+    #region Range
 
     /// <inheritdoc />
-    public bool SupportsRangeValue
+    public double? RangeValue => ReadRange(p => p.Value.Value);
+
+    /// <inheritdoc />
+    public double? RangeMinimum => ReadRange(p => p.Minimum.Value);
+
+    /// <inheritdoc />
+    public double? RangeMaximum => ReadRange(p => p.Maximum.Value);
+
+    /// <inheritdoc />
+    public double? RangeSmallChange => ReadRange(p => p.SmallChange.Value);
+
+    /// <inheritdoc />
+    public bool SupportsSetRangeValue => HasPattern(() => _element.Patterns.RangeValue.IsSupported);
+
+    /// <inheritdoc />
+    /// <remarks>Clamped to the published bounds, as the platform would clamp a drag.</remarks>
+    public void SetRangeValue(double value)
     {
-        get
+        if (!SupportsSetRangeValue)
         {
-            try
-            {
-                return _element.Patterns.RangeValue.IsSupported;
-            }
-            catch
-            {
-                return false;
-            }
+            throw new NotSupportedException(
+                $"'{AutomationId ?? Name ?? "(unnamed)"}' does not expose the UI Automation "
+                + "RangeValue pattern, so its value cannot be set.");
         }
+
+        var pattern = _element.Patterns.RangeValue.Pattern;
+        var clamped = Math.Clamp(value, pattern.Minimum.Value, pattern.Maximum.Value);
+        pattern.SetValue(clamped);
     }
 
-    /// <inheritdoc />
-    public bool SetRangeValue(double value)
+    private double? ReadRange(Func<IRangeValuePattern, double> read)
     {
         try
         {
-            if (!_element.Patterns.RangeValue.IsSupported)
-                return false;
-                
-            var pattern = _element.Patterns.RangeValue.Pattern;
-            
-            // Clamp value to valid range
-            var min = pattern.Minimum.Value;
-            var max = pattern.Maximum.Value;
-            var clampedValue = Math.Max(min, Math.Min(max, value));
-            
-            pattern.SetValue(clampedValue);
-            return true;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    /// <inheritdoc />
-    public double? GetRangeValue()
-    {
-        try
-        {
-            if (!_element.Patterns.RangeValue.IsSupported)
-                return null;
-            return _element.Patterns.RangeValue.Pattern.Value.Value;
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    /// <inheritdoc />
-    public double? GetRangeMinimum()
-    {
-        try
-        {
-            if (!_element.Patterns.RangeValue.IsSupported)
-                return null;
-            return _element.Patterns.RangeValue.Pattern.Minimum.Value;
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    /// <inheritdoc />
-    public double? GetRangeMaximum()
-    {
-        try
-        {
-            if (!_element.Patterns.RangeValue.IsSupported)
-                return null;
-            return _element.Patterns.RangeValue.Pattern.Maximum.Value;
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    /// <inheritdoc />
-    public double? GetRangeSmallChange()
-    {
-        try
-        {
-            if (!_element.Patterns.RangeValue.IsSupported)
-                return null;
-            return _element.Patterns.RangeValue.Pattern.SmallChange.Value;
+            return _element.Patterns.RangeValue.IsSupported
+                ? read(_element.Patterns.RangeValue.Pattern)
+                : null;
         }
         catch
         {
@@ -1203,205 +1019,96 @@ public sealed class FlaUIMauiElement : IMauiElement, IInvokePatternElement, ISel
 
     #endregion
 
-    #region IExpandCollapsePatternElement Implementation
+    #region Dropdown
 
     /// <inheritdoc />
-    public bool SupportsExpandCollapse
-    {
-        get
-        {
-            if (!_element.Patterns.ExpandCollapse.IsSupported)
-                return false;
-            return true;
-        }
-    }
+    /// <remarks>ExpandCollapse. A WinUI <c>ComboBox</c> is the case this exists for.</remarks>
+    public bool SupportsDropdown => HasPattern(() => _element.Patterns.ExpandCollapse.IsSupported);
 
     /// <inheritdoc />
-    public bool IsExpanded
-    {
-        get
-        {
-            if (!_element.Patterns.ExpandCollapse.IsSupported)
-                return false;
-            return _element.Patterns.ExpandCollapse.Pattern.ExpandCollapseState.Value == 
-                   global::FlaUI.Core.Definitions.ExpandCollapseState.Expanded;
-        }
-    }
+    public bool IsDropdownOpen
+        => SupportsDropdown
+           && _element.Patterns.ExpandCollapse.Pattern.ExpandCollapseState.Value
+               == ExpandCollapseState.Expanded;
 
     /// <inheritdoc />
-    public bool Expand()
+    public void OpenDropdown()
     {
-        if (!_element.Patterns.ExpandCollapse.IsSupported)
-            return false;
-            
+        RequireDropdown(nameof(OpenDropdown));
+
         _element.Patterns.ExpandCollapse.Pattern.Expand();
-        
-        // Poll until expanded state is confirmed
-        WaitHelper.WaitFor(
-            () => _element.Patterns.ExpandCollapse.Pattern.ExpandCollapseState.Value == 
-                  global::FlaUI.Core.Definitions.ExpandCollapseState.Expanded,
-            timeoutMs: 2000,
-            pollingIntervalMs: 50);
-        
-        return IsExpanded;
-    }
 
-    /// <inheritdoc />
-    public bool Collapse()
-    {
-        if (!_element.Patterns.ExpandCollapse.IsSupported)
-            return false;
-            
-        _element.Patterns.ExpandCollapse.Pattern.Collapse();
-        return true;
-    }
-
-    /// <inheritdoc />
-    public IReadOnlyList<IMauiElement>? GetExpandedItems()
-    {
-        if (!_element.Patterns.ExpandCollapse.IsSupported)
-            return null;
-        
-        var wasExpanded = IsExpanded;
-        
-        // Expand if not already expanded
-        if (!wasExpanded)
+        if (!WaitHelper.WaitFor(() => IsDropdownOpen, timeoutMs: 2000, pollingIntervalMs: 50))
         {
-            if (!Expand())
+            throw new InvalidOperationException(
+                $"The dropdown on '{AutomationId ?? Name ?? "(unnamed)"}' accepted Expand and did "
+                + "not report itself open.");
+        }
+    }
+
+    /// <inheritdoc />
+    public void CloseDropdown()
+    {
+        RequireDropdown(nameof(CloseDropdown));
+
+        if (IsDropdownOpen)
+        {
+            _element.Patterns.ExpandCollapse.Pattern.Collapse();
+        }
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Looked for among descendants, then among children: a WinUI ComboBox's popup items are
+    /// reported under one or the other depending on how it was templated.
+    /// </remarks>
+    public IReadOnlyList<IMauiElement> ReadDropdownItems()
+    {
+        RequireDropdown(nameof(ReadDropdownItems));
+
+        AutomationElement[] items = [];
+
+        WaitHelper.WaitFor(() =>
+        {
+            items = _element.FindAllDescendants(cf => cf.ByControlType(ControlType.ListItem));
+            if (items.Length > 0) return true;
+
+            items = _element.FindAllChildren(cf => cf.ByControlType(ControlType.ListItem));
+            return items.Length > 0;
+        }, timeoutMs: 2000, pollingIntervalMs: 50);
+
+        return items.Select(item => (IMauiElement)new FlaUIMauiElement(item, _driver)).ToList();
+    }
+
+    /// <inheritdoc />
+    /// <remarks>The Selection pattern, which names the chosen item rather than the combo box's header.</remarks>
+    public string? SelectedItemText
+    {
+        get
+        {
+            try
+            {
+                if (!_element.Patterns.Selection.IsSupported)
+                    return null;
+
+                var selection = _element.Patterns.Selection.Pattern.Selection.Value;
+                return selection is { Length: > 0 } ? selection[0].Name : null;
+            }
+            catch
+            {
                 return null;
-        }
-        
-        try
-        {
-            global::FlaUI.Core.AutomationElements.AutomationElement[] items = [];
-            
-            // Poll for ListItem elements to appear after expansion
-            WaitHelper.WaitFor(() =>
-            {
-                // Try descendants of this element
-                items = _element.FindAllDescendants(cf => 
-                    cf.ByControlType(global::FlaUI.Core.Definitions.ControlType.ListItem));
-                if (items.Length > 0) return true;
-                
-                // Try direct/logical children (FlaUI ComboBox pattern)
-                items = _element.FindAllChildren(cf => 
-                    cf.ByControlType(global::FlaUI.Core.Definitions.ControlType.ListItem));
-                return items.Length > 0;
-            }, timeoutMs: 2000, pollingIntervalMs: 50);
-            
-            return items.Select(e => new FlaUIMauiElement(e, _driver) as IMauiElement).ToList();
-        }
-        finally
-        {
-            // Restore original state
-            if (!wasExpanded)
-            {
-                Collapse();
             }
         }
     }
 
-    /// <inheritdoc />
-    public bool SelectItemByText(string text)
+    private void RequireDropdown(string operation)
     {
-        if (!_element.Patterns.ExpandCollapse.IsSupported)
-            return false;
-        
-        _element.Patterns.ExpandCollapse.Pattern.Expand();
-        WaitHelper.WaitFor(() => IsExpanded, timeoutMs: 2000, pollingIntervalMs: 50);
-        
-        // Find ListItem descendants
-        global::FlaUI.Core.AutomationElements.AutomationElement[] items = [];
-        WaitHelper.WaitFor(() =>
+        if (!SupportsDropdown)
         {
-            items = _element.FindAllDescendants(cf => 
-                cf.ByControlType(global::FlaUI.Core.Definitions.ControlType.ListItem));
-            return items.Length > 0;
-        }, timeoutMs: 2000, pollingIntervalMs: 50);
-        
-        var target = items.FirstOrDefault(i => i.Name == text);
-        if (target == null)
-        {
-            Collapse();
-            return false;
+            throw new NotSupportedException(
+                $"'{AutomationId ?? Name ?? "(unnamed)"}' does not expose the UI Automation "
+                + $"ExpandCollapse pattern, so it has no dropdown to {operation}.");
         }
-        
-        // Use SelectionItemPattern — the standard UIA way to select items
-        if (target.Patterns.SelectionItem.IsSupported)
-        {
-            target.Patterns.SelectionItem.Pattern.Select();
-        }
-        else
-        {
-            new FlaUIMauiElement(target, _driver).Click();
-        }
-        
-        // Wait for the dropdown to collapse (selection should auto-close)
-        WaitHelper.WaitFor(() => !IsExpanded, timeoutMs: 2000, pollingIntervalMs: 50);
-        
-        if (IsExpanded)
-            Collapse();
-        
-        return true;
-    }
-
-    /// <inheritdoc />
-    public bool SelectItemByIndex(int index)
-    {
-        if (!_element.Patterns.ExpandCollapse.IsSupported)
-            return false;
-        
-        _element.Patterns.ExpandCollapse.Pattern.Expand();
-        WaitHelper.WaitFor(() => IsExpanded, timeoutMs: 2000, pollingIntervalMs: 50);
-        
-        // Find ListItem descendants
-        global::FlaUI.Core.AutomationElements.AutomationElement[] items = [];
-        WaitHelper.WaitFor(() =>
-        {
-            items = _element.FindAllDescendants(cf => 
-                cf.ByControlType(global::FlaUI.Core.Definitions.ControlType.ListItem));
-            return items.Length > 0;
-        }, timeoutMs: 2000, pollingIntervalMs: 50);
-        
-        if (index >= items.Length)
-        {
-            Collapse();
-            return false;
-        }
-        
-        var item = items[index];
-        
-        // Use SelectionItemPattern — the standard UIA way to select items
-        if (item.Patterns.SelectionItem.IsSupported)
-        {
-            item.Patterns.SelectionItem.Pattern.Select();
-        }
-        else
-        {
-            new FlaUIMauiElement(item, _driver).Click();
-        }
-        
-        // Wait for the dropdown to collapse (selection should auto-close)
-        WaitHelper.WaitFor(() => !IsExpanded, timeoutMs: 2000, pollingIntervalMs: 50);
-        
-        if (IsExpanded)
-            Collapse();
-        
-        return true;
-    }
-
-    /// <inheritdoc />
-    public string? GetSelectedItemText()
-    {
-        // Use SelectionPattern to get the currently selected item
-        if (!_element.Patterns.Selection.IsSupported)
-            return null;
-        
-        var selection = _element.Patterns.Selection.Pattern.Selection.Value;
-        if (selection == null || selection.Length == 0)
-            return null;
-        
-        return selection[0].Name;
     }
 
     #endregion

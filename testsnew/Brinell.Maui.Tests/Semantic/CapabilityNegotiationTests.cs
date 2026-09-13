@@ -5,15 +5,15 @@ namespace Brinell.Maui.Tests.Semantic;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The Windows element (<c>FlaUIMauiElement</c>) implements seven capability interfaces; the
-/// mobile element (<c>AppiumMauiElement</c>) implements two. Every control therefore runs
-/// down a different branch depending on platform, and until Android actually runs, these
+/// The Windows element (<c>FlaUIMauiElement</c>) answers most <c>Supports*</c> questions yes;
+/// the mobile element (<c>AppiumMauiElement</c>) answers most of them no. Every control therefore
+/// runs down a different branch depending on platform, and until Android actually runs, these
 /// mocked tests are the only thing verifying the branch mobile will take.
 /// </para>
 /// <para>
-/// A mock that implements a capability stands in for Windows; one that does not stands in for
-/// mobile. That is exactly how the production code decides — an <c>is</c> test plus a
-/// <c>Supports*</c> probe — so the substitution is faithful rather than approximate.
+/// A mock that answers a question yes stands in for Windows; one left at the interface's default
+/// stands in for mobile. That is exactly how the production code decides - a <c>Supports*</c>
+/// question on <c>IMauiElement</c> - so the substitution is faithful rather than approximate.
 /// </para>
 /// <para>
 /// These do not test <c>AppiumMauiElement</c> itself, which wraps a sealed Appium type and
@@ -36,20 +36,18 @@ public class CapabilityNegotiationTests : SemanticControlTestsBase
     }
 
     /// <summary>
-    /// A mobile-shaped element: no capability interface, state read from an attribute.
+    /// A mobile-shaped element: checked state, a toggle that taps, and no set-state command.
     /// </summary>
     /// <remarks>
-    /// Mirrors what <c>AppiumMauiElement</c> exposes on Android, where checked state lives in
-    /// the <c>checked</c> attribute and there is no Toggle command to call.
+    /// Mirrors what <c>AppiumMauiElement</c> exposes on Android, where checked state comes from
+    /// the <c>checked</c> attribute and <c>SupportsSetChecked</c> keeps its default, false.
     /// </remarks>
     private static Mock<IMauiElement> CreateAttributeBackedToggle(bool initialState)
     {
         var isChecked = initialState;
         var element = CreateElement(ToggleId, 0, 0, 32, 32);
 
-        element.Setup(e => e.GetAttribute("checked"))
-            .Returns(() => isChecked ? "true" : "false");
-        element.Setup(e => e.Selected).Returns(() => isChecked);
+        element.Setup(e => e.Checked).Returns(() => isChecked);
         // Toggling is what the control asks for; on this platform the element performs it with a
         // tap, which is why AppiumMauiElement implements Toggle as Click. The mock mirrors that:
         // the operation exists and works, without any Toggle pattern behind it.
@@ -78,7 +76,7 @@ public class CapabilityNegotiationTests : SemanticControlTestsBase
         Page.IncludeProblemReports.Toggle();
 
         element.Verify(e => e.Toggle(), Times.Once);
-        element.As<ITogglePatternElement>().Verify(e => e.TogglePattern(), Times.Never);
+        element.Verify(e => e.SetChecked(It.IsAny<bool>()), Times.Never);
         element.Verify(e => e.Click(), Times.Never);
     }
 
@@ -106,7 +104,7 @@ public class CapabilityNegotiationTests : SemanticControlTestsBase
     /// State is readable without the capability, from the platform's own attribute.
     /// </summary>
     [Fact]
-    public void IsChecked_ReadsAttribute_WhenTogglePatternIsAbsent()
+    public void IsChecked_ReadsCheckedState_OnTheMobileShapedElement()
     {
         var element = CreateAttributeBackedToggle(initialState: true);
         GivenElement(element);
@@ -135,8 +133,7 @@ public class CapabilityNegotiationTests : SemanticControlTestsBase
     public void Toggle_ReportsAToggleThatDidNothing()
     {
         var element = CreateElement(ToggleId, 0, 0, 32, 32);
-        element.Setup(e => e.GetAttribute("checked")).Returns("false");
-        element.Setup(e => e.Selected).Returns(false);
+        element.Setup(e => e.Checked).Returns(false);
 
         // Accepts the call, changes nothing - exactly what a lying pattern looks like.
         element.Setup(e => e.Toggle());
@@ -168,7 +165,7 @@ public class CapabilityNegotiationTests : SemanticControlTestsBase
     /// Reaching a requested state works without the capability, on the mobile path.
     /// </summary>
     [Fact]
-    public void SetChecked_ReachesTargetState_WithoutTogglePattern()
+    public void SetChecked_ReachesTargetState_WithoutASetStateCommand()
     {
         var element = CreateAttributeBackedToggle(initialState: false);
         GivenElement(element);
@@ -177,6 +174,29 @@ public class CapabilityNegotiationTests : SemanticControlTestsBase
 
         Assert.True(Page.IncludeProblemReports.IsChecked());
         element.Verify(e => e.Toggle(), Times.Once);
+    }
+
+    /// <summary>
+    /// A set-state command the platform accepts without moving the control is reported.
+    /// </summary>
+    /// <remarks>
+    /// Step 108: it is never followed by a toggle. Falling through on a refusal is what made the
+    /// old route a ladder, and a toggle after a lying set-state could as easily undo the state as
+    /// reach it.
+    /// </remarks>
+    [Fact]
+    public void SetChecked_ReportsASetStateThatDidNothing_RatherThanToggling()
+    {
+        var element = CreateElement(ToggleId, 0, 0, 32, 32);
+        element.Setup(e => e.Checked).Returns(false);
+        element.Setup(e => e.SupportsSetChecked).Returns(true);
+        element.Setup(e => e.SetChecked(true));
+        GivenElement(element);
+
+        var ex = Assert.Throws<InvalidOperationException>(() => Page.IncludeProblemReports.Check());
+
+        Assert.Contains("did not change", ex.Message);
+        element.Verify(e => e.Toggle(), Times.Never);
     }
 
     #endregion

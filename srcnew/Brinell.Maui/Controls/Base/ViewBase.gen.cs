@@ -19,22 +19,6 @@ namespace Brinell.Maui.Controls.Base;
 public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IElementObject<TScope>
     where TScope : IMauiScope<TScope>
 {
-    #region FindChild
-
-    public TScope FindChild(string automationId)
-    {
-        return RunDoWithElement(element => { FindChildCore(element, automationId); });
-    }
-
-    #endregion
-    #region FindChildByControlType
-
-    public TScope FindChildByControlType(string controlType)
-    {
-        return RunDoWithElement(element => { FindChildByControlTypeCore(element, controlType); });
-    }
-
-    #endregion
     #region Visible (IsVisible / WaitVisible / AssertVisible)
 
     public bool? IsVisible()
@@ -54,28 +38,6 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
         return RunAssertWithOptionalElement(expected,
            IsVisibleCore, (actual, expected1) => (actual == expected1),
            message ?? $"Expected Visible to be '{expected}'. Locator: {Locator}", timeoutMs);
-    }
-
-    #endregion
-    #region VisibleAfterScroll (IsVisibleAfterScroll / WaitVisibleAfterScroll / AssertVisibleAfterScroll)
-
-    public bool? IsVisibleAfterScroll()
-    {
-        return IsVisibleAfterScrollCore(TryFindElement()) == true;
-    }
-
-    public bool WaitVisibleAfterScroll(bool? expected = true, int? timeoutMs = null)
-    {
-        return RunWaitWithOptionalElement(expected,
-           element => IsVisibleAfterScrollCore(element) == expected!.Value,
-           timeoutMs);
-    }
-
-    public TScope AssertVisibleAfterScroll(bool? expected = true, string? message = null, int? timeoutMs = null)
-    {
-        return RunAssertWithOptionalElement(expected,
-           IsVisibleAfterScrollCore, (actual, expected1) => (actual == expected1),
-           message ?? $"Expected VisibleAfterScroll to be '{expected}'. Locator: {Locator}", timeoutMs);
     }
 
     #endregion

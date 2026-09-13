@@ -37,6 +37,11 @@ TestResults/
 If no suite is configured, typed artifact folders are created directly under the
 run directory.
 
+The MAUI UI suite writes two reports into `attachments/` on every run: the gesture
+accessibility audit (`accessibility-audit.md`) and per-class test timings
+(`test-timings.md`, with the raw `test-timings.csv`). See the
+[MAUI guide](../platform-guides/maui.md#run-artifacts).
+
 ## Provider
 
 Use `DefaultTestArtifactPathProvider.Create(...)` to resolve folders. It finds a

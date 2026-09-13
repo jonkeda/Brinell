@@ -6,6 +6,25 @@ status: measurement
 
 # Physical Input Inventory
 
+> **Current state, after steps 103-106 (2026-09-13).** The measurement below is historical and its
+> call-site names are out of date. What the MAUI FlaUI stack can reach for today, all of it
+> refused under the quiet default:
+>
+> | Where | Entry points | Semantic route taken first, when the app declares it |
+> |---|---|---|
+> | `Windowing/PhysicalPointer` | `Click`, `DoubleClick`, `RightClick`, `Hover`, `LongPress`, `Drag`, and `BringAppToFront` for everything below | `LongPress` and `Swipe*` gesture verbs (step 103, 105b) |
+> | `FlaUIMauiElement` keyboard | `SendKeys(Keys)`, `SendKeys(Paste)`, `SendKeys(SetValue fallback)`, `Clear(Ctrl+A,Delete)`, `Submit(Enter)`, `Focus` without the bridge | `SetText`, `ClearText`, `Submit`, `Focus` verbs |
+>
+> Each use is recorded **once**: a keyboard route records itself as it takes the foreground,
+> rather than once for the keystroke and again for the foreground. Gone entirely: the mouse-wheel
+> "swipe" (`Swipe(wheel)`), which scrolled a `ScrollView` by five wheel clicks, and the driver's
+> own `PointerLongPress`/`PointerDrag`/`EnsureRootWindowFocused`, now in `PhysicalPointer`.
+> `grep "Mouse\." srcnew/Brinell.Maui.FlaUI` finds `PhysicalPointer.cs` and nothing else.
+>
+> `PhysicalInput` itself stays unchanged (step 106): every policy value, the log and the counters
+> have users, and it is what makes the quiet run a guarantee.
+
+
 The deliverable of [step 3](steps.md). Nothing was fixed to produce it; it is a measurement of
 which physical-input paths the suite actually reaches, so the build order for the semantic verbs
 comes from evidence rather than from reading the source and guessing.

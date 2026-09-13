@@ -102,33 +102,6 @@ public class MauiTestContext : IMauiTestContext
     }
     
     /// <inheritdoc />
-    /// <remarks>
-    /// A plain lookup, then a scroll on the platforms whose tree omits what is not rendered.
-    /// Passes no container: the root scope has none to name, so the driver picks the scrolling
-    /// container on screen. Does not poll — the caller has already established that a plain
-    /// lookup finds nothing.
-    /// </remarks>
-    public IMauiElement? TryFindElementAfterScroll(Locator locator)
-    {
-        ArgumentNullException.ThrowIfNull(locator);
-
-        try
-        {
-            var elements = _driver.FindElements(locator);
-            if (elements.Count > 0)
-            {
-                return elements[0];
-            }
-        }
-        catch (Exception)
-        {
-            return null;
-        }
-
-        return _driver.TryFindByScrollingWithin(null, locator);
-    }
-
-    /// <inheritdoc />
     public IMauiElement FindElement(Locator locator)
     {        
         ArgumentNullException.ThrowIfNull(locator);

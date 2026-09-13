@@ -17,10 +17,7 @@ public class GenericBrowserControlTests : SemanticControlTestsBase
         var child = CreateElement("GenericBrowserItem_801", 50, 50, 80, 20);
         var nativeButton = CreateInvokableElement("GenericBrowserItemButton_801", 40, 40, 220, 50);
         var row = CreateSelectableElement("ListItem", 40, 40, 220, 50);
-        nativeButton.As<IInvokePatternElement>()
-            .Setup(e => e.InvokePattern())
-            .Callback(() => selected = true)
-            .Returns(true);
+        nativeButton.Setup(e => e.Invoke()).Callback(() => selected = true);
 
         Context
             .Setup(c => c.FindElements(It.Is<Locator>(l => l.Value == "GenericBrowserItemButton_801")))
@@ -35,8 +32,8 @@ public class GenericBrowserControlTests : SemanticControlTestsBase
 
         Page.Browser.SelectItem("801");
 
-        nativeButton.As<IInvokePatternElement>().Verify(e => e.InvokePattern(), Times.Once);
-        row.As<ISelectionItemPatternElement>().Verify(e => e.SelectItemPattern(), Times.Never);
+        nativeButton.Verify(e => e.Invoke(), Times.Once);
+        row.Verify(e => e.Select(), Times.Never);
         child.Verify(e => e.Click(), Times.Never);
     }
 
@@ -45,10 +42,7 @@ public class GenericBrowserControlTests : SemanticControlTestsBase
     {
         var selected = false;
         var nativeButton = CreateInvokableElement("GenericBrowserItemButton_0_3555", 40, 40, 220, 50);
-        nativeButton.As<IInvokePatternElement>()
-            .Setup(e => e.InvokePattern())
-            .Callback(() => selected = true)
-            .Returns(true);
+        nativeButton.Setup(e => e.Invoke()).Callback(() => selected = true);
 
         Context
             .Setup(c => c.FindElements(It.Is<Locator>(l => l.Value == "GenericBrowserItemButton_0_3555")))
@@ -59,7 +53,7 @@ public class GenericBrowserControlTests : SemanticControlTestsBase
 
         Page.Browser.SelectItem("0:3555");
 
-        nativeButton.As<IInvokePatternElement>().Verify(e => e.InvokePattern(), Times.Once);
+        nativeButton.Verify(e => e.Invoke(), Times.Once);
     }
 
     [Fact]
@@ -116,7 +110,7 @@ public class GenericBrowserControlTests : SemanticControlTestsBase
 
         Page.Browser.ToggleItem("0:3555");
 
-        nativeButton.As<IInvokePatternElement>().Verify(e => e.InvokePattern(), Times.Once);
+        nativeButton.Verify(e => e.Invoke(), Times.Once);
     }
 
     [Fact]
@@ -126,10 +120,7 @@ public class GenericBrowserControlTests : SemanticControlTestsBase
         var browserRoot = CreateElement("GenericBrowser", 0, 80, 560, 520);
         var nativeClose = CreateInvokableElement("DrawerView_Cancel_NativeButton", 0, 0, 48, 48);
         var gestureClose = CreateElement("DrawerView_Cancel", 0, 0, 48, 48);
-        nativeClose.As<IInvokePatternElement>()
-            .Setup(e => e.InvokePattern())
-            .Callback(() => closed = true)
-            .Returns(true);
+        nativeClose.Setup(e => e.Invoke()).Callback(() => closed = true);
 
         Context
             .Setup(c => c.FindElements(It.Is<Locator>(l => l.Value == "DrawerView_Cancel_NativeButton")))
@@ -143,12 +134,12 @@ public class GenericBrowserControlTests : SemanticControlTestsBase
 
         Page.Browser.Close();
 
-        nativeClose.As<IInvokePatternElement>().Verify(e => e.InvokePattern(), Times.Once);
+        nativeClose.Verify(e => e.Invoke(), Times.Once);
         gestureClose.Verify(e => e.Click(), Times.Never);
     }
 
     [Fact]
-    public void GenericBrowser_SelectItem_SelectsContainingListItemPatternBeforeChildClick()
+    public void GenericBrowser_SelectItem_SelectsTheContainingListItemBeforeChildClick()
     {
         var selected = false;
         var child = CreateElement("GenericBrowserItem_801", 50, 50, 80, 20);
@@ -164,7 +155,7 @@ public class GenericBrowserControlTests : SemanticControlTestsBase
 
         Page.Browser.SelectItem("801");
 
-        row.As<ISelectionItemPatternElement>().Verify(e => e.SelectItemPattern(), Times.Once);
+        row.Verify(e => e.Select(), Times.Once);
         child.Verify(e => e.Click(), Times.Never);
     }
 }

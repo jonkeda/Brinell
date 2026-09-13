@@ -39,7 +39,7 @@ public class MauiFixture : MauiTestFixtureBase
 
         // The app is up by now - the base constructor launched it - so this is the first moment
         // the other collection could truthfully be told there are two. See ParallelismProbe.
-        ParallelismProbe.Enter(ParallelismProbe.Hub, Context.Driver.CurrentWindowHandle);
+        ParallelismProbe.Enter(ParallelismProbe.Hub, Context.Driver);
     }
 
     public TestComposition Composition { get; }

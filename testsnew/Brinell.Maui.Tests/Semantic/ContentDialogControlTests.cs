@@ -7,7 +7,7 @@ public class ContentDialogControlTests : SemanticControlTestsBase
     {
         var driver = new Mock<IMauiDriver>();
         var dialogRoot = CreateElement("ContentDialog", 0, 0, 300, 200);
-        var deleteButton = CreateLegacyAccessibleElement("DialogDelete", 10, 150, 80, 40);
+        var deleteButton = CreateInvokableElement("DialogDelete", 10, 150, 80, 40);
         dialogRoot
             .Setup(e => e.FindElement(
                 It.Is<Locator>(l => l.Strategy == LocatorStrategy.Name && l.Value == "Delete"), 0))

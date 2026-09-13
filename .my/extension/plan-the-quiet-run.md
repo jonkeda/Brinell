@@ -370,6 +370,10 @@ it finally is.
 
 #### Stage J and stage I — results
 
+**Confirmed by a person, 2026-09-13.** The user watched a full run while working in the editor
+and the app stayed behind it throughout - the check step 15 asked for, performed after the fixes
+below rather than before them.
+
 **The window, which is what was actually reported.** "The screen still pops over the editor" was
 measured before it was fixed: the watchdog counted **two foreground grabs per button click**,
 navigating or not, and none for a read. Clicks go through `InvokePattern`, which is not physical

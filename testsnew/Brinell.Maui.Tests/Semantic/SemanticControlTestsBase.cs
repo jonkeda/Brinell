@@ -50,18 +50,12 @@ public abstract class SemanticControlTestsBase
         int x,
         int y,
         int width,
-        int height)
+        int height,
+        Action? onInvoke = null)
     {
         var element = CreateElement(automationId, x, y, width, height);
-        element.As<IInvokePatternElement>()
-            .Setup(e => e.SupportsInvokePattern)
-            .Returns(true);
-        element.As<IInvokePatternElement>()
-            .Setup(e => e.InvokePattern())
-            .Returns(true);
-
-        element.Setup(e => e.Invoke());
-
+        element.Setup(e => e.SupportsInvoke).Returns(true);
+        element.Setup(e => e.Invoke()).Callback(() => onInvoke?.Invoke());
         return element;
     }
 
@@ -74,20 +68,15 @@ public abstract class SemanticControlTestsBase
         Action? onSelect = null)
     {
         var element = CreateElement(automationId, x, y, width, height);
-        element.As<ISelectionItemPatternElement>()
-            .Setup(e => e.SupportsSelectionItemPattern)
-            .Returns(true);
-        element.As<ISelectionItemPatternElement>()
-            .Setup(e => e.SelectItemPattern())
-            .Callback(() => onSelect?.Invoke())
-            .Returns(true);
 
         // The operation a control asks for. FlaUIMauiElement.Select runs the SelectionItem
         // pattern behind it; AppiumMauiElement taps.
+        element.Setup(e => e.SupportsSelect).Returns(true);
         element.Setup(e => e.Select()).Callback(() => onSelect?.Invoke());
         return element;
     }
 
+    /// <summary>A Windows-shaped toggle: checked state, a toggle, and a set-state command.</summary>
     protected static Mock<IMauiElement> CreateToggleElement(
         string automationId,
         int x,
@@ -98,43 +87,15 @@ public abstract class SemanticControlTestsBase
     {
         var isChecked = initialState;
         var element = CreateElement(automationId, x, y, width, height);
-        element.Setup(e => e.Selected).Returns(() => isChecked);
-        element.As<ITogglePatternElement>()
-            .Setup(e => e.SupportsTogglePattern)
-            .Returns(true);
-        element.As<ITogglePatternElement>()
-            .Setup(e => e.IsTogglePatternChecked())
-            .Returns(() => isChecked);
-        element.As<ITogglePatternElement>()
-            .Setup(e => e.TogglePattern())
-            .Callback(() => isChecked = !isChecked)
-            .Returns(true);
-        element.As<ITogglePatternElement>()
-            .Setup(e => e.SetToggleStatePattern(It.IsAny<bool>()))
-            .Callback<bool>(value => isChecked = value)
-            .Returns(true);
+        element.Setup(e => e.Checked).Returns(() => isChecked);
+        element.Setup(e => e.SupportsToggle).Returns(true);
+        element.Setup(e => e.SupportsSetChecked).Returns(true);
+        element.Setup(e => e.SetChecked(It.IsAny<bool>())).Callback<bool>(value => isChecked = value);
 
-        // What the control actually asks for. FlaUIMauiElement.Toggle runs the Toggle pattern
-        // and throws if it is absent or refuses; the mock stands in for the working case.
+        // FlaUIMauiElement.Toggle runs the Toggle pattern and throws if it is absent or refuses;
+        // the mock stands in for the working case.
         element.Setup(e => e.Toggle()).Callback(() => isChecked = !isChecked);
 
-        return element;
-    }
-
-    protected static Mock<IMauiElement> CreateLegacyAccessibleElement(
-        string automationId,
-        int x,
-        int y,
-        int width,
-        int height)
-    {
-        var element = CreateElement(automationId, x, y, width, height);
-        element.As<ILegacyIAccessiblePatternElement>()
-            .Setup(e => e.SupportsLegacyIAccessiblePattern)
-            .Returns(true);
-        element.As<ILegacyIAccessiblePatternElement>()
-            .Setup(e => e.DoDefaultActionPattern())
-            .Returns(true);
         return element;
     }
 

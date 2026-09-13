@@ -42,13 +42,8 @@ public abstract partial class RangeControlBase<TScope> : FocusableControlBase<TS
     {
         if (element == null) return null;
 
-        // Try RangeValue pattern first (Windows/FlaUI)
-        if (element is IRangePatternElement rangeElement && rangeElement.SupportsRangeValue)
-        {
-            var value = rangeElement.GetRangeValue();
-            if (value.HasValue)
-                return value.Value;
-        }
+        if (element.RangeValue is { } value)
+            return value;
 
         // Text is the only other place a value can be read: Android publishes no range pattern,
         // so a seek bar answers through whatever text it shows.
@@ -74,14 +69,15 @@ public abstract partial class RangeControlBase<TScope> : FocusableControlBase<TS
 
         EnsureSettableCore(element);
 
-        // Try RangeValue pattern first (Windows/FlaUI)
-        if (element is IRangePatternElement rangeElement && rangeElement.SupportsRangeValue)
+        // One question, then one route: a range the platform can set is set, and one it cannot
+        // is typed into. A SetRangeValue the platform refuses throws rather than falling through
+        // to typing, which would put the digits wherever focus happened to be.
+        if (element.SupportsSetRangeValue)
         {
-            if (rangeElement.SetRangeValue(value.Value))
-                return;
+            element.SetRangeValue(value.Value);
+            return;
         }
 
-        // Default implementation: try to use SendKeys
         // Override in derived classes for slider-specific drag behavior
         element.Clear();
         element.SendKeys(value.Value.ToString());
@@ -97,17 +93,9 @@ public abstract partial class RangeControlBase<TScope> : FocusableControlBase<TS
     {
         if (element == null) return null;
 
-        // Try RangeValue pattern first (Windows/FlaUI)
-        if (element is IRangePatternElement rangeElement && rangeElement.SupportsRangeValue)
-        {
-            var min = rangeElement.GetRangeMinimum();
-            if (min.HasValue)
-                return min.Value;
-        }
-
         // No attribute fallback: a range's bounds are published by the range pattern or not at
         // all, and Android publishes neither.
-        return null;
+        return element.RangeMinimum;
     }
 
     /// <summary>
@@ -120,16 +108,8 @@ public abstract partial class RangeControlBase<TScope> : FocusableControlBase<TS
     {
         if (element == null) return null;
 
-        // Try RangeValue pattern first (Windows/FlaUI)
-        if (element is IRangePatternElement rangeElement && rangeElement.SupportsRangeValue)
-        {
-            var max = rangeElement.GetRangeMaximum();
-            if (max.HasValue)
-                return max.Value;
-        }
         // Published by the range pattern or not at all - see GetMinimumCore.
-
-        return null;
+        return element.RangeMaximum;
     }
 
     /// <summary>
@@ -142,16 +122,8 @@ public abstract partial class RangeControlBase<TScope> : FocusableControlBase<TS
     {
         if (element == null) return null;
 
-        // Try RangeValue pattern first (Windows/FlaUI)
-        if (element is IRangePatternElement rangeElement && rangeElement.SupportsRangeValue)
-        {
-            var step = rangeElement.GetRangeSmallChange();
-            if (step.HasValue)
-                return step.Value;
-        }
         // Published by the range pattern or not at all - see GetMinimumCore.
-
-        return 1.0; // Default step
+        return element.RangeSmallChange ?? 1.0;
     }
 
     /// <summary>

@@ -31,6 +31,28 @@ public partial class Switch<TScope> : Base.ToggleControlBase<TScope>
 
     #region Core Methods (Element-Aware, No Logging)
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// <b>One question, then one route.</b> Where the platform can set the state directly -
+    /// Windows, through the Toggle pattern against a fresh read - it is asked for the state
+    /// wanted, which is idempotent. Otherwise the control toggles, which is how Android and iOS
+    /// change it. Never both (step 108).
+    /// </remarks>
+    protected override void SetCheckedCore(IMauiElement element, bool? @checked, int? timeoutMs = null)
+    {
+        if (@checked == null || IsCheckedCore(element) == @checked)
+            return;
+
+        if (element.SupportsSetChecked)
+        {
+            SetCheckedDirectly(element, @checked.Value, timeoutMs);
+            return;
+        }
+
+        ToggleCore(element, timeoutMs);
+    }
+
+
     /// <summary>
     /// Reads the On/Off state from the pre-found element.
     /// Switch terminology for the underlying checked state.

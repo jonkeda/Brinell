@@ -65,10 +65,10 @@ public abstract partial class SelectableItemBase<TCollection, TSelf>
     {
         if (element == null) return false;
 
-        if (element.Selected) return true;
-
-        return element is ITogglePatternElement { SupportsTogglePattern: true } toggle
-               && toggle.IsTogglePatternChecked() == true;
+        // Selected is the question; checked is asked too because Android reports a radio-style
+        // tab bar through checked state rather than selection. Two properties, each meaning one
+        // thing - Windows' Selected no longer reads the toggle state on the side (step 105a).
+        return element.Selected || element.Checked == true;
     }
 
     #endregion

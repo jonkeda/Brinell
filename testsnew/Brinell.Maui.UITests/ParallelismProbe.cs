@@ -58,6 +58,24 @@ internal static class ParallelismProbe
     /// It is what turns "two fixtures" into "two apps" for anyone reading the assertion.
     /// </param>
     internal static void Enter(string side, string token)
+        => EnterCore(side, token);
+
+    /// <summary>
+    /// Records that <paramref name="side"/>'s app is up, identified in whatever way the platform can.
+    /// </summary>
+    /// <remarks>
+    /// The window handle on Windows. <b>Not on Android</b>: UiAutomator2 does not implement the
+    /// WebDriver window-handle command and throws <c>NotImplementedException</c>, and because this is
+    /// called from the fixture constructor that took every Android test down before its body ran -
+    /// from stage B, when the probe was added, until it was found by the step 100a Android run.
+    /// There is only ever one app on a device, so a per-fixture token says as much.
+    /// </remarks>
+    internal static void Enter(string side, IMauiDriver driver)
+        => EnterCore(side, driver.Platform == Enums.MauiPlatform.Windows
+            ? driver.CurrentWindowHandle
+            : $"{driver.Platform}:{Guid.NewGuid():N}");
+
+    private static void EnterCore(string side, string token)
     {
         lock (Gate)
         {

@@ -16,7 +16,6 @@ public sealed class DriverRootScope<TScope>(IMauiScope<TScope> owner) : IMauiSco
     public bool IsReady(int? timeoutMs = null) => true;
     public bool WaitReady(int? timeoutMs = null) => true;
     public IMauiElement? TryFindElement(Locator locator) => Context.TryFindElement(locator);
-    public IMauiElement? TryFindElementAfterScroll(Locator locator) => Context.TryFindElementAfterScroll(locator);
     public IMauiElement FindElement(Locator locator) => Context.FindElement(locator);
     public IReadOnlyList<IMauiElement> FindElements(Locator locator) => Context.FindElements(locator);
 }

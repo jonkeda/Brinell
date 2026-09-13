@@ -46,35 +46,29 @@ public partial class ScrollView<TParent, TSelf> : ContainerObjectBase<TParent, T
     {
     }
 
+    /// <inheritdoc />
+    /// <remarks>A scroll view is the element that scrolls for everything inside it.</remarks>
+    public override IMauiElement? ScrollingRoot => TryGetContainerRoot();
+
     #region Core Methods (Element-Aware, No Logging)
 
     /// <summary>
     /// Scrolls one viewport toward the end of the content.
     /// </summary>
     /// <remarks>
-    /// The scroll pattern first, the pointer only if there is none. This used to swipe
-    /// unconditionally, which made a <c>ScrollView</c> the one container that reached for the
-    /// mouse where every other one asked UI Automation - the ladder existed in
-    /// <see cref="ScrollHelper"/> and this simply did not climb it.
+    /// The Scroll pattern where the element has one, a swipe where it does not - asked once, see
+    /// <see cref="ScrollHelper"/>. At the end of the content this does nothing.
     /// </remarks>
     /// <param name="element">The container's own element.</param>
     protected virtual void ScrollForwardCore(IMauiElement element)
-    {
-        if (ScrollHelper.TryScrollForward(element)) return;
-
-        ScrollHelper.TrySwipeForward(element);
-    }
+        => ScrollHelper.StepForward(element);
 
     /// <summary>
     /// Scrolls one viewport back toward the start of the content.
     /// </summary>
     /// <param name="element">The container's own element.</param>
     protected virtual void ScrollBackCore(IMauiElement element)
-    {
-        if (ScrollHelper.TryScrollBack(element)) return;
-
-        ScrollHelper.TrySwipeBack(element);
-    }
+        => ScrollHelper.StepBack(element);
 
     #endregion
 
@@ -100,7 +94,7 @@ public partial class ScrollView<TParent, TSelf> : ContainerObjectBase<TParent, T
     /// </remarks>
     public TSelf ScrollTo(Locator locator)
     {
-        ScrollHelper.TryScrollIntoView(TryFindElement(locator));
+        ScrollHelper.ScrollIntoView(TryFindElement(locator));
         return Self;
     }
 

@@ -12,19 +12,22 @@ public interface IMauiElementScope : IElementScope<IMauiElement>
     IMauiTestContext Context { get; }
 
     /// <summary>
-    /// Finds an element anywhere on the page, scrolling to it where the platform hides
-    /// off-screen content from the accessibility tree. Does not poll.
+    /// The element that scrolls for this scope, or null to let the driver pick the one on screen.
     /// </summary>
     /// <remarks>
-    /// The need is the backend's, not MAUI's: Android publishes accessibility nodes only for
-    /// content inside the viewport, so a plain lookup reports a control that plainly exists as
-    /// missing. UIA and the DOM keep off-screen content but drop virtualised content, which is
-    /// the same question asked of a different backend — so a scope on another stack should
-    /// expect to declare this too. It is declared here rather than on <c>IElementScope</c>
-    /// only because MAUI is so far the one stack with a backend that needs it. See
-    /// <c>.my/scroll/finding-why-android-hides-offscreen-controls.md</c>.
+    /// <para>
+    /// For platforms that drop off-screen content from the accessibility tree: Android publishes
+    /// nodes only for what is inside the viewport, so a control that plainly exists reports as
+    /// missing until something scrolls to it. A control that finds nothing asks the driver to
+    /// scroll this element looking for it (<c>IMauiDriver.TryFindByScrollingWithin</c>). Windows
+    /// keeps off-screen elements in the tree and scrolls nothing.
+    /// </para>
+    /// <para>
+    /// <b>This replaced <c>TryFindElementAfterScroll(locator)</c></b>, a lookup every scope had to
+    /// implement. Four did; the one on containers - and so on every page - was a plain lookup, so on
+    /// Android a control inside a container was never scrolled into the tree at all (step 100a).
+    /// A scope now only says which element scrolls, and the control does the lookup once.
+    /// </para>
     /// </remarks>
-    /// <param name="locator">The locator for the element.</param>
-    /// <returns>The element, or null when it is not on the page.</returns>
-    IMauiElement? TryFindElementAfterScroll(Locator locator);
+    IMauiElement? ScrollingRoot => null;
 }

@@ -54,13 +54,51 @@ Install browsers from the test project's output if needed:
 pwsh bin\Debug\net10.0\playwright.ps1 install
 ```
 
-## Pointer Input Problems
+## Physical Input Problems
 
-Routine actions should not require pointer input. For explicit gesture-only
-surfaces, set:
+MAUI runs on Windows refuse real mouse, keyboard, clipboard and foreground use by
+default, so a run does not take the machine. A test that falls back to real input
+fails with `PhysicalInputRefusedException`, naming the call site and the semantic
+route that should replace it.
+
+- **Fix the route, not the policy.** The exception says which verb or pattern to use.
+  If the control has no semantic route, see
+  [AD-008](../architecture/decisions.md#ad-008-gestures-and-semantic-actions-go-through-ui-automation).
+- **A test that is about real input** should say so with `[PhysicalInputFact]`, which
+  skips it while input is refused.
+- **To allow real input for a run** - to watch it, or to exercise the fallback path:
 
 ```powershell
-$env:BRINELL_ALLOW_POINTER_INPUT = "true"
+$env:BRINELL_BACKGROUND_MODE = "0"
 ```
 
-Leave it unset for normal runs.
+- **To list every physical-input use without refusing any:**
+
+```powershell
+$env:BRINELL_BACKGROUND_MODE = "audit"
+$env:BRINELL_PHYSICAL_INPUT_LOG = "physical-input.log"
+```
+
+`BRINELL_ALLOW_POINTER_INPUT` no longer does anything, and has not for some time.
+
+## Gesture Bridge Problems
+
+"No element published on the app's bridge answers ..." has several causes that read
+identically from a test:
+
+- **The app was built without the bridge.** It is compiled in only in Debug, or with
+  `-p:BrinellUiaBridge=true`. A Release build contains no bridge at all, by design.
+- **The app never turned it on.** Every app under test must call
+  `builder.UseBrinellGestureBridge()` in `MauiProgram`, before its first page loads.
+- **The element never declared the verb**, or has no `AutomationId`.
+- **The page had not published yet.** Pages publish on `Loaded`, after they appear in
+  the tree; the driver waits through that, so a persistent failure is one of the above.
+
+Set `BRINELL_UIA_LOG` to a file and rerun: the app records whether the bridge is on,
+what it published, and every call it answered. `FlaUIMauiDriver.DescribeGestureBridge()`
+prints the raw tree under the window.
+
+**If every test after some point fails in milliseconds,** check the driver's root
+element before the app: UI Automation can retire a cached element for a live window.
+The driver now re-attaches (`FlaUIMauiDriver.RootReattachments` counts it); a count
+that keeps growing means something is invalidating it again.

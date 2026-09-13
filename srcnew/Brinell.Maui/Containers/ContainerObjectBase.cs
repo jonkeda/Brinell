@@ -191,14 +191,12 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
         => new($"Container is not ready. Container locator: {Locator}, Child locator: {locator}");
 
     /// <inheritdoc />
-    /// <inheritdoc />
     /// <remarks>
-    /// The same lookup as <see cref="TryFindElement"/>: a container scopes its search to its own
-    /// root, and scrolling that root is the container's own concern — <c>ScrollHelper</c> — not
-    /// something an element lookup should trigger as a side effect. Overridden by a container
-    /// that can scroll itself to reach a child.
+    /// None for a page or a plain scope: the driver picks the scrolling element on screen.
+    /// A container passes its parent's answer on, and a container that scrolls itself answers
+    /// with its own root.
     /// </remarks>
-    public virtual IMauiElement? TryFindElementAfterScroll(Locator locator) => TryFindElement(locator);
+    public virtual IMauiElement? ScrollingRoot => null;
 
     public IMauiElement? TryFindElement(Locator locator)
     {
@@ -678,6 +676,13 @@ public abstract class ContainerObjectBase<TParent, TSelf>
     /// <inheritdoc />
     public override IPageObject? Page => _parentScope.Page;
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// Whatever scrolls for the scope this container sits in: a <c>Border</c> inside a
+    /// <c>ScrollView</c> is scrolled by the <c>ScrollView</c>.
+    /// </remarks>
+    public override IMauiElement? ScrollingRoot => _parentScope.ScrollingRoot;
+
     protected override IMauiElement FindContainerRootElement()
         => _parentScope.FindElement(Locator);
 
@@ -688,4 +693,20 @@ public abstract class ContainerObjectBase<TParent, TSelf>
         => _parentScope.WaitReady(timeoutMs);
 
     protected override TParent SetResult => Parent;
+
+    // More of the element-object surface, so a container can declare a control capability
+    // (IRefreshableControlObject, ISwipeableControlObject) the way a view does. Added with step 102
+    // option B, which made RefreshView and SwipeView containers: a container is an element too.
+    // The Enabled trio is not here: items already generate their own, so a container that needs
+    // it declares IsEnabledCore and the generator emits it.
+
+    /// <summary>Whether the container is on the page, without waiting.</summary>
+    public bool IsExists() => IsExists(timeoutMs: null);
+
+    /// <summary>Whether the container is on screen, without waiting.</summary>
+    public bool? IsVisible() => IsVisible(timeoutMs: null);
+
+    /// <summary>Reads a named attribute from the container's root, in the platform's own vocabulary.</summary>
+    public string? GetAttribute(string name, int? timeoutMs = null)
+        => TryGetContainerRoot()?.GetAttribute(name);
 }

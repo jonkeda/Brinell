@@ -88,8 +88,4 @@ public sealed class AppRoot : ObjectBase, IMauiScope<AppRoot>
     /// <inheritdoc />
     public IReadOnlyList<IMauiElement> FindElements(Locator locator)
         => _context.FindElements(locator);
-
-    /// <inheritdoc />
-    public IMauiElement? TryFindElementAfterScroll(Locator locator)
-        => _context.TryFindElementAfterScroll(locator);
 }

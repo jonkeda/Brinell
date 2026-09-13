@@ -31,7 +31,7 @@ public class ShellFixture : MauiTestFixtureBase
         _page = new ShellSamplePage(Context);
 
         // See MauiFixture for why this is here and not in a test body.
-        ParallelismProbe.Enter(ParallelismProbe.Shell, Context.Driver.CurrentWindowHandle);
+        ParallelismProbe.Enter(ParallelismProbe.Shell, Context.Driver);
     }
 
     /// <inheritdoc />

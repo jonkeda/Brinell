@@ -57,6 +57,14 @@ public class ActionGenerator : IMemberGenerator
         if (methodName.StartsWith(GuardPrefix))
             return false;
 
+        // Exclude anything that returns a value. The wrapper is RunDoWithElement, which has
+        // nowhere to put a result, so a query claimed here becomes a public method that does the
+        // lookup and throws the answer away. That is how FindChildCore became a public
+        // FindChild(id) on every control that found a child and returned the scope instead
+        // (step 101b).
+        if (method.ReturnType.ToString() != "void")
+            return false;
+
         var modifiers = method.Modifiers;
 
         // Exclude overrides — the base class already generated the public wrapper.

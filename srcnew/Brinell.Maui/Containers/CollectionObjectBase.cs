@@ -536,8 +536,8 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     /// Scrolls the collection to the top, returning the collection for chaining.
     /// </summary>
     /// <remarks>
-    /// Uses the first realized row's scroll-into-view where available, falling back to
-    /// a pointer swipe only where pointer input is permitted.
+    /// Uses the first realized row's scroll-into-view where available; otherwise steps back by the
+    /// container's one scroll route until it stops moving.
     /// </remarks>
     public TSelf ScrollToTop(int? timeoutMs = null)
     {
@@ -545,21 +545,18 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
 
         var target = ScrollTarget ?? TryGetContainerRoot();
 
-        // Scroll pattern first; repeat until it stops making progress, since one step is
-        // one viewport.
-        var scrolled = false;
-        while (ScrollHelper.TryScrollBack(target))
+        // The Scroll pattern reports when it stops moving, so it is repeated to the top. A swipe
+        // cannot report that, so on a platform that scrolls by swiping one step is taken - which
+        // is what this did before, and repeating a swipe that cannot say it arrived would never end.
+        if (target is { SupportsScrollContent: true })
         {
-            scrolled = true;
+            while (target.ScrollContent(-1))
+            {
+            }
         }
-
-        // Only if the pattern never moved anything. The loop above ends at the top by
-        // definition, so a swipe after it was a pointer action taken every single time this ran
-        // and could not change the outcome - the largest remaining source of physical input in
-        // the suite, spent confirming something already true.
-        if (!scrolled)
+        else
         {
-            ScrollHelper.TrySwipeBack(target);
+            ScrollHelper.StepBack(target);
         }
 
         return Self;
@@ -641,18 +638,12 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
             // may be a non-scrolling wrapper around it.
             var target = ScrollTarget ?? root;
 
-            // UI Automation scroll pattern first: it moves the scrolling container, so it
-            // advances a virtualizing list past its realized window, and it is not gated
-            // by the pointer-input policy.
-            if (ScrollHelper.TryScrollForward(target))
+            // One route, chosen by the element: the Scroll pattern moves the scrolling container,
+            // so it advances a virtualizing list past its realized window; a touch platform
+            // swipes. A step that reports no movement is the end of the list - not a reason to
+            // try the other route.
+            if (!ScrollHelper.StepForward(target))
             {
-                return HasMoreThan(countBefore);
-            }
-
-            // Pointer fallback, for surfaces with no scroll pattern.
-            if (!ScrollHelper.TrySwipeForward(target))
-            {
-                // Neither route made progress: this is as far as scrolling can go.
                 return false;
             }
         }
@@ -687,7 +678,7 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
         var last = TryGetItemRoot(count - 1);
         if (last == null) return false;
 
-        return ScrollHelper.TryScrollIntoView(last);
+        return ScrollHelper.ScrollIntoView(last);
     }
 
     /// <summary>

@@ -163,9 +163,7 @@ public partial class Entry<TScope> : Base.FocusableControlBase<TScope>, IEditabl
 
         // Read-only is the Value pattern's business. Windows answers it; Android publishes no
         // editability at all, so it answers null - unknown - rather than "editable".
-        return element is IValuePatternElement { SupportsValuePattern: true } value
-            ? value.IsValuePatternReadOnly()
-            : null;
+        return element?.IsReadOnly;
     }
 
     #endregion

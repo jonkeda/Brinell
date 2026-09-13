@@ -63,7 +63,7 @@ stage rather than to develop against.
 
 | # | Step | Stage | Depends on | Status |
 |---|---|---|---|---|
-| 1 | Occluded-window screenshots | 0 | — | **done** — but see the follow-up below: the test became order-dependent in stage B |
+| 1 | Occluded-window screenshots | 0 | — | **done** — the stage B order-dependence did not recur: it passed in every full run on 2026-09-13 |
 | 2 | Off-screen window placement | 0 | — | **done** (`offscreen` needs ToolbarItem activation — see step 3) |
 | 3 | Background-mode guard + inventory | 0 | — | **done** |
 | 4 | Spike: child HWND raw provider | A | — | **done** |
@@ -77,7 +77,7 @@ stage rather than to develop against.
 | 12 | FlaUI client extensions | A | 10 | **done** |
 | 13 | **Focus verb** | B | 12 | **done** |
 | 14 | **Text input verbs** | B | 13 | **done** |
-| 15 | Background mode passes | B | 3, 13, 14 | **partly** — zero refusals; blocked on the flaky step 36, and the human check is not done |
+| 15 | Background mode passes | B | 3, 13, 14 | **done** — zero refusals; step 36 root-caused by 43; the human check performed 2026-09-13: a person typed in the editor through a full run and the app stayed behind it |
 | 16 | Windows-only parallelism | B | 15 | **done** |
 | 17 | Gestures sample page | C | 11 | **done** |
 | 18 | Full gesture vocabulary, bound at publish time | C | 17 | **done** |
@@ -92,7 +92,7 @@ stage rather than to develop against.
 | 27 | Security gating | E | 18 | **done** — the first draft of the test passed for the wrong reason; parked 41 |
 | 28 | Versioning and lifetime tests | E | 18 | **done** — two teardown gaps, three of them in the harness; parked 42 |
 | 29 | Accessibility audit report | E | 18 | **done** — 11 of 33 elements have no route but the pointer |
-| 30 | Documentation and AD-008 | E | 19 | todo |
+| 30 | Documentation and AD-008 | E | 19 | **done** — AD-005 rewritten for `BRINELL_BACKGROUND_MODE`, AD-008 written; `AGENTS.md`, `stack.md`, troubleshooting, MAUI guide, reporting guide and the AppSupport README updated; the dead `BRINELL_ALLOW_POINTER_INPUT` removed everywhere |
 | 31 | Stepper: 11 failing before any of this work | G | — | **parked** — a peer for `MauiStepper` was built and measured unworkable; see the section |
 | 32 | Shell app: 13 failing before any of this work | G | — | **closed** — the page object scoped under an id nothing carried; the Shell now publishes its id, and the flyout goes through the app's verbs. 15/15 Shell tests, three runs |
 | 33 | Navigation stall: a 2 s grace on the wrong question, and two 10 s negative assertions | G | — | **closed** — A by 22; B by J3 (negative assertions wait 500 ms, not 10 s) |
@@ -107,11 +107,11 @@ stage rather than to develop against.
 | 42 | A bridge cached against a closed window is guarded but not measured | G | 28 | **parked** — needs a MAUI window that closes mid-suite |
 | 43 | Outcomes travel as values, not as `S_FALSE` | H | 40 | **done** — closes 40; see [plan-the-quiet-run.md](plan-the-quiet-run.md) |
 | 44 | Actions do not Try: the remaining three | H | 43 | **done** — `TryAppendText`/`TryClearFocus` are now `Supports…` + a command that throws; no `Try` action remains |
-| 45 | `InvokeAnywhere` stops guessing; the seven step-36 skips come back | H | 44 | **done** — the seven step-36 skips are removed; readiness races fixed along the way |
+| 45 | Pages answer honestly; the seven step-36 skips come back | H | 44 | **done** — `InvokeAnywhere` was not rewritten: pages now decline or report unavailable truthfully, so its existing walk works. The seven step-36 skips are removed; readiness races fixed along the way |
 | 46 | Watch the foreground; make "it never took the machine" a test | I | 45 | **done** — `ForegroundGrabs` and `ForegroundWatchdogTests`: navigating must not take the foreground |
 | 47 | Launch without taking the foreground | I | 46 | **done** — explicit environment, watchdog from launch, and `WS_EX_NOACTIVATE` stops `InvokePattern` raising the window |
 | 48 | Keep the window behind, not just put it behind | I | 46 | **done** — watchdog pushes back any window of the app that becomes foreground; off-screen measured and rejected |
-| 49 | Make the quiet run the default | I | 48 | **done** — the MAUI FlaUI stack declares quiet by default; `BRINELL_BACKGROUND_MODE=0` asks for real input. Full suite with nothing set: 266 passed, 0 failed |
+| 49 | Make the quiet run the default | I | 48 | **done** — the MAUI FlaUI stack declares quiet by default; `BRINELL_BACKGROUND_MODE=0` asks for real input. Full suite with nothing set: 266 passed, 0 failed; 281 passed after steps 32 and 35 |
 
 ---
 
@@ -650,9 +650,10 @@ dotnet test testsnew\Brinell.Maui.UITests -v:minimal /nr:false
 **Done when** the suite passes at baseline in background mode, and you can type in Visual Studio
 throughout without the cursor moving or focus being taken. Test it by doing exactly that.
 
-> **That last check has never been performed, and a person cannot perform it in CI.** Step 46 in
-> [plan-the-quiet-run.md](plan-the-quiet-run.md) replaces it with a foreground watchdog, which is
-> the only part of this programme's claim still taken on trust.
+> **Performed on 2026-09-13**, after `WS_EX_NOACTIVATE` and the foreground watchdog landed: the user
+> watched a full run while working in the editor, and the app stayed behind it throughout. A
+> person cannot do this in CI, which is what step 46's `ForegroundWatchdogTests` is for; this was
+> the check that the automated one measures the right thing.
 
 #### Result — the physical-input claim is proven; the suite is not yet stably green
 

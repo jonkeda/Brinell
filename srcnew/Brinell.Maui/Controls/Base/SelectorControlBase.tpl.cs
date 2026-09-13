@@ -1,3 +1,5 @@
+using Brinell.Core.Utilities;
+
 namespace Brinell.Maui.Controls.Base;
 
 /// <summary>
@@ -53,10 +55,9 @@ public abstract partial class SelectorControlBase<TScope> : FocusableControlBase
             return;
         }
 
-        // For ComboBox with ExpandCollapse pattern, use SelectItemByText for reliable selection
-        if (element is IExpandCollapsePatternElement<IMauiElement> comboBox && comboBox.SupportsExpandCollapse)
+        if (element.SupportsDropdown)
         {
-            if (!comboBox.SelectItemByText(text))
+            if (!SelectFromDropdown(element, items => items.FirstOrDefault(i => i.Name == text || i.Text == text)))
             {
                 throw new InvalidOperationException($"Item with text '{text}' not found. Locator: {Locator}");
             }
@@ -99,10 +100,9 @@ public abstract partial class SelectorControlBase<TScope> : FocusableControlBase
             return;
         }
 
-        // For ComboBox with ExpandCollapse pattern, use SelectItemByIndex for reliable selection
-        if (element is IExpandCollapsePatternElement<IMauiElement> comboBox && comboBox.SupportsExpandCollapse)
+        if (element.SupportsDropdown)
         {
-            if (!comboBox.SelectItemByIndex(index.Value))
+            if (!SelectFromDropdown(element, items => index.Value < items.Count ? items[index.Value] : null))
             {
                 throw new ArgumentOutOfRangeException(nameof(index),
                     $"Index {index} is out of range. Locator: {Locator}");
@@ -153,11 +153,11 @@ public abstract partial class SelectorControlBase<TScope> : FocusableControlBase
     {
         if (element == null) return null;
 
-        // For ComboBox (ExpandCollapse pattern), use SelectionPattern to get the selected item text
-        // This avoids returning the ComboBox header/title instead of the selected value
-        if (element is IExpandCollapsePatternElement<IMauiElement> comboBox && comboBox.SupportsExpandCollapse)
+        // A dropdown names its selected item separately from its header/title, which is what its
+        // text would otherwise return.
+        if (element.SupportsDropdown)
         {
-            return comboBox.GetSelectedItemText();
+            return element.SelectedItemText;
         }
 
         // Otherwise whatever the control renders as its current choice.
@@ -208,20 +208,12 @@ public abstract partial class SelectorControlBase<TScope> : FocusableControlBase
     {
         if (element == null) return null;
 
-        // For ExpandCollapse elements, expand first so item elements remain valid while reading texts
-        if (element is IExpandCollapsePatternElement<IMauiElement> comboBox && comboBox.SupportsExpandCollapse)
+        // Opened for the read and closed again, so the item elements are still live while their
+        // texts are read.
+        if (element.SupportsDropdown)
         {
-            comboBox.Expand();
-            try
-            {
-                // GetExpandedItems sees already-expanded state, so won't collapse in its finally
-                var items = comboBox.GetExpandedItems();
-                return items?.Select(i => i.Text ?? string.Empty).ToList();
-            }
-            finally
-            {
-                comboBox.Collapse();
-            }
+            return WithDropdownOpen(element,
+                () => element.ReadDropdownItems().Select(i => i.Text ?? string.Empty).ToList());
         }
 
         var defaultItems = GetItemElementsCore(element);
@@ -263,14 +255,69 @@ public abstract partial class SelectorControlBase<TScope> : FocusableControlBase
     {
         if (element == null) return null;
 
-        // For ComboBox with ExpandCollapse pattern, use GetExpandedItems which handles expand/collapse
-        if (element is IExpandCollapsePatternElement<IMauiElement> comboBox && comboBox.SupportsExpandCollapse)
+        if (element.SupportsDropdown)
         {
-            return comboBox.GetExpandedItems();
+            return WithDropdownOpen(element, element.ReadDropdownItems);
         }
 
         // Default implementation - override for specific controls
         return null;
+    }
+
+    /// <summary>
+    /// Opens the dropdown, chooses one of its items, and leaves it closed.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The item is <see cref="IMauiElement.Select"/>ed, which throws where it cannot be. This used
+    /// to live on the Windows element as <c>SelectItemByText</c>, and fell back to a pointer click
+    /// on an item without the SelectionItem pattern - a physical click nobody asked for, inside a
+    /// call that looked semantic (step 107).
+    /// </para>
+    /// </remarks>
+    /// <param name="element">The selector, which answered <c>SupportsDropdown</c>.</param>
+    /// <param name="choose">Picks the item from those the dropdown shows, or null for none.</param>
+    /// <returns>False when <paramref name="choose"/> found nothing; the dropdown is closed again.</returns>
+    protected bool SelectFromDropdown(
+        IMauiElement element, Func<IReadOnlyList<IMauiElement>, IMauiElement?> choose)
+    {
+        element.OpenDropdown();
+
+        var item = choose(element.ReadDropdownItems());
+        if (item == null)
+        {
+            element.CloseDropdown();
+            return false;
+        }
+
+        item.Select();
+
+        // Choosing an item closes a combo box by itself; close it if this one did not.
+        WaitHelper.WaitFor(() => !element.IsDropdownOpen, DefaultTimeoutMs, PollingIntervalMs);
+        element.CloseDropdown();
+        return true;
+    }
+
+    /// <summary>Runs a read with the dropdown open, restoring the state it was found in.</summary>
+    protected static T WithDropdownOpen<T>(IMauiElement element, Func<T> read)
+    {
+        var wasOpen = element.IsDropdownOpen;
+        if (!wasOpen)
+        {
+            element.OpenDropdown();
+        }
+
+        try
+        {
+            return read();
+        }
+        finally
+        {
+            if (!wasOpen)
+            {
+                element.CloseDropdown();
+            }
+        }
     }
 
     #endregion

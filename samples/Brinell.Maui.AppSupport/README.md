@@ -144,16 +144,25 @@ for one — see [Shipping](#shipping) — so the same line is correct in a relea
 does nothing, as under test. Put it in `CreateMauiApp`: elements publish themselves on `Loaded`,
 and one that loads before this runs finds the bridge off and stays unpublished.
 
+**Every app under test needs that line, and forgetting it fails silently.** Without it the bridge
+compiles in and publishes nothing: every declaration is ignored, and tests fail with "no element
+published on the app's bridge". The Brinell Shell sample went an entire stage like that. The bridge
+log's first line says which it is - `bridge ON` or `bridge OFF`, with the reason.
+
 Nothing else is needed. No registration: the first element that declares a verb creates the
 bridge, and an app with no declarations behaves exactly as if these files were absent.
 
 ## From a test
 
 ```csharp
-driver.PerformGesture("TestRefreshView", MauiGesture.SwipeDown);   // throws if refused
-driver.TryPerformGesture("TestSwipeView", MauiGesture.SwipeRight); // returns false if refused
-driver.SupportsGesture("TestSwipeView", MauiGesture.Pinch);        // asks first
+driver.SupportsGesture("TestSwipeView", MauiGesture.SwipeRight);   // a question: declared or not
+driver.PerformGesture("TestSwipeView", MauiGesture.SwipeRight);    // a command: happens or throws
 ```
+
+A question and a command, never one call answering both. There used to be a
+`TryPerformGesture`; it was removed because its `false` meant "not declared", "refused" and
+"not published yet" at once, and callers that carried on past it asserted things that had not
+happened.
 
 Addressed by `AutomationId` rather than by element, because the controls that most need a gesture
 are the ones Windows automation cannot see.
@@ -166,14 +175,37 @@ $env:BRINELL_APP_CRASH_LOG = "crash.log" # unhandled exceptions in the app under
 ```
 
 and from a test, `FlaUIMauiDriver.DescribeGestureBridge()` prints the raw tree below the app
-window. Between them they separate the three failures that otherwise look identical: no bridge
-window (the app was built without these sources), a bridge window whose provider never answered
-`WM_GETOBJECT`, or a fragment root with nothing registered on it.
+window. Between them they separate the failures that otherwise look identical:
+
+- **the bridge is off** - a Release build, or no `UseBrinellGestureBridge()` - which the log's first
+  line states;
+- **no bridge window** - the app was built without these sources;
+- **a bridge window whose provider never answered `WM_GETOBJECT`**;
+- **a fragment root with nothing registered on it** - no declaration, or no `AutomationId`.
+
+## Lifetime
+
+**A page that unloads retires its targets; it does not disconnect them.** A retired target answers
+every verb with `UIA_E_ELEMENTNOTAVAILABLE` at once and is removed from the fragment root, so nothing
+new finds it and anything still holding it fails promptly.
+
+It used to call `UiaDisconnectProvider` instead, and that was measured to make UI Automation retire
+the *client's element for the whole app window* - seven or eight times in 150 page changes - after
+which a test driver holding that element could find nothing at all. See
+`.my/fix/rca-app-freeze-was-a-stale-root.md`.
+
+`UiaDisconnectProvider` is still called where it matters: when the bridge is torn down with its
+window. A provider left connected to a window that no longer exists makes clients block until their
+transaction times out - every accessibility client on the desktop, not only the test.
+
+**Do not put the disconnect back on the unload path.** `NavigationStressTests` (opt-in,
+`BRINELL_STRESS=1`) fails if the window element starts being retired again.
 
 ## What it copies
 
-Copying this project into an app means copying `srcnew/Brinell.Uia.Contracts` alongside it and
-adjusting the `Compile Include` path in the csproj. Both ends of the bridge — the app and the
+Copying this project into an app means copying `srcnew/Brinell.Uia.Contracts` alongside it -
+including `Brinell.Uia.Bridge.props`, which decides whether the bridge is compiled in - and
+adjusting the `Compile Include` and `Import` paths in the csproj. Both ends of the bridge — the app and the
 test assembly — must compile the same GUIDs, verb numbers and method table, or they do not speak
 to each other.
 

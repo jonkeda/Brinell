@@ -10,14 +10,35 @@ namespace Brinell.Maui.Controls.Base;
 
 /// <summary>
 /// Base class for MAUI controls with toggle capability.
-/// Implements IToggleControlObject with Toggle, Check, Uncheck, SetChecked.
+/// Implements IToggleControlObject with Toggle, Check, Uncheck, SetChecked, and Click.
 /// </summary>
+/// <remarks>
+/// <para>
+/// <b>Focusable, not clickable</b> (step 102, option B). This used to derive from
+/// <c>ClickableControlBase</c>, which gave every switch, check box and radio button a generated
+/// <c>DoubleClick</c>, <c>RightClick</c>, <c>Hover</c>, <c>LongPress</c>, <c>Press</c> and
+/// <c>IsClickable</c>/<c>WaitClickable</c>/<c>AssertClickable</c>. None of them means anything
+/// for a toggle, the first four exist only as real pointer input on Windows - which the quiet
+/// default refuses - and <c>Click</c> had to be overridden to mean something else anyway.
+/// </para>
+/// <para>
+/// <c>Click</c> stays, declared here for what it is on a toggle: flipping it.
+/// </para>
+/// </remarks>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
 
-public abstract partial class ToggleControlBase<TScope> : ClickableControlBase<TScope>,
+public abstract partial class ToggleControlBase<TScope> : FocusableControlBase<TScope>,
     IToggleControlObject<TScope>
     where TScope : IMauiScope<TScope>
 {
+    #region Click
+
+    public TScope Click(int? timeoutMs = null)
+    {
+        return RunDoWithElement(element => { ClickCore(element, timeoutMs); }, timeoutMs);
+    }
+
+    #endregion
     #region Toggle
 
     public TScope Toggle(int? timeoutMs = null)

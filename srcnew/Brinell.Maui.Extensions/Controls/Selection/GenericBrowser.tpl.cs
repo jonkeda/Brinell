@@ -279,23 +279,23 @@ public partial class GenericBrowser<TScope> : Brinell.Maui.Controls.Base.ViewBas
 
         try
         {
-            if (element is ISelectionItemPatternElement { SupportsSelectionItemPattern: true } selectionItem
-                && selectionItem.SelectItemPattern())
+            // One question per element, then one route. A route that throws means "not this
+            // candidate" to the caller - it is never followed by a second route on the same
+            // element, which is what the pattern ladder here used to do (step 107).
+            if (element.SupportsSelect)
             {
+                element.Select();
                 return true;
             }
 
-            if (element is IInvokePatternElement { SupportsInvokePattern: true } invoke
-                && invoke.InvokePattern())
+            if (element.SupportsInvoke)
             {
+                element.Invoke();
                 return true;
             }
 
-            if (element is ILegacyIAccessiblePatternElement { SupportsLegacyIAccessiblePattern: true } legacy
-                && legacy.DoDefaultActionPattern())
-            {
-                return true;
-            }
+            // No LegacyIAccessible rung: DoDefaultAction was measured reporting success without
+            // doing anything, and nothing in a ladder can detect that.
 
             element.Click();
             return true;

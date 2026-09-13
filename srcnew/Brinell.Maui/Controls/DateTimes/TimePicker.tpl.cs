@@ -120,11 +120,13 @@ public partial class TimePicker<TScope> : Base.FocusableControlBase<TScope>
     }
 
     /// <summary>
-    /// Sets the time without using the pointer.
+    /// Sets the time through the app's <c>SetTime</c> verb, or throws naming it.
     /// </summary>
     /// <remarks>
-    /// Opens the flyout by Invoke, sets hour, minute and period by their SelectionItem patterns,
-    /// and commits with Accept. No coordinates at any step.
+    /// The WinUI clock-flyout walk that used to be the route for an app without the bridge -
+    /// open by Invoke, pick hour, minute and period from WinUI's looping selectors, Accept - was
+    /// removed at step 107: Windows template internals in a cross-platform control, replaced by
+    /// the verb since step 20. See <c>DatePicker.SetDateCore</c>.
     /// </remarks>
     protected virtual void SetTimeCore(IMauiElement element, TimeSpan? time, int? timeoutMs = null)
     {
@@ -140,145 +142,10 @@ public partial class TimePicker<TScope> : Base.FocusableControlBase<TScope>
             return;
         }
 
-        Scope.WaitReady(timeoutMs ?? DefaultTimeoutMs);
-
-        var failure = TrySetByFlyout(element, time.Value, timeoutMs);
-        if (failure == null) return;
-
         throw new BrinellException(
             $"Could not set time {time.Value}. The app under test does not declare the SetTime "
-            + $"verb, and the flyout route failed: {failure}. Declaring the verb is one "
-            + $"attribute in the app's markup. Locator: {Locator}");
-    }
-
-    /// <summary>
-    /// Opens the time flyout by pattern and picks hour, minute and period.
-    /// </summary>
-    /// <remarks>
-    /// Measured against WinUI's TimePicker: the flyout carries HourLoopingSelector,
-    /// MinuteLoopingSelector and PeriodLoopingSelector - each a List of ListItems with a
-    /// SelectionItem pattern - plus AcceptButton and DismissButton, both Invoke-able. The hour
-    /// list is a 12-hour clock named 12, 1 .. 11, so the hour has to be converted.
-    /// </remarks>
-    private string? TrySetByFlyout(IMauiElement element, TimeSpan time, int? timeoutMs)
-    {
-        var button = element.FindElements(Locator.ByAutomationId("FlyoutButton")).FirstOrDefault()
-                     ?? element;
-
-        if (button is not IInvokePatternElement invoke || !invoke.SupportsInvokePattern)
-            return "the flyout button advertises no Invoke pattern";
-
-        if (!invoke.InvokePattern())
-            return "Invoke on the flyout button was refused";
-
-        if (!WaitForFlyout(timeoutMs))
-            return "the flyout did not open";
-
-        var hour12 = time.Hours % 12 == 0 ? 12 : time.Hours % 12;
-        var period = time.Hours < 12 ? 0 : 1;
-
-        if (!SelectInLooper("HourLoopingSelector", n => n == hour12))
-            return $"no selectable hour '{hour12}' in the flyout";
-
-        if (!SelectInLooper("MinuteLoopingSelector", n => n == time.Minutes))
-            return $"no selectable minute '{time.Minutes}' in the flyout";
-
-        // A 24-hour locale renders no period list; its absence is not a failure.
-        SelectPeriod(period);
-
-        var accept = Context.TryFindElement(Locator.ByAutomationId("AcceptButton"));
-        if (accept is not IInvokePatternElement acceptInvoke || !acceptInvoke.InvokePattern())
-            return "Accept was not available or was refused";
-
-        WaitHelper.Pause(PollingIntervalMs);
-
-        if (WaitForTime(time)) return null;
-
-        var actual = MauiScope.TryFindElement(Locator) is { } e ? ReadTime(e) : null;
-        var seconds = time.Seconds != 0
-            ? " The requested time carries seconds, and the WinUI flyout selects hours and minutes only."
-            : string.Empty;
-        return $"the control reports '{actual}' after Accept, not {time}.{seconds}";
-    }
-
-    private bool WaitForFlyout(int? timeoutMs)
-    {
-        var deadline = System.DateTime.UtcNow.AddMilliseconds(timeoutMs ?? DefaultTimeoutMs);
-        while (System.DateTime.UtcNow < deadline)
-        {
-            if (Context.TryFindElement(Locator.ByAutomationId("AcceptButton")) != null)
-                return true;
-            WaitHelper.Pause(PollingIntervalMs);
-        }
-
-        return false;
-    }
-
-    private bool SelectInLooper(string automationId, Func<int, bool> matches)
-    {
-        var looper = Context.TryFindElement(Locator.ByAutomationId(automationId));
-        if (looper == null) return false;
-
-        foreach (var item in looper.FindElements(Locator.ByControlType("ListItem")))
-        {
-            var name = DateTimeFormats.Clean(item.Name);
-            if (!int.TryParse(name, System.Globalization.NumberStyles.Integer, Culture, out var number))
-                continue;
-            if (!matches(number)) continue;
-
-            return item is ISelectionItemPatternElement selectable
-                   && selectable.SupportsSelectionItemPattern
-                   && selectable.SelectItemPattern();
-        }
-
-        return false;
-    }
-
-    private void SelectPeriod(int index)
-    {
-        var looper = Context.TryFindElement(Locator.ByAutomationId("PeriodLoopingSelector"));
-        if (looper == null) return;
-
-        var items = looper.FindElements(Locator.ByControlType("ListItem"));
-        if (index >= items.Count) return;
-
-        if (items[index] is ISelectionItemPatternElement selectable
-            && selectable.SupportsSelectionItemPattern)
-        {
-            selectable.SelectItemPattern();
-        }
-    }
-
-    /// <summary>
-    /// Polls until the control reports the time to the minute, or the wait runs out.
-    /// </summary>
-    /// <remarks>
-    /// A value that disagrees is a failure. A value that cannot be read is not: at midnight the
-    /// WinUI flyout button's name comes back as ' time picker' with no time in it and no text
-    /// descendants to fall back on, so the control publishes nothing to check against even though
-    /// the set worked. Treating unreadable as failure turned a working midnight set into an error.
-    /// </remarks>
-    private bool WaitForTime(TimeSpan time)
-    {
-        var deadline = System.DateTime.UtcNow.AddMilliseconds(DefaultTimeoutMs);
-        var everRead = false;
-
-        do
-        {
-            var element = MauiScope.TryFindElement(Locator);
-            var actual = element == null ? null : ReadTime(element);
-            if (actual != null)
-            {
-                everRead = true;
-                if (actual.Value.Hours == time.Hours && actual.Value.Minutes == time.Minutes)
-                    return true;
-            }
-
-            WaitHelper.Pause(PollingIntervalMs);
-        }
-        while (System.DateTime.UtcNow < deadline);
-
-        return !everRead;
+            + "verb, and it is the only route: declaring it is one attribute in the app's markup - "
+            + $"see GestureAutomation.Verbs. Locator: {Locator}");
     }
 
     #endregion

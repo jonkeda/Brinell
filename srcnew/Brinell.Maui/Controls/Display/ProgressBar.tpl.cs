@@ -58,15 +58,11 @@ public partial class ProgressBar<TScope> : Base.ViewBase<TScope>
         // A progress bar reports its value through the range pattern, and reports it in its own
         // units: WinUI uses 0-100 where MAUI's Progress is 0-1. Normalising against the reported
         // minimum and maximum is what makes the returned value mean the same thing everywhere.
-        if (element is IRangePatternElement range && range.SupportsRangeValue)
+        if (element.RangeValue is { } current)
         {
-            var current = range.GetRangeValue();
-            if (current.HasValue)
-            {
-                var min = range.GetRangeMinimum() ?? 0d;
-                var max = range.GetRangeMaximum() ?? 1d;
-                return max > min ? (current.Value - min) / (max - min) : current.Value;
-            }
+            var min = element.RangeMinimum ?? 0d;
+            var max = element.RangeMaximum ?? 1d;
+            return max > min ? (current - min) / (max - min) : current;
         }
 
         // Nothing else to ask: a progress bar without the range pattern publishes no progress.

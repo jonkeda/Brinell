@@ -1,5 +1,6 @@
 using Brinell.Core;
 using Brinell.Maui.Configuration;
+using Brinell.Maui.Containers;
 
 namespace Brinell.Maui.Extensions.Controls.Generated;
 
@@ -7,8 +8,14 @@ namespace Brinell.Maui.Extensions.Controls.Generated;
 /// MAUI generated editable field wrapper.
 /// Handles generated field roots that expose child native buttons/text entries.
 /// </summary>
+/// <remarks>
+/// <b>A container</b> (step 101a): its parts - the native buttons, the text entry - are looked for
+/// under its own root and nowhere else. As a view it looked for them with <c>FindChildCore</c>,
+/// which fell back to searching the whole page for any visible match whose centre lay inside the
+/// field's bounds - a geometric guess that could as easily land on an overlapping neighbour.
+/// </remarks>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public class EditableField<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope>
+public class EditableField<TScope> : ContainerObjectBase<TScope, EditableField<TScope>>
     where TScope : IMauiScope<TScope>
 {
     private const string NativeButtonId = "EditableFieldView_NativeButton";
@@ -51,7 +58,7 @@ public class EditableField<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope>
             throw new ElementNotFoundException($"Could not open generated editable field. Locator: {Locator}");
         }
 
-        return ContainingScope;
+        return Parent;
     }
 
     /// <summary>
@@ -59,15 +66,15 @@ public class EditableField<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope>
     /// </summary>
     public bool TryOpen(int? timeoutMs = null)
     {
-        return Run(nameof(TryOpen), (string?)null, () =>
+        return Once(() =>
         {
-            var root = TryFindElement();
+            var root = TryGetContainerRoot();
             if (root == null) return false;
 
-            var target = FindChild(root, NativeButtonId)
-                ?? FindChild(root, TextEditorNativeButtonId)
-                ?? FindChild(root, ButtonId)
-                ?? FindChild(root, TextEditorButtonId)
+            var target = FindPart(NativeButtonId)
+                ?? FindPart(TextEditorNativeButtonId)
+                ?? FindPart(ButtonId)
+                ?? FindPart(TextEditorButtonId)
                 ?? root;
 
             return TryActivate(target);
@@ -84,7 +91,7 @@ public class EditableField<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope>
             throw new ElementNotFoundException($"Could not set generated editable field text. Locator: {Locator}");
         }
 
-        return ContainingScope;
+        return Parent;
     }
 
     /// <summary>
@@ -92,12 +99,12 @@ public class EditableField<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope>
     /// </summary>
     public bool TrySetText(string text, int? timeoutMs = null)
     {
-        return Run(nameof(TrySetText), text, () =>
+        return Once(() =>
         {
-            var root = TryFindElement();
+            var root = TryGetContainerRoot();
             if (root == null) return false;
 
-            var entry = FindChild(root, TextEntryId);
+            var entry = FindPart(TextEntryId);
             if (entry != null)
             {
                 SetElementText(entry, text);
@@ -113,15 +120,24 @@ public class EditableField<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope>
     /// </summary>
     public string? GetEntryText(int? timeoutMs = null)
     {
-        return Run(nameof(GetEntryText), (string?)null, () =>
+        return Once(() =>
         {
-            var root = TryFindElement();
-            return root == null ? null : FindChild(root, TextEntryId)?.Text;
+            var root = TryGetContainerRoot();
+            return root == null ? null : FindPart(TextEntryId)?.Text;
         }, timeoutMs);
     }
 
-    private IMauiElement? FindChild(IMauiElement root, string automationId)
-        => FindChildCore(root, automationId);
+    /// <summary>A visible part of this field, looked for under its root only.</summary>
+    private IMauiElement? FindPart(string automationId)
+        => FindElements(Locator.ByAutomationId(automationId)).FirstVisible();
+
+    /// <summary>Runs an operation once, after the page is ready, and returns its result.</summary>
+    private T Once<T>(Func<T> operation, int? timeoutMs)
+    {
+        var result = default(T)!;
+        RunDo(() => result = operation(), timeoutMs);
+        return result;
+    }
 
     /// <summary>
     /// Activates one candidate surface of the generated field, reporting failure rather than throwing.
@@ -141,15 +157,11 @@ public class EditableField<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope>
 
         try
         {
-            if (element is IInvokePatternElement { SupportsInvokePattern: true } invoke
-                && invoke.InvokePattern())
+            // One question, then one route - see GenericBrowser.TryActivate. No LegacyIAccessible
+            // rung: DoDefaultAction was measured reporting success without doing anything.
+            if (element.SupportsInvoke)
             {
-                return true;
-            }
-
-            if (element is ILegacyIAccessiblePatternElement { SupportsLegacyIAccessiblePattern: true } legacy
-                && legacy.DoDefaultActionPattern())
-            {
+                element.Invoke();
                 return true;
             }
 
@@ -183,8 +195,8 @@ public class EditableField<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope>
 
     private bool TryOpenTextEditor(IMauiElement root, int? timeoutMs)
     {
-        var target = FindChild(root, TextEditorNativeButtonId)
-            ?? FindChild(root, TextEditorButtonId)
+        var target = FindPart(TextEditorNativeButtonId)
+            ?? FindPart(TextEditorButtonId)
             ?? root;
 
         if (TryActivate(target) && WaitForTextEditorOpen(timeoutMs))
@@ -221,7 +233,7 @@ public class EditableField<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope>
     {
         IMauiElement? result = null;
         RunWait(
-            () => (result = MauiScope.FindVisibleElements(TextEditorLocator).FirstOrDefault()) != null,
+            () => (result = Parent.FindVisibleElements(TextEditorLocator).FirstOrDefault()) != null,
             timeoutMs);
         return result;
     }
@@ -230,8 +242,8 @@ public class EditableField<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope>
     {
         IMauiElement? result = null;
         RunWait(
-            () => (result = MauiScope.FindVisibleByAutomationId(TextEditorOkNativeButtonId)
-                            ?? MauiScope.FindVisibleByAutomationId(TextEditorOkButtonId)) != null,
+            () => (result = Parent.FindVisibleByAutomationId(TextEditorOkNativeButtonId)
+                            ?? Parent.FindVisibleByAutomationId(TextEditorOkButtonId)) != null,
             timeoutMs);
         return result;
     }

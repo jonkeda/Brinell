@@ -115,11 +115,8 @@ public partial class DatePicker<TScope> : Base.FocusableControlBase<TScope>
     {
         if (element == null) return null;
 
-        if (element is IValuePatternElement value && value.SupportsValuePattern)
-        {
-            var patternDate = ParseDate(value.GetValuePattern());
-            if (patternDate != null) return patternDate;
-        }
+        var valueDate = ParseDate(element.Value);
+        if (valueDate != null) return valueDate;
 
         foreach (var child in element.FindElements(Locator.ByAutomationId("DateText")))
         {
@@ -135,10 +132,16 @@ public partial class DatePicker<TScope> : Base.FocusableControlBase<TScope>
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>One question, then one route.</b> If the app under test declares the <c>SetDate</c>
-    /// verb, it sets its own <c>DatePicker.Date</c> and says what the control then holds. If it
-    /// does not, the calendar is opened and the day selected by pattern - the route for an app
-    /// carrying no instrumentation, and still no pointer anywhere in it.
+    /// <b>The verb, or a refusal that names it.</b> If the app under test declares the
+    /// <c>SetDate</c> verb, it sets its own <c>DatePicker.Date</c> and says what the control then
+    /// holds. If it does not, this throws.
+    /// </para>
+    /// <para>
+    /// <b>There was a second route, and step 107 removed it.</b> For an app without the bridge,
+    /// the control opened WinUI's calendar flyout by Invoke and walked it by pattern - month
+    /// header, Previous and Next, one DataItem per day - by the automation ids of WinUI's own
+    /// template. That was Windows internals written into a cross-platform control, it did nothing
+    /// on Android, and the <c>SetDate</c> verb has replaced it since step 20.
     /// </para>
     /// <para>
     /// <b>This was a three-rung ladder</b>, and the rungs were tried in order until one appeared
@@ -160,196 +163,10 @@ public partial class DatePicker<TScope> : Base.FocusableControlBase<TScope>
             return;
         }
 
-        if (!TrySetByCalendar(element, date.Value, timeoutMs))
-        {
-            throw new BrinellException(
-                $"Could not set date {date.Value:yyyy-MM-dd}. The app under test does not declare "
-                + "the SetDate verb, and walking the calendar flyout did not reach the day. "
-                + $"Declaring the verb is one attribute in the app's markup. Locator: {Locator}");
-        }
-    }
-
-    #endregion
-
-    #region Calendar flyout navigation
-
-    /// <summary>
-    /// Rung 2: open the calendar by Invoke and select the day by pattern.
-    /// </summary>
-    /// <remarks>
-    /// Measured against WinUI's CalendarDatePicker: Invoke opens a CalendarView carrying a header
-    /// button ('September 2026'), Previous and Next buttons - all Invoke-able - and one DataItem
-    /// per day, each with a SelectionItem pattern. No coordinates are involved at any step.
-    /// </remarks>
-    private bool TrySetByCalendar(IMauiElement element, System.DateTime date, int? timeoutMs)
-    {
-        if (element is not IInvokePatternElement invoke || !invoke.SupportsInvokePattern)
-            return false;
-
-        if (!invoke.InvokePattern())
-            return false;
-
-        var calendar = WaitForCalendar(timeoutMs);
-        if (calendar == null)
-            return false;
-
-        try
-        {
-            if (!NavigateToMonth(calendar, date))
-                return false;
-
-            var day = FindDayItem(calendar, date);
-            if (day is not ISelectionItemPatternElement selectable
-                || !selectable.SupportsSelectionItemPattern)
-                return false;
-
-            if (!selectable.SelectItemPattern())
-                return false;
-        }
-        finally
-        {
-            WaitHelper.Pause(PollingIntervalMs);
-        }
-
-        // Selecting reports success even when the control declines to take the value, so the rung
-        // is only honest if it reads the date back. A picker constrained by MinimumDate or
-        // MaximumDate is the case that matters: the cell can exist and still not commit.
-        return WaitForDate(date);
-    }
-
-    /// <summary>Polls until the control reports the date, or the wait runs out.</summary>
-    private bool WaitForDate(System.DateTime date)
-    {
-        var deadline = System.DateTime.UtcNow.AddMilliseconds(DefaultTimeoutMs);
-        do
-        {
-            var element = MauiScope.TryFindElement(Locator);
-            if (element != null && ReadDate(element)?.Date == date.Date)
-                return true;
-
-            WaitHelper.Pause(PollingIntervalMs);
-        }
-        while (System.DateTime.UtcNow < deadline);
-
-        return false;
-    }
-
-    private IMauiElement? WaitForCalendar(int? timeoutMs)
-    {
-        var deadline = System.DateTime.UtcNow.AddMilliseconds(timeoutMs ?? DefaultTimeoutMs);
-        while (System.DateTime.UtcNow < deadline)
-        {
-            var calendar = Context.TryFindElement(Locator.ByAutomationId("CalendarView"));
-            if (calendar != null) return calendar;
-            WaitHelper.Pause(PollingIntervalMs);
-        }
-
-        return null;
-    }
-
-    /// <summary>
-    /// Walks the calendar to the month holding <paramref name="date"/> using Previous/Next.
-    /// </summary>
-    /// <remarks>
-    /// The header button doubles as the month label, so the current month is read from its Name
-    /// rather than tracked. The loop stops when the header stops changing, which is how a picker
-    /// constrained by MinimumDate/MaximumDate reports that it will not go further - Next simply
-    /// does nothing at the boundary.
-    /// </remarks>
-    private bool NavigateToMonth(IMauiElement calendar, System.DateTime date)
-    {
-        var target = new System.DateTime(date.Year, date.Month, 1);
-
-        for (var guard = 0; guard < 120; guard++)
-        {
-            var header = ReadHeaderMonth(calendar);
-            if (header == null) return true; // Unreadable header: let the day search decide.
-            if (header.Value == target) return true;
-
-            var button = FindCalendarButton(calendar, header.Value < target ? "Next" : "Previous");
-            if (button is not IInvokePatternElement step || !step.InvokePattern())
-                return false;
-
-            WaitHelper.Pause(PollingIntervalMs);
-            if (ReadHeaderMonth(calendar) == header)
-                return false; // Refused to move - the target is outside Minimum/MaximumDate.
-        }
-
-        return false;
-    }
-
-    private System.DateTime? ReadHeaderMonth(IMauiElement calendar)
-    {
-        foreach (var button in calendar.FindElements(Locator.ByControlType("Button")))
-        {
-            var name = DateTimeFormats.Clean(button.Name);
-            if (name.Length == 0 || name == "Previous" || name == "Next") continue;
-
-            if (System.DateTime.TryParse("1 " + name, Culture,
-                    System.Globalization.DateTimeStyles.None, out var month))
-                return new System.DateTime(month.Year, month.Month, 1);
-        }
-
-        return null;
-    }
-
-    private static IMauiElement? FindCalendarButton(IMauiElement calendar, string name)
-    {
-        foreach (var button in calendar.FindElements(Locator.ByControlType("Button")))
-        {
-            if (string.Equals(DateTimeFormats.Clean(button.Name), name, StringComparison.OrdinalIgnoreCase))
-                return button;
-        }
-
-        return null;
-    }
-
-    /// <summary>
-    /// Finds the cell for <paramref name="date"/> among the calendar's day items.
-    /// </summary>
-    /// <remarks>
-    /// Day cells are named by number alone ('8'), or '7, today' for today, and the grid spans two
-    /// months - a measured September view ran 7..30 then 1..7 of October, so '7' appeared twice.
-    /// Matching on the number alone would pick the wrong month. The cells are in chronological
-    /// order, so each descent in the sequence is a month boundary; counting those identifies which
-    /// run a cell belongs to.
-    /// </remarks>
-    private static IMauiElement? FindDayItem(IMauiElement calendar, System.DateTime date)
-    {
-        var items = calendar.FindElements(Locator.ByControlType("DataItem"));
-        if (items.Count == 0) return null;
-
-        var run = 0;
-        var previousDay = 0;
-        IMauiElement? firstRunMatch = null;
-
-        foreach (var item in items)
-        {
-            if (!TryReadDayNumber(item, out var day)) continue;
-
-            if (day < previousDay) run++;
-            previousDay = day;
-
-            if (day != date.Day) continue;
-
-            // Run 0 is the header month; the calendar opens on the month being displayed, which
-            // NavigateToMonth has already made the target month.
-            if (run == 0) return item;
-            firstRunMatch ??= item;
-        }
-
-        return firstRunMatch;
-    }
-
-    private static bool TryReadDayNumber(IMauiElement item, out int day)
-    {
-        day = 0;
-        var name = DateTimeFormats.Clean(item.Name);
-        if (name.Length == 0) return false;
-
-        // '7, today' and '8' both start with the number.
-        var digits = new string(name.TakeWhile(char.IsDigit).ToArray());
-        return digits.Length > 0 && int.TryParse(digits, out day);
+        throw new BrinellException(
+            $"Could not set date {date.Value:yyyy-MM-dd}. The app under test does not declare the "
+            + "SetDate verb, and it is the only route: declaring it is one attribute in the app's "
+            + $"markup - see GestureAutomation.Verbs. Locator: {Locator}");
     }
 
     #endregion

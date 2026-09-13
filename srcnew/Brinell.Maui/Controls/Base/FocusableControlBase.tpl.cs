@@ -44,10 +44,9 @@ public abstract partial class FocusableControlBase<TScope> : ViewBase<TScope>, I
     /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
     protected virtual void FocusCore(IMauiElement element, int? timeoutMs = null)
     {
-        if (element is IFocusPatternElement focusable
-            && focusable.SupportsSetFocus
-            && focusable.SetFocus())
+        if (element.SupportsFocus)
         {
+            element.Focus();
             return;
         }
 

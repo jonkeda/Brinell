@@ -129,8 +129,7 @@ public class TabMenuTests
             button.Setup(e => e.Text).Returns(caption);
             button.Setup(e => e.Selected).Returns(selected);
             button.Setup(e => e.Rect).Returns(new System.Drawing.Rectangle(0, 0, 80, 40));
-            button.As<IInvokePatternElement>().Setup(e => e.SupportsInvokePattern).Returns(true);
-            button.As<IInvokePatternElement>().Setup(e => e.InvokePattern()).Returns(true);
+            button.Setup(e => e.SupportsInvoke).Returns(true);
 
             var tabRoot = new Mock<IMauiElement>();
             tabRoot.Setup(e => e.Visible).Returns(true);

@@ -5,7 +5,7 @@ namespace Brinell.Maui.Tests.Semantic;
 public class CheckBoxControlTests : SemanticControlTestsBase
 {
     [Fact]
-    public void CheckBox_SetChecked_UsesTogglePatternBeforeClick()
+    public void CheckBox_SetChecked_AsksForTheStateWhereThePlatformCan()
     {
         var checkBox = CreateToggleElement("IncludeProblemReports", 0, 0, 32, 32, initialState: false);
         Context
@@ -19,7 +19,8 @@ public class CheckBoxControlTests : SemanticControlTestsBase
 
         Page.IncludeProblemReports.Check();
 
-        checkBox.As<ITogglePatternElement>().Verify(e => e.SetToggleStatePattern(true), Times.Once);
+        checkBox.Verify(e => e.SetChecked(true), Times.Once);
+        checkBox.Verify(e => e.Toggle(), Times.Never);
         checkBox.Verify(e => e.Click(), Times.Never);
         checkBox.Verify(e => e.SendKeys(It.IsAny<string>(), It.IsAny<TextInputMethod>()), Times.Never);
         Assert.True(Page.IncludeProblemReports.IsChecked());

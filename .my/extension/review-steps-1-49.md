@@ -40,7 +40,7 @@ failure relies on is measured but not understood.
 | Never takes the foreground | **Holds, with one known exception** | `WS_EX_NOACTIVATE` took button clicks from two foreground grabs each to zero; `ForegroundWatchdogTests` fails if navigation grabs it. **Launch still grabs once per collection** - Windows gives a new process the foreground - and the watchdog puts it back within milliseconds |
 | Stays behind the user's windows | **Holds** | Watchdog keyed on the process from the moment of launch |
 | Is the default | **Holds for the MAUI FlaUI stack** | Module initializer; `BRINELL_BACKGROUND_MODE=0` opts out. WPF and WinForms deliberately still default to allowed |
-| Verified on a real desktop by a person | **Not since the fix** | The report "the screen still pops over the editor" came before `WS_EX_NOACTIVATE`. Nobody has watched a run since |
+| Verified on a real desktop by a person | **Holds** | Watched by the user on 2026-09-13, after the fix: the app stayed behind the editor for the whole run. The earlier report, "the screen still pops over the editor", came before `WS_EX_NOACTIVATE` |
 
 ---
 
@@ -65,9 +65,10 @@ literal assertion, and `EveryVerb_IsClassifiedByKind` now forces a decision for 
 
 ### Stage B — background execution (13-16)
 
-Focus and text verbs, background mode, parallel collections. **Delivered, but step 15 is still
-recorded as "partly"**, blocked on step 36 and on a human check. Both blockers are gone: 36 was
-root-caused, and the human check was replaced by the foreground watchdog. The row should close.
+Focus and text verbs, background mode, parallel collections. **Delivered.** Step 15 sat at
+"partly" for most of the programme, blocked on step 36 and on a human check. Both are gone: 36 was
+root-caused, and the human check - a person typing through a full run - was performed on
+2026-09-13 and the app stayed behind the editor. The row is closed.
 
 ### Stage C — gestures (17-19)
 
@@ -94,8 +95,8 @@ Security gating, lifetime, the accessibility audit. **Substantively done, with r
 made to the design along the way**: section 8's claim that no string is interpreted as a command,
 and no information disclosed, was false and was rewritten.
 
-**Step 30, documentation and AD-008, has not been started**, and section 5 shows that the
-documentation it would update is now actively wrong.
+**Step 30, documentation and AD-008, is done** (after this review first found it unstarted and the
+documentation actively wrong - section 5).
 
 ### Stage G — the parked list (31-42)
 
@@ -134,15 +135,17 @@ scroll landing later than its verb returns, a window element retired by UI Autom
 
 | Row | What it says | What is true |
 |---|---|---|
-| **15** | "partly - blocked on the flaky step 36, and the human check is not done" | Both blockers are resolved; should be **done** |
-| **45** | "`InvokeAnywhere` stops guessing" | `InvokeAnywhere` was not rewritten. The fix was on the other side - pages now answer honestly, so the walk's existing rule works. The outcome stands; the title describes work that did not happen |
-| **49** | "Full suite with nothing set: 266 passed" | 281 passed after steps 32 and 35 |
-| **1** | "the test became order-dependent in stage B" | It passed in every full run measured today |
+| **15** | "partly - blocked on the flaky step 36, and the human check is not done" | Both blockers are resolved - 36 root-caused, and the human check performed by the user on 2026-09-13; now **done** |
+| **45** | "`InvokeAnywhere` stops guessing" | `InvokeAnywhere` was not rewritten. The fix was on the other side - pages now answer honestly, so the walk's existing rule works. **Row retitled** |
+| **49** | "Full suite with nothing set: 266 passed" | 281 passed after steps 32 and 35. **Row updated** |
+| **1** | "the test became order-dependent in stage B" | It passed in every full run measured today. **Caveat closed** |
 | **plan-the-quiet-run §1** | "11 failed", "33 skipped" | Historical baseline, correctly labelled as such - not wrong, but a reader skimming could take it as current |
 
 ---
 
 ## 5. Defects found by this review
+
+**Defects 1-3 are fixed** by step 30's documentation pass; 4 resolves on commit; 5 remains.
 
 **1. The documented switch does nothing.** `BRINELL_ALLOW_POINTER_INPUT` appears in AD-005, in
 `AGENTS.md`, in `docs/architecture/stack.md` and in `docs/guides/troubleshooting.md`. **No code
@@ -203,25 +206,24 @@ In the order it is worth doing.
 1. **Commit.** 85 files, in reviewable pieces if possible: the contract and provider changes
    (43, retire-not-disconnect), the driver (quiet default, watchdog, `NOACTIVATE`, self-healing
    root, readiness), the sample apps, the tests, then the documents.
-2. **Watch one run on a real desktop.** The foreground claim was last checked by a person *before*
-   the fix that made it true. Start a full run, keep typing in the editor, and confirm nothing
-   comes forward except the launch flash.
+2. ~~**Watch one run on a real desktop.**~~ **Done 2026-09-13** - the app stayed behind the editor
+   throughout.
 
-### Documentation - step 30, now overdue
+### Documentation - step 30 - **done 2026-09-13**
 
-3. **Remove `BRINELL_ALLOW_POINTER_INPUT`** from AD-005, `AGENTS.md`, `stack.md` and the
-   troubleshooting guide, and document `BRINELL_BACKGROUND_MODE` and the quiet default in its place.
-4. **Write AD-008** - gestures and semantic actions go through UI Automation - with the three
-   admission tests, so the bridge does not become the app's primary automation surface.
-5. **Fix the AppSupport README** (`TryPerformGesture`, retire-not-disconnect,
-   `UseBrinellGestureBridge` being required in every app - the Shell app went silent without it).
-6. **Add a MAUI guide section** on background execution: the quiet default, how to opt out, the
-   watchdog, and why off-screen placement is not recommended.
+3. ~~**Remove `BRINELL_ALLOW_POINTER_INPUT`** from AD-005, `AGENTS.md`, `stack.md` and the
+   troubleshooting guide, and document `BRINELL_BACKGROUND_MODE` and the quiet default in its place.~~ Done.
+4. ~~**Write AD-008** - gestures and semantic actions go through UI Automation - with the three
+   admission tests, so the bridge does not become the app's primary automation surface.~~ Done.
+5. ~~**Fix the AppSupport README** (`TryPerformGesture`, retire-not-disconnect,
+   `UseBrinellGestureBridge` being required in every app - the Shell app went silent without it).~~ Done.
+6. ~~**Add a MAUI guide section** on background execution: the quiet default, how to opt out, the
+   watchdog, and why off-screen placement is not recommended.~~ Done.
 
 ### Correct the record
 
-7. Close row **15**; retitle row **45** to what was done; update row **49**'s count; confirm row
-   **1** and close its caveat.
+7. ~~Close row **15**; retitle row **45** to what was done; update row **49**'s count; confirm row
+   **1** and close its caveat.~~ Done.
 
 ### Remaining steps
 

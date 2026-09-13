@@ -1,3 +1,5 @@
+using Brinell.Maui.Containers;
+
 namespace Brinell.Maui.Controls.Container;
 
 /// <summary>
@@ -5,7 +7,12 @@ namespace Brinell.Maui.Controls.Container;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Refreshing is declared as a capability (<see cref="IRefreshableControlObject{TScope}"/>)
+/// <b>A container</b> (step 102, option B): it hosts content, so it is modelled the way
+/// <c>ScrollView</c> and <c>Border</c> are - its children are found under it. It used to be a
+/// view, which gave it no way to name what it holds.
+/// </para>
+/// <para>
+/// Refreshing is declared as a capability (<see cref="IRefreshableControlObject{TSelf}"/>)
 /// rather than inherited from a refreshable base class. C# allows one base class, and a
 /// RefreshView wraps a scrollable child — a control that may well need both capabilities.
 /// </para>
@@ -17,27 +24,37 @@ namespace Brinell.Maui.Controls.Container;
 /// Android/iOS phase.
 /// </para>
 /// </remarks>
-/// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public partial class RefreshView<TScope> : Base.ViewBase<TScope>, IRefreshableControlObject<TScope>
-    where TScope : IMauiScope<TScope>
+/// <typeparam name="TParent">The parent scope type.</typeparam>
+/// <typeparam name="TSelf">The concrete container type.</typeparam>
+public partial class RefreshView<TParent, TSelf> : ContainerObjectBase<TParent, TSelf>,
+    IRefreshableControlObject<TSelf>
+    where TParent : IMauiScope<TParent>
+    where TSelf : RefreshView<TParent, TSelf>
 {
     /// <summary>
     /// Creates a new refresh view control within the specified scope.
     /// </summary>
-    public RefreshView(IMauiScope<TScope> scope, Locator locator)
-        : base(scope, locator)
+    public RefreshView(IMauiScope<TParent> parentScope, Locator locator)
+        : base(parentScope, locator)
     {
     }
 
     /// <summary>
     /// Creates a new refresh view control using the scope's default locator strategy.
     /// </summary>
-    public RefreshView(IMauiScope<TScope> scope, string locatorValue)
-        : base(scope, locatorValue)
+    public RefreshView(IMauiScope<TParent> parentScope, string locatorValue)
+        : base(parentScope, locatorValue)
     {
     }
 
     #region Core Methods (Element-Aware, No Logging)
+
+    /// <summary>Whether the container reports itself enabled.</summary>
+    /// <param name="element">The container's root, or null when absent.</param>
+    /// <returns>The enabled state, or null when absent.</returns>
+    [AbsenceTolerant]
+    protected virtual bool? IsEnabledCore(IMauiElement? element) => element?.Enabled;
+
 
     /// <summary>
     /// Performs the pull-to-refresh gesture.
@@ -89,8 +106,28 @@ public partial class RefreshView<TScope> : Base.ViewBase<TScope>, IRefreshableCo
     /// the generator emits one member per Core method and cannot know this shorthand is
     /// wanted.
     /// </remarks>
-    public TScope AssertRefreshing(string? message, int? timeoutMs = null)
+    public TSelf AssertRefreshing(string? message, int? timeoutMs = null)
         => AssertRefreshing(true, message, timeoutMs);
 
     #endregion
+}
+
+/// <summary>
+/// A <see cref="RefreshView{TParent, TSelf}"/> for use where no view-specific subclass is needed.
+/// </summary>
+/// <typeparam name="TParent">The parent scope type.</typeparam>
+public sealed partial class RefreshView<TParent> : RefreshView<TParent, RefreshView<TParent>>
+    where TParent : IMauiScope<TParent>
+{
+    /// <summary>Creates a RefreshView container within the specified scope.</summary>
+    public RefreshView(IMauiScope<TParent> parentScope, Locator locator)
+        : base(parentScope, locator)
+    {
+    }
+
+    /// <summary>Creates a RefreshView container using the scope's default locator strategy.</summary>
+    public RefreshView(IMauiScope<TParent> parentScope, string locatorValue)
+        : base(parentScope, locatorValue)
+    {
+    }
 }
