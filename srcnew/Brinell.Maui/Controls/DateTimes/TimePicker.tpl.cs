@@ -132,20 +132,10 @@ public partial class TimePicker<TScope> : Base.FocusableControlBase<TScope>
     {
         if (time == null) return;
 
-        // One question, then one route - see DatePicker.SetDateCore for why that is not the
-        // same as trying the first and falling back. The verb sets TimePicker.Time directly,
-        // which is also the fix for the flyout route reading 15:30 back as 03:30: there is no
-        // 12-hour clock anywhere in it to lose the AM/PM half.
-        if (element.SupportsSetTime)
-        {
-            element.SetTime(time.Value);
-            return;
-        }
-
-        throw new BrinellException(
-            $"Could not set time {time.Value}. The app under test does not declare the SetTime "
-            + "verb, and it is the only route: declaring it is one attribute in the app's markup - "
-            + $"see GestureAutomation.Verbs. Locator: {Locator}");
+        // One route - see DatePicker.SetDateCore. The verb sets TimePicker.Time directly, which is
+        // also the fix for the flyout route reading 15:30 back as 03:30: there is no 12-hour clock
+        // anywhere in it to lose the AM/PM half.
+        element.SetTime(time.Value);
     }
 
     #endregion

@@ -36,11 +36,11 @@ public class CapabilityNegotiationTests : SemanticControlTestsBase
     }
 
     /// <summary>
-    /// A mobile-shaped element: checked state, a toggle that taps, and no set-state command.
+    /// A mobile-shaped element: checked state, a toggle that taps, and a set-state that toggles.
     /// </summary>
     /// <remarks>
     /// Mirrors what <c>AppiumMauiElement</c> exposes on Android, where checked state comes from
-    /// the <c>checked</c> attribute and <c>SupportsSetChecked</c> keeps its default, false.
+    /// the <c>checked</c> attribute and <c>SetChecked</c> reads it and taps when it differs.
     /// </remarks>
     private static Mock<IMauiElement> CreateAttributeBackedToggle(bool initialState)
     {
@@ -52,6 +52,13 @@ public class CapabilityNegotiationTests : SemanticControlTestsBase
         // tap, which is why AppiumMauiElement implements Toggle as Click. The mock mirrors that:
         // the operation exists and works, without any Toggle pattern behind it.
         element.Setup(e => e.Toggle()).Callback(() => isChecked = !isChecked);
+        element.Setup(e => e.SetChecked(It.IsAny<bool>())).Callback<bool>(value =>
+        {
+            if (isChecked != value)
+            {
+                isChecked = !isChecked;
+            }
+        });
 
         return element;
     }
@@ -159,13 +166,18 @@ public class CapabilityNegotiationTests : SemanticControlTestsBase
         Page.IncludeProblemReports.Check();
 
         element.Verify(e => e.Toggle(), Times.Never);
+        element.Verify(e => e.SetChecked(It.IsAny<bool>()), Times.Never);
     }
 
     /// <summary>
-    /// Reaching a requested state works without the capability, on the mobile path.
+    /// Reaching a requested state asks the element for that state, on the mobile path too.
     /// </summary>
+    /// <remarks>
+    /// The control asks for the state and verifies it; how the element reaches it - a tap on this
+    /// platform - is below the interface.
+    /// </remarks>
     [Fact]
-    public void SetChecked_ReachesTargetState_WithoutASetStateCommand()
+    public void SetChecked_ReachesTargetState_OnTheMobileShapedElement()
     {
         var element = CreateAttributeBackedToggle(initialState: false);
         GivenElement(element);
@@ -173,7 +185,7 @@ public class CapabilityNegotiationTests : SemanticControlTestsBase
         Page.IncludeProblemReports.Check();
 
         Assert.True(Page.IncludeProblemReports.IsChecked());
-        element.Verify(e => e.Toggle(), Times.Once);
+        element.Verify(e => e.SetChecked(true), Times.Once);
     }
 
     /// <summary>
@@ -189,7 +201,6 @@ public class CapabilityNegotiationTests : SemanticControlTestsBase
     {
         var element = CreateElement(ToggleId, 0, 0, 32, 32);
         element.Setup(e => e.Checked).Returns(false);
-        element.Setup(e => e.SupportsSetChecked).Returns(true);
         element.Setup(e => e.SetChecked(true));
         GivenElement(element);
 

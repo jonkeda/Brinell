@@ -58,7 +58,7 @@ public abstract partial class RangeControlBase<TScope> : FocusableControlBase<TS
 
     /// <summary>
     /// Sets value on pre-found element.
-    /// Uses FlaUI RangeValue.SetValue pattern when available, otherwise falls back to SendKeys.
+    /// The element picks the route: the RangeValue pattern on Windows, arrow keys on Android and iOS.
     /// </summary>
     /// <param name="element">The pre-found element.</param>
     /// <param name="value">The value to set. Null skips the operation.</param>
@@ -69,18 +69,9 @@ public abstract partial class RangeControlBase<TScope> : FocusableControlBase<TS
 
         EnsureSettableCore(element);
 
-        // One question, then one route: a range the platform can set is set, and one it cannot
-        // is typed into. A SetRangeValue the platform refuses throws rather than falling through
-        // to typing, which would put the digits wherever focus happened to be.
-        if (element.SupportsSetRangeValue)
-        {
-            element.SetRangeValue(value.Value);
-            return;
-        }
-
-        // Override in derived classes for slider-specific drag behavior
-        element.Clear();
-        element.SendKeys(value.Value.ToString());
+        // One route. A SetRangeValue the platform refuses throws rather than falling through to
+        // typing, which would put the digits wherever focus happened to be.
+        element.SetRangeValue(value.Value);
     }
 
     /// <summary>

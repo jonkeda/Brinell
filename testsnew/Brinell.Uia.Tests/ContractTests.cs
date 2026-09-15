@@ -262,6 +262,7 @@ public class ContractTests
             BrinellVerb.NavigateBack,
             BrinellVerb.NavigateTo,
             BrinellVerb.InvokeMenuItem,
+            BrinellVerb.InvokeToolbarItem,
             BrinellVerb.DismissAlert,
             BrinellVerb.OpenFlyout,
             BrinellVerb.CloseFlyout,

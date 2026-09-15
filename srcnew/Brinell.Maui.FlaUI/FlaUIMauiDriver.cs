@@ -39,7 +39,6 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
         _automation = new UIA3Automation();
         _window = AppWindow.FromHandle(_automation, windowHandle);
         _conditionFactory = new ConditionFactory(_automation.PropertyLibrary);
-        Pointer = new PhysicalPointer(_window);
     }
 
     /// <summary>
@@ -87,7 +86,6 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
             ?? throw new InvalidOperationException("Failed to get main window");
         _window = new AppWindow(_automation, window);
         _conditionFactory = new ConditionFactory(_automation.PropertyLibrary);
-        Pointer = new PhysicalPointer(_window);
 
         WindowPlacement.ApplyRequested(_window);
         _quiet.Settle(_window.Handle);
@@ -106,7 +104,6 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
             ?? throw new InvalidOperationException("Failed to get main window");
         _window = new AppWindow(_automation, window);
         _conditionFactory = new ConditionFactory(_automation.PropertyLibrary);
-        Pointer = new PhysicalPointer(_window);
     }
 
     #region Platform
@@ -134,9 +131,6 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// <c>.my/fix/rca-app-freeze-was-a-stale-root.md</c>.
     /// </remarks>
     internal AutomationElement RootElement => _window.Element;
-
-    /// <summary>The real mouse and the foreground, for the few routes that still need them.</summary>
-    internal PhysicalPointer Pointer { get; }
 
     /// <summary>How many times the root element had gone stale and was attached again.</summary>
     /// <remarks>Diagnostics. A number that grows during a run is the invalidation happening.</remarks>
@@ -423,6 +417,27 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// </exception>
     public void PerformGesture(string automationId, MauiGesture gesture, int arg1, int arg2)
         => GestureRunner.Perform(RootElement, Automation, automationId, gesture, arg1, arg2);
+
+    /// <inheritdoc />
+    public bool SupportsStateReads(string automationId)
+        => BridgeVerbRunner.Supports(
+            RootElement, Automation, automationId, BrinellVerb.GetState);
+
+    /// <inheritdoc />
+    public string ReadState(string automationId, string property)
+    {
+        var answer = BridgeVerbRunner.Send(
+            RootElement, Automation, automationId, BrinellVerb.GetState, property);
+
+        if (!answer.Delivered)
+        {
+            throw new NotSupportedException(
+                $"'{automationId}' does not answer GetState('{property}'). The bridge said: "
+                + answer.Reason);
+        }
+
+        return answer.Value;
+    }
 
     /// <summary>
     /// Whether the app under test publishes a Brinell bridge at all.
@@ -765,8 +780,47 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
         throw new BrinellException($"Could not invoke menu item '{automationId}': {reason}.");
     }
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// Answered only by the page on screen - the app enforces that - so the walk passes over pages
+    /// that have been popped and still answer, rather than raising their items against the live
+    /// navigation stack.
+    /// </remarks>
+    public void InvokeToolbarItem(string automationId)
+    {
+        var answer = Bridge.BridgeVerbRunner.ExchangeAnywhere(
+            RootElement, Automation, BrinellVerb.InvokeToolbarItem, automationId);
+
+        // In the payload, as for menu items: a success HRESULT cannot say "found it, declined".
+        if (answer.Delivered)
+        {
+            if (answer.Value != MenuItemDisabled)
+            {
+                return;
+            }
+
+            throw new BrinellException(
+                $"Could not invoke toolbar item '{automationId}': it is disabled, so a user could "
+                + "not have pressed it either.");
+        }
+
+        var reason = answer.HResult switch
+        {
+            HResults.E_INVALIDARG => "no AutomationId was given",
+
+            HResults.UIA_E_ELEMENTNOTAVAILABLE =>
+                "no toolbar item on the page on screen carries that AutomationId. Toolbar items "
+                + "are matched by the id in the app's markup, not by their text",
+
+            _ => answer.Reason,
+        };
+
+        throw new BrinellException($"Could not invoke toolbar item '{automationId}': {reason}.");
+    }
+
     /// <summary>
-    /// What <c>InvokeMenuItem</c> answers with when it declined to raise the item.
+    /// What <c>InvokeMenuItem</c> and <c>InvokeToolbarItem</c> answer with when they declined to
+    /// raise the item.
     /// </summary>
     /// <remarks>
     /// Duplicated from the provider rather than shared, like the date formats above and for the

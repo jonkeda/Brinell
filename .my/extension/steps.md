@@ -93,7 +93,7 @@ stage rather than to develop against.
 | 28 | Versioning and lifetime tests | E | 18 | **done** — two teardown gaps, three of them in the harness; parked 42 |
 | 29 | Accessibility audit report | E | 18 | **done** — 11 of 33 elements have no route but the pointer |
 | 30 | Documentation and AD-008 | E | 19 | **done** — AD-005 rewritten for `BRINELL_BACKGROUND_MODE`, AD-008 written; `AGENTS.md`, `stack.md`, troubleshooting, MAUI guide, reporting guide and the AppSupport README updated; the dead `BRINELL_ALLOW_POINTER_INPUT` removed everywhere |
-| 31 | Stepper: 11 failing before any of this work | G | — | **parked** — a peer for `MauiStepper` was built and measured unworkable; see the section |
+| 31 | Stepper: 11 failing before any of this work | G | — | **done** — the peer finding still stands; the control object now resolves through the published buttons, invokes them, and reads range state through `GetState` |
 | 32 | Shell app: 13 failing before any of this work | G | — | **closed** — the page object scoped under an id nothing carried; the Shell now publishes its id, and the flyout goes through the app's verbs. 15/15 Shell tests, three runs |
 | 33 | Navigation stall: a 2 s grace on the wrong question, and two 10 s negative assertions | G | — | **closed** — A by 22; B by J3 (negative assertions wait 500 ms, not 10 s) |
 | 34 | Actions do not Try: remove `Try` from commands, keep it on searches | G | 33 | **closed by 44** |
@@ -1647,6 +1647,11 @@ leave the platform control alone and resolve from the side that is addressable -
 finding `…Plus` and `…Minus` (MAUI names the template buttons after the Stepper's id), and reading
 the value through a bridge `GetState("Value")` declared on the Stepper. Both avoid touching WinUI's
 styling at all.
+
+**Done 2026-09-14.** The peer finding still stands. The defect was in the control object: only
+optional lookup knew the button shape, actions used `Click`, and value reads guessed a label id.
+Required lookup now resolves the same button pair, activation uses Invoke, and value, bounds, and
+increment are read by id through `GetState`.
 
 ### Step 32 — Shell app: 13 tests
 

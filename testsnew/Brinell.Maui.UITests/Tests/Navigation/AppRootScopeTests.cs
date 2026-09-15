@@ -59,8 +59,7 @@ public class AppRootScopeTests
     /// that is always ready must still report an element that is genuinely not there, or the
     /// fixture's fallback loop cannot tell "no button" from "not yet".
     /// </remarks>
-    [Trait(PhysicalInputTrait.Name, PhysicalInputTrait.Deliberate)]
-    [PhysicalInputFact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     public Task BackToHub_IsAbsentAtTheHub()
     {
         _fixture.Open(SamplePage.Buttons);
@@ -75,15 +74,15 @@ public class AppRootScopeTests
     }
 
     /// <summary>
-    /// Clicking it returns to the hub - the fallback route, exercised on purpose.
+    /// Clicking it returns to the hub, without the pointer.
     /// </summary>
     /// <remarks>
-    /// This is the path every non-Windows run takes on every test. It clicks rather than
-    /// invoking a pattern, deliberately: see <c>ToolbarButton</c> for the four measurements
-    /// behind that, the worst of which is that Invoke reports success and does nothing.
+    /// On Windows <c>ToolbarButton</c> asks the app to raise the item through
+    /// <c>InvokeToolbarItem</c>; it never asks for the Invoke pattern, which reports success and
+    /// does nothing on a toolbar item, and the Windows driver has no real click to fall back on.
+    /// On Android and iOS the same call is a tap.
     /// </remarks>
-    [Trait(PhysicalInputTrait.Name, PhysicalInputTrait.Deliberate)]
-    [PhysicalInputFact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     public Task BackToHub_Click_ReturnsToTheHub()
     {
         _fixture.Open(SamplePage.Container);

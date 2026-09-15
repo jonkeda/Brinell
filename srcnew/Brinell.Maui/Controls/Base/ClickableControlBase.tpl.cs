@@ -104,9 +104,19 @@ public abstract partial class ClickableControlBase<TScope> : FocusableControlBas
 
     /// <summary>
     /// Activates the button through keyboard input after focusing it.
-    /// Useful for MAUI/WinUI button surfaces where UIA Invoke reports success
-    /// without dispatching the app command.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Written for WinUI button surfaces whose Invoke pattern reports success without raising the
+    /// app's command - the <c>ToolbarItem</c> family.
+    /// </para>
+    /// <para>
+    /// <b>Not available on Windows.</b> The Windows driver does not type, so
+    /// <c>SendKeys</c> throws there, naming the alternative. For a toolbar item use
+    /// <c>ToolbarButton</c>, which asks the app to raise it; for anything else, ask the control for
+    /// the operation it means. On Android and iOS the key is delivered by Appium.
+    /// </para>
+    /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <param name="timeoutMs">Optional timeout for clickable check.</param>
     protected virtual void PressCore(IMauiElement element, int? timeoutMs = null)

@@ -1,10 +1,7 @@
-using Brinell.Core.Diagnostics;
 using Brinell.Core.Exceptions;
 using Brinell.Core.Interfaces;
 using Brinell.Core.Utilities;
 using FlaUI.Core.Definitions;
-using FlaUI.Core.Input;
-using FlaUI.Core.WindowsAPI;
 using System.Drawing;
 using System.Globalization;
 using FlaUI.Core.Patterns;
@@ -20,10 +17,18 @@ namespace Brinell.Maui.FlaUI;
 /// Provides native Windows UI Automation support for MAUI desktop apps.
 /// </summary>
 /// <remarks>
+/// <para>
 /// UI Automation patterns are this class's implementation detail, not its API. It used to
 /// implement eight <c>*PatternElement</c> interfaces that controls cast to; controls now ask
 /// <see cref="IMauiElement"/> in terms of what they do, and this class answers from the patterns
 /// (step 107).
+/// </para>
+/// <para>
+/// <b>No real mouse, keyboard, clipboard or foreground, and no fallback to them.</b> Every action
+/// is a UI Automation pattern or a verb the app answers through the Brinell bridge, which is a
+/// hard requirement for MAUI on Windows. An action with neither route throws, naming the route the
+/// app would have to offer - see <c>.my/bridge/no-physical-input.md</c>.
+/// </para>
 /// </remarks>
 public sealed class FlaUIMauiElement : IMauiElement
 {
@@ -65,6 +70,35 @@ public sealed class FlaUIMauiElement : IMauiElement
 
     /// <inheritdoc />
     public bool Enabled => _element.IsEnabled;
+
+    /// <inheritdoc />
+    public int? PositionInSet => ReadNearestSetValue(
+        static element => element.Properties.PositionInSet.ValueOrDefault);
+
+    /// <inheritdoc />
+    public int? SizeOfSet => ReadNearestSetValue(
+        static element => element.Properties.SizeOfSet.ValueOrDefault);
+
+    private int? ReadNearestSetValue(Func<AutomationElement, int> read)
+    {
+        for (var candidate = _element; candidate is not null; candidate = candidate.Parent)
+        {
+            try
+            {
+                var value = read(candidate);
+                if (value > 0)
+                {
+                    return value;
+                }
+            }
+            catch
+            {
+                // This ancestor does not publish the optional set property.
+            }
+        }
+
+        return null;
+    }
 
     /// <inheritdoc />
     /// <remarks>
@@ -290,17 +324,29 @@ public sealed class FlaUIMauiElement : IMauiElement
     #region Actions (IElement<IMauiElement>)
 
     /// <inheritdoc />
-    /// <inheritdoc />
     /// <remarks>
     /// <para>
-    /// A real mouse click, and the last resort: UI Automation patterns handle every click the
-    /// suite performs. It exists because a control can genuinely expose no usable pattern, and
-    /// because on Android and iOS a tap is the ordinary path rather than a fallback.
+    /// <b>The app's <c>Tap</c> verb, or nothing.</b> A click is not a UI Automation operation: a
+    /// control is invoked, toggled or selected, and control objects ask for those by name. What is
+    /// left for <c>Click</c> is an element whose app declares a tap - a view with a
+    /// <c>TapGestureRecognizer</c> - and on Android and iOS, where a tap is the ordinary path.
+    /// </para>
+    /// <para>
+    /// It used to be a real mouse click, taking the foreground first.
     /// </para>
     /// </remarks>
     public void Click()
     {
-        _driver.Pointer.Click(_element);
+        if (SupportsGesture(MauiGesture.Tap))
+        {
+            PerformGesture(MauiGesture.Tap);
+            return;
+        }
+
+        throw NoQuietRoute(
+            "be clicked",
+            "Ask the control object for the operation it means - Invoke, Toggle or Select - or "
+            + "declare the Tap verb on the element in the app under test.");
     }
 
     #region Activation
@@ -316,7 +362,7 @@ public sealed class FlaUIMauiElement : IMauiElement
 
     /// <inheritdoc />
     public void Toggle() => Perform(
-        nameof(Toggle), SupportsToggle, RunTogglePattern, "TogglePattern");
+        nameof(Toggle), HasTogglePattern, RunTogglePattern, "TogglePattern");
 
     /// <inheritdoc />
     public void Select() => Perform(
@@ -325,8 +371,7 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// <inheritdoc />
     public bool SupportsInvoke => HasPattern(() => _element.Patterns.Invoke.IsSupported);
 
-    /// <inheritdoc />
-    public bool SupportsToggle => HasPattern(() => _element.Patterns.Toggle.IsSupported);
+    private bool HasTogglePattern => HasPattern(() => _element.Patterns.Toggle.IsSupported);
 
     /// <inheritdoc />
     public bool SupportsSelect => HasPattern(() => _element.Patterns.SelectionItem.IsSupported);
@@ -364,19 +409,17 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// <inheritdoc />
     /// <remarks>
     /// <para>
-    /// <b><see cref="TextInputMethod.Keys"/> still types, and that is deliberate.</b> A keyboard
-    /// raises <c>TextChanged</c> per character, applies <c>MaxLength</c> as it goes and lets a
-    /// numeric keyboard refuse a letter; setting the text raises one change for the whole value.
-    /// A test <i>of</i> input behaviour needs the former, so this method keeps meaning "type
-    /// it", and the bridge becomes the default for the other two - which are about
-    /// <i>arranging</i> a field's contents, not about the input pipeline.
+    /// <b>Writes the text; never types it.</b> <see cref="TextInputMethod.SetValue"/> tries the
+    /// Value pattern and then the app's <c>SetText</c> verb. <see cref="TextInputMethod.Paste"/>
+    /// is the <c>SetText</c> verb, because the thing a paste arranges is the field's contents, and
+    /// the clipboard it used to overwrite belongs to the person at the machine.
     /// </para>
     /// <para>
-    /// <b><see cref="TextInputMethod.Paste"/> no longer reaches the clipboard when the bridge
-    /// can take it.</b> The physical route writes the machine-wide clipboard and sends Ctrl+V:
-    /// it destroys whatever the person at the keyboard had copied, and two runs on one machine
-    /// corrupt each other. It stays as the fallback because an uninstrumented app has nothing
-    /// else.
+    /// <b><see cref="TextInputMethod.Keys"/> throws.</b> Typing raises <c>TextChanged</c> per
+    /// character, applies <c>MaxLength</c> as it goes and lets a numeric keyboard refuse a letter,
+    /// and none of that can be done without the real keyboard. A test of that behaviour belongs on
+    /// the Android head; a test that only wants the text there should say
+    /// <see cref="TextInputMethod.SetValue"/>.
     /// </para>
     /// </remarks>
     public void SendKeys(string text, TextInputMethod method = TextInputMethod.Keys)
@@ -384,17 +427,19 @@ public sealed class FlaUIMauiElement : IMauiElement
         switch (method)
         {
             case TextInputMethod.Keys:
-                FocusForKeyboardInput("FlaUIMauiElement.SendKeys(Keys)", "nothing, when the test is of the input pipeline; the SetText verb otherwise");
-                Keyboard.Type(text);
-                break;
+                throw NoQuietRoute(
+                    "be typed into key by key",
+                    "Use TextInputMethod.SetValue to put the text in the field. A test of "
+                    + "per-keystroke behaviour belongs on the Android head.");
+
             case TextInputMethod.Paste:
                 if (TryBridge(BrinellVerb.SetText, text, out _))
                     return;
 
-                FocusForKeyboardInput("FlaUIMauiElement.SendKeys(Paste)", "the SetText verb - this one also destroys the user's clipboard");
-                System.Windows.Forms.Clipboard.SetText(text);
-                Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_V);
-                break;
+                throw NoQuietRoute(
+                    "be pasted into",
+                    "Declare the SetText verb on the element in the app under test.");
+
             case TextInputMethod.SetValue:
                 // The Value pattern first, and the bridge second. Both are semantic, so the
                 // ordering is not about avoiding physical input at all - it is that the pattern
@@ -408,9 +453,11 @@ public sealed class FlaUIMauiElement : IMauiElement
                 if (TryBridge(BrinellVerb.SetText, text, out _))
                     return;
 
-                FocusForKeyboardInput("FlaUIMauiElement.SendKeys(SetValue fallback)", "the SetText verb");
-                Keyboard.Type(text);
-                break;
+                throw NoQuietRoute(
+                    "have its text set",
+                    "It exposes no writable UI Automation Value pattern and does not answer the "
+                    + "SetText verb - either it is read-only, or the app under test needs to "
+                    + "declare SetText on it.");
         }
     }
 
@@ -423,48 +470,48 @@ public sealed class FlaUIMauiElement : IMauiElement
         if (TryBridge(BrinellVerb.ClearText))
             return;
 
-        // Select all and delete
-        FocusForKeyboardInput("FlaUIMauiElement.Clear(Ctrl+A,Delete)", "the ClearText verb");
-        Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_A);
-        Keyboard.Type(VirtualKeyShort.DELETE);
+        throw NoQuietRoute(
+            "be cleared",
+            "It exposes no writable UI Automation Value pattern and does not answer the ClearText "
+            + "verb - either it is read-only, or the app under test needs to declare ClearText on it.");
     }
 
     /// <inheritdoc />
-    public void DoubleClick()
-    {
-        _driver.Pointer.DoubleClick(_element);
-    }
-
-    /// <inheritdoc />
-    public void RightClick()
-    {
-        // Still physical, and still right for what it is - see PhysicalPointer.RightClick.
-        _driver.Pointer.RightClick(_element);
-    }
-
-    /// <inheritdoc />
-    public void Hover()
-    {
-        _driver.Pointer.Hover(_element);
-    }
+    /// <remarks>The app's <c>DoubleTap</c> verb; throws where the app does not declare it.</remarks>
+    /// <exception cref="GestureUnavailableException">The app does not offer a double tap here.</exception>
+    public void DoubleClick() => PerformGesture(MauiGesture.DoubleTap);
 
     /// <inheritdoc />
     /// <remarks>
-    /// <b>The bridge's <c>LongPress</c> verb where the app declares it, the real pointer where it
-    /// does not</b> - one question, then one route (step 103). The verb has no duration: the app
-    /// raises its own long-press handling, which is the thing a test of it wants. The pointer
-    /// route is refused under a quiet run, with a message naming the verb.
+    /// Always throws. A right-click means "show me the context menu", and there is no way to make
+    /// a menu appear without the pointer. Reaching one of its <i>items</i> is
+    /// <c>IMauiDriver.InvokeMenuItem</c>, which is nearly always what a test wanted.
     /// </remarks>
-    public void LongPress(int durationMs = 1000)
-    {
-        if (SupportsGesture(MauiGesture.LongPress))
-        {
-            PerformGesture(MauiGesture.LongPress);
-            return;
-        }
+    public void RightClick()
+        => throw NoQuietRoute(
+            "be right-clicked",
+            "To run a context-menu item, use IMauiDriver.InvokeMenuItem with the item's "
+            + "AutomationId. A test that the menu appears needs a real pointer, which this driver "
+            + "does not use.");
 
-        _driver.Pointer.LongPress(_element, durationMs);
-    }
+    /// <inheritdoc />
+    /// <remarks>
+    /// Always throws. Hovering is pointer position, and no verb stands in for it yet; add one when
+    /// an app under test needs pointer-over behaviour tested.
+    /// </remarks>
+    public void Hover()
+        => throw NoQuietRoute(
+            "be hovered",
+            "Hover is pointer position, and no Brinell verb stands in for it.");
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// The bridge's <c>LongPress</c> verb. It has no duration: the app raises its own long-press
+    /// handling, which is the thing a test of it wants. It used to fall back to holding the real
+    /// mouse button down where the app did not declare the verb.
+    /// </remarks>
+    /// <exception cref="GestureUnavailableException">The app does not offer a long press here.</exception>
+    public void LongPress(int durationMs = 1000) => PerformGesture(MauiGesture.LongPress);
 
     /// <inheritdoc />
     /// <remarks>
@@ -595,7 +642,7 @@ public sealed class FlaUIMauiElement : IMauiElement
         for (var ancestor = _element.Parent; ancestor != null; ancestor = ancestor.Parent)
         {
             var container = new FlaUIMauiElement(ancestor, _driver);
-            if (!string.IsNullOrEmpty(container.AutomationId) && container.SupportsScrollVerbs)
+            if (!string.IsNullOrEmpty(container.AutomationId) && container.DeclaresScrollVerbs)
             {
                 container.ScrollTo(id);
                 return;
@@ -606,8 +653,9 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// <inheritdoc />
     /// <remarks>
     /// <para>
-    /// <b>The bridge's swipe verb for the direction, where the app declares it; the real pointer
-    /// where it does not</b> (step 105b). The direction is the dominant axis of the two points.
+    /// <b>The bridge's swipe verb for the direction</b> (step 105b), which is the dominant axis of
+    /// the two points. It used to fall back to a real pointer drag where the app did not declare
+    /// the verb; now it throws <see cref="GestureUnavailableException"/>.
     /// </para>
     /// <para>
     /// <b>No mouse wheel.</b> A mostly-vertical swipe used to become five wheel clicks at the
@@ -625,13 +673,7 @@ public sealed class FlaUIMauiElement : IMauiElement
             ? (deltaX < 0 ? MauiGesture.SwipeLeft : MauiGesture.SwipeRight)
             : (deltaY < 0 ? MauiGesture.SwipeUp : MauiGesture.SwipeDown);
 
-        if (SupportsGesture(direction))
-        {
-            PerformGesture(direction);
-            return;
-        }
-
-        _driver.Pointer.Drag(new Point(startX, startY), new Point(endX, endY), durationMs);
+        PerformGesture(direction);
     }
 
     #endregion
@@ -782,8 +824,7 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// The bridge raises the control's own completion command, which is what Enter would have
     /// caused. It refuses when the app handles completion with an event handler rather than a
     /// bound command - <c>Entry.SendCompleted</c> is internal in MAUI, so there is genuinely no
-    /// public route - and then the real Enter below is the only way to reach the app's
-    /// behaviour.
+    /// public route - and then this throws. It used to press the real Enter key instead.
     /// </remarks>
     public void Submit()
     {
@@ -794,8 +835,11 @@ public sealed class FlaUIMauiElement : IMauiElement
         if (TryBridge(BrinellVerb.Submit))
             return;
 
-        FocusForKeyboardInput("FlaUIMauiElement.Submit(Enter)", "the Submit verb");
-        Keyboard.Type(VirtualKeyShort.ENTER);
+        throw NoQuietRoute(
+            "be submitted",
+            "It does not answer the Submit verb. The verb raises a bound ReturnCommand; an app that "
+            + "handles Completed with an event handler has no public route MAUI lets the bridge "
+            + "call, so bind a command instead.");
     }
 
     #endregion
@@ -810,59 +854,51 @@ public sealed class FlaUIMauiElement : IMauiElement
     #region Focus
 
     /// <inheritdoc />
-    /// <remarks>UIA can always focus an element; there is nothing to advertise.</remarks>
-    public bool SupportsFocus => true;
-
-    /// <inheritdoc />
     /// <remarks>
     /// <para>
-    /// <b>The bridge first, and this is the difference the whole of stage B turns on.</b>
-    /// Focus and the desktop foreground window are separate things that the physical path had
-    /// to conflate: it calls <c>SetForeground</c> because the global keystrokes that usually
-    /// follow go wherever the foreground is. Asking for focus on its own needs none of that, so
-    /// the bridge route leaves the machine with whoever is sitting at it.
+    /// <b>The bridge, and this is the difference the whole of stage B turns on.</b> Focus and the
+    /// desktop foreground window are separate things that the physical path had to conflate: it
+    /// called <c>SetForeground</c> because the global keystrokes that usually follow go wherever
+    /// the foreground is. Asking for focus on its own needs none of that, so the bridge route
+    /// leaves the machine with whoever is sitting at it. UI Automation's own <c>SetFocus</c> is not
+    /// offered: WinUI keyboard focus belongs to the foreground window, so on an app kept behind
+    /// the user's work it lands nowhere a test can rely on.
     /// </para>
     /// <para>
-    /// The fallback is the old path in full, because an app without the bridge must keep
-    /// working exactly as it did - and like every physical route it is refused under a quiet run.
+    /// Without the <c>Focus</c> verb, an element that declares <c>Tap</c> is tapped, which is what
+    /// the control object used to do when it was told focus had no route of its own. For a date
+    /// picker that opens its calendar.
     /// </para>
     /// </remarks>
     public void Focus()
     {
-        if (TryBridge(BrinellVerb.Focus))
+        var declaresFocus = BridgeDeclares(BrinellVerb.Focus);
+        if (declaresFocus && TryBridge(BrinellVerb.Focus))
             return;
 
-        FocusForKeyboardInput("FlaUIMauiElement.Focus", "the Focus verb");
+        if (!declaresFocus && SupportsGesture(MauiGesture.Tap))
+        {
+            PerformGesture(MauiGesture.Tap);
+            return;
+        }
+
+        throw NoQuietRoute(
+            "be focused",
+            "It does not answer the Focus verb. Declare Focus on the element in the app under test.");
     }
 
     #endregion
 
     /// <summary>
-    /// Brings the app to the front, then gives this element keyboard focus.
+    /// The exception for an action this driver has no route for without physical input.
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Both halves are needed. FlaUI's <c>Focus()</c> only activates the window when the element
-    /// *is* a window; for a control it takes the <c>FocusNative</c> branch, which sets keyboard
-    /// focus without raising anything — so the global <c>Keyboard</c> input that follows would
-    /// reach whichever window is actually in front.
-    /// </para>
-    /// <para>
-    /// <b>Not routed through the bridge, deliberately.</b> Every caller of this is about to send
-    /// real keystrokes, and those need the foreground however the focus was obtained. The bridge
-    /// belongs one level up, in <see cref="SetFocus"/> and in the text verbs, where focus is the
-    /// whole request rather than the setup for a keystroke.
-    /// </para>
-    /// </remarks>
-    /// <param name="site">Who is about to send keystrokes, for the physical-input record.</param>
-    /// <param name="replacement">The semantic route that would avoid it, for the refusal message.</param>
-    private void FocusForKeyboardInput(string site, string replacement)
-    {
-        // The one record for the keystrokes that follow: taking the foreground is what makes
-        // them physical, so it is recorded here rather than once by the caller and again here.
-        _driver.Pointer.BringAppToFront(site, replacement);
-        _element.Focus();
-    }
+    /// <param name="operation">What was asked, phrased to follow "cannot", e.g. "be clicked".</param>
+    /// <param name="instead">What to do instead.</param>
+    /// <returns>The exception to throw.</returns>
+    private NotSupportedException NoQuietRoute(string operation, string instead)
+        => new(
+            $"'{AutomationId ?? Name ?? "(unnamed)"}' cannot {operation} without real mouse or "
+            + $"keyboard input, which Brinell.Maui does not use on Windows. {instead}");
 
     #endregion
 
@@ -891,11 +927,8 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// <remarks>
     /// UI Automation has no set-state call, but a state read and a toggle against the element in
     /// hand is as close as the platform comes, and the read makes it idempotent. The control
-    /// verifies the outcome.
+    /// verifies the outcome. Without the Toggle pattern, <see cref="Toggle"/> throws naming it.
     /// </remarks>
-    public bool SupportsSetChecked => SupportsToggle;
-
-    /// <inheritdoc />
     public void SetChecked(bool isChecked)
     {
         if (Checked == isChecked)
@@ -985,13 +1018,10 @@ public sealed class FlaUIMauiElement : IMauiElement
     public double? RangeSmallChange => ReadRange(p => p.SmallChange.Value);
 
     /// <inheritdoc />
-    public bool SupportsSetRangeValue => HasPattern(() => _element.Patterns.RangeValue.IsSupported);
-
-    /// <inheritdoc />
     /// <remarks>Clamped to the published bounds, as the platform would clamp a drag.</remarks>
     public void SetRangeValue(double value)
     {
-        if (!SupportsSetRangeValue)
+        if (!HasPattern(() => _element.Patterns.RangeValue.IsSupported))
         {
             throw new NotSupportedException(
                 $"'{AutomationId ?? Name ?? "(unnamed)"}' does not expose the UI Automation "
@@ -1212,9 +1242,6 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// which is why this is a verb of its own rather than sugar over <c>GetText</c> and
     /// <c>SetText</c>.
     /// </remarks>
-    public bool SupportsAppendText => BridgeDeclares(BrinellVerb.AppendText);
-
-    /// <inheritdoc />
     public void AppendText(string text)
     {
         if (!TryBridge(BrinellVerb.AppendText, text, out _))
@@ -1233,9 +1260,6 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// effect, and one that needs the app in front. The verb removes focus and does nothing
     /// else.
     /// </remarks>
-    public bool SupportsClearFocus => BridgeDeclares(BrinellVerb.Unfocus);
-
-    /// <inheritdoc />
     public void ClearFocus()
     {
         if (!TryBridge(BrinellVerb.Unfocus))
@@ -1279,8 +1303,8 @@ public sealed class FlaUIMauiElement : IMauiElement
 
     #region Scrolling
 
-    /// <inheritdoc />
-    public bool SupportsScrollVerbs => BridgeDeclares(BrinellVerb.ScrollPosition);
+    /// <summary>Whether the app declares the scroll verbs on this element.</summary>
+    private bool DeclaresScrollVerbs => BridgeDeclares(BrinellVerb.ScrollPosition);
 
     /// <inheritdoc />
     /// <remarks>
@@ -1327,7 +1351,7 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// </remarks>
     private void WaitForTheViewportToSettle()
     {
-        if (!SupportsScrollVerbs)
+        if (!DeclaresScrollVerbs)
         {
             return;
         }
@@ -1365,12 +1389,30 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// </remarks>
     public void ScrollToIndex(int index)
     {
-        if (!TryBridge(BrinellVerb.ScrollToIndex, index, 0))
+        var answer = BridgeVerbRunner.Invoke(
+            _driver.RootElement,
+            _driver.Automation,
+            AutomationId,
+            BrinellVerb.ScrollToIndex,
+            index,
+            0);
+
+        if (!answer.Delivered)
         {
+            if (answer.HResult == HResults.BRINELL_E_DECLINED)
+            {
+                var itemCount = _driver.SupportsStateReads(AutomationId ?? string.Empty)
+                    ? _driver.ReadState(AutomationId!, "ItemCount")
+                    : "unknown";
+                throw new ArgumentOutOfRangeException(
+                    nameof(index),
+                    index,
+                    $"'{AutomationId}' declined index {index}; item count is {itemCount}.");
+            }
+
             throw new BrinellException(
                 $"'{AutomationId}' could not scroll to index {index}. Either it does not declare "
-                + "the ScrollToIndex verb, or it is not a collection, or the index is past the "
-                + "end of its items.");
+                + $"the ScrollToIndex verb or it is not a collection. The bridge said: {answer.Reason}");
         }
 
         WaitForTheViewportToSettle();
@@ -1478,12 +1520,6 @@ public sealed class FlaUIMauiElement : IMauiElement
     #region Dates and times
 
     /// <inheritdoc />
-    public bool SupportsSetDate => BridgeDeclares(BrinellVerb.SetDate);
-
-    /// <inheritdoc />
-    public bool SupportsSetTime => BridgeDeclares(BrinellVerb.SetTime);
-
-    /// <inheritdoc />
     /// <remarks>
     /// <para>
     /// The app sets <c>DatePicker.Date</c> and reports what the control then holds, which is not
@@ -1504,9 +1540,8 @@ public sealed class FlaUIMauiElement : IMauiElement
         if (!TryBridge(BrinellVerb.SetDate, wanted, out var landed))
         {
             throw new NotSupportedException(
-                $"'{AutomationId}' does not answer SetDate. Declare it with "
-                + "uia:GestureAutomation.Verbs on the DatePicker in the app under test, or drive "
-                + "the control through its calendar.");
+                $"'{AutomationId}' did not answer SetDate, and it is the only route. Declare it with "
+                + "uia:GestureAutomation.Verbs on the DatePicker in the app under test.");
         }
 
         if (landed != wanted)
@@ -1526,9 +1561,8 @@ public sealed class FlaUIMauiElement : IMauiElement
         if (!TryBridge(BrinellVerb.SetTime, wanted, out var landed))
         {
             throw new NotSupportedException(
-                $"'{AutomationId}' does not answer SetTime. Declare it with "
-                + "uia:GestureAutomation.Verbs on the TimePicker in the app under test, or drive "
-                + "the control through its clock flyout.");
+                $"'{AutomationId}' did not answer SetTime, and it is the only route. Declare it with "
+                + "uia:GestureAutomation.Verbs on the TimePicker in the app under test.");
         }
 
         if (landed != wanted)

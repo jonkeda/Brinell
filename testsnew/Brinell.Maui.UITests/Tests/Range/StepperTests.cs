@@ -1,4 +1,5 @@
 using Brinell.Maui.UITests.Pages;
+using Xunit.Abstractions;
 
 namespace Brinell.Maui.UITests.Tests.Range;
 
@@ -11,10 +12,12 @@ namespace Brinell.Maui.UITests.Tests.Range;
 public class StepperTests
 {
     private readonly MauiFixture _fixture;
+    private readonly ITestOutputHelper _output;
 
-    public StepperTests(MauiFixture fixture)
+    public StepperTests(MauiFixture fixture, ITestOutputHelper output)
     {
         _fixture = fixture;
+        _output = output;
         _fixture.Open(SamplePage.Range);
     }
 
@@ -49,10 +52,42 @@ public class StepperTests
         return Task.CompletedTask;
     }
 
+    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [Trait("Pattern", "Probe")]
+    public Task StepperButtons_ReportInvokeBehavior()
+    {
+        var minus = _fixture.Context.TryFindElement(Locator.ByAutomationId("TestStepperMinus"));
+        var plus = _fixture.Context.TryFindElement(Locator.ByAutomationId("TestStepperPlus"));
+        var value = _fixture.Context.TryFindElement(Locator.ByAutomationId("StepperValueLabel"));
+
+        _output.WriteLine(
+            $"Minus: found={minus is not null}, SupportsInvoke={minus?.SupportsInvoke}, Enabled={minus?.Enabled}");
+        _output.WriteLine(
+            $"Plus: found={plus is not null}, SupportsInvoke={plus?.SupportsInvoke}, Enabled={plus?.Enabled}");
+
+        var before = value?.Text ?? value?.Name;
+        string result;
+
+        try
+        {
+            plus?.Invoke();
+            result = "returned";
+        }
+        catch (Exception ex)
+        {
+            result = $"threw {ex.GetType().Name}: {ex.Message}";
+        }
+
+        var after = value?.Text ?? value?.Name;
+        _output.WriteLine($"Plus Invoke {result}; value before='{before}', after='{after}'.");
+
+        return Task.CompletedTask;
+    }
+
     /// <summary>
     /// Verifies that the Stepper is enabled.
     /// </summary>
-    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs, Skip = "Stage G step 31: TestStepper does not resolve on Windows. Pre-existing and unrelated to the bridge work - see .my/extension/steps.md.")]
+    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Method", "IsEnabled")]
     public Task Stepper_IsEnabled_ReturnsTrue()
     {
@@ -65,7 +100,7 @@ public class StepperTests
     /// <summary>
     /// Verifies that the Stepper value updates when set.
     /// </summary>
-    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs, Skip = "Stage G step 31: TestStepper does not resolve on Windows. Pre-existing and unrelated to the bridge work - see .my/extension/steps.md.")]
+    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Method", "SetValue")]
     public Task Stepper_SetValue_UpdatesDisplay()
     {
@@ -80,7 +115,7 @@ public class StepperTests
     /// <summary>
     /// Verifies that the Stepper respects minimum value bounds.
     /// </summary>
-    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs, Skip = "Stage G step 31: TestStepper does not resolve on Windows. Pre-existing and unrelated to the bridge work - see .my/extension/steps.md.")]
+    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Method", "MinValue")]
     public Task Stepper_SetValue_RespectsBounds_Min()
     {
@@ -95,7 +130,7 @@ public class StepperTests
     /// <summary>
     /// Verifies that the Stepper respects maximum value bounds.
     /// </summary>
-    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs, Skip = "Stage G step 31: TestStepper does not resolve on Windows. Pre-existing and unrelated to the bridge work - see .my/extension/steps.md.")]
+    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Method", "MaxValue")]
     public Task Stepper_SetValue_RespectsBounds_Max()
     {
@@ -110,7 +145,7 @@ public class StepperTests
     /// <summary>
     /// Verifies that the Stepper increments by the correct step size.
     /// </summary>
-    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs, Skip = "Stage G step 31: TestStepper does not resolve on Windows. Pre-existing and unrelated to the bridge work - see .my/extension/steps.md.")]
+    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Method", "Increment")]
     public Task Stepper_Increment_ChangesValueByStepSize()
     {
@@ -128,7 +163,7 @@ public class StepperTests
     /// <summary>
     /// Verifies that the Stepper decrements by the correct step size.
     /// </summary>
-    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs, Skip = "Stage G step 31: TestStepper does not resolve on Windows. Pre-existing and unrelated to the bridge work - see .my/extension/steps.md.")]
+    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Method", "Decrement")]
     public Task Stepper_Decrement_ChangesValueByStepSize()
     {
@@ -146,7 +181,7 @@ public class StepperTests
     /// <summary>
     /// Verifies that the Stepper status message updates on value change.
     /// </summary>
-    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs, Skip = "Stage G step 31: TestStepper does not resolve on Windows. Pre-existing and unrelated to the bridge work - see .my/extension/steps.md.")]
+    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Method", "StatusUpdate")]
     public Task Stepper_SetValue_UpdatesStatus()
     {
@@ -161,7 +196,7 @@ public class StepperTests
     /// <summary>
     /// Verifies that the Stepper can be reset to its initial value.
     /// </summary>
-    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs, Skip = "Stage G step 31: TestStepper does not resolve on Windows. Pre-existing and unrelated to the bridge work - see .my/extension/steps.md.")]
+    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Method", "Reset")]
     public Task Stepper_Reset_RestoresInitialValue()
     {
@@ -180,7 +215,7 @@ public class StepperTests
     /// <summary>
     /// Verifies that the Stepper enforces minimum bounds on decrement.
     /// </summary>
-    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs, Skip = "Stage G step 31: TestStepper does not resolve on Windows. Pre-existing and unrelated to the bridge work - see .my/extension/steps.md.")]
+    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Method", "BoundsAtMin")]
     public Task Stepper_Decrement_StopsAtMinimum()
     {
@@ -198,7 +233,7 @@ public class StepperTests
     /// <summary>
     /// Verifies that the Stepper enforces maximum bounds on increment.
     /// </summary>
-    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs, Skip = "Stage G step 31: TestStepper does not resolve on Windows. Pre-existing and unrelated to the bridge work - see .my/extension/steps.md.")]
+    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Method", "BoundsAtMax")]
     public Task Stepper_Increment_StopsAtMaximum()
     {
@@ -216,7 +251,7 @@ public class StepperTests
     /// <summary>
     /// Verifies that multiple stepper value changes are reflected correctly.
     /// </summary>
-    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs, Skip = "Stage G step 31: TestStepper does not resolve on Windows. Pre-existing and unrelated to the bridge work - see .my/extension/steps.md.")]
+    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Method", "MultipleChanges")]
     public Task Stepper_MultipleValueChanges_UpdatesDisplay()
     {

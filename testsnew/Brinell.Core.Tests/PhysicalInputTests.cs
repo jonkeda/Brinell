@@ -9,9 +9,10 @@ namespace Brinell.Core.Tests;
 /// <remarks>
 /// <para>
 /// Deliberately here rather than beside a driver. The gate is platform-neutral and guards the
-/// WPF and WinForms drivers as well as the MAUI one, so pinning it against a single platform's UI
-/// suite would test the least of it — and would need an app, a desktop and a minute per run to say
-/// something these say in milliseconds.
+/// WPF and WinForms drivers, so pinning it against a single platform's UI suite would test the
+/// least of it — and would need an app, a desktop and a minute per run to say something these say
+/// in milliseconds. (The MAUI FlaUI driver no longer uses real input, so it no longer passes
+/// through the gate.)
 /// </para>
 /// <para>
 /// What each platform driver still owes is that its own call sites are guarded. That is a
@@ -126,10 +127,10 @@ public class PhysicalInputTests
     public void RefusedException_NamesBothTheCallSiteAndItsReplacement()
     {
         var exception = new PhysicalInputRefusedException(
-            "FlaUIMauiElement.SendKeys(Paste)", "the SetText verb");
+            "FlaUIWpfElement.RightClick", "an InvokeMenuItem verb");
 
-        Assert.Contains("FlaUIMauiElement.SendKeys(Paste)", exception.Message);
-        Assert.Contains("the SetText verb", exception.Message);
+        Assert.Contains("FlaUIWpfElement.RightClick", exception.Message);
+        Assert.Contains("an InvokeMenuItem verb", exception.Message);
         Assert.Contains("BRINELL_BACKGROUND_MODE", exception.Message);
     }
 }

@@ -1,4 +1,3 @@
-using Brinell.Core.Diagnostics;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -25,9 +24,8 @@ namespace Brinell.Maui.UITests.Tests.Background;
 /// </para>
 /// <para>
 /// <b>Windows only, and not by omission.</b> This folder is excluded from the mobile head, which
-/// serialises its collections unconditionally: two Appium sessions share one emulator no matter
-/// what the input policy says. There the constraint is hardware, and no amount of background mode
-/// changes it.
+/// serialises its collections unconditionally: two Appium sessions share one emulator. There the
+/// constraint is hardware, and nothing the driver does changes it.
 /// </para>
 /// </remarks>
 internal static class ParallelRun
@@ -46,43 +44,18 @@ internal static class ParallelRun
     internal const int FactTimeoutMs = 90_000;
 
     /// <summary>
-    /// Asserts what the policy in force promises about the other collection.
+    /// Asserts that the other collection's app is up at the same time as this one.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// <b>Both modes assert; they assert opposite things.</b> In background mode the lease opens
-    /// and the two apps should be up together. With physical input allowed the lease is
-    /// exclusive, so while this side holds it the other app must not be up at all.
-    /// </para>
-    /// <para>
-    /// Neither check waits in the serialised case, because neither has to. The question is about
-    /// stays that have already been recorded, not about what might happen next: if the other
-    /// collection ran first it left a stay that ended before this one began, and if it has not run
-    /// yet it left none at all. Both are answered on the spot, and both are answered correctly.
-    /// </para>
+    /// There used to be a second, opposite assertion for runs with physical input allowed, which
+    /// serialised the collections behind a desktop lease. The driver no longer has such a mode, so
+    /// the two apps are always expected up together.
     /// </remarks>
     /// <param name="side">The caller's side of the pair.</param>
     /// <param name="ownWindow">This side's app window, for comparison against the other's.</param>
     /// <param name="output">Where to record what was observed, so a pass is still readable.</param>
     internal static void AssertPolicyIsHonoured(string side, string ownWindow, ITestOutputHelper output)
     {
-        if (PhysicalInput.Policy == PhysicalInputPolicy.Allowed)
-        {
-            var intruder = ParallelismProbe.WaitForOverlap(side, 0);
-
-            Assert.True(
-                intruder is null,
-                $"Physical input is allowed, so {side} holds the desktop exclusively - but the "
-                + $"other sample app was up at the same time, in window {intruder}. The desktop "
-                + "lease is not serialising the collections.");
-
-            output.WriteLine(
-                $"{side}: physical input allowed, so the collections are serialised and this side "
-                + "had the desktop to itself, as expected. DesktopGateTests covers the branch "
-                + "properly.");
-            return;
-        }
-
         var other = ParallelismProbe.WaitForOverlap(side, MeetTimeoutMs);
 
         Assert.True(

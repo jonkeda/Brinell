@@ -89,9 +89,11 @@ public partial class Entry<TScope> : Base.FocusableControlBase<TScope>, IEditabl
     /// the suite.
     /// </para>
     /// <para>
-    /// Typing remains the fallback and is still correct - it is what a user does. A test that is
-    /// specifically about per-keystroke behaviour should call <c>SendKeys</c> with
-    /// <see cref="TextInputMethod.Keys"/> and say so.
+    /// The element picks the route. On Android and iOS it types, which is still correct there - it
+    /// is what a user does. On Windows there is no typing: an entry without the <c>AppendText</c>
+    /// verb throws, and so does one whose app refuses it. A test that is specifically about
+    /// per-keystroke behaviour should call <c>SendKeys</c> with <see cref="TextInputMethod.Keys"/>,
+    /// say so, and run on the mobile head.
     /// </para>
     /// </remarks>
     /// <param name="element">The pre-found element.</param>
@@ -101,15 +103,7 @@ public partial class Entry<TScope> : Base.FocusableControlBase<TScope>, IEditabl
     {
         if (text == null) return;
 
-        // Asked, then commanded. A refusal from the app now throws with its reason instead of
-        // falling through to typing into a field the app just declined to change.
-        if (element.SupportsAppendText)
-        {
-            element.AppendText(text);
-            return;
-        }
-
-        element.SendKeys(text);
+        element.AppendText(text);
     }
 
     /// <summary>

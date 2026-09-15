@@ -76,7 +76,7 @@ public abstract class SemanticControlTestsBase
         return element;
     }
 
-    /// <summary>A Windows-shaped toggle: checked state, a toggle, and a set-state command.</summary>
+    /// <summary>A Windows-shaped toggle: checked state, a toggle, and a set-state operation.</summary>
     protected static Mock<IMauiElement> CreateToggleElement(
         string automationId,
         int x,
@@ -88,8 +88,6 @@ public abstract class SemanticControlTestsBase
         var isChecked = initialState;
         var element = CreateElement(automationId, x, y, width, height);
         element.Setup(e => e.Checked).Returns(() => isChecked);
-        element.Setup(e => e.SupportsToggle).Returns(true);
-        element.Setup(e => e.SupportsSetChecked).Returns(true);
         element.Setup(e => e.SetChecked(It.IsAny<bool>())).Callback<bool>(value => isChecked = value);
 
         // FlaUIMauiElement.Toggle runs the Toggle pattern and throws if it is absent or refuses;

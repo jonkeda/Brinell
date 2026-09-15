@@ -37,7 +37,7 @@ Use xUnit `Assert`. FluentAssertions is banned in test projects by
 | Variable | Purpose |
 | --- | --- |
 | `APPIUM_SERVER_URI` | Appium server URL |
-| `APPIUM_PLATFORM` | `windows`, `android`, or `ios` |
+| `APPIUM_PLATFORM` | `windows`, `android`, or `ios`. `windows` selects the FlaUI driver; only `android` and `ios` use Appium |
 | `APPIUM_APP_PATH` | App executable or package path |
 | `APPIUM_DEVICE_NAME` | Device/emulator name |
 | `WPF_APP_PATH`, `WINFORMS_APP_PATH` | Desktop sample/app executable paths |
@@ -49,8 +49,8 @@ Use xUnit `Assert`. FluentAssertions is banned in test projects by
 | `BRINELL_TEST_RESULTS_DIR` | Overrides the `TestResults` root |
 | `BRINELL_TEST_RUN_ID` | Reuses a run folder across projects |
 | `BRINELL_TEST_SUITE` | Overrides the artifact suite name |
-| `BRINELL_BACKGROUND_MODE` | Physical input policy - see [AD-005](decisions.md#ad-005-physical-input-is-opt-in). Unset: the stack's default (refused for MAUI on Windows). `1`: refused. `audit`: performed and recorded. `0`: performed |
-| `BRINELL_PHYSICAL_INPUT_LOG` | File that audited physical-input uses are appended to |
+| `BRINELL_BACKGROUND_MODE` | Physical input policy for WPF and WinForms - see [AD-005](decisions.md#ad-005-physical-input-is-opt-in). Unset or `0`: performed. `1`: refused. `audit`: performed and recorded. No effect on MAUI, which uses no physical input |
+| `BRINELL_PHYSICAL_INPUT_LOG` | File that audited physical-input uses are appended to (WPF and WinForms) |
 | `BRINELL_AUT_PLACE` | Where to put the MAUI app window on launch: `right`, `offscreen`, `secondary`. `offscreen` breaks visibility checks - UI Automation counts the monitor - so leave it unset unless you know you need it |
 | `BRINELL_AUT_PLACEMENT_RESULT_FILE` | File the driver writes where the window was actually placed |
 | `BRINELL_UIA_BRIDGE` | Gesture bridge. As an MSBuild constant, puts the bridge in the build (Debug only by default). As a variable set to `1`, turns it on at run time; the FlaUI driver sets it on the app it launches |

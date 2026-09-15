@@ -247,7 +247,7 @@ internal static class MauiCapabilities
     /// <summary>How many items a source holds, without enumerating it if it can be asked.</summary>
     /// <param name="source">The items source, possibly null.</param>
     /// <returns>The count, or zero.</returns>
-    private static int Count(System.Collections.IEnumerable? source) => source switch
+    internal static int Count(System.Collections.IEnumerable? source) => source switch
     {
         null => 0,
         System.Collections.ICollection collection => collection.Count,
@@ -666,6 +666,120 @@ internal static class MauiCapabilities
             foreach (var entry in Flatten(flyout))
             {
                 yield return entry;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Raises a toolbar item by its <c>AutomationId</c>, answering only for the page on screen.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The same entry point as <see cref="InvokeMenuItem"/>.</b> <c>ToolbarItem</c> derives from
+    /// <c>MenuItem</c>, so <c>IMenuItemController.Activate</c> is what the platform's toolbar calls
+    /// when the item is pressed: the same <c>Command</c> runs and the same <c>Clicked</c> fires.
+    /// </para>
+    /// <para>
+    /// <b>Why the client needs this at all.</b> On Windows a <c>ToolbarItem</c>'s automation peer
+    /// accepts the Invoke pattern, reports success and raises nothing - measured four ways - so the
+    /// only other route was a real mouse click.
+    /// </para>
+    /// <para>
+    /// <b>Only the page on screen answers, which is stricter than menu items and has to be.</b> The
+    /// client takes the first target that answers, and a popped page keeps answering until its
+    /// handler goes. Its toolbar items still hold their commands, and a command like "go back"
+    /// acts on the <i>live</i> navigation stack - so a stale page raising its Back item would pop
+    /// the page the test is on. The same rule <see cref="NavigateBack"/> applies, for the same
+    /// reason.
+    /// </para>
+    /// <para>
+    /// Items are looked for on the page and then on each page containing it, because a
+    /// <c>NavigationPage</c>, <c>TabbedPage</c> or <c>FlyoutPage</c> can contribute toolbar items
+    /// of its own to the bar the user sees.
+    /// </para>
+    /// </remarks>
+    /// <param name="element">The element the verb arrived on; its page is searched.</param>
+    /// <param name="automationId">The toolbar item's id.</param>
+    /// <param name="outcome">Empty when raised, <see cref="MenuItemDisabled"/> when declined.</param>
+    /// <returns>The HRESULT to answer with.</returns>
+    internal static int InvokeToolbarItem(
+        VisualElement element, string automationId, out string outcome)
+    {
+        outcome = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(automationId))
+        {
+            return HResults.E_INVALIDARG;
+        }
+
+        var page = PageOf(element);
+
+        // UIA_E_ELEMENTNOTAVAILABLE, not a refusal: a page that is not on screen has nothing to
+        // say about the toolbar the user sees. The client asks the next target.
+        if (page is null || !IsOnScreen(page))
+        {
+            return HResults.UIA_E_ELEMENTNOTAVAILABLE;
+        }
+
+        var item = PageAndContainers(page)
+            .SelectMany(level => level.ToolbarItems)
+            .FirstOrDefault(candidate => candidate.AutomationId == automationId);
+
+        if (item is null)
+        {
+            return HResults.UIA_E_ELEMENTNOTAVAILABLE;
+        }
+
+        // Refused for an item a user could not press, as for menu items. IsEnabled follows the
+        // command's CanExecute, so this is the app's own answer rather than the markup's.
+        if (!item.IsEnabled)
+        {
+            outcome = MenuItemDisabled;
+            return HResults.S_OK;
+        }
+
+        ((IMenuItemController)item).Activate();
+        return HResults.S_OK;
+    }
+
+    /// <summary>
+    /// Whether this page is the one the user is looking at.
+    /// </summary>
+    /// <remarks>
+    /// On top of its navigation stack, and not covered by a modal. In a Shell app, Shell's own
+    /// current page. A page in no stack at all is being torn down.
+    /// </remarks>
+    /// <param name="page">The page.</param>
+    /// <returns>Whether it is on screen.</returns>
+    private static bool IsOnScreen(Page page)
+    {
+        if (Shell.Current is { } shell)
+        {
+            return ReferenceEquals(shell.CurrentPage, page);
+        }
+
+        var navigation = page.Navigation;
+        var stack = navigation?.NavigationStack;
+
+        if (stack is not { Count: > 0 } || !ReferenceEquals(stack[^1], page))
+        {
+            return false;
+        }
+
+        var modals = navigation!.ModalStack;
+        return modals.Count == 0 || ReferenceEquals(modals[^1], page);
+    }
+
+    /// <summary>The page, then each page that contains it, innermost first.</summary>
+    /// <param name="page">The page.</param>
+    /// <returns>The pages whose toolbar items can appear together.</returns>
+    private static IEnumerable<Page> PageAndContainers(Page page)
+    {
+        for (Element? walker = page; walker is not null; walker = walker.Parent)
+        {
+            if (walker is Page level)
+            {
+                yield return level;
             }
         }
     }

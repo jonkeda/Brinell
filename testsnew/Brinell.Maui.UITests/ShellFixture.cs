@@ -18,12 +18,6 @@ public class ShellFixture : MauiTestFixtureBase
     /// <summary>How many pushed pages the reset will pop before giving up.</summary>
     private const int MaxPops = 3;
 
-    /// <summary>
-    /// Held for as long as this fixture's app is running. See <see cref="DesktopLease"/>, and
-    /// <c>MauiFixture</c> for why this is a field initializer rather than a constructor line.
-    /// </summary>
-    private readonly IDisposable _desktop = DesktopLease.Acquire();
-
     private readonly ShellSamplePage _page;
 
     public ShellFixture()
@@ -42,7 +36,6 @@ public class ShellFixture : MauiTestFixtureBase
         if (disposing)
         {
             ParallelismProbe.Leave(ParallelismProbe.Shell);
-            _desktop.Dispose();
         }
     }
 

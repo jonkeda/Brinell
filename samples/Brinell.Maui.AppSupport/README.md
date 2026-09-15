@@ -94,6 +94,11 @@ The handlers above make an element *findable*. The bridge makes it *drivable* â€
 swipe, tap, focus or refresh a control without a mouse, without the foreground window, and
 without the control being addressable at all.
 
+**For MAUI on Windows it is required.** The Brinell Windows driver uses no mouse, keyboard,
+clipboard or foreground at all, so there is nothing to fall back on: an app without the bridge
+can be driven only through plain UI Automation patterns, and every other action throws, naming
+the verb the app would need to declare.
+
 ## Why this is separate from the handlers
 
 A gesture cannot be expressed as a UI Automation pattern from XAML. `AutomationPeer.GetPatternCore`

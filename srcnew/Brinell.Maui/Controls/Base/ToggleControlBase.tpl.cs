@@ -157,7 +157,7 @@ public abstract partial class ToggleControlBase<TScope> : FocusableControlBase<T
     /// the control throws, as <see cref="ToggleCore"/> does: it is never followed by a toggle, which
     /// is what made the old route a ladder.
     /// </remarks>
-    /// <param name="element">The pre-found element, which answered <c>SupportsSetChecked</c>.</param>
+    /// <param name="element">The pre-found element.</param>
     /// <param name="checked">The desired checked state.</param>
     /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
     protected void SetCheckedDirectly(IMauiElement element, bool @checked, int? timeoutMs)

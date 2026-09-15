@@ -3,6 +3,7 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:viewModels="using:Brinell.Samples.Maui.App.ViewModels"
+    xmlns:uia="clr-namespace:Brinell.Maui.AppSupport.Uia;assembly=Brinell.Maui.AppSupport"
     x:Class="Brinell.Samples.Maui.App.Views2.TestViews.RangeView"
     BackgroundColor="{AppThemeBinding Light=White, Dark=#1F1F1F}">
 
@@ -77,7 +78,8 @@
                 Minimum="{Binding StepperMinimum}"
                 Maximum="{Binding StepperMaximum}"
                 Increment="{Binding StepperIncrement}"
-                AutomationId="TestStepper" />
+                AutomationId="TestStepper"
+                uia:GestureAutomation.Verbs="GetState" />
 
             <HorizontalStackLayout Spacing="20">
                 <Label Text="{Binding StepperMinimum, StringFormat='Min: {0:F0}'}" 

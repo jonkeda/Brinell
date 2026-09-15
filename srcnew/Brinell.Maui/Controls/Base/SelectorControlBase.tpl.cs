@@ -64,7 +64,8 @@ public abstract partial class SelectorControlBase<TScope> : FocusableControlBase
             return;
         }
 
-        // Default implementation: open picker and find item
+        // Default implementation: open picker and tap the item. Android and iOS only - on Windows
+        // the verbs or the dropdown above answer, and a click with neither throws, naming them.
         element.Click();
 
         // Find and click item with matching text

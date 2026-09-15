@@ -10,8 +10,8 @@ namespace Brinell.Maui.Controls.Range;
 /// MAUI Slider control for continuous value selection.
 /// Inherits GetValue, SetValue, GetMinimum, GetMaximum, Increment, Decrement from RangeControlBase.
 /// Provides additional slider-specific methods like SlideToPercentage.
-/// Overrides SetValueCore to use keyboard-based approach since Windows Appium driver 
-/// doesn't support mouse Actions API (only pen/touch pointer input supported).
+/// Overrides SetValueCore to clamp the value to the slider's range before the element sets it -
+/// through RangeValue on Windows, with arrow keys on Android and iOS.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
 

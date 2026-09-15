@@ -22,9 +22,21 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable
     /// <param name="driver">The AppiumDriver to wrap.</param>
     /// <param name="platform">The platform this driver is connected to.</param>
     /// <exception cref="ArgumentNullException">Thrown when driver is null.</exception>
+    /// <exception cref="PlatformNotSupportedException">
+    /// Thrown for any platform but Android and iOS. Windows is driven by <c>Brinell.Maui.FlaUI</c>,
+    /// and the element code here has no desktop routes to fall back on.
+    /// </exception>
     public AppiumMauiDriver(AppiumDriver driver, MauiPlatform platform)
     {
         _driver = driver ?? throw new ArgumentNullException(nameof(driver));
+
+        if (platform is not (MauiPlatform.Android or MauiPlatform.iOS))
+        {
+            throw new PlatformNotSupportedException(
+                $"{nameof(AppiumMauiDriver)} drives Android and iOS only, not {platform}. "
+                + "MAUI on Windows is driven by Brinell.Maui.FlaUI - MauiDriverFactory chooses it.");
+        }
+
         _platform = platform;
     }
     
@@ -106,7 +118,27 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable
     }
     
     #endregion
-    
+
+    #region Toolbar
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Found by accessibility id and tapped, which is the ordinary route on a touch platform. MAUI
+    /// puts a <c>ToolbarItem</c>'s <c>AutomationId</c> in the accessibility label: on Android the
+    /// node's <c>resource-id</c> is empty and the value is in <c>content-desc</c>.
+    /// </remarks>
+    public void InvokeToolbarItem(string automationId)
+    {
+        if (string.IsNullOrEmpty(automationId))
+        {
+            throw new BrinellException("Could not invoke a toolbar item: no AutomationId was given.");
+        }
+
+        FindElement(Locator.ByAccessibilityId(automationId)).Click();
+    }
+
+    #endregion
+
     #region Window Management
     
     /// <inheritdoc />

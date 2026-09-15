@@ -1,4 +1,3 @@
-using Brinell.Core.Diagnostics;
 using Xunit;
 
 namespace Brinell.Maui.UITests.Tests.Shell;
@@ -37,7 +36,7 @@ public class ShellFlyoutVerbTests
     public ShellFlyoutVerbTests(ShellFixture fixture) => _fixture = fixture;
 
     /// <summary>
-    /// The flyout opens and closes with physical input refused outright.
+    /// The flyout opens and closes without physical input.
     /// </summary>
     /// <remarks>
     /// Both directions in one test, deliberately: a flyout that opens and cannot be closed
@@ -49,16 +48,13 @@ public class ShellFlyoutVerbTests
     {
         var driver = _fixture.Context.Driver;
 
-        using (PhysicalInput.OverridePolicy(PhysicalInputPolicy.Refused))
-        {
-            Assert.False(driver.IsFlyoutOpen(), "The flyout was already open before the test.");
+        Assert.False(driver.IsFlyoutOpen(), "The flyout was already open before the test.");
 
-            driver.OpenFlyout();
-            Assert.True(driver.IsFlyoutOpen(), "The app accepted OpenFlyout and nothing opened.");
+        driver.OpenFlyout();
+        Assert.True(driver.IsFlyoutOpen(), "The app accepted OpenFlyout and nothing opened.");
 
-            driver.CloseFlyout();
-            Assert.False(driver.IsFlyoutOpen(), "The app accepted CloseFlyout and it stayed open.");
-        }
+        driver.CloseFlyout();
+        Assert.False(driver.IsFlyoutOpen(), "The app accepted CloseFlyout and it stayed open.");
 
         return Task.CompletedTask;
     }

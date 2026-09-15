@@ -50,6 +50,16 @@ public interface IMauiElement : IElement<IMauiElement>
     bool Focused { get; }
 
     /// <summary>
+    /// One-based logical position in a set, inherited from the nearest ancestor that publishes it.
+    /// </summary>
+    int? PositionInSet => null;
+
+    /// <summary>
+    /// Logical size of the set, inherited from the nearest ancestor that publishes it.
+    /// </summary>
+    int? SizeOfSet => null;
+
+    /// <summary>
     /// The element's hint text - what a field shows before it is filled in.
     /// </summary>
     /// <remarks>
@@ -133,16 +143,14 @@ public interface IMauiElement : IElement<IMauiElement>
     /// knows its own operation just calls it and lets the throw name a wrong declaration.
     /// </para>
     /// <para>
-    /// These three replaced casts to <c>IInvokePatternElement</c>, <c>ISelectionItemPatternElement</c>
-    /// and <c>ITogglePatternElement</c>, which put UI Automation's vocabulary into cross-platform
-    /// controls (step 107). Windows answers from the pattern; a touch platform answers true,
-    /// because a tap is how it does all three.
+    /// These replaced casts to <c>IInvokePatternElement</c> and <c>ISelectionItemPatternElement</c>,
+    /// which put UI Automation's vocabulary into cross-platform controls (step 107). Windows
+    /// answers from the pattern; a touch platform answers true, because a tap is how it does both.
+    /// There is no <c>SupportsToggle</c>: no control has to choose whether to toggle, so
+    /// <see cref="Toggle"/> just performs or throws.
     /// </para>
     /// </remarks>
     bool SupportsInvoke => false;
-
-    /// <summary>Whether <see cref="Toggle"/> has a route. See <see cref="SupportsInvoke"/>.</summary>
-    bool SupportsToggle => false;
 
     /// <summary>Whether <see cref="Select"/> has a route. See <see cref="SupportsInvoke"/>.</summary>
     bool SupportsSelect => false;
@@ -151,14 +159,19 @@ public interface IMauiElement : IElement<IMauiElement>
 
     #region Focus
 
-    /// <summary>Whether <see cref="Focus"/> has a route that is not a click.</summary>
+    /// <summary>Gives this element focus. Performs or throws.</summary>
     /// <remarks>
-    /// False means the control's only way to focus is to activate the element, which for a date
-    /// picker opens its calendar. That is the control's decision to make, so it is asked here.
+    /// <para>
+    /// The element picks the route. Windows asks the app through the <c>Focus</c> verb, or taps an
+    /// element that declares <c>Tap</c>, and otherwise throws naming the verb. Android and iOS
+    /// tap, which is how a touch platform focuses a field.
+    /// </para>
+    /// <para>
+    /// There used to be a <c>SupportsFocus</c> question in front of this. Its false branch clicked,
+    /// which since the Windows driver stopped using the mouse only ever meant "tap on mobile", so
+    /// that choice now lives in the mobile element instead.
+    /// </para>
     /// </remarks>
-    bool SupportsFocus => false;
-
-    /// <summary>Gives this element focus without activating it. Performs or throws.</summary>
     /// <exception cref="NotSupportedException">This platform cannot focus this element.</exception>
     void Focus()
         => throw new NotSupportedException(
@@ -185,14 +198,12 @@ public interface IMauiElement : IElement<IMauiElement>
     /// </remarks>
     bool? Checked => null;
 
-    /// <summary>Whether the platform can set the checked state directly, rather than by toggling.</summary>
-    /// <remarks>
-    /// Asking for the state you want is idempotent; toggling depends on the state read beforehand
-    /// still being true when the toggle lands. Neither Android nor iOS has such a command.
-    /// </remarks>
-    bool SupportsSetChecked => false;
-
     /// <summary>Sets the checked state. Performs or throws; a no-op when already there.</summary>
+    /// <remarks>
+    /// Neither platform has a set-state command. Each reads <see cref="Checked"/> and toggles only
+    /// when it differs: the Toggle pattern on Windows, a tap on Android and iOS. The control then
+    /// verifies the state it asked for.
+    /// </remarks>
     /// <exception cref="NotSupportedException">This platform offers no route.</exception>
     void SetChecked(bool isChecked)
         => throw new NotSupportedException(
@@ -241,10 +252,11 @@ public interface IMauiElement : IElement<IMauiElement>
     /// <summary>The range's small step. Null when not published.</summary>
     double? RangeSmallChange => null;
 
-    /// <summary>Whether <see cref="SetRangeValue"/> has a route.</summary>
-    bool SupportsSetRangeValue => false;
-
     /// <summary>Sets a range control's value. Performs or throws.</summary>
+    /// <remarks>
+    /// Windows sets it through the RangeValue pattern. Android and iOS publish no settable value,
+    /// so their element steps it with the keyboard.
+    /// </remarks>
     /// <exception cref="NotSupportedException">This platform offers no route.</exception>
     void SetRangeValue(double value)
         => throw new NotSupportedException(
@@ -342,54 +354,32 @@ public interface IMauiElement : IElement<IMauiElement>
 
     #region Semantic text
 
-    /// <summary>
-    /// Appends text without typing it, if the platform can.
-    /// </summary>
+    /// <summary>Appends text to a field. Performs or throws.</summary>
     /// <remarks>
     /// <para>
     /// Appending is the one text operation that cannot be assembled from a read and a write out
     /// here. Between the two calls the app is still running, and anything it does to the field
-    /// in between is silently overwritten; a platform that can do both in one pass of the app's
-    /// own UI thread should, and this is where it says so.
+    /// in between is silently overwritten. Windows asks the app through the <c>AppendText</c> verb,
+    /// which does both in one pass of the app's UI thread. Android and iOS type the text.
     /// </para>
     /// <para>
-    /// Defaulted to false so a platform without a semantic route compiles and answers honestly.
-    /// The caller then types, which is what it always did.
+    /// A refusal from the app is an exception carrying its reason, never a quiet fallback. This
+    /// was once <c>TryAppendText</c>, whose <c>false</c> meant both "no route" and "the app
+    /// refused", so a caller that typed on <c>false</c> typed into a read-only field (stage G step
+    /// 34). It later became a <c>SupportsAppendText</c> question whose false branch typed, which
+    /// on Windows only ever threw; the route choice now lives in each element.
     /// </para>
-    /// <para>
-    /// <b>A question and a command, not one call answering both.</b> This was
-    /// <c>TryAppendText</c>, whose <c>false</c> meant both "this platform has no semantic route"
-    /// and "the app refused" - so a caller that fell back to typing on <c>false</c> typed into a
-    /// read-only field the app had just declined to change. Stage G step 34.
-    /// </para>
-    /// </remarks>
-    bool SupportsAppendText => false;
-
-    /// <summary>Appends text through the platform's semantic route.</summary>
-    /// <remarks>
-    /// Performs or throws. Ask <see cref="SupportsAppendText"/> first; a refusal from the app is
-    /// an exception carrying its reason, never a quiet fallback.
     /// </remarks>
     /// <param name="text">The text to append.</param>
     void AppendText(string text)
         => throw new NotSupportedException("This platform has no semantic route for appending text.");
 
-    /// <summary>
-    /// Removes focus from the element without moving it elsewhere, if the platform can.
-    /// </summary>
+    /// <summary>Removes focus from the element. Performs or throws.</summary>
     /// <remarks>
-    /// The usual route is a Tab keystroke, which is a different operation wearing this one's
-    /// name: it moves focus to whatever is next in the tab order, with whatever side effects
-    /// that has, and it needs the app in front to receive the key at all. A platform that can
-    /// simply drop focus should say so here.
-    /// <para>
-    /// Split into this question and <see cref="ClearFocus"/> for the reason given on
-    /// <see cref="SupportsAppendText"/>.
-    /// </para>
+    /// Windows drops focus through the app's <c>Unfocus</c> verb. Android and iOS send Tab, which is
+    /// a stand-in rather than the operation: it moves focus on to whatever is next in the tab
+    /// order, with whatever side effects that has.
     /// </remarks>
-    bool SupportsClearFocus => false;
-
-    /// <summary>Removes focus without moving it elsewhere. Performs or throws.</summary>
     void ClearFocus()
         => throw new NotSupportedException("This platform has no semantic route for clearing focus.");
 
@@ -471,15 +461,6 @@ public interface IMauiElement : IElement<IMauiElement>
             $"{GetType().Name} does not implement ScrollContent.");
 
     /// <summary>
-    /// Whether this element can be asked to scroll semantically.
-    /// </summary>
-    /// <remarks>
-    /// A question, so a caller takes one route rather than trying one. See
-    /// <see cref="SupportsSetDate"/> for why that distinction is the whole point.
-    /// </remarks>
-    bool SupportsScrollVerbs => false;
-
-    /// <summary>
     /// Brings a named descendant into view.
     /// </summary>
     /// <remarks>
@@ -506,20 +487,21 @@ public interface IMauiElement : IElement<IMauiElement>
     /// Whether this element can be asked to scroll to an item index.
     /// </summary>
     /// <remarks>
-    /// Separate from <see cref="SupportsScrollVerbs"/> because the two are declared separately
-    /// and by different controls: a <c>ScrollView</c> answers <c>ScrollTo</c> and
-    /// <c>ScrollPosition</c> and has no items; a <c>CollectionView</c> answers this and has no
-    /// scroll offset of its own to report.
+    /// A question, because a collection without it still scrolls by the Scroll pattern or by
+    /// swiping. A <c>ScrollView</c> answers <c>ScrollTo</c> and <c>ScrollPosition</c> and has no
+    /// items; a <c>CollectionView</c> answers this and has no scroll offset of its own to report.
     /// </remarks>
     bool SupportsScrollToIndex => false;
 
     /// <summary>Brings the item at an index into view.</summary>
     /// <remarks>
-    /// An index past the end is not an error: it is how a caller walking a virtualized list
-    /// finds out it has reached the end. Nothing moves and nothing throws.
+    /// An index past the end is refused with <see cref="ArgumentOutOfRangeException"/>, naming the
+    /// item count where the app publishes it. That is how a caller walking a virtualized list
+    /// finds out it has reached the end, and nothing moves.
     /// </remarks>
     /// <param name="index">The item index.</param>
     /// <exception cref="NotSupportedException">This platform offers no route.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The index is past the end of the items.</exception>
     void ScrollToIndex(int index)
         => throw new NotSupportedException(
             $"{GetType().Name} does not implement ScrollToIndex.");
@@ -555,8 +537,7 @@ public interface IMauiElement : IElement<IMauiElement>
     /// <summary>Whether this element can be asked to select an item by its text.</summary>
     /// <remarks>
     /// Separate from <see cref="SupportsSelectIndex"/> because the two are declared separately in
-    /// the app's markup, the same way <see cref="SupportsSetDate"/> and
-    /// <see cref="SupportsSetTime"/> are. An app may well publish one and not the other.
+    /// the app's markup. An app may well publish one and not the other.
     /// </remarks>
     bool SupportsSelectByText => false;
 
@@ -591,36 +572,18 @@ public interface IMauiElement : IElement<IMauiElement>
     #region Dates and times
 
     /// <summary>
-    /// Whether <see cref="SetDate"/> has a semantic route on this element.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>A question, so that a control can choose a route without trying one.</b> A caller asks
-    /// this once and then takes exactly one path: the verb, or whatever the platform does for an
-    /// app that carries no bridge. That is the difference between this and the three-rung ladder
-    /// it replaced, which performed each rung to discover whether it was the right one - and
-    /// whose first rung, on WinUI, advertised a Value pattern and then refused the write.
-    /// </para>
-    /// <para>
-    /// On Windows the answer is whether the app under test declared <c>SetDate</c> on this
-    /// element, so a false is usually a missing line of markup rather than something impossible.
-    /// </para>
-    /// </remarks>
-    bool SupportsSetDate => false;
-
-    /// <summary>Whether <see cref="SetTime"/> has a semantic route. See <see cref="SupportsSetDate"/>.</summary>
-    bool SupportsSetTime => false;
-
-    /// <summary>
     /// Sets a date picker's date.
     /// </summary>
     /// <remarks>
     /// <para>
     /// <b>The control names the operation; the element decides how the platform performs it</b> -
-    /// the same split as <see cref="Invoke"/> and <see cref="Toggle"/>. On Windows that is a verb
-    /// the app answers by setting <c>DatePicker.Date</c>, or, for an app carrying no bridge, the
-    /// calendar flyout walked by pattern. Neither is a rung of the other: the element asks the
-    /// app once whether it declares the verb, and takes one route.
+    /// the same split as <see cref="Invoke"/> and <see cref="Toggle"/>. On Windows that is the
+    /// <c>SetDate</c> verb, which the app answers by setting <c>DatePicker.Date</c>, and a missing
+    /// declaration throws naming it. Android and iOS have no route yet, so they throw too.
+    /// </para>
+    /// <para>
+    /// There used to be a <c>SupportsSetDate</c> question in front of this. Both of its branches
+    /// ended in the same place on every platform - the verb, or a throw - so it was removed.
     /// </para>
     /// <para>
     /// Defaulted to a throw rather than to a no-op, for the reason the activation verbs are: a
@@ -629,7 +592,6 @@ public interface IMauiElement : IElement<IMauiElement>
     /// </remarks>
     /// <param name="date">The date to set.</param>
     /// <exception cref="NotSupportedException">This platform offers no route.</exception>
-    /// <seealso cref="SupportsSetDate"/>
     void SetDate(DateTime date)
         => throw new NotSupportedException(
             $"{GetType().Name} does not implement SetDate. A control asked for a date to be set "

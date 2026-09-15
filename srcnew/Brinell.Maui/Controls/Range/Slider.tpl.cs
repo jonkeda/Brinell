@@ -6,8 +6,8 @@ using Brinell.Core.Utilities;
 /// MAUI Slider control for continuous value selection.
 /// Inherits GetValue, SetValue, GetMinimum, GetMaximum, Increment, Decrement from RangeControlBase.
 /// Provides additional slider-specific methods like SlideToPercentage.
-/// Overrides SetValueCore to use keyboard-based approach since Windows Appium driver 
-/// doesn't support mouse Actions API (only pen/touch pointer input supported).
+/// Overrides SetValueCore to clamp the value to the slider's range before the element sets it -
+/// through RangeValue on Windows, with arrow keys on Android and iOS.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
 public partial class Slider<TScope> : Base.RangeControlBase<TScope>
@@ -37,9 +37,15 @@ public partial class Slider<TScope> : Base.RangeControlBase<TScope>
     #region Core Methods (Element-Aware, No Logging)
 
     /// <summary>
-    /// Sets slider value using the best available approach.
-    /// Priority: 1) RangeValue pattern (FlaUI), 2) windows: click, 3) keyboard navigation.
+    /// Sets slider value, clamped to the slider's range.
+    /// The element picks the route: the RangeValue pattern on Windows, arrow keys on Android and iOS.
     /// </summary>
+    /// <remarks>
+    /// There used to be a middle rung that clicked at a computed point through Appium's
+    /// <c>windows: click</c> script. Windows is driven by FlaUI, not Appium, so that rung only ever
+    /// ran on Android, where the script does not exist and it failed through to the keyboard. The
+    /// keyboard route itself now lives in <c>AppiumMauiElement.SetRangeValue</c>.
+    /// </remarks>
     /// <param name="element">The slider element.</param>
     /// <param name="value">The target value. Null skips the operation.</param>
     /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
@@ -61,20 +67,7 @@ public partial class Slider<TScope> : Base.RangeControlBase<TScope>
         // Clamp value to valid range
         var target = Math.Clamp(value.Value, min, max);
 
-        if (element.SupportsSetRangeValue)
-        {
-            element.SetRangeValue(target);
-            return;
-        }
-
-        // Try using windows: click extension (bypasses W3C Actions)
-        if (TrySetValueWithWindowsClick(element, target, min, max))
-        {
-            return;
-        }
-
-        // Fallback: Use keyboard-based approach
-        SetValueWithKeyboard(element, target, min, max);
+        element.SetRangeValue(target);
     }
 
     /// <summary>
@@ -97,121 +90,6 @@ public partial class Slider<TScope> : Base.RangeControlBase<TScope>
         return ((current.Value - min) / (max - min)) * 100.0;
     }
 
-    #endregion
-
-    #region SetValue Helpers
-
-    /// <summary>
-    /// Attempts to set slider value using the windows: click extension.
-    /// This bypasses the W3C Actions API that doesn't work on Windows.
-    /// </summary>
-    private bool TrySetValueWithWindowsClick(IMauiElement element, double value, double min, double max)
-    {
-        try
-        {
-            var range = max - min;
-            var percentage = (value - min) / range;
-            
-            // Get element bounds
-            var location = element.Location;
-            var size = element.Size;
-            
-            // Calculate click position with padding
-            var padding = (int)(size.Width * 0.05);
-            var usableWidth = size.Width - (2 * padding);
-            var targetX = location.X + padding + (int)(usableWidth * percentage);
-            var centerY = location.Y + (size.Height / 2);
-            
-            // Execute windows: click extension
-            Context.Driver.ExecuteScript("windows: click", new Dictionary<string, object>
-            {
-                { "x", targetX },
-                { "y", centerY }
-            });
-            
-            // Brief pause for value to update
-            WaitHelper.Pause(50);
-            return true;
-        }
-        catch (Exception)
-        {
-            // windows: click not supported or failed
-            return false;
-        }
-    }
-    
-    /// <summary>
-    /// Sets slider value using keyboard arrow keys.
-    /// This is a reliable fallback when mouse-based approaches don't work.
-    /// </summary>
-    private void SetValueWithKeyboard(IMauiElement element, double value, double min, double max)
-    {
-        var step = GetStepCore(element) ?? 1;
-        var range = max - min;
-        
-        // Calculate how many steps from min to target
-        var stepsToTarget = (int)Math.Round((value - min) / step);
-        var totalSteps = (int)Math.Round(range / step);
-        
-        // Click on the element to focus it
-        element.Click();
-        WaitHelper.Pause(50);
-        
-        // Get current value
-        var currentValue = GetValueCore(element) ?? min;
-        
-        // If we need to go to minimum first (more reliable)
-        if (Math.Abs(value - min) < Math.Abs(value - currentValue))
-        {
-            // Send Home key to go to minimum
-            element.SendKeys(OpenQA.Selenium.Keys.Home);
-            WaitHelper.Pause(50);
-            
-            // Send right arrow keys to reach target
-            for (int i = 0; i < stepsToTarget; i++)
-            {
-                element.SendKeys(OpenQA.Selenium.Keys.ArrowRight);
-                WaitHelper.Pause(10);
-            }
-        }
-        else if (Math.Abs(value - max) < Math.Abs(value - currentValue))
-        {
-            // Send End key to go to maximum
-            element.SendKeys(OpenQA.Selenium.Keys.End);
-            WaitHelper.Pause(50);
-            
-            // Calculate steps back from max
-            var stepsFromMax = (int)Math.Round((max - value) / step);
-            for (int i = 0; i < stepsFromMax; i++)
-            {
-                element.SendKeys(OpenQA.Selenium.Keys.ArrowLeft);
-                WaitHelper.Pause(10);
-            }
-        }
-        else
-        {
-            // Move from current position
-            var stepsNeeded = (int)Math.Round((value - currentValue) / step);
-            var key = stepsNeeded > 0 ? OpenQA.Selenium.Keys.ArrowRight : OpenQA.Selenium.Keys.ArrowLeft;
-            
-            for (int i = 0; i < Math.Abs(stepsNeeded); i++)
-            {
-                element.SendKeys(key);
-                WaitHelper.Pause(10);
-            }
-        }
-        
-        // Poll until the value is near target or timeout
-        _ = RunWaitWithElement(value,
-            e =>
-            {
-                var current = GetValueCore(e);
-                if (current == null) return false;
-                return Math.Abs(current.Value - value) <= Math.Max(step, 0.5);
-            },
-            1000);
-    }
-    
     #endregion
 
     #region Slider-Specific Core Methods

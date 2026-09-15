@@ -144,11 +144,9 @@ internal static class MauiVerbDispatcher
                 return MauiCapabilities.PresentFlyout(element, presented: false);
 
             case BrinellVerb.ScrollToIndex:
-                // S_FALSE, not a refusal: a ListView whose ItemsSource is shorter than the index
-                // is a real state of the app, and the caller asked something answerable.
                 return MauiCapabilities.ScrollToIndex(element, arg1)
                     ? HResults.S_OK
-                    : HResults.S_FALSE;
+                    : HResults.BRINELL_E_DECLINED;
 
             case BrinellVerb.SelectIndex:
                 // Its own four answers, passed through. A negative index is the caller's bug, an
@@ -257,6 +255,15 @@ internal static class MauiVerbDispatcher
                 // The outcome travels as a value: a success HRESULT cannot carry it, because UI
                 // Automation reports every one of them to the client as S_OK.
                 var hr = MauiCapabilities.InvokeMenuItem(element, argument, out var outcome);
+                result = outcome;
+                return hr;
+            }
+
+            // A toolbar item, raised by id. Its automation peer accepts Invoke and raises nothing
+            // on Windows, so without this the only route was the mouse.
+            case BrinellVerb.InvokeToolbarItem:
+            {
+                var hr = MauiCapabilities.InvokeToolbarItem(element, argument, out var outcome);
                 result = outcome;
                 return hr;
             }
@@ -376,6 +383,14 @@ internal static class MauiVerbDispatcher
         "Progress" when element is ProgressBar bar
             => MauiCapabilities.ReadProgress(bar).ToString(CultureInfo.InvariantCulture),
         "Date" when element is DatePicker datePicker => MauiCapabilities.ReadDate(datePicker),
+        "Value" when element is Stepper stepper
+            => stepper.Value.ToString(CultureInfo.InvariantCulture),
+        "Minimum" when element is Stepper stepper
+            => stepper.Minimum.ToString(CultureInfo.InvariantCulture),
+        "Maximum" when element is Stepper stepper
+            => stepper.Maximum.ToString(CultureInfo.InvariantCulture),
+        "Increment" when element is Stepper stepper
+            => stepper.Increment.ToString(CultureInfo.InvariantCulture),
 
         // A picker's own list and its own position in it. Read from outside, both meant opening
         // the dropdown and walking the popup - and the index was then derived by matching the
@@ -387,6 +402,8 @@ internal static class MauiVerbDispatcher
             => MauiCapabilities.ReadSelectedItem(showing),
         "ItemCount" when element is Picker counted
             => counted.Items.Count.ToString(CultureInfo.InvariantCulture),
+        "ItemCount" when element is ItemsView itemsView
+            => MauiCapabilities.Count(itemsView.ItemsSource).ToString(CultureInfo.InvariantCulture),
         "Items" when element is Picker listed => MauiCapabilities.ReadItems(listed),
         "Time" when element is TimePicker timePicker => MauiCapabilities.ReadTime(timePicker),
         "FlyoutIsPresented" => MauiCapabilities.IsFlyoutPresented(element)?.ToString(),

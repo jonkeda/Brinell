@@ -44,7 +44,7 @@ Check:
 - platform driver is installed;
 - app path or package is valid;
 - emulator/device is connected;
-- platform value matches `windows`, `android`, or `ios`.
+- platform value is `android` or `ios` - MAUI on Windows is driven by FlaUI, not Appium.
 
 ## Playwright Problems
 
@@ -54,31 +54,28 @@ Install browsers from the test project's output if needed:
 pwsh bin\Debug\net10.0\playwright.ps1 install
 ```
 
-## Physical Input Problems
+## "Cannot ... Without Real Mouse Or Keyboard Input"
 
-MAUI runs on Windows refuse real mouse, keyboard, clipboard and foreground use by
-default, so a run does not take the machine. A test that falls back to real input
-fails with `PhysicalInputRefusedException`, naming the call site and the semantic
-route that should replace it.
+MAUI on Windows has no physical input: no click, no typing, no clipboard, no foreground.
+An action with no UI Automation pattern and no bridge verb throws `NotSupportedException`
+(`GestureUnavailableException` for a gesture), and the message names what to use instead.
 
-- **Fix the route, not the policy.** The exception says which verb or pattern to use.
-  If the control has no semantic route, see
+- **Fix the route.** Usually the element needs a verb declared in the app's markup - `Tap`,
+  `Focus`, `SetText`, `Submit`, `LongPress`, `Swipe*` - see
   [AD-008](../architecture/decisions.md#ad-008-gestures-and-semantic-actions-go-through-ui-automation).
-- **A test that is about real input** should say so with `[PhysicalInputFact]`, which
-  skips it while input is refused.
-- **To allow real input for a run** - to watch it, or to exercise the fallback path:
+  If the message says the bridge answers nothing at all, see
+  [Gesture Bridge Problems](#gesture-bridge-problems).
+- **Or ask for the operation you mean.** A raw `Click` is not a UI Automation operation;
+  controls invoke, toggle or select. `SendKeys` with `TextInputMethod.Keys` types key by key and
+  has no Windows route; `SetValue` puts the text in the field.
+- **`RightClick` and `Hover` always throw on Windows.** Use `IMauiDriver.InvokeMenuItem` for a
+  context-menu item.
+- **A test that is about real input** - per-keystroke `TextChanged`, a menu appearing - runs on
+  the Android head, where Appium injects input inside the device.
 
-```powershell
-$env:BRINELL_BACKGROUND_MODE = "0"
-```
-
-- **To list every physical-input use without refusing any:**
-
-```powershell
-$env:BRINELL_BACKGROUND_MODE = "audit"
-$env:BRINELL_PHYSICAL_INPUT_LOG = "physical-input.log"
-```
-
+There is no environment variable that turns physical input back on for MAUI.
+`BRINELL_BACKGROUND_MODE` and `BRINELL_PHYSICAL_INPUT_LOG` apply to WPF and WinForms only (see
+[AD-005](../architecture/decisions.md#ad-005-physical-input-is-opt-in)).
 `BRINELL_ALLOW_POINTER_INPUT` no longer does anything, and has not for some time.
 
 ## Gesture Bridge Problems

@@ -1,5 +1,4 @@
 using Brinell.Core;
-using Brinell.Core.Diagnostics;
 using Brinell.Core.Locators;
 using Brinell.Maui.UITests.Pages;
 using Xunit.Abstractions;
@@ -18,18 +17,17 @@ namespace Brinell.Maui.UITests.Tests.Background;
 /// clipboard; it was simply the fastest way to get a string into a field from outside the app.
 /// </para>
 /// <para>
-/// <b>Typing is kept, deliberately, and is not a fallback that should disappear.</b> A keyboard
-/// raises <c>TextChanged</c> per character, applies <c>MaxLength</c> as it goes and lets a
-/// numeric keyboard refuse a letter; setting <c>Text</c> raises one change for the whole value.
-/// A test <i>of</i> input behaviour needs the former and should say so with
-/// <see cref="TextInputMethod.Keys"/>. What moves to the bridge is <i>arrangement</i> - getting
-/// a field into the state a test wants to start from.
+/// <b>Typing is not available on Windows.</b> A keyboard raises <c>TextChanged</c> per character,
+/// applies <c>MaxLength</c> as it goes and lets a numeric keyboard refuse a letter; setting
+/// <c>Text</c> raises one change for the whole value. A test <i>of</i> input behaviour needs the
+/// former, says so with <see cref="TextInputMethod.Keys"/>, and runs on the mobile head. What the
+/// bridge does is <i>arrangement</i> - getting a field into the state a test wants to start from.
 /// </para>
 /// <para>
-/// Each test runs under <see cref="PhysicalInputPolicy.Refused"/>, so passing is itself the
-/// evidence: any fall-through to the keyboard, the clipboard or the foreground window would
-/// have thrown. See <see cref="FocusVerbTests.RefusedPolicy_StillRefuses"/> for the guard on
-/// that guard.
+/// Passing is the evidence that no keyboard, clipboard or foreground was used: the Windows driver
+/// has no such fallback, and throws where a route is missing. See
+/// <see cref="FocusVerbTests.ActionsWithNoSemanticRoute_ThrowInsteadOfUsingRealInput"/> for the
+/// test that pins that.
 /// </para>
 /// </remarks>
 [Collection("Maui")]
@@ -58,12 +56,9 @@ public class TextVerbTests
     {
         var page = Page;
 
-        using (PhysicalInput.OverridePolicy(PhysicalInputPolicy.Refused))
-        {
-            page.TestEntry.SetText("stage b");
+        page.TestEntry.SetText("stage b");
 
-            Assert.Equal("stage b", page.TestEntry.GetText());
-        }
+        Assert.Equal("stage b", page.TestEntry.GetText());
 
         return Task.CompletedTask;
     }
@@ -83,13 +78,10 @@ public class TextVerbTests
     {
         var page = Page;
 
-        using (PhysicalInput.OverridePolicy(PhysicalInputPolicy.Refused))
-        {
-            page.TestEntry.SetText("first");
-            page.TestEntry.Append(" second");
+        page.TestEntry.SetText("first");
+        page.TestEntry.Append(" second");
 
-            Assert.Equal("first second", page.TestEntry.GetText());
-        }
+        Assert.Equal("first second", page.TestEntry.GetText());
 
         return Task.CompletedTask;
     }
@@ -102,15 +94,12 @@ public class TextVerbTests
     {
         var page = Page;
 
-        using (PhysicalInput.OverridePolicy(PhysicalInputPolicy.Refused))
-        {
-            page.TestEntry.SetText("something to remove");
-            page.TestEntry.Clear();
+        page.TestEntry.SetText("something to remove");
+        page.TestEntry.Clear();
 
-            Assert.True(
-                string.IsNullOrEmpty(page.TestEntry.GetText()),
-                $"The entry still holds '{page.TestEntry.GetText()}'.");
-        }
+        Assert.True(
+            string.IsNullOrEmpty(page.TestEntry.GetText()),
+            $"The entry still holds '{page.TestEntry.GetText()}'.");
 
         return Task.CompletedTask;
     }
@@ -154,19 +143,13 @@ public class TextVerbTests
                     "The clipboard would not take the sentinel - another process holds it - so "
                     + "there is nothing to canary. The paste itself is still checked below.");
 
-                using (PhysicalInput.OverridePolicy(PhysicalInputPolicy.Refused))
-                {
-                    element.SendKeys("pasted without a clipboard", TextInputMethod.Paste);
-                }
+                element.SendKeys("pasted without a clipboard", TextInputMethod.Paste);
 
                 Assert.Equal("pasted without a clipboard", page.TestEntry.GetText());
                 return Task.CompletedTask;
             }
 
-            using (PhysicalInput.OverridePolicy(PhysicalInputPolicy.Refused))
-            {
-                element.SendKeys("pasted without a clipboard", TextInputMethod.Paste);
-            }
+            element.SendKeys("pasted without a clipboard", TextInputMethod.Paste);
 
             Assert.Equal("pasted without a clipboard", page.TestEntry.GetText());
             Assert.Equal(sentinel, ReadClipboard());
@@ -204,8 +187,8 @@ public class TextVerbTests
         var element = _fixture.Context.TryFindElement(Locator.ByAutomationId("ReadOnlyEntry"));
         Assert.NotNull(element);
 
-        // Outside a refusal scope: the point here is what the field holds afterwards, not which
-        // route was taken, and every route must fail. Letting the ladder run to the end is what
+        // The point here is what the field holds afterwards, not which route was taken, and every
+        // route must fail. Letting the ladder run to the end is what
         // makes that a complete statement.
         try
         {
@@ -235,11 +218,8 @@ public class TextVerbTests
     {
         var page = Page;
 
-        using (PhysicalInput.OverridePolicy(PhysicalInputPolicy.Refused))
-        {
-            page.TestSearchBar.SetText("brinell");
-            page.TestSearchBar.Submit();
-        }
+        page.TestSearchBar.SetText("brinell");
+        page.TestSearchBar.Submit();
 
         page.SearchStatusLabel.WaitTextContains("brinell", TestConstants.DefaultTestTimeoutMs);
 

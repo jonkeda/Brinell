@@ -1,5 +1,5 @@
 using System.Runtime.InteropServices;
-using Brinell.Core.Diagnostics;
+using Brinell.Core;
 using Brinell.Core.Locators;
 using Brinell.Core.Exceptions;
 using Brinell.Maui.FlaUI;
@@ -13,20 +13,18 @@ namespace Brinell.Maui.UITests.Tests.Background;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Focus is the linchpin of the whole programme.</b> Every physical action in the driver
-/// calls <c>SetForeground</c> first, and its own remarks admit why: without it, keystrokes meant
-/// for the app land in whatever the person at the keyboard is doing. Foreground is a
-/// desktop-global resource and there is exactly one of it; <c>VisualElement.Focus</c> is not,
-/// and costs nobody anything.
+/// <b>Focus was the linchpin of the whole programme.</b> Every physical action in the driver
+/// used to call <c>SetForeground</c> first, because without it keystrokes meant for the app land
+/// in whatever the person at the keyboard is doing. Foreground is a desktop-global resource and
+/// there is exactly one of it; <c>VisualElement.Focus</c> is not, and costs nobody anything.
 /// </para>
 /// <para>
-/// <b>How these tests prove it, and why the proof is unusual.</b> Asserting that focus landed
-/// says nothing about how - the old path would pass the same assertion, having stolen the
-/// foreground on the way. So each test runs inside
-/// <see cref="PhysicalInputPolicy.Refused"/>, which turns every real mouse, keyboard,
-/// clipboard and <c>SetForeground</c> call in the framework into a
-/// <see cref="PhysicalInputRefusedException"/>. A test that passes under it did not touch any of
-/// them: not because it was measured afterwards, but because the alternative would have thrown.
+/// <b>How these tests prove it.</b> Asserting that focus landed says nothing about how - the old
+/// path would pass the same assertion, having stolen the foreground on the way. That path is now
+/// gone from the driver: <c>Focus</c> is the app's verb or an exception, so a test that passes
+/// did not touch the foreground. These tests used to show it by running inside a refused
+/// physical-input policy; <see cref="ActionsWithNoSemanticRoute_ThrowInsteadOfUsingRealInput"/>
+/// now pins that nothing falls back.
 /// </para>
 /// <para>
 /// The foreground assertions are then belt and braces, and cheap enough to keep - they name the
@@ -47,8 +45,7 @@ public class FocusVerbTests
         _fixture = fixture;
         _output = output;
 
-        // Navigation happens outside the refusal scope on purpose. Getting to the page is the
-        // arrangement; what is under test is what happens once there.
+        // Getting to the page is the arrangement; what is under test is what happens once there.
         _fixture.Open(SamplePage.Text);
     }
 
@@ -83,14 +80,11 @@ public class FocusVerbTests
     {
         var page = Page;
 
-        using (PhysicalInput.OverridePolicy(PhysicalInputPolicy.Refused))
-        {
-            page.TestEntry.Focus();
+        page.TestEntry.Focus();
 
-            Assert.True(
-                page.TestEntry.IsFocused(),
-                "The entry did not report focus after the Focus verb.");
-        }
+        Assert.True(
+            page.TestEntry.IsFocused(),
+            "The entry did not report focus after the Focus verb.");
 
         return Task.CompletedTask;
     }
@@ -109,10 +103,7 @@ public class FocusVerbTests
         var page = Page;
         var before = GetForegroundWindow();
 
-        using (PhysicalInput.OverridePolicy(PhysicalInputPolicy.Refused))
-        {
-            page.TestEditor.Focus();
-        }
+        page.TestEditor.Focus();
 
         var after = GetForegroundWindow();
 
@@ -137,16 +128,13 @@ public class FocusVerbTests
     {
         var page = Page;
 
-        using (PhysicalInput.OverridePolicy(PhysicalInputPolicy.Refused))
-        {
-            page.TestEntry.Focus();
-            Assert.True(page.TestEntry.IsFocused(), "The entry did not take focus.");
+        page.TestEntry.Focus();
+        Assert.True(page.TestEntry.IsFocused(), "The entry did not take focus.");
 
-            page.TestSearchBar.Focus();
+        page.TestSearchBar.Focus();
 
-            Assert.True(page.TestSearchBar.IsFocused(), "The search bar did not take focus.");
-            Assert.False(page.TestEntry.IsFocused(), "The entry still reports focus.");
-        }
+        Assert.True(page.TestSearchBar.IsFocused(), "The search bar did not take focus.");
+        Assert.False(page.TestEntry.IsFocused(), "The entry still reports focus.");
 
         return Task.CompletedTask;
     }
@@ -164,38 +152,45 @@ public class FocusVerbTests
     {
         var page = Page;
 
-        using (PhysicalInput.OverridePolicy(PhysicalInputPolicy.Refused))
-        {
-            page.TestEntry.Focus();
-            Assert.True(page.TestEntry.IsFocused(), "The entry did not take focus.");
+        page.TestEntry.Focus();
+        Assert.True(page.TestEntry.IsFocused(), "The entry did not take focus.");
 
-            page.TestEntry.Blur();
+        page.TestEntry.Blur();
 
-            Assert.False(page.TestEntry.IsFocused(), "The entry still reports focus after Blur.");
-        }
+        Assert.False(page.TestEntry.IsFocused(), "The entry still reports focus after Blur.");
 
         return Task.CompletedTask;
     }
 
     /// <summary>
-    /// The guard on the guard: refusal actually refuses.
+    /// The guard: actions with no semantic route throw rather than reach for real input.
     /// </summary>
     /// <remarks>
-    /// Every test above proves its point by <i>not</i> throwing, which is only evidence if the
-    /// throw was possible. This drives a path with no semantic route - a raw click - inside the
-    /// same scope, and requires it to be refused. Without this, a policy that had quietly
-    /// stopped working would make the whole class pass for the wrong reason.
+    /// <para>
+    /// These used to be refused by a policy, which a test proved by expecting
+    /// <c>PhysicalInputRefusedException</c>. The driver no longer has a physical fallback
+    /// to refuse, so the proof is that each of these fails outright, naming what to use instead.
+    /// </para>
+    /// <para>
+    /// The entry declares text and focus verbs but no Tap, so a raw click has no route; typing key
+    /// by key, right-clicking and hovering have none on any element.
+    /// </para>
     /// </remarks>
     [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
-    public Task RefusedPolicy_StillRefuses()
+    public Task ActionsWithNoSemanticRoute_ThrowInsteadOfUsingRealInput()
     {
         var element = _fixture.Context.TryFindElement(Locator.ByAutomationId("TestEntry"));
         Assert.NotNull(element);
 
-        using (PhysicalInput.OverridePolicy(PhysicalInputPolicy.Refused))
-        {
-            Assert.Throws<PhysicalInputRefusedException>(() => element.Click());
-        }
+        var click = Assert.Throws<NotSupportedException>(() => element.Click());
+        Assert.Contains("Invoke", click.Message);
+
+        var typing = Assert.Throws<NotSupportedException>(
+            () => element.SendKeys("x", TextInputMethod.Keys));
+        Assert.Contains("SetValue", typing.Message);
+
+        Assert.Throws<NotSupportedException>(() => element.RightClick());
+        Assert.Throws<NotSupportedException>(() => element.Hover());
 
         return Task.CompletedTask;
     }

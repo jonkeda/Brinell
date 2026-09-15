@@ -109,10 +109,94 @@ public sealed class AppiumMauiElement : IMauiElement
     public bool SupportsInvoke => true;
 
     /// <inheritdoc />
-    public bool SupportsToggle => true;
+    public bool SupportsSelect => true;
+
+    #endregion
+
+    #region Focus and text
+
+    // The mobile routes that used to sit in the control objects, behind a Supports* question
+    // whose false branch only ever ran here. Windows performs these through the app's verbs.
 
     /// <inheritdoc />
-    public bool SupportsSelect => true;
+    /// <remarks>A tap: how a touch platform focuses a field.</remarks>
+    public void Focus() => Click();
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Tab, which moves focus on to the next control rather than removing it. This platform has
+    /// no way to simply drop focus.
+    /// </remarks>
+    public void ClearFocus() => SendKeys(Keys.Tab);
+
+    /// <inheritdoc />
+    /// <remarks>Types the text at the end of what the field holds.</remarks>
+    public void AppendText(string text) => SendKeys(text);
+
+    #endregion
+
+    #region Range
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// <para>
+    /// <b>Arrow keys.</b> Neither platform publishes a settable range value from outside, so the
+    /// value is stepped from the nearer of the minimum, the maximum and the current value, then
+    /// polled until it lands within a step of the target.
+    /// </para>
+    /// <para>
+    /// No bounds or step are published here either, so these are 0, 100 and 1 - the same
+    /// assumptions the Slider control made when this route lived in it. The current value is read
+    /// from the element's text.
+    /// </para>
+    /// </remarks>
+    public void SetRangeValue(double value)
+    {
+        const double min = 0;
+        const double max = 100;
+        const double step = 1;
+
+        Click();
+        WaitHelper.Pause(50);
+
+        var current = ReadRangeText() ?? min;
+
+        if (Math.Abs(value - min) < Math.Abs(value - current))
+        {
+            SendKeys(Keys.Home);
+            WaitHelper.Pause(50);
+            PressRepeatedly(Keys.ArrowRight, (int)Math.Round((value - min) / step));
+        }
+        else if (Math.Abs(value - max) < Math.Abs(value - current))
+        {
+            SendKeys(Keys.End);
+            WaitHelper.Pause(50);
+            PressRepeatedly(Keys.ArrowLeft, (int)Math.Round((max - value) / step));
+        }
+        else
+        {
+            var steps = (int)Math.Round((value - current) / step);
+            PressRepeatedly(steps > 0 ? Keys.ArrowRight : Keys.ArrowLeft, Math.Abs(steps));
+        }
+
+        WaitHelper.WaitFor(
+            ReadRangeText,
+            reading => reading.HasValue && Math.Abs(reading.Value - value) <= Math.Max(step, 0.5),
+            timeoutMs: 1000,
+            pollingIntervalMs: 50);
+    }
+
+    private void PressRepeatedly(string key, int times)
+    {
+        for (var i = 0; i < times; i++)
+        {
+            SendKeys(key);
+            WaitHelper.Pause(10);
+        }
+    }
+
+    private double? ReadRangeText()
+        => double.TryParse(Text, out var parsed) ? parsed : null;
 
     #endregion
 
@@ -218,10 +302,6 @@ public sealed class AppiumMauiElement : IMauiElement
     /// "Unsupported execute method 'mobile: setValue', did you mean 'mobile: setUiMode'?",
     /// which reads like a driver version problem rather than the wrong API for the platform.
     /// </para>
-    /// <para>
-    /// Anything else clears and types: slower, needs a keyboard, but works on any driver
-    /// rather than failing on the ones this method has not been taught.
-    /// </para>
     /// </remarks>
     private void SetValueDirectly(string text)
     {
@@ -244,11 +324,30 @@ public sealed class AppiumMauiElement : IMauiElement
                 break;
 
             default:
-                _element.Clear();
-                _element.SendKeys(text);
-                break;
+                throw NotAMobilePlatform(nameof(SetValueDirectly));
         }
     }
+
+    /// <summary>
+    /// The exception for a branch this driver cannot reach: a platform other than Android or iOS.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <see cref="AppiumMauiDriver"/> refuses any other platform in its constructor, so this is a
+    /// guard rather than a route.
+    /// </para>
+    /// <para>
+    /// These branches used to hold desktop fallbacks - W3C mouse actions, <c>windows: scroll</c>,
+    /// a JavaScript <c>scrollBy</c>, clearing and typing - written for Appium's Windows driver.
+    /// Windows is driven by <c>Brinell.Maui.FlaUI</c>, so none of them ever ran.
+    /// </para>
+    /// </remarks>
+    /// <param name="operation">What was asked.</param>
+    /// <returns>The exception to throw.</returns>
+    private PlatformNotSupportedException NotAMobilePlatform(string operation)
+        => new(
+            $"{nameof(AppiumMauiElement)}.{operation} has no route for {_driver.Platform}. This "
+            + "driver serves Android and iOS; MAUI on Windows is driven by Brinell.Maui.FlaUI.");
 
     /// <inheritdoc />
     public void Clear() => _element.Clear();
@@ -294,13 +393,7 @@ public sealed class AppiumMauiElement : IMauiElement
                 });
                 break;
             default:
-                // Desktop: use Actions API
-                var actions = new Actions(_driver.Driver);
-                actions.ClickAndHold(_element)
-                       .Pause(TimeSpan.FromMilliseconds(durationMs))
-                       .Release()
-                       .Perform();
-                break;
+                throw NotAMobilePlatform(nameof(LongPress));
         }
     }
     
@@ -330,8 +423,7 @@ public sealed class AppiumMauiElement : IMauiElement
                 ScrollIntoViewiOS();
                 break;
             default:
-                ScrollIntoViewWindows();
-                break;
+                throw NotAMobilePlatform(nameof(ScrollIntoView));
         }
     }
     
@@ -415,27 +507,6 @@ public sealed class AppiumMauiElement : IMauiElement
         }
     }
     
-    private void ScrollIntoViewWindows()
-    {
-        try
-        {
-            _driver.Driver.ExecuteScript("windows: scroll", new Dictionary<string, object>
-            {
-                { "elementId", _element.Id },
-                { "direction", "down" },
-                { "percent", 0.5 }
-            });
-        }
-        catch
-        {
-            // Try JavaScript fallback for webview
-            if (_driver.Driver is IJavaScriptExecutor jsExecutor)
-            {
-                jsExecutor.ExecuteScript("arguments[0].scrollIntoView({behavior: 'auto', block: 'center'});", _element);
-            }
-        }
-    }
-
     /// <summary>
     /// Waits until the element stops moving, so a caller acts on where it is rather than where it
     /// was.
@@ -549,9 +620,7 @@ public sealed class AppiumMauiElement : IMauiElement
                 });
                 break;
             default:
-                // Desktop: use W3C Actions (touch pointer for Windows compatibility)
-                PerformSwipeWithActions(startX, startY, endX, endY, durationMs);
-                break;
+                throw NotAMobilePlatform(nameof(Swipe));
         }
     }
     
@@ -565,32 +634,6 @@ public sealed class AppiumMauiElement : IMauiElement
             return deltaX > 0 ? "right" : "left";
         }
         return deltaY > 0 ? "down" : "up";
-    }
-    
-    private void PerformSwipeWithActions(int startX, int startY, int endX, int endY, int durationMs)
-    {
-        // Try touch pointer first (works on Windows Appium)
-        try
-        {
-            var actions = new Actions(_driver.Driver);
-            actions.MoveToLocation(startX, startY)
-                   .ClickAndHold()
-                   .Pause(TimeSpan.FromMilliseconds(100))
-                   .MoveToLocation(endX, endY)
-                   .Pause(TimeSpan.FromMilliseconds(durationMs))
-                   .Release()
-                   .Perform();
-        }
-        catch
-        {
-            // Fallback: Use JavaScript scrollBy for relative scroll
-            var deltaX = endX - startX;
-            var deltaY = endY - startY;
-            if (_driver.Driver is IJavaScriptExecutor jsExecutor)
-            {
-                jsExecutor.ExecuteScript($"window.scrollBy({-deltaX}, {-deltaY});");
-            }
-        }
     }
     
     #endregion
@@ -792,10 +835,6 @@ public sealed class AppiumMauiElement : IMauiElement
     /// on <i>every</i> view, a plain Button included, so the attribute being present cannot
     /// distinguish a real toggle; <c>checkable</c> is the attribute that does.
     /// </para>
-    /// <para>
-    /// <see cref="SupportsSetChecked"/> keeps its default, false: neither platform has a set-state
-    /// command, so a control toggles and verifies.
-    /// </para>
     /// </remarks>
     public bool? Checked
     {
@@ -823,6 +862,19 @@ public sealed class AppiumMauiElement : IMauiElement
                 return null;
             }
         }
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Neither platform has a set-state command, so this reads the state and taps when it
+    /// differs. The control verifies the state it asked for.
+    /// </remarks>
+    public void SetChecked(bool isChecked)
+    {
+        if (Checked == isChecked)
+            return;
+
+        Toggle();
     }
 
     /// <summary>

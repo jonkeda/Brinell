@@ -112,6 +112,18 @@ public interface IMauiDriver : IDriver<IMauiElement>, IDiagnosticDriver
 
     #endregion
 
+    #region State the platform cannot expose as an element
+
+    /// <summary>Whether the element identified by <paramref name="automationId"/> declares GetState.</summary>
+    bool SupportsStateReads(string automationId) => false;
+
+    /// <summary>Reads app-published state for an element that may not exist in the native tree.</summary>
+    string ReadState(string automationId, string property)
+        => throw new NotSupportedException(
+            $"State reads are not implemented for {GetType().Name}.");
+
+    #endregion
+
     #region Navigation
     
     /// <summary>
@@ -277,6 +289,30 @@ public interface IMauiDriver : IDriver<IMauiElement>, IDiagnosticDriver
     void InvokeMenuItem(string automationId)
         => throw new NotSupportedException(
             $"Menu items are not implemented for {GetType().Name}.");
+
+    /// <summary>
+    /// Raises a toolbar item on the page on screen by its <c>AutomationId</c>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The only route to a toolbar item on Windows that does not take the mouse.</b> A MAUI
+    /// <c>ToolbarItem</c>'s automation peer accepts the Invoke pattern, reports success and raises
+    /// nothing - measured four ways. The app raises the item itself, through the same entry point
+    /// its toolbar uses, so the same command runs.
+    /// </para>
+    /// <para>
+    /// Android and iOS find the item by its accessibility id and tap it, which is the ordinary
+    /// route there. <c>ToolbarButton</c> calls this on every platform; there used to be a
+    /// <c>SupportsToolbarVerb</c> question in front of it, whose false branch was that tap.
+    /// </para>
+    /// </remarks>
+    /// <param name="automationId">The toolbar item's <c>AutomationId</c>.</param>
+    /// <exception cref="Brinell.Core.Exceptions.BrinellException">
+    /// The item is disabled, or no page on screen has an item with that id.
+    /// </exception>
+    void InvokeToolbarItem(string automationId)
+        => throw new NotSupportedException(
+            $"Toolbar items are not implemented for {GetType().Name}.");
 
     /// <summary>Opens a Shell's flyout.</summary>
     /// <remarks>

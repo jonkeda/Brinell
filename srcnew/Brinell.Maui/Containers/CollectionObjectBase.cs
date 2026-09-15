@@ -105,16 +105,39 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
 
         try
         {
-            return _itemStrategy.FindItemElement(root, index);
+            return FindItemRoot(root, index);
         }
         catch (StaleElementReferenceException)
         {
             InvalidateCache();
 
             root = TryGetContainerRoot();
-            return root == null ? null : _itemStrategy.FindItemElement(root, index);
+            return root == null ? null : FindItemRoot(root, index);
         }
     }
+
+    private IMauiElement? FindItemRoot(IMauiElement collectionRoot, int index)
+    {
+        var roots = _itemStrategy.FindItemElements(collectionRoot);
+        if (roots.Any(item => LogicalIndexOf(item).HasValue))
+        {
+            return roots.FirstOrDefault(item => LogicalIndexOf(item) == index);
+        }
+
+        return _itemStrategy.FindItemElement(collectionRoot, index);
+    }
+
+    // Read once: PositionInSet is a live UI Automation read, and a row the list recycles between
+    // two reads answers the second with nothing.
+    private static int? LogicalIndexOf(IMauiElement itemRoot)
+        => itemRoot.PositionInSet is > 0 and var position ? position - 1 : null;
+
+    /// <summary>The logical indexes of the realized rows, in tree order, as one comparable string.</summary>
+    private string RealizedLogicalIndexes()
+        => string.Join(",", TryGetItemRoots().Select(root => LogicalIndexOf(root)?.ToString() ?? "-"));
+
+    private TItem CreateItem(IMauiElement itemRoot, int positionalIndex)
+        => _itemFactory(Self, itemRoot, LogicalIndexOf(itemRoot) ?? positionalIndex);
 
     /// <summary>
     /// Gets the item identified by <paramref name="key"/>: its automation id, or failing
@@ -264,7 +287,7 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
         {
             if (MatchesKey(itemRoots[index], key))
             {
-                return _itemFactory(Self, itemRoots[index], index);
+                return CreateItem(itemRoots[index], index);
             }
         }
 
@@ -317,13 +340,10 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     {
         get
         {
-            var count = GetItemCount();
-            for (var index = 0; index < count; index++)
+            var roots = TryGetItemRoots();
+            for (var index = 0; index < roots.Count; index++)
             {
-                var item = TryItem(index);
-                if (item == null) yield break;
-
-                yield return item;
+                yield return CreateItem(roots[index], index);
             }
         }
     }
@@ -393,7 +413,7 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
 
         // Realize more rows before polling, otherwise a short viewport guarantees a
         // timeout rather than a wait.
-        TryMaterializeMore(GetItemCount());
+        TryMaterializeMore(NextMaterializationIndex());
 
         return Poll(() => GetItemCount() >= minimumCount, timeoutMs ?? DefaultTimeoutMs);
     }
@@ -446,25 +466,67 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     {
         ArgumentNullException.ThrowIfNull(predicate);
 
-        var match = Items.FirstOrDefault(predicate);
-        if (match != null) return match;
-
-        // The match may be off-screen in a virtualizing collection: scroll while the
-        // materialized count keeps growing, checking only the newly-arrived rows.
-        var seen = GetItemCount();
-        while (TryMaterializeMore(seen))
+        var roots = TryGetItemRoots();
+        if (!roots.Any(item => LogicalIndexOf(item).HasValue))
         {
-            var count = GetItemCount();
-            for (var index = seen; index < count; index++)
+            var match = Items.FirstOrDefault(predicate);
+            if (match != null) return match;
+
+            var seen = GetItemCount();
+            while (TryMaterializeMore(seen))
             {
-                var item = TryItem(index);
-                if (item != null && predicate(item)) return item;
+                var count = GetItemCount();
+                for (var index = seen; index < count; index++)
+                {
+                    var item = TryItem(index);
+                    if (item != null && predicate(item)) return item;
+                }
+
+                seen = count;
             }
 
-            seen = count;
+            return null;
         }
 
-        return null;
+        var seenLogicalIndexes = new HashSet<int>();
+        while (true)
+        {
+            roots = TryGetItemRoots();
+            foreach (var (root, position) in roots.Select((root, position) => (root, position)))
+            {
+                var logicalIndex = LogicalIndexOf(root);
+                if (!logicalIndex.HasValue || seenLogicalIndexes.Contains(logicalIndex.Value))
+                {
+                    continue;
+                }
+
+                var item = CreateItem(root, position);
+                var matches = predicate(item);
+
+                // A row the list recycled while the predicate read it holds another item now, so
+                // neither answer is about this index. Leave it unseen for the next pass.
+                if (LogicalIndexOf(root) != logicalIndex)
+                {
+                    continue;
+                }
+
+                seenLogicalIndexes.Add(logicalIndex.Value);
+                if (matches) return item;
+            }
+
+            var lastLogical = roots.Select(LogicalIndexOf).Where(index => index.HasValue)
+                .Select(index => index!.Value).DefaultIfEmpty(-1).Max();
+            var logicalCount = GetLogicalItemCount(roots);
+            if (lastLogical < 0 || logicalCount is null || lastLogical >= logicalCount.Value - 1)
+            {
+                return null;
+            }
+
+            if (!TryMaterializeMore(lastLogical + 1))
+            {
+                return null;
+            }
+        }
     }
 
     /// <summary>
@@ -494,6 +556,29 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
 
         if (TryGetItemRoot(index) != null) return Self;
 
+        var roots = TryGetItemRoots();
+        var semantic = ScrollTarget ?? TryGetContainerRoot();
+        if (semantic is { SupportsScrollToIndex: true }
+            && roots.Any(item => LogicalIndexOf(item).HasValue))
+        {
+            var logicalCount = GetLogicalItemCount(roots);
+            if (logicalCount.HasValue && index >= logicalCount.Value)
+            {
+                throw new ElementNotFoundException(
+                    $"No logical item at index {index} in collection. Locator: {Locator}, "
+                    + $"item count: {logicalCount.Value}.");
+            }
+
+            semantic.ScrollToIndex(index);
+            if (Poll(() => TryGetItemRoot(index) != null, timeoutMs ?? DefaultTimeoutMs))
+            {
+                return Self;
+            }
+
+            throw new ElementNotFoundException(
+                $"Could not materialize logical item {index}. Locator: {Locator}.");
+        }
+
         // A virtualizing panel slides its realized window: rows drop off the top as new
         // ones appear below, so the materialized COUNT can plateau while scrolling is
         // still making progress. Track the furthest row actually reached instead, and
@@ -502,7 +587,7 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
 
         while (true)
         {
-            if (!TryMaterializeMore(GetItemCount())) break;
+            if (!TryMaterializeMore(NextMaterializationIndex())) break;
 
             if (TryGetItemRoot(index) != null) return Self;
 
@@ -528,8 +613,36 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     /// </summary>
     private int FurthestReachableIndex()
     {
-        var count = GetItemCount();
-        return count == 0 ? -1 : count - 1;
+        var roots = TryGetItemRoots();
+        var logical = roots.Select(LogicalIndexOf).Where(index => index.HasValue)
+            .Select(index => index!.Value).ToArray();
+        return logical.Length > 0
+            ? logical.Max()
+            : roots.Count - 1;
+    }
+
+    private int? GetLogicalItemCount(IReadOnlyList<IMauiElement>? roots = null)
+    {
+        roots ??= TryGetItemRoots();
+        var size = roots.Select(item => item.SizeOfSet).FirstOrDefault(value => value is > 0);
+        if (size.HasValue)
+        {
+            return size.Value;
+        }
+
+        var semantic = ScrollTarget ?? TryGetContainerRoot();
+        if (semantic?.SupportsStateReads != true)
+        {
+            return null;
+        }
+
+        return int.TryParse(
+            semantic.ReadState("ItemCount"),
+            System.Globalization.NumberStyles.Integer,
+            System.Globalization.CultureInfo.InvariantCulture,
+            out var count)
+            ? count
+            : null;
     }
 
     /// <summary>
@@ -567,15 +680,14 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     /// </summary>
     public TSelf ScrollToEnd(int? timeoutMs = null)
     {
-        var seen = -1;
-        while (GetItemCount() != seen)
+        while (TryMaterializeMore(NextMaterializationIndex()))
         {
-            seen = GetItemCount();
-            if (!TryMaterializeMore(seen)) break;
         }
 
         return Self;
     }
+
+    private int NextMaterializationIndex() => FurthestReachableIndex() + 1;
 
     /// <summary>
     /// Asks the row at the given index to scroll itself into view.
@@ -606,10 +718,12 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     /// progress, and a policy refusal there simply ends the scroll rather than failing
     /// the caller.
     /// </remarks>
-    private bool TryMaterializeMore(int countBefore)
+    private bool TryMaterializeMore(int nextIndex)
     {
         var root = TryGetContainerRoot();
         if (root == null) return false;
+
+        var countBefore = GetItemCount();
 
         // The semantic route, when the app under test declared it. One call with a definite
         // unit - an item index - replacing a wheel click, which means whatever the OS and the
@@ -621,8 +735,40 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
         var semantic = ScrollTarget ?? root;
         if (semantic.SupportsScrollToIndex)
         {
-            semantic.ScrollToIndex(countBefore);
-            return HasMoreThan(countBefore);
+            var before = FurthestReachableIndex();
+
+            try
+            {
+                semantic.ScrollToIndex(nextIndex);
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                return false;
+            }
+
+            // The verb returns once the app has asked the list to scroll, before the new rows reach
+            // the automation tree, and a CollectionView publishes no scroll offset to settle on. So
+            // wait for progress, then for the realized rows to stop changing: rows read while the
+            // list is still recycling report one item's position beside another item's content.
+            // An index past the end was refused above, so these deadlines are only paid in full
+            // when scrolling is broken.
+            if (!Poll(() => FurthestReachableIndex() > before, DefaultTimeoutMs))
+            {
+                return false;
+            }
+
+            var previous = RealizedLogicalIndexes();
+            Poll(
+                () =>
+                {
+                    var current = RealizedLogicalIndexes();
+                    var settled = current == previous;
+                    previous = current;
+                    return settled;
+                },
+                DefaultTimeoutMs);
+
+            return true;
         }
 
         // UI Automation first: pull the last realized row into view, which makes the
@@ -672,13 +818,10 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     /// </summary>
     private bool TryScrollLastItemIntoView()
     {
-        var count = GetItemCount();
-        if (count == 0) return false;
+        var roots = TryGetItemRoots();
+        if (roots.Count == 0) return false;
 
-        var last = TryGetItemRoot(count - 1);
-        if (last == null) return false;
-
-        return ScrollHelper.ScrollIntoView(last);
+        return ScrollHelper.ScrollIntoView(roots[^1]);
     }
 
     /// <summary>

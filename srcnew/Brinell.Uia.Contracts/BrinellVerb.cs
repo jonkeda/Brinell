@@ -163,6 +163,24 @@ public enum BrinellVerb
     /// HRESULT from a custom pattern to the client as <see cref="HResults.S_OK"/>.
     /// </remarks>
     InvokeMenuItem = 902,
+
+    /// <summary>
+    /// Invokes a toolbar item, on the page on screen, by id.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The argument is the item's <c>AutomationId</c>, and the answers are those of
+    /// <see cref="InvokeMenuItem"/>: an empty string when raised, <c>"disabled"</c> when found and
+    /// declined.
+    /// </para>
+    /// <para>
+    /// <b>A verb of its own rather than a wider <see cref="InvokeMenuItem"/>.</b> A MAUI
+    /// <c>ToolbarItem</c> is a <c>MenuItem</c> and is raised the same way, but an app that
+    /// declared menu items agreed to have its menus reached, not its toolbar - and a client asking
+    /// whether toolbar items are reachable needs an answer an older app cannot give by accident.
+    /// </para>
+    /// </remarks>
+    InvokeToolbarItem = 903,
 }
 
 /// <summary>What a verb asks for: a reading, an act on the element, or an act on the app.</summary>
@@ -318,6 +336,7 @@ public static class BrinellVerbs
         BrinellVerb.CurrentAlert => BrinellVerbTransport.Exchange,
         BrinellVerb.DismissAlert => BrinellVerbTransport.Exchange,
         BrinellVerb.InvokeMenuItem => BrinellVerbTransport.Exchange,
+        BrinellVerb.InvokeToolbarItem => BrinellVerbTransport.Exchange,
 
         // Everything else is ints or nothing: the gestures, Focus and Unfocus, the flyouts,
         // going back, scrolling to an index, selecting by index.
@@ -391,6 +410,7 @@ public static class BrinellVerbs
         BrinellVerb.NavigateBack => BrinellVerbKind.AppAction,
         BrinellVerb.NavigateTo => BrinellVerbKind.AppAction,
         BrinellVerb.InvokeMenuItem => BrinellVerbKind.AppAction,
+        BrinellVerb.InvokeToolbarItem => BrinellVerbKind.AppAction,
         BrinellVerb.DismissAlert => BrinellVerbKind.AppAction,
         BrinellVerb.OpenFlyout => BrinellVerbKind.AppAction,
         BrinellVerb.CloseFlyout => BrinellVerbKind.AppAction,

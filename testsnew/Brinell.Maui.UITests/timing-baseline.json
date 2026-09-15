@@ -1,11 +1,9 @@
 {
   "(root)/TestTimingReportTests": 7,
   "Background/DateTimeVerbTests": 95,
-  "Background/DesktopGateTests": 96,
   "Background/FocusVerbTests": 138,
   "Background/HubCollectionParallelismTests": 2,
   "Background/NavigationVerbTests": 787,
-  "Background/QuietDefaultTests": 2,
   "Background/ScrollVerbTests": 250,
   "Background/SelectionVerbTests": 214,
   "Background/ShellCollectionParallelismTests": 10,

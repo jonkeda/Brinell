@@ -1,4 +1,3 @@
-using Brinell.Core.Diagnostics;
 using Brinell.Core.Locators;
 using Brinell.Maui.Interfaces;
 using Brinell.Maui.UITests.Pages;
@@ -65,17 +64,14 @@ public class SelectionVerbTests
     }
 
     /// <summary>
-    /// Selecting by index works with physical input refused outright.
+    /// Selecting by index works without physical input.
     /// </summary>
     [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
-    public Task SelectIndex_WorksWithPhysicalInputRefused()
+    public Task SelectIndex_WorksWithoutPhysicalInput()
     {
         var page = Page;
 
-        using (PhysicalInput.OverridePolicy(PhysicalInputPolicy.Refused))
-        {
-            page.TestPicker.SelectByIndex(2);
-        }
+        page.TestPicker.SelectByIndex(2);
 
         page.StatusLabel.AssertTextContains("Option 3");
 

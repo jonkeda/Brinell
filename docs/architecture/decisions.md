@@ -25,27 +25,29 @@ enabled state, request observation, or another observable condition.
 
 ## AD-005: Physical Input Is Opt-In
 
-Routine actions use semantic control APIs and UI Automation patterns. Real mouse,
-keyboard, clipboard and foreground-window use all pass through one gate,
-`PhysicalInput`, and are only for tests whose subject *is* physical input.
+Routine actions use semantic control APIs and UI Automation patterns.
 
-The gate is controlled by `BRINELL_BACKGROUND_MODE`:
+**MAUI on Windows uses no physical input at all.** `Brinell.Maui.FlaUI` has no code that
+moves the pointer, types, writes the clipboard or takes the foreground. Every action is a
+UI Automation pattern or a verb the app answers through the gesture bridge (AD-008), and an
+action with neither throws `NotSupportedException` - or `GestureUnavailableException` for a
+gesture - naming the route the app would have to offer. There is no setting that brings
+physical input back, and no test of real input runs on Windows; such a test belongs on the
+mobile head, where Appium injects input inside the device.
+
+**WPF and WinForms still fall back to real input**, with no semantic route behind it. There,
+real mouse, keyboard, clipboard and foreground-window use pass through one gate,
+`PhysicalInput`, controlled by `BRINELL_BACKGROUND_MODE`:
 
 | Value | Physical input |
 | --- | --- |
-| unset | the stack's default - **refused** for MAUI through FlaUI, allowed for WPF and WinForms |
+| unset | performed |
 | `1`, or any other value | refused: the call throws `PhysicalInputRefusedException` |
 | `audit` | performed, and every use recorded (`BRINELL_PHYSICAL_INPUT_LOG` names a file) |
 | `0`, `false`, `off`, `allow` | performed |
 
-The MAUI FlaUI stack declares quiet as its default because every path it needs has
-a route that does not take the machine. WPF and WinForms do not, because they still
-fall back to real input with no semantic route behind it; refusing by default would
-fail their suites rather than quieten them.
-
-A test that exercises real input on purpose says so: `[PhysicalInputFact]`, which
-skips itself with a reason when input is refused, and the `PhysicalInput=Deliberate`
-trait.
+Refusing by default would fail their suites rather than quieten them. The variable has no
+effect on MAUI. The history and the removal plan are in `.my/bridge/no-physical-input.md`.
 
 ## AD-006: xUnit Assert Only
 
@@ -59,11 +61,15 @@ Screenshots, logs, traces, UAT output, and runner reports should use the shared
 ## AD-008: Gestures And Semantic Actions Go Through UI Automation
 
 Where a MAUI app offers no UI Automation route for an action - gestures, a Shell
-flyout, a menu item that is not in the tree, setting a date without typing - the
-app under test publishes a **gesture bridge**: a custom UI Automation pattern on a
-raw-view-only sidecar element, declared per element in markup with
-`GestureAutomation.Verbs` from `Brinell.Maui.AppSupport`. Tests reach it through
+flyout, a menu or toolbar item that cannot be activated through the tree, setting a
+date without typing - the app under test publishes a **gesture bridge**: a custom UI
+Automation pattern on a raw-view-only sidecar element, declared per element in markup
+with `GestureAutomation.Verbs` from `Brinell.Maui.AppSupport`. Tests reach it through
 `IMauiDriver` and `IMauiElement`, never through coordinates.
+
+**The bridge is a hard requirement for MAUI on Windows.** The driver has no physical
+fallback (AD-005), so an app without `UseBrinellGestureBridge()` gets only what plain UI
+Automation patterns offer, and every other action throws.
 
 **The bridge must never become the app's primary automation surface.** Three tests
 before any verb is added:
@@ -74,7 +80,8 @@ before any verb is added:
    express.
 2. **Is the physical path the thing under test?** A test asserting that typing
    fires `TextChanged` must type. The bridge is for arranging state and for actions
-   with no semantic route, not for skipping the behaviour under test.
+   with no semantic route, not for skipping the behaviour under test. Such a test
+   runs on the mobile head only - Windows has no physical path to exercise.
 3. **Does it stay a UI test?** Read what the user can see. If an assertion needs the
    view model, the coverage belongs in `Brinell.Maui.Tests`.
 

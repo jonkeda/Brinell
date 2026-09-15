@@ -149,24 +149,19 @@ public partial class DatePicker<TScope> : Base.FocusableControlBase<TScope>
     /// dead on the only platform that runs them - WinUI advertises the Value pattern and refuses
     /// the write, and a <c>CalendarDatePicker</c> hosts no text to type into - so every call paid
     /// for two failures to reach the one that worked, and a genuine breakage in the calendar
-    /// route would have been reported as "could not set the date" with three suspects. Asking
-    /// first costs one capability lookup and names the failure.
+    /// route would have been reported as "could not set the date" with three suspects.
+    /// </para>
+    /// <para>
+    /// It then became a <c>SupportsSetDate</c> question followed by the verb or a throw. Both
+    /// branches ended in the element on every platform, so the element now throws itself, naming
+    /// the verb.
     /// </para>
     /// </remarks>
     protected virtual void SetDateCore(IMauiElement element, System.DateTime? date, int? timeoutMs = null)
     {
         if (date == null) return;
 
-        if (element.SupportsSetDate)
-        {
-            element.SetDate(date.Value);
-            return;
-        }
-
-        throw new BrinellException(
-            $"Could not set date {date.Value:yyyy-MM-dd}. The app under test does not declare the "
-            + "SetDate verb, and it is the only route: declaring it is one attribute in the app's "
-            + $"markup - see GestureAutomation.Verbs. Locator: {Locator}");
+        element.SetDate(date.Value);
     }
 
     #endregion

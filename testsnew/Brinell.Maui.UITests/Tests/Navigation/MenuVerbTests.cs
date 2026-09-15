@@ -1,4 +1,3 @@
-using Brinell.Core.Diagnostics;
 using Brinell.Core.Utilities;
 using Brinell.Maui.UITests.Pages;
 using Xunit;
@@ -65,15 +64,12 @@ public class MenuVerbTests
     }
 
     /// <summary>
-    /// A page-menu item runs, with physical input refused outright.
+    /// A page-menu item runs, without the pointer.
     /// </summary>
     [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     public Task InvokeMenuItem_RunsAPageMenuItem_WithoutThePointer()
     {
-        using (PhysicalInput.OverridePolicy(PhysicalInputPolicy.Refused))
-        {
-            _fixture.Context.Driver.InvokeMenuItem("PageMenuFileNew");
-        }
+        _fixture.Context.Driver.InvokeMenuItem("PageMenuFileNew");
 
         Page.LastAction.AssertText("Menu/File/New");
 
@@ -91,10 +87,7 @@ public class MenuVerbTests
     [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     public Task InvokeMenuItem_RunsAContextMenuItem_WithoutOpeningTheFlyout()
     {
-        using (PhysicalInput.OverridePolicy(PhysicalInputPolicy.Refused))
-        {
-            _fixture.Context.Driver.InvokeMenuItem("ContextMenuCopy");
-        }
+        _fixture.Context.Driver.InvokeMenuItem("ContextMenuCopy");
 
         Page.LastAction.AssertText("Menu/Context/Copy");
 

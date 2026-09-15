@@ -1,4 +1,3 @@
-using Brinell.Core.Diagnostics;
 using Brinell.Core.Locators;
 using Brinell.Maui.Interfaces;
 using Brinell.Maui.UITests.Pages;
@@ -45,20 +44,6 @@ public class ScrollVerbTests
                $"'{Scroller}' was not found, so nothing below is measuring what it claims.");
 
     /// <summary>
-    /// The control group: the page's scroller declares the verbs.
-    /// </summary>
-    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
-    public Task Scroller_OffersTheSemanticRoute()
-    {
-        Assert.True(
-            Element.SupportsScrollVerbs,
-            $"'{Scroller}' does not declare ScrollPosition, so every test below would fall back "
-            + "to the wheel and still pass.");
-
-        return Task.CompletedTask;
-    }
-
-    /// <summary>
     /// The page is long enough for scrolling to mean something.
     /// </summary>
     /// <remarks>
@@ -94,10 +79,7 @@ public class ScrollVerbTests
         var before = Element.ReadScrollPosition();
         Assert.True(before.IsAtTop, $"The page did not start at the top; it is at {before.Y}.");
 
-        using (PhysicalInput.OverridePolicy(PhysicalInputPolicy.Refused))
-        {
-            Element.ScrollTo("ScrollBottomButton");
-        }
+        Element.ScrollTo("ScrollBottomButton");
 
         var after = Element.ReadScrollPosition();
 
@@ -130,18 +112,12 @@ public class ScrollVerbTests
     {
         var page = new ScrollTestPage(_fixture.Context);
 
-        using (PhysicalInput.OverridePolicy(PhysicalInputPolicy.Refused))
-        {
-            Element.ScrollTo("ScrollBottomButton");
-        }
+        Element.ScrollTo("ScrollBottomButton");
 
         var atBottom = Element.ReadScrollPosition();
         Assert.True(page.BottomLabel.IsVisible(), "The bottom label is not on screen.");
 
-        using (PhysicalInput.OverridePolicy(PhysicalInputPolicy.Refused))
-        {
-            Element.ScrollTo("ScrollStatusLabel");
-        }
+        Element.ScrollTo("ScrollStatusLabel");
 
         var backUp = Element.ReadScrollPosition();
 
@@ -177,25 +153,46 @@ public class ScrollVerbTests
     {
         _fixture.Open(SamplePage.GridCollection);
 
+        var products = _fixture.GridCollectionDemoPage.Products;
+        products.BulkAddButton.Click();
+        Assert.True(products.WaitLogicalCount(63, TestConstants.LongTestTimeoutMs));
+
         var collection = _fixture.Context.TryFindElement(
                              Locator.ByAutomationId("ProductCollectionView"))
                          ?? throw new InvalidOperationException(
                              "ProductCollectionView was not found.");
 
-        using (PhysicalInput.OverridePolicy(PhysicalInputPolicy.Refused))
-        {
-            collection.ScrollToIndex(0);
-            var top = collection.FindElements(Locator.ByAutomationId("ProductRow")).Count;
+        collection.ScrollToIndex(0);
+        var top = collection.FindElements(Locator.ByAutomationId("ProductRow")).Count;
 
-            collection.ScrollToIndex(60);
-            var down = collection.FindElements(Locator.ByAutomationId("ProductRow")).Count;
+        collection.ScrollToIndex(60);
+        var down = collection.FindElements(Locator.ByAutomationId("ProductRow")).Count;
 
-            Assert.True(
-                top > 0 && down > 0,
-                $"The collection realized {top} rows at the top and {down} after scrolling, so "
-                + "one of the two scrolls did not land anywhere with rows in it.");
-        }
+        Assert.True(
+            top > 0 && down > 0,
+            $"The collection realized {top} rows at the top and {down} after scrolling, so "
+            + "one of the two scrolls did not land anywhere with rows in it.");
 
+        return Task.CompletedTask;
+    }
+
+    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    public Task ScrollToIndex_AtItemCount_IsRefusedWithTheCount()
+    {
+        _fixture.Open(SamplePage.GridCollection);
+
+        var collection = _fixture.Context.TryFindElement(
+                             Locator.ByAutomationId("ProductCollectionView"))
+                         ?? throw new InvalidOperationException(
+                             "ProductCollectionView was not found.");
+        var itemCount = int.Parse(
+            collection.ReadState("ItemCount"),
+            System.Globalization.CultureInfo.InvariantCulture);
+
+        var error = Assert.Throws<ArgumentOutOfRangeException>(
+            () => collection.ScrollToIndex(itemCount));
+
+        Assert.Contains($"item count is {itemCount}", error.Message);
         return Task.CompletedTask;
     }
 

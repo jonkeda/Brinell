@@ -33,23 +33,16 @@ public partial class CheckBox<TScope> : Base.ToggleControlBase<TScope>
 
     /// <inheritdoc />
     /// <remarks>
-    /// <b>One question, then one route.</b> Where the platform can set the state directly -
-    /// Windows, through the Toggle pattern against a fresh read - it is asked for the state
-    /// wanted, which is idempotent. Otherwise the control toggles, which is how Android and iOS
-    /// change it. Never both (step 108).
+    /// <b>One route.</b> The element is asked for the state wanted, which is idempotent: it reads
+    /// the state and toggles only when it differs - the Toggle pattern on Windows, a tap on Android
+    /// and iOS - and the control verifies the result (step 108).
     /// </remarks>
     protected override void SetCheckedCore(IMauiElement element, bool? @checked, int? timeoutMs = null)
     {
         if (@checked == null || IsCheckedCore(element) == @checked)
             return;
 
-        if (element.SupportsSetChecked)
-        {
-            SetCheckedDirectly(element, @checked.Value, timeoutMs);
-            return;
-        }
-
-        ToggleCore(element, timeoutMs);
+        SetCheckedDirectly(element, @checked.Value, timeoutMs);
     }
 
     #endregion

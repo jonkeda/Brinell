@@ -39,13 +39,14 @@ archive, not the active source of truth.
   `WaitReady`, and assertions over raw driver operations.
 - Prefer UI Automation patterns before pointer or coordinate strategies.
 - Do not expose direct mouse movement as a normal public test API.
-- Physical input (mouse, keyboard, clipboard, foreground) goes through `PhysicalInput`
-  and is refused by default for MAUI on Windows; `BRINELL_BACKGROUND_MODE=0` allows it.
-  A test of real input declares itself with `[PhysicalInputFact]` and the
-  `PhysicalInput=Deliberate` trait. See AD-005.
+- MAUI on Windows uses no physical input (mouse, keyboard, clipboard, foreground), and
+  there is no switch to turn it on. Do not add any to `Brinell.Maui.FlaUI`: an action
+  with no UI Automation pattern and no bridge verb throws, naming the route. A test of
+  real input belongs on the Android head. WPF and WinForms still go through
+  `PhysicalInput` and `BRINELL_BACKGROUND_MODE`. See AD-005.
 - An action with no UI Automation route goes through the app's gesture bridge
   (`GestureAutomation.Verbs`), never through coordinates - and only after the three
-  admission tests in AD-008.
+  admission tests in AD-008. For MAUI on Windows the bridge is required.
 
 ## Synchronization
 
@@ -109,11 +110,11 @@ Notes:
 
 - `dotnet test` takes **one** `--filter`; passing two silently drops the first. Use
   `|` for OR and `&` for AND inside a single filter string.
-- The full suite is expected to be **green with nothing set**: 0 failed. The skips are
-  deliberate and each carries its reason - the Stepper (stage G step 31), two
-  CollectionView rows MAUI recycles, the tests of real input (skipped while input is
-  refused) and the opt-in stress test. A failure is a regression until shown otherwise;
-  still establish it against a rebuilt baseline before reporting it.
+- The full suite is expected to be **green with nothing set**: 0 failed. The only deliberate
+  skip is the opt-in stress test. A failure is a
+  regression until shown otherwise; still establish it against a rebuilt baseline before
+  reporting it. `OccludedScreenshotTests` reads real screen pixels and fails its own
+  check when other always-on-top windows are open - rule that out first.
 - **Rebuild the sample app before a UI run** when anything under `samples/` changed.
   `dotnet test` builds the test project, not the app it launches, and a stale app
   binary passes or fails for reasons that no longer exist.

@@ -1,5 +1,11 @@
 # The quiet run
 
+> **Historical, superseded 2026-09-14.** This plan made physical input *refused by default* for
+> MAUI on Windows. The follow-up removed it entirely: `PhysicalPointer`, `QuietByDefault`, the
+> desktop lease and `PhysicalInputFact` are gone, and there is no `BRINELL_BACKGROUND_MODE` for
+> MAUI any more. Read [../bridge/no-physical-input.md](../bridge/no-physical-input.md) for the
+> current state; the measurements below are still accurate as history.
+
 **The end state: a MAUI suite driven through FlaUI that never takes the keyboard, never takes the
 pointer, never takes the foreground, and leaves the app under test behind whatever the person at
 the machine is working in.** Not "mostly", not "if you set a variable and do not touch anything" —

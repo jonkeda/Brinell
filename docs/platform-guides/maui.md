@@ -17,14 +17,15 @@ Brinell supports MAUI through shared MAUI controls plus driver adapters.
 | Driver | Use when |
 | --- | --- |
 | FlaUI | Windows MAUI desktop automation |
-| Appium | Android, iOS, or Appium-backed Windows automation |
+| Appium | Android and iOS. The Appium driver refuses any other platform. |
 
 ## Rules
 
 - Prefer automation IDs and semantic control APIs.
 - Wait for page readiness after navigation.
 - Keep Appium capability setup in fixtures/options.
-- Physical input is refused by default on Windows; see below.
+- On Windows the app under test must host the gesture bridge; there is no physical
+  input to fall back on. See below.
 
 ## Background Execution On Windows
 
@@ -32,16 +33,16 @@ A MAUI run through FlaUI does not take the machine. You can start a full run and
 working in your editor: nothing types into your window, the pointer does not move,
 and the app stays behind whatever you are using.
 
-That is the default. Three things make it true:
+That is not a setting; there is no other mode. Three things make it true:
 
-- **No physical input.** Every real mouse, keyboard, clipboard or foreground call goes
-  through `PhysicalInput` and is refused. A refused call throws, naming the semantic
-  route to use instead. `BRINELL_BACKGROUND_MODE=0` allows real input for a run - see
+- **No physical input.** The Windows driver has no code that clicks, types, writes the
+  clipboard or takes the foreground. An action with no UI Automation pattern and no
+  bridge verb throws `NotSupportedException`, naming the route the app would have to
+  offer. `BRINELL_BACKGROUND_MODE` has no effect on MAUI - see
   [AD-005](../architecture/decisions.md#ad-005-physical-input-is-opt-in).
 - **The window cannot be activated.** Invoking a WinUI button through
-  `InvokePattern` activates its window, which is not physical input and so is not
-  caught by the policy. The driver marks the app's window `WS_EX_NOACTIVATE`, which
-  stops it.
+  `InvokePattern` activates its window, which is not physical input. The driver marks
+  the app's window `WS_EX_NOACTIVATE`, which stops it.
 - **A watchdog puts it back.** From the moment the app launches, any of its windows
   that becomes the foreground is sent behind and your window restored. The one
   expected occurrence is launch itself, once per test collection, for a few
@@ -55,9 +56,14 @@ their page report themselves invisible and "scroll into view" waits time out.
 ## Gestures And Semantic Actions
 
 Some actions have no UI Automation route on Windows: swipes, pull-to-refresh, a Shell
-flyout, a menu item that is not in the tree until a context menu opens, setting a
-picker's date without typing. For these the app under test publishes a **gesture
-bridge** - see [AD-008](../architecture/decisions.md#ad-008-gestures-and-semantic-actions-go-through-ui-automation).
+flyout, a menu item that is not in the tree until a context menu opens, a toolbar item
+whose Invoke pattern reports success and does nothing, setting a picker's date without
+typing. For these the app under test publishes a **gesture bridge** - see
+[AD-008](../architecture/decisions.md#ad-008-gestures-and-semantic-actions-go-through-ui-automation).
+
+**On Windows the bridge is required, not optional.** Without it only plain UI Automation
+patterns work - invoke, toggle, select, value, range, expand/collapse, scroll, and reads -
+and everything else throws.
 
 In the app, with `Brinell.Maui.AppSupport`:
 
@@ -87,8 +93,14 @@ never try one and fall back to another.
 - **`DatePicker.SetDate` and `TimePicker.SetTime` have no second route.** Without the
   `SetDate`/`SetTime` verb they throw, naming it. The WinUI calendar and clock flyout walks
   they used to fall back to were removed.
-- **Long press and swipe** use the `LongPress` and `Swipe*` verbs where the element declares
-  them, and real pointer input otherwise - which the quiet default refuses.
+- **Long press and swipe** use the `LongPress` and `Swipe*` verbs, and throw
+  `GestureUnavailableException` where the element does not declare them. `DoubleClick` is the
+  `DoubleTap` verb; a raw `Click` is the `Tap` verb.
+- **Toolbar items** (`ToolbarButton`) are raised through `IMauiDriver.InvokeToolbarItem`, and
+  menu items through `InvokeMenuItem`. On Android and iOS a toolbar item is tapped.
+- **No Windows route at all:** `RightClick` (use `InvokeMenuItem` for the item you wanted),
+  `Hover`, and typing key by key with `TextInputMethod.Keys` (use `SetValue`). A test of
+  per-keystroke behaviour runs on the mobile head.
 - **Control objects never see UI Automation.** They ask `IMauiElement` in terms of what they
   do (`Checked`, `SetRangeValue`, `OpenDropdown`, `SupportsInvoke`), and the Windows element
   answers from the patterns. The `*PatternElement` interfaces are gone from MAUI.
@@ -103,6 +115,16 @@ never try one and fall back to another.
 
 When a verb is not answered, see
 [Troubleshooting](../guides/troubleshooting.md#gesture-bridge-problems).
+
+## Virtualized Collections
+
+On Windows, `CollectionObjectBase.Item(int)` uses the logical data-source index reported by the
+nearest UI Automation `PositionInSet`; recycled row containers do not change that meaning.
+`ScrollToItem(int)` asks the app to materialize that logical index, and content searches revisit
+each recycled window until the app-reported item count is reached.
+
+Android and iOS currently publish no equivalent logical-index source. Their collection item APIs
+therefore retain positional semantics over the rows currently exposed by Appium.
 
 ## Run Artifacts
 

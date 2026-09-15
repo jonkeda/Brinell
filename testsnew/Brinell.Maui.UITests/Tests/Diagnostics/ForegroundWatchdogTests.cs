@@ -1,4 +1,3 @@
-using Brinell.Core.Diagnostics;
 using Brinell.Maui.FlaUI;
 using Brinell.Maui.UITests.Pages;
 using Xunit;
@@ -42,12 +41,6 @@ public class ForegroundWatchdogTests
     [Fact(Timeout = TestConstants.LongTestTimeoutMs)]
     public Task Navigating_DoesNotTakeTheForeground()
     {
-        if (PhysicalInput.Policy == PhysicalInputPolicy.Allowed)
-        {
-            // The watchdog only runs where nothing clicks at coordinates.
-            return Task.CompletedTask;
-        }
-
         var driver = (FlaUIMauiDriver)_fixture.Context.Driver;
         var before = driver.ForegroundGrabs;
 

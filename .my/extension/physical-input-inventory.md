@@ -6,6 +6,11 @@ status: measurement
 
 # Physical Input Inventory
 
+> **Historical, superseded 2026-09-14.** Everything this inventory lists for `Brinell.Maui.FlaUI`
+> has since been deleted rather than refused - the MAUI Windows driver has no physical input left
+> to measure. See [../bridge/no-physical-input.md](../bridge/no-physical-input.md). The WPF and
+> WinForms sites it mentions still exist and still record through `PhysicalInput`.
+
 > **Current state, after steps 103-106 (2026-09-13).** The measurement below is historical and its
 > call-site names are out of date. What the MAUI FlaUI stack can reach for today, all of it
 > refused under the quiet default:

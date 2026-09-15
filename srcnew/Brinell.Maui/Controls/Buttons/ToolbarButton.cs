@@ -28,16 +28,15 @@ namespace Brinell.Maui.Controls.Buttons;
 /// <item><description>A plain click - stable.</description></item>
 /// </list>
 /// <para>
-/// So this control declines the pattern ladder outright instead of relying on falling through it.
-/// A silent no-op is worse than an honest click: it turns navigation that did not happen into a
-/// timeout somewhere else. The full account is in
+/// So this control never asks for the pattern. A silent no-op is worse than a refusal: it turns
+/// navigation that did not happen into a timeout somewhere else. The full account is in
 /// <c>.my/extension/physical-input-inventory.md</c>.
 /// </para>
 /// <para>
-/// <b>Prefer a semantic route where the app has one.</b> A click is real pointer input and is
-/// refused in background mode. Where the app under test publishes the Brinell automation bridge,
-/// ask it to navigate instead - <c>IMauiDriver.NavigateBack</c> - and keep this for the
-/// platforms and apps that have no bridge.
+/// <b>The driver raises the item by id instead.</b> <c>IMauiDriver.InvokeToolbarItem</c> on Windows
+/// asks the app, through the same entry point the toolbar uses - declaring the verb is a
+/// requirement there, see <c>.my/bridge/no-physical-input.md</c>. On Android and iOS it finds the
+/// item and taps it, which is the ordinary route.
 /// </para>
 /// </remarks>
 public class ToolbarButton<TScope> : Button<TScope>
@@ -68,13 +67,19 @@ public class ToolbarButton<TScope> : Button<TScope>
 
     /// <inheritdoc />
     /// <remarks>
-    /// A real pointer click, named outright. See the type remarks: the Invoke pattern reports
-    /// success and raises nothing on this control, so asking for it would be a way of never
-    /// clicking.
+    /// <para>
+    /// One route on every platform: the driver's <c>InvokeToolbarItem</c>. Never the Invoke
+    /// pattern - see the type remarks.
+    /// </para>
+    /// <para>
+    /// <b>The id comes from the locator, not the element.</b> The element resolved on Windows is
+    /// native chrome, and MAUI does not carry the item's <c>AutomationId</c> onto it reliably; the
+    /// locator holds the id the app's markup gave the item, which is what the app matches on.
+    /// </para>
     /// </remarks>
     protected override void ClickCore(IMauiElement element, int? timeoutMs = null)
     {
         EnsureClickableCore(element);
-        element.Click();
+        Context.Driver.InvokeToolbarItem(Locator.Value);
     }
 }

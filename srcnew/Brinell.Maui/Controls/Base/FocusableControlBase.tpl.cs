@@ -32,48 +32,34 @@ public abstract partial class FocusableControlBase<TScope> : ViewBase<TScope>, I
     #region Core Methods (Element-Aware, No Logging)
 
     /// <summary>
-    /// Focuses the control, preferring the platform's own focus over a click.
+    /// Focuses the control.
     /// </summary>
     /// <remarks>
-    /// Clicking to focus is a side effect standing in for the real operation: it also activates
-    /// the control, which is wrong for anything that opens on activation, and it needs the element
-    /// visible and unobstructed. UIA can focus directly, so it does. A WebDriver-backed element
-    /// cannot, and falls back to the click.
+    /// The element picks the route. On Windows that is the app's <c>Focus</c> verb, or a tap where
+    /// the element declares only <c>Tap</c>, and otherwise a throw naming the verb. On Android and
+    /// iOS it is an ordinary tap.
     /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
     protected virtual void FocusCore(IMauiElement element, int? timeoutMs = null)
     {
-        if (element.SupportsFocus)
-        {
-            element.Focus();
-            return;
-        }
-
-        element.Click();
+        element.Focus();
     }
 
     /// <summary>
-    /// Removes focus by sending Tab key or clicking elsewhere.
+    /// Removes focus from the control.
     /// </summary>
     /// <remarks>
-    /// Tab is a stand-in, not the operation: it moves focus on to the next control rather than
-    /// removing it, so a control with a focus-out handler and the control after it both see
-    /// something the test did not ask for. Where the platform can simply drop focus it does,
-    /// and Tab remains for where it cannot.
+    /// The element picks the route. Windows drops focus through the app's <c>Unfocus</c> verb. Android
+    /// and iOS send Tab, which is a stand-in rather than the operation: it moves focus on to the next
+    /// control, so a control with a focus-out handler and the control after it both see something the
+    /// test did not ask for.
     /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
     protected virtual void BlurCore(IMauiElement element, int? timeoutMs = null)
     {
-        if (element.SupportsClearFocus)
-        {
-            element.ClearFocus();
-            return;
-        }
-
-        // Send Tab key to move focus away
-        element.SendKeys(OpenQA.Selenium.Keys.Tab);
+        element.ClearFocus();
     }
 
     /// <summary>

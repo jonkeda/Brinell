@@ -1,4 +1,3 @@
-using Brinell.Core.Diagnostics;
 using Brinell.Maui.Containers;
 using Brinell.Core.Utilities;
 using Brinell.Maui.Configuration;
@@ -16,17 +15,6 @@ namespace Brinell.Maui.UITests;
 [TestModuleScan(typeof(HubPage), NamespacePrefix = "Brinell.Maui.UITests.Pages")]
 public class MauiFixture : MauiTestFixtureBase
 {
-    /// <summary>
-    /// Held for as long as this fixture's app is running. See <see cref="DesktopLease"/>.
-    /// </summary>
-    /// <remarks>
-    /// <b>A field initializer, and it has to be.</b> These run before the base constructor,
-    /// which is where the app is launched - so the desktop is taken before anything appears on
-    /// it. Acquiring in the constructor body would take the lease after the window was already
-    /// up, which is a lease over the wrong interval.
-    /// </remarks>
-    private readonly IDisposable _desktop = DesktopLease.Acquire();
-
     private readonly HubPage _hub;
     private readonly AppRoot _appRoot;
 
@@ -74,10 +62,8 @@ public class MauiFixture : MauiTestFixtureBase
 
         if (disposing)
         {
-            // Both after the base, so the app is gone before either the next collection is let
-            // in or anyone is told this one is still running.
+            // After the base, so the app is gone before anyone is told this one is still running.
             ParallelismProbe.Leave(ParallelismProbe.Hub);
-            _desktop.Dispose();
         }
     }
 
@@ -204,9 +190,7 @@ public class MauiFixture : MauiTestFixtureBase
 
                 if (BackToHub.WaitExists(true, TestConstants.ShortTestTimeoutMs))
                 {
-                    PhysicalInput.Used(
-                        "MauiFixture.ReturnToHub",
-                        "a working activation route for ToolbarItem");
+                    // The toolbar verb on Windows, a tap elsewhere - ToolbarButton chooses.
                     BackToHub.Click();
                 }
                 else

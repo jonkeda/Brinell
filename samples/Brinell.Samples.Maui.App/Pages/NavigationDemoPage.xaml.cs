@@ -5,7 +5,27 @@ public partial class NavigationDemoPage : ContentPage
     public NavigationDemoPage()
     {
         InitializeComponent();
+
+        // Records like the others if it ever runs, and cannot run - so a test can tell "refused"
+        // from "ran and had no visible effect".
+        PageToolbarDelete.Command = new Command(() => RecordToolbar("Delete"), () => false);
     }
+
+    /// <summary>
+    /// Records a page-toolbar activation.
+    /// </summary>
+    /// <remarks>
+    /// Neither item navigates, on purpose. The only other toolbar item in the sample is "Back",
+    /// and a test of a verb that is only ever exercised against navigation cannot tell "the item
+    /// was raised" from "the page happened to change".
+    /// </remarks>
+    private void OnToolbarRefresh(object? sender, EventArgs e) => RecordToolbar("Refresh");
+
+    private void OnToolbarAbout(object? sender, EventArgs e) => RecordToolbar("About");
+
+    private void RecordToolbar(string item)
+        => (DemoView.BindingContext as ViewModels.NavigationDemoViewModel)?
+            .ToolbarCommand.Execute($"PageToolbar/{item}");
 
     /// <summary>
     /// Records a page-menu activation, the same way every other surface in the demo does.

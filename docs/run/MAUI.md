@@ -15,14 +15,11 @@ dotnet build srcnew\Brinell.Maui.FlaUI\Brinell.Maui.FlaUI.csproj -f net10.0-wind
 dotnet test testsnew\Brinell.Maui.UITests\Brinell.Maui.UITests.csproj -f net10.0-windows7.0 -v:minimal /nr:false
 ```
 
+The Windows run drives the app without mouse, keyboard or foreground, so you can keep
+working while it runs. It needs no environment variables, and the app under test must
+host the gesture bridge - see the [MAUI platform guide](../platform-guides/maui.md).
+
 ## Appium Setup
 
-Set Appium values before Appium-backed tests:
-
-```powershell
-$env:APPIUM_SERVER_URI = "http://127.0.0.1:4723"
-$env:APPIUM_PLATFORM = "windows"
-$env:APPIUM_APP_PATH = "path\to\app.exe"
-```
-
-Use [MAUI Android](maui-android.md) for Android-specific setup.
+Appium drives MAUI on Android and iOS only; Windows always uses FlaUI. Use
+[MAUI Android](maui-android.md) for Android setup.

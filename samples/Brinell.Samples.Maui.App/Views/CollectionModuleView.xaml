@@ -9,9 +9,11 @@
 
     Two constraints from measurement, not preference:
 
-    1. Every list is SHORT (5 items). Deep virtualized scrolling does not work on Windows:
-       CollectionView recycles row containers, so only ~30 of 63 rows exist in the
-       automation tree at once even at 100% scroll. Tests stay inside the realized window.
+    1. Every list is SHORT (5 items). Deep virtualized scrolling is covered once, on
+       GridCollectionDemoView: CollectionView recycles row containers, so only ~30 of 63 rows
+       exist in the automation tree at once, and reaching a far row takes the ScrollToIndex
+       verb plus the logical index each row's ListViewItem publishes
+       (see .my/bridge/fix-remaining-skips.md). These lists do not declare that verb.
 
     2. Item templates use REPEATING AutomationIds with no index baked in. Scoping is what
        separates the rows. Unique per-row ids would make item tests pass without testing

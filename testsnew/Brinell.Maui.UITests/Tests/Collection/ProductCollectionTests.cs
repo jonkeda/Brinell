@@ -8,8 +8,8 @@ namespace Brinell.Maui.UITests.Tests.Collection;
 /// </summary>
 /// <remarks>
 /// Logical count is read from <c>ProductCountLabel</c>; row APIs report what is
-/// materialized in the automation tree. Under virtualization those differ, so this class
-/// never asserts that <c>GetItemCount()</c> equals the data-source size.
+/// materialized in the automation tree. Logical indexes come from UI Automation set metadata,
+/// so <c>Item(i)</c> keeps its data-source meaning as the realized window moves.
 /// </remarks>
 [Collection("Maui")]
 [Trait("Category", "UITest")]
@@ -266,7 +266,7 @@ public class ProductCollectionTests
     }
 
     /// <summary>13. ScrollToItem materializes an off-screen row without a fixed delay.</summary>
-    [Fact(Timeout = TestConstants.LongTestTimeoutMs, Skip = "Blocked by MAUI CollectionView row recycling, not by a missing scroll primitive. Scrolling now works: TryScrollContent drives the UIA Scroll pattern and reaches VerticalScrollPercent=100. But only ~30 of 63 rows are ever in the automation tree at once - MAUI recycles row containers, so a far index is never simultaneously realized with index 0. Any test needing a specific far row must scroll AND re-resolve as the window moves; the collection API returns positional indexes over the realized window, which cannot express that. See design section 8.1.")]
+    [Fact(Timeout = TestConstants.LongTestTimeoutMs)]
     [Trait("Pattern", "Virtualization")]
     public Task ScrollToItem_MaterializesOffscreenRow()
     {
@@ -281,7 +281,7 @@ public class ProductCollectionTests
     }
 
     /// <summary>14. Content search finds a bulk row that starts off-screen.</summary>
-    [Fact(Timeout = TestConstants.LongTestTimeoutMs, Skip = "Blocked by MAUI CollectionView row recycling, not by a missing scroll primitive. Scrolling now works: TryScrollContent drives the UIA Scroll pattern and reaches VerticalScrollPercent=100. But only ~30 of 63 rows are ever in the automation tree at once - MAUI recycles row containers, so a far index is never simultaneously realized with index 0. Any test needing a specific far row must scroll AND re-resolve as the window moves; the collection API returns positional indexes over the realized window, which cannot express that. See design section 8.1.")]
+    [Fact(Timeout = TestConstants.LongTestTimeoutMs)]
     [Trait("Pattern", "Virtualization")]
     public Task ItemWhere_ScrollsToFindOffscreenRow()
     {

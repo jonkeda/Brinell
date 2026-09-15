@@ -1,4 +1,3 @@
-using Brinell.Core.Diagnostics;
 using Brinell.Core.Utilities;
 using Brinell.Maui.UITests.Pages;
 
@@ -51,12 +50,9 @@ public class NavigationVerbTests
         var page = new TextTestPage(_fixture.Context);
         page.WaitLoaded(true, TestConstants.DefaultTestTimeoutMs);
 
-        using (PhysicalInput.OverridePolicy(PhysicalInputPolicy.Refused))
-        {
-            // Throws with the app's own reason if it did not. There is nothing to assert on the
-            // call itself any more, which is the point of it no longer returning a bool.
-            _fixture.Context.Driver.NavigateBack();
-        }
+        // Throws with the app's own reason if it did not. There is nothing to assert on the
+        // call itself any more, which is the point of it no longer returning a bool.
+        _fixture.Context.Driver.NavigateBack();
 
         Assert.True(
             _fixture.Hub.WaitLoaded(true, TestConstants.DefaultTestTimeoutMs),
@@ -93,10 +89,7 @@ public class NavigationVerbTests
             "A page is open, so there is something to go back to - but the app said it was at "
             + "its root. A caller believing that would never return to the hub.");
 
-        using (PhysicalInput.OverridePolicy(PhysicalInputPolicy.Refused))
-        {
-            _fixture.Context.Driver.NavigateBack();
-        }
+        _fixture.Context.Driver.NavigateBack();
 
         Assert.True(
             _fixture.Hub.WaitLoaded(true, TestConstants.DefaultTestTimeoutMs),
@@ -123,10 +116,7 @@ public class NavigationVerbTests
     {
         _fixture.Open(SamplePage.Text);
 
-        using (PhysicalInput.OverridePolicy(PhysicalInputPolicy.Refused))
-        {
-            _fixture.Context.Driver.NavigateBack();
-        }
+        _fixture.Context.Driver.NavigateBack();
 
         _fixture.Hub.WaitLoaded(true, TestConstants.DefaultTestTimeoutMs);
 
@@ -136,36 +126,33 @@ public class NavigationVerbTests
     }
 
     /// <summary>
-    /// A full navigation round trip runs with physical input refused outright.
+    /// A full navigation round trip runs without physical input.
     /// </summary>
     /// <remarks>
     /// The step 15 claim in miniature: open a page, come back, open another. That is what the
-    /// fixture does between every pair of tests in the suite, and until now it could not be done
+    /// fixture does between every pair of tests in the suite, and it once could not be done
     /// without taking the mouse and the foreground window.
     /// </remarks>
     [Fact(Timeout = TestConstants.LongTestTimeoutMs)]
-    public Task Fixture_NavigatesBetweenPagesWithPhysicalInputRefused()
+    public Task Fixture_NavigatesBetweenPagesWithoutPhysicalInput()
     {
-        // Start from a known place outside the scope, so the assertion is about the navigation
-        // and not about whatever the previous test left behind.
+        // Start from a known place, so the assertion is about the navigation and not about
+        // whatever the previous test left behind.
         _fixture.Open(SamplePage.Text);
 
-        using (PhysicalInput.OverridePolicy(PhysicalInputPolicy.Refused))
-        {
-            _fixture.Open(SamplePage.Container);
+        _fixture.Open(SamplePage.Container);
 
-            var container = _fixture.ContainerTestPage;
-            Assert.True(
-                container.WaitLoaded(true, TestConstants.DefaultTestTimeoutMs),
-                "The container page did not open with physical input refused.");
+        var container = _fixture.ContainerTestPage;
+        Assert.True(
+            container.WaitLoaded(true, TestConstants.DefaultTestTimeoutMs),
+            "The container page did not open.");
 
-            _fixture.Open(SamplePage.Text);
+        _fixture.Open(SamplePage.Text);
 
-            var text = new TextTestPage(_fixture.Context);
-            Assert.True(
-                text.WaitLoaded(true, TestConstants.DefaultTestTimeoutMs),
-                "The text page did not reopen with physical input refused.");
-        }
+        var text = new TextTestPage(_fixture.Context);
+        Assert.True(
+            text.WaitLoaded(true, TestConstants.DefaultTestTimeoutMs),
+            "The text page did not reopen.");
 
         return Task.CompletedTask;
     }

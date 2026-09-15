@@ -1,4 +1,3 @@
-using Brinell.Core.Diagnostics;
 using static Brinell.Maui.FlaUI.Windowing.NativeMethods;
 
 namespace Brinell.Maui.FlaUI.Windowing;
@@ -8,8 +7,9 @@ namespace Brinell.Maui.FlaUI.Windowing;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Three measures, all active only when physical input is not <c>Allowed</c>. A run that clicks at
-/// coordinates needs the window in front, or its clicks and keystrokes land somewhere else:
+/// Three measures, always active. They used to switch off when physical input was allowed,
+/// because a run that clicks at coordinates needs the window in front; this driver no longer
+/// clicks or types at all, so nothing needs the window in front:
 /// </para>
 /// <list type="bullet">
 /// <item>a <b>watchdog</b> that pushes the app back whenever any of its windows takes the foreground;</item>
@@ -27,21 +27,18 @@ internal sealed class QuietWindow : IDisposable
     private readonly CancellationTokenSource? _watchdog;
     private int _foregroundGrabs;
 
-    private QuietWindow(int processId, IntPtr previousForeground, bool watch)
+    private QuietWindow(int processId, IntPtr previousForeground)
     {
         _processId = processId;
         _previousForeground = previousForeground;
 
-        if (watch)
+        _watchdog = new CancellationTokenSource();
+        var token = _watchdog.Token;
+        new Thread(() => WatchTheForeground(token))
         {
-            _watchdog = new CancellationTokenSource();
-            var token = _watchdog.Token;
-            new Thread(() => WatchTheForeground(token))
-            {
-                IsBackground = true,
-                Name = "Brinell foreground watchdog",
-            }.Start();
-        }
+            IsBackground = true,
+            Name = "Brinell foreground watchdog",
+        }.Start();
     }
 
     /// <summary>
@@ -55,7 +52,7 @@ internal sealed class QuietWindow : IDisposable
     /// <param name="processId">The app under test, whose windows are watched.</param>
     /// <param name="previousForeground">The window the person was using, to hand back.</param>
     internal static QuietWindow ForLaunch(int processId, IntPtr previousForeground)
-        => new(processId, previousForeground, PhysicalInput.Policy != PhysicalInputPolicy.Allowed);
+        => new(processId, previousForeground);
 
     /// <summary>
     /// How many times the app under test took the foreground and had to be put back.
@@ -72,12 +69,8 @@ internal sealed class QuietWindow : IDisposable
     /// </summary>
     internal void Settle(IntPtr mainWindow)
     {
-        if (PhysicalInput.Policy != PhysicalInputPolicy.Allowed)
-        {
-            RefuseActivation(mainWindow);
-            SendBehind(mainWindow);
-        }
-
+        RefuseActivation(mainWindow);
+        SendBehind(mainWindow);
         RestorePreviousForeground();
     }
 

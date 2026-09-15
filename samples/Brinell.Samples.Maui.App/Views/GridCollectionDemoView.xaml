@@ -107,14 +107,14 @@
                      window size; without it the third seed row can fall outside the
                      realized range on a short window. -->
                 <!--
-                    ScrollToIndex, declared: a virtualized CollectionView only materializes the
-                    rows near the viewport, so a search for a row further down used to advance
-                    the list with mouse-wheel clicks and re-read the realized items each time.
-                    CollectionView.ScrollTo(index) is the same call on every platform.
+                    A virtualized CollectionView only materializes rows near the viewport.
+                    ScrollToIndex materializes a requested logical row; GetState publishes the
+                    exact item count. On Windows each realized row's ListViewItem ancestor also
+                    publishes PositionInSet, which keeps Item(i) logical as containers recycle.
                 -->
                 <CollectionView Grid.Row="2"
                                 AutomationId="ProductCollectionView"
-                                uia:GestureAutomation.Verbs="ScrollToIndex"
+                                uia:GestureAutomation.Verbs="ScrollToIndex,GetState"
                                 HeightRequest="320"
                                 MinimumHeightRequest="320"
                                 ItemsSource="{Binding Products}"

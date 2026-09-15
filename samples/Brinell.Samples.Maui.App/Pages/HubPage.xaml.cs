@@ -136,7 +136,8 @@ public partial class HubPage : ContentPage
             page,
             $"{nameof(BrinellVerb.NavigateBack)},{nameof(BrinellVerb.GetState)},"
             + $"{nameof(BrinellVerb.CurrentRoute)},{nameof(BrinellVerb.IsIdle)},"
-            + $"{nameof(BrinellVerb.CurrentAlert)},{nameof(BrinellVerb.InvokeMenuItem)}");
+            + $"{nameof(BrinellVerb.CurrentAlert)},{nameof(BrinellVerb.InvokeMenuItem)},"
+            + $"{nameof(BrinellVerb.InvokeToolbarItem)}");
     }
 
     /// <summary>

@@ -1,5 +1,6 @@
 using Brinell.Core.Locators;
 using Brinell.Core.Utilities;
+using System.Globalization;
 
 namespace Brinell.Maui.Controls.Range;
 
@@ -7,21 +8,28 @@ namespace Brinell.Maui.Controls.Range;
 /// MAUI Stepper control with +/- buttons for discrete value changes.
 /// Inherits GetValue, SetValue, GetMinimum, GetMaximum, Increment, Decrement from RangeControlBase.
 /// Provides additional stepper-specific methods like IncrementBy and DecrementBy.
-/// Overrides Increment/Decrement to use child button clicks instead of SendKeys.
-/// 
+/// Overrides Increment/Decrement to invoke the stepper's own buttons instead of sending keys.
+///
 /// Windows MAUI Note: On Windows, MAUI Stepper doesn't expose a single element with the AutomationId.
 /// Instead, it exposes separate button elements with "{AutomationId}Minus" and "{AutomationId}Plus".
-/// This control automatically handles this by falling back to the button-based approach.
+/// This control resolves through that pair, presses them through the Invoke pattern, and reads
+/// Value, Minimum, Maximum and Increment from the app with the bridge's GetState verb, which the
+/// Stepper must declare.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
 public partial class Stepper<TScope> : Base.RangeControlBase<TScope>
     where TScope : IMauiScope<TScope>
 {
     private readonly string? _baseAutomationId;
-    private IMauiElement? _minusButton;
-    private IMauiElement? _plusButton;
-    private IMauiElement? _valueLabelElement;
-    private bool _usingButtonMode;
+
+    private sealed record StepperParts(
+        IMauiElement Proxy,
+        IMauiElement? Native,
+        IMauiElement? Minus,
+        IMauiElement? Plus)
+    {
+        public bool IsButtonMode => Native is null;
+    }
     
     /// <summary>
     /// Creates a new stepper control within the specified scope.
@@ -54,69 +62,77 @@ public partial class Stepper<TScope> : Base.RangeControlBase<TScope>
     #region Button Mode for Windows
     
     /// <summary>
-    /// Tries to find the stepper element. On Windows, falls back to button-based mode
-    /// where the minus button serves as the proxy element.
+    /// Resolves the native Stepper or its two Windows buttons.
     /// </summary>
-    protected override IMauiElement? TryFindElement()
+    private StepperParts? ResolveParts()
     {
-        // First try the standard approach (works on Android/iOS)
         var element = base.TryFindElement();
         if (element != null)
         {
-            _usingButtonMode = false;
-            return element;
+            return new StepperParts(element, element, null, null);
         }
-        
-        // Fall back to Windows button mode
-        if (!string.IsNullOrEmpty(_baseAutomationId))
+
+        if (string.IsNullOrEmpty(_baseAutomationId))
         {
-            var minusLocator = new Locator(LocatorStrategy.AutomationId, $"{_baseAutomationId}Minus");
-            _minusButton = MauiScope.TryFindElement(minusLocator);
-            
-            if (_minusButton != null)
-            {
-                var plusLocator = new Locator(LocatorStrategy.AutomationId, $"{_baseAutomationId}Plus");
-                _plusButton = MauiScope.TryFindElement(plusLocator);
-                
-                _usingButtonMode = true;
-                // Return minus button as proxy element (for existence checks)
-                return _minusButton;
-            }
+            return null;
         }
-        
-        return null;
+
+        var minus = MauiScope.TryFindElement(
+            new Locator(LocatorStrategy.AutomationId, $"{_baseAutomationId}Minus"));
+        var plus = MauiScope.TryFindElement(
+            new Locator(LocatorStrategy.AutomationId, $"{_baseAutomationId}Plus"));
+
+        return minus is not null && plus is not null
+            ? new StepperParts(minus, null, minus, plus)
+            : null;
+    }
+
+    /// <summary>
+    /// Tries to find the stepper element. On Windows, the minus button is its proxy.
+    /// </summary>
+    protected override IMauiElement? TryFindElement()
+    {
+        return ResolveParts()?.Proxy;
+    }
+
+    /// <summary>
+    /// Finds the stepper element through the same native-or-buttons resolution as optional reads.
+    /// </summary>
+    protected override IMauiElement FindElement()
+    {
+        var parts = ResolveParts();
+        if (parts is not null)
+        {
+            return parts.Proxy;
+        }
+
+        throw new ElementNotFoundException(
+            $"Stepper was not found by '{Locator}', '{_baseAutomationId}Minus', or "
+            + $"'{_baseAutomationId}Plus'.");
     }
     
-    /// <summary>
-    /// Tries to find the value label element (used on Windows for reading the value).
-    /// </summary>
-    private IMauiElement? TryFindValueLabel()
+    private bool SupportsStateReads()
     {
-        if (_valueLabelElement != null)
-            return _valueLabelElement;
-            
-        // On Windows, the value is typically in a label like "{BaseId}Label" or near the stepper
-        // Common patterns: "QuantityLabel", "Quantity: 1"
-        if (!string.IsNullOrEmpty(_baseAutomationId))
+        return !string.IsNullOrEmpty(_baseAutomationId)
+            && Context.Driver.SupportsStateReads(_baseAutomationId);
+    }
+
+    private double? ReadNumericState(string property)
+    {
+        if (!SupportsStateReads())
         {
-            // Try common label naming patterns
-            var labelPatterns = new[]
-            {
-                $"{_baseAutomationId.Replace("Stepper", "")}Label",  // QuantityStepper -> QuantityLabel
-                $"{_baseAutomationId}Value",
-                $"{_baseAutomationId}Label"
-            };
-            
-            foreach (var pattern in labelPatterns)
-            {
-                var locator = new Locator(LocatorStrategy.AutomationId, pattern);
-                _valueLabelElement = MauiScope.TryFindElement(locator);
-                if (_valueLabelElement != null)
-                    return _valueLabelElement;
-            }
+            return null;
         }
-        
-        return null;
+
+        var value = Context.Driver.ReadState(_baseAutomationId!, property);
+        return double.TryParse(
+            value,
+            NumberStyles.Float,
+            CultureInfo.InvariantCulture,
+            out var parsed)
+            ? parsed
+            : throw new FormatException(
+                $"Stepper '{_baseAutomationId}' returned '{value}' for {property}.");
     }
     
     #endregion
@@ -124,17 +140,17 @@ public partial class Stepper<TScope> : Base.RangeControlBase<TScope>
     #region Core Method Overrides
     
     /// <summary>
-    /// Increments the stepper by clicking the increment button.
+    /// Increments the stepper by invoking its increment button.
     /// Uses button mode on Windows where buttons are exposed separately.
     /// </summary>
     /// <param name="element">The pre-found stepper element.</param>
     /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
     protected override void IncrementCore(IMauiElement element, int? timeoutMs = null)
     {
-        // In Windows button mode, use the cached plus button
-        if (_usingButtonMode && _plusButton != null)
+        var parts = ResolveParts();
+        if (parts?.IsButtonMode == true)
         {
-            _plusButton.Click();
+            parts.Plus!.Invoke();
             return;
         }
         
@@ -142,7 +158,7 @@ public partial class Stepper<TScope> : Base.RangeControlBase<TScope>
         var incrementButton = FindChildButton(element, isIncrement: true);
         if (incrementButton != null)
         {
-            incrementButton.Click();
+            incrementButton.Invoke();
             return;
         }
         
@@ -150,17 +166,17 @@ public partial class Stepper<TScope> : Base.RangeControlBase<TScope>
     }
     
     /// <summary>
-    /// Decrements the stepper by clicking the decrement button.
+    /// Decrements the stepper by invoking its decrement button.
     /// Uses button mode on Windows where buttons are exposed separately.
     /// </summary>
     /// <param name="element">The pre-found stepper element.</param>
     /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
     protected override void DecrementCore(IMauiElement element, int? timeoutMs = null)
     {
-        // In Windows button mode, use the cached minus button
-        if (_usingButtonMode && _minusButton != null)
+        var parts = ResolveParts();
+        if (parts?.IsButtonMode == true)
         {
-            _minusButton.Click();
+            parts.Minus!.Invoke();
             return;
         }
         
@@ -168,7 +184,7 @@ public partial class Stepper<TScope> : Base.RangeControlBase<TScope>
         var decrementButton = FindChildButton(element, isIncrement: false);
         if (decrementButton != null)
         {
-            decrementButton.Click();
+            decrementButton.Invoke();
             return;
         }
         
@@ -176,58 +192,57 @@ public partial class Stepper<TScope> : Base.RangeControlBase<TScope>
     }
     
     /// <summary>
-    /// Gets the current value. In button mode, reads from the value label.
+    /// Gets the current value: from the app's GetState when the Stepper declares it, otherwise
+    /// from the RangeValue pattern.
     /// </summary>
     /// <param name="element">The stepper element (or proxy button in button mode).</param>
     /// <returns>The current value, or null if not available.</returns>
     protected override double? GetValueCore(IMauiElement? element)
     {
-        // In button mode, read from the value label
-        if (_usingButtonMode)
+        if (SupportsStateReads())
         {
-            var label = TryFindValueLabel();
-            if (label != null)
-            {
-                var text = label.Text ?? label.Name;
-                if (!string.IsNullOrEmpty(text))
-                {
-                    // Parse value from text like "Quantity: 5" or just "5"
-                    var numericPart = ExtractNumericValue(text);
-                    if (numericPart.HasValue)
-                        return numericPart.Value;
-                }
-            }
-            // If no label found, we can't determine the value
-            return null;
+            return ReadNumericState("Value");
         }
-        
-        // Standard RangeValue pattern
+
         return base.GetValueCore(element);
     }
-    
-    /// <summary>
-    /// Extracts numeric value from text like "Quantity: 5" or "5".
-    /// </summary>
-    private static double? ExtractNumericValue(string text)
+
+    /// <inheritdoc />
+    protected override double? GetMinimumCore(IMauiElement? element)
     {
-        if (string.IsNullOrEmpty(text))
-            return null;
-            
-        // Try to find a number in the text
-        var matches = System.Text.RegularExpressions.Regex.Matches(text, @"-?\d+\.?\d*");
-        if (matches.Count > 0)
+        if (SupportsStateReads())
         {
-            // Take the last number (typically the value)
-            var lastMatch = matches[^1];
-            if (double.TryParse(lastMatch.Value, out var value))
-                return value;
+            return ReadNumericState("Minimum");
         }
-        
-        return null;
+
+        return base.GetMinimumCore(element);
+    }
+
+    /// <inheritdoc />
+    protected override double? GetMaximumCore(IMauiElement? element)
+    {
+        if (SupportsStateReads())
+        {
+            return ReadNumericState("Maximum");
+        }
+
+        return base.GetMaximumCore(element);
+    }
+
+    /// <inheritdoc />
+    protected override double? GetStepCore(IMauiElement? element)
+    {
+        if (SupportsStateReads())
+        {
+            return ReadNumericState("Increment");
+        }
+
+        return base.GetStepCore(element);
     }
     
     /// <summary>
-    /// Sets value by repeatedly clicking increment/decrement buttons.
+    /// Sets value by clamping it to the range, invoking increment or decrement the needed number
+    /// of times, and waiting until the read value reaches the target.
     /// </summary>
     /// <param name="element">The pre-found stepper element.</param>
     /// <param name="value">The target value. Null skips the operation.</param>
@@ -238,32 +253,41 @@ public partial class Stepper<TScope> : Base.RangeControlBase<TScope>
 
         EnsureSettableCore(element);
 
-        var target = value.Value;
-        var current = GetValueCore(element) ?? 0;
-        var step = GetStepCore(element) ?? 1;
+        var minimum = GetMinimumCore(element) ?? double.NegativeInfinity;
+        var maximum = GetMaximumCore(element) ?? double.PositiveInfinity;
+        var target = Math.Clamp(value.Value, minimum, maximum);
+        var current = GetValueCore(element)
+            ?? throw new NotSupportedException(
+                $"Stepper '{_baseAutomationId ?? Locator.Value}' does not expose its current value.");
+        var step = GetStepCore(element)
+            ?? throw new NotSupportedException(
+                $"Stepper '{_baseAutomationId ?? Locator.Value}' does not expose its increment.");
+        if (step <= 0)
+        {
+            throw new InvalidOperationException(
+                $"Stepper '{_baseAutomationId ?? Locator.Value}' reported a non-positive increment: {step}.");
+        }
+
         var diff = target - current;
-        var clicks = (int)Math.Abs(diff / step);
-        
-        // Limit to prevent infinite loops while still allowing full stepper ranges
-        clicks = Math.Min(clicks, 200);
+        var presses = (int)Math.Round(Math.Abs(diff / step), MidpointRounding.AwayFromZero);
         
         var increment = diff > 0;
-        for (int i = 0; i < clicks; i++)
+        for (int i = 0; i < presses; i++)
         {
             if (increment)
                 IncrementCore(element, timeoutMs);
             else
                 DecrementCore(element, timeoutMs);
         }
-        
-        // In button mode, poll until the label reflects the target value
-        if (_usingButtonMode)
-        {
-            WaitHelper.WaitFor(
+
+        if (!WaitHelper.WaitFor(
                 () => GetValueCore(element),
-                v => v.HasValue && Math.Abs(v.Value - target) < 0.01,
-                timeoutMs: 1000,
-                pollingIntervalMs: 50);
+                actual => actual.HasValue && Math.Abs(actual.Value - target) < 0.01,
+                timeoutMs: timeoutMs ?? DefaultTimeoutMs,
+                pollingIntervalMs: PollingIntervalMs))
+        {
+            throw new TimeoutException(
+                $"Stepper '{_baseAutomationId ?? Locator.Value}' did not reach {target}.");
         }
     }
     
@@ -304,31 +328,6 @@ public partial class Stepper<TScope> : Base.RangeControlBase<TScope>
     #endregion
 
     #region Stepper-Specific Core Methods
-
-    /// <summary>
-    /// Reads the value and polls until two consecutive reads return the same result,
-    /// ensuring data binding has propagated after recent button clicks.
-    /// </summary>
-    private double? GetStableValue(IMauiElement element)
-    {
-        var value = GetValueCore(element);
-        if (value == null) return null;
-        
-        // Poll until value stabilizes (two consecutive reads match)
-        WaitHelper.WaitFor(
-            () =>
-            {
-                var next = GetValueCore(element);
-                if (next.HasValue && Math.Abs(next.Value - value.Value) < 0.01)
-                    return true;
-                value = next;
-                return false;
-            },
-            timeoutMs: 500,
-            pollingIntervalMs: 50);
-        
-        return value;
-    }
 
     /// <summary>
     /// Increments the stepper value multiple times.
@@ -399,42 +398,10 @@ public partial class Stepper<TScope> : Base.RangeControlBase<TScope>
         var element = TryFindElement();
         if (element == null) return null;
 
-        // In button mode, try incrementing and check if value actually changed
-        if (_usingButtonMode && _plusButton != null)
-        {
-            // Read current stable value
-            var before = GetStableValue(element);
-            if (before == null) return null;
-
-            _plusButton.Click();
-
-            // Poll to see if value changed
-            var changed = WaitHelper.WaitFor(
-                () => GetValueCore(element),
-                v => v.HasValue && Math.Abs(v.Value - before.Value) > 0.01,
-                timeoutMs: 500,
-                pollingIntervalMs: 50);
-
-            if (changed)
-            {
-                // Value increased — undo the increment
-                _minusButton?.Click();
-                // Wait for undo to apply
-                WaitHelper.WaitFor(
-                    () => GetValueCore(element),
-                    v => v.HasValue && Math.Abs(v.Value - before.Value) < 0.01,
-                    timeoutMs: 500,
-                    pollingIntervalMs: 50);
-                return true;
-            }
-
-            return false; // Value didn't change — at maximum
-        }
-
         var current = GetValueCore(element);
         var max = GetMaximumCore(element);
 
-        if (current == null || max == null) return true;
+        if (current == null || max == null) return null;
         return current.Value < max.Value;
     }
 
@@ -449,42 +416,10 @@ public partial class Stepper<TScope> : Base.RangeControlBase<TScope>
         var element = TryFindElement();
         if (element == null) return null;
 
-        // In button mode, try decrementing and check if value actually changed
-        if (_usingButtonMode && _minusButton != null)
-        {
-            // Read current stable value
-            var before = GetStableValue(element);
-            if (before == null) return null;
-
-            _minusButton.Click();
-
-            // Poll to see if value changed
-            var changed = WaitHelper.WaitFor(
-                () => GetValueCore(element),
-                v => v.HasValue && Math.Abs(v.Value - before.Value) > 0.01,
-                timeoutMs: 500,
-                pollingIntervalMs: 50);
-
-            if (changed)
-            {
-                // Value decreased — undo the decrement
-                _plusButton?.Click();
-                // Wait for undo to apply
-                WaitHelper.WaitFor(
-                    () => GetValueCore(element),
-                    v => v.HasValue && Math.Abs(v.Value - before.Value) < 0.01,
-                    timeoutMs: 500,
-                    pollingIntervalMs: 50);
-                return true;
-            }
-
-            return false; // Value didn't change — at minimum
-        }
-
         var current = GetValueCore(element);
         var min = GetMinimumCore(element);
 
-        if (current == null || min == null) return true;
+        if (current == null || min == null) return null;
         return current.Value > min.Value;
     }
 

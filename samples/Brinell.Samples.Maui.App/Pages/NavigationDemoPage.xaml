@@ -16,8 +16,11 @@
              Title="Navigation">
 
     <ContentPage.ToolbarItems>
-        <ToolbarItem AutomationId="PageToolbarRefresh" Text="Refresh" />
-        <ToolbarItem AutomationId="PageToolbarAbout" Text="About" />
+        <ToolbarItem AutomationId="PageToolbarRefresh" Text="Refresh" Clicked="OnToolbarRefresh" />
+        <ToolbarItem AutomationId="PageToolbarAbout" Text="About" Clicked="OnToolbarAbout" />
+        <!-- Disabled through its command, set in code-behind: MAUI drives a ToolbarItem's
+             IsEnabled from CanExecute and overwrites the markup's value. -->
+        <ToolbarItem x:Name="PageToolbarDelete" AutomationId="PageToolbarDelete" Text="Delete" />
     </ContentPage.ToolbarItems>
 
     <ContentPage.MenuBarItems>
