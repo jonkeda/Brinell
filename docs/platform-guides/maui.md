@@ -96,8 +96,12 @@ never try one and fall back to another.
 - **Long press and swipe** use the `LongPress` and `Swipe*` verbs, and throw
   `GestureUnavailableException` where the element does not declare them. `DoubleClick` is the
   `DoubleTap` verb; a raw `Click` is the `Tap` verb.
-- **Toolbar items** (`ToolbarButton`) are raised through `IMauiDriver.InvokeToolbarItem`, and
-  menu items through `InvokeMenuItem`. On Android and iOS a toolbar item is tapped.
+- **Toolbar items** (`ToolbarButton`) are raised through `IMauiElement.InvokeToolbarItem`, and
+  menu items through `IMauiDriver.InvokeMenuItem`. On Android and iOS a toolbar item is tapped.
+- **App-level questions go to `Context.AppElement`**: the Shell flyout (`OpenFlyout`,
+  `CloseFlyout`, `IsFlyoutOpen`), the alert on screen (`ReadAlert`), the active dialog
+  (`TryFindActiveDialog`) and targets reached by id (`TryFindDeclared`). Control objects call
+  `IMauiElement` only, never the driver.
 - **No Windows route at all:** `RightClick` (use `InvokeMenuItem` for the item you wanted),
   `Hover`, and typing key by key with `TextInputMethod.Keys` (use `SetValue`). A test of
   per-keystroke behaviour runs on the mobile head.

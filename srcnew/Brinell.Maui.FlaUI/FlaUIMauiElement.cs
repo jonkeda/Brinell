@@ -32,7 +32,7 @@ namespace Brinell.Maui.FlaUI;
 /// </remarks>
 public sealed class FlaUIMauiElement : IMauiElement
 {
-    private readonly AutomationElement _element;
+    private readonly AutomationElement? _wrapped;
     private readonly FlaUIMauiDriver _driver;
 
     /// <summary>
@@ -43,9 +43,31 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// <exception cref="ArgumentNullException">Thrown when element or driver is null.</exception>
     public FlaUIMauiElement(AutomationElement element, FlaUIMauiDriver driver)
     {
-        _element = element ?? throw new ArgumentNullException(nameof(element));
+        _wrapped = element ?? throw new ArgumentNullException(nameof(element));
         _driver = driver ?? throw new ArgumentNullException(nameof(driver));
     }
+
+    /// <summary>Creates the app element, which stands for the application window.</summary>
+    private FlaUIMauiElement(FlaUIMauiDriver driver)
+    {
+        _driver = driver;
+    }
+
+    /// <summary>The app element: <see cref="IMauiDriver.AppElement"/>.</summary>
+    internal static FlaUIMauiElement ForApp(FlaUIMauiDriver driver) => new(driver);
+
+    /// <summary>Whether this element stands for the app rather than one of its elements.</summary>
+    private bool IsApp => _wrapped is null;
+
+    /// <summary>
+    /// The automation element: the one wrapped, or for the app element the driver's window.
+    /// </summary>
+    /// <remarks>
+    /// The app element reads the window afresh each time rather than holding it, because UI
+    /// Automation retires the window element during a run and the driver attaches again - see
+    /// <c>.my/fix/rca-app-freeze-was-a-stale-root.md</c>.
+    /// </remarks>
+    private AutomationElement _element => _wrapped ?? _driver.RootElement;
 
     #region State Properties (IElement<IMauiElement>)
 
@@ -354,8 +376,8 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// <inheritdoc />
     /// <remarks>
     /// The Invoke pattern, and nothing else. Where a control genuinely cannot be invoked - a
-    /// MAUI <c>ToolbarItem</c> is the known case - the control says <c>Click</c> instead; it is
-    /// not this method's job to guess a substitute.
+    /// MAUI <c>ToolbarItem</c> is the known case - the control names its own operation,
+    /// <see cref="InvokeToolbarItem"/>; it is not this method's job to guess a substitute.
     /// </remarks>
     public void Invoke() => Perform(
         nameof(Invoke), SupportsInvoke, RunInvokePattern, "InvokePattern");
@@ -375,6 +397,14 @@ public sealed class FlaUIMauiElement : IMauiElement
 
     /// <inheritdoc />
     public bool SupportsSelect => HasPattern(() => _element.Patterns.SelectionItem.IsSupported);
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// The app raises the item by id through the <c>InvokeToolbarItem</c> verb, which the page on
+    /// screen must declare. Never the Invoke pattern: a toolbar item's peer accepts it and does
+    /// nothing.
+    /// </remarks>
+    public void InvokeToolbarItem(string automationId) => _driver.InvokeToolbarItem(automationId);
 
     /// <summary>
     /// Runs one automation pattern, or explains which half of it was missing.
@@ -515,21 +545,30 @@ public sealed class FlaUIMauiElement : IMauiElement
 
     /// <inheritdoc />
     /// <remarks>
-    /// The UIA Scroll pattern on this element, or on the nearest scrollable ancestor. The route
-    /// for an app that has not declared the bridge's scroll verbs; it is not pointer input.
+    /// <para>
+    /// The UIA Scroll pattern on this element, or on the nearest scrollable ancestor, which reports
+    /// whether the content moved. It is not pointer input.
+    /// </para>
+    /// <para>
+    /// Without the pattern, the bridge's swipe verb for the direction - a vertical step towards the
+    /// end is a swipe up - which the app must declare, and which cannot report movement. An element
+    /// too short to swipe answers <see cref="ScrollStep.NotMoved"/>, as the shared swipe helper did
+    /// when this route lived in the control layer.
+    /// </para>
     /// </remarks>
-    public bool SupportsScrollContent => FindScrollPattern() != null;
-
-    /// <inheritdoc />
-    public bool ScrollContent(int verticalSteps, int horizontalSteps = 0)
+    /// <exception cref="Bridge.GestureUnavailableException">
+    /// No Scroll pattern, and the app does not declare the swipe.
+    /// </exception>
+    public ScrollStep ScrollContent(int verticalSteps, int horizontalSteps = 0)
     {
-        var scroll = FindScrollPattern()
-            ?? throw new NotSupportedException(
-                $"'{AutomationId ?? Name ?? "(unnamed)"}' neither exposes the UI Automation Scroll "
-                + "pattern nor sits inside anything that does.");
+        var scroll = FindScrollPattern();
+        if (scroll == null)
+        {
+            return SwipeContent(verticalSteps, horizontalSteps);
+        }
 
         if (verticalSteps == 0 && horizontalSteps == 0)
-            return false;
+            return ScrollStep.NotMoved;
 
         var before = (scroll.VerticalScrollPercent.ValueOrDefault, scroll.HorizontalScrollPercent.ValueOrDefault);
 
@@ -541,12 +580,43 @@ public sealed class FlaUIMauiElement : IMauiElement
         {
             // UIA refuses a scroll past the end with an error rather than a no-op, and a dead
             // element fails the same way. Both are "did not move", which is what is reported.
-            return false;
+            return ScrollStep.NotMoved;
         }
 
         // The scroll percent does not update synchronously: read immediately it reports the
         // pre-scroll value, making a successful scroll look like no progress.
-        return WaitForScrollChange(scroll, before);
+        return WaitForScrollChange(scroll, before) ? ScrollStep.Moved : ScrollStep.NotMoved;
+    }
+
+    /// <summary>The height below which a swipe has no room to travel.</summary>
+    private const int MinimumSwipeHeight = 40;
+
+    /// <summary>
+    /// Steps the content with the bridge's swipe verbs, for an element with no Scroll pattern.
+    /// </summary>
+    private ScrollStep SwipeContent(int verticalSteps, int horizontalSteps)
+    {
+        if (verticalSteps != 0)
+        {
+            if (Rect.Height <= MinimumSwipeHeight)
+                return ScrollStep.NotMoved;
+
+            // Content moves opposite to the finger: towards the end is a swipe up.
+            var gesture = verticalSteps > 0 ? MauiGesture.SwipeUp : MauiGesture.SwipeDown;
+            for (var step = 0; step < Math.Abs(verticalSteps); step++)
+                PerformGesture(gesture);
+        }
+
+        if (horizontalSteps != 0)
+        {
+            var gesture = horizontalSteps > 0 ? MauiGesture.SwipeLeft : MauiGesture.SwipeRight;
+            for (var step = 0; step < Math.Abs(horizontalSteps); step++)
+                PerformGesture(gesture);
+        }
+
+        return verticalSteps == 0 && horizontalSteps == 0
+            ? ScrollStep.NotMoved
+            : ScrollStep.Unconfirmed;
     }
 
     /// <summary>
@@ -1111,11 +1181,17 @@ public sealed class FlaUIMauiElement : IMauiElement
     }
 
     /// <inheritdoc />
-    /// <remarks>The Selection pattern, which names the chosen item rather than the combo box's header.</remarks>
+    /// <remarks>
+    /// For a dropdown, the Selection pattern, which names the chosen item rather than the combo
+    /// box's header. For anything else, <see cref="Text"/>: what the control shows as its choice.
+    /// </remarks>
     public string? SelectedItemText
     {
         get
         {
+            if (!SupportsDropdown)
+                return Text;
+
             try
             {
                 if (!_element.Patterns.Selection.IsSupported)
@@ -1129,6 +1205,70 @@ public sealed class FlaUIMauiElement : IMauiElement
                 return null;
             }
         }
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Opened for the read and restored afterwards, so the items are live while their texts are
+    /// read. Null for an element with no dropdown: nothing else here publishes a selector's items.
+    /// </remarks>
+    public IReadOnlyList<string>? ReadItemTexts()
+    {
+        if (!SupportsDropdown)
+            return null;
+
+        return WithDropdownOpen(
+            () => ReadDropdownItems().Select(item => item.Text ?? string.Empty).ToList());
+    }
+
+    /// <summary>Runs a read with the dropdown open, restoring the state it was found in.</summary>
+    private T WithDropdownOpen<T>(Func<T> read)
+    {
+        var wasOpen = IsDropdownOpen;
+        if (!wasOpen)
+        {
+            OpenDropdown();
+        }
+
+        try
+        {
+            return read();
+        }
+        finally
+        {
+            if (!wasOpen)
+            {
+                CloseDropdown();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Opens the dropdown, selects the item <paramref name="choose"/> picks, and leaves it closed.
+    /// </summary>
+    /// <remarks>
+    /// The route for an app that declares no selection verb. The item is <see cref="Select"/>ed,
+    /// which throws where it cannot be - never a pointer click inside a call that looks semantic
+    /// (step 107). This lived in <c>SelectorControlBase</c> until the route choice moved here.
+    /// </remarks>
+    /// <returns>False when <paramref name="choose"/> found nothing; the dropdown is closed again.</returns>
+    private bool SelectFromDropdown(Func<IReadOnlyList<IMauiElement>, IMauiElement?> choose)
+    {
+        OpenDropdown();
+
+        var item = choose(ReadDropdownItems());
+        if (item == null)
+        {
+            CloseDropdown();
+            return false;
+        }
+
+        item.Select();
+
+        // Choosing an item closes a combo box by itself; close it if this one did not.
+        WaitHelper.WaitFor(() => !IsDropdownOpen, timeoutMs: 2000, pollingIntervalMs: 50);
+        CloseDropdown();
+        return true;
     }
 
     private void RequireDropdown(string operation)
@@ -1450,18 +1590,70 @@ public sealed class FlaUIMauiElement : IMauiElement
     #region Selection
 
     /// <inheritdoc />
-    public bool SupportsSelectIndex => BridgeDeclares(BrinellVerb.SelectIndex);
-
-    /// <inheritdoc />
-    public bool SupportsSelectByText => BridgeDeclares(BrinellVerb.SelectByText);
-
-    /// <inheritdoc />
     /// <remarks>
-    /// The app range-checks against its own item list, so an index past the end is refused by
-    /// the only party that knows how many items there are. The dropdown route counted the items
-    /// the popup had rendered, which is a different number while a virtualized list is filling.
+    /// <para>
+    /// <b>One question, then one route.</b> The <c>SelectIndex</c> verb where the app declares it:
+    /// nothing opens, and the app range-checks against its own item list, so an index past the end
+    /// is refused by the only party that knows how many items there are. Otherwise the dropdown -
+    /// open, select, close - which counts the items the popup rendered, a different number while a
+    /// virtualized list is filling. With neither, a throw naming both.
+    /// </para>
+    /// <para>
+    /// These were <c>SupportsSelectIndex</c> and <c>SupportsDropdown</c> questions in the control.
+    /// </para>
     /// </remarks>
     public void SelectIndex(int index)
+    {
+        if (BridgeDeclares(BrinellVerb.SelectIndex))
+        {
+            SelectIndexThroughTheApp(index);
+            return;
+        }
+
+        if (SupportsDropdown)
+        {
+            if (!SelectFromDropdown(items => index >= 0 && index < items.Count ? items[index] : null))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(index), index, $"'{AutomationId}' has no item at index {index}.");
+            }
+
+            return;
+        }
+
+        throw NoSelectionRoute(BrinellVerb.SelectIndex);
+    }
+
+    /// <inheritdoc />
+    /// <remarks>Routes as <see cref="SelectIndex"/> does, with the <c>SelectByText</c> verb.</remarks>
+    public void SelectByText(string text)
+    {
+        if (BridgeDeclares(BrinellVerb.SelectByText))
+        {
+            SelectByTextThroughTheApp(text);
+            return;
+        }
+
+        if (SupportsDropdown)
+        {
+            if (!SelectFromDropdown(items => items.FirstOrDefault(i => i.Name == text || i.Text == text)))
+            {
+                throw new InvalidOperationException($"'{AutomationId}' has no item with text '{text}'.");
+            }
+
+            return;
+        }
+
+        throw NoSelectionRoute(BrinellVerb.SelectByText);
+    }
+
+    private NotSupportedException NoSelectionRoute(BrinellVerb verb)
+        => new(
+            $"'{AutomationId ?? Name ?? "(unnamed)"}' cannot be selected from: the app does not "
+            + $"declare the {verb} verb on it, and it exposes no UI Automation ExpandCollapse "
+            + "pattern to open. Declare the verb with uia:GestureAutomation.Verbs in the app under test.");
+
+    private void SelectIndexThroughTheApp(int index)
     {
         var outcome = BridgeVerbRunner.Invoke(
             _driver.RootElement, _driver.Automation, AutomationId, BrinellVerb.SelectIndex, index);
@@ -1492,13 +1684,13 @@ public sealed class FlaUIMauiElement : IMauiElement
         throw new BrinellException($"'{AutomationId}' could not select index {index}: {reason}.");
     }
 
-    /// <inheritdoc />
+    /// <summary>Selects by text through the app's verb.</summary>
     /// <remarks>
     /// The app answers with the text it landed on, which is checked here rather than left to a
     /// later assertion: a picker whose selection is two-way bound can decline a value, and the
     /// old route would have reported that as a successful selection.
     /// </remarks>
-    public void SelectByText(string text)
+    private void SelectByTextThroughTheApp(string text)
     {
         if (!TryBridge(BrinellVerb.SelectByText, text, out var landed))
         {
@@ -1585,6 +1777,108 @@ public sealed class FlaUIMauiElement : IMauiElement
 
     /// <summary>The wire format for a time. See <see cref="BridgeDateFormat"/>.</summary>
     private const string BridgeTimeFormat = @"hh\:mm\:ss";
+
+    #endregion
+
+    #region The app
+
+    /// <summary>How long the Shell chrome gets to appear when the app declares no flyout verbs.</summary>
+    private const int ChromeFindTimeoutMs = 5000;
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// <para>
+    /// The app's <c>OpenFlyout</c> verb where it declares the flyout verbs: one property on the
+    /// Shell, and no chrome to find.
+    /// </para>
+    /// <para>
+    /// Otherwise the Shell's opener, found by name and invoked through its pattern. It sits in the
+    /// window's title-bar strip, where a synthetic pointer click is intercepted before it reaches
+    /// the button and the flyout simply never opens.
+    /// </para>
+    /// </remarks>
+    public void OpenFlyout()
+    {
+        RequireApp(nameof(OpenFlyout));
+
+        if (_driver.SupportsFlyoutVerbs)
+        {
+            _driver.OpenFlyout();
+            return;
+        }
+
+        _driver.FindElement(Locator.ByName("Open Navigation"), ChromeFindTimeoutMs).Invoke();
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// The app's <c>CloseFlyout</c> verb where declared. Otherwise WinUI's light-dismiss layer,
+    /// through its pattern: the layer covers the page, and a click aimed at it can land on whatever
+    /// it is covering. Stage G step 32 measured that layer refusing Invoke, which is why the verb
+    /// comes first.
+    /// </remarks>
+    public void CloseFlyout()
+    {
+        RequireApp(nameof(CloseFlyout));
+
+        if (_driver.SupportsFlyoutVerbs)
+        {
+            _driver.CloseFlyout();
+            return;
+        }
+
+        _driver.FindElement(Locator.ByAutomationId("LightDismiss"), ChromeFindTimeoutMs).Invoke();
+    }
+
+    /// <inheritdoc />
+    public bool? IsFlyoutOpen
+    {
+        get
+        {
+            RequireApp(nameof(IsFlyoutOpen));
+            return _driver.SupportsFlyoutVerbs ? _driver.IsFlyoutOpen() : null;
+        }
+    }
+
+    /// <inheritdoc />
+    public AlertContents? ReadAlert()
+    {
+        RequireApp(nameof(ReadAlert));
+        return _driver.CurrentAlert();
+    }
+
+    /// <inheritdoc />
+    public IMauiElement? TryFindActiveDialog()
+    {
+        RequireApp(nameof(TryFindActiveDialog));
+        return _driver.TryFindActiveDialogRoot();
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// The bridge target for that id, found with the same raw walk every verb uses. Null when the
+    /// app publishes no bridge or declares nothing with that id.
+    /// </remarks>
+    public IMauiElement? TryFindDeclared(string automationId)
+    {
+        RequireApp(nameof(TryFindDeclared));
+
+        if (string.IsNullOrEmpty(automationId))
+            return null;
+
+        var target = BrinellBridgeLookup.Find(_driver.RootElement, _driver.Automation, automationId);
+        return target is null ? null : new FlaUIDeclaredElement(automationId, target, _driver);
+    }
+
+    private void RequireApp(string operation)
+    {
+        if (!IsApp)
+        {
+            throw new NotSupportedException(
+                $"{operation} is a question about the app, not about '{AutomationId ?? Name ?? "(unnamed)"}'. "
+                + "Ask IMauiTestContext.AppElement.");
+        }
+    }
 
     #endregion
 

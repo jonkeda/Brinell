@@ -57,7 +57,13 @@ public class MauiTestContext : IMauiTestContext
     
     /// <inheritdoc />
     public MauiPlatform Platform => _platform;
-    
+
+    /// <inheritdoc />
+    public IMauiElement AppElement => _driver.AppElement;
+
+    /// <inheritdoc />
+    public ShellChromeLocators ShellChrome => _driver.ShellChrome;
+
     /// <inheritdoc />
     public TimeoutSettings Timeouts => _timeouts;
     
@@ -120,7 +126,7 @@ public class MauiTestContext : IMauiTestContext
             WaitHelper.Pause((int)pollInterval.TotalMilliseconds);
         }
         
-        var scrolledTo = _driver.TryFindByScrollingWithin(null, locator);
+        var scrolledTo = _driver.AppElement.TryFindByScrolling(locator);
         if (scrolledTo != null)
         {
             return scrolledTo;

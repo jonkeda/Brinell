@@ -22,18 +22,15 @@ public partial class ShellFlyout<TParent>
     : CollectionObjectBase<TParent, ShellFlyout<TParent>, ShellFlyoutItem<TParent>>
     where TParent : IMauiScope<TParent>
 {
-    private readonly IMauiScope<TParent> _scope;
-    private readonly MauiPlatform _platform;
-
     /// <summary>Creates the flyout within the given scope.</summary>
-    public ShellFlyout(IMauiScope<TParent> scope, MauiPlatform platform)
+    /// <param name="scope">The scope the shell belongs to.</param>
+    /// <param name="chrome">Where the platform draws Shell, from <see cref="IMauiTestContext.ShellChrome"/>.</param>
+    public ShellFlyout(IMauiScope<TParent> scope, ShellChromeLocators chrome)
         : base(scope,
-               ShellChrome.FlyoutHost(platform),
-               ItemStrategy.ByLocator(ShellChrome.FlyoutItem(platform)),
+               chrome.FlyoutHost,
+               ItemStrategy.ByLocator(chrome.FlyoutItem),
                (flyout, itemRoot, index) => new ShellFlyoutItem<TParent>(flyout, itemRoot, index))
     {
-        _scope = scope;
-        _platform = platform;
     }
 
     /// <summary>
@@ -61,23 +58,19 @@ public partial class ShellFlyout<TParent>
     /// the app's own behaviour, while this opener is drawn by the platform and clicking it on an
     /// open flyout is not defined.
     /// </para>
+    /// <para>
+    /// The app element picks the route - the app's verb where declared, the platform's opener
+    /// otherwise. This used to ask the driver <c>SupportsFlyoutVerbs</c> and find the opener
+    /// itself, from a per-platform locator.
+    /// </para>
     /// </remarks>
     /// <param name="timeoutMs">Optional timeout.</param>
     /// <returns>The flyout, for chaining.</returns>
     public ShellFlyout<TParent> Open(int? timeoutMs = null)
     {
-        if (Context.Driver.SupportsFlyoutVerbs)
-        {
-            // The app's own route: one property on the Shell, and no chrome to find.
-            Context.Driver.OpenFlyout();
-            InvalidateCache();
-            WaitOpen(true, timeoutMs);
-            return Self;
-        }
-
         if (IsOpen() == true) return Self;
 
-        Activate(_scope.FindElement(ShellChrome.FlyoutOpener(_platform)));
+        Context.AppElement.OpenFlyout();
         InvalidateCache();
         WaitOpen(true, timeoutMs);
 
@@ -96,37 +89,16 @@ public partial class ShellFlyout<TParent>
     /// <returns>The flyout, for chaining.</returns>
     public ShellFlyout<TParent> Close(int? timeoutMs = null)
     {
-        if (Context.Driver.SupportsFlyoutVerbs)
-        {
-            // Stage G step 32. The chrome route taps a light-dismiss layer that does not support
-            // Invoke, which failed two tests; the app can simply be told.
-            Context.Driver.CloseFlyout();
-            InvalidateCache();
-            WaitOpen(false, timeoutMs);
-            return Self;
-        }
-
         if (IsOpen() != true) return Self;
 
-        ShellChrome.DismissFlyout(Context, _platform);
+        // Stage G step 32: the chrome route on Windows taps a light-dismiss layer that does not
+        // support Invoke, which failed two tests. Where the app declares the verb, the app element
+        // tells the app instead.
+        Context.AppElement.CloseFlyout();
         InvalidateCache();
         WaitOpen(false, timeoutMs);
 
         return Self;
-    }
-
-    /// <summary>
-    /// Presses a piece of chrome through its automation pattern, falling back to a click.
-    /// </summary>
-    /// <remarks>
-    /// The flyout's opener sits in the window's title-bar strip on Windows, where a synthetic
-    /// pointer click is intercepted before it reaches the button and the flyout simply never
-    /// opens. Asking the element to invoke itself needs no coordinates. This is the same ladder
-    /// every control click walks, applied to chrome the app did not draw.
-    /// </remarks>
-    private static void Activate(IMauiElement element)
-    {
-        element.Invoke();
     }
 
     #region Core Methods (Element-Aware, No Logging)
@@ -140,9 +112,10 @@ public partial class ShellFlyout<TParent>
     {
         // Asked of the app where it can say. Counting the pane's items answers differently on a
         // fresh launch than later in a run, because Windows hides them rather than removing them.
-        if (Context.Driver.SupportsFlyoutVerbs)
+        // Null is the app not saying, and counting works everywhere.
+        if (Context.AppElement.IsFlyoutOpen is { } reported)
         {
-            return Context.Driver.IsFlyoutOpen();
+            return reported;
         }
 
         if (element == null) return false;

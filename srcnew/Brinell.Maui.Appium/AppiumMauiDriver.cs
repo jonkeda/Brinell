@@ -119,22 +119,48 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable
     
     #endregion
 
-    #region Toolbar
+    #region The app
 
     /// <inheritdoc />
     /// <remarks>
-    /// Found by accessibility id and tapped, which is the ordinary route on a touch platform. MAUI
-    /// puts a <c>ToolbarItem</c>'s <c>AutomationId</c> in the accessibility label: on Android the
-    /// node's <c>resource-id</c> is empty and the value is in <c>content-desc</c>.
+    /// Stands for the whole screen. It finds a root node only when a member needs one; the
+    /// app-level members address the screen and do not.
     /// </remarks>
-    public void InvokeToolbarItem(string automationId)
-    {
-        if (string.IsNullOrEmpty(automationId))
-        {
-            throw new BrinellException("Could not invoke a toolbar item: no AutomationId was given.");
-        }
+    public IMauiElement AppElement => AppiumMauiElement.ForApp(this);
 
-        FindElement(Locator.ByAccessibilityId(automationId)).Click();
+    /// <inheritdoc />
+    /// <remarks>
+    /// <para>
+    /// Android renders Shell's tabs as a bottom navigation bar whose items are frame layouts
+    /// carrying the tab's title as their content description - the only frame layouts on the page
+    /// that carry one, which is what makes the locator exact rather than merely plausible. Nothing
+    /// names a host above them, so both searches are rooted at the app's content frame.
+    /// </para>
+    /// <para>
+    /// The drawer's items are view groups carrying their title as a content description, and they
+    /// leave the tree entirely while the drawer is shut. iOS has not been mapped and throws.
+    /// </para>
+    /// </remarks>
+    public ShellChromeLocators ShellChrome => _platform == MauiPlatform.Android
+        ? AndroidShellChrome
+        : throw new PlatformNotSupportedException(
+            $"Shell chrome on {_platform} has not been mapped. Dump the tree and add it to "
+            + $"{nameof(AppiumMauiDriver)} - see .my/navigation/design-shell-sample-app.md.");
+
+    private static readonly ShellChromeLocators AndroidShellChrome = new(
+        TabHost: Locator.ById("android:id/content"),
+        Tab: Locator.ByXPath("//android.widget.FrameLayout[@content-desc!='']"),
+        FlyoutHost: Locator.ById("android:id/content"),
+        FlyoutItem: Locator.ByXPath("//android.view.ViewGroup[@content-desc!='']"));
+
+    /// <summary>The hierarchy's root node, for the app element's members that need a node.</summary>
+    internal AppiumElement FindRootNode()
+    {
+        var by = _platform == MauiPlatform.Android
+            ? By.XPath("/hierarchy/*[1]")
+            : MobileBy.ClassName("XCUIElementTypeApplication");
+
+        return (AppiumElement)_driver.FindElement(by);
     }
 
     #endregion
@@ -231,8 +257,8 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable
     
     #region Dialogs
 
-    /// <inheritdoc />
-    public IMauiElement? TryFindActiveDialogRoot()
+    /// <summary>The dialog on screen, or null. Answers <c>AppElement.TryFindActiveDialog</c>.</summary>
+    internal IMauiElement? TryFindActiveDialogRoot()
     {
         var by = _platform switch
         {
@@ -252,13 +278,18 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable
     
     #region Scrolling
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Finds an element by scrolling a container until it enters the tree. Answers
+    /// <c>IMauiElement.TryFindByScrolling</c>.
+    /// </summary>
     /// <remarks>
     /// Android only. iOS would be served by <c>mobile: scroll</c> with the container as
     /// <c>element</c>; until that is written and run on a device, answering null keeps the
     /// caller on the plain-lookup result rather than on an untested path.
     /// </remarks>
-    public IMauiElement? TryFindByScrollingWithin(IMauiElement? container, Locator locator)
+    /// <param name="container">The container to scroll, or null for the first scrollable on screen.</param>
+    /// <param name="locator">The locator for the element.</param>
+    internal IMauiElement? TryFindByScrollingWithin(IMauiElement? container, Locator locator)
     {
         if (_platform != MauiPlatform.Android)
         {

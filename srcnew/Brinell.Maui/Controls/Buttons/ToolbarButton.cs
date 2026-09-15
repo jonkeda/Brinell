@@ -33,10 +33,10 @@ namespace Brinell.Maui.Controls.Buttons;
 /// <c>.my/extension/physical-input-inventory.md</c>.
 /// </para>
 /// <para>
-/// <b>The driver raises the item by id instead.</b> <c>IMauiDriver.InvokeToolbarItem</c> on Windows
-/// asks the app, through the same entry point the toolbar uses - declaring the verb is a
-/// requirement there, see <c>.my/bridge/no-physical-input.md</c>. On Android and iOS it finds the
-/// item and taps it, which is the ordinary route.
+/// <b>The element raises the item by id instead.</b> <c>IMauiElement.InvokeToolbarItem</c> on
+/// Windows asks the app, through the same entry point the toolbar uses - declaring the verb is a
+/// requirement there, see <c>.my/bridge/no-physical-input.md</c>. On Android and iOS it taps the
+/// item, which is the ordinary route.
 /// </para>
 /// </remarks>
 public class ToolbarButton<TScope> : Button<TScope>
@@ -68,7 +68,7 @@ public class ToolbarButton<TScope> : Button<TScope>
     /// <inheritdoc />
     /// <remarks>
     /// <para>
-    /// One route on every platform: the driver's <c>InvokeToolbarItem</c>. Never the Invoke
+    /// One route on every platform: the element's <c>InvokeToolbarItem</c>. Never the Invoke
     /// pattern - see the type remarks.
     /// </para>
     /// <para>
@@ -80,6 +80,6 @@ public class ToolbarButton<TScope> : Button<TScope>
     protected override void ClickCore(IMauiElement element, int? timeoutMs = null)
     {
         EnsureClickableCore(element);
-        Context.Driver.InvokeToolbarItem(Locator.Value);
+        element.InvokeToolbarItem(Locator.Value);
     }
 }

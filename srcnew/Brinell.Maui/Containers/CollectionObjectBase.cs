@@ -657,19 +657,13 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
         if (TryScrollItemIntoView(0)) return Self;
 
         var target = ScrollTarget ?? TryGetContainerRoot();
+        if (target == null) return Self;
 
-        // The Scroll pattern reports when it stops moving, so it is repeated to the top. A swipe
-        // cannot report that, so on a platform that scrolls by swiping one step is taken - which
-        // is what this did before, and repeating a swipe that cannot say it arrived would never end.
-        if (target is { SupportsScrollContent: true })
+        // Repeated only while the platform confirms movement. A swipe cannot confirm it, so where
+        // the element swipes one step is taken - repeating a swipe that cannot say it arrived would
+        // never end.
+        while (target.ScrollContent(-1) == ScrollStep.Moved)
         {
-            while (target.ScrollContent(-1))
-            {
-            }
-        }
-        else
-        {
-            ScrollHelper.StepBack(target);
         }
 
         return Self;

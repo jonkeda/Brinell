@@ -18,9 +18,9 @@ public interface IMauiElementScope : IElementScope<IMauiElement>
     /// <para>
     /// For platforms that drop off-screen content from the accessibility tree: Android publishes
     /// nodes only for what is inside the viewport, so a control that plainly exists reports as
-    /// missing until something scrolls to it. A control that finds nothing asks the driver to
-    /// scroll this element looking for it (<c>IMauiDriver.TryFindByScrollingWithin</c>). Windows
-    /// keeps off-screen elements in the tree and scrolls nothing.
+    /// missing until something scrolls to it. A control that finds nothing asks this element to
+    /// scroll looking for it (<see cref="IMauiElement.TryFindByScrolling"/>), or the app element
+    /// when this is null. Windows keeps off-screen elements in the tree and scrolls nothing.
     /// </para>
     /// <para>
     /// <b>This replaced <c>TryFindElementAfterScroll(locator)</c></b>, a lookup every scope had to

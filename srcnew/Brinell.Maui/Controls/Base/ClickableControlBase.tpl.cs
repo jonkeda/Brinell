@@ -40,7 +40,7 @@ public abstract partial class ClickableControlBase<TScope> : FocusableControlBas
     /// <para>
     /// Invokes, because a plain command control is invoked. A control that activates some other
     /// way says so by overriding this - <c>ToggleControlBase</c> toggles, <c>RadioButton</c>
-    /// selects, <c>ToolbarButton</c> clicks - and each states its own operation rather than a
+    /// selects, <c>ToolbarButton</c> raises a toolbar item - and each states its own operation rather than a
     /// shared helper trying several and taking the first that answers.
     /// </para>
     /// <para>

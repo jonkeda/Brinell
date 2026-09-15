@@ -10,9 +10,9 @@ namespace Brinell.Maui.Tests.Semantic;
 /// <para>
 /// Steps 100a and 100b. The sweep matters on Android, which leaves content outside the viewport
 /// out of the accessibility tree, and it is expensive - a UiScrollable walk of the whole list.
-/// Two things are pinned here because neither is visible in a Windows run, where the driver's
+/// Two things are pinned here because neither is visible in a Windows run, where the element's
 /// sweep does nothing: that a poll sweeps once rather than once per tick, and that a control
-/// inside a scroll view asks the driver to scroll <i>that</i> view.
+/// inside a scroll view asks <i>that</i> view to scroll, and a control on a page asks the app element.
 /// </para>
 /// <para>
 /// The second was simply not happening before: scopes each implemented the lookup, and the one
@@ -23,22 +23,22 @@ public class ScrollLookupTests : SemanticControlTestsBase
 {
     private const string MissingId = "PromptDialogView_OKButton";
 
-    private readonly Mock<IMauiDriver> _driver = new();
+    private readonly Mock<IMauiElement> _app = new();
 
     public ScrollLookupTests()
     {
-        Context.Setup(c => c.Driver).Returns(_driver.Object);
+        Context.Setup(c => c.AppElement).Returns(_app.Object);
         Context.Setup(c => c.TryFindElement(It.Is<Locator>(l => l.Value == MissingId)))
             .Returns((IMauiElement?)null);
     }
 
     [Fact]
-    public void IsExists_OnAPage_SweepsOnce_LettingTheDriverPickTheScroller()
+    public void IsExists_OnAPage_SweepsOnce_LettingThePlatformPickTheScroller()
     {
         Assert.False(Page.PromptOk.IsExists());
 
-        _driver.Verify(
-            d => d.TryFindByScrollingWithin(null, It.Is<Locator>(l => l.Value == MissingId)),
+        _app.Verify(
+            a => a.TryFindByScrolling(It.Is<Locator>(l => l.Value == MissingId)),
             Times.Once);
     }
 
@@ -47,8 +47,8 @@ public class ScrollLookupTests : SemanticControlTestsBase
     {
         Assert.False(Page.PromptOk.WaitExists(true, timeoutMs: 60));
 
-        _driver.Verify(
-            d => d.TryFindByScrollingWithin(It.IsAny<IMauiElement?>(), It.IsAny<Locator>()),
+        _app.Verify(
+            a => a.TryFindByScrolling(It.IsAny<Locator>()),
             Times.Once);
     }
 
@@ -59,15 +59,15 @@ public class ScrollLookupTests : SemanticControlTestsBase
 
         Assert.ThrowsAny<Exception>(() => Page.PromptOk.AssertVisibleAfterScroll(true, timeoutMs: 60));
 
-        _driver.Verify(
-            d => d.TryFindByScrollingWithin(It.IsAny<IMauiElement?>(), It.IsAny<Locator>()),
+        _app.Verify(
+            a => a.TryFindByScrolling(It.IsAny<Locator>()),
             Times.Once);
         Assert.True(clock.ElapsedMilliseconds < 2_000,
             $"An absent element should cost one sweep, not a find timeout per tick; took {clock.ElapsedMilliseconds} ms");
     }
 
     [Fact]
-    public void AControlInsideAScrollView_AsksTheDriverToScrollThatView()
+    public void AControlInsideAScrollView_AsksThatViewToScroll()
     {
         var scrollRoot = CreateElement("Scroller", 0, 0, 400, 600);
         scrollRoot.Setup(e => e.FindElement(It.IsAny<Locator>(), 0))
@@ -79,10 +79,10 @@ public class ScrollLookupTests : SemanticControlTestsBase
 
         Assert.False(scroller.Label("BelowTheFold").IsExists());
 
-        _driver.Verify(
-            d => d.TryFindByScrollingWithin(
-                scrollRoot.Object, It.Is<Locator>(l => l.Value == "BelowTheFold")),
+        scrollRoot.Verify(
+            e => e.TryFindByScrolling(It.Is<Locator>(l => l.Value == "BelowTheFold")),
             Times.Once);
+        _app.Verify(a => a.TryFindByScrolling(It.IsAny<Locator>()), Times.Never);
     }
 
     [Fact]
@@ -94,8 +94,8 @@ public class ScrollLookupTests : SemanticControlTestsBase
 
         Assert.True(Page.PromptOk.IsExists());
 
-        _driver.Verify(
-            d => d.TryFindByScrollingWithin(It.IsAny<IMauiElement?>(), It.IsAny<Locator>()),
+        _app.Verify(
+            a => a.TryFindByScrolling(It.IsAny<Locator>()),
             Times.Never);
     }
 }

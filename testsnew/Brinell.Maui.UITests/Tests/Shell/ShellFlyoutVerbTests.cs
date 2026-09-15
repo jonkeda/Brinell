@@ -46,15 +46,15 @@ public class ShellFlyoutVerbTests
     [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     public Task Flyout_OpensAndClosesWithoutPhysicalInput()
     {
-        var driver = _fixture.Context.Driver;
+        var app = _fixture.Context.AppElement;
 
-        Assert.False(driver.IsFlyoutOpen(), "The flyout was already open before the test.");
+        Assert.False(app.IsFlyoutOpen, "The flyout was already open before the test.");
 
-        driver.OpenFlyout();
-        Assert.True(driver.IsFlyoutOpen(), "The app accepted OpenFlyout and nothing opened.");
+        app.OpenFlyout();
+        Assert.True(app.IsFlyoutOpen, "The app accepted OpenFlyout and nothing opened.");
 
-        driver.CloseFlyout();
-        Assert.False(driver.IsFlyoutOpen(), "The app accepted CloseFlyout and it stayed open.");
+        app.CloseFlyout();
+        Assert.False(app.IsFlyoutOpen, "The app accepted CloseFlyout and it stayed open.");
 
         return Task.CompletedTask;
     }
@@ -71,15 +71,15 @@ public class ShellFlyoutVerbTests
     [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     public Task Flyout_AskedTwiceForTheSameState_StaysThere()
     {
-        var driver = _fixture.Context.Driver;
+        var app = _fixture.Context.AppElement;
 
-        driver.OpenFlyout();
-        driver.OpenFlyout();
-        Assert.True(driver.IsFlyoutOpen());
+        app.OpenFlyout();
+        app.OpenFlyout();
+        Assert.True(app.IsFlyoutOpen);
 
-        driver.CloseFlyout();
-        driver.CloseFlyout();
-        Assert.False(driver.IsFlyoutOpen());
+        app.CloseFlyout();
+        app.CloseFlyout();
+        Assert.False(app.IsFlyoutOpen);
 
         return Task.CompletedTask;
     }

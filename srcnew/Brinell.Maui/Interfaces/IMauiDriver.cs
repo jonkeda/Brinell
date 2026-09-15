@@ -16,7 +16,29 @@ public interface IMauiDriver : IDriver<IMauiElement>, IDiagnosticDriver
     /// Gets the target platform (Windows, Android, iOS, macOS).
     /// </summary>
     MauiPlatform Platform { get; }
-    
+
+    #endregion
+
+    #region The app
+
+    /// <summary>
+    /// The app itself, as an element: the application window on Windows, the hierarchy root on
+    /// Android and iOS.
+    /// </summary>
+    /// <remarks>
+    /// Where the app-level members of <see cref="IMauiElement"/> are answered - the flyout, the
+    /// alert, the active dialog, targets reached by id. Control objects reach it through
+    /// <see cref="IMauiTestContext.AppElement"/> and never call the driver for those.
+    /// </remarks>
+    IMauiElement AppElement { get; }
+
+    /// <summary>Where this platform draws MAUI Shell's tabs and flyout.</summary>
+    /// <exception cref="PlatformNotSupportedException">Shell has not been mapped on this platform.</exception>
+    ShellChromeLocators ShellChrome
+        => throw new PlatformNotSupportedException(
+            $"Shell chrome has not been mapped for {GetType().Name}. Dump the tree and map it - "
+            + "see .my/navigation/design-shell-sample-app.md.");
+
     #endregion
     
     #region Context Switching (Hybrid Apps)
@@ -109,18 +131,6 @@ public interface IMauiDriver : IDriver<IMauiElement>, IDiagnosticDriver
             $"Gestures are not implemented for {GetType().Name}. On Windows they are carried by "
             + "the Brinell UI Automation bridge, which the app under test must opt into; on "
             + "Android and iOS they are synthetic touch input.");
-
-    #endregion
-
-    #region State the platform cannot expose as an element
-
-    /// <summary>Whether the element identified by <paramref name="automationId"/> declares GetState.</summary>
-    bool SupportsStateReads(string automationId) => false;
-
-    /// <summary>Reads app-published state for an element that may not exist in the native tree.</summary>
-    string ReadState(string automationId, string property)
-        => throw new NotSupportedException(
-            $"State reads are not implemented for {GetType().Name}.");
 
     #endregion
 
@@ -290,132 +300,8 @@ public interface IMauiDriver : IDriver<IMauiElement>, IDiagnosticDriver
         => throw new NotSupportedException(
             $"Menu items are not implemented for {GetType().Name}.");
 
-    /// <summary>
-    /// Raises a toolbar item on the page on screen by its <c>AutomationId</c>.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>The only route to a toolbar item on Windows that does not take the mouse.</b> A MAUI
-    /// <c>ToolbarItem</c>'s automation peer accepts the Invoke pattern, reports success and raises
-    /// nothing - measured four ways. The app raises the item itself, through the same entry point
-    /// its toolbar uses, so the same command runs.
-    /// </para>
-    /// <para>
-    /// Android and iOS find the item by its accessibility id and tap it, which is the ordinary
-    /// route there. <c>ToolbarButton</c> calls this on every platform; there used to be a
-    /// <c>SupportsToolbarVerb</c> question in front of it, whose false branch was that tap.
-    /// </para>
-    /// </remarks>
-    /// <param name="automationId">The toolbar item's <c>AutomationId</c>.</param>
-    /// <exception cref="Brinell.Core.Exceptions.BrinellException">
-    /// The item is disabled, or no page on screen has an item with that id.
-    /// </exception>
-    void InvokeToolbarItem(string automationId)
-        => throw new NotSupportedException(
-            $"Toolbar items are not implemented for {GetType().Name}.");
-
-    /// <summary>Opens a Shell's flyout.</summary>
-    /// <remarks>
-    /// <b>One property on the app, replacing a hamburger button nothing can find.</b> Shell
-    /// draws that button as chrome with no <c>AutomationId</c>, so every previous route to it was
-    /// a guess: by name, by control type, or by clicking where it usually is.
-    /// </remarks>
-    /// <exception cref="Brinell.Core.Exceptions.BrinellException">
-    /// The app has no Shell, or does not declare the verb.
-    /// </exception>
-    void OpenFlyout()
-        => throw new NotSupportedException(
-            $"Flyouts are not implemented for {GetType().Name}.");
-
-    /// <summary>
-    /// Whether the app offers the flyout verbs, so a caller can take that route rather than the
-    /// chrome.
-    /// </summary>
-    /// <remarks>
-    /// A question, asked before commanding - not a command that returns false. Stage G step 32:
-    /// the Shell control object dismissed its flyout by tapping a light-dismiss layer that does not
-    /// support Invoke, and two tests failed on it; where the app declares the verbs, there is no
-    /// chrome to guess at.
-    /// </remarks>
-    bool SupportsFlyoutVerbs => false;
-
-    /// <summary>Closes a Shell's flyout. See <see cref="OpenFlyout"/>.</summary>
-    /// <exception cref="Brinell.Core.Exceptions.BrinellException">
-    /// The app has no Shell, or does not declare the verb.
-    /// </exception>
-    void CloseFlyout()
-        => throw new NotSupportedException(
-            $"Flyouts are not implemented for {GetType().Name}.");
-
-    /// <summary>
-    /// Whether a Shell's flyout is showing.
-    /// </summary>
-    /// <remarks>
-    /// The question, so a caller does not have to establish it by opening the flyout and seeing
-    /// what changes. Windows keeps the pane's items in the tree once it has been opened, hidden
-    /// rather than removed, so counting them answers differently on a fresh launch than on the
-    /// second test in a run - which is what asking the app avoids.
-    /// </remarks>
-    /// <returns>Whether it is presented.</returns>
-    /// <exception cref="NotSupportedException">The app does not declare the read.</exception>
-    bool IsFlyoutOpen()
-        => throw new NotSupportedException(
-            $"Flyouts are not implemented for {GetType().Name}.");
-
-    /// <summary>
-    /// What the alert on screen is asking, or null when none is open.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>Only the app can answer this, and only if it says so.</b> On Windows the popup
-    /// publishes its title and its buttons, and those are read straight off the platform through
-    /// <c>ContentDialog</c>. The message is the exception: WinUI puts it in the dialog's content
-    /// area beside a second copy of the title, so from outside it can only be identified as "the
-    /// text that is not the title" - which is wrong for an alert whose message and title read
-    /// alike, and wrong quietly.
-    /// </para>
-    /// <para>
-    /// There is no supported way to observe <c>DisplayAlert</c> either: MAUI signals its own
-    /// platform layer through <c>MessagingCenter</c>, which is internal in MAUI 10. So the app
-    /// under test raises its alerts through <c>BrinellAlerts</c> and this reports what they were
-    /// given. An app that does not answers null, and its title and buttons are still readable.
-    /// </para>
-    /// </remarks>
-    /// <returns>The alert's four strings, or null when nothing is open or nothing declares it.</returns>
-    AlertContents? CurrentAlert() => null;
-
-    /// <summary>
-    /// Gets the active native dialog root, or null when no dialog is open.
-    /// </summary>
-    /// <remarks>
-    /// On Windows, WinUI3 dialogs live in a sibling top-level window. Other platforms expose
-    /// dialogs in the normal element tree. The returned element is the root used to scope all
-    /// dialog content lookups.
-    /// </remarks>
-    IMauiElement? TryFindActiveDialogRoot();
-
-    #endregion
-    
-    #region Scrolling
-
-    /// <summary>
-    /// Finds an element by scrolling a container until it enters the accessibility tree.
-    /// </summary>
-    /// <remarks>
-    /// The neutral form of "the tree omits what is not rendered", which every backend has some
-    /// version of: UiAutomator2 drops scrolled-off-screen elements, while UIA and the DOM keep
-    /// them but drop virtualised ones. A driver whose backend hides nothing relevant answers
-    /// null, which is an answer rather than a gap.
-    /// </remarks>
-    /// <param name="container">
-    /// The container to scroll, or null to let the platform pick the scrolling container on
-    /// screen.
-    /// </param>
-    /// <param name="locator">The locator for the element.</param>
-    /// <returns>
-    /// The element once it is on screen and still, or null when scrolling does not reach it.
-    /// </returns>
-    IMauiElement? TryFindByScrollingWithin(IMauiElement? container, Locator locator);
+    // The toolbar, flyout, alert, dialog, scroll-find and by-id state members that were here are
+    // on IMauiElement now, answered by AppElement - see .my/ControlFlow/design-every-call-through-the-element.md.
 
     #endregion
 }

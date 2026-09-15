@@ -473,8 +473,14 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
             return element;
         }
 
-        return Context.Driver?.TryFindByScrollingWithin(_mauiScope.ScrollingRoot, Locator);
+        return ScrollingElement()?.TryFindByScrolling(Locator);
     }
+
+    /// <summary>
+    /// The element to scroll when looking for this control: the scope's scroller, or the app,
+    /// which lets the platform pick the scrolling container on screen.
+    /// </summary>
+    private IMauiElement? ScrollingElement() => _mauiScope.ScrollingRoot ?? Context.AppElement;
 
     /// <summary>
     /// A resolver for a polling helper, applying <paramref name="lookup"/>.
@@ -527,7 +533,7 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
         }
         catch (ElementNotFoundException)
         {
-            var swept = Context.Driver?.TryFindByScrollingWithin(_mauiScope.ScrollingRoot, Locator);
+            var swept = ScrollingElement()?.TryFindByScrolling(Locator);
             if (swept != null)
             {
                 return swept;

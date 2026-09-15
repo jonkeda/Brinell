@@ -45,19 +45,26 @@ public class SelectionVerbTests
            ?? throw new InvalidOperationException($"'{automationId}' was not found.");
 
     /// <summary>
-    /// The control group: the sample's pickers declare the verbs.
+    /// The control group: the sample's pickers answer state reads.
     /// </summary>
     /// <remarks>
-    /// Without this, every test below would quietly fall back to the dropdown and still pass -
+    /// <para>
+    /// Without this, the reads below would quietly fall back to the dropdown and still pass -
     /// which is how a capability comes to be believed in without ever having been exercised.
+    /// </para>
+    /// <para>
+    /// <b>The selection verbs have no flag to assert any more</b>: <c>SupportsSelectIndex</c> and
+    /// <c>SupportsSelectByText</c> went when the element took over the route choice. What catches a
+    /// quiet fallback to the dropdown now is the refusal tests below - the app refuses with a
+    /// <see cref="BrinellException"/> naming its reason, and the dropdown route throws something
+    /// else entirely.
+    /// </para>
     /// </remarks>
     [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     public Task Pickers_OfferTheSemanticRoute()
     {
         var picker = Element("TestPicker");
 
-        Assert.True(picker.SupportsSelectIndex, "'TestPicker' does not declare SelectIndex.");
-        Assert.True(picker.SupportsSelectByText, "'TestPicker' does not declare SelectByText.");
         Assert.True(picker.SupportsStateReads, "'TestPicker' does not declare GetState.");
 
         return Task.CompletedTask;

@@ -37,9 +37,9 @@ namespace Brinell.Maui.Appium;
 /// </remarks>
 public sealed class AppiumMauiElement : IMauiElement
 {
-    private readonly AppiumElement _element;
+    private readonly AppiumElement? _wrapped;
     private readonly AppiumMauiDriver _driver;
-    
+
     /// <summary>
     /// Creates a new AppiumMauiElement wrapper.
     /// </summary>
@@ -48,9 +48,31 @@ public sealed class AppiumMauiElement : IMauiElement
     /// <exception cref="ArgumentNullException">Thrown when element or driver is null.</exception>
     public AppiumMauiElement(AppiumElement element, AppiumMauiDriver driver)
     {
-        _element = element ?? throw new ArgumentNullException(nameof(element));
+        _wrapped = element ?? throw new ArgumentNullException(nameof(element));
         _driver = driver ?? throw new ArgumentNullException(nameof(driver));
     }
+
+    /// <summary>Creates the app element, which stands for the whole screen's hierarchy.</summary>
+    private AppiumMauiElement(AppiumMauiDriver driver)
+    {
+        _driver = driver;
+    }
+
+    /// <summary>The app element: <see cref="IMauiDriver.AppElement"/>.</summary>
+    internal static AppiumMauiElement ForApp(AppiumMauiDriver driver) => new(driver);
+
+    /// <summary>Whether this element stands for the app rather than one of its elements.</summary>
+    private bool IsApp => _wrapped is null;
+
+    /// <summary>
+    /// The Appium element: the one wrapped, or for the app element the hierarchy's root node.
+    /// </summary>
+    /// <remarks>
+    /// Found only when a member actually needs a node. The app-level members - the flyout, the
+    /// dialog, scroll-finding - address the whole screen and never do, so asking the app element
+    /// for them costs no round trip.
+    /// </remarks>
+    private AppiumElement _element => _wrapped ?? _driver.FindRootNode();
     
     #region State Properties (IElement<IMauiElement>)
     
@@ -110,6 +132,29 @@ public sealed class AppiumMauiElement : IMauiElement
 
     /// <inheritdoc />
     public bool SupportsSelect => true;
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// A tap on the item, which is the ordinary route on a touch platform. On an item the id is not
+    /// needed: the element was found already. On the app element the item is found first, by the
+    /// accessibility id MAUI puts a toolbar item's <c>AutomationId</c> in - on Android the node's
+    /// <c>resource-id</c> is empty and the value is in <c>content-desc</c>.
+    /// </remarks>
+    public void InvokeToolbarItem(string automationId)
+    {
+        if (!IsApp)
+        {
+            Click();
+            return;
+        }
+
+        if (string.IsNullOrEmpty(automationId))
+        {
+            throw new BrinellException("Could not invoke a toolbar item: no AutomationId was given.");
+        }
+
+        _driver.FindElement(Locator.ByAccessibilityId(automationId)).Click();
+    }
 
     #endregion
 
@@ -891,6 +936,268 @@ public sealed class AppiumMauiElement : IMauiElement
         catch
         {
             return false;
+        }
+    }
+
+    #endregion
+
+    #region Scrolling
+
+    /// <summary>Margin in pixels kept away from an element's edges when swiping.</summary>
+    private const int EdgeInset = 20;
+
+    /// <summary>
+    /// An element shorter (or narrower) than this cannot be swiped meaningfully - the start and end
+    /// points would collapse onto each other.
+    /// </summary>
+    private const int MinimumSwipeExtent = 40;
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// <para>
+    /// <b>A swipe across the element's own bounds</b>, one per step: from far to near drags the
+    /// content towards the start, revealing what follows. A swipe cannot report whether anything
+    /// moved, so a performed step is <see cref="ScrollStep.Unconfirmed"/> and the caller checks
+    /// the content.
+    /// </para>
+    /// <para>
+    /// This geometry lived in the cross-platform <c>ScrollHelper</c>, behind a
+    /// <c>SupportsScrollContent</c> question this platform always answered false.
+    /// </para>
+    /// </remarks>
+    public ScrollStep ScrollContent(int verticalSteps, int horizontalSteps = 0)
+    {
+        if (verticalSteps == 0 && horizontalSteps == 0)
+            return ScrollStep.NotMoved;
+
+        var rect = Rect;
+
+        if (verticalSteps != 0)
+        {
+            if (rect.Height <= MinimumSwipeExtent)
+                return ScrollStep.NotMoved;
+
+            var centerX = rect.X + (rect.Width / 2);
+            var near = rect.Y + EdgeInset;
+            var far = rect.Y + rect.Height - EdgeInset;
+
+            for (var step = 0; step < Math.Abs(verticalSteps); step++)
+            {
+                if (verticalSteps > 0)
+                    Swipe(centerX, far, centerX, near);
+                else
+                    Swipe(centerX, near, centerX, far);
+            }
+        }
+
+        if (horizontalSteps != 0)
+        {
+            if (rect.Width <= MinimumSwipeExtent)
+                return ScrollStep.NotMoved;
+
+            var centerY = rect.Y + (rect.Height / 2);
+            var near = rect.X + EdgeInset;
+            var far = rect.X + rect.Width - EdgeInset;
+
+            for (var step = 0; step < Math.Abs(horizontalSteps); step++)
+            {
+                if (horizontalSteps > 0)
+                    Swipe(far, centerY, near, centerY);
+                else
+                    Swipe(near, centerY, far, centerY);
+            }
+        }
+
+        return ScrollStep.Unconfirmed;
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// <c>UiScrollable</c> rooted at this element, or on the app element at the first scrollable
+    /// container on screen. Android only; iOS answers null until it is written and run on a device.
+    /// </remarks>
+    public IMauiElement? TryFindByScrolling(Locator locator)
+        => _driver.TryFindByScrollingWithin(IsApp ? null : this, locator);
+
+    #endregion
+
+    #region Selection
+
+    /// <summary>
+    /// The rows of the dialog an Android <c>Picker</c> opens: MAUI builds it with
+    /// <c>AlertDialog.Builder.SetItems</c>, which lists them under the framework's own id.
+    /// </summary>
+    private static readonly Locator AndroidPickerItems =
+        Locator.ByXPath("//*[@resource-id='android:id/select_dialog_listview']/*");
+
+    /// <summary>How long the picker's dialog gets to show its rows.</summary>
+    private const int PickerItemsTimeoutMs = 5000;
+
+    /// <inheritdoc />
+    /// <remarks>The picker's own text, which is its selected item.</remarks>
+    public string? SelectedItemText => Text;
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// <para>
+    /// Taps the picker open and taps the row showing the text. The rows are the ones the dialog has
+    /// realized, so an item far down a long list is not found until something scrolls to it.
+    /// </para>
+    /// <para>
+    /// <b>Compiled, not yet run on a device.</b> This replaces the control layer's tap route, which
+    /// tapped the picker open and then threw because nothing listed its items. iOS draws a picker
+    /// wheel instead and has no route yet.
+    /// </para>
+    /// </remarks>
+    public void SelectByText(string text)
+    {
+        var items = OpenPicker(nameof(SelectByText));
+        var item = items.FirstOrDefault(i => i.Text == text);
+
+        if (item == null)
+        {
+            DismissPicker();
+            throw new InvalidOperationException(
+                $"'{AutomationId}' has no item with text '{text}' among the {items.Count} its dialog shows.");
+        }
+
+        item.Click();
+    }
+
+    /// <inheritdoc />
+    /// <remarks>See <see cref="SelectByText"/>: the same route and the same caveats.</remarks>
+    public void SelectIndex(int index)
+    {
+        var items = OpenPicker(nameof(SelectIndex));
+
+        if (index < 0 || index >= items.Count)
+        {
+            DismissPicker();
+            throw new ArgumentOutOfRangeException(
+                nameof(index), index, $"'{AutomationId}' shows {items.Count} item(s); there is no index {index}.");
+        }
+
+        items[index].Click();
+    }
+
+    private IReadOnlyList<IMauiElement> OpenPicker(string operation)
+    {
+        if (_driver.Platform != MauiPlatform.Android)
+        {
+            throw new PlatformNotSupportedException(
+                $"{nameof(AppiumMauiElement)}.{operation} has no route for {_driver.Platform}: its "
+                + "picker has not been mapped. Dump the tree and add it here.");
+        }
+
+        Click();
+        return _driver.FindElements(AndroidPickerItems, PickerItemsTimeoutMs);
+    }
+
+    /// <summary>Closes the picker's dialog without choosing, so a failed selection leaves nothing open.</summary>
+    private void DismissPicker()
+    {
+        try
+        {
+            _driver.Driver.Navigate().Back();
+        }
+        catch
+        {
+            // The exception about the missing item is the one worth reporting.
+        }
+    }
+
+    #endregion
+
+    #region The app
+
+    /// <summary>How long Shell's chrome gets to appear.</summary>
+    private const int ChromeFindTimeoutMs = 5000;
+
+    /// <inheritdoc />
+    /// <remarks>Taps the drawer's opener, which Android names by its content description.</remarks>
+    public void OpenFlyout()
+    {
+        RequireApp(nameof(OpenFlyout));
+        RequireAndroid("the flyout opener");
+
+        _driver.FindElement(Locator.ByAccessibilityId("Open navigation drawer"), ChromeFindTimeoutMs).Click();
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Back, which is how Android's drawer is dismissed. Its opener changes its content description
+    /// once open, so it is not a handle for closing.
+    /// </remarks>
+    public void CloseFlyout()
+    {
+        RequireApp(nameof(CloseFlyout));
+        RequireAndroid("dismissing the flyout");
+
+        _driver.Driver.Navigate().Back();
+    }
+
+    /// <inheritdoc />
+    /// <remarks>Null: nothing on this platform reports it, and the caller counts the drawer's items.</remarks>
+    public bool? IsFlyoutOpen
+    {
+        get
+        {
+            RequireApp(nameof(IsFlyoutOpen));
+            return null;
+        }
+    }
+
+    /// <inheritdoc />
+    /// <remarks>Null: there is no app-side alert report on this platform yet.</remarks>
+    public AlertContents? ReadAlert()
+    {
+        RequireApp(nameof(ReadAlert));
+        return null;
+    }
+
+    /// <inheritdoc />
+    public IMauiElement? TryFindActiveDialog()
+    {
+        RequireApp(nameof(TryFindActiveDialog));
+        return _driver.TryFindActiveDialogRoot();
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// The real node, by the id MAUI maps an <c>AutomationId</c> to: the resource id on most
+    /// controls, the accessibility id on the rest. Null where it is not in the tree.
+    /// </remarks>
+    public IMauiElement? TryFindDeclared(string automationId)
+    {
+        RequireApp(nameof(TryFindDeclared));
+
+        if (string.IsNullOrEmpty(automationId))
+            return null;
+
+        return _driver.FindElements(Locator.ByAutomationId(automationId)).FirstOrDefault()
+            ?? _driver.FindElements(Locator.ByAccessibilityId(automationId)).FirstOrDefault();
+    }
+
+    private void RequireApp(string operation)
+    {
+        if (!IsApp)
+        {
+            throw new NotSupportedException(
+                $"{operation} is a question about the app, not about one element. "
+                + "Ask IMauiTestContext.AppElement.");
+        }
+    }
+
+    /// <summary>
+    /// Refuses rather than guesses on a platform whose Shell chrome nobody has mapped.
+    /// </summary>
+    private void RequireAndroid(string what)
+    {
+        if (_driver.Platform != MauiPlatform.Android)
+        {
+            throw new PlatformNotSupportedException(
+                $"Shell chrome on {_driver.Platform} has not been mapped: nothing is known about {what}. "
+                + "Dump the tree and add it - see .my/navigation/design-shell-sample-app.md.");
         }
     }
 

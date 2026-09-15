@@ -113,6 +113,30 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
 
     #endregion
 
+    #region The app
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Stands for the application window, read afresh on every use - the window element can be
+    /// retired by UI Automation and attached again. <c>TryFindByScrolling</c> keeps the interface
+    /// default, null: UIA keeps scrolled-off-screen elements in the tree with
+    /// <c>IsOffscreen=true</c>, so scrolling reveals nothing a plain lookup missed.
+    /// </remarks>
+    public IMauiElement AppElement => FlaUIMauiElement.ForApp(this);
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Read from a tree dump, not reasoned about: Windows reports WinUI's own <c>navViewItem</c>s in
+    /// place of anything the app wrote, inside hosts WinUI names.
+    /// </remarks>
+    public ShellChromeLocators ShellChrome { get; } = new(
+        TabHost: Locator.ByAutomationId("TopNavMenuItemsHost"),
+        Tab: Locator.ByControlType("TabItem"),
+        FlyoutHost: Locator.ByAutomationId("MenuItemsHost"),
+        FlyoutItem: Locator.ByControlType("ListItem"));
+
+    #endregion
+
     #region Internal
 
     /// <summary>
@@ -418,13 +442,13 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     public void PerformGesture(string automationId, MauiGesture gesture, int arg1, int arg2)
         => GestureRunner.Perform(RootElement, Automation, automationId, gesture, arg1, arg2);
 
-    /// <inheritdoc />
-    public bool SupportsStateReads(string automationId)
+    /// <summary>Whether the bridge target with this id declares GetState.</summary>
+    internal bool SupportsStateReads(string automationId)
         => BridgeVerbRunner.Supports(
             RootElement, Automation, automationId, BrinellVerb.GetState);
 
-    /// <inheritdoc />
-    public string ReadState(string automationId, string property)
+    /// <summary>Reads app-published state for a bridge target, which may have no node in the tree.</summary>
+    internal string ReadState(string automationId, string property)
     {
         var answer = BridgeVerbRunner.Send(
             RootElement, Automation, automationId, BrinellVerb.GetState, property);
@@ -786,7 +810,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// that have been popped and still answer, rather than raising their items against the live
     /// navigation stack.
     /// </remarks>
-    public void InvokeToolbarItem(string automationId)
+    internal void InvokeToolbarItem(string automationId)
     {
         var answer = Bridge.BridgeVerbRunner.ExchangeAnywhere(
             RootElement, Automation, BrinellVerb.InvokeToolbarItem, automationId);
@@ -829,15 +853,15 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// </remarks>
     private const string MenuItemDisabled = "disabled";
 
-    /// <inheritdoc />
-    public void OpenFlyout() => PresentFlyout(BrinellVerb.OpenFlyout, "open");
+    /// <summary>Opens the Shell's flyout through the app's verb.</summary>
+    internal void OpenFlyout() => PresentFlyout(BrinellVerb.OpenFlyout, "open");
 
-    /// <inheritdoc />
+    /// <summary>Whether the app declares the flyout verbs.</summary>
     /// <remarks>
     /// All three - open, close, and the read that says which - because a caller that can open
     /// through the app but has to check through the chrome has not escaped the chrome.
     /// </remarks>
-    public bool SupportsFlyoutVerbs
+    internal bool SupportsFlyoutVerbs
         => Bridge.BrinellBridgeLookup.Targets(RootElement, Automation).Any(target =>
         {
             var verbs = target.SupportedVerbs();
@@ -846,8 +870,8 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
                    && verbs.Contains(BrinellVerb.GetState);
         });
 
-    /// <inheritdoc />
-    public void CloseFlyout() => PresentFlyout(BrinellVerb.CloseFlyout, "close");
+    /// <summary>Closes the Shell's flyout through the app's verb.</summary>
+    internal void CloseFlyout() => PresentFlyout(BrinellVerb.CloseFlyout, "close");
 
     /// <summary>
     /// Sends one of the two flyout verbs, and reports what came back.
@@ -875,8 +899,8 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
             + "flyout - or no element declares the verb. The bridge said: " + answer.Reason);
     }
 
-    /// <inheritdoc />
-    public bool IsFlyoutOpen()
+    /// <summary>Whether the Shell's flyout is showing, as the app reports it.</summary>
+    internal bool IsFlyoutOpen()
     {
         var answer = Bridge.BridgeVerbRunner.ExchangeAnywhere(
             RootElement, Automation, BrinellVerb.GetState, "FlyoutIsPresented");
@@ -893,7 +917,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
         return bool.TryParse(answer.Value, out var presented) && presented;
     }
 
-    /// <inheritdoc />
+    /// <summary>What the alert on screen asks, or null.</summary>
     /// <remarks>
     /// <b>Null covers two different things on purpose here</b>, and that is unusual enough to
     /// say: no dialog is on screen, and no app-side declaration. Both mean "there is no question
@@ -901,7 +925,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// them asks <see cref="TryFindActiveDialogRoot"/> - a dialog on screen with no readable
     /// question is exactly the app that has not declared <c>CurrentAlert</c>.
     /// </remarks>
-    public AlertContents? CurrentAlert()
+    internal AlertContents? CurrentAlert()
     {
         // The screen decides whether there is an alert; the app only says what it asks.
         //
@@ -928,8 +952,8 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
         return new AlertContents(title, message, accept, cancel);
     }
 
-    /// <inheritdoc />
-    public IMauiElement? TryFindActiveDialogRoot()
+    /// <summary>The dialog on screen, or null.</summary>
+    internal IMauiElement? TryFindActiveDialogRoot()
     {
         var popupCondition = _conditionFactory.ByControlType(ControlType.Window)
             .And(_conditionFactory.ByClassName("Popup"));
@@ -979,19 +1003,6 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
             return null;
         }
     }
-
-    #endregion
-    
-    #region Scrolling
-
-    /// <inheritdoc />
-    /// <remarks>
-    /// UIA keeps scrolled-off-screen elements in the tree with <c>IsOffscreen=true</c>, so
-    /// scrolling reveals nothing a plain lookup missed. A virtualised list is the exception —
-    /// there the answer is <c>VirtualizedItemPattern.Realize()</c>, not scrolling — and no list
-    /// under test virtualises.
-    /// </remarks>
-    public IMauiElement? TryFindByScrollingWithin(IMauiElement? container, Locator locator) => null;
 
     #endregion
     

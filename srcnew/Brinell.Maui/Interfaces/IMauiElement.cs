@@ -155,6 +155,29 @@ public interface IMauiElement : IElement<IMauiElement>
     /// <summary>Whether <see cref="Select"/> has a route. See <see cref="SupportsInvoke"/>.</summary>
     bool SupportsSelect => false;
 
+    /// <summary>
+    /// Raises this element as a MAUI <c>ToolbarItem</c>. Performs or throws.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Not <see cref="Invoke"/>, because on Windows Invoke lies here.</b> A toolbar item's
+    /// automation peer accepts the Invoke pattern, reports success and raises nothing - measured
+    /// four ways. Windows asks the app to raise the item through the bridge's
+    /// <c>InvokeToolbarItem</c> verb; Android and iOS tap this element, which is the ordinary route.
+    /// </para>
+    /// <para>
+    /// The id is passed in rather than read from the element: the element Windows resolves is
+    /// native chrome, and MAUI does not carry the item's <c>AutomationId</c> onto it reliably.
+    /// Called on <see cref="IMauiTestContext.AppElement"/>, it raises the item on the page on
+    /// screen with that id, without anything having been found first.
+    /// </para>
+    /// </remarks>
+    /// <param name="automationId">The item's <c>AutomationId</c>, as the app's markup gives it.</param>
+    /// <exception cref="NotSupportedException">This platform cannot raise a toolbar item.</exception>
+    void InvokeToolbarItem(string automationId)
+        => throw new NotSupportedException(
+            $"{GetType().Name} does not implement InvokeToolbarItem.");
+
     #endregion
 
     #region Focus
@@ -306,8 +329,23 @@ public interface IMauiElement : IElement<IMauiElement>
         => throw new NotSupportedException(
             $"{GetType().Name} does not implement ReadDropdownItems.");
 
-    /// <summary>The text of the dropdown's selected item, read without opening it. Null when none.</summary>
+    /// <summary>The text of the selector's selected item, read without opening anything. Null when none.</summary>
+    /// <remarks>
+    /// Windows reads a dropdown's Selection pattern, which names the chosen item rather than the
+    /// combo box's header, and a selector without a dropdown's text. Android and iOS read the text
+    /// the picker shows.
+    /// </remarks>
     string? SelectedItemText => null;
+
+    /// <summary>
+    /// The texts of a selector's items, in order. Null where this platform cannot read them.
+    /// </summary>
+    /// <remarks>
+    /// Windows opens the dropdown, reads the items while they are live, and leaves it as it was
+    /// found. Android and iOS answer null: nothing reads a picker's items there yet, and null says
+    /// so rather than an empty list claiming the picker holds nothing.
+    /// </remarks>
+    IReadOnlyList<string>? ReadItemTexts() => null;
 
     #endregion
 
@@ -427,38 +465,53 @@ public interface IMauiElement : IElement<IMauiElement>
     #region Scrolling
 
     /// <summary>
-    /// Whether this element, or the container it sits in, can be scrolled a viewport at a time
-    /// without pointer input.
+    /// Scrolls the content one viewport step and reports what is known about whether it moved.
+    /// Performs or throws.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// Windows' Scroll pattern, on the element or its nearest scrolling ancestor - a MAUI
+    /// Windows uses the Scroll pattern on the element or its nearest scrolling ancestor - a MAUI
     /// <c>CollectionView</c> is often wrapped, so the addressable element and the scrolling one
-    /// differ. A touch platform answers false: it scrolls by swiping, and the caller swipes.
+    /// differ - and the pattern reports <see cref="ScrollStep.Moved"/> or
+    /// <see cref="ScrollStep.NotMoved"/>. Without it, the bridge's swipe verb, which cannot say.
+    /// Android and iOS swipe across the element, which cannot say either:
+    /// <see cref="ScrollStep.Unconfirmed"/>.
     /// </para>
     /// <para>
-    /// This was <c>IElement.TryScrollContent</c>, whose <c>false</c> meant both "cannot scroll"
-    /// and "already at the end", so a caller that swiped on false swiped a list that had simply
-    /// finished (step 105c).
+    /// There used to be a <c>SupportsScrollContent</c> question in front of this, whose false
+    /// branch swiped. On Windows that swipe was the bridge verb, on Android a drag computed in the
+    /// control layer - so the question only chose the platform. The answer that mattered, whether
+    /// a caller can loop until the content stops, is the return value now.
     /// </para>
-    /// </remarks>
-    bool SupportsScrollContent => false;
-
-    /// <summary>
-    /// Scrolls the content one viewport step and reports whether it moved.
-    /// </summary>
-    /// <remarks>
-    /// False means the content was already at that end - an ordinary answer a caller uses to stop.
-    /// It never means "no route": that is <see cref="SupportsScrollContent"/>, and this throws.
+    /// <para>
     /// Not to be confused with the bridge's <see cref="ScrollTo"/>, which reveals a named descendant.
+    /// </para>
     /// </remarks>
     /// <param name="verticalSteps">Positive towards the end, negative towards the start.</param>
     /// <param name="horizontalSteps">Positive towards the end, negative towards the start.</param>
-    /// <returns>Whether the content moved.</returns>
+    /// <returns>What is known about the movement.</returns>
     /// <exception cref="NotSupportedException">This element has no scroll route.</exception>
-    bool ScrollContent(int verticalSteps, int horizontalSteps = 0)
+    ScrollStep ScrollContent(int verticalSteps, int horizontalSteps = 0)
         => throw new NotSupportedException(
             $"{GetType().Name} does not implement ScrollContent.");
+
+    /// <summary>
+    /// Finds a descendant by scrolling this element until the descendant enters the tree.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// For platforms that leave off-screen content out of the accessibility tree: Android
+    /// publishes nodes only for what is inside the viewport. Called on the app element, the
+    /// platform picks the scrolling container on screen.
+    /// </para>
+    /// <para>
+    /// Windows keeps off-screen elements in the tree, so scrolling reveals nothing a plain lookup
+    /// missed, and it answers null - an answer, not a gap. That is the default.
+    /// </para>
+    /// </remarks>
+    /// <param name="locator">The locator for the descendant.</param>
+    /// <returns>The element once it is on screen and still, or null when scrolling does not reach it.</returns>
+    IMauiElement? TryFindByScrolling(Locator locator) => null;
 
     /// <summary>
     /// Brings a named descendant into view.
@@ -525,33 +578,24 @@ public interface IMauiElement : IElement<IMauiElement>
     #region Selection
 
     /// <summary>
-    /// Whether this element can be asked to select an item by position.
-    /// </summary>
-    /// <remarks>
-    /// A question, so a control object takes one route rather than trying one. Where it answers
-    /// false the selector falls back to the dropdown - open it, wait for its items to appear in
-    /// the accessibility tree, select one, close it - which is the route this replaces.
-    /// </remarks>
-    bool SupportsSelectIndex => false;
-
-    /// <summary>Whether this element can be asked to select an item by its text.</summary>
-    /// <remarks>
-    /// Separate from <see cref="SupportsSelectIndex"/> because the two are declared separately in
-    /// the app's markup. An app may well publish one and not the other.
-    /// </remarks>
-    bool SupportsSelectByText => false;
-
-    /// <summary>
     /// Selects the item at a position, or throws saying why it could not.
     /// </summary>
     /// <remarks>
-    /// <b>Nothing opens.</b> The dropdown route had a visible side effect - the popup appears and
-    /// goes again - and a two-second poll waiting for its items to reach the accessibility tree.
-    /// The app moves its own selection instead, so the only thing a user would see is the value
-    /// changing, which is what the test is about.
+    /// <para>
+    /// The element picks the route. Windows asks the app through the <c>SelectIndex</c> verb, where
+    /// nothing opens and the app range-checks against its own items; where the app declares no
+    /// verb it opens the dropdown, selects the item and closes it again; with neither it throws.
+    /// Android and iOS tap the picker open and tap the item.
+    /// </para>
+    /// <para>
+    /// There used to be <c>SupportsSelectIndex</c> and <c>SupportsSelectByText</c> questions in
+    /// front of these, and a third branch that tapped. That branch ran only on Android and iOS, and
+    /// only there was it broken, which nothing on Windows could show.
+    /// </para>
     /// </remarks>
     /// <param name="index">The zero-based item position.</param>
     /// <exception cref="NotSupportedException">This platform offers no route.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">No item at that position.</exception>
     void SelectIndex(int index)
         => throw new NotSupportedException(
             $"{GetType().Name} does not implement SelectIndex.");
@@ -559,7 +603,7 @@ public interface IMauiElement : IElement<IMauiElement>
     /// <summary>Selects the item showing this text, or throws saying why it could not.</summary>
     /// <remarks>
     /// Where two items read alike this takes the first, and cannot do otherwise - that is what
-    /// <see cref="SelectIndex"/> is for. The app reports which one it landed on.
+    /// <see cref="SelectIndex"/> is for. Routes as <see cref="SelectIndex"/> does.
     /// </remarks>
     /// <param name="text">The item text.</param>
     /// <exception cref="NotSupportedException">This platform offers no route.</exception>
@@ -607,6 +651,102 @@ public interface IMauiElement : IElement<IMauiElement>
         => throw new NotSupportedException(
             $"{GetType().Name} does not implement SetTime. A control asked for a time to be set "
             + "and this platform offers no route to it.");
+
+    #endregion
+
+    #region The app (IMauiTestContext.AppElement only)
+
+    // What a control needs from the app rather than from one of its elements: the Shell's
+    // flyout, the alert on screen, the dialog, and targets the platform's tree cannot show.
+    //
+    // These used to be IMauiDriver members that control objects called directly, which put a
+    // second route beside the element one - and every such call site had to know which of the
+    // two it was on. Now there is one: a control asks an element, and for app-level questions the
+    // element is the app. Called on any other element they throw, which is the default.
+    //
+    // See .my/ControlFlow/design-every-call-through-the-element.md.
+
+    /// <summary>Opens a Shell's flyout. Performs or throws; already open is success.</summary>
+    /// <remarks>
+    /// Windows uses the app's <c>OpenFlyout</c> verb where declared, and otherwise invokes the
+    /// Shell's opener in the title bar. Android taps the navigation drawer's opener.
+    /// </remarks>
+    /// <exception cref="NotSupportedException">Not the app element, or no route on this platform.</exception>
+    void OpenFlyout()
+        => throw new NotSupportedException(
+            $"{GetType().Name} does not implement OpenFlyout. Ask IMauiTestContext.AppElement.");
+
+    /// <summary>Closes a Shell's flyout without choosing anything. Performs or throws.</summary>
+    /// <remarks>
+    /// Windows uses the app's <c>CloseFlyout</c> verb where declared, and otherwise invokes the
+    /// light-dismiss layer - through its pattern, since a click aimed at it could land on whatever
+    /// it covers. Android goes back, which is how its drawer is dismissed.
+    /// </remarks>
+    /// <exception cref="NotSupportedException">Not the app element, or no route on this platform.</exception>
+    void CloseFlyout()
+        => throw new NotSupportedException(
+            $"{GetType().Name} does not implement CloseFlyout. Ask IMauiTestContext.AppElement.");
+
+    /// <summary>
+    /// Whether a Shell's flyout is showing, as the app reports it. Null when the platform cannot
+    /// say without counting the flyout's items.
+    /// </summary>
+    /// <remarks>
+    /// Null is the ordinary answer where the app does not declare the read, and the caller counts
+    /// the items instead - which works on every platform, so this is not a route choice in
+    /// disguise. Windows keeps a flyout's items in the tree once opened, so counting answers
+    /// differently on a fresh launch than later in a run; asking the app does not.
+    /// </remarks>
+    /// <exception cref="NotSupportedException">Not the app element.</exception>
+    bool? IsFlyoutOpen
+        => throw new NotSupportedException(
+            $"{GetType().Name} does not implement IsFlyoutOpen. Ask IMauiTestContext.AppElement.");
+
+    /// <summary>
+    /// What the alert on screen is asking, or null when none is open or the app does not report it.
+    /// </summary>
+    /// <remarks>
+    /// Only the app can answer, and only if it raises its alerts through <c>BrinellAlerts</c>:
+    /// WinUI puts the message beside a second copy of the title, so from outside it cannot be told
+    /// apart. Android and iOS answer null until something reads their dialogs.
+    /// </remarks>
+    /// <exception cref="NotSupportedException">Not the app element.</exception>
+    AlertContents? ReadAlert()
+        => throw new NotSupportedException(
+            $"{GetType().Name} does not implement ReadAlert. Ask IMauiTestContext.AppElement.");
+
+    /// <summary>The root of the dialog on screen, or null when none is open.</summary>
+    /// <remarks>
+    /// A find with no locator, because each platform draws its dialog somewhere different: WinUI
+    /// as a popup inside the app's window, Android as an alert panel, iOS as an alert element.
+    /// </remarks>
+    /// <exception cref="NotSupportedException">Not the app element.</exception>
+    IMauiElement? TryFindActiveDialog()
+        => throw new NotSupportedException(
+            $"{GetType().Name} does not implement TryFindActiveDialog. Ask IMauiTestContext.AppElement.");
+
+    /// <summary>
+    /// An element the app declared by <c>AutomationId</c>, whether or not the platform's tree
+    /// shows it. Null when there is none.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>For the controls Windows automation cannot see.</b> A MAUI <c>Stepper</c> has no tree node
+    /// of its own on Windows, only its two buttons, and a <c>SwipeView</c> publishes no
+    /// <c>AutomationId</c>. Their bridge elements are still addressable by id, so Windows returns
+    /// an element standing for the bridge target: it answers <see cref="SupportsStateReads"/>,
+    /// <see cref="ReadState"/>, <see cref="SupportsGesture"/> and <see cref="PerformGesture"/>, and
+    /// refuses everything else rather than inventing a visibility or a text.
+    /// </para>
+    /// <para>
+    /// Android and iOS return the real node found by that id, where it is in the tree.
+    /// </para>
+    /// </remarks>
+    /// <param name="automationId">The <c>AutomationId</c> in the app's markup.</param>
+    /// <exception cref="NotSupportedException">Not the app element.</exception>
+    IMauiElement? TryFindDeclared(string automationId)
+        => throw new NotSupportedException(
+            $"{GetType().Name} does not implement TryFindDeclared. Ask IMauiTestContext.AppElement.");
 
     #endregion
 

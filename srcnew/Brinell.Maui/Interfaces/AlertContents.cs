@@ -19,7 +19,7 @@ namespace Brinell.Maui.Interfaces;
 /// </remarks>
 /// <param name="Title">The alert's title.</param>
 /// <param name="Message">Its message, which only the app can report - see
-/// <c>IMauiDriver.CurrentAlert</c>.</param>
+/// <c>IMauiElement.ReadAlert</c>.</param>
 /// <param name="Accept">The accepting button's text, empty when there is only one button.</param>
 /// <param name="Cancel">The dismissing button's text.</param>
 public readonly record struct AlertContents(

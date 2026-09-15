@@ -27,7 +27,7 @@ public class ContentDialog<TParent> : ContainerObjectBase<TParent, ContentDialog
     /// <inheritdoc />
     protected override IMauiElement FindContainerRootElement()
     {
-        return Context.Driver.TryFindActiveDialogRoot()
+        return Context.AppElement.TryFindActiveDialog()
             ?? throw new ElementNotFoundException("No active content dialog was found.");
     }
 
@@ -96,7 +96,7 @@ public class ContentDialog<TParent> : ContainerObjectBase<TParent, ContentDialog
     /// The app under test does not report its alerts.
     /// </exception>
     public string GetMessage()
-        => Context.Driver.CurrentAlert()?.Message
+        => Context.AppElement.ReadAlert()?.Message
            ?? throw new NotSupportedException(
                "The app under test does not report what its alerts ask. Raise them through "
                + "BrinellAlerts in the app - one line per call site - or assert on the title and "

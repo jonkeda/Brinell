@@ -48,7 +48,7 @@ public class AlertReadTests
         _page.ShowConfirmButton.Click();
         Assert.True(dialog.WaitExists(true, TestConstants.DefaultTestTimeoutMs));
 
-        var asked = _fixture.Context.Driver.CurrentAlert();
+        var asked = _fixture.Context.AppElement.ReadAlert();
 
         Assert.NotNull(asked);
         Assert.Equal("Confirm", asked!.Value.Title);
@@ -78,7 +78,7 @@ public class AlertReadTests
         _page.ShowAlertButton.Click();
         Assert.True(dialog.WaitExists(true, TestConstants.DefaultTestTimeoutMs));
 
-        var asked = _fixture.Context.Driver.CurrentAlert();
+        var asked = _fixture.Context.AppElement.ReadAlert();
 
         Assert.NotNull(asked);
         Assert.Equal("Alert", asked!.Value.Title);
@@ -104,7 +104,7 @@ public class AlertReadTests
     [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     public Task CurrentAlert_WithNothingOpen_IsNull()
     {
-        Assert.Null(_fixture.Context.Driver.CurrentAlert());
+        Assert.Null(_fixture.Context.AppElement.ReadAlert());
 
         return Task.CompletedTask;
     }
@@ -134,12 +134,12 @@ public class AlertReadTests
 
         _page.ShowConfirmButton.Click();
         Assert.True(dialog.WaitExists(true, TestConstants.DefaultTestTimeoutMs));
-        Assert.NotNull(_fixture.Context.Driver.CurrentAlert());
+        Assert.NotNull(_fixture.Context.AppElement.ReadAlert());
 
         dialog.DialogButton("Yes").Click();
         Assert.True(dialog.WaitExists(false, TestConstants.DefaultTestTimeoutMs));
 
-        Assert.Null(_fixture.Context.Driver.CurrentAlert());
+        Assert.Null(_fixture.Context.AppElement.ReadAlert());
 
         _page.Result.AssertText("confirmed");
 
@@ -187,7 +187,7 @@ public class AlertReadTests
         _page.ShowPromptButton.Click();
         Assert.True(dialog.WaitExists(true, TestConstants.DefaultTestTimeoutMs));
 
-        var asked = _fixture.Context.Driver.CurrentAlert();
+        var asked = _fixture.Context.AppElement.ReadAlert();
 
         Assert.NotNull(asked);
         Assert.Equal("Prompt", asked!.Value.Title);

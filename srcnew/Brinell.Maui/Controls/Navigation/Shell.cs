@@ -1,5 +1,3 @@
-using Brinell.Maui.Enums;
-
 namespace Brinell.Maui.Controls.Navigation;
 
 /// <summary>
@@ -38,8 +36,8 @@ public class Shell<TParent>
     /// </summary>
     /// <remarks>
     /// The two collections are built on first use rather than here, because each asks
-    /// <see cref="ShellChrome"/> where its platform draws things and that refuses for a
-    /// platform nobody has mapped yet. Building them eagerly would make an unmapped platform
+    /// <see cref="IMauiTestContext.ShellChrome"/> where its platform draws things and that refuses
+    /// for a platform nobody has mapped yet. Building them eagerly would make an unmapped platform
     /// fail while a fixture was being constructed - before any test, and nowhere near the
     /// member that actually needs the answer.
     /// </remarks>
@@ -49,9 +47,9 @@ public class Shell<TParent>
         ArgumentNullException.ThrowIfNull(scope);
 
         _tabs = new Lazy<ShellTabs<TParent>>(
-            () => new ShellTabs<TParent>(scope, scope.Context.Driver.Platform));
+            () => new ShellTabs<TParent>(scope, scope.Context.ShellChrome));
         _flyout = new Lazy<ShellFlyout<TParent>>(
-            () => new ShellFlyout<TParent>(scope, scope.Context.Driver.Platform));
+            () => new ShellFlyout<TParent>(scope, scope.Context.ShellChrome));
     }
 
     /// <summary>The tabs of the current shell item.</summary>

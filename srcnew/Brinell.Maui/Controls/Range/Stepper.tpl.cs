@@ -111,20 +111,30 @@ public partial class Stepper<TScope> : Base.RangeControlBase<TScope>
             + $"'{_baseAutomationId}Plus'.");
     }
     
-    private bool SupportsStateReads()
+    /// <summary>
+    /// The Stepper as the app declared it, when it answers state reads; otherwise null.
+    /// </summary>
+    /// <remarks>
+    /// Not the element this control resolves: on Windows that is the <c>{id}Minus</c> button, which
+    /// does not answer for the Stepper. The app element finds the declaration by id, which works
+    /// whether or not the platform's tree has a node for it - the same two calls
+    /// (<see cref="IMauiElement.SupportsStateReads"/>, <see cref="IMauiElement.ReadState"/>) that
+    /// <c>Image</c> and <c>Picker</c> make. This used to ask the driver by id directly.
+    /// </remarks>
+    private IMauiElement? StateSource()
     {
-        return !string.IsNullOrEmpty(_baseAutomationId)
-            && Context.Driver.SupportsStateReads(_baseAutomationId);
-    }
-
-    private double? ReadNumericState(string property)
-    {
-        if (!SupportsStateReads())
+        if (string.IsNullOrEmpty(_baseAutomationId))
         {
             return null;
         }
 
-        var value = Context.Driver.ReadState(_baseAutomationId!, property);
+        var declared = Context.AppElement.TryFindDeclared(_baseAutomationId);
+        return declared is { SupportsStateReads: true } ? declared : null;
+    }
+
+    private double ReadNumericState(IMauiElement source, string property)
+    {
+        var value = source.ReadState(property);
         return double.TryParse(
             value,
             NumberStyles.Float,
@@ -199,9 +209,9 @@ public partial class Stepper<TScope> : Base.RangeControlBase<TScope>
     /// <returns>The current value, or null if not available.</returns>
     protected override double? GetValueCore(IMauiElement? element)
     {
-        if (SupportsStateReads())
+        if (StateSource() is { } source)
         {
-            return ReadNumericState("Value");
+            return ReadNumericState(source, "Value");
         }
 
         return base.GetValueCore(element);
@@ -210,9 +220,9 @@ public partial class Stepper<TScope> : Base.RangeControlBase<TScope>
     /// <inheritdoc />
     protected override double? GetMinimumCore(IMauiElement? element)
     {
-        if (SupportsStateReads())
+        if (StateSource() is { } source)
         {
-            return ReadNumericState("Minimum");
+            return ReadNumericState(source, "Minimum");
         }
 
         return base.GetMinimumCore(element);
@@ -221,9 +231,9 @@ public partial class Stepper<TScope> : Base.RangeControlBase<TScope>
     /// <inheritdoc />
     protected override double? GetMaximumCore(IMauiElement? element)
     {
-        if (SupportsStateReads())
+        if (StateSource() is { } source)
         {
-            return ReadNumericState("Maximum");
+            return ReadNumericState(source, "Maximum");
         }
 
         return base.GetMaximumCore(element);
@@ -232,9 +242,9 @@ public partial class Stepper<TScope> : Base.RangeControlBase<TScope>
     /// <inheritdoc />
     protected override double? GetStepCore(IMauiElement? element)
     {
-        if (SupportsStateReads())
+        if (StateSource() is { } source)
         {
-            return ReadNumericState("Increment");
+            return ReadNumericState(source, "Increment");
         }
 
         return base.GetStepCore(element);
