@@ -4,17 +4,8 @@ namespace Brinell.Maui.Interfaces;
 /// A gesture a test can ask an element to perform, in the test author's terms.
 /// </summary>
 /// <remarks>
-/// <para>
-/// <b>Deliberately not the wire enum.</b> On Windows a gesture travels as a numbered verb
-/// through a custom UI Automation pattern, and those numbers are a frozen contract shared with
-/// the app under test. On Android and iOS the same gesture is real touch input and no such
-/// number exists. Tying the test-facing API to one platform's wire format would leak that
-/// platform into every shared test and make the numbers impossible to change independently.
-/// </para>
-/// <para>
-/// The mapping to Windows verb numbers lives in the FlaUI driver, which is the only place that
-/// knows about either.
-/// </para>
+/// Independent of how each platform carries the gesture: a verb through the UI Automation bridge
+/// on Windows, real touch input on Android and iOS.
 /// </remarks>
 public enum MauiGesture
 {

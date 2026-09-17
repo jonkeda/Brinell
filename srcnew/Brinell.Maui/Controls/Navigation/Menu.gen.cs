@@ -23,7 +23,7 @@ namespace Brinell.Maui.Controls.Navigation;
 /// </code>
 /// <para>
 /// A menu whose root <i>is</i> its trigger and item host - a bar that is always showing its
-/// items - needs neither extra locator and behaves as it did before.
+/// items - needs neither extra locator.
 /// </para>
 /// </remarks>
 /// <typeparam name="TParent">The containing scope type.</typeparam>

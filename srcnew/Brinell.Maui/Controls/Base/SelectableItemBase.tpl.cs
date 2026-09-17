@@ -6,8 +6,7 @@ namespace Brinell.Maui.Controls.Base;
 /// A collection item that can be the current one: a tab, a flyout entry, a list row.
 /// </summary>
 /// <remarks>
-/// Selection is the one thing a navigation item knows that a plain clickable item does not,
-/// and reading it is the same everywhere, so it lives here rather than in each item type.
+/// Selection state is read the same way for every navigation item, so it lives here.
 /// </remarks>
 /// <typeparam name="TCollection">The owning collection.</typeparam>
 /// <typeparam name="TSelf">The item type itself (self-referencing for fluent returns).</typeparam>
@@ -28,10 +27,9 @@ public abstract partial class SelectableItemBase<TCollection, TSelf>
     /// A selectable item is chosen, not activated.
     /// </summary>
     /// <remarks>
-    /// The distinction this class is named for, now expressed in what it does rather than only
-    /// in what it reads: choosing one member of a group unchooses the others, and invoking does
-    /// not. A tab, a list row and a radio button are all selected; a menu entry is invoked, which
-    /// is what <see cref="ClickableItemBase{TCollection, TSelf}"/> does.
+    /// Choosing one member of a group unchooses the others; invoking does not. A tab, a list row
+    /// and a radio button are selected; a menu entry is invoked, as
+    /// <see cref="ClickableItemBase{TCollection, TSelf}"/> does.
     /// </remarks>
     /// <param name="element">The item's root element.</param>
     /// <param name="timeoutMs">Optional timeout.</param>
@@ -55,19 +53,13 @@ public abstract partial class SelectableItemBase<TCollection, TSelf>
     /// Whether an element reports itself as selected, by any means the platform offers.
     /// </summary>
     /// <remarks>
-    /// Windows answers through <c>Selected</c>, which reads the selection pattern and falls
-    /// back to the toggle pattern. Android reports selection on a tab bar but checked state on
-    /// a radio-style one, so the toggle probe is asked second rather than not at all. An
-    /// element that exposes neither is not selected as far as anything can tell, which is the
-    /// honest answer - guessing from styling or from app state is not a control's business.
+    /// Reads <c>Selected</c>, then checked state, because Android reports a radio-style tab bar
+    /// through checked state. An element that exposes neither is not selected.
     /// </remarks>
     protected static bool IsMarkedSelected(IMauiElement? element)
     {
         if (element == null) return false;
 
-        // Selected is the question; checked is asked too because Android reports a radio-style
-        // tab bar through checked state rather than selection. Two properties, each meaning one
-        // thing - Windows' Selected no longer reads the toggle state on the side (step 105a).
         return element.Selected || element.Checked == true;
     }
 

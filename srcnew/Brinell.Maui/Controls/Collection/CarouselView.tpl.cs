@@ -19,11 +19,8 @@ namespace Brinell.Maui.Controls.Collection;
 /// }
 /// </code>
 /// <para>
-/// There is deliberately no <c>Position</c> or <c>IsLoopEnabled</c> here. Both were read from
-/// a MAUI bindable property through <c>GetAttribute</c>, and neither platform publishes those
-/// to automation: Windows maps seven attribute names and nothing else, Android raises for an
-/// unknown one. The members existed and answered a constant - 0 and false - whatever the app
-/// did. A carousel's position needs an automation source before it can be reported.
+/// There is no <c>Position</c> or <c>IsLoopEnabled</c>: neither platform publishes them to
+/// automation.
 /// </para>
 /// </remarks>
 /// <typeparam name="TParent">The parent scope type (a page or another container).</typeparam>

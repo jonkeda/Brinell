@@ -7,32 +7,11 @@ namespace Brinell.Maui.Interfaces;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Public extensions rather than internal helpers, so a control object outside this assembly
-/// can use them.
+/// Swipes are real pointer gestures: they either happen or throw.
 /// </para>
 /// <para>
-/// <b>Why here and not in <c>Brinell.Core</c>.</b> The geometry is platform-neutral and would
-/// generalize, so this is placement by convenience rather than necessity. The reason it used
-/// to be necessary is gone: these once had to catch a policy refusal that only
-/// <c>Brinell.Maui</c> could name. When a second platform needs swipes, move them.
-/// </para>
-/// <para>
-/// <b>Pointer input, and no <c>Try</c>.</b> Swipes are real pointer gestures. They either happen
-/// or throw - which is what the names now say. They were <c>TrySwipeLeft</c> and the rest, each
-/// returning a <c>bool</c> that was <c>true</c> whenever the element was non-null: a return value
-/// carrying no information, and an invitation to write the <c>else</c> that would make this a
-/// ladder. See <c>.my/fix/design-actions-do-not-try.md</c>.
-/// </para>
-/// <para>
-/// <b>Who calls these.</b> A control object asks its element to perform a gesture and the element
-/// decides how its platform does that; on Appium, that is these. They are not the route on
-/// Windows, where a gesture travels as a verb to the app itself.
-/// </para>
-/// <para>
-/// <b>Largely unexercised.</b> The controls that use these — <c>SwipeView</c> and
-/// <c>RefreshView</c> — are not addressable by AutomationId on Windows, so this logic has
-/// never run in a passing test. It was carried over verbatim rather than simplified, because
-/// Android and iOS are where it will first be exercised.
+/// A control object asks its element to perform a gesture and the element decides how; on Appium
+/// it uses these. On Windows a gesture travels as a verb to the app instead.
 /// </para>
 /// </remarks>
 public static class MauiElementGestureExtensions
@@ -91,9 +70,8 @@ public static class MauiElementGestureExtensions
     /// Swipes between two points expressed relative to the element's top-left corner.
     /// </summary>
     /// <remarks>
-    /// The only one of these that takes coordinates, and the only one a test should reach for
-    /// when the four directions will not do. <c>IMauiElement.Swipe</c> takes absolute points;
-    /// this is the translation, and it is the whole reason the method exists.
+    /// Use this when the four directions will not do. <c>IMauiElement.Swipe</c> takes absolute
+    /// points; this translates from element-relative ones.
     /// </remarks>
     public static void SwipeRelative(this IMauiElement element,
         int startX, int startY, int endX, int endY)

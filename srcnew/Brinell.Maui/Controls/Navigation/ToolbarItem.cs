@@ -8,9 +8,7 @@ namespace Brinell.Maui.Controls.Navigation;
 /// Everything an item does - <c>Click</c>, <c>GetText</c>, <c>IsEnabled</c> and their
 /// <c>Wait</c>/<c>Assert</c> forms - comes from
 /// <see cref="Base.ClickableItemBase{TCollection, TSelf}"/>, and existence and visibility
-/// from the container base beneath it. Nothing here is toolbar-specific, which is the point:
-/// a toolbar item is a leaf, and the type exists to name it and to scope anything a richer
-/// item later holds.
+/// from the container base beneath it.
 /// </remarks>
 /// <typeparam name="TParent">The scope the toolbar belongs to.</typeparam>
 public class ToolbarItem<TParent> : Base.ClickableItemBase<Toolbar<TParent>, ToolbarItem<TParent>>

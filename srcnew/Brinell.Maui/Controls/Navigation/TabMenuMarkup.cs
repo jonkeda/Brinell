@@ -5,9 +5,7 @@ namespace Brinell.Maui.Controls.Navigation;
 /// the reach into one tab's parts.
 /// </summary>
 /// <remarks>
-/// <see cref="TabMenu{TParent}"/> is a Brinell composite rather than a stock MAUI control, so
-/// these ids are its contract with the app's markup. They live here because the tab menu and
-/// its tabs both need them, and a contract stated twice is a contract that drifts.
+/// These ids are the contract between <see cref="TabMenu{TParent}"/> and the app's markup.
 /// </remarks>
 internal static class TabMenuMarkup
 {

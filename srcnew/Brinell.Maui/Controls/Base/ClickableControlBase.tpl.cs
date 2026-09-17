@@ -37,16 +37,9 @@ public abstract partial class ClickableControlBase<TScope> : FocusableControlBas
     /// Performs click on pre-found element. No logging - caller handles logging.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// Invokes, because a plain command control is invoked. A control that activates some other
-    /// way says so by overriding this - <c>ToggleControlBase</c> toggles, <c>RadioButton</c>
-    /// selects, <c>ToolbarButton</c> raises a toolbar item - and each states its own operation rather than a
-    /// shared helper trying several and taking the first that answers.
-    /// </para>
-    /// <para>
-    /// <see cref="IMauiElement.Invoke"/> is platform-neutral: the Invoke pattern on Windows, a
-    /// tap on Android and iOS. See <c>.my/fix/design-controls-know-how-to-click.md</c>.
-    /// </para>
+    /// Invokes the element: the Invoke pattern on Windows, a tap on Android and iOS. Controls that
+    /// activate differently override this - <c>ToggleControlBase</c> toggles, <c>RadioButton</c>
+    /// selects, <c>ToolbarButton</c> raises a toolbar item.
     /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <param name="timeoutMs">Optional timeout for clickable check.</param>
@@ -106,16 +99,8 @@ public abstract partial class ClickableControlBase<TScope> : FocusableControlBas
     /// Activates the button through keyboard input after focusing it.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// Written for WinUI button surfaces whose Invoke pattern reports success without raising the
-    /// app's command - the <c>ToolbarItem</c> family.
-    /// </para>
-    /// <para>
-    /// <b>Not available on Windows.</b> The Windows driver does not type, so
-    /// <c>SendKeys</c> throws there, naming the alternative. For a toolbar item use
-    /// <c>ToolbarButton</c>, which asks the app to raise it; for anything else, ask the control for
-    /// the operation it means. On Android and iOS the key is delivered by Appium.
-    /// </para>
+    /// Not available on Windows, where the driver does not type; use <c>ToolbarButton</c> for a
+    /// toolbar item. On Android and iOS the key is delivered by Appium.
     /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <param name="timeoutMs">Optional timeout for clickable check.</param>
@@ -153,9 +138,7 @@ public abstract partial class ClickableControlBase<TScope> : FocusableControlBas
 
     /// <inheritdoc />
     /// <remarks>
-    /// A clickable control must also be enabled. Checked here, inside the readiness poll, so a
-    /// control enabled by a binding that resolves a frame later is waited for rather than
-    /// failed against — <c>ClickCore</c> re-checks it, but by then the retry loop has ended.
+    /// Also requires the control to be enabled, so a control enabled a moment late is waited for.
     /// </remarks>
     protected override void EnsureReadyForActionCore(IMauiElement element)
     {

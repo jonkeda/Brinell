@@ -29,22 +29,8 @@ public partial class TabItem<TParent> : Base.SelectableItemBase<TabMenu<TParent>
     /// Invokes the tab's button surface, falling back to the tab itself.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// The tab's root is a layout, and a layout has no command. The button inside it does.
-    /// </para>
-    /// <para>
-    /// <b>Invoked rather than selected, unlike the rest of
-    /// <see cref="Base.SelectableItemBase{TCollection, TSelf}"/>.</b> A tab is conceptually one
-    /// of a group, but this tab bar is built from plain buttons - see
-    /// <c>TabMenu_PlainButtonBar_ReportsNoSelection</c> - and a button exposes Invoke and no
-    /// SelectionItem. Selection is reported separately rather than performed by the click.
-    /// </para>
-    /// <para>
-    /// Measured, not assumed: inheriting <c>Select</c> failed with "'TabMenuView_Button' does not
-    /// expose the UI Automation SelectionItemPattern". Under the activation ladder this control
-    /// worked by falling through from SelectionItem to Invoke, so the mismatch was real all along
-    /// and simply never said so.
-    /// </para>
+    /// The tab's root is a layout; the button inside it carries the command. The tab is invoked
+    /// rather than selected because the tab bar is built from plain buttons.
     /// </remarks>
     /// <param name="element">The tab's root element.</param>
     /// <param name="timeoutMs">Optional timeout.</param>
@@ -60,10 +46,8 @@ public partial class TabItem<TParent> : Base.SelectableItemBase<TabMenu<TParent>
     /// Reads the tab's caption from its caption label, then its button, then the tab itself.
     /// </summary>
     /// <remarks>
-    /// Named <c>GetText</c> like every other item rather than <c>GetCaption</c>: one word for
-    /// one idea across item types is worth more than a word that reads better on a tab. Where
-    /// the text lives is the tab's business, not the caller's - the tab's own element reports
-    /// an empty string on Windows.
+    /// On Windows the tab's own element reports an empty string, so the caption label is read
+    /// first.
     /// </remarks>
     /// <param name="element">The tab's root element.</param>
     protected override string? GetTextCore(IMauiElement element)

@@ -30,9 +30,8 @@ public partial class WebView<TScope> : Base.ViewBase<TScope>
     /// Gets the current URL of the WebView.
     /// </summary>
     /// <remarks>
-    /// Each platform surfaces the URL differently, so all three are tried in turn: an
-    /// explicit attribute, the bound Source, and finally the element's text — on Windows a
-    /// WebView2 exposes its address through the value pattern rather than an attribute.
+    /// Read from the element's text, which is where WebView2 surfaces its address on Windows. In a
+    /// web context, ask with a script instead.
     /// </remarks>
     /// <param name="element">The pre-found element (may be null).</param>
     /// <returns>The current URL, or null if not available.</returns>
@@ -42,8 +41,6 @@ public partial class WebView<TScope> : Base.ViewBase<TScope>
     {
         if (element == null) return null;
 
-        // A web view publishes no url of its own; on Windows WebView2 surfaces it as the
-        // element's text. In a web context the honest way to ask is a script, not an element.
         return element.Text;
     }
 

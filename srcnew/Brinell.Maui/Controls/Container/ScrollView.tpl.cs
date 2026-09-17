@@ -7,22 +7,7 @@ namespace Brinell.Maui.Controls.Container;
 /// scrolling.
 /// </summary>
 /// <remarks>
-/// <para>
-/// A scrolling container needs both scroll behaviour and container scoping, and C# gives
-/// one base class. Scoping wins the base slot — it is the reason to model a ScrollView as
-/// a container at all — and the scroll mechanics are delegated to
-/// <see cref="ScrollHelper"/>, which <see cref="CollectionObjectBase{TParent, TSelf, TItem}"/>
-/// also uses.
-/// </para>
-/// <para>
-/// Scrolling is UI Automation first, falling back to a pointer swipe only where pointer
-/// input is permitted. The methods here report progress rather than throwing when
-/// scrolling is not possible, because "cannot scroll further" is an ordinary outcome.
-/// </para>
-/// <para>
-/// Unlike the other layout containers, <c>ScrollView</c> is addressable on Windows
-/// without an automation handler.
-/// </para>
+/// Scrolling methods report progress rather than throwing when the content cannot scroll further.
 /// </remarks>
 /// <typeparam name="TParent">The parent scope type (a page or another container).</typeparam>
 /// <typeparam name="TSelf">The view type itself (self-referencing for fluent returns).</typeparam>
@@ -55,10 +40,7 @@ public partial class ScrollView<TParent, TSelf> : ContainerObjectBase<TParent, T
     /// <summary>
     /// Scrolls one viewport toward the end of the content.
     /// </summary>
-    /// <remarks>
-    /// The Scroll pattern where the element has one, a swipe where it does not - asked once, see
-    /// <see cref="ScrollHelper"/>. At the end of the content this does nothing.
-    /// </remarks>
+    /// <remarks>At the end of the content this does nothing.</remarks>
     /// <param name="element">The container's own element.</param>
     protected virtual void ScrollForwardCore(IMauiElement element)
         => ScrollHelper.StepForward(element);
@@ -80,17 +62,9 @@ public partial class ScrollView<TParent, TSelf> : ContainerObjectBase<TParent, T
     /// <param name="locator">Locator for the descendant, resolved within this container.</param>
     /// <returns>The container, for chaining.</returns>
     /// <remarks>
-    /// <para>
-    /// Hand-written: this resolves a <em>descendant</em> from a locator the caller supplies,
-    /// so its subject is not the container's own element and it does not fit the Core
-    /// contract, which passes the control's own element first.
-    /// </para>
-    /// <para>
-    /// Asks the element to scroll itself into view via the platform's scroll-item pattern.
-    /// Silently does nothing when the element is not present — use
-    /// <see cref="ContainerObjectBase{TParent, TSelf}.FindElement"/> first if absence should
-    /// be an error.
-    /// </para>
+    /// Does nothing when the element is not present; use
+    /// <see cref="ContainerObjectBase{TParent, TSelf}.FindElement"/> first if absence should be an
+    /// error.
     /// </remarks>
     public TSelf ScrollTo(Locator locator)
     {

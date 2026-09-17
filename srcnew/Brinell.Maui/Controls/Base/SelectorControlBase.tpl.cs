@@ -4,19 +4,6 @@ namespace Brinell.Maui.Controls.Base;
 /// Base class for MAUI controls with selection capability.
 /// Implements ISelectorControlObject with SelectByText, SelectByIndex, GetSelectedText.
 /// </summary>
-/// <remarks>
-/// <para>
-/// <b>One element call per operation, and no route choice here.</b> Selection used to ask
-/// <c>SupportsSelectByText</c>, then a dropdown question, and fall through to tapping the
-/// picker. On Windows the last branch threw; on Android and iOS the first two always answered
-/// false, so the tap was the only branch that ran there - and it could not work, because the item
-/// lookup it relied on answered null. The element picks the route now, and each platform's route
-/// is written once, in its own element.
-/// </para>
-/// <para>
-/// See <c>.my/ControlFlow/design-every-call-through-the-element.md</c>.
-/// </para>
-/// </remarks>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
 public abstract partial class SelectorControlBase<TScope> : FocusableControlBase<TScope>,
     ISelectorControlObject<TScope>
@@ -98,11 +85,7 @@ public abstract partial class SelectorControlBase<TScope> : FocusableControlBase
     /// <summary>
     /// Gets selected text from pre-found element.
     /// </summary>
-    /// <remarks>
-    /// The element answers: a dropdown names its selected item separately from its header, which
-    /// is what its text would otherwise return, and a selector without one shows its choice as
-    /// text. See <see cref="IMauiElement.SelectedItemText"/>.
-    /// </remarks>
+    /// <remarks>See <see cref="IMauiElement.SelectedItemText"/>.</remarks>
     /// <param name="element">The pre-found element.</param>
     /// <returns>The selected text, or null if not available.</returns>
     protected virtual string? GetSelectedTextCore(IMauiElement? element)
@@ -141,9 +124,7 @@ public abstract partial class SelectorControlBase<TScope> : FocusableControlBase
     /// Override in derived classes for picker-specific implementation.
     /// </summary>
     /// <remarks>
-    /// Generates <c>GetItemTexts</c> plus sequence-aware comparisons. Plain equality is not
-    /// generated for a collection: <c>==</c> would compare references, which no caller could
-    /// satisfy.
+    /// Generates <c>GetItemTexts</c> with sequence comparisons rather than plain equality.
     /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <returns>List of item texts, or null if not available.</returns>

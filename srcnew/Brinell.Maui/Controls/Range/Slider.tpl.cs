@@ -40,12 +40,6 @@ public partial class Slider<TScope> : Base.RangeControlBase<TScope>
     /// Sets slider value, clamped to the slider's range.
     /// The element picks the route: the RangeValue pattern on Windows, arrow keys on Android and iOS.
     /// </summary>
-    /// <remarks>
-    /// There used to be a middle rung that clicked at a computed point through Appium's
-    /// <c>windows: click</c> script. Windows is driven by FlaUI, not Appium, so that rung only ever
-    /// ran on Android, where the script does not exist and it failed through to the keyboard. The
-    /// keyboard route itself now lives in <c>AppiumMauiElement.SetRangeValue</c>.
-    /// </remarks>
     /// <param name="element">The slider element.</param>
     /// <param name="value">The target value. Null skips the operation.</param>
     /// <param name="timeoutMs">Optional timeout in milliseconds.</param>

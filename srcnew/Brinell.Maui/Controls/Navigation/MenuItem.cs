@@ -5,8 +5,7 @@ namespace Brinell.Maui.Controls.Navigation;
 /// </summary>
 /// <remarks>
 /// Like <see cref="ToolbarItem{TParent}"/>, everything it does comes from
-/// <see cref="Base.ClickableItemBase{TCollection, TSelf}"/>. A menu item is a leaf; the type
-/// exists to name it and to scope anything a richer item later holds.
+/// <see cref="Base.ClickableItemBase{TCollection, TSelf}"/>.
 /// </remarks>
 /// <typeparam name="TParent">The scope the menu belongs to.</typeparam>
 public class MenuItem<TParent> : Base.ClickableItemBase<Menu<TParent>, MenuItem<TParent>>

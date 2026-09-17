@@ -13,22 +13,7 @@ namespace Brinell.Maui.Controls.Container;
 /// scrolling.
 /// </summary>
 /// <remarks>
-/// <para>
-/// A scrolling container needs both scroll behaviour and container scoping, and C# gives
-/// one base class. Scoping wins the base slot — it is the reason to model a ScrollView as
-/// a container at all — and the scroll mechanics are delegated to
-/// <see cref="ScrollHelper"/>, which <see cref="CollectionObjectBase{TParent, TSelf, TItem}"/>
-/// also uses.
-/// </para>
-/// <para>
-/// Scrolling is UI Automation first, falling back to a pointer swipe only where pointer
-/// input is permitted. The methods here report progress rather than throwing when
-/// scrolling is not possible, because "cannot scroll further" is an ordinary outcome.
-/// </para>
-/// <para>
-/// Unlike the other layout containers, <c>ScrollView</c> is addressable on Windows
-/// without an automation handler.
-/// </para>
+/// Scrolling methods report progress rather than throwing when the content cannot scroll further.
 /// </remarks>
 /// <typeparam name="TParent">The parent scope type (a page or another container).</typeparam>
 /// <typeparam name="TSelf">The view type itself (self-referencing for fluent returns).</typeparam>

@@ -7,18 +7,8 @@ namespace Brinell.Maui.Controls.Base;
 /// says something, and it can be disabled.
 /// </summary>
 /// <remarks>
-/// <para>
-/// An item is a <see cref="ItemContainerBase{TCollection, TSelf}"/> rather than a control
-/// because <see cref="CollectionObjectBase{TParent, TSelf, TItem}"/> hands out containers -
-/// that is what gives the item its own root and lets a chain stay on the item. The price is
-/// that a leaf item cannot inherit <see cref="ClickableControlBase{TScope}"/>, so the two
-/// or three members a leaf needs live here instead, once, for every item type that wants
-/// them.
-/// </para>
-/// <para>
-/// Existence and visibility are not declared here: <see cref="ContainerObjectBase{TParent,
-/// TSelf}"/> already answers both against the item's root.
-/// </para>
+/// Existence and visibility come from <see cref="ContainerObjectBase{TParent, TSelf}"/>,
+/// answered against the item's root.
 /// </remarks>
 /// <typeparam name="TCollection">The owning collection.</typeparam>
 /// <typeparam name="TSelf">The item type itself (self-referencing for fluent returns).</typeparam>

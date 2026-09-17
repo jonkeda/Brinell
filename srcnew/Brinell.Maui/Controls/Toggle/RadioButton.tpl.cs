@@ -35,17 +35,7 @@ public partial class RadioButton<TScope> : Base.ToggleControlBase<TScope>
     /// A radio button is chosen from a group, not flipped.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// The distinction is real and not pedantry: selecting one member deselects the rest, and
-    /// toggling does not. A radio button driven through Toggle can end up as the second one
-    /// checked in a group where only one may be.
-    /// </para>
-    /// <para>
-    /// This used to be expressed as an ordering constraint inside a shared ladder -
-    /// <c>ToggleControlBase</c> appended its Toggle rung <i>after</i> SelectionItem, with a
-    /// comment in that file explaining that a radio button in this file depended on the order.
-    /// Naming the operation here removes the dependency along with the comment.
-    /// </para>
+    /// Selecting one member deselects the rest; toggling does not.
     /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <param name="timeoutMs">Optional timeout for clickable check.</param>
@@ -57,9 +47,7 @@ public partial class RadioButton<TScope> : Base.ToggleControlBase<TScope>
 
     /// <inheritdoc />
     /// <remarks>
-    /// Selecting, for the reason above. A radio button cannot be unselected by acting on it, so
-    /// there is no state to flip - the base's "did the state change" check still applies and is
-    /// what catches a selection that did not take.
+    /// Selects the radio button, and throws when the selection does not take.
     /// </remarks>
     protected override void ToggleCore(IMauiElement element, int? timeoutMs = null)
     {
@@ -92,11 +80,8 @@ public partial class RadioButton<TScope> : Base.ToggleControlBase<TScope>
         => element == null ? null : element.Checked ?? element.Selected;
 
     /// <inheritdoc />
-    /// <remarks>
-    /// Checking a radio button is selecting it. <b>Unchecking one is refused</b>: nothing a user can
-    /// do to a radio button unchecks it - they choose another - and the toggle this used to fall
-    /// through to did nothing and reported nothing, so a test asking for it passed without the
-    /// state it asked for (step 108).
+    /// Checking a radio button selects it. Unchecking one throws <see cref="NotSupportedException"/>:
+    /// select another member of the group instead.
     /// </remarks>
     protected override void SetCheckedCore(IMauiElement element, bool? @checked, int? timeoutMs = null)
     {

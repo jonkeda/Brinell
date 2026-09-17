@@ -33,9 +33,7 @@ public partial class Switch<TScope> : Base.ToggleControlBase<TScope>
 
     /// <inheritdoc />
     /// <remarks>
-    /// <b>One route.</b> The element is asked for the state wanted, which is idempotent: it reads
-    /// the state and toggles only when it differs - the Toggle pattern on Windows, a tap on Android
-    /// and iOS - and the control verifies the result (step 108).
+    /// Toggles only when the state differs, then verifies the result.
     /// </remarks>
     protected override void SetCheckedCore(IMauiElement element, bool? @checked, int? timeoutMs = null)
     {

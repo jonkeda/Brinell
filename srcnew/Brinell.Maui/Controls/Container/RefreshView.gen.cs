@@ -12,23 +12,9 @@ namespace Brinell.Maui.Controls.Container;
 /// MAUI RefreshView control: a container that refreshes its content when pulled down.
 /// </summary>
 /// <remarks>
-/// <para>
-/// <b>A container</b> (step 102, option B): it hosts content, so it is modelled the way
-/// <c>ScrollView</c> and <c>Border</c> are - its children are found under it. It used to be a
-/// view, which gave it no way to name what it holds.
-/// </para>
-/// <para>
-/// Refreshing is declared as a capability (<see cref="IRefreshableControlObject{TSelf}"/>)
-/// rather than inherited from a refreshable base class. C# allows one base class, and a
-/// RefreshView wraps a scrollable child — a control that may well need both capabilities.
-/// </para>
-/// <para>
-/// <b>Not addressable on Windows.</b> RefreshView maps to the WinUI
-/// <c>RefreshContainer</c>, whose automation peer must not be overridden — doing so
-/// collapses the entire UIA tree. Pull-to-refresh is a mobile gesture in any case; on
-/// Windows, drive the bound command instead. These members exist for the planned
-/// Android/iOS phase.
-/// </para>
+/// <b>Not addressable on Windows.</b> RefreshView maps to the WinUI <c>RefreshContainer</c>,
+/// whose automation peer cannot be overridden without collapsing the UIA tree. On Windows, drive
+/// the bound command instead.
 /// </remarks>
 /// <typeparam name="TParent">The parent scope type.</typeparam>
 /// <typeparam name="TSelf">The concrete container type.</typeparam>

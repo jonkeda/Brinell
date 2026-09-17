@@ -12,8 +12,7 @@ namespace Brinell.Maui.Controls.Base;
 /// A collection item that can be the current one: a tab, a flyout entry, a list row.
 /// </summary>
 /// <remarks>
-/// Selection is the one thing a navigation item knows that a plain clickable item does not,
-/// and reading it is the same everywhere, so it lives here rather than in each item type.
+/// Selection state is read the same way for every navigation item, so it lives here.
 /// </remarks>
 /// <typeparam name="TCollection">The owning collection.</typeparam>
 /// <typeparam name="TSelf">The item type itself (self-referencing for fluent returns).</typeparam>

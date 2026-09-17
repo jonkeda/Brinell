@@ -29,17 +29,8 @@ public interface IMauiTestContext : ITestContext<IMauiElement>, IMauiElementScop
     /// Android and iOS.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// <b>How a control object asks the app anything.</b> The flyout, the alert on screen, the
-    /// active dialog and targets the platform's tree cannot show have no element of their own, so
-    /// control objects used to call the driver for them - a second route beside the element one.
-    /// They ask this element instead, and every control call goes through
-    /// <see cref="IMauiElement"/>.
-    /// </para>
-    /// <para>
-    /// Resolved freshly on each read: a window UI Automation has retired is attached again rather
-    /// than answered for.
-    /// </para>
+    /// Control objects ask this element for app-level things - the flyout, the alert, the active
+    /// dialog, and targets the platform's tree cannot show. Resolved freshly on each read.
     /// </remarks>
     IMauiElement AppElement { get; }
 

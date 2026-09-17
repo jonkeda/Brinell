@@ -39,17 +39,8 @@ public partial class Image<TScope> : Base.ViewBase<TScope>
     /// Whether the image has finished loading a bitmap.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// <b>This used to be "it occupies space", and that assertion passed for the wrong
-    /// reason.</b> A broken image occupies exactly as much space as a working one, because the
-    /// layout reserves it either way - so a test asserting an image had loaded was asserting
-    /// that MAUI had done arithmetic. The old comment was right that nothing else was
-    /// observable; it was observing from outside the app, where the source does not reach.
-    /// </para>
-    /// <para>
-    /// The app answers now where it can. The size check remains for platforms with no bridge,
-    /// stated as the weaker thing it is rather than as the definition.
-    /// </para>
+    /// Asked of the app where it can answer. Otherwise falls back to whether the image occupies
+    /// space, which a broken image also does.
     /// </remarks>
     /// <param name="element">The pre-found element (may be null).</param>
     /// <returns>True if loaded, false otherwise, null if not found.</returns>
@@ -57,10 +48,7 @@ public partial class Image<TScope> : Base.ViewBase<TScope>
     {
         if (element == null) return null;
 
-        // Source is read first, and its null is what says the app does not answer here - so the
-        // size route is taken on the strength of one call rather than a separate question.
-        // IsLoading is only asked once Source has answered, because an app that answers one
-        // answers both.
+        // A null Source means the app does not answer here, so fall back to the size check.
         if (element.ReadState("Source") is { } source)
         {
             // Loaded means: a source to load, and not still loading it. Either alone is the
@@ -79,9 +67,8 @@ public partial class Image<TScope> : Base.ViewBase<TScope>
     /// Where the image's bitmap comes from, as the app declared it.
     /// </summary>
     /// <remarks>
-    /// Only the app can answer this: an image source never reaches the accessibility tree on any
-    /// platform. Null rather than empty where there is no bridge, so "no source" and "cannot
-    /// tell" stay distinguishable.
+    /// Only the app can answer this. Null where the app does not report it, so "no source" and
+    /// "cannot tell" stay distinguishable.
     /// </remarks>
     /// <param name="element">The pre-found element (may be null).</param>
     /// <returns>The source, or null when it cannot be read.</returns>

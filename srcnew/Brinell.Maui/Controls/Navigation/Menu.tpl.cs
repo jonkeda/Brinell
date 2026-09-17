@@ -17,7 +17,7 @@ namespace Brinell.Maui.Controls.Navigation;
 /// </code>
 /// <para>
 /// A menu whose root <i>is</i> its trigger and item host - a bar that is always showing its
-/// items - needs neither extra locator and behaves as it did before.
+/// items - needs neither extra locator.
 /// </para>
 /// </remarks>
 /// <typeparam name="TParent">The containing scope type.</typeparam>
@@ -90,7 +90,7 @@ public partial class Menu<TParent>
     /// </summary>
     /// <remarks>
     /// A disclosure menu's trigger toggles, so calling this on an open menu closes it. Ask
-    /// <c>IsOpen</c> rather than assuming, and see the sample's menu tests for both.
+    /// <c>IsOpen</c> rather than assuming.
     /// </remarks>
     /// <param name="element">The menu's own element.</param>
     /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
@@ -107,9 +107,8 @@ public partial class Menu<TParent>
     /// Whether the menu is showing its items.
     /// </summary>
     /// <remarks>
-    /// Read from the item host rather than from the menu itself: the menu's own element is
-    /// there whether it is open or shut, which is why the previous <c>IsOpen</c> - the
-    /// trigger's own visibility - answered true for a closed menu.
+    /// Read from the item host, since the menu's own element is present whether it is open or
+    /// not.
     /// </remarks>
     /// <param name="element">The menu's own element (may be null).</param>
     /// <returns>True when open, false when shut, null when the menu is not on the page.</returns>

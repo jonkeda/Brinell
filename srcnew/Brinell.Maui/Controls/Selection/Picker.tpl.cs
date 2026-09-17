@@ -31,23 +31,11 @@ public partial class Picker<TScope> : Base.SelectorControlBase<TScope>
 
     #region Flyout - Core Methods
 
-    // Opening the dropdown is now a thing a test asks for, rather than something selection did
-    // on its way past. The two were the same call before: to select an item you opened the
-    // popup, and so every selection test was also, silently, a flyout test - and a genuine
-    // flyout test could not be told apart from one that only wanted the value changed.
-    //
-    // This half stays on the ExpandCollapse pattern rather than becoming a verb. MAUI has no
-    // public API to open a Picker's dropdown - it belongs to the platform control - so an app
-    // could only answer such a verb by reaching into WinUI, while the pattern is exactly the
-    // supported way to ask a combo box to expand. There is nothing to gain by moving it.
+    // Opening the dropdown uses the ExpandCollapse pattern: MAUI has no public API for it.
 
     /// <summary>Opens the picker's dropdown.</summary>
     /// <remarks>
-    /// Performs or throws, with no question in front of it: the element throws a
-    /// <see cref="NotSupportedException"/> naming the missing ExpandCollapse pattern where there
-    /// is nothing to expand. That replaced a <c>BrinellException</c> raised here after asking
-    /// <c>SupportsDropdown</c> - the same failure, one round trip earlier, and named by the
-    /// platform that knows.
+    /// Throws <see cref="NotSupportedException"/> where the platform has nothing to expand.
     /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <param name="timeoutMs">Optional timeout.</param>
@@ -62,11 +50,7 @@ public partial class Picker<TScope> : Base.SelectorControlBase<TScope>
         => element.CloseDropdown();
 
     /// <summary>Whether the picker's dropdown is showing.</summary>
-    /// <remarks>
-    /// False where the platform publishes no ExpandCollapse pattern, which is the honest answer:
-    /// nothing is open, and nothing can be. The element says so with null, which this flattens -
-    /// a caller asking a picker whether its flyout is open is not asking whether it could be.
-    /// </remarks>
+    /// <remarks>False where the platform publishes no ExpandCollapse pattern.</remarks>
     /// <param name="element">The pre-found element.</param>
     /// <returns>Whether the dropdown is open.</returns>
     protected virtual bool? IsFlyoutOpenCore(IMauiElement? element)
@@ -76,11 +60,8 @@ public partial class Picker<TScope> : Base.SelectorControlBase<TScope>
     /// What the open dropdown is showing.
     /// </summary>
     /// <remarks>
-    /// <b>Not the same question as <c>GetItemTexts</c>, and the difference is the point.</b> This
-    /// is what the popup has put into the accessibility tree, which for a long list is the
-    /// visible handful rather than everything the picker holds - so it answers "what can be seen
-    /// right now", while the app answers "what is there". Reading the second out of the first is
-    /// what step 24 stopped doing.
+    /// Only what the popup has put into the accessibility tree, which for a long list is the
+    /// visible handful. Use <c>GetItemTexts</c> for every item the picker holds.
     /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <returns>The realized item texts, or null where the platform has no dropdown to read.</returns>
@@ -91,14 +72,7 @@ public partial class Picker<TScope> : Base.SelectorControlBase<TScope>
 
     #region Selection state - Core Methods
 
-    // Four reads the app answers for itself. Each one used to open the dropdown, read the popup
-    // and close it again - a read that changed what it was reading, so asking a picker what it
-    // held twice in a row was two different journeys through the app, and a test that only
-    // wanted to check a value left the UI somewhere it had not been.
-    //
-    // Each calls ReadState exactly once and branches on the result. Asking whether the app
-    // answers and then asking for the value would walk the bridge twice per read - the pair of
-    // calls the nullable read replaced, rebuilt by hand.
+    // These reads are answered by the app, without opening the dropdown.
 
     /// <inheritdoc />
     protected override string? GetSelectedTextCore(IMauiElement? element)
@@ -113,10 +87,7 @@ public partial class Picker<TScope> : Base.SelectorControlBase<TScope>
 
     /// <inheritdoc />
     /// <remarks>
-    /// <b>This was derived, and the derivation was wrong for a picker holding two items that
-    /// read alike.</b> It read the selected text and returned the position of the first item
-    /// matching it, so selecting the second of two identical entries reported the first. The app
-    /// holds the number.
+    /// Read from the app, so it is correct when two items read alike.
     /// </remarks>
     protected override int? GetSelectedIndexCore(IMauiElement? element)
     {
@@ -141,11 +112,6 @@ public partial class Picker<TScope> : Base.SelectorControlBase<TScope>
     }
 
     /// <inheritdoc />
-    /// <remarks>
-    /// The count travels with the items so that a lie is detectable: item texts are arbitrary
-    /// user strings, one of them may contain a newline, and a list silently one item longer than
-    /// the app's would be compared against an expectation without anyone being told.
-    /// </remarks>
     protected override IReadOnlyList<string>? GetItemTextsCore(IMauiElement? element)
     {
         if (element?.ReadState("Items") is not { } reported)
@@ -206,9 +172,7 @@ public partial class Picker<TScope> : Base.SelectorControlBase<TScope>
     {
         if (element == null) return null;
 
-        // The accessible name, which is what a picker's Title becomes once rendered. Not the
-        // MAUI Title property - nothing publishes that - so a picker whose name is set from
-        // something else reports that instead.
+        // The accessible name, which is what a rendered picker's Title becomes.
         return element.Name;
     }
 

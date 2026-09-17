@@ -5,16 +5,12 @@ namespace Brinell.Maui.Containers;
 /// </summary>
 /// <remarks>
 /// <para>
-/// A locator is normally handed to the driver to <i>search</i> with. A collection needs the
-/// other direction: it has the item roots already and must say which one the caller meant.
-/// Reusing <see cref="Locator"/> for that keeps one vocabulary - <c>ByAutomationId</c>,
-/// <c>ByText</c>, <c>ByControlType</c> - instead of inventing a second way to name a thing.
+/// A collection already holds its item roots and must say which one the caller meant, using the
+/// same <see cref="Locator"/> vocabulary as a search.
 /// </para>
 /// <para>
-/// Identifiers are compared exactly; captions leniently. An <c>AutomationId</c> is written by
-/// the app author on both sides of the comparison, so a difference in case is a mistake worth
-/// surfacing. A caption is rendered by the platform - Android cases button text to suit its
-/// theme - so an exact match there would pass on one platform and fail on the other.
+/// Identifiers are compared exactly; captions ignore case, because platforms render captions
+/// differently - Android cases button text to suit its theme.
 /// </para>
 /// </remarks>
 public static class ElementMatch

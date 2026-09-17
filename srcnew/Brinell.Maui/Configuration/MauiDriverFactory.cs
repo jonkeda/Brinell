@@ -18,10 +18,7 @@ public static class MauiDriverFactory
     /// The Appium client assembly name.
     /// </summary>
     /// <remarks>
-    /// The NuGet package is called <c>Appium.WebDriver</c> but the assembly it ships is
-    /// <c>Appium.Net</c>. Loading by the package name fails at runtime with "assembly not
-    /// found", which reads as a missing package rather than a wrong name — and, because the
-    /// load is by reflection, nothing catches it at compile time.
+    /// The <c>Appium.WebDriver</c> package ships an assembly named <c>Appium.Net</c>.
     /// </remarks>
     private const string AppiumAssemblyName = "Appium.Net";
 

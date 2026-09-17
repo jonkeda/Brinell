@@ -46,12 +46,7 @@ public class ContentDialog<TParent> : ContainerObjectBase<TParent, ContentDialog
     /// <summary>
     /// The dialog's title, as the platform publishes it.
     /// </summary>
-    /// <remarks>
-    /// <b>The dialog's own accessible name</b>, not the first piece of text inside it. WinUI
-    /// names a <c>ContentDialog</c> after its title and also renders that title as a text
-    /// element in the content area, so reading the text would be picking a position out of a
-    /// list and hoping; the name is the platform stating which it is.
-    /// </remarks>
+    /// <remarks>Read from the dialog's accessible name.</remarks>
     /// <returns>The title.</returns>
     public string? GetTitle() => ContainerRoot.Name;
 
@@ -59,16 +54,8 @@ public class ContentDialog<TParent> : ContainerObjectBase<TParent, ContentDialog
     /// The text on every button the dialog is offering.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// <b>Worth asserting on its own, because the commonest dialog defect is the button list.</b>
-    /// A confirmation that offers no way out, or that offers two where the destructive one is
-    /// the default, is wrong in a way no assertion about the outcome can see: the test presses a
-    /// button by name and passes either way.
-    /// </para>
-    /// <para>
-    /// Read from the platform rather than from the app, because unlike the message these are
-    /// published unambiguously - each is a Button element with its text as its name.
-    /// </para>
+    /// Worth asserting on its own: a confirmation with the wrong buttons still passes a test that
+    /// presses a button by name.
     /// </remarks>
     /// <returns>The button texts, in tree order.</returns>
     public IReadOnlyList<string> GetButtonTexts()
@@ -79,17 +66,7 @@ public class ContentDialog<TParent> : ContainerObjectBase<TParent, ContentDialog
     /// The question the dialog is asking, as the app phrased it.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// <b>This one does not come from the dialog</b>, which is worth knowing before reading the
-    /// exception it can throw. WinUI puts the message in the dialog's content area beside a
-    /// second copy of the title, so from out here it can only be picked out as "the text that is
-    /// not the title" - true until an app writes an alert whose message and title read alike, and
-    /// wrong silently when one does. It is asked of the app instead, which passed the string.
-    /// </para>
-    /// <para>
-    /// It sits on the dialog anyway because this is where someone looks for it. The title and
-    /// the buttons beside it are read straight off the platform and need nothing from the app.
-    /// </para>
+    /// Asked of the app rather than read from the dialog, so the app must report its alerts.
     /// </remarks>
     /// <returns>The message.</returns>
     /// <exception cref="NotSupportedException">

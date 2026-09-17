@@ -50,10 +50,8 @@ public abstract partial class FocusableControlBase<TScope> : ViewBase<TScope>, I
     /// Removes focus from the control.
     /// </summary>
     /// <remarks>
-    /// The element picks the route. Windows drops focus through the app's <c>Unfocus</c> verb. Android
-    /// and iOS send Tab, which is a stand-in rather than the operation: it moves focus on to the next
-    /// control, so a control with a focus-out handler and the control after it both see something the
-    /// test did not ask for.
+    /// Windows drops focus through the app's <c>Unfocus</c> verb. Android and iOS send Tab, which
+    /// moves focus on to the next control.
     /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
@@ -66,9 +64,7 @@ public abstract partial class FocusableControlBase<TScope> : ViewBase<TScope>, I
     /// Gets focus state from the pre-found element.
     /// </summary>
     /// <remarks>
-    /// Null when there is no element - unknown, rather than "not focused". This used to probe
-    /// three attribute names and return false when none answered, which on Windows was always:
-    /// none of them is a name UIA publishes, so a focused control reported itself unfocused.
+    /// Null when there is no element - unknown, rather than "not focused".
     /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <returns>True if focused, false if not, null if there is no element.</returns>

@@ -16,11 +16,6 @@ namespace Brinell.Maui.Controls.Navigation;
 /// Tabs.AssertItemCount(3);
 /// Tabs["Search"].AssertSelected();
 /// </code>
-/// <para>
-/// This replaces a hand-written search that fetched three parallel lists - captions, buttons
-/// and tab surfaces - and paired them by position, which no other collection could reuse and
-/// which broke silently if one list came back shorter than the others.
-/// </para>
 /// </remarks>
 /// <typeparam name="TParent">The containing scope type.</typeparam>
 public partial class TabMenu<TParent>

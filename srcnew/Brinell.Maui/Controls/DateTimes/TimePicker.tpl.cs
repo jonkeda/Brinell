@@ -59,10 +59,9 @@ public partial class TimePicker<TScope> : Base.FocusableControlBase<TScope>
     /// Parses a rendered time using the declared format.
     /// </summary>
     /// <remarks>
-    /// WinUI appends ' time picker' to the flyout button's name, so the accessible string reads
-    /// ' 3:06 PM time picker' where the screen shows 3:06 PM. That suffix comes off before parsing.
-    /// A declared format is the only one tried; without one the suite default is tried first and
-    /// the culture's own patterns second.
+    /// Strips the " time picker" suffix WinUI adds to the accessible name. A declared format is the
+    /// only one tried; without one the suite default is tried first and the culture's own patterns
+    /// second.
     /// </remarks>
     protected TimeSpan? ParseTime(string? text)
     {
@@ -94,17 +93,14 @@ public partial class TimePicker<TScope> : Base.FocusableControlBase<TScope>
 
     #region Time - Core Methods
 
-    // Named ReadTime rather than GetTimeCore so the generated exact-equality
-    // trio lands on TimeValue. AssertTime/WaitTime compare within a tolerance, which the
-    // generated equality comparison cannot express, so those stay hand-written below
-    // and keep their original signatures (including the defaulted toleranceSeconds).
+    // Named ReadTime rather than GetTimeCore so the generated trio lands on TimeValue;
+    // AssertTime/WaitTime compare within a tolerance and stay hand-written below.
 
     /// <summary>
     /// Reads the time the control is showing.
     /// </summary>
     /// <remarks>
-    /// The TimePicker root publishes no patterns at all on Windows - the value lives on its
-    /// FlyoutButton child, which is why this reads through to it rather than asking the root.
+    /// On Windows the value lives on the FlyoutButton child, so this reads through to it.
     /// </remarks>
     protected virtual TimeSpan? ReadTime(IMauiElement? element)
     {
@@ -122,19 +118,10 @@ public partial class TimePicker<TScope> : Base.FocusableControlBase<TScope>
     /// <summary>
     /// Sets the time through the app's <c>SetTime</c> verb, or throws naming it.
     /// </summary>
-    /// <remarks>
-    /// The WinUI clock-flyout walk that used to be the route for an app without the bridge -
-    /// open by Invoke, pick hour, minute and period from WinUI's looping selectors, Accept - was
-    /// removed at step 107: Windows template internals in a cross-platform control, replaced by
-    /// the verb since step 20. See <c>DatePicker.SetDateCore</c>.
-    /// </remarks>
     protected virtual void SetTimeCore(IMauiElement element, TimeSpan? time, int? timeoutMs = null)
     {
         if (time == null) return;
 
-        // One route - see DatePicker.SetDateCore. The verb sets TimePicker.Time directly, which is
-        // also the fix for the flyout route reading 15:30 back as 03:30: there is no 12-hour clock
-        // anywhere in it to lose the AM/PM half.
         element.SetTime(time.Value);
     }
 

@@ -65,11 +65,9 @@ public partial class DatePicker<TScope> : Base.FocusableControlBase<TScope>
     /// Parses a rendered date using the declared format.
     /// </summary>
     /// <remarks>
-    /// When the control declares a format through <see cref="WithFormat"/>, that format is the
-    /// only one tried, and a mismatch throws naming both what was expected and what arrived. When
-    /// no format is declared the suite default is tried first and the culture's own patterns
-    /// second, which keeps an unconfigured suite working without ever falling back to the
-    /// locale-ambiguous guessing this replaced.
+    /// When a format is declared through <see cref="WithFormat"/>, only that format is tried and a
+    /// mismatch throws. Otherwise the suite default is tried first and the culture's own patterns
+    /// second.
     /// </remarks>
     protected System.DateTime? ParseDate(string? text)
     {
@@ -97,19 +95,14 @@ public partial class DatePicker<TScope> : Base.FocusableControlBase<TScope>
 
     #region Date - Core Methods
 
-    // Named ReadDate rather than GetDateCore so the generated exact-equality
-    // trio lands on DateValue. AssertDate/WaitDate compare whole days only, which the
-    // generated equality comparison cannot express, so those stay hand-written below
-    // and keep their original signatures.
+    // Named ReadDate rather than GetDateCore so the generated trio lands on DateValue;
+    // AssertDate/WaitDate compare whole days and stay hand-written below.
 
     /// <summary>
     /// Reads the date the control is showing.
     /// </summary>
     /// <remarks>
-    /// The Value pattern is the authoritative source on Windows: it answers '07-Sep-26' on the
-    /// picker itself, so there is nothing to search for. It is read-only there, which is why it
-    /// appears here and not in <see cref="SetDateCore"/>. The DateText child is the fallback for
-    /// platforms that publish no Value pattern.
+    /// Reads the Value pattern on Windows, and the DateText child on platforms without one.
     /// </remarks>
     protected virtual System.DateTime? ReadDate(IMauiElement? element)
     {
@@ -131,31 +124,7 @@ public partial class DatePicker<TScope> : Base.FocusableControlBase<TScope>
     /// Sets the date.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// <b>The verb, or a refusal that names it.</b> If the app under test declares the
-    /// <c>SetDate</c> verb, it sets its own <c>DatePicker.Date</c> and says what the control then
-    /// holds. If it does not, this throws.
-    /// </para>
-    /// <para>
-    /// <b>There was a second route, and step 107 removed it.</b> For an app without the bridge,
-    /// the control opened WinUI's calendar flyout by Invoke and walked it by pattern - month
-    /// header, Previous and Next, one DataItem per day - by the automation ids of WinUI's own
-    /// template. That was Windows internals written into a cross-platform control, it did nothing
-    /// on Android, and the <c>SetDate</c> verb has replaced it since step 20.
-    /// </para>
-    /// <para>
-    /// <b>This was a three-rung ladder</b>, and the rungs were tried in order until one appeared
-    /// to work: a writable Value pattern, then the calendar, then typing. Two of the three were
-    /// dead on the only platform that runs them - WinUI advertises the Value pattern and refuses
-    /// the write, and a <c>CalendarDatePicker</c> hosts no text to type into - so every call paid
-    /// for two failures to reach the one that worked, and a genuine breakage in the calendar
-    /// route would have been reported as "could not set the date" with three suspects.
-    /// </para>
-    /// <para>
-    /// It then became a <c>SupportsSetDate</c> question followed by the verb or a throw. Both
-    /// branches ended in the element on every platform, so the element now throws itself, naming
-    /// the verb.
-    /// </para>
+    /// Requires the app under test to declare the <c>SetDate</c> verb; throws otherwise.
     /// </remarks>
     protected virtual void SetDateCore(IMauiElement element, System.DateTime? date, int? timeoutMs = null)
     {

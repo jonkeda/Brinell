@@ -25,10 +25,8 @@ public class BrinellMauiConfiguration : BrinellConfigurationBase
     /// Loads MAUI configuration from brinell.maui.config.json
     /// </summary>
     /// <remarks>
-    /// The <c>APPIUM_PLATFORM</c> environment variable overrides the platform from the file.
-    /// The same test assembly is run against Windows, Android and iOS, so which platform a run
-    /// targets is a property of the run rather than of the checked-in configuration — and a CI
-    /// job or a local script can set it without editing a file.
+    /// The <c>APPIUM_PLATFORM</c> environment variable overrides the platform from the file, so a
+    /// CI job or local script can choose the platform without editing the file.
     /// </remarks>
     /// <param name="configPath">Optional custom config file path. If null, uses default location.</param>
     /// <returns>Loaded configuration or defaults if file not found.</returns>
@@ -64,9 +62,7 @@ public class BrinellMauiConfiguration : BrinellConfigurationBase
     /// Applies the <c>APPIUM_PLATFORM</c> override, when set.
     /// </summary>
     /// <remarks>
-    /// An unrecognized value throws rather than silently falling back to Windows: a typo would
-    /// otherwise start a FlaUI run on a machine expecting Android and fail much later with an
-    /// unrelated message about a missing assembly.
+    /// An unrecognized value throws rather than falling back to Windows.
     /// </remarks>
     private static void ApplyPlatformOverride(BrinellMauiConfiguration configuration)
     {

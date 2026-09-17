@@ -5,9 +5,6 @@ namespace Brinell.Maui.Interfaces;
 /// </summary>
 /// <remarks>
 /// Three answers rather than a bool, because a swipe cannot report whether the content moved.
-/// With a bool, "moved" and "swiped, cannot tell" had to share <c>true</c>, and a caller looping
-/// until the content stops had to know which platform it was on to avoid looping forever - which
-/// is what the <c>SupportsScrollContent</c> question used to be for.
 /// </remarks>
 public enum ScrollStep
 {
@@ -26,14 +23,8 @@ public enum ScrollStep
     /// The content went straight to a requested item rather than moving by one step.
     /// </summary>
     /// <remarks>
-    /// Only <see cref="IMauiElement.ScrollTowards"/> returns this, and only where the platform
-    /// could jump. It exists because a jump and a step need different waits afterwards: a jump
-    /// lands somewhere new and the caller waits for progress and then for the realized rows to
-    /// settle, while a step realizes at most a row or two and the caller just counts. Collapsing
-    /// the two into <see cref="Moved"/> would put a step's outcome through the jump's wait.
-    /// <para>
-    /// <see cref="IMauiElement.ScrollContent"/> never returns it.
-    /// </para>
+    /// Returned only by <see cref="IMauiElement.ScrollTowards"/>, where the platform could jump.
+    /// A jump needs a different wait than a step: the new rows arrive after the call returns.
     /// </remarks>
     Jumped,
 }

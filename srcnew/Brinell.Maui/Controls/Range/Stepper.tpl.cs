@@ -115,11 +115,8 @@ public partial class Stepper<TScope> : Base.RangeControlBase<TScope>
     /// The Stepper as the app declared it, or null where it was never declared.
     /// </summary>
     /// <remarks>
-    /// Not the element this control resolves: on Windows that is the <c>{id}Minus</c> button, which
-    /// does not answer for the Stepper. The app element finds the declaration by id, which works
-    /// whether or not the platform's tree has a node for it. Whether it answers state reads is no
-    /// longer asked here - <see cref="IMauiElement.ReadState"/> says so by returning null, the
-    /// same single call <c>Image</c> and <c>Picker</c> make.
+    /// On Windows the control resolves the <c>{id}Minus</c> button, which does not answer for the
+    /// Stepper, so the app element finds the declaration by id.
     /// </remarks>
     private IMauiElement? StateSource()
         => string.IsNullOrEmpty(_baseAutomationId)
@@ -129,10 +126,6 @@ public partial class Stepper<TScope> : Base.RangeControlBase<TScope>
     /// <summary>
     /// A number the app publishes for this Stepper, or null where it publishes none.
     /// </summary>
-    /// <remarks>
-    /// Asked once and branched on. Asking whether the app answers and then asking for the value
-    /// would walk the bridge twice for one number, which is what the nullable read exists to stop.
-    /// </remarks>
     private double? ReadNumericState(string property)
     {
         if (StateSource()?.ReadState(property) is not { } value)
@@ -209,11 +202,6 @@ public partial class Stepper<TScope> : Base.RangeControlBase<TScope>
     /// <summary>
     /// Gets the current value: from the app's GetState when the Stepper declares it, otherwise
     /// from the RangeValue pattern.
-    /// <remarks>
-    /// One call decides and supplies. <c>ReadNumericState</c> returns null where the app
-    /// publishes nothing, and that null - not a separate question - is what selects the base
-    /// range read.
-    /// </remarks>
     /// </summary>
     /// <param name="element">The stepper element (or proxy button in button mode).</param>
     /// <returns>The current value, or null if not available.</returns>
@@ -389,8 +377,6 @@ public partial class Stepper<TScope> : Base.RangeControlBase<TScope>
 
     /// <summary>
     /// Checks if the stepper can be incremented (not at maximum).
-    /// Hand-written: the generator always names its state trio <c>Is{Name}</c>, so it
-    /// cannot emit a member called <c>CanIncrement</c>.
     /// </summary>
     /// <returns>True if increment is possible, false otherwise.</returns>
     public bool? CanIncrement()
@@ -407,8 +393,6 @@ public partial class Stepper<TScope> : Base.RangeControlBase<TScope>
 
     /// <summary>
     /// Checks if the stepper can be decremented (not at minimum).
-    /// Hand-written: the generator always names its state trio <c>Is{Name}</c>, so it
-    /// cannot emit a member called <c>CanDecrement</c>.
     /// </summary>
     /// <returns>True if decrement is possible, false otherwise.</returns>
     public bool? CanDecrement()

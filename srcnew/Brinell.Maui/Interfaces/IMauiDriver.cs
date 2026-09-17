@@ -11,7 +11,7 @@ namespace Brinell.Maui.Interfaces;
 public interface IMauiDriver : IDriver<IMauiElement>, IDiagnosticDriver
 {
     #region Platform
-    
+
     /// <summary>
     /// Gets the target platform (Windows, Android, iOS, macOS).
     /// </summary>
@@ -26,9 +26,9 @@ public interface IMauiDriver : IDriver<IMauiElement>, IDiagnosticDriver
     /// Android and iOS.
     /// </summary>
     /// <remarks>
-    /// Where the app-level members of <see cref="IMauiElement"/> are answered - the flyout, the
-    /// alert, the active dialog, targets reached by id. Control objects reach it through
-    /// <see cref="IMauiTestContext.AppElement"/> and never call the driver for those.
+    /// Answers the app-level members of <see cref="IMauiElement"/> - the flyout, the alert, the
+    /// active dialog, targets reached by id. Control objects reach it through
+    /// <see cref="IMauiTestContext.AppElement"/>.
     /// </remarks>
     IMauiElement AppElement { get; }
 
@@ -40,28 +40,28 @@ public interface IMauiDriver : IDriver<IMauiElement>, IDiagnosticDriver
             + "see .my/navigation/design-shell-sample-app.md.");
 
     #endregion
-    
+
     #region Context Switching (Hybrid Apps)
-    
+
     /// <summary>
     /// Gets or sets the current context (NATIVE_APP, WEBVIEW_*, etc.).
     /// </summary>
     string Context { get; set; }
-    
+
     /// <summary>
     /// Gets all available contexts.
     /// </summary>
     IReadOnlyCollection<string> Contexts { get; }
-    
+
     #endregion
-    
+
     #region Window Management
-    
+
     /// <summary>
     /// Gets the current window handle.
     /// </summary>
     string CurrentWindowHandle { get; }
-    
+
     /// <summary>
     /// Gets all window handles.
     /// </summary>
@@ -76,19 +76,8 @@ public interface IMauiDriver : IDriver<IMauiElement>, IDiagnosticDriver
     /// <c>AutomationId</c>.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// <b>Addressed by id, not by element, deliberately.</b> The controls that most need a
-    /// gesture are the ones Windows automation cannot see: a MAUI <c>SwipeView</c> publishes no
-    /// <c>AutomationId</c> at all on Windows, because its WinUI peer must not be overridden -
-    /// doing so collapses the app's entire automation tree. There is therefore no element to
-    /// hang the call on, and requiring one would exclude exactly the cases the bridge exists
-    /// for.
-    /// </para>
-    /// <para>
-    /// This is the only form. The element-level question was removed once no control asked it:
-    /// a control names its gesture and <see cref="IMauiElement.PerformGesture"/> performs or
-    /// throws. What survives here is a test's way of asserting what the app declared.
-    /// </para>
+    /// Addressed by id rather than by element so it also reaches controls Windows automation
+    /// cannot see, such as a <c>SwipeView</c>.
     /// </remarks>
     /// <param name="automationId">The MAUI <c>AutomationId</c> of the target element.</param>
     /// <param name="gesture">The gesture to ask about.</param>
@@ -108,17 +97,8 @@ public interface IMauiDriver : IDriver<IMauiElement>, IDiagnosticDriver
     /// Performs a gesture that carries a magnitude, or throws.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// <b>Two gestures are meaningless without one.</b> A pan with no distance is not a pan and
-    /// a pinch with no scale is not a pinch, so an overload that could not express either would
-    /// leave the two verbs describable but not usable. The rest ignore the arguments, which is
-    /// why the no-argument overload above simply passes zeroes rather than being a separate
-    /// path.
-    /// </para>
-    /// <para>
-    /// The meaning of each argument is defined per verb, on <c>BrinellVerb</c>: pan takes device
-    /// independent pixels, pinch takes a percentage where 100 is no change.
-    /// </para>
+    /// Pan takes a distance in device-independent pixels; pinch takes a percentage where 100 is no
+    /// change. Other gestures ignore the arguments.
     /// </remarks>
     /// <param name="automationId">The MAUI <c>AutomationId</c> of the target element.</param>
     /// <param name="gesture">The gesture to perform.</param>
@@ -136,29 +116,18 @@ public interface IMauiDriver : IDriver<IMauiElement>, IDiagnosticDriver
     #endregion
 
     #region Navigation
-    
+
     /// <summary>
     /// Navigates to the specified URL or destination.
     /// </summary>
     void NavigateTo(string destination);
-    
+
     /// <summary>
     /// Goes back one page, or throws saying why it could not.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// <b>This used to be a bool, and the bool caused a defect rather than merely permitting
-    /// one.</b> It answered <c>false</c> for four different situations - the app has no bridge,
-    /// the page has not published itself yet, this target is a page that was popped long ago, and
-    /// we are already at the root with nothing to pop. The caller could not tell them apart, so
-    /// it guessed, and the guess written into the driver was a two-second wait that fired on the
-    /// commonest of the four. Every fixture reset starting at the hub paid it. See
-    /// <c>.my/fix/rca-navigation-tests-stall.md</c>.
-    /// </para>
-    /// <para>
     /// Ask <see cref="IsAtNavigationRoot"/> first if "nothing to pop" is an expected outcome
-    /// rather than a failure. That is the question; this is the command.
-    /// </para>
+    /// rather than a failure.
     /// </remarks>
     /// <exception cref="Brinell.Core.Exceptions.BrinellException">
     /// The app did not go back, with the specific reason.
@@ -169,16 +138,7 @@ public interface IMauiDriver : IDriver<IMauiElement>, IDiagnosticDriver
     /// Whether the app is showing its first page, with nothing to go back to.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// The question that <see cref="NavigateBack"/>'s old bool was being made to answer as a side
-    /// effect. Asking it costs one round trip and is answered by any live element on the app's
-    /// bridge - a page's navigation stack is the app's, not that page's, so unlike going back
-    /// there is no wrong element to reach.
-    /// </para>
-    /// <para>
-    /// Defaulted to true so a platform with no navigation model compiles and does not send a
-    /// caller looking for a page to pop that does not exist.
-    /// </para>
+    /// Defaults to true on a platform with no navigation model.
     /// </remarks>
     /// <returns>Whether there is nothing to go back to.</returns>
     bool IsAtNavigationRoot() => NavigationDepth() <= 1;
@@ -187,17 +147,8 @@ public interface IMauiDriver : IDriver<IMauiElement>, IDiagnosticDriver
     /// How many pages are on the app's navigation stack.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// <b>A number rather than a flag, because callers pop in a loop.</b> "Are we at the root" is
-    /// enough to decide whether to pop at all, and not enough to wait for a pop to finish: the
-    /// pop is started rather than awaited, so a caller unwinding a stack three deep has to be
-    /// able to see the depth fall to know the first one landed. With only the flag it would wait
-    /// out a timeout per pop, which is the shape of the defect this whole change removes.
-    /// </para>
-    /// <para>
-    /// Answered by any live element on the app's bridge: a page's navigation stack is the app's,
-    /// not that page's.
-    /// </para>
+    /// A pop is started rather than awaited, so a caller unwinding several pages can watch the
+    /// depth fall to know each pop landed.
     /// </remarks>
     /// <returns>The number of pages, where 1 means only the root.</returns>
     int NavigationDepth() => 1;
@@ -206,23 +157,8 @@ public interface IMauiDriver : IDriver<IMauiElement>, IDiagnosticDriver
     /// Whether the app has finished the work it had queued.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// <b>What <c>AD-004</c> needs in order to be a followable rule.</b> "No arbitrary sleeps" is
-    /// only obeyable if there is something to wait <i>on</i>; without one, a test that needs the
-    /// UI to settle either sleeps or invents a sentinel element whose appearance approximates
-    /// settling.
-    /// </para>
-    /// <para>
-    /// <b>On the driver, not on an element</b>, because it is a question about the app: a
-    /// dispatcher belongs to the app and every element would give the same answer. Putting it on
-    /// an element would also mean every control that wanted to be waited on had to declare a verb
-    /// that has nothing to do with that control.
-    /// </para>
-    /// <para>
-    /// It does not promise that nothing new will be queued. An app with a running animation or a
-    /// live timer is never idle by any definition, and reporting that is better than a number
-    /// that hides it.
-    /// </para>
+    /// Use this to wait for the UI to settle instead of sleeping. It does not promise that nothing
+    /// new will be queued: an app with a running animation or a live timer is never idle.
     /// </remarks>
     /// <param name="timeoutMs">How long to give the queue to drain.</param>
     /// <returns>Whether it drained within the budget.</returns>
@@ -232,32 +168,31 @@ public interface IMauiDriver : IDriver<IMauiElement>, IDiagnosticDriver
     /// Where the app currently is, in the terms its own navigation model uses.
     /// </summary>
     /// <remarks>
-    /// A Shell app answers with its route. An app built on <c>NavigationPage</c> has no route, so
-    /// it answers with the identity of the page on top - which is what a test asserting "we are
-    /// on the hub" actually means.
+    /// A Shell app answers with its route. An app built on <c>NavigationPage</c> answers with the
+    /// identity of the page on top.
     /// </remarks>
     /// <returns>The route, or the top page's identity.</returns>
     string CurrentRoute() => string.Empty;
-    
+
     /// <summary>
     /// Refreshes the current page/view.
     /// </summary>
     void Refresh();
-    
+
     /// <summary>
     /// Takes a screenshot of the current state.
     /// </summary>
     byte[] TakeScreenshot();
-    
+
     /// <summary>
     /// Resets the application state (terminates and relaunches).
     /// </summary>
     void ResetAppState();
-    
+
     #endregion
-    
+
     #region Script Execution
-    
+
     /// <summary>
     /// Executes a script command (e.g., mobile gestures, platform-specific actions).
     /// </summary>
@@ -265,9 +200,9 @@ public interface IMauiDriver : IDriver<IMauiElement>, IDiagnosticDriver
     /// <param name="args">Arguments to pass to the script.</param>
     /// <returns>The script result, or null.</returns>
     object? ExecuteScript(string script, params object[] args);
-    
+
     #endregion
-    
+
     #region Dialogs
 
     /// <summary>
@@ -275,22 +210,13 @@ public interface IMauiDriver : IDriver<IMauiElement>, IDiagnosticDriver
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>The item is not in the tree this client can search.</b> MAUI does not propagate
-    /// <c>AutomationId</c> to menu chrome on Windows (dotnet/maui#3996), which the navigation
-    /// probe measures rather than assumes: <c>PageMenuFile</c> and <c>PageMenuFileNew</c> are
-    /// findable by neither id nor name. A context flyout is further out of reach still - it does
-    /// not exist until someone right-clicks. So the app is asked by id, because the app is the
-    /// only party that has the id.
+    /// MAUI does not propagate <c>AutomationId</c> to menu chrome on Windows (dotnet/maui#3996),
+    /// and a context flyout does not exist until it is opened, so the app is asked to raise the
+    /// item by id.
     /// </para>
     /// <para>
-    /// <b>What this replaces is the suite's remaining positional input.</b> Reaching a context
-    /// menu item meant a right-click at one coordinate followed by a click at another, with the
-    /// app holding the foreground throughout. Both coordinates are guesses about where the
-    /// platform drew something.
-    /// </para>
-    /// <para>
-    /// Nothing opens. A test that means "the menu opens and shows these items" is a test about
-    /// the menu and still needs the pointer - see <see cref="IMauiElement.RightClick"/>.
+    /// Nothing opens. To test that the menu opens and shows its items, use
+    /// <see cref="IMauiElement.RightClick"/>.
     /// </para>
     /// </remarks>
     /// <param name="automationId">The menu item's <c>AutomationId</c>.</param>
@@ -300,9 +226,6 @@ public interface IMauiDriver : IDriver<IMauiElement>, IDiagnosticDriver
     void InvokeMenuItem(string automationId)
         => throw new NotSupportedException(
             $"Menu items are not implemented for {GetType().Name}.");
-
-    // The toolbar, flyout, alert, dialog, scroll-find and by-id state members that were here are
-    // on IMauiElement now, answered by AppElement - see .my/ControlFlow/design-every-call-through-the-element.md.
 
     #endregion
 }

@@ -81,20 +81,9 @@ public partial class Entry<TScope> : Base.FocusableControlBase<TScope>, IEditabl
     /// Appends text without clearing existing content.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// The semantic route first. Appending is the one text operation with no
-    /// <c>TextInputMethod</c> that fits: <c>SetValue</c> replaces rather than appends, and
-    /// reading the field and writing the concatenation from out here leaves a window in which
-    /// the app can change it. So this typed, which made it the last routine keyboard input in
-    /// the suite.
-    /// </para>
-    /// <para>
-    /// The element picks the route. On Android and iOS it types, which is still correct there - it
-    /// is what a user does. On Windows there is no typing: an entry without the <c>AppendText</c>
-    /// verb throws, and so does one whose app refuses it. A test that is specifically about
-    /// per-keystroke behaviour should call <c>SendKeys</c> with <see cref="TextInputMethod.Keys"/>,
-    /// say so, and run on the mobile head.
-    /// </para>
+    /// On Android and iOS this types. On Windows it uses the app's <c>AppendText</c> verb and
+    /// throws when the app does not declare it or refuses. For per-keystroke behaviour, call
+    /// <c>SendKeys</c> with <see cref="TextInputMethod.Keys"/> on a mobile platform.
     /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <param name="text">The text to append.</param>
@@ -111,10 +100,8 @@ public partial class Entry<TScope> : Base.FocusableControlBase<TScope>, IEditabl
     /// Drives MAUI Entry.Completed command paths such as search boxes.
     /// </summary>
     /// <remarks>
-    /// Through the element's own <c>Submit</c> rather than an Enter keystroke, so a platform
-    /// with a semantic route to the control's completion command can take it. Enter remains
-    /// what happens underneath where there is no such route - and for an app that handles
-    /// <c>Completed</c> as an event rather than a bound command, there genuinely is none.
+    /// Uses the platform's route to the completion command where there is one, and presses Enter
+    /// otherwise.
     /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <param name="timeoutMs">Optional timeout for enabled check.</param>
@@ -136,9 +123,7 @@ public partial class Entry<TScope> : Base.FocusableControlBase<TScope>, IEditabl
     {
         if (element == null) return null;
 
-        // The hint is what a field shows before it is filled in, and every platform publishes it.
-        // An empty MAUI Entry on Windows also reports its placeholder as the accessible name -
-        // a coincidence of that platform rather than a binding, so it is consulted second.
+        // The hint first; an empty Entry on Windows also reports its placeholder as its name.
         return element.Hint ?? element.Name;
     }
 
@@ -155,8 +140,7 @@ public partial class Entry<TScope> : Base.FocusableControlBase<TScope>, IEditabl
     {
         if (element == null) return null;
 
-        // Read-only is the Value pattern's business. Windows answers it; Android publishes no
-        // editability at all, so it answers null - unknown - rather than "editable".
+        // Windows answers from the Value pattern; Android publishes no editability and answers null.
         return element?.IsReadOnly;
     }
 
@@ -168,9 +152,7 @@ public partial class Entry<TScope> : Base.FocusableControlBase<TScope>, IEditabl
     /// Enters text, doing nothing when the text is null.
     /// </summary>
     /// <remarks>
-    /// Hand-written to follow the nullable skip pattern the generated setters use: a null value
-    /// returns the scope without resolving an element. The generator classifies setters by the
-    /// <c>Set</c> prefix, and <c>Enter</c> is the same operation under a different name.
+    /// A null value returns the scope without resolving an element.
     /// </remarks>
     /// <param name="text">The text to enter, or null to skip.</param>
     /// <param name="timeoutMs">Optional timeout in milliseconds.</param>

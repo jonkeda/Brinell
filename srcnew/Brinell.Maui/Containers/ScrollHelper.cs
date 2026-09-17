@@ -3,20 +3,6 @@ namespace Brinell.Maui.Containers;
 /// <summary>
 /// Element-level scrolling primitives shared by containers and collections.
 /// </summary>
-/// <remarks>
-/// <para>
-/// C# allows one base class, and a scrolling container needs both scroll behaviour and
-/// container scoping, so the mechanics live here as static helpers over
-/// <see cref="IMauiElement"/> and the container types delegate to them.
-/// </para>
-/// <para>
-/// <b>No route choice here.</b> This used to ask <c>SupportsScrollContent</c> and, on false,
-/// compute a swipe across the element's bounds. On Windows that swipe became the bridge's verb and
-/// on Android a drag, so the question only chose the platform. The element scrolls one step by
-/// whatever route it has, and says what it knows about the result (step 105c, then
-/// <c>.my/ControlFlow/design-every-call-through-the-element.md</c>).
-/// </para>
-/// </remarks>
 public static class ScrollHelper
 {
     /// <summary>

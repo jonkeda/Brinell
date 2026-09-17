@@ -24,6 +24,5 @@ public partial class TableView<TScope> : Base.ViewBase<TScope>
     {
     }
 
-    // No Intent: it is a MAUI bindable property that no platform publishes to automation, so
-    // the member answered null for every app. A table's intent is not observable from outside.
+    // No Intent: no platform publishes it to automation.
 }

@@ -13,17 +13,7 @@ namespace Brinell.Maui.Controls.Base;
 /// Implements IToggleControlObject with Toggle, Check, Uncheck, SetChecked, and Click.
 /// </summary>
 /// <remarks>
-/// <para>
-/// <b>Focusable, not clickable</b> (step 102, option B). This used to derive from
-/// <c>ClickableControlBase</c>, which gave every switch, check box and radio button a generated
-/// <c>DoubleClick</c>, <c>RightClick</c>, <c>Hover</c>, <c>LongPress</c>, <c>Press</c> and
-/// <c>IsClickable</c>/<c>WaitClickable</c>/<c>AssertClickable</c>. None of them means anything
-/// for a toggle, the first four exist only as real pointer input on Windows - which the quiet
-/// default refuses - and <c>Click</c> had to be overridden to mean something else anyway.
-/// </para>
-/// <para>
-/// <c>Click</c> stays, declared here for what it is on a toggle: flipping it.
-/// </para>
+/// <c>Click</c> on a toggle flips it.
 /// </remarks>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
 

@@ -69,8 +69,7 @@ public abstract partial class RangeControlBase<TScope> : FocusableControlBase<TS
 
         EnsureSettableCore(element);
 
-        // One route. A SetRangeValue the platform refuses throws rather than falling through to
-        // typing, which would put the digits wherever focus happened to be.
+        // A refused value throws rather than typing into whatever has focus.
         element.SetRangeValue(value.Value);
     }
 
@@ -180,7 +179,6 @@ public abstract partial class RangeControlBase<TScope> : FocusableControlBase<TS
 
     /// <summary>
     /// Waits until the value matches expected within the given tolerance.
-    /// Hand-written: the generated WaitValue compares with equality only.
     /// </summary>
     /// <param name="expected">The expected value. Null skips the wait.</param>
     /// <param name="tolerance">The allowed absolute difference.</param>
@@ -199,7 +197,6 @@ public abstract partial class RangeControlBase<TScope> : FocusableControlBase<TS
 
     /// <summary>
     /// Asserts the value matches expected within the given tolerance.
-    /// Hand-written: the generated AssertValue compares with equality only.
     /// </summary>
     /// <param name="expected">The expected value. Null skips the assertion.</param>
     /// <param name="tolerance">The allowed absolute difference.</param>

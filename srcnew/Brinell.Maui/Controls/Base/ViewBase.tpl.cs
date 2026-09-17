@@ -281,16 +281,8 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
     /// Polls until the control is ready to be acted on, and returns its element.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// <b>Poll to get ready, then act once.</b> Resolution is safe to repeat — finding an
-    /// element, checking visibility, checking enabled — so it is what the retry loop covers.
-    /// The action is not safe to repeat, so it runs after the loop, exactly once.
-    /// </para>
-    /// <para>
-    /// An exception from the action propagates rather than being retried: once the action has
-    /// been attempted, retrying can only compound the damage — a driver that acts and then
-    /// throws would otherwise replay it, silently doubling a click.
-    /// </para>
+    /// Resolution is polled because it is safe to repeat; the action itself then runs exactly
+    /// once, so a failing action is never replayed.
     /// </remarks>
     private IMauiElement ResolveReadyElement(int? timeoutMs, bool doEnsureVisible, string? caller)
     {
@@ -383,11 +375,8 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
         {
             return ContainingScope;
         }
-        // Resolve once, then re-read the value each tick. The element rarely changes identity
-        // while an assertion waits for its value to settle, but re-finding it every 100 ms is
-        // the single largest source of traffic in an Android run — 811 lookups for 34 tests,
-        // 78 s. A stale handle drops back to re-resolving, which is the case that made
-        // re-finding look necessary in the first place.
+        // Resolve once, then re-read the value each tick; a stale handle drops back to
+        // re-resolving.
         IMauiElement? element = null;
         RunPoll(null, () =>
         {
@@ -449,19 +438,10 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
     /// Resolves the element, scrolling to look for it if the plain lookup finds nothing.
     /// </summary>
     /// <remarks>
-    /// <para>
     /// The difference from <see cref="TryFindElement()"/> matters only on Android, which publishes
-    /// an accessibility node only for content inside the viewport: a control scrolled out of a
-    /// <c>ScrollView</c> still exists and is laid out, but a plain lookup answers "no such
-    /// element". Windows keeps the same element with <c>IsOffscreen=true</c>, and its driver
-    /// scrolls nothing - so both platforms give a test the same answer.
-    /// </para>
-    /// <para>
-    /// <b>Done here, once, rather than by every scope.</b> Scopes used to implement
-    /// <c>TryFindElementAfterScroll</c>, and the one containers and pages inherited did not scroll -
-    /// so on Android nothing inside a container was ever scrolled to (step 100a). A scope now says
-    /// which element scrolls, <see cref="IMauiElementScope.ScrollingRoot"/>, and nothing else.
-    /// </para>
+    /// an accessibility node only for content inside the viewport. Windows keeps off-screen
+    /// elements in the tree, so both platforms give a test the same answer. The scope names the
+    /// element that scrolls through <see cref="IMauiElementScope.ScrollingRoot"/>.
     /// </remarks>
     /// <param name="lookup">Whether to scroll to look.</param>
     /// <returns>The element, or null when it is genuinely not on the page.</returns>
@@ -486,10 +466,8 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
     /// A resolver for a polling helper, applying <paramref name="lookup"/>.
     /// </summary>
     /// <remarks>
-    /// With <see cref="ScrollLookup.Once"/> the sweep happens on the first call and never again:
-    /// a sweep costs orders of magnitude more than a plain lookup, and one answers the question it
-    /// exists for. If the element is on the page the sweep leaves it on screen; if it is not,
-    /// sweeping again will not change that. This was <c>ScrollingOnceResolver</c> (step 100b).
+    /// With <see cref="ScrollLookup.Once"/> the sweep happens on the first call only; later calls
+    /// use a plain lookup.
     /// </remarks>
     /// <param name="lookup">Whether to scroll to look.</param>
     /// <returns>A resolver to hand to a polling helper.</returns>
@@ -517,11 +495,8 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
     /// Finds the element within the scope, sweeping the scope's scroller once if it is not found.
     /// </summary>
     /// <remarks>
-    /// The route every action takes, so it needs the sweep as much as <see cref="IsExists"/> does:
-    /// measured on Android at step 100a, a page's reset button below the fold failed every test
-    /// in the class with "not found within container" before the test body ran. The scope polls
-    /// for its find timeout first; the sweep is paid once, after that, and only on the way to
-    /// failing.
+    /// The scope polls for its find timeout first; the sweep runs once after that, so a control
+    /// below the fold on Android is still found.
     /// </remarks>
     /// <returns>The element.</returns>
     /// <exception cref="ElementNotFoundException">Thrown when element is not found.</exception>
@@ -562,11 +537,6 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
     /// <summary>
     /// Polls visible state using pre-found element.
     /// </summary>
-    /// <remarks>
-    /// Not generated: this is already a <c>Wait*</c>, and the generated
-    /// <c>WaitVisible</c> comes from <see cref="IsVisibleCore"/>. Generating from this one
-    /// too would collide on the name.
-    /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <param name="expected">The expected visible state.</param>
     /// <param name="timeoutMs">Maximum time to wait in milliseconds.</param>
@@ -582,24 +552,9 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
     /// on screen.
     /// </summary>
     /// <remarks>
-    /// <para>
     /// <c>IsVisible</c> answers "on screen right now"; this answers "could the user see it at
-    /// all", which requires scrolling — no property distinguishes a control scrolled out of view
-    /// from one that is not rendered. Prefer this when a test means "the page shows this
-    /// control", since whether something sits above the fold depends on window size and so
-    /// differs between platforms.
-    /// </para>
-    /// <para>
-    /// <b>Takes the element it is given, and resolves nothing.</b> It used to resolve a missing
-    /// element with <c>FindElement</c>, which polls for the whole find timeout before giving up -
-    /// so <c>AssertVisibleAfterScroll(false)</c> paid that on every tick of its own poll. The trio
-    /// below resolves with <see cref="ScrollLookup.Once"/> instead, the same lookup <c>Exists</c>
-    /// uses, which is what makes an absent element cheap and an Android one findable (step 100c).
-    /// </para>
-    /// <para>
-    /// Revealing is the element's business: on Windows its ScrollItem pattern, or the bridge's
-    /// <c>ScrollTo</c> verb on the scroll view that holds it.
-    /// </para>
+    /// all". Prefer this when a test means "the page shows this control", since whether something
+    /// sits above the fold depends on window size and differs between platforms.
     /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <returns>True when visible, scrolling to it first if needed; null when absent.</returns>
@@ -683,15 +638,11 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
     /// <remarks>
     /// <para>
     /// "On the page", not "in the accessibility tree right now": Android publishes a node only
-    /// for content inside the viewport, so the second reading answers no for a control Windows
-    /// answers yes for. Deliberately not split into two methods the way visibility is — only
-    /// one existence question is real, and naming the platform artifact would invite tests to
-    /// depend on it.
+    /// for content inside the viewport.
     /// </para>
     /// <para>
-    /// The cost lands on absence: <c>AssertExists(false)</c> must exhaust a scroll of the
-    /// container before it can answer, which is the honest price of "is it really not there?"
-    /// and is paid only when the element is not found.
+    /// <c>AssertExists(false)</c> scrolls the container before it can answer, so checking for
+    /// absence is slower than checking for presence.
     /// </para>
     /// </remarks>
     public bool IsExists()
@@ -737,21 +688,16 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
     /// </summary>
     /// <remarks>
     /// <para>
-    /// The deliberate escape hatch, and the only place in the control library that asks for an
-    /// attribute by name. You are asking <b>one platform a question in its own vocabulary</b>:
-    /// Windows answers twelve names (automation id, name, class, control type, enabled, visible,
-    /// help text and the scroll percentages) and null to everything else; Android answers
-    /// UiAutomator2's accessibility attributes - <c>text</c>, <c>content-desc</c>,
-    /// <c>resource-id</c>, <c>checked</c>, <c>selected</c>, <c>focused</c>, <c>hint</c> and
-    /// friends - and null to the rest.
+    /// An escape hatch that asks one platform a question in its own vocabulary. Windows answers
+    /// automation id, name, class, control type, enabled, visible, help text and the scroll
+    /// percentages; Android answers UiAutomator2's accessibility attributes - <c>text</c>,
+    /// <c>content-desc</c>, <c>resource-id</c>, <c>checked</c>, <c>selected</c>, <c>focused</c>,
+    /// <c>hint</c> and similar. Anything else returns null.
     /// </para>
     /// <para>
-    /// A null answer therefore means either "empty" or "this platform has no such attribute",
-    /// and nothing here can tell you which. That is why controls do not use it: a MAUI
-    /// bindable property is not an automation attribute, so asking for <c>Value</c> or
-    /// <c>Source</c> by name returns null on every device and reads as data. Everything a
-    /// control needs comes from a member on <c>IMauiElement</c> or a pattern capability
-    /// instead - see <c>.my/GetAttribute/</c>.
+    /// Null means either "empty" or "no such attribute". MAUI bindable properties such as
+    /// <c>Value</c> or <c>Source</c> are not automation attributes and always return null; prefer
+    /// the members on <c>IMauiElement</c>.
     /// </para>
     /// </remarks>
     /// <param name="element">The pre-found element.</param>

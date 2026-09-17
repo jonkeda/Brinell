@@ -10,11 +10,8 @@ namespace Brinell.Maui.Interfaces;
 /// <c>FlyoutItem</c> does not reach them. So something has to know what each platform draws.
 /// </para>
 /// <para>
-/// <b>The driver supplies these, not the control objects.</b> They used to be a
-/// <c>MauiPlatform</c> switch in <c>ShellChrome</c>, the only platform branch left in the controls.
-/// Each backend now answers for its own platform, and one that has not mapped Shell throws
-/// <see cref="PlatformNotSupportedException"/> rather than guessing - a platform is added by
-/// dumping its tree, not by reasoning about what it probably draws.
+/// Each driver supplies these for its own platform; one that has not mapped Shell throws
+/// <see cref="PlatformNotSupportedException"/>.
 /// </para>
 /// </remarks>
 /// <param name="TabHost">The element the tabs are searched within.</param>

@@ -26,10 +26,8 @@ namespace Brinell.Maui.Controls.Collection;
 /// }
 /// </code>
 /// <para>
-/// This replaces the former <c>CollectionView&lt;TScope, TItem&gt; : List&lt;&gt;</c>, which
-/// looked rows up page-wide by an indexed AutomationId. Rows are now found within the
-/// collection and scoped to their own root, so an item template can repeat the same ids on
-/// every row — the normal MAUI authoring style.
+/// Rows are found within the collection and scoped to their own root, so an item template can
+/// repeat the same ids on every row.
 /// </para>
 /// </remarks>
 /// <typeparam name="TParent">The parent scope type (a page or another container).</typeparam>

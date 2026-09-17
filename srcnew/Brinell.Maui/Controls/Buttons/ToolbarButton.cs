@@ -6,37 +6,12 @@ namespace Brinell.Maui.Controls.Buttons;
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
 /// <remarks>
 /// <para>
-/// <b>Two things differ from an ordinary <see cref="Button{TScope}"/>, and both come from where
-/// it is drawn.</b>
+/// The toolbar belongs to the window, so a toolbar item scoped to a page object cannot be
+/// resolved when that page is not showing. Declare it on <c>AppRoot</c>.
 /// </para>
 /// <para>
-/// <b>It is not inside a page.</b> The toolbar belongs to the window, so a toolbar item scoped to
-/// a page object cannot be resolved when that page is not showing - which for a back affordance
-/// is exactly when it is wanted. Declare it on <c>AppRoot</c>.
-/// </para>
-/// <para>
-/// <b>Its automation peer accepts an Invoke that goes nowhere.</b> This is the important one, and
-/// it is measured rather than assumed. On Windows, driving a MAUI <c>ToolbarItem</c> through the
-/// Invoke pattern <i>reports success</i> and does not raise the command:
-/// </para>
-/// <list type="table">
-/// <item><description>Invoke alone - 4 failures in 4.</description></item>
-/// <item><description>Invoke, then click if it returned false - 3 failures in 4. The fallback
-/// never fires, because Invoke said it worked.</description></item>
-/// <item><description>The shared activation ladder, which worked for every other
-/// control in the suite - 1 failure in 3, and the run went from 5 s to 58 s.</description></item>
-/// <item><description>A plain click - stable.</description></item>
-/// </list>
-/// <para>
-/// So this control never asks for the pattern. A silent no-op is worse than a refusal: it turns
-/// navigation that did not happen into a timeout somewhere else. The full account is in
-/// <c>.my/extension/physical-input-inventory.md</c>.
-/// </para>
-/// <para>
-/// <b>The element raises the item by id instead.</b> <c>IMauiElement.InvokeToolbarItem</c> on
-/// Windows asks the app, through the same entry point the toolbar uses - declaring the verb is a
-/// requirement there, see <c>.my/bridge/no-physical-input.md</c>. On Android and iOS it taps the
-/// item, which is the ordinary route.
+/// Clicking raises the item by its id rather than through the Invoke pattern, which on Windows
+/// reports success without raising the item's command.
 /// </para>
 /// </remarks>
 public class ToolbarButton<TScope> : Button<TScope>
@@ -52,11 +27,9 @@ public class ToolbarButton<TScope> : Button<TScope>
 
     /// <summary>Creates a toolbar button using the scope's default locator strategy.</summary>
     /// <remarks>
-    /// <b>Usually the wrong constructor for this control.</b> MAUI surfaces a
-    /// <c>ToolbarItem</c>'s <c>AutomationId</c> as the platform's accessibility label, not as its
-    /// automation id: on Android the node's <c>resource-id</c> is empty and the value appears in
-    /// <c>content-desc</c>. <c>Locator.ByAccessibilityId</c> is the same string on all three
-    /// platforms, so prefer the other constructor.
+    /// Prefer the <see cref="Locator"/> constructor with <c>Locator.ByAccessibilityId</c>. MAUI
+    /// publishes a <c>ToolbarItem</c>'s <c>AutomationId</c> as the accessibility label, not the
+    /// automation id, so the default strategy may not find it on Android.
     /// </remarks>
     /// <param name="scope">The scope, normally <c>AppRoot</c>.</param>
     /// <param name="locatorValue">The locator value.</param>
@@ -67,15 +40,8 @@ public class ToolbarButton<TScope> : Button<TScope>
 
     /// <inheritdoc />
     /// <remarks>
-    /// <para>
-    /// One route on every platform: the element's <c>InvokeToolbarItem</c>. Never the Invoke
-    /// pattern - see the type remarks.
-    /// </para>
-    /// <para>
-    /// <b>The id comes from the locator, not the element.</b> The element resolved on Windows is
-    /// native chrome, and MAUI does not carry the item's <c>AutomationId</c> onto it reliably; the
-    /// locator holds the id the app's markup gave the item, which is what the app matches on.
-    /// </para>
+    /// Raises the item through the element's <c>InvokeToolbarItem</c>, using the id from the
+    /// locator.
     /// </remarks>
     protected override void ClickCore(IMauiElement element, int? timeoutMs = null)
     {

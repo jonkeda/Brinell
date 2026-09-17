@@ -5,10 +5,8 @@ namespace Brinell.Maui.Interfaces;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Six numbers rather than a percentage.</b> UI Automation offers a scroll percent, and a
-/// percent cannot answer the question tests actually ask: "are we at the bottom" is true both
-/// for a long list scrolled to its end and for a page too short to scroll at all, and those are
-/// different facts about the app. Offset, viewport and content size together separate them.
+/// A percentage cannot tell a long list scrolled to its end from a page too short to scroll;
+/// offset, viewport and content size together can.
 /// </para>
 /// <para>
 /// Device-independent units, as MAUI reports them - not physical pixels. A test comparing these

@@ -7,17 +7,7 @@ namespace Brinell.Maui.Controls.Base;
 /// Implements IToggleControlObject with Toggle, Check, Uncheck, SetChecked, and Click.
 /// </summary>
 /// <remarks>
-/// <para>
-/// <b>Focusable, not clickable</b> (step 102, option B). This used to derive from
-/// <c>ClickableControlBase</c>, which gave every switch, check box and radio button a generated
-/// <c>DoubleClick</c>, <c>RightClick</c>, <c>Hover</c>, <c>LongPress</c>, <c>Press</c> and
-/// <c>IsClickable</c>/<c>WaitClickable</c>/<c>AssertClickable</c>. None of them means anything
-/// for a toggle, the first four exist only as real pointer input on Windows - which the quiet
-/// default refuses - and <c>Click</c> had to be overridden to mean something else anyway.
-/// </para>
-/// <para>
-/// <c>Click</c> stays, declared here for what it is on a toggle: flipping it.
-/// </para>
+/// <c>Click</c> on a toggle flips it.
 /// </remarks>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
 public abstract partial class ToggleControlBase<TScope> : FocusableControlBase<TScope>,
@@ -81,18 +71,7 @@ public abstract partial class ToggleControlBase<TScope> : FocusableControlBase<T
     /// Performs toggle on pre-found element, and confirms the state actually changed.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// One operation and one check, where this used to be three rungs - the Toggle pattern, then
-    /// the activation ladder, then a Space keystroke - each tried in turn until the state moved.
-    /// </para>
-    /// <para>
-    /// <b>The check stays and the rungs go, and the difference matters.</b> Verifying the
-    /// outcome is not a fallback: it is how this control catches a platform that accepts the
-    /// call and does nothing, which is exactly what <c>LegacyIAccessible</c> did to a Switch and
-    /// what a <c>ToolbarItem</c> does to Invoke. Trying a different route afterwards is what made
-    /// it a ladder, and that part is gone: if a toggle does not toggle, that is a fact worth
-    /// reporting rather than working around.
-    /// </para>
+    /// Throws when the platform accepts the toggle but the state does not change.
     /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
@@ -126,14 +105,9 @@ public abstract partial class ToggleControlBase<TScope> : FocusableControlBase<T
     /// Sets checked state on pre-found element. No-op if already in the target state.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// <b>Toggles, and knows nothing else.</b> This used to try the platform's set-state command
-    /// first and fall through to a toggle on any <c>false</c> - a two-rung ladder in a base that
-    /// three different controls share. Which route a control has is that control's knowledge, so
-    /// <c>Switch</c> and <c>CheckBox</c> override this to set the state directly where the
-    /// platform can, and <c>RadioButton</c> overrides it because a radio button cannot be
-    /// unchecked at all (step 108).
-    /// </para>
+    /// Toggles when the state differs. <c>Switch</c> and <c>CheckBox</c> override this to set the
+    /// state directly where the platform can; <c>RadioButton</c> overrides it because a radio
+    /// button cannot be unchecked.
     /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <param name="checked">The desired checked state. Null skips the operation.</param>
@@ -153,9 +127,7 @@ public abstract partial class ToggleControlBase<TScope> : FocusableControlBase<T
     /// Sets the state through the platform's own set-state command, and confirms it took.
     /// </summary>
     /// <remarks>
-    /// For the controls that have such a command. A command the platform accepts without moving
-    /// the control throws, as <see cref="ToggleCore"/> does: it is never followed by a toggle, which
-    /// is what made the old route a ladder.
+    /// Throws when the platform accepts the command but the control does not move.
     /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <param name="checked">The desired checked state.</param>
@@ -176,10 +148,7 @@ public abstract partial class ToggleControlBase<TScope> : FocusableControlBase<T
     /// Gets checked state from pre-found element.
     /// </summary>
     /// <remarks>
-    /// <see cref="IMauiElement.Checked"/>, and only that. It used to read the toggle state and fall
-    /// back to <c>Selected</c>, which on Windows fell back to the toggle state again - so a control
-    /// could not tell which of the two the platform had published (step 105a). A radio button,
-    /// which is chosen rather than checked, overrides this.
+    /// Reads <see cref="IMauiElement.Checked"/>. <c>RadioButton</c> overrides this.
     /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <returns>True if checked, false if unchecked, null if unknown or element is null.</returns>

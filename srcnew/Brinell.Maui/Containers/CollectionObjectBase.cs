@@ -10,13 +10,6 @@ namespace Brinell.Maui.Containers;
 /// <remarks>
 /// Being a container, a collection scopes its own non-item controls too - a title,
 /// an empty view, a footer - alongside <see cref="Item"/>.
-/// <para>
-/// <typeparamref name="TItem"/> is constrained to <see cref="IMauiItemContainer{TCollection,
-/// TSelf}"/> - the contract, not <see cref="ItemContainerBase{TCollection, TSelf}"/> - so
-/// items are still structurally guaranteed to be scoped to this collection while an item type
-/// stays free to arrive at that any way it likes. The base class supplies nothing this class
-/// calls: items are built by the factory and handed straight back.
-/// </para>
 /// </remarks>
 /// <typeparam name="TParent">The parent scope type.</typeparam>
 /// <typeparam name="TSelf">The collection type itself (self-referencing).</typeparam>
@@ -33,11 +26,6 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     /// <summary>
     /// Whether the last scroll this collection performed was a jump, or null before the first.
     /// </summary>
-    /// <remarks>
-    /// Remembered so a collection that cannot jump keeps trying the <c>ScrollIntoView</c> rung
-    /// before stepping, as it did when a <c>SupportsScrollToIndex</c> question chose the route up
-    /// front. The element now reports which route it took, and this is where that answer is kept.
-    /// </remarks>
     private bool? _lastScrollJumped;
 
     /// <summary>
@@ -78,11 +66,6 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     /// Gets the item at <paramref name="index"/>. Equivalent to <see cref="Item"/>;
     /// the indexer reads better for a direct lookup, <c>Item(i)</c> mid-chain.
     /// </summary>
-    /// <remarks>
-    /// Renamed via <see cref="System.Runtime.CompilerServices.IndexerNameAttribute"/>
-    /// because an indexer is otherwise emitted as a member called <c>Item</c>, which
-    /// would collide with the <see cref="Item"/> method.
-    /// </remarks>
     [System.Runtime.CompilerServices.IndexerName("ItemAt")]
     public TItem this[int index] => Item(index);
 
@@ -154,10 +137,9 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     /// that its caption.
     /// </summary>
     /// <remarks>
-    /// The id is tried first across every item before any caption is considered, because an
-    /// id is the identifier the app author chose and a caption is what the platform happened
-    /// to render. Say which one you mean with the <see cref="Locator"/> overload -
-    /// <c>Toolbar[Locator.ByText("Save")]</c> - when a collection could answer to both.
+    /// The id is tried across every item before any caption is considered. Use the
+    /// <see cref="Locator"/> overload - <c>Toolbar[Locator.ByText("Save")]</c> - when a
+    /// collection could answer to both.
     /// </remarks>
     [System.Runtime.CompilerServices.IndexerName("ItemAt")]
     public TItem this[string key] => Item(key);
@@ -180,10 +162,8 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     /// throwing when it does not.
     /// </summary>
     /// <remarks>
-    /// Waits, for the same reason <c>FindElement</c> waits and <c>TryFindElement</c> does not:
-    /// naming an item is a search, and the thing being searched for often arrives a frame
-    /// after whatever revealed it - <c>Menu.Open()["New"]</c> asks for an item the click has
-    /// only just started rendering. Use <see cref="TryItem(string)"/> to ask about right now.
+    /// Waits because an item often appears a frame after whatever revealed it, as in
+    /// <c>Menu.Open()["New"]</c>. Use <see cref="TryItem(string)"/> to ask about right now.
     /// </remarks>
     public TItem Item(string key, int? timeoutMs = null)
     {
@@ -225,10 +205,8 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     /// Gets the item identified by <paramref name="key"/>, or null when none matches.
     /// </summary>
     /// <remarks>
-    /// Three passes, each across every item before the next begins: the automation id the app
-    /// author chose, then the caption the platform rendered, then the accessibility name.
-    /// The last is not redundant - navigation chrome regularly carries a name and no text at
-    /// all, which is how Android labels a tab.
+    /// Three passes, each across every item before the next begins: automation id, then
+    /// caption, then accessibility name (how Android labels a tab).
     /// </remarks>
     public TItem? TryItem(string key)
     {
@@ -319,11 +297,6 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     /// <summary>
     /// Every materialized item root, or an empty list when the collection is absent.
     /// </summary>
-    /// <remarks>
-    /// Protected because a collection sometimes has to ask about the elements rather than the
-    /// items - "is any of these visible", say - and building item objects to answer that would
-    /// be paying for scoping nobody uses.
-    /// </remarks>
     protected IReadOnlyList<IMauiElement> TryGetItemRoots()
     {
         var root = TryGetContainerRoot();
@@ -568,10 +541,7 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
 
         var roots = TryGetItemRoots();
 
-        // Asked whatever the platform can do. This used to sit inside the jump branch, so a
-        // collection that could only step walked to the end of the list before reporting an index
-        // that the app could have refused immediately - and reported it as "could not scroll"
-        // rather than "there is no such item".
+        // Refuse an index past the end up front rather than scrolling to the end first.
         var logicalCount = GetLogicalItemCount(roots);
         if (logicalCount.HasValue
             && index >= logicalCount.Value
@@ -587,11 +557,8 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
         // still making progress. Track the furthest row actually reached instead, and
         // stop only when a scroll step fails to reach any further.
         //
-        // One loop for both platforms. Where the element can jump, the first pass lands on the
-        // row and returns, which is what the separate jump branch did; where it can only step,
-        // each pass is one step, which is what this loop always did. The index is passed through
-        // rather than NextMaterializationIndex() so a jump goes to the row asked for - a stepping
-        // platform ignores it.
+        // Where the element can jump, the first pass lands on the row; where it can only step,
+        // each pass is one step and the index is ignored.
         var furthestReached = -1;
 
         while (true)
@@ -710,13 +677,6 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     /// <summary>
     /// Scrolls one step toward the end and reports whether that materialized new rows.
     /// </summary>
-    /// <remarks>
-    /// Prefers the UI Automation route - asking the last realized row to scroll itself
-    /// into view - over pointer input, which is gated on Windows and unavailable by
-    /// default. A pointer swipe is attempted only when the automation route makes no
-    /// progress, and a policy refusal there simply ends the scroll rather than failing
-    /// the caller.
-    /// </remarks>
     private bool TryMaterializeMore(int nextIndex)
     {
         var root = TryGetContainerRoot();
@@ -729,11 +689,8 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
         // non-scrolling wrapper around it.
         var target = ScrollTarget ?? root;
 
-        // UI Automation first: pull the last realized row into view, which makes the virtualizing
-        // panel realize the rows after it. Only worth trying on a collection already known not to
-        // jump - a jumping one lands where it was asked and this would scroll it somewhere else
-        // first. The very first call has no outcome to remember and goes straight to the element,
-        // which is the one place the order differs from before.
+        // On a collection known not to jump, pull the last realized row into view first, which
+        // makes the virtualizing panel realize the rows after it.
         if (_lastScrollJumped == false && TryScrollLastItemIntoView() && HasMoreThan(countBefore))
         {
             return true;
@@ -742,16 +699,13 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
         ScrollStep step;
         try
         {
-            // One call, and the element chooses: it jumps where the app declared a route to an
-            // index, and otherwise moves the scrolling container one step - the Scroll pattern on
-            // Windows, a swipe on a touch platform. Asking first which it would do cost a walk of
-            // the bridge to learn what the call reports anyway.
+            // The element jumps where the app declared a route to an index, and otherwise moves
+            // one step.
             step = target.ScrollTowards(nextIndex);
         }
         catch (ArgumentOutOfRangeException)
         {
-            // Past the end. Only a platform that can jump can tell, and it is not an error here:
-            // the caller's count check has already spoken, and this simply stops.
+            // Past the end; stop scrolling.
             return false;
         }
         catch (StaleElementReferenceException)
@@ -764,19 +718,13 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
 
         return step switch
         {
-            // A jump lands somewhere new, and the rows arrive afterwards: the verb returns once
-            // the app has asked the list to scroll, before the new rows reach the automation tree,
-            // and a CollectionView publishes no scroll offset to settle on. So wait for progress,
-            // then for the realized rows to stop changing - rows read while the list is still
-            // recycling report one item's position beside another item's content.
+            // The new rows reach the tree after the jump returns, and rows read while the list is
+            // still recycling mix up positions and content, so wait for them to settle.
             ScrollStep.Jumped => WaitForProgressThenSettle(reachBefore),
 
             // The content was already at the end.
             ScrollStep.NotMoved => false,
 
-            // A step realizes at most a row or two, so counting is the whole question. Putting
-            // this through the jump's progress wait would call a working step a failure whenever
-            // it realized nothing beyond the furthest row already reached.
             _ => HasMoreThan(countBefore),
         };
     }
@@ -785,10 +733,6 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     /// Waits for a jump to reach further than <paramref name="reachBefore"/>, then for the
     /// realized rows to stop changing.
     /// </summary>
-    /// <remarks>
-    /// Only for <see cref="ScrollStep.Jumped"/>. An index past the end throws rather than
-    /// arriving here, so these deadlines are paid in full only when scrolling is broken.
-    /// </remarks>
     private bool WaitForProgressThenSettle(int reachBefore)
     {
         if (!Poll(() => FurthestReachableIndex() > reachBefore, DefaultTimeoutMs))
@@ -814,10 +758,8 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     /// The element that actually scrolls, when it is not this container's own root.
     /// </summary>
     /// <remarks>
-    /// A collection is often wrapped for automation purposes - a platform bridge that
-    /// exposes an AutomationId - so the container root and the scrolling item host can
-    /// be different elements. Override to name the scrolling one; returning null uses
-    /// the container root.
+    /// Override when the container root wraps the scrolling item host; returning null uses the
+    /// container root.
     /// </remarks>
     protected virtual IMauiElement? ScrollTarget => null;
 
@@ -874,17 +816,9 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     /// Activates an item, given the element the item strategy found for it.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// The element a strategy matches is usually inside the row rather than the row itself —
-    /// a label or a cell — and on Windows selection responds to the <c>ListItem</c> that
-    /// contains it, not to that inner element. So the containing row is tried first, then the
-    /// element itself.
-    /// </para>
-    /// <para>
-    /// This lives on the collection rather than in a shared helper because "the row that owns
-    /// this element" is collection knowledge. A collection whose rows activate differently
-    /// overrides this.
-    /// </para>
+    /// The containing <c>ListItem</c> row is tried first, then the element itself, because the
+    /// element a strategy matches is usually inside the row. Override for rows that activate
+    /// differently.
     /// </remarks>
     /// <param name="itemRoot">The element found for the item.</param>
     /// <returns>True when the item was activated.</returns>
@@ -927,12 +861,6 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     /// <summary>
     /// Activates a candidate row, reporting failure rather than throwing.
     /// </summary>
-    /// <remarks>
-    /// Unlike a control's click, this walks a list of candidates and a given one may simply be
-    /// the wrong element, so an unsuccessful pattern is an answer rather than a fault. A
-    /// pointer-policy violation is still allowed to surface — that is a configuration error,
-    /// not a mismatched candidate.
-    /// </remarks>
     private static bool TryActivate(IMauiElement element)
     {
         if (!element.HasUsableBounds())
@@ -942,12 +870,7 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
 
         try
         {
-            // The one place a catch is still right, and it is worth saying why it survived the
-            // removal of the activation ladder. This catches because the *element* may be the
-            // wrong candidate, not because the *route* may be wrong - a different question, with
-            // a different answer. Everywhere else, catching an activation failure and trying
-            // something else is the thing that was deleted.
-            // Selected, not invoked: this is choosing a row in a collection.
+            // A candidate may be the wrong element, so a failure here is an answer, not a fault.
             element.Select();
             return true;
         }

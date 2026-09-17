@@ -103,10 +103,7 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     /// Gets this container's own element, or null when it is absent.
     /// </summary>
     /// <remarks>
-    /// The container's answer to "the element for this object", which for a container is its
-    /// root. Named to match <c>ViewBase.TryFindElement()</c> so a generated member reads the
-    /// same on both bases — the generator emits one call shape and each base decides what its
-    /// own element is.
+    /// For a container this is its root.
     /// </remarks>
     protected IMauiElement? TryFindElement() => TryGetContainerRoot();
 
@@ -134,16 +131,12 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     /// </summary>
     /// <remarks>
     /// <para>
-    /// The container is already a scope, so a child resolves within it and nothing else needs to
-    /// know where the container sits. This is the typed counterpart to <see cref="FindElement"/>:
-    /// that one hands back an <c>IMauiElement</c>, which is where a test stops chaining and starts
-    /// doing automation by hand.
+    /// The typed counterpart to <see cref="FindElement"/>, which returns a raw
+    /// <c>IMauiElement</c>.
     /// </para>
     /// <para>
     /// Prefer declaring a named property on the container - <c>public Label&lt;ProductRow&gt; Name
-    /// =&gt; new(this, "ProductNameLabel");</c> - which reads better and gives the child a name.
-    /// This exists for children not worth naming, and for tests that would otherwise reach for a
-    /// locator.
+    /// =&gt; new(this, "ProductNameLabel");</c>. Use this for children not worth naming.
     /// </para>
     /// </remarks>
     /// <typeparam name="TControl">The control type to resolve the child as.</typeparam>
@@ -529,11 +522,8 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     /// Polls a predicate that is meaningful when the container root is absent.
     /// </summary>
     /// <remarks>
-    /// The counterpart of <see cref="RunDoWithElement"/> for <c>[AbsenceTolerant]</c> Core
-    /// methods: the root is resolved with <see cref="TryGetContainerRoot"/> and may be null,
-    /// because the predicate may be asking about absence. Mirrors
-    /// <c>ViewBase.RunWaitWithOptionalElement</c> — generated members use whichever helper
-    /// their base class provides, so both bases must offer the pair.
+    /// Used by generated members whose Core method carries <c>[AbsenceTolerant]</c>: the root may
+    /// be null, because the predicate may be asking about absence.
     /// </remarks>
     protected bool RunWaitWithOptionalElement<T>(T? expected,
         Func<IMauiElement?, bool> coreOperation,
@@ -694,11 +684,8 @@ public abstract class ContainerObjectBase<TParent, TSelf>
 
     protected override TParent SetResult => Parent;
 
-    // More of the element-object surface, so a container can declare a control capability
-    // (IRefreshableControlObject, ISwipeableControlObject) the way a view does. Added with step 102
-    // option B, which made RefreshView and SwipeView containers: a container is an element too.
-    // The Enabled trio is not here: items already generate their own, so a container that needs
-    // it declares IsEnabledCore and the generator emits it.
+    // Element-object members, so a container can declare a control capability
+    // (IRefreshableControlObject, ISwipeableControlObject) the way a view does.
 
     /// <summary>Whether the container is on the page, without waiting.</summary>
     public bool IsExists() => IsExists(timeoutMs: null);

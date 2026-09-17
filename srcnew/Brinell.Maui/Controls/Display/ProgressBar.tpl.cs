@@ -39,12 +39,7 @@ public partial class ProgressBar<TScope> : Base.ViewBase<TScope>
     {
         if (element == null) return null;
 
-        // The app's own number first, in MAUI's units, with no arithmetic in between.
-        //
-        // The rescaling below is correct and is also a second home for the definition of
-        // "progress": it infers the scale from whatever minimum and maximum the platform
-        // reports, so a platform reporting a different range - or none - quietly changes what
-        // the returned number means. Asking the app removes the inference rather than tuning it.
+        // The app's own number first, in MAUI's units.
         if (double.TryParse(
                 element.ReadState("Progress"),
                 System.Globalization.NumberStyles.Float,
@@ -77,9 +72,8 @@ public partial class ProgressBar<TScope> : Base.ViewBase<TScope>
 
     #region Hand-written Convenience Members
 
-    // Tolerance-based comparison is beyond the generated Assert/Wait variants, so the
-    // progress members that take a tolerance stay hand-written. They overload the
-    // generated exact-equality AssertProgress/WaitProgress rather than replacing them.
+    // Tolerance-based comparisons stay hand-written; they overload the generated
+    // exact-equality AssertProgress/WaitProgress.
 
     /// <summary>
     /// Waits for the progress value to reach the expected value within a tolerance.
