@@ -108,23 +108,13 @@ public abstract class SemanticControlTestsBase
 
         public override bool IsLoaded(int? timeoutMs = null) => true;
 
-        public EditableField<TestPage> TestField => new(this, "TestField");
-
         public Editor<TestPage> Notes => new(this, "Notes");
-
-        public IconCommandButton<TestPage> Save => new(this, "SaveButton");
-
-        public RoundButton<TestPage> Add => new(this, "AddButton");
 
         public Button<TestPage> PromptOk => new(this, "PromptDialogView_OKButton");
 
         public Button<TestPage> NativeDialogDelete => new(this, "NativeDialog_Delete");
 
         public ContentDialog<TestPage> Dialog => new(this);
-
-        public GenericBrowser<TestPage> Browser => new(this);
-
-        public SelectionList<TestPage> List => new(this);
 
         public TabMenu<TestPage> Tabs => new(this);
 

@@ -8,7 +8,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\srcnew\Brinell.Uat\Brinell.Uat.csproj" />
     <ProjectReference Include="..\..\srcnew\Brinell.Maui\Brinell.Maui.csproj" />
-    <ProjectReference Include="..\..\srcnew\Brinell.Maui.Extensions\Brinell.Maui.Extensions.csproj" />
     <ProjectReference Include="..\..\srcnew\Brinell.Maui.FlaUI\Brinell.Maui.FlaUI.csproj" />
     <ProjectReference Include="..\..\srcnew\Brinell.Presenter\Brinell.Presenter.csproj" />
     <ProjectReference Include="..\Brinell.Maui.UITests\Brinell.Maui.UITests.csproj" ReferenceOutputAssembly="false" />

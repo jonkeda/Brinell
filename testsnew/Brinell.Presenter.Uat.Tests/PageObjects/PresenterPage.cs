@@ -2,7 +2,6 @@ using Brinell.Maui.Controls.Buttons;
 using Brinell.Maui.Controls.Display;
 using Brinell.Maui.Controls.Selection;
 using Brinell.Maui.Controls.Text;
-using Brinell.Maui.Extensions.Controls.Selection;
 using Brinell.Maui.Interfaces;
 using Brinell.Maui.Pages;
 using Brinell.Presenter.ViewModels;
@@ -31,8 +30,6 @@ public sealed class PresenterPage : PageObjectBase<PresenterPage>
 
     [UatName("All Workspace Tree")]
     public Label<PresenterPage> AllWorkspaceTree => new(this,"AllWorkspaceTreeText");
-
-    public SelectionList<PresenterPage> WorkspaceRows => new(this);
 
     [UatName("Step List")]
     public Label<PresenterPage> StepList => new(this,"StepListText");
