@@ -57,11 +57,15 @@ public partial class Image<TScope> : Base.ViewBase<TScope>
     {
         if (element == null) return null;
 
-        if (element.SupportsStateReads)
+        // Source is read first, and its null is what says the app does not answer here - so the
+        // size route is taken on the strength of one call rather than a separate question.
+        // IsLoading is only asked once Source has answered, because an app that answers one
+        // answers both.
+        if (element.ReadState("Source") is { } source)
         {
             // Loaded means: a source to load, and not still loading it. Either alone is the
             // wrong question - an image with no source is never loading and never loaded.
-            var hasSource = !string.IsNullOrEmpty(element.ReadState("Source"));
+            var hasSource = !string.IsNullOrEmpty(source);
             var loading = bool.TryParse(element.ReadState("IsLoading"), out var busy) && busy;
 
             return hasSource && !loading;
@@ -82,7 +86,7 @@ public partial class Image<TScope> : Base.ViewBase<TScope>
     /// <param name="element">The pre-found element (may be null).</param>
     /// <returns>The source, or null when it cannot be read.</returns>
     protected virtual string? GetSourceCore(IMauiElement? element)
-        => element is { SupportsStateReads: true } ? element.ReadState("Source") : null;
+        => element?.ReadState("Source");
 
     #endregion
 

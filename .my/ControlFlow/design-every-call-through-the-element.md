@@ -465,6 +465,25 @@ be compiled. Step 6 is the one where Android behaviour is supposed to change.
 
 ## 8. Done 2026-09-15
 
+> **Followed up 2026-09-17: the last six `Supports*` members are gone too.** This design kept
+> `SupportsInvoke`, `SupportsSelect`, `SupportsDropdown`, `SupportsGesture`, `SupportsStateReads`
+> and `SupportsScrollToIndex` on the grounds that each was a *real* route choice - both answers
+> occur on Windows and both branches work there. That rule was right, and each one still went,
+> for reasons the rule did not cover; see
+> [plan-remove-the-last-supports-members.md](plan-remove-the-last-supports-members.md).
+>
+> | Member | How it went |
+> |---|---|
+> | `SupportsGesture` | Deleted. No control ever asked it; private to each backend now. |
+> | `SupportsDropdown` | `IsDropdownOpen` became `bool?`, so the question and the read are one call. `ReadDropdownItems` became `ReadDropdownItemTexts`. |
+> | `SupportsInvoke`, `SupportsSelect` | Deleted. Their only callers were the Extensions controls, which were themselves deleted; every remaining caller names one operation. |
+> | `SupportsStateReads` | `ReadState` returns `string?`, null where the app does not answer. One bridge walk instead of two. |
+> | `SupportsScrollToIndex` | Became `ScrollStep ScrollTowards(int index)`, with a new `ScrollStep.Jumped` so the caller can still tell a jump from a step. |
+>
+> `IMauiElement` now asks no questions: every member performs, reads, or reads nullably. The
+> table below describes the interface as it was on 2026-09-15.
+
+
 All of sections 4.1 to 4.8 were implemented in one pass, together with step 7 (moving the tests
 off the driver).
 

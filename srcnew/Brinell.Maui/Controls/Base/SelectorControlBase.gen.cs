@@ -13,7 +13,7 @@ namespace Brinell.Maui.Controls.Base;
 /// <remarks>
 /// <para>
 /// <b>One element call per operation, and no route choice here.</b> Selection used to ask
-/// <c>SupportsSelectByText</c>, then <c>SupportsDropdown</c>, and fall through to tapping the
+/// <c>SupportsSelectByText</c>, then a dropdown question, and fall through to tapping the
 /// picker. On Windows the last branch threw; on Android and iOS the first two always answered
 /// false, so the tap was the only branch that ran there - and it could not work, because the item
 /// lookup it relied on answered null. The element picks the route now, and each platform's route

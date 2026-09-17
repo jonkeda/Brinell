@@ -135,25 +135,12 @@ public interface IMauiElement : IElement<IMauiElement>
             $"{GetType().Name} does not implement Select. A control asked to be chosen and this "
             + "platform offers no route to it.");
 
-    /// <summary>Whether <see cref="Invoke"/> has a route on this element.</summary>
-    /// <remarks>
-    /// <para>
-    /// For a control that has to <i>choose</i> between surfaces - a compound template whose
-    /// command may sit on any of several parts - and must ask rather than try. A control that
-    /// knows its own operation just calls it and lets the throw name a wrong declaration.
-    /// </para>
-    /// <para>
-    /// These replaced casts to <c>IInvokePatternElement</c> and <c>ISelectionItemPatternElement</c>,
-    /// which put UI Automation's vocabulary into cross-platform controls (step 107). Windows
-    /// answers from the pattern; a touch platform answers true, because a tap is how it does both.
-    /// There is no <c>SupportsToggle</c>: no control has to choose whether to toggle, so
-    /// <see cref="Toggle"/> just performs or throws.
-    /// </para>
-    /// </remarks>
-    bool SupportsInvoke => false;
-
-    /// <summary>Whether <see cref="Select"/> has a route. See <see cref="SupportsInvoke"/>.</summary>
-    bool SupportsSelect => false;
+    // There is no SupportsInvoke, SupportsSelect or SupportsToggle. Every control object names
+    // the one operation it means - Invoke, Toggle, Select or InvokeToolbarItem - and the element
+    // performs it or throws naming what was missing. The two flags that used to sit here existed
+    // for controls that walked candidates of mixed kind and could not name an operation; those
+    // controls are gone, and the one candidate-walker left, CollectionObjectBase, names Select
+    // because it knows it is choosing a row. A flag here would be an invitation to guess.
 
     /// <summary>
     /// Raises this element as a MAUI <c>ToolbarItem</c>. Performs or throws.
@@ -300,10 +287,15 @@ public interface IMauiElement : IElement<IMauiElement>
     /// and uses this only where the app declares none.
     /// </para>
     /// </remarks>
-    bool SupportsDropdown => false;
-
-    /// <summary>Whether the dropdown is open. False where there is no dropdown.</summary>
-    bool IsDropdownOpen => false;
+    /// <summary>Whether the dropdown is open. Null where this element has no dropdown.</summary>
+    /// <remarks>
+    /// <b>Nullable, so the question and the read are one call.</b> Null means "this element
+    /// publishes no dropdown", which is a different thing from "there is one and it is shut" -
+    /// and the caller that needed to tell them apart used to ask <c>SupportsDropdown</c> first,
+    /// at the cost of a second round trip. The same convention covers <see cref="Checked"/>,
+    /// <see cref="RangeValue"/> and <see cref="IsFlyoutOpen"/>.
+    /// </remarks>
+    bool? IsDropdownOpen => null;
 
     /// <summary>Opens the dropdown and waits for it to report open. Performs or throws.</summary>
     /// <exception cref="NotSupportedException">This element has no dropdown.</exception>
@@ -311,23 +303,29 @@ public interface IMauiElement : IElement<IMauiElement>
         => throw new NotSupportedException(
             $"{GetType().Name} does not implement OpenDropdown.");
 
-    /// <summary>Closes the dropdown. A no-op when it is already closed.</summary>
-    /// <exception cref="NotSupportedException">This element has no dropdown.</exception>
-    void CloseDropdown()
-        => throw new NotSupportedException(
-            $"{GetType().Name} does not implement CloseDropdown.");
+    /// <summary>Closes the dropdown. A no-op when it is already closed, or when there is none.</summary>
+    /// <remarks>
+    /// <b>Lenient, unlike <see cref="OpenDropdown"/>.</b> An element that cannot be open already
+    /// has the state the caller asked for, which is the reasoning <c>CloseFlyout</c> uses for
+    /// "already shut is success". Opening has no such reading: asking for a dropdown that does
+    /// not exist is asking for something that cannot happen.
+    /// </remarks>
+    void CloseDropdown() { }
 
     /// <summary>
-    /// The items the open dropdown has put into the accessibility tree, waiting briefly for them.
+    /// The texts of the items the dropdown shows, opening it for the read and restoring it.
+    /// Null where this element has no dropdown.
     /// </summary>
     /// <remarks>
     /// Realized items, not every item the control holds: a long list publishes the visible
-    /// handful. Empty when the dropdown is closed or has nothing to show.
+    /// handful. Empty where the dropdown opened and showed nothing.
+    /// <para>
+    /// Texts rather than elements. The elements went stale as soon as the dropdown closed, so
+    /// the only safe caller was one holding it open - which is the platform's own selection
+    /// route, and is now private to it.
+    /// </para>
     /// </remarks>
-    /// <exception cref="NotSupportedException">This element has no dropdown.</exception>
-    IReadOnlyList<IMauiElement> ReadDropdownItems()
-        => throw new NotSupportedException(
-            $"{GetType().Name} does not implement ReadDropdownItems.");
+    IReadOnlyList<string>? ReadDropdownItemTexts() => null;
 
     /// <summary>The text of the selector's selected item, read without opening anything. Null when none.</summary>
     /// <remarks>
@@ -350,25 +348,6 @@ public interface IMauiElement : IElement<IMauiElement>
     #endregion
 
     #region Gestures
-
-    /// <summary>
-    /// Whether this element can perform the gesture semantically, without synthetic input.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// A question, not a demand: a test may reasonably ask and then take another route. On
-    /// Windows the answer is whether the app under test declared this gesture on this element
-    /// for the automation bridge, which means a false is usually a missing declaration in the
-    /// app's markup rather than something impossible.
-    /// </para>
-    /// <para>
-    /// Defaulted to false so a platform that has not implemented gestures yet compiles and
-    /// answers honestly. A platform that synthesises real touch input should return true.
-    /// </para>
-    /// </remarks>
-    /// <param name="gesture">The gesture to ask about.</param>
-    /// <returns>Whether <see cref="PerformGesture"/> would work.</returns>
-    bool SupportsGesture(MauiGesture gesture) => false;
 
     /// <summary>
     /// Performs the gesture, or throws saying why it could not.
@@ -426,18 +405,7 @@ public interface IMauiElement : IElement<IMauiElement>
     #region State the platform cannot be asked for
 
     /// <summary>
-    /// Whether this element can be asked what the app holds, rather than what it renders.
-    /// </summary>
-    /// <remarks>
-    /// A question, so a control object takes one route rather than trying one. Where it answers
-    /// false the control falls back to what the accessibility tree can see, which is what every
-    /// one of these reads used to do exclusively - and is why several of them were true for the
-    /// wrong reason.
-    /// </remarks>
-    bool SupportsStateReads => false;
-
-    /// <summary>
-    /// Reads a named piece of app state.
+    /// Reads a named piece of app state. Null where the app does not answer state reads here.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -450,15 +418,26 @@ public interface IMauiElement : IElement<IMauiElement>
     /// Each name is a case in the app's own provider, so an unknown one is refused rather than
     /// silently answered with an empty string.
     /// </para>
+    /// <para>
+    /// <b>Null is "the app does not answer state reads on this element", not "the value is
+    /// empty".</b> That is the case a control falls back from, to whatever the accessibility tree
+    /// can see - which is what every one of these reads used to do exclusively, and is why
+    /// several of them were true for the wrong reason. A name the app <i>does</i> answer reads
+    /// for but has no case for still throws: that is a defect in the test, not an absence in the
+    /// platform, and the two used to be indistinguishable because asking cost a separate walk.
+    /// </para>
+    /// <para>
+    /// One call, so a caller branches on the result rather than asking and then reading. Calling
+    /// it twice - once to decide, once to use - is the double walk this replaced, under a new
+    /// name.
+    /// </para>
     /// </remarks>
     /// <param name="property">The property name, as the provider spells it.</param>
-    /// <returns>The value, as the app formatted it.</returns>
+    /// <returns>The value as the app formatted it, or null where the app does not answer.</returns>
     /// <exception cref="NotSupportedException">
-    /// This platform, or this element, does not answer that.
+    /// The app answers state reads here but has no case for that name.
     /// </exception>
-    string ReadState(string property)
-        => throw new NotSupportedException(
-            $"{GetType().Name} does not implement ReadState.");
+    string? ReadState(string property) => null;
 
     #endregion
 
@@ -537,14 +516,31 @@ public interface IMauiElement : IElement<IMauiElement>
             $"{GetType().Name} does not implement ScrollTo.");
 
     /// <summary>
-    /// Whether this element can be asked to scroll to an item index.
+    /// Moves the content towards the item at an index, and reports how it moved.
+    /// Performs or throws.
     /// </summary>
     /// <remarks>
-    /// A question, because a collection without it still scrolls by the Scroll pattern or by
-    /// swiping. A <c>ScrollView</c> answers <c>ScrollTo</c> and <c>ScrollPosition</c> and has no
-    /// items; a <c>CollectionView</c> answers this and has no scroll offset of its own to report.
+    /// <para>
+    /// <b>The route choice lives here, not in the caller.</b> Where the platform can jump to an
+    /// index it jumps and reports <see cref="ScrollStep.Jumped"/>; otherwise it scrolls one step,
+    /// exactly as <see cref="ScrollContent"/> does, and reports what that step reported. A
+    /// collection without the jump route still scrolls by the Scroll pattern or by swiping,
+    /// which is why this performs rather than refusing.
+    /// </para>
+    /// <para>
+    /// The caller still needs to know which happened, because the two need different waits, so
+    /// the answer is a result rather than a question asked beforehand. This replaced a
+    /// <c>SupportsScrollToIndex</c> flag that cost a round trip and then told the caller
+    /// something the call itself establishes.
+    /// </para>
     /// </remarks>
-    bool SupportsScrollToIndex => false;
+    /// <param name="index">The item index to move towards.</param>
+    /// <returns>How the content moved.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// The platform can jump and the index is past the end of the items. A platform that can only
+    /// step cannot tell, and scrolls.
+    /// </exception>
+    ScrollStep ScrollTowards(int index) => ScrollContent(1);
 
     /// <summary>Brings the item at an index into view.</summary>
     /// <remarks>
@@ -734,9 +730,9 @@ public interface IMauiElement : IElement<IMauiElement>
     /// <b>For the controls Windows automation cannot see.</b> A MAUI <c>Stepper</c> has no tree node
     /// of its own on Windows, only its two buttons, and a <c>SwipeView</c> publishes no
     /// <c>AutomationId</c>. Their bridge elements are still addressable by id, so Windows returns
-    /// an element standing for the bridge target: it answers <see cref="SupportsStateReads"/>,
-    /// <see cref="ReadState"/>, <see cref="SupportsGesture"/> and <see cref="PerformGesture"/>, and
-    /// refuses everything else rather than inventing a visibility or a text.
+    /// an element standing for the bridge target: it answers <see cref="ReadState"/> and
+    /// <see cref="PerformGesture"/>, and refuses everything else rather than inventing a
+    /// visibility or a text.
     /// </para>
     /// <para>
     /// Android and iOS return the real node found by that id, where it is in the tree.

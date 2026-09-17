@@ -359,7 +359,7 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// </remarks>
     public void Click()
     {
-        if (SupportsGesture(MauiGesture.Tap))
+        if (DeclaresGesture(MauiGesture.Tap))
         {
             PerformGesture(MauiGesture.Tap);
             return;
@@ -380,7 +380,7 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// <see cref="InvokeToolbarItem"/>; it is not this method's job to guess a substitute.
     /// </remarks>
     public void Invoke() => Perform(
-        nameof(Invoke), SupportsInvoke, RunInvokePattern, "InvokePattern");
+        nameof(Invoke), HasInvokePattern, RunInvokePattern, "InvokePattern");
 
     /// <inheritdoc />
     public void Toggle() => Perform(
@@ -388,15 +388,16 @@ public sealed class FlaUIMauiElement : IMauiElement
 
     /// <inheritdoc />
     public void Select() => Perform(
-        nameof(Select), SupportsSelect, RunSelectionItemPattern, "SelectionItemPattern");
+        nameof(Select), HasSelectionItemPattern, RunSelectionItemPattern, "SelectionItemPattern");
 
-    /// <inheritdoc />
-    public bool SupportsInvoke => HasPattern(() => _element.Patterns.Invoke.IsSupported);
+    // The three pattern checks Perform chooses on. All private: they were SupportsInvoke and
+    // SupportsSelect on IMauiElement until no control asked them, and HasTogglePattern never
+    // needed to be public because no control ever had to choose whether to toggle.
+    private bool HasInvokePattern => HasPattern(() => _element.Patterns.Invoke.IsSupported);
 
     private bool HasTogglePattern => HasPattern(() => _element.Patterns.Toggle.IsSupported);
 
-    /// <inheritdoc />
-    public bool SupportsSelect => HasPattern(() => _element.Patterns.SelectionItem.IsSupported);
+    private bool HasSelectionItemPattern => HasPattern(() => _element.Patterns.SelectionItem.IsSupported);
 
     /// <inheritdoc />
     /// <remarks>
@@ -946,7 +947,7 @@ public sealed class FlaUIMauiElement : IMauiElement
         if (declaresFocus && TryBridge(BrinellVerb.Focus))
             return;
 
-        if (!declaresFocus && SupportsGesture(MauiGesture.Tap))
+        if (!declaresFocus && DeclaresGesture(MauiGesture.Tap))
         {
             PerformGesture(MauiGesture.Tap);
             return;
@@ -1121,15 +1122,23 @@ public sealed class FlaUIMauiElement : IMauiElement
 
     #region Dropdown
 
-    /// <inheritdoc />
-    /// <remarks>ExpandCollapse. A WinUI <c>ComboBox</c> is the case this exists for.</remarks>
-    public bool SupportsDropdown => HasPattern(() => _element.Patterns.ExpandCollapse.IsSupported);
+    /// <summary>
+    /// Whether this element exposes the ExpandCollapse pattern. A WinUI <c>ComboBox</c> is the
+    /// case this exists for.
+    /// </summary>
+    /// <remarks>
+    /// Private: this was <c>SupportsDropdown</c> on <c>IMauiElement</c>, where every caller asked
+    /// it and then immediately asked something else. The nullable <see cref="IsDropdownOpen"/>
+    /// answers both in one walk.
+    /// </remarks>
+    private bool HasDropdown => HasPattern(() => _element.Patterns.ExpandCollapse.IsSupported);
 
     /// <inheritdoc />
-    public bool IsDropdownOpen
-        => SupportsDropdown
-           && _element.Patterns.ExpandCollapse.Pattern.ExpandCollapseState.Value
-               == ExpandCollapseState.Expanded;
+    public bool? IsDropdownOpen
+        => HasDropdown
+            ? _element.Patterns.ExpandCollapse.Pattern.ExpandCollapseState.Value
+                == ExpandCollapseState.Expanded
+            : null;
 
     /// <inheritdoc />
     public void OpenDropdown()
@@ -1138,7 +1147,7 @@ public sealed class FlaUIMauiElement : IMauiElement
 
         _element.Patterns.ExpandCollapse.Pattern.Expand();
 
-        if (!WaitHelper.WaitFor(() => IsDropdownOpen, timeoutMs: 2000, pollingIntervalMs: 50))
+        if (!WaitHelper.WaitFor(() => IsDropdownOpen == true, timeoutMs: 2000, pollingIntervalMs: 50))
         {
             throw new InvalidOperationException(
                 $"The dropdown on '{AutomationId ?? Name ?? "(unnamed)"}' accepted Expand and did "
@@ -1147,22 +1156,30 @@ public sealed class FlaUIMauiElement : IMauiElement
     }
 
     /// <inheritdoc />
+    /// <remarks>Lenient: an element with no dropdown is already in the asked-for state.</remarks>
     public void CloseDropdown()
     {
-        RequireDropdown(nameof(CloseDropdown));
-
-        if (IsDropdownOpen)
+        if (IsDropdownOpen == true)
         {
             _element.Patterns.ExpandCollapse.Pattern.Collapse();
         }
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// The live popup item elements, for a caller that is holding the dropdown open.
+    /// </summary>
     /// <remarks>
     /// Looked for among descendants, then among children: a WinUI ComboBox's popup items are
     /// reported under one or the other depending on how it was templated.
+    /// <para>
+    /// Private: these elements go stale the moment the dropdown closes, so the only safe caller
+    /// is one that holds it open - this class's own selection route and
+    /// <see cref="ReadDropdownItemTexts"/>. It was on <c>IMauiElement</c> as
+    /// <c>ReadDropdownItems</c>, where it handed callers elements that could die between the
+    /// read and the use.
+    /// </para>
     /// </remarks>
-    public IReadOnlyList<IMauiElement> ReadDropdownItems()
+    private IReadOnlyList<IMauiElement> ReadDropdownItems()
     {
         RequireDropdown(nameof(ReadDropdownItems));
 
@@ -1189,7 +1206,7 @@ public sealed class FlaUIMauiElement : IMauiElement
     {
         get
         {
-            if (!SupportsDropdown)
+            if (!HasDropdown)
                 return Text;
 
             try
@@ -1209,12 +1226,20 @@ public sealed class FlaUIMauiElement : IMauiElement
 
     /// <inheritdoc />
     /// <remarks>
-    /// Opened for the read and restored afterwards, so the items are live while their texts are
-    /// read. Null for an element with no dropdown: nothing else here publishes a selector's items.
+    /// The same read as <see cref="ReadDropdownItemTexts"/> on Windows. They stay two members
+    /// because they mean different things - "every item the selector holds" versus "what the
+    /// popup is showing" - as <c>Picker</c> documents.
     /// </remarks>
-    public IReadOnlyList<string>? ReadItemTexts()
+    public IReadOnlyList<string>? ReadItemTexts() => ReadDropdownItemTexts();
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Opened for the read and restored afterwards, so the items are live while their texts are
+    /// read. Null for an element with no dropdown.
+    /// </remarks>
+    public IReadOnlyList<string>? ReadDropdownItemTexts()
     {
-        if (!SupportsDropdown)
+        if (!HasDropdown)
             return null;
 
         return WithDropdownOpen(
@@ -1224,7 +1249,7 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// <summary>Runs a read with the dropdown open, restoring the state it was found in.</summary>
     private T WithDropdownOpen<T>(Func<T> read)
     {
-        var wasOpen = IsDropdownOpen;
+        var wasOpen = IsDropdownOpen == true;
         if (!wasOpen)
         {
             OpenDropdown();
@@ -1266,14 +1291,14 @@ public sealed class FlaUIMauiElement : IMauiElement
         item.Select();
 
         // Choosing an item closes a combo box by itself; close it if this one did not.
-        WaitHelper.WaitFor(() => !IsDropdownOpen, timeoutMs: 2000, pollingIntervalMs: 50);
+        WaitHelper.WaitFor(() => IsDropdownOpen != true, timeoutMs: 2000, pollingIntervalMs: 50);
         CloseDropdown();
         return true;
     }
 
     private void RequireDropdown(string operation)
     {
-        if (!SupportsDropdown)
+        if (!HasDropdown)
         {
             throw new NotSupportedException(
                 $"'{AutomationId ?? Name ?? "(unnamed)"}' does not expose the UI Automation "
@@ -1353,13 +1378,20 @@ public sealed class FlaUIMauiElement : IMauiElement
 
     #region Gestures (Brinell UI Automation bridge)
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Whether the app under test declared this gesture on this element.
+    /// </summary>
     /// <remarks>
-    /// Answered by asking the app under test what it declared for this element, not by
-    /// inspecting the control. A <c>SwipeView</c> that has not opted in reports false, which is
-    /// correct: nothing can drive it semantically until the app says so.
+    /// Answered by asking the app what it declared, not by inspecting the control. A
+    /// <c>SwipeView</c> that has not opted in reports false, which is correct: nothing can drive
+    /// it semantically until the app says so.
+    /// <para>
+    /// Private: this used to be on <c>IMauiElement</c>, where no control object ever asked it.
+    /// Windows still needs the answer internally, to choose between the declared gesture route
+    /// and a pointer click, so it stays here as an implementation detail.
+    /// </para>
     /// </remarks>
-    public bool SupportsGesture(MauiGesture gesture)
+    private bool DeclaresGesture(MauiGesture gesture)
         => GestureRunner.Supports(_driver.RootElement, _driver.Automation, AutomationId, gesture);
 
     /// <inheritdoc />
@@ -1423,20 +1455,34 @@ public sealed class FlaUIMauiElement : IMauiElement
     #region State the platform cannot be asked for
 
     /// <inheritdoc />
-    public bool SupportsStateReads => BridgeDeclares(BrinellVerb.GetState);
-
-    /// <inheritdoc />
-    public string ReadState(string property)
+    /// <remarks>
+    /// One bridge walk, not two. <see cref="BridgeVerbRunner.SendIfDeclared"/> resolves the
+    /// target once and reports whether the verb was declared separately from whether it was
+    /// answered, which is what lets null and the throw mean different things here. The pair of
+    /// calls this replaced - a <c>SupportsStateReads</c> that walked the bridge, then a read that
+    /// walked it again - could not tell them apart at all: a provider says
+    /// <c>UIA_E_NOTSUPPORTED</c> both for a verb it never declared and for a name it does not
+    /// handle.
+    /// </remarks>
+    public string? ReadState(string property)
     {
-        if (!TryBridge(BrinellVerb.GetState, property, out var value))
+        var answer = BridgeVerbRunner.SendIfDeclared(
+            _driver.RootElement, _driver.Automation, AutomationId, BrinellVerb.GetState, property,
+            out var declared);
+
+        if (!declared)
         {
-            throw new NotSupportedException(
-                $"'{AutomationId}' does not answer GetState('{property}'). Either the app has not "
-                + "declared GetState on it, or its provider has no case for that name - the two "
-                + "read alike from here, and both are changes to the app under test.");
+            return null;
         }
 
-        return value;
+        if (!answer.Delivered)
+        {
+            throw new NotSupportedException(
+                $"'{AutomationId}' declares GetState but has no case for '{property}'. The bridge "
+                + "said: " + answer.Reason);
+        }
+
+        return answer.Value;
     }
 
     #endregion
@@ -1518,7 +1564,43 @@ public sealed class FlaUIMauiElement : IMauiElement
     }
 
     /// <inheritdoc />
-    public bool SupportsScrollToIndex => BridgeDeclares(BrinellVerb.ScrollToIndex);
+    /// <remarks>
+    /// One walk of the bridge decides the route and takes it. Where the app declares
+    /// <c>ScrollToIndex</c> this jumps, settles as <see cref="ScrollToIndex"/> does, and reports
+    /// <see cref="ScrollStep.Jumped"/>; otherwise it is a Scroll-pattern step. The pair this
+    /// replaced - a <c>SupportsScrollToIndex</c> walk followed by a <c>ScrollToIndex</c> walk -
+    /// asked the bridge the same question twice.
+    /// </remarks>
+    public ScrollStep ScrollTowards(int index)
+    {
+        var answer = BridgeVerbRunner.InvokeIfDeclared(
+            _driver.RootElement, _driver.Automation, AutomationId,
+            BrinellVerb.ScrollToIndex, index, 0, out var declared);
+
+        if (!declared)
+        {
+            return ScrollContent(1);
+        }
+
+        if (!answer.Delivered)
+        {
+            if (answer.HResult == HResults.BRINELL_E_DECLINED)
+            {
+                var itemCount = ReadState("ItemCount") ?? "unknown";
+                throw new ArgumentOutOfRangeException(
+                    nameof(index),
+                    index,
+                    $"'{AutomationId}' declined index {index}; item count is {itemCount}.");
+            }
+
+            throw new BrinellException(
+                $"'{AutomationId}' declares ScrollToIndex but could not scroll to index {index}. "
+                + $"The bridge said: {answer.Reason}");
+        }
+
+        WaitForTheViewportToSettle();
+        return ScrollStep.Jumped;
+    }
 
     /// <inheritdoc />
     /// <remarks>
@@ -1541,9 +1623,7 @@ public sealed class FlaUIMauiElement : IMauiElement
         {
             if (answer.HResult == HResults.BRINELL_E_DECLINED)
             {
-                var itemCount = _driver.SupportsStateReads(AutomationId ?? string.Empty)
-                    ? _driver.ReadState(AutomationId!, "ItemCount")
-                    : "unknown";
+                var itemCount = ReadState("ItemCount") ?? "unknown";
                 throw new ArgumentOutOfRangeException(
                     nameof(index),
                     index,
@@ -1610,7 +1690,7 @@ public sealed class FlaUIMauiElement : IMauiElement
             return;
         }
 
-        if (SupportsDropdown)
+        if (HasDropdown)
         {
             if (!SelectFromDropdown(items => index >= 0 && index < items.Count ? items[index] : null))
             {
@@ -1634,7 +1714,7 @@ public sealed class FlaUIMauiElement : IMauiElement
             return;
         }
 
-        if (SupportsDropdown)
+        if (HasDropdown)
         {
             if (!SelectFromDropdown(items => items.FirstOrDefault(i => i.Name == text || i.Text == text)))
             {

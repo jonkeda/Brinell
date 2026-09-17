@@ -21,4 +21,19 @@ public enum ScrollStep
 
     /// <summary>A swipe was performed, and nothing reports whether the content moved.</summary>
     Unconfirmed,
+
+    /// <summary>
+    /// The content went straight to a requested item rather than moving by one step.
+    /// </summary>
+    /// <remarks>
+    /// Only <see cref="IMauiElement.ScrollTowards"/> returns this, and only where the platform
+    /// could jump. It exists because a jump and a step need different waits afterwards: a jump
+    /// lands somewhere new and the caller waits for progress and then for the realized rows to
+    /// settle, while a step realizes at most a row or two and the caller just counts. Collapsing
+    /// the two into <see cref="Moved"/> would put a step's outcome through the jump's wait.
+    /// <para>
+    /// <see cref="IMauiElement.ScrollContent"/> never returns it.
+    /// </para>
+    /// </remarks>
+    Jumped,
 }

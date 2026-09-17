@@ -85,8 +85,9 @@ public interface IMauiDriver : IDriver<IMauiElement>, IDiagnosticDriver
     /// for.
     /// </para>
     /// <para>
-    /// The element-level <see cref="IMauiElement.SupportsGesture"/> remains, for the elements
-    /// that are addressable.
+    /// This is the only form. The element-level question was removed once no control asked it:
+    /// a control names its gesture and <see cref="IMauiElement.PerformGesture"/> performs or
+    /// throws. What survives here is a test's way of asserting what the app declared.
     /// </para>
     /// </remarks>
     /// <param name="automationId">The MAUI <c>AutomationId</c> of the target element.</param>

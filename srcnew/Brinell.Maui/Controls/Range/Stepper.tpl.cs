@@ -112,29 +112,34 @@ public partial class Stepper<TScope> : Base.RangeControlBase<TScope>
     }
     
     /// <summary>
-    /// The Stepper as the app declared it, when it answers state reads; otherwise null.
+    /// The Stepper as the app declared it, or null where it was never declared.
     /// </summary>
     /// <remarks>
     /// Not the element this control resolves: on Windows that is the <c>{id}Minus</c> button, which
     /// does not answer for the Stepper. The app element finds the declaration by id, which works
-    /// whether or not the platform's tree has a node for it - the same two calls
-    /// (<see cref="IMauiElement.SupportsStateReads"/>, <see cref="IMauiElement.ReadState"/>) that
-    /// <c>Image</c> and <c>Picker</c> make. This used to ask the driver by id directly.
+    /// whether or not the platform's tree has a node for it. Whether it answers state reads is no
+    /// longer asked here - <see cref="IMauiElement.ReadState"/> says so by returning null, the
+    /// same single call <c>Image</c> and <c>Picker</c> make.
     /// </remarks>
     private IMauiElement? StateSource()
+        => string.IsNullOrEmpty(_baseAutomationId)
+            ? null
+            : Context.AppElement.TryFindDeclared(_baseAutomationId);
+
+    /// <summary>
+    /// A number the app publishes for this Stepper, or null where it publishes none.
+    /// </summary>
+    /// <remarks>
+    /// Asked once and branched on. Asking whether the app answers and then asking for the value
+    /// would walk the bridge twice for one number, which is what the nullable read exists to stop.
+    /// </remarks>
+    private double? ReadNumericState(string property)
     {
-        if (string.IsNullOrEmpty(_baseAutomationId))
+        if (StateSource()?.ReadState(property) is not { } value)
         {
             return null;
         }
 
-        var declared = Context.AppElement.TryFindDeclared(_baseAutomationId);
-        return declared is { SupportsStateReads: true } ? declared : null;
-    }
-
-    private double ReadNumericState(IMauiElement source, string property)
-    {
-        var value = source.ReadState(property);
         return double.TryParse(
             value,
             NumberStyles.Float,
@@ -204,50 +209,35 @@ public partial class Stepper<TScope> : Base.RangeControlBase<TScope>
     /// <summary>
     /// Gets the current value: from the app's GetState when the Stepper declares it, otherwise
     /// from the RangeValue pattern.
+    /// <remarks>
+    /// One call decides and supplies. <c>ReadNumericState</c> returns null where the app
+    /// publishes nothing, and that null - not a separate question - is what selects the base
+    /// range read.
+    /// </remarks>
     /// </summary>
     /// <param name="element">The stepper element (or proxy button in button mode).</param>
     /// <returns>The current value, or null if not available.</returns>
     protected override double? GetValueCore(IMauiElement? element)
     {
-        if (StateSource() is { } source)
-        {
-            return ReadNumericState(source, "Value");
-        }
-
-        return base.GetValueCore(element);
+        return ReadNumericState("Value") ?? base.GetValueCore(element);
     }
 
     /// <inheritdoc />
     protected override double? GetMinimumCore(IMauiElement? element)
     {
-        if (StateSource() is { } source)
-        {
-            return ReadNumericState(source, "Minimum");
-        }
-
-        return base.GetMinimumCore(element);
+        return ReadNumericState("Minimum") ?? base.GetMinimumCore(element);
     }
 
     /// <inheritdoc />
     protected override double? GetMaximumCore(IMauiElement? element)
     {
-        if (StateSource() is { } source)
-        {
-            return ReadNumericState(source, "Maximum");
-        }
-
-        return base.GetMaximumCore(element);
+        return ReadNumericState("Maximum") ?? base.GetMaximumCore(element);
     }
 
     /// <inheritdoc />
     protected override double? GetStepCore(IMauiElement? element)
     {
-        if (StateSource() is { } source)
-        {
-            return ReadNumericState(source, "Increment");
-        }
-
-        return base.GetStepCore(element);
+        return ReadNumericState("Increment") ?? base.GetStepCore(element);
     }
     
     /// <summary>

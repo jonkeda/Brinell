@@ -65,7 +65,9 @@ public class SelectionVerbTests
     {
         var picker = Element("TestPicker");
 
-        Assert.True(picker.SupportsStateReads, "'TestPicker' does not declare GetState.");
+        // A non-null answer is the declaration: ReadState returns null where the app does not
+        // answer state reads at all, which is what the removed SupportsStateReads flag said.
+        Assert.NotNull(picker.ReadState("ItemCount"));
 
         return Task.CompletedTask;
     }

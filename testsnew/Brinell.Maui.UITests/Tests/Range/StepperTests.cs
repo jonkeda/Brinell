@@ -60,10 +60,8 @@ public class StepperTests
         var plus = _fixture.Context.TryFindElement(Locator.ByAutomationId("TestStepperPlus"));
         var value = _fixture.Context.TryFindElement(Locator.ByAutomationId("StepperValueLabel"));
 
-        _output.WriteLine(
-            $"Minus: found={minus is not null}, SupportsInvoke={minus?.SupportsInvoke}, Enabled={minus?.Enabled}");
-        _output.WriteLine(
-            $"Plus: found={plus is not null}, SupportsInvoke={plus?.SupportsInvoke}, Enabled={plus?.Enabled}");
+        _output.WriteLine($"Minus: found={minus is not null}, Enabled={minus?.Enabled}");
+        _output.WriteLine($"Plus: found={plus is not null}, Enabled={plus?.Enabled}");
 
         var before = value?.Text ?? value?.Name;
         string result;

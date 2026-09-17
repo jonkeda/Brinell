@@ -54,7 +54,6 @@ public abstract class SemanticControlTestsBase
         Action? onInvoke = null)
     {
         var element = CreateElement(automationId, x, y, width, height);
-        element.Setup(e => e.SupportsInvoke).Returns(true);
         element.Setup(e => e.Invoke()).Callback(() => onInvoke?.Invoke());
         return element;
     }
@@ -71,7 +70,6 @@ public abstract class SemanticControlTestsBase
 
         // The operation a control asks for. FlaUIMauiElement.Select runs the SelectionItem
         // pattern behind it; AppiumMauiElement taps.
-        element.Setup(e => e.SupportsSelect).Returns(true);
         element.Setup(e => e.Select()).Callback(() => onSelect?.Invoke());
         return element;
     }

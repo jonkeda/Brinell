@@ -25,9 +25,9 @@ namespace Brinell.Maui.Appium;
 /// <para>
 /// Answers <see cref="IMauiElement"/> in its own terms. It used to implement three UI Automation
 /// <c>*PatternElement</c> interfaces - toggle, selection item, value - so controls written against
-/// Windows could cast to them; controls now ask what they mean (<see cref="Checked"/>,
-/// <see cref="SupportsInvoke"/>) and a member this platform has no route for keeps the interface's
-/// default, which says so (step 107).
+/// Windows could cast to them; controls now name what they mean (<see cref="Invoke"/>,
+/// <see cref="Select"/>, <see cref="Checked"/>) and a member this platform has no route for keeps
+/// the interface's default, which says so (step 107).
 /// </para>
 /// <para>
 /// Android and iOS express toggle and selection state through different attributes, so each
@@ -125,13 +125,6 @@ public sealed class AppiumMauiElement : IMauiElement
 
     /// <inheritdoc />
     public void Select() => Click();
-
-    /// <inheritdoc />
-    /// <remarks>True: a tap is how this platform invokes, toggles and selects alike.</remarks>
-    public bool SupportsInvoke => true;
-
-    /// <inheritdoc />
-    public bool SupportsSelect => true;
 
     /// <inheritdoc />
     /// <remarks>
@@ -249,20 +242,6 @@ public sealed class AppiumMauiElement : IMauiElement
 
     /// <inheritdoc />
     /// <remarks>
-    /// <b>The honest list, not the optimistic one.</b> A touch platform could in principle
-    /// synthesise all nine gestures, and saying so would make this method a promise the next one
-    /// cannot keep. These five are what is implemented; the rest need W3C pointer action
-    /// sequences, which nothing here writes yet.
-    /// </remarks>
-    public bool SupportsGesture(MauiGesture gesture) => gesture is
-        MauiGesture.Tap
-        or MauiGesture.SwipeLeft
-        or MauiGesture.SwipeRight
-        or MauiGesture.SwipeUp
-        or MauiGesture.SwipeDown;
-
-    /// <inheritdoc />
-    /// <remarks>
     /// <para>
     /// <b>This is where a swipe becomes a swipe on a touch device.</b> A control object names the
     /// gesture and its element performs it however the platform does - on Windows by handing a
@@ -271,9 +250,16 @@ public sealed class AppiumMauiElement : IMauiElement
     /// knows how.
     /// </para>
     /// <para>
-    /// A gesture that is not in <see cref="SupportsGesture"/> throws rather than doing something
-    /// near enough. Delivering a press for a long press, or a tap for a pinch, would report a
-    /// gesture the app never received.
+    /// <b>The switch below is the honest list, and the only one.</b> A touch platform could in
+    /// principle synthesise all nine gestures; these five are what is implemented, and the rest
+    /// need W3C pointer action sequences that nothing here writes yet. There used to be a
+    /// <c>SupportsGesture</c> naming the same five separately - a second list to keep in step
+    /// with this one - and it went when no control was left asking it.
+    /// </para>
+    /// <para>
+    /// A gesture the switch does not handle throws rather than doing something near enough.
+    /// Delivering a press for a long press, or a tap for a pinch, would report a gesture the app
+    /// never received.
     /// </para>
     /// </remarks>
     public void PerformGesture(MauiGesture gesture)

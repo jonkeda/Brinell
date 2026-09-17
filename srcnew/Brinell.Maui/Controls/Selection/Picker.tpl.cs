@@ -42,40 +42,35 @@ public partial class Picker<TScope> : Base.SelectorControlBase<TScope>
     // supported way to ask a combo box to expand. There is nothing to gain by moving it.
 
     /// <summary>Opens the picker's dropdown.</summary>
+    /// <remarks>
+    /// Performs or throws, with no question in front of it: the element throws a
+    /// <see cref="NotSupportedException"/> naming the missing ExpandCollapse pattern where there
+    /// is nothing to expand. That replaced a <c>BrinellException</c> raised here after asking
+    /// <c>SupportsDropdown</c> - the same failure, one round trip earlier, and named by the
+    /// platform that knows.
+    /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <param name="timeoutMs">Optional timeout.</param>
     protected virtual void OpenFlyoutCore(IMauiElement element, int? timeoutMs = null)
-    {
-        if (!element.SupportsDropdown)
-        {
-            throw new BrinellException(
-                $"This picker cannot be expanded: its platform element publishes no dropdown. "
-                + $"Locator: {Locator}");
-        }
-
-        element.OpenDropdown();
-    }
+        => element.OpenDropdown();
 
     /// <summary>Closes the picker's dropdown.</summary>
+    /// <remarks>Lenient in the element: a picker with no dropdown is already closed.</remarks>
     /// <param name="element">The pre-found element.</param>
     /// <param name="timeoutMs">Optional timeout.</param>
     protected virtual void CloseFlyoutCore(IMauiElement element, int? timeoutMs = null)
-    {
-        if (element.SupportsDropdown)
-        {
-            element.CloseDropdown();
-        }
-    }
+        => element.CloseDropdown();
 
     /// <summary>Whether the picker's dropdown is showing.</summary>
     /// <remarks>
     /// False where the platform publishes no ExpandCollapse pattern, which is the honest answer:
-    /// nothing is open, and nothing can be.
+    /// nothing is open, and nothing can be. The element says so with null, which this flattens -
+    /// a caller asking a picker whether its flyout is open is not asking whether it could be.
     /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <returns>Whether the dropdown is open.</returns>
     protected virtual bool? IsFlyoutOpenCore(IMauiElement? element)
-        => element is { SupportsDropdown: true, IsDropdownOpen: true };
+        => element?.IsDropdownOpen ?? false;
 
     /// <summary>
     /// What the open dropdown is showing.
@@ -90,15 +85,7 @@ public partial class Picker<TScope> : Base.SelectorControlBase<TScope>
     /// <param name="element">The pre-found element.</param>
     /// <returns>The realized item texts, or null where the platform has no dropdown to read.</returns>
     protected virtual IReadOnlyList<string>? GetDropdownItemTextsCore(IMauiElement? element)
-    {
-        if (element is not { SupportsDropdown: true })
-        {
-            return null;
-        }
-
-        return WithDropdownOpen(element,
-            () => element.ReadDropdownItems().Select(item => item.Text ?? string.Empty).ToList());
-    }
+        => element?.ReadDropdownItemTexts();
 
     #endregion
 
@@ -108,16 +95,19 @@ public partial class Picker<TScope> : Base.SelectorControlBase<TScope>
     // and close it again - a read that changed what it was reading, so asking a picker what it
     // held twice in a row was two different journeys through the app, and a test that only
     // wanted to check a value left the UI somewhere it had not been.
+    //
+    // Each calls ReadState exactly once and branches on the result. Asking whether the app
+    // answers and then asking for the value would walk the bridge twice per read - the pair of
+    // calls the nullable read replaced, rebuilt by hand.
 
     /// <inheritdoc />
     protected override string? GetSelectedTextCore(IMauiElement? element)
     {
-        if (element is not { SupportsStateReads: true })
+        if (element?.ReadState("SelectedItem") is not { } selected)
         {
             return base.GetSelectedTextCore(element);
         }
 
-        var selected = element.ReadState("SelectedItem");
         return selected.Length == 0 ? null : selected;
     }
 
@@ -130,12 +120,10 @@ public partial class Picker<TScope> : Base.SelectorControlBase<TScope>
     /// </remarks>
     protected override int? GetSelectedIndexCore(IMauiElement? element)
     {
-        if (element is not { SupportsStateReads: true })
+        if (element?.ReadState("SelectedIndex") is not { } reported)
         {
             return base.GetSelectedIndexCore(element);
         }
-
-        var reported = element.ReadState("SelectedIndex");
 
         if (!int.TryParse(
                 reported,
@@ -160,12 +148,11 @@ public partial class Picker<TScope> : Base.SelectorControlBase<TScope>
     /// </remarks>
     protected override IReadOnlyList<string>? GetItemTextsCore(IMauiElement? element)
     {
-        if (element is not { SupportsStateReads: true })
+        if (element?.ReadState("Items") is not { } reported)
         {
             return base.GetItemTextsCore(element);
         }
 
-        var reported = element.ReadState("Items");
         var lines = reported.Split('\n');
 
         if (!int.TryParse(
@@ -187,12 +174,10 @@ public partial class Picker<TScope> : Base.SelectorControlBase<TScope>
     /// <inheritdoc />
     protected override int? GetItemCountCore(IMauiElement? element)
     {
-        if (element is not { SupportsStateReads: true })
+        if (element?.ReadState("ItemCount") is not { } reported)
         {
             return base.GetItemCountCore(element);
         }
-
-        var reported = element.ReadState("ItemCount");
 
         if (!int.TryParse(
                 reported,

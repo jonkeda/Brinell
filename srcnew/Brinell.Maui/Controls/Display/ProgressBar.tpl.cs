@@ -45,8 +45,7 @@ public partial class ProgressBar<TScope> : Base.ViewBase<TScope>
         // "progress": it infers the scale from whatever minimum and maximum the platform
         // reports, so a platform reporting a different range - or none - quietly changes what
         // the returned number means. Asking the app removes the inference rather than tuning it.
-        if (element.SupportsStateReads
-            && double.TryParse(
+        if (double.TryParse(
                 element.ReadState("Progress"),
                 System.Globalization.NumberStyles.Float,
                 System.Globalization.CultureInfo.InvariantCulture,

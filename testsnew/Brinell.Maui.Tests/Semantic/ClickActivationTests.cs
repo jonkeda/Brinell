@@ -62,15 +62,16 @@ public class ClickActivationTests : SemanticControlTestsBase
     /// patterns is reintroducing the ladder one control at a time.
     /// </para>
     /// <para>
-    /// The element here advertises every capability the old ladder knew about, so any surviving
-    /// probe would find something and be caught.
+    /// The element here answers <c>Select</c> as well as <c>Invoke</c>, so a control reaching
+    /// past the operation it named would find somewhere to go and be caught. There is nothing
+    /// left to advertise: the capability flags a probe would have consulted are gone from the
+    /// interface, and what is asserted is the behaviour rather than the absence of a flag.
     /// </para>
     /// </remarks>
     [Fact]
     public void Click_DoesNotReachPastInvokeToAPattern()
     {
         var element = CreateSelectableElement(ButtonId, 0, 0, 80, 24);
-        element.Setup(e => e.SupportsInvoke).Returns(true);
         GivenElement(element);
 
         Page.PromptOk.Click();

@@ -1,5 +1,16 @@
 # The `Supports*` properties: are they needed?
 
+> **Superseded 2026-09-17: they are all gone.** This note asked the question when `IMauiElement`
+> had 18 of them. The answer turned out to be no, one member at a time, and the last six were
+> removed by [../ControlFlow/plan-remove-the-last-supports-members.md](../ControlFlow/plan-remove-the-last-supports-members.md).
+> `IMauiElement` now asks no questions at all: every member performs, reads, or reads nullably.
+> The only `Supports*` left in the MAUI stack is `IMauiDriver.SupportsGesture(id, gesture)`, which
+> is a test's way of asserting what the app declared rather than a route choice.
+>
+> The reasoning below is kept because it is what established the rule that decided each removal:
+> a question was allowed only where both answers occur on the same backend and both branches work
+> there. Read it as history, not as a description of the interface.
+
 **The question.** `IMauiElement` has 18 `Supports*` members, and `IMauiDriver` has 4 more. Does
 Appium or FlaUI actually need them, or do they mostly answer true?
 

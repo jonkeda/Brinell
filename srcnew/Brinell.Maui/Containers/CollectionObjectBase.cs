@@ -31,6 +31,16 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     private readonly Func<TSelf, IMauiElement, int, TItem> _itemFactory;
 
     /// <summary>
+    /// Whether the last scroll this collection performed was a jump, or null before the first.
+    /// </summary>
+    /// <remarks>
+    /// Remembered so a collection that cannot jump keeps trying the <c>ScrollIntoView</c> rung
+    /// before stepping, as it did when a <c>SupportsScrollToIndex</c> question chose the route up
+    /// front. The element now reports which route it took, and this is where that answer is kept.
+    /// </remarks>
+    private bool? _lastScrollJumped;
+
+    /// <summary>
     /// Creates a collection within the given parent scope.
     /// </summary>
     /// <param name="parentScope">The parent scope (page or container).</param>
@@ -557,37 +567,36 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
         if (TryGetItemRoot(index) != null) return Self;
 
         var roots = TryGetItemRoots();
-        var semantic = ScrollTarget ?? TryGetContainerRoot();
-        if (semantic is { SupportsScrollToIndex: true }
+
+        // Asked whatever the platform can do. This used to sit inside the jump branch, so a
+        // collection that could only step walked to the end of the list before reporting an index
+        // that the app could have refused immediately - and reported it as "could not scroll"
+        // rather than "there is no such item".
+        var logicalCount = GetLogicalItemCount(roots);
+        if (logicalCount.HasValue
+            && index >= logicalCount.Value
             && roots.Any(item => LogicalIndexOf(item).HasValue))
         {
-            var logicalCount = GetLogicalItemCount(roots);
-            if (logicalCount.HasValue && index >= logicalCount.Value)
-            {
-                throw new ElementNotFoundException(
-                    $"No logical item at index {index} in collection. Locator: {Locator}, "
-                    + $"item count: {logicalCount.Value}.");
-            }
-
-            semantic.ScrollToIndex(index);
-            if (Poll(() => TryGetItemRoot(index) != null, timeoutMs ?? DefaultTimeoutMs))
-            {
-                return Self;
-            }
-
             throw new ElementNotFoundException(
-                $"Could not materialize logical item {index}. Locator: {Locator}.");
+                $"No logical item at index {index} in collection. Locator: {Locator}, "
+                + $"item count: {logicalCount.Value}.");
         }
 
         // A virtualizing panel slides its realized window: rows drop off the top as new
         // ones appear below, so the materialized COUNT can plateau while scrolling is
         // still making progress. Track the furthest row actually reached instead, and
         // stop only when a scroll step fails to reach any further.
+        //
+        // One loop for both platforms. Where the element can jump, the first pass lands on the
+        // row and returns, which is what the separate jump branch did; where it can only step,
+        // each pass is one step, which is what this loop always did. The index is passed through
+        // rather than NextMaterializationIndex() so a jump goes to the row asked for - a stepping
+        // platform ignores it.
         var furthestReached = -1;
 
         while (true)
         {
-            if (!TryMaterializeMore(NextMaterializationIndex())) break;
+            if (!TryMaterializeMore(index)) break;
 
             if (TryGetItemRoot(index) != null) return Self;
 
@@ -631,13 +640,9 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
         }
 
         var semantic = ScrollTarget ?? TryGetContainerRoot();
-        if (semantic?.SupportsStateReads != true)
-        {
-            return null;
-        }
 
         return int.TryParse(
-            semantic.ReadState("ItemCount"),
+            semantic?.ReadState("ItemCount"),
             System.Globalization.NumberStyles.Integer,
             System.Globalization.CultureInfo.InvariantCulture,
             out var count)
@@ -718,74 +723,36 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
         if (root == null) return false;
 
         var countBefore = GetItemCount();
+        var reachBefore = FurthestReachableIndex();
 
-        // The semantic route, when the app under test declared it. One call with a definite
-        // unit - an item index - replacing a wheel click, which means whatever the OS and the
-        // control decide it means and reports nothing about whether the content arrived.
-        //
-        // Asked once rather than attempted: ScrollToIndex either moves the list or is a no-op
-        // because the index is past the end, and the caller's count check distinguishes those
-        // without anything needing to report failure.
-        var semantic = ScrollTarget ?? root;
-        if (semantic.SupportsScrollToIndex)
-        {
-            var before = FurthestReachableIndex();
+        // The scrollable element is the item host, not this container's root, which may be a
+        // non-scrolling wrapper around it.
+        var target = ScrollTarget ?? root;
 
-            try
-            {
-                semantic.ScrollToIndex(nextIndex);
-            }
-            catch (ArgumentOutOfRangeException)
-            {
-                return false;
-            }
-
-            // The verb returns once the app has asked the list to scroll, before the new rows reach
-            // the automation tree, and a CollectionView publishes no scroll offset to settle on. So
-            // wait for progress, then for the realized rows to stop changing: rows read while the
-            // list is still recycling report one item's position beside another item's content.
-            // An index past the end was refused above, so these deadlines are only paid in full
-            // when scrolling is broken.
-            if (!Poll(() => FurthestReachableIndex() > before, DefaultTimeoutMs))
-            {
-                return false;
-            }
-
-            var previous = RealizedLogicalIndexes();
-            Poll(
-                () =>
-                {
-                    var current = RealizedLogicalIndexes();
-                    var settled = current == previous;
-                    previous = current;
-                    return settled;
-                },
-                DefaultTimeoutMs);
-
-            return true;
-        }
-
-        // UI Automation first: pull the last realized row into view, which makes the
-        // virtualizing panel realize the rows after it.
-        if (TryScrollLastItemIntoView() && HasMoreThan(countBefore))
+        // UI Automation first: pull the last realized row into view, which makes the virtualizing
+        // panel realize the rows after it. Only worth trying on a collection already known not to
+        // jump - a jumping one lands where it was asked and this would scroll it somewhere else
+        // first. The very first call has no outcome to remember and goes straight to the element,
+        // which is the one place the order differs from before.
+        if (_lastScrollJumped == false && TryScrollLastItemIntoView() && HasMoreThan(countBefore))
         {
             return true;
         }
 
+        ScrollStep step;
         try
         {
-            // The scrollable element is the item host, not this container's root, which
-            // may be a non-scrolling wrapper around it.
-            var target = ScrollTarget ?? root;
-
-            // One route, chosen by the element: the Scroll pattern moves the scrolling container,
-            // so it advances a virtualizing list past its realized window; a touch platform
-            // swipes. A step that reports no movement is the end of the list - not a reason to
-            // try the other route.
-            if (!ScrollHelper.StepForward(target))
-            {
-                return false;
-            }
+            // One call, and the element chooses: it jumps where the app declared a route to an
+            // index, and otherwise moves the scrolling container one step - the Scroll pattern on
+            // Windows, a swipe on a touch platform. Asking first which it would do cost a walk of
+            // the bridge to learn what the call reports anyway.
+            step = target.ScrollTowards(nextIndex);
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            // Past the end. Only a platform that can jump can tell, and it is not an error here:
+            // the caller's count check has already spoken, and this simply stops.
+            return false;
         }
         catch (StaleElementReferenceException)
         {
@@ -793,7 +760,54 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
             return false;
         }
 
-        return HasMoreThan(countBefore);
+        _lastScrollJumped = step == ScrollStep.Jumped;
+
+        return step switch
+        {
+            // A jump lands somewhere new, and the rows arrive afterwards: the verb returns once
+            // the app has asked the list to scroll, before the new rows reach the automation tree,
+            // and a CollectionView publishes no scroll offset to settle on. So wait for progress,
+            // then for the realized rows to stop changing - rows read while the list is still
+            // recycling report one item's position beside another item's content.
+            ScrollStep.Jumped => WaitForProgressThenSettle(reachBefore),
+
+            // The content was already at the end.
+            ScrollStep.NotMoved => false,
+
+            // A step realizes at most a row or two, so counting is the whole question. Putting
+            // this through the jump's progress wait would call a working step a failure whenever
+            // it realized nothing beyond the furthest row already reached.
+            _ => HasMoreThan(countBefore),
+        };
+    }
+
+    /// <summary>
+    /// Waits for a jump to reach further than <paramref name="reachBefore"/>, then for the
+    /// realized rows to stop changing.
+    /// </summary>
+    /// <remarks>
+    /// Only for <see cref="ScrollStep.Jumped"/>. An index past the end throws rather than
+    /// arriving here, so these deadlines are paid in full only when scrolling is broken.
+    /// </remarks>
+    private bool WaitForProgressThenSettle(int reachBefore)
+    {
+        if (!Poll(() => FurthestReachableIndex() > reachBefore, DefaultTimeoutMs))
+        {
+            return false;
+        }
+
+        var previous = RealizedLogicalIndexes();
+        Poll(
+            () =>
+            {
+                var current = RealizedLogicalIndexes();
+                var settled = current == previous;
+                previous = current;
+                return settled;
+            },
+            DefaultTimeoutMs);
+
+        return true;
     }
 
     /// <summary>

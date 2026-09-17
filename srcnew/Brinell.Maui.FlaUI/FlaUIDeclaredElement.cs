@@ -46,8 +46,14 @@ internal sealed class FlaUIDeclaredElement : IMauiElement
     public string? AutomationId => _automationId;
 
     /// <inheritdoc />
-    /// <remarks>Read from the target found at lookup, so asking costs no second walk of the bridge.</remarks>
-    public bool SupportsStateReads
+    /// <remarks>
+    /// The declaration is read from the target found at lookup, so answering null costs no walk
+    /// of the bridge at all - this element already holds the thing that knows.
+    /// </remarks>
+    public string? ReadState(string property)
+        => DeclaresStateReads ? _driver.ReadState(_automationId, property) : null;
+
+    private bool DeclaresStateReads
     {
         get
         {
@@ -62,13 +68,6 @@ internal sealed class FlaUIDeclaredElement : IMauiElement
             }
         }
     }
-
-    /// <inheritdoc />
-    public string ReadState(string property) => _driver.ReadState(_automationId, property);
-
-    /// <inheritdoc />
-    public bool SupportsGesture(MauiGesture gesture)
-        => GestureRunner.Supports(_driver.RootElement, _driver.Automation, _automationId, gesture);
 
     /// <inheritdoc />
     public void PerformGesture(MauiGesture gesture)

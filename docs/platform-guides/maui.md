@@ -106,8 +106,16 @@ never try one and fall back to another.
   `Hover`, and typing key by key with `TextInputMethod.Keys` (use `SetValue`). A test of
   per-keystroke behaviour runs on the mobile head.
 - **Control objects never see UI Automation.** They ask `IMauiElement` in terms of what they
-  do (`Checked`, `SetRangeValue`, `OpenDropdown`, `SupportsInvoke`), and the Windows element
-  answers from the patterns. The `*PatternElement` interfaces are gone from MAUI.
+  do (`Checked`, `SetRangeValue`, `OpenDropdown`, `Invoke`), and the Windows element answers
+  from the patterns. The `*PatternElement` interfaces are gone from MAUI.
+
+- **`IMauiElement` asks no questions.** Every member performs, reads, or reads nullably - there
+  is no `Supports*` member left on it. A control names the one operation it means and the element
+  performs it or throws; where a platform has nothing to say, a nullable read says so with `null`
+  (`IsDropdownOpen`, `ReadState`, `Checked`, `RangeValue`), and where a route choice belongs to
+  the platform the element reports which one it took (`ScrollTowards`). The driver's
+  `SupportsGesture(id, gesture)` is the exception and is deliberate: it exists for tests to assert
+  what the app under test declared.
 
 - **It is test instrumentation, not a product feature.** The bridge is compiled in only
   in Debug and turned on only when the test driver asks. A Release build contains none

@@ -7,7 +7,7 @@ namespace Brinell.Maui.Controls.Base;
 /// <remarks>
 /// <para>
 /// <b>One element call per operation, and no route choice here.</b> Selection used to ask
-/// <c>SupportsSelectByText</c>, then <c>SupportsDropdown</c>, and fall through to tapping the
+/// <c>SupportsSelectByText</c>, then a dropdown question, and fall through to tapping the
 /// picker. On Windows the last branch threw; on Android and iOS the first two always answered
 /// false, so the tap was the only branch that ran there - and it could not work, because the item
 /// lookup it relied on answered null. The element picks the route now, and each platform's route
@@ -166,33 +166,4 @@ public abstract partial class SelectorControlBase<TScope> : FocusableControlBase
 
     #endregion
 
-    #region Helpers
-
-    /// <summary>Runs a read with the dropdown open, restoring the state it was found in.</summary>
-    /// <remarks>
-    /// For members that are about the dropdown itself - <c>Picker</c>'s flyout reads - and so
-    /// have asked <see cref="IMauiElement.SupportsDropdown"/> first.
-    /// </remarks>
-    protected static T WithDropdownOpen<T>(IMauiElement element, Func<T> read)
-    {
-        var wasOpen = element.IsDropdownOpen;
-        if (!wasOpen)
-        {
-            element.OpenDropdown();
-        }
-
-        try
-        {
-            return read();
-        }
-        finally
-        {
-            if (!wasOpen)
-            {
-                element.CloseDropdown();
-            }
-        }
-    }
-
-    #endregion
 }

@@ -18,11 +18,23 @@ choices: on Windows the false branch is a working route, not a throw. So removin
 |---|---|---|
 | `SupportsGesture` | nothing: no control asks it | delete, make it private in FlaUI |
 | `SupportsDropdown` | `bool? IsDropdownOpen`, a `CloseDropdown` that tolerates no dropdown, `ReadDropdownItemTexts()` | the question becomes a nullable read |
-| `SupportsInvoke`, `SupportsSelect` | `Activate()` | the choice moves into the element |
+| `SupportsInvoke`, `SupportsSelect` | nothing: no control asks them any more | delete, keep them private in FlaUI |
 | `SupportsStateReads` | `string? ReadState(property)`: null when the app does not answer | the question and the read become one call |
 | `SupportsScrollToIndex` | `ScrollStep ScrollTowards(int index)` | the choice moves into the element; the riskiest step |
 
 Measured by reading the code on 2026-09-15. Nothing has been run for this plan.
+
+> **Updated 2026-09-17.** Every control object in `Brinell.Maui.Extensions` was deleted, and with
+> it the only reason section 3 existed. All three `TryActivate` copies are gone, no control asks
+> `SupportsInvoke` or `SupportsSelect` any more, and the `Activate()` member this plan proposed is
+> no longer needed: the two members can simply be deleted. Section 3 is rewritten below and the
+> affected rows of sections 6, 7 and 8 are corrected. Sections 1, 2, 4 and 5 are untouched — none
+> of them had an Extensions caller.
+>
+> Also measured on 2026-09-17: `grep "cannot be expanded" testsnew` returns nothing, so the
+> exception-type change in section 2 breaks no test. `CollectionObjectBase.TryActivate` survives
+> and is **not** affected: it calls `element.Select()` directly and has never asked a `Supports*`
+> question.
 
 ---
 
@@ -36,7 +48,8 @@ worth removing:
   bridge and `ReadState` walks it again; `SupportsScrollToIndex` does the same.
 - **Appium answers most of them with a constant.** `SupportsInvoke` and `SupportsSelect` are
   always true, and `SupportsDropdown`, `SupportsStateReads` and `SupportsScrollToIndex` are
-  always false. Every control that asks one of these has a branch that never runs on mobile.
+  always false. Every control that asks one of these has a branch that never runs on mobile —
+  and since 2026-09-17 no control asks `SupportsInvoke` or `SupportsSelect` on any platform.
 - **Some are already answered better as a result.** The last design turned `IsFlyoutOpen` and
   `ReadItemTexts` into nullable reads, where null means "this platform does not say", and that
   read well. The same convention already covers `Checked`, `RangeValue` and `Value`.
@@ -122,57 +135,94 @@ Windows today; they stay two members because they mean different things ("every 
 
 ---
 
-## 3. `SupportsInvoke` and `SupportsSelect` — `Activate()`
+## 3. `SupportsInvoke` and `SupportsSelect` — delete
 
-**Used by:** three copies of `TryActivate` in the Extensions project, plus unit-test mocks and a
-diagnostic message in `StepperTests`:
+**Rewritten 2026-09-17.** This section used to propose an `Activate()` member, because three
+copies of `TryActivate` — in `SelectionList.tpl.cs`, `GenericBrowser.tpl.cs` and
+`EditableField.cs` — asked `SupportsSelect`, then `SupportsInvoke`, then fell back to `Click()`.
+Those were the only control objects in the repository that walked candidates of unknown kind, and
+they were the whole case for the new member. **All three files were deleted** along with the rest
+of `Brinell.Maui.Extensions`. Nothing replaced them, so there is no caller left to serve and no
+member to add: the two flags just go.
 
-| File | Candidates it walks |
+**Used by, as of 2026-09-17:**
+
+| Caller | Use | After |
+|---|---|---|
+| Control objects | **none** | — |
+| `FlaUIMauiElement.Invoke` and `Select` | internally, as the presence check inside `Perform` | private `HasInvokePattern` / `HasSelectionItemPattern` |
+| `AppiumMauiElement` | implements both as constant `true` | delete |
+| `SemanticControlTestsBase.CreateInvokableElement` / `CreateSelectableElement` | sets the flag beside the operation | drop the flag line, keep `Invoke()` / `Select()` |
+| `ClickActivationTests.Click_DoesNotReachPastInvokeToAPattern` | sets `SupportsInvoke` on a selectable element | see below |
+| `TabMenuTests` | sets `SupportsInvoke` on each tab button | drop the line |
+| `StepperTests.StepperButtons_ReportInvokeBehavior` | prints `SupportsInvoke` in a diagnostic | print `Enabled` only |
+
+**Why no `Activate()` is needed, beyond the callers having gone.** The deletion is the occasion,
+but it is not the reason. Every activation call site in the library names exactly one operation,
+and always did:
+
+| Call site | Operation |
 |---|---|
-| `SelectionList.tpl.cs` | the containing `ListItem` rows, then the matched element |
-| `GenericBrowser.tpl.cs` | item button, row, label, close button |
-| `EditableField.cs` | native button, icon, root, OK button |
+| `ClickableControlBase.ClickCore` | `Invoke` |
+| `ClickableItemBase.ClickCore` | `Invoke` |
+| `SelectableItemBase.ClickCore` | `Select` |
+| `ToggleControlBase.ClickCore` | `Toggle` |
+| `RadioButton.ClickCore` | `Select` — overrides the toggle base |
+| `TabItem.ClickCore` | `Invoke` — overrides the selectable base |
+| `ToolbarButton.ClickCore` | `InvokeToolbarItem` |
+| `CollectionObjectBase.TryActivate` | `Select` |
 
-Each copy asks `SupportsSelect`, then `SupportsInvoke`, then falls back to `Click()`. That is the
-one place a control genuinely does not know what an element is: it walks candidates of mixed
-kinds.
+The last row is the one that settles it. That method **is** a candidate walker — it tries each
+containing `ListItem`, then the element itself — and it still names one operation, because it
+knows it is choosing a row. Walking candidates therefore never required a polymorphic verb, and
+that was the only remaining argument for one.
 
-**New member:**
+What made the three deleted copies different was not that they did not know their *operation*; it
+was that they did not know their *markup*. `EditableField` tried a native button, an icon, a root
+and an OK button; `GenericBrowser` tried an item button, a row, a label and a close button. Those
+are candidates of mixed kind, so no single verb fitted — and `Activate()` would have been a verb
+covering uncertainty about *which element*, presented as uncertainty about *which operation*.
 
-```csharp
-/// Performs whatever activating this element means on this platform. Performs or throws.
-/// For callers walking candidates of unknown kind; a control that knows its operation names it.
-void Activate() => throw new NotSupportedException(...);
-```
+`RadioButton` is the cautionary case pointing the other way: it is a toggle by hierarchy but
+selects by behaviour. That was fixed by naming the right operation in one overridden method — the
+fix that [.my/fix/design-controls-know-how-to-click.md](../fix/design-controls-know-how-to-click.md)
+is about — not by adding a verb that decides at run time. Adding `Activate()` would have reopened
+that question under a new name.
 
-| FlaUI | Appium |
-|---|---|
-| SelectionItem pattern, then `Select`; otherwise Invoke pattern, then `Invoke`; otherwise the declared `Tap` verb; otherwise throw naming all three. Chosen by which pattern is **present**, never by trying one and falling back when it fails. That is the same choice `TryActivate` makes today. | `Click()` |
+**Not affected:** `CollectionObjectBase.TryActivate`. It shares the name and the
+walk-the-candidates shape, but it calls `element.Select()` directly and has never asked a
+`Supports*` question — its `catch` is there because the *element* may be the wrong candidate, not
+because the *route* may be wrong, and its own remarks say so. Nothing in this step touches it.
 
-The three `TryActivate` methods become `try { element.Activate(); return true; } catch { return false; }`,
-and the bounds guards stay where they are.
+**Change:**
 
-**This is not the activation ladder coming back**
-(`.my/fix/design-controls-know-how-to-click.md`). The ladder *tried* a rung and fell to the next
-when it failed, and two rungs were measured reporting success falsely. `Activate` chooses once by
-presence and runs one route. The `ToolbarItem` lie cannot reach it, because `ToolbarButton` calls
-`InvokeToolbarItem`, and no LegacyIAccessible rung is added.
+- Remove `SupportsInvoke` and `SupportsSelect` from `IMauiElement`.
+- In `FlaUIMauiElement`, rename them to private `HasInvokePattern` and `HasSelectionItemPattern`.
+  `Perform` already takes the presence check as an argument, so both call sites are one word each,
+  and `HasTogglePattern` beside them already has this shape.
+- In `AppiumMauiElement`, delete both. They answered a constant `true`; the class comment naming
+  `SupportsInvoke` as the example of a flag-versus-no-route distinction needs a different example
+  or deleting with them.
 
-**Remove:** `SupportsInvoke` and `SupportsSelect` from the interface. FlaUI keeps private
-`HasInvokePattern` and `HasSelectionItemPattern` for `Perform`.
+**The one test that needs thought, not just a deleted line.**
+`ClickActivationTests.Click_DoesNotReachPastInvokeToAPattern` builds an element that "advertises
+every capability the old ladder knew about, so any surviving probe would find something and be
+caught". With both flags gone there is less to advertise, but the assertions that carry the test —
+`Invoke` once, `Select` never, `Click` never — still do the work, because a control reaching past
+`Invoke` would have to call `Select` or `Click` to get anywhere. Keep the test, drop the two
+capability setups, and update the remark so it no longer promises capabilities the interface no
+longer has.
 
-**Tests:**
+**Risk: low, and lower than when this section was first written.** No control object changes at
+all — this is now a deletion from the interface and its two implementations, plus four test edits.
+The Moq hazard that made the original version of this step dangerous (an unconfigured default
+interface member silently reporting success) does not arise, because no member is being added.
 
-- `SemanticControlTestsBase.CreateInvokableElement` and `CreateSelectableElement` also set up
-  `Activate()` with the same callback. Moq does not run default interface members, so without
-  that setup `TryActivate` would report success and the callback would never fire.
-- Remove the dead `SupportsInvoke` setups in `TabMenuTests` and `ClickActivationTests`.
-- `StepperTests` prints `Enabled` only.
-
-**Coverage gap:** the Extensions controls have no Windows UI tests. Their mock tests in
-`Brinell.Maui.Tests` are the check, plus `Brinell.Presenter.Uat.Tests` where it uses them.
-
----
+**Coverage.** The original section ended by noting that the Extensions controls had no Windows UI
+tests and that their mock tests were the only check. Both the controls and those mock tests are
+gone. What is left covering this step is `ClickActivationTests`, `TabMenuTests` and
+`TypedListControlTests` in `Brinell.Maui.Tests`, all of which exercise `Invoke` and `Select`
+through real control objects, plus the Windows UI suite.
 
 ## 4. `SupportsStateReads` — `ReadState` returns null when the app does not answer
 
@@ -350,14 +400,17 @@ Each step builds the solution and the UI, Mobile and UAT test projects, and runs
 tests. After that, run the smallest UI tier that can prove the step wrong, one UI process at a
 time.
 
+The Maui unit-test baseline is **109 passed, 1 skipped, 110 total** as of 2026-09-17, down from
+123 when the Extensions mock tests existed.
+
 | # | Step | UI tier |
 |---|---|---|
 | 1 | `SupportsGesture` (1) | `FullyQualifiedName~Tests.Gestures` |
 | 2 | Dropdown (2) | `FullyQualifiedName~Tests.Selection\|FullyQualifiedName~SelectionVerbTests` |
-| 3 | `Activate` (3) | unit tests; `Brinell.Presenter.Uat.Tests` if it runs locally |
+| 3 | Delete `SupportsInvoke` / `SupportsSelect` (3) | unit tests only. `Brinell.Presenter.Uat.Tests` no longer applies: it stopped referencing Extensions when those controls went |
 | 4 | Nullable `ReadState` (4) | `FullyQualifiedName~Tests.Display\|FullyQualifiedName~Tests.Range\|FullyQualifiedName~Tests.Selection\|FullyQualifiedName~Tests.Background` |
 | 5 | `ScrollTowards` with `Jumped` (5) | `FullyQualifiedName~Tests.Collection\|FullyQualifiedName~Tests.Container\|FullyQualifiedName~Tests.Scroll`, **three runs**: the recycle race showed up only across runs |
-| 6 | Docs and the full suite | full suite: expect 296 tests, 295 passed, 1 skipped |
+| 6 | Docs and the full suite | full suite: expect 296 tests, 295 passed, 1 skipped. Unchanged by the Extensions deletion — no UI test ever referenced those controls |
 
 **Docs to update in step 6:**
 
@@ -379,10 +432,12 @@ difference means a Core method changed shape by mistake.
   declared, which is its whole purpose, and no control calls it. It could move to
   `AppElement.TryFindDeclared(id)` plus a nullable gesture read, but that is a test-API change
   with no control benefit.
-- **`HasUsableBounds` in Extensions.** It is a geometry guard, not a platform question.
+- **`HasUsableBounds`.** A geometry guard, not a platform question. It was called from the
+  Extensions controls when this plan was written; those are gone, and its remaining callers
+  are `CollectionObjectBase`, `PageObjectBase` and `ElementScopeExtensions`.
 - **Android and iOS.** None of this can be run on a device from here. The Appium side of every
-  step is a default or a one-line delegation, except `Activate` (`Click`) and `ScrollTowards`
-  (`ScrollContent(1)`), both of which reuse routes that already exist.
+  step is a default, a one-line delegation, or a deletion — except `ScrollTowards`
+  (`ScrollContent(1)`), which reuses a route that already exists.
 
 ---
 
@@ -390,7 +445,7 @@ difference means a Core method changed shape by mistake.
 
 | Region | Members |
 |---|---|
-| Activation | `Invoke`, `Toggle`, `Select`, `Activate`, `InvokeToolbarItem` |
+| Activation | `Invoke`, `Toggle`, `Select`, `InvokeToolbarItem` |
 | Focus | `Focus`, `ClearFocus` |
 | Checked | `Checked`, `SetChecked` |
 | Text | `Value`, `IsReadOnly`, `AppendText` |
@@ -403,6 +458,12 @@ difference means a Core method changed shape by mistake.
 | Dates | `SetDate`, `SetTime` |
 | The app | `OpenFlyout`, `CloseFlyout`, `IsFlyoutOpen`, `ReadAlert`, `TryFindActiveDialog`, `TryFindDeclared` |
 
-That is **no `Supports*` member**: six removed, three added (`Activate`, `ReadDropdownItemTexts`,
-`ScrollTowards`), one removed without replacement (`ReadDropdownItems`), and two signatures
-changed (`IsDropdownOpen` and `ReadState` become nullable).
+That is **no `Supports*` member**: six removed, **two** added (`ReadDropdownItemTexts` and
+`ScrollTowards`), two removed without replacement (`SupportsInvoke` and `SupportsSelect` — see 3 —
+plus `ReadDropdownItems`), and two signatures changed (`IsDropdownOpen` and `ReadState` become
+nullable).
+
+The Activation region is therefore unchanged by this plan, where the 2026-09-15 version of it
+gained `Activate`. Deleting the Extensions controls removed the only callers that could not name
+their own operation, so every remaining caller already says `Invoke`, `Toggle` or `Select` and the
+interface needs no verb for "whatever this is".

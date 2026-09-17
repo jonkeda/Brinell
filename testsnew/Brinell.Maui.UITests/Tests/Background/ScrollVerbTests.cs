@@ -186,7 +186,9 @@ public class ScrollVerbTests
                          ?? throw new InvalidOperationException(
                              "ProductCollectionView was not found.");
         var itemCount = int.Parse(
-            collection.ReadState("ItemCount"),
+            collection.ReadState("ItemCount")
+                ?? throw new InvalidOperationException(
+                    "ProductCollectionView does not answer GetState('ItemCount')."),
             System.Globalization.CultureInfo.InvariantCulture);
 
         var error = Assert.Throws<ArgumentOutOfRangeException>(

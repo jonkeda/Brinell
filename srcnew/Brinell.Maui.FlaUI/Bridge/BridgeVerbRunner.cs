@@ -111,7 +111,7 @@ internal static class BridgeVerbRunner
         int arg1 = 0,
         int arg2 = 0)
     {
-        if (!TryResolve(root, automation, automationId, verb, out var pattern, out var failure))
+        if (!TryResolve(root, automation, automationId, verb, out var pattern, out var failure, out _))
         {
             return failure;
         }
@@ -141,10 +141,132 @@ internal static class BridgeVerbRunner
         BrinellVerb verb,
         string argument = "")
     {
-        if (!TryResolve(root, automation, automationId, verb, out var pattern, out var failure))
+        if (!TryResolve(root, automation, automationId, verb, out var pattern, out var failure, out _))
         {
             return failure;
         }
+
+        var hr = pattern!.Exchange((int)verb, argument, out var value);
+
+        return new BridgeVerbResult(
+            BrinellVerbFailure.Succeeded(hr),
+            hr,
+            value,
+            BrinellVerbFailure.Describe(verb, hr));
+    }
+
+    /// <summary>
+    /// Invokes a verb only where the target declares it, telling "not declared" apart from
+    /// "declared and refused" in a single walk.
+    /// </summary>
+    /// <remarks>
+    /// The no-strings counterpart of <see cref="SendIfDeclared"/>, for the same reason: a caller
+    /// that must take a different route when the app never declared the verb cannot learn that
+    /// from <see cref="Invoke"/>'s result, because a refusal and an absence arrive alike.
+    /// <c>ScrollTowards</c> is that caller - it steps instead of jumping.
+    /// </remarks>
+    /// <param name="root">The app's top-level window.</param>
+    /// <param name="automation">The session.</param>
+    /// <param name="automationId">The MAUI <c>AutomationId</c> of the target.</param>
+    /// <param name="verb">The verb.</param>
+    /// <param name="arg1">The verb's first argument.</param>
+    /// <param name="arg2">The verb's second argument.</param>
+    /// <param name="declared">Whether the target declared the verb at all.</param>
+    /// <returns>What happened.</returns>
+    internal static BridgeVerbResult InvokeIfDeclared(
+        AutomationElement root,
+        UIA3Automation automation,
+        string? automationId,
+        BrinellVerb verb,
+        int arg1,
+        int arg2,
+        out bool declared)
+    {
+        declared = false;
+
+        if (!TryResolve(root, automation, automationId, verb, out var pattern, out var failure,
+                out var target))
+        {
+            return failure;
+        }
+
+        if (!target!.SupportedVerbs().Contains(verb))
+        {
+            return new BridgeVerbResult(
+                false,
+                HResults.UIA_E_NOTSUPPORTED,
+                string.Empty,
+                $"the app under test does not declare {verb} on '{automationId}'.");
+        }
+
+        declared = true;
+
+        var hr = pattern!.Invoke((int)verb, arg1, arg2);
+
+        return new BridgeVerbResult(
+            BrinellVerbFailure.Succeeded(hr),
+            hr,
+            string.Empty,
+            BrinellVerbFailure.Describe(verb, hr));
+    }
+
+    /// <summary>
+    /// Exchanges a verb only where the target declares it, telling "not declared" apart from
+    /// "declared and refused" in a single walk.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Why this exists when <see cref="Exchange"/> deliberately skips the capability list.</b>
+    /// Exchange is right for a caller that is going to act regardless: the verb's own return value
+    /// says what happened, and checking the declaration first would cost a round trip to learn
+    /// something the call establishes anyway. But a provider answers <c>UIA_E_NOTSUPPORTED</c>
+    /// both for a verb it never declared and for a name it declared but does not handle, so a
+    /// caller that must report "this platform does not answer" separately from "that name is
+    /// wrong" cannot get it from Exchange's result.
+    /// </para>
+    /// <para>
+    /// That caller is <c>ReadState</c>, which returns null for the first and throws for the
+    /// second. It used to ask <c>SupportsStateReads</c> and then read, walking the bridge twice.
+    /// This resolves once and answers both questions off the element it already holds.
+    /// </para>
+    /// </remarks>
+    /// <param name="root">The app's top-level window.</param>
+    /// <param name="automation">The session.</param>
+    /// <param name="automationId">The MAUI <c>AutomationId</c> of the target.</param>
+    /// <param name="verb">The verb.</param>
+    /// <param name="argument">The verb's argument, or empty where it takes none.</param>
+    /// <param name="declared">Whether the target declared the verb at all.</param>
+    /// <returns>What happened. Not delivered, with <paramref name="declared"/> false, when the
+    /// target does not declare the verb or could not be resolved.</returns>
+    internal static BridgeVerbResult SendIfDeclared(
+        AutomationElement root,
+        UIA3Automation automation,
+        string? automationId,
+        BrinellVerb verb,
+        string argument,
+        out bool declared)
+    {
+        declared = false;
+
+        if (!TryResolve(root, automation, automationId, verb, out var pattern, out var failure,
+                out var target))
+        {
+            return failure;
+        }
+
+        // The declaration is read off the target TryResolve already resolved. Calling
+        // BrinellBridgeLookup.Find again here would walk the bridge a second time, which is the
+        // cost this method exists to remove.
+        if (!target!.SupportedVerbs().Contains(verb))
+        {
+            return new BridgeVerbResult(
+                false,
+                HResults.UIA_E_NOTSUPPORTED,
+                string.Empty,
+                $"the app under test does not declare {verb} on '{automationId}'.");
+        }
+
+        declared = true;
 
         var hr = pattern!.Exchange((int)verb, argument, out var value);
 
@@ -314,9 +436,11 @@ internal static class BridgeVerbRunner
         string? automationId,
         BrinellVerb verb,
         out IBrinellAutomationPattern? pattern,
-        out BridgeVerbResult failure)
+        out BridgeVerbResult failure,
+        out AutomationElement? target)
     {
         pattern = null;
+        target = null;
 
         if (string.IsNullOrWhiteSpace(automationId))
         {
@@ -329,7 +453,7 @@ internal static class BridgeVerbRunner
             return false;
         }
 
-        var element = BrinellBridgeLookup.Find(root, automation, automationId);
+        var element = target = BrinellBridgeLookup.Find(root, automation, automationId);
 
         if (element is null)
         {
