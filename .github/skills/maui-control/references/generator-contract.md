@@ -24,10 +24,20 @@ tools\Brinell.Generator.Cli\bin\Release\net10.0\Brinell.Generator.Cli.exe --inpu
 
 Output is always `<name>.gen.cs` beside the input.
 
+`CreateMaui.Bat` rewrites every `.gen.cs`, and about 70 whose content did not change still show
+as modified because of line endings. `git diff --ignore-cr-at-eol --name-only` lists only the
+files with a real change; restore the rest (Git Bash, from the Brinell root):
+
+```
+comm -23 <(git diff --name-only -- '*.gen.cs' | sort) <(git diff --ignore-cr-at-eol --name-only -- '*.gen.cs' | sort) | xargs -r git checkout --
+```
+
+Then `git status` shows only the `.gen.cs` files you meant to change.
+
 - Never edit a `.gen.cs` by hand. Never commit a `.tpl.cs` change without regenerating.
 - A class with Core methods or shortcuts is a `.tpl.cs`; a class with neither stays a
   plain `.cs` (a page, an app container with only named children).
-- The class must be `partial`.
+- A `.tpl.cs` class must be `partial`.
 
 ## What is matched
 

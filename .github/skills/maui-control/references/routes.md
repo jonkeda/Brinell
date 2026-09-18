@@ -22,6 +22,11 @@ The element in a Core method already exposes the patterns the platform publishes
 A property that answers `null` means the platform does not publish it. Pass the null on;
 never substitute a guess.
 
+**A pattern that runs but changes nothing in the app is not a route.** Example: the Scroll
+pattern brings the next carousel card on screen, but MAUI's `Position` never updates, so the
+bound label and the indicator stay on the old card. Measure the app-side effect (a status
+label, a bound value), record the evidence in the member's remarks, and go on to step 2.
+
 ## 2. An existing bridge verb
 
 Where UI Automation has no pattern for the action, the app publishes a gesture bridge
@@ -39,6 +44,13 @@ Where UI Automation has no pattern for the action, the app publishes a gesture b
   value throws, naming the property and the text; it does not return null.
 - Name the verbs the app must declare in the class `<remarks>`
   (the app declares `uia:GestureAutomation.Verbs="Tap,GetState"`).
+- "The platform does not publish X" means neither the tree nor the bridge answers it. A value
+  the tree lacks but the bridge's `GetState` can read is published; add the member.
+- **Extending the bridge for an existing verb** - binding it for another view type (a
+  `VerbBindings` row) or adding a state property to the `GetState` dispatcher in
+  `samples/Brinell.Maui.AppSupport/Uia/` - is not a new verb, but it is still an app-side
+  change. Answer AD-008's three tests for it in the plan or PR (or, when there is none, in the
+  control's class remarks), and run tier 2b.
 
 ## 3. A new bridge verb, only after AD-008's three tests
 

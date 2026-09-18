@@ -32,7 +32,8 @@ public class CommunityToolkitMediaTestPage : PageObjectBase<CommunityToolkitMedi
   `Name` is the page root's `AutomationId`.
 - **Controls are expression-bodied properties** that create a fresh object on each access:
   `public Switch<FooPage> TestSwitch => new(this, "TestSwitch");`. Never cache an element or a
-  control instance in a field.
+  control instance in a field. (`GridCollectionDemoPage` still creates its containers once in
+  the constructor; that is debt, not a model.)
 - Components and framework containers are declared the same way:
   `public Popup<FooPage> TestPopup => new(this, "TestPopup");`.
 - **Locators live here and only here.** Prefer the `AutomationId` string. Use

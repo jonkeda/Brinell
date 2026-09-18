@@ -6,8 +6,9 @@ act on its own root. Base: `ContainerObjectBase<TParent, TSelf>` in
 
 ## Shape (framework container)
 
-Two classes in one `.tpl.cs`: an open generic for subclassing, and a sealed concrete one for
-callers that need no subclass.
+Two classes in one file: an open generic for subclassing, and a sealed concrete one for
+callers that need no subclass. Popup declares a Core method, so it is a `.tpl.cs` and both
+classes are `partial`.
 
 ```csharp
 namespace Brinell.Maui.CommunityToolkit.Controls.Views;
@@ -42,7 +43,9 @@ public sealed partial class Popup<TParent> : Popup<TParent, Popup<TParent>>
 ```
 
 A page declares it like a control: `public Popup<MyPage> TestPopup => new(this, "TestPopup");`.
-A container with no Core methods and no shortcuts may be a plain `.cs` (R5), as `Border` could be.
+A container with no Core methods and no shortcuts is a plain `.cs` (R5), and not `partial`.
+Some older behaviour-less containers (`Border`, `Grid`, `ContentView`) are still `.tpl.cs`
+files with an empty `.gen.cs`; they predate R5 and are not a model.
 
 ## What the base already gives
 

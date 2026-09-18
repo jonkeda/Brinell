@@ -59,7 +59,7 @@ public enum SamplePage
     /// <summary>Phase 0 probe measuring which layouts expose their AutomationId.</summary>
     AutomationProbe,
 
-    /// <summary>CommunityToolkit.Maui views: Expander, AvatarView, RatingView, DrawingView, StateContainer.</summary>
+    /// <summary>CommunityToolkit.Maui views: Expander, AvatarView, RatingView, DrawingView, StateContainer, DockLayout.</summary>
     CommunityToolkit,
 
     /// <summary>CommunityToolkit.Maui alerts: Popup, Snackbar and Toast.</summary>

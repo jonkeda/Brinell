@@ -18,6 +18,7 @@ Microsoft.Maui.Controls 10.0.90, on Windows.
 | `DrawingView` | `DrawingView<TScope>` | `...Controls.Views` | `ViewBase` |
 | `Popup` | `Popup<TParent>` / `Popup<TParent, TSelf>` | `...Controls.Views` | `ContainerObjectBase` |
 | `StateContainer` | `StateContainer<TParent>` / `StateContainer<TParent, TSelf>` | `...Controls.Layouts` | `ContainerObjectBase` |
+| `DockLayout` | `DockLayout<TParent>` / `DockLayout<TParent, TSelf>` | `...Controls.Layouts` | `ContainerObjectBase` |
 | `MediaElement` | `MediaElement<TScope>` | `...Controls.Media` | `ComponentObjectBase` |
 
 `MediaElement` moved here from `Brinell.Maui.Controls.Media`, where it was an empty stub.
@@ -35,6 +36,7 @@ bridge only where none does.
 | DrawingView | `DrawLine(dx, dy)`, `GetLineCount` | Not in the tree by id; resolved through the bridge declaration. App sink: `Pan` (one line), `GetState(LineCount)`. |
 | Popup | `IsOpen`, `WaitOpen`, `CloseWith(buttonId)`, plus scoped children | Tree: the popup is a modal page in the main window. Buttons answer Invoke. `CloseWith` is two calls in sequence: press the button, then wait for the popup to go. |
 | StateContainer | `IsShowing(id)`, `WaitShowing(id)`, `AssertShowing(id)`, generated; ids only, no locators | Tree: the current state's view is the only child. A container that is absent shows nothing (false). |
+| DockLayout | Scoping only: the base's `AssertExists`/`AssertVisible` and scoped children (`Child<T>(id)`, `Label(id)`, `Button(id)`, ...) | Tree: `Group class=Layout` with the AutomationId (AppSupport's `Layout` handler covers it), children beneath it in declaration order. Dock position, spacing and `ShouldExpandLastChild` are not published, so there are no reads for them. |
 | MediaElement | `Play`, `Pause`, `Stop`, `SetPlaying`, `IsPlaying`, `WaitOpened`, `GetProgress` (+ `GreaterThan`/`AtLeast`), `GetElapsed`, `GetRemaining` (+ ordered comparisons), `GetDuration`; parts `PlayPauseButton` (`MediaPlayPauseButton`), `ProgressSlider`, `TimeElapsedLabel` / `TimeRemainingLabel` (`MediaTimeLabel`), and the other transport buttons | Tree: WinUI transport controls. Play/pause through Invoke, progress and seeking through the seek slider's RangeValue. The parts own the behaviour; the component forwards through generated shortcuts. `Play` waits for the media to open first; `Stop` pauses and seeks to 0, because the transport has no stop button. The component resolves its flattened transport children from its parent scope. |
 
 ### The app side
@@ -62,7 +64,7 @@ Expander, RatingView and DrawingView and adds no new verb numbers.
 | Expander, RatingView, DrawingView | Need the app sink. | No state reads: `IsExpanded`, rating and line count answer null; gestures are touch input. |
 | DrawingView | A line is arranged through the sink, not drawn. A test of real strokes belongs on Android. | - |
 
-`DockLayout`, `UniformItemsLayout`, `LazyView` and `SemanticOrderView` have no controls of their
+`UniformItemsLayout`, `LazyView` and `SemanticOrderView` have no controls of their
 own: they are plain layouts, so use `Grid`/`ContentView`-style containers or the child controls.
 `CameraView` and `Map` are out of scope (hardware, keys).
 

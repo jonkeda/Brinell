@@ -17,16 +17,23 @@ follow the rule and mention the disagreement.
    [component](references/component.md), [collection](references/collection.md).
 2. **Probe the platform** before writing members: what the automation tree shows for the
    element on Windows (control type, patterns, children, AutomationId) and on Android when an
-   emulator is up. Choose a route per member with [routes.md](references/routes.md).
+   emulator is up (`adb devices`). The repo has no general probe tool: a short script in your
+   scratch directory that walks the raw UI Automation view (FlaUI or
+   `System.Windows.Automation`) is fine. Keep it out of the repo and record what it showed in the
+   class remarks. Choose a route per member with [routes.md](references/routes.md).
 3. **Add the sample**: an element in `samples/Brinell.Samples.Maui.App` with an
    `AutomationId`, and a status label that shows the visible effect of each action.
 4. **Write the template** `Foo.tpl.cs` to the [generator contract](references/generator-contract.md)
    and the common rules below.
 5. **Generate and build**: `tools\Scripts\CreateMaui.Bat`, read its errors and warnings, diff
-   `Foo.gen.cs` against the API you intended, build.
+   `Foo.gen.cs` against the API you intended, then
+   `dotnet build srcnew\Brinell.sln -v:minimal /nr:false`. A plain `.cs` (no Core methods, no
+   shortcuts: R5) skips generation; just build.
 6. **Prove it**: page-object members and UI tests, written with the `maui-ui-test` skill.
-   Rebuild the sample app, then run tier 1 (`--filter "Control=Foo"`), plus tier 2b
-   (`--filter "Stage=Background"`) if a bridge verb was added.
+   Rebuild the sample app (the solution build above includes it and the Windows exe the fixture
+   launches), then run tier 1 (`--filter "Control=Foo"`), plus tier 2b
+   (`--filter "Stage=Background"`) if a bridge verb was added. If you changed a page other tests
+   share, also run that area (`--filter "FullyQualifiedName~Tests.<Area>"`).
 
 ## Choosing the kind
 
@@ -56,9 +63,10 @@ Tie-breakers:
   `srcnew/Brinell.Maui.<Source>/Controls/<Family>/Foo.tpl.cs`. The namespace follows the folder.
 - `Foo.gen.cs` is generated. Never edit it; never commit a template change without
   regenerating.
-- The class is `partial`, with two constructors: `(IMauiScope<TScope> scope, Locator locator)`
-  and `(IMauiScope<TScope> scope, string locatorValue)`. Public on concrete classes, protected
-  on abstract bases.
+- A `.tpl.cs` class is `partial` (the generator adds the other half); a plain `.cs` class is not.
+- Two constructors: `(IMauiScope<TScope> scope, Locator locator)` and
+  `(IMauiScope<TScope> scope, string locatorValue)`. Public on concrete classes, protected on
+  abstract bases.
 
 ### Generator contract (full text: [generator-contract.md](references/generator-contract.md))
 
@@ -131,6 +139,7 @@ belong: the control exists so nothing above it touches them.
 
 ## Report
 
-Finish with: files changed, the generated public API (from `Foo.gen.cs`), hand-written members
+Finish with: files changed, the public API (from `Foo.gen.cs`; for a plain `.cs`, the declared
+and inherited members), hand-written members
 and why, the route per member per platform, test commands with exact pass/fail counts, and
 anything left undone.

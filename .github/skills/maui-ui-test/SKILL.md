@@ -16,10 +16,15 @@ needs something they do not offer, add it there first; never reach past them.
    member is missing, stop writing the test and add it with the `maui-control` skill first.
 2. **Write the test** (shape below) using only page-object members.
 3. **If the sample app lacks what the test needs**, add it to `samples/Brinell.Samples.Maui.App`
-   with `AutomationId`s and a status label that shows the result, then rebuild the app.
+   with `AutomationId`s and a status label that shows the result, then rebuild the app:
+   `dotnet build srcnew\Brinell.sln -v:minimal /nr:false` builds it, including the Windows exe
+   the fixture launches.
 4. **Run the smallest tier that can fail**:
    `dotnet test testsnew\Brinell.Maui.UITests\Brinell.Maui.UITests.csproj --filter "Control=Foo"`.
-   One UI test process at a time, and never build while it runs.
+   One UI test process at a time, and never build while it runs. Tier 2b
+   (`--filter "Stage=Background"`) also launches the Shell sample app, which `Brinell.sln` does
+   not build; in a fresh checkout build it first:
+   `dotnet build samples\Brinell.Samples.Maui.ShellApp\Brinell.Samples.Maui.ShellApp.csproj -f net10.0-windows10.0.19041.0 -v:minimal /nr:false`.
 
 ## Test shape
 
@@ -73,6 +78,13 @@ public class MediaElementTests
 - Use xUnit `Assert` on values read with `Get*`/`Is*` only when the chain cannot express it
   (`Assert.InRange(duration.Value, 5, 7)`). No FluentAssertions.
 - Assert on what the user sees (status label, text, checked state), never the view model.
+- On Windows `IsVisible` means "on screen now"; it never scrolls. To prove something is shown,
+  `AssertVisibleAfterScroll` may scroll it into view first; to prove something is *not* shown
+  (an off-screen carousel card), use `AssertVisible(false)`, never a scrolling check, because
+  scrolling would change the state under test.
+- In a virtualized collection an off-screen row may not be realized at all, and whether it is
+  depends on timing. `Item(i)` then throws. Check it as
+  `collection.TryItem(i)?.Name.AssertVisible(false)`: not realized is not shown.
 - Negative cases use the API: `AssertExists(false)`, `AssertOpen(false)`, `TryItem(i)` returning
   null, `Assert.Throws<ElementNotFoundException>(...)`.
 - **No** `Thread.Sleep`, `Task.Delay`, raised timeouts, or try/catch around control calls. A
@@ -89,6 +101,15 @@ In tests, page objects' public members, app containers and test helpers, do not 
 | `FindElement`, `FindElements`, `TryFindElement` on a page, container, context or `AppRoot` | a named control property, `Child<T>(id)`, or a collection's `Item`/`Items`/`ItemWhere` |
 | `ContainerRoot`, `AppElement`, `TryGetItemRoot`, `ScrollingRoot` | a container, collection, or `AppRoot`-scoped control |
 | `new Locator(...)` / `Locator.By*` in a test method | a page-object property |
+
+One structural exception: a collection row's constructor takes `IMauiElement itemRoot` and
+passes it to `ItemContainerBase` untouched; the collection's item factory does the same. Never
+read or call it.
+
+Ids (strings) are not locators: `Child<T>(id)`, `Label(id)`, `Button(id)` on a container are
+allowed in a test. Prefer a named property for anything the page or container owns; a one-off id
+is right when naming it would mislead, such as proving a control outside a container is *not*
+found through it.
 
 Why, and the one exception (framework tests of the driver and bridge themselves):
 [forbidden-apis.md](references/forbidden-apis.md). Existing tests that break these rules are not

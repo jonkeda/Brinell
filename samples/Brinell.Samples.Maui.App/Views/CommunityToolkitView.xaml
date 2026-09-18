@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <!--
-    CommunityToolkit.Maui views: Expander, AvatarView, RatingView, DrawingView and
-    StateContainer.
+    CommunityToolkit.Maui views: Expander, AvatarView, RatingView, DrawingView, StateContainer
+    and DockLayout.
 
     Each control has an AutomationId and a status label echoing the state a test asserts.
     Verbs are declared only where the probe (.my/communitytoolkit/probe.md) found no UI
     Automation route and the AD-008 checks passed: Expander, RatingView and DrawingView. They are
-    answered by ToolkitVerbSink, because AppSupport does not know the toolkit's types. AvatarView
-    and StateContainer are read from the tree and declare nothing.
+    answered by ToolkitVerbSink, because AppSupport does not know the toolkit's types. AvatarView,
+    StateContainer and DockLayout are read from the tree and declare nothing.
 -->
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
@@ -109,6 +109,27 @@
             <Label x:Name="StateStatus"
                    AutomationId="StateStatusLabel"
                    Text="state: content" />
+
+            <!-- DockLayout: a plain layout, so it declares nothing; tests use it as a scope. -->
+            <Label Text="DockLayout" FontSize="16" FontAttributes="Bold" />
+            <toolkit:DockLayout AutomationId="TestDockLayout"
+                                HeightRequest="140"
+                                ShouldExpandLastChild="True">
+                <Label toolkit:DockLayout.DockPosition="Top"
+                       AutomationId="DockHeaderLabel"
+                       Text="Dock header" />
+                <Label toolkit:DockLayout.DockPosition="Bottom"
+                       x:Name="DockStatus"
+                       AutomationId="DockStatusLabel"
+                       Text="dock: idle" />
+                <Button toolkit:DockLayout.DockPosition="Left"
+                        AutomationId="DockActionButton"
+                        Text="Press"
+                        Clicked="OnDockAction" />
+                <Label AutomationId="DockCenterLabel"
+                       Text="Dock centre"
+                       VerticalOptions="Center" />
+            </toolkit:DockLayout>
 
         </VerticalStackLayout>
     </ScrollView>

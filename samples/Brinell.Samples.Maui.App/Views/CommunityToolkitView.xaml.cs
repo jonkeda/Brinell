@@ -48,6 +48,8 @@ public partial class CommunityToolkitView : ContentView
 
     private void OnStateContent(object? sender, EventArgs e) => SetState(null);
 
+    private void OnDockAction(object? sender, EventArgs e) => DockStatus.Text = "dock: pressed";
+
     private void SetState(string? state)
     {
         StateContainer.SetCurrentState(StateHost, state);

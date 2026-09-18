@@ -405,6 +405,19 @@ internal static class MauiVerbDispatcher
         "ItemCount" when element is ItemsView itemsView
             => MauiCapabilities.Count(itemsView.ItemsSource).ToString(CultureInfo.InvariantCulture),
         "Items" when element is Picker listed => MauiCapabilities.ReadItems(listed),
+
+        // A carousel's list publishes its cards but not which one is current. The Scroll pattern
+        // percentage is no substitute: it moves under a UI Automation scroll that Position never
+        // follows.
+        "Position" when element is CarouselView carousel
+            => carousel.Position.ToString(CultureInfo.InvariantCulture),
+
+        // An IndicatorView draws its dots with no automation element at all on Windows, so the
+        // selected dot and the number of dots are only answerable here.
+        "Position" when element is IndicatorView indicator
+            => indicator.Position.ToString(CultureInfo.InvariantCulture),
+        "Count" when element is IndicatorView indicated
+            => indicated.Count.ToString(CultureInfo.InvariantCulture),
         "Time" when element is TimePicker timePicker => MauiCapabilities.ReadTime(timePicker),
         "FlyoutIsPresented" => MauiCapabilities.IsFlyoutPresented(element)?.ToString(),
         "IsEnabled" => element.IsEnabled.ToString(),

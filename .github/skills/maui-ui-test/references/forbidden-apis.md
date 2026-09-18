@@ -18,6 +18,11 @@ collections in test projects, do not use:
 Inside a ControlObject, `IMauiElement` and `Find*` are the implementation: that is where they
 belong. The list applies to everything above the controls.
 
+One structural exception above the controls: an app collection's row constructor
+`(collection, IMauiElement itemRoot, int index)` and the collection's item factory pass the
+root to `ItemContainerBase` untouched. That is plumbing the base requires; never read or call
+the element.
+
 ## Why
 
 Raw access skips everything the control model provides:

@@ -102,7 +102,7 @@ public static class SamplePages
         new(SamplePage.AutomationProbe, "Probe", "Layout AutomationId addressability",
             () => new AutomationProbePage()),
 
-        new(SamplePage.CommunityToolkit, "Community Toolkit", "Expander, AvatarView, RatingView, DrawingView, StateContainer",
+        new(SamplePage.CommunityToolkit, "Community Toolkit", "Expander, AvatarView, RatingView, DrawingView, StateContainer, DockLayout",
             () => new CommunityToolkitPage()),
 
         new(SamplePage.CommunityToolkitAlerts, "Toolkit Alerts", "Popup, Snackbar and Toast",

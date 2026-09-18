@@ -153,6 +153,17 @@ internal static class VerbBindings
                     });
                 }
 
+                // A CarouselView moves one card along its own axis. Its list does publish a
+                // Scroll pattern, but scrolling that shows the next card without MAUI's Position
+                // following, so the pattern cannot stand in for the swipe (measured 2026-09-18).
+                if (element is CarouselView carousel && MauiCapabilities.CarouselStepFor(carousel, verb) is { } step)
+                {
+                    return new VerbBinding(verb, (target, _, _) =>
+                        MauiCapabilities.StepCarousel((CarouselView)target, step)
+                            ? HResults.S_OK
+                            : HResults.BRINELL_E_DECLINED);
+                }
+
                 // Then pull-to-refresh, which is a downward swipe and nothing else.
                 if (element is RefreshView && verb == BrinellVerb.SwipeDown)
                 {

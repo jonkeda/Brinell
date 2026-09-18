@@ -1,11 +1,12 @@
 using Brinell.Maui.CommunityToolkit.Controls.Layouts;
 using Brinell.Maui.CommunityToolkit.Controls.Views;
+using Brinell.Maui.UITests.Containers;
 
 namespace Brinell.Maui.UITests.Pages;
 
 /// <summary>
 /// Page object for the CommunityToolkit views sample page: Expander, AvatarView, RatingView,
-/// DrawingView and StateContainer.
+/// DrawingView, StateContainer and DockLayout.
 /// </summary>
 public class CommunityToolkitTestPage : PageObjectBase<CommunityToolkitTestPage>
 {
@@ -60,6 +61,12 @@ public class CommunityToolkitTestPage : PageObjectBase<CommunityToolkitTestPage>
     public Button<CommunityToolkitTestPage> StateContentButton => new(this, "StateContentButton");
 
     public Label<CommunityToolkitTestPage> StateStatusLabel => new(this, "StateStatusLabel");
+
+    #endregion
+
+    #region DockLayout
+
+    public ToolkitDockContainer TestDockLayout => new(this, "TestDockLayout");
 
     #endregion
 }

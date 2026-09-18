@@ -85,6 +85,69 @@ internal static class MauiCapabilities
     /// <param name="refreshView">The view to refresh.</param>
     internal static void StartRefresh(RefreshView refreshView) => refreshView.IsRefreshing = true;
 
+    /// <summary>
+    /// How many cards a swipe in this direction moves a carousel, given its orientation.
+    /// </summary>
+    /// <remarks>
+    /// Content follows the finger, so a swipe left on a horizontal carousel brings in the card
+    /// to the right: the next one. A swipe across the carousel's axis does not move it, and
+    /// answers null, as does any verb that is not a swipe.
+    /// </remarks>
+    /// <param name="carousel">The carousel.</param>
+    /// <param name="verb">The swipe verb.</param>
+    /// <returns>+1 for next, -1 for previous, or null.</returns>
+    internal static int? CarouselStepFor(CarouselView carousel, BrinellVerb verb)
+    {
+        var vertical = carousel.ItemsLayout is LinearItemsLayout { Orientation: ItemsLayoutOrientation.Vertical };
+        return (verb, vertical) switch
+        {
+            (BrinellVerb.SwipeLeft, false) or (BrinellVerb.SwipeUp, true) => 1,
+            (BrinellVerb.SwipeRight, false) or (BrinellVerb.SwipeDown, true) => -1,
+            _ => null,
+        };
+    }
+
+    /// <summary>
+    /// Moves a carousel one card, as a swipe would.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Position, not the scroller.</b> Measured on Windows (2026-09-18, MAUI 10): a UI
+    /// Automation scroll of the carousel's list brings the next card on screen, but MAUI never
+    /// hears of it - <c>Position</c>, the bound view model and the IndicatorView all stay on the
+    /// old card. Setting <c>Position</c> is what a finished swipe does, and everything bound to
+    /// it follows.
+    /// </para>
+    /// <para>
+    /// A carousel that cannot move - swiping disabled, or at either end without
+    /// <c>Loop</c> - reports false, which the caller turns into a refusal rather than a success.
+    /// </para>
+    /// </remarks>
+    /// <param name="carousel">The carousel.</param>
+    /// <param name="step">+1 for the next card, -1 for the previous one.</param>
+    /// <returns>Whether the carousel moved.</returns>
+    internal static bool StepCarousel(CarouselView carousel, int step)
+    {
+        var count = Count(carousel.ItemsSource);
+        if (!carousel.IsSwipeEnabled || count == 0)
+        {
+            return false;
+        }
+
+        var target = carousel.Position + step;
+        if (carousel.Loop)
+        {
+            target = ((target % count) + count) % count;
+        }
+        else if (target < 0 || target >= count)
+        {
+            return false;
+        }
+
+        carousel.Position = target;
+        return true;
+    }
+
     // ---- Dates and times ----------------------------------------------------------
     //
     // Two properties, and that is the entire feature. What it replaces on the client side is

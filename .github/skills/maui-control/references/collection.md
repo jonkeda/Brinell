@@ -80,6 +80,20 @@ public class ProductRow : ItemContainerBase<ProductCollection, ProductRow>
   `ClickableItemBase` or `SelectableItemBase` in `Controls/Base/`, with Core methods on its
   own root (`TabItem`).
 
+## Looping and virtualized platform lists
+
+A `CarouselView` loops by default, and on Windows a looping carousel publishes its items over
+and over (5 cards became about 6,500 list items). Any tree search that walks it - including a
+search for a control placed after it, and a raw probe script - does not finish, and can hang
+the app. Before probing or testing a carousel, set `Loop="False"` in the sample, and say in the
+control's remarks that a looping carousel cannot be searched on Windows.
+
+On Windows `IsVisible` means "on screen now". A check that scrolls (`AssertVisibleAfterScroll`)
+can move the carousel itself, so use it only to prove the current item is shown; prove the
+others are off screen with `TryItem(i)?.Name.AssertVisible(false)`. `Item(i)` finds only
+realized rows (by `PositionInSet`), and an off-screen row may or may not be realized depending
+on timing; a test that demands it with `Item(i)` passes on one run and fails on the next.
+
 ## Counts and indexes
 
 - `GetItemCount` is the number of **realized** rows, not the data count. Under virtualization

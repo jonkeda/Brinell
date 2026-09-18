@@ -22,6 +22,7 @@
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:controls="clr-namespace:Brinell.Samples.Maui.App.Controls"
+             xmlns:uia="clr-namespace:Brinell.Maui.AppSupport.Uia;assembly=Brinell.Maui.AppSupport"
              xmlns:viewModels="using:Brinell.Samples.Maui.App.ViewModels"
              x:Class="Brinell.Samples.Maui.App.Views2.TestViews.CollectionModuleView"
              x:DataType="viewModels:CollectionModuleViewModel"
@@ -79,6 +80,20 @@
             <!-- ===================== CarouselView + IndicatorView =====================
                  IndicatorView is bound to the carousel, so its state is a function of the
                  carousel's position rather than something separately driven.
+
+                 Loop="False" is measured, not taste: on Windows a looping carousel
+                 publishes its five cards over and over (about 6,500 list items), and any
+                 descendant search that walks through it - including one for a control placed
+                 after it - never finishes.
+
+                 The carousel declares SwipeLeft,SwipeRight,GetState. On Windows a UI Automation
+                 scroll of its list shows the next card but MAUI's Position never follows, so the
+                 swipe goes through the bridge, which sets Position as a finished swipe does.
+                 GetState answers Position: the list publishes its cards, not which is current.
+
+                 The IndicatorView has no element in the Windows automation tree at all, so it
+                 declares GetState: the bridge answers its Position and Count, which are the
+                 selected dot and the number of dots the user sees.
             -->
             <Label Text="CarouselView / IndicatorView" FontSize="16" FontAttributes="Bold" />
 
@@ -88,10 +103,12 @@
                                   ItemsSource="{Binding Items}"
                                   Position="{Binding CarouselPosition}"
                                   HeightRequest="90"
+                                  Loop="False"
+                                  uia:GestureAutomation.Verbs="SwipeLeft,SwipeRight,GetState"
                                   IndicatorView="TestIndicatorView">
                         <CarouselView.ItemTemplate>
                             <DataTemplate x:DataType="viewModels:CollectionItem">
-                                <Grid Padding="10">
+                                <Grid AutomationId="CarouselCard" Padding="10">
                                     <Label AutomationId="CarouselCardLabel"
                                            Text="{Binding Name}"
                                            FontSize="18"
@@ -104,6 +121,7 @@
 
                     <IndicatorView x:Name="TestIndicatorView"
                                    AutomationId="TestIndicatorView"
+                                   uia:GestureAutomation.Verbs="GetState"
                                    HorizontalOptions="Center"
                                    IndicatorColor="{AppThemeBinding Light=LightGray, Dark=Gray}"
                                    SelectedIndicatorColor="{AppThemeBinding Light=Black, Dark=White}" />

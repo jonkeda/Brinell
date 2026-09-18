@@ -14,8 +14,30 @@ Plus the framework changes that make rule 2 enforceable rather than advisory (se
 Status (2026-09-18): steps 1-5 of section 7 done. The skills are in `.github/skills/`
 (`maui-control`, `maui-ui-test`, `convert-control`) with stubs in `.claude/skills/`;
 `AGENTS.md`, `.github/copilot-instructions.md`, `docs/guides/test-writing.md` and
-`control-source-builder.md` point at them. Step 6 (evaluation with fresh agents) and step 7
-(P1 - P4) are not started. No code under `srcnew/` changed.
+`control-source-builder.md` point at them. Step 7 (P1 - P4) is not started. No code under
+`srcnew/` changed in the main tree.
+
+Step 6, first round (2026-09-18), two fresh agents in worktrees, one after the other:
+- **Control eval: CommunityToolkit `DockLayout`.** Chose container, a plain `.cs` (R5); no
+  members the platform cannot answer, with a comment saying so; probed Windows; ran
+  `Control=DockLayout` 3/3 and `Tests.CommunityToolkit` 42/42 unprompted. No never-list hits.
+- **Test eval: `CarouselView` / `IndicatorView` tests.** Added members to the controls rather
+  than working around them, extended the bridge for existing verbs, and ran `Control=...` 8/8,
+  tier 2b 58/58 and `Brinell.Maui.Tests` 114/114 unprompted. One never-list hit: the row
+  constructor's `IMauiElement itemRoot`, which the collection pattern requires.
+- Wording fixed after each round: `partial` only for `.tpl.cs`; no-generation path for a plain
+  `.cs`; probing without a repo tool; sample-app and Shell-app build commands; the `.gen.cs`
+  line-ending restore command (tested); ids vs locators in tests; the row-constructor exception;
+  visibility on Windows; looping carousels; a pattern with no app-side effect is not a route;
+  bridge state counts as "published"; extending the bridge needs AD-008 answers too.
+
+Both results were brought into the main tree (2026-09-18). `DockLayout` lost `partial`. One
+carousel test failed there and not in the agent's worktree: it demanded `Item(2)` of a
+virtualized carousel to check that card 2 was off screen. Fixed with `TryItem(i)?`, and added
+to both skills. After that: toolkit + collection + tier 2b 123/124 before the fix, the three
+controls 11/11 three times after it, `Brinell.Maui.Tests` 114/114.
+
+A second round with new tasks has not been run.
 
 ## 1. Format: what "best these days" means here
 
@@ -472,6 +494,9 @@ the MAUI test projects).
 - Not reported inside types that derive from `ViewBase`, `RootedScopeBase` (pages,
   containers, components, collections) in their non-public members, or `IItemStrategy`
   implementations: that is where raw access belongs.
+- `BRN1002` also exempts an `IMauiElement` parameter that is only passed on: an
+  `ItemContainerBase` row's `(collection, itemRoot, index)` constructor and the item factory
+  lambda given to `CollectionObjectBase`. Reading or calling it is still reported.
 - Opt-out: `[DriverLevelTest("reason")]` on a class, for the bridge and diagnostic tests.
 - Ship as warnings, fix or mark the current hits, then make them errors in the test projects.
 - Why this and not only instructions: it holds for every author and every tool, and it shows
