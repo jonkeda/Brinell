@@ -44,7 +44,26 @@ public enum Comparison
     /// <summary>
     /// Cardinality of a returned collection — <c>AssertItemTextsCount(3)</c>.
     /// </summary>
-    Count = 128
+    Count = 128,
+
+    /// <summary>
+    /// Strictly greater — <c>WaitValueGreaterThan(50)</c>. For values with a <c>&gt;</c>
+    /// operator, such as numbers and dates; a null actual never passes.
+    /// </summary>
+    /// <remarks>
+    /// For a value that only ever moves past a mark - playback progress, a count that grows -
+    /// and so never equals the mark at the moment it is read.
+    /// </remarks>
+    GreaterThan = 256,
+
+    /// <summary>Greater or equal — <c>WaitValueAtLeast(50)</c>. See <see cref="GreaterThan"/>.</summary>
+    AtLeast = 512,
+
+    /// <summary>Strictly less — <c>WaitValueLessThan(50)</c>. See <see cref="GreaterThan"/>.</summary>
+    LessThan = 1024,
+
+    /// <summary>Less or equal — <c>WaitValueAtMost(50)</c>. See <see cref="GreaterThan"/>.</summary>
+    AtMost = 2048
 }
 
 /// <summary>

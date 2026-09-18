@@ -1,5 +1,4 @@
 using Brinell.Core.Locators;
-using Brinell.Core.Utilities;
 using System.Globalization;
 
 namespace Brinell.Maui.Controls.Range;
@@ -268,14 +267,12 @@ public partial class Stepper<TScope> : Base.RangeControlBase<TScope>
                 DecrementCore(element, timeoutMs);
         }
 
-        if (!WaitHelper.WaitFor(
-                () => GetValueCore(element),
+        if (!Until(() => GetValueCore(element),
                 actual => actual.HasValue && Math.Abs(actual.Value - target) < 0.01,
-                timeoutMs: timeoutMs ?? DefaultTimeoutMs,
-                pollingIntervalMs: PollingIntervalMs))
+                timeoutMs, out var lastError))
         {
             throw new TimeoutException(
-                $"Stepper '{_baseAutomationId ?? Locator.Value}' did not reach {target}.");
+                $"Stepper '{_baseAutomationId ?? Locator.Value}' did not reach {target}.", lastError);
         }
     }
     

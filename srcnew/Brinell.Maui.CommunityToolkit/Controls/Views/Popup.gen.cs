@@ -54,13 +54,5 @@ public partial class Popup<TParent, TSelf> : ContainerObjectBase<TParent, TSelf>
     }
 
     #endregion
-    #region CloseWith
-
-    public TSelf CloseWith(string buttonAutomationId, int? timeoutMs = null)
-    {
-        return RunDoWithElement(element => { CloseWithCore(element, buttonAutomationId, timeoutMs); }, timeoutMs);
-    }
-
-    #endregion
 
 }

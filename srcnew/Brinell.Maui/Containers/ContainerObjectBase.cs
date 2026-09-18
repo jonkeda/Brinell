@@ -12,9 +12,10 @@ namespace Brinell.Maui.Containers;
 /// to <see cref="ContainerObjectBase{TParent, TSelf}"/>.
 /// </para>
 /// <para>
-/// Searches are scoped strictly to <see cref="ContainerRoot"/>: when a child is not
+/// By default, searches are scoped strictly to <see cref="ContainerRoot"/>: when a child is not
 /// found within the container, the search does <b>not</b> fall back to the parent scope.
-/// Container scoping means elements must be within the container.
+/// Container scoping means elements must be within the container. A component whose platform
+/// deliberately flattens its children may override the element-finding members explicitly.
 /// </para>
 /// </remarks>
 /// <typeparam name="TSelf">The container type itself (self-referencing for fluent returns).</typeparam>
@@ -191,7 +192,7 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     /// </remarks>
     public virtual IMauiElement? ScrollingRoot => null;
 
-    public IMauiElement? TryFindElement(Locator locator)
+    public virtual IMauiElement? TryFindElement(Locator locator)
     {
         ArgumentNullException.ThrowIfNull(locator);
         if (!CanResolveElements()) return null;
@@ -228,7 +229,7 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     }
 
     /// <inheritdoc />
-    public IMauiElement FindElement(Locator locator)
+    public virtual IMauiElement FindElement(Locator locator)
     {
         ArgumentNullException.ThrowIfNull(locator);
         if (!CanResolveElements()) throw CreateScopeNotReadyException(locator);
@@ -239,7 +240,7 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     }
 
     /// <inheritdoc />
-    public IReadOnlyList<IMauiElement> FindElements(Locator locator)
+    public virtual IReadOnlyList<IMauiElement> FindElements(Locator locator)
     {
         ArgumentNullException.ThrowIfNull(locator);
         if (!CanResolveElements()) return [];
@@ -452,6 +453,26 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
         return ok;
     }
 
+    /// <summary>
+    /// Waits, inside a Core method, for a read of the root the method already holds.
+    /// </summary>
+    /// <remarks>
+    /// The container counterpart of the control base's <c>Until</c>: no readiness check, no log
+    /// entry, only polling, because the generated wrapper did the rest. On timeout,
+    /// <paramref name="lastError"/> holds the exception the final read threw.
+    /// </remarks>
+    /// <param name="read">Reads the value.</param>
+    /// <param name="done">Whether the value is the one waited for.</param>
+    /// <param name="timeoutMs">Maximum time to wait; null for the default.</param>
+    /// <param name="lastError">The final read's exception, or null.</param>
+    /// <returns>True when <paramref name="done"/> held within the timeout.</returns>
+    protected bool Until<T>(Func<T?> read, Func<T?, bool> done, int? timeoutMs, out Exception? lastError)
+        => WaitHelper.WaitFor(read, done, timeoutMs ?? DefaultTimeoutMs, PollingIntervalMs, out lastError);
+
+    /// <inheritdoc cref="Until{T}(Func{T}, Func{T, bool}, int?, out Exception?)"/>
+    protected bool Until<T>(Func<T?> read, Func<T?, bool> done, int? timeoutMs)
+        => Until(read, done, timeoutMs, out _);
+
     /// <summary>Polls an arbitrary condition.</summary>
     protected bool RunWait(Func<bool> operation, int? timeoutMs = null,
         [CallerMemberName] string? caller = null)
@@ -500,6 +521,42 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
         var value = default(T);
         RunPoll(null, () => { value = coreOperation(ContainerRoot); return true; }, timeoutMs, caller);
         return value;
+    }
+
+    /// <summary>
+    /// Reads a value that is meaningful when the container root is absent: once, with the root
+    /// resolved optionally.
+    /// </summary>
+    /// <remarks>
+    /// Used by generated <c>Get*</c> members whose Core method carries <c>[AbsenceTolerant]</c>.
+    /// </remarks>
+    protected T? RunGetWithOptionalElement<T>(Func<IMauiElement?, T> coreOperation,
+        int? timeoutMs = null, [CallerMemberName] string? caller = null)
+    {
+        var timeout = timeoutMs ?? DefaultTimeoutMs;
+        if (Page != null && !Page.WaitReady(timeout))
+        {
+            var snapshot = Page.ProbeReadiness();
+            throw new PageLoadException(
+                $"Page '{Page.Name}' did not become ready for {caller ?? "operation"} on container '{Locator}' within {timeout} ms. " +
+                $"Last readiness state: {snapshot.State}; busy value: '{snapshot.BusySignalValue ?? "(none)"}'.");
+        }
+
+        var stopwatch = Stopwatch.StartNew();
+        Logger?.LogEntry(TestName, PageName, ControlId, caller ?? string.Empty, null);
+        try
+        {
+            var value = coreOperation(TryGetContainerRoot());
+            Logger?.LogExit(TestName, PageName, ControlId, caller ?? string.Empty,
+                LogResult.Success, (int)stopwatch.ElapsedMilliseconds);
+            return value;
+        }
+        catch (Exception ex)
+        {
+            Logger?.LogExit(TestName, PageName, ControlId, caller ?? string.Empty,
+                LogResult.Error, (int)stopwatch.ElapsedMilliseconds, ex.Message);
+            throw;
+        }
     }
 
     /// <summary>Sets a value on the container, returning the parent scope.</summary>

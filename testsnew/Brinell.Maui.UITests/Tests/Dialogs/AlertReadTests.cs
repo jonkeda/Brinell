@@ -164,11 +164,13 @@ public class AlertReadTests
         _page.ShowConfirmButton.Click();
         Assert.True(dialog.WaitExists(true, TestConstants.DefaultTestTimeoutMs));
 
+        dialog.AssertTitle("Confirm")
+            .AssertButtonTexts(["Yes", "No"])
+            .AssertButtonTextsHasItem("No")
+            .AssertButtonTextsCount(2)
+            // And the half that does need the app, reached from the same place a reader would look.
+            .AssertMessage("Proceed?");
         Assert.Equal("Confirm", dialog.GetTitle());
-        Assert.Equal(["Yes", "No"], dialog.GetButtonTexts());
-
-        // And the half that does need the app, reached from the same place a reader would look.
-        Assert.Equal("Proceed?", dialog.GetMessage());
 
         dialog.DialogButton("No").Click();
         Assert.True(dialog.WaitExists(false, TestConstants.DefaultTestTimeoutMs));

@@ -25,7 +25,21 @@ public class MediaElementTests
     public Task MediaElement_ResolvesAndIsVisible()
     {
         GetPage().TestMediaElement.AssertExists()
-            .TestMediaElement.AssertVisible();
+            .AssertVisible();
+        return Task.CompletedTask;
+    }
+
+    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [Trait("Method", "TransportButtons")]
+    public Task MediaElement_TransportButtons_AreControlObjects()
+    {
+        var media = GetPage().TestMediaElement;
+
+        media.PlayPauseButton.AssertExists()
+            .VolumeMuteButton.AssertExists()
+            .RepeatButton.AssertExists()
+            .RewindButton.AssertExists()
+            .FastForwardButton.AssertExists();
         return Task.CompletedTask;
     }
 
@@ -47,10 +61,9 @@ public class MediaElementTests
         var page = GetPage();
 
         page.TestMediaElement.Play()
-            .TestMediaElement.AssertPlaying(true);
-
-        Assert.True(page.TestMediaElement.WaitProgressPasses(0));
-        page.TestMediaElement.Pause();
+            .AssertPlaying(true)
+            .AssertProgressGreaterThan(0)
+            .Stop();
         return Task.CompletedTask;
     }
 
@@ -59,8 +72,9 @@ public class MediaElementTests
     public Task MediaElement_PlayThenPause_Pauses()
     {
         GetPage().TestMediaElement.Play()
-            .TestMediaElement.Pause()
-            .TestMediaElement.AssertPlaying(false);
+            .Pause()
+            .AssertPlaying(false)
+            .Stop();
         return Task.CompletedTask;
     }
 
@@ -69,8 +83,33 @@ public class MediaElementTests
     public Task MediaElement_PauseWhenNotPlaying_IsNoOp()
     {
         GetPage().TestMediaElement.Pause()
-            .TestMediaElement.SetPlaying(null)
-            .TestMediaElement.AssertPlaying(false);
+            .SetPlaying(null)
+            .AssertPlaying(false);
+        return Task.CompletedTask;
+    }
+
+    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [Trait("Method", "SetPlaying")]
+    public Task MediaElement_SetPlaying_PlaysAndPauses()
+    {
+        GetPage().TestMediaElement.SetPlaying(true)
+            .AssertPlaying(true)
+            .SetPlaying(false)
+            .AssertPlaying(false)
+            .Stop();
+        return Task.CompletedTask;
+    }
+
+    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [Trait("Method", "Stop")]
+    public Task MediaElement_Stop_PausesAndReturnsToTheStart()
+    {
+        GetPage().TestMediaElement.Play()
+            .AssertProgressGreaterThan(0)
+            .Stop()
+            .AssertPlaying(false)
+            .AssertProgress(0)
+            .AssertElapsed(0);
         return Task.CompletedTask;
     }
 
@@ -88,11 +127,34 @@ public class MediaElementTests
     {
         var page = GetPage();
 
-        Assert.True(page.TestMediaElement.WaitDurationKnown());
+        Assert.True(page.TestMediaElement.WaitOpened());
 
         var duration = page.TestMediaElement.GetDuration();
         Assert.NotNull(duration);
         Assert.InRange(duration.Value, 5, 7);
+        return Task.CompletedTask;
+    }
+
+    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [Trait("Method", "GetRemaining")]
+    public Task MediaElement_BeforePlay_AllOfTheClipRemains()
+    {
+        GetPage().TestMediaElement.AssertElapsed(0)
+            .AssertRemainingAtLeast(5)
+            .AssertRemainingAtMost(7);
+        return Task.CompletedTask;
+    }
+
+    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [Trait("Method", "PlayPauseButton")]
+    public Task MediaElement_PlayPauseButton_ReportsTheSameStateAsTheComponent()
+    {
+        var media = GetPage().TestMediaElement;
+
+        media.Play()
+            .PlayPauseButton.AssertPlaying(true)
+            .Stop()
+            .PlayPauseButton.AssertPlaying(false);
         return Task.CompletedTask;
     }
 }

@@ -1,5 +1,3 @@
-using Brinell.Core.Utilities;
-
 namespace Brinell.Maui.CommunityToolkit.Controls.Views;
 
 /// <summary>
@@ -130,14 +128,12 @@ public partial class RatingView<TScope> : Brinell.Maui.Controls.Base.RangeContro
         EnsureSettableCore(element);
         element.SelectIndex(star.Value - 1);
 
-        if (!WaitHelper.WaitFor(
-                () => GetValueCore(element),
+        if (!Until(() => GetValueCore(element),
                 actual => actual.HasValue && Math.Abs(actual.Value - star.Value) < 0.001,
-                timeoutMs: timeoutMs ?? DefaultTimeoutMs,
-                pollingIntervalMs: PollingIntervalMs))
+                timeoutMs, out var lastError))
         {
             throw new TimeoutException(
-                $"RatingView '{Locator.Value}' did not reach a rating of {star}.");
+                $"RatingView '{Locator.Value}' did not reach a rating of {star}.", lastError);
         }
     }
 

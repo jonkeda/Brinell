@@ -76,21 +76,32 @@ public partial class Popup<TParent, TSelf> : ContainerObjectBase<TParent, TSelf>
     [AbsenceTolerant]
     protected virtual bool? IsOpenCore(IMauiElement? element) => element != null;
 
+    #endregion
+
+    #region Hand-written: across parts
+
     /// <summary>
     /// Presses a button inside the popup that closes it, then waits for the popup to go.
     /// </summary>
-    /// <param name="element">The popup root.</param>
+    /// <remarks>
+    /// Across two parts: the button, and the popup root that should disappear. Two calls in
+    /// sequence, each its own unit of work.
+    /// </remarks>
     /// <param name="buttonAutomationId">The AutomationId of the closing button.</param>
-    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
-    protected virtual void CloseWithCore(IMauiElement element, string buttonAutomationId, int? timeoutMs = null)
+    /// <param name="timeoutMs">Optional timeout in milliseconds, for each of the two steps.</param>
+    /// <returns>This popup, for chaining (its members now report it closed).</returns>
+    /// <exception cref="TimeoutException">The popup was still open after the press.</exception>
+    public TSelf CloseWith(string buttonAutomationId, int? timeoutMs = null)
     {
         Button(buttonAutomationId).Click(timeoutMs);
 
-        if (!RunWait(() => TryFindElement() == null, timeoutMs))
+        if (!WaitOpen(false, timeoutMs))
         {
             throw new TimeoutException(
                 $"Popup '{Locator.Value}' was still open after pressing '{buttonAutomationId}'.");
         }
+
+        return Self;
     }
 
     #endregion

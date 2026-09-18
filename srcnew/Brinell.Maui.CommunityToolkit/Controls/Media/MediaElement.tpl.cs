@@ -1,5 +1,6 @@
-using System.Text.RegularExpressions;
-using Brinell.Core.Utilities;
+using Brinell.Maui.Containers;
+using Brinell.Maui.Controls.Buttons;
+using Brinell.Maui.Controls.Range;
 
 namespace Brinell.Maui.CommunityToolkit.Controls.Media;
 
@@ -16,6 +17,12 @@ namespace Brinell.Maui.CommunityToolkit.Controls.Media;
 /// with no bridge.
 /// </para>
 /// <para>
+/// <b>The parts own the behaviour.</b> <see cref="MediaPlayPauseButton{TScope}"/> knows whether
+/// media plays and how to change it; <see cref="MediaTimeLabel{TScope}"/> reads a time. This
+/// component forwards to them through shortcuts, so each call is the part's own single unit of
+/// work. Only members that need two parts are hand-written here.
+/// </para>
+/// <para>
 /// <b>Not the toolkit's <c>CurrentState</c>.</b> Measured on toolkit 10.0.0 / Windows: after the
 /// transport controls start playback, <c>CurrentState</c> stays <c>Opening</c> and
 /// <c>StateChanged</c> never fires, while the player plays. A state read from the app would be
@@ -25,19 +32,22 @@ namespace Brinell.Maui.CommunityToolkit.Controls.Media;
 /// <b>Limits.</b> One media element per scope on Windows: the transport ids are fixed, so put each
 /// media element in its own container. Playback controls must be shown
 /// (<c>ShouldShowPlaybackControls</c>). <c>IsPlaying</c> reads the play/pause button's name, which
-/// Windows localizes; it matches the English "Pause". Android publishes none of these ids yet.
+/// Windows localizes; it matches the English "Pause". The transport has no stop button, so
+/// <see cref="Stop"/> pauses and seeks to the start. Android publishes none of these ids yet.
 /// </para>
 /// </remarks>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public partial class MediaElement<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope>
+public partial class MediaElement<TScope> : ComponentObjectBase<TScope, MediaElement<TScope>>
     where TScope : IMauiScope<TScope>
 {
     private const string PlayPauseButtonId = "PlayPauseButton";
+    private const string VolumeMuteButtonId = "VolumeMuteButton";
+    private const string RepeatButtonId = "RepeatButton";
+    private const string RewindButtonId = "RewindButton";
+    private const string FastForwardButtonId = "FastForwardButton";
     private const string TimeElapsedId = "TimeElapsedElement";
     private const string TimeRemainingId = "TimeRemainingElement";
     private const string ProgressSliderId = "ProgressSlider";
-
-    private static readonly Regex Clock = new(@"(\d+):(\d{2}):(\d{2})\s*$", RegexOptions.CultureInvariant);
 
     /// <summary>
     /// Creates a media element control within the specified scope.
@@ -59,167 +69,169 @@ public partial class MediaElement<TScope> : Brinell.Maui.Controls.Base.ViewBase<
     {
     }
 
+    #region Transport Controls
+
+    /// <summary>The transport button that toggles playback.</summary>
+    public MediaPlayPauseButton<MediaElement<TScope>> PlayPauseButton => new(this, PlayPauseButtonId);
+
+    /// <summary>The transport button that toggles muted audio.</summary>
+    public Button<MediaElement<TScope>> VolumeMuteButton => new(this, VolumeMuteButtonId);
+
+    /// <summary>The transport button that changes repeat mode.</summary>
+    public Button<MediaElement<TScope>> RepeatButton => new(this, RepeatButtonId);
+
+    /// <summary>The transport button that rewinds playback.</summary>
+    public Button<MediaElement<TScope>> RewindButton => new(this, RewindButtonId);
+
+    /// <summary>The transport button that advances playback.</summary>
+    public Button<MediaElement<TScope>> FastForwardButton => new(this, FastForwardButtonId);
+
+    /// <summary>The transport slider that reports and changes playback progress, 0 to 100.</summary>
+    public Slider<MediaElement<TScope>> ProgressSlider => new(this, ProgressSliderId);
+
+    /// <summary>The transport readout of elapsed playback time.</summary>
+    public MediaTimeLabel<MediaElement<TScope>> TimeElapsedLabel => new(this, TimeElapsedId);
+
+    /// <summary>The transport readout of remaining playback time.</summary>
+    public MediaTimeLabel<MediaElement<TScope>> TimeRemainingLabel => new(this, TimeRemainingId);
+
+    #endregion
+
     #region Element Finding
 
     /// <summary>
     /// The element by its locator where the platform shows it; otherwise its play/pause button,
     /// which stands in for it as the Stepper's buttons stand in for a Stepper.
     /// </summary>
-    protected override IMauiElement? TryFindElement()
-        => base.TryFindElement() ?? Part(PlayPauseButtonId);
-
-    /// <inheritdoc />
-    protected override IMauiElement FindElement()
-        => TryFindElement()
+    protected override IMauiElement FindContainerRootElement()
+        => Parent.TryFindElement(Locator)
+           ?? Parent.TryFindElement(Locator.ByAutomationId(PlayPauseButtonId))
            ?? throw new ElementNotFoundException(
                $"MediaElement was not found by '{Locator}' or by its '{PlayPauseButtonId}'. The "
                + "transport controls must be shown (ShouldShowPlaybackControls).");
 
+    /// <summary>
+    /// Resolves transport controls from the parent because WinUI flattens them beside the
+    /// unexposed MediaElement root.
+    /// </summary>
+    public override IMauiElement? TryFindElement(Locator locator)
+        => Parent.TryFindElement(locator);
+
+    /// <inheritdoc />
+    public override IMauiElement FindElement(Locator locator)
+        => Parent.FindElement(locator);
+
+    /// <inheritdoc />
+    public override IReadOnlyList<IMauiElement> FindElements(Locator locator)
+        => Parent.FindElements(locator);
+
     #endregion
 
-    #region Core Methods (Element-Aware, No Logging)
+    #region Shortcuts
+
+    /// <summary>Whether media is playing, as the play/pause button shows it.</summary>
+    protected bool? IsPlayingShortcut() => PlayPauseButton.IsPlaying();
+
+    /// <summary>Pauses playback. No-op when not playing.</summary>
+    protected MediaElement<TScope> PauseShortcut(int? timeoutMs = null) => PlayPauseButton.Pause(timeoutMs);
+
+    /// <summary>Playback progress, 0 to 100, from the seek slider.</summary>
+    [GenerateComparisons(Comparison.Equals | Comparison.GreaterThan | Comparison.AtLeast)]
+    protected double? GetProgressShortcut() => ProgressSlider.GetValue();
+
+    /// <summary>Elapsed time in seconds; null while playing or before the media opens.</summary>
+    [GenerateComparisons(Comparison.Equals | Comparison.GreaterThan | Comparison.AtLeast
+        | Comparison.LessThan | Comparison.AtMost)]
+    protected double? GetElapsedShortcut() => TimeElapsedLabel.GetSeconds();
+
+    /// <summary>Remaining time in seconds; null while playing or before the media opens.</summary>
+    [GenerateComparisons(Comparison.Equals | Comparison.GreaterThan | Comparison.AtLeast
+        | Comparison.LessThan | Comparison.AtMost)]
+    protected double? GetRemainingShortcut() => TimeRemainingLabel.GetSeconds();
+
+    #endregion
+
+    #region Hand-written: across parts
 
     /// <summary>
-    /// Reads whether media is playing: the transport shows "Pause" while it plays.
+    /// Waits until the media has opened, shown by the remaining time getting its clock.
     /// </summary>
-    /// <param name="element">The pre-found element.</param>
-    /// <returns>True while playing, null where there is no play/pause button.</returns>
-    protected virtual bool? IsPlayingCore(IMauiElement? element)
-        => element == null
-            ? null
-            : Part(PlayPauseButtonId)?.Name is { } name
-                ? name.StartsWith("Pause", StringComparison.OrdinalIgnoreCase)
-                : null;
+    /// <remarks>
+    /// Reads the remaining-time readout. Meaningful while paused only: during playback Windows
+    /// drops the clock from the name, so this would wait for the player to pause.
+    /// </remarks>
+    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
+    /// <returns>True when the media opened within the timeout.</returns>
+    public bool WaitOpened(int? timeoutMs = null)
+        => TimeRemainingLabel.WaitSecondsAtLeast(0, timeoutMs);
 
     /// <summary>
-    /// Reads how far playback has got, from 0 to 100, from the seek slider's RangeValue pattern.
+    /// Starts playback, first waiting for the media to open. No-op when already playing.
     /// </summary>
-    /// <param name="element">The pre-found element.</param>
-    /// <returns>The progress, or null where there is no seek slider.</returns>
-    protected virtual double? GetProgressCore(IMauiElement? element)
-        => element == null ? null : Part(ProgressSliderId)?.RangeValue;
+    /// <remarks>
+    /// Across two parts: the play/pause button, and the remaining-time readout that says the media
+    /// has opened. The button is enabled before the media opens and the player drops a press made
+    /// then, so the button alone cannot do this (probed 2026-09-18).
+    /// </remarks>
+    /// <param name="timeoutMs">Optional timeout in milliseconds, for each of the two steps.</param>
+    /// <returns>This media element, for chaining.</returns>
+    /// <exception cref="TimeoutException">The media did not open.</exception>
+    public MediaElement<TScope> Play(int? timeoutMs = null)
+    {
+        if (PlayPauseButton.IsPlaying() == true)
+        {
+            return this;
+        }
+
+        if (!WaitOpened(timeoutMs))
+        {
+            throw new TimeoutException(
+                $"MediaElement '{Locator.Value}' never showed a remaining time, so its media did not open.");
+        }
+
+        return PlayPauseButton.Play(timeoutMs);
+    }
+
+    /// <summary>
+    /// Plays or pauses. Null skips the operation.
+    /// </summary>
+    /// <remarks>Hand-written because <see cref="Play"/> is.</remarks>
+    /// <param name="playing">True to play, false to pause, null to do nothing.</param>
+    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
+    /// <returns>This media element, for chaining.</returns>
+    public MediaElement<TScope> SetPlaying(bool? playing, int? timeoutMs = null)
+        => playing switch
+        {
+            true => Play(timeoutMs),
+            false => Pause(timeoutMs),
+            null => this
+        };
+
+    /// <summary>
+    /// Stops playback: pauses, then seeks to the start.
+    /// </summary>
+    /// <remarks>
+    /// Across two parts: the play/pause button and the seek slider. The WinUI transport shows no
+    /// stop button (probed 2026-09-18), and seeking the slider moves playback.
+    /// </remarks>
+    /// <param name="timeoutMs">Optional timeout in milliseconds, for each of the two steps.</param>
+    /// <returns>This media element, for chaining.</returns>
+    public MediaElement<TScope> Stop(int? timeoutMs = null)
+    {
+        Pause(timeoutMs);
+        return ProgressSlider.SetValue(0, timeoutMs);
+    }
 
     /// <summary>
     /// Reads the media's length in whole seconds: elapsed plus remaining.
     /// </summary>
     /// <remarks>
-    /// Read while the player is not running: during playback Windows drops the clock from the
-    /// times' names (it stays only in their text pattern, which the driver does not read), and this
-    /// answers null.
+    /// Across two parts: the elapsed and remaining readouts. Null while playing or before the
+    /// media opens, when Windows drops the clock from the readouts' names.
     /// </remarks>
-    /// <param name="element">The pre-found element.</param>
-    /// <returns>The duration, or null while either time shows no clock.</returns>
-    protected virtual double? GetDurationCore(IMauiElement? element)
-        => element == null ? null : ReadClock(TimeElapsedId) + ReadClock(TimeRemainingId);
-
-    /// <summary>
-    /// Starts playback through the transport controls. No-op when already playing.
-    /// </summary>
-    /// <param name="element">The pre-found element.</param>
-    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
-    protected virtual void PlayCore(IMauiElement element, int? timeoutMs = null)
-        => SetPlayingCore(element, true, timeoutMs);
-
-    /// <summary>
-    /// Pauses playback through the transport controls. No-op when not playing.
-    /// </summary>
-    /// <param name="element">The pre-found element.</param>
-    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
-    protected virtual void PauseCore(IMauiElement element, int? timeoutMs = null)
-        => SetPlayingCore(element, false, timeoutMs);
-
-    /// <summary>
-    /// Presses play/pause when the state differs, then waits for the transport to show the change.
-    /// </summary>
-    /// <param name="element">The pre-found element.</param>
-    /// <param name="playing">True to play, false to pause. Null skips the operation.</param>
-    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
-    protected virtual void SetPlayingCore(IMauiElement element, bool? playing, int? timeoutMs = null)
-    {
-        if (playing == null || IsPlayingCore(element) == playing)
-        {
-            return;
-        }
-
-        var button = Part(PlayPauseButtonId)
-            ?? throw new NotSupportedException(
-                $"MediaElement '{Locator.Value}' has no '{PlayPauseButtonId}' in this scope. The "
-                + "transport controls must be shown, and on Android they publish no id this control "
-                + "can find.");
-
-        // A press before the media has opened is dropped by the player: failed once under the full
-        // suite, where the page was pressed straight after it arrived. The transport shows a
-        // duration once the media is open, so wait for that first.
-        if (playing.Value
-            && !WaitHelper.WaitFor(
-                () => GetDurationCore(element),
-                duration => duration > 0,
-                timeoutMs: timeoutMs ?? DefaultTimeoutMs,
-                pollingIntervalMs: PollingIntervalMs))
-        {
-            throw new TimeoutException(
-                $"MediaElement '{Locator.Value}' never showed a duration, so its media did not open.");
-        }
-
-        button.Invoke();
-
-        if (!WaitHelper.WaitFor(
-                () => IsPlayingCore(element),
-                actual => actual == playing,
-                timeoutMs: timeoutMs ?? DefaultTimeoutMs,
-                pollingIntervalMs: PollingIntervalMs))
-        {
-            throw new TimeoutException(
-                $"MediaElement '{Locator.Value}' did not {(playing.Value ? "start playing" : "pause")}.");
-        }
-    }
-
-    #endregion
-
-    #region Hand-written Members
-
-    // Hand-written: generated waits compare for equality, and playing progress or a loading
-    // duration is only ever "past" a value, never equal to one.
-
-    /// <summary>
-    /// Waits until playback progress, from 0 to 100, is past the given value.
-    /// </summary>
-    /// <param name="percent">The progress to pass.</param>
-    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
-    /// <returns>True when progress passed it within the timeout.</returns>
-    public bool WaitProgressPasses(double percent, int? timeoutMs = null)
-        => RunWait(() => GetProgressCore(TryFindElement()) > percent, timeoutMs);
-
-    /// <summary>
-    /// Waits until the media has opened far enough to show a non-zero duration.
-    /// </summary>
-    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
-    /// <returns>True when the duration became known within the timeout.</returns>
-    public bool WaitDurationKnown(int? timeoutMs = null)
-        => RunWait(() => GetDurationCore(TryFindElement()) > 0, timeoutMs);
-
-    #endregion
-
-    #region Helpers
-
-    private IMauiElement? Part(string automationId)
-        => MauiScope.TryFindElement(Locator.ByAutomationId(automationId));
-
-    /// <summary>
-    /// The trailing h:mm:ss of a transport time, in seconds. The label drops its clock for a moment
-    /// while it updates, which reads as null rather than zero.
-    /// </summary>
-    private double? ReadClock(string automationId)
-    {
-        if (Part(automationId)?.Name is not { } name || Clock.Match(name) is not { Success: true } match)
-        {
-            return null;
-        }
-
-        return int.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture) * 3600
-               + int.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture) * 60
-               + int.Parse(match.Groups[3].Value, CultureInfo.InvariantCulture);
-    }
+    /// <returns>The duration, or null while either readout shows no clock.</returns>
+    public double? GetDuration()
+        => TimeElapsedLabel.GetSeconds() + TimeRemainingLabel.GetSeconds();
 
     #endregion
 }

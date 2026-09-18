@@ -82,24 +82,18 @@ public abstract partial class ToggleControlBase<TScope> : FocusableControlBase<T
 
         element.Toggle();
 
-        if (!WaitForStateChange(element, beforeState, timeoutMs))
+        if (beforeState != null
+            && !Until(() => IsCheckedCore(element), state => state != beforeState, timeoutMs, out var lastError))
         {
             throw new InvalidOperationException(
                 $"The element accepted Toggle and its checked state did not change, so nothing "
                 + $"the test asked for happened. It was {Describe(beforeState)} before and after. "
-                + $"Locator: {Locator}");
+                + $"Locator: {Locator}", lastError);
         }
     }
 
     private static string Describe(bool? state)
         => state switch { true => "checked", false => "unchecked", _ => "in an unknown state" };
-
-    private bool WaitForStateChange(IMauiElement element, bool? beforeState, int? timeoutMs = null)
-    {
-        if (beforeState == null)
-            return true;
-        return RunWaitWithElement(!beforeState, e => IsCheckedCore(e) != beforeState, timeoutMs);
-    }
 
     /// <summary>
     /// Sets checked state on pre-found element. No-op if already in the target state.
@@ -136,11 +130,11 @@ public abstract partial class ToggleControlBase<TScope> : FocusableControlBase<T
     {
         element.SetChecked(@checked);
 
-        if (!RunWaitWithElement(@checked, e => IsCheckedCore(e) == @checked, timeoutMs))
+        if (!Until(() => IsCheckedCore(element), state => state == @checked, timeoutMs, out var lastError))
         {
             throw new InvalidOperationException(
                 $"The element accepted SetChecked({@checked}) and its checked state did not change. "
-                + $"Locator: {Locator}");
+                + $"Locator: {Locator}", lastError);
         }
     }
 

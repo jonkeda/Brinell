@@ -44,4 +44,10 @@ public class MethodInfo
     /// instead of throwing ElementNotFoundException for the state they are testing.
     /// </summary>
     public bool IsAbsenceTolerant { get; set; }
+
+    /// <summary>
+    /// The parsed shortcut, when this method is a component's forward to a part rather than a
+    /// Core method. Holds strings only, like the rest of this type.
+    /// </summary>
+    public Analysis.ShortcutMethod? Shortcut { get; set; }
 }

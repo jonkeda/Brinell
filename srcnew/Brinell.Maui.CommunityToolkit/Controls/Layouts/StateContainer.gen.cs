@@ -34,5 +34,27 @@ public partial class StateContainer<TParent, TSelf> : ContainerObjectBase<TParen
     where TParent : IMauiScope<TParent>
     where TSelf : StateContainer<TParent, TSelf>
 {
+    #region Showing (IsShowing / WaitShowing / AssertShowing)
+
+    public bool? IsShowing(string viewAutomationId)
+    {
+        return IsShowingCore(TryFindElement(), viewAutomationId) == true;
+    }
+
+    public bool WaitShowing(string viewAutomationId, bool? expected = true, int? timeoutMs = null)
+    {
+        return RunWaitWithOptionalElement(expected,
+           element => IsShowingCore(element, viewAutomationId) == expected!.Value,
+           timeoutMs);
+    }
+
+    public TSelf AssertShowing(string viewAutomationId, bool? expected = true, string? message = null, int? timeoutMs = null)
+    {
+        return RunAssertWithOptionalElement(expected,
+           element => IsShowingCore(element, viewAutomationId), (actual, expected1) => (actual == expected1),
+           message ?? $"Expected Showing to be '{expected}'. Locator: {Locator}", timeoutMs);
+    }
+
+    #endregion
 
 }

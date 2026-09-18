@@ -25,19 +25,28 @@ public class AvatarViewTests
     public Task AvatarView_IsVisible()
     {
         GetPage().TestAvatarView.AssertExists()
-            .TestAvatarView.AssertVisible();
+            .AssertVisible();
         return Task.CompletedTask;
     }
 
     [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
-    [Trait("Method", "GetText")]
-    public Task AvatarView_GetText_ReturnsInitials()
+    [Trait("Method", "GetInitials")]
+    public Task AvatarView_GetInitials_ReturnsInitials()
     {
         var page = GetPage();
 
-        Assert.Equal("BR", page.TestAvatarView.GetText());
-        page.TestAvatarView.AssertText("BR")
-            .TestAvatarView.AssertTextEmpty(false);
+        Assert.Equal("BR", page.TestAvatarView.GetInitials());
+        page.TestAvatarView.AssertInitials("BR")
+            .AssertInitialsEmpty(false);
+        return Task.CompletedTask;
+    }
+
+    [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
+    [Trait("Method", "Initials")]
+    public Task AvatarView_Initials_IsAPartWithTheInitials()
+    {
+        GetPage().TestAvatarView.Initials.AssertExists()
+            .Initials.AssertInitials("BR");
         return Task.CompletedTask;
     }
 

@@ -37,6 +37,62 @@ public abstract partial class RangeControlBase<TScope> : FocusableControlBase<TS
            message ?? $"Expected Value to be '{expected}'. Locator: {Locator}", timeoutMs);
     }
 
+    public bool WaitValueGreaterThan(double? expected, int? timeoutMs = null)
+    {
+        return RunWaitWithElement(expected,
+           element => GetValueCore(element) > expected,
+           timeoutMs);
+    }
+
+    public TScope AssertValueGreaterThan(double? expected, string? message = null, int? timeoutMs = null)
+    {
+        return RunAssertWithElement(expected,
+           element => GetValueCore(element), (actual, expected1) => (actual > expected1),
+           message ?? $"Expected Value to be greater than '{expected}'. Locator: {Locator}", timeoutMs);
+    }
+
+    public bool WaitValueAtLeast(double? expected, int? timeoutMs = null)
+    {
+        return RunWaitWithElement(expected,
+           element => GetValueCore(element) >= expected,
+           timeoutMs);
+    }
+
+    public TScope AssertValueAtLeast(double? expected, string? message = null, int? timeoutMs = null)
+    {
+        return RunAssertWithElement(expected,
+           element => GetValueCore(element), (actual, expected1) => (actual >= expected1),
+           message ?? $"Expected Value to be at least '{expected}'. Locator: {Locator}", timeoutMs);
+    }
+
+    public bool WaitValueLessThan(double? expected, int? timeoutMs = null)
+    {
+        return RunWaitWithElement(expected,
+           element => GetValueCore(element) < expected,
+           timeoutMs);
+    }
+
+    public TScope AssertValueLessThan(double? expected, string? message = null, int? timeoutMs = null)
+    {
+        return RunAssertWithElement(expected,
+           element => GetValueCore(element), (actual, expected1) => (actual < expected1),
+           message ?? $"Expected Value to be less than '{expected}'. Locator: {Locator}", timeoutMs);
+    }
+
+    public bool WaitValueAtMost(double? expected, int? timeoutMs = null)
+    {
+        return RunWaitWithElement(expected,
+           element => GetValueCore(element) <= expected,
+           timeoutMs);
+    }
+
+    public TScope AssertValueAtMost(double? expected, string? message = null, int? timeoutMs = null)
+    {
+        return RunAssertWithElement(expected,
+           element => GetValueCore(element), (actual, expected1) => (actual <= expected1),
+           message ?? $"Expected Value to be at most '{expected}'. Locator: {Locator}", timeoutMs);
+    }
+
     #endregion
     #region SetValue
 

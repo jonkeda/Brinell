@@ -1,14 +1,23 @@
+using Brinell.Maui.Containers;
+using Brinell.Maui.Controls.Display;
+
 namespace Brinell.Maui.CommunityToolkit.Controls.Views;
 
 /// <summary>
 /// CommunityToolkit.Maui <c>AvatarView</c>: initials or an image in a bordered shape.
 /// </summary>
 /// <remarks>
+/// <para>
 /// Read from the automation tree alone, no bridge: on Windows the avatar is a group whose child
 /// is a text element carrying the initials, or an image element when an image source is set.
+/// </para>
+/// <para>
+/// The parts own the reads; this component forwards to them through shortcuts, so each call is
+/// the part's own single unit of work.
+/// </para>
 /// </remarks>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
-public partial class AvatarView<TScope> : Brinell.Maui.Controls.Base.ViewBase<TScope>
+public partial class AvatarView<TScope> : ComponentObjectBase<TScope, AvatarView<TScope>>
     where TScope : IMauiScope<TScope>
 {
     /// <summary>
@@ -31,32 +40,33 @@ public partial class AvatarView<TScope> : Brinell.Maui.Controls.Base.ViewBase<TS
     {
     }
 
-    #region Core Methods (Element-Aware, No Logging)
+    #region Parts
 
-    /// <summary>
-    /// Reads the text the avatar shows, typically initials.
-    /// </summary>
-    /// <param name="element">The pre-found element.</param>
-    /// <returns>The shown text, or null when the avatar shows no text.</returns>
+    private static readonly Locator InitialsLocator = Locator.ByControlType("text");
+    private static readonly Locator ImageLocator = Locator.ByControlType("image");
+
+    /// <summary>The initials, shown when no image is.</summary>
+    public AvatarInitials<AvatarView<TScope>> Initials => new(this, InitialsLocator);
+
+    /// <summary>The image, when an image source is set.</summary>
+    public AvatarImage<AvatarView<TScope>> Image => new(this, ImageLocator);
+
+    #endregion
+
+    #region Shortcuts
+
+    /// <summary>The initials the avatar shows; null while an image replaces them.</summary>
     [GenerateComparisons(Comparison.Equals | Comparison.Empty)]
-    protected virtual string? GetTextCore(IMauiElement? element)
-    {
-        if (element == null)
-        {
-            return null;
-        }
-
-        var text = element.FindElements(Locator.ByControlType("text")).FirstOrDefault();
-        return text?.Name ?? text?.Text;
-    }
+    protected string? GetInitialsShortcut() => Initials.GetInitials();
 
     /// <summary>
-    /// Reads whether the avatar shows an image rather than text.
+    /// Whether the avatar shows an image rather than initials.
     /// </summary>
-    /// <param name="element">The pre-found element.</param>
-    /// <returns>True when an image is shown, null when the element is absent.</returns>
-    protected virtual bool? IsShowingImageCore(IMauiElement? element)
-        => element?.FindElements(Locator.ByControlType("image")).Count > 0;
+    /// <remarks>
+    /// Shown rather than exists: an existence check scrolls the app when the image is missing and
+    /// can find another image on the page.
+    /// </remarks>
+    protected bool? IsShowingImageShortcut() => Image.IsShown();
 
     #endregion
 }

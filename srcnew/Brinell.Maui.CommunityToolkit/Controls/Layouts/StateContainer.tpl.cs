@@ -50,41 +50,23 @@ public partial class StateContainer<TParent, TSelf> : ContainerObjectBase<TParen
     /// </remarks>
     protected override bool CacheContainerRoot => false;
 
-    #region Hand-written Members
-
-    // Hand-written: the generator forwards extra parameters only for Get* members, and the
-    // question here is "is this view shown", which takes the view's id.
+    #region Core Methods (Element-Aware, No Logging)
 
     /// <summary>
     /// Whether the view with the given AutomationId is currently shown inside the container.
     /// </summary>
+    /// <remarks>
+    /// Absence tolerant: a container that is not on the page shows nothing, so the answer is
+    /// false rather than an error.
+    /// </remarks>
+    /// <param name="element">The container root, or null when it is absent.</param>
     /// <param name="viewAutomationId">The AutomationId of a state view or of the normal content.</param>
     /// <returns>True when shown.</returns>
-    public bool IsShowing(string viewAutomationId)
-        => TryFindElement(Locator.ByAutomationId(viewAutomationId)) != null;
-
-    /// <summary>
-    /// Waits until the view with the given AutomationId is shown, or is no longer shown.
-    /// </summary>
-    /// <param name="viewAutomationId">The AutomationId of the view.</param>
-    /// <param name="expected">True to wait for it to appear, false to wait for it to go.</param>
-    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
-    /// <returns>True when the condition was met within the timeout.</returns>
-    public bool WaitShowing(string viewAutomationId, bool expected = true, int? timeoutMs = null)
-        => RunWait(() => IsShowing(viewAutomationId) == expected, timeoutMs);
-
-    /// <summary>
-    /// Asserts that the view with the given AutomationId is, or is not, shown.
-    /// </summary>
-    /// <param name="viewAutomationId">The AutomationId of the view.</param>
-    /// <param name="expected">True to assert it is shown, false to assert it is not.</param>
-    /// <param name="message">Optional assertion message.</param>
-    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
-    /// <returns>The container for fluent chaining.</returns>
-    public TSelf AssertShowing(string viewAutomationId, bool expected = true, string? message = null, int? timeoutMs = null)
-        => RunAssert<bool?>(expected, () => IsShowing(viewAutomationId), (actual, wanted) => actual == wanted,
-            message ?? $"Expected '{viewAutomationId}' {(expected ? "to be" : "not to be")} shown in state container '{Locator.Value}'.",
-            timeoutMs);
+    [AbsenceTolerant]
+    protected virtual bool? IsShowingCore(IMauiElement? element, string viewAutomationId)
+        => element != null
+           && element.TryFindElement(Locator.ByAutomationId(viewAutomationId), out var view, 0)
+           && view != null;
 
     #endregion
 }

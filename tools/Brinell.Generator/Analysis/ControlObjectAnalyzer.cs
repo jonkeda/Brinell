@@ -99,6 +99,166 @@ public class ControlObjectAnalyzer
     }
 
     /// <summary>
+    /// The unit-of-work helpers a Core method must not call: the generated wrapper around the
+    /// Core method is already one of them.
+    /// </summary>
+    private static readonly string[] RunHelperPrefixes = ["RunWait", "RunDo", "RunGet", "RunAssert", "RunSet"];
+
+    /// <summary>
+    /// The child factories a container inherits; each returns a control scoped to it.
+    /// </summary>
+    private static readonly HashSet<string> ChildFactories =
+        ["Button", "Label", "Entry", "CheckBox", "ActivityIndicator", "Child"];
+
+    /// <summary>
+    /// Reports Core methods that start a second unit of work inside the one their generated
+    /// wrapper already runs.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Two shapes, both found from syntax alone:
+    /// </para>
+    /// <list type="bullet">
+    /// <item>A call to a <c>Run*</c> helper (<c>RunWait</c>, <c>RunDo</c>, <c>RunGet*</c>,
+    /// <c>RunAssert*</c>, <c>RunSet*</c>, <c>Run</c>): a second poll with its own timeout and log
+    /// entry. Wait with <c>Until</c>.</item>
+    /// <item>A call on a part: a property or method of this class built with <c>new(this, ...)</c>,
+    /// or a container's child factory (<c>Button(id)</c>, <c>Label(id)</c>, ...). The part's public
+    /// member is a complete unit of work of its own.</item>
+    /// </list>
+    /// <para>
+    /// Warnings, not errors: generation goes on, and the CLI prints them. Hand-written members are
+    /// not Core methods and may call parts in sequence.
+    /// </para>
+    /// </remarks>
+    /// <param name="classDecl">The class being generated.</param>
+    /// <returns>One message per nested call; empty when there are none.</returns>
+    public IReadOnlyList<string> FindNestedUnitsOfWork(ClassDeclarationSyntax classDecl)
+    {
+        var parts = PartMembers(classDecl);
+        var warnings = new List<string>();
+
+        foreach (var method in CoreMethods(classDecl))
+        {
+            var name = method.Identifier.Text;
+            if (!name.EndsWith("Core", StringComparison.Ordinal)) continue;
+
+            SyntaxNode? body = (SyntaxNode?)method.Body ?? method.ExpressionBody;
+            if (body == null) continue;
+
+            foreach (var invocation in body.DescendantNodes().OfType<InvocationExpressionSyntax>())
+            {
+                if (IsRunHelperCall(invocation, out var helper))
+                {
+                    warnings.Add(
+                        $"'{name}' calls '{helper}' inside a Core method: a second poll with its own " +
+                        "timeout and log entry, inside the one the generated wrapper runs. Wait with " +
+                        "Until instead.");
+                }
+                else if (IsPartCall(invocation, parts, out var call))
+                {
+                    warnings.Add(
+                        $"'{name}' calls '{call}', a public member of another control: a nested unit " +
+                        "of work (a second readiness check, poll and log entry). Move the behaviour to " +
+                        "the part and add a shortcut, or hand-write the member as calls in sequence.");
+                }
+            }
+        }
+
+        return warnings;
+    }
+
+    /// <summary>
+    /// Names of the class's properties and methods that return a control scoped to the class:
+    /// their body creates an object and passes <c>this</c>.
+    /// </summary>
+    private static HashSet<string> PartMembers(ClassDeclarationSyntax classDecl)
+    {
+        static bool CreatesScopedToThis(ExpressionSyntax? expression)
+            => expression is BaseObjectCreationExpressionSyntax { ArgumentList: { } arguments }
+               && arguments.Arguments.Any(a => a.Expression.DescendantNodesAndSelf().OfType<ThisExpressionSyntax>().Any());
+
+        var names = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (var property in classDecl.Members.OfType<PropertyDeclarationSyntax>())
+        {
+            var expression = property.ExpressionBody?.Expression
+                ?? property.AccessorList?.Accessors
+                    .FirstOrDefault(a => a.IsKind(SyntaxKind.GetAccessorDeclaration))?.ExpressionBody?.Expression;
+            if (CreatesScopedToThis(expression))
+                names.Add(property.Identifier.Text);
+        }
+
+        foreach (var method in classDecl.Members.OfType<MethodDeclarationSyntax>())
+        {
+            if (CreatesScopedToThis(method.ExpressionBody?.Expression))
+                names.Add(method.Identifier.Text);
+        }
+
+        return names;
+    }
+
+    private static bool IsRunHelperCall(InvocationExpressionSyntax invocation, out string helper)
+    {
+        helper = invocation.Expression switch
+        {
+            IdentifierNameSyntax identifier => identifier.Identifier.Text,
+            GenericNameSyntax generic => generic.Identifier.Text,
+            MemberAccessExpressionSyntax { Expression: ThisExpressionSyntax or BaseExpressionSyntax } access
+                => access.Name.Identifier.Text,
+            _ => ""
+        };
+
+        var name = helper;
+        return name == "Run" || RunHelperPrefixes.Any(prefix => name.StartsWith(prefix, StringComparison.Ordinal));
+    }
+
+    private static bool IsPartCall(InvocationExpressionSyntax invocation, HashSet<string> parts, out string call)
+    {
+        call = invocation.Expression.ToString();
+
+        if (invocation.Expression is not MemberAccessExpressionSyntax access)
+            return false;
+
+        return access.Expression switch
+        {
+            // Part.Member(...)
+            IdentifierNameSyntax target => parts.Contains(target.Identifier.Text),
+            // Button(id).Member(...), Child<T>(id).Member(...), PartFactory(x).Member(...)
+            InvocationExpressionSyntax { Expression: IdentifierNameSyntax factory }
+                => ChildFactories.Contains(factory.Identifier.Text) || parts.Contains(factory.Identifier.Text),
+            InvocationExpressionSyntax { Expression: GenericNameSyntax factory }
+                => ChildFactories.Contains(factory.Identifier.Text),
+            _ => false
+        };
+    }
+
+    /// <summary>
+    /// Reports methods named as shortcuts that cannot be one.
+    /// </summary>
+    /// <remarks>
+    /// A method ending in <c>Shortcut</c> is a shortcut by intent, so one that breaks the rules
+    /// (not protected, virtual, or not a single call on a part) is an error rather than a
+    /// silent skip, as for Core methods.
+    /// </remarks>
+    /// <param name="classDecl">The class being generated.</param>
+    /// <returns>One message per malformed shortcut; empty when all are well-formed.</returns>
+    public IReadOnlyList<string> FindMalformedShortcuts(ClassDeclarationSyntax classDecl)
+    {
+        var problems = new List<string>();
+
+        foreach (var method in CoreMethods(classDecl))
+        {
+            if (!ShortcutMethod.IsCandidate(method) || HasSkipGenerationAttribute(method)) continue;
+
+            if (!ShortcutMethod.TryParse(method, out _, out var error))
+                problems.Add(error!);
+        }
+
+        return problems;
+    }
+
+    /// <summary>
     /// Whether a Core method opts out of generation with <c>[SkipGeneration]</c>.
     /// </summary>
     public static bool IsGenerationSkipped(MethodDeclarationSyntax method)

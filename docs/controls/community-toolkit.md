@@ -13,12 +13,12 @@ Microsoft.Maui.Controls 10.0.90, on Windows.
 | Toolkit view | Control | Namespace | Base |
 | --- | --- | --- | --- |
 | `Expander` | `Expander<TScope>` | `Brinell.Maui.CommunityToolkit.Controls.Views` | `ViewBase` |
-| `AvatarView` | `AvatarView<TScope>` | `...Controls.Views` | `ViewBase` |
+| `AvatarView` | `AvatarView<TScope>`, parts `AvatarInitials<TScope>`, `AvatarImage<TScope>` | `...Controls.Views` | `ComponentObjectBase` |
 | `RatingView` | `RatingView<TScope>` | `...Controls.Views` | `RangeControlBase` |
 | `DrawingView` | `DrawingView<TScope>` | `...Controls.Views` | `ViewBase` |
 | `Popup` | `Popup<TParent>` / `Popup<TParent, TSelf>` | `...Controls.Views` | `ContainerObjectBase` |
 | `StateContainer` | `StateContainer<TParent>` / `StateContainer<TParent, TSelf>` | `...Controls.Layouts` | `ContainerObjectBase` |
-| `MediaElement` | `MediaElement<TScope>` | `...Controls.Media` | `ViewBase` |
+| `MediaElement` | `MediaElement<TScope>` | `...Controls.Media` | `ComponentObjectBase` |
 
 `MediaElement` moved here from `Brinell.Maui.Controls.Media`, where it was an empty stub.
 
@@ -30,12 +30,12 @@ bridge only where none does.
 | Control | Public API | Route |
 | --- | --- | --- |
 | Expander | `IsExpanded`, `Expand`, `Collapse`, `Toggle`, `SetExpanded` | App sink: `Tap`, `GetState(IsExpanded)`. No pattern on the expander or its header. |
-| AvatarView | `GetText`, `IsShowingImage` | Tree: the child text or image element. |
+| AvatarView | `GetInitials` (+ `Empty`), `IsShowingImage`; parts `Initials`, `Image` | Tree: the child text or image element. The parts own the reads; the component forwards through shortcuts. No initials while an image is shown is an answer (null), not a wait. |
 | RatingView | `GetValue`/`SetValue` (rating), `GetMaximum`, `Increment`, `Decrement`, `TapStar`, `IsReadOnly` | App sink: `SelectIndex` (tap star *i*), `GetState(Rating, MaximumRating, IsReadOnly)`. No RangeValue. |
 | DrawingView | `DrawLine(dx, dy)`, `GetLineCount` | Not in the tree by id; resolved through the bridge declaration. App sink: `Pan` (one line), `GetState(LineCount)`. |
-| Popup | `IsOpen`, `WaitOpen`, `CloseWith(buttonId)`, plus scoped children | Tree: the popup is a modal page in the main window. Buttons answer Invoke. |
-| StateContainer | `IsShowing(id)`, `WaitShowing(id)`, `AssertShowing(id)` | Tree: the current state's view is the only child. |
-| MediaElement | `Play`, `Pause`, `SetPlaying`, `IsPlaying`, `GetProgress`, `GetDuration` | Tree: WinUI transport controls. Play/pause through Invoke, progress through the seek slider's RangeValue. |
+| Popup | `IsOpen`, `WaitOpen`, `CloseWith(buttonId)`, plus scoped children | Tree: the popup is a modal page in the main window. Buttons answer Invoke. `CloseWith` is two calls in sequence: press the button, then wait for the popup to go. |
+| StateContainer | `IsShowing(id)`, `WaitShowing(id)`, `AssertShowing(id)`, generated; ids only, no locators | Tree: the current state's view is the only child. A container that is absent shows nothing (false). |
+| MediaElement | `Play`, `Pause`, `Stop`, `SetPlaying`, `IsPlaying`, `WaitOpened`, `GetProgress` (+ `GreaterThan`/`AtLeast`), `GetElapsed`, `GetRemaining` (+ ordered comparisons), `GetDuration`; parts `PlayPauseButton` (`MediaPlayPauseButton`), `ProgressSlider`, `TimeElapsedLabel` / `TimeRemainingLabel` (`MediaTimeLabel`), and the other transport buttons | Tree: WinUI transport controls. Play/pause through Invoke, progress and seeking through the seek slider's RangeValue. The parts own the behaviour; the component forwards through generated shortcuts. `Play` waits for the media to open first; `Stop` pauses and seeks to 0, because the transport has no stop button. The component resolves its flattened transport children from its parent scope. |
 
 ### The app side
 
@@ -58,7 +58,7 @@ Expander, RatingView and DrawingView and adds no new verb numbers.
 | --- | --- | --- |
 | Snackbar | **No control.** `Show()` throws `InvalidOperationException`: an unpackaged app cannot enable it, and when enabled it is an OS notification outside the app's tree. | Not probed. |
 | Toast | **No control.** `Show()` throws `COMException` in an unpackaged app; uncaught in an `async void` handler it ends the process. | Not probed. |
-| MediaElement | The toolkit's `CurrentState` stays `Opening` and `StateChanged` never fires while playback started from the transport controls runs, so state is read from the transport instead. `IsPlaying` matches the English "Pause" button name. One media element per scope. `GetDuration` answers null while playing. | Transport controls publish no ids yet. |
+| MediaElement | The toolkit's `CurrentState` stays `Opening` and `StateChanged` never fires while playback started from the transport controls runs, so state is read from the transport instead. `IsPlaying` matches the English "Pause" button name. One media element per scope. `GetDuration`, `GetElapsed` and `GetRemaining` answer null while playing, and `WaitOpened` only answers while paused. The play/pause button is enabled before the media opens, and a press made then is dropped. | Transport controls publish no ids yet. |
 | Expander, RatingView, DrawingView | Need the app sink. | No state reads: `IsExpanded`, rating and line count answer null; gestures are touch input. |
 | DrawingView | A line is arranged through the sink, not drawn. A test of real strokes belongs on Android. | - |
 

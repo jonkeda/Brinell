@@ -19,6 +19,12 @@ public sealed class ControlObjectGenerator
     private readonly CodeFormatter _formatter = new();
 
     /// <summary>
+    /// Warnings from the last <see cref="Generate"/>: code that generates but breaks a rule the
+    /// generator cannot enforce by failing, such as a Core method that nests a unit of work.
+    /// </summary>
+    public IReadOnlyList<string> Warnings { get; private set; } = [];
+
+    /// <summary>
     /// Registers a member generator. Registration order matters: the first
     /// generator whose <c>Matches</c> returns true handles the Core method.
     /// </summary>
@@ -42,6 +48,8 @@ public sealed class ControlObjectGenerator
         if (_generators.Count == 0)
             throw new InvalidOperationException("At least one member generator must be registered.");
 
+        Warnings = [];
+
         var (classDecl, root) = _analyzer.FindTarget(sourceCode, options.TargetClassName);
 
         if (classDecl == null)
@@ -49,12 +57,18 @@ public sealed class ControlObjectGenerator
 
         // A near-miss Core method used to vanish silently; with [SkipGeneration] available to
         // declare a deliberate exclusion, an undeclared one is an error rather than a maybe.
-        var skipped = _analyzer.FindSilentlySkippedCoreMethods(classDecl);
+        var skipped = _analyzer.FindSilentlySkippedCoreMethods(classDecl)
+            .Concat(_analyzer.FindMalformedShortcuts(classDecl))
+            .ToList();
         if (skipped.Count > 0)
         {
             throw new InvalidOperationException(
                 $"In {classDecl.Identifier.Text}: " + string.Join(" ", skipped));
         }
+
+        Warnings = _analyzer.FindNestedUnitsOfWork(classDecl)
+            .Select(warning => $"In {classDecl.Identifier.Text}: {warning}")
+            .ToList();
 
         var context = _analyzer.BuildContext(classDecl, root);
 
@@ -125,10 +139,12 @@ public sealed class ControlObjectGenerator
     /// Creates a generator wired with the default member generators. Order matters:
     /// the Is/Wait/Assert family and the Set family are registered before the broader
     /// action family so <c>Is*Core</c>, <c>Get*Core</c>, and <c>Set*Core</c> are not
-    /// captured as plain actions.
+    /// captured as plain actions. Shortcuts end in <c>Shortcut</c>, not <c>Core</c>, so no
+    /// other generator claims them; they come first only to make that obvious.
     /// </summary>
     public static ControlObjectGenerator CreateDefault() =>
         new ControlObjectGenerator()
+            .Register(new ShortcutGenerator())
             .Register(new IsWaitAssertGenerator())
             .Register(new SetGenerator())
             .Register(new ActionGenerator());

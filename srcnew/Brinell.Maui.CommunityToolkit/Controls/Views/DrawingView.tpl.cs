@@ -1,5 +1,3 @@
-using Brinell.Core.Utilities;
-
 namespace Brinell.Maui.CommunityToolkit.Controls.Views;
 
 /// <summary>
@@ -115,14 +113,10 @@ public partial class DrawingView<TScope> : Brinell.Maui.Controls.Base.ViewBase<T
             return;
         }
 
-        if (!WaitHelper.WaitFor(
-                () => GetLineCountCore(element),
-                actual => actual > before,
-                timeoutMs: timeoutMs ?? DefaultTimeoutMs,
-                pollingIntervalMs: PollingIntervalMs))
+        if (!Until(() => GetLineCountCore(element), actual => actual > before, timeoutMs, out var lastError))
         {
             throw new TimeoutException(
-                $"DrawingView '{Locator.Value}' did not gain a line after the stroke.");
+                $"DrawingView '{Locator.Value}' did not gain a line after the stroke.", lastError);
         }
     }
 

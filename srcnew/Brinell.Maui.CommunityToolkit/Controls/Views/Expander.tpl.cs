@@ -1,5 +1,3 @@
-using Brinell.Core.Utilities;
-
 namespace Brinell.Maui.CommunityToolkit.Controls.Views;
 
 /// <summary>
@@ -113,14 +111,11 @@ public partial class Expander<TScope> : Brinell.Maui.Controls.Base.ViewBase<TSco
 
         ToggleCore(element, timeoutMs);
 
-        if (!WaitHelper.WaitFor(
-                () => IsExpandedCore(element),
-                actual => actual == expanded,
-                timeoutMs: timeoutMs ?? DefaultTimeoutMs,
-                pollingIntervalMs: PollingIntervalMs))
+        if (!Until(() => IsExpandedCore(element), actual => actual == expanded, timeoutMs, out var lastError))
         {
             throw new TimeoutException(
-                $"Expander '{Locator.Value}' did not become {(expanded.Value ? "expanded" : "collapsed")}.");
+                $"Expander '{Locator.Value}' did not become {(expanded.Value ? "expanded" : "collapsed")}.",
+                lastError);
         }
     }
 

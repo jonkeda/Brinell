@@ -83,6 +83,7 @@ if (inputFiles.Count == 0)
 
 var generator = BuildGenerator(members);
 int failed = 0;
+int warnings = 0;
 
 foreach (var inputFile in inputFiles)
 {
@@ -101,6 +102,12 @@ foreach (var inputFile in inputFiles)
 
         generator.GenerateToFile(inputFile, outputFile, options);
         Console.WriteLine($"Successfully generated: {outputFile}");
+
+        foreach (var warning in generator.Warnings)
+        {
+            warnings++;
+            Console.WriteLine($"Warning: {inputFile}: {warning}");
+        }
     }
     catch (InvalidOperationException ex)
     {
@@ -116,6 +123,11 @@ foreach (var inputFile in inputFiles)
         if (!string.IsNullOrEmpty(ex.StackTrace))
             Console.Error.WriteLine(ex.StackTrace);
     }
+}
+
+if (warnings > 0)
+{
+    Console.WriteLine($"{warnings} warning(s). Generation continued; see the lines starting 'Warning:'.");
 }
 
 if (failed > 0)

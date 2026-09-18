@@ -9,7 +9,7 @@ namespace Brinell.Maui.Controls.Dialogs;
 /// DisplayPromptAsync.
 /// </summary>
 /// <typeparam name="TParent">The parent scope type.</typeparam>
-public class ContentDialog<TParent> : ContainerObjectBase<TParent, ContentDialog<TParent>>
+public partial class ContentDialog<TParent> : ContainerObjectBase<TParent, ContentDialog<TParent>>
     where TParent : IMauiScope<TParent>
 {
     /// <summary>
@@ -31,6 +31,8 @@ public class ContentDialog<TParent> : ContainerObjectBase<TParent, ContentDialog
             ?? throw new ElementNotFoundException("No active content dialog was found.");
     }
 
+    #region Parts
+
     /// <summary>
     /// Finds a dialog button by visible text.
     /// </summary>
@@ -43,12 +45,17 @@ public class ContentDialog<TParent> : ContainerObjectBase<TParent, ContentDialog
     public Entry<ContentDialog<TParent>> PromptInput
         => new(this, Locator.ByControlType("entry"));
 
+    #endregion
+
+    #region Core Methods (Element-Aware, No Logging)
+
     /// <summary>
     /// The dialog's title, as the platform publishes it.
     /// </summary>
     /// <remarks>Read from the dialog's accessible name.</remarks>
+    /// <param name="element">The dialog root.</param>
     /// <returns>The title.</returns>
-    public string? GetTitle() => ContainerRoot.Name;
+    protected virtual string? GetTitleCore(IMauiElement? element) => element?.Name;
 
     /// <summary>
     /// The text on every button the dialog is offering.
@@ -57,25 +64,33 @@ public class ContentDialog<TParent> : ContainerObjectBase<TParent, ContentDialog
     /// Worth asserting on its own: a confirmation with the wrong buttons still passes a test that
     /// presses a button by name.
     /// </remarks>
+    /// <param name="element">The dialog root.</param>
     /// <returns>The button texts, in tree order.</returns>
-    public IReadOnlyList<string> GetButtonTexts()
-        => [.. FindElements(Locator.ByControlType("button"))
-            .Select(button => button.Name ?? string.Empty)];
+    [GenerateComparisons(Comparison.SequenceEquals | Comparison.HasItem | Comparison.Count)]
+    protected virtual IReadOnlyList<string>? GetButtonTextsCore(IMauiElement? element)
+        => element == null
+            ? null
+            : [.. element.FindElements(Locator.ByControlType("button"), 0)
+                .Select(button => button.Name ?? string.Empty)];
 
     /// <summary>
     /// The question the dialog is asking, as the app phrased it.
     /// </summary>
     /// <remarks>
-    /// Asked of the app rather than read from the dialog, so the app must report its alerts.
+    /// Asked of the app rather than read from the dialog, so the app must report its alerts. The
+    /// dialog root is still resolved first, so the question is read while the dialog is open.
     /// </remarks>
+    /// <param name="element">The dialog root.</param>
     /// <returns>The message.</returns>
     /// <exception cref="NotSupportedException">
     /// The app under test does not report its alerts.
     /// </exception>
-    public string GetMessage()
+    protected virtual string? GetMessageCore(IMauiElement? element)
         => Context.AppElement.ReadAlert()?.Message
            ?? throw new NotSupportedException(
                "The app under test does not report what its alerts ask. Raise them through "
                + "BrinellAlerts in the app - one line per call site - or assert on the title and "
                + "the buttons, which the platform publishes without any cooperation.");
+
+    #endregion
 }

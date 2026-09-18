@@ -38,6 +38,8 @@ public abstract partial class RangeControlBase<TScope> : FocusableControlBase<TS
     /// </summary>
     /// <param name="element">The pre-found element.</param>
     /// <returns>The current value, or null if element is null.</returns>
+    [GenerateComparisons(Comparison.Equals | Comparison.GreaterThan | Comparison.AtLeast
+        | Comparison.LessThan | Comparison.AtMost)]
     protected virtual double? GetValueCore(IMauiElement? element)
     {
         if (element == null) return null;

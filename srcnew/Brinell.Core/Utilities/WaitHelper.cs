@@ -101,6 +101,48 @@ public static class WaitHelper
     }
     
     /// <summary>
+    /// Wait for a value getter to return a value that matches the predicate, and report why the
+    /// last attempt failed when it never does.
+    /// </summary>
+    /// <remarks>
+    /// Unlike the overload without <paramref name="lastError"/>, a failing read is not lost: when
+    /// the wait times out, <paramref name="lastError"/> holds the exception the final attempt
+    /// threw, so the caller's message can say "not found" rather than only "did not happen".
+    /// It is null when the final attempt read a value that did not match.
+    /// </remarks>
+    /// <typeparam name="T">Type of value.</typeparam>
+    /// <param name="getValue">Function to get the current value.</param>
+    /// <param name="predicate">Predicate to check the value.</param>
+    /// <param name="timeoutMs">Maximum time to wait in milliseconds.</param>
+    /// <param name="pollingIntervalMs">Interval between checks in milliseconds.</param>
+    /// <param name="lastError">The final attempt's exception, or null.</param>
+    /// <returns>True if predicate became true, false if timeout.</returns>
+    public static bool WaitFor<T>(Func<T?> getValue, Func<T?, bool> predicate, int timeoutMs,
+        int pollingIntervalMs, out Exception? lastError)
+    {
+        var sw = Stopwatch.StartNew();
+
+        while (true)
+        {
+            try
+            {
+                lastError = null;
+                if (predicate(getValue()))
+                    return true;
+            }
+            catch (Exception ex)
+            {
+                lastError = ex;
+            }
+
+            if (sw.ElapsedMilliseconds >= timeoutMs)
+                return false;
+
+            Pause(pollingIntervalMs);
+        }
+    }
+
+    /// <summary>
     /// Wait for a value getter to return a non-null value.
     /// </summary>
     /// <typeparam name="T">Type of value.</typeparam>
