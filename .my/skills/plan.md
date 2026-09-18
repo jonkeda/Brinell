@@ -11,7 +11,11 @@ work without copying a neighbour blindly:
 
 Plus the framework changes that make rule 2 enforceable rather than advisory (section 6).
 
-Status: plan only. Nothing under `.claude/` or `srcnew/` has changed yet.
+Status (2026-09-18): steps 1-5 of section 7 done. The skills are in `.github/skills/`
+(`maui-control`, `maui-ui-test`, `convert-control`) with stubs in `.claude/skills/`;
+`AGENTS.md`, `.github/copilot-instructions.md`, `docs/guides/test-writing.md` and
+`control-source-builder.md` point at them. Step 6 (evaluation with fresh agents) and step 7
+(P1 - P4) are not started. No code under `srcnew/` changed.
 
 ## 1. Format: what "best these days" means here
 
@@ -80,7 +84,9 @@ relative to that folder.
 These are drafted from the code (`ViewBase.tpl.cs`, `ClickableControlBase.tpl.cs`,
 `ToggleControlBase.tpl.cs`, `ContainerObjectBase.cs`, `ComponentObjectBase.cs`,
 `CollectionObjectBase.cs`, `ItemContainerBase.cs`, `ItemStrategy.cs`, `Stepper.tpl.cs`,
-`Expander.tpl.cs`, `MediaElement.tpl.cs`), not copied from any one control. The skill
+`Expander.tpl.cs`, `ScrollView.tpl.cs`, `RefreshView.tpl.cs`, `Popup.tpl.cs`,
+`StateContainer.tpl.cs`, `MediaElement.tpl.cs`, `AvatarView.tpl.cs` and their parts), not
+copied from any one control. The skill
 states them as rules; a short example follows each, and the example never replaces the rule.
 
 ### 3.1 Choosing the kind (the first thing `SKILL.md` asks)
@@ -88,8 +94,8 @@ states them as rules; a short example follows each, and the example never replac
 | The thing on screen... | Kind | Base |
 | --- | --- | --- |
 | is one element to the test, even when the platform draws parts (Stepper's +/-), and its parts are implementation detail | **simple control** | `ViewBase<TScope>` or a capability base |
-| is a region that only scopes other controls and has no behaviour of its own | **container** | `ContainerObjectBase<TParent, TSelf>` |
-| is one control to the user but made of parts a test wants to address by name (MediaElement's transport buttons, slider, time labels) | **component** | `ComponentObjectBase<TScope, Foo<TScope>>` |
+| is a region whose content the *app* chooses, which scopes other controls and may read or act on its own root (Border, ScrollView, Popup, StateContainer) | **container** | `ContainerObjectBase<TParent, TSelf>` |
+| is one control to the user but made of fixed parts the *control* knows and a test wants to address by name (MediaElement's transport buttons, slider, time labels; AvatarView's initials and image) | **component** | `ComponentObjectBase<TScope, Foo<TScope>>` |
 | repeats rows whose children are controls (a row has a label, a checkbox, a delete button) | **collection** + item | `CollectionObjectBase<TParent, TSelf, TItem>` + `ItemContainerBase<TCollection, TSelf>` |
 
 Tie-breakers the skill spells out:
@@ -98,8 +104,12 @@ Tie-breakers the skill spells out:
   a collection.
 - If you would expose parts as public properties, it is a component. If you would only use
   them inside Core methods, it is a simple control with private part resolution (Stepper).
-- A container that gains behaviour (refresh, swipe, play) becomes a component, or implements
-  the capability interface (`IRefreshableControlObject`, `ISwipeableControlObject`).
+- Behaviour on the root alone does not make a container a component. A container declares
+  Core methods on its own root (`Popup.IsOpenCore`, `StateContainer.IsShowingCore`,
+  `ScrollView.ScrollForwardCore`) and implements capability interfaces
+  (`IRefreshableControlObject`, `ISwipeableControlObject`). It becomes a component when the
+  control itself names parts whose ids or shapes are fixed by the platform or library, not by
+  the app.
 
 ### 3.2 Rules common to every kind
 
@@ -212,55 +222,126 @@ exactly where they belong: the control exists so nothing above it touches them.
 
 ### 3.4 Container (`container.md`)
 
-- Framework container: open generic `Foo<TParent, TSelf> : ContainerObjectBase<TParent, TSelf>`
-  plus `public sealed class Foo<TParent> : Foo<TParent, Foo<TParent>>` for callers that need no
-  subclass. Both with the two constructors.
+- Framework container: `public partial class Foo<TParent, TSelf> : ContainerObjectBase<TParent,
+  TSelf>` in a `.tpl.cs`, plus `public sealed partial class Foo<TParent> : Foo<TParent,
+  Foo<TParent>>` for callers that need no subclass (a page declares
+  `public Popup<MyPage> TestPopup => new(this, "TestPopup")`). Both with the two public
+  constructors `(IMauiScope<TParent> parentScope, Locator locator)` and `(..., string
+  locatorValue)`. A container with no Core methods and no shortcuts may stay a plain `.cs` (R5).
+- The base already gives `IsExists`, `IsVisible`, `WaitExists`, `WaitVisible`,
+  `AssertExists`, `AssertVisible`, `GetAttribute`, `WaitReady`, and typed children:
+  `Child<TControl>(id)`, `Label(id)`, `Button(id)`, `Entry(id)`, `CheckBox(id)`. Do not
+  re-declare them.
+- **Core methods act on the container root.** Same contract as a control: `protected virtual
+  *Core(IMauiElement element, ...)`, where `element` is the root. The generator emits the
+  public members through the container's `Run*` helpers; actions and asserts return `TSelf`,
+  generated setters return the parent (`SetResult`). The caller leaves with `.Parent`.
+- A read that must answer for a missing container carries `[AbsenceTolerant]` and takes a
+  nullable root (`Popup.IsOpenCore(element) => element != null`,
+  `StateContainer.IsShowingCore(element, viewAutomationId)`).
+- A capability interface (`IRefreshableControlObject<TSelf>`) is implemented on the
+  container itself, with Core methods for whatever the base does not already supply
+  (`RefreshView.IsEnabledCore`, `PullToRefreshCore`).
+- Inside a Core method, wait with `Until(read, done, timeoutMs, out lastError)`; the container
+  base has it too (R2).
 - Scoping is strict: children resolve only under the root, never in the parent. This is the
   point of a container; do not add a fallback.
-- Members return `TSelf`; the caller leaves with `.Parent`. Generated setters return the
-  parent (`SetResult`).
+- **Root lookup overrides**, each with a remark giving the reason:
+  - `CacheContainerRoot => false` when the app rebuilds or replaces the root during a test
+    (Popup opens and closes; StateContainer swaps its children).
+  - `FindContainerRootElement()` when the root is not under the parent: Popup searches
+    `Context.AppElement`, because the toolkit shows it as a modal page. Throw
+    `ElementNotFoundException` naming the locator.
+  - A root that lives outside the raising page also answers `Page => null` and overrides
+    `IsParentReady`/`WaitParentReady` to `true`: waiting for the page underneath fails exactly
+    while the popup covers it.
 - Content that loads asynchronously: override `WaitContentReadyCore` and wait on a concrete
   state (spinner gone, count non-zero).
 - A container that scrolls answers `ScrollingRoot` with its own root (ScrollView). Otherwise
   inherit the parent's.
+- A member that needs a child and the root is hand-written as plain calls in sequence, with a
+  remark naming both (`Popup.CloseWith(id)`: `Button(id).Click()`, then `WaitOpen(false)` and
+  a `TimeoutException` naming the button). Same rule as R4.
 - Windows: layout views with no automation peer (ContentView, Border) are invisible to UI
   Automation until the app registers the Brinell handlers from `samples/Brinell.Maui.AppSupport`.
   Say so in the class remarks and check the sample registers it.
-- App-specific containers (in test projects) derive from `ContainerObjectBase` or from a
-  framework container, expose children as named properties
-  (`public Entry<ProductForm> Name => new(this, "ProductNameEntry")`), and compose domain
-  helpers from those children, returning `Self`.
+- App-specific containers (in test projects' `Containers/`) derive from `ContainerObjectBase`
+  or from a framework container, take `(IMauiScope<TPage> parentScope, string automationId)`,
+  expose children as named properties
+  (`public Entry<ProductFormContainer> NameEntry => new(this, "ProductNameEntry")`), nest
+  containers the same way (`public ProductOptionsContainer Options => new(this, ...)`), and
+  compose domain helpers from those children, returning `Self` (`FillProduct`).
 
 ### 3.5 Component (`component.md`)
 
-- `public partial class Foo<TScope> : ComponentObjectBase<TScope, Foo<TScope>>`. Same
-  constructors as a simple control, so a page declares it like one:
-  `public Foo<MyPage> Player => new(this, "Player")`.
-- Parts are named, typed child properties scoped to `this`:
-  `public Button<Foo<TScope>> PlayPause => new(this, "PlayPauseButton")`. Part ids are
-  `private const string`.
+- `public partial class Foo<TScope> : ComponentObjectBase<TScope, Foo<TScope>> where TScope :
+  IMauiScope<TScope>`, in a `.tpl.cs`. Two public constructors named `scope`, like a simple
+  control, so a page declares it like one:
+  `public MediaElement<MyPage> Player => new(this, "Player")`. It is a container underneath, so
+  everything in 3.4 applies (strict scoping, typed children, root overrides); it adds
+  `ActivityIndicator(id)` to the typed children.
+- **Parts** are named, typed properties scoped to `this`, in a `#region Parts` (or a region
+  named for the platform's term, `Transport Controls`):
+  `public MediaPlayPauseButton<MediaElement<TScope>> PlayPauseButton => new(this, PlayPauseButtonId)`.
+  Part ids are `private const string`. A part the platform publishes without an id is located
+  by a `private static readonly Locator` (`AvatarView`: `Locator.ByControlType("text")`); that
+  locator stays private (R6).
 - **Parts own the behaviour; the component forwards** (see
-  [component-operations-plan.md](component-operations-plan.md)). A part that needs more than
-  its base gets its own control class with element-first Core methods
-  (`MediaPlayPauseButton.IsPlayingCore(element)`), which read only their own element.
-- The component exposes part members through **shortcuts**:
-  `protected bool? IsPlayingShortcut() => PlayPauseButton.IsPlaying();`. The generator emits
-  the public trio as single calls on the part, with no wrapper. Rules: `protected`, not virtual,
-  expression-bodied, one `Part.Member(...)` call; `Is*` shortcuts call an `Is*` member, `Get*`
-  shortcuts a `Get*` member; `[GenerateComparisons]` on a `Get*` shortcut forwards those
-  variants.
-- A component Core method never calls another control's public member: that nests one unit of
-  work inside another (two readiness checks, two polls, timeouts that add up, swallowed errors).
-- Members that need two parts are hand-written as plain calls in sequence, with no `Run*`
-  wrapper, and a remark naming the parts and why no single part answers
-  (`MediaElement.Play`: wait for the remaining time's clock, then press).
+  [component-operations-plan.md](component-operations-plan.md)). A plain control type is used
+  where its members are enough (`Button`, `Slider`). A part that needs more gets its own
+  control class, derived from the nearest simple control and named `<Component><Part>`, in the
+  component's folder: `MediaPlayPauseButton : Button`, `MediaTimeLabel : Label`,
+  `AvatarInitials : Label`, `AvatarImage : Image`. Its element-first Core methods read and act
+  on its own element only (`MediaPlayPauseButton.SetPlayingCore` presses, then `Until` the
+  name changes). The part's class remarks name the component and say what it cannot see
+  ("this control cannot see the media's state, so the component waits first").
+- **Absence is the part's answer.** When "not shown" is a valid state (no image set, no
+  initials while an image shows), the part declares an `[AbsenceTolerant]` read
+  (`AvatarImage.IsShownCore(element) => element?.Visible == true`,
+  `AvatarInitials.GetInitialsCore`), because plain `IsVisible` answers null for a missing
+  element and `IsExists` may scroll the app and find another element. The component then
+  forwards to that read.
+- **Shortcuts**, in a `#region Shortcuts`, expose part members on the component:
+  `protected bool? IsPlayingShortcut() => PlayPauseButton.IsPlaying();`. Rules (checked by
+  `ControlObjectAnalyzer`; a malformed shortcut fails generation): name ends in `Shortcut`;
+  `protected`, not virtual; expression-bodied; exactly one `Part.Member(...)` call on a
+  property or field of the class. The public name drops `Shortcut`:
+  - `Is*` -> `IsX / WaitX / AssertX`, forwarding to the part's `Is*` trio.
+  - `Get*` -> `GetX / WaitX / AssertX`; `[GenerateComparisons(...)]` on the shortcut forwards
+    those variants, including the ordered ones (`GreaterThan`, `AtLeast`, `LessThan`,
+    `AtMost`).
+  - An action or setter returning the component is made public as is:
+    `protected MediaElement<TScope> PauseShortcut(int? timeoutMs = null) => PlayPauseButton.Pause(timeoutMs);`.
+    With a separate button per action no part class is needed:
+    `PlayShortcut(int? timeoutMs = null) => PlayButton.Click(timeoutMs)`.
+  The generated `Assert*` returns the component, which compiles only when the part is scoped
+  to `this`, so a mis-scoped part is a compile error.
+- A component with only shortcuts and hand-written members has no Core methods; that is the
+  target shape (MediaElement, AvatarView). A component Core method never calls another
+  control's public member: that nests one unit of work inside another (two readiness checks,
+  two polls, timeouts that add up, swallowed errors).
+- **Across two parts**, in a `#region Hand-written: across parts`, as plain calls in sequence,
+  with no `Run*` wrapper and a remark naming the parts and why no single part answers. In
+  order of preference: find one part that answers it (`WaitOpened` is
+  `TimeRemainingLabel.WaitSecondsAtLeast(0)`); hand-write a `Get` only
+  (`GetDuration` = elapsed + remaining, no generated `Wait`/`Assert` around it); hand-write
+  an action that waits on one part, then acts on another, and throws `TimeoutException`
+  naming what did not happen (`MediaElement.Play`: wait for the remaining time's clock, then
+  press). Null-skip and idempotence still hold (`SetPlaying(null)` returns, `Play` is a no-op
+  while playing).
 - Root resolution: the default is the parent's `FindElement(Locator)`. When the platform does
   not publish the root, override `FindContainerRootElement` with a documented stand-in (the
-  first part that proves the component is there), and throw naming every locator tried.
+  first part that proves the component is there, as Stepper's buttons stand in for Stepper),
+  and throw naming every locator tried and the app-side requirement
+  (`ShouldShowPlaybackControls`).
 - A platform that flattens the parts beside the root: override `TryFindElement`,
   `FindElement` and `FindElements` to delegate to `Parent`, with remarks giving the evidence
-  and the consequence (one component per scope). This is the only licence to break strict
-  scoping.
+  and the consequence (one component per scope; put each in its own container). This is the
+  only licence to break strict scoping. P2 changes these overrides from public to protected.
+- Class remarks record: the route per platform and that no bridge is used (or which verb is),
+  why the component reads what the user sees rather than app state when those disagree
+  (MediaElement's `CurrentState`, with the probe reference), and the limits (localized names,
+  missing buttons, platforms that publish nothing yet).
 
 ### 3.6 Collection (`collection.md`)
 

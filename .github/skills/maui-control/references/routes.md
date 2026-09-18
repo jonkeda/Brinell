@@ -1,0 +1,94 @@
+# Routes: how a control reaches the platform
+
+A route is how one member reads or acts on the app. Choose per member and per platform,
+in this order, and record the choice in the member's `<remarks>`.
+
+## 1. A UI Automation pattern, through `IMauiElement`
+
+The element in a Core method already exposes the patterns the platform publishes:
+
+| Need | `IMauiElement` member |
+| --- | --- |
+| press | `Invoke()` |
+| toggle / check | `Toggle()`, `SetChecked(bool)`, `Checked` |
+| select | `Select()`, `SelectIndex(i)`, `SelectByText(text)`, `SelectedItemText` |
+| text value | `Value`, `IsReadOnly`, `Text`, `AppendText(text)` |
+| range | `RangeValue`, `RangeMinimum`, `RangeMaximum`, `RangeSmallChange`, `SetRangeValue(v)` |
+| dropdown | `IsDropdownOpen`, `OpenDropdown()`, `CloseDropdown()`, `ReadDropdownItemTexts()` |
+| list items | `ReadItemTexts()`, `PositionInSet`, `SizeOfSet` |
+| scrolling | `ScrollContent(...)`, `ScrollTo(id)`, `ScrollToIndex(i)`, `ReadScrollPosition()`; `ScrollHelper` for container steps |
+| name, state | `Name`, `Visible`, `Enabled`, `GetAttribute(name)` |
+
+A property that answers `null` means the platform does not publish it. Pass the null on;
+never substitute a guess.
+
+## 2. An existing bridge verb
+
+Where UI Automation has no pattern for the action, the app publishes a gesture bridge
+(AD-008): verbs declared per element in markup with `GestureAutomation.Verbs` from
+`Brinell.Maui.AppSupport`.
+
+| Need | Member |
+| --- | --- |
+| a gesture (tap, swipe, pinch, long press) | `element.PerformGesture(MauiGesture.X)` |
+| state the tree does not show | `Context.AppElement.TryFindDeclared(id)?.ReadState(property)` |
+| date, time | `SetDate(date)`, `SetTime(time)` |
+| Shell flyout, toolbar | `OpenFlyout()`, `CloseFlyout()`, `InvokeToolbarItem(id)` |
+
+- Parse state read with `ReadState` using `CultureInfo.InvariantCulture`. A malformed
+  value throws, naming the property and the text; it does not return null.
+- Name the verbs the app must declare in the class `<remarks>`
+  (the app declares `uia:GestureAutomation.Verbs="Tap,GetState"`).
+
+## 3. A new bridge verb, only after AD-008's three tests
+
+Answer each in writing, in the plan or the PR, before adding a verb:
+
+1. **Is it blocked?** If a real pattern (`Invoke`, `Toggle`, `Value`, `SelectionItem`,
+   `RangeValue`, `Scroll`, `ExpandCollapse`) already answers it, it stays there.
+2. **Is the physical path the thing under test?** A test that asserts typing fires
+   `TextChanged` must type; that test runs on the mobile head only.
+3. **Does it stay a UI test?** Read what the user can see. If the assertion needs the view
+   model, the coverage belongs in `Brinell.Maui.Tests`.
+
+A verb that fails any test is not added. The member throws instead (below).
+
+Adding a verb also means: classify it (read, element action, app action), add it to the
+sample app's markup, and run tier 2b (`--filter "Stage=Background"`).
+
+## Never
+
+- **Coordinates.** No clicking at a point, no offsets from a bounding box.
+- **Physical input on MAUI Windows** (AD-005): no pointer movement, typing, clipboard or
+  foreground. There is no switch to turn it on.
+- **`Thread.Sleep` or `Task.Delay`** to let something happen. Wait for concrete state
+  with `Until`.
+- **Reading the view model** to answer a UI question.
+
+## When there is no route
+
+Throw `NotSupportedException` (or `GestureUnavailableException` for a gesture) naming the
+route the app would have to offer: the pattern, the verb, the handler, the sink. Do not
+fall back to something that works on one machine.
+
+Do not add a member the platform cannot answer at all; say so in a comment where a reader
+would look for it:
+
+```csharp
+// No SelectionMode or MultiSelectEnabled: neither platform publishes them to automation.
+```
+
+## Platform evidence
+
+Routes differ per platform. Every claim in `<remarks>` is measured, not assumed:
+
+- **Windows** (FlaUI, UI Automation): the control type, the patterns, the children, the
+  AutomationId. Layouts with no automation peer (`ContentView`, `Border`) publish nothing
+  until the app registers the Brinell automation handlers from
+  `samples/Brinell.Maui.AppSupport`.
+- **Android** (Appium, UiAutomator2): the class, `resource-id`, `content-desc`, what touch
+  does. Physical input is allowed here, injected by Appium inside the device.
+
+Write it as evidence: "Windows: no ExpandCollapse pattern; the app declares `Tap,GetState`.
+Android: touch; no state read, so IsExpanded is null." Date a probe when behaviour depends
+on a library version ("probed 2026-09-18, toolkit 10.0.0").

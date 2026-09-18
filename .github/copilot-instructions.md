@@ -13,6 +13,13 @@ These instructions apply to the Brinell submodule.
 
 Use [AGENTS.md](../AGENTS.md) as the local entry point.
 
+## Skills
+
+Task workflows live in [skills/](skills/): `maui-control` (create a MAUI ControlObject),
+`maui-ui-test` (write MAUI UI tests and page objects) and `convert-control` (convert a
+control to the generator format). Before one of those tasks, read its `SKILL.md` and the
+reference it points to; if your tool does not load skills, open them directly.
+
 ## Build And Test
 
 Commands are from the Brinell root.

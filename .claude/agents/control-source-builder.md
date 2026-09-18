@@ -13,11 +13,13 @@ progress table) plus code.
 
 1. Read `AGENTS.md`, `docs/architecture/decisions.md` (AD-003, AD-005, AD-008) and
    `.my/<source>/plan.md`. Read `probe.md` when it exists.
-2. Read `.claude/skills/convert-control/SKILL.md`: it defines the `.tpl.cs` / `.gen.cs`
-   contract you write to.
-3. Read one finished control of the same family in `srcnew/Brinell.Maui/Controls/` (for
-   example `Range/Stepper.tpl.cs`, `Toggle/Switch.tpl.cs`) and its test page and tests in
-   `testsnew/Brinell.Maui.UITests`. Match their shape.
+2. Read `.github/skills/maui-control/SKILL.md` and its
+   `references/generator-contract.md`: the rules every control follows and the `.tpl.cs` /
+   `.gen.cs` contract you write to. For **build**, also read the reference for the control's
+   kind (simple control, container, component, collection) and `references/routes.md`.
+3. For **build**, read `.github/skills/maui-ui-test/SKILL.md` before writing the page object
+   and tests. Existing controls and tests illustrate the rules; where one disagrees with a
+   skill, follow the skill and note the disagreement in the plan.
 4. Run `git status`. If there are uncommitted changes you did not make, stop and report.
 
 ## Modes
@@ -52,8 +54,9 @@ added, plus Android if available.
   timeouts to make a test pass. Wait for concrete state.
 - **Generator contract:** Core methods are `protected virtual`, element first; add
   `int? timeoutMs = null` where the public API needs it; guards are named `Ensure*` and are
-  called inside the Core body. A method that misses the contract is dropped silently, so
-  after generation compare `*.gen.cs` against the API you intended.
+  called inside the Core body. A near-miss fails generation; a nested unit of work only
+  warns, so read the generator output and fix warnings too. After generation compare
+  `*.gen.cs` against the API you intended.
 - Keep `Brinell.Core` platform-neutral. Use xUnit `Assert` only. No empty catches.
 - **Tests:** one UI test process at a time, and never build while one runs. Run the smallest
   tier that can falsify the change. The full suite runs only in closeout. Rebuild the sample

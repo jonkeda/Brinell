@@ -30,6 +30,35 @@ archive, not the active source of truth.
 - Exact.Construction, `.cnv2`, or sibling conversion references are optional and
   task-specific; do not require missing files for normal Brinell work.
 
+## Skills
+
+Task workflows live in `.github/skills/` (Claude Code reads them through stubs in
+`.claude/skills/`):
+
+- [maui-control](.github/skills/maui-control/SKILL.md) - create or extend a MAUI
+  ControlObject: simple control, container, component, or collection.
+- [maui-ui-test](.github/skills/maui-ui-test/SKILL.md) - write MAUI UI tests and page
+  objects.
+- [convert-control](.github/skills/convert-control/SKILL.md) - convert a hand-written
+  control to the `.tpl.cs` / `.gen.cs` format.
+
+Read the matching skill before doing that task.
+
+## Never In Tests
+
+In tests, page objects' public members, app containers and test helpers - even for a quick
+fix:
+
+- no `Context.Driver` or other `IMauiDriver` member;
+- no `IMauiElement` variables, parameters, returns or members;
+- no `FindElement` / `FindElements` / `TryFindElement`, `ContainerRoot`, `AppElement` or
+  `TryGetItemRoot`;
+- no `Locator` construction in a test method.
+
+Use or add a page-object or control member instead. The reasons and the one exception
+(driver and bridge framework tests) are in
+[forbidden-apis.md](.github/skills/maui-ui-test/references/forbidden-apis.md).
+
 ## Core Rules
 
 - Build tests through Brinell page objects and ControlObjects.
