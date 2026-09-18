@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+    CommunityToolkit.Maui alerts: Popup, Snackbar and Toast.
+
+    None of these is declared in the page's markup - each is raised by a button - so this view
+    supplies the buttons and a label recording the outcome, the same shape as DialogsView.
+-->
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Brinell.Samples.Maui.App.Views2.TestViews.CommunityToolkitAlertsView"
+             BackgroundColor="{AppThemeBinding Light=White, Dark=#1F1F1F}">
+
+    <ScrollView AutomationId="CommunityToolkitAlertsRootScroll">
+        <VerticalStackLayout Padding="20" Spacing="15">
+
+            <Label AutomationId="PageTitle"
+                   Text="Community Toolkit Alerts"
+                   FontSize="24"
+                   FontAttributes="Bold" />
+
+            <Label x:Name="AlertResult"
+                   AutomationId="AlertResultLabel"
+                   Text="none" />
+
+            <Label Text="Popup" FontSize="16" FontAttributes="Bold" />
+            <Button AutomationId="ShowPopupButton"
+                    Text="Show popup"
+                    Clicked="OnShowPopup" />
+
+            <Label Text="Snackbar" FontSize="16" FontAttributes="Bold" />
+            <Button AutomationId="ShowSnackbarButton"
+                    Text="Show snackbar"
+                    Clicked="OnShowSnackbar" />
+
+            <Label Text="Toast" FontSize="16" FontAttributes="Bold" />
+            <Button AutomationId="ShowToastButton"
+                    Text="Show toast"
+                    Clicked="OnShowToast" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentView>

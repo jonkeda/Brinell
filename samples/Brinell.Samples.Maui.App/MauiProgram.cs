@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using CommunityToolkit.Maui;
 using Microsoft.Maui.Controls.Hosting;
 
@@ -25,6 +25,9 @@ public static class MauiProgram
         builder
             .UseMauiApp<App>()
             .UseMauiCommunityToolkit()
+            // MediaElement is its own package and its own registration. No Android foreground
+            // service: the sample plays a local clip only while its page is open.
+            .UseMauiCommunityToolkitMediaElement(isAndroidForegroundServiceEnabled: false, static _ => { })
             .ConfigureMauiHandlers(handlers =>
             {
 #if WINDOWS

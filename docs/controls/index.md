@@ -39,6 +39,8 @@ Controls should not:
 - Shared interfaces: `srcnew/Brinell.Core/Interfaces`
 - Locators: `srcnew/Brinell.Core/Locators`
 - MAUI controls: `srcnew/Brinell.Maui/Controls`
+- CommunityToolkit.Maui controls: `srcnew/Brinell.Maui.CommunityToolkit/Controls` - see
+  [CommunityToolkit.Maui Controls](community-toolkit.md)
 - WPF/WinForms controls: `srcnew/Brinell.Wpf`, `srcnew/Brinell.WinForms`
 - Web controls: `srcnew/Brinell.Html`, `srcnew/Brinell.Html.Playwright`
 

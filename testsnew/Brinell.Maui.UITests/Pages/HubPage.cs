@@ -27,7 +27,10 @@ public enum SamplePage
     Navigation,
     Scroll,
     Gestures,
-    AutomationProbe
+    AutomationProbe,
+    CommunityToolkit,
+    CommunityToolkitAlerts,
+    CommunityToolkitMedia
 }
 
 /// <summary>

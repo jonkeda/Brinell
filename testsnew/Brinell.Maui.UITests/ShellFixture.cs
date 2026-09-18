@@ -1,3 +1,4 @@
+using Brinell.Core.Utilities;
 using Brinell.Maui.Configuration;
 using Brinell.Maui.Enums;
 using Brinell.Maui.Testing;
@@ -71,9 +72,17 @@ public class ShellFixture : MauiTestFixtureBase
 
         // Then pop whatever a previous test pushed. Only the Detail tab can push, so its
         // sub-page marker is the whole question.
+        //
+        // Each pop is waited out before asking again. A pop animates: on Android the sub-page stays
+        // in the tree for a moment after its back button is pressed, and without the wait the next
+        // pass saw it still "pushed" and pressed a button that had already gone.
         for (var pop = 0; pop < MaxPops && _page.IsSubPagePushed(); pop++)
         {
             _page.SubPageBackButton.Click();
+            WaitHelper.WaitFor(
+                () => !_page.IsSubPagePushed(),
+                TestConstants.ShortTestTimeoutMs,
+                Context.Timeouts.PollingInterval);
         }
 
         // A flyout item that is not the tabbed section has no tabs, so a test that ended on one

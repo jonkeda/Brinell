@@ -24,6 +24,7 @@ rebuilt.
 
 - [Control Object Index](controls/index.md)
 - [Core Interfaces](controls/interfaces.md)
+- [CommunityToolkit.Maui Controls](controls/community-toolkit.md)
 
 ## Guides
 

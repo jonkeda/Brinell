@@ -1100,38 +1100,78 @@ public sealed class AppiumMauiElement : IMauiElement
     private const int ChromeFindTimeoutMs = 5000;
 
     /// <inheritdoc />
-    /// <remarks>Taps the drawer's opener, which Android names by its content description.</remarks>
+    /// <remarks>
+    /// Taps the drawer's opener, which Android names by its content description, and waits for the
+    /// drawer's items. A no-op when the drawer is already open - which matters, because the opener
+    /// renames itself while the drawer is open, so a second tap has nothing to find.
+    /// </remarks>
     public void OpenFlyout()
     {
         RequireApp(nameof(OpenFlyout));
         RequireAndroid("the flyout opener");
 
+        if (IsFlyoutOpen == true)
+        {
+            return;
+        }
+
         _driver.FindElement(Locator.ByAccessibilityId("Open navigation drawer"), ChromeFindTimeoutMs).Click();
+        WaitForFlyout(open: true);
     }
 
     /// <inheritdoc />
     /// <remarks>
     /// Back, which is how Android's drawer is dismissed. Its opener changes its content description
-    /// once open, so it is not a handle for closing.
+    /// once open, so it is not a handle for closing. A no-op when the drawer is shut: back there
+    /// would leave the page instead.
     /// </remarks>
     public void CloseFlyout()
     {
         RequireApp(nameof(CloseFlyout));
         RequireAndroid("dismissing the flyout");
 
+        if (IsFlyoutOpen != true)
+        {
+            return;
+        }
+
         _driver.Driver.Navigate().Back();
+        WaitForFlyout(open: false);
     }
 
     /// <inheritdoc />
-    /// <remarks>Null: nothing on this platform reports it, and the caller counts the drawer's items.</remarks>
+    /// <remarks>
+    /// Android: whether the drawer's items are in the tree. They leave it entirely while the drawer
+    /// is shut, so their presence is the drawer's state. Other platforms: null.
+    /// </remarks>
     public bool? IsFlyoutOpen
     {
         get
         {
             RequireApp(nameof(IsFlyoutOpen));
-            return null;
+
+            return _driver.Platform == MauiPlatform.Android
+                ? _driver.FindElements(_driver.ShellChrome.FlyoutHost).Count > 0
+                : null;
         }
     }
+
+    /// <summary>Waits for the drawer to finish opening or closing, bounded by the chrome timeout.</summary>
+    private void WaitForFlyout(bool open)
+    {
+        if (!WaitHelper.WaitFor(
+                () => IsFlyoutOpen,
+                state => state == open,
+                timeoutMs: ChromeFindTimeoutMs,
+                pollingIntervalMs: FlyoutPollIntervalMs))
+        {
+            throw new BrinellException(
+                $"The flyout did not {(open ? "open" : "close")} within {ChromeFindTimeoutMs} ms.");
+        }
+    }
+
+    /// <summary>How often the drawer's state is asked while it animates.</summary>
+    private const int FlyoutPollIntervalMs = 100;
 
     /// <inheritdoc />
     /// <remarks>Null: there is no app-side alert report on this platform yet.</remarks>

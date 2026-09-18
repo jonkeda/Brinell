@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+    CommunityToolkit.Maui MediaElement, on a page of its own so opening the other toolkit pages
+    never pays for loading media.
+
+    The clip is a six-second tone embedded as a raw asset, so playback needs no network.
+
+    No verbs: on Windows the transport controls are in the tree and answer Invoke, and their
+    elapsed and remaining times are text. There is deliberately no label echoing CurrentState -
+    on Windows the toolkit leaves it at Opening while the player plays (probe.md).
+-->
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             x:Class="Brinell.Samples.Maui.App.Views2.TestViews.CommunityToolkitMediaView"
+             BackgroundColor="{AppThemeBinding Light=White, Dark=#1F1F1F}">
+
+    <VerticalStackLayout Padding="20" Spacing="15">
+
+        <Label AutomationId="PageTitle"
+               Text="Community Toolkit Media"
+               FontSize="24"
+               FontAttributes="Bold" />
+
+        <toolkit:MediaElement AutomationId="TestMediaElement"
+                              Source="embed://tone.wav"
+                              ShouldAutoPlay="False"
+                              ShouldShowPlaybackControls="True"
+                              HeightRequest="120" />
+
+    </VerticalStackLayout>
+</ContentView>

@@ -57,5 +57,14 @@ public enum SamplePage
     Gestures,
 
     /// <summary>Phase 0 probe measuring which layouts expose their AutomationId.</summary>
-    AutomationProbe
+    AutomationProbe,
+
+    /// <summary>CommunityToolkit.Maui views: Expander, AvatarView, RatingView, DrawingView, StateContainer.</summary>
+    CommunityToolkit,
+
+    /// <summary>CommunityToolkit.Maui alerts: Popup, Snackbar and Toast.</summary>
+    CommunityToolkitAlerts,
+
+    /// <summary>CommunityToolkit.Maui MediaElement.</summary>
+    CommunityToolkitMedia
 }

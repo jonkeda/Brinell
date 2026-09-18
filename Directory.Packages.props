@@ -28,9 +28,10 @@
     <!-- Appium for MAUI/Mobile -->
     <PackageVersion Include="Appium.WebDriver" Version="8.3.2" />
     <!-- MAUI -->
-    <PackageVersion Include="Microsoft.Maui.Controls" Version="10.0.71" />
+    <PackageVersion Include="Microsoft.Maui.Controls" Version="10.0.90" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Debug" Version="10.0.9" />
-    <PackageVersion Include="CommunityToolkit.Maui" Version="9.0.0" />
+    <PackageVersion Include="CommunityToolkit.Maui" Version="15.0.1" />
+    <PackageVersion Include="CommunityToolkit.Maui.MediaElement" Version="10.0.0" />
     <!-- WireMock for API mocking -->
     <PackageVersion Include="WireMock.Net" Version="2.15.0" />
     <!-- Source Link -->

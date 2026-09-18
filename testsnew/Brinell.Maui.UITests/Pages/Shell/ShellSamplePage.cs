@@ -28,13 +28,32 @@ public class ShellSamplePage : PageObjectBase<ShellSamplePage>
     public override string Name => "AppShell";
 
     /// <summary>
-    /// The shell is up once its tab strip is there.
+    /// The shell is up once it shows either its tab strip or a flyout item's page.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// A plain lookup, never a scrolling one: a readiness check that scrolls turns "not ready
     /// yet" into a sweep of the whole page. The rule from the Android performance work.
+    /// </para>
+    /// <para>
+    /// <b>Not the tab strip alone.</b> A flyout item without tabs shows none on Android (Windows
+    /// keeps an empty host), so on those pages the Shell never counted as loaded, every lookup
+    /// scoped under it was refused, and the fixture could not open the flyout to leave -
+    /// <c>.my/navigation/rca-android-return-to-hub.md</c>.
+    /// </para>
     /// </remarks>
-    public override bool IsLoaded(int? timeoutMs = null) => Shell.Tabs.IsExists();
+    public override bool IsLoaded(int? timeoutMs = null)
+        => Shell.Tabs.IsExists()
+           || Context.TryFindElement(Locator.ByAutomationId("ShellFlyoutPageTitle")) != null;
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Not cached. On Android the Shell's view element goes stale when its content is replaced -
+    /// a tab reselected, a page pushed - while still passing the cache's validity check, and
+    /// lookups under it then find nothing: <c>ShellDetailSubBackButton</c> "not found within
+    /// container" while the button was on screen. Finding the root each time is one lookup by id.
+    /// </remarks>
+    protected override bool CacheContainerRoot => false;
 
     /// <summary>The shell's tabs and flyout.</summary>
     public Shell<ShellSamplePage> Shell { get; }

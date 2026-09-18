@@ -207,6 +207,26 @@ public class MauiFixture : MauiTestFixtureBase
         // whichever test navigated next.
         _hub.InvalidateCache();
 
+        // "At the root" is a reading of what is on screen, and something can be over the hub that
+        // does not look like a pushed page: on Android a CommunityToolkit popup is a modal page
+        // with no toolbar, so nothing reports a way back while it covers the hub. When the hub is
+        // not here after all, one more back dismisses that - and cannot leave the hub, because a
+        // hub that was showing would have satisfied the wait above.
+        if (!_hub.WaitLoaded(true, TestConstants.ShortTestTimeoutMs))
+        {
+            try
+            {
+                Context.Driver.NavigateBack();
+                attempts.Add("the hub was covered, so went back once more");
+            }
+            catch (BrinellException failure)
+            {
+                attempts.Add($"nothing to go back from: {failure.Message}");
+            }
+
+            _hub.InvalidateCache();
+        }
+
         if (!_hub.WaitLoaded(true, TestConstants.ShortTestTimeoutMs))
         {
             throw new InvalidOperationException(

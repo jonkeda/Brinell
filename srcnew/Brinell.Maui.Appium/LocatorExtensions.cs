@@ -70,6 +70,12 @@ internal static class LocatorExtensions
             // class of its Button ancestor, which is what a class-name match sees.
             (MauiPlatform.Android, "button") => "android.widget.Button",
             (MauiPlatform.iOS, "button") => "XCUIElementTypeButton",
+            // Display text and images, as Windows reads "text" (ControlType.Text) and "image". A
+            // MAUI Label renders as a TextView and an Image as an ImageView.
+            (MauiPlatform.Android, "text") => "android.widget.TextView",
+            (MauiPlatform.iOS, "text") => "XCUIElementTypeStaticText",
+            (MauiPlatform.Android, "image") => "android.widget.ImageView",
+            (MauiPlatform.iOS, "image") => "XCUIElementTypeImage",
             _ => throw new ArgumentOutOfRangeException(
                 nameof(controlType), controlType,
                 $"Control type '{controlType}' is not supported on {platform}.")

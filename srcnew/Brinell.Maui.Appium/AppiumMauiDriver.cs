@@ -133,24 +133,33 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable
     /// <para>
     /// Android renders Shell's tabs as a bottom navigation bar whose items are frame layouts
     /// carrying the tab's title as their content description - the only frame layouts on the page
-    /// that carry one, which is what makes the locator exact rather than merely plausible. Nothing
-    /// names a host above them, so both searches are rooted at the app's content frame.
+    /// that carry one, which is what makes the locator exact rather than merely plausible.
     /// </para>
     /// <para>
-    /// The drawer's items are view groups carrying their title as a content description, and they
-    /// leave the tree entirely while the drawer is shut. iOS has not been mapped and throws.
+    /// <b>The hosts are found beneath the Shell, never above it.</b> They are looked up in the
+    /// page's scope, whose root is the Shell's own view (the <c>DrawerLayout</c>, once the app
+    /// publishes its id), and a scope only searches down. They used to be <c>android:id/content</c>,
+    /// the frame <i>above</i> the Shell, which no scoped lookup can reach: every tab and flyout
+    /// collection reported zero items. Each host is named by what it holds, as measured on the
+    /// device - see <c>.my/navigation/rca-android-return-to-hub.md</c>.
+    /// </para>
+    /// <para>
+    /// The drawer's items are view groups carrying their title as a content description, inside
+    /// the drawer's recycler view, and they leave the tree entirely while the drawer is shut. iOS
+    /// has not been mapped and throws.
     /// </para>
     /// </remarks>
     public ShellChromeLocators ShellChrome => _platform == MauiPlatform.Android
         ? AndroidShellChrome
         : throw new PlatformNotSupportedException(
             $"Shell chrome on {_platform} has not been mapped. Dump the tree and add it to "
-            + $"{nameof(AppiumMauiDriver)} - see .my/navigation/design-shell-sample-app.md.");
+            + $"{nameof(AppiumMauiDriver)}.");
 
     private static readonly ShellChromeLocators AndroidShellChrome = new(
-        TabHost: Locator.ById("android:id/content"),
+        TabHost: Locator.ByXPath("//android.view.ViewGroup[android.widget.FrameLayout[@content-desc!='']]"),
         Tab: Locator.ByXPath("//android.widget.FrameLayout[@content-desc!='']"),
-        FlyoutHost: Locator.ById("android:id/content"),
+        FlyoutHost: Locator.ByXPath(
+            "//androidx.recyclerview.widget.RecyclerView[.//android.view.ViewGroup[@content-desc!='']]"),
         FlyoutItem: Locator.ByXPath("//android.view.ViewGroup[@content-desc!='']"));
 
     /// <summary>The hierarchy's root node, for the app element's members that need a node.</summary>
@@ -232,7 +241,46 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable
     public void NavigateTo(string destination) => _driver.Navigate().GoToUrl(destination);
     
     /// <inheritdoc />
+    /// <remarks>
+    /// <b>Sends back whatever <see cref="IsAtNavigationRoot"/> thinks.</b> That answer reads the
+    /// toolbar, and not everything above the first page has one: an Android modal page - a
+    /// CommunityToolkit popup, say - covers the app and reports no way back. Refusing here on that
+    /// reading was tried and blocked the one press that dismisses such a page, so the judgement
+    /// stays with the caller, which can see what it expected to be on screen.
+    /// See <c>.my/navigation/rca-android-return-to-hub.md</c>.
+    /// </remarks>
     public void NavigateBack() => _driver.Navigate().Back();
+
+    /// <summary>
+    /// The toolbar's up button, which a <c>NavigationPage</c> shows on every page above its root.
+    /// </summary>
+    /// <remarks>
+    /// Android's English content description (<c>abc_action_bar_up_description</c>); a device in
+    /// another language shows a translated one.
+    /// </remarks>
+    private static readonly By AndroidNavigateUp =
+        By.XPath("//android.widget.ImageButton[@content-desc='Navigate up']");
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// <para>
+    /// Android: true when the toolbar shows no "Navigate up" button. Without this override the
+    /// interface default answered true on every page, so <c>MauiFixture</c> never went back and every
+    /// test after the first failed to reach the hub.
+    /// </para>
+    /// <para>
+    /// iOS keeps the default: its navigation bar has not been mapped.
+    /// </para>
+    /// </remarks>
+    public bool IsAtNavigationRoot()
+        => _platform != MauiPlatform.Android || _driver.FindElements(AndroidNavigateUp).Count == 0;
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// A lower bound on Android: 1 at the root, otherwise 2. The toolbar shows whether there is a
+    /// page to go back to, not how many; to unwind several, loop on <see cref="IsAtNavigationRoot"/>.
+    /// </remarks>
+    public int NavigationDepth() => IsAtNavigationRoot() ? 1 : 2;
     
     /// <inheritdoc />
     public void Refresh() => _driver.Navigate().Refresh();

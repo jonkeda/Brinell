@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `Brinell.Maui.CommunityToolkit` control objects for CommunityToolkit.Maui: `Expander`,
+  `AvatarView`, `RatingView`, `DrawingView`, `Popup`, `StateContainer` and `MediaElement`, each
+  with a sample page section and Windows UI tests. Routes and platform gaps are in
+  `docs/controls/community-toolkit.md`.
+- Sample app `ToolkitVerbSink`: answers bridge verbs for toolkit views that AppSupport cannot know.
 - Initial release of Brinell UI testing framework
 - `Brinell.Core` - Core abstractions and interfaces
   - `IDriverAdapter` and `IElementAdapter` for platform abstraction
@@ -40,6 +45,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Request/response recording
 
 ### Changed
+- `CommunityToolkit.Maui` 9.0.0 -> 15.0.1 and `Microsoft.Maui.Controls` -> 10.0.90 (required by the
+  toolkit). Added `CommunityToolkit.Maui.MediaElement` 10.0.0.
+- `Brinell.Maui.CommunityToolkit` no longer references CommunityToolkit.Maui, is centrally
+  versioned, and is in `srcnew/Brinell.sln`. `CreateMaui.Bat` generates its controls too.
+- `MediaElement<TScope>` moved from `Brinell.Maui.Controls.Media` to
+  `Brinell.Maui.CommunityToolkit.Controls.Media`.
 - Migrated from Oravey.UITestFramework namespace
 
 ### Fixed

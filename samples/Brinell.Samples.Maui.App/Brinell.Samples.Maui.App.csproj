@@ -52,6 +52,7 @@
     <PackageReference Include="Microsoft.Maui.Controls" />
     <PackageReference Include="Microsoft.Extensions.Logging.Debug" />
     <PackageReference Include="CommunityToolkit.Maui" />
+    <PackageReference Include="CommunityToolkit.Maui.MediaElement" />
   </ItemGroup>
 
   <ItemGroup>
