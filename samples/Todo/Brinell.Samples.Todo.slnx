@@ -1,0 +1,18 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Brinell.Samples.Todo.Api/Brinell.Samples.Todo.Api.csproj" />
+    <Project Path="src/Brinell.Samples.Todo.App/Brinell.Samples.Todo.App.csproj" />
+    <Project Path="src/Brinell.Samples.Todo.Contracts/Brinell.Samples.Todo.Contracts.csproj" />
+    <Project Path="src/Brinell.Samples.Todo.Core/Brinell.Samples.Todo.Core.csproj" />
+    <Project Path="src/Brinell.Samples.Todo.Infrastructure/Brinell.Samples.Todo.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Brinell.Samples.Todo.IntegrationTests/Brinell.Samples.Todo.IntegrationTests.csproj" />
+    <Project Path="tests/Brinell.Samples.Todo.TestSupport/Brinell.Samples.Todo.TestSupport.csproj" />
+    <Project Path="tests/Brinell.Samples.Todo.UnitTests/Brinell.Samples.Todo.UnitTests.csproj" />
+  </Folder>
+  <Project Path="../../srcnew/Brinell.Core/Brinell.Core.csproj" />
+  <Project Path="../../srcnew/Brinell.Mocking/Brinell.Mocking.csproj" />
+  <Project Path="../Brinell.Maui.AppSupport/Brinell.Maui.AppSupport.csproj" />
+  <Project Path="../Brinell.Samples.Shared/Brinell.Samples.Shared.csproj" />
+</Solution>

@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <TargetFrameworks>net10.0</TargetFrameworks>
     <RootNamespace>Brinell.Mocking</RootNamespace>
     <Description>API mocking infrastructure for UI tests. Provides WireMock-based mock servers for simulating backend services during testing.</Description>
     <PackageId>Brinell.Mocking</PackageId>

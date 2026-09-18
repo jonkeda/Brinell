@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+    The list. Ids are the contract with the page objects: see .my/TodoApp/plan.md, section 2.
+
+    TodoList_State is a CommunityToolkit StateContainer. Its default content is the list; the
+    Loading, Empty and Error views each carry their own AutomationId, which is how Brinell's
+    StateContainer control tells which one is showing.
+-->
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             xmlns:vm="clr-namespace:Brinell.Samples.Todo.Core.ViewModels;assembly=Brinell.Samples.Todo.Core"
+             xmlns:views="clr-namespace:Brinell.Samples.Todo.App.Views"
+             x:Class="Brinell.Samples.Todo.App.Pages.TodoListPage"
+             x:DataType="vm:TodoListViewModel"
+             AutomationId="TodoListPage"
+             Title="Todos">
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Sync" AutomationId="TodoList_Sync" Command="{Binding SyncCommand}" />
+        <ToolbarItem Text="Add" AutomationId="TodoList_Add" Command="{Binding AddCommand}" />
+    </ContentPage.ToolbarItems>
+
+    <Grid RowDefinitions="Auto,*" Padding="16" RowSpacing="12">
+
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+            <Picker AutomationId="TodoList_Filter"
+                    Title="Show"
+                    ItemsSource="{Binding FilterNames}"
+                    SelectedIndex="{Binding FilterIndex}" />
+            <Label Grid.Column="1"
+                   AutomationId="TodoList_LastSync"
+                   Text="{Binding SyncLine}"
+                   VerticalOptions="Center" />
+        </Grid>
+
+        <Grid Grid.Row="1"
+              AutomationId="TodoList_State"
+              toolkit:StateContainer.CurrentState="{Binding StateKey}">
+
+            <toolkit:StateContainer.StateViews>
+                <VerticalStackLayout toolkit:StateView.StateKey="Loading"
+                                     AutomationId="TodoList_Loading"
+                                     Spacing="8"
+                                     VerticalOptions="Center">
+                    <ActivityIndicator IsRunning="True" />
+                    <Label Text="Loading…" HorizontalOptions="Center" />
+                </VerticalStackLayout>
+
+                <VerticalStackLayout toolkit:StateView.StateKey="Empty"
+                                     AutomationId="TodoList_Empty"
+                                     VerticalOptions="Center">
+                    <Label AutomationId="TodoList_EmptyLabel"
+                           Text="Nothing to do"
+                           HorizontalOptions="Center" />
+                </VerticalStackLayout>
+
+                <VerticalStackLayout toolkit:StateView.StateKey="Error"
+                                     AutomationId="TodoList_Error"
+                                     Spacing="12"
+                                     VerticalOptions="Center">
+                    <Label AutomationId="TodoList_ErrorLabel"
+                           Text="{Binding ErrorMessage}"
+                           HorizontalTextAlignment="Center" />
+                    <Button AutomationId="TodoList_Retry"
+                            Text="Retry"
+                            Command="{Binding RetryCommand}"
+                            HorizontalOptions="Center" />
+                </VerticalStackLayout>
+            </toolkit:StateContainer.StateViews>
+
+            <CollectionView AutomationId="TodoList_Items"
+                            ItemsSource="{Binding Items}"
+                            SelectionMode="Single"
+                            SelectedItem="{Binding SelectedItem}">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="vm:TodoRowViewModel">
+                        <!-- Every row uses the same ids; item scoping keeps them apart. -->
+                        <Grid AutomationId="TodoRow"
+                              Padding="8"
+                              ColumnDefinitions="*,Auto,Auto,16"
+                              ColumnSpacing="12">
+                            <Label AutomationId="TodoRow_Title"
+                                   Text="{Binding Title}"
+                                   VerticalOptions="Center" />
+                            <Label Grid.Column="1"
+                                   AutomationId="TodoRow_Due"
+                                   Text="{Binding DueText}"
+                                   VerticalOptions="Center" />
+                            <views:TodoStatusView Grid.Column="2"
+                                                  AutomationId="TodoRow_Status"
+                                                  Status="{Binding Status, Mode=OneWay}"
+                                                  IsPastDue="{Binding IsPastDue}"
+                                                  IsReadOnly="True" />
+                            <Label Grid.Column="3"
+                                   AutomationId="TodoRow_Pending"
+                                   Text="●"
+                                   SemanticProperties.Description="Not synced yet"
+                                   IsVisible="{Binding IsPending}"
+                                   VerticalOptions="Center" />
+                        </Grid>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </Grid>
+    </Grid>
+</ContentPage>

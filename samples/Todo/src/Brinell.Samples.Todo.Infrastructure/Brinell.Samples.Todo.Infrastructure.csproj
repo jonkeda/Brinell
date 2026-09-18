@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Brinell.Samples.Todo.Infrastructure</RootNamespace>
+    <Description>SQLite storage, the HTTP API client, sync, launch settings and the DI composition the app and the integration tests share.</Description>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Brinell.Samples.Todo.Core\Brinell.Samples.Todo.Core.csproj" />
+    <ProjectReference Include="..\Brinell.Samples.Todo.Contracts\Brinell.Samples.Todo.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>
