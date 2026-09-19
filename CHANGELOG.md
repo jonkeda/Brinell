@@ -35,7 +35,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Collections: `ItemKey` on every row (`IMauiItemObject.Key`), `IItemStrategy.HasStableIds`,
   `timeoutMs` on `Item(int)`, `FindItem` and `ItemWhere`.
 - Near-miss warnings: a call that passed after three or more replacements, or after using more
-  than half its budget, logs `LogResult.Warning`. `BRINELL_CALL_LOG` (a folder) makes
+  than half its budget, logs `LogResult.Warning`. The thresholds are settings:
+  `MauiTestContextOptions.NearMiss` (`NearMissSettings`), read through `IMauiTestContext.NearMiss`. `BRINELL_CALL_LOG` (a folder) makes
   `MauiTestContext` write every call to CSV.
 - `tools/Scripts/repeat-run.ps1`: runs a test project N times and summarizes failures by test.
 - AD-009 (app bugs stay failures) and AD-010 (MAUI ahead of Core, on purpose).
@@ -111,7 +112,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `WaitForItems` run on one budget (`DefaultWait` unless given), and a long list needs a
   budget to match.
 - A row is found again by its item key, and reports `ItemChanged` instead of answering for
-  another item.
+  another item. This covers a row's own members (`Click`, `GetText`) as well as the controls inside
+  it: a cached row element that now holds another item is not used.
+- `SelectItem` finds the row by polling, then activates it once. Only an activation that reports
+  "nothing activated" is asked again; any exception ends the call.
+- `IMauiElement.ScrollIntoView(int timeoutMs)` has no default. Every scroll inside a call gets what
+  is left of the call's budget (`CallRemainingMs` on controls and scopes), and Appium's Android
+  scroll makes at least one step. `ScrollHelper.ScrollIntoView` takes a budget, and
+  `ScrollView.ScrollTo` is one call.
+- A call whose attempts all raised an unexpected exception fails with `WaitTimeoutException`,
+  naming the exception type and how many attempts raised it, with the exception as
+  `InnerException`. A single attempt still throws the exception itself.
+- The FlaUI driver raises `AppUnavailableException` when a bridge verb, a state read or a gesture
+  found no target because the launched app has exited, instead of "not ready" or "unavailable".
+- `IMauiElementScope.DescribeMiss(locator)` builds a scope's "not found" message without
+  looking again; a control's `NotFound()` uses it.
+- `IsExists()` / `IsVisible()` on containers and pages answer now and take no timeout;
+  `GetItemCount()`, `IsEmpty()` and `TrySelectItem(index)` lose their unused timeouts.
 - `AppRoot` no longer scrolls to look for a control; Shell's flyout still does, within itself.
 - `IsExists()` / `IsVisible()` on a control read the element only; they no longer consult the
   page.
@@ -134,7 +151,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `WaitContentReadyCore` (use `ProbeContentReadiness`), `IsReady(int?)` (now `IsReady()`), the
   page's `EnsureLoaded`, both `Until` implementations (use `Confirm`), `RunPoll`,
   `WaitVisibleCore`, `EnsureVisible(element, timeout)` and `doEnsureVisible`, and the virtual
-  `ViewBase.FindElement()` (override `TryFindElement()` and `NotFound()`).
+  `ViewBase.FindElement()` (override `TryFindElement()` and `NotFound()`), and
+  `ObjectBase.Poll`.
 - `PageReadinessSnapshot` from the MAUI page contract.
 
 ### Fixed

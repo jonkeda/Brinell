@@ -30,4 +30,10 @@ public class MauiTestContextOptions
     /// If null, a no-op logger will be used.
     /// </summary>
     public ITestLogger? Logger { get; init; }
+
+    /// <summary>
+    /// When a successful call is still logged as a near-miss. If null,
+    /// <see cref="NearMissSettings.Default"/>.
+    /// </summary>
+    public NearMissSettings? NearMiss { get; init; }
 }

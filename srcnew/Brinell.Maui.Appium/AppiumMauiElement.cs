@@ -503,7 +503,7 @@ public sealed class AppiumMauiElement : IMauiElement
     });
     
     /// <inheritdoc />
-    public void ScrollIntoView(int timeoutMs = 5000) => Live(() =>
+    public void ScrollIntoView(int timeoutMs) => Live(() =>
     {
         // Check if element is already visible
         try
@@ -552,7 +552,9 @@ public sealed class AppiumMauiElement : IMauiElement
                 { "percent", 0.7 }
             };
             
-            while (DateTime.UtcNow - startTime < timeout)
+            // At least one step, even on a spent budget: the caller's poll decides whether to try
+            // again, and a zero budget must not mean "never scrolls".
+            do
             {
                 try
                 {
@@ -581,6 +583,7 @@ public sealed class AppiumMauiElement : IMauiElement
                     break;
                 }
             }
+            while (DateTime.UtcNow - startTime < timeout);
         }
         catch (Exception error) when (!AppiumErrors.IsGone(error))
         {

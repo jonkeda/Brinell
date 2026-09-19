@@ -95,7 +95,10 @@ public class MediaElementTests
   Never raise one to hide a flake.
 - What a failure means: `ScopeNotReadyException` - a page, container or row never became
   ready (it names which, and what it saw); `ElementNotReadyException` - found, but disabled or
-  not visible; `StaleElementException` - replaced after an action that ran once. A near-miss
+  not visible; `StaleElementException` - replaced after an action that ran once;
+  `WaitTimeoutException` naming an exception type and "N of M attempts raised it" - every
+  attempt threw something unexpected (the real exception is its `InnerException`);
+  `AppUnavailableException` - the app exited or the session was lost, reported at once. A near-miss
   warning in the call log means the call passed only after trouble; set `BRINELL_CALL_LOG` to a
   folder to write every call to CSV.
 

@@ -73,6 +73,8 @@ public class StaleReadinessPinTests : SemanticControlTestsBase
 
         public PinRows Rows => new(this, "Rows");
 
+        public PinClickRows ClickRows => new(this, "Rows");
+
         public SlowContainer Slow => new(this, "Slow");
     }
 
@@ -97,6 +99,17 @@ public class StaleReadinessPinTests : SemanticControlTestsBase
     {
         public Label<PinRow> Name => new(this, "RowName");
     }
+
+    /// <summary>Rows with members of their own (clicked, read), not only children.</summary>
+    private sealed class PinClickRows(IMauiScope<PinPage> scope, string automationId)
+        : CollectionObjectBase<PinPage, PinClickRows, PinClickRow>(
+            scope,
+            automationId,
+            ItemStrategy.ByLocator(Locator.ByControlType("ListItem")),
+            (collection, itemRoot, index) => new PinClickRow(collection, itemRoot, index));
+
+    private sealed class PinClickRow(PinClickRows collection, IMauiElement itemRoot, int index)
+        : ClickableItemBase<PinClickRows, PinClickRow>(collection, itemRoot, index);
 
     /// <summary>A container whose content becomes ready only after a few checks.</summary>
     private sealed class SlowContainer(IMauiScope<PinPage> parentScope, string locatorValue)
@@ -444,6 +457,104 @@ public class StaleReadinessPinTests : SemanticControlTestsBase
     }
 
     /// <summary>
+    /// (Q7, review) A row's own member - not only a control inside it - reads its own item after
+    /// the list recycled the element it had already used for another item.
+    /// </summary>
+    [Fact]
+    [Trait("Pin", "review")]
+    public void Row_OwnRead_FindsItsItemAgain_WhenItsElementIsRecycled()
+    {
+        var (row, second, _) = GivenRecycledClickRow();
+
+        Assert.Equal("Item 1 (moved)", row.GetText(timeoutMs: 500));
+        Assert.Equal("Item 7", second.Object.Text);
+    }
+
+    /// <summary>
+    /// (Q7, R0, review) A row's own action never lands on the item now shown in its old element.
+    /// </summary>
+    [Fact]
+    [Trait("Pin", "review")]
+    public void Row_OwnClick_ActsOnItsOwnItem_WhenItsElementIsRecycled()
+    {
+        var (row, second, moved) = GivenRecycledClickRow();
+
+        row.Click(timeoutMs: 500);
+
+        moved.Verify(e => e.Invoke(), Times.Once);
+        second.Verify(e => e.Invoke(), Times.Never);
+    }
+
+    /// <summary>
+    /// A clickable row that has used its element once, after which the list recycles that element
+    /// for item 7 and shows item 1 in a new element.
+    /// </summary>
+    private (PinClickRow Row, Mock<IMauiElement> Recycled, Mock<IMauiElement> Moved) GivenRecycledClickRow()
+    {
+        var first = ClickRow("Item 0", () => 1);
+        var secondPosition = 2;
+        var secondText = "Item 1";
+        var second = ClickRow("Item 1", () => secondPosition);
+        second.Setup(e => e.Text).Returns(() => secondText);
+        _rows.AddRange([first.Object, second.Object]);
+
+        var row = NewPage().ClickRows.Item(1);
+        Assert.Equal("Item 1", row.GetText(timeoutMs: 500));
+
+        secondPosition = 8;
+        secondText = "Item 7";
+        var moved = ClickRow("Item 1 (moved)", () => 2);
+        _rows.Add(moved.Object);
+
+        return (row, second, moved);
+    }
+
+    private static Mock<IMauiElement> ClickRow(string text, Func<int> positionInSet)
+    {
+        var row = Row("Row", text);
+        row.Setup(e => e.Text).Returns(text);
+        row.Setup(e => e.PositionInSet).Returns(positionInSet);
+        return row;
+    }
+
+    /// <summary>
+    /// (R0, review) <c>SelectItem</c> activates once: a failure after the activation - here the
+    /// row turning stale - ends the call instead of activating again.
+    /// </summary>
+    [Fact]
+    [Trait("Pin", "review")]
+    public void SelectItem_FailureAfterActivating_IsNotRepeated()
+    {
+        var row = Row("Row_A", "A");
+        row.Setup(e => e.Select()).Throws(new StaleElementException());
+        _rows.Add(row.Object);
+
+        Assert.ThrowsAny<Exception>(() => NewPage().Rows.SelectItem(0, timeoutMs: 500));
+
+        row.Verify(e => e.Select(), Times.Once);
+    }
+
+    /// <summary>
+    /// (Step 8, kept) <c>SelectItem</c> asks again while the platform answers that it activated
+    /// nothing (a row without a size yet), and succeeds once it does.
+    /// </summary>
+    [Fact]
+    [Trait("Pin", "review")]
+    public void SelectItem_NothingActivatedYet_IsAskedAgainWithinTheBudget()
+    {
+        var reads = 0;
+        var row = Row("Row_A", "A");
+        row.Setup(e => e.Rect).Returns(() => ++reads < 6
+            ? System.Drawing.Rectangle.Empty
+            : new System.Drawing.Rectangle(0, 0, 300, 40));
+        _rows.Add(row.Object);
+
+        NewPage().Rows.SelectItem(0, timeoutMs: 1000);
+
+        row.Verify(e => e.Select(), Times.Once);
+    }
+
+    /// <summary>
     /// (D1) ScrollToItem honours the caller's budget. Fails today: each scroll step that jumps
     /// waits up to DefaultWait for the list to settle, whatever the caller asked for.
     /// </summary>
@@ -475,6 +586,81 @@ public class StaleReadinessPinTests : SemanticControlTestsBase
         var item = NewPage().Rows.Item(0);
 
         Assert.Equal("A", item.Name.GetText());
+    }
+
+    /// <summary>
+    /// (R2, R3, review) A scroll below a call gets what is left of the call's budget, never a
+    /// default of its own.
+    /// </summary>
+    [Fact]
+    [Trait("Pin", "review")]
+    public void ScrollIntoView_IsGivenTheCallsRemainingBudget()
+    {
+        var element = Element();
+        GivenTarget(() => element.Object);
+        var given = new List<int>();
+        element.Setup(e => e.ScrollIntoView(It.IsAny<int>())).Callback<int>(given.Add);
+
+        NewPage().Target.ScrollIntoView();
+
+        var budget = Assert.Single(given);
+        Assert.InRange(budget, 1, 1000);
+    }
+
+    /// <summary>(R2, R3, review) A row scrolled into view by a collection call gets the call's budget.</summary>
+    [Fact]
+    [Trait("Pin", "review")]
+    public void ScrollToTop_ScrollsTheFirstRowWithinTheCallsBudget()
+    {
+        var row = Row("Row_A", "A");
+        var given = new List<int>();
+        row.Setup(e => e.ScrollIntoView(It.IsAny<int>())).Callback<int>(given.Add);
+        _rows.Add(row.Object);
+
+        NewPage().Rows.ScrollToTop(timeoutMs: 300);
+
+        Assert.NotEmpty(given);
+        Assert.All(given, budget => Assert.InRange(budget, 0, 300));
+    }
+
+    /// <summary>
+    /// (Design 2.1, review) An unexpected exception on every attempt fails the call naming its type
+    /// and how many attempts raised it, with the exception itself inside.
+    /// </summary>
+    [Fact]
+    [Trait("Pin", "review")]
+    public void UnexpectedException_OnEveryAttempt_IsNamedWithItsCount()
+    {
+        var element = Element();
+        element.Setup(e => e.Text).Throws(new InvalidOperationException("the platform refused"));
+        GivenTarget(() => element.Object);
+
+        var error = Assert.Throws<WaitTimeoutException>(() => NewPage().Status.GetText(timeoutMs: 200));
+
+        Assert.IsType<InvalidOperationException>(error.InnerException);
+        Assert.Matches(@"\d+ of \d+ attempts raised InvalidOperationException", error.Message);
+        Assert.Contains("the platform refused", error.Message);
+    }
+
+    /// <summary>(X5, review) The near-miss thresholds come from the context's settings.</summary>
+    [Fact]
+    [Trait("Pin", "review")]
+    public void NearMiss_ThresholdsComeFromTheContext()
+    {
+        Context.Setup(c => c.NearMiss).Returns(new NearMissSettings(Replacements: 1, BudgetShare: 1.0));
+        var reads = 0;
+        var first = Element(text: "first");
+        first.Setup(e => e.InstanceKey).Returns("1");
+        first.Setup(e => e.Visible).Returns(false);
+        var second = Element(text: "second");
+        second.Setup(e => e.InstanceKey).Returns("2");
+        GivenTarget(() => ++reads == 1 ? first.Object : second.Object);
+
+        Assert.Equal("second", NewPage().Status.GetText(timeoutMs: 1000));
+
+        _logger.Verify(l => l.LogExit(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
+            It.IsAny<string>(), LogResult.Warning, It.IsAny<int>(), It.Is<string?>(m => m!.StartsWith("near-miss"))),
+            Times.Once);
     }
 
     #endregion

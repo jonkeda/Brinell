@@ -1,3 +1,5 @@
+using Brinell.Maui.Context;
+
 namespace Brinell.Maui.Calls;
 
 /// <summary>
@@ -11,31 +13,27 @@ namespace Brinell.Maui.Calls;
 /// </para>
 /// <para>
 /// A call that succeeds only after trouble is still reported (R0): when the phase's attempts saw
-/// the element replaced <see cref="NearMissReplacements"/> times or more, or used more than
-/// <see cref="NearMissBudgetShare"/> of the budget, the exit is logged as
+/// the element replaced <see cref="NearMissSettings.Replacements"/> times or more, or used more
+/// than <see cref="NearMissSettings.BudgetShare"/> of the budget, the exit is logged as
 /// <see cref="LogResult.Warning"/> with a "near-miss:" summary. A UI that keeps re-rendering, or a
 /// page slow to become idle, then shows up in the log although the test passed.
 /// </para>
 /// </remarks>
 internal sealed class ControlCall
 {
-    /// <summary>Replacements at or above which a successful call is a near-miss (X5).</summary>
-    public const int NearMissReplacements = 3;
-
-    /// <summary>The share of the budget above which a successful call is a near-miss (X5).</summary>
-    public const double NearMissBudgetShare = 0.5;
-
     private const string TestName = "Test";
 
     private readonly ITestLogger? _logger;
     private readonly string _pageName;
     private readonly string _controlId;
+    private readonly NearMissSettings _nearMiss;
 
-    public ControlCall(ITestLogger? logger, string pageName, string controlId)
+    public ControlCall(IMauiTestContext context, string pageName, string controlId)
     {
-        _logger = logger;
+        _logger = context.Logger;
         _pageName = pageName;
         _controlId = controlId;
+        _nearMiss = context.NearMiss ?? NearMissSettings.Default;
     }
 
     /// <summary>
@@ -60,6 +58,8 @@ internal sealed class ControlCall
         var context = new AttemptContext(Deadline.In(budgetMs), animationMs);
         _logger?.LogEntry(TestName, _pageName, _controlId, caller, value);
 
+        var outer = AttemptContext.Current;
+        AttemptContext.Current = context;
         T result;
         try
         {
@@ -70,6 +70,10 @@ internal sealed class ControlCall
             _logger?.LogExit(TestName, _pageName, _controlId, caller,
                 LogResult.Error, (int)clock.ElapsedMilliseconds, error.Message);
             throw;
+        }
+        finally
+        {
+            AttemptContext.Current = outer;
         }
 
         var elapsed = (int)clock.ElapsedMilliseconds;
@@ -91,9 +95,9 @@ internal sealed class ControlCall
         return result;
     }
 
-    private static bool IsNearMiss(AttemptContext context)
+    private bool IsNearMiss(AttemptContext context)
     {
-        if (context.Log.Replacements >= NearMissReplacements)
+        if (context.Log.Replacements >= _nearMiss.Replacements)
         {
             return true;
         }
@@ -102,6 +106,6 @@ internal sealed class ControlCall
         var budget = context.Deadline.BudgetMs;
         return budget > 0
                && context.Log.Attempts > 1
-               && context.Log.LastAtMs > budget * NearMissBudgetShare;
+               && context.Log.LastAtMs > budget * _nearMiss.BudgetShare;
     }
 }

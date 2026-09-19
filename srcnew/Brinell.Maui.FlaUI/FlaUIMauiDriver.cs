@@ -216,6 +216,26 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
 
     #region Element Finding
 
+    /// <summary>
+    /// Asks the app's bridge: the first published target that answers <paramref name="verb"/>.
+    /// </summary>
+    /// <remarks>
+    /// The bridge lookup walks the tree and treats a target it cannot read as "not there". When
+    /// nothing answered because the launched app has exited, that is not "not ready yet", which a
+    /// call would wait out; it is <see cref="AppUnavailableException"/>, which ends the call at once
+    /// (R0).
+    /// </remarks>
+    private Bridge.BridgeVerbResult Exchange(BrinellVerb verb, string argument = "")
+    {
+        var answer = Bridge.BridgeVerbRunner.ExchangeAnywhere(RootElement, Automation, verb, argument);
+        if (!answer.Delivered && AppHasExited)
+        {
+            throw new AppUnavailableException("the application process has exited.");
+        }
+
+        return answer;
+    }
+
     /// <inheritdoc />
     public IReadOnlyList<IMauiElement> FindElements(Locator locator)
     {
@@ -462,14 +482,30 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// The app publishes no bridge, the element was not declared, or the verb was refused.
     /// </exception>
     public void PerformGesture(string automationId, MauiGesture gesture)
-        => GestureRunner.Perform(RootElement, Automation, automationId, gesture);
+        => WhileTheAppRuns(() => GestureRunner.Perform(RootElement, Automation, automationId, gesture));
 
     /// <inheritdoc />
     /// <exception cref="Bridge.GestureUnavailableException">
     /// The app publishes no bridge, the element was not declared, or the verb was refused.
     /// </exception>
     public void PerformGesture(string automationId, MauiGesture gesture, int arg1, int arg2)
-        => GestureRunner.Perform(RootElement, Automation, automationId, gesture, arg1, arg2);
+        => WhileTheAppRuns(() => GestureRunner.Perform(RootElement, Automation, automationId, gesture, arg1, arg2));
+
+    /// <summary>
+    /// Runs a bridge gesture; a gesture that found no target because the app has exited is
+    /// <see cref="AppUnavailableException"/>, not "unavailable" (see <see cref="Exchange"/>).
+    /// </summary>
+    private void WhileTheAppRuns(Action gesture)
+    {
+        try
+        {
+            gesture();
+        }
+        catch (Bridge.GestureUnavailableException error) when (AppHasExited)
+        {
+            throw new AppUnavailableException("the application process has exited.", error);
+        }
+    }
 
     /// <summary>Whether the bridge target with this id declares GetState.</summary>
     internal bool SupportsStateReads(string automationId)
@@ -481,6 +517,11 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     {
         var answer = BridgeVerbRunner.Send(
             RootElement, Automation, automationId, BrinellVerb.GetState, property);
+
+        if (!answer.Delivered && AppHasExited)
+        {
+            throw new AppUnavailableException("the application process has exited.");
+        }
 
         if (!answer.Delivered)
         {
@@ -558,10 +599,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// <inheritdoc />
     public bool IsIdle(int timeoutMs = 2000)
     {
-        var answer = Bridge.BridgeVerbRunner.ExchangeAnywhere(
-            RootElement,
-            Automation,
-            BrinellVerb.IsIdle,
+        var answer = Exchange(BrinellVerb.IsIdle,
             timeoutMs.ToString(System.Globalization.CultureInfo.InvariantCulture));
 
         if (!answer.Delivered)
@@ -599,8 +637,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
 
         while (true)
         {
-            answer = Bridge.BridgeVerbRunner.ExchangeAnywhere(
-                RootElement, Automation, BrinellVerb.GetState, "NavigationDepth");
+            answer = Exchange(BrinellVerb.GetState, "NavigationDepth");
 
             if (answer.Delivered
                 && int.TryParse(
@@ -734,8 +771,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// </remarks>
     public void NavigateTo(string destination)
     {
-        var result = Bridge.BridgeVerbRunner.ExchangeAnywhere(
-            RootElement, Automation, BrinellVerb.NavigateTo, destination);
+        var result = Exchange(BrinellVerb.NavigateTo, destination);
 
         if (!result.Delivered)
         {
@@ -755,8 +791,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// </remarks>
     public string CurrentRoute()
     {
-        var result = Bridge.BridgeVerbRunner.ExchangeAnywhere(
-            RootElement, Automation, BrinellVerb.CurrentRoute);
+        var result = Exchange(BrinellVerb.CurrentRoute);
 
         if (!result.Delivered)
         {
@@ -799,8 +834,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// <inheritdoc />
     public void InvokeMenuItem(string automationId)
     {
-        var answer = Bridge.BridgeVerbRunner.ExchangeAnywhere(
-            RootElement, Automation, BrinellVerb.InvokeMenuItem, automationId);
+        var answer = Exchange(BrinellVerb.InvokeMenuItem, automationId);
 
         // The outcome is in the payload, not in the HRESULT, and that is not a style choice.
         // A success HRESULT does not survive UI Automation's custom-pattern marshalling: the app
@@ -852,8 +886,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// </remarks>
     internal void InvokeToolbarItem(string automationId)
     {
-        var answer = Bridge.BridgeVerbRunner.ExchangeAnywhere(
-            RootElement, Automation, BrinellVerb.InvokeToolbarItem, automationId);
+        var answer = Exchange(BrinellVerb.InvokeToolbarItem, automationId);
 
         // In the payload, as for menu items: a success HRESULT cannot say "found it, declined".
         if (answer.Delivered)
@@ -956,8 +989,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// <summary>Whether the Shell's flyout is showing, as the app reports it.</summary>
     internal bool IsFlyoutOpen()
     {
-        var answer = Bridge.BridgeVerbRunner.ExchangeAnywhere(
-            RootElement, Automation, BrinellVerb.GetState, "FlyoutIsPresented");
+        var answer = Exchange(BrinellVerb.GetState, "FlyoutIsPresented");
 
         if (!answer.Delivered)
         {
@@ -993,8 +1025,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
             return null;
         }
 
-        var answer = Bridge.BridgeVerbRunner.ExchangeAnywhere(
-            RootElement, Automation, BrinellVerb.CurrentAlert);
+        var answer = Exchange(BrinellVerb.CurrentAlert);
 
         if (!answer.Delivered
             || !AlertPayload.TryParse(

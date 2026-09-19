@@ -66,7 +66,7 @@ public interface IMauiCollectionObject<TParent, TSelf, TItem>
     TItem? TryItem(int index);
 
     /// <summary>How many items are materialized now.</summary>
-    int GetItemCount(int? timeoutMs = null);
+    int GetItemCount();
 
     /// <summary>The materialized items.</summary>
     IEnumerable<TItem> Items { get; }

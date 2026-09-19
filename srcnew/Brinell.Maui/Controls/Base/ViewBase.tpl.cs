@@ -82,13 +82,18 @@ public abstract partial class ViewBase<TScope> : IElementObject<TScope>
 
     private string PageName => Page?.GetType().Name ?? "Unknown";
     private string ControlId => Locator.Value;
-    private ITestLogger? Logger => Context.Logger;
 
-    private ControlCall Call => new(Logger, PageName, ControlId);
+    private ControlCall Call => new(Context, PageName, ControlId);
 
     private int Budget(int? timeoutMs) => timeoutMs ?? DefaultTimeoutMs;
 
     private int AnimationMs => Context.Timeouts.Animation;
+
+    /// <summary>
+    /// What is left of the running call's budget, for a wait below the call (a scroll); the
+    /// default wait outside a call. Nothing inside a call starts a budget of its own (R2, R3).
+    /// </summary>
+    protected int CallRemainingMs => AttemptContext.RemainingOr(DefaultTimeoutMs);
 
     /// <summary>The failure of a phase that ran out of budget, from what it last saw.</summary>
     private Exception Failure(AttemptContext attempt, string caller, int budgetMs)
@@ -720,23 +725,13 @@ public abstract partial class ViewBase<TScope> : IElementObject<TScope>
     /// The error for a control that could not be found.
     /// </summary>
     /// <remarks>
-    /// By default the scope's own reason ("not loaded", "not within the container"), asked for
-    /// once, at the moment of failure. A control whose <see cref="TryFindElement()"/> looks in more
-    /// than one place overrides this to say where it looked.
+    /// By default the scope's own words ("not found within the container"), from
+    /// <see cref="IMauiElementScope.DescribeMiss"/>, which builds the message without looking
+    /// again. A control whose <see cref="TryFindElement()"/> looks in more than one place overrides
+    /// this to say where it looked.
     /// </remarks>
     protected virtual ElementNotFoundException NotFound()
-    {
-        try
-        {
-            _mauiScope.FindElement(Locator);
-        }
-        catch (ElementNotFoundException error)
-        {
-            return error;
-        }
-
-        return new ElementNotFoundException(Locator);
-    }
+        => _mauiScope.DescribeMiss(Locator) ?? new ElementNotFoundException(Locator);
 
     /// <summary>
     /// The lookup of one attempt: a plain lookup, then a sweep of the scroller when the scope
@@ -955,7 +950,7 @@ public abstract partial class ViewBase<TScope> : IElementObject<TScope>
     /// Core scroll implementation. Uses element's ScrollIntoView method.
     /// </summary>
     /// <param name="element">The element to scroll into view.</param>
-    protected virtual void ScrollIntoViewCore(IMauiElement element) => element.ScrollIntoView();
+    protected virtual void ScrollIntoViewCore(IMauiElement element) => element.ScrollIntoView(CallRemainingMs);
 
     #endregion
 

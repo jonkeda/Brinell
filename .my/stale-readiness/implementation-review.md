@@ -3,6 +3,22 @@
 Reviewed 2026-09-19, against [plan.md](plan.md) (status "done", steps 0-9) and [design.md](design.md).
 The review covers the working tree: everything after step 0 (commit `4455f79`) is uncommitted.
 
+## Outcome (2026-09-19)
+
+All seven findings are fixed. Each fix, with its evidence, is in [plan.md](plan.md) 2.1 under
+"Review fixes", and the decisions are in plan.md section 3.
+
+| # | Outcome |
+| --- | --- |
+| 1 | Fixed: a cached row element must still hold the row's item. Two pins. |
+| 2 | Fixed: `SelectItem` resolves by polling, then activates once. Two pins. |
+| 3 | Fixed for scrolls: every scroll gets the call's remaining budget (`CallRemainingMs`). The driver settle waits are kept on purpose, and design 5 now says so. Two pins. |
+| 4 | Fixed: after retries, the failure is a `WaitTimeoutException` naming the type and count, with the exception inside. One pin. |
+| 5 | Fixed at the driver: a bridge answer of "nothing", when the app has exited, is `AppUnavailableException`. The tree-walk catches in `BrinellBridgeLookup` stay, because a vanished sibling must not end a walk. Not tested against a closed app. |
+| 6 | Fixed: the unused timeouts are gone, and so is `ObjectBase.Poll`. Container `GetAttribute` keeps its timeout for Core's `IControlObject`. |
+| 7 | Fixed: `NearMissSettings`, and `IMauiElementScope.DescribeMiss`. One pin. |
+| Hygiene | Plan sections 3 and 4 updated. The commit is still to do. |
+
 ## Verdict
 
 Most of the plan is built as described, and the claims I could check hold up. There is one real

@@ -240,10 +240,12 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     {
         ArgumentNullException.ThrowIfNull(locator);
 
-        return TryFindElement(locator)
-            ?? throw new ElementNotFoundException(
-                $"Element not found within {ScopeName}. Child locator: {locator}");
+        return TryFindElement(locator) ?? throw DescribeMiss(locator);
     }
+
+    /// <inheritdoc />
+    public virtual ElementNotFoundException DescribeMiss(Locator locator)
+        => new($"Element not found within {ScopeName}. Child locator: {locator}");
 
     /// <inheritdoc />
     public virtual IReadOnlyList<IMauiElement> FindElements(Locator locator)
@@ -368,7 +370,13 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
 
             if (context.Log.Last is { Kind: ObservationKind.Failed, Error: { } error })
             {
-                System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw();
+                var failure = context.Log.Unexpected(error, ScopeName, budgetMs);
+                if (ReferenceEquals(failure, error))
+                {
+                    System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw();
+                }
+
+                throw failure;
             }
 
             return onTimeout == null ? false : throw onTimeout(ProbeReadiness());
@@ -379,24 +387,15 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     #region State
 
     /// <summary>
-    /// Whether the container's root element exists.
+    /// Whether the container's root element exists, now. <see cref="WaitExists"/> waits.
     /// </summary>
-    public bool IsExists(int? timeoutMs = null)
-    {
-        if (timeoutMs is > 0)
-            return Poll(() => TryGetContainerRoot() != null, timeoutMs);
-
-        return TryGetContainerRoot() != null;
-    }
+    public bool IsExists() => TryGetContainerRoot() != null;
 
     /// <summary>
-    /// Whether the container's root element is visible; null when it does not exist.
+    /// Whether the container's root element is visible, now; null when it does not exist.
+    /// <see cref="WaitVisible"/> waits.
     /// </summary>
-    public bool? IsVisible(int? timeoutMs = null)
-    {
-        var root = TryGetContainerRoot();
-        return root?.Visible;
-    }
+    public bool? IsVisible() => TryGetContainerRoot()?.Visible;
 
     /// <summary>
     /// Waits until the container's existence matches <paramref name="expected"/>.
@@ -447,11 +446,17 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     // Every public member is one call (.my/stale-readiness/design.md, R1): one log pair, one
     // budget, one poll, whose attempts check the page and then use the root. An action runs once.
 
-    private protected ControlCall Call => new(Logger, PageName, ControlId);
+    private protected ControlCall Call => new(Context, PageName, ControlId);
 
     private protected int Budget(int? timeoutMs) => timeoutMs ?? DefaultTimeoutMs;
 
     private protected int AnimationMs => Context.Timeouts.Animation;
+
+    /// <summary>
+    /// What is left of the running call's budget, for a wait below the call (a scroll); the
+    /// default wait outside a call. Nothing inside a call starts a budget of its own (R2, R3).
+    /// </summary>
+    protected int CallRemainingMs => AttemptContext.RemainingOr(DefaultTimeoutMs);
 
     /// <summary>The failure of a phase that ran out of budget, from what it last saw.</summary>
     private protected Exception Failure(AttemptContext attempt, string caller, int budgetMs)
@@ -461,20 +466,11 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
             RootNotFound,
             readiness => ScopeGate.NotReady(readiness, caller, $"container '{Locator}'", budgetMs));
 
-    /// <summary>Why the root could not be found, asked for once at the moment of failure.</summary>
-    private ElementNotFoundException RootNotFound()
-    {
-        try
-        {
-            _ = ContainerRoot;
-        }
-        catch (ElementNotFoundException error)
-        {
-            return error;
-        }
-
-        return new ElementNotFoundException(Locator);
-    }
+    /// <summary>
+    /// The error for this scope's root not found, in the words of whatever it is looked up in.
+    /// Builds the message only: it does not look again.
+    /// </summary>
+    protected virtual ElementNotFoundException RootNotFound() => new(Locator);
 
     /// <summary>One attempt against the root: the scope chain, then the root, then <paramref name="body"/>.</summary>
     private protected Observation RootAttempt(Func<IMauiElement, Observation> body)
@@ -815,7 +811,6 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
 
     private string PageName => Page?.GetType().Name ?? "Unknown";
     private string ControlId => Locator.Value;
-    private ITestLogger? Logger => Context.Logger;
 
     #endregion
 }
@@ -873,7 +868,11 @@ public abstract class ContainerObjectBase<TParent, TSelf>
     public override bool AllowsScrollLookup => _parentScope.AllowsScrollLookup;
 
     protected override IMauiElement FindContainerRootElement()
-        => _parentScope.FindElement(Locator);
+        => _parentScope.TryFindElement(Locator) ?? throw RootNotFound();
+
+    /// <inheritdoc />
+    protected override ElementNotFoundException RootNotFound()
+        => _parentScope.DescribeMiss(Locator) ?? new ElementNotFoundException(Locator);
 
     /// <summary>
     /// Whether this container inherits its parent's readiness. False for a scope shown over its
@@ -890,13 +889,12 @@ public abstract class ContainerObjectBase<TParent, TSelf>
     // Element-object members, so a container can declare a control capability
     // (IRefreshableControlObject, ISwipeableControlObject) the way a view does.
 
-    /// <summary>Whether the container is on the page, without waiting.</summary>
-    public bool IsExists() => IsExists(timeoutMs: null);
-
-    /// <summary>Whether the container is on screen, without waiting.</summary>
-    public bool? IsVisible() => IsVisible(timeoutMs: null);
-
-    /// <summary>Reads a named attribute from the container's root, in the platform's own vocabulary.</summary>
+    /// <summary>Reads a named attribute from the container's root, in the platform's own vocabulary, now.</summary>
+    /// <remarks>
+    /// <paramref name="timeoutMs"/> is not used. It is there because Core's <c>IControlObject</c>
+    /// declares it, and a container that declares a control capability implements that interface
+    /// (R9: Core is not changed by this work; see <c>move-down.md</c>).
+    /// </remarks>
     public string? GetAttribute(string name, int? timeoutMs = null)
         => TryGetContainerRoot()?.GetAttribute(name);
 }

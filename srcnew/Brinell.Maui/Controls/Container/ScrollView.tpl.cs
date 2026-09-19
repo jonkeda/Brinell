@@ -62,15 +62,13 @@ public partial class ScrollView<TParent, TSelf> : ContainerObjectBase<TParent, T
     /// <param name="locator">Locator for the descendant, resolved within this container.</param>
     /// <returns>The container, for chaining.</returns>
     /// <remarks>
-    /// Does nothing when the element is not present; use
+    /// One call: it waits for the scope chain, then scrolls once, within the call's budget. Does
+    /// nothing when the element is not present; use
     /// <see cref="ContainerObjectBase{TParent, TSelf}.FindElement"/> first if absence should be an
     /// error.
     /// </remarks>
     public TSelf ScrollTo(Locator locator)
-    {
-        ScrollHelper.ScrollIntoView(TryFindElement(locator));
-        return Self;
-    }
+        => RunDo(() => ScrollHelper.ScrollIntoView(TryFindElement(locator), CallRemainingMs));
 
     /// <summary>
     /// Brings a descendant into view by automation id.

@@ -81,8 +81,12 @@ public interface IMauiElement
     void LongPress(int durationMs = 1000);
 
     /// <summary>Scrolls the element into the visible viewport.</summary>
-    /// <param name="timeoutMs">Maximum time to wait for scroll completion.</param>
-    void ScrollIntoView(int timeoutMs = 5000);
+    /// <param name="timeoutMs">
+    /// The most time the scroll may take. No default: a caller passes what is left of its call's
+    /// budget, so a scroll never outlasts the call it is part of (<c>.my/stale-readiness/design.md</c>,
+    /// R2 and R3). A driver that scrolls in steps makes at least one step, even on zero.
+    /// </param>
+    void ScrollIntoView(int timeoutMs);
 
     /// <summary>Performs a swipe gesture from one point to another.</summary>
     void Swipe(int startX, int startY, int endX, int endY, int durationMs = 500);

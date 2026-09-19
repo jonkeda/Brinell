@@ -66,7 +66,7 @@ into a pass, and it must not hide how hard reaching the state was.
 | A page or scope stays busy | Waits within the budget, then fails | `ScopeNotReadyException` names the scope and its state |
 | The app process exits, or the driver session is lost | **Fails at once**, with no retries | `AppUnavailableException`, raised by the driver |
 | A busy signal is missing or not a boolean | **Fails at once** (a configuration error) | `ScopeNotReadyException` naming the signal |
-| An unexpected exception inside an attempt | Retried within the budget, then rethrown | The final message names its type and how many attempts raised it; it is never reported as "not found" |
+| An unexpected exception inside an attempt | Retried within the budget, then reported | A `WaitTimeoutException` names its type and how many attempts raised it, with the exception inside (after a single attempt, the exception itself); it is never reported as "not found" |
 | **Success after trouble**: replaced 3 or more times, or more than half the budget used | Passes | **A near-miss warning**: `LogExit(..., LogResult.Warning, ...)` with the observations. A run can list its near-misses, so a UI that keeps re-rendering, or a page that is slow to become idle, surfaces as a finding |
 | Anything below the poll | No catch-alls (R5) | A failure is either an answer (an absent element, an unknown candidate) or a signal |
 
@@ -134,7 +134,7 @@ public member
 | `IContainerControl<T>`, `IContainerObject<T>` | yes: they are `IElementScope<T>` | **leaves** |
 | `ControlObjectBase<TScope>` (typed on `IElementScope`) | yes | **leaves**; `ViewBase` holds its own `Locator` and scope |
 | `ElementGeometryExtensions`, `ElementScopeExtensions` (typed on `IElement<T>` / `IElementScope<T>`) | yes, by typing | **leaves**; MAUI copies in `MauiElementExtensions` |
-| `WaitHelper` | no, but its loops are what R2 removes | no longer used by MAUI |
+| `WaitHelper` | no, but its loops are what R2 removes | used by MAUI only for `Pause` between attempts, and by the drivers for the settle waits below an action (section 5) |
 
 **Rule of thumb:** MAUI keeps a Core interface when this work does not change its shape, and
 leaves it when this work would. Nothing is bridged. Nothing in Core is edited.
@@ -305,6 +305,18 @@ switches to the new page interface and the attribute can go.
 
 **Selenium types appear only in `Brinell.Maui.Appium`.**
 
+**Settle waits below an action.** A driver action may wait, with a short fixed bound, for the
+effect of the step it just took: FlaUI's `OpenDropdown` and its close (2 s each), Appium's
+`SetRangeValue` (1 s), the flyout, and `WaitUntilPositionSettles`. These are the action's own
+confirmation (R3), not a second poll: they never repeat the action and never look for an element.
+They stay, and each says what it waits for when it gives up. A scroll is not one of them: it
+takes the caller's remaining budget (6.4).
+
+**The bridge and a closed app.** The bridge lookup treats a target it cannot read as "not there".
+When nothing answered because the launched app has exited, the FlaUI driver raises
+`AppUnavailableException` (bridge verbs, state reads, gestures), so a toolbar or menu call on a
+closed app fails at once instead of waiting out its budget as "not ready".
+
 ---
 
 ## 6. Calls (`Brinell.Maui/Calls/`, all internal)
@@ -347,7 +359,9 @@ internal sealed class ObservationLog
     ///   ItemChanged   -> StaleElementException ("row 3 now shows another item")
     ///   Pending       -> WaitTimeoutException (what was still pending)
     ///   Mismatch      -> the AssertionException as-is
-    ///   Failed        -> the last exception as-is, with its type and count in the message
+    ///   Failed        -> after one attempt, the exception as-is; after retries, a
+    ///                    WaitTimeoutException naming its type and how many attempts raised it,
+    ///                    with the exception as InnerException (a message cannot be added to it)
     public Exception ToException(Locator? locator, string caller, int budgetMs);
 
     /// "replaced 3 times; last: NotReady(Disabled) at 1800 ms", for messages and near-misses.
@@ -397,12 +411,18 @@ lives in a local captured by that attempt's closure (7.6).
 /// One public call: a log entry/exit pair around the whole body, action included. There is no
 /// page gate here: readiness is the first step of every attempt (R4).
 /// On success, it writes a near-miss (LogResult.Warning, 4.4) when the log shows
-/// NearMissReplacements or more replacements, or more than NearMissBudgetShare of the budget used (X5).
+/// context.NearMiss.Replacements or more replacements, or more than context.NearMiss.BudgetShare
+/// of the budget used (X5).
 internal sealed class ControlCall(IMauiTestContext context, string scopeName, string controlId)
 {
     public T Run<T>(string caller, string? value, int budgetMs, Func<AttemptContext, T> body);
 }
 ```
+
+While its body runs, the call's `AttemptContext` is `AttemptContext.Current`. A wait below the
+call that has no parameter for a budget - a Core method's scroll, a collection's scroll step -
+takes `CallRemainingMs` from it, so it never outlasts the call (R2, R3). `IMauiElement.ScrollIntoView`
+has no default timeout for that reason.
 
 ### 6.5 `Confirm`
 
@@ -547,6 +567,8 @@ public abstract class ItemObjectBase<TCollection, TSelf> : ContainerObjectBase<T
     public ItemKey Key { get; }                        // recorded at creation
     public override bool AllowsScrollLookup => false;  // unchanged
     // root re-resolved by Key; a root whose KeyOf(...) differs -> ProbeReadiness = ItemChanged
+    // a cached root counts only while it still holds Key (IsCachedRootValid), so the row's own
+    // members - Click, GetText - never use a recycled element either (implementation review)
 }
 ```
 
@@ -566,10 +588,10 @@ private Func<AttemptContext, Observation> MaterializeAttempts(Func<IMauiElement?
 
 | Member | After |
 | --- | --- |
-| `Item(index)`, `this[int]`, `Item(key)`, `this[Locator]`, `ItemWhere`, `SelectItem` | Call units that wait (R7). |
-| `TryItem`, `TrySelectItem`, `FindItem` | Answer now. `FindItem`'s recycling guard becomes `ItemKey`. |
+| `Item(index)`, `this[int]`, `Item(key)`, `this[Locator]`, `ItemWhere`, `SelectItem` | Call units that wait (R7). `SelectItem` resolves by polling, then activates once; only an activation that answers "nothing activated" is asked again, and any exception ends the call (R0). |
+| `TryItem`, `TrySelectItem`, `FindItem` | Answer now (`TrySelectItem` has no timeout). `FindItem`'s recycling guard becomes `ItemKey`. |
 | `ScrollToItem`, `ScrollToEnd`, `ScrollToTop`, `WaitForItems` | Call units with one budget (`timeoutMs ?? DefaultWait`) on `MaterializeAttempts`. `ScrollToTop` is bounded. |
-| `WaitItemCount`, `WaitAnyItem`, `AssertItemCount`, `AssertEmpty` | Call units. `GetItemCount` is a single read. |
+| `WaitItemCount`, `WaitAnyItem`, `AssertItemCount`, `AssertEmpty` | Call units. `GetItemCount()` and `IsEmpty()` are single reads, with no timeout. |
 | `TryGetItemRoot`, `TryGetItemRoots`, `GetItemCount` internals | `WithRoot`. |
 | `TryScrollItemIntoView`, `TryActivate`, `IsUsable` | Catch-alls go. A stale row is a signal. "Wrong candidate" is an answer only for the exceptions the drivers document for it. |
 
@@ -664,11 +686,11 @@ button. If the Delete command never re-enabled, it would fail with "found but di
 | Audience | Change |
 | --- | --- |
 | **Generated code** | None (R8). |
-| **Control authors** | Override `TryFindElement()` + `NotFound()`, not `FindElement()`. Throw `ElementNotReadyException` from `EnsureReadyForActionCore`. Use `Confirm`. Never call `EnsureVisible` from a Core method. |
+| **Control authors** | Override `TryFindElement()` + `NotFound()`, not `FindElement()`. Throw `ElementNotReadyException` from `EnsureReadyForActionCore`. Use `Confirm`. Never call `EnsureVisible` from a Core method. A wait below the call (a scroll) takes `CallRemainingMs`. |
 | **Container authors** | Override `ProbeContentReadiness`, not `WaitContentReadyCore`. Use `AsksParent => false` for a scope shown over its parent. Implement `TryFindRootElement`, which returns null. |
 | **Page authors** | `IsLoaded()` takes no parameter; the overrides in about 10 MAUI test pages change mechanically. It is part of readiness, not a gate on each lookup. |
 | **Test authors** | App bugs still fail, now naming what was seen (R0). Near-misses show in the log. Budgets mean what they say. `Item(index)` and `SelectItem` wait. `ScrollToItem` has a budget. Use `AppRoot` (`DriverRootScope` is gone). `ItemObjectBase` replaces `ItemContainerBase`. `ScopeNotReadyException` replaces `PageLoadException` from MAUI. |
-| **Driver authors** | Implement `IMauiElement` / `IMauiDriver` directly. `InstanceKey`. `Live` maps staleness. Finds make one attempt. Report an app that is gone as `AppUnavailableException`. |
+| **Driver authors** | Implement `IMauiElement` / `IMauiDriver` directly. `InstanceKey`. `Live` maps staleness. Finds make one attempt. Report an app that is gone as `AppUnavailableException`. `ScrollIntoView(timeoutMs)` has no default, and a stepping scroll makes at least one step. |
 | **Other stacks** | Nothing. Core is unchanged (R9). |
 | **Skills** | `maui-control`: R0-R2 wording, `ProbeContentReadiness`, `AsksParent`, `ItemObjectBase`, `IMauiElement` as the element type. `maui-ui-test`: `ItemObjectBase`, what waits and what does not, `ScopeNotReadyException`. |
 
@@ -680,8 +702,8 @@ Removed or renamed, all listed in `CHANGELOG.md` in the last step:
   `ControlObjectBase<TScope>`.
 - **Lookups:** the timeout finds on MAUI elements and drivers.
 - **Waits:** `EnsureVisible(element, timeout)`, `WaitVisibleCore`, `doEnsureVisible`, both `Until`
-  implementations, both `RunPoll` implementations. (`ObjectBase.Poll` stays for now, running on
-  `Poller`.)
+  implementations, both `RunPoll` implementations, and `ObjectBase.Poll` (removed after the
+  implementation review, when nothing called it).
 - **Virtual `ViewBase.FindElement()`.**
 - **Page gating:** `CanResolveElements`, `EnsureLoaded`, `WaitContentReadyCore`, `IsParentReady`,
   `WaitParentReady`. (`IsCachedRootValid` stays until the root renames.)
@@ -702,7 +724,7 @@ Removed or renamed, all listed in `CHANGELOG.md` in the last step:
 | --- | --- | --- |
 | S1 | Resolve once in `RunAssertWithElement`? | Resolve once; re-locate on `Stale` / `NotReady`. Revisit with step 2's numbers. |
 | D3 | Should `Poller` retry unknown exceptions? | Yes, within the budget, and named in the final message. `AppUnavailableException` and configuration errors are never retried. |
-| X5 | Near-miss thresholds | 3 or more replacements, or more than 50% of the budget used. These are settings (`NearMissReplacements`, `NearMissBudgetShare`), and step 8 decides whether they are too noisy. |
+| X5 | Near-miss thresholds | **Settled** (step 8, and the implementation review): 3 or more replacements, or more than 50% of the budget used. They are settings: `MauiTestContextOptions.NearMiss` (`NearMissSettings`). Step 8 saw 1 near-miss in 4,833 logged calls, so the defaults are not noisy. |
 | Q6 | Root cache: the object's lifetime, with an alive check | Switch to per-call if step 2 shows the check costs more than a lookup. |
 | Q9 | Default budget for materializing loops | `DefaultWait`. Step 2's list of long-list tests decides. |
 | X1 | When to start moving down (4.5) | After plan step 9, as its own plan. |

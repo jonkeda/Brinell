@@ -142,11 +142,14 @@ would have shipped the bug.
 - **Some failures end the call at once:** the app process exits or the driver session
   is lost (`AppUnavailableException`), or a page's busy signal is missing or unreadable
   (`ScopeNotReadyException`, a configuration error).
-- **A budget the caller set is never extended**, no other element is used in place of
-  the one asked for, and an error is never treated as absence.
+- **A budget the caller set is never extended**: a scroll below the call gets what is
+  left of it. No other element is used in place of the one asked for - a row whose
+  element now shows another item is found again by its key - and an error is never
+  treated as absence: an exception every attempt raised is reported with its type and
+  count.
 - **Success after trouble is reported.** A call that passed after its element was
   replaced three or more times, or after using more than half its budget, logs a
-  near-miss warning. Set `BRINELL_CALL_LOG` to a folder to write every context's calls
+  near-miss warning (thresholds: `MauiTestContextOptions.NearMiss`). Set `BRINELL_CALL_LOG` to a folder to write every context's calls
   to CSV and list them.
 
 Proven on 2026-09-19 (`.my/stale-readiness/plan.md`, step 8): with the bug put back,

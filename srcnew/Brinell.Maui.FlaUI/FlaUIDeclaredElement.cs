@@ -68,10 +68,14 @@ internal sealed class FlaUIDeclaredElement : IMauiElement
             {
                 return _target.SupportedVerbs().Contains(BrinellVerb.GetState);
             }
-            catch
+            catch (Exception) when (!_driver.AppHasExited)
             {
                 // The page republished its bridge since the lookup: nothing to ask.
                 return false;
+            }
+            catch (Exception error)
+            {
+                throw new AppUnavailableException("the application process has exited.", error);
             }
         }
     }
@@ -145,7 +149,7 @@ internal sealed class FlaUIDeclaredElement : IMauiElement
     public void LongPress(int durationMs = 1000) => throw NotInTheTree("pointer route; use PerformGesture");
 
     /// <inheritdoc />
-    public void ScrollIntoView(int timeoutMs = 5000) => throw NotInTheTree("position");
+    public void ScrollIntoView(int timeoutMs) => throw NotInTheTree("position");
 
     /// <inheritdoc />
     public void Swipe(int startX, int startY, int endX, int endY, int durationMs = 500)

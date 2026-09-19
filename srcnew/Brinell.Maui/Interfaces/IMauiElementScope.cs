@@ -56,6 +56,13 @@ public interface IMauiElementScope
     IMauiElement FindElement(Locator locator);
 
     /// <summary>
+    /// The error for <paramref name="locator"/> not found in this scope, in the scope's own words
+    /// ("not found within ..."). Builds the message only: it does not look again.
+    /// </summary>
+    /// <param name="locator">The locator that found nothing.</param>
+    ElementNotFoundException DescribeMiss(Locator locator) => new(locator);
+
+    /// <summary>
     /// Finds every element in this scope matching <paramref name="locator"/>, in one attempt.
     /// </summary>
     /// <returns>The matches; empty when none match now.</returns>

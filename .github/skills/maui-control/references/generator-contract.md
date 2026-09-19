@@ -146,6 +146,9 @@ answer "not shown" declares its own absence-tolerant read.
   confirmed throw `confirmation.Failure(Locator, "<action>", lastError => new ...)`. It never
   repeats the action, and reports a replaced element as `StaleElementException`. Never a
   `Run*` helper, never `Thread.Sleep`.
+- Anything else below the call that takes a time limit - `element.ScrollIntoView(timeoutMs)`,
+  `ScrollHelper.ScrollIntoView(element, timeoutMs)` - gets `CallRemainingMs`: what is left of the
+  call's budget. Never a fixed number, so a call never outlasts its `timeoutMs`.
 - Never call a public member of another control (a part, `Button(id)`, `Child<T>(id)`, an
   item): that public member is a whole unit of work of its own (readiness, poll, log entry,
   timeout), nested inside the one the generated wrapper runs.

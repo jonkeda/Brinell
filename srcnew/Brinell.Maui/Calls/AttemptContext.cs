@@ -11,6 +11,8 @@ namespace Brinell.Maui.Calls;
 /// </remarks>
 internal sealed class AttemptContext
 {
+    private static readonly AsyncLocal<AttemptContext?> CurrentContext = new();
+
     private readonly int _animationMs;
     private readonly Dictionary<string, long> _scrolledAt = new(StringComparer.Ordinal);
     private long? _sweptAt;
@@ -20,6 +22,23 @@ internal sealed class AttemptContext
         Deadline = deadline;
         _animationMs = Math.Max(0, animationMs);
     }
+
+    /// <summary>
+    /// The context of the call running on this flow, or null outside any call. Set by
+    /// <see cref="ControlCall"/> around its body, so code below a call - a Core method, a driver
+    /// scroll - can be given what is left of the call's budget without a parameter for it.
+    /// </summary>
+    public static AttemptContext? Current
+    {
+        get => CurrentContext.Value;
+        set => CurrentContext.Value = value;
+    }
+
+    /// <summary>
+    /// What is left of the running call's budget, or <paramref name="outsideACallMs"/> when no
+    /// call is running (a plain <c>Is*</c> member).
+    /// </summary>
+    public static int RemainingOr(int outsideACallMs) => Current?.Deadline.RemainingMs ?? outsideACallMs;
 
     /// <summary>The phase's deadline.</summary>
     public Deadline Deadline { get; }

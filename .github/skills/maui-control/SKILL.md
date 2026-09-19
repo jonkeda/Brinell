@@ -91,7 +91,8 @@ Tie-breakers:
   `Confirm(read, done, timeoutMs)`, which never repeats the action. When the effect is not
   confirmed it throws `confirmation.Failure(Locator, "<action>", lastError => new ...(message,
   lastError))`: a replaced element is reported as `StaleElementException`, and an ignored
-  action as the control's own exception with `lastError` as its `InnerException`.
+  action as the control's own exception with `lastError` as its `InnerException`. A scroll or
+  other wait below the call takes `CallRemainingMs`, never a fixed timeout.
 - **R3.** A part with behaviour of its own gets its own control class; a component forwards to
   it through `*Shortcut` methods.
 - **R4.** A member that needs two parts (or a child and the root) is hand-written as plain calls

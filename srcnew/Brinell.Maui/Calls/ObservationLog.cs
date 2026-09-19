@@ -12,6 +12,7 @@ internal sealed class ObservationLog
 {
     private readonly List<(Observation Observation, long AtMs)> _entries = [];
     private readonly HashSet<string> _instanceKeys = new(StringComparer.Ordinal);
+    private readonly Dictionary<Type, int> _failures = [];
     private int _staleCount;
 
     /// <summary>The most recent observation, or a <see cref="ObservationKind.Pending"/> placeholder.</summary>
@@ -42,6 +43,11 @@ internal sealed class ObservationLog
         if (observation.Kind == ObservationKind.Stale)
         {
             _staleCount++;
+        }
+
+        if (observation is { Kind: ObservationKind.Failed, Error: { } error })
+        {
+            _failures[error.GetType()] = _failures.GetValueOrDefault(error.GetType()) + 1;
         }
     }
 
@@ -88,9 +94,37 @@ internal sealed class ObservationLog
                 Join(last.Kind == ObservationKind.ItemChanged ? last.Detail : "It was found, then gone", history)),
             ObservationKind.Pending => new WaitTimeoutException(
                 $"'{locator}' did not reach the state waited for within {budgetMs} ms. {Summary()}.", budgetMs),
+            ObservationKind.Failed when last.Error is { } error => Unexpected(error, $"'{locator}'", budgetMs),
             _ => last.Error ?? new WaitTimeoutException(
                 $"'{locator}' did not complete within {budgetMs} ms. {Summary()}.", budgetMs)
         };
+    }
+
+    /// <summary>
+    /// The failure of a phase whose last attempt raised <paramref name="error"/>, an exception no
+    /// observation explains (design 2.1: "names its type and how many attempts raised it").
+    /// </summary>
+    /// <remarks>
+    /// After a single attempt the exception is the answer and is returned as it is. After retries
+    /// it is wrapped, as the inner exception of a <see cref="WaitTimeoutException"/> whose message
+    /// names its type, how many of the attempts raised it, and its message. It is never reported
+    /// as "not found".
+    /// </remarks>
+    /// <param name="error">The last attempt's exception.</param>
+    /// <param name="subject">What the call was about, for the message.</param>
+    /// <param name="budgetMs">The phase's budget.</param>
+    public Exception Unexpected(Exception error, string subject, int budgetMs)
+    {
+        if (Attempts <= 1)
+        {
+            return error;
+        }
+
+        var raised = _failures.GetValueOrDefault(error.GetType());
+        return new WaitTimeoutException(
+            $"{subject} did not complete within {budgetMs} ms: {raised} of {Attempts} attempts raised " +
+            $"{error.GetType().Name}. Last: {error.Message}",
+            error);
     }
 
     private static string Join(params string?[] parts)

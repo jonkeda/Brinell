@@ -80,8 +80,8 @@ Things the MAUI steps did not do, which the move down should settle:
   - `CacheContainerRoot` → `CacheRoot`;
   - `IsCachedRootValid` → `IsRootUsable`.
   Done once, in Core's naming, they avoid a second rename.
-- **`ObjectBase.Poll`** still exists; it runs on `Poller`. Its remaining callers (collection
-  and container helpers) are call units now, so it can go when nothing calls it.
+- **`GetAttribute(name, timeoutMs)`** on MAUI containers keeps an unused `timeoutMs`, because
+  Core's `IControlObject` declares it. Drop it from the Core interface when it moves.
 - **Page waits** keep `PageLoad` as their default budget; design 7.5 said `DefaultWait`. That is
   a decision for Core's page contract.
 - **`IsExists()` / `IsVisible()`** on a control no longer consult the page (design 7.4). Other

@@ -46,7 +46,11 @@ public abstract class PageObjectBase<TSelf> : RootedScopeBase<TSelf, TSelf>, IMa
 
     protected override IMauiElement FindContainerRootElement()
         => Context.FindElements(Locator).FirstOrDefault(element => element.HasUsableBounds())
-            ?? throw new ElementNotFoundException($"Page root not found. Locator: {Locator}");
+            ?? throw RootNotFound();
+
+    /// <inheritdoc />
+    protected override ElementNotFoundException RootNotFound()
+        => new($"Page root not found. Locator: {Locator}");
 
     protected override bool IsCachedRootValid(IMauiElement root)
         => root.HasUsableBounds();

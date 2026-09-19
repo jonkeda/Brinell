@@ -59,10 +59,12 @@ public abstract class ItemObjectBase<TCollection, TSelf>
 
     /// <inheritdoc />
     /// <remarks>
-    /// Alive and still with a size: a list that removes a row may leave its element in the tree,
-    /// collapsed, for a moment.
+    /// Alive, still with a size, and still holding this item. A list that removes a row may leave
+    /// its element in the tree, collapsed, for a moment; a list that recycles a row keeps the
+    /// element and puts another item in it. Either way the row is found again by its
+    /// <see cref="Key"/>, so the row's own members never answer for, or act on, another item.
     /// </remarks>
-    protected override bool IsCachedRootValid(IMauiElement root) => IsUsable(root);
+    protected override bool IsCachedRootValid(IMauiElement root) => IsUsable(root) && Key.IsHeldBy(root);
 
     /// <summary>
     /// Returns the supplied root while it still holds this item, and otherwise finds the item again
@@ -81,13 +83,15 @@ public abstract class ItemObjectBase<TCollection, TSelf>
             return _itemRoot;
         }
 
-        var refreshed = Parent.TryGetItemRoot(Key)
-            ?? throw new ElementNotFoundException(
-                $"Item [{Key}] is no longer in its collection, or not realized now.");
+        var refreshed = Parent.TryGetItemRoot(Key) ?? throw RootNotFound();
 
         _itemRoot = refreshed;
         return _itemRoot;
     }
+
+    /// <inheritdoc />
+    protected override ElementNotFoundException RootNotFound()
+        => new($"Item [{Key}] is no longer in its collection, or not realized now.");
 
     /// <inheritdoc />
     /// <remarks>

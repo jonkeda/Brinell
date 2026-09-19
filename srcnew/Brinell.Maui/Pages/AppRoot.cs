@@ -75,6 +75,9 @@ public sealed class AppRoot : ObjectBase, IMauiScope<AppRoot>
     public IMauiElement FindElement(Locator locator) => _context.FindElement(locator);
 
     /// <inheritdoc />
+    public ElementNotFoundException DescribeMiss(Locator locator) => _context.DescribeMiss(locator);
+
+    /// <inheritdoc />
     public IReadOnlyList<IMauiElement> FindElements(Locator locator)
         => _context.FindElements(locator);
 }

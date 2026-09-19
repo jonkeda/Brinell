@@ -8,18 +8,20 @@ public static class ScrollHelper
     /// <summary>
     /// Asks an element to bring itself into view.
     /// </summary>
+    /// <param name="element">The element, or null.</param>
+    /// <param name="timeoutMs">The most time the scroll may take: what is left of the caller's call.</param>
     /// <returns>True if the request was made; false for no element, or one with no route.</returns>
     /// <remarks>
     /// A true return means the request was accepted, <b>not</b> that the viewport moved.
     /// Callers that need to know must observe the resulting state themselves.
     /// </remarks>
-    public static bool ScrollIntoView(IMauiElement? element)
+    public static bool ScrollIntoView(IMauiElement? element, int timeoutMs)
     {
         if (element == null) return false;
 
         try
         {
-            element.ScrollIntoView();
+            element.ScrollIntoView(timeoutMs);
             return true;
         }
         catch (NotSupportedException)

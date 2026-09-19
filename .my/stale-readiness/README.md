@@ -6,6 +6,7 @@ Start here.
 | --- | --- | --- |
 | [plan.md](plan.md) | Steps, status, decisions taken, baseline numbers | **what to do next, and what is done** |
 | [design.md](design.md) | The accepted design: rules (R0-R9), classes, what changes for whom, open decisions | **what to build** |
+| [implementation-review.md](implementation-review.md) | A review of the built code against the plan, and what was fixed | nothing; the fixes are recorded in plan.md 2.1 |
 | [move-down.md](move-down.md) | First draft of the next project: moving the proven shape from MAUI to Core, stack by stack | nothing yet; a draft for its own plan |
 | [background/](background/) | How we got here: analyses, the first plan and design, the review | nothing; context only |
 

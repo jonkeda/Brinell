@@ -104,13 +104,21 @@ fails on the next.
 - **A row remembers which item it holds** (`Key`: the logical index, else a stable or unique
   automation id, else the position). A row whose element went away is found again by that key;
   a row whose element now shows another item reports `ItemChanged` rather than answering for it.
-  Only a position key cannot be checked, so prefer rows the platform numbers.
+  The row's own members (`Click`, `GetText`) check the key too: a cached element that now holds
+  another item is dropped and the item is found again. Only a position key cannot be checked,
+  so prefer rows the platform numbers.
 
 ## Waiting and budgets
 
 - Non-`Try` members wait within their `timeoutMs`: `Item(i)`, `this[i]`, `Item(key)`,
   `ItemWhere`, `SelectItem`, `WaitItemCount`, `WaitAnyItem`, `WaitForItems`, `Assert*`.
-  `TryItem`, `TrySelectItem` and `GetItemCount` answer about now.
+  `TryItem`, `TrySelectItem(i)`, `GetItemCount()` and `IsEmpty()` answer about now and take no
+  timeout.
+- `SelectItem` polls for the row, then activates it once. An `ActivateItemCore` override answers
+  false only when it activated nothing (asked again within the budget); anything that throws
+  ends the call, because the row may already be activated.
+- A wait below a call - a scroll in a Core method or an override - takes `CallRemainingMs`, never a
+  default of its own. `IMauiElement.ScrollIntoView(timeoutMs)` has no default for that reason.
 - `FindItem(predicate, timeoutMs)` scrolls through the list once and answers null at the end.
   `ItemWhere(predicate, timeoutMs)` keeps scrolling and looking until the budget runs out.
 - `ScrollToItem`, `ScrollToEnd`, `ScrollToTop`, `WaitForItems`, `FindItem` and `ItemWhere` take

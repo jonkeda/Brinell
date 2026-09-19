@@ -36,4 +36,7 @@ public interface IMauiTestContext : ITestContext, IMauiElementScope
     /// <summary>Where this platform draws MAUI Shell's tabs and flyout.</summary>
     /// <exception cref="PlatformNotSupportedException">Shell has not been mapped on this platform.</exception>
     ShellChromeLocators ShellChrome { get; }
+
+    /// <summary>When a call that succeeded is still logged as a near-miss.</summary>
+    Context.NearMissSettings NearMiss { get; }
 }

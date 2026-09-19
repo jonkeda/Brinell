@@ -716,7 +716,7 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// caller's visibility check reports it.
     /// </para>
     /// </remarks>
-    public void ScrollIntoView(int timeoutMs = 5000) => Live(() =>
+    public void ScrollIntoView(int timeoutMs) => Live(() =>
     {
         try
         {

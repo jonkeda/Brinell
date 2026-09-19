@@ -3,7 +3,8 @@
 The work plan and its status. What to build is in [design.md](design.md). Why it is built that way
 is in `background/` (see [README.md](README.md)).
 
-Status: **done**, 2026-09-19. Steps 0-9 done. The next project is drafted in [move-down.md](move-down.md). The design is accepted (section 3).
+Status: **done**, 2026-09-19. Steps 0-9 done, and the findings of the
+[implementation review](implementation-review.md) fixed (2.1, "Review fixes"). The next project is drafted in [move-down.md](move-down.md). The design is accepted (section 3).
 
 ## 1. Goal
 
@@ -29,7 +30,7 @@ Working rules:
 - **One UI test process at a time.** Two runs at once fight over the desktop.
 - **The smallest test tier that can falsify each step.** The full suites run only in step 8.
 - **Restart Appium after any killed run.**
-- **Android starts from a failing baseline** (Range 6/16, Picker 0/8). Compare against it; do not
+- **Android starts from a failing baseline** (Range 6 passed / 16 failed, Picker 0 passed / 8 failed). Compare against it; do not
   expect green.
 
 Status values: `todo`, `doing`, `done`, `blocked`.
@@ -40,7 +41,7 @@ Status values: `todo`, `doing`, `done`, `blocked`.
 | **1. MAUI stands alone** | done (2026-09-19, see 2.1) | MAUI stops implementing Core's `IElement`, `IDriver`, `IElementScope`, `IPageObject`, `ITestContext<T>`, `IContainerControl` and `IContainerObject`, and stops using `ControlObjectBase`. New or reshaped: `IMauiElement`, `IMauiDriver`, `IMauiElementScope`, `IMauiPage`, `IMauiTestContext` (design 4.2). MAUI copies of the geometry and scope helpers. Finds make one attempt, and the timeout finds are gone (F7 goes with them). `IsLoaded()`, `GetTitle()` and `TakeScreenshot(string?)` lose their unused timeouts. **Otherwise no behaviour change:** `ProbeReadiness` and the readiness chain come in step 5 | Solution builds; `Brinell.Maui.Tests`, `Brinell.Maui.Uat.Tests` (MAUI pages still discovered) and every other stack's tests green; `Brinell.Core` untouched (`git diff --stat srcnew/Brinell.Core` empty); no `IElement<`, `IElementScope`, `IPageObject`, `IDriver<` or `ControlObjectBase` found in `srcnew/Brinell.Maui*` |
 | **2. Pin it down** | done (2026-09-19, see 2.1) | **Failing unit tests:** original plan (a)-(e), trace (f)-(h), scopes (dialog on a busy page, content readiness reaching a child, row re-resolves to another item, `ScrollToItem` budget, `Item(index)` waits). **R0 guard tests:** a command that never re-enables → `Click` fails with "disabled" within its budget; an action with no effect → `NotConfirmed`, action `Times.Once`; an element re-rendered every 100 ms → the call passes **and** a near-miss `Warning` is logged; the app exiting mid-call → `AppUnavailableException` without waiting out the budget. **Baseline:** a repeat-run script (a suite run N times, each failure classified as framework race, app bug, environment or driver gap); a `FindElement` and an alive check measured per call; the collection UI tests that take more than 5 s; full-suite timing | Tests fail for the stated reason; baseline recorded in section 4 |
 | **3. Stale signal** | done (2026-09-19, see 2.1) | MAUI exceptions (design 4.3), with `AppUnavailableException` raised by both drivers. `InstanceKey`; `Live` in both drivers; `MauiTestContext.TryFindElement` narrowed; `WithRoot`; the alive rule (R6); every Selenium catch switched; catch-alls removed | Mapping unit tests; no Selenium type found in `srcnew/Brinell.Maui` |
-| **4. Calls** | done (2026-09-19, see 2.1) | `Calls/*` (design 6), including near-miss logging through `LogExit(Warning)`. `ViewBase` and `RootedScopeBase` moved onto the calls layer. `ObjectBase.Poll` runs on `Poller` (kept, see 2.1). The `MauiTestContext.FindElement` loop removed. `Menu.OpenCore` | The step 2 plan and trace tests pass; one log pair per call; the near-miss test passes |
+| **4. Calls** | done (2026-09-19, see 2.1) | `Calls/*` (design 6), including near-miss logging through `LogExit(Warning)`. `ViewBase` and `RootedScopeBase` moved onto the calls layer. `ObjectBase.Poll` runs on `Poller` (kept, see 2.1; removed in the review fixes). The `MauiTestContext.FindElement` loop removed. `Menu.OpenCore` | The step 2 plan and trace tests pass; one log pair per call; the near-miss test passes |
 | **5. Scope readiness** | done (2026-09-19, see 2.1) | `ScopeReadiness` and the `ProbeReadiness` chain; `AsksParent`; `ProbeContentReadiness`; `CanResolveElements` removed; `AppRoot` without sweep; `DriverRootScope` removed; page and container public members as call units; `ScopeNotReadyException` replaces `PageLoadException` (4 tests) | Scope tests pass |
 | **6. Confirm** | done (2026-09-19, see 2.1) | `Confirm` replaces `Until`; the 8 act-then-confirm Cores; `EnsureClickableCore` calls removed | Replaced element: new message, action `Times.Once`; the R0 "no effect" test passes |
 | **7. Collections** | done (2026-09-19, see 2.1) | `ItemKey`; `MaterializeAttempts`; the members table in design 7.6 | Collection tests pass; the long-list tests from step 2 given explicit budgets where needed |
@@ -496,6 +497,68 @@ a copy afterwards and checked with `git diff`.
   - risks and open questions.
 - No code changed in this step.
 
+**Review fixes (2026-09-19).** From [implementation-review.md](implementation-review.md); each
+finding is numbered as there.
+
+1. **A row's own members on a recycled element.** `ItemObjectBase.IsCachedRootValid` now also
+   requires `Key.IsHeldBy(root)`, so a cached element that holds another item is dropped and the
+   item is found again by key. Pins: `Row_OwnRead_...` and `Row_OwnClick_...` (`Pin=review`). The
+   read returned "Item 7" before the fix.
+2. **`SelectItem` activating twice.** It now resolves by polling, then activates once. Only a
+   `false` ("nothing activated") is asked again, and any exception ends the call. Pin
+   `SelectItem_FailureAfterActivating_IsNotRepeated`: 33 selects before the fix, 1 after. The
+   step 8 behaviour (asking again after `false`) has its own pin. Windows still tries the
+   containing `ListItem` rows before the element: `TryActivate` treats `NotSupportedException` /
+   `InvalidOperationException` as "this candidate did nothing", as the drivers document.
+3. **Budgets below the call.**
+   - `IMauiElement.ScrollIntoView(int timeoutMs)` lost its 5 s default.
+   - `ControlCall` publishes its context as `AttemptContext.Current` while its body runs.
+     Controls and scopes pass `CallRemainingMs` to every scroll: `ScrollIntoViewCore`, the
+     collection's `TryScrollItemIntoView`, `ScrollHelper.ScrollIntoView` (now with a budget)
+     and `ScrollView.ScrollTo` (now one call).
+   - Appium's Android scroll makes at least one step on a spent budget.
+   - The driver settle waits (dropdown, range, flyout, position settling) are kept on purpose,
+     as recorded in design 5 and section 3.
+4. **Unexpected exceptions.** After retries, `ObservationLog.Unexpected` reports a
+   `WaitTimeoutException`: "N of M attempts raised X. Last: ...", with the exception as
+   `InnerException`. After a single attempt it is still the exception itself. `RunProbe` uses
+   the same rule.
+5. **The bridge and a closed app.** `FlaUIMauiDriver.Exchange` wraps every bridge verb, and
+   `ReadState`, the gestures and `FlaUIDeclaredElement.DeclaresStateReads` check too. When
+   nothing answered because the launched app has exited, each raises `AppUnavailableException`.
+   The catch-alls inside `BrinellBridgeLookup` stay: a tree walk that meets a vanished sibling
+   must go on walking. Not tested with a real closed app; the FlaUI driver has no unit-test
+   seam.
+6. **Timeouts that did nothing.**
+   - These answer now and lost the parameter: container and page `IsExists()` / `IsVisible()`,
+     `GetItemCount()`, `IsEmpty()` and `TrySelectItem(index)`. The Todo fixture's
+     `dialog.IsExists(0)` became `IsExists()`.
+   - `ObjectBase.Poll` had no callers left and is removed.
+   - Container `GetAttribute(name, timeoutMs)` keeps its unused parameter, because Core's
+     `IControlObject` declares it ([move-down.md](move-down.md) section 4).
+7. **Design departures.**
+   - The near-miss thresholds are `NearMissSettings` (`MauiTestContextOptions.NearMiss`, read
+     through `IMauiTestContext.NearMiss`).
+   - `IMauiElementScope.DescribeMiss` builds a scope's "not found" message without looking;
+     `ViewBase.NotFound()` and a container's `RootNotFound()` use it.
+
+- **Evidence:**
+  - `Brinell.Maui.Tests`: 176 passed, 1 skipped. That is 168 before plus 8 review pins.
+    - The two row pins and the `SelectItem` pin were seen failing on the old code.
+    - The scroll-budget, unexpected-exception and near-miss-settings pins fail on it by
+      construction: the old 5000 ms default, the raw exception, and the fixed thresholds.
+      They were not run against it.
+  - `Brinell.Generator.Tests`: 156/156.
+  - `Brinell.Core.Tests`: 16/16.
+  - Regenerating changes no `.gen.cs` file (R8).
+  - Windows UI, affected classes (collections, containers, scroll, background verbs,
+    navigation): 105/105.
+  - Todo UI suite, one run: 36 passed, 3 skipped, 0 failed.
+  - Windows `Brinell.Maui.UITests` in full: 353 tests, 351 passed, 2 gated skips, **0 failed**,
+    2 min 57 s.
+  - Android was not run: no emulator was up. The Appium changes are the scroll loop's first
+    step and the removed default.
+
 ## 3. Decisions taken
 
 | Date | Decision | Source |
@@ -508,11 +571,13 @@ a copy afterwards and checked with `git diff`.
 | 2026-09-19 | Q6: keep a root for the object's lifetime and check it with the alive read (0.2 ms) rather than find it per call (22.7 ms for a page root, Windows) | measured, section 4 |
 | 2026-09-19 | `ActOnce`: a Core method throws `ElementNotReadyException` only before it acts, so an action reported as not performed is asked again within the budget. Any other failure still ends the call at once (R0) | found in step 8 (a toolbar bridge not answering yet); AD-009 |
 | 2026-09-19 | Page waits keep `PageLoad` as their default budget; the root renames of design 7.3 wait for the move down | step 5 notes; [move-down.md](move-down.md) |
+| 2026-09-19 | Q9: materializing loops keep `DefaultWait`; the one long-list test (`ItemWhere_ScrollsToFindOffscreenRow`) passes an explicit budget | step 7 |
+| 2026-09-19 | X5: near-miss thresholds stay at 3 replacements or 50% of the budget, as settings (`MauiTestContextOptions.NearMiss`) | step 8 (1 near-miss in 4,833 calls); implementation review |
+| 2026-09-19 | Driver settle waits below an action (dropdown, range, flyout) keep short fixed bounds; scrolls take the call's remaining budget | [implementation-review.md](implementation-review.md), finding 3; design 5 |
+| 2026-09-19 | An unexpected exception retried to the end of the budget is reported as `WaitTimeoutException` naming its type and count, with the exception inside | implementation review, finding 4; design 6.1 |
 | 2026-09-18 | Keep `ToolbarButton.RequiresVisibilityForAction => false` (S4) | [original-plan.md](background/original-plan.md) |
 
-Still open: design section 11 (S1, D3, X1, X2, X5, Q9). Q6 is settled (above). Q9 has its number: one collection
-test needs more than 5 s (`ItemWhere_ScrollsToFindOffscreenRow`, 10.4 s), so step 7 gives it an
-explicit budget if `DefaultWait` stays the default.
+Still open: design section 11 (S1, D3, X1, X2). Q6, Q9 and X5 are settled (above).
 
 ## 4. Baseline and measurements
 
@@ -522,7 +587,7 @@ Filled in during step 2 and compared in step 8.
 | --- | --- | --- | --- |
 | Todo UI run failure rate (toolbar Cancel) | ~1 in 2 before the `ToolbarButton` fix | 2026-09-18 | [original-plan.md](background/original-plan.md) section 1 |
 | Windows `Brinell.Maui.UITests` Range | 23/23 green | 2026-09-18 | |
-| Android Range / Picker | 6/16 fail / 0/8 pass | 2026-09-18 | driver gaps |
+| Android Range / Picker | Range 6 passed, 16 failed (22); Picker 0 passed, 8 failed | 2026-09-18 (Range first measured 2026-09-05) | driver gaps |
 | `Brinell.Maui.Tests` | 137 passed, 1 skipped (138) | 2026-09-19 | before step 1, and unchanged after it |
 | `Brinell.Maui.Uat.Tests` | 0/4 pass | 2026-09-19 | pre-existing: the scenarios open pages "Main" and "User Form", which the sample app no longer has. Discovery itself finds 20 pages |
 | `Brinell.Presenter.Uat.Tests` | 16 passed, 4 failed (20) | 2026-09-19 | pre-existing: `WorkspaceTree_ShowsMarkdownOnly` and 3 `UatFile_Passes` cases |
@@ -537,5 +602,6 @@ Filled in during step 2 and compared in step 8.
 | Full Windows `Brinell.Maui.UITests` after step 7 | 353 tests, **3 min 47 s**; 351 passed, 2 gated skips, 0 failed | 2026-09-19 | slower than step 6 (2 min 59 s): the long-list search (+6 s, see 2.1) and two expected-failure lookups (+9 s, since given 500 ms budgets) |
 | Full Windows `Brinell.Maui.UITests`, step 8 | 353 tests, **3 min 38 s**; 350 passed, 2 gated skips, 1 failed (an exception-type pin, updated; its class 8/8 since) | 2026-09-19 | report `TestResults/20260919-172808-908730`; see 2.1, step 8 |
 | Todo UI suite, repeated, step 8 | with the override: 5 × 39, **0 failures**; without it: 5 × 39, **0 failures** | 2026-09-19 | `TestResults/step8-with-override`, `TestResults/step8-no-override-3` |
-| Android Range + Selection, step 8 | 31 tests: 10 passed, 21 failed (all known driver gaps) | 2026-09-19 | baseline Range 6/22 passed, Picker 0/8 |
+| Full Windows `Brinell.Maui.UITests`, after the review fixes | 353 tests, **2 min 57 s**; 351 passed, 2 gated skips, 0 failed | 2026-09-19 | see 2.1, "Review fixes" |
+| Android Range + Selection, step 8 | 31 tests: 10 passed, 21 failed (all known driver gaps) | 2026-09-19 | baseline: Range 6 passed, 16 failed; Picker 0 passed, 8 failed |
 | Classes over 2x their 2026-09-15 timing | `ProductCollectionTests` 1151 vs 420 ms/test, `StepperTests` 507 vs 161, `TextVerbTests` 893 vs 214, `ScrollVerbTests` 606 vs 250 | 2026-09-19 | before any behaviour change (step 1 changed none), so this is the baseline to compare against, not a regression of this work |

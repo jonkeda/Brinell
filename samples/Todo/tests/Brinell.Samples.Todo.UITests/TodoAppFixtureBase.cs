@@ -309,7 +309,7 @@ public abstract class TodoAppFixtureBase : MauiTestFixtureBase
             var dialog = new ContentDialog<AppRoot>(appRoot);
             var list = new TodoListPage(Context);
 
-            if (dialog.IsExists(0) == true)
+            if (dialog.IsExists())
             {
                 var buttons = dialog.GetButtonTexts() ?? [];
                 dialog.DialogButton(buttons.Contains("Discard") ? "Discard" : "Cancel").Click();

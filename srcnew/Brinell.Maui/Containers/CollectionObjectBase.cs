@@ -423,14 +423,14 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     #region Counting
 
     /// <inheritdoc />
-    /// <remarks>One read of the realized rows; <paramref name="timeoutMs"/> is not used.</remarks>
-    public int GetItemCount(int? timeoutMs = null)
+    /// <remarks>One read of the realized rows.</remarks>
+    public int GetItemCount()
         => WithRoot(root => _itemStrategy.FindItemElements(root).Count, 0);
 
     /// <summary>
     /// Whether the collection currently has no materialized items.
     /// </summary>
-    public bool IsEmpty(int? timeoutMs = null) => GetItemCount() == 0;
+    public bool IsEmpty() => GetItemCount() == 0;
 
     /// <summary>
     /// Waits until the materialized item count equals <paramref name="expected"/>.
@@ -772,7 +772,7 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
 
         try
         {
-            itemRoot.ScrollIntoView();
+            itemRoot.ScrollIntoView(CallRemainingMs);
             return true;
         }
         catch (Exception error) when (error is NotSupportedException or InvalidOperationException)
@@ -963,7 +963,7 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
         var roots = TryGetItemRoots();
         if (roots.Count == 0) return false;
 
-        return ScrollHelper.ScrollIntoView(roots[^1]);
+        return ScrollHelper.ScrollIntoView(roots[^1], CallRemainingMs);
     }
 
     #endregion
@@ -976,13 +976,15 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     /// </summary>
     /// <remarks>
     /// <para>
-    /// Each attempt finds the row and asks the platform to activate it. The call is done at the
-    /// first activation.
+    /// The row is found by polling, then activated once, as every action is (the control base's
+    /// <c>ActOnce</c>). Any exception from the activation ends the call at once: the row may
+    /// already have been activated, and activating it again could deselect it or navigate twice
+    /// (R0).
     /// </para>
     /// <para>
-    /// A refused activation is tried again within the budget. That is not a repeated action:
-    /// <see cref="ActivateItemCore"/> answers false only when nothing was activated (a row without
-    /// a size, or a selection the platform refused), which is a row not ready yet - a list
+    /// An activation that answers false is asked again within the budget. That is not a repeated
+    /// action: <see cref="ActivateItemCore"/> answers false only when nothing was activated (a row
+    /// without a size, or a selection the platform refused), which is a row not ready yet - a list
     /// re-laying out after a change. A row that stays refused fails the call when the budget
     /// runs out, naming the refusal.
     /// </para>
@@ -991,43 +993,47 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     {
         ArgumentOutOfRangeException.ThrowIfNegative(index);
 
+        const string NotActivated = "found, and the platform did not activate it";
         var budget = Budget(timeoutMs);
         return Call.Run(nameof(SelectItem), index.ToString(System.Globalization.CultureInfo.InvariantCulture),
             budget, AnimationMs, context =>
             {
-                if (Poll(context, _ => RootAttempt(_ =>
+                while (true)
+                {
+                    IMauiElement? itemRoot = null;
+                    if (!Poll(context, _ => RootAttempt(_ =>
+                            (itemRoot = TryGetItemRoot(index)) != null ? Observation.Done() : Observation.Missing())))
                     {
-                        var itemRoot = TryGetItemRoot(index);
-                        if (itemRoot == null)
-                        {
-                            return Observation.Missing();
-                        }
+                        throw context.Log.Last.Kind == ObservationKind.Missing
+                            ? new ElementNotFoundException(
+                                $"No item at index {index} to select within {budget} ms. Locator: {Locator}, " +
+                                $"materialized items: {GetItemCount()}.")
+                            : Failure(context, nameof(SelectItem), budget);
+                    }
 
-                        return ActivateItemCore(itemRoot)
-                            ? Observation.Done()
-                            : Observation.Pending("found, and the platform did not activate it");
-                    })))
-                {
-                    return Self;
+                    if (ActivateItemCore(itemRoot!))
+                    {
+                        return Self;
+                    }
+
+                    context.Log.Add(Observation.Pending(NotActivated), context.Deadline.ElapsedMs);
+                    if (context.Deadline.RemainingMs <= 0)
+                    {
+                        throw new InvalidOperationException(
+                            $"Item {index} was found, and the platform did not activate it within {budget} ms. " +
+                            $"Locator: {Locator}. {context.Log.Summary()}.");
+                    }
+
+                    Brinell.Core.Utilities.WaitHelper.Pause(
+                        Math.Max(1, Math.Min(PollingIntervalMs, context.Deadline.RemainingMs)));
                 }
-
-                throw context.Log.Last.Kind switch
-                {
-                    ObservationKind.Missing => new ElementNotFoundException(
-                        $"No item at index {index} to select within {budget} ms. Locator: {Locator}, " +
-                        $"materialized items: {GetItemCount()}."),
-                    ObservationKind.Pending => new InvalidOperationException(
-                        $"Item {index} was found, and the platform did not activate it within {budget} ms. " +
-                        $"Locator: {Locator}. {context.Log.Summary()}."),
-                    _ => Failure(context, nameof(SelectItem), budget)
-                };
             });
     }
 
     /// <summary>
     /// Attempts to select the item at <paramref name="index"/>, now.
     /// </summary>
-    public bool TrySelectItem(int index, int? timeoutMs = null)
+    public bool TrySelectItem(int index)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(index);
 

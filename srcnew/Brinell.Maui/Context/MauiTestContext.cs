@@ -12,6 +12,7 @@ public class MauiTestContext : IMauiTestContext
     private readonly Interfaces.IMauiDriver _driver;
     private readonly TimeoutSettings _timeouts;
     private readonly ITestLogger _logger;
+    private readonly NearMissSettings _nearMiss;
 
     /// <summary>The call log this context opened itself (<c>BRINELL_CALL_LOG</c>), disposed with it.</summary>
     private readonly CsvTestLogger? _callLog;
@@ -28,6 +29,7 @@ public class MauiTestContext : IMauiTestContext
         ArgumentNullException.ThrowIfNull(options);
         
         _timeouts = options.Timeouts ?? TimeoutSettings.Default;
+        _nearMiss = options.NearMiss ?? NearMissSettings.Default;
         _callLog = options.Logger == null ? OpenCallLog() : null;
         _logger = options.Logger ?? _callLog ?? (ITestLogger)NullTestLogger.Instance;
         
@@ -73,6 +75,9 @@ public class MauiTestContext : IMauiTestContext
     
     /// <inheritdoc />
     public ITestLogger Logger => _logger;
+
+    /// <inheritdoc />
+    public NearMissSettings NearMiss => _nearMiss;
     
     /// <inheritdoc />
     public LocatorStrategy DefaultLocatorStrategy => LocatorStrategy.AutomationId;
@@ -118,8 +123,11 @@ public class MauiTestContext : IMauiTestContext
     /// call's poll's job, and so is the sweep (throttled, in the control's lookup).
     /// </remarks>
     public IMauiElement FindElement(Locator locator)
-        => TryFindElement(locator)
-           ?? throw new ElementNotFoundException($"Element not found with locator: {locator}");
+        => TryFindElement(locator) ?? throw DescribeMiss(locator);
+
+    /// <inheritdoc />
+    public ElementNotFoundException DescribeMiss(Locator locator)
+        => new($"Element not found with locator: {locator}");
     
     /// <inheritdoc />
     public IReadOnlyList<IMauiElement> FindElements(Locator locator)
