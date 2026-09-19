@@ -12,6 +12,12 @@ rebuilt.
 - [Test Writing Guide](guides/test-writing.md)
 - [Troubleshooting](guides/troubleshooting.md)
 
+## Samples
+
+- [Todo: one MAUI app, five test tiers](../samples/Todo/README.md): page objects and
+  ControlObjects, WireMock, a seeded SQLite database, and a test pyramid traced to user journeys,
+  on Windows and Android.
+
 ## Architecture
 
 - [Architecture Overview](architecture/overview.md)

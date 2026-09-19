@@ -1,8 +1,17 @@
 # Finding elements: trace, gaps, and what to merge
 
+> **Background.** Findings F1-F9 are still accurate descriptions of the code on 2026-09-19. The
+> *changes* it proposes are replaced by [../design.md](../design.md). What changed since:
+>
+> - F6 and F8 ("remove the timeouts from `IElement` / `IDriver`") are **not** done in Core. MAUI
+>   gets its own `IMauiElement` / `IMauiDriver` without timeouts (design R9, 4.2). Core is
+>   unchanged until the shape moves down (design 4.5).
+> - Section 4's table is replaced by design 4.2.
+> - Section 5's phases (including "phase 2b") are replaced by plan.md steps.
+
 This traces `FindElement`, `TryFindElement` and `FindElements` from a control down to the
 driver. It then lists what should change because of the stale-readiness plan
-([plan.md](plan.md)) and its companion note ([resolve-ready-element.md](resolve-ready-element.md)),
+([original-plan.md](original-plan.md)) and its companion note ([resolve-ready-element.md](resolve-ready-element.md)),
 and which methods can be merged.
 
 Status: analysis, 2026-09-19. Nothing is changed yet. Scope: `Brinell.Maui`,

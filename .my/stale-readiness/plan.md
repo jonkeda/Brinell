@@ -1,230 +1,77 @@
-# Stale elements in the readiness wait - plan
+# Stale readiness: plan
 
-Goal: a control's public call spends its time budget on the control, not on one element
-instance. When the platform replaces the element partway through, the next poll finds the new
-one; the call honours the caller's `timeoutMs`; and a stale element is recognised as stale on
-every platform, not only on Appium.
+The work plan and its status. What to build is in [design.md](design.md). Why it is built that way
+is in `background/` (see [README.md](README.md)).
 
-Status: draft, 2026-09-18. Nothing changed yet beyond the narrow `ToolbarButton` workaround
-described in section 1.
+Status: **not started**, 2026-09-19. The design is accepted (section 3).
 
-Related:
+## 1. Goal
 
-- Found in: `.my/TodoApp/plan.md`, section 9, "Phase 4" (the Brinell `ToolbarButton` fix).
-- Rules this touches: AD-004 (wait for state) in `docs/architecture/decisions.md`; the
-  `maui-control` skill's R1/R2 and "Actions confirm their effect".
-- Discussion: [resolve-ready-element.md](resolve-ready-element.md), on whether actions still need
-  `ResolveReadyElement` after this plan, and on the log and budget gaps it found.
-- Trace: [find-element-trace.md](find-element-trace.md), on the `FindElement`, `TryFindElement`
-  and `FindElements` path from control to driver: two more nested waits and a merged lookup
-  surface.
-- Tests: `testsnew/Brinell.Maui.Tests/Semantic/ReadinessTests.cs` and `UntilTests.cs` (mocked
-  elements, milliseconds); `testsnew/Brinell.Maui.UITests` (Windows, minutes); Todo UI suite.
+A test's call on any MAUI object (control, page, container, collection or row) is one unit of
+work:
 
----
+- it spends one budget;
+- it waits for its scope chain;
+- it finds its element again on every attempt;
+- it recognizes a replaced element on every platform;
+- it never repeats an action;
+- when it fails, it says what it last saw.
 
-## 1. What happens today
+**App bugs stay failures** (design R0). **MAUI is made right first, on its own interfaces; Core is
+not changed.** The proven shape moves down to Core later, as its own project (design 4.5).
 
-### The observed failure
+This started from the Todo edit page's toolbar Cancel, which failed one full UI run in two.
 
-The Todo edit page's Cancel is a MAUI `ToolbarItem`. On Windows MAUI replaces a toolbar item's
-element whenever its command's `CanExecute` changes. Measured by UI Automation runtime id, around
-a command that finishes:
+## 2. Steps
 
-```text
-   5 ms  42.3410548.4.30  enabled=False
- 206 ms  missing
- 213 ms  42.3410548.4.65  enabled=True
-```
+Working rules:
 
-A `Click()` whose lookup landed on `…4.30` waited 5 s for that instance to become visible, then
-failed with `Element was not visible within 5000ms after scrolling into view`. It happened in
-about one full Todo UI run in two. `ToolbarButton` now opts out of the visibility wait
-(`ViewBase.RequiresVisibilityForAction => false`), which fixes toolbar buttons and nothing else.
+- **One UI test process at a time.** Two runs at once fight over the desktop.
+- **The smallest test tier that can falsify each step.** The full suites run only in step 8.
+- **Restart Appium after any killed run.**
+- **Android starts from a failing baseline** (Range 6/16, Picker 0/8). Compare against it; do not
+  expect green.
 
-### The mechanism
+Status values: `todo`, `doing`, `done`, `blocked`.
 
-`ViewBase.RunPoll` owns the call's budget (`timeoutMs ?? DefaultWait`, 5 s by default) and
-catches every exception as "transient". Inside it, four helpers do this on each iteration:
+| Step | Status | Contents | Done when |
+| --- | --- | --- | --- |
+| **0. Rename** | todo | `ItemContainerBase` → `ItemObjectBase`, `IMauiItemContainer` → `IMauiItemObject`; tests, Todo sample, skills (`maui-control`, `maui-ui-test`) | Builds; `Brinell.Maui.Tests` green; no behaviour change |
+| **1. MAUI stands alone** | todo | MAUI stops implementing Core's `IElement`, `IDriver`, `IElementScope`, `IPageObject`, `ITestContext<T>`, `IContainerControl` and `IContainerObject`, and stops using `ControlObjectBase`. New or reshaped: `IMauiElement`, `IMauiDriver`, `IMauiElementScope`, `IMauiPage`, `IMauiTestContext` (design 4.2). MAUI copies of the geometry and scope helpers. Finds make one attempt, and the timeout finds are gone (F7 goes with them). `IsLoaded()`, `GetTitle()` and `TakeScreenshot(string?)` lose their unused timeouts. **Otherwise no behaviour change:** `ProbeReadiness` and the readiness chain come in step 5 | Solution builds; `Brinell.Maui.Tests`, `Brinell.Maui.Uat.Tests` (MAUI pages still discovered) and every other stack's tests green; `Brinell.Core` untouched (`git diff --stat srcnew/Brinell.Core` empty); no `IElement<`, `IElementScope`, `IPageObject`, `IDriver<` or `ControlObjectBase` found in `srcnew/Brinell.Maui*` |
+| **2. Pin it down** | todo | **Failing unit tests:** original plan (a)-(e), trace (f)-(h), scopes (dialog on a busy page, content readiness reaching a child, row re-resolves to another item, `ScrollToItem` budget, `Item(index)` waits). **R0 guard tests:** a command that never re-enables → `Click` fails with "disabled" within its budget; an action with no effect → `NotConfirmed`, action `Times.Once`; an element re-rendered every 100 ms → the call passes **and** a near-miss `Warning` is logged; the app exiting mid-call → `AppUnavailableException` without waiting out the budget. **Baseline:** a repeat-run script (a suite run N times, each failure classified as framework race, app bug, environment or driver gap); a `FindElement` and an alive check measured per call; the collection UI tests that take more than 5 s; full-suite timing | Tests fail for the stated reason; baseline recorded in section 4 |
+| **3. Stale signal** | todo | MAUI exceptions (design 4.3), with `AppUnavailableException` raised by both drivers. `InstanceKey`; `Live` in both drivers; `MauiTestContext.TryFindElement` narrowed; `WithRoot`; the alive rule (R6); every Selenium catch switched; catch-alls removed | Mapping unit tests; no Selenium type found in `srcnew/Brinell.Maui` |
+| **4. Calls** | todo | `Calls/*` (design 6), including near-miss logging through `LogExit(Warning)`. `ViewBase` and `RootedScopeBase` moved onto the calls layer. `ObjectBase.Poll` removed. The `MauiTestContext.FindElement` loop removed. `Menu.OpenCore` | The step 2 plan and trace tests pass; one log pair per call; the near-miss test passes |
+| **5. Scope readiness** | todo | `ScopeReadiness` and the `ProbeReadiness` chain; `AsksParent`; `ProbeContentReadiness`; `CanResolveElements` removed; `AppRoot` without sweep; `DriverRootScope` removed; page and container public members as call units; `ScopeNotReadyException` replaces `PageLoadException` (4 tests) | Scope tests pass |
+| **6. Confirm** | todo | `Confirm` replaces `Until`; the 8 act-then-confirm Cores; `EnsureClickableCore` calls removed | Replaced element: new message, action `Times.Once`; the R0 "no effect" test passes |
+| **7. Collections** | todo | `ItemKey`; `MaterializeAttempts`; the members table in design 7.6 | Collection tests pass; the long-list tests from step 2 given explicit budgets where needed |
+| **8. Prove it** | todo | On a branch, remove the `ToolbarButton` override and run Todo 5×. **R0 proof:** re-introduce the Todo `CanExecuteChanged` bug on a branch and run TOD.04.4. Run Windows `Brinell.Maui.UITests` in full against `timing-baseline.json`. Run the repeat-run script against the step 2 baseline. Run the Android baseline subset. Restore the override and the fix | Todo 5/5. **TOD.04.4 still fails against the bug, and names what it saw.** No new Windows failures, and no slowdowns beyond the threshold. Framework-race failures down, and none moved from "app bug" to "pass". Near-misses listed. Android no worse than baseline |
+| **9. Write it down** | todo | AD-004 ("one unit per call; only the call's poll waits; a call waits for its scope chain"); a new decision record for R0; a decision record for R9 (MAUI ahead of Core, on purpose); both skills; `CHANGELOG.md` (design section 10 list); a first draft of the "move down" plan (design 4.5) | Docs merged |
 
-```csharp
-var element = FindElement();
-EnsureVisible(element, DefaultTimeoutMs);   // a second, full 5 s budget, pinned to this element
-```
+## 3. Decisions taken
 
-`EnsureVisible` scrolls once, then calls `WaitVisibleCore(element, true, timeout)`, which is
-**another `RunPoll`** on the same element instance. So:
-
-1. **One element can eat the whole budget.** If the found element is being replaced, the inner
-   poll spends 5 s reading a dead element, and the outer poll then has no time left to find the
-   new one.
-2. **The caller's timeout is not honoured.** The inner wait is always `DefaultWait`:
-   `Click(timeoutMs: 500)` can take 5 s, and `Click(timeoutMs: 20_000)` can burn its first 5 s
-   on one element.
-3. **Nested readiness and logging.** The inner `RunPoll` repeats the page-readiness gate and
-   writes its own entry/exit log lines, so one call logs as two and waits for the page twice.
-4. **The failure message misleads.** It says "not visible", when the element was gone.
-
-### Where it happens
-
-| Site | Pattern | Budget |
+| Date | Decision | Source |
 | --- | --- | --- |
-| `ViewBase.ResolveReadyElement` (every action and setter via `RunDoWithElement`, `RunSetWithElement`) | find, `EnsureVisible(DefaultWait)`, `EnsureReadyForActionCore` | nested 5 s |
-| `ViewBase.RunWaitWithElement` (generated `Wait*`) | find, `EnsureVisible(DefaultWait)`, read | nested 5 s |
-| `ViewBase.RunGetWithElement` (generated `Get*`) | find, `EnsureVisible(DefaultWait)`, read | nested 5 s |
-| `ViewBase.RunAssertWithElement` (generated `Assert*`) | find **once**, `EnsureVisible(DefaultWait)`, re-read; re-find only on `StaleElementReferenceException` | nested 5 s, and see "Stale detection" |
-| `ToggleControlBase` Core (line 81), `RadioButton` Core (line 55) | `EnsureVisible(element, timeoutMs ?? DefaultWait)` inside a Core method | caller's, but pinned |
-| 8 Core methods that act, then `Until` on the same element: `ToggleControlBase` (x2), `CarouselView`, `Stepper`, `MediaPlayPauseButton`, `DrawingView`, `Expander`, `RatingView` | act, then read back the element they were given | caller's, pinned |
-| `ContainerObjectBase.ContainerRoot` cache | `IsCachedRootValid` reads `TagName`; a failure invalidates | to verify on FlaUI |
+| 2026-09-19 | Q1-Q10 as proposed: scope readiness chain, "loaded" merged into readiness, `AppRoot` the only whole-app scope, one alive rule, object-lifetime root cache, `ItemKey`, scope members as call units, one budget for materializing, non-`Try` waits | [scopes-analysis.md](background/scopes-analysis.md) section 6 |
+| 2026-09-19 | Rename `ItemContainerBase` → `ItemObjectBase` (and the interface) | user |
+| 2026-09-19 | After the review: keep everything marked "defer", and keep the full diagnostics. Only the two "drop" items go (`Deadline` internal, no `Carry`) | [review.md](background/review.md), outcome |
+| 2026-09-19 | R0: app bugs stay failures; near-misses are reported; `AppUnavailableException` fails at once | user; design 2.1 |
+| 2026-09-19 | **No bridges on Core interfaces.** MAUI gets its own interfaces now, Core is not changed, and the proven shape moves down later, one stack at a time. This replaces the earlier "Core base interfaces with bridges" decision | user; design R9, 4 |
+| 2026-09-18 | Keep `ToolbarButton.RequiresVisibilityForAction => false` (S4) | [original-plan.md](background/original-plan.md) |
 
-The `RunWaitWithOptionalElement` / `RunAssertWithOptionalElement` pair (absence-tolerant
-members) already re-resolve on every poll and do not force visibility. They are the model.
+Still open: design section 11 (S1, D3, X1, X2, X5, Q6, Q9). Most are settled by step 2's
+numbers.
 
-### Stale detection works on Appium only
+## 4. Baseline and measurements
 
-The platform-neutral code recognises a stale element by catching
-`StaleElementReferenceException`, which is **Selenium's** type (it reaches `Brinell.Maui` through
-its `Appium.WebDriver` reference). There are 11 such catches: `ViewBase.RunAssertWithElement`,
-`ContainerObjectBase` (x2), `CollectionObjectBase` (x4), `ElementMatch`, `PageObjectBase` (x2) and
-`TabMenuMarkup`; the `ItemContainerBase` remarks describe the same contract.
+Filled in during step 2 and compared in step 8.
 
-The FlaUI driver never raises that type. A removed UI Automation element fails with UIA's
-`UIA_E_ELEMENTNOTAVAILABLE` (`0x80040201`), surfaced by FlaUI as its own exception or a
-`COMException`. The driver knows the code (`FlaUIMauiElement` line 1753, `AppWindow`), but only
-for bridge answers and window re-attach. So on Windows every one of those catches is dead code,
-the error falls into `RunPoll`'s catch-all, and the poll retries **the same dead element** until
-it times out.
-
----
-
-## 2. What we want
-
-1. **One budget per public call:** the caller's `timeoutMs`, or `DefaultWait`. Nothing inside
-   the call starts a budget of its own.
-2. **Re-resolve on every attempt** that did not succeed, unless there is a measured reason to pin
-   (an action already performed must not be repeated: that rule stays).
-3. **A stale element is a named, platform-neutral signal:** a Brinell `StaleElementException` in
-   `Brinell.Core.Exceptions`, raised by both drivers and caught by the controls. Selenium's type
-   stays inside the Appium driver.
-4. **Messages say what was last observed:** "found but not visible", "found but disabled",
-   "found, then gone (replaced 3 times)", and name the `Locator`.
-5. **No change for a control that was working:** same members, same generated API, same
-   semantics for null-skip, idempotence and "confirm the effect". Timing changes only where the
-   old behaviour was wrong (the nested budget).
-
----
-
-## 3. Design
-
-### 3.1 `EnsureVisible` becomes one attempt, not a wait
-
-```csharp
-/// One attempt: visible now, or scroll once and look again. Throws NotVisibleException
-/// (carrying what it saw) when still not visible; the caller's poll decides whether to retry.
-protected virtual void EnsureVisible(IMauiElement element)
-```
-
-- The `timeout` parameter goes (no backward compatibility: change it outright).
-- The four `Run*WithElement` helpers call it inside their existing `RunPoll`, so a not-yet-visible
-  element costs one poll interval, and the next attempt finds the element again.
-- **Scroll throttling.** Scrolling on every poll interval could fight a list that is still
-  moving, and on Android a scroll is a UiScrollable search. Scroll at most once per element
-  instance, and at most every `Animation` ms (300 by default) for the same locator; otherwise only
-  re-check visibility. The Core pieces this needs (`ScrollIntoViewCore`, `ScrollLookup`) exist.
-
-### 3.2 Resolve per attempt, in all four helpers
-
-`ResolveReadyElement`, `RunWaitWithElement` and `RunGetWithElement` already call `FindElement()`
-per iteration; with 3.1 they stop pinning. `RunAssertWithElement` keeps "resolve once, re-read
-each tick" (it avoids a tree search per read, which is why it was written that way) but
-re-resolves on `StaleElementException` **and** on `NotVisibleException`.
-
-Measure before choosing for `RunAssertWithElement`: if a `FindElement` per poll costs little on
-Windows (FlaUI caches) and Android (one Appium round trip), resolve every time and delete the
-special case.
-
-### 3.3 The stale signal
-
-- `Brinell.Core.Exceptions.StaleElementException : BrinellException`, with the `Locator` when
-  known.
-- **FlaUI:** `FlaUIMauiElement` wraps its property reads and actions; `UIA_E_ELEMENTNOTAVAILABLE`
-  (FlaUI's exception or a `COMException` with that HRESULT) becomes `StaleElementException`. One
-  helper, used everywhere the element touches UIA, not a catch per member.
-- **Appium:** `AppiumMauiElement` maps Selenium's `StaleElementReferenceException` the same way.
-- The 11 catches switch to `StaleElementException`. `Brinell.Maui` no longer names a Selenium
-  type.
-
-### 3.4 Actions that confirm their effect
-
-The 8 act-then-`Until` Core methods keep reading "their own element" (R1). What changes is what
-happens when that element is replaced after the action:
-
-- `Until` treats `StaleElementException` as "cannot confirm on this instance". The Core method
-  throws it; the generated action's caller does **not** repeat the action. The failure says the
-  action ran and the element was replaced before its effect could be read.
-- Where a control's element is known to be replaced by its own action (none measured yet besides
-  toolbar items, which confirm nothing), give that control a documented re-read through a fresh
-  lookup. Not a general mechanism: add it when a control needs it, with the evidence.
-
-### 3.5 Container roots
-
-Verify first: after the element is removed, does `IsCachedRootValid` (a `TagName` read) fail on
-FlaUI, or does FlaUI return a cached value? If it passes for a dead root, containers keep
-resolving children under a removed root until the poll ends. Fix only if measured: read a property
-FlaUI does not cache (`IsOffscreen`, or `GetRuntimeId`) and let `StaleElementException` invalidate.
-
-### 3.6 `ToolbarButton`
-
-Keep `RequiresVisibilityForAction => false`: it is right on its own terms (the click raises the
-item by id, so the instance on screen does not matter). After 3.1-3.3 it is no longer what keeps
-the Todo suite green; phase 5 proves that by running with it removed.
-
----
-
-## 4. Risks
-
-| Risk | Mitigation |
-| --- | --- |
-| A control relied on the nested 5 s to wait out a slow scroll or animation | The outer budget is still 5 s by default; only the nesting goes. Phase 5's full-suite comparison against `timing-baseline.json` shows any test that got slower or started timing out. |
-| Scroll storms (scrolling every poll) | Throttle as in 3.1. Unit-test: at most one scroll per element instance per `Animation` ms. |
-| `FindElement` per poll is expensive on Android | Measure in phase 0; if needed, keep resolve-once in `RunAssertWithElement` and re-resolve only on the two signals. |
-| Mapping too much to "stale" on FlaUI (not every COM error is a removed element) | Map exactly `UIA_E_ELEMENTNOTAVAILABLE`; everything else keeps its type. |
-| Callers that caught `StaleElementReferenceException` outside `srcnew/` (tests, Construction) | Grep `testsnew/`, `samples/`, and `construction/Exact.Construction.UITests` in phase 2 and change them; no deprecation shim (no-backward-compatibility rule). |
-| Behaviour differs Windows vs Android | Android runs its known baseline subset before and after (6/16 Range, 0/8 Picker fail before any change); compare, do not expect green. |
-
----
-
-## 5. Phases
-
-One UI test process at a time; the smallest tier that can falsify each change; the full Windows
-suite at the end only.
-
-| Phase | Deliverable | Done when |
-| --- | --- | --- |
-| **0. Pin it down** | Unit tests in `Semantic/ReadinessTests.cs` that fail today: (a) first lookup returns an element that never becomes visible, second returns a good one -> `Click()` succeeds and invokes the good one once; (b) `Click(timeoutMs: 300)` against a never-visible element fails in < 1 s; (c) one public call writes one log entry/exit pair; (d) same as (a) for `Get*`, `Wait*`, `Assert*`. Measure `FindElement` cost per call on Windows (and Android if an emulator is up). Record the current full-suite timing. | The tests exist and fail for the stated reason; numbers recorded here. |
-| **1. Stale signal** | `StaleElementException` in Core; FlaUI and Appium mapping; the 11 catches switched. Unit tests for the mapping at the element level (FlaUI: a mocked `AutomationElement` failing with `0x80040201`; Appium: Selenium's exception). | `Brinell.Maui.Tests` green; `grep StaleElementReferenceException srcnew/Brinell.Maui` finds nothing. |
-| **2. Single budget** | `EnsureVisible` as one attempt with scroll throttling (3.1); the four helpers (3.2); `ToggleControlBase`/`RadioButton` Core calls updated; callers outside `srcnew/` updated. | Phase 0 tests pass; the rest of `Brinell.Maui.Tests` green. |
-| **3. Confirming actions** | `Until` and the 8 act-then-confirm Core methods handle `StaleElementException` as in 3.4; unit tests in `UntilTests.cs`. | A replaced element fails with the new message and the action is not repeated (verified by `Verify(..., Times.Once)`). |
-| **4. Container roots** | Measure 3.5 on FlaUI (a short probe against the sample app's StateContainer, which swaps its children). Fix only if the cache survives a removed root. | Measured result recorded; fix + unit test if needed. |
-| **5. Prove it** | Remove `ToolbarButton`'s override on a branch and run the Todo UI suite 5x (it failed 1 in 2 before); run `Brinell.Maui.UITests` on Windows in full (baseline: Range 23/23 green) and compare with `timing-baseline.json`; run the Android baseline subset if an emulator is up. Put the override back (3.6). | Todo 5/5 without the override; Windows suite no new failures and no test slower by more than the report's threshold; Android no worse than its baseline. |
-| **6. Write it down** | AD-004 gains the rule "one budget per public call; nothing inside a call waits with its own default"; the `maui-control` skill's R2 says the same; `CHANGELOG.md` names the removed `EnsureVisible(element, timeout)` overload and the exception type change. | Docs merged; links valid. |
-
----
-
-## 6. Open decisions
-
-| # | Question | Recommendation |
-| --- | --- | --- |
-| S1 | Re-resolve on every poll everywhere, or keep resolve-once in `RunAssertWithElement`? | Decide on phase 0's measurement; default to resolve-once plus the two re-resolve signals. |
-| S2 | Name and home of the stale type | `Brinell.Core.Exceptions.StaleElementException`, next to `ElementNotFoundException`. |
-| S3 | Scroll throttle interval | `Timeouts.Animation` (300 ms), not a new setting. |
-| S4 | Keep `ToolbarButton.RequiresVisibilityForAction` after the fix? | Keep: it is correct in its own right (3.6). |
-| S5 | Also fix the misleading message when the page gate fails first? | Out of scope unless phase 0 shows it on the same path. |
-
-## 7. Out of scope
-
-- Physical-input fallbacks (AD-005): none are added.
-- WPF / WinForms controls: they have their own base classes; check them for the same nesting
-  afterwards, as a separate item.
-- The Construction UI tests beyond changing their `StaleElementReferenceException` catches, if
-  any.
+| Measure | Value | Date | Notes |
+| --- | --- | --- | --- |
+| Todo UI run failure rate (toolbar Cancel) | ~1 in 2 before the `ToolbarButton` fix | 2026-09-18 | [original-plan.md](background/original-plan.md) section 1 |
+| Windows `Brinell.Maui.UITests` Range | 23/23 green | 2026-09-18 | |
+| Android Range / Picker | 6/16 fail / 0/8 pass | 2026-09-18 | driver gaps |
+| `FindElement` cost per call (Windows / Android) | | | step 2 |
+| Alive-check cost per call | | | step 2 (decides Q6) |
+| Collection UI tests taking more than 5 s | | | step 2 (decides Q9) |
+| Repeat-run failure classes (race / app bug / environment / driver gap) | | | step 2 |
+| Full-suite timing | | | step 2 |

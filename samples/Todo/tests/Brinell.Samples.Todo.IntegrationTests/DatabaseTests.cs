@@ -132,6 +132,38 @@ public sealed class DatabaseTests : IDisposable
     }
 
     [Fact]
+    [Trait("Journey", "TOD.08.7")]
+    public async Task ASave_IsAllOrNothing_ToAReaderOnAnotherConnection()
+    {
+        // The deterministic half of "killed during save": whatever moment a save is caught at, the
+        // row holds one whole version, never a new title beside old notes. The real kill is manual
+        // (manual/charters.md, CH-2).
+        using var host = await TodoHost.StartAsync("three-todos");
+        var milk = (await host.Repository.GetAsync(host.Scenario.Local[0].Id))!;
+        var versionA = milk with { Title = "Version A", Notes = "Notes of A" };
+        var versionB = milk with { Title = "Version B", Notes = "Notes of B" };
+        await host.Repository.SaveAsync(versionA);
+
+        var writer = Task.Run(async () =>
+        {
+            for (var i = 0; i < 100; i++)
+            {
+                await host.Repository.SaveAsync(i % 2 == 0 ? versionB : versionA);
+            }
+        });
+
+        var seen = new HashSet<(string Title, string? Notes)>();
+        while (!writer.IsCompleted)
+        {
+            var read = (await host.Repository.GetAsync(milk.Id))!;
+            seen.Add((read.Title, read.Notes));
+        }
+
+        await writer;
+        Assert.All(seen, pair => Assert.Equal($"Notes of {pair.Title[^1]}", pair.Notes));
+    }
+
+    [Fact]
     [Trait("Journey", "TOD.01.1")]
     public async Task TheComposition_ResolvesEveryViewModel()
     {

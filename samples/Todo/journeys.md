@@ -2,7 +2,7 @@
 
 Module id: `TOD`. Subtask ids: `TOD.<journey>.<subtask>` (e.g. `TOD.02.3`), the same notation as
 the Contacts bundle (`CON.xx.y`). Every automated test carries `[Trait("Journey", "TOD.xx.y")]`
-and `[Trait("Pyramid", "...")]`; the coverage report in [plan.md](plan.md#journey-coverage-report)
+and `[Trait("Pyramid", "...")]`; the coverage report ([README](README.md#the-journey-coverage-report))
 compares those traits with this file.
 
 Tiers: **U** Unit, **I** Integration (headless, WireMock + SQLite), **C** Contract (real API in
@@ -117,7 +117,7 @@ a navigation, a real wire). Where a subtask lists two tiers, the second checks o
 | Id | Subtask | Tier | Why there |
 | --- | --- | --- | --- |
 | TOD.10.1 | Every screen loads and its key controls exist | **R** | Reviews crawl: list, detail, edit, empty, error |
-| TOD.10.2 | Interactive controls have AutomationIds and accessible names | **R** | `AccessibilityAudit` |
+| TOD.10.2 | Interactive controls have AutomationIds and accessible names | **R** + M | Reviews find every control by its AutomationId; a screen reader checks the names (Brinell's `AccessibilityAudit` covers gesture verbs only, and this app declares none) |
 | TOD.10.3 | Screenshots per screen for design review | **R** | Artifacts (AD-007) |
 | TOD.10.4 | Dark mode, 200 % font scaling, small-screen keyboard overlap | M | Visual judgement |
 
@@ -134,7 +134,7 @@ Counts are per assignment, so a subtask with two tiers counts twice.
 | Contract | 1 | |
 | UI hermetic | 27 | one example per behaviour |
 | UI live | 3 | real wire only |
-| Manual | 3 | |
+| Manual | 4 | |
 | Smoke / Reviews gates | 2 / 3 | |
 
 At the subtask level, UI hermetic has more assignments than Unit. That is expected for a small CRUD

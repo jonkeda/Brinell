@@ -1,6 +1,15 @@
 # Do we still need `ResolveReadyElement`? - discussion
 
-Question: once the plan in [plan.md](plan.md) is done, can actions and setters drop
+> **Background.** Its conclusions are in [../design.md](../design.md): R1, R3 and section 8
+> (`ResolveReady`, the action inside `ControlCall`). What changed since:
+>
+> - The `TryOnElement` sketch now starts with the scope-readiness step (design 8).
+> - Option B for the confirm budget is accepted (design R3).
+> - Its section 5 plan edits are replaced by plan.md steps.
+> - Its section 6 open points are settled: `doEnsureVisible` and the `EnsureClickableCore` calls
+>   are removed.
+
+Question: once the plan in [original-plan.md](original-plan.md) is done, can actions and setters drop
 `ViewBase.ResolveReadyElement` and go through one of the existing `Run*` helpers instead?
 
 Status: discussion, 2026-09-19. It assumes phases 1-3 of the plan are in: `EnsureVisible` is one

@@ -1,5 +1,9 @@
 # Brinell WinForms Sample Application
 
+> **Looking for a complete example?** [Todo](Todo/README.md) is a MAUI app tested at every tier:
+> unit, integration against WireMock and SQLite, hermetic and live UI tests with Brinell on
+> Windows and Android, and manual charters, all traced to user journeys.
+
 This directory contains a sample WinForms application demonstrating the Brinell UI testing framework for Windows Forms.
 
 ## Projects

@@ -10,7 +10,7 @@ demonstrates.
 
 Related:
 
-- [journeys.md](journeys.md): the journey backbone (`TOD.xx.y`) and the tier each subtask gets.
+- [journeys.md](../../samples/Todo/journeys.md): the journey backbone (`TOD.xx.y`) and the tier each subtask gets.
 - Strategy: `../../../.my/testpyramide/test-pyramid-discussion.md` (5 tiers, Smoke, Reviews,
   "push down" rule, traits).
 - Spec format: `../../../.my/testpyramide/Contacts/` (5-document bundle, `CON.xx.y` ids).
@@ -224,7 +224,7 @@ Every test carries traits, so a report can compare journeys with tests:
 [Fact]
 [Trait("Module", "Todo")]
 [Trait("Journey", "TOD.02.3")]
-[Trait("Pyramid", "Unit")]      // Unit | Integration | UiHermetic | UiLive
+[Trait("Pyramid", "Unit")]      // Unit | Integration | Contract | UiHermetic | UiLive
 public void Save_WithEmptyTitle_ShowsTitleRequired() { ... }
 ```
 
@@ -452,7 +452,7 @@ pyramid allocation honest as the app grows.
 
 ---
 
-## 9. Implementation notes (phases 0-7)
+## 9. Implementation notes (phases 0-8)
 
 What building phases 0-2 settled or changed. Test counts are from the runs that closed each phase.
 
@@ -682,3 +682,60 @@ The live tier (3) is skipped without `BRINELL_UAT_LIVE_API=1`, as on Windows.
 
 **Not done here.** `Brinell.NativeAndroid` maps ids with `By.Id` too, so it probably has the same
 scoping leak under an element. It is untested there, and it is a separate driver.
+
+### Phase 8 - close-out
+
+- **`samples/Todo/README.md`**: the app, the projects, the five tiers with their real counts,
+  and the TOD.02 walkthrough through all five tiers. The walkthrough quotes the actual tests:
+  - unit: validation `[Theory]` and the edit view model;
+  - integration: TOD.02.6 on disk, plus the contract tests;
+  - hermetic UI: TOD.02.3, plus a `WaitForRequest` example;
+  - live UI: TOD.07.4;
+  - manual: CH-2 and CH-3.
+
+  The README also covers the test data (scenarios, not a bridge), how to run each tier on
+  Windows and Android, and the coverage report. It is linked from `docs/README.md` (a new
+  Samples section) and from `samples/README.md`.
+- **`journeys.md` moved** from here to `samples/Todo/journeys.md`: the report and the README use
+  it, so it belongs with the sample. The link above now points there.
+- **`samples/Todo/manual/charters.md`**: five charters:
+  - CH-1: network lost mid-sync (TOD.08.6);
+  - CH-2: app killed mid-save (TOD.08.7);
+  - CH-3: looks and accessibility (TOD.10.4, TOD.10.2);
+  - CH-4: exploratory, two devices on one backend;
+  - CH-5: the Android-skipped tests, run by hand.
+
+  Each charter has a time box, a mission, what to look for, why it is manual, and a
+  **Moved down** line.
+- **`tests/Brinell.Samples.Todo.JourneyCoverage`**: its own project, not a test in `UnitTests`,
+  because it must reference all three test assemblies. It reads the UI tests from the mobile
+  head, since the Windows head is `net10.0-windows`. It uses reflection only: no test runs and no
+  app launches, so it takes about 50 ms. Seven checks:
+  - every automated assignment has a test in its tier;
+  - every M subtask is named in a charter;
+  - no Journey trait names an unknown subtask;
+  - every test has a Pyramid trait;
+  - the pyramid's shape holds: unit cases > hermetic > live;
+  - the matrix is written to `TestResults/<run-id>/suites/TodoJourneyCoverage/journey-coverage.md`.
+- **Gaps the report found, and what closed them:**
+  - TOD.08.7 (I) had no test. Added `DatabaseTests.ASave_IsAllOrNothing_ToAReaderOnAnotherConnection`:
+    a reader on another connection watches 100 alternating saves and never sees a mixed row.
+  - TOD.10.3 (R): the Reviews already saved screenshots, but carried no trait. They now carry
+    TOD.10.2 and TOD.10.3, and assert that each screenshot file exists.
+  - TOD.10.2 (R) claimed accessible names, which no automated test checks: Brinell's
+    `AccessibilityAudit` covers gesture verbs only, and this app has none. Changed it to **R + M**:
+    the Reviews find every control by AutomationId, and CH-3 checks the names with a screen reader.
+- **Contract tier trait.** `ContractTests` was tagged `Pyramid=Integration`, but `journeys.md`
+  gives contract tests their own tier (C). It is now `Pyramid=Contract`.
+- **Counts:**
+
+  | Tier | Tests (cases) |
+  | --- | --- |
+  | Unit | 70 (114) |
+  | Integration | 24 |
+  | Contract | 4 |
+  | UI hermetic | 34 (36) |
+  | UI live | 3 |
+
+- **Runs:** unit 114, integration 28, coverage 7, and the Windows Review gate 5/5, all green.
+- **Not done:** phase 6 (Gherkin specs) stays optional and was not started.

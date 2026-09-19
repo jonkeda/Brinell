@@ -5,7 +5,8 @@ namespace Brinell.Samples.Todo.UITests.Tests;
 
 /// <summary>
 /// The Reviews pass: every screen once, its key controls present by AutomationId, and a screenshot
-/// for design review.
+/// for design review (TOD.10.1-3). Accessible names are checked by hand, with a screen reader
+/// (manual/charters.md, CH-3).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -34,6 +35,8 @@ public sealed class ReviewTests
 
     [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Journey", "TOD.10.1")]
+    [Trait("Journey", "TOD.10.2")]
+    [Trait("Journey", "TOD.10.3")]
     public Task List_ShowsItsControls()
     {
         var list = _fixture.List;
@@ -45,12 +48,14 @@ public sealed class ReviewTests
         list.State.AssertShowing(TodoListState.Content, timeoutMs: TestConstants.PageTimeoutMs);
         list.Todos.Row("Buy milk").Status.AssertChangeable(false);
 
-        _fixture.CaptureReview("list");
+        Assert.True(File.Exists(_fixture.CaptureReview("list")), "No list screenshot was written.");
         return Task.CompletedTask;
     }
 
     [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Journey", "TOD.10.1")]
+    [Trait("Journey", "TOD.10.2")]
+    [Trait("Journey", "TOD.10.3")]
     public Task Detail_ShowsItsControls()
     {
         var detail = _fixture.List.Open("Book dentist");
@@ -65,13 +70,15 @@ public sealed class ReviewTests
         detail.Due.AssertText("No due date");
         detail.SyncState.AssertText("Synced");
 
-        _fixture.CaptureReview("detail");
+        Assert.True(File.Exists(_fixture.CaptureReview("detail")), "No detail screenshot was written.");
         detail.Back();
         return Task.CompletedTask;
     }
 
     [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Journey", "TOD.10.1")]
+    [Trait("Journey", "TOD.10.2")]
+    [Trait("Journey", "TOD.10.3")]
     public Task Edit_ShowsItsControls()
     {
         var edit = _fixture.List.Open("Book dentist").Edit();
@@ -86,13 +93,15 @@ public sealed class ReviewTests
         edit.DueDate.AssertExists(true);
         edit.Status.AssertChangeable(true);
 
-        _fixture.CaptureReview("edit");
+        Assert.True(File.Exists(_fixture.CaptureReview("edit")), "No edit screenshot was written.");
         edit.CancelEdit().Back();
         return Task.CompletedTask;
     }
 
     [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Journey", "TOD.10.1")]
+    [Trait("Journey", "TOD.10.2")]
+    [Trait("Journey", "TOD.10.3")]
     public Task ErrorState_ShowsTheMessageAndRetry()
     {
         _fixture.Backend.Get(TodoApi.TodosPath).AtPriority(1).Fails(500);
@@ -101,7 +110,7 @@ public sealed class ReviewTests
         list.State.AssertShowing(TodoListState.Error, timeoutMs: TestConstants.PageTimeoutMs);
         list.State.ErrorLabel.AssertTextContains("server had a problem");
         list.State.Retry.AssertExists(true);
-        _fixture.CaptureReview("error");
+        Assert.True(File.Exists(_fixture.CaptureReview("error")), "No error screenshot was written.");
 
         _fixture.ResetBackend();
         list.State.Retry.Click();
@@ -128,6 +137,8 @@ public sealed class ReviewEmptyTests
 
     [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Journey", "TOD.10.1")]
+    [Trait("Journey", "TOD.10.2")]
+    [Trait("Journey", "TOD.10.3")]
     public Task EmptyList_SaysNothingToDo_AndKeepsAdd()
     {
         var list = _fixture.List;
@@ -136,7 +147,7 @@ public sealed class ReviewEmptyTests
         list.State.EmptyLabel.AssertText("Nothing to do");
         list.AddButton.AssertExists(true);
 
-        _fixture.CaptureReview("empty");
+        Assert.True(File.Exists(_fixture.CaptureReview("empty")), "No empty screenshot was written.");
         return Task.CompletedTask;
     }
 }

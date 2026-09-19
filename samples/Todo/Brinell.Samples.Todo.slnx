@@ -8,6 +8,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Brinell.Samples.Todo.IntegrationTests/Brinell.Samples.Todo.IntegrationTests.csproj" />
+    <Project Path="tests/Brinell.Samples.Todo.JourneyCoverage/Brinell.Samples.Todo.JourneyCoverage.csproj" />
     <Project Path="tests/Brinell.Samples.Todo.TestSupport/Brinell.Samples.Todo.TestSupport.csproj" />
     <Project Path="tests/Brinell.Samples.Todo.UITests.Mobile/Brinell.Samples.Todo.UITests.Mobile.csproj" />
     <Project Path="tests/Brinell.Samples.Todo.UITests/Brinell.Samples.Todo.UITests.csproj" />

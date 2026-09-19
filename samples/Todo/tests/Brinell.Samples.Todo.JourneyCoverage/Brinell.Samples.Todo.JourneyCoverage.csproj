@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Brinell.Samples.Todo.JourneyCoverage</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      The test projects whose traits are compared with journeys.md. Referenced only to read their
+      attributes: nothing here runs their tests or launches the app. The UI tests are read from the
+      mobile head, which compiles the same sources for plain net10.0 (the Windows head is
+      net10.0-windows), so the report runs anywhere.
+    -->
+    <ProjectReference Include="..\Brinell.Samples.Todo.UnitTests\Brinell.Samples.Todo.UnitTests.csproj" />
+    <ProjectReference Include="..\Brinell.Samples.Todo.IntegrationTests\Brinell.Samples.Todo.IntegrationTests.csproj" />
+    <ProjectReference Include="..\Brinell.Samples.Todo.UITests.Mobile\Brinell.Samples.Todo.UITests.Mobile.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\journeys.md" Link="journeys.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\manual\charters.md" Link="charters.md" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

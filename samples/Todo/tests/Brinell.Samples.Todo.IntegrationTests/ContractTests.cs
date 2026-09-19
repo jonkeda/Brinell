@@ -17,7 +17,7 @@ namespace Brinell.Samples.Todo.IntegrationTests;
 /// server that no longer exists.
 /// </remarks>
 [Trait("Module", "Todo")]
-[Trait("Pyramid", "Integration")]
+[Trait("Pyramid", "Contract")]
 [Trait("Journey", "TOD.07.9")]
 public sealed class ContractTests : IAsyncLifetime
 {
