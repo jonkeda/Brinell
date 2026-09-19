@@ -135,12 +135,17 @@ answer "not shown" declares its own absence-tolerant read.
 
 - The element parameter is already resolved and ready. Read and act on **that element
   only**.
-- Guards are `Ensure*Core` calls inside the Core body. No guard is injected by the
-  generator. Readiness that should be *waited for* (enabled a moment late) goes in
-  `EnsureReadyForActionCore`.
-- To wait for an effect, use `Until(read, done, timeoutMs, out lastError)` and pass
-  `lastError` as the `InnerException` of the timeout you throw. Never a `Run*` helper,
-  never `Thread.Sleep`.
+- Guards are `Ensure*Core` calls inside the Core body, **before** the action. No guard is
+  injected by the generator. Readiness that should be *waited for* (enabled a moment late)
+  goes in `EnsureReadyForActionCore`.
+- `ElementNotReadyException` from a Core method means "I did not act": the generated action
+  resolves again and asks again within its budget. So throw it only before acting - never
+  after the element was touched - and let any other failure propagate, which ends the call
+  at once (AD-009).
+- To wait for an effect, use `Confirm(read, done, timeoutMs)`, and when it is not
+  confirmed throw `confirmation.Failure(Locator, "<action>", lastError => new ...)`. It never
+  repeats the action, and reports a replaced element as `StaleElementException`. Never a
+  `Run*` helper, never `Thread.Sleep`.
 - Never call a public member of another control (a part, `Button(id)`, `Child<T>(id)`, an
   item): that public member is a whole unit of work of its own (readiness, poll, log entry,
   timeout), nested inside the one the generated wrapper runs.

@@ -6,10 +6,13 @@ namespace Brinell.Maui.Interfaces;
 /// </summary>
 /// <typeparam name="TParent">The parent scope type (page or container).</typeparam>
 /// <typeparam name="TSelf">The container type itself (self-referencing).</typeparam>
-public interface IMauiContainer<TParent, TSelf> : IMauiScope<TSelf>, IContainerControl<IMauiElement>
+public interface IMauiContainer<TParent, TSelf> : IMauiScope<TSelf>
     where TParent : IMauiScope<TParent>
     where TSelf : IMauiContainer<TParent, TSelf>
 {
+    /// <summary>The element all of this container's lookups are scoped to.</summary>
+    IMauiElement ContainerRoot { get; }
+
     /// <summary>
     /// Gets the parent scope (page or container).
     /// Navigate up the scope hierarchy by calling Parent.

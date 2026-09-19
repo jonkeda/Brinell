@@ -59,6 +59,7 @@ into a pass, and it must not hide how hard reaching the state was.
 | Situation | What the call does | How the app bug stays visible |
 | --- | --- | --- |
 | A command never re-enables (a lost `CanExecuteChanged`) | Waits within the budget for "enabled", then fails | `ElementNotReadyException`: "found but disabled for 5000 ms", with the `Locator` and the element last seen |
+| The action was **not performed**: a Core guard refused before acting, or the driver reports that nothing answered (a toolbar item the app's bridge did not answer for yet) or that the item is disabled | Resolves and asks again within the budget (`ActOnce`, step 8), because nothing happened. A Core method throws `ElementNotReadyException` only before it acts | `ElementNotReadyException` naming what was missing, when the budget runs out |
 | The action ran, but its effect never shows | Never acts again; `Confirm` reports `NotConfirmed` | "Toggle ran; the state stayed Off for 5000 ms". The action ran exactly once |
 | The element was replaced after the action | Never acts again; `Confirm` reports `Replaced` | "Toggle ran, and the element was replaced before its effect could be read" |
 | A row now shows a different item | Never acts on it; the attempt reports `ItemChanged` | "row 3 now shows another item", on timeout |
@@ -71,7 +72,7 @@ into a pass, and it must not hide how hard reaching the state was.
 
 What the framework **never** does to make a test pass:
 
-- repeat an action;
+- repeat an action that may have run (only one reported as not performed is asked again);
 - extend a budget the caller set;
 - fall back to another element (another row, another window);
 - treat an error as absence.
@@ -93,7 +94,7 @@ Brinell.Maui          Interfaces   IMauiElement · IMauiDriver · IMauiElementSc
                       Scopes       ScopeReadiness · AppRoot · PageObjectBase · RootedScopeBase
                                    ContainerObjectBase · CollectionObjectBase · ItemObjectBase
                       Controls     ViewBase · the Run* helpers · Confirm
-                      Helpers      MauiElementGeometry · MauiScopeExtensions
+                      Helpers      MauiElementExtensions
 Drivers (FlaUI, Appium)            Live(...) stale mapping · InstanceKey · single-attempt finds
 ```
 
@@ -132,7 +133,7 @@ public member
 | `ITestContext<T>` | yes: it is an `IElementScope<T>` | **leaves**; `IMauiTestContext` = `ITestContext` + `IMauiElementScope` |
 | `IContainerControl<T>`, `IContainerObject<T>` | yes: they are `IElementScope<T>` | **leaves** |
 | `ControlObjectBase<TScope>` (typed on `IElementScope`) | yes | **leaves**; `ViewBase` holds its own `Locator` and scope |
-| `ElementGeometryExtensions`, `ElementScopeExtensions` (typed on `IElement<T>` / `IElementScope<T>`) | yes, by typing | **leaves**; MAUI copies (`MauiElementGeometry`, `MauiScopeExtensions`) |
+| `ElementGeometryExtensions`, `ElementScopeExtensions` (typed on `IElement<T>` / `IElementScope<T>`) | yes, by typing | **leaves**; MAUI copies in `MauiElementExtensions` |
 | `WaitHelper` | no, but its loops are what R2 removes | no longer used by MAUI |
 
 **Rule of thumb:** MAUI keeps a Core interface when this work does not change its shape, and
@@ -157,8 +158,8 @@ public interface IMauiElement
     // lookup: one attempt each, no timeouts
     IMauiElement? TryFindElement(Locator locator);
     IReadOnlyList<IMauiElement> FindElements(Locator locator);
-    IMauiElement FindElement(Locator locator)
-        => TryFindElement(locator) ?? throw new ElementNotFoundException(locator);
+    // The throwing form is the extension MauiElementExtensions.FindElement (Try ?? throw), so a
+    // mocked element needs only TryFindElement set up (plan 2.1, step 1).
 }
 
 /// The driver. No Core driver interface underneath.
@@ -225,11 +226,16 @@ public interface IMauiTestContext : ITestContext, IMauiElementScope   // ITestCo
 // as today, minus the Core IContainerControl / IContainerObject bases.
 ```
 
-MAUI-owned helpers replace the Core extensions MAUI used:
+MAUI-owned helpers replace the Core extensions MAUI used, in one class,
+`MauiElementExtensions`:
 
-- `MauiElementGeometry`: `HasUsableBounds`, `CenterOf`, `ContainsCenter`, `Area` on `IMauiElement`.
-- `MauiScopeExtensions`: `FindVisibleElements`, `FindVisibleByAutomationId`, `FindVisibleByName`
-  on `IMauiElementScope`.
+- **on `IMauiElement`:** `FindElement` (the throwing lookup), `HasUsableBounds`,
+  `ContainsCenter`, `Area`, `IsControlType`, `FirstVisible`;
+- **on `IMauiElementScope`:** `FindVisibleElements`, `FindVisibleByAutomationId`,
+  `FindVisibleByName`.
+
+The helpers keep Core's method names, so call sites did not change. `CenterOf(Rectangle)` stays
+Core's, because it is typed on a rectangle, not on an interface.
 
 These are copies today. They merge back into Core when the shape moves down (4.5).
 
@@ -277,9 +283,12 @@ When MAUI has passed plan step 8 (proved on Windows and Todo, and no worse on An
 
 Until then, **MAUI and Core disagree on purpose**, and each is internally consistent.
 
-UAT note: `UatDiscovery.IsPageType` recognizes `IPageObject`, the `[UatName]` attribute, or a
-type name ending in "Page" (on by default). MAUI pages keep being found by name. Plan step 1
-checks this with `Brinell.Maui.Uat.Tests`.
+UAT note (corrected in step 1): MAUI UAT finds pages through Brinell.Core's `TestComposition`,
+which recognizes Core's `[TestPage]` attribute or Core's page interface. It does **not** use
+`UatDiscovery`'s name inference. `PageObjectBase` therefore carries `[TestPage]`. The attribute
+is inherited and unchanged; abstract types are skipped. `Brinell.Maui.Uat.Tests` confirms the
+same 20 pages and the same controls are found as before. When the shape moves down, composition
+switches to the new page interface and the attribute can go.
 
 ---
 
@@ -289,9 +298,9 @@ checks this with `Brinell.Maui.Uat.Tests`.
 | --- | --- |
 | `FlaUIMauiElement` | Implements `IMauiElement` directly. `Live<T>(Func<T>)` and `Live(Action)` wrap every UIA touch. `UIA_E_ELEMENTNOTAVAILABLE` (FlaUI's exception, or a `COMException` with `0x80040201`) becomes `StaleElementException`; other errors keep their type. `InstanceKey` reads the runtime id through `Live`, so it doubles as the alive check (R6). Finds make one `FindFirstDescendant` / `FindAllDescendants` call. |
 | `FlaUIDeclaredElement` | Never stale. `InstanceKey` is the declared id. |
-| `FlaUIMauiDriver` | Implements `IMauiDriver`. `FindElements` makes one search; the timeout `FindElement` / `TryFindElement` are gone, and with them the `while`-loop bug (F7). An exited app process becomes `AppUnavailableException`. Chrome lookups use a private `FindChrome(locator, timeoutMs)`. |
+| `FlaUIMauiDriver` | Implements `IMauiDriver`. `FindElements` makes one search; the timeout `FindElement` / `TryFindElement` are gone, and with them the `while`-loop bug (F7). An exited app process becomes `AppUnavailableException`. Chrome lookups use an internal `FindChrome(locator, timeoutMs)` (internal, because the element classes call it on their driver). |
 | `AppiumMauiElement` | The same `Live` helper, mapping Selenium's `StaleElementReferenceException`. `InstanceKey` is the element id. Finds make one search, with no `WebDriverWait`. |
-| `AppiumMauiDriver` | Implements `IMauiDriver`. An invalid or terminated session becomes `AppUnavailableException`. Chrome lookups are private. |
+| `AppiumMauiDriver` | Implements `IMauiDriver`. An invalid or terminated session becomes `AppUnavailableException`. Chrome lookups use internal `FindChrome` / `FindAllChrome` (the drawer opener, a toolbar item raised by id, picker items). |
 | `MauiTestContext` | `TryFindElement`: one `FindElements`, catching nothing (F4). `FindElement`: the interface default, with no `ElementFind` loop and no sweep (F1, F2). It no longer reads `TimeoutSettings.ElementFind`. |
 
 **Selenium types appear only in `Brinell.Maui.Appium`.**
@@ -671,11 +680,12 @@ Removed or renamed, all listed in `CHANGELOG.md` in the last step:
   `ControlObjectBase<TScope>`.
 - **Lookups:** the timeout finds on MAUI elements and drivers.
 - **Waits:** `EnsureVisible(element, timeout)`, `WaitVisibleCore`, `doEnsureVisible`, both `Until`
-  implementations, `ObjectBase.Poll`, both `RunPoll` implementations.
+  implementations, both `RunPoll` implementations. (`ObjectBase.Poll` stays for now, running on
+  `Poller`.)
 - **Virtual `ViewBase.FindElement()`.**
 - **Page gating:** `CanResolveElements`, `EnsureLoaded`, `WaitContentReadyCore`, `IsParentReady`,
-  `WaitParentReady`, `IsCachedRootValid`.
-- **Renamed:**
+  `WaitParentReady`. (`IsCachedRootValid` stays until the root renames.)
+- **Renamed** (the first three **not done**; left for the move down, see [move-down.md](move-down.md) section 4):
   - `FindContainerRootElement` → `TryFindRootElement`;
   - `ContainerRoot` / `TryGetContainerRoot` → `Root` / `TryGetRoot`;
   - `CacheContainerRoot` → `CacheRoot`;

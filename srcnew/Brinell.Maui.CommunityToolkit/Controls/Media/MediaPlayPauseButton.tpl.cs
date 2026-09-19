@@ -85,11 +85,12 @@ public partial class MediaPlayPauseButton<TScope> : Button<TScope>
 
         ClickCore(element, timeoutMs);
 
-        if (!Until(() => IsPlayingCore(element), actual => actual == playing, timeoutMs, out var lastError))
+        var confirmation = Confirm(() => IsPlayingCore(element), actual => actual == playing, timeoutMs);
+        if (!confirmation.IsConfirmed)
         {
-            throw new TimeoutException(
+            throw confirmation.Failure(Locator, "the press", lastError => new TimeoutException(
                 $"'{Locator.Value}' was pressed and did not {(playing.Value ? "start playing" : "pause")}.",
-                lastError);
+                lastError));
         }
     }
 

@@ -64,9 +64,7 @@ public partial class StateContainer<TParent, TSelf> : ContainerObjectBase<TParen
     /// <returns>True when shown.</returns>
     [AbsenceTolerant]
     protected virtual bool? IsShowingCore(IMauiElement? element, string viewAutomationId)
-        => element != null
-           && element.TryFindElement(Locator.ByAutomationId(viewAutomationId), out var view, 0)
-           && view != null;
+        => element?.TryFindElement(Locator.ByAutomationId(viewAutomationId)) != null;
 
     #endregion
 }

@@ -27,7 +27,7 @@ public class NavigationDemoPage : PageObjectBase<NavigationDemoPage>
     public override string Name => "NavigationDemoPage";
 
     /// <inheritdoc />
-    public override bool IsLoaded(int? timeoutMs = null) => PageTitle.IsExists();
+    public override bool IsLoaded() => PageTitle.IsExists();
 
     #region Observed state
 
@@ -95,17 +95,14 @@ public class NavigationDemoPage : PageObjectBase<NavigationDemoPage>
     /// flyout items are found that way. Separating the two lets the probe distinguish
     /// "absent" from "present but not addressable by id".
     /// </remarks>
+    /// <remarks>
+    /// By the Name strategy, which every driver supports. It used an XPath locator, which the
+    /// Windows driver does not support: the lookup threw, the test context read the error as
+    /// "absent", and every by-name probe answered null without looking (found in stale-readiness
+    /// step 3, when that catch-all was removed).
+    /// </remarks>
     public IMauiElement? TryFindByName(string name)
-    {
-        try
-        {
-            return Context.TryFindElement(new Locator(LocatorStrategy.XPath, $"//*[@Name='{name}']"));
-        }
-        catch (ElementNotFoundException)
-        {
-            return null;
-        }
-    }
+        => Context.TryFindElement(Locator.ByName(name));
 
     #endregion
 }

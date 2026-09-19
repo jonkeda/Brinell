@@ -87,9 +87,11 @@ Tie-breakers:
 
 - **R1.** A Core method reads and acts on its own element only. It never calls a public member
   of another control (a part, `Button(id)`, `Child<T>(id)`, an item).
-- **R2.** A Core method never calls a `Run*` helper. It waits with
-  `Until(read, done, timeoutMs, out lastError)`, and a timeout passes `lastError` as the
-  exception's `InnerException`.
+- **R2.** A Core method never calls a `Run*` helper. It waits for its action's effect with
+  `Confirm(read, done, timeoutMs)`, which never repeats the action. When the effect is not
+  confirmed it throws `confirmation.Failure(Locator, "<action>", lastError => new ...(message,
+  lastError))`: a replaced element is reported as `StaleElementException`, and an ignored
+  action as the control's own exception with `lastError` as its `InnerException`.
 - **R3.** A part with behaviour of its own gets its own control class; a component forwards to
   it through `*Shortcut` methods.
 - **R4.** A member that needs two parts (or a child and the root) is hand-written as plain calls

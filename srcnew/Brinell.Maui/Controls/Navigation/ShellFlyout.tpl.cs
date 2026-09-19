@@ -35,6 +35,17 @@ public partial class ShellFlyout<TParent>
     /// </remarks>
     protected override bool CacheContainerRoot => false;
 
+    /// <inheritdoc />
+    /// <remarks>The flyout scrolls its own items: its host is the scroller.</remarks>
+    public override IMauiElement? ScrollingRoot => TryGetContainerRoot();
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// On, although the app root it sits in turns sweeps off: a long flyout holds items below the
+    /// fold, and its host is the one scroller they can be in.
+    /// </remarks>
+    public override bool AllowsScrollLookup => true;
+
     /// <summary>
     /// Opens the flyout, and does nothing when it is already open.
     /// </summary>

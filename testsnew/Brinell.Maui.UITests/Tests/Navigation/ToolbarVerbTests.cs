@@ -1,4 +1,5 @@
 using Brinell.Core.Utilities;
+using Brinell.Maui.Exceptions;
 using Brinell.Maui.UITests.Pages;
 using Xunit;
 
@@ -59,9 +60,10 @@ public class ToolbarVerbTests
     [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     public Task InvokeToolbarItem_WhenTheItemIsDisabled_IsRefusedAndDoesNothing()
     {
-        var refusal = Assert.Throws<BrinellException>(
+        var refusal = Assert.Throws<ElementNotReadyException>(
             () => _fixture.Context.AppElement.InvokeToolbarItem("PageToolbarDelete"));
 
+        Assert.Equal(NotReadyReason.Disabled, refusal.Reason);
         Assert.Contains("disabled", refusal.Message);
         Page.LastAction.AssertText("none");
 

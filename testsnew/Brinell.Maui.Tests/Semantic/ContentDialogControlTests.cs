@@ -15,8 +15,8 @@ public class ContentDialogControlTests : SemanticControlTestsBase
         var dialogRoot = CreateElement("ContentDialog", 0, 0, 300, 200);
         var deleteButton = CreateInvokableElement("DialogDelete", 10, 150, 80, 40);
         dialogRoot
-            .Setup(e => e.FindElement(
-                It.Is<Locator>(l => l.Strategy == LocatorStrategy.Name && l.Value == "Delete"), 0))
+            .Setup(e => e.TryFindElement(
+                It.Is<Locator>(l => l.Strategy == LocatorStrategy.Name && l.Value == "Delete")))
             .Returns(deleteButton.Object);
         _app
             .Setup(a => a.TryFindActiveDialog())
@@ -25,7 +25,7 @@ public class ContentDialogControlTests : SemanticControlTestsBase
         var exists = Page.Dialog.DialogButton("Delete").IsExists();
 
         Assert.True(exists);
-        dialogRoot.Verify(e => e.FindElement(It.IsAny<Locator>(), 0), Times.Once);
+        dialogRoot.Verify(e => e.TryFindElement(It.IsAny<Locator>()), Times.Once);
         Context.Verify(c => c.TryFindElement(It.IsAny<Locator>()), Times.Never);
     }
 
@@ -34,8 +34,8 @@ public class ContentDialogControlTests : SemanticControlTestsBase
     {
         var dialogRoot = CreateElement("ContentDialog", 0, 0, 300, 200);
         dialogRoot
-            .Setup(e => e.FindElement(It.IsAny<Locator>(), 0))
-            .Throws(new ElementNotFoundException("not in dialog"));
+            .Setup(e => e.TryFindElement(It.IsAny<Locator>()))
+            .Returns((IMauiElement?)null);
         _app
             .Setup(a => a.TryFindActiveDialog())
             .Returns(dialogRoot.Object);
@@ -53,8 +53,8 @@ public class ContentDialogControlTests : SemanticControlTestsBase
         var dialogRoot = CreateElement("ContentDialog", 0, 0, 300, 200);
         var promptInput = CreateElement("PromptInput", 20, 80, 260, 40);
         dialogRoot
-            .Setup(e => e.FindElement(
-                It.Is<Locator>(l => l.Strategy == LocatorStrategy.ControlType && l.Value == "entry"), 0))
+            .Setup(e => e.TryFindElement(
+                It.Is<Locator>(l => l.Strategy == LocatorStrategy.ControlType && l.Value == "entry")))
             .Returns(promptInput.Object);
         _app
             .Setup(a => a.TryFindActiveDialog())
@@ -63,7 +63,7 @@ public class ContentDialogControlTests : SemanticControlTestsBase
         var exists = Page.Dialog.PromptInput.IsExists();
 
         Assert.True(exists);
-        dialogRoot.Verify(e => e.FindElement(It.IsAny<Locator>(), 0), Times.Once);
+        dialogRoot.Verify(e => e.TryFindElement(It.IsAny<Locator>()), Times.Once);
     }
 
     [Fact]
@@ -75,7 +75,7 @@ public class ContentDialogControlTests : SemanticControlTestsBase
         okButton.Setup(e => e.Invoke()).Callback(() => dismissed = true);
 
         dialogRoot.Setup(e => e.TagName).Returns("ContentDialog");
-        dialogRoot.Setup(e => e.FindElement(It.IsAny<Locator>(), 0)).Returns(okButton.Object);
+        dialogRoot.Setup(e => e.TryFindElement(It.IsAny<Locator>())).Returns(okButton.Object);
         _app
             .Setup(a => a.TryFindActiveDialog())
             .Returns(() => dismissed ? null : dialogRoot.Object);
@@ -97,13 +97,10 @@ public class ContentDialogControlTests : SemanticControlTestsBase
         dialogRoot.Setup(e => e.Name).Returns(string.Empty);
         var title = CreateElement("alertTitle", 10, 10, 280, 30);
         title.Setup(e => e.Text).Returns("Delete todo?");
-        var titleElement = title.Object;
         dialogRoot
             .Setup(e => e.TryFindElement(
-                It.Is<Locator>(l => l.Strategy == LocatorStrategy.XPath && l.Value.Contains(":id/alertTitle")),
-                out titleElement,
-                It.IsAny<int>()))
-            .Returns(true);
+                It.Is<Locator>(l => l.Strategy == LocatorStrategy.XPath && l.Value.Contains(":id/alertTitle"))))
+            .Returns(title.Object);
         _app.Setup(a => a.TryFindActiveDialog()).Returns(dialogRoot.Object);
 
         Assert.Equal("Delete todo?", Page.Dialog.GetTitle());
@@ -118,7 +115,6 @@ public class ContentDialogControlTests : SemanticControlTestsBase
         _app.Setup(a => a.TryFindActiveDialog()).Returns(dialogRoot.Object);
 
         Assert.Equal("Discard changes?", Page.Dialog.GetTitle());
-        IMauiElement? unused;
-        dialogRoot.Verify(e => e.TryFindElement(It.IsAny<Locator>(), out unused, It.IsAny<int>()), Times.Never);
+        dialogRoot.Verify(e => e.TryFindElement(It.IsAny<Locator>()), Times.Never);
     }
 }

@@ -15,7 +15,7 @@ public class RangeTestPage : PageObjectBase<RangeTestPage>
     public override string Name => "RangeTestPage";
 
     /// <inheritdoc />
-    public override bool IsLoaded(int? timeoutMs = null)
+    public override bool IsLoaded()
     {
         // Page is loaded when the status label exists
         return StatusLabel.IsExists();

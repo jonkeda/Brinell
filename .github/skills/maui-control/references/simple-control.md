@@ -75,11 +75,12 @@ protected virtual void SetPlayingCore(IMauiElement element, bool? playing, int? 
 
     ClickCore(element, timeoutMs);                 // own Core method, own element
 
-    if (!Until(() => IsPlayingCore(element), actual => actual == playing, timeoutMs, out var lastError))
+    var confirmation = Confirm(() => IsPlayingCore(element), actual => actual == playing, timeoutMs);
+    if (!confirmation.IsConfirmed)                 // never repeats the press
     {
-        throw new TimeoutException(
+        throw confirmation.Failure(Locator, "the press", lastError => new TimeoutException(
             $"'{Locator.Value}' was pressed and did not {(playing.Value ? "start playing" : "pause")}.",
-            lastError);
+            lastError));                           // a replaced element: StaleElementException
     }
 }
 ```

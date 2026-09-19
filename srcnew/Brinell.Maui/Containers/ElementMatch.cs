@@ -44,7 +44,7 @@ public static class ElementMatch
                     "already found. Supported: AutomationId, Id, AccessibilityId, Text, Name, ControlType.")
             };
         }
-        catch (StaleElementReferenceException)
+        catch (StaleElementException)
         {
             // A dead element matches nothing; the caller re-resolves and asks again.
             return false;

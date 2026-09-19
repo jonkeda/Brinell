@@ -69,7 +69,53 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// </remarks>
     private AutomationElement _element => _wrapped ?? _driver.RootElement;
 
-    #region State Properties (IElement<IMauiElement>)
+    #region Live: how a removed element is reported
+
+    /// <summary>
+    /// Runs a UI Automation read or action, reporting a removed element as
+    /// <see cref="StaleElementException"/> and a closed app as <see cref="AppUnavailableException"/>.
+    /// </summary>
+    /// <remarks>
+    /// Every member that touches UI Automation for MAUI's lookups, readiness checks, state reads and
+    /// actions goes through this. A member that treats an unsupported property as "none" still
+    /// does, but its catch lets a removed element through (<see cref="FlaUIErrors.IsElementGone"/>).
+    /// A removed element is a signal, and must never read as an empty value.
+    /// </remarks>
+    private T Live<T>(Func<T> touch)
+    {
+        try
+        {
+            return touch();
+        }
+        catch (Exception error) when (FlaUIErrors.IsElementGone(error))
+        {
+            if (_driver.AppHasExited)
+            {
+                throw new AppUnavailableException("the application process has exited.", error);
+            }
+
+            throw new StaleElementException(platformError: error);
+        }
+    }
+
+    /// <inheritdoc cref="Live{T}(Func{T})"/>
+    private void Live(Action touch) => Live(() =>
+    {
+        touch();
+        return true;
+    });
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// The UI Automation runtime id: the same for the same element, new when WinUI replaces it (a
+    /// toolbar item replaced when its command's CanExecute changes goes <c>…4.30</c> to
+    /// <c>…4.65</c>). Read live, so it doubles as the "is this element still there" check.
+    /// </remarks>
+    public string InstanceKey => Live(() => string.Join('.', _element.Properties.RuntimeId.Value));
+
+    #endregion
+
+    #region State Properties
 
     /// <inheritdoc />
     /// <remarks>
@@ -88,10 +134,10 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// answers it separately through <c>IsVisibleAfterScroll</c>.
     /// </para>
     /// </remarks>
-    public bool Visible => !_element.IsOffscreen;
+    public bool Visible => Live(() => !_element.IsOffscreen);
 
     /// <inheritdoc />
-    public bool Enabled => _element.IsEnabled;
+    public bool Enabled => Live(() => _element.IsEnabled);
 
     /// <inheritdoc />
     public int? PositionInSet => ReadNearestSetValue(
@@ -101,7 +147,7 @@ public sealed class FlaUIMauiElement : IMauiElement
     public int? SizeOfSet => ReadNearestSetValue(
         static element => element.Properties.SizeOfSet.ValueOrDefault);
 
-    private int? ReadNearestSetValue(Func<AutomationElement, int> read)
+    private int? ReadNearestSetValue(Func<AutomationElement, int> read) => Live<int?>(() =>
     {
         for (var candidate = _element; candidate is not null; candidate = candidate.Parent)
         {
@@ -113,51 +159,45 @@ public sealed class FlaUIMauiElement : IMauiElement
                     return value;
                 }
             }
-            catch
+            catch (Exception error) when (!FlaUIErrors.IsElementGone(error))
             {
                 // This ancestor does not publish the optional set property.
             }
         }
 
         return null;
-    }
+    });
 
     /// <inheritdoc />
     /// <remarks>
     /// The SelectionItem pattern and nothing else. It used to fall back to the Toggle pattern, so
     /// a checked CheckBox reported itself selected; checked state is <see cref="Checked"/> (step 105a).
     /// </remarks>
-    public bool Selected
+    public bool Selected => Live(() =>
     {
-        get
+        try
         {
-            try
-            {
-                return _element.Patterns.SelectionItem.IsSupported
-                       && _element.Patterns.SelectionItem.Pattern.IsSelected.Value;
-            }
-            catch
-            {
-                return false;
-            }
+            return _element.Patterns.SelectionItem.IsSupported
+                   && _element.Patterns.SelectionItem.Pattern.IsSelected.Value;
         }
-    }
+        catch (Exception error) when (!FlaUIErrors.IsElementGone(error))
+        {
+            return false;
+        }
+    });
 
     /// <inheritdoc />
-    public string? AutomationId
+    public string? AutomationId => Live<string?>(() =>
     {
-        get
+        try
         {
-            try
-            {
-                return _element.Properties.AutomationId.ValueOrDefault;
-            }
-            catch
-            {
-                return null;
-            }
+            return _element.Properties.AutomationId.ValueOrDefault;
         }
-    }
+        catch (Exception error) when (!FlaUIErrors.IsElementGone(error))
+        {
+            return null;
+        }
+    });
 
     #region Text field state
 
@@ -176,7 +216,7 @@ public sealed class FlaUIMauiElement : IMauiElement
                 var nested = FindNestedTextBoxElement();
                 return nested?.Patterns.Value.IsSupported == true ? nested : null;
             }
-            catch
+            catch (Exception error) when (!FlaUIErrors.IsElementGone(error))
             {
                 return null;
             }
@@ -184,54 +224,45 @@ public sealed class FlaUIMauiElement : IMauiElement
     }
 
     /// <inheritdoc />
-    public string? Value
+    public string? Value => Live<string?>(() =>
     {
-        get
+        try
         {
-            try
-            {
-                return ValuePatternElement?.Patterns.Value.Pattern.Value.Value;
-            }
-            catch
-            {
-                return null;
-            }
+            return ValuePatternElement?.Patterns.Value.Pattern.Value.Value;
         }
-    }
+        catch (Exception error) when (!FlaUIErrors.IsElementGone(error))
+        {
+            return null;
+        }
+    });
 
     /// <inheritdoc />
-    public bool? IsReadOnly
+    public bool? IsReadOnly => Live<bool?>(() =>
     {
-        get
+        try
         {
-            try
-            {
-                return ValuePatternElement?.Patterns.Value.Pattern.IsReadOnly.Value;
-            }
-            catch
-            {
-                return null;
-            }
+            return ValuePatternElement?.Patterns.Value.Pattern.IsReadOnly.Value;
         }
-    }
+        catch (Exception error) when (!FlaUIErrors.IsElementGone(error))
+        {
+            return null;
+        }
+    });
 
     #endregion
 
     /// <inheritdoc />
-    public string? Hint
+    public string? Hint => Live<string?>(() =>
     {
-        get
+        try
         {
-            try
-            {
-                return _element.Properties.HelpText.ValueOrDefault;
-            }
-            catch
-            {
-                return null;
-            }
+            return _element.Properties.HelpText.ValueOrDefault;
         }
-    }
+        catch (Exception error) when (!FlaUIErrors.IsElementGone(error))
+        {
+            return null;
+        }
+    });
 
     /// <inheritdoc />
     /// <remarks>
@@ -248,49 +279,41 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// from UI Automation is already the answer, and it is the answer on nearly every read.
     /// </para>
     /// </remarks>
-    public bool Focused
+    public bool Focused => Live(() =>
     {
-        get
+        try
         {
-            try
+            if (_element.Properties.HasKeyboardFocus.ValueOrDefault)
             {
-                if (_element.Properties.HasKeyboardFocus.ValueOrDefault)
-                {
-                    return true;
-                }
-            }
-            catch
-            {
-                // Fall through to the app's own answer, which is the better one anyway.
-            }
-
-            return TryBridge(BrinellVerb.IsFocused, string.Empty, out var reported)
-                   && bool.TryParse(reported, out var focused)
-                   && focused;
-        }
-    }
-
-    /// <inheritdoc />
-    public string? Name
-    {
-        get
-        {
-            try
-            {
-                return _element.Properties.Name.ValueOrDefault;
-            }
-            catch
-            {
-                return null;
+                return true;
             }
         }
-    }
+        catch (Exception error) when (!FlaUIErrors.IsElementGone(error))
+        {
+            // Fall through to the app's own answer, which is the better one anyway.
+        }
+
+        return TryBridge(BrinellVerb.IsFocused, string.Empty, out var reported)
+               && bool.TryParse(reported, out var focused)
+               && focused;
+    });
 
     /// <inheritdoc />
-    public string? Text
+    public string? Name => Live<string?>(() =>
     {
-        get
+        try
         {
+            return _element.Properties.Name.ValueOrDefault;
+        }
+        catch (Exception error) when (!FlaUIErrors.IsElementGone(error))
+        {
+            return null;
+        }
+    });
+
+    /// <inheritdoc />
+    public string? Text => Live<string?>(() =>
+    {
             try
             {
                 // Try Value pattern first (for text inputs)
@@ -322,28 +345,32 @@ public sealed class FlaUIMauiElement : IMauiElement
                 // Fallback to Name property with safe access
                 return _element.Properties.Name.ValueOrDefault;
             }
-            catch
+            catch (Exception error) when (!FlaUIErrors.IsElementGone(error))
             {
                 return null;
             }
-        }
-    }
+    });
 
     /// <inheritdoc />
-    public string? TagName => _element.ControlType.ToString();
+    public string? TagName => Live(() => _element.ControlType.ToString());
 
     /// <inheritdoc />
-    public Point Location => new Point(_element.BoundingRectangle.X, _element.BoundingRectangle.Y);
+    public Point Location => Live(() => new Point(_element.BoundingRectangle.X, _element.BoundingRectangle.Y));
 
     /// <inheritdoc />
-    public Size Size => new Size(_element.BoundingRectangle.Width, _element.BoundingRectangle.Height);
+    public Size Size => Live(() => new Size(_element.BoundingRectangle.Width, _element.BoundingRectangle.Height));
 
     /// <inheritdoc />
-    public Rectangle Rect => new Rectangle(Location, Size);
+    /// <remarks>One read of the bounds, so a single call sees one element, not two.</remarks>
+    public Rectangle Rect => Live(() =>
+    {
+        var bounds = _element.BoundingRectangle;
+        return new Rectangle(bounds.X, bounds.Y, bounds.Width, bounds.Height);
+    });
 
     #endregion
 
-    #region Actions (IElement<IMauiElement>)
+    #region Actions
 
     /// <inheritdoc />
     /// <remarks>
@@ -416,7 +443,7 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// the call and did not do the thing, which is a fault further down. The old ladder reported
     /// neither - it moved on to the next rung and, if that worked, said nothing at all.
     /// </remarks>
-    private void Perform(string operation, bool supported, Func<bool> run, string pattern)
+    private void Perform(string operation, bool supported, Func<bool> run, string pattern) => Live(() =>
     {
         var name = AutomationId ?? Name ?? "(unnamed)";
 
@@ -433,7 +460,7 @@ public sealed class FlaUIMauiElement : IMauiElement
             throw new InvalidOperationException(
                 $"The UI Automation {pattern} on '{name}' was available but refused to {operation}.");
         }
-    }
+    });
 
     #endregion
    
@@ -453,7 +480,7 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// <see cref="TextInputMethod.SetValue"/>.
     /// </para>
     /// </remarks>
-    public void SendKeys(string text, TextInputMethod method = TextInputMethod.Keys)
+    public void SendKeys(string text, TextInputMethod method = TextInputMethod.Keys) => Live(() =>
     {
         switch (method)
         {
@@ -490,10 +517,10 @@ public sealed class FlaUIMauiElement : IMauiElement
                     + "SetText verb - either it is read-only, or the app under test needs to "
                     + "declare SetText on it.");
         }
-    }
+    });
 
     /// <inheritdoc />
-    public void Clear()
+    public void Clear() => Live(() =>
     {
         if (TrySetTextValue(string.Empty))
             return;
@@ -505,7 +532,7 @@ public sealed class FlaUIMauiElement : IMauiElement
             "be cleared",
             "It exposes no writable UI Automation Value pattern and does not answer the ClearText "
             + "verb - either it is read-only, or the app under test needs to declare ClearText on it.");
-    }
+    });
 
     /// <inheritdoc />
     /// <remarks>The app's <c>DoubleTap</c> verb; throws where the app does not declare it.</remarks>
@@ -560,7 +587,7 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// <exception cref="Bridge.GestureUnavailableException">
     /// No Scroll pattern, and the app does not declare the swipe.
     /// </exception>
-    public ScrollStep ScrollContent(int verticalSteps, int horizontalSteps = 0)
+    public ScrollStep ScrollContent(int verticalSteps, int horizontalSteps = 0) => Live<ScrollStep>(() =>
     {
         var scroll = FindScrollPattern();
         if (scroll == null)
@@ -577,17 +604,17 @@ public sealed class FlaUIMauiElement : IMauiElement
         {
             scroll.Scroll(ToAmount(horizontalSteps), ToAmount(verticalSteps));
         }
-        catch (Exception)
+        catch (Exception error) when (!FlaUIErrors.IsElementGone(error))
         {
-            // UIA refuses a scroll past the end with an error rather than a no-op, and a dead
-            // element fails the same way. Both are "did not move", which is what is reported.
+            // UIA refuses a scroll past the end with an error rather than a no-op: "did not move".
+            // A removed element is not that - it is let through, and reported as stale.
             return ScrollStep.NotMoved;
         }
 
         // The scroll percent does not update synchronously: read immediately it reports the
         // pre-scroll value, making a successful scroll look like no progress.
         return WaitForScrollChange(scroll, before) ? ScrollStep.Moved : ScrollStep.NotMoved;
-    }
+    });
 
     /// <summary>The height below which a swipe has no room to travel.</summary>
     private const int MinimumSwipeHeight = 40;
@@ -664,9 +691,9 @@ public sealed class FlaUIMauiElement : IMauiElement
                     return candidate.Patterns.Scroll.Pattern;
             }
         }
-        catch
+        catch (Exception error) when (!FlaUIErrors.IsElementGone(error))
         {
-            // A dead element, or one whose ancestors cannot be walked: no route.
+            // Ancestors that cannot be walked: no route. A removed element is let through.
         }
 
         return null;
@@ -689,7 +716,7 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// caller's visibility check reports it.
     /// </para>
     /// </remarks>
-    public void ScrollIntoView(int timeoutMs = 5000)
+    public void ScrollIntoView(int timeoutMs = 5000) => Live(() =>
     {
         try
         {
@@ -701,7 +728,7 @@ public sealed class FlaUIMauiElement : IMauiElement
             if (!_element.IsOffscreen)
                 return;
         }
-        catch
+        catch (Exception error) when (!FlaUIErrors.IsElementGone(error))
         {
             // A ScrollItem that refuses is the same as none: try the container.
         }
@@ -719,7 +746,7 @@ public sealed class FlaUIMauiElement : IMauiElement
                 return;
             }
         }
-    }
+    });
 
     /// <inheritdoc />
     /// <remarks>
@@ -749,78 +776,33 @@ public sealed class FlaUIMauiElement : IMauiElement
 
     #endregion
 
-    #region Element Finding (IElement<IMauiElement>)
+    #region Element Finding
 
     /// <inheritdoc />
-    public IMauiElement FindElement(Locator locator, int timeoutMs = 5000)
+    public IMauiElement? TryFindElement(Locator locator) => Live<IMauiElement?>(() =>
     {
         var condition = locator.ToCondition(_driver.ConditionFactory);
-        
-        var startTime = DateTime.UtcNow;
-        var timeout = TimeSpan.FromMilliseconds(timeoutMs);
-        
-        do
-        {
-            var found = _element.FindFirstDescendant(condition);
-            if (found != null)
-            {
-                return new FlaUIMauiElement(found, _driver);
-            }
-            
-            if (timeoutMs <= 0) break;
-            WaitHelper.Pause(100);
-        }
-        while (DateTime.UtcNow - startTime < timeout);
-        
-        throw new ElementNotFoundException(locator);
-    }
+        var found = _element.FindFirstDescendant(condition);
+
+        return found == null ? null : new FlaUIMauiElement(found, _driver);
+    });
 
     /// <inheritdoc />
-    public IReadOnlyList<IMauiElement> FindElements(Locator locator, int timeoutMs = 0)
+    public IReadOnlyList<IMauiElement> FindElements(Locator locator) => Live<IReadOnlyList<IMauiElement>>(() =>
     {
         var condition = locator.ToCondition(_driver.ConditionFactory);
-        
-        if (timeoutMs > 0)
-        {
-            var startTime = DateTime.UtcNow;
-            var timeout = TimeSpan.FromMilliseconds(timeoutMs);
-            
-            while (DateTime.UtcNow - startTime < timeout)
-            {
-                var found = _element.FindAllDescendants(condition);
-                if (found.Length > 0)
-                {
-                    return found.Select(e => new FlaUIMauiElement(e, _driver)).ToList();
-                }
-                WaitHelper.Pause(100);
-            }
-        }
-        
-        var elements = _element.FindAllDescendants(condition);
-        return elements.Select(e => new FlaUIMauiElement(e, _driver)).ToList();
-    }
 
-    /// <inheritdoc />
-    public bool TryFindElement(Locator locator, out IMauiElement? element, int timeoutMs = 0)
-    {
-        try
-        {
-            element = FindElement(locator, timeoutMs);
-            return true;
-        }
-        catch (ElementNotFoundException)
-        {
-            element = null;
-            return false;
-        }
-    }
+        return _element.FindAllDescendants(condition)
+            .Select(e => new FlaUIMauiElement(e, _driver))
+            .ToList();
+    });
 
     #endregion
 
     #region Attribute Access (IMauiElement)
 
     /// <inheritdoc />
-    public string? GetAttribute(string attributeName)
+    public string? GetAttribute(string attributeName) => Live<string?>(() =>
     {
         try
         {
@@ -842,11 +824,11 @@ public sealed class FlaUIMauiElement : IMauiElement
                 _ => null
             };
         }
-        catch
+        catch (Exception error) when (!FlaUIErrors.IsElementGone(error))
         {
             return null;
         }
-    }
+    });
 
     /// <summary>
     /// Gets a numeric value from the Scroll pattern, or null if not supported.
@@ -977,22 +959,19 @@ public sealed class FlaUIMauiElement : IMauiElement
 
     /// <inheritdoc />
     /// <remarks>The Toggle pattern: <c>Switch</c> maps to ToggleSwitch, <c>CheckBox</c> to CheckBox.</remarks>
-    public bool? Checked
+    public bool? Checked => Live<bool?>(() =>
     {
-        get
+        try
         {
-            try
-            {
-                return _element.Patterns.Toggle.IsSupported
-                    ? _element.Patterns.Toggle.Pattern.ToggleState.Value == ToggleState.On
-                    : null;
-            }
-            catch
-            {
-                return null;
-            }
+            return _element.Patterns.Toggle.IsSupported
+                ? _element.Patterns.Toggle.Pattern.ToggleState.Value == ToggleState.On
+                : null;
         }
-    }
+        catch (Exception error) when (!FlaUIErrors.IsElementGone(error))
+        {
+            return null;
+        }
+    });
 
     /// <inheritdoc />
     /// <remarks>
@@ -1000,13 +979,13 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// hand is as close as the platform comes, and the read makes it idempotent. The control
     /// verifies the outcome. Without the Toggle pattern, <see cref="Toggle"/> throws naming it.
     /// </remarks>
-    public void SetChecked(bool isChecked)
+    public void SetChecked(bool isChecked) => Live(() =>
     {
         if (Checked == isChecked)
             return;
 
         Toggle();
-    }
+    });
 
     private bool RunTogglePattern()
     {
@@ -1018,7 +997,7 @@ public sealed class FlaUIMauiElement : IMauiElement
             _element.Patterns.Toggle.Pattern.Toggle();
             return true;
         }
-        catch (Exception)
+        catch (Exception error) when (!FlaUIErrors.IsElementGone(error))
         {
             return false;
         }
@@ -1034,7 +1013,7 @@ public sealed class FlaUIMauiElement : IMauiElement
         {
             return probe();
         }
-        catch
+        catch (Exception error) when (!FlaUIErrors.IsElementGone(error))
         {
             return false;
         }
@@ -1050,7 +1029,7 @@ public sealed class FlaUIMauiElement : IMauiElement
             _element.Patterns.Invoke.Pattern.Invoke();
             return true;
         }
-        catch
+        catch (Exception error) when (!FlaUIErrors.IsElementGone(error))
         {
             return false;
         }
@@ -1066,7 +1045,7 @@ public sealed class FlaUIMauiElement : IMauiElement
             _element.Patterns.SelectionItem.Pattern.Select();
             return true;
         }
-        catch
+        catch (Exception error) when (!FlaUIErrors.IsElementGone(error))
         {
             return false;
         }
@@ -1090,7 +1069,7 @@ public sealed class FlaUIMauiElement : IMauiElement
 
     /// <inheritdoc />
     /// <remarks>Clamped to the published bounds, as the platform would clamp a drag.</remarks>
-    public void SetRangeValue(double value)
+    public void SetRangeValue(double value) => Live(() =>
     {
         if (!HasPattern(() => _element.Patterns.RangeValue.IsSupported))
         {
@@ -1102,9 +1081,9 @@ public sealed class FlaUIMauiElement : IMauiElement
         var pattern = _element.Patterns.RangeValue.Pattern;
         var clamped = Math.Clamp(value, pattern.Minimum.Value, pattern.Maximum.Value);
         pattern.SetValue(clamped);
-    }
+    });
 
-    private double? ReadRange(Func<IRangeValuePattern, double> read)
+    private double? ReadRange(Func<IRangeValuePattern, double> read) => Live<double?>(() =>
     {
         try
         {
@@ -1112,11 +1091,11 @@ public sealed class FlaUIMauiElement : IMauiElement
                 ? read(_element.Patterns.RangeValue.Pattern)
                 : null;
         }
-        catch
+        catch (Exception error) when (!FlaUIErrors.IsElementGone(error))
         {
             return null;
         }
-    }
+    });
 
     #endregion
 
@@ -1134,14 +1113,14 @@ public sealed class FlaUIMauiElement : IMauiElement
     private bool HasDropdown => HasPattern(() => _element.Patterns.ExpandCollapse.IsSupported);
 
     /// <inheritdoc />
-    public bool? IsDropdownOpen
-        => HasDropdown
+    public bool? IsDropdownOpen => Live<bool?>(() =>
+        HasDropdown
             ? _element.Patterns.ExpandCollapse.Pattern.ExpandCollapseState.Value
                 == ExpandCollapseState.Expanded
-            : null;
+            : null);
 
     /// <inheritdoc />
-    public void OpenDropdown()
+    public void OpenDropdown() => Live(() =>
     {
         RequireDropdown(nameof(OpenDropdown));
 
@@ -1153,17 +1132,17 @@ public sealed class FlaUIMauiElement : IMauiElement
                 $"The dropdown on '{AutomationId ?? Name ?? "(unnamed)"}' accepted Expand and did "
                 + "not report itself open.");
         }
-    }
+    });
 
     /// <inheritdoc />
     /// <remarks>Lenient: an element with no dropdown is already in the asked-for state.</remarks>
-    public void CloseDropdown()
+    public void CloseDropdown() => Live(() =>
     {
         if (IsDropdownOpen == true)
         {
             _element.Patterns.ExpandCollapse.Pattern.Collapse();
         }
-    }
+    });
 
     /// <summary>
     /// The live popup item elements, for a caller that is holding the dropdown open.
@@ -1202,27 +1181,24 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// For a dropdown, the Selection pattern, which names the chosen item rather than the combo
     /// box's header. For anything else, <see cref="Text"/>: what the control shows as its choice.
     /// </remarks>
-    public string? SelectedItemText
+    public string? SelectedItemText => Live<string?>(() =>
     {
-        get
+        if (!HasDropdown)
+            return Text;
+
+        try
         {
-            if (!HasDropdown)
-                return Text;
-
-            try
-            {
-                if (!_element.Patterns.Selection.IsSupported)
-                    return null;
-
-                var selection = _element.Patterns.Selection.Pattern.Selection.Value;
-                return selection is { Length: > 0 } ? selection[0].Name : null;
-            }
-            catch
-            {
+            if (!_element.Patterns.Selection.IsSupported)
                 return null;
-            }
+
+            var selection = _element.Patterns.Selection.Pattern.Selection.Value;
+            return selection is { Length: > 0 } ? selection[0].Name : null;
         }
-    }
+        catch (Exception error) when (!FlaUIErrors.IsElementGone(error))
+        {
+            return null;
+        }
+    });
 
     /// <inheritdoc />
     /// <remarks>
@@ -1237,14 +1213,14 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// Opened for the read and restored afterwards, so the items are live while their texts are
     /// read. Null for an element with no dropdown.
     /// </remarks>
-    public IReadOnlyList<string>? ReadDropdownItemTexts()
+    public IReadOnlyList<string>? ReadDropdownItemTexts() => Live<IReadOnlyList<string>?>(() =>
     {
         if (!HasDropdown)
             return null;
 
         return WithDropdownOpen(
             () => ReadDropdownItems().Select(item => item.Text ?? string.Empty).ToList());
-    }
+    });
 
     /// <summary>Runs a read with the dropdown open, restoring the state it was found in.</summary>
     private T WithDropdownOpen<T>(Func<T> read)
@@ -1323,7 +1299,7 @@ public sealed class FlaUIMauiElement : IMauiElement
             return _element.FindFirstDescendant(cf =>
                 cf.ByControlType(global::FlaUI.Core.Definitions.ControlType.Edit));
         }
-        catch
+        catch (Exception error) when (!FlaUIErrors.IsElementGone(error))
         {
             return null;
         }
@@ -1367,7 +1343,7 @@ public sealed class FlaUIMauiElement : IMauiElement
             pattern.SetValue(text);
             return true;
         }
-        catch
+        catch (Exception error) when (!FlaUIErrors.IsElementGone(error))
         {
             return false;
         }
@@ -1682,7 +1658,7 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// These were <c>SupportsSelectIndex</c> and <c>SupportsDropdown</c> questions in the control.
     /// </para>
     /// </remarks>
-    public void SelectIndex(int index)
+    public void SelectIndex(int index) => Live(() =>
     {
         if (BridgeDeclares(BrinellVerb.SelectIndex))
         {
@@ -1702,11 +1678,11 @@ public sealed class FlaUIMauiElement : IMauiElement
         }
 
         throw NoSelectionRoute(BrinellVerb.SelectIndex);
-    }
+    });
 
     /// <inheritdoc />
     /// <remarks>Routes as <see cref="SelectIndex"/> does, with the <c>SelectByText</c> verb.</remarks>
-    public void SelectByText(string text)
+    public void SelectByText(string text) => Live(() =>
     {
         if (BridgeDeclares(BrinellVerb.SelectByText))
         {
@@ -1725,7 +1701,7 @@ public sealed class FlaUIMauiElement : IMauiElement
         }
 
         throw NoSelectionRoute(BrinellVerb.SelectByText);
-    }
+    });
 
     private NotSupportedException NoSelectionRoute(BrinellVerb verb)
         => new(
@@ -1887,7 +1863,7 @@ public sealed class FlaUIMauiElement : IMauiElement
             return;
         }
 
-        _driver.FindElement(Locator.ByName("Open Navigation"), ChromeFindTimeoutMs).Invoke();
+        _driver.FindChrome(Locator.ByName("Open Navigation"), ChromeFindTimeoutMs).Invoke();
     }
 
     /// <inheritdoc />
@@ -1907,7 +1883,7 @@ public sealed class FlaUIMauiElement : IMauiElement
             return;
         }
 
-        _driver.FindElement(Locator.ByAutomationId("LightDismiss"), ChromeFindTimeoutMs).Invoke();
+        _driver.FindChrome(Locator.ByAutomationId("LightDismiss"), ChromeFindTimeoutMs).Invoke();
     }
 
     /// <inheritdoc />

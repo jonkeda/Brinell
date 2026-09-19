@@ -3,22 +3,21 @@ using Brinell.Maui.Enums;
 namespace Brinell.Maui.Interfaces;
 
 /// <summary>
-/// MAUI test context interface with Appium driver access.
-/// Combines test context capabilities with MAUI element scope.
+/// MAUI test context: the driver, timeouts, logging and navigation, and the app-wide lookup scope.
 /// </summary>
-public interface IMauiTestContext : ITestContext<IMauiElement>, IMauiElementScope
+/// <remarks>
+/// Implements Core's non-generic <see cref="ITestContext"/>, whose shape this work does not
+/// change, and MAUI's own scope. It does not implement Core's generic <c>ITestContext&lt;T&gt;</c>
+/// (see <c>.my/stale-readiness/design.md</c>, R9). As a scope, <see cref="IMauiElementScope.Context"/>
+/// returns the context itself.
+/// </remarks>
+public interface IMauiTestContext : ITestContext, IMauiElementScope
 {
     /// <summary>
-    /// Gets the wrapped Appium driver for operations.
+    /// Gets the wrapped driver.
     /// </summary>
     IMauiDriver Driver { get; }
-    
-    /// <summary>
-    /// Gets this context as the element scope.
-    /// Implementation should return 'this'.
-    /// </summary>
-    new IMauiTestContext Context { get; }
-    
+
     /// <summary>
     /// Gets the target platform for this test context.
     /// </summary>

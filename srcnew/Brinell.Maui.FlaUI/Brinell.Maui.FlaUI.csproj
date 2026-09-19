@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Brinell.Maui.UITests" />
     <ProjectReference Include="..\Brinell.Maui\Brinell.Maui.csproj" />
 
     <!--

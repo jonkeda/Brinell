@@ -1,15 +1,65 @@
 namespace Brinell.Maui.Interfaces;
 
 /// <summary>
-/// MAUI-specific element scope that provides access to the test context.
-/// Extends the generic element scope with IMauiElement as the element type.
+/// Anything controls can be declared in: a page, a container, a collection row, or the app root.
 /// </summary>
-public interface IMauiElementScope : IElementScope<IMauiElement>
+/// <remarks>
+/// MAUI owns this contract; it does not derive from Brinell.Core's scope interfaces (see
+/// <c>.my/stale-readiness/design.md</c>, R9). Lookups make one attempt and never wait.
+/// </remarks>
+public interface IMauiElementScope
 {
     /// <summary>
     /// Gets the MAUI test context for this scope.
     /// </summary>
     IMauiTestContext Context { get; }
+
+    /// <summary>
+    /// The locator strategy used when a control is declared with a plain string.
+    /// </summary>
+    LocatorStrategy DefaultLocatorStrategy { get; }
+
+    /// <summary>
+    /// The page this scope belongs to, or null when it belongs to none (the app root, chrome).
+    /// </summary>
+    IMauiPage? Page { get; }
+
+    /// <summary>
+    /// One readiness probe, no waiting: whether this scope can be used now, having asked its
+    /// parent first when it inherits the parent's readiness.
+    /// </summary>
+    /// <remarks>
+    /// The first step of every attempt of a call on a control in this scope
+    /// (<c>.my/stale-readiness/design.md</c>, R4 and section 7.1). A scope that is not ready says
+    /// which scope in the chain it was, and what it found.
+    /// </remarks>
+    ScopeReadiness ProbeReadiness();
+
+    /// <summary>Whether the scope is ready for interaction now: one probe.</summary>
+    bool IsReady() => ProbeReadiness().IsReady;
+
+    /// <summary>
+    /// Waits until the scope is ready for interaction.
+    /// </summary>
+    bool WaitReady(int? timeoutMs = null);
+
+    /// <summary>
+    /// Finds the first element in this scope matching <paramref name="locator"/>, in one attempt.
+    /// </summary>
+    /// <returns>The element, or null when none matches now.</returns>
+    IMauiElement? TryFindElement(Locator locator);
+
+    /// <summary>
+    /// Finds the first element in this scope matching <paramref name="locator"/>, or throws.
+    /// </summary>
+    /// <exception cref="ElementNotFoundException">No element matches.</exception>
+    IMauiElement FindElement(Locator locator);
+
+    /// <summary>
+    /// Finds every element in this scope matching <paramref name="locator"/>, in one attempt.
+    /// </summary>
+    /// <returns>The matches; empty when none match now.</returns>
+    IReadOnlyList<IMauiElement> FindElements(Locator locator);
 
     /// <summary>
     /// The element that scrolls for this scope, or null to let the driver pick the one on screen.

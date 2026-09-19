@@ -32,7 +32,7 @@ public sealed class PresenterUatScenarioTests(PresenterFixture fixture)
         using var scope = Fixture.Composition.CreateScope();
         var presenterPage = scope.ServiceProvider.GetRequiredService<PresenterPage>();
 
-        if (!presenterPage.IsLoaded(timeoutMs: 30000))
+        if (!presenterPage.IsLoaded())
         {
             return;
         }

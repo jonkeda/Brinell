@@ -17,7 +17,7 @@ public class SelectionTestPage : PageObjectBase<SelectionTestPage>
     public override string Name => "SelectionTestPage";
 
     /// <inheritdoc />
-    public override bool IsLoaded(int? timeoutMs = null)
+    public override bool IsLoaded()
     {
         // Page is loaded when the status label exists
         return StatusLabel.IsExists();

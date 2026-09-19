@@ -314,15 +314,15 @@ public abstract class TodoAppFixtureBase : MauiTestFixtureBase
                 var buttons = dialog.GetButtonTexts() ?? [];
                 dialog.DialogButton(buttons.Contains("Discard") ? "Discard" : "Cancel").Click();
             }
-            else if (list.IsLoaded(0))
+            else if (list.IsLoaded())
             {
                 return list;
             }
-            else if (new TodoEditPage(Context).IsLoaded(0))
+            else if (new TodoEditPage(Context).IsLoaded())
             {
                 new TodoEditPage(Context).CancelButton.Click();
             }
-            else if (new TodoDetailPage(Context).IsLoaded(0))
+            else if (new TodoDetailPage(Context).IsLoaded())
             {
                 new TodoDetailPage(Context).BackButton.Click();
             }

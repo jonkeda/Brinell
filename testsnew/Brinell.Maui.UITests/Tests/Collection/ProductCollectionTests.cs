@@ -54,7 +54,8 @@ public class ProductCollectionTests
     public Task OutOfRange_TryItemReturnsNull_ItemThrows()
     {
         Assert.Null(Page.Products.TryItem(9999));
-        Assert.Throws<ElementNotFoundException>(() => Page.Products.Item(9999));
+        // Item(i) waits for the row (Q10); a short budget keeps the expected failure quick.
+        Assert.Throws<ElementNotFoundException>(() => Page.Products.Item(9999, timeoutMs: 500));
 
         return Task.CompletedTask;
     }
@@ -198,7 +199,7 @@ public class ProductCollectionTests
 
         Assert.Null(Page.Products.FindItem(r => r.Name.GetText() == "Nonexistent"));
         Assert.Throws<ElementNotFoundException>(
-            () => Page.Products.ItemWhere(r => r.Name.GetText() == "Nonexistent"));
+            () => Page.Products.ItemWhere(r => r.Name.GetText() == "Nonexistent", timeoutMs: 500));
 
         return Task.CompletedTask;
     }
@@ -288,7 +289,11 @@ public class ProductCollectionTests
         Page.Products.BulkAddButton.Click();
         Assert.True(Page.Products.WaitLogicalCount(BulkTotal, TestConstants.LongTestTimeoutMs));
 
-        var row = Page.Products.FindItem(r => r.Name.GetText() == "Bulk Product 55");
+        // A scroll through 60 rows, reading each one's name, takes longer than the default wait
+        // (10.4 s in the 2026-09-19 baseline): the search gets a budget to match (Q9).
+        var row = Page.Products.FindItem(
+            r => r.Name.GetText() == "Bulk Product 55",
+            timeoutMs: TestConstants.DefaultTestTimeoutMs);
 
         Assert.NotNull(row);
 

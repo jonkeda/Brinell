@@ -59,7 +59,7 @@ public abstract partial class ToggleControlBase<TScope> : FocusableControlBase<T
     {
         if (IsEnabledCore(element) != true)
         {
-            throw new TimeoutException($"Element was not enabled. Locator: {Locator}");
+            throw new ElementNotReadyException(Locator, NotReadyReason.Disabled);
         }
     }
 
@@ -78,17 +78,21 @@ public abstract partial class ToggleControlBase<TScope> : FocusableControlBase<T
     protected virtual void ToggleCore(IMauiElement element, int? timeoutMs = null)
     {
         var beforeState = IsCheckedCore(element);
-        EnsureVisible(element, timeoutMs ?? DefaultTimeoutMs);
 
         element.Toggle();
 
-        if (beforeState != null
-            && !Until(() => IsCheckedCore(element), state => state != beforeState, timeoutMs, out var lastError))
+        if (beforeState == null)
         {
-            throw new InvalidOperationException(
+            return;
+        }
+
+        var confirmation = Confirm(() => IsCheckedCore(element), state => state != beforeState, timeoutMs);
+        if (!confirmation.IsConfirmed)
+        {
+            throw confirmation.Failure(Locator, "Toggle", lastError => new InvalidOperationException(
                 $"The element accepted Toggle and its checked state did not change, so nothing "
                 + $"the test asked for happened. It was {Describe(beforeState)} before and after. "
-                + $"Locator: {Locator}", lastError);
+                + $"Locator: {Locator}", lastError));
         }
     }
 
@@ -130,11 +134,12 @@ public abstract partial class ToggleControlBase<TScope> : FocusableControlBase<T
     {
         element.SetChecked(@checked);
 
-        if (!Until(() => IsCheckedCore(element), state => state == @checked, timeoutMs, out var lastError))
+        var confirmation = Confirm(() => IsCheckedCore(element), state => state == @checked, timeoutMs);
+        if (!confirmation.IsConfirmed)
         {
-            throw new InvalidOperationException(
+            throw confirmation.Failure(Locator, "SetChecked", lastError => new InvalidOperationException(
                 $"The element accepted SetChecked({@checked}) and its checked state did not change. "
-                + $"Locator: {Locator}", lastError);
+                + $"Locator: {Locator}", lastError));
         }
     }
 

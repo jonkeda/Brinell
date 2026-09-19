@@ -70,8 +70,8 @@ public class ScrollLookupTests : SemanticControlTestsBase
     public void AControlInsideAScrollView_AsksThatViewToScroll()
     {
         var scrollRoot = CreateElement("Scroller", 0, 0, 400, 600);
-        scrollRoot.Setup(e => e.FindElement(It.IsAny<Locator>(), 0))
-            .Throws(new ElementNotFoundException("not realized"));
+        scrollRoot.Setup(e => e.TryFindElement(It.IsAny<Locator>()))
+            .Returns((IMauiElement?)null);
         Context.Setup(c => c.TryFindElement(It.Is<Locator>(l => l.Value == "Scroller")))
             .Returns(scrollRoot.Object);
 

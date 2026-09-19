@@ -16,6 +16,12 @@ public interface IItemStrategy
     /// Finds one item's root, or null when the index is out of range.
     /// </summary>
     IMauiElement? FindItemElement(IMauiElement collectionRoot, int index);
+
+    /// <summary>
+    /// Whether each row's automation id names its item and no other (<c>Task_0</c>,
+    /// <c>Task_1</c>): a row can then be found again by its id.
+    /// </summary>
+    bool HasStableIds => false;
 }
 
 /// <summary>
@@ -85,7 +91,7 @@ internal sealed class LocatorItemStrategy : IItemStrategy
     {
         ArgumentNullException.ThrowIfNull(collectionRoot);
 
-        return collectionRoot.FindElements(_itemLocator, timeoutMs: 0);
+        return collectionRoot.FindElements(_itemLocator);
     }
 
     /// <inheritdoc />
@@ -103,6 +109,9 @@ internal sealed class LocatorItemStrategy : IItemStrategy
 /// </summary>
 internal sealed class IndexedIdItemStrategy : IItemStrategy
 {
+    /// <inheritdoc />
+    public bool HasStableIds => true;
+
     private readonly string _prefix;
     private readonly int _maxItems;
 
@@ -143,7 +152,7 @@ internal sealed class IndexedIdItemStrategy : IItemStrategy
         try
         {
             return collectionRoot.FindElement(
-                Locator.ByAutomationId($"{_prefix}{index}"), timeoutMs: 0);
+                Locator.ByAutomationId($"{_prefix}{index}"));
         }
         catch (ElementNotFoundException)
         {
@@ -159,6 +168,9 @@ internal sealed class WithinItemStrategy : IItemStrategy
 {
     private readonly Locator _hostLocator;
     private readonly IItemStrategy _inner;
+
+    /// <inheritdoc />
+    public bool HasStableIds => _inner.HasStableIds;
 
     public WithinItemStrategy(Locator hostLocator, IItemStrategy inner)
     {
@@ -190,6 +202,6 @@ internal sealed class WithinItemStrategy : IItemStrategy
     {
         ArgumentNullException.ThrowIfNull(collectionRoot);
 
-        return collectionRoot.TryFindElement(_hostLocator, out var host, 0) ? host : null;
+        return collectionRoot.TryFindElement(_hostLocator);
     }
 }

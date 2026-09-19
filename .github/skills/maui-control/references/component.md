@@ -71,7 +71,7 @@ The two public constructors take `scope`, like a simple control.
     `MediaTimeLabel : Label`, `AvatarInitials : Label`, `AvatarImage : Image`);
   - named `<Component><Part>`, in the component's folder, as its own `.tpl.cs`;
   - element-first Core methods that read and act on **its own element only**
-    (`MediaPlayPauseButton.SetPlayingCore` presses, then `Until` its name changes);
+    (`MediaPlayPauseButton.SetPlayingCore` presses, then `Confirm`s its name changes);
   - class remarks naming the component and what the part cannot see ("this control cannot
     see the media's state, so a component that owns this button waits for the media first").
 - **Absence is the part's answer.** When "not shown" is a valid state (no image set; no

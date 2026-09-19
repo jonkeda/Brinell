@@ -29,8 +29,7 @@ public class TypedListControlTests : SemanticControlTestsBase
         listRoot
             .Setup(e => e.FindElements(
                 It.Is<Locator>(l => l.Strategy == LocatorStrategy.ControlType
-                                    && l.Value == "ListItem"),
-                It.IsAny<int>()))
+                                    && l.Value == "ListItem")))
             .Returns(new[] { row.Object });
 
         var result = Page.TypedList.TrySelectItem(0);
@@ -63,7 +62,7 @@ public class TypedListControlTests : SemanticControlTestsBase
 
         listRoot
             .Setup(e => e.FindElements(
-                It.Is<Locator>(l => l.Value == "ListItem"), It.IsAny<int>()))
+                It.Is<Locator>(l => l.Value == "ListItem")))
             .Returns(new[] { row.Object });
 
         Assert.Equal(1, Page.TypedList.GetItemCount());

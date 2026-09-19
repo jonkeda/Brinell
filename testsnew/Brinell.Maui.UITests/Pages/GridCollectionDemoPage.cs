@@ -22,7 +22,7 @@ public class GridCollectionDemoPage : PageObjectBase<GridCollectionDemoPage>
     public override string Name => "GridCollectionPage";
 
     /// <inheritdoc />
-    public override bool IsLoaded(int? timeoutMs = null) => PageTitle.IsExists();
+    public override bool IsLoaded() => PageTitle.IsExists();
 
     /// <summary>The page title label.</summary>
     public Label<GridCollectionDemoPage> PageTitle => new(this, "PageTitle");

@@ -20,13 +20,15 @@ MAUI pages and container objects share rooted-scope behavior without sharing a
 parent contract:
 
 - `RootedScopeBase<TSelf, TSetResult>` owns root caching, stale recovery,
-  strict descendant lookup, typed child factories, state, and readiness hooks.
+  strict descendant lookup, typed child factories, state, and readiness:
+  `ProbeReadiness()` asks the parent (unless `AsksParent` is false), then checks
+  the root, then `ProbeContentReadiness(root)`.
 - `PageObjectBase<TSelf>` locates its root from the driver and has no `Parent`.
 - `ContainerObjectBase<TParent, TSelf>` locates its root inside its parent and
   implements `IMauiContainerObject<TParent, TSelf>` with an explicit `Parent`.
-- `DriverRootScope<TScope>` is an explicit escape for application or platform
-  chrome outside the current page subtree. Ordinary controls do not fall back
-  to it.
+- `AppRoot` is the one whole-app scope, for application or platform chrome
+  outside every page (toolbar items, menus, Shell's flyout). Ordinary controls
+  do not fall back to it.
 
 Rooted scopes must provide a root locator and root-resolution implementation.
 A page also validates cached roots through visible, usable bounds so navigating

@@ -83,12 +83,21 @@ public class MediaElementTests
   (an off-screen carousel card), use `AssertVisible(false)`, never a scrolling check, because
   scrolling would change the state under test.
 - In a virtualized collection an off-screen row may not be realized at all, and whether it is
-  depends on timing. `Item(i)` then throws. Check it as
+  depends on timing. `Item(i)` then waits out its budget and throws. Check it as
   `collection.TryItem(i)?.Name.AssertVisible(false)`: not realized is not shown.
 - Negative cases use the API: `AssertExists(false)`, `AssertOpen(false)`, `TryItem(i)` returning
-  null, `Assert.Throws<ElementNotFoundException>(...)`.
-- **No** `Thread.Sleep`, `Task.Delay`, raised timeouts, or try/catch around control calls. A
-  flaky wait is a control bug: fix the control.
+  null, `Assert.Throws<ElementNotFoundException>(...)`. A lookup expected to fail waits its whole
+  budget first (`Item(i)` and `ItemWhere` wait), so give it a short one:
+  `Assert.Throws<ElementNotFoundException>(() => list.Item(9999, timeoutMs: 500))`.
+- **No** `Thread.Sleep`, `Task.Delay`, or try/catch around control calls. A flaky wait is a
+  control bug: fix the control. A raised `timeoutMs` is right only for an operation that is
+  long by nature - scrolling a long list, a search through it - and gets a comment saying so.
+  Never raise one to hide a flake.
+- What a failure means: `ScopeNotReadyException` - a page, container or row never became
+  ready (it names which, and what it saw); `ElementNotReadyException` - found, but disabled or
+  not visible; `StaleElementException` - replaced after an action that ran once. A near-miss
+  warning in the call log means the call passed only after trouble; set `BRINELL_CALL_LOG` to a
+  folder to write every call to CSV.
 
 ## The never-list
 

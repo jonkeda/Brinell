@@ -49,7 +49,7 @@ public class ReadinessTests
 
         public override string Name => "GatedPage";
 
-        public override bool IsLoaded(int? timeoutMs = null) => _isLoaded();
+        public override bool IsLoaded() => _isLoaded();
 
         public Button<GatedPage> Target => new(this, "Target");
     }
@@ -92,7 +92,7 @@ public class ReadinessTests
         element.Setup(e => e.Enabled).Returns(true);
         element.Setup(e => e.Rect).Returns(new System.Drawing.Rectangle(0, 0, 40, 20));
 
-        _pageRoot.Setup(e => e.FindElement(It.Is<Locator>(l => l.Value == "Target"), 0))
+        _pageRoot.Setup(e => e.TryFindElement(It.Is<Locator>(l => l.Value == "Target")))
             .Returns(element.Object);
 
         return element;
@@ -102,7 +102,7 @@ public class ReadinessTests
     {
         var signal = new Mock<IMauiElement>();
         signal.Setup(e => e.Text).Returns(readValue);
-        _pageRoot.Setup(e => e.FindElement(It.Is<Locator>(l => l.Value == "Busy"), 0))
+        _pageRoot.Setup(e => e.TryFindElement(It.Is<Locator>(l => l.Value == "Busy")))
             .Returns(signal.Object);
         return signal;
     }
@@ -143,10 +143,11 @@ public class ReadinessTests
         var page = new GatedPage(_context.Object, () => false);
         GivenElement();
 
-        var ex = Assert.Throws<ElementNotFoundException>(() => page.Target.Click());
+        var ex = Assert.Throws<ScopeNotReadyException>(() => page.Target.Click());
 
         Assert.Contains("GatedPage", ex.Message);
-        Assert.Contains("not loaded", ex.Message);
+        Assert.Contains(nameof(ScopeReadinessState.NotLoaded), ex.Message);
+        Assert.Equal(ScopeReadinessState.NotLoaded, ex.Readiness.State);
     }
 
     #endregion
@@ -180,10 +181,10 @@ public class ReadinessTests
 
         var page = new AbsentPage(_context.Object);
 
-        var ex = Assert.Throws<PageLoadException>(() => page.Target.Click());
+        var ex = Assert.Throws<ScopeNotReadyException>(() => page.Target.Click());
 
         Assert.Contains("AbsentPage", ex.Message);
-        Assert.Contains(nameof(PageReadinessState.MissingRoot), ex.Message);
+        Assert.Contains(nameof(ScopeReadinessState.MissingRoot), ex.Message);
     }
 
     [Fact]
@@ -291,7 +292,7 @@ public class ReadinessTests
         GivenBusySignal(() => "True");
         var element = GivenElement();
 
-        var exception = Assert.Throws<PageLoadException>(
+        var exception = Assert.Throws<ScopeNotReadyException>(
             () => new BusyGatedPage(_context.Object).Target.Click(timeoutMs: 10));
 
         Assert.Contains("Click", exception.Message);
@@ -355,7 +356,7 @@ public class ReadinessTests
         var element = GivenElement();
         element.Setup(e => e.Enabled).Returns(false);
 
-        var ex = Assert.Throws<TimeoutException>(() => page.Target.Click());
+        var ex = Assert.Throws<ElementNotReadyException>(() => page.Target.Click());
 
         Assert.Contains("Target", ex.Message);
         element.Verify(e => e.Invoke(), Times.Never);
@@ -391,8 +392,9 @@ public class ReadinessTests
     /// <c>IsExists()</c> does not wait for a page that has not arrived yet.
     /// </summary>
     /// <remarks>
-    /// A query issued straight after navigation is one observation. Use
-    /// <c>WaitExists()</c> when arrival is the expected behavior.
+    /// A query issued straight after navigation is one observation, of the element only: a lookup
+    /// does not consult the page (design 7.4). Use <c>WaitExists()</c> when arrival is the
+    /// expected behavior; its attempts ask the page first.
     /// </remarks>
     [Fact]
     public void IsExists_DoesNotWaitForThePage_WhenItHasNotArrived()
@@ -402,11 +404,11 @@ public class ReadinessTests
         _context.Setup(c => c.TryFindElement(It.IsAny<Locator>())).Returns((IMauiElement?)null);
 
         Assert.False(page.Target.IsExists());
-        Assert.Equal(1, checks);
+        Assert.Equal(0, checks);
     }
 
     [Fact]
-    public void IsVisible_ObservesPageAndElementOnce()
+    public void IsVisible_ReadsTheElementOnce_AndNotThePage()
     {
         var pageChecks = 0;
         var visibleReads = 0;
@@ -415,7 +417,7 @@ public class ReadinessTests
         element.Setup(e => e.Visible).Returns(() => { visibleReads++; return true; });
 
         Assert.True(page.Target.IsVisible());
-        Assert.Equal(1, pageChecks);
+        Assert.Equal(0, pageChecks);
         Assert.Equal(1, visibleReads);
     }
 

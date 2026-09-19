@@ -47,6 +47,13 @@ internal sealed class FlaUIDeclaredElement : IMauiElement
 
     /// <inheritdoc />
     /// <remarks>
+    /// The declared id: a declared element is answered by the app through the bridge, not held as
+    /// a tree node, so it is never replaced and never goes stale.
+    /// </remarks>
+    public string InstanceKey => $"declared:{_automationId}";
+
+    /// <inheritdoc />
+    /// <remarks>
     /// The declaration is read from the target found at lookup, so answering null costs no walk
     /// of the bridge at all - this element already holds the thing that knows.
     /// </remarks>
@@ -148,14 +155,10 @@ internal sealed class FlaUIDeclaredElement : IMauiElement
     public string? GetAttribute(string name) => throw NotInTheTree("attributes");
 
     /// <inheritdoc />
-    public IMauiElement FindElement(Locator locator, int timeoutMs = 5000) => throw NotInTheTree("descendants");
+    public IMauiElement? TryFindElement(Locator locator) => throw NotInTheTree("descendants");
 
     /// <inheritdoc />
-    public IReadOnlyList<IMauiElement> FindElements(Locator locator, int timeoutMs = 0)
-        => throw NotInTheTree("descendants");
-
-    /// <inheritdoc />
-    public bool TryFindElement(Locator locator, out IMauiElement? element, int timeoutMs = 0)
+    public IReadOnlyList<IMauiElement> FindElements(Locator locator)
         => throw NotInTheTree("descendants");
 
     /// <inheritdoc />

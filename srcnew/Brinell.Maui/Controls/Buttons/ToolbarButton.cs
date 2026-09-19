@@ -61,7 +61,6 @@ public class ToolbarButton<TScope> : Button<TScope>
     /// </remarks>
     protected override void ClickCore(IMauiElement element, int? timeoutMs = null)
     {
-        EnsureClickableCore(element);
         element.InvokeToolbarItem(Locator.Value);
     }
 }

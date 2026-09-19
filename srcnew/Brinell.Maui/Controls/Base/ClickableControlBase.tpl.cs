@@ -42,10 +42,9 @@ public abstract partial class ClickableControlBase<TScope> : FocusableControlBas
     /// selects, <c>ToolbarButton</c> raises a toolbar item.
     /// </remarks>
     /// <param name="element">The pre-found element.</param>
-    /// <param name="timeoutMs">Optional timeout for clickable check.</param>
+    /// <param name="timeoutMs">Unused: the call checks that the element is enabled while it resolves it.</param>
     protected virtual void ClickCore(IMauiElement element, int? timeoutMs = null)
     {
-        EnsureClickableCore(element);
         element.Invoke();
     }
 
@@ -53,10 +52,9 @@ public abstract partial class ClickableControlBase<TScope> : FocusableControlBas
     /// Performs double-click on pre-found element. No logging - caller handles logging.
     /// </summary>
     /// <param name="element">The pre-found element.</param>
-    /// <param name="timeoutMs">Optional timeout for clickable check.</param>
+    /// <param name="timeoutMs">Unused: the call checks that the element is enabled while it resolves it.</param>
     protected virtual void DoubleClickCore(IMauiElement element, int? timeoutMs = null)
     {
-        EnsureClickableCore(element);
         element.DoubleClick();
     }
 
@@ -64,10 +62,9 @@ public abstract partial class ClickableControlBase<TScope> : FocusableControlBas
     /// Performs right-click on pre-found element. No logging - caller handles logging.
     /// </summary>
     /// <param name="element">The pre-found element.</param>
-    /// <param name="timeoutMs">Optional timeout for clickable check.</param>
+    /// <param name="timeoutMs">Unused: the call checks that the element is enabled while it resolves it.</param>
     protected virtual void RightClickCore(IMauiElement element, int? timeoutMs = null)
     {
-        EnsureClickableCore(element);
         element.RightClick();
     }
 
@@ -75,10 +72,9 @@ public abstract partial class ClickableControlBase<TScope> : FocusableControlBas
     /// Core implementation of Hover using pre-found element.
     /// </summary>
     /// <param name="element">The pre-found element.</param>
-    /// <param name="timeoutMs">Optional timeout for clickable check.</param>
+    /// <param name="timeoutMs">Unused: the call checks that the element is enabled while it resolves it.</param>
     protected virtual void HoverCore(IMauiElement element, int? timeoutMs = null)
     {
-        EnsureClickableCore(element);
         element.Hover();
     }
 
@@ -87,10 +83,9 @@ public abstract partial class ClickableControlBase<TScope> : FocusableControlBas
     /// </summary>
     /// <param name="element">The pre-found element.</param>
     /// <param name="durationMs">Duration of the press in milliseconds.</param>
-    /// <param name="timeoutMs">Optional timeout for clickable check.</param>
+    /// <param name="timeoutMs">Unused: the call checks that the element is enabled while it resolves it.</param>
     protected virtual void LongPressCore(IMauiElement element, int? durationMs = null, int? timeoutMs = null)
     {
-        EnsureClickableCore(element);
         var duration = durationMs ?? 1000; // Default 1 second
         element.LongPress(duration);
     }
@@ -103,12 +98,17 @@ public abstract partial class ClickableControlBase<TScope> : FocusableControlBas
     /// toolbar item. On Android and iOS the key is delivered by Appium.
     /// </remarks>
     /// <param name="element">The pre-found element.</param>
-    /// <param name="timeoutMs">Optional timeout for clickable check.</param>
+    /// <param name="timeoutMs">Unused: the call checks that the element is enabled while it resolves it.</param>
     protected virtual void PressCore(IMauiElement element, int? timeoutMs = null)
     {
-        EnsureClickableCore(element);
-        element.SendKeys(Keys.Space);
+        element.SendKeys(WebDriverSpaceKey);
     }
+
+    /// <summary>
+    /// The WebDriver key code for Space (Selenium's <c>Keys.Space</c>), which Appium delivers as a
+    /// key press. Spelled out here so the control layer names no Selenium type.
+    /// </summary>
+    private const string WebDriverSpaceKey = "";
 
     #endregion
 
@@ -122,8 +122,7 @@ public abstract partial class ClickableControlBase<TScope> : FocusableControlBas
     {
         if (IsEnabledCore(element) != true)
         {
-            throw new TimeoutException(
-                $"Element was not enabled. Locator: {Locator}");
+            throw new ElementNotReadyException(Locator, NotReadyReason.Disabled);
         }
     }
 

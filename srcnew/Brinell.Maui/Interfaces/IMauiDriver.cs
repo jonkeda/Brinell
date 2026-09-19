@@ -4,12 +4,43 @@ using Brinell.Maui.Enums;
 namespace Brinell.Maui.Interfaces;
 
 /// <summary>
-/// MAUI-specific driver interface extending <see cref="IDriver{TElement}"/> and <see cref="IDiagnosticDriver"/>.
-/// Adds platform detection, context switching for hybrid apps, and window management.
-/// This interface can be mocked for unit testing without requiring an Appium connection.
+/// The driver for a MAUI app under test: lookup from the app root, platform detection, context
+/// switching for hybrid apps, window management, navigation and gestures.
 /// </summary>
-public interface IMauiDriver : IDriver<IMauiElement>, IDiagnosticDriver
+/// <remarks>
+/// MAUI owns this contract; it does not derive from Brinell.Core's driver interface (see
+/// <c>.my/stale-readiness/design.md</c>, R9). This interface can be mocked for unit testing
+/// without requiring an Appium connection.
+/// </remarks>
+public interface IMauiDriver : IDiagnosticDriver, IDisposable
 {
+    #region Lookup
+
+    /// <summary>
+    /// Finds every element in the app matching <paramref name="locator"/>, in one attempt.
+    /// </summary>
+    /// <remarks>
+    /// Never waits: waiting belongs to the control's own poll.
+    /// </remarks>
+    /// <param name="locator">The locator strategy and value.</param>
+    /// <returns>The matches; empty when none match now.</returns>
+    IReadOnlyList<IMauiElement> FindElements(Locator locator);
+
+    #endregion
+
+    #region Session
+
+    /// <summary>Closes the current window.</summary>
+    void Close();
+
+    /// <summary>Ends the session and closes the app.</summary>
+    void Quit();
+
+    /// <summary>Takes a screenshot of the app.</summary>
+    byte[] GetScreenshot();
+
+    #endregion
+
     #region Platform
 
     /// <summary>

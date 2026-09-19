@@ -52,10 +52,8 @@ public partial class DrawingView<TScope> : Brinell.Maui.Controls.Base.ViewBase<T
                : null);
 
     /// <inheritdoc />
-    protected override IMauiElement FindElement()
-        => TryFindElement()
-           ?? throw new ElementNotFoundException(
-               $"DrawingView was not found by '{Locator}' in the tree or among the app's bridge "
+    protected override ElementNotFoundException NotFound()
+        => new($"DrawingView was not found by '{Locator}' in the tree or among the app's bridge "
                + "declarations. On Windows the app must declare GetState on it.");
 
     #endregion
@@ -113,10 +111,11 @@ public partial class DrawingView<TScope> : Brinell.Maui.Controls.Base.ViewBase<T
             return;
         }
 
-        if (!Until(() => GetLineCountCore(element), actual => actual > before, timeoutMs, out var lastError))
+        var confirmation = Confirm(() => GetLineCountCore(element), actual => actual > before, timeoutMs);
+        if (!confirmation.IsConfirmed)
         {
-            throw new TimeoutException(
-                $"DrawingView '{Locator.Value}' did not gain a line after the stroke.", lastError);
+            throw confirmation.Failure(Locator, "the stroke", lastError => new TimeoutException(
+                $"DrawingView '{Locator.Value}' did not gain a line after the stroke.", lastError));
         }
     }
 

@@ -11,7 +11,7 @@ Use it for logic the UI cannot reach cheaply or reliably:
 - stale-element recovery and root re-resolution;
 - idempotence and null-skip;
 - error messages naming the locator;
-- waiting and timeouts (`Until`, absence tolerance).
+- waiting and timeouts (`Confirm`, absence tolerance).
 
 Do not use it to assert what the user sees in a real app: that is a UI test.
 

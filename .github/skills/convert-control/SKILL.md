@@ -58,7 +58,7 @@ conversion procedure.
 
 7. **Remove nested units of work.** A Core method that calls a `Run*` helper or a public member
    of another control makes the generator warn. Replace `Run*` waits with
-   `Until(read, done, timeoutMs, out lastError)`; move part behaviour to the part (see the
+   `Confirm(read, done, timeoutMs)`; move part behaviour to the part (see the
    component reference).
 
 8. **Generate and build** (from the Brinell root):

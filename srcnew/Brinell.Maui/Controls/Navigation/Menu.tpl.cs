@@ -96,9 +96,9 @@ public partial class Menu<TParent>
     /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
     protected virtual void OpenCore(IMauiElement element, int? timeoutMs = null)
     {
-        var trigger = _triggerLocator == null
-            ? element
-            : element.FindElement(_triggerLocator, timeoutMs ?? DefaultTimeoutMs);
+        // One lookup (R2): the call's poll already waited for the menu to be ready, and the
+        // trigger is part of it.
+        var trigger = _triggerLocator == null ? element : element.FindElement(_triggerLocator);
 
         trigger.Invoke();
     }
@@ -119,8 +119,7 @@ public partial class Menu<TParent>
 
         if (_itemsHostLocator == null) return element.Visible;
 
-        return element.TryFindElement(_itemsHostLocator, out var host, 0)
-               && host?.Visible == true;
+        return element.TryFindElement(_itemsHostLocator)?.Visible == true;
     }
 
     #endregion

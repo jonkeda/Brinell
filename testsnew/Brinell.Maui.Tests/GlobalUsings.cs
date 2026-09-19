@@ -19,3 +19,5 @@ global using Brinell.Maui.Controls.Toggle;
 global using Brinell.Maui.Interfaces;
 global using Brinell.Maui.Pages;
 global using OpenQA.Selenium;
+global using Brinell.Maui.Exceptions;
+global using Brinell.Maui.Scopes;

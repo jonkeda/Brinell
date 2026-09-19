@@ -57,10 +57,8 @@ public partial class IndicatorView<TScope> : Base.ViewBase<TScope>
                : null);
 
     /// <inheritdoc />
-    protected override IMauiElement FindElement()
-        => TryFindElement()
-           ?? throw new ElementNotFoundException(
-               $"IndicatorView was not found by '{Locator}' in the tree or among the app's bridge "
+    protected override ElementNotFoundException NotFound()
+        => new($"IndicatorView was not found by '{Locator}' in the tree or among the app's bridge "
                + "declarations. On Windows the app must declare GetState on it.");
 
     #endregion

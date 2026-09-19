@@ -52,18 +52,18 @@ public partial class Player<TScope> : ComponentObjectBase<TScope, Player<TScope>
 
         var warning = Assert.Single(warnings);
         Assert.Contains($"'{helper}'", warning);
-        Assert.Contains("Wait with Until instead", warning);
+        Assert.Contains("Wait with Confirm instead", warning);
     }
 
     [Fact]
-    public void CoreMethodReadingItsOwnElementAndWaitingWithUntil_IsNotWarned()
+    public void CoreMethodReadingItsOwnElementAndWaitingWithConfirm_IsNotWarned()
     {
         var (_, warnings) = Generate(
             "protected virtual void StopCore(IMauiElement element, int? timeoutMs = null)\n" +
             "{\n" +
             "    element.Invoke();\n" +
             "    element.FindElement(Locator.ByAutomationId(\"x\"), 0).Invoke();\n" +
-            "    Until(() => element.Name, name => name == \"Play\", timeoutMs);\n" +
+            "    Confirm(() => element.Name, name => name == \"Play\", timeoutMs);\n" +
             "}");
 
         Assert.Empty(warnings);

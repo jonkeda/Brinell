@@ -25,6 +25,13 @@ public partial class ContentDialog<TParent> : ContainerObjectBase<TParent, Conte
     protected override bool CacheContainerRoot => false;
 
     /// <inheritdoc />
+    /// <remarks>
+    /// A dialog answers for itself: it is shown over the page that raised it, which may be busy
+    /// (waiting for the answer) for as long as the dialog is open.
+    /// </remarks>
+    protected override bool AsksParent => false;
+
+    /// <inheritdoc />
     protected override IMauiElement FindContainerRootElement()
     {
         return Context.AppElement.TryFindActiveDialog()
@@ -69,7 +76,7 @@ public partial class ContentDialog<TParent> : ContainerObjectBase<TParent, Conte
 
         // Android publishes no name on the alert's root; the title is its alertTitle text, under
         // the app's package for MAUI's AppCompat alert and android: for a framework one.
-        return element.TryFindElement(AndroidAlertTitle, out var title, 0) ? title?.Text : null;
+        return element.TryFindElement(AndroidAlertTitle)?.Text;
     }
 
     /// <summary>An Android alert's title, whichever package its ids carry.</summary>
@@ -88,7 +95,7 @@ public partial class ContentDialog<TParent> : ContainerObjectBase<TParent, Conte
     protected virtual IReadOnlyList<string>? GetButtonTextsCore(IMauiElement? element)
         => element == null
             ? null
-            : [.. element.FindElements(Locator.ByControlType("button"), 0)
+            : [.. element.FindElements(Locator.ByControlType("button"))
                 .Select(button => button.Name ?? string.Empty)];
 
     /// <summary>

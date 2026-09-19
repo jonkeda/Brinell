@@ -95,20 +95,11 @@ public partial class Stepper<TScope> : Base.RangeControlBase<TScope>
     }
 
     /// <summary>
-    /// Finds the stepper element through the same native-or-buttons resolution as optional reads.
+    /// Says where the stepper was looked for: its own locator, then its two buttons.
     /// </summary>
-    protected override IMauiElement FindElement()
-    {
-        var parts = ResolveParts();
-        if (parts is not null)
-        {
-            return parts.Proxy;
-        }
-
-        throw new ElementNotFoundException(
-            $"Stepper was not found by '{Locator}', '{_baseAutomationId}Minus', or "
-            + $"'{_baseAutomationId}Plus'.");
-    }
+    protected override ElementNotFoundException NotFound()
+        => new($"Stepper was not found by '{Locator}', '{_baseAutomationId}Minus', or "
+               + $"'{_baseAutomationId}Plus'.");
     
     /// <summary>
     /// The Stepper as the app declared it, or null where it was never declared.
@@ -267,12 +258,13 @@ public partial class Stepper<TScope> : Base.RangeControlBase<TScope>
                 DecrementCore(element, timeoutMs);
         }
 
-        if (!Until(() => GetValueCore(element),
+        var confirmation = Confirm(() => GetValueCore(element),
                 actual => actual.HasValue && Math.Abs(actual.Value - target) < 0.01,
-                timeoutMs, out var lastError))
+                timeoutMs);
+        if (!confirmation.IsConfirmed)
         {
-            throw new TimeoutException(
-                $"Stepper '{_baseAutomationId ?? Locator.Value}' did not reach {target}.", lastError);
+            throw confirmation.Failure(Locator, "the presses", lastError => new TimeoutException(
+                $"Stepper '{_baseAutomationId ?? Locator.Value}' did not reach {target}.", lastError));
         }
     }
     

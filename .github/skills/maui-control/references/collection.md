@@ -91,8 +91,9 @@ control's remarks that a looping carousel cannot be searched on Windows.
 On Windows `IsVisible` means "on screen now". A check that scrolls (`AssertVisibleAfterScroll`)
 can move the carousel itself, so use it only to prove the current item is shown; prove the
 others are off screen with `TryItem(i)?.Name.AssertVisible(false)`. `Item(i)` finds only
-realized rows (by `PositionInSet`), and an off-screen row may or may not be realized depending
-on timing; a test that demands it with `Item(i)` passes on one run and fails on the next.
+realized rows (by `PositionInSet`), and waits for one; an off-screen row may or may not be
+realized depending on timing, so a test that demands it with `Item(i)` passes on one run and
+fails on the next.
 
 ## Counts and indexes
 
@@ -100,6 +101,21 @@ on timing; a test that demands it with `Item(i)` passes on one run and fails on 
   they differ. A logical count comes from what the app shows (a count label), as a domain
   helper on the app collection. Say in each member's remarks which one it means.
 - The logical index comes from `PositionInSet` where the platform publishes it.
+- **A row remembers which item it holds** (`Key`: the logical index, else a stable or unique
+  automation id, else the position). A row whose element went away is found again by that key;
+  a row whose element now shows another item reports `ItemChanged` rather than answering for it.
+  Only a position key cannot be checked, so prefer rows the platform numbers.
+
+## Waiting and budgets
+
+- Non-`Try` members wait within their `timeoutMs`: `Item(i)`, `this[i]`, `Item(key)`,
+  `ItemWhere`, `SelectItem`, `WaitItemCount`, `WaitAnyItem`, `WaitForItems`, `Assert*`.
+  `TryItem`, `TrySelectItem` and `GetItemCount` answer about now.
+- `FindItem(predicate, timeoutMs)` scrolls through the list once and answers null at the end.
+  `ItemWhere(predicate, timeoutMs)` keeps scrolling and looking until the budget runs out.
+- `ScrollToItem`, `ScrollToEnd`, `ScrollToTop`, `WaitForItems`, `FindItem` and `ItemWhere` take
+  one scroll step per attempt, all on the one budget. A long list needs a budget to match
+  (the 60-row product search takes about 12 s on Windows).
 
 ## What the base gives, and what to override
 
@@ -111,7 +127,7 @@ Given: `Item(i)`, `this[i]`, `TryItem(i)`, `Item(key)`, `ItemByAutomationId`, `I
 | Override | When |
 | --- | --- |
 | `ScrollTarget` | the scrolling element is not the root (a wrapper around the CollectionView) |
-| `ActivateItemCore(itemRoot)` | selecting a row is not a tap or invoke of its root |
+| `ActivateItemCore(itemRoot)` | selecting a row is not a tap or invoke of its root. Return false only when nothing was activated: `SelectItem` asks again within its budget |
 | `MatchesKey(itemRoot, key)` | rows are keyed another way than a descendant matching the locator |
 
 Collection-level controls (title, empty view, count label, buttons) are named properties on

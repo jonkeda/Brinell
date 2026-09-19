@@ -37,8 +37,6 @@ public abstract partial class ClickableItemBase<TCollection, TSelf>
     /// <param name="timeoutMs">Optional timeout.</param>
     protected virtual void ClickCore(IMauiElement element, int? timeoutMs = null)
     {
-        EnsureClickableCore(element);
-
         // Invoked: a plain item is activated, the way a menu entry is. An item that is chosen
         // from a group rather than activated overrides this - see SelectableItemBase.
         element.Invoke();
@@ -79,7 +77,7 @@ public abstract partial class ClickableItemBase<TCollection, TSelf>
     {
         if (IsEnabledCore(element) != true)
         {
-            throw new TimeoutException($"Item {Index} was not enabled. Locator: {Locator}");
+            throw new ElementNotReadyException(Locator, NotReadyReason.Disabled, $"item {Index}");
         }
     }
 
@@ -88,6 +86,10 @@ public abstract partial class ClickableItemBase<TCollection, TSelf>
     /// </summary>
     /// <param name="element">The item's root element.</param>
     protected virtual void EnsureClickableCore(IMauiElement element) => EnsureEnabledCore(element);
+
+    /// <inheritdoc />
+    /// <remarks>An item is acted on only when it is clickable: checked while the call resolves it.</remarks>
+    protected override void EnsureReadyForActionCore(IMauiElement root) => EnsureClickableCore(root);
 
     #endregion
 }

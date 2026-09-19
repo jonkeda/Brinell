@@ -36,7 +36,7 @@ public class AppRootScopeTests
     /// </summary>
     /// <remarks>
     /// The regression guard for the original outage. A page-scoped control here throws
-    /// <c>PageLoadException</c> with <c>MissingRoot</c>, because it asks a page object for
+    /// <c>ScopeNotReadyException</c> with <c>MissingRoot</c>, because it asks a page object for
     /// something that is not in it.
     /// </remarks>
     [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]

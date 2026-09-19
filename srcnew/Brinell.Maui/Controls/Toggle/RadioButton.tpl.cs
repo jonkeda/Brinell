@@ -52,7 +52,6 @@ public partial class RadioButton<TScope> : Base.ToggleControlBase<TScope>
     protected override void ToggleCore(IMauiElement element, int? timeoutMs = null)
     {
         var before = IsCheckedCore(element);
-        EnsureVisible(element, timeoutMs ?? DefaultTimeoutMs);
 
         element.Select();
 

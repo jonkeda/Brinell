@@ -5,10 +5,18 @@ namespace Brinell.Maui.Containers;
 /// than located.
 /// </summary>
 /// <remarks>
+/// <para>
 /// This is what makes item scoping real. Because the row's root is already known, its
 /// children resolve within that subtree, so an item template can use the same automation
 /// ids on every row - the normal MAUI authoring style - without the rows becoming
 /// ambiguous.
+/// </para>
+/// <para>
+/// A row records which item it holds (<see cref="Key"/>) when it is created. A row whose element
+/// has gone is found again by that key, never by where it happened to be; a row whose element now
+/// holds another item reports <see cref="ScopeReadinessState.ItemChanged"/>, so a call never acts
+/// on the wrong item (<c>.my/stale-readiness/design.md</c>, section 7.6).
+/// </para>
 /// </remarks>
 /// <typeparam name="TCollection">The owning collection.</typeparam>
 /// <typeparam name="TSelf">The item type itself (self-referencing for fluent returns).</typeparam>
@@ -30,10 +38,17 @@ public abstract class ItemObjectBase<TCollection, TSelf>
     {
         _itemRoot = itemRoot ?? throw new ArgumentNullException(nameof(itemRoot));
         Index = index;
+        Key = collection.KeyOf(itemRoot, index);
     }
 
     /// <inheritdoc />
     public int Index { get; }
+
+    /// <summary>Which item this row holds, recorded when it was created.</summary>
+    public ItemKey Key { get; }
+
+    /// <inheritdoc />
+    protected override string ScopeName => $"{GetType().Name.Split('`')[0]} [{Key}]";
 
     /// <inheritdoc />
     /// <remarks>
@@ -42,53 +57,76 @@ public abstract class ItemObjectBase<TCollection, TSelf>
     /// </remarks>
     public override bool AllowsScrollLookup => false;
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// Alive and still with a size: a list that removes a row may leave its element in the tree,
+    /// collapsed, for a moment.
+    /// </remarks>
+    protected override bool IsCachedRootValid(IMauiElement root) => IsUsable(root);
+
     /// <summary>
-    /// Returns the supplied root, re-resolving it from the collection if it has died.
+    /// Returns the supplied root while it still holds this item, and otherwise finds the item again
+    /// by its <see cref="Key"/>.
     /// </summary>
     /// <remarks>
-    /// Mutating or scrolling a collection can invalidate a captured element. Platform
-    /// adapters are inconsistent about how they report that: some raise
-    /// <see cref="StaleElementReferenceException"/>, others let a raw UI-automation
-    /// error escape, and some return an element whose bounds have collapsed. Any of
-    /// those is treated as "re-resolve from the collection", which is also correct when
-    /// the element is merely still valid.
+    /// Mutating or scrolling a collection can invalidate a captured element. The drivers report a
+    /// removed element as <see cref="StaleElementException"/>, a recycled row answers for another
+    /// item, and a removed one can keep answering with collapsed bounds. Each means "find the item
+    /// again", and the key decides which element that is.
     /// </remarks>
     protected override IMauiElement FindContainerRootElement()
     {
-        if (IsUsable(_itemRoot))
+        if (IsUsable(_itemRoot) && Key.IsHeldBy(_itemRoot))
         {
             return _itemRoot;
         }
 
-        var refreshed = Parent.TryGetItemRoot(Index)
+        var refreshed = Parent.TryGetItemRoot(Key)
             ?? throw new ElementNotFoundException(
-                $"Item {Index} is no longer available and could not be re-resolved in its collection.");
+                $"Item [{Key}] is no longer in its collection, or not realized now.");
 
         _itemRoot = refreshed;
         return _itemRoot;
     }
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// The row's element must still hold this item. When it holds another one, the row forgets it,
+    /// and the next attempt finds the item again by its key.
+    /// </remarks>
+    protected override ScopeReadiness ProbeContentReadiness(IMauiElement root)
+    {
+        if (Key.IsHeldBy(root))
+        {
+            return ContentReady();
+        }
+
+        InvalidateCache();
+        return new ScopeReadiness(ScopeName, ScopeReadinessState.ItemChanged,
+            $"the row's element now holds another item than [{Key}]");
+    }
+
     /// <summary>
-    /// Whether an element still answers for itself. Any failure means "not usable".
+    /// Whether the row's element is still there (the alive rule, R6) and still has a size.
     /// </summary>
     private static bool IsUsable(IMauiElement element)
     {
         try
         {
-            _ = element.TagName;
+            _ = element.InstanceKey;
             var rect = element.Rect;
             return rect.Width > 0 && rect.Height > 0;
         }
-        catch
+        catch (StaleElementException)
         {
-            // A dead element throws differently per adapter; all of them mean re-resolve.
             return false;
         }
     }
 }
 
 /// <summary>
-/// Lets an item re-resolve its own root after virtualization invalidates it.
+/// Lets an item record which item it holds, and find its root again by that record after
+/// virtualization invalidates it.
 /// Implemented by collections; separated from the collection interface so
 /// <see cref="ItemObjectBase{TCollection, TSelf}"/> can constrain on it without
 /// naming the item type and creating a circular constraint.
@@ -96,7 +134,13 @@ public abstract class ItemObjectBase<TCollection, TSelf>
 public interface IItemRootProvider
 {
     /// <summary>
-    /// Finds the root element of the item at the given index, or null when there is none.
+    /// The strongest key the platform offers for the row at <paramref name="position"/> whose
+    /// element is <paramref name="itemRoot"/>.
     /// </summary>
-    IMauiElement? TryGetItemRoot(int index);
+    ItemKey KeyOf(IMauiElement itemRoot, int position);
+
+    /// <summary>
+    /// Finds the root element of the item with the given key, or null when it is not realized.
+    /// </summary>
+    IMauiElement? TryGetItemRoot(ItemKey key);
 }

@@ -84,7 +84,7 @@ public sealed class PresenterPage : PageObjectBase<PresenterPage>
         WorkspaceTree.AssertTextContains(expectedVisibleText, timeoutMs: timeoutMs);
     }
 
-    public override bool IsLoaded(int? timeoutMs = null)
+    public override bool IsLoaded()
     {
         return StatusSummary.IsExists();
     }

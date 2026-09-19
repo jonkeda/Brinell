@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using Brinell.Core.Utilities;
+using Brinell.Maui.Calls;
 
 namespace Brinell.Maui.Containers;
 
@@ -21,7 +22,7 @@ namespace Brinell.Maui.Containers;
 /// <typeparam name="TSelf">The container type itself (self-referencing for fluent returns).</typeparam>
 /// <typeparam name="TSetResult">The scope returned by generated set operations.</typeparam>
 public abstract class RootedScopeBase<TSelf, TSetResult>
-    : ObjectBase, IMauiScope<TSelf>, IContainerObject<IMauiElement>
+    : ObjectBase, IMauiScope<TSelf>
     where TSelf : RootedScopeBase<TSelf, TSetResult>
 {
     private IMauiElement? _cachedRoot;
@@ -36,7 +37,7 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     public TSelf Self => (TSelf)this;
 
     /// <inheritdoc />
-    public abstract IPageObject? Page { get; }
+    public abstract IMauiPage? Page { get; }
 
     /// <inheritdoc />
     public LocatorStrategy DefaultLocatorStrategy => LocatorStrategy.AutomationId;
@@ -47,9 +48,14 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     protected virtual bool CacheContainerRoot => true;
 
     /// <summary>Checks whether a cached root still represents this scope.</summary>
+    /// <remarks>
+    /// By default: the root is still there. Reading its <see cref="IMauiElement.InstanceKey"/> is
+    /// a live read, and a removed root answers it with <see cref="StaleElementException"/> on every
+    /// platform (<c>.my/stale-readiness/design.md</c>, R6). A page adds "and shown".
+    /// </remarks>
     protected virtual bool IsCachedRootValid(IMauiElement root)
     {
-        _ = root.TagName;
+        _ = root.InstanceKey;
         return true;
     }
 
@@ -74,7 +80,7 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
 
                     InvalidateCache();
                 }
-                catch
+                catch (StaleElementException)
                 {
                     InvalidateCache();
                 }
@@ -120,6 +126,36 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
         catch (ElementNotFoundException)
         {
             return null;
+        }
+    }
+
+    /// <summary>
+    /// Runs <paramref name="read"/> against the root. When the root turns out to be gone, forgets
+    /// it, finds it again once, and runs <paramref name="read"/> on the new one.
+    /// </summary>
+    /// <remarks>
+    /// The one place the scope layer handles a stale root (<c>.my/stale-readiness/design.md</c>,
+    /// section 7.3; F9). A second stale answer propagates: the call's poll decides what to do
+    /// with it.
+    /// </remarks>
+    /// <param name="read">What to do with the root.</param>
+    /// <param name="whenAbsent">The answer when there is no root.</param>
+    /// <returns>What <paramref name="read"/> returned, or <paramref name="whenAbsent"/>.</returns>
+    protected T WithRoot<T>(Func<IMauiElement, T> read, T whenAbsent)
+    {
+        var root = TryGetContainerRoot();
+        if (root == null) return whenAbsent;
+
+        try
+        {
+            return read(root);
+        }
+        catch (StaleElementException)
+        {
+            InvalidateCache();
+
+            root = TryGetContainerRoot();
+            return root == null ? whenAbsent : read(root);
         }
     }
 
@@ -173,17 +209,6 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
 
     #region Element finding (scoped to the container root)
 
-    /// <summary>
-    /// Whether this scope may resolve children now.
-    /// </summary>
-    protected virtual bool CanResolveElements(bool wait = false) => true;
-
-    /// <summary>
-    /// Creates the error raised when child resolution is blocked by scope readiness.
-    /// </summary>
-    protected virtual ElementNotFoundException CreateScopeNotReadyException(Locator locator)
-        => new($"Container is not ready. Container locator: {Locator}, Child locator: {locator}");
-
     /// <inheritdoc />
     /// <remarks>
     /// None for a page or a plain scope: the driver picks the scrolling element on screen.
@@ -195,115 +220,159 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     /// <inheritdoc />
     public virtual bool AllowsScrollLookup => true;
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// One attempt, and no readiness check: a lookup answers what is there now. A call's attempt
+    /// asks the scope chain first (<see cref="ProbeReadiness"/>), so a scope that is not ready is
+    /// reported as that, not as a missing child.
+    /// </remarks>
     public virtual IMauiElement? TryFindElement(Locator locator)
     {
         ArgumentNullException.ThrowIfNull(locator);
-        if (!CanResolveElements()) return null;
 
-        var root = TryGetContainerRoot();
-        if (root == null) return null;
-
-        try
-        {
-            return root.FindElement(locator, timeoutMs: 0);
-        }
-        catch (ElementNotFoundException)
-        {
-            // Not found within the container. Do NOT fall back to the parent scope -
-            // container scoping means elements must be within the container.
-            return null;
-        }
-        catch (StaleElementReferenceException)
-        {
-            InvalidateCache();
-
-            root = TryGetContainerRoot();
-            if (root == null) return null;
-
-            try
-            {
-                return root.FindElement(locator, timeoutMs: 0);
-            }
-            catch (ElementNotFoundException)
-            {
-                return null;
-            }
-        }
+        // Not found within the container is null. Do NOT fall back to the parent scope -
+        // container scoping means elements must be within the container.
+        return WithRoot(root => root.TryFindElement(locator), null);
     }
 
     /// <inheritdoc />
     public virtual IMauiElement FindElement(Locator locator)
     {
         ArgumentNullException.ThrowIfNull(locator);
-        if (!CanResolveElements()) throw CreateScopeNotReadyException(locator);
 
         return TryFindElement(locator)
             ?? throw new ElementNotFoundException(
-                $"Element not found within container. Container locator: {Locator}, Child locator: {locator}");
+                $"Element not found within {ScopeName}. Child locator: {locator}");
     }
 
     /// <inheritdoc />
     public virtual IReadOnlyList<IMauiElement> FindElements(Locator locator)
     {
         ArgumentNullException.ThrowIfNull(locator);
-        if (!CanResolveElements()) return [];
 
-        var root = TryGetContainerRoot();
-        if (root == null) return [];
-
-        try
-        {
-            return root.FindElements(locator, timeoutMs: 0);
-        }
-        catch (StaleElementReferenceException)
-        {
-            InvalidateCache();
-
-            root = TryGetContainerRoot();
-            return root == null ? [] : root.FindElements(locator, timeoutMs: 0);
-        }
+        return WithRoot(root => root.FindElements(locator), []);
     }
 
     #endregion
 
     #region Readiness
 
-    /// <inheritdoc />
-    public virtual bool IsReady(int? timeoutMs = null)
-    {
-        if (!IsParentReady(timeoutMs)) return false;
-        if (TryGetContainerRoot() == null) return false;
+    /// <summary>The scope's name in readiness answers and messages.</summary>
+    protected virtual string ScopeName => $"{GetType().Name.Split('`')[0]} '{Locator}'";
 
-        return WaitContentReadyCore(timeoutMs);
+    /// <inheritdoc />
+    /// <remarks>
+    /// The parent first (<see cref="ProbeParentReadiness"/>), returned unchanged when it is not
+    /// ready; then this scope's root; then <see cref="ProbeContentReadiness"/> on it. A root that
+    /// turns out to be gone is found once more; gone again, the answer is
+    /// <see cref="ScopeReadinessState.StaleRoot"/>.
+    /// </remarks>
+    public virtual ScopeReadiness ProbeReadiness()
+    {
+        var parent = ProbeParentReadiness();
+        return parent.IsReady ? ProbeOwnReadiness(rootReacquired: false) : parent;
     }
 
+    /// <inheritdoc cref="IMauiElementScope.IsReady"/>
+    public bool IsReady() => ProbeReadiness().IsReady;
+
+    /// <summary>
+    /// The readiness this scope inherits: its parent's when it asks the parent, otherwise ready.
+    /// </summary>
+    /// <remarks>None for a page, which has no parent.</remarks>
+    protected virtual ScopeReadiness ProbeParentReadiness() => ScopeReadiness.Ready(ScopeName);
+
+    /// <summary>
+    /// What an attempt of this scope's own members checks first: the parent chain for a
+    /// container (its own root is what the attempt then looks for), the whole probe for a page.
+    /// </summary>
+    protected virtual ScopeReadiness ProbeCallReadiness() => ProbeParentReadiness();
+
+    /// <summary>
+    /// This scope's own readiness beyond "the root is there": one attempt, no waiting.
+    /// </summary>
+    /// <remarks>
+    /// Override for a scope whose content loads asynchronously, checking concrete UI state - a
+    /// spinner gone, at least one row - and answering <see cref="ContentReady"/> or
+    /// <see cref="ContentNotReady"/>. Never sleep here: the call's poll repeats the probe.
+    /// </remarks>
+    /// <param name="root">The scope's root, just found or checked.</param>
+    protected virtual ScopeReadiness ProbeContentReadiness(IMauiElement root) => ContentReady();
+
+    /// <summary>The answer of a scope that is ready.</summary>
+    protected ScopeReadiness ContentReady() => ScopeReadiness.Ready(ScopeName);
+
+    /// <summary>The answer of a scope whose content is not ready yet.</summary>
+    /// <param name="detail">What it is waiting for, for the message.</param>
+    protected ScopeReadiness ContentNotReady(string? detail = null)
+        => new(ScopeName, ScopeReadinessState.ContentNotReady, detail);
+
+    private ScopeReadiness ProbeOwnReadiness(bool rootReacquired)
+    {
+        try
+        {
+            var root = TryGetContainerRoot();
+            if (root == null)
+            {
+                return new ScopeReadiness(
+                    ScopeName,
+                    rootReacquired ? ScopeReadinessState.StaleRoot : ScopeReadinessState.MissingRoot,
+                    RootReacquired: rootReacquired);
+            }
+
+            var answer = ProbeContentReadiness(root);
+            return rootReacquired ? answer with { RootReacquired = true } : answer;
+        }
+        catch (StaleElementException)
+        {
+            if (rootReacquired)
+            {
+                return new ScopeReadiness(ScopeName, ScopeReadinessState.StaleRoot, RootReacquired: true);
+            }
+
+            InvalidateCache();
+            return ProbeOwnReadiness(rootReacquired: true);
+        }
+    }
+
+    /// <summary>The budget <see cref="WaitReady"/> uses when the caller gives none.</summary>
+    protected virtual int DefaultReadyTimeoutMs => DefaultTimeoutMs;
+
     /// <inheritdoc />
+    /// <remarks>One call: polls <see cref="ProbeReadiness"/>. A misconfigured scope fails at once.</remarks>
     public virtual bool WaitReady(int? timeoutMs = null)
-    {
-        if (!WaitParentReady(timeoutMs)) return false;
-        if (!WaitExists(true, timeoutMs)) return false;
-
-        return WaitContentReady(timeoutMs);
-    }
-
-    /// <summary>Checks readiness outside this rooted scope.</summary>
-    protected virtual bool IsParentReady(int? timeoutMs = null) => true;
-
-    /// <summary>Waits for readiness outside this rooted scope.</summary>
-    protected virtual bool WaitParentReady(int? timeoutMs = null) => true;
+        => RunProbe(() => ScopeGate.Check(ProbeReadiness()) ?? Observation.Done(),
+            timeoutMs ?? DefaultReadyTimeoutMs);
 
     /// <summary>
-    /// Waits for readiness beyond the root element merely existing.
+    /// A member of the scope itself as one call: polls <paramref name="probe"/> with no readiness
+    /// step in front, because the probe is about the scope's own state.
     /// </summary>
-    public bool WaitContentReady(int? timeoutMs = null)
-        => WaitContentReadyCore(timeoutMs);
+    /// <param name="probe">One attempt.</param>
+    /// <param name="budgetMs">The call's budget.</param>
+    /// <param name="onTimeout">
+    /// The failure to throw when the budget runs out, given the last readiness; null to answer
+    /// false instead.
+    /// </param>
+    /// <param name="caller">The public member.</param>
+    /// <returns>True when the probe reported done within the budget.</returns>
+    private protected bool RunProbe(Func<Observation> probe, int budgetMs,
+        Func<ScopeReadiness, Exception>? onTimeout = null,
+        [CallerMemberName] string? caller = null)
+        => Call.Run(caller ?? nameof(RunProbe), null, budgetMs, AnimationMs, context =>
+        {
+            if (Poll(context, _ => probe()))
+            {
+                return true;
+            }
 
-    /// <summary>
-    /// Extra readiness beyond "the root element exists". Override for a container whose
-    /// content loads asynchronously, waiting on concrete UI state - a spinner clearing,
-    /// a count becoming non-zero - never a fixed sleep.
-    /// </summary>
-    protected virtual bool WaitContentReadyCore(int? timeoutMs = null) => true;
+            if (context.Log.Last is { Kind: ObservationKind.Failed, Error: { } error })
+            {
+                System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw();
+            }
+
+            return onTimeout == null ? false : throw onTimeout(ProbeReadiness());
+        }, succeeded: met => met);
 
     #endregion
 
@@ -333,56 +402,39 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     /// Waits until the container's existence matches <paramref name="expected"/>.
     /// A null expectation is a skip and returns true.
     /// </summary>
+    /// <remarks>One call; each attempt checks the parent chain first.</remarks>
     public bool WaitExists(bool? expected, int? timeoutMs = null)
-    {
-        if (expected == null) return true;
-
-        return Poll(() => IsExists() == expected.Value, timeoutMs ?? DefaultTimeoutMs);
-    }
+        => RunWaitWithOptionalElement(expected, root => (root != null) == expected!.Value, timeoutMs);
 
     /// <summary>
     /// Waits until the container's visibility matches <paramref name="expected"/>.
     /// A null expectation is a skip and returns true.
     /// </summary>
+    /// <remarks>One call; each attempt checks the parent chain first.</remarks>
     public bool WaitVisible(bool? expected, int? timeoutMs = null)
-    {
-        if (expected == null) return true;
-
-        return Poll(() => IsVisible() == expected.Value, timeoutMs ?? DefaultTimeoutMs);
-    }
+        => RunWaitWithOptionalElement(expected, root => root?.Visible == expected!.Value, timeoutMs);
 
     /// <summary>
     /// Asserts the container's existence, returning the container so a chain stays inside it.
     /// </summary>
     public TSelf AssertExists(bool? expected = true, string? message = null, int? timeoutMs = null)
-    {
-        if (expected == null) return Self;
-
-        if (!WaitExists(expected, timeoutMs))
-        {
-            throw new AssertionException(
-                message ?? $"Expected container {(expected.Value ? "to exist" : "not to exist")}. Locator: {Locator}");
-        }
-
-        return Self;
-    }
+        => RunAssertWithOptionalElement(
+            expected,
+            root => (bool?)(root != null),
+            (actual, wanted) => actual == wanted,
+            message ?? $"Expected container {(expected == true ? "to exist" : "not to exist")}. Locator: {Locator}",
+            timeoutMs);
 
     /// <summary>
     /// Asserts the container's visibility, returning the container so a chain stays inside it.
     /// </summary>
     public TSelf AssertVisible(bool? expected = true, string? message = null, int? timeoutMs = null)
-    {
-        if (expected == null) return Self;
-
-        if (!WaitVisible(expected, timeoutMs))
-        {
-            var actual = IsVisible();
-            throw new AssertionException(
-                message ?? $"Expected container visibility '{expected}' but got '{actual}'. Locator: {Locator}");
-        }
-
-        return Self;
-    }
+        => RunAssertWithOptionalElement(
+            expected,
+            root => root?.Visible,
+            (actual, wanted) => actual == wanted,
+            message ?? $"Expected container visibility '{expected}'. Locator: {Locator}",
+            timeoutMs);
 
     #endregion
 
@@ -391,96 +443,103 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     // Mirrors the helper surface on the control base, but returning TSelf instead of the
     // parent scope. Identical names and shapes let the generator emit one body for both
     // hierarchies. The element these operate on is the container root.
+    //
+    // Every public member is one call (.my/stale-readiness/design.md, R1): one log pair, one
+    // budget, one poll, whose attempts check the page and then use the root. An action runs once.
 
-    /// <summary>
-    /// Polls a condition, logging entry and exit, and rethrowing the last transient
-    /// failure when the condition never held.
-    /// </summary>
-    private bool RunPoll(string? value, Func<bool> condition,
-        int? timeoutMs = null, [CallerMemberName] string? caller = null)
+    private protected ControlCall Call => new(Logger, PageName, ControlId);
+
+    private protected int Budget(int? timeoutMs) => timeoutMs ?? DefaultTimeoutMs;
+
+    private protected int AnimationMs => Context.Timeouts.Animation;
+
+    /// <summary>The failure of a phase that ran out of budget, from what it last saw.</summary>
+    private protected Exception Failure(AttemptContext attempt, string caller, int budgetMs)
+        => attempt.Log.ToException(
+            Locator,
+            budgetMs,
+            RootNotFound,
+            readiness => ScopeGate.NotReady(readiness, caller, $"container '{Locator}'", budgetMs));
+
+    /// <summary>Why the root could not be found, asked for once at the moment of failure.</summary>
+    private ElementNotFoundException RootNotFound()
     {
-        var stopwatch = Stopwatch.StartNew();
-        var timeout = timeoutMs ?? DefaultTimeoutMs;
-        Logger?.LogEntry(TestName, PageName, ControlId, caller ?? string.Empty, value);
-
-        var ok = false;
-        Exception? lastException = null;
-        if (Page != null && !Page.WaitReady(timeout))
+        try
         {
-            var snapshot = Page.ProbeReadiness();
-            throw new PageLoadException(
-                $"Page '{Page.Name}' did not become ready for {caller ?? "operation"} on container '{Locator}' within {timeout} ms. " +
-                $"Last readiness state: {snapshot.State}; busy value: '{snapshot.BusySignalValue ?? "(none)"}'.");
+            _ = ContainerRoot;
+        }
+        catch (ElementNotFoundException error)
+        {
+            return error;
         }
 
-        do
-        {
-            try
-            {
-                if ((Page == null || Page.IsReady()) && condition())
-                {
-                    ok = true;
-                    break;
-                }
-            }
-            catch (Exception ex)
-            {
-                lastException = ex;
-                // Polling expects transient failures (stale elements, not-yet-rendered)
-            }
-
-            if (stopwatch.ElapsedMilliseconds >= timeout)
-                break;
-
-            WaitHelper.Pause(PollingIntervalMs);
-        }
-        while (stopwatch.ElapsedMilliseconds < timeout);
-        stopwatch.Stop();
-
-        if (ok)
-        {
-            Logger?.LogExit(TestName, PageName, ControlId, caller ?? string.Empty,
-                LogResult.Success, (int)stopwatch.ElapsedMilliseconds);
-        }
-        else
-        {
-            Logger?.LogExit(TestName, PageName, ControlId, caller ?? string.Empty,
-                LogResult.Error, (int)stopwatch.ElapsedMilliseconds, lastException?.Message);
-
-            if (lastException != null)
-            {
-                throw lastException;
-            }
-        }
-
-        return ok;
+        return new ElementNotFoundException(Locator);
     }
 
+    /// <summary>One attempt against the root: the scope chain, then the root, then <paramref name="body"/>.</summary>
+    private protected Observation RootAttempt(Func<IMauiElement, Observation> body)
+    {
+        if (ScopeGate.Check(ProbeCallReadiness()) is { } notReady)
+        {
+            return notReady;
+        }
+
+        var root = TryGetContainerRoot();
+        if (root == null)
+        {
+            return Observation.Missing();
+        }
+
+        try
+        {
+            return body(root);
+        }
+        catch (StaleElementException error)
+        {
+            InvalidateCache();
+            return Observation.Stale(error, null);
+        }
+        catch (ElementNotReadyException error)
+        {
+            return Observation.NotReady(error, null);
+        }
+        catch (AssertionException error)
+        {
+            return Observation.Mismatch(error, null);
+        }
+    }
+
+    /// <summary>A poll of <paramref name="attempt"/> as one call; false when it never reported Done.</summary>
+    private protected bool Poll(AttemptContext context, Func<AttemptContext, Observation> attempt,
+        Func<Observation, bool>? stop = null)
+        => Poller.Until(attempt, context, PollingIntervalMs, stop);
+
     /// <summary>
-    /// Waits, inside a Core method, for a read of the root the method already holds.
+    /// Waits, inside a Core method, for the effect of an action the method has already done on the
+    /// root.
     /// </summary>
     /// <remarks>
-    /// The container counterpart of the control base's <c>Until</c>: no readiness check, no log
-    /// entry, only polling, because the generated wrapper did the rest. On timeout,
-    /// <paramref name="lastError"/> holds the exception the final read threw.
+    /// The container counterpart of the control base's <c>Confirm</c>: no readiness check, no log
+    /// entry, never a repeat, because the generated wrapper did the rest. A stale read ends the wait
+    /// as <see cref="Controls.Base.ConfirmationResult.Replaced"/> at once.
     /// </remarks>
     /// <param name="read">Reads the value.</param>
     /// <param name="done">Whether the value is the one waited for.</param>
     /// <param name="timeoutMs">Maximum time to wait; null for the default.</param>
-    /// <param name="lastError">The final read's exception, or null.</param>
-    /// <returns>True when <paramref name="done"/> held within the timeout.</returns>
-    protected bool Until<T>(Func<T?> read, Func<T?, bool> done, int? timeoutMs, out Exception? lastError)
-        => WaitHelper.WaitFor(read, done, timeoutMs ?? DefaultTimeoutMs, PollingIntervalMs, out lastError);
-
-    /// <inheritdoc cref="Until{T}(Func{T}, Func{T, bool}, int?, out Exception?)"/>
-    protected bool Until<T>(Func<T?> read, Func<T?, bool> done, int? timeoutMs)
-        => Until(read, done, timeoutMs, out _);
+    /// <returns>How the wait ended, with the last value and error.</returns>
+    protected Controls.Base.Confirmation<T> Confirm<T>(Func<T?> read, Func<T?, bool> done, int? timeoutMs)
+        => Confirmer.Run(read, done, timeoutMs ?? DefaultTimeoutMs, PollingIntervalMs);
 
     /// <summary>Polls an arbitrary condition.</summary>
     protected bool RunWait(Func<bool> operation, int? timeoutMs = null,
         [CallerMemberName] string? caller = null)
     {
-        return RunPoll(null, operation, timeoutMs, caller);
+        var budget = Budget(timeoutMs);
+        caller ??= nameof(RunWait);
+        return Call.Run(caller, null, budget, AnimationMs, context =>
+            Poll(context, _ => ScopeGate.Check(ProbeCallReadiness()) ?? (operation() ? Observation.Done() : Observation.Pending()))
+            || (context.Log.Last.Kind == ObservationKind.Pending ? false : throw Failure(context, caller, budget)),
+            succeeded: met => met);
     }
 
     /// <summary>Polls a condition evaluated against the container root.</summary>
@@ -489,41 +548,65 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     {
         if (expected == null) return true;
 
-        return RunPoll(null, () => coreOperation(ContainerRoot), timeoutMs, caller);
+        var budget = Budget(timeoutMs);
+        caller ??= nameof(RunWaitWithElement);
+        return Call.Run(caller, null, budget, AnimationMs, context =>
+            Poll(context, _ => RootAttempt(root => coreOperation(root) ? Observation.Done() : Observation.Pending()))
+            || (context.Log.Last.Kind == ObservationKind.Pending ? false : throw Failure(context, caller, budget)),
+            succeeded: met => met);
     }
 
-    /// <summary>Runs an action, returning the container for chaining.</summary>
+    /// <summary>Runs an action once, as one call, after the scope chain is ready.</summary>
     protected TSelf RunDo(Action operation, int? timeoutMs = null,
         [CallerMemberName] string? caller = null)
     {
-        var timeout = timeoutMs ?? DefaultTimeoutMs;
-        if (Page != null && !Page.WaitReady(timeout))
+        var budget = Budget(timeoutMs);
+        caller ??= nameof(RunDo);
+        return Call.Run(caller, null, budget, AnimationMs, context =>
         {
-            var snapshot = Page.ProbeReadiness();
-            throw new PageLoadException(
-                $"Page '{Page.Name}' did not become ready for {caller ?? "operation"} on container '{Locator}' within {timeout} ms. " +
-                $"Last readiness state: {snapshot.State}; busy value: '{snapshot.BusySignalValue ?? "(none)"}'.");
-        }
-        operation();
-        return Self;
+            if (!Poll(context, _ => ScopeGate.Check(ProbeCallReadiness()) ?? Observation.Done()))
+            {
+                throw Failure(context, caller, budget);
+            }
+
+            operation();
+            return Self;
+        });
     }
 
-    /// <summary>Runs an action against the container root, returning the container.</summary>
+    /// <summary>Runs an action against the container root, once, as one call.</summary>
     protected TSelf RunDoWithElement(Action<IMauiElement> coreOperation,
         int? timeoutMs = null, [CallerMemberName] string? caller = null)
     {
-        var root = ResolveReadyRoot(timeoutMs, caller);
-        coreOperation(root);
-        return Self;
+        var budget = Budget(timeoutMs);
+        caller ??= nameof(RunDoWithElement);
+        return Call.Run(caller, null, budget, AnimationMs, context =>
+        {
+            ActOnceOnRoot(context, caller, budget, coreOperation);
+            return Self;
+        });
     }
 
     /// <summary>Reads a value from the container root.</summary>
     protected T? RunGetWithElement<T>(Func<IMauiElement, T> coreOperation,
         int? timeoutMs = null, [CallerMemberName] string? caller = null)
     {
-        var value = default(T);
-        RunPoll(null, () => { value = coreOperation(ContainerRoot); return true; }, timeoutMs, caller);
-        return value;
+        var budget = Budget(timeoutMs);
+        caller ??= nameof(RunGetWithElement);
+        return Call.Run(caller, null, budget, AnimationMs, context =>
+        {
+            var value = default(T);
+            if (!Poll(context, _ => RootAttempt(root =>
+                {
+                    value = coreOperation(root);
+                    return Observation.Done();
+                })))
+            {
+                throw Failure(context, caller, budget);
+            }
+
+            return value;
+        });
     }
 
     /// <summary>
@@ -536,30 +619,17 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     protected T? RunGetWithOptionalElement<T>(Func<IMauiElement?, T> coreOperation,
         int? timeoutMs = null, [CallerMemberName] string? caller = null)
     {
-        var timeout = timeoutMs ?? DefaultTimeoutMs;
-        if (Page != null && !Page.WaitReady(timeout))
+        var budget = Budget(timeoutMs);
+        caller ??= nameof(RunGetWithOptionalElement);
+        return Call.Run(caller, null, budget, AnimationMs, context =>
         {
-            var snapshot = Page.ProbeReadiness();
-            throw new PageLoadException(
-                $"Page '{Page.Name}' did not become ready for {caller ?? "operation"} on container '{Locator}' within {timeout} ms. " +
-                $"Last readiness state: {snapshot.State}; busy value: '{snapshot.BusySignalValue ?? "(none)"}'.");
-        }
+            if (!Poll(context, _ => ScopeGate.Check(ProbeCallReadiness()) ?? Observation.Done()))
+            {
+                throw Failure(context, caller, budget);
+            }
 
-        var stopwatch = Stopwatch.StartNew();
-        Logger?.LogEntry(TestName, PageName, ControlId, caller ?? string.Empty, null);
-        try
-        {
-            var value = coreOperation(TryGetContainerRoot());
-            Logger?.LogExit(TestName, PageName, ControlId, caller ?? string.Empty,
-                LogResult.Success, (int)stopwatch.ElapsedMilliseconds);
-            return value;
-        }
-        catch (Exception ex)
-        {
-            Logger?.LogExit(TestName, PageName, ControlId, caller ?? string.Empty,
-                LogResult.Error, (int)stopwatch.ElapsedMilliseconds, ex.Message);
-            throw;
-        }
+            return coreOperation(TryGetContainerRoot());
+        });
     }
 
     /// <summary>Sets a value on the container, returning the parent scope.</summary>
@@ -570,9 +640,14 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
         {
             return SetResult;
         }
-        var root = ResolveReadyRoot(timeoutMs, caller);
-        coreOperation(root);
-        return SetResult;
+
+        var budget = Budget(timeoutMs);
+        caller ??= nameof(RunSetWithElement);
+        return Call.Run(caller, value.ToString(), budget, AnimationMs, context =>
+        {
+            ActOnceOnRoot(context, caller, budget, coreOperation);
+            return SetResult;
+        });
     }
 
     /// <summary>The scope returned by a generated set operation.</summary>
@@ -591,7 +666,13 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     {
         if (expected == null) return true;
 
-        return RunPoll(null, () => coreOperation(TryGetContainerRoot()), timeoutMs, caller);
+        var budget = Budget(timeoutMs);
+        caller ??= nameof(RunWaitWithOptionalElement);
+        return Call.Run(caller, null, budget, AnimationMs, context =>
+            Poll(context, _ => ScopeGate.Check(ProbeCallReadiness())
+                ?? (coreOperation(TryGetContainerRoot()) ? Observation.Done() : Observation.Pending()))
+            || (context.Log.Last.Kind == ObservationKind.Pending ? false : throw Failure(context, caller, budget)),
+            succeeded: met => met);
     }
 
     /// <summary>
@@ -608,17 +689,8 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     {
         if (expected == null) return Self;
 
-        RunPoll(null, () =>
-        {
-            var actual = getActual(TryGetContainerRoot());
-            if (!compare(actual, expected))
-            {
-                throw new AssertionException(message ?? "Assert exception", expected, actual);
-            }
-            return true;
-        }, timeoutMs, caller);
-
-        return Self;
+        return RunAssertCore(expected, () => getActual(TryGetContainerRoot()), compare, message, timeoutMs,
+            caller ?? nameof(RunAssertWithOptionalElement));
     }
 
     /// <summary>Asserts a value, returning the container for chaining.</summary>
@@ -628,17 +700,7 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     {
         if (expected == null) return Self;
 
-        RunPoll(null, () =>
-        {
-            var actual = getActual();
-            if (!compare(actual, expected))
-            {
-                throw new AssertionException(message ?? "Assert exception", expected, actual);
-            }
-            return true;
-        }, timeoutMs, caller);
-
-        return Self;
+        return RunAssertCore(expected, getActual, compare, message, timeoutMs, caller ?? nameof(RunAssert));
     }
 
     /// <summary>Asserts a value read from the container root.</summary>
@@ -648,36 +710,109 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     {
         if (expected == null) return Self;
 
-        RunPoll(null, () =>
+        var budget = Budget(timeoutMs);
+        caller ??= nameof(RunAssertWithElement);
+        return Call.Run(caller, null, budget, AnimationMs, context =>
         {
-            var actual = getActual(ContainerRoot);
-            if (!compare(actual, expected))
+            if (!Poll(context, _ => RootAttempt(root =>
+                {
+                    var actual = getActual(root);
+                    return compare(actual, expected)
+                        ? Observation.Done()
+                        : Observation.Mismatch(new AssertionException(message ?? "Assert exception", expected, actual), null);
+                })))
             {
-                throw new AssertionException(message ?? "Assert exception", expected, actual);
+                throw Failure(context, caller, budget);
             }
-            return true;
-        }, timeoutMs, caller);
 
-        return Self;
+            return Self;
+        });
     }
 
-    private IMauiElement ResolveReadyRoot(int? timeoutMs, string? caller)
+    private TSelf RunAssertCore<T>(T expected, Func<T?> getActual, Func<T?, T?, bool> compare,
+        string? message, int? timeoutMs, string caller)
+    {
+        var budget = Budget(timeoutMs);
+        return Call.Run(caller, null, budget, AnimationMs, context =>
+        {
+            if (!Poll(context, _ =>
+                {
+                    if (ScopeGate.Check(ProbeCallReadiness()) is { } notReady)
+                    {
+                        return notReady;
+                    }
+
+                    var actual = getActual();
+                    return compare(actual, expected)
+                        ? Observation.Done()
+                        : Observation.Mismatch(new AssertionException(message ?? "Assert exception", expected, actual), null);
+                }))
+            {
+                throw Failure(context, caller, budget);
+            }
+
+            return Self;
+        });
+    }
+
+    /// <summary>
+    /// What an action or a set on this scope requires of its root beyond being there: one check,
+    /// inside the call's poll, throwing <see cref="ElementNotReadyException"/> when not met.
+    /// </summary>
+    /// <remarks>Nothing by default; a clickable item adds "enabled".</remarks>
+    /// <param name="root">The root, just found.</param>
+    protected virtual void EnsureReadyForActionCore(IMauiElement root)
+    {
+    }
+
+    /// <summary>
+    /// Resolves the root, then runs <paramref name="act"/> on it: once, unless it reports that it
+    /// did not act.
+    /// </summary>
+    /// <remarks>
+    /// As the control base's <c>ActOnce</c>: a Core method throws <see cref="ElementNotReadyException"/>
+    /// only before it acts, so resolving again and asking again within the budget repeats nothing
+    /// (R0). Any other exception ends the call at once.
+    /// </remarks>
+    private void ActOnceOnRoot(AttemptContext context, string caller, int budgetMs, Action<IMauiElement> act)
+    {
+        while (true)
+        {
+            var root = ResolveReadyRoot(context, caller, budgetMs);
+            try
+            {
+                act(root);
+                return;
+            }
+            catch (ElementNotReadyException error) when (context.Deadline.RemainingMs > 0)
+            {
+                context.Log.Add(Observation.NotReady(error, null), context.Deadline.ElapsedMs);
+                WaitHelper.Pause(Math.Max(1, Math.Min(PollingIntervalMs, context.Deadline.RemainingMs)));
+            }
+        }
+    }
+
+    /// <summary>Polls until the scope chain is ready and the root there, and returns the root.</summary>
+    private IMauiElement ResolveReadyRoot(AttemptContext context, string caller, int budgetMs)
     {
         IMauiElement? ready = null;
-        RunPoll(null, () =>
+        if (!Poll(context, _ => RootAttempt(root =>
+            {
+                EnsureReadyForActionCore(root);
+                ready = root;
+                return Observation.Done();
+            })))
         {
-            ready = ContainerRoot;
-            return true;
-        }, timeoutMs, caller);
+            throw Failure(context, caller, budgetMs);
+        }
 
-        return ready ?? ContainerRoot;
+        return ready!;
     }
 
     #endregion
 
     #region Logging identity
 
-    private string TestName => "Test";
     private string PageName => Page?.GetType().Name ?? "Unknown";
     private string ControlId => Locator.Value;
     private ITestLogger? Logger => Context.Logger;
@@ -724,7 +859,7 @@ public abstract class ContainerObjectBase<TParent, TSelf>
     public override IMauiTestContext Context => _parentScope.Context;
 
     /// <inheritdoc />
-    public override IPageObject? Page => _parentScope.Page;
+    public override IMauiPage? Page => _parentScope.Page;
 
     /// <inheritdoc />
     /// <remarks>
@@ -740,11 +875,15 @@ public abstract class ContainerObjectBase<TParent, TSelf>
     protected override IMauiElement FindContainerRootElement()
         => _parentScope.FindElement(Locator);
 
-    protected override bool IsParentReady(int? timeoutMs = null)
-        => _parentScope.IsReady(timeoutMs);
+    /// <summary>
+    /// Whether this container inherits its parent's readiness. False for a scope shown over its
+    /// parent (a popup, a dialog), which is usable while the page under it is busy or gone.
+    /// </summary>
+    protected virtual bool AsksParent => true;
 
-    protected override bool WaitParentReady(int? timeoutMs = null)
-        => _parentScope.WaitReady(timeoutMs);
+    /// <inheritdoc />
+    protected override ScopeReadiness ProbeParentReadiness()
+        => AsksParent ? _parentScope.ProbeReadiness() : ContentReady();
 
     protected override TParent SetResult => Parent;
 

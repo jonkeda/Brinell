@@ -27,8 +27,8 @@ public class FluentChainingTests
         pageRoot.Setup(e => e.Visible).Returns(true);
         pageRoot.Setup(e => e.TagName).Returns("Page");
         pageRoot.Setup(e => e.Rect).Returns(new System.Drawing.Rectangle(0, 0, 400, 800));
-        pageRoot.Setup(e => e.FindElement(It.IsAny<Locator>(), 0))
-            .Returns((Locator locator, int _) => _mockContext.Object.FindElement(locator));
+        pageRoot.Setup(e => e.TryFindElement(It.IsAny<Locator>()))
+            .Returns((Locator locator) => _mockContext.Object.FindElement(locator));
         _mockContext.Setup(c => c.FindElements(It.Is<Locator>(l => l.Value == "Test Page")))
             .Returns([pageRoot.Object]);
         
@@ -329,7 +329,7 @@ public class FluentChainingTests
         childMockElement.Setup(e => e.Rect).Returns(new System.Drawing.Rectangle(10, 10, 80, 32));
         
         // Set up the container element to find the child element
-        containerMock.Setup(e => e.FindElement(It.Is<Locator>(l => l.Value.Contains(childAutomationId)), It.IsAny<int>()))
+        containerMock.Setup(e => e.TryFindElement(It.Is<Locator>(l => l.Value.Contains(childAutomationId))))
             .Returns(childMockElement.Object);
     }
     
@@ -356,7 +356,7 @@ public class FluentChainingTests
         public TestPage(IMauiTestContext context) : base(context) { }
         
         public override string Name => "Test Page";
-        public override bool IsLoaded(int? timeoutMs = null) => true;
+        public override bool IsLoaded() => true;
         
         // Controls with fluent chaining - return TestPage
         public Button<TestPage> TestButton => new(this, Locator.ByAutomationId("TestButton"));

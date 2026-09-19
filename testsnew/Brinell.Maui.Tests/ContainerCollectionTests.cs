@@ -26,35 +26,13 @@ public class ContainerCollectionTests
         pageRoot.Setup(e => e.Visible).Returns(true);
         pageRoot.Setup(e => e.TagName).Returns("Page");
         pageRoot.Setup(e => e.Rect).Returns(new System.Drawing.Rectangle(0, 0, 400, 800));
-        pageRoot.Setup(e => e.FindElement(It.IsAny<Locator>(), 0))
-            .Returns((Locator locator, int _) => _context.Object.FindElement(locator));
+        pageRoot.Setup(e => e.TryFindElement(It.IsAny<Locator>()))
+            .Returns((Locator locator) => _context.Object.FindElement(locator));
         _context.Setup(c => c.FindElements(It.Is<Locator>(l => l.Value == "TestPage")))
             .Returns([pageRoot.Object]);
     }
 
     #region Container scoping
-
-    [Fact]
-    [Trait("Pattern", "DriverRootScope")]
-    public void DriverRootScope_DoesNotUseOwnerPageReadiness()
-    {
-        var page = new TestPage(_context.Object);
-
-        var element = new Mock<IMauiElement>();
-        element.Setup(e => e.Visible).Returns(true);
-        element.Setup(e => e.Enabled).Returns(true);
-        _context.Setup(c => c.TryFindElement(It.Is<Locator>(l => l.Value == "GlobalButton")))
-            .Returns(element.Object);
-        _context.Setup(c => c.FindElement(It.Is<Locator>(l => l.Value == "GlobalButton")))
-            .Returns(element.Object);
-
-        var driverScope = new DriverRootScope<TestPage>(page);
-        Assert.Null(driverScope.Page);
-
-        new Button<TestPage>(driverScope, "GlobalButton").Click();
-
-        element.Verify(e => e.Invoke(), Times.Once);
-    }
 
     [Fact]
     [Trait("Pattern", "Scoping")]
@@ -67,8 +45,8 @@ public class ContainerCollectionTests
         Assert.True(page.Form.FormButton.IsExists());
 
         // Resolved element-relative, not page-wide.
-        root.Verify(e => e.FindElement(
-            It.Is<Locator>(l => l.Value == "FormButton"), It.IsAny<int>()), Times.AtLeastOnce);
+        root.Verify(e => e.TryFindElement(
+            It.Is<Locator>(l => l.Value == "FormButton")), Times.AtLeastOnce);
     }
 
     /// <summary>
@@ -82,8 +60,8 @@ public class ContainerCollectionTests
         var root = SetupRootElement("Form");
 
         // The child is NOT under the container root...
-        root.Setup(e => e.FindElement(It.Is<Locator>(l => l.Value == "Elsewhere"), It.IsAny<int>()))
-            .Throws(new ElementNotFoundException("not in container"));
+        root.Setup(e => e.TryFindElement(It.Is<Locator>(l => l.Value == "Elsewhere")))
+            .Returns((IMauiElement?)null);
 
         // ...but it does exist at page level.
         var pageWide = new Mock<IMauiElement>();
@@ -185,17 +163,17 @@ public class ContainerCollectionTests
     }
 
     /// <summary>
-    /// Design 8.3: readiness is parent-ready, then root-exists, then WaitContentReadyCore.
+    /// Readiness is the parent, then the root, then ProbeContentReadiness (design 7.2).
     /// The default hook returns true, preserving the previous behaviour.
     /// </summary>
     [Fact]
-    [Trait("Method", "WaitContentReady")]
-    public void WaitContentReady_DefaultsToTrue()
+    [Trait("Method", "ProbeContentReadiness")]
+    public void ProbeContentReadiness_DefaultsToReady()
     {
         var page = new TestPage(_context.Object);
         SetupRootElement("Form");
 
-        Assert.True(page.Form.WaitContentReady());
+        Assert.True(page.Form.WaitReady());
         Assert.True(page.Form.IsReady());
     }
 
@@ -203,8 +181,8 @@ public class ContainerCollectionTests
     /// An overridden readiness hook gates IsReady even when the root exists.
     /// </summary>
     [Fact]
-    [Trait("Method", "WaitContentReady")]
-    public void WaitContentReady_OverrideGatesReadiness()
+    [Trait("Method", "ProbeContentReadiness")]
+    public void ProbeContentReadiness_OverrideGatesReadiness()
     {
         var page = new TestPage(_context.Object);
         SetupRootElement("Slow");
@@ -260,7 +238,7 @@ public class ContainerCollectionTests
         var page = new TestPage(_context.Object);
 
         var stale = new Mock<IMauiElement>();
-        stale.Setup(e => e.TagName).Throws(new StaleElementReferenceException("stale"));
+        stale.Setup(e => e.InstanceKey).Throws(new StaleElementException());
 
         var fresh = new Mock<IMauiElement>();
         fresh.Setup(e => e.Visible).Returns(true);
@@ -305,8 +283,8 @@ public class ContainerCollectionTests
 
         _ = page.Rows.Item(0).Name.GetText();
 
-        roots[0].Verify(e => e.FindElement(
-            It.Is<Locator>(l => l.Value == "RowName"), It.IsAny<int>()), Times.AtLeastOnce);
+        roots[0].Verify(e => e.TryFindElement(
+            It.Is<Locator>(l => l.Value == "RowName")), Times.AtLeastOnce);
         _context.Verify(c => c.TryFindElement(It.Is<Locator>(l => l.Value == "RowName")), Times.Never);
         _context.Verify(c => c.FindElement(It.Is<Locator>(l => l.Value == "RowName")), Times.Never);
     }
@@ -317,8 +295,8 @@ public class ContainerCollectionTests
     {
         var page = new TestPage(_context.Object);
         var roots = SetupCollection("Rows", ("Alpha", "1.00"));
-        roots[0].Setup(e => e.FindElement(It.Is<Locator>(l => l.Value == "RowDue"), It.IsAny<int>()))
-            .Throws(new ElementNotFoundException("this row has no due date"));
+        roots[0].Setup(e => e.TryFindElement(It.Is<Locator>(l => l.Value == "RowDue")))
+            .Returns((IMauiElement?)null);
 
         // As Android answers a sweep: it walks the whole list and finds the next row's label.
         var app = new Mock<IMauiElement>();
@@ -518,7 +496,7 @@ public class ContainerCollectionTests
     {
         var page = new TestPage(_context.Object);
         var root = SetupRootElement("Rows");
-        root.Setup(e => e.FindElements(It.IsAny<Locator>(), It.IsAny<int>()))
+        root.Setup(e => e.FindElements(It.IsAny<Locator>()))
             .Returns(Array.Empty<IMauiElement>());
         SetupChild(root, "RowsEmptyLabel");
 
@@ -719,11 +697,11 @@ public class ContainerCollectionTests
             child.Setup(e => e.Text).Returns(text);
         }
 
-        parent.Setup(e => e.FindElement(
-                It.Is<Locator>(l => l.Value == automationId), It.IsAny<int>()))
+        parent.Setup(e => e.TryFindElement(
+                It.Is<Locator>(l => l.Value == automationId)))
             .Returns(child.Object);
         parent.Setup(e => e.FindElements(
-                It.Is<Locator>(l => l.Value == automationId), It.IsAny<int>()))
+                It.Is<Locator>(l => l.Value == automationId)))
             .Returns(new[] { child.Object });
 
         return child;
@@ -753,7 +731,7 @@ public class ContainerCollectionTests
         }
 
         root.Setup(e => e.FindElements(
-                It.Is<Locator>(l => l.Value == "RowRoot"), It.IsAny<int>()))
+                It.Is<Locator>(l => l.Value == "RowRoot")))
             .Returns(rowMocks.Select(m => m.Object).ToArray());
 
         return rowMocks;
@@ -786,7 +764,7 @@ public class ContainerCollectionTests
         }
 
         root.Setup(e => e.FindElements(
-                It.Is<Locator>(l => l.Value == "RowRoot"), It.IsAny<int>()))
+                It.Is<Locator>(l => l.Value == "RowRoot")))
             .Returns(rowMocks.Select(m => m.Object).ToArray());
 
         return rowMocks;
@@ -807,7 +785,7 @@ public class ContainerCollectionTests
         // As the Appium driver answers: ListItem is a UI Automation control type with no
         // UiAutomator2 counterpart, and asking for it throws.
         var root = Mock.Get(_context.Object.FindElement(Locator.ByAutomationId("Rows")));
-        root.Setup(e => e.FindElements(It.Is<Locator>(l => l.Value == "ListItem"), It.IsAny<int>()))
+        root.Setup(e => e.FindElements(It.Is<Locator>(l => l.Value == "ListItem")))
             .Throws(new ArgumentOutOfRangeException("controlType", "Control type 'ListItem' is not supported on Android."));
 
         page.Rows.SelectItem(1);
@@ -830,7 +808,7 @@ public class ContainerCollectionTests
         }
 
         public override string Name => "TestPage";
-        public override bool IsLoaded(int? timeoutMs = null) => true;
+        public override bool IsLoaded() => true;
 
         public FormContainer Form { get; }
         public RowCollection Rows { get; }
@@ -862,7 +840,8 @@ public class ContainerCollectionTests
 
         public bool ContentIsReady { get; set; }
 
-        protected override bool WaitContentReadyCore(int? timeoutMs = null) => ContentIsReady;
+        protected override ScopeReadiness ProbeContentReadiness(IMauiElement root)
+            => ContentIsReady ? ContentReady() : ContentNotReady("still loading");
     }
 
     private class RowCollection : CollectionObjectBase<TestPage, RowCollection, RowContainer>

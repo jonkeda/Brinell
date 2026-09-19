@@ -56,7 +56,7 @@ Do not re-declare these:
 - typed children scoped to the root: `Child<TControl>(id)`, `Label(id)`, `Button(id)`,
   `Entry(id)`, `CheckBox(id)`;
 - `Parent`, to leave the container in a chain;
-- `Until(read, done, timeoutMs, out lastError)` for waiting inside Core methods.
+- `Confirm(read, done, timeoutMs)` for waiting for an action's effect inside Core methods.
 
 ## Rules
 
@@ -98,8 +98,8 @@ Each with a `<remarks>` giving the reason.
 | --- | --- |
 | The app rebuilds or replaces the root during a test (Popup opens and closes; StateContainer swaps its children) | `protected override bool CacheContainerRoot => false;` |
 | The root is not under the parent (the toolkit shows a Popup as a modal page) | `FindContainerRootElement()` searching `Context.AppElement`; throw `ElementNotFoundException` naming the locator |
-| The root lives outside the raising page, which is out of the tree while it shows | `public override IPageObject? Page => null;` and `IsParentReady`/`WaitParentReady` returning `true` |
-| Content loads asynchronously | `WaitContentReadyCore(timeoutMs)`, waiting on concrete state (spinner gone, count non-zero), never a sleep |
+| The container is shown over its parent, which may be busy or out of the tree while it shows (a Popup, a dialog) | `protected override bool AsksParent => false;` - it answers for itself, and `Page` still names the page for the log |
+| Content loads asynchronously | `protected override ScopeReadiness ProbeContentReadiness(IMauiElement root)`: one check of concrete state (spinner gone, count non-zero), answering `ContentReady()` or `ContentNotReady("what it waits for")`. Never a sleep and never a loop: every call on a child asks it on each attempt |
 | The container scrolls its content | `public override IMauiElement? ScrollingRoot => TryGetContainerRoot();` (ScrollView). Otherwise inherit the parent's |
 
 ## Windows

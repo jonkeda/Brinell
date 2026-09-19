@@ -74,7 +74,7 @@ sample app's markup, and run tier 2b (`--filter "Stage=Background"`).
 - **Physical input on MAUI Windows** (AD-005): no pointer movement, typing, clipboard or
   foreground. There is no switch to turn it on.
 - **`Thread.Sleep` or `Task.Delay`** to let something happen. Wait for concrete state
-  with `Until`.
+  with a `Wait*` member, or with `Confirm` inside a Core method.
 - **Reading the view model** to answer a UI question.
 
 ## When there is no route

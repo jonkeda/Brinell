@@ -12,6 +12,9 @@ public class MauiTestContext : IMauiTestContext
     private readonly Interfaces.IMauiDriver _driver;
     private readonly TimeoutSettings _timeouts;
     private readonly ITestLogger _logger;
+
+    /// <summary>The call log this context opened itself (<c>BRINELL_CALL_LOG</c>), disposed with it.</summary>
+    private readonly CsvTestLogger? _callLog;
     private readonly MauiPlatform _platform;
     private readonly bool _ownsDriver;
     private bool _disposed;
@@ -25,7 +28,8 @@ public class MauiTestContext : IMauiTestContext
         ArgumentNullException.ThrowIfNull(options);
         
         _timeouts = options.Timeouts ?? TimeoutSettings.Default;
-        _logger = options.Logger ?? NullTestLogger.Instance;
+        _callLog = options.Logger == null ? OpenCallLog() : null;
+        _logger = options.Logger ?? _callLog ?? (ITestLogger)NullTestLogger.Instance;
         
         // Use injected driver if provided, otherwise use factory
         if (options.Driver != null)
@@ -77,13 +81,16 @@ public class MauiTestContext : IMauiTestContext
     /// <remarks>
     /// Test context root scope has no associated page.
     /// </remarks>
-    public IPageObject? Page => null;
+    public IMauiPage? Page => null;
     
     /// <inheritdoc />
     /// <remarks>
-    /// Test context root is always ready (driver is connected).
+    /// Ready while the session is open: the context is a lookup service, not a scope with content.
     /// </remarks>
-    public bool IsReady(int? timeoutMs = null) => !_disposed;
+    public ScopeReadiness ProbeReadiness()
+        => _disposed
+            ? new ScopeReadiness(nameof(MauiTestContext), ScopeReadinessState.MissingRoot, "the test context is disposed")
+            : ScopeReadiness.Ready(nameof(MauiTestContext));
     
     /// <inheritdoc />
     /// <remarks>
@@ -92,49 +99,27 @@ public class MauiTestContext : IMauiTestContext
     public bool WaitReady(int? timeoutMs = null) => !_disposed;
     
     /// <inheritdoc />
+    /// <remarks>
+    /// Null means "nothing matches now" and nothing else. A driver error propagates: reading it as
+    /// "absent" would let <c>WaitExists(false)</c> pass on a broken driver (F4).
+    /// </remarks>
     public IMauiElement? TryFindElement(Locator locator)
     {
         ArgumentNullException.ThrowIfNull(locator);
-        
-        try
-        {
-            var elements = _driver.FindElements(locator);
-            return elements.Count > 0 ? elements[0] : null;
-        }
-        catch (Exception)
-        {
-            return null;
-        }
+
+        var elements = _driver.FindElements(locator);
+        return elements.Count > 0 ? elements[0] : null;
     }
     
     /// <inheritdoc />
+    /// <remarks>
+    /// One attempt, like every lookup (R2): it used to wait <c>ElementFind</c> (3 s) and then sweep
+    /// the app, inside every poll tick of every control on <c>AppRoot</c> (F1, F2). Waiting is the
+    /// call's poll's job, and so is the sweep (throttled, in the control's lookup).
+    /// </remarks>
     public IMauiElement FindElement(Locator locator)
-    {        
-        ArgumentNullException.ThrowIfNull(locator);
-        
-        var timeout = TimeSpan.FromMilliseconds(_timeouts.ElementFind);
-        var pollInterval = TimeSpan.FromMilliseconds(100);
-        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-        
-        while (stopwatch.Elapsed < timeout)
-        {
-            var elements = _driver.FindElements(locator);
-            if (elements.Count > 0)
-            {
-                return elements[0];
-            }
-            WaitHelper.Pause((int)pollInterval.TotalMilliseconds);
-        }
-        
-        var scrolledTo = _driver.AppElement.TryFindByScrolling(locator);
-        if (scrolledTo != null)
-        {
-            return scrolledTo;
-        }
-
-        throw new ElementNotFoundException(
-            $"Element not found with locator: {locator} after {_timeouts.ElementFind}ms");
-    }
+        => TryFindElement(locator)
+           ?? throw new ElementNotFoundException($"Element not found with locator: {locator}");
     
     /// <inheritdoc />
     public IReadOnlyList<IMauiElement> FindElements(Locator locator)
@@ -187,6 +172,36 @@ public class MauiTestContext : IMauiTestContext
     }
     
     /// <summary>
+    /// A call log in the folder <c>BRINELL_CALL_LOG</c> names, when it is set: one CSV file per
+    /// context, with every call's entry and exit, near-miss warnings included
+    /// (<c>.my/stale-readiness/design.md</c>, 4.4). Off unless asked for, and only when the
+    /// options give no logger of their own.
+    /// </summary>
+    private static CsvTestLogger? OpenCallLog()
+    {
+        var folder = Environment.GetEnvironmentVariable("BRINELL_CALL_LOG");
+        if (string.IsNullOrWhiteSpace(folder))
+        {
+            return null;
+        }
+
+        var log = new CsvTestLogger(Path.Combine(folder,
+            $"calls-{DateTime.Now:yyyyMMdd-HHmmss}-{Environment.ProcessId}-{Guid.NewGuid().ToString("N")[..8]}.csv"));
+        AppDomain.CurrentDomain.ProcessExit += (_, _) =>
+        {
+            try
+            {
+                log.Flush();
+            }
+            catch (ObjectDisposedException)
+            {
+                // Already closed with its context.
+            }
+        };
+        return log;
+    }
+
+    /// <summary>
     /// Disposes the test context and quits the driver.
     /// </summary>
     public void Dispose()
@@ -202,6 +217,11 @@ public class MauiTestContext : IMauiTestContext
     {
         if (_disposed) return;
         
+        if (disposing)
+        {
+            _callLog?.Dispose();
+        }
+
         if (disposing && _ownsDriver)
         {
             try

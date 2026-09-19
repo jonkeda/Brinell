@@ -121,7 +121,7 @@ public class ControlObjectAnalyzer
     /// <list type="bullet">
     /// <item>A call to a <c>Run*</c> helper (<c>RunWait</c>, <c>RunDo</c>, <c>RunGet*</c>,
     /// <c>RunAssert*</c>, <c>RunSet*</c>, <c>Run</c>): a second poll with its own timeout and log
-    /// entry. Wait with <c>Until</c>.</item>
+    /// entry. Wait for an action's effect with <c>Confirm</c>.</item>
     /// <item>A call on a part: a property or method of this class built with <c>new(this, ...)</c>,
     /// or a container's child factory (<c>Button(id)</c>, <c>Label(id)</c>, ...). The part's public
     /// member is a complete unit of work of its own.</item>
@@ -153,7 +153,7 @@ public class ControlObjectAnalyzer
                     warnings.Add(
                         $"'{name}' calls '{helper}' inside a Core method: a second poll with its own " +
                         "timeout and log entry, inside the one the generated wrapper runs. Wait with " +
-                        "Until instead.");
+                        "Confirm instead.");
                 }
                 else if (IsPartCall(invocation, parts, out var call))
                 {

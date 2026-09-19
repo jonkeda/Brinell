@@ -23,6 +23,26 @@ Do not fix tests by adding arbitrary sleeps or longer delays. Wait for concrete
 UI state, navigation completion, busy sentinel changes, text, visibility,
 enabled state, request observation, or another observable condition.
 
+On MAUI, the framework does the waiting, and does it one way (2026-09-19,
+`.my/stale-readiness/design.md`):
+
+- **One unit per public call.** A call on a control, page, container, collection or
+  row is one log entry/exit pair and one failure, with the action inside it.
+- **Only the call's poll waits.** Readiness, lookup, visibility, scrolling and
+  settling are single attempts inside that poll. Nothing below it sleeps or loops on
+  its own, and the caller's `timeoutMs` is the whole budget.
+- **A call waits for its scope chain.** Each attempt first asks the scope the control
+  stands in, which asks its parent: a row, its collection, the page. A dialog or popup
+  shown over a page answers for itself.
+- **Every attempt finds its element again.** A replaced element is a signal
+  (`StaleElementException`), never a reason to wait on the old one.
+- **Non-`Try` members wait; `Try*` members answer about now.**
+- **Inside a Core method, wait for an action's effect with `Confirm`**, which never
+  repeats the action.
+
+A test that needs more time than the default passes its own `timeoutMs`. It does not
+add a delay.
+
 ## AD-005: Physical Input Is Opt-In
 
 Routine actions use semantic control APIs and UI Automation patterns.
@@ -103,3 +123,44 @@ Rules that follow from how the bridge behaves, each measured:
 - **Instrumenting an element is the moment to ask whether it is gesture-only.** The
   accessibility audit lists every instrumented element that nothing but a pointer can
   reach; that list is a backlog for the app, not a licence.
+
+## AD-009: App Bugs Stay Failures
+
+The framework waits for the app to *reach* a state. It never waits out, retries
+through or swallows a *defect*. A MAUI UI test found the Todo sample's lost
+`CanExecuteChanged` because it failed; a framework that had absorbed that failure
+would have shipped the bug.
+
+- **An action that may have run is never repeated.** Its effect is confirmed
+  (`Confirm`); an effect that never shows, or an element replaced before it could be
+  read, fails the call.
+- **An action that did not happen may be asked again, within the budget.** A Core
+  method throws `ElementNotReadyException` only before it acts: its guards come first,
+  and a driver raises it when nothing was performed (no bridge target answered, the
+  item is disabled). A command that never re-enables still fails, as "disabled", when
+  the budget runs out.
+- **Some failures end the call at once:** the app process exits or the driver session
+  is lost (`AppUnavailableException`), or a page's busy signal is missing or unreadable
+  (`ScopeNotReadyException`, a configuration error).
+- **A budget the caller set is never extended**, no other element is used in place of
+  the one asked for, and an error is never treated as absence.
+- **Success after trouble is reported.** A call that passed after its element was
+  replaced three or more times, or after using more than half its budget, logs a
+  near-miss warning. Set `BRINELL_CALL_LOG` to a folder to write every context's calls
+  to CSV and list them.
+
+Proven on 2026-09-19 (`.my/stale-readiness/plan.md`, step 8): with the bug put back,
+the Todo journey TOD.04.4 failed 3 times out of 3, naming the dialog that never
+appeared.
+
+## AD-010: MAUI Ahead Of Core, On Purpose
+
+`Brinell.Maui` owns the interfaces its call model needs (`IMauiElement`,
+`IMauiDriver`, `IMauiElementScope`, `IMauiPage`, `IMauiTestContext`) and no longer
+implements Core's element, driver, scope and page interfaces. Core was not changed to
+get there. The MAUI stack is where the model was designed and proven; the other stacks
+keep Core's shapes until the proven shape moves down to Core, one stack at a time, as
+its own project.
+
+Until then, expect the MAUI types to differ from their Core counterparts. Do not add
+adapters between the two: a bridge now would have to be undone in the move down.

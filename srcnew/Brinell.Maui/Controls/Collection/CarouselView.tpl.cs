@@ -141,11 +141,12 @@ public abstract partial class CarouselView<TParent, TSelf, TItem>
             return;
         }
 
-        if (!Until(() => GetPositionCore(element), actual => actual != before, timeoutMs, out var lastError))
+        var confirmation = Confirm(() => GetPositionCore(element), actual => actual != before, timeoutMs);
+        if (!confirmation.IsConfirmed)
         {
-            throw new TimeoutException(
+            throw confirmation.Failure(Locator, "the swipe", lastError => new TimeoutException(
                 $"Carousel '{Locator}' was swiped to the {direction} card and stayed at position {before}.",
-                lastError);
+                lastError));
         }
     }
 

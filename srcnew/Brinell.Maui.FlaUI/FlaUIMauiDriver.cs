@@ -175,6 +175,30 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// </remarks>
     internal AutomationElement RootElement => _window.Element;
 
+    /// <summary>
+    /// Whether the app this driver launched has exited.
+    /// </summary>
+    /// <remarks>
+    /// Tells an element that is gone because the app is gone from one that was only replaced: the
+    /// first is <c>AppUnavailableException</c>, the second <c>StaleElementException</c>. Always
+    /// false for a driver that attached rather than launched, since it has no process to watch.
+    /// </remarks>
+    internal bool AppHasExited
+    {
+        get
+        {
+            try
+            {
+                return _application?.HasExited == true;
+            }
+            catch (InvalidOperationException)
+            {
+                // The process object no longer answers; it is gone.
+                return true;
+            }
+        }
+    }
+
     /// <summary>How many times the root element had gone stale and was attached again.</summary>
     /// <remarks>Diagnostics. A number that grows during a run is the invalidation happening.</remarks>
     public int RootReattachments => _window.Reattachments;
@@ -190,71 +214,57 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
 
     #endregion
 
-    #region Element Finding (IDriver<IMauiElement>)
-    
+    #region Element Finding
+
     /// <inheritdoc />
-    public IMauiElement FindElement(Locator locator, int timeoutMs = 5000)
+    public IReadOnlyList<IMauiElement> FindElements(Locator locator)
     {
         var condition = locator.ToCondition(_conditionFactory);
-        
-        var startTime = DateTime.UtcNow;
-        var timeout = TimeSpan.FromMilliseconds(timeoutMs);
-        
-        while (DateTime.UtcNow - startTime < timeout)
+
+        try
+        {
+            return RootElement.FindAllDescendants(condition)
+                .Select(e => new FlaUIMauiElement(e, this))
+                .ToList();
+        }
+        catch (Exception error) when (FlaUIErrors.IsElementGone(error) && AppHasExited)
+        {
+            throw new AppUnavailableException("the application process has exited.", error);
+        }
+    }
+
+    /// <summary>
+    /// Finds a piece of window chrome the driver acts on itself, waiting for it to appear.
+    /// </summary>
+    /// <remarks>
+    /// Only for the driver's own actions (opening the navigation pane, dismissing a flyout), which
+    /// run inside a control's action rather than inside its poll. Everything a control looks up
+    /// goes through <see cref="FindElements"/>, which never waits.
+    /// </remarks>
+    /// <param name="locator">The chrome element's locator.</param>
+    /// <param name="timeoutMs">How long to wait for it to appear.</param>
+    /// <returns>The element.</returns>
+    /// <exception cref="ElementNotFoundException">It did not appear in time.</exception>
+    internal IMauiElement FindChrome(Locator locator, int timeoutMs)
+    {
+        var condition = locator.ToCondition(_conditionFactory);
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
+        do
         {
             var found = RootElement.FindFirstDescendant(condition);
             if (found != null)
             {
                 return new FlaUIMauiElement(found, this);
             }
-            
-            if (timeoutMs <= 0) break;
+
             WaitHelper.Pause(100);
         }
-        
+        while (stopwatch.ElapsedMilliseconds < timeoutMs);
+
         throw new ElementNotFoundException(locator);
     }
-    
-    /// <inheritdoc />
-    public IReadOnlyList<IMauiElement> FindElements(Locator locator, int timeoutMs = 0)
-    {
-        var condition = locator.ToCondition(_conditionFactory);
-        
-        if (timeoutMs > 0)
-        {
-            var startTime = DateTime.UtcNow;
-            var timeout = TimeSpan.FromMilliseconds(timeoutMs);
-            
-            while (DateTime.UtcNow - startTime < timeout)
-            {
-                var found = RootElement.FindAllDescendants(condition);
-                if (found.Length > 0)
-                {
-                    return found.Select(e => new FlaUIMauiElement(e, this)).ToList();
-                }
-                WaitHelper.Pause(100);
-            }
-        }
-        
-        var elements = RootElement.FindAllDescendants(condition);
-        return elements.Select(e => new FlaUIMauiElement(e, this)).ToList();
-    }
-    
-    /// <inheritdoc />
-    public bool TryFindElement(Locator locator, out IMauiElement? element, int timeoutMs = 0)
-    {
-        try
-        {
-            element = FindElement(locator, timeoutMs);
-            return true;
-        }
-        catch (ElementNotFoundException)
-        {
-            element = null;
-            return false;
-        }
-    }
-    
+
     #endregion
     
     #region Window Management
@@ -804,9 +814,20 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
                 return;
             }
 
-            throw new BrinellException(
-                $"Could not invoke menu item '{automationId}': it is disabled, so a user could "
-                + "not have picked it either.");
+            // Nothing was picked: waited for within the call's budget, as for toolbar items.
+            throw new ElementNotReadyException(
+                Locator.ByAutomationId(automationId),
+                NotReadyReason.Disabled,
+                "the menu item is disabled, so a user could not have picked it either");
+        }
+
+        if (answer.Declined == 0)
+        {
+            // Nothing on the app's bridge answered, so nothing was picked: as for toolbar items.
+            throw new ElementNotReadyException(
+                Locator.ByAutomationId(automationId),
+                NotReadyReason.Other,
+                answer.Reason);
         }
 
         var reason = answer.HResult switch
@@ -842,9 +863,23 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
                 return;
             }
 
-            throw new BrinellException(
-                $"Could not invoke toolbar item '{automationId}': it is disabled, so a user could "
-                + "not have pressed it either.");
+            // Nothing was pressed: a command enabled a moment late is waited for within the call's
+            // budget, and one that never re-enables fails as "disabled" when it runs out.
+            throw new ElementNotReadyException(
+                Locator.ByAutomationId(automationId),
+                NotReadyReason.Disabled,
+                "the toolbar item is disabled, so a user could not have pressed it either");
+        }
+
+        if (answer.Declined == 0)
+        {
+            // Nothing on the app's bridge answered, so nothing was pressed: the page is still
+            // publishing its bridge (seen right after navigating back to it). Waited for like any
+            // other not-ready element; a bridge that never answers fails when the budget runs out.
+            throw new ElementNotReadyException(
+                Locator.ByAutomationId(automationId),
+                NotReadyReason.Other,
+                answer.Reason);
         }
 
         var reason = answer.HResult switch

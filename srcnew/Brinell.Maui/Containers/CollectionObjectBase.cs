@@ -1,4 +1,4 @@
-using Brinell.Core.Utilities;
+using Brinell.Maui.Calls;
 using Brinell.Maui.Configuration;
 using Brinell.Maui.Controls;
 
@@ -8,8 +8,17 @@ namespace Brinell.Maui.Containers;
 /// Base class for collection objects: a container that also hands out typed items.
 /// </summary>
 /// <remarks>
+/// <para>
 /// Being a container, a collection scopes its own non-item controls too - a title,
-/// an empty view, a footer - alongside <see cref="Item"/>.
+/// an empty view, a footer - alongside <see cref="Item(int, int?)"/>.
+/// </para>
+/// <para>
+/// Every non-<c>Try</c> member is one call that waits within its budget, and every <c>Try*</c>
+/// member answers about now (<c>.my/stale-readiness/design.md</c>, section 7.6, Q10). Members that
+/// scroll to realize rows (<see cref="ScrollToItem"/>, <see cref="ScrollToEnd"/>,
+/// <see cref="WaitForItems"/>, <see cref="ItemWhere"/>, <see cref="FindItem"/>) take one scroll
+/// step per attempt of the call's poll, so the caller's budget covers the whole loop (Q9).
+/// </para>
 /// </remarks>
 /// <typeparam name="TParent">The parent scope type.</typeparam>
 /// <typeparam name="TSelf">The collection type itself (self-referencing).</typeparam>
@@ -20,6 +29,9 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     where TSelf : CollectionObjectBase<TParent, TSelf, TItem>
     where TItem : class, IMauiItemObject<TSelf, TItem>
 {
+    /// <summary>The detail of a <c>Missing</c> observation that means "scrolled to the end".</summary>
+    private const string EndOfList = "reached the end of the list";
+
     private readonly IItemStrategy _itemStrategy;
     private readonly Func<TSelf, IMauiElement, int, TItem> _itemFactory;
 
@@ -27,6 +39,12 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     /// Whether the last scroll this collection performed was a jump, or null before the first.
     /// </summary>
     private bool? _lastScrollJumped;
+
+    /// <summary>The realized rows the items being created were found among, for their keys.</summary>
+    private IReadOnlyList<IMauiElement>? _keyRoots;
+
+    /// <summary>The automation ids more than one of <see cref="_keyRoots"/> carries; computed on demand.</summary>
+    private HashSet<string>? _duplicateIds;
 
     /// <summary>
     /// Creates a collection within the given parent scope.
@@ -60,23 +78,107 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
         _itemFactory = itemFactory ?? throw new ArgumentNullException(nameof(itemFactory));
     }
 
+    #region Item keys
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// The strongest the platform offers: the logical index where the platform publishes one
+    /// (<c>PositionInSet</c>); otherwise the automation id, where the item strategy says ids are
+    /// stable or no other realized row carries the same one; otherwise the position.
+    /// </remarks>
+    public ItemKey KeyOf(IMauiElement itemRoot, int position)
+    {
+        ArgumentNullException.ThrowIfNull(itemRoot);
+
+        if (ItemKey.LogicalIndexOf(itemRoot) is { } logical)
+        {
+            return ItemKey.Logical(logical);
+        }
+
+        var id = itemRoot.AutomationId;
+        if (!string.IsNullOrEmpty(id) && (_itemStrategy.HasStableIds || IsUniqueAmongRealized(itemRoot, id)))
+        {
+            return ItemKey.AutomationId(id);
+        }
+
+        return ItemKey.Position(position);
+    }
+
+    /// <inheritdoc />
+    public IMauiElement? TryGetItemRoot(ItemKey key) => key.Kind switch
+    {
+        ItemKeyKind.Logical => WithRoot(
+            root => _itemStrategy.FindItemElements(root).FirstOrDefault(item => ItemKey.LogicalIndexOf(item) == key.Index),
+            null),
+        ItemKeyKind.AutomationId => WithRoot(
+            root => _itemStrategy.FindItemElements(root).Where(item => item.AutomationId == key.Value).ToList() is [var only]
+                ? only
+                : null,
+            null),
+        _ => TryGetItemRoot(key.Index)
+    };
+
+    /// <summary>Whether no other realized row carries <paramref name="id"/>.</summary>
+    private bool IsUniqueAmongRealized(IMauiElement itemRoot, string id)
+    {
+        if (_keyRoots == null || !_keyRoots.Any(root => ReferenceEquals(root, itemRoot)))
+        {
+            // Created outside a listing (a row re-found by its own lookup): list the rows once.
+            return TryGetItemRoots().Count(root => root.AutomationId == id) == 1;
+        }
+
+        _duplicateIds ??= _keyRoots
+            .Select(root => root.AutomationId)
+            .Where(value => !string.IsNullOrEmpty(value))
+            .GroupBy(value => value!)
+            .Where(group => group.Count() > 1)
+            .Select(group => group.Key)
+            .ToHashSet();
+
+        return !_duplicateIds.Contains(id);
+    }
+
+    /// <summary>Builds the item for a row found among <paramref name="roots"/>.</summary>
+    private TItem CreateItem(IMauiElement itemRoot, int index, IReadOnlyList<IMauiElement> roots)
+    {
+        if (!ReferenceEquals(_keyRoots, roots))
+        {
+            _keyRoots = roots;
+            _duplicateIds = null;
+        }
+
+        return _itemFactory(Self, itemRoot, index);
+    }
+
+    /// <summary>Builds the item for a row, at its logical index when it has one.</summary>
+    private TItem CreateItemAt(IMauiElement itemRoot, int positionalIndex, IReadOnlyList<IMauiElement> roots)
+        => CreateItem(itemRoot, ItemKey.LogicalIndexOf(itemRoot) ?? positionalIndex, roots);
+
+    #endregion
+
     #region Item access
 
     /// <summary>
-    /// Gets the item at <paramref name="index"/>. Equivalent to <see cref="Item"/>;
-    /// the indexer reads better for a direct lookup, <c>Item(i)</c> mid-chain.
+    /// Gets the item at <paramref name="index"/>, waiting for it to appear. Equivalent to
+    /// <see cref="Item(int, int?)"/>; the indexer reads better for a direct lookup, <c>Item(i)</c>
+    /// mid-chain.
     /// </summary>
     [System.Runtime.CompilerServices.IndexerName("ItemAt")]
     public TItem this[int index] => Item(index);
 
     /// <inheritdoc />
-    public TItem Item(int index)
+    /// <remarks>
+    /// Waits, like <see cref="Item(string, int?)"/>: a row often appears a frame after whatever
+    /// added it. Use <see cref="TryItem(int)"/> to ask about right now. Does not scroll; use
+    /// <see cref="ScrollToItem"/> for a row outside the realized window.
+    /// </remarks>
+    public TItem Item(int index, int? timeoutMs = null)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(index);
 
-        return TryItem(index)
-            ?? throw new ElementNotFoundException(
-                $"No item at index {index} in collection. Locator: {Locator}, materialized items: {GetItemCount()}.");
+        return RunFind(() => TryItem(index), timeoutMs,
+            () => new ElementNotFoundException(
+                $"No item at index {index} in collection. Locator: {Locator}, materialized items: {GetItemCount()}."));
     }
 
     /// <inheritdoc />
@@ -84,53 +186,38 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     {
         if (index < 0) return null;
 
-        var itemRoot = TryGetItemRoot(index);
-        return itemRoot == null ? null : _itemFactory(Self, itemRoot, index);
+        return WithRoot(root =>
+        {
+            var roots = _itemStrategy.FindItemElements(root);
+            var itemRoot = FindItemRoot(root, roots, index);
+            return itemRoot == null ? null : CreateItem(itemRoot, index, roots);
+        }, null);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Finds the root element of the item at <paramref name="index"/>, or null when there is none now.
+    /// </summary>
+    /// <remarks>The logical index where the platform publishes one, otherwise the position.</remarks>
     public IMauiElement? TryGetItemRoot(int index)
     {
         if (index < 0) return null;
 
-        var root = TryGetContainerRoot();
-        if (root == null) return null;
-
-        try
-        {
-            return FindItemRoot(root, index);
-        }
-        catch (StaleElementReferenceException)
-        {
-            InvalidateCache();
-
-            root = TryGetContainerRoot();
-            return root == null ? null : FindItemRoot(root, index);
-        }
+        return WithRoot(root => FindItemRoot(root, _itemStrategy.FindItemElements(root), index), null);
     }
 
-    private IMauiElement? FindItemRoot(IMauiElement collectionRoot, int index)
+    private IMauiElement? FindItemRoot(IMauiElement collectionRoot, IReadOnlyList<IMauiElement> roots, int index)
     {
-        var roots = _itemStrategy.FindItemElements(collectionRoot);
-        if (roots.Any(item => LogicalIndexOf(item).HasValue))
+        if (roots.Any(item => ItemKey.LogicalIndexOf(item).HasValue))
         {
-            return roots.FirstOrDefault(item => LogicalIndexOf(item) == index);
+            return roots.FirstOrDefault(item => ItemKey.LogicalIndexOf(item) == index);
         }
 
-        return _itemStrategy.FindItemElement(collectionRoot, index);
+        return index < roots.Count ? roots[index] : _itemStrategy.FindItemElement(collectionRoot, index);
     }
-
-    // Read once: PositionInSet is a live UI Automation read, and a row the list recycles between
-    // two reads answers the second with nothing.
-    private static int? LogicalIndexOf(IMauiElement itemRoot)
-        => itemRoot.PositionInSet is > 0 and var position ? position - 1 : null;
 
     /// <summary>The logical indexes of the realized rows, in tree order, as one comparable string.</summary>
     private string RealizedLogicalIndexes()
-        => string.Join(",", TryGetItemRoots().Select(root => LogicalIndexOf(root)?.ToString() ?? "-"));
-
-    private TItem CreateItem(IMauiElement itemRoot, int positionalIndex)
-        => _itemFactory(Self, itemRoot, LogicalIndexOf(itemRoot) ?? positionalIndex);
+        => string.Join(",", TryGetItemRoots().Select(root => ItemKey.LogicalIndexOf(root)?.ToString() ?? "-"));
 
     /// <summary>
     /// Gets the item identified by <paramref name="key"/>: its automation id, or failing
@@ -169,10 +256,10 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     {
         ArgumentNullException.ThrowIfNull(key);
 
-        return WaitForItem(() => TryItem(key), timeoutMs)
-            ?? throw new ElementNotFoundException(
+        return RunFind(() => TryItem(key), timeoutMs,
+            () => new ElementNotFoundException(
                 $"No item with the automation id or caption '{key}' in collection. " +
-                $"Locator: {Locator}, materialized items: {GetItemCount()}.");
+                $"Locator: {Locator}, materialized items: {GetItemCount()}."));
     }
 
     /// <summary>
@@ -184,21 +271,31 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     {
         ArgumentNullException.ThrowIfNull(key);
 
-        return WaitForItem(() => TryItem(key), timeoutMs)
-            ?? throw new ElementNotFoundException(
+        return RunFind(() => TryItem(key), timeoutMs,
+            () => new ElementNotFoundException(
                 $"No item matched {key} in collection. " +
-                $"Locator: {Locator}, materialized items: {GetItemCount()}.");
+                $"Locator: {Locator}, materialized items: {GetItemCount()}."));
     }
 
     /// <summary>
-    /// Polls a keyed lookup until it finds something or the timeout runs out.
+    /// A lookup as one call: each attempt checks the scope chain and the collection root, then
+    /// looks once, until it finds something or the budget runs out.
     /// </summary>
-    private TItem? WaitForItem(Func<TItem?> lookup, int? timeoutMs)
+    private TItem RunFind(Func<TItem?> lookup, int? timeoutMs, Func<ElementNotFoundException> notFound,
+        [System.Runtime.CompilerServices.CallerMemberName] string? caller = null)
     {
-        TItem? match = null;
-        Poll(() => (match = lookup()) != null, timeoutMs ?? DefaultTimeoutMs);
+        var budget = Budget(timeoutMs);
+        caller ??= nameof(RunFind);
+        return Call.Run(caller, null, budget, AnimationMs, context =>
+        {
+            TItem? found = null;
+            if (Poll(context, _ => RootAttempt(_ => (found = lookup()) != null ? Observation.Done() : Observation.Missing())))
+            {
+                return found!;
+            }
 
-        return match;
+            throw context.Log.Last.Kind == ObservationKind.Missing ? notFound() : Failure(context, caller, budget);
+        });
     }
 
     /// <summary>
@@ -238,7 +335,7 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     /// Gets the item whose automation id is <paramref name="automationId"/>.
     /// </summary>
     /// <remarks>
-    /// This and the three below are named forms of <see cref="Item(Locator)"/>, for when the
+    /// This and the three below are named forms of <see cref="Item(Locator, int?)"/>, for when the
     /// selector is fixed at the call site: <c>Toolbar.ItemByText("Save")</c> reads better than
     /// <c>Toolbar[Locator.ByText("Save")]</c>. Pass a <see cref="Locator"/> instead when the
     /// selector is chosen at run time.
@@ -275,7 +372,7 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
         {
             if (MatchesKey(itemRoots[index], key))
             {
-                return CreateItem(itemRoots[index], index);
+                return CreateItemAt(itemRoots[index], index, itemRoots);
             }
         }
 
@@ -298,22 +395,7 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     /// Every materialized item root, or an empty list when the collection is absent.
     /// </summary>
     protected IReadOnlyList<IMauiElement> TryGetItemRoots()
-    {
-        var root = TryGetContainerRoot();
-        if (root == null) return [];
-
-        try
-        {
-            return _itemStrategy.FindItemElements(root);
-        }
-        catch (StaleElementReferenceException)
-        {
-            InvalidateCache();
-
-            root = TryGetContainerRoot();
-            return root == null ? [] : _itemStrategy.FindItemElements(root);
-        }
-    }
+        => WithRoot(root => _itemStrategy.FindItemElements(root), []);
 
     /// <summary>
     /// The items, yielded lazily. A consumer that stops early - <c>Items.First(...)</c> -
@@ -326,7 +408,7 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
             var roots = TryGetItemRoots();
             for (var index = 0; index < roots.Count; index++)
             {
-                yield return CreateItem(roots[index], index);
+                yield return CreateItemAt(roots[index], index, roots);
             }
         }
     }
@@ -341,44 +423,26 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     #region Counting
 
     /// <inheritdoc />
+    /// <remarks>One read of the realized rows; <paramref name="timeoutMs"/> is not used.</remarks>
     public int GetItemCount(int? timeoutMs = null)
-    {
-        var root = TryGetContainerRoot();
-        if (root == null) return 0;
-
-        try
-        {
-            return _itemStrategy.FindItemElements(root).Count;
-        }
-        catch (StaleElementReferenceException)
-        {
-            InvalidateCache();
-
-            root = TryGetContainerRoot();
-            return root == null ? 0 : _itemStrategy.FindItemElements(root).Count;
-        }
-    }
+        => WithRoot(root => _itemStrategy.FindItemElements(root).Count, 0);
 
     /// <summary>
     /// Whether the collection currently has no materialized items.
     /// </summary>
-    public bool IsEmpty(int? timeoutMs = null) => GetItemCount(timeoutMs) == 0;
+    public bool IsEmpty(int? timeoutMs = null) => GetItemCount() == 0;
 
     /// <summary>
     /// Waits until the materialized item count equals <paramref name="expected"/>.
     /// </summary>
     public bool WaitItemCount(int expected, int? timeoutMs = null)
-        => Poll(() => GetItemCount() == expected, timeoutMs ?? DefaultTimeoutMs);
+        => RunWait(() => GetItemCount() == expected, timeoutMs);
 
     /// <summary>
-    /// Waits until at least one item is materialized, scrolling if needed.
+    /// Waits until at least one item is materialized.
     /// </summary>
     public bool WaitAnyItem(int? timeoutMs = null)
-    {
-        if (GetItemCount() > 0) return true;
-
-        return Poll(() => GetItemCount() > 0, timeoutMs ?? DefaultTimeoutMs);
-    }
+        => RunWait(() => GetItemCount() > 0, timeoutMs);
 
     /// <summary>
     /// Waits until at least <paramref name="minimumCount"/> items are materialized,
@@ -387,18 +451,28 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     /// <remarks>
     /// Prefer this to <see cref="WaitItemCount"/> on a virtualizing collection: the
     /// realized count is bounded by the viewport, so an exact match may never occur even
-    /// though the data source holds more. Scrolling is attempted only when the count is
-    /// short, and is best-effort - see <see cref="ScrollToEnd"/> for its limits.
+    /// though the data source holds more. Each attempt takes at most one scroll step, and only
+    /// while the count is short; see <see cref="ScrollToEnd"/> for its limits.
     /// </remarks>
     public bool WaitForItems(int minimumCount = 1, int? timeoutMs = null)
     {
-        if (GetItemCount() >= minimumCount) return true;
+        var budget = Budget(timeoutMs);
+        return Call.Run(nameof(WaitForItems), minimumCount.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            budget, AnimationMs, context =>
+            {
+                var materialize = MaterializeAttempts(
+                    NextMaterializationIndex,
+                    () => GetItemCount() >= minimumCount ? Observation.Done() : null);
 
-        // Realize more rows before polling, otherwise a short viewport guarantees a
-        // timeout rather than a wait.
-        TryMaterializeMore(NextMaterializationIndex());
+                if (Poll(context, materialize))
+                {
+                    return true;
+                }
 
-        return Poll(() => GetItemCount() >= minimumCount, timeoutMs ?? DefaultTimeoutMs);
+                return context.Log.Last.Kind is ObservationKind.Missing or ObservationKind.Pending
+                    ? false
+                    : throw Failure(context, nameof(WaitForItems), budget);
+            }, succeeded: met => met);
     }
 
     /// <summary>
@@ -410,115 +484,126 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     /// presence matters.
     /// </remarks>
     public TSelf AssertItemCount(int expected, string? message = null, int? timeoutMs = null)
-    {
-        if (!WaitItemCount(expected, timeoutMs))
-        {
-            throw new AssertionException(
-                message ?? $"Expected {expected} items but found {GetItemCount()}. Locator: {Locator}");
-        }
-
-        return Self;
-    }
+        => RunAssert<int?>(expected, () => GetItemCount(), (actual, wanted) => actual == wanted,
+            message ?? $"Expected {expected} items. Locator: {Locator}", timeoutMs);
 
     /// <summary>
     /// Asserts whether the collection is empty, returning the collection for chaining.
     /// </summary>
     public TSelf AssertEmpty(bool? expected = true, string? message = null, int? timeoutMs = null)
-    {
-        if (expected == null) return Self;
-
-        if (!Poll(() => IsEmpty() == expected.Value, timeoutMs ?? DefaultTimeoutMs))
-        {
-            throw new AssertionException(
-                message ?? $"Expected collection {(expected.Value ? "to be empty" : "not to be empty")} " +
-                           $"but found {GetItemCount()} items. Locator: {Locator}");
-        }
-
-        return Self;
-    }
+        => RunAssert(expected, () => (bool?)IsEmpty(), (actual, wanted) => actual == wanted,
+            message ?? $"Expected collection {(expected == true ? "to be empty" : "not to be empty")}. Locator: {Locator}",
+            timeoutMs);
 
     #endregion
 
     #region Search by content
 
     /// <summary>
-    /// Finds the first item matching <paramref name="predicate"/>, scrolling to
-    /// materialize more rows if needed. Returns null when none matches.
+    /// Finds the first item matching <paramref name="predicate"/>, scrolling through the list once
+    /// to realize more rows. Returns null when none matches by the end of the list.
     /// </summary>
-    public TItem? FindItem(Func<TItem, bool> predicate)
+    /// <remarks>
+    /// Answers about the list as it is: it does not wait for an item to appear. The scroll through
+    /// the list is one call on <paramref name="timeoutMs"/> (<c>DefaultWait</c> when null); a list
+    /// that takes longer to scroll through needs a larger budget.
+    /// </remarks>
+    public TItem? FindItem(Func<TItem, bool> predicate, int? timeoutMs = null)
     {
         ArgumentNullException.ThrowIfNull(predicate);
 
-        var roots = TryGetItemRoots();
-        if (!roots.Any(item => LogicalIndexOf(item).HasValue))
+        var budget = Budget(timeoutMs);
+        return Call.Run(nameof(FindItem), null, budget, AnimationMs, context =>
         {
-            var match = Items.FirstOrDefault(predicate);
-            if (match != null) return match;
+            TItem? match = null;
+            var search = SearchAttempts(predicate, item => match = item);
 
-            var seen = GetItemCount();
-            while (TryMaterializeMore(seen))
+            if (Poll(context, search, stop: IsEndOfList))
             {
-                var count = GetItemCount();
-                for (var index = seen; index < count; index++)
-                {
-                    var item = TryItem(index);
-                    if (item != null && predicate(item)) return item;
-                }
-
-                seen = count;
+                return match;
             }
 
-            return null;
-        }
-
-        var seenLogicalIndexes = new HashSet<int>();
-        while (true)
-        {
-            roots = TryGetItemRoots();
-            foreach (var (root, position) in roots.Select((root, position) => (root, position)))
-            {
-                var logicalIndex = LogicalIndexOf(root);
-                if (!logicalIndex.HasValue || seenLogicalIndexes.Contains(logicalIndex.Value))
-                {
-                    continue;
-                }
-
-                var item = CreateItem(root, position);
-                var matches = predicate(item);
-
-                // A row the list recycled while the predicate read it holds another item now, so
-                // neither answer is about this index. Leave it unseen for the next pass.
-                if (LogicalIndexOf(root) != logicalIndex)
-                {
-                    continue;
-                }
-
-                seenLogicalIndexes.Add(logicalIndex.Value);
-                if (matches) return item;
-            }
-
-            var lastLogical = roots.Select(LogicalIndexOf).Where(index => index.HasValue)
-                .Select(index => index!.Value).DefaultIfEmpty(-1).Max();
-            var logicalCount = GetLogicalItemCount(roots);
-            if (lastLogical < 0 || logicalCount is null || lastLogical >= logicalCount.Value - 1)
-            {
-                return null;
-            }
-
-            if (!TryMaterializeMore(lastLogical + 1))
-            {
-                return null;
-            }
-        }
+            return IsEndOfList(context.Log.Last) ? null : throw Failure(context, nameof(FindItem), budget);
+        });
     }
 
     /// <summary>
-    /// Finds the first item matching <paramref name="predicate"/>, throwing when none does.
+    /// Finds the first item matching <paramref name="predicate"/>, scrolling to realize more rows,
+    /// and waiting for one to appear; throws when none does within the budget.
     /// </summary>
-    public TItem ItemWhere(Func<TItem, bool> predicate)
-        => FindItem(predicate)
-           ?? throw new ElementNotFoundException(
-               $"No item matched the predicate in collection. Locator: {Locator}, materialized items: {GetItemCount()}.");
+    public TItem ItemWhere(Func<TItem, bool> predicate, int? timeoutMs = null)
+    {
+        ArgumentNullException.ThrowIfNull(predicate);
+
+        var budget = Budget(timeoutMs);
+        return Call.Run(nameof(ItemWhere), null, budget, AnimationMs, context =>
+        {
+            TItem? match = null;
+            if (Poll(context, SearchAttempts(predicate, item => match = item)))
+            {
+                return match!;
+            }
+
+            throw context.Log.Last.Kind is ObservationKind.Missing or ObservationKind.Pending
+                ? new ElementNotFoundException(
+                    $"No item matched the predicate in collection within {budget} ms. Locator: {Locator}, " +
+                    $"materialized items: {GetItemCount()}. {context.Log.Summary()}.")
+                : Failure(context, nameof(ItemWhere), budget);
+        });
+    }
+
+    /// <summary>
+    /// The attempts of a search: each looks at the realized rows not yet seen, then takes one
+    /// scroll step.
+    /// </summary>
+    /// <remarks>
+    /// A row is seen once, by its key. A row that holds another item after the predicate read it
+    /// (the list recycled it) is left unseen for the next attempt: neither answer was about it.
+    /// Rows keyed only by position cannot be told apart after a scroll, so they are read again.
+    /// </remarks>
+    private Func<AttemptContext, Observation> SearchAttempts(Func<TItem, bool> predicate, Action<TItem> found)
+    {
+        var seen = new HashSet<ItemKey>();
+        return MaterializeAttempts(NextMaterializationIndex, () =>
+        {
+            var roots = TryGetItemRoots();
+            for (var position = 0; position < roots.Count; position++)
+            {
+                var root = roots[position];
+                if (ItemKey.LogicalIndexOf(root) is { } logical && seen.Contains(ItemKey.Logical(logical)))
+                {
+                    // Seen already: skip it without building the row object.
+                    continue;
+                }
+
+                var item = CreateItemAt(root, position, roots);
+                var key = item.Key;
+                if (seen.Contains(key))
+                {
+                    continue;
+                }
+
+                var matches = predicate(item);
+                if (!key.IsHeldBy(root))
+                {
+                    continue;
+                }
+
+                if (key.Kind != ItemKeyKind.Position)
+                {
+                    seen.Add(key);
+                }
+
+                if (matches)
+                {
+                    found(item);
+                    return Observation.Done();
+                }
+            }
+
+            return null;
+        });
+    }
 
     #endregion
 
@@ -529,58 +614,51 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     /// collection for chaining.
     /// </summary>
     /// <remarks>
-    /// Scrolls a step at a time and re-checks after each, stopping when the item
-    /// resolves or when scrolling stops producing new rows. Waits on observed item
-    /// state rather than a fixed delay.
+    /// One call on <paramref name="timeoutMs"/> (<c>DefaultWait</c> when null): each attempt checks
+    /// for the row, then takes one scroll step. Stops when the row resolves, and fails when the
+    /// list reaches its end without it or the budget runs out. A long list needs a budget to match.
     /// </remarks>
     public TSelf ScrollToItem(int index, int? timeoutMs = null)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(index);
 
-        if (TryGetItemRoot(index) != null) return Self;
+        var budget = Budget(timeoutMs);
+        return Call.Run(nameof(ScrollToItem), index.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            budget, AnimationMs, context =>
+            {
+                ThrowIfPastTheEnd(index);
 
+                var materialize = MaterializeAttempts(
+                    () => index,
+                    () => TryGetItemRoot(index) != null ? Observation.Done() : null);
+
+                if (Poll(context, materialize, stop: IsEndOfList))
+                {
+                    return Self;
+                }
+
+                throw context.Log.Last.Kind is ObservationKind.Missing or ObservationKind.Pending
+                    ? new ElementNotFoundException(
+                        $"Could not scroll item {index} into view within {budget} ms. Locator: {Locator}, " +
+                        $"materialized items: {GetItemCount()}, furthest reached: {FurthestReachableIndex()}. " +
+                        $"{context.Log.Summary()}.")
+                    : Failure(context, nameof(ScrollToItem), budget);
+            });
+    }
+
+    /// <summary>Refuses an index past the end up front, rather than scrolling to the end first.</summary>
+    private void ThrowIfPastTheEnd(int index)
+    {
         var roots = TryGetItemRoots();
-
-        // Refuse an index past the end up front rather than scrolling to the end first.
         var logicalCount = GetLogicalItemCount(roots);
         if (logicalCount.HasValue
             && index >= logicalCount.Value
-            && roots.Any(item => LogicalIndexOf(item).HasValue))
+            && roots.Any(item => ItemKey.LogicalIndexOf(item).HasValue))
         {
             throw new ElementNotFoundException(
                 $"No logical item at index {index} in collection. Locator: {Locator}, "
                 + $"item count: {logicalCount.Value}.");
         }
-
-        // A virtualizing panel slides its realized window: rows drop off the top as new
-        // ones appear below, so the materialized COUNT can plateau while scrolling is
-        // still making progress. Track the furthest row actually reached instead, and
-        // stop only when a scroll step fails to reach any further.
-        //
-        // Where the element can jump, the first pass lands on the row; where it can only step,
-        // each pass is one step and the index is ignored.
-        var furthestReached = -1;
-
-        while (true)
-        {
-            if (!TryMaterializeMore(index)) break;
-
-            if (TryGetItemRoot(index) != null) return Self;
-
-            var reach = FurthestReachableIndex();
-            if (reach <= furthestReached) break;
-
-            furthestReached = reach;
-        }
-
-        if (TryGetItemRoot(index) == null)
-        {
-            throw new ElementNotFoundException(
-                $"Could not scroll item {index} into view. Locator: {Locator}, " +
-                $"materialized items: {GetItemCount()}, furthest reached: {furthestReached}.");
-        }
-
-        return Self;
     }
 
     /// <summary>
@@ -590,7 +668,7 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     private int FurthestReachableIndex()
     {
         var roots = TryGetItemRoots();
-        var logical = roots.Select(LogicalIndexOf).Where(index => index.HasValue)
+        var logical = roots.Select(ItemKey.LogicalIndexOf).Where(index => index.HasValue)
             .Select(index => index!.Value).ToArray();
         return logical.Length > 0
             ? logical.Max()
@@ -622,38 +700,67 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     /// </summary>
     /// <remarks>
     /// Uses the first realized row's scroll-into-view where available; otherwise steps back by the
-    /// container's one scroll route until it stops moving.
+    /// container's one scroll route until it stops moving, or until the budget runs out.
     /// </remarks>
     public TSelf ScrollToTop(int? timeoutMs = null)
     {
-        if (TryScrollItemIntoView(0)) return Self;
-
-        var target = ScrollTarget ?? TryGetContainerRoot();
-        if (target == null) return Self;
-
-        // Repeated only while the platform confirms movement. A swipe cannot confirm it, so where
-        // the element swipes one step is taken - repeating a swipe that cannot say it arrived would
-        // never end.
-        while (target.ScrollContent(-1) == ScrollStep.Moved)
+        var budget = Budget(timeoutMs);
+        return Call.Run(nameof(ScrollToTop), null, budget, AnimationMs, context =>
         {
-        }
+            if (!Poll(context, _ => RootAttempt(root =>
+                {
+                    if (TryScrollItemIntoView(0))
+                    {
+                        return Observation.Done();
+                    }
 
-        return Self;
+                    // Repeated only while the platform confirms movement. A swipe cannot confirm
+                    // it, so where the element swipes one step is taken - repeating a swipe that
+                    // cannot say it arrived would never end.
+                    return (ScrollTarget ?? root).ScrollContent(-1) == ScrollStep.Moved
+                        ? Observation.Pending("moved up")
+                        : Observation.Done();
+                })))
+            {
+                throw Failure(context, nameof(ScrollToTop), budget);
+            }
+
+            return Self;
+        });
     }
 
     /// <summary>
     /// Scrolls the collection to the end, returning the collection for chaining.
     /// </summary>
+    /// <remarks>
+    /// One call on <paramref name="timeoutMs"/> (<c>DefaultWait</c> when null), one scroll step per
+    /// attempt, until scrolling stops producing rows.
+    /// </remarks>
     public TSelf ScrollToEnd(int? timeoutMs = null)
     {
-        while (TryMaterializeMore(NextMaterializationIndex()))
+        var budget = Budget(timeoutMs);
+        return Call.Run(nameof(ScrollToEnd), null, budget, AnimationMs, context =>
         {
-        }
+            var materialize = MaterializeAttempts(NextMaterializationIndex, () => null);
 
-        return Self;
+            Poll(context, materialize, stop: IsEndOfList);
+            if (!IsEndOfList(context.Log.Last))
+            {
+                throw context.Log.Last.Kind == ObservationKind.Pending
+                    ? new WaitTimeoutException(
+                        $"'{Locator}' did not reach the end of its list within {budget} ms. {context.Log.Summary()}.",
+                        budget)
+                    : Failure(context, nameof(ScrollToEnd), budget);
+            }
+
+            return Self;
+        });
     }
 
     private int NextMaterializationIndex() => FurthestReachableIndex() + 1;
+
+    private static bool IsEndOfList(Observation observation)
+        => observation is { Kind: ObservationKind.Missing, Detail: EndOfList };
 
     /// <summary>
     /// Asks the row at the given index to scroll itself into view.
@@ -668,90 +775,175 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
             itemRoot.ScrollIntoView();
             return true;
         }
-        catch
+        catch (Exception error) when (error is NotSupportedException or InvalidOperationException)
         {
+            // The platform could not scroll this row into view: an answer. A row that is gone is
+            // not - it propagates as StaleElementException.
             return false;
         }
     }
 
-    /// <summary>
-    /// Scrolls one step toward the end and reports whether that materialized new rows.
-    /// </summary>
-    private bool TryMaterializeMore(int nextIndex)
+    #endregion
+
+    #region Materializing, one step per attempt
+
+    private enum MaterializePhase
     {
-        var root = TryGetContainerRoot();
-        if (root == null) return false;
+        /// <summary>Look for the target; if absent, take a scroll step.</summary>
+        Idle,
 
-        var countBefore = GetItemCount();
-        var reachBefore = FurthestReachableIndex();
+        /// <summary>A step was taken; wait for the rows to change.</summary>
+        AwaitingProgress,
 
-        // The scrollable element is the item host, not this container's root, which may be a
-        // non-scrolling wrapper around it.
-        var target = ScrollTarget ?? root;
+        /// <summary>A jump brought new rows; wait for them to stop changing.</summary>
+        Settling
+    }
 
+    /// <summary>What a materializing loop carries from one attempt to the next.</summary>
+    private sealed class Materialization
+    {
+        public MaterializePhase Phase = MaterializePhase.Idle;
+        public string RealizedBefore = string.Empty;
+        public int CountBefore;
+        public long MovedAtMs;
+        public bool Jumped;
+        public bool UsedLastIntoView;
+        public bool TriedLastIntoView;
+    }
+
+    /// <summary>
+    /// The attempts of a loop that scrolls to realize rows: <see cref="ScrollToItem"/>,
+    /// <see cref="ScrollToEnd"/>, <see cref="WaitForItems"/>, <see cref="FindItem"/> and
+    /// <see cref="ItemWhere"/>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Each attempt checks the scope chain and the collection root, then, by phase: waits for a
+    /// step's rows to arrive ("waiting for new rows") or to settle ("rows still moving"); otherwise
+    /// looks for the target, and when it is absent takes one scroll step ("scrolled"). A step that
+    /// realizes nothing, or a list that cannot move, is the end of the list, observed as
+    /// <c>Missing</c>. No step waits on its own: the call's poll and budget are the only ones
+    /// (<c>.my/stale-readiness/design.md</c>, R2 and Q9).
+    /// </para>
+    /// <para>
+    /// The closure owns the loop's state, so one is built per call.
+    /// </para>
+    /// </remarks>
+    /// <param name="nextIndex">The index to scroll towards.</param>
+    /// <param name="target">Done when the target is there; null when it is not.</param>
+    private Func<AttemptContext, Observation> MaterializeAttempts(Func<int> nextIndex, Func<Observation?> target)
+    {
+        var state = new Materialization();
+        return context => RootAttempt(root => MaterializeStep(context, state, root, nextIndex, target));
+    }
+
+    private Observation MaterializeStep(AttemptContext context, Materialization state, IMauiElement root,
+        Func<int> nextIndex, Func<Observation?> target)
+    {
+        switch (state.Phase)
+        {
+            case MaterializePhase.AwaitingProgress:
+            {
+                var realized = RealizedLogicalIndexes();
+                if (GetItemCount() > state.CountBefore || realized != state.RealizedBefore)
+                {
+                    state.TriedLastIntoView = false;
+                    if (state.Jumped)
+                    {
+                        // Rows read while the list is still recycling mix up positions and
+                        // content, so let them settle first.
+                        state.Phase = MaterializePhase.Settling;
+                        state.RealizedBefore = realized;
+                        return Observation.Pending("rows still moving");
+                    }
+
+                    state.Phase = MaterializePhase.Idle;
+                    break;
+                }
+
+                // A jump's rows reach the tree after the jump returns, however long that takes;
+                // a step's rows arrive within a moment or not at all.
+                if (state.Jumped || context.Deadline.ElapsedMs - state.MovedAtMs < ProgressWindowMs)
+                {
+                    return Observation.Pending("waiting for new rows");
+                }
+
+                state.Phase = MaterializePhase.Idle;
+                if (state.UsedLastIntoView)
+                {
+                    // Pulling the last row into view realized nothing; take a real step next.
+                    break;
+                }
+
+                return Observation.Missing(EndOfList);
+            }
+
+            case MaterializePhase.Settling:
+            {
+                var realized = RealizedLogicalIndexes();
+                if (realized != state.RealizedBefore)
+                {
+                    state.RealizedBefore = realized;
+                    return Observation.Pending("rows still moving");
+                }
+
+                state.Phase = MaterializePhase.Idle;
+                break;
+            }
+        }
+
+        if (target() is { } done)
+        {
+            return done;
+        }
+
+        state.RealizedBefore = RealizedLogicalIndexes();
+        state.CountBefore = GetItemCount();
+        if (!ScrollOnce(root, nextIndex(), state))
+        {
+            return Observation.Missing(EndOfList);
+        }
+
+        state.Phase = MaterializePhase.AwaitingProgress;
+        state.MovedAtMs = context.Deadline.ElapsedMs;
+        return Observation.Pending("scrolled");
+    }
+
+    /// <summary>How long a scroll step's new rows may take to appear before the step counts as the end.</summary>
+    private int ProgressWindowMs => Math.Max(AnimationMs, PollingIntervalMs * 5);
+
+    /// <summary>One scroll step toward <paramref name="nextIndex"/>; false when the list cannot move.</summary>
+    private bool ScrollOnce(IMauiElement root, int nextIndex, Materialization state)
+    {
         // On a collection known not to jump, pull the last realized row into view first, which
         // makes the virtualizing panel realize the rows after it.
-        if (_lastScrollJumped == false && TryScrollLastItemIntoView() && HasMoreThan(countBefore))
+        if (_lastScrollJumped == false && !state.TriedLastIntoView && TryScrollLastItemIntoView())
         {
+            state.TriedLastIntoView = true;
+            state.UsedLastIntoView = true;
+            state.Jumped = false;
             return true;
         }
 
+        state.UsedLastIntoView = false;
+
+        // The scrollable element is the item host, not this container's root, which may be a
+        // non-scrolling wrapper around it. The element jumps where the app declared a route to an
+        // index, and otherwise moves one step.
         ScrollStep step;
         try
         {
-            // The element jumps where the app declared a route to an index, and otherwise moves
-            // one step.
-            step = target.ScrollTowards(nextIndex);
+            step = (ScrollTarget ?? root).ScrollTowards(nextIndex);
         }
         catch (ArgumentOutOfRangeException)
         {
-            // Past the end; stop scrolling.
-            return false;
-        }
-        catch (StaleElementReferenceException)
-        {
-            InvalidateCache();
+            // Past the end.
             return false;
         }
 
         _lastScrollJumped = step == ScrollStep.Jumped;
-
-        return step switch
-        {
-            // The new rows reach the tree after the jump returns, and rows read while the list is
-            // still recycling mix up positions and content, so wait for them to settle.
-            ScrollStep.Jumped => WaitForProgressThenSettle(reachBefore),
-
-            // The content was already at the end.
-            ScrollStep.NotMoved => false,
-
-            _ => HasMoreThan(countBefore),
-        };
-    }
-
-    /// <summary>
-    /// Waits for a jump to reach further than <paramref name="reachBefore"/>, then for the
-    /// realized rows to stop changing.
-    /// </summary>
-    private bool WaitForProgressThenSettle(int reachBefore)
-    {
-        if (!Poll(() => FurthestReachableIndex() > reachBefore, DefaultTimeoutMs))
-        {
-            return false;
-        }
-
-        var previous = RealizedLogicalIndexes();
-        Poll(
-            () =>
-            {
-                var current = RealizedLogicalIndexes();
-                var settled = current == previous;
-                previous = current;
-                return settled;
-            },
-            DefaultTimeoutMs);
-
-        return true;
+        state.Jumped = step == ScrollStep.Jumped;
+        return step != ScrollStep.NotMoved;
     }
 
     /// <summary>
@@ -774,33 +966,66 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
         return ScrollHelper.ScrollIntoView(roots[^1]);
     }
 
-    /// <summary>
-    /// Waits briefly for the materialized count to exceed a previous value, polling
-    /// observed state rather than sleeping.
-    /// </summary>
-    private bool HasMoreThan(int countBefore)
-        => Poll(() => GetItemCount() > countBefore, PollingIntervalMs * 5);
-
     #endregion
 
     #region Selection
 
     /// <summary>
-    /// Selects the item at <paramref name="index"/>, returning the collection for chaining.
+    /// Selects the item at <paramref name="index"/>, waiting for it to appear, returning the
+    /// collection for chaining.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Each attempt finds the row and asks the platform to activate it. The call is done at the
+    /// first activation.
+    /// </para>
+    /// <para>
+    /// A refused activation is tried again within the budget. That is not a repeated action:
+    /// <see cref="ActivateItemCore"/> answers false only when nothing was activated (a row without
+    /// a size, or a selection the platform refused), which is a row not ready yet - a list
+    /// re-laying out after a change. A row that stays refused fails the call when the budget
+    /// runs out, naming the refusal.
+    /// </para>
+    /// </remarks>
     public TSelf SelectItem(int index, int? timeoutMs = null)
     {
-        if (!TrySelectItem(index, timeoutMs))
-        {
-            throw new ElementNotFoundException(
-                $"Could not select item at index {index}. Locator: {Locator}");
-        }
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
 
-        return Self;
+        var budget = Budget(timeoutMs);
+        return Call.Run(nameof(SelectItem), index.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            budget, AnimationMs, context =>
+            {
+                if (Poll(context, _ => RootAttempt(_ =>
+                    {
+                        var itemRoot = TryGetItemRoot(index);
+                        if (itemRoot == null)
+                        {
+                            return Observation.Missing();
+                        }
+
+                        return ActivateItemCore(itemRoot)
+                            ? Observation.Done()
+                            : Observation.Pending("found, and the platform did not activate it");
+                    })))
+                {
+                    return Self;
+                }
+
+                throw context.Log.Last.Kind switch
+                {
+                    ObservationKind.Missing => new ElementNotFoundException(
+                        $"No item at index {index} to select within {budget} ms. Locator: {Locator}, " +
+                        $"materialized items: {GetItemCount()}."),
+                    ObservationKind.Pending => new InvalidOperationException(
+                        $"Item {index} was found, and the platform did not activate it within {budget} ms. " +
+                        $"Locator: {Locator}. {context.Log.Summary()}."),
+                    _ => Failure(context, nameof(SelectItem), budget)
+                };
+            });
     }
 
     /// <summary>
-    /// Attempts to select the item at <paramref name="index"/>.
+    /// Attempts to select the item at <paramref name="index"/>, now.
     /// </summary>
     public bool TrySelectItem(int index, int? timeoutMs = null)
     {
@@ -881,11 +1106,13 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
 
         try
         {
-            // A candidate may be the wrong element, so a failure here is an answer, not a fault.
+            // A candidate may be the wrong element, so a failure here is an answer, not a fault:
+            // the pattern is absent (NotSupported) or refused (InvalidOperation). A candidate that
+            // is gone is not an answer - it propagates as StaleElementException.
             element.Select();
             return true;
         }
-        catch
+        catch (Exception error) when (error is NotSupportedException or InvalidOperationException)
         {
             return false;
         }

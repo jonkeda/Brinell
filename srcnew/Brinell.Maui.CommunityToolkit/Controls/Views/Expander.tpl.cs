@@ -111,11 +111,12 @@ public partial class Expander<TScope> : Brinell.Maui.Controls.Base.ViewBase<TSco
 
         ToggleCore(element, timeoutMs);
 
-        if (!Until(() => IsExpandedCore(element), actual => actual == expanded, timeoutMs, out var lastError))
+        var confirmation = Confirm(() => IsExpandedCore(element), actual => actual == expanded, timeoutMs);
+        if (!confirmation.IsConfirmed)
         {
-            throw new TimeoutException(
+            throw confirmation.Failure(Locator, "the tap", lastError => new TimeoutException(
                 $"Expander '{Locator.Value}' did not become {(expanded.Value ? "expanded" : "collapsed")}.",
-                lastError);
+                lastError));
         }
     }
 

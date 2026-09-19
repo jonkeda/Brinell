@@ -170,8 +170,7 @@ public abstract partial class RangeControlBase<TScope> : FocusableControlBase<TS
     {
         if (IsEnabledCore(element) != true)
         {
-            throw new TimeoutException(
-                $"Element was not enabled. Locator: {Locator}");
+            throw new ElementNotReadyException(Locator, NotReadyReason.Disabled);
         }
     }
 

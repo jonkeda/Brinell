@@ -21,9 +21,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`WaitValueGreaterThan`, ...).
 - `MediaPlayPauseButton` and `MediaTimeLabel` part controls; `MediaElement.Stop`,
   `WaitOpened`, `GetElapsed`, `GetRemaining` and their comparison variants.
-- `Until(...)` on `ViewBase` and `RootedScopeBase`: the one way a Core method waits. It polls a
-  read of the element the method holds, with no second readiness check or log entry, and keeps
-  the last read's exception (`WaitHelper.WaitFor(..., out lastError)`).
+- `Confirm(read, done, timeoutMs)` on `ViewBase` and `RootedScopeBase`: the one way a Core
+  method waits for its action's effect. It never repeats the action, and returns a
+  `Confirmation<T>` (`Confirmed`, `NotConfirmed`, `Replaced`) whose `Failure(...)` reports a
+  replaced element as `StaleElementException`.
+- MAUI's own interfaces: `IMauiElement` (with `InstanceKey`), `IMauiDriver`, `IMauiElementScope`,
+  `IMauiPage`, `IMauiTestContext`, and `MauiElementExtensions` for the geometry and scope helpers
+  (AD-010).
+- MAUI exceptions: `StaleElementException`, `ElementNotReadyException` (`NotReadyReason`),
+  `ScopeNotReadyException` (with `Readiness`), `AppUnavailableException`, raised by both drivers.
+- Scope readiness: `ScopeReadiness` / `ScopeReadinessState`, `ProbeReadiness()` on every scope,
+  `ProbeContentReadiness(root)` and `AsksParent` for containers.
+- Collections: `ItemKey` on every row (`IMauiItemObject.Key`), `IItemStrategy.HasStableIds`,
+  `timeoutMs` on `Item(int)`, `FindItem` and `ItemWhere`.
+- Near-miss warnings: a call that passed after three or more replacements, or after using more
+  than half its budget, logs `LogResult.Warning`. `BRINELL_CALL_LOG` (a folder) makes
+  `MauiTestContext` write every call to CSV.
+- `tools/Scripts/repeat-run.ps1`: runs a test project N times and summarizes failures by test.
+- AD-009 (app bugs stay failures) and AD-010 (MAUI ahead of Core, on purpose).
 - Generator: `[AbsenceTolerant]` on a `Get*Core` reads once with the element resolved
   optionally (`RunGetWithOptionalElement`); `Is*Core` forwards extra parameters like `Get*Core`;
   state shortcuts may take parameters. The CLI prints a warning for a Core method that calls a
@@ -73,8 +88,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the media element rather than the page; `WaitProgressPasses` is replaced by
   `WaitProgressGreaterThan`, and `WaitDurationKnown` by `WaitOpened`.
 - Every control now does one unit of work per call. `ToggleControlBase`, `Stepper`,
-  `Expander`, `RatingView`, `DrawingView` wait with `Until` instead of a nested poll; a timeout
-  carries the last read's error as `InnerException`.
+  `CarouselView`, `Expander`, `RatingView`, `DrawingView` and `MediaPlayPauseButton` confirm their
+  effect with `Confirm` instead of a nested poll; a timeout carries the last read's error as
+  `InnerException`.
+- **MAUI calls (AD-004, AD-009; `.my/stale-readiness/`):** every public call on a control,
+  page, container, collection or row is one log entry/exit pair and one budget. Only the call's
+  poll waits, and each attempt first asks the scope chain (row, collection, page), then finds
+  the element again. Actions resolve by polling, then act once. A Core method that throws
+  `ElementNotReadyException` has not acted, so it is asked again within the budget.
+- MAUI no longer implements Core's `IElement`, `IDriver`, `IElementScope`, `IPageObject`,
+  `ITestContext<T>`, `IContainerControl` or `IContainerObject`, and controls no longer derive
+  from `ControlObjectBase`. Core itself is unchanged.
+- Finds on MAUI elements, drivers and scopes make one attempt; the timeout overloads are gone.
+- `IsLoaded()`, `GetTitle()` and `TakeScreenshot(string?)` lose their unused timeouts.
+- `ItemContainerBase` is `ItemObjectBase`, and `IMauiItemContainer` is `IMauiItemObject`.
+- MAUI throws `ScopeNotReadyException` where it threw `PageLoadException`, and
+  `ElementNotReadyException` where a disabled or hidden control used to raise `TimeoutException`.
+  The FlaUI driver reports a disabled toolbar or menu item, or one no bridge target answered
+  for, as `ElementNotReadyException`.
+- `Item(int)`, `this[int]`, `SelectItem` and `ItemWhere` wait within their budget; `TryItem`,
+  `TrySelectItem` and `FindItem` answer about now. `ScrollToItem`, `ScrollToEnd`, `ScrollToTop`
+  and `WaitForItems` run on one budget (`DefaultWait` unless given), and a long list needs a
+  budget to match.
+- A row is found again by its item key, and reports `ItemChanged` instead of answering for
+  another item.
+- `AppRoot` no longer scrolls to look for a control; Shell's flyout still does, within itself.
+- `IsExists()` / `IsVisible()` on a control read the element only; they no longer consult the
+  page.
+- `IItemRootProvider`: `KeyOf(root, position)` and `TryGetItemRoot(ItemKey)`.
 - `AvatarView`: the `Text` part is now `Initials` (`AvatarInitials`), and `GetText` /
   `WaitText` / `AssertText` are `GetInitials` / `WaitInitials` / `AssertInitials`. `Image` is an
   `AvatarImage`.
@@ -87,7 +128,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   behaviour stays as it was now that the attribute works on getters.
 - Migrated from Oravey.UITestFramework namespace
 
+### Removed
+- MAUI: `DriverRootScope` (use `AppRoot`), `Popup.Page => null`, `CanResolveElements`,
+  `CreateScopeNotReadyException`, `IsParentReady` / `WaitParentReady`, `WaitContentReady` /
+  `WaitContentReadyCore` (use `ProbeContentReadiness`), `IsReady(int?)` (now `IsReady()`), the
+  page's `EnsureLoaded`, both `Until` implementations (use `Confirm`), `RunPoll`,
+  `WaitVisibleCore`, `EnsureVisible(element, timeout)` and `doEnsureVisible`, and the virtual
+  `ViewBase.FindElement()` (override `TryFindElement()` and `NotFound()`).
+- `PageReadinessSnapshot` from the MAUI page contract.
+
 ### Fixed
+- `Brinell.Maui.UITests`' `NavigationDemoPage` looked up by name through an XPath locator the
+  FlaUI driver does not support, so its "unreachable by name" probes never looked.
 - N/A (initial release)
 
 ## [0.1.0] - TBD

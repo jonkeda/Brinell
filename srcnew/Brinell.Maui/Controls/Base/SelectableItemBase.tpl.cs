@@ -35,7 +35,6 @@ public abstract partial class SelectableItemBase<TCollection, TSelf>
     /// <param name="timeoutMs">Optional timeout.</param>
     protected override void ClickCore(IMauiElement element, int? timeoutMs = null)
     {
-        EnsureClickableCore(element);
         element.Select();
     }
 

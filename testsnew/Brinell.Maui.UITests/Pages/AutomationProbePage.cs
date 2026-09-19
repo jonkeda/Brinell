@@ -20,7 +20,7 @@ public class AutomationProbePage : PageObjectBase<AutomationProbePage>
     public override string Name => "AutomationProbePage";
 
     /// <inheritdoc />
-    public override bool IsLoaded(int? timeoutMs = null) => PageTitle.IsExists();
+    public override bool IsLoaded() => PageTitle.IsExists();
 
     /// <summary>The page title label.</summary>
     public Label<AutomationProbePage> PageTitle => new(this, "PageTitle");
@@ -55,15 +55,6 @@ public class AutomationProbePage : PageObjectBase<AutomationProbePage>
         var container = TryFindByAutomationId(containerId);
         if (container == null) return null;
 
-        try
-        {
-            return container.TryFindElement(Locator.ByAutomationId(childId), out var child, 0)
-                ? child
-                : null;
-        }
-        catch (ElementNotFoundException)
-        {
-            return null;
-        }
+        return container.TryFindElement(Locator.ByAutomationId(childId));
     }
 }

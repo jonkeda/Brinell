@@ -6,13 +6,120 @@ using Brinell.Core.Locators;
 namespace Brinell.Maui.Interfaces;
 
 /// <summary>
-/// MAUI-specific element interface extending <see cref="IElement{TSelf}"/>.
-/// Adds DOM access methods for hybrid WebView apps.
-/// This interface can be mocked for unit testing without requiring an Appium connection.
+/// A UI element of the MAUI app under test: its state, location, gestures and child lookup.
 /// </summary>
-public interface IMauiElement : IElement<IMauiElement>
+/// <remarks>
+/// <para>
+/// MAUI owns this contract; it does not derive from a Brinell.Core element interface. Core's
+/// shape is changed later, when the MAUI shape has been proven (see
+/// <c>.my/stale-readiness/design.md</c>, R9).
+/// </para>
+/// <para>
+/// Child lookup makes one attempt and never waits: waiting belongs to the control's own poll.
+/// <see cref="MauiElementExtensions.FindElement"/> is the throwing form.
+/// </para>
+/// This interface can be mocked for unit testing without requiring an Appium connection.
+/// </remarks>
+public interface IMauiElement
 {
+    #region State
+
+    /// <summary>Whether the element is currently visible on screen.</summary>
+    bool Visible { get; }
+
+    /// <summary>Whether the element is enabled for interaction.</summary>
+    bool Enabled { get; }
+
+    /// <summary>Whether the element is selected (toggles, checkboxes, list items).</summary>
+    bool Selected { get; }
+
+    /// <summary>The visible text content of the element, or null if not available.</summary>
+    string? Text { get; }
+
+    /// <summary>The control type or tag name, or null if not available.</summary>
+    string? TagName { get; }
+
+    /// <summary>The top-left location of the element on screen.</summary>
+    Point Location { get; }
+
+    /// <summary>The size of the element.</summary>
+    Size Size { get; }
+
+    /// <summary>The bounding rectangle of the element.</summary>
+    Rectangle Rect { get; }
+
+    /// <summary>Gets an attribute value from the element, or null if not present.</summary>
+    /// <param name="name">The attribute name.</param>
+    string? GetAttribute(string name);
+
+    #endregion
+
+    #region Basic actions and gestures
+
+    /// <summary>Performs a click/tap on the element.</summary>
+    void Click();
+
+    /// <summary>Sends text to the element using the specified input method.</summary>
+    /// <param name="text">The text to enter.</param>
+    /// <param name="method">How to enter the text (Keys, Paste, or SetValue).</param>
+    void SendKeys(string text, TextInputMethod method = TextInputMethod.Keys);
+
+    /// <summary>Clears the element's value (for input fields).</summary>
+    void Clear();
+
+    /// <summary>Performs a double-click on the element.</summary>
+    void DoubleClick();
+
+    /// <summary>Performs a right-click (context click) on the element.</summary>
+    void RightClick();
+
+    /// <summary>Hovers the pointer over the element.</summary>
+    void Hover();
+
+    /// <summary>Performs a long-press/hold on the element.</summary>
+    /// <param name="durationMs">Duration in milliseconds.</param>
+    void LongPress(int durationMs = 1000);
+
+    /// <summary>Scrolls the element into the visible viewport.</summary>
+    /// <param name="timeoutMs">Maximum time to wait for scroll completion.</param>
+    void ScrollIntoView(int timeoutMs = 5000);
+
+    /// <summary>Performs a swipe gesture from one point to another.</summary>
+    void Swipe(int startX, int startY, int endX, int endY, int durationMs = 500);
+
+    #endregion
+
+    #region Child lookup
+
+    /// <summary>
+    /// Finds the first descendant matching <paramref name="locator"/>, in one attempt.
+    /// </summary>
+    /// <param name="locator">The locator strategy and value.</param>
+    /// <returns>The element, or null when none matches now.</returns>
+    IMauiElement? TryFindElement(Locator locator);
+
+    /// <summary>
+    /// Finds every descendant matching <paramref name="locator"/>, in one attempt.
+    /// </summary>
+    /// <param name="locator">The locator strategy and value.</param>
+    /// <returns>The matches; empty when none match now.</returns>
+    IReadOnlyList<IMauiElement> FindElements(Locator locator);
+
+    #endregion
+
     #region Identity
+
+    /// <summary>
+    /// Identifies this element instance: the same for the same UI element, new when the platform
+    /// replaces it.
+    /// </summary>
+    /// <remarks>
+    /// Windows answers the UI Automation runtime id, Android and iOS the WebDriver element id.
+    /// Read live: reading it from an element that is gone raises <c>StaleElementException</c>,
+    /// which makes it the check that a cached element is still there
+    /// (<c>.my/stale-readiness/design.md</c>, R6), and the value that counts replacements.
+    /// </remarks>
+    string InstanceKey { get; }
 
     /// <summary>
     /// The element's automation id - the identifier the app author set.
@@ -141,7 +248,7 @@ public interface IMauiElement : IElement<IMauiElement>
     /// </summary>
     /// <remarks>
     /// <para>
-    /// Distinct from <see cref="IElement{TSelf}.Selected"/>, which means "chosen, one of a group" -
+    /// Distinct from <see cref="Selected"/>, which means "chosen, one of a group" -
     /// a tab, a list row, a radio button.
     /// </para>
     /// <para>
@@ -171,7 +278,7 @@ public interface IMauiElement : IElement<IMauiElement>
     /// <remarks>
     /// Windows' Value pattern: a <c>CalendarDatePicker</c> answers '07-Sep-26' here while its
     /// name and text say something else. Android and iOS publish no such thing, and their
-    /// <see cref="IElement{TSelf}.Text"/> is already the value.
+    /// <see cref="Text"/> is already the value.
     /// </remarks>
     string? Value => null;
 

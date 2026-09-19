@@ -1,4 +1,5 @@
 using Brinell.Core.Utilities;
+using Brinell.Maui.Exceptions;
 using Brinell.Maui.UITests.Pages;
 using Xunit;
 
@@ -115,9 +116,10 @@ public class MenuVerbTests
     [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     public Task InvokeMenuItem_WhenTheItemIsDisabled_IsRefusedAndDoesNothing()
     {
-        var refusal = Assert.Throws<BrinellException>(
+        var refusal = Assert.Throws<ElementNotReadyException>(
             () => _fixture.Context.Driver.InvokeMenuItem("ContextMenuDelete"));
 
+        Assert.Equal(NotReadyReason.Disabled, refusal.Reason);
         Assert.Contains("disabled", refusal.Message);
 
         // The action counter is the check that matters: a refusal that had already run the

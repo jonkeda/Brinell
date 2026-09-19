@@ -120,7 +120,7 @@ public class ClickActivationTests : SemanticControlTestsBase
         element.Setup(e => e.Enabled).Returns(false);
         GivenElement(element);
 
-        Assert.Throws<TimeoutException>(() => Page.PromptOk.Click());
+        Assert.Throws<ElementNotReadyException>(() => Page.PromptOk.Click());
 
         element.Verify(e => e.Invoke(), Times.Never);
         element.Verify(e => e.Click(), Times.Never);

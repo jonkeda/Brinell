@@ -128,12 +128,13 @@ public partial class RatingView<TScope> : Brinell.Maui.Controls.Base.RangeContro
         EnsureSettableCore(element);
         element.SelectIndex(star.Value - 1);
 
-        if (!Until(() => GetValueCore(element),
+        var confirmation = Confirm(() => GetValueCore(element),
                 actual => actual.HasValue && Math.Abs(actual.Value - star.Value) < 0.001,
-                timeoutMs, out var lastError))
+                timeoutMs);
+        if (!confirmation.IsConfirmed)
         {
-            throw new TimeoutException(
-                $"RatingView '{Locator.Value}' did not reach a rating of {star}.", lastError);
+            throw confirmation.Failure(Locator, "the tap", lastError => new TimeoutException(
+                $"RatingView '{Locator.Value}' did not reach a rating of {star}.", lastError));
         }
     }
 

@@ -34,14 +34,14 @@ public sealed class PageScopingTests
         var globalDuplicate = new Mock<IMauiElement>();
         context.Setup(c => c.TryFindElement(It.Is<Locator>(l => l.Value == "Save")))
             .Returns(globalDuplicate.Object);
-        pageRoot.Setup(e => e.FindElement(It.Is<Locator>(l => l.Value == "Save"), 0))
-            .Throws(new ElementNotFoundException("Not in page"));
+        pageRoot.Setup(e => e.TryFindElement(It.Is<Locator>(l => l.Value == "Save")))
+            .Returns((IMauiElement?)null);
 
         var page = new ScopedPage(context.Object);
 
         Assert.False(page.Save.IsExists());
         context.Verify(c => c.TryFindElement(It.Is<Locator>(l => l.Value == "Save")), Times.Never);
-        pageRoot.Verify(e => e.FindElement(It.Is<Locator>(l => l.Value == "Save"), 0), Times.Once);
+        pageRoot.Verify(e => e.TryFindElement(It.Is<Locator>(l => l.Value == "Save")), Times.Once);
     }
 
     [Fact]
@@ -56,7 +56,7 @@ public sealed class PageScopingTests
             .Returns([pageRoot.Object]);
         context.Setup(c => c.FindElements(It.Is<Locator>(l => l.Value == "Row")))
             .Returns([globalChild.Object]);
-        pageRoot.Setup(e => e.FindElements(It.Is<Locator>(l => l.Value == "Row"), 0))
+        pageRoot.Setup(e => e.FindElements(It.Is<Locator>(l => l.Value == "Row")))
             .Returns(pageChildren);
 
         var actual = new ScopedPage(context.Object).FindElements(Locator.ByAutomationId("Row"));
@@ -98,14 +98,14 @@ public sealed class PageScopingTests
         sentinel.Setup(e => e.Text).Returns("False");
         context.Setup(c => c.FindElements(It.Is<Locator>(l => l.Value == "ScopedPage")))
             .Returns([pageRoot.Object]);
-        pageRoot.Setup(e => e.FindElement(It.Is<Locator>(l => l.Value == "Busy"), 0))
+        pageRoot.Setup(e => e.TryFindElement(It.Is<Locator>(l => l.Value == "Busy")))
             .Returns(sentinel.Object);
 
         var actual = new RequiredBusyPage(context.Object).ProbeReadiness();
 
-        Assert.Equal(PageReadinessState.Ready, actual.State);
+        Assert.Equal(ScopeReadinessState.Ready, actual.State);
         context.Verify(c => c.FindElement(It.Is<Locator>(l => l.Value == "Busy")), Times.Never);
-        pageRoot.Verify(e => e.FindElement(It.Is<Locator>(l => l.Value == "Busy"), 0), Times.Once);
+        pageRoot.Verify(e => e.TryFindElement(It.Is<Locator>(l => l.Value == "Busy")), Times.Once);
     }
 
     [Fact]
@@ -115,10 +115,10 @@ public sealed class PageScopingTests
         var pageRoot = CreateUsableElement();
         context.Setup(c => c.FindElements(It.Is<Locator>(l => l.Value == "ScopedPage")))
             .Returns([pageRoot.Object]);
-        pageRoot.Setup(e => e.FindElement(It.IsAny<Locator>(), 0))
-            .Throws(new ElementNotFoundException("missing"));
+        pageRoot.Setup(e => e.TryFindElement(It.IsAny<Locator>()))
+            .Returns((IMauiElement?)null);
 
-        var exception = Assert.Throws<PageLoadException>(
+        var exception = Assert.Throws<ScopeNotReadyException>(
             () => new RequiredBusyPage(context.Object).IsBusy());
 
         Assert.Contains("requires a page-local busy signal", exception.Message);
@@ -133,17 +133,17 @@ public sealed class PageScopingTests
 
         var snapshot = new ScopedPage(context.Object).ProbeReadiness();
 
-        Assert.Equal(PageReadinessState.Ready, snapshot.State);
+        Assert.Equal(ScopeReadinessState.Ready, snapshot.State);
     }
 
     [Fact]
-    public void IsLoaded_WithTimeout_RemainsAnInstantaneousRootProbe()
+    public void IsLoaded_IsAnInstantaneousRootProbe()
     {
         var context = CreateContext();
         context.Setup(c => c.FindElements(It.Is<Locator>(l => l.Value == "ScopedPage")))
             .Returns([]);
 
-        var loaded = new ScopedPage(context.Object).IsLoaded(timeoutMs: 10_000);
+        var loaded = new ScopedPage(context.Object).IsLoaded();
 
         Assert.False(loaded);
         context.Verify(
@@ -161,7 +161,7 @@ public sealed class PageScopingTests
         signal.Setup(e => e.Text).Returns(() => values.Count > 0 ? values.Dequeue() : "False");
         context.Setup(c => c.FindElements(It.Is<Locator>(l => l.Value == "ScopedPage")))
             .Returns([pageRoot.Object]);
-        pageRoot.Setup(e => e.FindElement(It.Is<Locator>(l => l.Value == "Busy"), 0))
+        pageRoot.Setup(e => e.TryFindElement(It.Is<Locator>(l => l.Value == "Busy")))
             .Returns(signal.Object);
         var page = new RequiredBusyPage(context.Object);
 
@@ -180,14 +180,14 @@ public sealed class PageScopingTests
         context.SetupSequence(c => c.FindElements(It.Is<Locator>(l => l.Value == "ScopedPage")))
             .Returns([firstRoot.Object])
             .Returns([secondRoot.Object]);
-        firstRoot.Setup(e => e.FindElement(It.IsAny<Locator>(), 0))
-            .Throws(new StaleElementReferenceException("stale"));
-        secondRoot.Setup(e => e.FindElement(It.Is<Locator>(l => l.Value == "Busy"), 0))
+        firstRoot.Setup(e => e.TryFindElement(It.IsAny<Locator>()))
+            .Throws(new StaleElementException());
+        secondRoot.Setup(e => e.TryFindElement(It.Is<Locator>(l => l.Value == "Busy")))
             .Returns(currentSignal.Object);
 
         var snapshot = new RequiredBusyPage(context.Object).ProbeReadiness();
 
-        Assert.Equal(PageReadinessState.Ready, snapshot.State);
+        Assert.Equal(ScopeReadinessState.Ready, snapshot.State);
         Assert.True(snapshot.RootReacquired);
         context.Verify(
             c => c.FindElements(It.Is<Locator>(l => l.Value == "ScopedPage")),
@@ -202,7 +202,7 @@ public sealed class PageScopingTests
         var popupChild = CreateUsableElement();
         context.Setup(c => c.FindElement(It.Is<Locator>(l => l.Value == "PopupRoot")))
             .Returns(popupRoot.Object);
-        popupRoot.Setup(e => e.FindElement(It.Is<Locator>(l => l.Value == "Accept"), 0))
+        popupRoot.Setup(e => e.TryFindElement(It.Is<Locator>(l => l.Value == "Accept")))
             .Returns(popupChild.Object);
 
         var actual = new PopupPage(context.Object).Accept.IsExists();

@@ -8,5 +8,5 @@ global using Brinell.Maui.Controls.Buttons;
 global using Brinell.Maui.Controls.Text;
 global using Brinell.Maui.Enums;
 global using Brinell.Maui.Interfaces;
-global using OpenQA.Selenium;
-global using OpenQA.Selenium.Appium;
+global using Brinell.Maui.Exceptions;
+global using Brinell.Maui.Scopes;

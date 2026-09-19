@@ -42,7 +42,7 @@ public class ShellSamplePage : PageObjectBase<ShellSamplePage>
     /// <c>.my/navigation/rca-android-return-to-hub.md</c>.
     /// </para>
     /// </remarks>
-    public override bool IsLoaded(int? timeoutMs = null)
+    public override bool IsLoaded()
         => Shell.Tabs.IsExists()
            || Context.TryFindElement(Locator.ByAutomationId("ShellFlyoutPageTitle")) != null;
 

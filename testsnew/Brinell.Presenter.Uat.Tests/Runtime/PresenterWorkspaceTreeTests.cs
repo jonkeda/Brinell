@@ -34,7 +34,7 @@ public sealed class PresenterWorkspaceTreeTests : IDisposable
 
     private void ReloadWorkspace()
     {
-        Assert.True(_page.IsLoaded(timeoutMs: 30000), "Presenter page was not loaded.");
+        Assert.True(_page.IsLoaded(), "Presenter page was not loaded.");
         _page.ReloadButton.Click();
         _page.StatusSummary.AssertTextContains("Ready", timeoutMs: 30000);
     }

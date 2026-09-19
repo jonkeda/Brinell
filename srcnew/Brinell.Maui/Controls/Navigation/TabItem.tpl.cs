@@ -38,9 +38,13 @@ public partial class TabItem<TParent> : Base.SelectableItemBase<TabMenu<TParent>
     {
         var target = TabMenuMarkup.ButtonWithin(element) ?? element;
 
-        EnsureClickableCore(target);
         target.Invoke();
     }
+
+    /// <inheritdoc />
+    /// <remarks>The button inside the tab carries the command, so it is the one that must be enabled.</remarks>
+    protected override void EnsureClickableCore(IMauiElement element)
+        => base.EnsureClickableCore(TabMenuMarkup.ButtonWithin(element) ?? element);
 
     /// <summary>
     /// Reads the tab's caption from its caption label, then its button, then the tab itself.

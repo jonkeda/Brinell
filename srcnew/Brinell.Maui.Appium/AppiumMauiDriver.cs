@@ -47,76 +47,78 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable
     
     #endregion
     
-    #region Element Finding (IDriver<IMauiElement>)
-    
+    #region Element Finding
+
     /// <inheritdoc />
-    public IMauiElement FindElement(Locator locator, int timeoutMs = 5000)
+    public IReadOnlyList<IMauiElement> FindElements(Locator locator)
     {
         var by = locator.ToBy(_platform);
-        
-        if (timeoutMs > 0)
-        {
-            var wait = new WebDriverWait(_driver, TimeSpan.FromMilliseconds(timeoutMs));
-            try
-            {
-                var element = wait.Until(d => d.FindElement(by));
-                return new AppiumMauiElement((AppiumElement)element, this);
-            }
-            catch (WebDriverTimeoutException)
-            {
-                throw new ElementNotFoundException(locator);
-            }
-        }
-        
+
         try
         {
-            return new AppiumMauiElement((AppiumElement)_driver.FindElement(by), this);
+            return _driver.FindElements(by).Select(e => new AppiumMauiElement(e, this)).ToList();
         }
-        catch (NoSuchElementException)
+        catch (Exception error) when (AppiumErrors.IsSessionGone(error))
+        {
+            throw new AppUnavailableException("the driver session has ended.", error);
+        }
+    }
+
+    /// <summary>
+    /// Finds a piece of app chrome the driver acts on itself, waiting for it to appear.
+    /// </summary>
+    /// <remarks>
+    /// Only for the driver's own actions (the drawer opener, a toolbar item raised by id), which
+    /// run inside a control's action rather than inside its poll. Everything a control looks up
+    /// goes through <see cref="FindElements"/>, which never waits.
+    /// </remarks>
+    /// <param name="locator">The chrome element's locator.</param>
+    /// <param name="timeoutMs">How long to wait for it to appear.</param>
+    /// <returns>The element.</returns>
+    /// <exception cref="ElementNotFoundException">It did not appear in time.</exception>
+    internal IMauiElement FindChrome(Locator locator, int timeoutMs)
+    {
+        var by = locator.ToBy(_platform);
+        var wait = new WebDriverWait(_driver, TimeSpan.FromMilliseconds(timeoutMs));
+
+        try
+        {
+            var element = wait.Until(d => d.FindElement(by));
+            return new AppiumMauiElement((AppiumElement)element, this);
+        }
+        catch (WebDriverTimeoutException)
         {
             throw new ElementNotFoundException(locator);
         }
     }
-    
-    /// <inheritdoc />
-    public IReadOnlyList<IMauiElement> FindElements(Locator locator, int timeoutMs = 0)
+
+    /// <summary>
+    /// Finds every match for a piece of app chrome, waiting for at least one to appear.
+    /// </summary>
+    /// <remarks>
+    /// As <see cref="FindChrome"/>: for the driver's own actions only, such as reading a picker's
+    /// items after opening it.
+    /// </remarks>
+    /// <param name="locator">The chrome elements' locator.</param>
+    /// <param name="timeoutMs">How long to wait for the first to appear.</param>
+    /// <returns>The matches; empty when none appeared in time.</returns>
+    internal IReadOnlyList<IMauiElement> FindAllChrome(Locator locator, int timeoutMs)
     {
         var by = locator.ToBy(_platform);
-        
-        if (timeoutMs > 0)
-        {
-            var wait = new WebDriverWait(_driver, TimeSpan.FromMilliseconds(timeoutMs));
-            try
-            {
-                // Wait for at least one element to appear
-                wait.Until(d => d.FindElements(by).Count > 0);
-            }
-            catch (WebDriverTimeoutException)
-            {
-                // No elements found within timeout, return empty list
-                return Array.Empty<IMauiElement>();
-            }
-        }
-        
-        var elements = _driver.FindElements(by);
-        return elements.Select(e => new AppiumMauiElement(e, this)).ToList();
-    }
-    
-    /// <inheritdoc />
-    public bool TryFindElement(Locator locator, out IMauiElement? element, int timeoutMs = 0)
-    {
+        var wait = new WebDriverWait(_driver, TimeSpan.FromMilliseconds(timeoutMs));
+
         try
         {
-            element = FindElement(locator, timeoutMs);
-            return true;
+            wait.Until(d => d.FindElements(by).Count > 0);
         }
-        catch (ElementNotFoundException)
+        catch (WebDriverTimeoutException)
         {
-            element = null;
-            return false;
+            return Array.Empty<IMauiElement>();
         }
+
+        return FindElements(locator);
     }
-    
+
     #endregion
 
     #region The app

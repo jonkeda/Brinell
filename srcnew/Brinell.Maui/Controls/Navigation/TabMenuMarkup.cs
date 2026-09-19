@@ -33,11 +33,9 @@ internal static class TabMenuMarkup
 
         try
         {
-            return tabRoot.TryFindElement(Locator.ByAutomationId(automationId), out var found, 0)
-                ? found
-                : null;
+            return tabRoot.TryFindElement(Locator.ByAutomationId(automationId));
         }
-        catch (StaleElementReferenceException)
+        catch (StaleElementException)
         {
             return null;
         }

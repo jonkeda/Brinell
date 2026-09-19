@@ -32,8 +32,8 @@ public class TabMenuTests
         pageRoot.Setup(e => e.Visible).Returns(true);
         pageRoot.Setup(e => e.TagName).Returns("Page");
         pageRoot.Setup(e => e.Rect).Returns(new System.Drawing.Rectangle(0, 0, 400, 800));
-        pageRoot.Setup(e => e.FindElement(It.IsAny<Locator>(), 0))
-            .Returns((Locator locator, int _) => _context.Object.FindElement(locator));
+        pageRoot.Setup(e => e.TryFindElement(It.IsAny<Locator>()))
+            .Returns((Locator locator) => _context.Object.FindElement(locator));
         _context.Setup(c => c.FindElements(It.Is<Locator>(l => l.Value == "TestPage")))
             .Returns([pageRoot.Object]);
     }
@@ -138,16 +138,14 @@ public class TabMenuTests
             tabRoot.Setup(e => e.Text).Returns(string.Empty);
             tabRoot.Setup(e => e.Rect).Returns(new System.Drawing.Rectangle(0, 0, 80, 60));
 
-            IMauiElement? buttonOut = button.Object;
             tabRoot.Setup(e => e.TryFindElement(
-                    It.Is<Locator>(l => l.Value == "TabMenuView_Button"), out buttonOut, It.IsAny<int>()))
-                .Returns(true);
+                    It.Is<Locator>(l => l.Value == "TabMenuView_Button")))
+                .Returns(button.Object);
 
             // No caption label: the caption is read from the button instead.
-            IMauiElement? none = null;
             tabRoot.Setup(e => e.TryFindElement(
-                    It.Is<Locator>(l => l.Value == "TabMenuView_Caption"), out none, It.IsAny<int>()))
-                .Returns(false);
+                    It.Is<Locator>(l => l.Value == "TabMenuView_Caption")))
+                .Returns((IMauiElement?)null);
 
             _buttons[caption] = button;
             _tabRoots[caption] = tabRoot;
@@ -155,7 +153,7 @@ public class TabMenuTests
         }
 
         root.Setup(e => e.FindElements(
-                It.Is<Locator>(l => l.Value == "TabMenuView_Grid"), It.IsAny<int>()))
+                It.Is<Locator>(l => l.Value == "TabMenuView_Grid")))
             .Returns(tabRoots);
 
         return new TabMenu<TestPage>(new TestPage(_context.Object));
@@ -166,7 +164,7 @@ public class TabMenuTests
         public TestPage(IMauiTestContext context) : base(context) { }
 
         public override string Name => "TestPage";
-        public override bool IsLoaded(int? timeoutMs = null) => true;
+        public override bool IsLoaded() => true;
     }
 
     #endregion

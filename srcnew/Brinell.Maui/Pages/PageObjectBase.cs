@@ -1,4 +1,5 @@
 using Brinell.Maui.Controls;
+using Brinell.Maui.Calls;
 using Brinell.Maui.Containers;
 
 namespace Brinell.Maui.Pages;
@@ -10,6 +11,12 @@ namespace Brinell.Maui.Pages;
 /// resolve strictly within that root.
 /// </summary>
 /// <typeparam name="TSelf">The concrete page type (CRTP pattern).</typeparam>
+/// <remarks>
+/// <c>[TestPage]</c> (inherited) is how test composition and UAT find MAUI pages: they used to
+/// recognize them by Brinell.Core's page interface, which MAUI pages no longer implement (see
+/// <c>.my/stale-readiness/design.md</c>, R9).
+/// </remarks>
+[Brinell.Core.Composition.TestPage]
 public abstract class PageObjectBase<TSelf> : RootedScopeBase<TSelf, TSelf>, IMauiPage<TSelf>
     where TSelf : PageObjectBase<TSelf>
 {
@@ -28,14 +35,14 @@ public abstract class PageObjectBase<TSelf> : RootedScopeBase<TSelf, TSelf>, IMa
     /// <inheritdoc />
     public override IMauiTestContext Context => _context;
     
-    #region IPageObject Implementation
+    #region Page state
     
     /// <inheritdoc />
     public virtual string Name => GetType().Name;
 
     protected override Locator Locator => new(LocatorStrategy.AutomationId, Name);
 
-    public override IPageObject? Page => this;
+    public override IMauiPage? Page => this;
 
     protected override IMauiElement FindContainerRootElement()
         => Context.FindElements(Locator).FirstOrDefault(element => element.HasUsableBounds())
@@ -52,98 +59,60 @@ public abstract class PageObjectBase<TSelf> : RootedScopeBase<TSelf, TSelf>, IMa
     /// <summary>The AutomationId of the page-local busy signal.</summary>
     protected virtual string BusyAutomationId => DefaultBusyAutomationId;
 
-    private bool _ensuringLoad;
-
-    private bool EnsureLoaded(bool wait = false)
-    {
-        if (_ensuringLoad) return true;
-
-        try
-        {
-            _ensuringLoad = true;
-            return wait
-                ? IsLoaded() || Poll(() => IsLoaded(), Context.Timeouts.PageLoad)
-                : IsLoaded();
-        }
-        finally
-        {
-            _ensuringLoad = false;
-        }
-    }
-
-    protected override bool CanResolveElements(bool wait = false)
-        => EnsureLoaded(wait);
-
-    protected override ElementNotFoundException CreateScopeNotReadyException(Locator locator)
-        => new($"Page '{Name}' is not loaded, so '{locator}' cannot be found in it. " +
-               $"The page root is located by AutomationId:{Name}.");
     /// <inheritdoc />
-    public virtual bool IsLoaded(int? timeoutMs = null)
-        => IsVisiblePageRootLoaded();
+    protected override string ScopeName => Name;
 
-    private bool IsVisiblePageRootLoaded()
+    /// <inheritdoc />
+    public virtual bool IsLoaded()
         => TryGetContainerRoot() is { } root && root.HasUsableBounds();
 
     /// <inheritdoc />
-    public PageReadinessSnapshot ProbeReadiness() => ProbeReadinessCore(rootReacquired: false);
-
-    private PageReadinessSnapshot ProbeReadinessCore(bool rootReacquired)
+    /// <remarks>
+    /// A page's content readiness: <see cref="IsLoaded"/>, then the page-local busy signal when
+    /// the page has one. The root itself was checked by the probe before this.
+    /// </remarks>
+    protected override ScopeReadiness ProbeContentReadiness(IMauiElement root)
     {
-        var root = TryGetContainerRoot();
-        if (root == null)
-            return Snapshot(
-                rootReacquired ? PageReadinessState.StaleRoot : PageReadinessState.MissingRoot,
-                rootReacquired: rootReacquired);
+        if (!IsLoaded())
+            return new ScopeReadiness(Name, ScopeReadinessState.NotLoaded);
 
         if (BusySignalPolicy == BusySignalPolicy.Disabled)
-            return Snapshot(PageReadinessState.Ready, rootReacquired: rootReacquired);
+            return ContentReady();
 
-        IMauiElement? signal;
-        try
-        {
-            signal = root.FindElement(Locator.ByAutomationId(BusyAutomationId), timeoutMs: 0);
-        }
-        catch (ElementNotFoundException)
-        {
-            return Snapshot(PageReadinessState.MissingBusySignal, rootReacquired: rootReacquired);
-        }
-        catch (StaleElementReferenceException)
-        {
-            if (rootReacquired)
-                return Snapshot(PageReadinessState.StaleRoot, rootReacquired: true);
+        var signal = root.TryFindElement(Locator.ByAutomationId(BusyAutomationId));
+        if (signal == null)
+            return new ScopeReadiness(
+                Name,
+                ScopeReadinessState.MissingBusySignal,
+                $"Page '{Name}' requires a page-local busy signal with AutomationId:{BusyAutomationId}, but it was not found beneath the current page root.");
 
-            InvalidateCache();
-            return ProbeReadinessCore(rootReacquired: true);
-        }
+        var value = signal.Text;
+        if (!bool.TryParse(value, out var busy))
+            return new ScopeReadiness(
+                Name,
+                ScopeReadinessState.InvalidBusySignal,
+                $"Page '{Name}' busy signal AutomationId:{BusyAutomationId} must contain 'True' or 'False', but contained '{value ?? "(null)"}'.");
 
-        string? value;
-        try
-        {
-            value = signal.Text;
-        }
-        catch (StaleElementReferenceException)
-        {
-            if (rootReacquired)
-                return Snapshot(PageReadinessState.StaleRoot, rootReacquired: true);
-
-            InvalidateCache();
-            return ProbeReadinessCore(rootReacquired: true);
-        }
-
-        return bool.TryParse(value, out var busy)
-            ? Snapshot(
-                busy ? PageReadinessState.Busy : PageReadinessState.Ready,
-                value,
-                rootReacquired)
-            : Snapshot(PageReadinessState.InvalidBusySignal, value, rootReacquired);
+        return busy
+            ? new ScopeReadiness(Name, ScopeReadinessState.Busy, $"busy value: '{value}'")
+            : ContentReady();
     }
+
+    /// <inheritdoc />
+    /// <remarks>A page's own members check the whole page: root, loaded, busy.</remarks>
+    protected override ScopeReadiness ProbeCallReadiness() => ProbeReadiness();
+
+    /// <inheritdoc />
+    protected override int DefaultReadyTimeoutMs => Context.Timeouts.PageLoad;
 
     /// <inheritdoc />
     public bool IsBusy()
     {
-        var snapshot = ProbeReadiness();
-        ThrowIfInvalidReadiness(snapshot);
-        return snapshot.IsBusy;
+        var readiness = ProbeReadiness();
+        if (readiness.IsConfigurationError)
+            throw ScopeGate.Misconfigured(readiness);
+
+        return readiness.IsBusy;
     }
 
     /// <inheritdoc />
@@ -151,137 +120,104 @@ public abstract class PageObjectBase<TSelf> : RootedScopeBase<TSelf, TSelf>, IMa
     {
         if (expected == null) return true;
 
-        return Poll(() =>
+        return RunProbe(() =>
         {
-            var snapshot = ProbeReadiness();
-            ThrowIfInvalidReadiness(snapshot);
-            return snapshot.IsLoaded && snapshot.IsBusy == expected.Value;
+            var readiness = ProbeReadiness();
+            if (readiness.IsConfigurationError)
+                throw ScopeGate.Misconfigured(readiness);
+
+            return readiness.IsLoaded && readiness.IsBusy == expected.Value
+                ? Observation.Done()
+                : Observation.ScopeNotReady(readiness);
         }, timeoutMs ?? Context.Timeouts.PageLoad);
     }
 
-    /// <summary>Migration alias for waiting until the loaded page is not busy.</summary>
+    /// <summary>Waits until the loaded page is not busy: <see cref="WaitReady"/>.</summary>
     public bool WaitIdle(int? timeoutMs = null) => WaitReady(timeoutMs);
 
     /// <summary>
-    /// Asserts that the page is idle.
+    /// Asserts that the page becomes ready: loaded and not busy.
     /// </summary>
     /// <param name="message">Optional custom failure message.</param>
     /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
-    /// <exception cref="PageLoadException">Thrown when page does not become idle within timeout.</exception>
+    /// <exception cref="ScopeNotReadyException">The page did not become ready within the timeout.</exception>
     public void AssertIdle(string? message = null, int? timeoutMs = null)
     {
-        if (!WaitIdle(timeoutMs))
-        {
-            var snapshot = ProbeReadiness();
-            throw new PageLoadException(
-                message ?? $"Page '{Name}' did not become ready within timeout. Last readiness state: {snapshot.State}; busy value: '{snapshot.BusySignalValue ?? "(none)"}'.");
-        }
+        var budget = timeoutMs ?? Context.Timeouts.PageLoad;
+        RunProbe(
+            () => ScopeGate.Check(ProbeReadiness()) ?? Observation.Done(),
+            budget,
+            readiness => new ScopeNotReadyException(
+                readiness,
+                message ?? $"Page '{Name}' did not become ready within {budget} ms. Last readiness state: {readiness.State}" +
+                    (readiness.Detail is null ? "." : $" ({readiness.Detail}).")));
     }
 
-    private PageReadinessSnapshot Snapshot(
-        PageReadinessState state,
-        string? value = null,
-        bool rootReacquired = false)
-        => new(Name, state, BusySignalPolicy, value, rootReacquired);
-
-    private void ThrowIfInvalidReadiness(PageReadinessSnapshot snapshot)
-    {
-        if (snapshot.State == PageReadinessState.MissingBusySignal)
-            throw new PageLoadException(
-                $"Page '{Name}' requires a page-local busy signal with AutomationId:{BusyAutomationId}, but it was not found beneath the current page root.");
-
-        if (snapshot.State == PageReadinessState.InvalidBusySignal)
-            throw new PageLoadException(
-                $"Page '{Name}' busy signal AutomationId:{BusyAutomationId} must contain 'True' or 'False', but contained '{snapshot.BusySignalValue ?? "(null)"}'.");
-    }
-    
     /// <inheritdoc />
     public bool WaitLoaded(bool? expected, int? timeoutMs = null)
     {
-        // Nullable skip pattern
         if (expected == null) return true;
-        
-        var timeout = timeoutMs ?? Context.Timeouts.PageLoad;
-        return Poll(
-            () => IsLoaded() == expected.Value,
-            timeout);
+
+        return RunProbe(
+            () => IsLoaded() == expected.Value ? Observation.Done() : Observation.Pending(),
+            timeoutMs ?? Context.Timeouts.PageLoad);
     }
-    
+
     /// <inheritdoc />
+    /// <exception cref="ScopeNotReadyException">The loaded state did not match within the timeout.</exception>
     public void AssertLoaded(bool? expected, string? message = null, int? timeoutMs = null)
     {
-        // Nullable skip pattern
         if (expected == null) return;
-        
-        if (!WaitLoaded(expected, timeoutMs))
-        {
-            var actual = IsLoaded();
-            throw new PageLoadException(
-                message ?? $"Expected page '{Name}' {(expected.Value ? "to be loaded" : "not to be loaded")} but loaded state is {actual}.");
-        }
+
+        RunProbe(
+            () => IsLoaded() == expected.Value ? Observation.Done() : Observation.Pending(),
+            timeoutMs ?? Context.Timeouts.PageLoad,
+            readiness => new ScopeNotReadyException(
+                readiness,
+                message ?? $"Expected page '{Name}' {(expected.Value ? "to be loaded" : "not to be loaded")} but it is {(expected.Value ? "not" : "still loaded")}. Last readiness state: {readiness.State}."));
     }
-    
+
     /// <inheritdoc />
-    public virtual string? GetTitle(int? timeoutMs = null)
+    public virtual string? GetTitle()
     {
         // Default implementation returns page name
         // Override for platforms that support page titles
         return Name;
     }
-    
+
     /// <inheritdoc />
     public bool WaitTitle(string? expected, int? timeoutMs = null)
     {
-        // Nullable skip pattern
         if (expected == null) return true;
-        
-        var timeout = timeoutMs ?? Context.Timeouts.DefaultWait;
-        return Poll(
-            () => GetTitle() == expected,
-            timeout);
+
+        return RunProbe(
+            () => GetTitle() == expected ? Observation.Done() : Observation.Pending(),
+            timeoutMs ?? Context.Timeouts.DefaultWait);
     }
-    
+
     /// <inheritdoc />
+    /// <exception cref="AssertionException">The title did not match within the timeout.</exception>
     public void AssertTitle(string? expected, string? message = null, int? timeoutMs = null)
     {
-        // Nullable skip pattern
         if (expected == null) return;
-        
-        if (!WaitTitle(expected, timeoutMs))
-        {
-            var actual = GetTitle();
-            throw new PageLoadException(
-                message ?? $"Expected page title '{expected}' but got '{actual ?? "(null)"}'.");
-        }
+
+        RunProbe(
+            () => GetTitle() == expected ? Observation.Done() : Observation.Pending(),
+            timeoutMs ?? Context.Timeouts.DefaultWait,
+            _ =>
+            {
+                var actual = GetTitle();
+                return new AssertionException(
+                    message ?? $"Expected page title '{expected}' but got '{actual ?? "(null)"}'.", expected, actual);
+            });
     }
-    
+
     /// <inheritdoc />
-    public void TakeScreenshot(string? filename = null, int? timeoutMs = null)
+    public void TakeScreenshot(string? filename = null)
     {
         var path = filename ?? $"{Name}_{DateTime.Now:yyyyMMdd_HHmmss}.png";
         Context.SaveScreenshot(path);
     }
-    
-    #endregion
-    
-    #region IMauiElementScope Implementation
-    
-    /// <inheritdoc />
-    public override bool IsReady(int? timeoutMs = null)
-    {
-        var snapshot = ProbeReadiness();
-        ThrowIfInvalidReadiness(snapshot);
-        return snapshot.IsReady;
-    }
-    
-    /// <inheritdoc />
-    public override bool WaitReady(int? timeoutMs = null)
-        => Poll(() =>
-        {
-            var snapshot = ProbeReadiness();
-            ThrowIfInvalidReadiness(snapshot);
-            return snapshot.IsReady;
-        }, timeoutMs ?? Context.Timeouts.PageLoad);
-    
+
     #endregion
 }

@@ -42,17 +42,31 @@ public sealed class AppRoot : ObjectBase, IMauiScope<AppRoot>
     /// <remarks>
     /// Because there is no page, page readiness checks do not apply to controls in this scope.
     /// </remarks>
-    public IPageObject? Page => null;
+    public IMauiPage? Page => null;
 
     /// <inheritdoc />
     public LocatorStrategy DefaultLocatorStrategy => _context.DefaultLocatorStrategy;
 
     /// <inheritdoc />
-    /// <remarks>Ready whenever the session is; there is nothing else to wait for.</remarks>
-    public bool IsReady(int? timeoutMs = null) => _context.IsReady(timeoutMs);
+    /// <remarks>
+    /// Ready whenever the session is: the app root has nothing of its own to wait for yet. An
+    /// app-level busy signal would be read here (design Q4).
+    /// </remarks>
+    public ScopeReadiness ProbeReadiness() => _context.ProbeReadiness() with { ScopeName = nameof(AppRoot) };
+
+    /// <inheritdoc cref="IMauiElementScope.IsReady"/>
+    public bool IsReady() => ProbeReadiness().IsReady;
 
     /// <inheritdoc />
     public bool WaitReady(int? timeoutMs = null) => _context.WaitReady(timeoutMs);
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Never: a scroll lookup searches whichever scroller is on screen, and the app root has no
+    /// scroller of its own, so a sweep would find whatever page happens to be under the control.
+    /// A scope inside it that scrolls (Shell's flyout) turns it back on.
+    /// </remarks>
+    public bool AllowsScrollLookup => false;
 
     /// <inheritdoc />
     public IMauiElement? TryFindElement(Locator locator) => _context.TryFindElement(locator);

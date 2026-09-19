@@ -19,11 +19,10 @@ public abstract class SemanticControlTestsBase
         pageRoot.Setup(e => e.Visible).Returns(true);
         pageRoot.Setup(e => e.TagName).Returns("Page");
         pageRoot.Setup(e => e.Rect).Returns(new System.Drawing.Rectangle(0, 0, 400, 800));
-        pageRoot.Setup(e => e.FindElement(It.IsAny<Locator>(), 0))
-            .Returns((Locator locator, int _) => Context.Object.TryFindElement(locator)
-                ?? throw new ElementNotFoundException($"Element not found: {locator}"));
-        pageRoot.Setup(e => e.FindElements(It.IsAny<Locator>(), 0))
-            .Returns((Locator locator, int _) => Context.Object.FindElements(locator));
+        pageRoot.Setup(e => e.TryFindElement(It.IsAny<Locator>()))
+            .Returns((Locator locator) => Context.Object.TryFindElement(locator));
+        pageRoot.Setup(e => e.FindElements(It.IsAny<Locator>()))
+            .Returns((Locator locator) => Context.Object.FindElements(locator));
         Context.Setup(c => c.FindElements(It.Is<Locator>(l => l.Value == "TestPage")))
             .Returns([pageRoot.Object]);
 
@@ -104,7 +103,7 @@ public abstract class SemanticControlTestsBase
 
         public override string Name => "TestPage";
 
-        public override bool IsLoaded(int? timeoutMs = null) => true;
+        public override bool IsLoaded() => true;
 
         public Editor<TestPage> Notes => new(this, "Notes");
 

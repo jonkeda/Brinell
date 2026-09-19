@@ -5,3 +5,4 @@ global using Brinell.Core;
 global using Brinell.Core.Interfaces;
 global using Brinell.Core.Locators;
 global using Brinell.Maui.Interfaces;
+global using Brinell.Maui.Exceptions;

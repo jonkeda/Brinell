@@ -73,17 +73,62 @@ public sealed class AppiumMauiElement : IMauiElement
     /// for them costs no round trip.
     /// </remarks>
     private AppiumElement _element => _wrapped ?? _driver.FindRootNode();
-    
-    #region State Properties (IElement<IMauiElement>)
+
+    #region Live: how a removed element is reported
+
+    /// <summary>
+    /// Runs a WebDriver read or action, reporting a replaced element as
+    /// <see cref="StaleElementException"/> and an ended session as <see cref="AppUnavailableException"/>.
+    /// </summary>
+    /// <remarks>
+    /// Every member that touches the element for MAUI's lookups, readiness checks, state reads and
+    /// actions goes through this. A catch inside such a member that means "absent" lets both through
+    /// (<see cref="AppiumErrors.IsGone"/>): a replaced element is a signal, never an empty value.
+    /// </remarks>
+    private T Live<T>(Func<T> touch)
+    {
+        try
+        {
+            return touch();
+        }
+        catch (Exception error) when (AppiumErrors.IsSessionGone(error))
+        {
+            throw new AppUnavailableException("the driver session has ended.", error);
+        }
+        catch (Exception error) when (AppiumErrors.IsElementGone(error))
+        {
+            throw new StaleElementException(platformError: error);
+        }
+    }
+
+    /// <inheritdoc cref="Live{T}(Func{T})"/>
+    private void Live(Action touch) => Live(() =>
+    {
+        touch();
+        return true;
+    });
+
+    /// <inheritdoc />
+    /// <remarks>The WebDriver element id; read live, so it doubles as the "still there" check.</remarks>
+    public string InstanceKey => Live(() =>
+    {
+        // A cheap round trip that fails on a replaced element; the id alone is held client-side.
+        _ = _element.Enabled;
+        return _element.Id;
+    });
+
+    #endregion
+
+    #region State Properties
     
     /// <inheritdoc />
-    public bool Visible => _element.Displayed;
+    public bool Visible => Live(() => _element.Displayed);
     
     /// <inheritdoc />
-    public bool Enabled => _element.Enabled;
+    public bool Enabled => Live(() => _element.Enabled);
     
     /// <inheritdoc />
-    public bool Selected => _element.Selected;
+    public bool Selected => Live(() => _element.Selected);
     
     /// <inheritdoc />
     /// <remarks>
@@ -95,10 +140,8 @@ public sealed class AppiumMauiElement : IMauiElement
     /// to read it ("attribute is unknown" on Android 16). A non-empty Android text read costs one
     /// class read more, and a text field's one hint read on top.
     /// </remarks>
-    public string? Text
+    public string? Text => Live(() =>
     {
-        get
-        {
             var text = _element.Text;
 
             if (_driver.Platform == MauiPlatform.Android
@@ -110,8 +153,7 @@ public sealed class AppiumMauiElement : IMauiElement
             }
 
             return text;
-        }
-    }
+    });
     
     /// <inheritdoc />
     /// <remarks>
@@ -119,25 +161,25 @@ public sealed class AppiumMauiElement : IMauiElement
     /// name request with null (probed 2026-09-19), so every Android type check - an EditText's
     /// placeholder, a control-type item key - silently failed.
     /// </remarks>
-    public string? TagName => _driver.Platform == MauiPlatform.Android
+    public string? TagName => Live(() => _driver.Platform == MauiPlatform.Android
         ? GetAttribute("class")
-        : _element.TagName;
+        : _element.TagName);
     
     /// <inheritdoc />
-    public Point Location => _element.Location;
+    public Point Location => Live(() => _element.Location);
     
     /// <inheritdoc />
-    public Size Size => _element.Size;
+    public Size Size => Live(() => _element.Size);
     
     /// <inheritdoc />
     public Rectangle Rect => new Rectangle(Location, Size);
     
     #endregion
     
-    #region Actions (IElement<IMauiElement>)
+    #region Actions
     
     /// <inheritdoc />
-    public void Click() => _element.Click();
+    public void Click() => Live(() => _element.Click());
 
     #region Activation
 
@@ -178,7 +220,7 @@ public sealed class AppiumMauiElement : IMauiElement
             throw new BrinellException("Could not invoke a toolbar item: no AutomationId was given.");
         }
 
-        _driver.FindElement(Locator.ByAccessibilityId(automationId)).Click();
+        _driver.FindChrome(Locator.ByAccessibilityId(automationId), ChromeFindTimeoutMs).Click();
     }
 
     #endregion
@@ -220,7 +262,7 @@ public sealed class AppiumMauiElement : IMauiElement
     /// from the element's text.
     /// </para>
     /// </remarks>
-    public void SetRangeValue(double value)
+    public void SetRangeValue(double value) => Live(() =>
     {
         const double min = 0;
         const double max = 100;
@@ -254,7 +296,7 @@ public sealed class AppiumMauiElement : IMauiElement
             reading => reading.HasValue && Math.Abs(reading.Value - value) <= Math.Max(step, 0.5),
             timeoutMs: 1000,
             pollingIntervalMs: 50);
-    }
+    });
 
     private void PressRepeatedly(string key, int times)
     {
@@ -294,7 +336,7 @@ public sealed class AppiumMauiElement : IMauiElement
     /// never received.
     /// </para>
     /// </remarks>
-    public void PerformGesture(MauiGesture gesture)
+    public void PerformGesture(MauiGesture gesture) => Live(() =>
     {
         switch (gesture)
         {
@@ -323,13 +365,13 @@ public sealed class AppiumMauiElement : IMauiElement
                     $"{nameof(AppiumMauiElement)} cannot perform {gesture}. It needs a W3C pointer "
                     + "action sequence, which this driver does not write yet.");
         }
-    }
+    });
 
     #endregion
 
     
     /// <inheritdoc />
-    public void SendKeys(string text, TextInputMethod method = TextInputMethod.Keys)
+    public void SendKeys(string text, TextInputMethod method = TextInputMethod.Keys) => Live(() =>
     {
         switch (method)
         {
@@ -344,7 +386,7 @@ public sealed class AppiumMauiElement : IMauiElement
                 SetValueDirectly(text);
                 break;
         }
-    }
+    });
     
     private void SetClipboardAndPaste(string text)
     {
@@ -413,14 +455,14 @@ public sealed class AppiumMauiElement : IMauiElement
             + "driver serves Android and iOS; MAUI on Windows is driven by Brinell.Maui.FlaUI.");
 
     /// <inheritdoc />
-    public void Clear() => _element.Clear();
+    public void Clear() => Live(() => _element.Clear());
     
     /// <inheritdoc />
-    public void DoubleClick()
+    public void DoubleClick() => Live(() =>
     {
         var actions = new Actions(_driver.Driver);
         actions.DoubleClick(_element).Perform();
-    }
+    });
     
     /// <inheritdoc />
     public void RightClick()
@@ -437,7 +479,7 @@ public sealed class AppiumMauiElement : IMauiElement
     }
     
     /// <inheritdoc />
-    public void LongPress(int durationMs = 1000)
+    public void LongPress(int durationMs = 1000) => Live(() =>
     {
         switch (_driver.Platform)
         {
@@ -458,17 +500,17 @@ public sealed class AppiumMauiElement : IMauiElement
             default:
                 throw NotAMobilePlatform(nameof(LongPress));
         }
-    }
+    });
     
     /// <inheritdoc />
-    public void ScrollIntoView(int timeoutMs = 5000)
+    public void ScrollIntoView(int timeoutMs = 5000) => Live(() =>
     {
         // Check if element is already visible
         try
         {
             if (_element.Displayed) return;
         }
-        catch
+        catch (Exception error) when (!AppiumErrors.IsGone(error))
         {
             // Continue with scroll attempt
         }
@@ -488,7 +530,7 @@ public sealed class AppiumMauiElement : IMauiElement
             default:
                 throw NotAMobilePlatform(nameof(ScrollIntoView));
         }
-    }
+    });
     
     private void ScrollIntoViewAndroid(DateTime startTime, TimeSpan timeout)
     {
@@ -516,7 +558,7 @@ public sealed class AppiumMauiElement : IMauiElement
                 {
                     if (_element.Displayed) return;
                 }
-                catch { }
+                catch (Exception error) when (!AppiumErrors.IsGone(error)) { }
                 
                 try
                 {
@@ -534,13 +576,13 @@ public sealed class AppiumMauiElement : IMauiElement
                         break;
                     }
                 }
-                catch
+                catch (Exception error) when (!AppiumErrors.IsGone(error))
                 {
                     break;
                 }
             }
         }
-        catch
+        catch (Exception error) when (!AppiumErrors.IsGone(error))
         {
             // Scroll attempt failed
         }
@@ -558,7 +600,7 @@ public sealed class AppiumMauiElement : IMauiElement
             
             _driver.Driver.ExecuteScript("mobile: scroll", scrollParams);
         }
-        catch
+        catch (Exception error) when (!AppiumErrors.IsGone(error))
         {
             // Fallback
             try
@@ -566,7 +608,7 @@ public sealed class AppiumMauiElement : IMauiElement
                 _driver.Driver.ExecuteScript("mobile: scroll", 
                     new Dictionary<string, object> { { "direction", "down" } });
             }
-            catch { }
+            catch (Exception fallbackError) when (!AppiumErrors.IsGone(fallbackError)) { }
         }
     }
     
@@ -622,7 +664,7 @@ public sealed class AppiumMauiElement : IMauiElement
 
             WaitUntilPositionSettles();
         }
-        catch
+        catch (Exception error) when (!AppiumErrors.IsGone(error))
         {
             // Not being able to move it is not a reason to refuse to act on it.
         }
@@ -648,7 +690,7 @@ public sealed class AppiumMauiElement : IMauiElement
                 previous = current;
             }
         }
-        catch
+        catch (Exception error) when (!AppiumErrors.IsGone(error))
         {
             // A position we cannot read is one we cannot wait on; let the caller proceed.
         }
@@ -656,7 +698,7 @@ public sealed class AppiumMauiElement : IMauiElement
 
 
     /// <inheritdoc />
-    public void Swipe(int startX, int startY, int endX, int endY, int durationMs = 500)
+    public void Swipe(int startX, int startY, int endX, int endY, int durationMs = 500) => Live(() =>
     {
         switch (_driver.Platform)
         {
@@ -685,7 +727,7 @@ public sealed class AppiumMauiElement : IMauiElement
             default:
                 throw NotAMobilePlatform(nameof(Swipe));
         }
-    }
+    });
     
     private static string GetSwipeDirection(int startX, int startY, int endX, int endY)
     {
@@ -701,74 +743,31 @@ public sealed class AppiumMauiElement : IMauiElement
     
     #endregion
     
-    #region Element Finding (IElement<IMauiElement>)
-    
+    #region Element Finding
+
     /// <inheritdoc />
-    public IMauiElement FindElement(Locator locator, int timeoutMs = 5000)
+    public IMauiElement? TryFindElement(Locator locator) => Live<IMauiElement?>(() =>
     {
         var by = locator.ToChildBy(_driver.Platform);
-        
-        if (timeoutMs > 0)
-        {
-            var wait = new WebDriverWait(_driver.Driver, TimeSpan.FromMilliseconds(timeoutMs));
-            try
-            {
-                var element = wait.Until(d => _element.FindElement(by));
-                return new AppiumMauiElement(element, _driver);
-            }
-            catch (WebDriverTimeoutException)
-            {
-                throw new ElementNotFoundException(locator);
-            }
-        }
-        
+
         try
         {
             return new AppiumMauiElement(_element.FindElement(by), _driver);
         }
         catch (NoSuchElementException)
         {
-            throw new ElementNotFoundException(locator);
+            return null;
         }
-    }
-    
+    });
+
     /// <inheritdoc />
-    public IReadOnlyList<IMauiElement> FindElements(Locator locator, int timeoutMs = 0)
+    public IReadOnlyList<IMauiElement> FindElements(Locator locator) => Live<IReadOnlyList<IMauiElement>>(() =>
     {
         var by = locator.ToChildBy(_driver.Platform);
-        
-        if (timeoutMs > 0)
-        {
-            var wait = new WebDriverWait(_driver.Driver, TimeSpan.FromMilliseconds(timeoutMs));
-            try
-            {
-                wait.Until(d => _element.FindElements(by).Count > 0);
-            }
-            catch (WebDriverTimeoutException)
-            {
-                return Array.Empty<IMauiElement>();
-            }
-        }
-        
-        var elements = _element.FindElements(by);
-        return elements.Select(e => new AppiumMauiElement(e, _driver)).ToList();
-    }
-    
-    /// <inheritdoc />
-    public bool TryFindElement(Locator locator, out IMauiElement? element, int timeoutMs = 0)
-    {
-        try
-        {
-            element = FindElement(locator, timeoutMs);
-            return true;
-        }
-        catch (ElementNotFoundException)
-        {
-            element = null;
-            return false;
-        }
-    }
-    
+
+        return _element.FindElements(by).Select(e => new AppiumMauiElement(e, _driver)).ToList();
+    });
+
     #endregion
     
     #region Attribute Access (IMauiElement)
@@ -811,12 +810,12 @@ public sealed class AppiumMauiElement : IMauiElement
     /// Android's accessible name is the content description; an element without one is named by
     /// its text, which is what a screen reader falls back to as well.
     /// </remarks>
-    public string? Name => _driver.Platform switch
+    public string? Name => Live<string?>(() => _driver.Platform switch
     {
         MauiPlatform.Android => Present(GetAttribute("content-desc")) ?? Present(_element.Text),
         MauiPlatform.iOS => Present(GetAttribute("name")) ?? Present(GetAttribute("label")),
         _ => null
-    };
+    });
 
     /// <summary>
     /// An attribute value, or null when there is none.
@@ -848,7 +847,7 @@ public sealed class AppiumMauiElement : IMauiElement
     /// probing several candidate names — as the progress and placeholder readers do — would abort
     /// on the first miss, while the same probe returns null on Windows.
     /// </remarks>
-    public string? GetAttribute(string attributeName)
+    public string? GetAttribute(string attributeName) => Live<string?>(() =>
     {
         try
         {
@@ -858,19 +857,19 @@ public sealed class AppiumMauiElement : IMauiElement
         {
             return null;
         }
-    }
+    });
     
     /// <inheritdoc />
-    public string? GetDomAttribute(string attributeName) => _element.GetDomAttribute(attributeName);
+    public string? GetDomAttribute(string attributeName) => Live(() => _element.GetDomAttribute(attributeName));
     
     /// <inheritdoc />
-    public string? GetDomProperty(string propertyName) => _element.GetDomProperty(propertyName);
+    public string? GetDomProperty(string propertyName) => Live(() => _element.GetDomProperty(propertyName));
     
     /// <inheritdoc />
-    public string? GetCssValue(string propertyName) => _element.GetCssValue(propertyName);
+    public string? GetCssValue(string propertyName) => Live(() => _element.GetCssValue(propertyName));
     
     /// <inheritdoc />
-    public void Submit() => _element.Submit();
+    public void Submit() => Live(() => _element.Submit());
     
     #endregion
 
@@ -899,10 +898,8 @@ public sealed class AppiumMauiElement : IMauiElement
     /// distinguish a real toggle; <c>checkable</c> is the attribute that does.
     /// </para>
     /// </remarks>
-    public bool? Checked
+    public bool? Checked => Live<bool?>(() =>
     {
-        get
-        {
             var attribute = ToggleStateAttribute;
             if (attribute == null) return null;
 
@@ -919,26 +916,25 @@ public sealed class AppiumMauiElement : IMauiElement
                 return value.Equals("true", StringComparison.OrdinalIgnoreCase)
                     || value.Equals("1", StringComparison.Ordinal);
             }
-            catch
+            catch (Exception error) when (!AppiumErrors.IsGone(error))
             {
                 // A driver may throw rather than return null for an absent attribute.
                 return null;
             }
-        }
-    }
+    });
 
     /// <inheritdoc />
     /// <remarks>
     /// Neither platform has a set-state command, so this reads the state and taps when it
     /// differs. The control verifies the state it asked for.
     /// </remarks>
-    public void SetChecked(bool isChecked)
+    public void SetChecked(bool isChecked) => Live(() =>
     {
         if (Checked == isChecked)
             return;
 
         Toggle();
-    }
+    });
 
     /// <summary>
     /// Whether an attribute is present and reads as true.
@@ -951,7 +947,7 @@ public sealed class AppiumMauiElement : IMauiElement
             return !string.IsNullOrEmpty(value)
                 && value.Equals("true", StringComparison.OrdinalIgnoreCase);
         }
-        catch
+        catch (Exception error) when (!AppiumErrors.IsGone(error))
         {
             return false;
         }
@@ -983,7 +979,7 @@ public sealed class AppiumMauiElement : IMauiElement
     /// <c>SupportsScrollContent</c> question this platform always answered false.
     /// </para>
     /// </remarks>
-    public ScrollStep ScrollContent(int verticalSteps, int horizontalSteps = 0)
+    public ScrollStep ScrollContent(int verticalSteps, int horizontalSteps = 0) => Live<ScrollStep>(() =>
     {
         if (verticalSteps == 0 && horizontalSteps == 0)
             return ScrollStep.NotMoved;
@@ -1027,7 +1023,7 @@ public sealed class AppiumMauiElement : IMauiElement
         }
 
         return ScrollStep.Unconfirmed;
-    }
+    });
 
     /// <inheritdoc />
     /// <remarks>
@@ -1067,7 +1063,7 @@ public sealed class AppiumMauiElement : IMauiElement
     /// wheel instead and has no route yet.
     /// </para>
     /// </remarks>
-    public void SelectByText(string text)
+    public void SelectByText(string text) => Live(() =>
     {
         var items = OpenPicker(nameof(SelectByText));
         var item = items.FirstOrDefault(i => i.Text == text);
@@ -1080,11 +1076,11 @@ public sealed class AppiumMauiElement : IMauiElement
         }
 
         item.Click();
-    }
+    });
 
     /// <inheritdoc />
     /// <remarks>See <see cref="SelectByText"/>: the same route and the same caveats.</remarks>
-    public void SelectIndex(int index)
+    public void SelectIndex(int index) => Live(() =>
     {
         var items = OpenPicker(nameof(SelectIndex));
 
@@ -1096,7 +1092,7 @@ public sealed class AppiumMauiElement : IMauiElement
         }
 
         items[index].Click();
-    }
+    });
 
     private IReadOnlyList<IMauiElement> OpenPicker(string operation)
     {
@@ -1108,7 +1104,7 @@ public sealed class AppiumMauiElement : IMauiElement
         }
 
         Click();
-        return _driver.FindElements(AndroidPickerItems, PickerItemsTimeoutMs);
+        return _driver.FindAllChrome(AndroidPickerItems, PickerItemsTimeoutMs);
     }
 
     /// <summary>Closes the picker's dialog without choosing, so a failed selection leaves nothing open.</summary>
@@ -1118,7 +1114,7 @@ public sealed class AppiumMauiElement : IMauiElement
         {
             _driver.Driver.Navigate().Back();
         }
-        catch
+        catch (Exception error) when (!AppiumErrors.IsGone(error))
         {
             // The exception about the missing item is the one worth reporting.
         }
@@ -1147,7 +1143,7 @@ public sealed class AppiumMauiElement : IMauiElement
             return;
         }
 
-        _driver.FindElement(Locator.ByAccessibilityId("Open navigation drawer"), ChromeFindTimeoutMs).Click();
+        _driver.FindChrome(Locator.ByAccessibilityId("Open navigation drawer"), ChromeFindTimeoutMs).Click();
         WaitForFlyout(open: true);
     }
 
