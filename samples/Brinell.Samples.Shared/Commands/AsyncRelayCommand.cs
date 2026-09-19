@@ -103,11 +103,15 @@ public class AsyncRelayCommand : IAsyncRelayCommand
         var trackBusy = _viewModel != null && !HasOption(AsyncRelayCommandOptions.SkipBusyTracking);
         if (trackBusy) _viewModel!.BeginBusy();
 
-        NotifyCanExecuteChanged();
-
         try
         {
             ExecutionTask = _execute();
+
+            // After ExecutionTask is set, not before: CanExecute reads IsRunning from it, so a
+            // notification raised earlier told the UI "still executable", the button stayed
+            // enabled for the whole run, and a press during it was silently dropped.
+            NotifyCanExecuteChanged();
+
             await ExecutionTask;
         }
         catch (Exception ex)

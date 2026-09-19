@@ -269,10 +269,20 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
         return ContainingScope;
     }
 
+    /// <summary>
+    /// Whether an action waits for the element to be visible before it runs.
+    /// </summary>
+    /// <remarks>
+    /// True for anything a user acts on where it is shown. A control whose action does not go
+    /// through the element on screen - it is raised by id through the bridge - overrides this to
+    /// false, so that a replaced element is looked up again instead of being waited on.
+    /// </remarks>
+    protected virtual bool RequiresVisibilityForAction => true;
+
     protected TScope RunDoWithElement(Action<IMauiElement> coreOperation,
         int? timeoutMs = null, bool doEnsureVisible = true, [CallerMemberName] string? caller = null)
     {
-        var element = ResolveReadyElement(timeoutMs, doEnsureVisible, caller);
+        var element = ResolveReadyElement(timeoutMs, doEnsureVisible && RequiresVisibilityForAction, caller);
         coreOperation(element);
         return ContainingScope;
     }
@@ -489,7 +499,7 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
     protected IMauiElement? TryFindElement(ScrollLookup lookup)
     {
         var element = TryFindElement();
-        if (element != null || lookup == ScrollLookup.None)
+        if (element != null || lookup == ScrollLookup.None || !_mauiScope.AllowsScrollLookup)
         {
             return element;
         }
@@ -547,7 +557,7 @@ public abstract partial class ViewBase<TScope> : ControlObjectBase<TScope>, IEle
         {
             return _mauiScope.FindElement(Locator);
         }
-        catch (ElementNotFoundException)
+        catch (ElementNotFoundException) when (_mauiScope.AllowsScrollLookup)
         {
             var swept = ScrollingElement()?.TryFindByScrolling(Locator);
             if (swept != null)

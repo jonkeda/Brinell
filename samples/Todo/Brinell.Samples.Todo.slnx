@@ -9,10 +9,17 @@
   <Folder Name="/tests/">
     <Project Path="tests/Brinell.Samples.Todo.IntegrationTests/Brinell.Samples.Todo.IntegrationTests.csproj" />
     <Project Path="tests/Brinell.Samples.Todo.TestSupport/Brinell.Samples.Todo.TestSupport.csproj" />
+    <Project Path="tests/Brinell.Samples.Todo.UITests.Mobile/Brinell.Samples.Todo.UITests.Mobile.csproj" />
+    <Project Path="tests/Brinell.Samples.Todo.UITests/Brinell.Samples.Todo.UITests.csproj" />
     <Project Path="tests/Brinell.Samples.Todo.UnitTests/Brinell.Samples.Todo.UnitTests.csproj" />
   </Folder>
   <Project Path="../../srcnew/Brinell.Core/Brinell.Core.csproj" />
+  <Project Path="../../srcnew/Brinell.Maui.Appium/Brinell.Maui.Appium.csproj" />
+  <Project Path="../../srcnew/Brinell.Maui.CommunityToolkit/Brinell.Maui.CommunityToolkit.csproj" />
+  <Project Path="../../srcnew/Brinell.Maui.FlaUI/Brinell.Maui.FlaUI.csproj" />
+  <Project Path="../../srcnew/Brinell.Maui/Brinell.Maui.csproj" />
   <Project Path="../../srcnew/Brinell.Mocking/Brinell.Mocking.csproj" />
+  <Project Path="../../srcnew/Brinell.Uia.Contracts/Brinell.Uia.Contracts.csproj" />
   <Project Path="../Brinell.Maui.AppSupport/Brinell.Maui.AppSupport.csproj" />
   <Project Path="../Brinell.Samples.Shared/Brinell.Samples.Shared.csproj" />
 </Solution>

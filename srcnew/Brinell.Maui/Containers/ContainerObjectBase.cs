@@ -192,6 +192,9 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     /// </remarks>
     public virtual IMauiElement? ScrollingRoot => null;
 
+    /// <inheritdoc />
+    public virtual bool AllowsScrollLookup => true;
+
     public virtual IMauiElement? TryFindElement(Locator locator)
     {
         ArgumentNullException.ThrowIfNull(locator);
@@ -729,6 +732,10 @@ public abstract class ContainerObjectBase<TParent, TSelf>
     /// <c>ScrollView</c> is scrolled by the <c>ScrollView</c>.
     /// </remarks>
     public override IMauiElement? ScrollingRoot => _parentScope.ScrollingRoot;
+
+    /// <inheritdoc />
+    /// <remarks>A container inside a row is confined as the row is.</remarks>
+    public override bool AllowsScrollLookup => _parentScope.AllowsScrollLookup;
 
     protected override IMauiElement FindContainerRootElement()
         => _parentScope.FindElement(Locator);

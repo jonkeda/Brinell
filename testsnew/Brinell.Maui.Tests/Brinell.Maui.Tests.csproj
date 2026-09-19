@@ -12,6 +12,8 @@
     <ProjectReference Include="..\..\srcnew\Brinell.Core\Brinell.Core.csproj" />
     <ProjectReference Include="..\..\srcnew\Brinell.Maui\Brinell.Maui.csproj" />
     <ProjectReference Include="..\..\srcnew\Brinell.Maui.Extensions\Brinell.Maui.Extensions.csproj" />
+    <!-- For AndroidHost, the Appium assembly's one piece of logic with no device in it. -->
+    <ProjectReference Include="..\..\srcnew\Brinell.Maui.Appium\Brinell.Maui.Appium.csproj" />
   </ItemGroup>
 
   <ItemGroup>

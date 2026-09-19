@@ -53,6 +53,7 @@ public sealed class TodoDetailViewModelTests
         await detail.LoadAsync(todo.Id);
 
         Assert.True(detail.IsOverdue);
+        Assert.DoesNotContain("Due", detail.DueText, StringComparison.Ordinal);
     }
 
     [Fact]

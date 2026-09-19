@@ -51,8 +51,8 @@ public sealed class TodoDetailViewModel : ParentViewModel
     /// <summary>Whether there are notes to show.</summary>
     public bool HasNotes => !string.IsNullOrEmpty(_item?.Notes);
 
-    /// <summary>"Due …", or "No due date".</summary>
-    public string DueText => _item?.DueDate is null ? "No due date" : TodoFormatting.Due(_item.DueDate);
+    /// <summary>The due date, or "No due date". The card already labels it "Due".</summary>
+    public string DueText => TodoFormatting.Date(_item?.DueDate, "No due date");
 
     /// <summary>When it was created, local time.</summary>
     public string CreatedText => _item is null ? string.Empty : TodoFormatting.Timestamp(_item.CreatedAt);

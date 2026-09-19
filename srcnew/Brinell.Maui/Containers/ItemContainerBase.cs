@@ -35,6 +35,13 @@ public abstract class ItemContainerBase<TCollection, TSelf>
     /// <inheritdoc />
     public int Index { get; }
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// Never: a sweep searches the whole list, and every row carries the same ids, so it would find
+    /// another row's element.
+    /// </remarks>
+    public override bool AllowsScrollLookup => false;
+
     /// <summary>
     /// Returns the supplied root, re-resolving it from the collection if it has died.
     /// </summary>

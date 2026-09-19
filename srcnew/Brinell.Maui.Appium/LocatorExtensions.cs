@@ -33,19 +33,21 @@ internal static class LocatorExtensions
         return locator.Strategy switch
         {
             // MAUI surfaces AutomationId differently on each mobile platform:
-            // - Android: the resource-id attribute, so By.Id
+            // - Android: the resource-id attribute, so the id strategy
             // - iOS: the accessibility identifier
             LocatorStrategy.AutomationId => platform switch
             {
-                MauiPlatform.Android => By.Id(locator.Value),
+                MauiPlatform.Android => AndroidIdBy(locator.Value),
                 MauiPlatform.iOS => MobileBy.AccessibilityId(locator.Value),
                 _ => throw new ArgumentOutOfRangeException(
                     nameof(platform), platform,
                     "Brinell.Maui.Appium drives Android and iOS. Windows uses Brinell.Maui.FlaUI.")
             },
             LocatorStrategy.AccessibilityId => MobileBy.AccessibilityId(locator.Value),
-            LocatorStrategy.Id => By.Id(locator.Value),
-            LocatorStrategy.Name => By.Name(locator.Value),
+            LocatorStrategy.Id => platform == MauiPlatform.Android ? AndroidIdBy(locator.Value) : By.Id(locator.Value),
+            LocatorStrategy.Name => platform == MauiPlatform.Android
+                ? AndroidNameBy(locator.Value)
+                : By.Name(locator.Value),
             LocatorStrategy.ClassName => By.ClassName(locator.Value),
             LocatorStrategy.XPath => By.XPath(locator.Value),
             LocatorStrategy.Css => By.CssSelector(locator.Value),
@@ -59,6 +61,64 @@ internal static class LocatorExtensions
                 $"Locator strategy '{locator.Strategy}' is not supported for MAUI/Appium.")
         };
     }
+
+    /// <summary>
+    /// Converts a locator for a search under an element, which must stay inside that element's
+    /// subtree.
+    /// </summary>
+    /// <remarks>
+    /// Differs from <see cref="ToBy"/> only for a name on Android, whose XPath is made relative: an
+    /// absolute one searches the whole page from any element.
+    /// </remarks>
+    /// <param name="locator">The locator to convert.</param>
+    /// <param name="platform">The target platform.</param>
+    /// <returns>A By selector for <c>element.FindElement</c>.</returns>
+    public static By ToChildBy(this Locator locator, MauiPlatform platform)
+    {
+        ArgumentNullException.ThrowIfNull(locator);
+
+        return platform == MauiPlatform.Android && locator.Strategy == LocatorStrategy.Name
+            ? By.XPath("." + AndroidNamePath(locator.Value))
+            : locator.ToBy(platform);
+    }
+
+    /// <summary>
+    /// A resource id on Android, sent as the W3C <c>id</c> strategy.
+    /// </summary>
+    /// <remarks>
+    /// Not Selenium's <c>By.Id</c>, which the .NET client sends as the CSS selector <c>#name</c>.
+    /// UiAutomator2 runs that from an element as a UiSelector that leaves the element's subtree:
+    /// asked for <c>TodoRow_Due</c> under a Todo row that has none, it answered with another row's.
+    /// The <c>id</c> strategy from the same row finds nothing, as it should (both probed
+    /// 2026-09-19, Android 16). A bare name matches in the app's package, as <c>By.Id</c> did.
+    /// </remarks>
+    private static By AndroidIdBy(string id) => new ResourceIdBy(id);
+
+    private sealed class ResourceIdBy(string id) : By("id", id);
+
+    /// <summary>
+    /// A name on Android: the element's accessible name, which is its <c>content-desc</c> when it
+    /// has one and its <c>text</c> otherwise - what UI Automation's Name is on Windows.
+    /// </summary>
+    /// <remarks>
+    /// Selenium's <c>By.Name</c> becomes a CSS <c>[name=...]</c> selector, which UiAutomator2 refuses
+    /// outright ("'name' is not a valid attribute"), so every name locator failed on Android - a
+    /// dialog's buttons among them (found by the Todo sample's delete confirmation).
+    /// </remarks>
+    /// <exception cref="ArgumentException">The name holds both quote characters, which no XPath 1.0 literal can.</exception>
+    private static By AndroidNameBy(string name) => By.XPath(AndroidNamePath(name));
+
+    private static string AndroidNamePath(string name)
+    {
+        var literal = XPathLiteral(name, name);
+        return $"//*[@content-desc={literal} or @text={literal}]";
+    }
+
+    /// <exception cref="ArgumentException">The value holds both quote characters, which no XPath 1.0 literal can.</exception>
+    private static string XPathLiteral(string value, string located)
+        => !value.Contains('\'') ? $"'{value}'"
+            : !value.Contains('"') ? $"\"{value}\""
+            : throw new ArgumentException($"A value with both quote characters cannot be located on Android: {located}", nameof(located));
 
     private static By ToControlTypeBy(string controlType, MauiPlatform platform)
     {

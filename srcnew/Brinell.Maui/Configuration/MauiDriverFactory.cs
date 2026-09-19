@@ -82,9 +82,9 @@ public static class MauiDriverFactory
 
         if (!string.IsNullOrEmpty(options.AppPath))
         {
-            var ctor = driverType.GetConstructor([typeof(string), typeof(string)])
-                       ?? throw new InvalidOperationException("FlaUIMauiDriver(string, string) constructor not found");
-            return (IMauiDriver)ctor.Invoke([options.AppPath, null]);
+            var ctor = driverType.GetConstructor([typeof(string), typeof(string), typeof(IReadOnlyDictionary<string, string>)])
+                       ?? throw new InvalidOperationException("FlaUIMauiDriver(string, string, IReadOnlyDictionary) constructor not found");
+            return (IMauiDriver)ctor.Invoke([options.AppPath, null, options.LaunchSettings]);
         }
 
         throw new ArgumentException(
@@ -216,11 +216,60 @@ public static class MauiDriverFactory
             {
                 addCapMethod.Invoke(appiumOptions, [cap.Key, cap.Value]);
             }
+
+            if (LaunchIntentArguments(options) is { } intentArguments)
+            {
+                addCapMethod.Invoke(appiumOptions, ["optionalIntentArguments", intentArguments]);
+            }
         }
         
         return appiumOptions;
     }
     
+    /// <summary>
+    /// <see cref="MauiDriverOptions.LaunchSettings"/> as launch-intent string extras, or null when
+    /// there are none.
+    /// </summary>
+    /// <remarks>
+    /// UiAutomator2 appends <c>optionalIntentArguments</c> to the <c>am start</c> it launches the
+    /// app with, as one command line: a value with whitespace or quotes would be split or broken
+    /// there, so it throws here, naming the setting, instead of arriving mangled.
+    /// </remarks>
+    /// <exception cref="ArgumentException">A name or value cannot travel on the command line.</exception>
+    /// <exception cref="NotSupportedException">Launch settings on a platform that has no route for them yet.</exception>
+    internal static string? LaunchIntentArguments(MauiDriverOptions options)
+    {
+        if (options.LaunchSettings.Count == 0)
+        {
+            return null;
+        }
+
+        if (options.Platform != MauiPlatform.Android)
+        {
+            throw new NotSupportedException(
+                $"Launch settings reach the app on Windows (environment) and Android (intent extras), not on {options.Platform} yet.");
+        }
+
+        var parts = new List<string>();
+        foreach (var (name, value) in options.LaunchSettings)
+        {
+            if (!IsCommandLineSafe(name) || !IsCommandLineSafe(value))
+            {
+                throw new ArgumentException(
+                    $"Launch setting '{name}' = '{value}' cannot be passed as an Android intent extra: "
+                    + "names and values may not be empty or contain whitespace or quotes.",
+                    nameof(options));
+            }
+
+            parts.Add($"--es {name} {value}");
+        }
+
+        return string.Join(' ', parts);
+
+        static bool IsCommandLineSafe(string text)
+            => text.Length > 0 && !text.Any(c => char.IsWhiteSpace(c) || c is '"' or '\'' or '`' or '\\');
+    }
+
     private static object CreatePlatformDriverReflection(Uri serverUri, object appiumOptions, MauiPlatform platform)
     {
         try

@@ -29,15 +29,15 @@ public static class MauiProgram
         // the sample app: the gates decide, not the call site.
         builder.UseBrinellGestureBridge();
 
-        // Every setting a test may change, read once. A normal launch sets none and gets the
-        // defaults: the app's own database file and the development API.
-        var settings = LaunchSettings.From(
-            Environment.GetEnvironmentVariable,
-            Path.Combine(FileSystem.AppDataDirectory, "todo.db"));
-
-        builder.Services.AddTodoServices(settings, new TodoPlatform(
-            DeviceConnectivity: new DeviceConnectivity(),
-            Dispatch: MainThread.BeginInvokeOnMainThread));
+        // Every setting a test may change, read once, on first use: on Android the launch intent
+        // that carries them does not exist yet while the container is built (see LaunchValues).
+        // A normal launch sets none and gets the defaults: the app's own database file and the
+        // development API.
+        builder.Services.AddTodoServices(
+            _ => LaunchSettings.From(LaunchValues.Read, Path.Combine(FileSystem.AppDataDirectory, "todo.db")),
+            new TodoPlatform(
+                DeviceConnectivity: new DeviceConnectivity(),
+                Dispatch: MainThread.BeginInvokeOnMainThread));
 
         builder.Services.AddSingleton<INavigator, ShellNavigator>();
         builder.Services.AddSingleton<IDialogs, ShellDialogs>();

@@ -21,4 +21,16 @@ public interface IMauiElementScope : IElementScope<IMauiElement>
     /// Windows keeps off-screen elements in the tree and scrolls nothing.
     /// </remarks>
     IMauiElement? ScrollingRoot => null;
+
+    /// <summary>
+    /// Whether a control in this scope may scroll to look for itself when a plain lookup finds nothing.
+    /// </summary>
+    /// <remarks>
+    /// A scroll lookup searches the whole scroller, not this scope, which is sound only where the
+    /// locator is unique on the page. Rows of a collection repeat their children's ids, so inside a
+    /// row a sweep finds another row's element: a row without a due date answered with the next
+    /// row's (the Todo sample on Android). A realized row already holds its children, so there is
+    /// nothing to scroll to.
+    /// </remarks>
+    bool AllowsScrollLookup => true;
 }

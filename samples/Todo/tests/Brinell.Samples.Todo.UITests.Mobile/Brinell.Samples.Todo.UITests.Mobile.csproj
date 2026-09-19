@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Brinell.Samples.Todo.UITests</RootNamespace>
+    <!--
+      Plain net10.0: this head drives an installed APK through an Appium server; it builds no app.
+      Run with APPIUM_PLATFORM=android (see run-android.ps1 beside this project).
+    -->
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <!--
+    The Android head of the Todo UI tests. The sources are LINKED from the Windows head, the way
+    Brinell.Maui.UITests.Mobile links Brinell.Maui.UITests: one set of page objects, controls,
+    fixtures and tests, compiled once against FlaUI and once against Appium.
+  -->
+  <ItemGroup>
+    <Compile Include="..\Brinell.Samples.Todo.UITests\**\*.cs"
+             Exclude="..\Brinell.Samples.Todo.UITests\bin\**;..\Brinell.Samples.Todo.UITests\obj\**"
+             Link="%(RecursiveDir)%(Filename)%(Extension)" />
+    <None Include="..\Brinell.Samples.Todo.UITests\brinell.maui.config.json"
+          Link="brinell.maui.config.json"
+          CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\srcnew\Brinell.Core\Brinell.Core.csproj" />
+    <ProjectReference Include="..\..\..\..\srcnew\Brinell.Maui\Brinell.Maui.csproj" />
+    <ProjectReference Include="..\..\..\..\srcnew\Brinell.Maui.CommunityToolkit\Brinell.Maui.CommunityToolkit.csproj" />
+    <!-- The only difference from the Windows head: Appium instead of FlaUI. -->
+    <ProjectReference Include="..\..\..\..\srcnew\Brinell.Maui.Appium\Brinell.Maui.Appium.csproj" />
+    <ProjectReference Include="..\Brinell.Samples.Todo.TestSupport\Brinell.Samples.Todo.TestSupport.csproj" />
+    <ProjectReference Include="..\..\src\Brinell.Samples.Todo.Api\Brinell.Samples.Todo.Api.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -53,6 +53,27 @@ public class MauiDriverOptions
     /// Additional Appium capabilities.
     /// </summary>
     public Dictionary<string, object> AdditionalCapabilities { get; } = new();
+
+    /// <summary>
+    /// Named values handed to the app when it is launched: a database path, a backend URL, a
+    /// fixed clock - whatever the app under test reads at startup.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Windows:</b> environment variables of the launched process only. The test process's own
+    /// environment is untouched, so two fixtures can launch two apps with different settings.
+    /// </para>
+    /// <para>
+    /// <b>Android:</b> string extras on the launch intent (<c>--es name value</c>, through
+    /// UiAutomator2's <c>optionalIntentArguments</c>). The app reads them from its activity's
+    /// intent. A value may not contain whitespace or quotes, because the arguments travel as one
+    /// <c>am start</c> command line; such a value throws when the session is created.
+    /// </para>
+    /// <para>
+    /// <b>iOS:</b> not supported yet; a non-empty dictionary throws rather than being dropped.
+    /// </para>
+    /// </remarks>
+    public Dictionary<string, string> LaunchSettings { get; } = new(StringComparer.Ordinal);
     
     /// <summary>
     /// Timeout settings for waits and polling.

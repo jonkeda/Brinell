@@ -55,7 +55,25 @@ public partial class ContentDialog<TParent> : ContainerObjectBase<TParent, Conte
     /// <remarks>Read from the dialog's accessible name.</remarks>
     /// <param name="element">The dialog root.</param>
     /// <returns>The title.</returns>
-    protected virtual string? GetTitleCore(IMauiElement? element) => element?.Name;
+    protected virtual string? GetTitleCore(IMauiElement? element)
+    {
+        if (element == null)
+        {
+            return null;
+        }
+
+        if (!string.IsNullOrEmpty(element.Name))
+        {
+            return element.Name;
+        }
+
+        // Android publishes no name on the alert's root; the title is its alertTitle text, under
+        // the app's package for MAUI's AppCompat alert and android: for a framework one.
+        return element.TryFindElement(AndroidAlertTitle, out var title, 0) ? title?.Text : null;
+    }
+
+    /// <summary>An Android alert's title, whichever package its ids carry.</summary>
+    private static readonly Locator AndroidAlertTitle = Locator.ByXPath(".//*[contains(@resource-id, ':id/alertTitle')]");
 
     /// <summary>
     /// The text on every button the dialog is offering.

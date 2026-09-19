@@ -17,7 +17,7 @@ Related:
 - Brinell rules: `AGENTS.md`, `docs/architecture/decisions.md` (AD-004, AD-005, AD-008).
 - Skills: `maui-control` (component, container, collection), `maui-ui-test` (page objects).
 
-Status: phases 0-2 implemented, 2026-09-18. See "Implementation notes" at the end for what building them changed.
+Status: phases 0-5 implemented, 2026-09-18. See "Implementation notes" at the end for what building them changed.
 
 ---
 
@@ -190,8 +190,8 @@ ControlObject (`ComponentObjectBase<TScope, TodoStatus<TScope>>`):
 
 No bridge verb: the button answers `InvokePattern` and the labels are text (AD-008, test 1).
 
-Open item: check whether `CreateMaui.Bat` can generate `.gen.cs` for a test project. If it cannot,
-write the ControlObject by hand in the component shape, and say so in the README.
+Settled: the generator CLI takes any folder (`toolsBrinell.Generator.Cli ... --input <test project>Controls`);
+`CreateMaui.Bat` only hard-codes the two framework folders. The Todo controls are `.tpl.cs` + `.gen.cs`.
 
 ### Container: `SectionCard` -> `SectionCard<TParent>`
 
@@ -349,7 +349,7 @@ These are framework changes, made in `srcnew/` with their own tests, before the 
 | B3 | **`ApiStubBuilder`**: `Get(path).ReturnsJson(object)` (the `ConfigureListStub` shape), `.ReturnsSample(path)` (Construction's `ContractSampleBody`: a recorded response file), `.WithDelay(ms)`, `.Fails(500)`, "fails once, then succeeds" (WireMock scenario states), `.AtPriority(n)` for per-test overrides, `RequireHeader(name, value)`. | `Brinell.Mocking` | A thin fluent layer over WireMock; WireMock types stay available for anything unusual. |
 | B3b | **Network-state file helper**: `NetworkStateFile.Create(path)`, `.SetOnline()`, `.SetOffline()`. | `Brinell.Mocking` (or `Brinell.Maui/Testing`) | The test side of Construction's `NetworkStateOverride`. The app side (a watcher behind `IConnectivity`) stays in each app, like the bridge sinks. |
 | B4 | **Android host reachability**: helper that gives the backend URL the device should use (`10.0.2.2` on the emulator, or `adb reverse tcp:port`). | `Brinell.Mocking` or `Brinell.Maui.Appium` | Needed only when Android starts (phase 7). |
-| B5 | **Fixture relaunch hook**: a supported way for a `MauiTestFixtureBase` subclass to (re)launch with new launch settings per class. | `Brinell.Maui/Testing` | **Not needed for phases 3-4:** a fixture overrides `CreateTestContextOptions()` to set up before launch, and an xUnit class fixture launches per class. Revisit only for per-test relaunch (section 6). |
+| B5 | **Fixture relaunch hook**: a supported way for a `MauiTestFixtureBase` subclass to (re)launch with new launch settings per class. | `Brinell.Maui/Testing` | **Done in phase 4:** `MauiTestFixtureBase.RestartApp()`, same options, new context and screenshot service. Needed by TOD.09.3 and for the B6 measurement. |
 | B6 | **Database bridge verb** - only if section 6's measurement says so. | `Brinell.Uia.Contracts`, AppSupport | See section 6. |
 
 ### 5a. Reusing Construction's WireMock setup
@@ -446,13 +446,13 @@ pyramid allocation honest as the app grows.
 | D1 | Location: `samples/Todo/` with its own solution, or split across `samples/` + `testsnew/` like the existing sample? | **Done:** `samples/Todo/` with `Brinell.Samples.Todo.slnx`. |
 | D2 | Storage library: `Microsoft.Data.Sqlite` with hand-written migrations, or EF Core Sqlite? | **Done:** `Microsoft.Data.Sqlite`: small, no trimming issues on Android, and migrations are visible code to test. |
 | D3 | MVVM library? | **Decided:** `Brinell.Samples.Shared` (`ParentViewModel`, relay commands), as the MAUI and WPF samples use. Navigation and dialogs stay app-local (section 2). |
-| D4 | Database bridge verb (B6)? | Not now; decide after the phase 4 measurement (section 6). |
-| D5 | "Live" backend: local `Todo.Api` process only, or also a deployed instance? | **Done:** local, in process (`TodoApiHost.StartAsync`) or as a process on `http://localhost:5080`; the base URL comes from settings, so a deployed one can be added later. |
+| D4 | Database bridge verb (B6)? | **Decided: no.** Relaunch measured at 1.33 s; the suite does not need a fresh app per test (phase 4 notes). |
+| D5 | "Live" backend: local `Todo.Api` process only, or also a deployed instance? | **Done:** local, in process (`TodoApiHost.StartAsync`) or as a process on `http://localhost:5080`; the base URL comes from settings, so a deployed one can be added later. Live tier: `TODO_LIVE_API_BASEURL` (+ `TODO_LIVE_API_KEY`) points it at a deployed API; proven against a separate process. |
 | D6 | Multiple todo lists? | **Done:** one list. Add only if the showcase needs a master-detail collection example. |
 
 ---
 
-## 9. Implementation notes (phases 0-2)
+## 9. Implementation notes (phases 0-7)
 
 What building phases 0-2 settled or changed. Test counts are from the runs that closed each phase.
 
@@ -504,3 +504,181 @@ What building phases 0-2 settled or changed. Test counts are from the runs that 
   correctly without a reload; `TodoStatusRules.Display(status, isPastDue)` is the shared rule.
 - `LaunchSettings` is read from environment variables on every head for now; reading Android
   intent extras is part of phase 7 (B1).
+
+### Phase 3 - test-side objects (Smoke 2 + Reviews 5, green on Windows)
+
+Project `tests/Brinell.Samples.Todo.UITests` (net10.0-windows, Brinell.Maui + FlaUI).
+
+- **Controls** (`Controls/`, generated): `TodoStatus` component (parts `Glyph`, `Text`, `Next`;
+  `GetStatus`/`WaitStatus`/`AssertStatus`, `GetGlyph`, `IsChangeable`; hand-written `AdvanceTo`),
+  `TodoStatusNextButton` and `TodoPendingMark` (absence-tolerant `IsShown`: a hidden MAUI view
+  leaves the Windows tree).
+- **Containers** (`Containers/`, plain): `SectionCard<TParent>` (header + scoped labels),
+  `TodoListState` (the toolkit `StateContainer`, state ids as constants), `TodoList` + `TodoRow`
+  (`Row`, `Titles`, `WaitRow`/`AssertRow`, `Open(title)` via `SelectItem`).
+- **Pages**: `TodoListPage`, `TodoDetailPage`, `TodoEditPage`. Toolbar items and the back arrow
+  on `AppRoot`; card labels named on the page (`detail.Due`, `edit.Title`).
+- **Fixture**: `TodoAppFixture` (+ `ThreeTodosFixture`, `EmptyFixture`, one collection each). In
+  `CreateTestContextOptions` it seeds a `TempDatabase` from the scenario, starts a `MockApiServer`
+  with the stateful `TodoServerStub`, creates a `NetworkStateFile`, sets the `LaunchSettings`
+  variables, pins the clock, then lets the base launch. `ResetBackend()` removes per-test
+  overrides; `CaptureReview(screen)` saves into the run's artifacts. Launch to list about 2.5 s.
+- **Tests**: Smoke (`Gate=Smoke`: app starts with the seeded rows and a sync line; a row opens
+  its detail) and Reviews (`Gate=Review`: list, detail, edit, error with Retry, empty; key
+  controls by id; one screenshot each). The error-state assertion was broken on purpose once to
+  prove it fails (it reported the app's real text); reverted.
+- **No parallel collections** in this assembly: the settings are process-wide environment
+  variables until B1. The whole project runs in about 7 s.
+
+Found while doing it:
+
+- **App defect, fixed:** the detail card read "Due  Due 01-Jan-26" (label plus a value that
+  repeated it). `DueText` is now the date alone (`TodoFormatting.Date`).
+- **Brinell bug, worked around:** `BrinellConfigurationBase.LoadFromJson` deserializes
+  case-sensitively and without an enum converter, so the lowercase keys of Brinell's own
+  `brinell.maui.config.json` never bind and every suite silently gets the defaults - including
+  artifacts in `%APPDATA%/brinell-artifacts` instead of the repository's `TestResults` (AD-007).
+  This project's config uses PascalCase keys. Fixing the loader would start applying every
+  suite's existing config (Construction's too), so it is left for a deliberate change.
+- **Screenshots can catch WinUI's page-entrance slide** (content offset, a blank list once): the
+  capture runs after the page is ready, not after its animation. The structural checks are not
+  affected; the images are for people and may need a second look.
+- Accessibility audit: not in Reviews. It is a driver API (tests may not call it) and audits
+  gesture verbs, which this app does not declare.
+- Android: the back arrow's locator and a Todo `.apk` path are phase 7.
+
+### Phase 4 - hermetic UI tests (35 UI tests green, 3 full runs in a row)
+
+28 new journey tests beside the 7 Smoke/Reviews tests, one per H-tagged subtask in `journeys.md`,
+over five fixtures (one app each): three-todos, empty, pending changes (no sync on start),
+overdue, and an unreachable backend. The whole UI project runs in about 28 s.
+
+- **Isolation without relaunching:** `StartTest()` (network online, backend overrides removed,
+  the scenario's server state back, the list on screen with the filter on All - leaving any dialog,
+  edit or detail page through the pages' own controls) plus unique data per test:
+  `ServerHasTodo(...)` puts a todo on the fake server and the test syncs it in, or the test creates
+  one through the UI. No test edits the scenario's todos, so order does not matter.
+- **Arranging through the backend** is the showcase's default (plan section 6, option B). The
+  database is seeded only for local-only state (the pending-changes fixture).
+- **B5 done:** `MauiTestFixtureBase.RestartApp()`; `TodoAppFixture.Restart()` re-applies its
+  settings first. Used by TOD.09.3.
+- **B6 decided, no:** a relaunch to a settled list takes **1.33 s** (1349 / 1330 / 1328 ms); the
+  mean hermetic test takes **539 ms** (105 runs). A fresh app per test would add about 47 s to a
+  28 s suite, and nothing needs it: the per-collection app with `StartTest()` was stable 3/3.
+  Section 6's own threshold (relaunch over about 3 s) is not met either.
+
+Found and fixed while doing it:
+
+- **Shared MVVM bug (`Brinell.Samples.Shared`):** `AsyncRelayCommand(<T>).ExecuteAsync` raised
+  `CanExecuteChanged` *before* setting `ExecutionTask`, so `CanExecute` still answered true: a
+  bound button never greyed out while its command ran, and a press during the run was silently
+  dropped. Found as "the second Cancel does nothing" in TOD.04.4. Fixed (notify after the task is
+  set); `Sync_WhileRunning_TellsTheUiItIsDisabled` fails on the old code (`[True, True]`) and
+  passes on the new. Other users: the MAUI sample's `AddProductCommand` (Product/Grid tests 25/25
+  twice after the fix; one earlier batch failure did not reproduce) and the WPF sample's
+  `LoginCommand` (`LoginTests.Login_CancelButton_ClearsFormOrNavigatesBack` and
+  `IsBusyTests.Login_WaitPageReady_CombinesLoadedAndNotBusy` fail **with and without** the fix:
+  pre-existing).
+- **Brinell `ToolbarButton` fix:** on Windows MAUI replaces a toolbar item's element whenever its
+  command's `CanExecute` changes (runtime id `…4.17` -> `…4.30` disabled -> missing -> `…4.65`
+  enabled, within 210 ms). The action readiness loop waited up to 5 s for the *found* element to
+  be visible, so a find that landed on the outgoing element failed as "not visible" - one full run
+  in two. `ViewBase.RequiresVisibilityForAction` (default true) lets `ToolbarButton` skip that
+  wait: it raises the item by id through the bridge, so only "enabled" matters. The broader
+  weakness - a readiness poll spending its whole budget on one possibly-stale element - is left
+  as is; it would change every control.
+- **App:** a row with no due date now hides its due label (`TodoRowViewModel.HasDueDate`) rather
+  than showing an empty, zero-size one that no test (or screen reader) can read.
+- **Page title:** `PageObjectBase.AssertTitle` reads the page root's name (its AutomationId), not
+  the title Shell shows; `TodoEditPage.Heading` reads the navigation header (`title`) instead.
+
+### Phase 5 - live UI tests (3 green, against in-process and separate-process APIs)
+
+`tests/Brinell.Samples.Todo.UITests/Live/`: the same page objects against the real `Todo.Api`,
+checked through the API's own HTTP endpoint (`LiveTodoApi`), never through the app's client.
+
+| Test | Journey | Proves |
+| --- | --- | --- |
+| `ATodoCreatedOnTheServer_AppearsInTheAppAfterSync` | TOD.07.3 | The app understands what the real server sends. |
+| `ATodoCreatedInTheApp_IsOnTheServerAfterSync` | TOD.07.4 | The real server accepts what the app sends (absent before Sync, present after). |
+| `ATodoDeletedInTheApp_IsGoneFromTheServerAfterSync` | TOD.07.5 | A delete reaches the server (200 before, 404 after). |
+
+- **Fixture split.** `TodoAppFixtureBase` owns the app side (database, network file, clock,
+  launch settings, restart, `StartTest`, the Reviews screenshots); subclasses supply the backend
+  through `StartBackend` / `StopBackend` / `ResetBackendForTest`. `TodoAppFixture` is the hermetic
+  one (WireMock + `TodoServerStub`), `LiveTodoAppFixture` the live one.
+- **Which API.** By default `TodoApiHost.StartAsync` in the test process on a free port with a
+  fresh server database; with `TODO_LIVE_API_BASEURL` (and `TODO_LIVE_API_KEY`) a deployed one.
+  Either way the scenario's server half is PUT over HTTP, so both are arranged the same way.
+  Nothing is reset between tests: a real server keeps what it is sent.
+- **Switch.** `[LiveApiFact]` skips unless `BRINELL_UAT_LIVE_API=1`, the UAT projects' `live-api`
+  switch. xUnit builds collection fixtures even for all-skipped collections - measured, about 2 s
+  of app and API launched for nothing - so the collection fixture is a `LiveAppHolder` that creates
+  the live app lazily, from a test constructor, which xUnit never runs for a skipped test. With the
+  switch off the tier costs 0.5 s and launches nothing.
+- **Runs:** whole UI project with the switch off 35 passed / 3 skipped (28 s); on 38/38 (31 s);
+  the live tier alone against `Todo.Api` started as its own process with its own key: 3/3, and the
+  server afterwards held exactly the seeds, the server-created todo and the app-created todo.
+
+Found and fixed while doing it:
+
+- **API bug:** `Program.cs` added the development address whenever `app.Urls` was empty - which
+  it always is before start - so `--urls` / `ASPNETCORE_URLS` were silently ignored and the API
+  listened on 5080 whatever it was told. It now checks `app.Configuration["urls"]`. The earlier
+  manual runs never noticed: they asked for 5080.
+- **Fixture bug:** the live fixture gave the API its key but not the app, which kept the
+  development key and was refused (401) by an API with a key of its own. Hidden in process, where
+  both used the development key; found by the separate-process run.
+
+### Phase 7 - Android (26 green, 11 skipped with reasons, 0 failed)
+
+`tests/Brinell.Samples.Todo.UITests.Mobile` is a second head over the same sources (it links
+`Brinell.Samples.Todo.UITests/**/*.cs`), run with `APPIUM_PLATFORM=android` against the
+`Brinell_Perf` emulator (Android 16). The Windows head still runs everything.
+
+**Brinell changes (B1, B4):**
+
+- **B1.** `MauiDriverOptions.LaunchSettings`. FlaUI puts them in the launched process's
+  environment. Appium sends them as `optionalIntentArguments` (`--es K V`, with the values
+  validated); iOS throws. The app's `MainActivity` captures the `TODO_*` extras before
+  `base.OnCreate`, and `LaunchValues.Read` falls back to environment variables. The
+  `AddTodoServices` overload takes a settings factory, so settings are read lazily, after the
+  extras exist.
+- **B4.** `AndroidHost.EmulatorUrl` rewrites a loopback URL to `10.0.2.2`, and
+  `AndroidHost.Reverse` runs `adb reverse`. WireMock and the API listen on the host, and the
+  fixture hands the app the rewritten URL.
+
+**Framework bugs found only on the device** (each has a unit test in `Brinell.Maui.Tests` that
+fails on the old code):
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| `SelectItem` threw "Control type 'ListItem' is not supported" | `ActivateItemCore` looked for a containing UIA `ListItem` on every platform | Windows only. Elsewhere it taps the row. |
+| "No active content dialog was found" | The AppCompat alert root is `<package>:id/parentPanel`, not `android:id/...` | `TryFindActiveDialogRoot` matches `.*:id/parentPanel` |
+| A dialog's title read empty | The alert root has no name; the title is the `alertTitle` child | `ContentDialog.GetTitleCore` falls back to `:id/alertTitle` |
+| Every name locator failed ("'name' is not a valid attribute") | `By.Name` is a CSS `[name=]` selector | An XPath on `content-desc` or `text`, made relative under an element |
+| A row without a due date reported another row's due label | Two bugs. (1) The .NET client sends `By.Id` as CSS `#id`, and UiAutomator2 runs that from an element as a UiSelector that leaves the subtree (the `id` strategy does not). (2) A control in a row that finds nothing does a scroll sweep, which searches the whole list. | Android ids are sent as the W3C `id` strategy. Item scopes set `AllowsScrollLookup = false`, because a realized row holds its children. |
+| An empty Entry read as its placeholder ("Title") | UiAutomator2 reports an empty `EditText`'s hint as its text. The fix checked `TagName`, which UiAutomator2 answers with null. `showing-hint` is listed but cannot be read. | On Android, `TagName` reads the `class` attribute. An `EditText` whose text equals its hint reads as empty. |
+
+**Test side.** The dialog moved from page scope to `AppRoot`, since it is not inside the page.
+The detail back button is the Up button (`Navigate up`) on Android. `TodoRow.Due` is a
+`ShownLabel` (absence-tolerant `IsShown`). The fixture sets the capabilities it needs:
+`appWaitPackage`, `enforceAppInstall`, and `waitForIdleTimeout=100`.
+
+**Skipped on Android (`[WindowsOnlyFact(reason)]`), a list rather than workarounds:**
+
+| Reason | Tests | What it would take |
+| --- | --- | --- |
+| `LocalState`: the scenario's local half is a DB file on this machine | PendingChanges x2, Unreachable startup | Push the seeded DB into the app's private storage (section 6, option A) |
+| `NetworkSwitch`: the network-state file is on this machine | Offline | A bridge verb, or an intent extra per launch |
+| `Reinstall`: every Appium session reinstalls, which wipes data | Todos_SurviveARestart | `noReset` for that one relaunch |
+| `PickerGap`: the Picker's native dialog is out of reach (Brinell Picker tests 0/8 on Android) | Filter x2 | Picker support in `Brinell.Maui.Appium` |
+| `ShellTitle`: Shell draws the title as an id-less TextView | EditPage_Heading_NamesTheMode | A title locator for the Shell toolbar |
+
+The live tier (3) is skipped without `BRINELL_UAT_LIVE_API=1`, as on Windows.
+
+**Runs.** Run 1: 9 passed / 26 failed. Run 2: 9 / 17 / 10 skipped. Run 3: 24 / 2 / 11. Final:
+26 passed / 0 failed / 11 skipped in 3 min 41 s. Windows after the changes: 36 passed / 3 skipped (live). Framework unit tests: 137 passed.
+
+**Not done here.** `Brinell.NativeAndroid` maps ids with `By.Id` too, so it probably has the same
+scoping leak under an element. It is untested there, and it is a separate driver.

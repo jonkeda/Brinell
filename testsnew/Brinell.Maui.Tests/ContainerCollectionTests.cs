@@ -312,6 +312,25 @@ public class ContainerCollectionTests
     }
 
     [Fact]
+    [Trait("Pattern", "ItemScoping")]
+    public void Row_MissingChild_IsNotSweptFor_SoAnotherRowsChildCannotAnswer()
+    {
+        var page = new TestPage(_context.Object);
+        var roots = SetupCollection("Rows", ("Alpha", "1.00"));
+        roots[0].Setup(e => e.FindElement(It.Is<Locator>(l => l.Value == "RowDue"), It.IsAny<int>()))
+            .Throws(new ElementNotFoundException("this row has no due date"));
+
+        // As Android answers a sweep: it walks the whole list and finds the next row's label.
+        var app = new Mock<IMauiElement>();
+        app.Setup(a => a.TryFindByScrolling(It.IsAny<Locator>()))
+            .Returns(Mock.Of<IMauiElement>(e => e.Visible == true));
+        _context.Setup(c => c.AppElement).Returns(app.Object);
+
+        Assert.False(page.Rows.Item(0).Due.IsExists());
+        app.Verify(a => a.TryFindByScrolling(It.IsAny<Locator>()), Times.Never);
+    }
+
+    [Fact]
     [Trait("Property", "Index")]
     public void Row_TracksItsIndex()
     {
@@ -775,6 +794,30 @@ public class ContainerCollectionTests
 
     #endregion
 
+    #region Selection per platform
+
+    [Fact]
+    [Trait("Pattern", "Selection")]
+    public void SelectItem_OnAndroid_TapsTheRow_WithoutAskingForAListItem()
+    {
+        _context.Setup(c => c.Platform).Returns(Brinell.Maui.Enums.MauiPlatform.Android);
+        var page = new TestPage(_context.Object);
+        var rows = SetupCollection("Rows", ("Alpha", "1.00"), ("Beta", "2.00"));
+
+        // As the Appium driver answers: ListItem is a UI Automation control type with no
+        // UiAutomator2 counterpart, and asking for it throws.
+        var root = Mock.Get(_context.Object.FindElement(Locator.ByAutomationId("Rows")));
+        root.Setup(e => e.FindElements(It.Is<Locator>(l => l.Value == "ListItem"), It.IsAny<int>()))
+            .Throws(new ArgumentOutOfRangeException("controlType", "Control type 'ListItem' is not supported on Android."));
+
+        page.Rows.SelectItem(1);
+
+        rows[1].Verify(row => row.Select(), Times.Once);
+        rows[0].Verify(row => row.Select(), Times.Never);
+    }
+
+    #endregion
+
     #region Test page objects
 
     private class TestPage : PageObjectBase<TestPage>
@@ -841,6 +884,7 @@ public class ContainerCollectionTests
         public Label<RowContainer> Name => new(this, "RowName");
         public Label<RowContainer> Price => new(this, "RowPrice");
         public Button<RowContainer> Delete => new(this, "RowDeleteButton");
+        public Label<RowContainer> Due => new(this, "RowDue");
     }
 
     #endregion

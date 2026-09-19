@@ -310,7 +310,11 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable
     {
         var by = _platform switch
         {
-            MauiPlatform.Android => By.Id("android:id/parentPanel"),
+            // Any package: the framework AlertDialog's root is android:id/parentPanel, but MAUI's
+            // DisplayAlert is AndroidX AppCompat's, whose ids carry the app's package
+            // (probed 2026-09-19 in the Todo sample: com.brinell.samples.todo:id/parentPanel).
+            // Looking for the framework id only never found a MAUI alert at all.
+            MauiPlatform.Android => MobileBy.AndroidUIAutomator("new UiSelector().resourceIdMatches(\".*:id/parentPanel\")"),
             MauiPlatform.iOS => MobileBy.ClassName("XCUIElementTypeAlert"),
             _ => null
         };

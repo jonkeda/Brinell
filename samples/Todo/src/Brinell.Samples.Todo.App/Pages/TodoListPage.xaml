@@ -86,6 +86,7 @@
                             <Label Grid.Column="1"
                                    AutomationId="TodoRow_Due"
                                    Text="{Binding DueText}"
+                                   IsVisible="{Binding HasDueDate}"
                                    VerticalOptions="Center" />
                             <views:TodoStatusView Grid.Column="2"
                                                   AutomationId="TodoRow_Status"

@@ -88,4 +88,37 @@ public class ContentDialogControlTests : SemanticControlTestsBase
         Assert.True(dismissedResult);
         Assert.True(dismissed);
     }
+
+    [Fact]
+    public void ContentDialog_GetTitle_WhenTheRootHasNoName_ReadsTheAlertTitle()
+    {
+        // As an Android AppCompat alert publishes it: a nameless root with an alertTitle child.
+        var dialogRoot = CreateElement("parentPanel", 0, 0, 300, 200);
+        dialogRoot.Setup(e => e.Name).Returns(string.Empty);
+        var title = CreateElement("alertTitle", 10, 10, 280, 30);
+        title.Setup(e => e.Text).Returns("Delete todo?");
+        var titleElement = title.Object;
+        dialogRoot
+            .Setup(e => e.TryFindElement(
+                It.Is<Locator>(l => l.Strategy == LocatorStrategy.XPath && l.Value.Contains(":id/alertTitle")),
+                out titleElement,
+                It.IsAny<int>()))
+            .Returns(true);
+        _app.Setup(a => a.TryFindActiveDialog()).Returns(dialogRoot.Object);
+
+        Assert.Equal("Delete todo?", Page.Dialog.GetTitle());
+    }
+
+    [Fact]
+    public void ContentDialog_GetTitle_PrefersTheRootsName()
+    {
+        // As a WinUI ContentDialog publishes it: the title is the root's own name.
+        var dialogRoot = CreateElement("ContentDialog", 0, 0, 300, 200);
+        dialogRoot.Setup(e => e.Name).Returns("Discard changes?");
+        _app.Setup(a => a.TryFindActiveDialog()).Returns(dialogRoot.Object);
+
+        Assert.Equal("Discard changes?", Page.Dialog.GetTitle());
+        IMauiElement? unused;
+        dialogRoot.Verify(e => e.TryFindElement(It.IsAny<Locator>(), out unused, It.IsAny<int>()), Times.Never);
+    }
 }

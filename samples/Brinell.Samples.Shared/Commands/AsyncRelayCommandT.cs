@@ -123,11 +123,13 @@ public class AsyncRelayCommand<T> : IAsyncRelayCommand<T>
         var trackBusy = _viewModel != null && !HasOption(AsyncRelayCommandOptions.SkipBusyTracking);
         if (trackBusy) _viewModel!.BeginBusy();
 
-        NotifyCanExecuteChanged();
-
         try
         {
             ExecutionTask = _execute(parameter);
+
+            // After ExecutionTask is set, not before: see AsyncRelayCommand.ExecuteAsync.
+            NotifyCanExecuteChanged();
+
             await ExecutionTask;
         }
         catch (Exception ex)

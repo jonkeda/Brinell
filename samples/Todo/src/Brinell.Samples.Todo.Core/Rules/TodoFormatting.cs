@@ -16,6 +16,10 @@ public static class TodoFormatting
     public static string Due(DateOnly? dueDate, IFormatProvider? culture = null)
         => dueDate is { } due ? "Due " + due.ToString("d", culture ?? CultureInfo.CurrentCulture) : string.Empty;
 
+    /// <summary>A date in the device's format, or <paramref name="none"/> when there is none.</summary>
+    public static string Date(DateOnly? date, string none, IFormatProvider? culture = null)
+        => date is { } value ? value.ToString("d", culture ?? CultureInfo.CurrentCulture) : none;
+
     /// <summary>A stored UTC time in the device's time zone and culture.</summary>
     public static string Timestamp(DateTimeOffset utc, TimeZoneInfo? zone = null, IFormatProvider? culture = null)
         => TimeZoneInfo.ConvertTime(utc, zone ?? TimeZoneInfo.Local).ToString("g", culture ?? CultureInfo.CurrentCulture);

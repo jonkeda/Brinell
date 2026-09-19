@@ -86,10 +86,42 @@ public sealed class AppiumMauiElement : IMauiElement
     public bool Selected => _element.Selected;
     
     /// <inheritdoc />
-    public string? Text => _element.Text;
+    /// <remarks>
+    /// An empty Android text field reports its placeholder as its text: UiAutomator2 gives an empty
+    /// <c>EditText</c> with <c>hint="Title"</c> the text "Title" as well (probed 2026-09-19 in the
+    /// Todo sample). Such a field reads as empty here, as it does on Windows, where the placeholder
+    /// is a separate property. The limit: a field whose value is exactly its own placeholder reads
+    /// as empty too. UiAutomator2 lists <c>showing-hint</c>, which would say so directly, but refuses
+    /// to read it ("attribute is unknown" on Android 16). A non-empty Android text read costs one
+    /// class read more, and a text field's one hint read on top.
+    /// </remarks>
+    public string? Text
+    {
+        get
+        {
+            var text = _element.Text;
+
+            if (_driver.Platform == MauiPlatform.Android
+                && !string.IsNullOrEmpty(text)
+                && TagName == "android.widget.EditText"
+                && text == Hint)
+            {
+                return string.Empty;
+            }
+
+            return text;
+        }
+    }
     
     /// <inheritdoc />
-    public string? TagName => _element.TagName;
+    /// <remarks>
+    /// On Android the widget class, <c>android.widget.EditText</c>: UiAutomator2 answers the tag
+    /// name request with null (probed 2026-09-19), so every Android type check - an EditText's
+    /// placeholder, a control-type item key - silently failed.
+    /// </remarks>
+    public string? TagName => _driver.Platform == MauiPlatform.Android
+        ? GetAttribute("class")
+        : _element.TagName;
     
     /// <inheritdoc />
     public Point Location => _element.Location;
@@ -674,7 +706,7 @@ public sealed class AppiumMauiElement : IMauiElement
     /// <inheritdoc />
     public IMauiElement FindElement(Locator locator, int timeoutMs = 5000)
     {
-        var by = locator.ToBy(_driver.Platform);
+        var by = locator.ToChildBy(_driver.Platform);
         
         if (timeoutMs > 0)
         {
@@ -703,7 +735,7 @@ public sealed class AppiumMauiElement : IMauiElement
     /// <inheritdoc />
     public IReadOnlyList<IMauiElement> FindElements(Locator locator, int timeoutMs = 0)
     {
-        var by = locator.ToBy(_driver.Platform);
+        var by = locator.ToChildBy(_driver.Platform);
         
         if (timeoutMs > 0)
         {

@@ -816,9 +816,17 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     /// Activates an item, given the element the item strategy found for it.
     /// </summary>
     /// <remarks>
-    /// The containing <c>ListItem</c> row is tried first, then the element itself, because the
-    /// element a strategy matches is usually inside the row. Override for rows that activate
-    /// differently.
+    /// <para>
+    /// Windows: the containing <c>ListItem</c> row is tried first, then the element itself, because
+    /// the element a strategy matches is usually inside the row, and the row is what carries the
+    /// selection pattern.
+    /// </para>
+    /// <para>
+    /// Android and iOS: the element itself, whose <c>Select</c> is a tap - what a finger does to a
+    /// row. <c>ListItem</c> is a UI Automation control type with no Appium counterpart; asking for
+    /// it there threw before any row was touched (found by the Todo sample's Android run).
+    /// </para>
+    /// <para>Override for rows that activate differently.</para>
     /// </remarks>
     /// <param name="itemRoot">The element found for the item.</param>
     /// <returns>True when the item was activated.</returns>
@@ -831,11 +839,14 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
             return false;
         }
 
-        foreach (var row in FindContainingRows(itemRoot))
+        if (Context.Platform == MauiPlatform.Windows)
         {
-            if (TryActivate(row))
+            foreach (var row in FindContainingRows(itemRoot))
             {
-                return true;
+                if (TryActivate(row))
+                {
+                    return true;
+                }
             }
         }
 

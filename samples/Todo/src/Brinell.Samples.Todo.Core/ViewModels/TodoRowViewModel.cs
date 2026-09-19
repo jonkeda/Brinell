@@ -17,6 +17,9 @@ public sealed class TodoRowViewModel(TodoItem item, DateOnly today, IFormatProvi
     /// <summary>"Due …", or empty.</summary>
     public string DueText { get; } = TodoFormatting.Due(item.DueDate, culture);
 
+    /// <summary>Whether the row shows a due date at all.</summary>
+    public bool HasDueDate { get; } = item.DueDate is not null;
+
     /// <summary>The stored status, for the read-only status control.</summary>
     public TodoStatus Status { get; } = item.Status;
 

@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Brinell.Samples.Todo.UITests</RootNamespace>
+    <!-- FlaUI drives the Windows app. -->
+    <TargetFramework>net10.0-windows</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\srcnew\Brinell.Core\Brinell.Core.csproj" />
+    <ProjectReference Include="..\..\..\..\srcnew\Brinell.Maui\Brinell.Maui.csproj" />
+    <ProjectReference Include="..\..\..\..\srcnew\Brinell.Maui.CommunityToolkit\Brinell.Maui.CommunityToolkit.csproj" />
+    <ProjectReference Include="..\..\..\..\srcnew\Brinell.Maui.FlaUI\Brinell.Maui.FlaUI.csproj" />
+    <!-- Loaded by name for an Android run; see Brinell.Maui.UITests.csproj. -->
+    <ProjectReference Include="..\..\..\..\srcnew\Brinell.Maui.Appium\Brinell.Maui.Appium.csproj" />
+    <!-- Scenarios, the database seeder and the WireMock fake backend, shared with the integration tier. -->
+    <ProjectReference Include="..\Brinell.Samples.Todo.TestSupport\Brinell.Samples.Todo.TestSupport.csproj" />
+    <!-- The real API, started in process by the live tier (Live/LiveTodoAppFixture). -->
+    <ProjectReference Include="..\..\src\Brinell.Samples.Todo.Api\Brinell.Samples.Todo.Api.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- RootDirectory null puts artifacts in the repository's TestResults (AD-007); without this
+         file the default is %APPDATA%/brinell-artifacts. PascalCase on purpose: the loader binds
+         case-sensitively, so the lowercase keys of Brinell's own config file are ignored. -->
+    <None Include="brinell.maui.config.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

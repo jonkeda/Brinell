@@ -19,8 +19,9 @@ public abstract class MauiTestFixtureBase : IDisposable
 {
     private static int _instanceCount;
     private readonly int _instanceId;
-    private readonly MauiTestContext _context;
-    private readonly IScreenshotService _screenshotService;
+    private readonly MauiTestContextOptions _options;
+    private MauiTestContext _context;
+    private IScreenshotService _screenshotService;
     private bool _disposed;
     
     /// <summary>
@@ -39,13 +40,45 @@ public abstract class MauiTestFixtureBase : IDisposable
         // Load configuration from config file (or defaults if not found)
         Configuration = BrinellMauiConfiguration.Load();
         
-        var options = CreateTestContextOptions();
-        
-        _context = new MauiTestContext(options);
+        _options = CreateTestContextOptions();
+
+        _context = new MauiTestContext(_options);
         
         Console.WriteLine($"[FIXTURE] {GetType().Name} #{_instanceId} CREATED - Driver session started");
         
-        // Initialize screenshot service
+        _screenshotService = CreateScreenshotService(_context);
+    }
+
+    /// <summary>
+    /// Closes the app and launches it again, with the options it was first launched with.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// For a test whose subject is a restart ("the data is still there"), and for measuring what a
+    /// fresh app per test would cost. What the first launch arranged outside the app - files,
+    /// servers, environment - is left as it is: <see cref="CreateTestContextOptions"/> is not
+    /// called again, so a fixture that arranges state there keeps that state.
+    /// </para>
+    /// <para>
+    /// <see cref="Context"/> and <see cref="ScreenshotService"/> are new objects afterwards. Page
+    /// and control objects built on the old context are stale: build new ones.
+    /// </para>
+    /// </remarks>
+    public void RestartApp()
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        Console.WriteLine($"[FIXTURE] {GetType().Name} #{_instanceId} RESTARTING at {DateTime.Now:HH:mm:ss.fff}");
+
+        _context.Dispose();
+        _context = new MauiTestContext(_options);
+        _screenshotService = CreateScreenshotService(_context);
+
+        Console.WriteLine($"[FIXTURE] {GetType().Name} #{_instanceId} RESTARTED - Driver session started");
+    }
+
+    private IScreenshotService CreateScreenshotService(MauiTestContext context)
+    {
         var screenshotSettings = new ScreenshotSettings
         {
             OutputDirectory = GetScreenshotDirectory(),
@@ -53,8 +86,9 @@ public abstract class MauiTestFixtureBase : IDisposable
             IncludeTimestamp = true,
             Format = ScreenshotFormat.Png
         };
-        _screenshotService = new ScreenshotService(_context, _context.Logger, screenshotSettings);
-        ScreenshotTestAttribute.SetService(_screenshotService);
+        var service = new ScreenshotService(context, context.Logger, screenshotSettings);
+        ScreenshotTestAttribute.SetService(service);
+        return service;
     }
 
     /// <summary>

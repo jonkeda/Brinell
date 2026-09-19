@@ -40,6 +40,22 @@ public class ToolbarButton<TScope> : Button<TScope>
 
     /// <inheritdoc />
     /// <remarks>
+    /// <para>
+    /// False: the click raises the item by its id through the bridge, so which instance of the
+    /// element is on screen does not matter - only that it is enabled.
+    /// </para>
+    /// <para>
+    /// And waiting on one instance is harmful. On Windows MAUI replaces a toolbar item's element
+    /// whenever its command's <c>CanExecute</c> changes (measured 2026-09-18 on the Todo sample: the
+    /// runtime id went <c>…4.17</c>, <c>…4.30</c> disabled, missing, <c>…4.65</c> enabled within
+    /// 210 ms of a command finishing). A visibility wait that found the outgoing element spent its
+    /// whole five seconds on it and failed as "not visible", about one full Todo run in two.
+    /// </para>
+    /// </remarks>
+    protected override bool RequiresVisibilityForAction => false;
+
+    /// <inheritdoc />
+    /// <remarks>
     /// Raises the item through the element's <c>InvokeToolbarItem</c>, using the id from the
     /// locator.
     /// </remarks>

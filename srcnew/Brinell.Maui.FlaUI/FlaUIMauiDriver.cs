@@ -47,6 +47,20 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// <param name="executablePath">Path to the application executable.</param>
     /// <param name="arguments">Optional command line arguments.</param>
     public FlaUIMauiDriver(string executablePath, string? arguments = null)
+        : this(executablePath, arguments, environment: null)
+    {
+    }
+
+    /// <summary>
+    /// Creates a new FlaUIMauiDriver by launching an application with extra environment variables.
+    /// </summary>
+    /// <param name="executablePath">Path to the application executable.</param>
+    /// <param name="arguments">Optional command line arguments.</param>
+    /// <param name="environment">
+    /// Variables set on the launched process only (<c>MauiDriverOptions.LaunchSettings</c>): the
+    /// test process's own environment is not changed, so each launch carries its own settings.
+    /// </param>
+    public FlaUIMauiDriver(string executablePath, string? arguments, IReadOnlyDictionary<string, string>? environment)
     {
         _automation = new UIA3Automation();
 
@@ -67,6 +81,11 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
         // Ask the app to turn its gesture bridge on. Asking is all this is: an app that was not
         // built with a bridge has nothing to turn on - see BrinellBridgeGate.
         processStartInfo.Environment[BrinellBridgeGate.EnableVariable] = "1";
+
+        foreach (var (name, value) in environment ?? new Dictionary<string, string>())
+        {
+            processStartInfo.Environment[name] = value;
+        }
 
         // Whoever the user was working in before the run. Windows hands a freshly launched
         // process the foreground; QuietWindow hands it back.

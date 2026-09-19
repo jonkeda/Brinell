@@ -157,6 +157,26 @@ public sealed class TodoListViewModelTests
     }
 
     [Fact]
+    [Trait("Journey", "TOD.07.1")]
+    public async Task Sync_WhileRunning_TellsTheUiItIsDisabled()
+    {
+        var answer = new TaskCompletionSource<SyncResult>();
+        _sync.SyncAsync(Arg.Any<CancellationToken>()).Returns(answer.Task);
+        var list = Create(syncOnStart: false);
+        await list.AppearAsync();
+        var announced = new List<bool>();
+        list.SyncCommand.CanExecuteChanged += (_, _) => announced.Add(list.SyncCommand.CanExecute(null));
+
+        var running = list.SyncCommand.ExecuteAsync(null);
+        answer.SetResult(new SyncResult(SyncError.None, Build.Now));
+        await running;
+
+        // A button bound to the command greys out while it runs, and comes back afterwards. Without
+        // the first false, the button looked usable and a press during the run went nowhere.
+        Assert.Equal([false, true], announced);
+    }
+
+    [Fact]
     [Trait("Journey", "TOD.01.4")]
     public async Task ChangingTheFilter_ReloadsTheRows()
     {
