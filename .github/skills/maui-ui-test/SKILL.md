@@ -103,7 +103,7 @@ In tests, page objects' public members, app containers and test helpers, do not 
 | `new Locator(...)` / `Locator.By*` in a test method | a page-object property |
 
 One structural exception: a collection row's constructor takes `IMauiElement itemRoot` and
-passes it to `ItemContainerBase` untouched; the collection's item factory does the same. Never
+passes it to `ItemObjectBase` untouched; the collection's item factory does the same. Never
 read or call it.
 
 Ids (strings) are not locators: `Child<T>(id)`, `Label(id)`, `Button(id)` on a container are

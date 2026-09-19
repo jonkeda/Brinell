@@ -140,7 +140,7 @@ public abstract class SemanticControlTestsBase
         }
     }
 
-    protected sealed class TestListItem : ItemContainerBase<TestCollection, TestListItem>
+    protected sealed class TestListItem : ItemObjectBase<TestCollection, TestListItem>
     {
         public TestListItem(TestCollection collection, IMauiElement itemRoot, int index)
             : base(collection, itemRoot, index)

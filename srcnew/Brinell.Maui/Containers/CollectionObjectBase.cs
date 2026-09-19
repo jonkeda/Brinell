@@ -18,7 +18,7 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     : ContainerObjectBase<TParent, TSelf>, IMauiCollectionObject<TParent, TSelf, TItem>, IItemRootProvider
     where TParent : IMauiScope<TParent>
     where TSelf : CollectionObjectBase<TParent, TSelf, TItem>
-    where TItem : class, IMauiItemContainer<TSelf, TItem>
+    where TItem : class, IMauiItemObject<TSelf, TItem>
 {
     private readonly IItemStrategy _itemStrategy;
     private readonly Func<TSelf, IMauiElement, int, TItem> _itemFactory;

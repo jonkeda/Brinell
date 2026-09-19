@@ -29,10 +29,10 @@ public interface IMauiContainerObject<TParent, TSelf>
 /// </summary>
 /// <typeparam name="TCollection">The owning collection scope.</typeparam>
 /// <typeparam name="TSelf">The item type itself (self-referencing).</typeparam>
-public interface IMauiItemContainer<TCollection, TSelf>
+public interface IMauiItemObject<TCollection, TSelf>
     : IMauiContainerObject<TCollection, TSelf>, IItemContainer<IMauiElement>
     where TCollection : IMauiScope<TCollection>
-    where TSelf : IMauiItemContainer<TCollection, TSelf>
+    where TSelf : IMauiItemObject<TCollection, TSelf>
 {
 }
 
@@ -46,6 +46,6 @@ public interface IMauiCollectionObject<TParent, TSelf, TItem>
     : IMauiContainerObject<TParent, TSelf>, ICollectionObject<IMauiElement, TItem>
     where TParent : IMauiScope<TParent>
     where TSelf : IMauiCollectionObject<TParent, TSelf, TItem>
-    where TItem : IMauiItemContainer<TSelf, TItem>
+    where TItem : IMauiItemObject<TSelf, TItem>
 {
 }

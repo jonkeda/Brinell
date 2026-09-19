@@ -3,7 +3,7 @@
 The work plan and its status. What to build is in [design.md](design.md). Why it is built that way
 is in `background/` (see [README.md](README.md)).
 
-Status: **not started**, 2026-09-19. The design is accepted (section 3).
+Status: **in progress**, 2026-09-19. The design is accepted (section 3).
 
 ## 1. Goal
 
@@ -36,7 +36,7 @@ Status values: `todo`, `doing`, `done`, `blocked`.
 
 | Step | Status | Contents | Done when |
 | --- | --- | --- | --- |
-| **0. Rename** | todo | `ItemContainerBase` → `ItemObjectBase`, `IMauiItemContainer` → `IMauiItemObject`; tests, Todo sample, skills (`maui-control`, `maui-ui-test`) | Builds; `Brinell.Maui.Tests` green; no behaviour change |
+| **0. Rename** | done | `ItemContainerBase` → `ItemObjectBase`, `IMauiItemContainer` → `IMauiItemObject`; tests, Todo sample, skills (`maui-control`, `maui-ui-test`) | Builds; `Brinell.Maui.Tests` green; no behaviour change |
 | **1. MAUI stands alone** | todo | MAUI stops implementing Core's `IElement`, `IDriver`, `IElementScope`, `IPageObject`, `ITestContext<T>`, `IContainerControl` and `IContainerObject`, and stops using `ControlObjectBase`. New or reshaped: `IMauiElement`, `IMauiDriver`, `IMauiElementScope`, `IMauiPage`, `IMauiTestContext` (design 4.2). MAUI copies of the geometry and scope helpers. Finds make one attempt, and the timeout finds are gone (F7 goes with them). `IsLoaded()`, `GetTitle()` and `TakeScreenshot(string?)` lose their unused timeouts. **Otherwise no behaviour change:** `ProbeReadiness` and the readiness chain come in step 5 | Solution builds; `Brinell.Maui.Tests`, `Brinell.Maui.Uat.Tests` (MAUI pages still discovered) and every other stack's tests green; `Brinell.Core` untouched (`git diff --stat srcnew/Brinell.Core` empty); no `IElement<`, `IElementScope`, `IPageObject`, `IDriver<` or `ControlObjectBase` found in `srcnew/Brinell.Maui*` |
 | **2. Pin it down** | todo | **Failing unit tests:** original plan (a)-(e), trace (f)-(h), scopes (dialog on a busy page, content readiness reaching a child, row re-resolves to another item, `ScrollToItem` budget, `Item(index)` waits). **R0 guard tests:** a command that never re-enables → `Click` fails with "disabled" within its budget; an action with no effect → `NotConfirmed`, action `Times.Once`; an element re-rendered every 100 ms → the call passes **and** a near-miss `Warning` is logged; the app exiting mid-call → `AppUnavailableException` without waiting out the budget. **Baseline:** a repeat-run script (a suite run N times, each failure classified as framework race, app bug, environment or driver gap); a `FindElement` and an alive check measured per call; the collection UI tests that take more than 5 s; full-suite timing | Tests fail for the stated reason; baseline recorded in section 4 |
 | **3. Stale signal** | todo | MAUI exceptions (design 4.3), with `AppUnavailableException` raised by both drivers. `InstanceKey`; `Live` in both drivers; `MauiTestContext.TryFindElement` narrowed; `WithRoot`; the alive rule (R6); every Selenium catch switched; catch-alls removed | Mapping unit tests; no Selenium type found in `srcnew/Brinell.Maui` |

@@ -1,7 +1,7 @@
 # Collection
 
 Repeating rows whose children are controls. Two types: the collection,
-`CollectionObjectBase<TParent, TSelf, TItem>`, and its row, `ItemContainerBase<TCollection, TSelf>`,
+`CollectionObjectBase<TParent, TSelf, TItem>`, and its row, `ItemObjectBase<TCollection, TSelf>`,
 both in `srcnew/Brinell.Maui/Containers/`. A collection is a container, so
 [container.md](container.md) applies to it too.
 
@@ -31,7 +31,7 @@ public abstract partial class CollectionView<TParent, TSelf, TItem>
     : CollectionObjectBase<TParent, TSelf, TItem>
     where TParent : IMauiScope<TParent>
     where TSelf : CollectionView<TParent, TSelf, TItem>
-    where TItem : class, IMauiItemContainer<TSelf, TItem>
+    where TItem : class, IMauiItemObject<TSelf, TItem>
 {
     protected CollectionView(IMauiScope<TParent> parentScope, Locator locator,
         IItemStrategy itemStrategy, Func<TSelf, IMauiElement, int, TItem> itemFactory)
@@ -62,7 +62,7 @@ public abstract partial class CollectionView<TParent, TSelf, TItem>
 /// Every automation id below repeats unchanged on every row. A row receives an
 /// already-discovered root and its index; it never locates itself by a unique id.
 /// </remarks>
-public class ProductRow : ItemContainerBase<ProductCollection, ProductRow>
+public class ProductRow : ItemObjectBase<ProductCollection, ProductRow>
 {
     public ProductRow(ProductCollection collection, IMauiElement itemRoot, int index)
         : base(collection, itemRoot, index) { }

@@ -12,10 +12,10 @@ namespace Brinell.Maui.Containers;
 /// </remarks>
 /// <typeparam name="TCollection">The owning collection.</typeparam>
 /// <typeparam name="TSelf">The item type itself (self-referencing for fluent returns).</typeparam>
-public abstract class ItemContainerBase<TCollection, TSelf>
-    : ContainerObjectBase<TCollection, TSelf>, IMauiItemContainer<TCollection, TSelf>
+public abstract class ItemObjectBase<TCollection, TSelf>
+    : ContainerObjectBase<TCollection, TSelf>, IMauiItemObject<TCollection, TSelf>
     where TCollection : IMauiScope<TCollection>, IItemRootProvider
-    where TSelf : ItemContainerBase<TCollection, TSelf>
+    where TSelf : ItemObjectBase<TCollection, TSelf>
 {
     private IMauiElement _itemRoot;
 
@@ -25,7 +25,7 @@ public abstract class ItemContainerBase<TCollection, TSelf>
     /// <param name="collection">The owning collection.</param>
     /// <param name="itemRoot">The item's root element.</param>
     /// <param name="index">The item's zero-based position.</param>
-    protected ItemContainerBase(TCollection collection, IMauiElement itemRoot, int index)
+    protected ItemObjectBase(TCollection collection, IMauiElement itemRoot, int index)
         : base(collection, Locator.ByAutomationId($"[item {index}]"))
     {
         _itemRoot = itemRoot ?? throw new ArgumentNullException(nameof(itemRoot));
@@ -90,7 +90,7 @@ public abstract class ItemContainerBase<TCollection, TSelf>
 /// <summary>
 /// Lets an item re-resolve its own root after virtualization invalidates it.
 /// Implemented by collections; separated from the collection interface so
-/// <see cref="ItemContainerBase{TCollection, TSelf}"/> can constrain on it without
+/// <see cref="ItemObjectBase{TCollection, TSelf}"/> can constrain on it without
 /// naming the item type and creating a circular constraint.
 /// </summary>
 public interface IItemRootProvider

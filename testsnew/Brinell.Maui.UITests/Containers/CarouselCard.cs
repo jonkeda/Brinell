@@ -9,7 +9,7 @@ namespace Brinell.Maui.UITests.Containers;
 /// The card's label id repeats unchanged on every card; the card is handed its root and never
 /// locates itself by a unique id.
 /// </remarks>
-public class CarouselCard : ItemContainerBase<CarouselCards, CarouselCard>
+public class CarouselCard : ItemObjectBase<CarouselCards, CarouselCard>
 {
     public CarouselCard(CarouselCards collection, IMauiElement itemRoot, int index)
         : base(collection, itemRoot, index)

@@ -10,7 +10,7 @@ namespace Brinell.Maui.UITests.Containers;
 /// receives an already-discovered root element and its index; it never locates itself
 /// from the page by a unique id.
 /// </remarks>
-public class ProductRow : ItemContainerBase<ProductCollection, ProductRow>
+public class ProductRow : ItemObjectBase<ProductCollection, ProductRow>
 {
     public ProductRow(ProductCollection collection, IMauiElement itemRoot, int index)
         : base(collection, itemRoot, index)

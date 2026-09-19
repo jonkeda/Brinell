@@ -876,7 +876,7 @@ public class ContainerCollectionTests
         public Label<RowCollection> EmptyLabel => new(this, "RowsEmptyLabel");
     }
 
-    private class RowContainer : ItemContainerBase<RowCollection, RowContainer>
+    private class RowContainer : ItemObjectBase<RowCollection, RowContainer>
     {
         public RowContainer(RowCollection collection, IMauiElement itemRoot, int index)
             : base(collection, itemRoot, index) { }

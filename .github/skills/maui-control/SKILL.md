@@ -42,7 +42,7 @@ follow the rule and mention the disagreement.
 | is one element to the test, even when the platform draws parts (Stepper's +/-), and its parts are implementation detail | **simple control** | `ViewBase<TScope>` or a capability base |
 | is a region whose content the *app* chooses, which scopes other controls and may read or act on its own root (Border, ScrollView, Popup, StateContainer) | **container** | `ContainerObjectBase<TParent, TSelf>` |
 | is one control to the user, made of fixed parts the *control* knows and a test wants to address by name (MediaElement's transport buttons, slider and time labels; AvatarView's initials and image) | **component** | `ComponentObjectBase<TScope, Foo<TScope>>` |
-| repeats rows whose children are controls (a row has a label, a checkbox, a delete button) | **collection** + item | `CollectionObjectBase<TParent, TSelf, TItem>` + `ItemContainerBase<TCollection, TSelf>` |
+| repeats rows whose children are controls (a row has a label, a checkbox, a delete button) | **collection** + item | `CollectionObjectBase<TParent, TSelf, TItem>` + `ItemObjectBase<TCollection, TSelf>` |
 
 Tie-breakers:
 

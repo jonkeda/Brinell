@@ -49,7 +49,7 @@ public abstract partial class CarouselView<TParent, TSelf, TItem>
     : CollectionObjectBase<TParent, TSelf, TItem>
     where TParent : IMauiScope<TParent>
     where TSelf : CarouselView<TParent, TSelf, TItem>
-    where TItem : class, IMauiItemContainer<TSelf, TItem>
+    where TItem : class, IMauiItemObject<TSelf, TItem>
 {
     /// <summary>
     /// Creates a CarouselView bound to an explicit locator.

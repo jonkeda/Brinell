@@ -13,7 +13,7 @@ namespace Brinell.Maui.Controls.Base;
 /// <typeparam name="TCollection">The owning collection.</typeparam>
 /// <typeparam name="TSelf">The item type itself (self-referencing for fluent returns).</typeparam>
 public abstract partial class ClickableItemBase<TCollection, TSelf>
-    : ItemContainerBase<TCollection, TSelf>
+    : ItemObjectBase<TCollection, TSelf>
     where TCollection : IMauiScope<TCollection>, IItemRootProvider
     where TSelf : ClickableItemBase<TCollection, TSelf>
 {

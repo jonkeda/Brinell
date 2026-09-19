@@ -91,7 +91,7 @@ public sealed class TodoList : CollectionObjectBase<TodoListPage, TodoList, Todo
 /// Every id below repeats unchanged on every row. The status is the read-only form of the
 /// <see cref="TodoStatus{TScope}"/> component: it has no Next button.
 /// </remarks>
-public sealed class TodoRow : ItemContainerBase<TodoList, TodoRow>
+public sealed class TodoRow : ItemObjectBase<TodoList, TodoRow>
 {
     /// <summary>Creates a row from the root the collection found.</summary>
     public TodoRow(TodoList collection, IMauiElement itemRoot, int index)
