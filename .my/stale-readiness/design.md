@@ -572,6 +572,15 @@ public abstract class ItemObjectBase<TCollection, TSelf> : ContainerObjectBase<T
 }
 ```
 
+**The guarantee has a floor, and it is the key kind.** `ItemKey.IsHeldBy` can only check a key the
+element itself carries: a `Logical` key reads `PositionInSet`, an `AutomationId` key reads the id.
+A `Position` key answers `true` unconditionally, because nothing on the element can tell. So for a
+collection whose platform publishes no `PositionInSet` **and** whose rows carry no distinguishing
+automation id, `IsCachedRootValid` and `ProbeContentReadiness` cannot detect recycling, and R0's
+"never act on another row" does not hold for it. Give such an item template an id
+(`Task_0`, `Task_1`, …) - that is what makes the guarantee real (second implementation review,
+finding 5).
+
 The materializing loop becomes attempts (Q8, Q9). One scroll step is a deliberate, repeatable
 action, so repeating it across attempts is the intent.
 
@@ -722,8 +731,9 @@ Removed or renamed, all listed in `CHANGELOG.md` in the last step:
 
 | # | Question | Default |
 | --- | --- | --- |
-| S1 | Resolve once in `RunAssertWithElement`? | Resolve once; re-locate on `Stale` / `NotReady`. Revisit with step 2's numbers. |
-| D3 | Should `Poller` retry unknown exceptions? | Yes, within the budget, and named in the final message. `AppUnavailableException` and configuration errors are never retried. |
+| S1 | Resolve once in `RunAssertWithElement`? | **Settled** (second implementation review, finding 1): no. It resolves per attempt, the same shape as `RunGetWithElement`, so an assert finds its element again on every attempt as every other call does. Resolving once held an element that had been replaced while still alive, and checked visibility only on the first lookup. Step 2 measured the saving it protected at 1.1 ms for a child under a known root. |
+| D3 | Should `Poller` retry unknown exceptions? | **Settled** (second implementation review, finding 2): yes, within the budget, and named in the final message - but a *missing route* is not an unknown exception. `RouteUnavailableException` (the `IMauiElement` / `IMauiDriver` capability defaults, a bridge-declared element asked for something in the UI Automation tree, a locator strategy that cannot be matched in hand) joins `AppUnavailableException` and configuration errors as never retried. A bridge verb that was not delivered stays a plain `NotSupportedException` and is still retried: an app republishes its bridge between pages, so that answer can change within a call (step 8). |
+| X6 | Should `Confirm` run under an `AttemptContext` of its own? | Open. Today `AttemptContext.Current` is still the poll's spent context while a confirmation runs, so `CallRemainingMs` read inside a Core method *after* it acted answers 0. Nothing reads it there yet. Changing it moves what every confirmation's scrolls are budgeted against (section 5), so it wants its own evidence. |
 | X5 | Near-miss thresholds | **Settled** (step 8, and the implementation review): 3 or more replacements, or more than 50% of the budget used. They are settings: `MauiTestContextOptions.NearMiss` (`NearMissSettings`). Step 8 saw 1 near-miss in 4,833 logged calls, so the defaults are not noisy. |
 | Q6 | Root cache: the object's lifetime, with an alive check | Switch to per-call if step 2 shows the check costs more than a lookup. |
 | Q9 | Default budget for materializing loops | `DefaultWait`. Step 2's list of long-list tests decides. |

@@ -1,4 +1,5 @@
 using System.Drawing;
+using System.Globalization;
 using Brinell.Core;
 using Brinell.Core.Exceptions;
 using Brinell.Core.Utilities;
@@ -249,66 +250,112 @@ public sealed class AppiumMauiElement : IMauiElement
 
     #region Range
 
+    // Android publishes a range through the node's range info: UiAutomator2 reports its current
+    // value as the node's text (Java's Float.toString, e.g. "2.1474836E7") and sets it with
+    // ACTION_SET_PROGRESS when sent a plain number. It publishes neither bound.
+    //
+    // What a stock MAUI Slider publishes there is its SeekBar's raw progress, 0 to int.MaxValue,
+    // and a Stepper publishes nothing. Brinell.Maui.AppSupport replaces both with the MAUI values
+    // and marks the node with the bounds in its extras. Only a marked node answers here: an
+    // unmarked range's text is a raw fraction, and it is never presented as a value.
+    // Probed 2026-09-19 on Android 36; see .my/android/plan.md.
+
+    /// <summary>The node extras AppSupport writes the bounds under; their presence is the mark.</summary>
+    private const string RangeMinimumExtra = "Brinell.Range.Minimum";
+
+    /// <inheritdoc cref="RangeMinimumExtra"/>
+    private const string RangeMaximumExtra = "Brinell.Range.Maximum";
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Android: the node's text, parsed, when the node is marked as in app units (see the region
+    /// comment). Null otherwise, and on iOS.
+    /// </remarks>
+    public double? RangeValue => Live(() => ReadAppRange() is not null ? ParseRangeNumber(_element.Text) : null);
+
+    /// <inheritdoc />
+    /// <remarks>Android: the minimum AppSupport published in the node's extras; null without it.</remarks>
+    public double? RangeMinimum => Live(() => ReadAppRange()?.Minimum);
+
+    /// <inheritdoc />
+    /// <remarks>Android: the maximum AppSupport published in the node's extras; null without it.</remarks>
+    public double? RangeMaximum => Live(() => ReadAppRange()?.Maximum);
+
     /// <inheritdoc />
     /// <remarks>
     /// <para>
-    /// <b>Arrow keys.</b> Neither platform publishes a settable range value from outside, so the
-    /// value is stepped from the nearer of the minimum, the maximum and the current value, then
-    /// polled until it lands within a step of the target.
+    /// Android: the value as a plain number, which UiAutomator2 turns into
+    /// <c>ACTION_SET_PROGRESS</c>, the action TalkBack uses as well. Performs or throws; the control
+    /// confirms the effect.
     /// </para>
     /// <para>
-    /// No bounds or step are published here either, so these are 0, 100 and 1 - the same
-    /// assumptions the Slider control made when this route lived in it. The current value is read
-    /// from the element's text.
+    /// Only on a node marked as in app units: on a stock <c>SeekBar</c> the number would be taken as
+    /// raw progress out of <c>int.MaxValue</c>, so that throws, naming AppSupport.
     /// </para>
     /// </remarks>
+    /// <exception cref="NotSupportedException">The node does not publish its range in app units, or the platform is not Android.</exception>
     public void SetRangeValue(double value) => Live(() =>
     {
-        const double min = 0;
-        const double max = 100;
-        const double step = 1;
-
-        Click();
-        WaitHelper.Pause(50);
-
-        var current = ReadRangeText() ?? min;
-
-        if (Math.Abs(value - min) < Math.Abs(value - current))
+        if (_driver.Platform != MauiPlatform.Android)
         {
-            SendKeys(Keys.Home);
-            WaitHelper.Pause(50);
-            PressRepeatedly(Keys.ArrowRight, (int)Math.Round((value - min) / step));
-        }
-        else if (Math.Abs(value - max) < Math.Abs(value - current))
-        {
-            SendKeys(Keys.End);
-            WaitHelper.Pause(50);
-            PressRepeatedly(Keys.ArrowLeft, (int)Math.Round((max - value) / step));
-        }
-        else
-        {
-            var steps = (int)Math.Round((value - current) / step);
-            PressRepeatedly(steps > 0 ? Keys.ArrowRight : Keys.ArrowLeft, Math.Abs(steps));
+            throw new NotSupportedException(
+                $"{nameof(AppiumMauiElement)}.{nameof(SetRangeValue)} has no route for {_driver.Platform} yet.");
         }
 
-        WaitHelper.WaitFor(
-            ReadRangeText,
-            reading => reading.HasValue && Math.Abs(reading.Value - value) <= Math.Max(step, 0.5),
-            timeoutMs: 1000,
-            pollingIntervalMs: 50);
+        if (ReadAppRange() is null)
+        {
+            throw new NotSupportedException(
+                $"'{AutomationId}' does not publish its range in the app's units, so a value cannot be set on it. "
+                + "The app has to include Brinell.Maui.AppSupport (AddBrinellAutomationHandlers), which "
+                + "publishes a Slider's and a Stepper's range on Android.");
+        }
+
+        _element.SendKeys(value.ToString("R", CultureInfo.InvariantCulture));
     });
 
-    private void PressRepeatedly(string key, int times)
+    /// <summary>The bounds AppSupport published on this node, or null when it published none.</summary>
+    private (double Minimum, double Maximum)? ReadAppRange()
     {
-        for (var i = 0; i < times; i++)
+        if (_driver.Platform != MauiPlatform.Android)
         {
-            SendKeys(key);
-            WaitHelper.Pause(10);
+            return null;
         }
+
+        var extras = ParseExtras(GetAttribute("extras"));
+        return extras.TryGetValue(RangeMinimumExtra, out var min)
+               && extras.TryGetValue(RangeMaximumExtra, out var max)
+               && ParseRangeNumber(min) is { } minimum
+               && ParseRangeNumber(max) is { } maximum
+            ? (minimum, maximum)
+            : null;
     }
 
-    private double? ReadRangeText()
-        => double.TryParse(Text, out var parsed) ? parsed : null;
+    /// <summary>
+    /// UiAutomator2's <c>extras</c>: <c>key=value</c> pairs separated by semicolons.
+    /// </summary>
+    internal static IReadOnlyDictionary<string, string> ParseExtras(string? extras)
+    {
+        var pairs = new Dictionary<string, string>(StringComparer.Ordinal);
+        if (string.IsNullOrEmpty(extras) || extras == "null")
+        {
+            return pairs;
+        }
+
+        foreach (var pair in extras.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            var separator = pair.IndexOf('=');
+            if (separator > 0)
+            {
+                pairs[pair[..separator]] = pair[(separator + 1)..];
+            }
+        }
+
+        return pairs;
+    }
+
+    /// <summary>A number as Java prints it (<c>5.0</c>, <c>2.1474836E7</c>), or null.</summary>
+    internal static double? ParseRangeNumber(string? text)
+        => double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed) ? parsed : null;
 
     #endregion
 
@@ -1041,11 +1088,20 @@ public sealed class AppiumMauiElement : IMauiElement
     #region Selection
 
     /// <summary>
-    /// The rows of the dialog an Android <c>Picker</c> opens: MAUI builds it with
-    /// <c>AlertDialog.Builder.SetItems</c>, which lists them under the framework's own id.
+    /// The list in the dialog an Android <c>Picker</c> opens, matched by id suffix.
     /// </summary>
+    /// <remarks>
+    /// MAUI builds the dialog with AndroidX AppCompat's <c>AlertDialog.Builder.SetItems</c>, so
+    /// the list's id carries the app's package (<c>com.brinell.samples.maui:id/select_dialog_listview</c>),
+    /// not <c>android:</c>. The framework dialog uses the same name under <c>android:</c>; the
+    /// suffix matches both. Probed 2026-09-19: the rows are <c>CheckedTextView</c>s, one per item.
+    /// </remarks>
+    private static readonly Locator AndroidPickerList =
+        Locator.ByXPath("//*[contains(@resource-id, ':id/select_dialog_listview')]");
+
+    /// <summary>The rows of the picker's dialog: the children of <see cref="AndroidPickerList"/>.</summary>
     private static readonly Locator AndroidPickerItems =
-        Locator.ByXPath("//*[@resource-id='android:id/select_dialog_listview']/*");
+        Locator.ByXPath("//*[contains(@resource-id, ':id/select_dialog_listview')]/*");
 
     /// <summary>How long the picker's dialog gets to show its rows.</summary>
     private const int PickerItemsTimeoutMs = 5000;
@@ -1058,46 +1114,42 @@ public sealed class AppiumMauiElement : IMauiElement
     /// <remarks>
     /// <para>
     /// Taps the picker open and taps the row showing the text. The rows are the ones the dialog has
-    /// realized, so an item far down a long list is not found until something scrolls to it.
+    /// realized, so an item far down a long list is not found until something scrolls to it: long
+    /// pickers and pickers with repeated texts have no Android route yet. iOS draws a picker wheel
+    /// instead and has no route yet.
     /// </para>
     /// <para>
-    /// <b>Compiled, not yet run on a device.</b> This replaces the control layer's tap route, which
-    /// tapped the picker open and then threw because nothing listed its items. iOS draws a picker
-    /// wheel instead and has no route yet.
+    /// Any failure after the dialog opened closes it again: a dialog left open covers the page and
+    /// takes every later test down with it.
     /// </para>
     /// </remarks>
-    public void SelectByText(string text) => Live(() =>
+    public void SelectByText(string text) => Live(() => WithOpenPicker(nameof(SelectByText), items =>
     {
-        var items = OpenPicker(nameof(SelectByText));
-        var item = items.FirstOrDefault(i => i.Text == text);
-
-        if (item == null)
-        {
-            DismissPicker();
-            throw new InvalidOperationException(
+        var item = items.FirstOrDefault(i => i.Text == text)
+            ?? throw new InvalidOperationException(
                 $"'{AutomationId}' has no item with text '{text}' among the {items.Count} its dialog shows.");
-        }
 
         item.Click();
-    });
+    }));
 
     /// <inheritdoc />
     /// <remarks>See <see cref="SelectByText"/>: the same route and the same caveats.</remarks>
-    public void SelectIndex(int index) => Live(() =>
+    public void SelectIndex(int index) => Live(() => WithOpenPicker(nameof(SelectIndex), items =>
     {
-        var items = OpenPicker(nameof(SelectIndex));
-
         if (index < 0 || index >= items.Count)
         {
-            DismissPicker();
             throw new ArgumentOutOfRangeException(
                 nameof(index), index, $"'{AutomationId}' shows {items.Count} item(s); there is no index {index}.");
         }
 
         items[index].Click();
-    });
+    }));
 
-    private IReadOnlyList<IMauiElement> OpenPicker(string operation)
+    /// <summary>
+    /// Taps the picker open, hands its rows to <paramref name="choose"/>, and closes the dialog
+    /// again when anything after the tap fails.
+    /// </summary>
+    private void WithOpenPicker(string operation, Action<IReadOnlyList<IMauiElement>> choose)
     {
         if (_driver.Platform != MauiPlatform.Android)
         {
@@ -1107,19 +1159,41 @@ public sealed class AppiumMauiElement : IMauiElement
         }
 
         Click();
-        return _driver.FindAllChrome(AndroidPickerItems, PickerItemsTimeoutMs);
+
+        var chosen = false;
+        try
+        {
+            choose(_driver.FindAllChrome(AndroidPickerItems, PickerItemsTimeoutMs));
+            chosen = true;
+        }
+        finally
+        {
+            if (!chosen)
+            {
+                TryDismissPicker();
+            }
+        }
     }
 
-    /// <summary>Closes the picker's dialog without choosing, so a failed selection leaves nothing open.</summary>
-    private void DismissPicker()
+    /// <summary>
+    /// Closes the picker's dialog without choosing, so a failed selection leaves nothing open.
+    /// </summary>
+    /// <remarks>
+    /// Back only while the dialog's list is on screen: with the dialog already gone, back would
+    /// leave the page instead.
+    /// </remarks>
+    private void TryDismissPicker()
     {
         try
         {
-            _driver.Driver.Navigate().Back();
+            if (_driver.FindElements(AndroidPickerList).Count > 0)
+            {
+                _driver.Driver.Navigate().Back();
+            }
         }
         catch (Exception error) when (!AppiumErrors.IsGone(error))
         {
-            // The exception about the missing item is the one worth reporting.
+            // The failure that brought us here is the one worth reporting.
         }
     }
 

@@ -556,8 +556,58 @@ finding is numbered as there.
   - Todo UI suite, one run: 36 passed, 3 skipped, 0 failed.
   - Windows `Brinell.Maui.UITests` in full: 353 tests, 351 passed, 2 gated skips, **0 failed**,
     2 min 57 s.
-  - Android was not run: no emulator was up. The Appium changes are the scroll loop's first
-    step and the removed default.
+  - Android Range + Selection (`emulator-5554`): 31 tests, 10 passed, 21 failed, identical to
+    step 8. The failures carry the same three driver-gap signatures:
+    - "Stepper does not expose its current value" (10);
+    - Appium "Cannot convert '' to float" (6);
+    - the Picker dialog showing 0 items (5).
+
+    No stale, timeout or `WaitTimeoutException` failures.
+
+**Second review fixes (2026-09-20).** From [implementation-review-2.md](implementation-review-2.md),
+designed in [review-2-fixes.md](review-2-fixes.md); each finding is numbered as there.
+
+1. **`Assert*` held one element for the whole call.** `RunAssertWithElement` now takes
+   `Attempt(ensureVisible: true, ...)`, the same body `RunGetWithElement` uses, so it finds the
+   element again and re-checks visibility on every attempt. `AssertText` and `GetText` now answer
+   about the same element; before, an element replaced while still alive was compared until the
+   budget ran out. Pins `Assert_FindsTheElementAgain_WhenItIsReplacedWhileAlive` and
+   `Assert_WaitsForVisibility_OnEveryAttempt` (`Pin=review2`). Settles S1.
+2. **A missing route was waited out.** New `RouteUnavailableException : NotSupportedException`,
+   thrown by the `IMauiElement` (25) and `IMauiDriver` (2) capability defaults, `ElementMatch.Matches`
+   and `FlaUIDeclaredElement.NotInTheTree`, and fatal in `Poller.IsFatal`. Before, such a read was
+   retried 48 times over 822 ms on an 800 ms budget and reported as a `WaitTimeoutException`; the
+   pin now measures under 300 ms on a 1000 ms budget. Bridge verbs that were not delivered keep
+   throwing plain `NotSupportedException` and are still retried, because an app republishes its
+   bridge between pages (step 8). Pins `RouteUnavailable_FailsAtOnce` and
+   `UnexpectedException_ThatIsNotAMissingRoute_IsStillRetried`. Settles D3.
+3. **A declared element's gesture** goes through `FlaUIMauiDriver.PerformGesture`, which is wrapped
+   in `WhileTheAppRuns`, instead of calling `GestureRunner.Perform` directly. Not tested against a
+   real closed app; the FlaUI driver has no unit-test seam.
+4. **`FlaUIMauiDriver.SupportsStateReads` removed.** No callers since step 8 folded it into
+   `ReadState`, and it was the one bridge entry point without the `AppHasExited` guard.
+5. **The position-key floor is in design 7.6.** `ItemKey.IsHeldBy` can only check a key the element
+   carries, so a `Position` key answers yes unconditionally and cannot detect recycling. No code.
+6. **Not fixed, on purpose.** The page probe still resolves its root twice; see section 3.
+7. **`timeoutMs` bounds the poll, not the call** - now said in `maui-ui-test`, together with
+   `RouteUnavailableException` in the failure list. The `Confirm` half is design 11's new X6.
+8. **`AppRoot.WaitReady`** polls `ProbeReadiness` on its own budget through `Poller.Until` instead
+   of handing the question to the context, which answered "not disposed" and ignored the timeout.
+
+- **Evidence:**
+  - `Brinell.Maui.Tests`: 186 passed, 1 skipped (section 4). The four new pins were seen failing on
+    the code before the fix.
+  - Windows `Brinell.Maui.UITests` in full, **twice**: 351 passed, 2 gated skips, **0 failed**.
+  - **The timing report could not be used.** Three Shell classes were flagged "slower" on the first
+    run; run in isolation they were back at baseline (`ShellTabTests` 157 ms a test against a
+    baseline of 157), and the second full run flagged five classes including
+    `ProductCollectionTests` at 1174 ms a test where the first run read 586 on identical code. Shell
+    test pages use neither `AppRoot` nor `RunAssertWithElement` - their asserts are `AssertExists`
+    and `AssertOpen` - so there is no path from this change to them. The per-class timings on this
+    machine vary by about 2x between runs, which is larger than anything this change could do.
+  - Two compile errors in the uncommitted `.my/android/` work were fixed so the tree could be built
+    at all (`Stepper.tpl.cs`, `StepperControlTests.cs`: missing `using`s). They belong to that
+    project's commit, not this one.
 
 ## 3. Decisions taken
 
@@ -575,9 +625,12 @@ finding is numbered as there.
 | 2026-09-19 | X5: near-miss thresholds stay at 3 replacements or 50% of the budget, as settings (`MauiTestContextOptions.NearMiss`) | step 8 (1 near-miss in 4,833 calls); implementation review |
 | 2026-09-19 | Driver settle waits below an action (dropdown, range, flyout) keep short fixed bounds; scrolls take the call's remaining budget | [implementation-review.md](implementation-review.md), finding 3; design 5 |
 | 2026-09-19 | An unexpected exception retried to the end of the budget is reported as `WaitTimeoutException` naming its type and count, with the exception inside | implementation review, finding 4; design 6.1 |
+| 2026-09-20 | S1: an assert resolves per attempt, like every other call. The lookup it saved is 1.1 ms; what it cost was an element replaced while alive being compared until the budget ran out | [implementation-review-2.md](implementation-review-2.md) finding 1; [review-2-fixes.md](review-2-fixes.md) 3.1 |
+| 2026-09-20 | D3: a missing route (`RouteUnavailableException`) ends the call at once; other unknown exceptions are still retried; a bridge verb that was not delivered is not a missing route | [implementation-review-2.md](implementation-review-2.md) finding 2; [review-2-fixes.md](review-2-fixes.md) 3.2 |
+| 2026-09-20 | The page probe keeps resolving its root twice. Passing the probe's root to the loaded check would stop readiness calling `IsLoaded()`, which 15 page objects override with a real content check | [review-2-fixes.md](review-2-fixes.md) 3.6 |
 | 2026-09-18 | Keep `ToolbarButton.RequiresVisibilityForAction => false` (S4) | [original-plan.md](background/original-plan.md) |
 
-Still open: design section 11 (S1, D3, X1, X2). Q6, Q9 and X5 are settled (above).
+Still open: design section 11 (X1, X2, X6). Q6, Q9, X5, S1 and D3 are settled (above).
 
 ## 4. Baseline and measurements
 
@@ -602,6 +655,9 @@ Filled in during step 2 and compared in step 8.
 | Full Windows `Brinell.Maui.UITests` after step 7 | 353 tests, **3 min 47 s**; 351 passed, 2 gated skips, 0 failed | 2026-09-19 | slower than step 6 (2 min 59 s): the long-list search (+6 s, see 2.1) and two expected-failure lookups (+9 s, since given 500 ms budgets) |
 | Full Windows `Brinell.Maui.UITests`, step 8 | 353 tests, **3 min 38 s**; 350 passed, 2 gated skips, 1 failed (an exception-type pin, updated; its class 8/8 since) | 2026-09-19 | report `TestResults/20260919-172808-908730`; see 2.1, step 8 |
 | Todo UI suite, repeated, step 8 | with the override: 5 × 39, **0 failures**; without it: 5 × 39, **0 failures** | 2026-09-19 | `TestResults/step8-with-override`, `TestResults/step8-no-override-3` |
+| Android Range + Selection, after the review fixes | 31 tests: 10 passed, 21 failed (the same known driver gaps as step 8) | 2026-09-19 | see 2.1, "Review fixes" |
 | Full Windows `Brinell.Maui.UITests`, after the review fixes | 353 tests, **2 min 57 s**; 351 passed, 2 gated skips, 0 failed | 2026-09-19 | see 2.1, "Review fixes" |
+| Full Windows `Brinell.Maui.UITests`, after the second review's fixes | twice: 353 tests, 351 passed, 2 gated skips, **0 failed** both times; **2 min 29 s** then **3 min 27 s** | 2026-09-20 | `TestResults/20260920-083438-cdf851`, `TestResults/20260920-084003-9a7a22`. The two runs differ by 40% on identical code, and `ProductCollectionTests` reads 586 then 1174 ms a test, so this machine's per-class timings cannot separate a change from its own noise; see 2.1, "Second review fixes" |
+| `Brinell.Maui.Tests`, after the second review's fixes | 186 passed, 1 skipped | 2026-09-20 | 176 before, plus 4 `Pin=review2` pins and 6 Stepper tests from the uncommitted Android work |
 | Android Range + Selection, step 8 | 31 tests: 10 passed, 21 failed (all known driver gaps) | 2026-09-19 | baseline: Range 6 passed, 16 failed; Picker 0 passed, 8 failed |
 | Classes over 2x their 2026-09-15 timing | `ProductCollectionTests` 1151 vs 420 ms/test, `StepperTests` 507 vs 161, `TextVerbTests` 893 vs 214, `ScrollVerbTests` 606 vs 250 | 2026-09-19 | before any behaviour change (step 1 changed none), so this is the baseline to compare against, not a regression of this work |

@@ -1,3 +1,4 @@
+using Brinell.Maui.Calls;
 using Brinell.Core.Interfaces;
 
 namespace Brinell.Maui.Pages;
@@ -5,22 +6,6 @@ namespace Brinell.Maui.Pages;
 /// <summary>
 /// The whole app as a scope, for the controls that do not live inside a page.
 /// </summary>
-/// <remarks>
-/// <para>
-/// Use this scope for controls outside every page root: a MAUI <c>ToolbarItem</c>, menu bars,
-/// Shell's flyout, platform date pickers and the buttons on a native alert. A control scoped to a
-/// page object cannot be resolved while that page is not loaded, which for a back button is
-/// exactly when it is needed.
-/// </para>
-/// <example>
-/// <code>
-/// private readonly AppRoot _appRoot = new(context);
-///
-/// public ToolbarButton&lt;AppRoot&gt; BackToHub
-///     =&gt; new(_appRoot, Locator.ByAccessibilityId("BackToHub"));
-/// </code>
-/// </example>
-/// </remarks>
 public sealed class AppRoot : ObjectBase, IMauiScope<AppRoot>
 {
     private readonly IMauiTestContext _context;
@@ -39,33 +24,30 @@ public sealed class AppRoot : ObjectBase, IMauiScope<AppRoot>
     /// <summary>
     /// None: this scope is not a page and is not in one.
     /// </summary>
-    /// <remarks>
-    /// Because there is no page, page readiness checks do not apply to controls in this scope.
-    /// </remarks>
     public IMauiPage? Page => null;
 
     /// <inheritdoc />
     public LocatorStrategy DefaultLocatorStrategy => _context.DefaultLocatorStrategy;
 
     /// <inheritdoc />
-    /// <remarks>
-    /// Ready whenever the session is: the app root has nothing of its own to wait for yet. An
-    /// app-level busy signal would be read here (design Q4).
-    /// </remarks>
     public ScopeReadiness ProbeReadiness() => _context.ProbeReadiness() with { ScopeName = nameof(AppRoot) };
 
     /// <inheritdoc cref="IMauiElementScope.IsReady"/>
     public bool IsReady() => ProbeReadiness().IsReady;
 
     /// <inheritdoc />
-    public bool WaitReady(int? timeoutMs = null) => _context.WaitReady(timeoutMs);
+    public bool WaitReady(int? timeoutMs = null)
+    {
+        var budget = timeoutMs ?? DefaultTimeoutMs;
+        var context = new AttemptContext(Deadline.In(budget), Context.Timeouts.Animation);
+
+        return Poller.Until(
+            _ => ScopeGate.Check(ProbeReadiness()) ?? Observation.Done(),
+            context,
+            PollingIntervalMs);
+    }
 
     /// <inheritdoc />
-    /// <remarks>
-    /// Never: a scroll lookup searches whichever scroller is on screen, and the app root has no
-    /// scroller of its own, so a sweep would find whatever page happens to be under the control.
-    /// A scope inside it that scrolls (Shell's flyout) turns it back on.
-    /// </remarks>
     public bool AllowsScrollLookup => false;
 
     /// <inheritdoc />

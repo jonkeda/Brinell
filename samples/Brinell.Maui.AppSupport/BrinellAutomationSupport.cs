@@ -1,6 +1,9 @@
 #if WINDOWS
 using Brinell.Maui.AppSupport.Handlers;
 #endif
+#if ANDROID
+using Brinell.Maui.AppSupport.Accessibility;
+#endif
 using Brinell.Maui.AppSupport.Uia;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Hosting;
@@ -37,7 +40,8 @@ public static class BrinellAutomationSupport
 {
     /// <summary>
     /// Registers automation handlers for <c>Layout</c>, <c>ContentView</c>, <c>Border</c> and
-    /// <c>ContentPage</c>.
+    /// <c>ContentPage</c> on Windows, and the range accessibility mappings for <c>Slider</c> and
+    /// <c>Stepper</c> on Android.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -62,6 +66,12 @@ public static class BrinellAutomationSupport
     /// <c>Frame</c> is also absent: it is deprecated in MAUI and has no handler to
     /// hook. Use <c>Border</c>, which is supported here.
     /// </para>
+    /// <para>
+    /// <b>On Android</b> nothing is registered as a handler. The <c>Slider</c> and <c>Stepper</c>
+    /// mappers get an accessibility delegate that publishes their range in the app's units, which
+    /// is what TalkBack announces and what a UI test reads (see <c>RangeAccessibility</c>). Call
+    /// this on every head, not only inside <c>#if WINDOWS</c>.
+    /// </para>
     /// </remarks>
     /// <param name="handlers">The handler collection from <c>ConfigureMauiHandlers</c>.</param>
     /// <returns>The same collection, for chaining.</returns>
@@ -77,6 +87,12 @@ public static class BrinellAutomationSupport
         handlers.AddHandler<ContentView, AutomationContentViewHandler>();
         handlers.AddHandler<Border, AutomationBorderHandler>();
         handlers.AddHandler<ContentPage, AutomationPageHandler>();
+#endif
+
+#if ANDROID
+        // Slider and Stepper publish their range in the app's own units, on the node TalkBack
+        // reads. Without it a Stepper publishes no value at all and a Slider only a raw fraction.
+        RangeAccessibility.Register();
 #endif
 
         return handlers;

@@ -123,6 +123,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A call whose attempts all raised an unexpected exception fails with `WaitTimeoutException`,
   naming the exception type and how many attempts raised it, with the exception as
   `InnerException`. A single attempt still throws the exception itself.
+- A route the platform does not have ends the call at once as `RouteUnavailableException` instead
+  of being asked again until the budget runs out: the `IMauiElement` and `IMauiDriver` capability
+  defaults, a bridge-declared element asked for something that lives in the UI Automation tree, and
+  a locator strategy that cannot be matched against an element already in hand. A bridge verb the
+  app did not answer is not a missing route and is still retried.
+- `Assert*` members that read through an element find the element again and re-check visibility on
+  every attempt, as `Get*` members already did. They used to resolve once and hold it, so an
+  element replaced while still alive was compared until the budget ran out.
+- `AppRoot.WaitReady(timeoutMs)` polls its own readiness on the budget given; it used to ask the
+  context, which answered "not disposed" without waiting and ignored the timeout.
 - The FlaUI driver raises `AppUnavailableException` when a bridge verb, a state read or a gesture
   found no target because the launched app has exited, instead of "not ready" or "unavailable".
 - `IMauiElementScope.DescribeMiss(locator)` builds a scope's "not found" message without
@@ -153,6 +163,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `WaitVisibleCore`, `EnsureVisible(element, timeout)` and `doEnsureVisible`, and the virtual
   `ViewBase.FindElement()` (override `TryFindElement()` and `NotFound()`), and
   `ObjectBase.Poll`.
+- `FlaUIMauiDriver.SupportsStateReads`: `ReadState` answers in one bridge walk.
 - `PageReadinessSnapshot` from the MAUI page contract.
 
 ### Fixed

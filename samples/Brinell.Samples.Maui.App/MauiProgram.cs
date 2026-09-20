@@ -30,15 +30,14 @@ public static class MauiProgram
             .UseMauiCommunityToolkitMediaElement(isAndroidForegroundServiceEnabled: false, static _ => { })
             .ConfigureMauiHandlers(handlers =>
             {
-#if WINDOWS
-                // Makes Grid, the stack layouts, FlexLayout, AbsoluteLayout,
+                // On Windows, makes Grid, the stack layouts, FlexLayout, AbsoluteLayout,
                 // ContentView, and Border expose their AutomationId to UI Automation.
                 // Without this, Brinell container objects cannot resolve on Windows.
+                // On Android, makes Slider and Stepper publish their range in app units.
                 //
                 // Referenced here as a project; copying AppSupport's sources into the
                 // app is the equally supported alternative.
                 handlers.AddBrinellAutomationHandlers();
-#endif
             });
 
         // The gesture bridge, off unless this build was compiled with BRINELL_UIA_BRIDGE and

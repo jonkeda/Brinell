@@ -7,7 +7,7 @@ using Brinell.Core.Utilities;
 /// Inherits GetValue, SetValue, GetMinimum, GetMaximum, Increment, Decrement from RangeControlBase.
 /// Provides additional slider-specific methods like SlideToPercentage.
 /// Overrides SetValueCore to clamp the value to the slider's range before the element sets it -
-/// through RangeValue on Windows, with arrow keys on Android and iOS.
+/// through RangeValue on Windows, through the accessibility set-progress action on Android.
 /// </summary>
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
 public partial class Slider<TScope> : Base.RangeControlBase<TScope>
@@ -37,9 +37,14 @@ public partial class Slider<TScope> : Base.RangeControlBase<TScope>
     #region Core Methods (Element-Aware, No Logging)
 
     /// <summary>
-    /// Sets slider value, clamped to the slider's range.
-    /// The element picks the route: the RangeValue pattern on Windows, arrow keys on Android and iOS.
+    /// Sets slider value, clamped to the slider's range where the range is published.
+    /// The element picks the route: the RangeValue pattern on Windows, the accessibility
+    /// set-progress action on Android.
     /// </summary>
+    /// <remarks>
+    /// A bound that is not published does not clamp: the app clamps anyway, and assuming 0-100
+    /// sent the wrong value to every slider with another range.
+    /// </remarks>
     /// <param name="element">The slider element.</param>
     /// <param name="value">The target value. Null skips the operation.</param>
     /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
@@ -49,40 +54,56 @@ public partial class Slider<TScope> : Base.RangeControlBase<TScope>
 
         EnsureSettableCore(element);
 
-        var min = GetMinimumCore(element) ?? 0;
-        var max = GetMaximumCore(element) ?? 100;
-        var range = max - min;
+        var min = GetMinimumCore(element) ?? double.NegativeInfinity;
+        var max = GetMaximumCore(element) ?? double.PositiveInfinity;
 
-        if (range <= 0)
+        if (max < min)
         {
             throw new InvalidOperationException($"Invalid slider range: min={min}, max={max}");
         }
 
-        // Clamp value to valid range
         var target = Math.Clamp(value.Value, min, max);
-
         element.SetRangeValue(target);
+
+        // A slider may snap to its own step; a thousandth of the range covers that.
+        var tolerance = double.IsFinite(max - min) ? Math.Max(0.01, (max - min) / 1000) : 0.01;
+        var confirmation = Confirm(() => GetValueCore(element),
+            actual => actual.HasValue && Math.Abs(actual.Value - target) <= tolerance,
+            timeoutMs);
+        if (!confirmation.IsConfirmed)
+        {
+            throw confirmation.Failure(Locator, "SetValue", lastError => new TimeoutException(
+                $"Slider '{Locator.Value}' was set to {target} and reads {Describe(confirmation.LastValue)}.",
+                lastError));
+        }
     }
+
+    private static string Describe(double? value) => value?.ToString() ?? "no value";
 
     /// <summary>
     /// Gets the current value as a percentage of the range from a pre-found element.
     /// </summary>
     /// <param name="element">The pre-found element.</param>
-    /// <returns>The percentage (0-100), or null if not available.</returns>
+    /// <returns>The percentage (0-100), or null if the value or the range is not published.</returns>
     protected virtual double? GetPercentageCore(IMauiElement? element)
     {
         if (element == null) return null;
 
         var current = GetValueCore(element);
-        if (current == null) return null;
+        var min = GetMinimumCore(element);
+        var max = GetMaximumCore(element);
+        if (current == null || min == null || max == null) return null;
 
-        var min = GetMinimumCore(element) ?? 0;
-        var max = GetMaximumCore(element) ?? 100;
+        if (Math.Abs(max.Value - min.Value) < 0.0001) return 0;
 
-        if (Math.Abs(max - min) < 0.0001) return 0;
-
-        return ((current.Value - min) / (max - min)) * 100.0;
+        return ((current.Value - min.Value) / (max.Value - min.Value)) * 100.0;
     }
+
+    /// <summary>The slider's published bound, or a failure saying it has none.</summary>
+    private double RequireBound(double? bound, string which)
+        => bound ?? throw new NotSupportedException(
+            $"Slider '{Locator.Value}' does not publish its {which}. On Android the app includes "
+            + "Brinell.Maui.AppSupport (AddBrinellAutomationHandlers), which publishes it.");
 
     #endregion
 
@@ -99,8 +120,8 @@ public partial class Slider<TScope> : Base.RangeControlBase<TScope>
     {
         if (percentage == null) return;
 
-        var min = GetMinimumCore(element) ?? 0;
-        var max = GetMaximumCore(element) ?? 100;
+        var min = RequireBound(GetMinimumCore(element), "minimum");
+        var max = RequireBound(GetMaximumCore(element), "maximum");
         var value = min + ((max - min) * (percentage.Value / 100.0));
         SetValueCore(element, value, timeoutMs);
     }
@@ -112,8 +133,7 @@ public partial class Slider<TScope> : Base.RangeControlBase<TScope>
     /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
     protected virtual void SlideToMinimumCore(IMauiElement element, int? timeoutMs = null)
     {
-        var min = GetMinimumCore(element) ?? 0;
-        SetValueCore(element, min, timeoutMs);
+        SetValueCore(element, RequireBound(GetMinimumCore(element), "minimum"), timeoutMs);
     }
 
     /// <summary>
@@ -123,8 +143,7 @@ public partial class Slider<TScope> : Base.RangeControlBase<TScope>
     /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
     protected virtual void SlideToMaximumCore(IMauiElement element, int? timeoutMs = null)
     {
-        var max = GetMaximumCore(element) ?? 100;
-        SetValueCore(element, max, timeoutMs);
+        SetValueCore(element, RequireBound(GetMaximumCore(element), "maximum"), timeoutMs);
     }
 
     #endregion

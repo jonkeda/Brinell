@@ -4,18 +4,6 @@ namespace Brinell.Maui.Exceptions;
 /// The element a handle referred to is no longer in the UI tree: the platform removed or
 /// replaced it.
 /// </summary>
-/// <remarks>
-/// <para>
-/// A signal, not a failure in itself (<c>.my/stale-readiness/design.md</c>, R5). A call's poll
-/// finds the element again when it sees one. A confirmation that sees one reports that the element
-/// was replaced, and never repeats the action.
-/// </para>
-/// <para>
-/// Raised by the drivers, which translate their platform's own signal: UI Automation's
-/// <c>UIA_E_ELEMENTNOTAVAILABLE</c> on Windows, Selenium's stale-reference error through Appium.
-/// Nothing above the drivers names a platform type.
-/// </para>
-/// </remarks>
 public sealed class StaleElementException : BrinellException
 {
     /// <summary>Creates the signal for an element that is gone.</summary>
@@ -54,11 +42,6 @@ public enum NotReadyReason
 /// The element was found, but is not ready for what the call wants: not visible, disabled, or
 /// short of a control's own requirement.
 /// </summary>
-/// <remarks>
-/// A check that makes one attempt raises this; the call's poll decides whether to try again. It
-/// replaces the <c>TimeoutException</c> such checks used to raise, which claimed a timeout from a
-/// check that never waited.
-/// </remarks>
 public sealed class ElementNotReadyException : BrinellException
 {
     /// <summary>Creates the report of an element that is not ready.</summary>
@@ -101,10 +84,6 @@ public sealed class ElementNotReadyException : BrinellException
 /// A scope a call stands in (a page, a container, a row) did not become ready within the call's
 /// budget, or is misconfigured.
 /// </summary>
-/// <remarks>
-/// Replaces the <c>PageLoadException</c> MAUI used to throw: the scope that was not ready may be a
-/// container or a row, not only a page. <see cref="Readiness"/> says which, and what it found.
-/// </remarks>
 public sealed class ScopeNotReadyException : BrinellException
 {
     /// <summary>Creates the report of a scope that was not ready.</summary>
@@ -123,10 +102,6 @@ public sealed class ScopeNotReadyException : BrinellException
 /// <summary>
 /// The app under test is gone: its process exited, or the driver's session ended.
 /// </summary>
-/// <remarks>
-/// Never retried (<c>.my/stale-readiness/design.md</c>, R0): no later attempt can succeed, and
-/// the crash or disconnect is itself the finding. Raised by the drivers.
-/// </remarks>
 public sealed class AppUnavailableException : BrinellException
 {
     /// <summary>Creates the report of an app that is gone.</summary>
@@ -135,6 +110,19 @@ public sealed class AppUnavailableException : BrinellException
     public AppUnavailableException(string detail, Exception? platformError = null)
         : base($"The app under test is no longer available: {detail}",
                platformError ?? new InvalidOperationException(detail))
+    {
+    }
+}
+
+/// <summary>
+/// There is no route for what was asked: this element, driver or platform has no way to do it, and
+/// will not grow one while the call runs.
+/// </summary>
+public sealed class RouteUnavailableException : NotSupportedException
+{
+    /// <summary>Creates the report of something the platform has no route for.</summary>
+    /// <param name="message">What was asked, and what to use instead.</param>
+    public RouteUnavailableException(string message) : base(message)
     {
     }
 }

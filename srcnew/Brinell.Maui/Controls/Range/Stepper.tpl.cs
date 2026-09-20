@@ -1,4 +1,6 @@
 using Brinell.Core.Locators;
+using Brinell.Maui.Calls;
+using Brinell.Maui.Controls.Base;
 using System.Globalization;
 
 namespace Brinell.Maui.Controls.Range;
@@ -138,60 +140,42 @@ public partial class Stepper<TScope> : Base.RangeControlBase<TScope>
     #region Core Method Overrides
     
     /// <summary>
-    /// Increments the stepper by invoking its increment button.
-    /// Uses button mode on Windows where buttons are exposed separately.
+    /// Presses the stepper's + button: the Windows <c>{id}Plus</c> button, or the last button
+    /// inside the Stepper elsewhere.
     /// </summary>
     /// <param name="element">The pre-found stepper element.</param>
-    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
+    /// <param name="timeoutMs">Unused: a press is one action, and its effect is the caller's to confirm.</param>
     protected override void IncrementCore(IMauiElement element, int? timeoutMs = null)
-    {
-        var parts = ResolveParts();
-        if (parts?.IsButtonMode == true)
-        {
-            parts.Plus!.Invoke();
-            return;
-        }
-        
-        // Try to find increment button as child
-        var incrementButton = FindChildButton(element, isIncrement: true);
-        if (incrementButton != null)
-        {
-            incrementButton.Invoke();
-            return;
-        }
-        
-        base.IncrementCore(element, timeoutMs);
-    }
-    
+        => PressButton(element, isIncrement: true);
+
     /// <summary>
-    /// Decrements the stepper by invoking its decrement button.
-    /// Uses button mode on Windows where buttons are exposed separately.
+    /// Presses the stepper's - button: the Windows <c>{id}Minus</c> button, or the first button
+    /// inside the Stepper elsewhere.
     /// </summary>
     /// <param name="element">The pre-found stepper element.</param>
-    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
+    /// <param name="timeoutMs">Unused: a press is one action, and its effect is the caller's to confirm.</param>
     protected override void DecrementCore(IMauiElement element, int? timeoutMs = null)
+        => PressButton(element, isIncrement: false);
+
+    private void PressButton(IMauiElement element, bool isIncrement)
     {
         var parts = ResolveParts();
-        if (parts?.IsButtonMode == true)
+        var button = parts?.IsButtonMode == true
+            ? (isIncrement ? parts.Plus : parts.Minus)
+            : FindChildButton(element, isIncrement);
+
+        if (button is null)
         {
-            parts.Minus!.Invoke();
-            return;
+            throw new NotSupportedException(
+                $"Stepper '{StepperName}' has no {(isIncrement ? "+" : "-")} button to press.");
         }
-        
-        // Try to find decrement button as child
-        var decrementButton = FindChildButton(element, isIncrement: false);
-        if (decrementButton != null)
-        {
-            decrementButton.Invoke();
-            return;
-        }
-        
-        base.DecrementCore(element, timeoutMs);
+
+        button.Invoke();
     }
-    
+
     /// <summary>
     /// Gets the current value: from the app's GetState when the Stepper declares it, otherwise
-    /// from the RangeValue pattern.
+    /// from the value the element publishes as a range.
     /// </summary>
     /// <param name="element">The stepper element (or proxy button in button mode).</param>
     /// <returns>The current value, or null if not available.</returns>
@@ -217,91 +201,116 @@ public partial class Stepper<TScope> : Base.RangeControlBase<TScope>
     {
         return ReadNumericState("Increment") ?? base.GetStepCore(element);
     }
-    
+
+    /// <summary>How close two values must be to count as the same.</summary>
+    private const double ValueTolerance = 0.01;
+
     /// <summary>
-    /// Sets value by clamping it to the range, invoking increment or decrement the needed number
-    /// of times, and waiting until the read value reaches the target.
+    /// Sets the value the way a user does: press towards the target, watch the value move, and
+    /// repeat.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Only the value has to be readable. The step is what one press changed, and the bounds clamp
+    /// the target only where they are published. Each press is its own action and is confirmed
+    /// before the next, so a Stepper that ignores a press fails after that one press, as
+    /// <see cref="ConfirmationResult.NotConfirmed"/>, rather than being pressed again (R0).
+    /// </para>
+    /// <para>
+    /// The loop stops when the value is as near the target as a whole number of steps gets it, or,
+    /// where the bound in that direction is not published, when a press after a successful one
+    /// changes nothing: the Stepper is at its bound. The presses and their confirmations share one
+    /// budget, <paramref name="timeoutMs"/>.
+    /// </para>
+    /// </remarks>
     /// <param name="element">The pre-found stepper element.</param>
     /// <param name="value">The target value. Null skips the operation.</param>
-    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
+    /// <param name="timeoutMs">The budget for all the presses and their confirmations; null for the default.</param>
     protected override void SetValueCore(IMauiElement element, double? value, int? timeoutMs = null)
     {
         if (value == null) return;
 
         EnsureSettableCore(element);
 
-        var minimum = GetMinimumCore(element) ?? double.NegativeInfinity;
-        var maximum = GetMaximumCore(element) ?? double.PositiveInfinity;
-        var target = Math.Clamp(value.Value, minimum, maximum);
-        var current = GetValueCore(element)
-            ?? throw new NotSupportedException(
-                $"Stepper '{_baseAutomationId ?? Locator.Value}' does not expose its current value.");
-        var step = GetStepCore(element)
-            ?? throw new NotSupportedException(
-                $"Stepper '{_baseAutomationId ?? Locator.Value}' does not expose its increment.");
-        if (step <= 0)
-        {
-            throw new InvalidOperationException(
-                $"Stepper '{_baseAutomationId ?? Locator.Value}' reported a non-positive increment: {step}.");
-        }
+        var minimum = GetMinimumCore(element);
+        var maximum = GetMaximumCore(element);
+        var target = Math.Clamp(
+            value.Value,
+            minimum ?? double.NegativeInfinity,
+            maximum ?? double.PositiveInfinity);
+        var current = GetValueCore(element) ?? throw NoValue();
+        var deadline = Deadline.In(timeoutMs ?? DefaultTimeoutMs);
+        double? step = null;
+        var presses = 0;
 
-        var diff = target - current;
-        var presses = (int)Math.Round(Math.Abs(diff / step), MidpointRounding.AwayFromZero);
-        
-        var increment = diff > 0;
-        for (int i = 0; i < presses; i++)
+        while (Math.Abs(target - current) > ValueTolerance
+               && (step is null || Math.Abs(target - current) >= step.Value / 2 - ValueTolerance))
         {
-            if (increment)
-                IncrementCore(element, timeoutMs);
-            else
-                DecrementCore(element, timeoutMs);
-        }
+            var up = target > current;
+            var before = current;
 
-        var confirmation = Confirm(() => GetValueCore(element),
-                actual => actual.HasValue && Math.Abs(actual.Value - target) < 0.01,
-                timeoutMs);
-        if (!confirmation.IsConfirmed)
-        {
-            throw confirmation.Failure(Locator, "the presses", lastError => new TimeoutException(
-                $"Stepper '{_baseAutomationId ?? Locator.Value}' did not reach {target}.", lastError));
+            PressButton(element, up);
+            presses++;
+
+            var confirmation = Confirm(
+                () => GetValueCore(element),
+                actual => actual.HasValue
+                    && (up ? actual.Value > before + ValueTolerance : actual.Value < before - ValueTolerance),
+                deadline.RemainingMs);
+
+            if (!confirmation.IsConfirmed)
+            {
+                var boundUnpublished = (up ? maximum : minimum) is null;
+                if (confirmation.Result == ConfirmationResult.NotConfirmed && step is not null && boundUnpublished)
+                {
+                    return;
+                }
+
+                var press = up ? "+" : "-";
+                throw confirmation.Failure(Locator, $"the {press} press", lastError => new TimeoutException(
+                    $"Stepper '{StepperName}' stayed at {before} after press {presses} ({press}) towards {target}, "
+                    + $"for {deadline.ElapsedMs} ms.",
+                    lastError));
+            }
+
+            current = confirmation.LastValue!.Value;
+            step ??= Math.Abs(current - before);
         }
     }
-    
+
+    /// <summary>The Stepper's name for messages: its AutomationId, or its locator's value.</summary>
+    private string StepperName => _baseAutomationId ?? Locator.Value;
+
+    /// <summary>The failure when the Stepper publishes no value to press towards.</summary>
+    private NotSupportedException NoValue()
+        => new($"Stepper '{StepperName}' does not expose its current value. On Windows the app declares "
+               + "the GetState verb on it; on Android the app includes Brinell.Maui.AppSupport "
+               + "(AddBrinellAutomationHandlers), which publishes it as the node's range.");
+
     /// <summary>
-    /// Finds increment or decrement button child element.
+    /// Finds the increment or decrement button inside the Stepper.
     /// </summary>
     /// <param name="parent">The parent stepper element.</param>
     /// <param name="isIncrement">True for increment button, false for decrement.</param>
     /// <returns>The button element, or null if not found.</returns>
+    /// <remarks>
+    /// The Stepper holds two buttons, - first and + last: <c>RepeatButton</c>s under UI Automation,
+    /// two <c>android.widget.Button</c>s on Android.
+    /// </remarks>
     private IMauiElement? FindChildButton(IMauiElement parent, bool isIncrement)
     {
-        // MAUI Stepper structure:
-        // - RepeatButton (decrement, typically first or has "-" text)
-        // - TextBlock (value display)
-        // - RepeatButton (increment, typically last or has "+" text)
-        
-        var buttons = parent.FindElements(
-            Locator.ByClassName("RepeatButton"));
-        
-        if (buttons.Count >= 2)
+        foreach (var locator in new[] { Locator.ByClassName("RepeatButton"), Locator.ByControlType("button") })
         {
-            // First is decrement, last is increment
-            return isIncrement ? buttons[^1] : buttons[0];
+            var buttons = parent.FindElements(locator);
+            if (buttons.Count >= 2)
+            {
+                return isIncrement ? buttons[^1] : buttons[0];
+            }
         }
-        
-        // Try Button class name as alternative
-        var altButtons = parent.FindElements(
-            Locator.ByClassName("Button"));
-        
-        if (altButtons.Count >= 2)
-        {
-            return isIncrement ? altButtons[^1] : altButtons[0];
-        }
-        
+
         return null;
     }
-    
+
     #endregion
 
     #region Stepper-Specific Core Methods

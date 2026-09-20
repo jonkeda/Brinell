@@ -3,16 +3,6 @@ namespace Brinell.Maui.Containers;
 /// <summary>
 /// Answers whether an element the caller already holds matches a locator.
 /// </summary>
-/// <remarks>
-/// <para>
-/// A collection already holds its item roots and must say which one the caller meant, using the
-/// same <see cref="Locator"/> vocabulary as a search.
-/// </para>
-/// <para>
-/// Identifiers are compared exactly; captions ignore case, because platforms render captions
-/// differently - Android cases button text to suit its theme.
-/// </para>
-/// </remarks>
 public static class ElementMatch
 {
     /// <summary>
@@ -39,7 +29,7 @@ public static class ElementMatch
                 LocatorStrategy.Text => Loosely(element.Text, locator.Value),
                 LocatorStrategy.Name => Loosely(element.Name, locator.Value),
                 LocatorStrategy.ControlType => MatchesControlType(element, locator.Value),
-                _ => throw new NotSupportedException(
+                _ => throw new RouteUnavailableException(
                     $"A '{locator.Strategy}' locator cannot be matched against an element that is " +
                     "already found. Supported: AutomationId, Id, AccessibilityId, Text, Name, ControlType.")
             };
@@ -54,13 +44,6 @@ public static class ElementMatch
     /// <summary>
     /// Whether the element is of the given control type.
     /// </summary>
-    /// <remarks>
-    /// Compared against the last segment of the platform's own type name, so
-    /// <c>ByControlType("Button")</c> matches Windows' <c>Button</c> and Android's
-    /// <c>android.widget.Button</c>. Type <i>names</i> still differ between platforms - a MAUI
-    /// Entry is <c>Edit</c> on Windows and <c>EditText</c> on Android - so a control-type key is
-    /// only portable where the platforms happen to agree. Prefer an id or a caption.
-    /// </remarks>
     private static bool MatchesControlType(IMauiElement element, string controlType)
     {
         var tagName = element.TagName;

@@ -11,11 +11,6 @@ namespace Brinell.Maui.Pages;
 /// resolve strictly within that root.
 /// </summary>
 /// <typeparam name="TSelf">The concrete page type (CRTP pattern).</typeparam>
-/// <remarks>
-/// <c>[TestPage]</c> (inherited) is how test composition and UAT find MAUI pages: they used to
-/// recognize them by Brinell.Core's page interface, which MAUI pages no longer implement (see
-/// <c>.my/stale-readiness/design.md</c>, R9).
-/// </remarks>
 [Brinell.Core.Composition.TestPage]
 public abstract class PageObjectBase<TSelf> : RootedScopeBase<TSelf, TSelf>, IMauiPage<TSelf>
     where TSelf : PageObjectBase<TSelf>
@@ -71,10 +66,6 @@ public abstract class PageObjectBase<TSelf> : RootedScopeBase<TSelf, TSelf>, IMa
         => TryGetContainerRoot() is { } root && root.HasUsableBounds();
 
     /// <inheritdoc />
-    /// <remarks>
-    /// A page's content readiness: <see cref="IsLoaded"/>, then the page-local busy signal when
-    /// the page has one. The root itself was checked by the probe before this.
-    /// </remarks>
     protected override ScopeReadiness ProbeContentReadiness(IMauiElement root)
     {
         if (!IsLoaded())
@@ -103,7 +94,6 @@ public abstract class PageObjectBase<TSelf> : RootedScopeBase<TSelf, TSelf>, IMa
     }
 
     /// <inheritdoc />
-    /// <remarks>A page's own members check the whole page: root, loaded, busy.</remarks>
     protected override ScopeReadiness ProbeCallReadiness() => ProbeReadiness();
 
     /// <inheritdoc />

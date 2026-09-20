@@ -10,19 +10,6 @@ namespace Brinell.Maui.FlaUI;
 /// An element the app declared by <c>AutomationId</c> on the Brinell bridge, standing in for a
 /// control the UI Automation tree does not show.
 /// </summary>
-/// <remarks>
-/// <para>
-/// <b>What <see cref="IMauiElement.TryFindDeclared"/> returns on Windows.</b> A MAUI <c>Stepper</c>
-/// has no tree node of its own - only its two buttons - and a <c>SwipeView</c> publishes no
-/// <c>AutomationId</c>, yet the bridge addresses both by id. This element answers what the bridge
-/// can: state reads and gestures.
-/// </para>
-/// <para>
-/// <b>Everything else throws.</b> It has no bounds, no visibility and no text, and inventing
-/// defaults for them would let it pass a visibility check or read as empty. Asking it one of those
-/// questions means a control took the wrong element.
-/// </para>
-/// </remarks>
 internal sealed class FlaUIDeclaredElement : IMauiElement
 {
     private readonly string _automationId;
@@ -46,17 +33,9 @@ internal sealed class FlaUIDeclaredElement : IMauiElement
     public string? AutomationId => _automationId;
 
     /// <inheritdoc />
-    /// <remarks>
-    /// The declared id: a declared element is answered by the app through the bridge, not held as
-    /// a tree node, so it is never replaced and never goes stale.
-    /// </remarks>
     public string InstanceKey => $"declared:{_automationId}";
 
     /// <inheritdoc />
-    /// <remarks>
-    /// The declaration is read from the target found at lookup, so answering null costs no walk
-    /// of the bridge at all - this element already holds the thing that knows.
-    /// </remarks>
     public string? ReadState(string property)
         => DeclaresStateReads ? _driver.ReadState(_automationId, property) : null;
 
@@ -82,13 +61,13 @@ internal sealed class FlaUIDeclaredElement : IMauiElement
 
     /// <inheritdoc />
     public void PerformGesture(MauiGesture gesture)
-        => GestureRunner.Perform(_driver.RootElement, _driver.Automation, _automationId, gesture);
+        => _driver.PerformGesture(_automationId, gesture);
 
     #endregion
 
     #region What it cannot answer
 
-    private NotSupportedException NotInTheTree(string member)
+    private RouteUnavailableException NotInTheTree(string member)
         => new(
             $"'{_automationId}' is reached through the app's bridge declaration, not through the UI "
             + $"Automation tree, so it has no {member}. It answers state reads and gestures only.");

@@ -17,10 +17,6 @@ namespace Brinell.Maui.FlaUI;
 /// FlaUI-based implementation of <see cref="IMauiDriver"/> for Windows platform.
 /// Provides native Windows UI Automation support for MAUI desktop apps.
 /// </summary>
-/// <remarks>
-/// What the window needs - staying attached, staying behind, being placed, the real mouse - lives
-/// in <c>Windowing/</c> (step 104). This class is launch, lookup, and the app-level verbs.
-/// </remarks>
 public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
 {
     private readonly UIA3Automation _automation;
@@ -135,19 +131,9 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     #region The app
 
     /// <inheritdoc />
-    /// <remarks>
-    /// Stands for the application window, read afresh on every use - the window element can be
-    /// retired by UI Automation and attached again. <c>TryFindByScrolling</c> keeps the interface
-    /// default, null: UIA keeps scrolled-off-screen elements in the tree with
-    /// <c>IsOffscreen=true</c>, so scrolling reveals nothing a plain lookup missed.
-    /// </remarks>
     public IMauiElement AppElement => FlaUIMauiElement.ForApp(this);
 
     /// <inheritdoc />
-    /// <remarks>
-    /// Read from a tree dump, not reasoned about: Windows reports WinUI's own <c>navViewItem</c>s in
-    /// place of anything the app wrote, inside hosts WinUI names.
-    /// </remarks>
     public ShellChromeLocators ShellChrome { get; } = new(
         TabHost: Locator.ByAutomationId("TopNavMenuItemsHost"),
         Tab: Locator.ByControlType("TabItem"),
@@ -169,20 +155,11 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     internal UIA3Automation Automation => _automation;
 
     /// <summary>The app's top-level window. Where a bridge lookup starts.</summary>
-    /// <remarks>
-    /// Re-attached when UI Automation has retired it - see <see cref="AppWindow"/> and
-    /// <c>.my/fix/rca-app-freeze-was-a-stale-root.md</c>.
-    /// </remarks>
     internal AutomationElement RootElement => _window.Element;
 
     /// <summary>
     /// Whether the app this driver launched has exited.
     /// </summary>
-    /// <remarks>
-    /// Tells an element that is gone because the app is gone from one that was only replaced: the
-    /// first is <c>AppUnavailableException</c>, the second <c>StaleElementException</c>. Always
-    /// false for a driver that attached rather than launched, since it has no process to watch.
-    /// </remarks>
     internal bool AppHasExited
     {
         get
@@ -200,16 +177,11 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     }
 
     /// <summary>How many times the root element had gone stale and was attached again.</summary>
-    /// <remarks>Diagnostics. A number that grows during a run is the invalidation happening.</remarks>
     public int RootReattachments => _window.Reattachments;
 
     /// <summary>
     /// How many times the app under test took the foreground and had to be put back.
     /// </summary>
-    /// <remarks>
-    /// <b>Zero is the claim this framework makes.</b> Always zero for a driver that attached rather
-    /// than launched, since only a launch is watched. See <see cref="QuietWindow"/>.
-    /// </remarks>
     public int ForegroundGrabs => _quiet?.ForegroundGrabs ?? 0;
 
     #endregion
@@ -219,12 +191,6 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// <summary>
     /// Asks the app's bridge: the first published target that answers <paramref name="verb"/>.
     /// </summary>
-    /// <remarks>
-    /// The bridge lookup walks the tree and treats a target it cannot read as "not there". When
-    /// nothing answered because the launched app has exited, that is not "not ready yet", which a
-    /// call would wait out; it is <see cref="AppUnavailableException"/>, which ends the call at once
-    /// (R0).
-    /// </remarks>
     private Bridge.BridgeVerbResult Exchange(BrinellVerb verb, string argument = "")
     {
         var answer = Bridge.BridgeVerbRunner.ExchangeAnywhere(RootElement, Automation, verb, argument);
@@ -256,11 +222,6 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// <summary>
     /// Finds a piece of window chrome the driver acts on itself, waiting for it to appear.
     /// </summary>
-    /// <remarks>
-    /// Only for the driver's own actions (opening the navigation pane, dismissing a flyout), which
-    /// run inside a control's action rather than inside its poll. Everything a control looks up
-    /// goes through <see cref="FindElements"/>, which never waits.
-    /// </remarks>
     /// <param name="locator">The chrome element's locator.</param>
     /// <param name="timeoutMs">How long to wait for it to appear.</param>
     /// <returns>The element.</returns>
@@ -331,20 +292,6 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     #region Screenshots
     
     /// <inheritdoc />
-    /// <remarks>
-    /// <para>
-    /// Asks the window to render itself first, so a screenshot is of the app even when the app
-    /// is behind something else. The fallback — FlaUI's <c>Capture.Element</c> — reads the
-    /// screen at the element's bounding rectangle, and with the app occluded that is a picture
-    /// of whatever is on top. A failure diagnostic showing the wrong application is worse than
-    /// none, because nothing about it looks wrong.
-    /// </para>
-    /// <para>
-    /// The fallback is kept rather than replaced: <c>PW_RENDERFULLCONTENT</c> returns black for
-    /// some GPU-composed content, and a minimized window has nothing to render. Reading the
-    /// screen is wrong only when the window is covered, and right the rest of the time.
-    /// </para>
-    /// </remarks>
     public byte[] GetScreenshot()
     {
         var windowContent = TryCaptureWindowContent();
@@ -464,20 +411,10 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     #region Gestures (Brinell UI Automation bridge)
 
     /// <inheritdoc />
-    /// <remarks>
-    /// Answered by asking the app under test what it declared, not by inspecting the control.
-    /// False for a control that could obviously be swiped means the app has not opted that
-    /// element in, which is a change to the app's markup rather than to the test.
-    /// </remarks>
     public bool SupportsGesture(string automationId, MauiGesture gesture)
         => GestureRunner.Supports(RootElement, Automation, automationId, gesture);
 
     /// <inheritdoc />
-    /// <remarks>
-    /// Works on elements this driver cannot find at all. A MAUI <c>SwipeView</c> publishes no
-    /// <c>AutomationId</c> on Windows, so <c>FindElement</c> will never return it - but its
-    /// bridge element is addressable, and that is what carries the verb.
-    /// </remarks>
     /// <exception cref="Bridge.GestureUnavailableException">
     /// The app publishes no bridge, the element was not declared, or the verb was refused.
     /// </exception>
@@ -507,11 +444,6 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
         }
     }
 
-    /// <summary>Whether the bridge target with this id declares GetState.</summary>
-    internal bool SupportsStateReads(string automationId)
-        => BridgeVerbRunner.Supports(
-            RootElement, Automation, automationId, BrinellVerb.GetState);
-
     /// <summary>Reads app-published state for a bridge target, which may have no node in the tree.</summary>
     internal string ReadState(string automationId, string property)
     {
@@ -536,10 +468,6 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// <summary>
     /// Whether the app under test publishes a Brinell bridge at all.
     /// </summary>
-    /// <remarks>
-    /// The one call that distinguishes "this app has no instrumentation" from "this element was
-    /// not declared". Worth checking once in a fixture rather than inferring it from a failure.
-    /// </remarks>
     /// <returns>Whether a bridge window is present.</returns>
     public bool HasGestureBridge()
         => Bridge.BrinellBridgeLookup.HasBridge(RootElement, Automation);
@@ -547,11 +475,6 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// <summary>
     /// Describes the raw automation tree just below the app window.
     /// </summary>
-    /// <remarks>
-    /// A diagnostic, for when a gesture is not found. The three causes present identically -
-    /// no bridge window, a bridge window whose provider never answered, or a fragment root with
-    /// nothing registered on it - and this is what tells them apart.
-    /// </remarks>
     /// <param name="maxDepth">How far below the window to walk.</param>
     /// <returns>One line per element, indented by depth.</returns>
     public string DescribeGestureBridge(int maxDepth = 3)
@@ -560,40 +483,12 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// <summary>
     /// Reports what each instrumented element offers somebody who is not using a pointer.
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>An accessibility backlog, not a diagnostic.</b> Instrumenting an element for gestures
-    /// is the moment to ask whether it is gesture-<i>only</i>, and this is what asks: for every
-    /// element the app published, it finds the real control in the accessibility tree and reports
-    /// whether a keyboard reaches it and whether it carries <c>InvokePattern</c>. The bridge does
-    /// not fix a gesture-only control; it only lets Brinell drive one. This list is what keeps
-    /// that honest.
-    /// </para>
-    /// <para>
-    /// <b>Covers what is published now</b>, which is the pages that are open - elements publish
-    /// on load and withdraw on unload. Call it as the app is walked and merge the passes.
-    /// </para>
-    /// </remarks>
     /// <param name="page">Where the app is, so a merged report says where each element was seen.</param>
     /// <returns>One finding per published element.</returns>
     public Bridge.AccessibilityAuditReport AuditGestureAccessibility(string page = "")
         => Bridge.AccessibilityAudit.Run(RootElement, Automation, page);
 
     /// <inheritdoc />
-    /// <remarks>
-    /// <para>
-    /// Asks whichever element the app published for the job, without naming one, because there
-    /// is nothing to name: going back is about the app rather than about a control, and on
-    /// Windows the affordance that would carry an <c>AutomationId</c> for it is a
-    /// <c>ToolbarItem</c> - drawn into native chrome, and measured four separate ways not to be
-    /// activatable through any automation pattern at all. That measurement is what makes this
-    /// method necessary rather than convenient: without it, returning to a previous page is the
-    /// one thing in the suite that has to be a real mouse click.
-    /// </para>
-    /// <para>
-    /// Never falls back to real input; see the interface.
-    /// </para>
-    /// </remarks>
     public bool IsAtNavigationRoot() => NavigationDepth() <= 1;
 
     /// <inheritdoc />
@@ -614,18 +509,6 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     }
 
     /// <inheritdoc />
-    /// <remarks>
-    /// <b>Retries briefly, because every way of getting no answer here is also a moment in a page
-    /// transition.</b> The obvious reading - nobody declares <c>GetState</c>, so waiting cannot
-    /// help - was tried and is wrong: between one page withdrawing and the next publishing, the
-    /// bridge is briefly empty and there is nobody to ask at all. An app that genuinely declares
-    /// none pays the budget once and then gets a message naming the fix.
-    /// <para>
-    /// Neither case existed until step 43 stopped a page answering for a stack it is no longer
-    /// part of. Before that a page mid-teardown answered with a depth of its own, which is how a
-    /// suite came to be told it was at the hub while looking at another page.
-    /// </para>
-    /// </remarks>
     public int NavigationDepth()
     {
         const int transitionBudgetMs = 2_000;
@@ -679,11 +562,6 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     }
 
     /// <summary>The raw tree under the window, or why it could not be read.</summary>
-    /// <remarks>
-    /// For failure messages only. "Nothing answered" has three causes that read identically -
-    /// no bridge window, a bridge window whose provider is gone, a bridge with nobody published -
-    /// and the tree is what separates them. It must never throw on the way to describing a failure.
-    /// </remarks>
     private string DescribeBridgeSafely()
     {
         try
@@ -697,31 +575,6 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     }
 
     /// <inheritdoc />
-    /// <remarks>
-    /// <para>
-    /// <b>No grace period, and that is the fix.</b> This used to poll for two seconds whenever
-    /// the verb did not answer <c>S_OK</c>, guarded on "does this app have a bridge" - which is
-    /// always true for the app under test. So it fired on the commonest answer of all, *we are
-    /// already at the root*, and every fixture reset that started at the hub paid two seconds to
-    /// be told something it had been told immediately. See
-    /// <c>.my/fix/rca-navigation-tests-stall.md</c>.
-    /// </para>
-    /// <para>
-    /// <b>The race the grace period was added for is real, and the answers now say which is
-    /// which.</b> A page publishes its bridge target on <c>Loaded</c>, later than its root
-    /// appearing in the automation tree, so there is a window in which no live page answers -
-    /// milliseconds after any navigation. Since step 43 the app distinguishes the three:
-    /// <c>UIA_E_ELEMENTNOTAVAILABLE</c> for a stale target, <c>BRINELL_E_DECLINED</c> for the
-    /// root with nothing to pop, and <c>S_OK</c> for a pop. All three cross the wire, which the
-    /// old <c>S_FALSE</c> did not.
-    /// </para>
-    /// <para>
-    /// <b>So the wait is back, bounded and only for the window it was meant for.</b> Not a grace
-    /// period on every call - the two answers that mean something is genuinely wrong return at
-    /// once, and only "nobody is published yet" is retried. A caller that commands without
-    /// asking pays it once at the root, which is what <see cref="IsAtNavigationRoot"/> is for.
-    /// </para>
-    /// </remarks>
     public void NavigateBack()
     {
         const int publishWindowMs = 1_000;
@@ -763,12 +616,6 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     #region Navigation
     
     /// <inheritdoc />
-    /// <remarks>
-    /// A Shell route, handed to the app's own <c>GoToAsync</c>. It used to say desktop apps have
-    /// no URLs, which is true of desktop apps in general and not of this one: a MAUI Shell app
-    /// navigates by route on every platform it runs on, and the bridge is how that route reaches
-    /// it without a pointer.
-    /// </remarks>
     public void NavigateTo(string destination)
     {
         var result = Exchange(BrinellVerb.NavigateTo, destination);
@@ -783,12 +630,6 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     }
 
     /// <inheritdoc />
-    /// <remarks>
-    /// Shell answers with its route. An app built on <c>NavigationPage</c> has no such thing, so
-    /// it answers with the identity of the page on top - which is what a test asserting "we are
-    /// on the hub" means anyway. Inventing a route for the second case would make two different
-    /// navigation models look alike.
-    /// </remarks>
     public string CurrentRoute()
     {
         var result = Exchange(BrinellVerb.CurrentRoute);
@@ -804,13 +645,6 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     }
     
     /// <inheritdoc />
-    /// <remarks>
-    /// <b>Re-navigates to where the app already is</b>, rather than sending F5. A MAUI app has no
-    /// refresh key: F5 was desktop-wide keyboard input landing wherever the foreground happened
-    /// to be, swallowing its own failure, and doing nothing at all in the common case. Asking the
-    /// app to go to its current route is the nearest thing that is actually defined - and it
-    /// fails loudly on an app that has no routes, rather than silently on every app.
-    /// </remarks>
     public void Refresh() => NavigateTo(CurrentRoute());
     
     /// <inheritdoc />
@@ -879,11 +713,6 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     }
 
     /// <inheritdoc />
-    /// <remarks>
-    /// Answered only by the page on screen - the app enforces that - so the walk passes over pages
-    /// that have been popped and still answer, rather than raising their items against the live
-    /// navigation stack.
-    /// </remarks>
     internal void InvokeToolbarItem(string automationId)
     {
         var answer = Exchange(BrinellVerb.InvokeToolbarItem, automationId);
@@ -933,21 +762,12 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// What <c>InvokeMenuItem</c> and <c>InvokeToolbarItem</c> answer with when they declined to
     /// raise the item.
     /// </summary>
-    /// <remarks>
-    /// Duplicated from the provider rather than shared, like the date formats above and for the
-    /// same reason: the app under test is not always one Brinell can add a reference to. A
-    /// mismatch is caught by <c>MenuVerbTests</c>, which drives a real disabled entry.
-    /// </remarks>
     private const string MenuItemDisabled = "disabled";
 
     /// <summary>Opens the Shell's flyout through the app's verb.</summary>
     internal void OpenFlyout() => PresentFlyout(BrinellVerb.OpenFlyout, "open");
 
     /// <summary>Whether the app declares the flyout verbs.</summary>
-    /// <remarks>
-    /// All three - open, close, and the read that says which - because a caller that can open
-    /// through the app but has to check through the chrome has not escaped the chrome.
-    /// </remarks>
     internal bool SupportsFlyoutVerbs
         => Bridge.BrinellBridgeLookup.Targets(RootElement, Automation).Any(target =>
         {
@@ -963,11 +783,6 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// <summary>
     /// Sends one of the two flyout verbs, and reports what came back.
     /// </summary>
-    /// <remarks>
-    /// <c>S_FALSE</c> - the flyout was already in the state asked for - is success here rather
-    /// than a failure. The caller asked for a state, not for a transition, and a test that had
-    /// to know which of the two happened would be asserting the order of the tests before it.
-    /// </remarks>
     private void PresentFlyout(BrinellVerb verb, string what)
     {
         var answer = Bridge.BridgeVerbRunner.InvokeAnywhere(RootElement, Automation, verb);
@@ -1004,13 +819,6 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     }
 
     /// <summary>What the alert on screen asks, or null.</summary>
-    /// <remarks>
-    /// <b>Null covers two different things on purpose here</b>, and that is unusual enough to
-    /// say: no dialog is on screen, and no app-side declaration. Both mean "there is no question
-    /// to read", both are ordinary rather than exceptional, and a test that wants to distinguish
-    /// them asks <see cref="TryFindActiveDialogRoot"/> - a dialog on screen with no readable
-    /// question is exactly the app that has not declared <c>CurrentAlert</c>.
-    /// </remarks>
     internal AlertContents? CurrentAlert()
     {
         // The screen decides whether there is an alert; the app only says what it asks.

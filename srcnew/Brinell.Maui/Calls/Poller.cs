@@ -5,19 +5,6 @@ namespace Brinell.Maui.Calls;
 /// <summary>
 /// The one retry loop of a MAUI call.
 /// </summary>
-/// <remarks>
-/// <para>
-/// It logs nothing, checks no readiness itself, and starts no budget of its own: the phase's
-/// <see cref="Deadline"/> is the only one (<c>.my/stale-readiness/design.md</c>, R2). There is
-/// always at least one attempt, even on a zero budget.
-/// </para>
-/// <para>
-/// An exception escaping an attempt is recorded as <see cref="ObservationKind.Failed"/> and
-/// retried, except the fatal ones (R0): <see cref="AppUnavailableException"/> (the app is gone,
-/// and no later attempt can succeed) and a <see cref="ScopeNotReadyException"/> for a misconfigured
-/// scope (a page whose busy signal is missing or unreadable). Both end the loop at once.
-/// </para>
-/// </remarks>
 internal static class Poller
 {
     /// <summary>
@@ -68,5 +55,6 @@ internal static class Poller
 
     /// <summary>Whether <paramref name="error"/> must end the call at once rather than be retried.</summary>
     public static bool IsFatal(Exception error) => error is AppUnavailableException
+        or RouteUnavailableException
         or ScopeNotReadyException { Readiness.IsConfigurationError: true };
 }

@@ -33,34 +33,26 @@ public abstract partial class RangeControlBase<TScope> : FocusableControlBase<TS
     #region Core Methods (Element-Aware, No Logging)
 
     /// <summary>
-    /// Gets value from pre-found element.
-    /// Uses RangeValue pattern when available, otherwise reads from attributes.
+    /// Gets value from pre-found element: the range value the element publishes, in the app's units.
     /// </summary>
+    /// <remarks>
+    /// No text fallback: an Android seek bar's text is its raw progress, 0 to <c>int.MaxValue</c>,
+    /// and reading it as the value presented a fraction as a number. The Android driver publishes a
+    /// range value only when the app says it is in app units (<c>Brinell.Maui.AppSupport</c>).
+    /// </remarks>
     /// <param name="element">The pre-found element.</param>
-    /// <returns>The current value, or null if element is null.</returns>
+    /// <returns>The current value, or null when the element publishes none.</returns>
     [GenerateComparisons(Comparison.Equals | Comparison.GreaterThan | Comparison.AtLeast
         | Comparison.LessThan | Comparison.AtMost)]
     protected virtual double? GetValueCore(IMauiElement? element)
     {
-        if (element == null) return null;
-
-        if (element.RangeValue is { } value)
-            return value;
-
-        // Text is the only other place a value can be read: Android publishes no range pattern,
-        // so a seek bar answers through whatever text it shows.
-        var text = element.Text;
-        if (!string.IsNullOrEmpty(text) && double.TryParse(text, out var t))
-        {
-            return t;
-        }
-
-        return null;
+        return element?.RangeValue;
     }
 
     /// <summary>
     /// Sets value on pre-found element.
-    /// The element picks the route: the RangeValue pattern on Windows, arrow keys on Android and iOS.
+    /// The element picks the route: the RangeValue pattern on Windows, the accessibility
+    /// set-progress action on Android.
     /// </summary>
     /// <param name="element">The pre-found element.</param>
     /// <param name="value">The value to set. Null skips the operation.</param>
@@ -85,8 +77,8 @@ public abstract partial class RangeControlBase<TScope> : FocusableControlBase<TS
     {
         if (element == null) return null;
 
-        // No attribute fallback: a range's bounds are published by the range pattern or not at
-        // all, and Android publishes neither.
+        // No attribute fallback: a range's bounds are published by the range pattern, or on
+        // Android by AppSupport, or not at all.
         return element.RangeMinimum;
     }
 

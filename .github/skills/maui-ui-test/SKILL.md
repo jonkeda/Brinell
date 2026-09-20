@@ -93,12 +93,18 @@ public class MediaElementTests
   control bug: fix the control. A raised `timeoutMs` is right only for an operation that is
   long by nature - scrolling a long list, a search through it - and gets a comment saying so.
   Never raise one to hide a flake.
+- `timeoutMs` bounds the **wait for the control**, not the whole call. An action that confirms its
+  own effect (`Toggle`, `SetChecked`, `CarouselView.Next`, `Stepper.SetValue`) waits again
+  afterwards, on a budget of its own, so `Toggle(timeoutMs: 300)` can take about 600 ms. Size a
+  budget by how long the control may take to become ready, not by how long the test may block.
 - What a failure means: `ScopeNotReadyException` - a page, container or row never became
   ready (it names which, and what it saw); `ElementNotReadyException` - found, but disabled or
   not visible; `StaleElementException` - replaced after an action that ran once;
   `WaitTimeoutException` naming an exception type and "N of M attempts raised it" - every
   attempt threw something unexpected (the real exception is its `InnerException`);
-  `AppUnavailableException` - the app exited or the session was lost, reported at once. A near-miss
+  `RouteUnavailableException` - this element, driver or platform has no route for what was asked,
+  reported at once rather than waited out; `AppUnavailableException` - the app exited or the
+  session was lost, reported at once. A near-miss
   warning in the call log means the call passed only after trouble; set `BRINELL_CALL_LOG` to a
   folder to write every call to CSV.
 

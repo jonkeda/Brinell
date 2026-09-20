@@ -665,6 +665,84 @@ public class StaleReadinessPinTests : SemanticControlTestsBase
 
     #endregion
 
+    #region Second review
+
+    /// <summary>
+    /// (S1, review 2) An assert finds its element again on every attempt, like every other call,
+    /// so an element replaced while still alive is compared as the new one. Failed before the fix:
+    /// <c>RunAssertWithElement</c> held the first element and released it only on a stale read, so
+    /// the assert compared "first" until the budget ran out.
+    /// </summary>
+    [Fact]
+    [Trait("Pin", "review2")]
+    public void Assert_FindsTheElementAgain_WhenItIsReplacedWhileAlive()
+    {
+        var reads = 0;
+        var first = Element(text: "first");
+        first.Setup(e => e.InstanceKey).Returns("1");
+        var second = Element(text: "second");
+        second.Setup(e => e.InstanceKey).Returns("2");
+        GivenTarget(() => ++reads == 1 ? first.Object : second.Object);
+
+        NewPage().Status.AssertText("second", timeoutMs: 500);
+    }
+
+    /// <summary>
+    /// (S1, review 2) An assert re-checks visibility on every attempt, as a read does: an element
+    /// that is not visible yet is waited for rather than read through.
+    /// </summary>
+    [Fact]
+    [Trait("Pin", "review2")]
+    public void Assert_WaitsForVisibility_OnEveryAttempt()
+    {
+        var reads = 0;
+        var element = Element(text: "value");
+        element.Setup(e => e.Visible).Returns(() => ++reads >= 3);
+        GivenTarget(() => element.Object);
+
+        NewPage().Status.AssertText("value", timeoutMs: 1000);
+
+        Assert.True(reads >= 3);
+    }
+
+    /// <summary>
+    /// (D3, R0, review 2) A route the platform does not have fails the call at once, naming the
+    /// route, instead of being asked again until the budget runs out and reported as a timeout.
+    /// </summary>
+    [Fact]
+    [Trait("Pin", "review2")]
+    public void RouteUnavailable_FailsAtOnce()
+    {
+        var element = Element();
+        element.Setup(e => e.Text).Throws(new RouteUnavailableException("no route for this"));
+        GivenTarget(() => element.Object);
+
+        var elapsed = Timed(() => NewPage().Status.GetText(timeoutMs: 1000));
+        var error = Assert.Throws<RouteUnavailableException>(() => NewPage().Status.GetText(timeoutMs: 1000));
+
+        Assert.Contains("no route for this", error.Message);
+        Assert.True(elapsed < 300, $"the call took {elapsed} ms; it should not wait out its budget");
+    }
+
+    /// <summary>
+    /// (D3, review 2) An unexpected exception that is <i>not</i> a missing route is still retried
+    /// within the budget, as design 11's D3 says.
+    /// </summary>
+    [Fact]
+    [Trait("Pin", "review2")]
+    public void UnexpectedException_ThatIsNotAMissingRoute_IsStillRetried()
+    {
+        var element = Element();
+        element.Setup(e => e.Text).Throws(new InvalidOperationException("the platform refused"));
+        GivenTarget(() => element.Object);
+
+        var error = Assert.Throws<WaitTimeoutException>(() => NewPage().Status.GetText(timeoutMs: 200));
+
+        Assert.Matches(@"\d+ of \d+ attempts raised InvalidOperationException", error.Message);
+    }
+
+    #endregion
+
     #region R0 guards (pass before and after) and near-misses
 
     /// <summary>
