@@ -26,11 +26,6 @@ public abstract partial class SelectableItemBase<TCollection, TSelf>
     /// <summary>
     /// A selectable item is chosen, not activated.
     /// </summary>
-    /// <remarks>
-    /// Choosing one member of a group unchooses the others; invoking does not. A tab, a list row
-    /// and a radio button are selected; a menu entry is invoked, as
-    /// <see cref="ClickableItemBase{TCollection, TSelf}"/> does.
-    /// </remarks>
     /// <param name="element">The item's root element.</param>
     /// <param name="timeoutMs">Optional timeout.</param>
     protected override void ClickCore(IMauiElement element, int? timeoutMs = null)
@@ -51,10 +46,6 @@ public abstract partial class SelectableItemBase<TCollection, TSelf>
     /// <summary>
     /// Whether an element reports itself as selected, by any means the platform offers.
     /// </summary>
-    /// <remarks>
-    /// Reads <c>Selected</c>, then checked state, because Android reports a radio-style tab bar
-    /// through checked state. An element that exposes neither is not selected.
-    /// </remarks>
     protected static bool IsMarkedSelected(IMauiElement? element)
     {
         if (element == null) return false;

@@ -40,11 +40,6 @@ public abstract partial class ToggleControlBase<TScope> : FocusableControlBase<T
     /// <summary>
     /// Clicking a toggle toggles it.
     /// </summary>
-    /// <remarks>
-    /// MAUI's <c>Switch</c> and <c>CheckBox</c> expose Toggle and neither Invoke nor
-    /// SelectionItem. <c>RadioButton</c> overrides this, because being chosen from a group is not
-    /// the same operation as being flipped.
-    /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <param name="timeoutMs">Optional timeout.</param>
     protected virtual void ClickCore(IMauiElement element, int? timeoutMs = null)
@@ -70,9 +65,6 @@ public abstract partial class ToggleControlBase<TScope> : FocusableControlBase<T
     /// <summary>
     /// Performs toggle on pre-found element, and confirms the state actually changed.
     /// </summary>
-    /// <remarks>
-    /// Throws when the platform accepts the toggle but the state does not change.
-    /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
     protected virtual void ToggleCore(IMauiElement element, int? timeoutMs = null)
@@ -102,11 +94,6 @@ public abstract partial class ToggleControlBase<TScope> : FocusableControlBase<T
     /// <summary>
     /// Sets checked state on pre-found element. No-op if already in the target state.
     /// </summary>
-    /// <remarks>
-    /// Toggles when the state differs. <c>Switch</c> and <c>CheckBox</c> override this to set the
-    /// state directly where the platform can; <c>RadioButton</c> overrides it because a radio
-    /// button cannot be unchecked.
-    /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <param name="checked">The desired checked state. Null skips the operation.</param>
     /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
@@ -124,9 +111,6 @@ public abstract partial class ToggleControlBase<TScope> : FocusableControlBase<T
     /// <summary>
     /// Sets the state through the platform's own set-state command, and confirms it took.
     /// </summary>
-    /// <remarks>
-    /// Throws when the platform accepts the command but the control does not move.
-    /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <param name="checked">The desired checked state.</param>
     /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
@@ -146,9 +130,6 @@ public abstract partial class ToggleControlBase<TScope> : FocusableControlBase<T
     /// <summary>
     /// Gets checked state from pre-found element.
     /// </summary>
-    /// <remarks>
-    /// Reads <see cref="IMauiElement.Checked"/>. <c>RadioButton</c> overrides this.
-    /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <returns>True if checked, false if unchecked, null if unknown or element is null.</returns>
     protected virtual bool? IsCheckedCore(IMauiElement? element) => element?.Checked;

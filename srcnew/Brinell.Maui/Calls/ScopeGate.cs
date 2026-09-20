@@ -3,12 +3,6 @@ namespace Brinell.Maui.Calls;
 /// <summary>
 /// The readiness step every attempt of a call starts with, and the failure it produces.
 /// </summary>
-/// <remarks>
-/// The step asks the scope the call stands in, which asks its parent first when it inherits the
-/// parent's readiness (<c>.my/stale-readiness/design.md</c>, R4 and section 7.2). It is a step of
-/// the attempt, not a gate before the poll, so readiness and the element share the call's one
-/// budget.
-/// </remarks>
 internal static class ScopeGate
 {
     /// <summary>

@@ -1,8 +1,8 @@
 namespace Brinell.Maui.Context;
 
 /// <summary>
-/// When a call that succeeded is still reported, as a near-miss (<c>.my/stale-readiness/design.md</c>,
-/// R0 and X5).
+/// When a call that succeeded is still reported, as a near-miss (see
+/// <c>.docs/contracts/call-model.md</c>, R0).
 /// </summary>
 /// <remarks>
 /// A near-miss is logged as <see cref="LogResult.Warning"/> with a "near-miss:" summary, so a UI

@@ -32,13 +32,10 @@ public enum ScopeReadinessState
 }
 
 /// <summary>
-/// Which scope answered a readiness probe, and why it is not ready.
+/// Which scope answered a readiness probe, and why it is not ready. A scope that asks its parent
+/// first returns the parent's answer unchanged when the parent is not ready, so a failure names
+/// the scope that actually was not ready.
 /// </summary>
-/// <remarks>
-/// A scope that asks its parent first returns the parent's answer unchanged when the parent is not
-/// ready, so a failure names the scope that actually was not ready
-/// (<c>.my/stale-readiness/design.md</c>, section 7.1).
-/// </remarks>
 /// <param name="ScopeName">The scope that answered.</param>
 /// <param name="State">What it found.</param>
 /// <param name="Detail">What a message should repeat, such as the busy signal's value.</param>

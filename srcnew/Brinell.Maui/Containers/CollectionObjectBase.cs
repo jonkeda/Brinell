@@ -14,10 +14,10 @@ namespace Brinell.Maui.Containers;
 /// </para>
 /// <para>
 /// Every non-<c>Try</c> member is one call that waits within its budget, and every <c>Try*</c>
-/// member answers about now (<c>.my/stale-readiness/design.md</c>, section 7.6, Q10). Members that
-/// scroll to realize rows (<see cref="ScrollToItem"/>, <see cref="ScrollToEnd"/>,
-/// <see cref="WaitForItems"/>, <see cref="ItemWhere"/>, <see cref="FindItem"/>) take one scroll
-/// step per attempt of the call's poll, so the caller's budget covers the whole loop (Q9).
+/// member answers about now (R7). Members that scroll to realize rows (<see cref="ScrollToItem"/>,
+/// <see cref="ScrollToEnd"/>, <see cref="WaitForItems"/>, <see cref="ItemWhere"/>,
+/// <see cref="FindItem"/>) take one scroll step per attempt of the call's poll, so the caller's
+/// budget covers the whole loop (R2). See <c>.docs/contracts/call-model.md</c>.
 /// </para>
 /// </remarks>
 /// <typeparam name="TParent">The parent scope type.</typeparam>
@@ -382,10 +382,6 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     /// <summary>
     /// Whether an item root answers to <paramref name="key"/>.
     /// </summary>
-    /// <remarks>
-    /// Override for a collection whose items are identified by something the element itself
-    /// does not carry - a child label's text, say.
-    /// </remarks>
     /// <param name="itemRoot">The element the item strategy found.</param>
     /// <param name="key">What is being looked for.</param>
     protected virtual bool MatchesKey(IMauiElement itemRoot, Locator key)
@@ -556,11 +552,6 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     /// The attempts of a search: each looks at the realized rows not yet seen, then takes one
     /// scroll step.
     /// </summary>
-    /// <remarks>
-    /// A row is seen once, by its key. A row that holds another item after the predicate read it
-    /// (the list recycled it) is left unseen for the next attempt: neither answer was about it.
-    /// Rows keyed only by position cannot be told apart after a scroll, so they are read again.
-    /// </remarks>
     private Func<AttemptContext, Observation> SearchAttempts(Func<TItem, bool> predicate, Action<TItem> found)
     {
         var seen = new HashSet<ItemKey>();
@@ -816,19 +807,6 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     /// <see cref="ScrollToEnd"/>, <see cref="WaitForItems"/>, <see cref="FindItem"/> and
     /// <see cref="ItemWhere"/>.
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Each attempt checks the scope chain and the collection root, then, by phase: waits for a
-    /// step's rows to arrive ("waiting for new rows") or to settle ("rows still moving"); otherwise
-    /// looks for the target, and when it is absent takes one scroll step ("scrolled"). A step that
-    /// realizes nothing, or a list that cannot move, is the end of the list, observed as
-    /// <c>Missing</c>. No step waits on its own: the call's poll and budget are the only ones
-    /// (<c>.my/stale-readiness/design.md</c>, R2 and Q9).
-    /// </para>
-    /// <para>
-    /// The closure owns the loop's state, so one is built per call.
-    /// </para>
-    /// </remarks>
     /// <param name="nextIndex">The index to scroll towards.</param>
     /// <param name="target">Done when the target is there; null when it is not.</param>
     private Func<AttemptContext, Observation> MaterializeAttempts(Func<int> nextIndex, Func<Observation?> target)
@@ -949,10 +927,6 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     /// <summary>
     /// The element that actually scrolls, when it is not this container's own root.
     /// </summary>
-    /// <remarks>
-    /// Override when the container root wraps the scrolling item host; returning null uses the
-    /// container root.
-    /// </remarks>
     protected virtual IMauiElement? ScrollTarget => null;
 
     /// <summary>
@@ -1046,19 +1020,6 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     /// <summary>
     /// Activates an item, given the element the item strategy found for it.
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Windows: the containing <c>ListItem</c> row is tried first, then the element itself, because
-    /// the element a strategy matches is usually inside the row, and the row is what carries the
-    /// selection pattern.
-    /// </para>
-    /// <para>
-    /// Android and iOS: the element itself, whose <c>Select</c> is a tap - what a finger does to a
-    /// row. <c>ListItem</c> is a UI Automation control type with no Appium counterpart; asking for
-    /// it there threw before any row was touched (found by the Todo sample's Android run).
-    /// </para>
-    /// <para>Override for rows that activate differently.</para>
-    /// </remarks>
     /// <param name="itemRoot">The element found for the item.</param>
     /// <returns>True when the item was activated.</returns>
     protected virtual bool ActivateItemCore(IMauiElement itemRoot)
@@ -1087,9 +1048,6 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem>
     /// <summary>
     /// The <c>ListItem</c> elements whose bounds contain the given element, tightest first.
     /// </summary>
-    /// <remarks>
-    /// Ordered by area so a nested row is preferred over the outer list that also contains it.
-    /// </remarks>
     private IReadOnlyList<IMauiElement> FindContainingRows(IMauiElement element)
     {
         var center = ElementGeometryExtensions.CenterOf(element.Rect);

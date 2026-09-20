@@ -33,7 +33,6 @@ public class MauiTestContext : IMauiTestContext
         _callLog = options.Logger == null ? OpenCallLog() : null;
         _logger = options.Logger ?? _callLog ?? (ITestLogger)NullTestLogger.Instance;
         
-        // Use injected driver if provided, otherwise use factory
         if (options.Driver != null)
         {
             _driver = options.Driver;
@@ -45,7 +44,6 @@ public class MauiTestContext : IMauiTestContext
             ArgumentNullException.ThrowIfNull(options.DriverOptions, nameof(options.DriverOptions));
             
             var driverOptions = options.DriverOptions;
-            // Apply overrides from context options
             driverOptions.Timeouts ??= options.Timeouts;
             driverOptions.Logger ??= options.Logger;
             
@@ -181,9 +179,8 @@ public class MauiTestContext : IMauiTestContext
     
     /// <summary>
     /// A call log in the folder <c>BRINELL_CALL_LOG</c> names, when it is set: one CSV file per
-    /// context, with every call's entry and exit, near-miss warnings included
-    /// (<c>.my/stale-readiness/design.md</c>, 4.4). Off unless asked for, and only when the
-    /// options give no logger of their own.
+    /// context, with every call's entry and exit, near-miss warnings included. Off unless asked
+    /// for, and only when the options give no logger of their own.
     /// </summary>
     private static CsvTestLogger? OpenCallLog()
     {

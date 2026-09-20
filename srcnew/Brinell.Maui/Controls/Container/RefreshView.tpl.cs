@@ -45,10 +45,6 @@ public partial class RefreshView<TParent, TSelf> : ContainerObjectBase<TParent, 
     /// <summary>
     /// Performs the pull-to-refresh gesture.
     /// </summary>
-    /// <remarks>
-    /// A downward touch swipe on Android and iOS; on Windows a verb the app answers by setting
-    /// <c>IsRefreshing</c>.
-    /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
     protected virtual void PullToRefreshCore(IMauiElement element, int? timeoutMs = null)
@@ -57,9 +53,6 @@ public partial class RefreshView<TParent, TSelf> : ContainerObjectBase<TParent, 
     /// <summary>
     /// Reads the refreshing state from the pre-found element.
     /// </summary>
-    /// <remarks>
-    /// No platform currently publishes a refreshing state, so this always returns null.
-    /// </remarks>
     /// <param name="element">The pre-found element (may be null).</param>
     /// <returns>Null: the refreshing state is unknown.</returns>
     [AbsenceTolerant]

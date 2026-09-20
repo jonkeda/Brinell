@@ -8,21 +8,6 @@ namespace Brinell.Maui.FlaUI.Bridge;
 /// <summary>
 /// Finds the bridge element that acts for a given <c>AutomationId</c>.
 /// </summary>
-/// <remarks>
-/// <para>
-/// <b>The bridge element is not under the element it acts for.</b> It hangs off a sidecar
-/// window belonging to the app's top-level window, deliberately, so that publishing it cannot
-/// disturb the app's own automation tree. So the lookup starts at the window, not at the
-/// element.
-/// </para>
-/// <para>
-/// <b>And it must be an explicit raw walk.</b> Bridge elements set
-/// <c>IsControlElement=false</c> so assistive technology never sees them, and
-/// <c>FindFirstDescendant</c> was measured not to reach elements in that state - see
-/// <c>OrdinarySearch_ReachesTheBridgeOrDoesNot</c> in <c>Brinell.Uia.Tests</c>. Using the
-/// ordinary search here would report every app as having no bridge.
-/// </para>
-/// </remarks>
 internal static class BrinellBridgeLookup
 {
     /// <summary>Finds the bridge element for an <c>AutomationId</c>, if the app publishes one.</summary>
@@ -50,13 +35,6 @@ internal static class BrinellBridgeLookup
     /// <summary>
     /// Every element currently published on the app's bridge.
     /// </summary>
-    /// <remarks>
-    /// For the verbs that are about the app rather than about one control - going back is the
-    /// first of them - where the caller has no <c>AutomationId</c> to look up because the thing
-    /// being asked is not a control at all. The caller picks by capability instead, which costs
-    /// one round trip per target; there are as many targets as the app has declarations, which
-    /// is a handful.
-    /// </remarks>
     /// <param name="root">The app's top-level window.</param>
     /// <param name="automation">The session, for its raw-view walker.</param>
     /// <returns>The bridge's children, or empty if there is no bridge.</returns>
@@ -96,22 +74,6 @@ internal static class BrinellBridgeLookup
     /// <summary>
     /// Finds the fragment root among the window's immediate children.
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>One level, and only one.</b> The bridge parents its window to the app's top-level
-    /// window, so the fragment root is always a direct child. An earlier version searched three
-    /// levels deep to be tolerant, and that was a mistake twice over: it walked the app's entire
-    /// XAML subtree - thousands of cross-process calls - before reaching a sibling that was
-    /// there all along, and a transient failure anywhere in that subtree aborted the search. The
-    /// result was a bridge that was found on one call and missing on the next.
-    /// </para>
-    /// <para>
-    /// Matched on <c>AutomationId</c> rather than class name. The bridge's own window reports
-    /// the class name to UI Automation whether or not the provider ever answered
-    /// <c>WM_GETOBJECT</c>, so a class-name match cannot tell a working bridge from an empty
-    /// window that looks like one.
-    /// </para>
-    /// </remarks>
     private static AutomationElement? FindBridgeRoot(ITreeWalker walker, AutomationElement window)
         => FirstChildWhere(
             walker,
@@ -122,12 +84,6 @@ internal static class BrinellBridgeLookup
     /// <summary>
     /// The first immediate child matching a predicate.
     /// </summary>
-    /// <remarks>
-    /// A failure reading one sibling skips that sibling rather than ending the walk. Elements
-    /// come and go while a walk is in progress - an app under test is a live application - and
-    /// abandoning the search because one neighbour vanished is how a lookup becomes
-    /// intermittent.
-    /// </remarks>
     private static AutomationElement? FirstChildWhere(
         ITreeWalker walker, AutomationElement parent, Func<AutomationElement, bool> matches)
     {
@@ -164,12 +120,6 @@ internal static class BrinellBridgeLookup
     /// <summary>
     /// Describes the raw tree just below the app window.
     /// </summary>
-    /// <remarks>
-    /// For telling apart the three ways a gesture goes missing, which are indistinguishable from
-    /// the test: no bridge window (the app was built without the automation sources), a bridge
-    /// window with no fragment root (<c>WM_GETOBJECT</c> is not being answered), or a fragment
-    /// root with no children (nothing declared verbs). Each wants a different fix.
-    /// </remarks>
     /// <param name="root">The app's top-level window.</param>
     /// <param name="automation">The session.</param>
     /// <param name="maxDepth">How far below the window to walk.</param>

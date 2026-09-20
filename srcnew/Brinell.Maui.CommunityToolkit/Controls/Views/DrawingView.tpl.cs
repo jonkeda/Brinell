@@ -61,7 +61,6 @@ public partial class DrawingView<TScope> : Brinell.Maui.Controls.Base.ViewBase<T
     #region Core Method Overrides
 
     /// <inheritdoc />
-    /// <remarks>Asks the app first: the declared element has no tree visibility to read.</remarks>
     protected override bool? IsVisibleCore(IMauiElement? element)
         => ReadBool(element, "IsVisible") ?? base.IsVisibleCore(element);
 

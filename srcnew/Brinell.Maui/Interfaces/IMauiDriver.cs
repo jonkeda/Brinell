@@ -95,7 +95,7 @@ public interface IMauiDriver : IDiagnosticDriver, IDisposable
     /// </summary>
     /// <param name="automationId">The MAUI <c>AutomationId</c> of the target element.</param>
     /// <param name="gesture">The gesture to ask about.</param>
-    /// <returns>Whether <see cref="PerformGesture"/> would work.</returns>
+    /// <returns>Whether <see cref="PerformGesture(string, MauiGesture)"/> would work.</returns>
     bool SupportsGesture(string automationId, MauiGesture gesture) => false;
 
     /// <summary>Performs a gesture on the element with this <c>AutomationId</c>, or throws.</summary>

@@ -19,10 +19,6 @@ namespace Brinell.Maui.FlaUI.Bridge;
 public static class BrinellGestureExtensions
 {
     /// <summary>The wire verb a test-facing gesture travels as.</summary>
-    /// <remarks>
-    /// The one place the two enums meet. Everything above this speaks
-    /// <see cref="MauiGesture"/>; everything below speaks numbers frozen into the contract.
-    /// </remarks>
     /// <param name="gesture">The gesture.</param>
     /// <returns>The verb.</returns>
     /// <exception cref="ArgumentOutOfRangeException">The gesture has no verb.</exception>

@@ -27,7 +27,6 @@ public static class UatScenarioSource
                 .Order(StringComparer.OrdinalIgnoreCase)
             : Array.Empty<string>();
 
-        // Use configuration filter if provided
         return ApplyFilter(files, configurationFilter);
     }
 

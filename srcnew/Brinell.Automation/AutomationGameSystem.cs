@@ -25,7 +25,6 @@ public class AutomationGameSystem : GameSystemBase
     private readonly IGame? _game;
     private bool _initialized;
 
-    // Game-thread command dispatch
     private readonly ConcurrentQueue<(AutomationCommand Command, TaskCompletionSource<AutomationResponse> Tcs)> _commandQueue = new();
 
     // Key simulation — uses the real keyboard device, not a simulated source
@@ -63,7 +62,6 @@ public class AutomationGameSystem : GameSystemBase
 
         Enabled = true;
 
-        // Create the real handler
         if (_customHandler != null)
             _handler = _customHandler;
         else if (_uiRootProvider != null)
@@ -71,12 +69,10 @@ public class AutomationGameSystem : GameSystemBase
         else
             throw new InvalidOperationException("No handler or UI root provider specified");
 
-        // Get the real keyboard device for key simulation
         var inputManager = Services.GetService<InputManager>();
         if (inputManager?.Keyboard is KeyboardDeviceBase keyboard)
             _keyboard = keyboard;
 
-        // Create server with a dispatching handler that routes commands to the game thread
         var dispatcher = new GameThreadDispatchHandler(this);
         _server = new AutomationServer(dispatcher, _options);
         _server.Start();
@@ -94,7 +90,6 @@ public class AutomationGameSystem : GameSystemBase
                 _keyboard = keyboard;
         }
 
-        // 1. Drain key simulation command queue
         while (_commandQueue.TryDequeue(out var item))
         {
             try
@@ -107,7 +102,6 @@ public class AutomationGameSystem : GameSystemBase
             }
         }
 
-        // 2. Process pending key releases (for hold duration)
         for (int i = _pendingKeyReleases.Count - 1; i >= 0; i--)
         {
             if (_gameTime >= _pendingKeyReleases[i].ReleaseAt)
@@ -136,7 +130,6 @@ public class AutomationGameSystem : GameSystemBase
             return true;
         }
 
-        // Handle key combination (e.g., Ctrl+C) — multiple keys pressed together
         if (command.Method == "SimulateKeyCombination")
         {
             var keys = new List<Keys>();

@@ -14,8 +14,6 @@ public sealed class BrinellWpfConfiguration : BrinellConfigurationBase
     /// </summary>
     public WpfOptions Wpf { get; set; } = new();
 
-    // Artifacts inherited from BrinellConfigurationBase
-
     /// <summary>
     /// Loads WPF configuration from brinell.wpf.config.json
     /// </summary>

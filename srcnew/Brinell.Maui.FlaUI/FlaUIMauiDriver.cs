@@ -362,7 +362,6 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
     /// <inheritdoc />
     public string GetPageSource()
     {
-        // Build an XML representation of the automation tree
         return BuildAutomationTree(RootElement);
     }
     

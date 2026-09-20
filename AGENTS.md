@@ -97,12 +97,24 @@ Use or add a page-object or control member instead. The reasons and the one exce
 
 ## Docs Rules
 
-- Active docs live in `docs/`.
-- Historical docs live in `docs2/`.
+Four trees, each with one job:
+
+- **`.docs/`** - decisions, invariants and contracts: what must stay true. Read it before
+  changing Brinell. A decision is recorded **once**, here, never also in code prose.
+- `docs/` - active guides for someone *using* Brinell.
+- `.my/` - plans, analyses and reviews for work in flight.
+- `docs2/` - historical archive.
+
 - Keep links valid and relative.
 - Use `Brinell.*` namespaces in examples.
 - Mark commands with their working directory.
 - Update `docs/README.md` when adding or moving active docs.
+
+Comment policy (full version in
+[.github/instructions/csharp-comments.instructions.md](.github/instructions/csharp-comments.instructions.md)):
+keep short `<summary>`/`<param>`/`<returns>` on public and protected members and a one-line
+`// why` with a pointer where a decision surprises; delete `<remarks>` that restate the code
+and all XML doc on private/internal members. Durable rationale goes to `.docs/`, not code prose.
 
 ## Verification
 

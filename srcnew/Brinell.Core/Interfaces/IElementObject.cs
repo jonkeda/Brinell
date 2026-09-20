@@ -8,8 +8,6 @@ namespace Brinell.Core.Interfaces;
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
 public interface IElementObject<TScope>
 {
-    // State (immediate, no waiting)
-    
     /// <summary>
     /// Check if the element exists in the UI tree.
     /// </summary>
@@ -26,8 +24,6 @@ public interface IElementObject<TScope>
     /// Returns null if element doesn't exist.
     /// </summary>
     bool? IsEnabled();
-    
-    // Waiting (poll until condition or timeout)
     
     /// <summary>
     /// Wait until element existence matches expected value.
@@ -46,8 +42,6 @@ public interface IElementObject<TScope>
     /// If expected is null, returns true immediately (skip).
     /// </summary>
     bool WaitEnabled(bool? expected, int? timeoutMs = null);
-    
-    // Assertions (throw on failure)
     
     /// <summary>
     /// Assert element existence matches expected value.

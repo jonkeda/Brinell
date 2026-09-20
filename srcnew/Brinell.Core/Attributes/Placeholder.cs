@@ -5,5 +5,4 @@ namespace Brinell.Core.Attributes;
 /// </summary>
 public static class Placeholder
 {
-    // Test attributes will be added here
 }

@@ -66,12 +66,10 @@ public partial class IndicatorView<TScope> : Base.ViewBase<TScope>
     #region Core Method Overrides
 
     /// <inheritdoc />
-    /// <remarks>Asks the app first: the declared element has no tree visibility to read.</remarks>
     protected override bool? IsVisibleCore(IMauiElement? element)
         => ReadBool(element, "IsVisible") ?? base.IsVisibleCore(element);
 
     /// <inheritdoc />
-    /// <remarks>Asks the app first: the declared element has no tree state to read.</remarks>
     protected override bool? IsEnabledCore(IMauiElement? element)
         => ReadBool(element, "IsEnabled") ?? base.IsEnabledCore(element);
 
@@ -82,9 +80,6 @@ public partial class IndicatorView<TScope> : Base.ViewBase<TScope>
     /// <summary>
     /// Gets the index of the selected indicator, counted from zero.
     /// </summary>
-    /// <remarks>
-    /// Bound to a carousel, this is the carousel's current card.
-    /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <returns>The selected index, or null where the platform does not publish it.</returns>
     protected virtual int? GetPositionCore(IMauiElement? element)
@@ -93,9 +88,6 @@ public partial class IndicatorView<TScope> : Base.ViewBase<TScope>
     /// <summary>
     /// Gets the number of indicators shown.
     /// </summary>
-    /// <remarks>
-    /// Bound to a carousel, this is its number of cards.
-    /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <returns>The indicator count, or null where the platform does not publish it.</returns>
     protected virtual int? GetCountCore(IMauiElement? element)

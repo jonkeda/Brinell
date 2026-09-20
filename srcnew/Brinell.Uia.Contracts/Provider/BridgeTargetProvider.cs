@@ -7,14 +7,6 @@ namespace Brinell.Uia.Provider;
 /// One raw-view-only UI Automation element standing for one instrumented target, and the
 /// thing that actually carries the Brinell pattern.
 /// </summary>
-/// <remarks>
-/// <para>
-/// Answers the meta verbs itself and delegates everything else to the
-/// <see cref="IBrinellVerbTarget"/> underneath. That split is deliberate: capability discovery
-/// and liveness have to work on every target regardless of what the hosting framework
-/// implements, and a target that could answer them could also get them wrong.
-/// </para>
-/// </remarks>
 [ComVisible(true)]
 [System.Runtime.Versioning.SupportedOSPlatform("windows")]
 internal sealed class BridgeTargetProvider
@@ -30,19 +22,6 @@ internal sealed class BridgeTargetProvider
     /// <summary>
     /// Stops this provider answering for its target, without disconnecting it from UI Automation.
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>The replacement for <c>UiaDisconnectProvider</c> on withdrawal.</b> Disconnecting a
-    /// target on every page unload was measured to make UI Automation retire the client's element
-    /// for the app's whole window - which is what ended runs looking like an app freeze. Retiring
-    /// keeps the promise the disconnect was making to a client still holding this provider: every
-    /// verb fails at once with <c>UIA_E_ELEMENTNOTAVAILABLE</c>, the retryable answer, instead of
-    /// acting for a page that has gone.
-    /// </para>
-    /// <para>
-    /// The provider is still dropped from the root's children, so nothing new can find it.
-    /// </para>
-    /// </remarks>
     internal void Retire() => _retired = true;
 
     internal BridgeTargetProvider(BridgeFragmentRoot root, IBrinellVerbTarget target, int runtimeId)
@@ -274,30 +253,6 @@ internal sealed class BridgeTargetProvider
     /// <summary>
     /// Refuses a verb number this build has no meaning for, telling the two reasons apart.
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>An undefined positive number is a newer client, not a broken one.</b> The vocabulary
-    /// is append-only - numbers are never renumbered and never reused - so the only way a
-    /// provider sees a number above the ones it knows is that the client was built against a
-    /// later contract. <c>UIA_E_NOTSUPPORTED</c> is exactly the answer that describes: this
-    /// element will never do that, use another route. The client already says so in
-    /// <c>BrinellUiaClient.Describe</c> - "the app was built against a contract that predates
-    /// this verb" - and until step 28 the provider answered <c>E_INVALIDARG</c> instead, which
-    /// the same table reads as "the client and the app disagree about the contract", sending the
-    /// reader to look for a wire fault that is not there.
-    /// </para>
-    /// <para>
-    /// <b>Zero and negatives stay <c>E_INVALIDARG</c>.</b> No future contract can define them -
-    /// <c>None</c> is the absence of a verb and the numbering starts above it - so they are
-    /// malformed rather than merely unknown, and that is a caller bug worth naming as one.
-    /// </para>
-    /// <para>
-    /// <b>Answered before anything else, and that is the "never a hang" half.</b> No liveness
-    /// check, no capability lookup, and above all no hop onto the app's UI thread: a verb this
-    /// build cannot name is refused by arithmetic, so a newer client cannot make an older app
-    /// block on a thread it does not understand the request for.
-    /// </para>
-    /// </remarks>
     /// <param name="verb">The number as it arrived on the wire.</param>
     /// <param name="refusal">The HRESULT to return, when this returns true.</param>
     /// <returns>Whether the verb was refused.</returns>

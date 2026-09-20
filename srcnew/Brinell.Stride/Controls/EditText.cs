@@ -17,7 +17,6 @@ public class EditText<TScope> : TextControlBase<TScope>
 
     public override TScope SetText(string text)
     {
-        // Server-side: set text directly via automation pipe
         var success = Context.SetElementText(AutomationId, text);
         if (!success)
             throw new InvalidOperationException($"Failed to set text on '{AutomationId}'");
@@ -26,7 +25,6 @@ public class EditText<TScope> : TextControlBase<TScope>
 
     public override TScope Clear()
     {
-        // Server-side: set text to empty via automation pipe
         Context.SetElementText(AutomationId, "");
         return ContainingScope;
     }

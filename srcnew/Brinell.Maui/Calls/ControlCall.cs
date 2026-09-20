@@ -6,19 +6,6 @@ namespace Brinell.Maui.Calls;
 /// One public call on a control or scope: one log entry/exit pair around the whole of it, the
 /// action included (<c>.my/stale-readiness/design.md</c>, R1).
 /// </summary>
-/// <remarks>
-/// <para>
-/// There is no page gate here: readiness is the first step of every attempt, inside the call's
-/// one poll, so it shares the call's one budget.
-/// </para>
-/// <para>
-/// A call that succeeds only after trouble is still reported (R0): when the phase's attempts saw
-/// the element replaced <see cref="NearMissSettings.Replacements"/> times or more, or used more
-/// than <see cref="NearMissSettings.BudgetShare"/> of the budget, the exit is logged as
-/// <see cref="LogResult.Warning"/> with a "near-miss:" summary. A UI that keeps re-rendering, or a
-/// page slow to become idle, then shows up in the log although the test passed.
-/// </para>
-/// </remarks>
 internal sealed class ControlCall
 {
     private const string TestName = "Test";

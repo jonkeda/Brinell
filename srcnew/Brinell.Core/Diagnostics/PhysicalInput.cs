@@ -49,7 +49,7 @@ public enum PhysicalInputPolicy
 /// to real input with no verb layer behind them - refusing it by default would fail their suites
 /// rather than quieten them. The MAUI FlaUI driver used to as well, and made refusal its default;
 /// it now has no physical input to guard, so it neither calls this nor sets a default
-/// (<c>.my/bridge/no-physical-input.md</c>).
+/// (see <c>.docs/decisions/ad-005-physical-input-is-opt-in.md</c>).
 /// </para>
 /// </remarks>
 public static class PhysicalInput
@@ -145,9 +145,6 @@ public static class PhysicalInput
     /// <summary>Forgets everything recorded. For tests of this type itself.</summary>
     public static void ResetRecorded() => Recorded.Clear();
 
-    /// <remarks>
-    /// Null means "not asked", and <see cref="Policy"/> supplies the default for it.
-    /// </remarks>
     private static PhysicalInputPolicy? ReadExplicitPolicy()
         => Environment.GetEnvironmentVariable("BRINELL_BACKGROUND_MODE")?.Trim().ToLowerInvariant() switch
         {
@@ -157,11 +154,6 @@ public static class PhysicalInput
             _ => PhysicalInputPolicy.Refused,
         };
 
-    /// <remarks>
-    /// Appends per use rather than writing a summary at exit: a run that crashes or is cut short
-    /// still leaves everything it reached on disk, and the whole point is to find out what the
-    /// suite reaches.
-    /// </remarks>
     private static void Append(string callSite, string replacement)
     {
         var path = LogPath.Value;

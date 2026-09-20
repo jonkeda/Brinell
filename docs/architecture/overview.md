@@ -3,6 +3,9 @@
 Brinell is organized around stable core abstractions and replaceable platform
 drivers.
 
+> Before changing Brinell, read the decisions, invariants and contracts in
+> [`.docs/`](../../.docs/README.md) - what must stay true.
+
 ## Core Contracts
 
 `srcnew/Brinell.Core` owns:

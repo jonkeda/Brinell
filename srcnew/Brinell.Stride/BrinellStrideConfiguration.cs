@@ -14,8 +14,6 @@ public sealed class BrinellStrideConfiguration : BrinellConfigurationBase
     /// </summary>
     public StrideOptions Stride { get; set; } = new();
 
-    // Artifacts inherited from BrinellConfigurationBase
-
     /// <summary>
     /// Loads Stride configuration from brinell.stride.config.json
     /// </summary>

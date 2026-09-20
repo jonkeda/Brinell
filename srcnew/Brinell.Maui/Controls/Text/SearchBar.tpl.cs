@@ -54,7 +54,6 @@ public partial class SearchBar<TScope> : Entry<TScope>
     /// <param name="timeoutMs">Optional timeout.</param>
     protected virtual void SubmitSearchCore(IMauiElement element, int? timeoutMs = null)
     {
-        // Submit the search by pressing Enter key
         element.Submit();
     }
 

@@ -85,13 +85,6 @@ internal static class LocatorExtensions
     /// <summary>
     /// A resource id on Android, sent as the W3C <c>id</c> strategy.
     /// </summary>
-    /// <remarks>
-    /// Not Selenium's <c>By.Id</c>, which the .NET client sends as the CSS selector <c>#name</c>.
-    /// UiAutomator2 runs that from an element as a UiSelector that leaves the element's subtree:
-    /// asked for <c>TodoRow_Due</c> under a Todo row that has none, it answered with another row's.
-    /// The <c>id</c> strategy from the same row finds nothing, as it should (both probed
-    /// 2026-09-19, Android 16). A bare name matches in the app's package, as <c>By.Id</c> did.
-    /// </remarks>
     private static By AndroidIdBy(string id) => new ResourceIdBy(id);
 
     private sealed class ResourceIdBy(string id) : By("id", id);
@@ -100,11 +93,6 @@ internal static class LocatorExtensions
     /// A name on Android: the element's accessible name, which is its <c>content-desc</c> when it
     /// has one and its <c>text</c> otherwise - what UI Automation's Name is on Windows.
     /// </summary>
-    /// <remarks>
-    /// Selenium's <c>By.Name</c> becomes a CSS <c>[name=...]</c> selector, which UiAutomator2 refuses
-    /// outright ("'name' is not a valid attribute"), so every name locator failed on Android - a
-    /// dialog's buttons among them (found by the Todo sample's delete confirmation).
-    /// </remarks>
     /// <exception cref="ArgumentException">The name holds both quote characters, which no XPath 1.0 literal can.</exception>
     private static By AndroidNameBy(string name) => By.XPath(AndroidNamePath(name));
 

@@ -62,7 +62,7 @@ An action with no UI Automation pattern and no bridge verb throws `NotSupportedE
 
 - **Fix the route.** Usually the element needs a verb declared in the app's markup - `Tap`,
   `Focus`, `SetText`, `Submit`, `LongPress`, `Swipe*` - see
-  [AD-008](../architecture/decisions.md#ad-008-gestures-and-semantic-actions-go-through-ui-automation).
+  [AD-008](../../.docs/decisions/ad-008-gestures-and-semantic-actions-go-through-ui-automation.md).
   If the message says the bridge answers nothing at all, see
   [Gesture Bridge Problems](#gesture-bridge-problems).
 - **Or ask for the operation you mean.** A raw `Click` is not a UI Automation operation;
@@ -75,7 +75,7 @@ An action with no UI Automation pattern and no bridge verb throws `NotSupportedE
 
 There is no environment variable that turns physical input back on for MAUI.
 `BRINELL_BACKGROUND_MODE` and `BRINELL_PHYSICAL_INPUT_LOG` apply to WPF and WinForms only (see
-[AD-005](../architecture/decisions.md#ad-005-physical-input-is-opt-in)).
+[AD-005](../../.docs/decisions/ad-005-physical-input-is-opt-in.md)).
 `BRINELL_ALLOW_POINTER_INPUT` no longer does anything, and has not for some time.
 
 ## Gesture Bridge Problems

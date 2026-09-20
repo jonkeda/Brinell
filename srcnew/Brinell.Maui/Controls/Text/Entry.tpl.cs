@@ -80,11 +80,6 @@ public partial class Entry<TScope> : Base.FocusableControlBase<TScope>, IEditabl
     /// Core implementation of Append using pre-found element.
     /// Appends text without clearing existing content.
     /// </summary>
-    /// <remarks>
-    /// On Android and iOS this types. On Windows it uses the app's <c>AppendText</c> verb and
-    /// throws when the app does not declare it or refuses. For per-keystroke behaviour, call
-    /// <c>SendKeys</c> with <see cref="TextInputMethod.Keys"/> on a mobile platform.
-    /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <param name="text">The text to append.</param>
     /// <param name="timeoutMs">Optional timeout for enabled check.</param>
@@ -99,10 +94,6 @@ public partial class Entry<TScope> : Base.FocusableControlBase<TScope>, IEditabl
     /// Core implementation of Submit using pre-found element.
     /// Drives MAUI Entry.Completed command paths such as search boxes.
     /// </summary>
-    /// <remarks>
-    /// Uses the platform's route to the completion command where there is one, and presses Enter
-    /// otherwise.
-    /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <param name="timeoutMs">Optional timeout for enabled check.</param>
     protected virtual void SubmitCore(IMauiElement element, int? timeoutMs = null)

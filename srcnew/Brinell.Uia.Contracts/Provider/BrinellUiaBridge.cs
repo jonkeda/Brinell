@@ -38,11 +38,6 @@ public sealed class BrinellUiaBridge : IDisposable
     /// <summary>
     /// Held for the life of the process, and for the same reason the class registration is.
     /// </summary>
-    /// <remarks>
-    /// The window class stores a raw function pointer to this delegate. A collected delegate
-    /// leaves the class pointing at freed memory, and the failure lands on whichever window
-    /// receives the next message - not necessarily ours.
-    /// </remarks>
     private static Win32.WndProc? _classWndProc;
 
     /// <summary>Counted by <see cref="Disconnect"/>; read through <see cref="DisconnectFailures"/>.</summary>
@@ -279,35 +274,8 @@ public sealed class BrinellUiaBridge : IDisposable
     /// <summary>
     /// Tears the bridge down because its window has already been destroyed.
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>The window can go without anyone disposing the bridge, and it usually does.</b>
-    /// Destroying a parent destroys its children, so an app window closing takes this window
-    /// with it - and the framework event a host hangs its teardown off is not guaranteed to
-    /// arrive first, or at all. Without this the providers are never disconnected and the
-    /// registry keeps a strong reference keyed on a handle Windows is free to hand to somebody
-    /// else, so the next window to receive that number would be answered by a dead bridge.
-    /// </para>
-    /// <para>
-    /// Called from the window procedure on <c>WM_DESTROY</c>, which is the one notification
-    /// that arrives however the window died.
-    /// </para>
-    /// </remarks>
     private void OnWindowDestroyed() => Teardown(destroyWindow: false);
 
-    /// <remarks>
-    /// <para>
-    /// <b>Reentrant on purpose.</b> The disposing path calls <c>DestroyWindow</c>, which sends
-    /// <c>WM_DESTROY</c> synchronously on the same thread, which lands back here. <c>_disposed</c>
-    /// is set before the destroy, so the inner call returns immediately and the work happens
-    /// once whichever way the teardown started.
-    /// </para>
-    /// <para>
-    /// <b>Order matters and the disconnect is not optional.</b> Providers first, then the root,
-    /// then the window: a provider disconnected after its window has gone is a provider nobody
-    /// can reach to disconnect.
-    /// </para>
-    /// </remarks>
     /// <param name="destroyWindow">
     /// False when the window is already being destroyed and this is the notification.
     /// </param>
@@ -353,18 +321,6 @@ public sealed class BrinellUiaBridge : IDisposable
     /// <summary>
     /// Severs a provider from UI Automation, counting the times it could not be done.
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>The HRESULT used to be discarded, which made "the disconnect is not optional" a claim
-    /// nothing checked.</b> A disconnect that quietly fails is exactly the leak the call exists
-    /// to prevent, and it would have looked identical to one that worked.
-    /// </para>
-    /// <para>
-    /// <b>Counted rather than thrown.</b> This runs during teardown, often from a window
-    /// procedure, where an exception would take the app down over a cleanup problem. A number a
-    /// test can read is the useful shape.
-    /// </para>
-    /// </remarks>
     private static void Disconnect(IRawElementProviderSimple provider)
     {
         try
@@ -384,7 +340,6 @@ public sealed class BrinellUiaBridge : IDisposable
     }
 
     /// <summary>Rebuilds the root's child snapshot and tells any listening client.</summary>
-    /// <remarks>Called under <c>_gate</c>.</remarks>
     private void PublishChildren()
     {
         _root.SetChildren([.. _targets.Values]);
@@ -470,12 +425,6 @@ public sealed class BrinellUiaBridge : IDisposable
     /// <summary>
     /// Maps a window back to its bridge.
     /// </summary>
-    /// <remarks>
-    /// The window procedure is a static function pointer shared by the whole class, so it needs
-    /// a way from the HWND to the instance. A dictionary rather than <c>GWLP_USERDATA</c>
-    /// because these sources may be compiled into more than one assembly in a process, and two
-    /// copies writing the same window word would be a very quiet kind of corruption.
-    /// </remarks>
     private static class Registry
     {
         private static readonly Lock Gate = new();

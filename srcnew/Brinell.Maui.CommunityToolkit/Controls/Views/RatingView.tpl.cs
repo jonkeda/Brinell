@@ -43,12 +43,10 @@ public partial class RatingView<TScope> : Brinell.Maui.Controls.Base.RangeContro
     #region Core Method Overrides
 
     /// <inheritdoc />
-    /// <remarks>The rating as the app reports it; null where it does not report one.</remarks>
     protected override double? GetValueCore(IMauiElement? element)
         => ReadNumber(element, "Rating");
 
     /// <inheritdoc />
-    /// <remarks>A rating starts at zero, with nothing filled.</remarks>
     protected override double? GetMinimumCore(IMauiElement? element)
         => element == null ? null : 0;
 
@@ -57,15 +55,10 @@ public partial class RatingView<TScope> : Brinell.Maui.Controls.Base.RangeContro
         => ReadNumber(element, "MaximumRating");
 
     /// <inheritdoc />
-    /// <remarks>One star.</remarks>
     protected override double? GetStepCore(IMauiElement? element)
         => element == null ? null : 1;
 
     /// <inheritdoc />
-    /// <remarks>
-    /// Taps the star numbered <paramref name="value"/> and waits for the app to report it. Only
-    /// whole ratings from 1 to the maximum can be tapped.
-    /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException">The value is not a star that can be tapped.</exception>
     protected override void SetValueCore(IMauiElement element, double? value, int? timeoutMs = null)
     {
@@ -143,7 +136,6 @@ public partial class RatingView<TScope> : Brinell.Maui.Controls.Base.RangeContro
     #region Guards
 
     /// <inheritdoc />
-    /// <remarks>Also refuses a read-only rating, which would ignore the tap.</remarks>
     protected override void EnsureSettableCore(IMauiElement element)
     {
         base.EnsureSettableCore(element);

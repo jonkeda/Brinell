@@ -44,10 +44,6 @@ public partial class StateContainer<TParent, TSelf> : ContainerObjectBase<TParen
     }
 
     /// <inheritdoc />
-    /// <remarks>
-    /// Not cached: switching state replaces the layout's children, and the layout can be rebuilt
-    /// with them.
-    /// </remarks>
     protected override bool CacheContainerRoot => false;
 
     #region Core Methods (Element-Aware, No Logging)
@@ -55,10 +51,6 @@ public partial class StateContainer<TParent, TSelf> : ContainerObjectBase<TParen
     /// <summary>
     /// Whether the view with the given AutomationId is currently shown inside the container.
     /// </summary>
-    /// <remarks>
-    /// Absence tolerant: a container that is not on the page shows nothing, so the answer is
-    /// false rather than an error.
-    /// </remarks>
     /// <param name="element">The container root, or null when it is absent.</param>
     /// <param name="viewAutomationId">The AutomationId of a state view or of the normal content.</param>
     /// <returns>True when shown.</returns>

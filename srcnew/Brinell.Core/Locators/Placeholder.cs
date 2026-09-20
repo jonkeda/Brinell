@@ -5,5 +5,4 @@ namespace Brinell.Core.Locators;
 /// </summary>
 public static class Placeholder
 {
-    // Locator types will be added here
 }

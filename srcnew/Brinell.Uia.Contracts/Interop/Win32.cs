@@ -3,11 +3,6 @@ using System.Runtime.InteropServices;
 namespace Brinell.Uia.Interop;
 
 /// <summary>The window-management calls the bridge needs to own an HWND.</summary>
-/// <remarks>
-/// A custom UI Automation pattern can only be answered by a native provider, and the only
-/// supported way to put a native provider into the tree is to return it from
-/// <c>WM_GETOBJECT</c> on a window. Hence a window, and hence this file.
-/// </remarks>
 internal static class Win32
 {
     internal const int WM_GETOBJECT = 0x003D;
@@ -17,11 +12,6 @@ internal static class Win32
     /// <summary>
     /// The object id UI Automation asks for. Not <c>OBJID_CLIENT</c>.
     /// </summary>
-    /// <remarks>
-    /// <c>WM_GETOBJECT</c> is shared with MSAA, which asks for <c>OBJID_CLIENT</c> (0) on the
-    /// same message. Answering both with the same provider is how you end up with two
-    /// disagreeing trees; answering only this one is correct.
-    /// </remarks>
     internal const int UiaRootObjectId = -25;
 
     internal const int WS_CHILD = 0x40000000;

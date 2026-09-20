@@ -27,7 +27,7 @@ namespace Brinell.Maui.FlaUI;
 /// <b>No real mouse, keyboard, clipboard or foreground, and no fallback to them.</b> Every action
 /// is a UI Automation pattern or a verb the app answers through the Brinell bridge, which is a
 /// hard requirement for MAUI on Windows. An action with neither route throws, naming the route the
-/// app would have to offer - see <c>.my/bridge/no-physical-input.md</c>.
+/// app would have to offer - see <c>.docs/decisions/ad-005-physical-input-is-opt-in.md</c>.
 /// </para>
 /// </remarks>
 public sealed class FlaUIMauiElement : IMauiElement
@@ -62,11 +62,6 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// <summary>
     /// The automation element: the one wrapped, or for the app element the driver's window.
     /// </summary>
-    /// <remarks>
-    /// The app element reads the window afresh each time rather than holding it, because UI
-    /// Automation retires the window element during a run and the driver attaches again - see
-    /// <c>.my/fix/rca-app-freeze-was-a-stale-root.md</c>.
-    /// </remarks>
     private AutomationElement _element => _wrapped ?? _driver.RootElement;
 
     #region Live: how a removed element is reported
@@ -75,12 +70,6 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// Runs a UI Automation read or action, reporting a removed element as
     /// <see cref="StaleElementException"/> and a closed app as <see cref="AppUnavailableException"/>.
     /// </summary>
-    /// <remarks>
-    /// Every member that touches UI Automation for MAUI's lookups, readiness checks, state reads and
-    /// actions goes through this. A member that treats an unsupported property as "none" still
-    /// does, but its catch lets a removed element through (<see cref="FlaUIErrors.IsElementGone"/>).
-    /// A removed element is a signal, and must never read as an empty value.
-    /// </remarks>
     private T Live<T>(Func<T> touch)
     {
         try
@@ -437,12 +426,6 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// <summary>
     /// Runs one automation pattern, or explains which half of it was missing.
     /// </summary>
-    /// <remarks>
-    /// Absent and present-but-refused are told apart deliberately. The first means the control
-    /// object named the wrong operation for this element; the second means the platform accepted
-    /// the call and did not do the thing, which is a fault further down. The old ladder reported
-    /// neither - it moved on to the next rung and, if that worked, said nothing at all.
-    /// </remarks>
     private void Perform(string operation, bool supported, Func<bool> run, string pattern) => Live(() =>
     {
         var name = AutomationId ?? Name ?? "(unnamed)";
@@ -1105,11 +1088,6 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// Whether this element exposes the ExpandCollapse pattern. A WinUI <c>ComboBox</c> is the
     /// case this exists for.
     /// </summary>
-    /// <remarks>
-    /// Private: this was <c>SupportsDropdown</c> on <c>IMauiElement</c>, where every caller asked
-    /// it and then immediately asked something else. The nullable <see cref="IsDropdownOpen"/>
-    /// answers both in one walk.
-    /// </remarks>
     private bool HasDropdown => HasPattern(() => _element.Patterns.ExpandCollapse.IsSupported);
 
     /// <inheritdoc />
@@ -1147,17 +1125,6 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// <summary>
     /// The live popup item elements, for a caller that is holding the dropdown open.
     /// </summary>
-    /// <remarks>
-    /// Looked for among descendants, then among children: a WinUI ComboBox's popup items are
-    /// reported under one or the other depending on how it was templated.
-    /// <para>
-    /// Private: these elements go stale the moment the dropdown closes, so the only safe caller
-    /// is one that holds it open - this class's own selection route and
-    /// <see cref="ReadDropdownItemTexts"/>. It was on <c>IMauiElement</c> as
-    /// <c>ReadDropdownItems</c>, where it handed callers elements that could die between the
-    /// read and the use.
-    /// </para>
-    /// </remarks>
     private IReadOnlyList<IMauiElement> ReadDropdownItems()
     {
         RequireDropdown(nameof(ReadDropdownItems));
@@ -1247,11 +1214,6 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// <summary>
     /// Opens the dropdown, selects the item <paramref name="choose"/> picks, and leaves it closed.
     /// </summary>
-    /// <remarks>
-    /// The route for an app that declares no selection verb. The item is <see cref="Select"/>ed,
-    /// which throws where it cannot be - never a pointer click inside a call that looks semantic
-    /// (step 107). This lived in <c>SelectorControlBase</c> until the route choice moved here.
-    /// </remarks>
     /// <returns>False when <paramref name="choose"/> found nothing; the dropdown is closed again.</returns>
     private bool SelectFromDropdown(Func<IReadOnlyList<IMauiElement>, IMauiElement?> choose)
     {
@@ -1308,15 +1270,6 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// <summary>
     /// Writes a value through the UIA Value pattern, reaching into a wrapper if it has to.
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Self first, wrapper only if self cannot be written. MAUI maps <c>Entry</c> and
-    /// <c>Editor</c> straight to a writable WinUI <c>Edit</c>, but <c>SearchBar</c> becomes an
-    /// AutoSuggestBox: a <c>Group</c> with no Value pattern of its own and the real field nested
-    /// inside. The descendant search is what makes SearchBar writable at all, and it runs only
-    /// once the direct write is ruled out.
-    /// </para>
-    /// </remarks>
     private bool TrySetTextValue(string text)
     {
         if (TryWriteValue(_element, text))
@@ -1357,16 +1310,6 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// <summary>
     /// Whether the app under test declared this gesture on this element.
     /// </summary>
-    /// <remarks>
-    /// Answered by asking the app what it declared, not by inspecting the control. A
-    /// <c>SwipeView</c> that has not opted in reports false, which is correct: nothing can drive
-    /// it semantically until the app says so.
-    /// <para>
-    /// Private: this used to be on <c>IMauiElement</c>, where no control object ever asked it.
-    /// Windows still needs the answer internally, to choose between the declared gesture route
-    /// and a pointer click, so it stays here as an implementation detail.
-    /// </para>
-    /// </remarks>
     private bool DeclaresGesture(MauiGesture gesture)
         => GestureRunner.Supports(_driver.RootElement, _driver.Automation, AutomationId, gesture);
 
@@ -1418,16 +1361,6 @@ public sealed class FlaUIMauiElement : IMauiElement
         }
     }
 
-    /// <summary>
-    /// Sends a verb to this element, and says whether the app performed it.
-    /// </summary>
-    /// <remarks>
-    /// The bridge rung of every ladder in this class. False covers all the ordinary negatives -
-    /// the app has no bridge, this element was never declared, the element refused the verb -
-    /// because at this level they call for the same response: try the next rung.
-    /// </remarks>
-    /// <param name="verb">The verb to send.</param>
-    /// <returns>Whether the app performed it.</returns>
     #region State the platform cannot be asked for
 
     /// <inheritdoc />
@@ -1498,19 +1431,6 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// <summary>
     /// Blocks until two consecutive reads of the scroll offset agree.
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>Settled, not arrived.</b> Waiting for a particular offset would mean predicting what
-    /// <c>MakeVisible</c> decides is enough, which is a MAUI layout question this side cannot
-    /// answer. Two equal readings is the weakest claim that is still the one the caller needs.
-    /// </para>
-    /// <para>
-    /// <b>Returns rather than throws when it never settles.</b> A scroller that is still moving
-    /// after the budget is a real thing - an inertia animation, a slow list - and the caller's own
-    /// assertion is a better place to fail than a helper that cannot know what was wanted. The
-    /// budget is generous because it is only ever paid in full when something is wrong.
-    /// </para>
-    /// </remarks>
     private void WaitForTheViewportToSettle()
     {
         if (!DeclaresScrollVerbs)
@@ -1741,11 +1661,6 @@ public sealed class FlaUIMauiElement : IMauiElement
     }
 
     /// <summary>Selects by text through the app's verb.</summary>
-    /// <remarks>
-    /// The app answers with the text it landed on, which is checked here rather than left to a
-    /// later assertion: a picker whose selection is two-way bound can decline a value, and the
-    /// old route would have reported that as a successful selection.
-    /// </remarks>
     private void SelectByTextThroughTheApp(string text)
     {
         if (!TryBridge(BrinellVerb.SelectByText, text, out var landed))
@@ -1823,12 +1738,6 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// <summary>
     /// The wire format for a date, which both ends must agree on exactly.
     /// </summary>
-    /// <remarks>
-    /// Duplicated from the provider's <c>MauiCapabilities.DateFormat</c> rather than shared,
-    /// for the reason the whole contract project exists: the app under test is not always one
-    /// Brinell can add a reference to. A mismatch here is caught by <c>DateVerbTests</c>, which
-    /// round-trips a value through a real app.
-    /// </remarks>
     private const string BridgeDateFormat = "yyyy-MM-dd";
 
     /// <summary>The wire format for a time. See <see cref="BridgeDateFormat"/>.</summary>
@@ -1952,12 +1861,6 @@ public sealed class FlaUIMauiElement : IMauiElement
     /// <summary>
     /// Whether the app under test declares this verb on this element.
     /// </summary>
-    /// <remarks>
-    /// <b>A question asked before choosing a route, not a rung tried before another.</b> The
-    /// distinction is the whole of <c>design-controls-know-how-to-click.md</c>: nothing is
-    /// performed to find out, so no route can leave the app changed on its way past. The answer
-    /// comes from the app's own declaration and is the same every time it is asked.
-    /// </remarks>
     /// <param name="verb">The verb.</param>
     /// <returns>Whether the bridge would carry it.</returns>
     private bool BridgeDeclares(BrinellVerb verb)

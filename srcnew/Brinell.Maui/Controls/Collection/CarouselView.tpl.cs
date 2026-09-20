@@ -80,11 +80,6 @@ public abstract partial class CarouselView<TParent, TSelf, TItem>
     /// <summary>
     /// Gets the index of the current card, counted from zero.
     /// </summary>
-    /// <remarks>
-    /// The app's own <c>Position</c>, through the bridge's <c>GetState</c>: the card on screen
-    /// and the IndicatorView's selected dot both follow it. Null where the app does not declare
-    /// <c>GetState</c> on the carousel, and on Android.
-    /// </remarks>
     /// <param name="element">The carousel's own element.</param>
     /// <returns>The position, or null where the platform does not publish it.</returns>
     protected virtual int? GetPositionCore(IMauiElement element)
@@ -103,12 +98,6 @@ public abstract partial class CarouselView<TParent, TSelf, TItem>
     /// <summary>
     /// Swipes to the next card, and waits for the carousel to arrive there.
     /// </summary>
-    /// <remarks>
-    /// A gesture, not coordinates: the bridge's swipe verb on Windows, a real swipe on a touch
-    /// platform. Throws where the platform has no route, naming the declaration to add, and on
-    /// Windows when the carousel refuses (the last card, without <c>Loop</c>). Where the
-    /// position is not published (Android) the move cannot be confirmed and is not waited for.
-    /// </remarks>
     /// <param name="element">The carousel's own element.</param>
     /// <param name="timeoutMs">Optional timeout in milliseconds for the move to show.</param>
     protected virtual void SwipeNextCore(IMauiElement element, int? timeoutMs = null)
@@ -117,9 +106,6 @@ public abstract partial class CarouselView<TParent, TSelf, TItem>
     /// <summary>
     /// Swipes to the previous card, and waits for the carousel to arrive there.
     /// </summary>
-    /// <remarks>
-    /// The mirror of <c>SwipeNext</c>; on Windows the first card, without <c>Loop</c>, refuses.
-    /// </remarks>
     /// <param name="element">The carousel's own element.</param>
     /// <param name="timeoutMs">Optional timeout in milliseconds for the move to show.</param>
     protected virtual void SwipePreviousCore(IMauiElement element, int? timeoutMs = null)

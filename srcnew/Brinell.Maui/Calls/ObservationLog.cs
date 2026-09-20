@@ -3,11 +3,6 @@ namespace Brinell.Maui.Calls;
 /// <summary>
 /// Every observation of one phase of a call, and the failure built from them.
 /// </summary>
-/// <remarks>
-/// A call that times out fails with what it <i>last saw</i>, in words, and says how often the
-/// element was replaced on the way (<c>.my/stale-readiness/design.md</c>, section 6.1, and R0: a
-/// failure names what was observed).
-/// </remarks>
 internal sealed class ObservationLog
 {
     private readonly List<(Observation Observation, long AtMs)> _entries = [];

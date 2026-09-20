@@ -1,12 +1,10 @@
 namespace Brinell.Maui.Interfaces;
 
+// R9: MAUI owns this contract and does not derive from Core's scopes; lookups make one attempt
+// and never wait. See .docs/decisions/ad-010-maui-ahead-of-core.md.
 /// <summary>
 /// Anything controls can be declared in: a page, a container, a collection row, or the app root.
 /// </summary>
-/// <remarks>
-/// MAUI owns this contract; it does not derive from Brinell.Core's scope interfaces (see
-/// <c>.my/stale-readiness/design.md</c>, R9). Lookups make one attempt and never wait.
-/// </remarks>
 public interface IMauiElementScope
 {
     /// <summary>
@@ -26,13 +24,9 @@ public interface IMauiElementScope
 
     /// <summary>
     /// One readiness probe, no waiting: whether this scope can be used now, having asked its
-    /// parent first when it inherits the parent's readiness.
+    /// parent first when it inherits the parent's readiness. A scope that is not ready says which
+    /// scope in the chain it was, and what it found.
     /// </summary>
-    /// <remarks>
-    /// The first step of every attempt of a call on a control in this scope
-    /// (<c>.my/stale-readiness/design.md</c>, R4 and section 7.1). A scope that is not ready says
-    /// which scope in the chain it was, and what it found.
-    /// </remarks>
     ScopeReadiness ProbeReadiness();
 
     /// <summary>Whether the scope is ready for interaction now: one probe.</summary>

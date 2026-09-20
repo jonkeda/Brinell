@@ -10,9 +10,4 @@ public interface IContainerControl<TElement> : IElementScope<TElement>
     /// Typed root element for scoped searches.
     /// </summary>
     TElement ContainerRoot { get; }
-    
-    // Inherits from IElementScope<TElement>:
-    // TElement? TryFindElement(Locator locator);
-    // TElement FindElement(Locator locator);
-    // IReadOnlyList<TElement> FindElements(Locator locator);
 }

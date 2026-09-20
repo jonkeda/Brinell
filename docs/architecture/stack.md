@@ -49,7 +49,7 @@ Use xUnit `Assert`. FluentAssertions is banned in test projects by
 | `BRINELL_TEST_RESULTS_DIR` | Overrides the `TestResults` root |
 | `BRINELL_TEST_RUN_ID` | Reuses a run folder across projects |
 | `BRINELL_TEST_SUITE` | Overrides the artifact suite name |
-| `BRINELL_BACKGROUND_MODE` | Physical input policy for WPF and WinForms - see [AD-005](decisions.md#ad-005-physical-input-is-opt-in). Unset or `0`: performed. `1`: refused. `audit`: performed and recorded. No effect on MAUI, which uses no physical input |
+| `BRINELL_BACKGROUND_MODE` | Physical input policy for WPF and WinForms - see [AD-005](../../.docs/decisions/ad-005-physical-input-is-opt-in.md). Unset or `0`: performed. `1`: refused. `audit`: performed and recorded. No effect on MAUI, which uses no physical input |
 | `BRINELL_PHYSICAL_INPUT_LOG` | File that audited physical-input uses are appended to (WPF and WinForms) |
 | `BRINELL_AUT_PLACE` | Where to put the MAUI app window on launch: `right`, `offscreen`, `secondary`. `offscreen` breaks visibility checks - UI Automation counts the monitor - so leave it unset unless you know you need it |
 | `BRINELL_AUT_PLACEMENT_RESULT_FILE` | File the driver writes where the window was actually placed |

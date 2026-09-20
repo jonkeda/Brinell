@@ -29,10 +29,6 @@ public partial class ShellFlyout<TParent>
     /// <summary>
     /// The flyout's root is resolved afresh every time.
     /// </summary>
-    /// <remarks>
-    /// The platform creates and destroys the pane as it opens and closes, so the root is not
-    /// cached.
-    /// </remarks>
     protected override bool CacheContainerRoot => false;
 
     /// <inheritdoc />

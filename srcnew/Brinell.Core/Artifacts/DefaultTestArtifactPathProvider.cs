@@ -64,7 +64,6 @@ public sealed class DefaultTestArtifactPathProvider : ITestArtifactPathProvider
     {
         ArgumentNullException.ThrowIfNull(artifacts);
 
-        // Use configuration values with reasonable defaults
         var root = artifacts.RootDirectory 
             ?? Path.Combine(FindRepositoryRoot(Environment.CurrentDirectory), "TestResults");
 

@@ -17,9 +17,6 @@ public static class MauiDriverFactory
     /// <summary>
     /// The Appium client assembly name.
     /// </summary>
-    /// <remarks>
-    /// The <c>Appium.WebDriver</c> package ships an assembly named <c>Appium.Net</c>.
-    /// </remarks>
     private const string AppiumAssemblyName = "Appium.Net";
 
     private static Type? _appiumDriverType;
@@ -37,7 +34,6 @@ public static class MauiDriverFactory
     {
         ArgumentNullException.ThrowIfNull(options);
         
-        // Windows always uses FlaUI, mobile uses Appium
         return options.Platform switch
         {
             MauiPlatform.Windows => CreateFlaUIDriver(options),
@@ -49,7 +45,6 @@ public static class MauiDriverFactory
     
     private static IMauiDriver CreateFlaUIDriver(MauiDriverOptions options)
     {
-        // Ensure we're on Windows
         if (!OperatingSystem.IsWindows())
         {
             throw new PlatformNotSupportedException(
@@ -57,10 +52,8 @@ public static class MauiDriverFactory
                 "Use APPIUM_PLATFORM=android or APPIUM_PLATFORM=ios for other platforms.");
         }
         
-        // Load FlaUI driver type dynamically
         var driverType = GetFlaUIDriverType();
         
-        // Determine which constructor to use
         if (options.WindowHandle.HasValue)
         {
             var ctor = driverType.GetConstructor([typeof(IntPtr)])
@@ -97,17 +90,13 @@ public static class MauiDriverFactory
     {
         ValidateAppiumOptions(options);
         
-        // Load types dynamically from Appium assembly
         var appiumOptionsType = LoadAppiumOptionsType();
         var appiumDriverType = GetAppiumDriverType();
         
-        // Build AppiumOptions using reflection
         var appiumOptions = BuildAppiumOptionsReflection(options, appiumOptionsType);
         
-        // Create the platform-specific driver
         var rawDriver = CreatePlatformDriverReflection(options.AppiumServerUri, appiumOptions, options.Platform);
         
-        // Create AppiumMauiDriver wrapper
         var ctor = appiumDriverType.GetConstructor([rawDriver.GetType(), typeof(MauiPlatform)])
             ?? appiumDriverType.GetConstructors().First();
         
@@ -183,7 +172,6 @@ public static class MauiDriverFactory
     {
         var appiumOptions = Activator.CreateInstance(appiumOptionsType)!;
         
-        // Set common properties using reflection
         var platformNameProp = appiumOptionsType.GetProperty("PlatformName");
         var automationNameProp = appiumOptionsType.GetProperty("AutomationName");
         var deviceNameProp = appiumOptionsType.GetProperty("DeviceName");
@@ -208,7 +196,6 @@ public static class MauiDriverFactory
                 break;
         }
         
-        // Add additional capabilities
         var addCapMethod = appiumOptionsType.GetMethod("AddAdditionalAppiumOption");
         if (addCapMethod != null)
         {
@@ -230,11 +217,6 @@ public static class MauiDriverFactory
     /// <see cref="MauiDriverOptions.LaunchSettings"/> as launch-intent string extras, or null when
     /// there are none.
     /// </summary>
-    /// <remarks>
-    /// UiAutomator2 appends <c>optionalIntentArguments</c> to the <c>am start</c> it launches the
-    /// app with, as one command line: a value with whitespace or quotes would be split or broken
-    /// there, so it throws here, naming the setting, instead of arriving mangled.
-    /// </remarks>
     /// <exception cref="ArgumentException">A name or value cannot travel on the command line.</exception>
     /// <exception cref="NotSupportedException">Launch settings on a platform that has no route for them yet.</exception>
     internal static string? LaunchIntentArguments(MauiDriverOptions options)

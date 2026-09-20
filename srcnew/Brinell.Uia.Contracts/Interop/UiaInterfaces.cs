@@ -19,11 +19,6 @@ namespace Brinell.Uia.Interop;
 /// <summary>
 /// Registers custom properties, events and patterns with UI Automation.
 /// </summary>
-/// <remarks>
-/// Instantiated from CLSID <c>{6e29fabf-9977-42d1-8d0e-ca7e61ad87e6}</c>. Registration is
-/// per-process and per-run: the ids it hands back are allocated on the spot and are not stable
-/// across processes or restarts, which is why the GUID rather than the id is the contract.
-/// </remarks>
 [ComImport]
 [Guid("8609c4ec-4a1a-4d88-a357-5a66e060e1cf")]
 [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
@@ -59,10 +54,6 @@ internal interface IUIAutomationRegistrar
 /// <summary>
 /// The client's handle on one element's instance of a custom pattern.
 /// </summary>
-/// <remarks>
-/// Handed to <see cref="IUIAutomationPatternHandler.CreateClientWrapper"/>. Calling
-/// <see cref="CallMethod"/> on it is what actually crosses the process boundary.
-/// </remarks>
 [ComImport]
 [Guid("c03a7fe4-9431-409f-bed8-ae7c2299bc8d")]
 [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
@@ -81,18 +72,6 @@ internal interface IUIAutomationPatternInstance
 /// <summary>
 /// The two callbacks UI Automation needs to operate a custom pattern.
 /// </summary>
-/// <remarks>
-/// <para>
-/// One implementation serves both processes and both directions.
-/// <see cref="CreateClientWrapper"/> runs in the client, turning a raw pattern instance into
-/// something callable; <see cref="Dispatch"/> runs in the provider, turning an index and a
-/// parameter array back into a method call.
-/// </para>
-/// <para>
-/// UI Automation holds this for the lifetime of the process, so the managed implementation
-/// must be rooted for just as long. See <c>BrinellPatternRegistration</c>.
-/// </para>
-/// </remarks>
 [ComImport]
 [Guid("d97022f3-a947-465e-8b2a-ac4315fa54e8")]
 [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
@@ -191,10 +170,6 @@ internal static class UiaNativeMethods
     /// <summary>
     /// Answers <c>WM_GETOBJECT</c> with a provider.
     /// </summary>
-    /// <remarks>
-    /// Returns the <c>LRESULT</c> the window procedure must return verbatim. It is not a
-    /// success code and must not be tested as one.
-    /// </remarks>
     [DllImport(UiaCore, ExactSpelling = true)]
     internal static extern IntPtr UiaReturnRawElementProvider(
         IntPtr hwnd,
@@ -210,20 +185,6 @@ internal static class UiaNativeMethods
     /// <summary>
     /// Tells UI Automation to forget a provider before it is destroyed.
     /// </summary>
-    /// <remarks>
-    /// Not optional. UI Automation caches provider pointers across processes, and a client
-    /// holding a stale one blocks until its transaction timeout rather than failing - which
-    /// means a leaked provider hangs every accessibility client on the desktop, not just the
-    /// test run.
-    /// </remarks>
-    /// <remarks>
-    /// <b>It calls out to the client, so it cannot run inside an input-synchronous call.</b>
-    /// While a window procedure is dispatching a <c>SendMessage</c> sent from another process,
-    /// COM refuses outgoing calls and this returns <c>RPC_E_CANTCALLOUT_ININPUTSYNCCALL</c>
-    /// (0x8001010D) - having disconnected nothing. Measured at step 28, where a test harness
-    /// drove teardown that way and spent an afternoon looking at a leak it had created itself.
-    /// Read the HRESULT.
-    /// </remarks>
     [DllImport(UiaCore, ExactSpelling = true)]
     internal static extern int UiaDisconnectProvider(IRawElementProviderSimple provider);
 
@@ -238,10 +199,6 @@ internal static class UiaNativeMethods
     /// <summary>
     /// Whether any UI Automation client is connected.
     /// </summary>
-    /// <remarks>
-    /// Worth checking before doing work to raise an event: with no client listening the whole
-    /// call is wasted, and in an app under test that is the common case between runs.
-    /// </remarks>
     [DllImport(UiaCore, ExactSpelling = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static extern bool UiaClientsAreListening();

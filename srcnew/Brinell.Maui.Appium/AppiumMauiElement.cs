@@ -22,7 +22,6 @@ namespace Brinell.Maui.Appium;
 /// an iOS-only script name (<c>mobile: setValue</c>) was called on Android where it does not
 /// exist. Both were invisible until a device ran.
 /// </para>
-/// <remarks>
 /// <para>
 /// Answers <see cref="IMauiElement"/> in its own terms. It used to implement three UI Automation
 /// <c>*PatternElement</c> interfaces - toggle, selection item, value - so controls written against
@@ -68,11 +67,6 @@ public sealed class AppiumMauiElement : IMauiElement
     /// <summary>
     /// The Appium element: the one wrapped, or for the app element the hierarchy's root node.
     /// </summary>
-    /// <remarks>
-    /// Found only when a member actually needs a node. The app-level members - the flyout, the
-    /// dialog, scroll-finding - address the whole screen and never do, so asking the app element
-    /// for them costs no round trip.
-    /// </remarks>
     private AppiumElement _element => _wrapped ?? _driver.FindRootNode();
 
     #region Live: how a removed element is reported
@@ -81,11 +75,6 @@ public sealed class AppiumMauiElement : IMauiElement
     /// Runs a WebDriver read or action, reporting a replaced element as
     /// <see cref="StaleElementException"/> and an ended session as <see cref="AppUnavailableException"/>.
     /// </summary>
-    /// <remarks>
-    /// Every member that touches the element for MAUI's lookups, readiness checks, state reads and
-    /// actions goes through this. A catch inside such a member that means "absent" lets both through
-    /// (<see cref="AppiumErrors.IsGone"/>): a replaced element is a signal, never an empty value.
-    /// </remarks>
     private T Live<T>(Func<T> touch)
     {
         try
@@ -446,15 +435,6 @@ public sealed class AppiumMauiElement : IMauiElement
     /// <summary>
     /// Sets an element's value directly, bypassing the keyboard.
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// The script name differs per driver and there is no shared one. XCUITest exposes
-    /// <c>mobile: setValue</c>; UiAutomator2 does not have that name at all and exposes
-    /// <c>mobile: replaceElementValue</c> instead. Calling the iOS name on Android fails with
-    /// "Unsupported execute method 'mobile: setValue', did you mean 'mobile: setUiMode'?",
-    /// which reads like a driver version problem rather than the wrong API for the platform.
-    /// </para>
-    /// </remarks>
     private void SetValueDirectly(string text)
     {
         switch (_driver.Platform)
@@ -483,17 +463,6 @@ public sealed class AppiumMauiElement : IMauiElement
     /// <summary>
     /// The exception for a branch this driver cannot reach: a platform other than Android or iOS.
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <see cref="AppiumMauiDriver"/> refuses any other platform in its constructor, so this is a
-    /// guard rather than a route.
-    /// </para>
-    /// <para>
-    /// These branches used to hold desktop fallbacks - W3C mouse actions, <c>windows: scroll</c>,
-    /// a JavaScript <c>scrollBy</c>, clearing and typing - written for Appium's Windows driver.
-    /// Windows is driven by <c>Brinell.Maui.FlaUI</c>, so none of them ever ran.
-    /// </para>
-    /// </remarks>
     /// <param name="operation">What was asked.</param>
     /// <returns>The exception to throw.</returns>
     private PlatformNotSupportedException NotAMobilePlatform(string operation)
@@ -552,7 +521,6 @@ public sealed class AppiumMauiElement : IMauiElement
     /// <inheritdoc />
     public void ScrollIntoView(int timeoutMs) => Live(() =>
     {
-        // Check if element is already visible
         try
         {
             if (_element.Displayed) return;
@@ -565,7 +533,6 @@ public sealed class AppiumMauiElement : IMauiElement
         var startTime = DateTime.UtcNow;
         var timeout = TimeSpan.FromMilliseconds(timeoutMs);
         
-        // Use platform-specific scrolling
         switch (_driver.Platform)
         {
             case MauiPlatform.Android:
@@ -666,31 +633,9 @@ public sealed class AppiumMauiElement : IMauiElement
     /// Waits until the element stops moving, so a caller acts on where it is rather than where it
     /// was.
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Android scrolling flings: <c>UiScrollable</c> hands back control while the container is
-    /// still coasting, so a tap issued then lands at coordinates the element has already left
-    /// and silently does nothing. Two identical rectangles in a row means settled; it returns as
-    /// soon as the element is still rather than sleeping a fixed time.
-    /// </para>
-    /// <para>
-    /// The mechanism is general — two identical rectangles in a row — and depends on nothing but
-    /// <see cref="Rect"/>; it lives here because the need does not generalise. UIA scrolling is
-    /// synchronous, and Playwright already performs this check internally as its "stable"
-    /// actionability requirement. If a smooth-scrolling Windows surface ever needs it, the home
-    /// is <c>ElementGeometryExtensions</c> beside <c>HasUsableBounds</c>, and it is a move rather
-    /// than a rewrite.
-    /// </para>
-    /// </remarks>
     /// <summary>
     /// Scrolls the element clear of the bottom of the screen when it has come to rest there.
     /// </summary>
-    /// <remarks>
-    /// <c>scrollIntoView</c> stops as soon as the element is on screen, which leaves it hard
-    /// against the bottom edge — under Android's navigation bar, which sits above the app and
-    /// swallows touches aimed at what is beneath it. The element is then visible, stationary and
-    /// perfectly findable, and the tap simply does not reach it.
-    /// </remarks>
     internal void NudgeClearOfBottomEdge()
     {
         try
@@ -870,12 +815,6 @@ public sealed class AppiumMauiElement : IMauiElement
     /// <summary>
     /// An attribute value, or null when there is none.
     /// </summary>
-    /// <remarks>
-    /// UiAutomator2 reports a missing attribute as the four characters <c>null</c> rather than
-    /// as nothing, so an element with no resource id answers "null" to a caller comparing ids.
-    /// An element whose content really is the word "null" is misread here, which is the price
-    /// of a driver that does not distinguish the two.
-    /// </remarks>
     private static string? Present(string? value)
         => string.IsNullOrEmpty(value) || value == "null" ? null : value;
 
@@ -928,11 +867,6 @@ public sealed class AppiumMauiElement : IMauiElement
     /// <summary>
     /// The attribute carrying checked state, per platform.
     /// </summary>
-    /// <remarks>
-    /// Android surfaces <c>checked</c> ("true"/"false") on CheckBox and Switch. iOS surfaces
-    /// <c>value</c> ("1"/"0") on a UISwitch. Anything else has no known attribute, so the
-    /// element reports no checked state rather than guessing.
-    /// </remarks>
     private string? ToggleStateAttribute => _driver.Platform switch
     {
         MauiPlatform.Android => "checked",
@@ -1090,12 +1024,6 @@ public sealed class AppiumMauiElement : IMauiElement
     /// <summary>
     /// The list in the dialog an Android <c>Picker</c> opens, matched by id suffix.
     /// </summary>
-    /// <remarks>
-    /// MAUI builds the dialog with AndroidX AppCompat's <c>AlertDialog.Builder.SetItems</c>, so
-    /// the list's id carries the app's package (<c>com.brinell.samples.maui:id/select_dialog_listview</c>),
-    /// not <c>android:</c>. The framework dialog uses the same name under <c>android:</c>; the
-    /// suffix matches both. Probed 2026-09-19: the rows are <c>CheckedTextView</c>s, one per item.
-    /// </remarks>
     private static readonly Locator AndroidPickerList =
         Locator.ByXPath("//*[contains(@resource-id, ':id/select_dialog_listview')]");
 
@@ -1178,10 +1106,6 @@ public sealed class AppiumMauiElement : IMauiElement
     /// <summary>
     /// Closes the picker's dialog without choosing, so a failed selection leaves nothing open.
     /// </summary>
-    /// <remarks>
-    /// Back only while the dialog's list is on screen: with the dialog already gone, back would
-    /// leave the page instead.
-    /// </remarks>
     private void TryDismissPicker()
     {
         try

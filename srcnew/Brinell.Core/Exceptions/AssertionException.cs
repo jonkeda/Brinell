@@ -42,10 +42,6 @@ public class AssertionException : BrinellException
     /// <summary>
     /// Appends what was actually found to the caller's message.
     /// </summary>
-    /// <remarks>
-    /// On its own line: assertion messages already carry the expectation and often a locator, and
-    /// the found value is the part a reader is looking for.
-    /// </remarks>
     private static string Describe(string message, object? actual, string? controlLocator)
     {
         var described = $"{message}{Environment.NewLine}Actual: {Format(actual)}";

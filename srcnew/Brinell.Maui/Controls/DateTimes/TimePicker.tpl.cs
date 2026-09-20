@@ -58,11 +58,6 @@ public partial class TimePicker<TScope> : Base.FocusableControlBase<TScope>
     /// <summary>
     /// Parses a rendered time using the declared format.
     /// </summary>
-    /// <remarks>
-    /// Strips the " time picker" suffix WinUI adds to the accessible name. A declared format is the
-    /// only one tried; without one the suite default is tried first and the culture's own patterns
-    /// second.
-    /// </remarks>
     protected TimeSpan? ParseTime(string? text)
     {
         var cleaned = DateTimeFormats.Clean(text);
@@ -99,9 +94,6 @@ public partial class TimePicker<TScope> : Base.FocusableControlBase<TScope>
     /// <summary>
     /// Reads the time the control is showing.
     /// </summary>
-    /// <remarks>
-    /// On Windows the value lives on the FlyoutButton child, so this reads through to it.
-    /// </remarks>
     protected virtual TimeSpan? ReadTime(IMauiElement? element)
     {
         if (element == null) return null;

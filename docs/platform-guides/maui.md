@@ -39,7 +39,7 @@ That is not a setting; there is no other mode. Three things make it true:
   clipboard or takes the foreground. An action with no UI Automation pattern and no
   bridge verb throws `NotSupportedException`, naming the route the app would have to
   offer. `BRINELL_BACKGROUND_MODE` has no effect on MAUI - see
-  [AD-005](../architecture/decisions.md#ad-005-physical-input-is-opt-in).
+  [AD-005](../../.docs/decisions/ad-005-physical-input-is-opt-in.md).
 - **The window cannot be activated.** Invoking a WinUI button through
   `InvokePattern` activates its window, which is not physical input. The driver marks
   the app's window `WS_EX_NOACTIVATE`, which stops it.
@@ -59,7 +59,7 @@ Some actions have no UI Automation route on Windows: swipes, pull-to-refresh, a 
 flyout, a menu item that is not in the tree until a context menu opens, a toolbar item
 whose Invoke pattern reports success and does nothing, setting a picker's date without
 typing. For these the app under test publishes a **gesture bridge** - see
-[AD-008](../architecture/decisions.md#ad-008-gestures-and-semantic-actions-go-through-ui-automation).
+[AD-008](../../.docs/decisions/ad-008-gestures-and-semantic-actions-go-through-ui-automation.md).
 
 **On Windows the bridge is required, not optional.** Without it only plain UI Automation
 patterns work - invoke, toggle, select, value, range, expand/collapse, scroll, and reads -

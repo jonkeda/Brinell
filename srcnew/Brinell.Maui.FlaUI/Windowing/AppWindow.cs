@@ -3,21 +3,6 @@ namespace Brinell.Maui.FlaUI.Windowing;
 /// <summary>
 /// The app's top-level window, as UI Automation hands it out - and handed out again when it goes stale.
 /// </summary>
-/// <remarks>
-/// <para>
-/// <b>The window handle is the identity; the element is a cache.</b> Two of eight full runs, and a
-/// stress probe within forty page changes, ended with every later test failing in milliseconds:
-/// bridge silent, window "unreadable". Captured in the act, the app was idle and responding, its
-/// window handle unchanged - and the element the driver had held since launch answered
-/// <c>UIA_E_ELEMENTNOTAVAILABLE</c>, while a fresh attach to the same handle worked at once. UI
-/// Automation had retired the element; the driver never asked again, so one invalidation blinded
-/// it for the rest of the run. See <c>.my/fix/rca-app-freeze-was-a-stale-root.md</c>.
-/// </para>
-/// <para>
-/// Step 104 moved this out of <c>FlaUIMauiDriver</c>, where it sat among placement and foreground
-/// code it has nothing to do with.
-/// </para>
-/// </remarks>
 internal sealed class AppWindow
 {
     private const int ElementNotAvailable = unchecked((int)0x80040201);
@@ -49,11 +34,6 @@ internal sealed class AppWindow
     internal IntPtr Handle { get; }
 
     /// <summary>The window's element, re-attached by handle if UI Automation has retired it.</summary>
-    /// <remarks>
-    /// The check is one property read, cheap next to the tree searches every caller goes on to do.
-    /// The re-attach is taken under a lock because the verb runners and the test thread can reach
-    /// it together.
-    /// </remarks>
     internal AutomationElement Element
     {
         get
@@ -99,20 +79,6 @@ internal sealed class AppWindow
     /// <summary>
     /// Attaches to a window, waiting for UI Automation to be willing to resolve it.
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>A window that exists is not always a window UI Automation will hand you.</b>
-    /// <c>FromHandle</c> throws <c>Win32Exception: "Unexpected HRESULT has been returned from a
-    /// call to a COM component"</c> for a handle it cannot resolve yet - not a null, so there is
-    /// nothing to test for and nothing that reads as "not ready".
-    /// </para>
-    /// <para>
-    /// <b>It fails in a constructor, which is what makes it worth handling here.</b> A fixture
-    /// that cannot build takes its whole collection down at once, and the report is a COM error
-    /// with no mention of a window - it reads as the automation stack being broken rather than a
-    /// window being a few milliseconds young.
-    /// </para>
-    /// </remarks>
     private static AutomationElement Attach(UIA3Automation automation, IntPtr windowHandle)
     {
         const int timeoutMs = 10_000;

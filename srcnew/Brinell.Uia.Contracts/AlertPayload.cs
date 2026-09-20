@@ -82,11 +82,6 @@ public static class AlertPayload
     /// <summary>
     /// Reverses <see cref="Escape"/>, left to right.
     /// </summary>
-    /// <remarks>
-    /// Scanned once rather than done with three <c>Replace</c> calls in the other order: replacing
-    /// <c>\\</c> last would turn the literal two characters <c>\</c> and <c>n</c> - written by an
-    /// app whose message really does contain a backslash before an n - into a line break.
-    /// </remarks>
     private static string Unescape(string value)
     {
         var built = new System.Text.StringBuilder(value.Length);

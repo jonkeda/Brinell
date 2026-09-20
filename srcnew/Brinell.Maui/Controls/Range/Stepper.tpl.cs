@@ -106,10 +106,6 @@ public partial class Stepper<TScope> : Base.RangeControlBase<TScope>
     /// <summary>
     /// The Stepper as the app declared it, or null where it was never declared.
     /// </summary>
-    /// <remarks>
-    /// On Windows the control resolves the <c>{id}Minus</c> button, which does not answer for the
-    /// Stepper, so the app element finds the declaration by id.
-    /// </remarks>
     private IMauiElement? StateSource()
         => string.IsNullOrEmpty(_baseAutomationId)
             ? null
@@ -209,20 +205,6 @@ public partial class Stepper<TScope> : Base.RangeControlBase<TScope>
     /// Sets the value the way a user does: press towards the target, watch the value move, and
     /// repeat.
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Only the value has to be readable. The step is what one press changed, and the bounds clamp
-    /// the target only where they are published. Each press is its own action and is confirmed
-    /// before the next, so a Stepper that ignores a press fails after that one press, as
-    /// <see cref="ConfirmationResult.NotConfirmed"/>, rather than being pressed again (R0).
-    /// </para>
-    /// <para>
-    /// The loop stops when the value is as near the target as a whole number of steps gets it, or,
-    /// where the bound in that direction is not published, when a press after a successful one
-    /// changes nothing: the Stepper is at its bound. The presses and their confirmations share one
-    /// budget, <paramref name="timeoutMs"/>.
-    /// </para>
-    /// </remarks>
     /// <param name="element">The pre-found stepper element.</param>
     /// <param name="value">The target value. Null skips the operation.</param>
     /// <param name="timeoutMs">The budget for all the presses and their confirmations; null for the default.</param>
@@ -293,10 +275,6 @@ public partial class Stepper<TScope> : Base.RangeControlBase<TScope>
     /// <param name="parent">The parent stepper element.</param>
     /// <param name="isIncrement">True for increment button, false for decrement.</param>
     /// <returns>The button element, or null if not found.</returns>
-    /// <remarks>
-    /// The Stepper holds two buttons, - first and + last: <c>RepeatButton</c>s under UI Automation,
-    /// two <c>android.widget.Button</c>s on Android.
-    /// </remarks>
     private IMauiElement? FindChildButton(IMauiElement parent, bool isIncrement)
     {
         foreach (var locator in new[] { Locator.ByClassName("RepeatButton"), Locator.ByControlType("button") })

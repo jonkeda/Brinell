@@ -7,20 +7,6 @@ namespace Brinell.Maui.FlaUI.Windowing;
 /// <summary>
 /// Puts the app under test where the harness asked: <c>BRINELL_AUT_PLACE</c>.
 /// </summary>
-/// <remarks>
-/// <para>
-/// All placements keep the window <b>composed</b>. Minimizing is not among them and must not be: a
-/// minimized WinUI window can stop laying out, and virtualized content may never realize, so a
-/// suite driving a minimized app fails on elements that genuinely are not there.
-/// </para>
-/// <para>
-/// <b>Not off-screen by default</b>, though it was tried for exactly the reason it is tempting.
-/// UI Automation's <c>IsOffscreen</c> counts the desktop, not just the scroll viewport, so with the
-/// window at x=-1144 a button plainly inside its page reported visible=False. Keeping the app out
-/// of the way is <see cref="QuietWindow"/>'s job, by z-order, which leaves geometry alone.
-/// </para>
-/// <para>Step 104 moved this out of <c>FlaUIMauiDriver</c>.</para>
-/// </remarks>
 internal static class WindowPlacement
 {
     private enum AutPlacement
@@ -108,10 +94,6 @@ internal static class WindowPlacement
         }
     }
 
-    /// <remarks>
-    /// <c>BRINELL_AUT_PLACE_RIGHT=1</c> predates <c>BRINELL_AUT_PLACE</c> and is still set by
-    /// existing scripts, so it keeps working. The newer variable wins when both are set.
-    /// </remarks>
     private static AutPlacement ReadRequestedPlacement(out string? unknownValue)
     {
         unknownValue = null;
@@ -140,10 +122,6 @@ internal static class WindowPlacement
             : AutPlacement.Default;
     }
 
-    /// <param name="effective">
-    /// What was actually chosen. <see cref="AutPlacement.Secondary"/> degrades to
-    /// <see cref="AutPlacement.Right"/> on a single-monitor desktop, and the report says so.
-    /// </param>
     private static Rectangle ComputeRequestedBounds(
         AppWindow window,
         AutPlacement placement,
@@ -179,17 +157,6 @@ internal static class WindowPlacement
         return new Rectangle(left, workArea.Top, width, workArea.Height);
     }
 
-    /// <remarks>
-    /// <para>
-    /// <b>A sliver stays on the desktop, not the whole window off it.</b> Moved entirely outside
-    /// the desktop, a WinUI window stops publishing its UI Automation tree. Measured.
-    /// </para>
-    /// <para>
-    /// Off the <i>virtual</i> screen, so a multi-monitor desktop does not get the app parked in the
-    /// middle of its second screen. Keeps the current size: a suite that only passes at one window
-    /// size is not a suite anyone can trust.
-    /// </para>
-    /// </remarks>
     private static Rectangle ComputeOffScreenBounds(AppWindow window)
     {
         const int Sliver = 8;
@@ -215,10 +182,6 @@ internal static class WindowPlacement
         return new Rectangle(0, 0, GetSystemMetrics(SmCxScreen), GetSystemMetrics(SmCyScreen));
     }
 
-    /// <remarks>
-    /// Origin only. A window that declines to resize is still correctly placed, and reporting
-    /// that as a failure would hide the one case that matters - a move that did not happen.
-    /// </remarks>
     private static bool LandedWhereAsked(Rectangle actual, Rectangle requested)
     {
         const int Tolerance = 16;
@@ -234,9 +197,6 @@ internal static class WindowPlacement
                bounds.Left, bounds.Top, bounds.Width, bounds.Height,
                SwpNoZOrder | SwpNoActivate);
 
-    /// <remarks>
-    /// Work area rather than full bounds, so the window does not sit under that monitor's taskbar.
-    /// </remarks>
     private static bool TryGetSecondaryWorkArea(out Rectangle workArea)
     {
         Rectangle? secondary = null;

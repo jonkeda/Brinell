@@ -47,10 +47,6 @@ public partial class TabMenu<TParent>
     /// <summary>
     /// Matches a tab by its own element, then by its caption and its button.
     /// </summary>
-    /// <remarks>
-    /// A tab's root is a layout: on Windows it reports an empty string for text, so
-    /// <c>Tabs["Search"]</c> would match nothing without reaching the parts that carry it.
-    /// </remarks>
     protected override bool MatchesKey(IMauiElement itemRoot, Locator key)
     {
         if (base.MatchesKey(itemRoot, key)) return true;

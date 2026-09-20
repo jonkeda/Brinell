@@ -4,9 +4,6 @@ namespace Brinell.Maui.Controls.Navigation;
 /// The automation ids a <see cref="TabMenu{TParent}"/> expects an app's tab bar to carry, and
 /// the reach into one tab's parts.
 /// </summary>
-/// <remarks>
-/// These ids are the contract between <see cref="TabMenu{TParent}"/> and the app's markup.
-/// </remarks>
 internal static class TabMenuMarkup
 {
     /// <summary>The tab bar itself.</summary>

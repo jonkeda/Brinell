@@ -34,23 +34,18 @@ public partial class Picker<TScope> : Base.SelectorControlBase<TScope>
     // Opening the dropdown uses the ExpandCollapse pattern: MAUI has no public API for it.
 
     /// <summary>Opens the picker's dropdown.</summary>
-    /// <remarks>
-    /// Throws <see cref="NotSupportedException"/> where the platform has nothing to expand.
-    /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <param name="timeoutMs">Optional timeout.</param>
     protected virtual void OpenFlyoutCore(IMauiElement element, int? timeoutMs = null)
         => element.OpenDropdown();
 
     /// <summary>Closes the picker's dropdown.</summary>
-    /// <remarks>Lenient in the element: a picker with no dropdown is already closed.</remarks>
     /// <param name="element">The pre-found element.</param>
     /// <param name="timeoutMs">Optional timeout.</param>
     protected virtual void CloseFlyoutCore(IMauiElement element, int? timeoutMs = null)
         => element.CloseDropdown();
 
     /// <summary>Whether the picker's dropdown is showing.</summary>
-    /// <remarks>False where the platform publishes no ExpandCollapse pattern.</remarks>
     /// <param name="element">The pre-found element.</param>
     /// <returns>Whether the dropdown is open.</returns>
     protected virtual bool? IsFlyoutOpenCore(IMauiElement? element)
@@ -59,10 +54,6 @@ public partial class Picker<TScope> : Base.SelectorControlBase<TScope>
     /// <summary>
     /// What the open dropdown is showing.
     /// </summary>
-    /// <remarks>
-    /// Only what the popup has put into the accessibility tree, which for a long list is the
-    /// visible handful. Use <c>GetItemTexts</c> for every item the picker holds.
-    /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <returns>The realized item texts, or null where the platform has no dropdown to read.</returns>
     protected virtual IReadOnlyList<string>? GetDropdownItemTextsCore(IMauiElement? element)
@@ -86,9 +77,6 @@ public partial class Picker<TScope> : Base.SelectorControlBase<TScope>
     }
 
     /// <inheritdoc />
-    /// <remarks>
-    /// Read from the app, so it is correct when two items read alike.
-    /// </remarks>
     protected override int? GetSelectedIndexCore(IMauiElement? element)
     {
         if (element?.ReadState("SelectedIndex") is not { } reported)

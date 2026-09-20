@@ -1,15 +1,12 @@
 namespace Brinell.Maui.Interfaces;
 
+// R9: MAUI's own copies of Core's element/scope extensions, typed on Core interfaces MAUI no
+// longer implements; they move back into Core with the rest. See
+// .docs/decisions/ad-010-maui-ahead-of-core.md.
 /// <summary>
 /// Lookup, geometry and visibility helpers over <see cref="IMauiElement"/> and
 /// <see cref="IMauiElementScope"/>.
 /// </summary>
-/// <remarks>
-/// MAUI's own copies of Brinell.Core's <c>ElementGeometryExtensions</c> and
-/// <c>ElementScopeExtensions</c>, which are typed on Core interfaces MAUI no longer implements.
-/// They move back into Core with the rest of the MAUI shape (<c>.my/stale-readiness/design.md</c>,
-/// section 4.5).
-/// </remarks>
 public static class MauiElementExtensions
 {
     /// <summary>

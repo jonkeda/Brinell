@@ -15,7 +15,7 @@ namespace Brinell.Maui.Containers;
 /// A row records which item it holds (<see cref="Key"/>) when it is created. A row whose element
 /// has gone is found again by that key, never by where it happened to be; a row whose element now
 /// holds another item reports <see cref="ScopeReadinessState.ItemChanged"/>, so a call never acts
-/// on the wrong item (<c>.my/stale-readiness/design.md</c>, section 7.6).
+/// on the wrong item.
 /// </para>
 /// </remarks>
 /// <typeparam name="TCollection">The owning collection.</typeparam>
@@ -58,24 +58,12 @@ public abstract class ItemObjectBase<TCollection, TSelf>
     public override bool AllowsScrollLookup => false;
 
     /// <inheritdoc />
-    /// <remarks>
-    /// Alive, still with a size, and still holding this item. A list that removes a row may leave
-    /// its element in the tree, collapsed, for a moment; a list that recycles a row keeps the
-    /// element and puts another item in it. Either way the row is found again by its
-    /// <see cref="Key"/>, so the row's own members never answer for, or act on, another item.
-    /// </remarks>
     protected override bool IsCachedRootValid(IMauiElement root) => IsUsable(root) && Key.IsHeldBy(root);
 
     /// <summary>
     /// Returns the supplied root while it still holds this item, and otherwise finds the item again
     /// by its <see cref="Key"/>.
     /// </summary>
-    /// <remarks>
-    /// Mutating or scrolling a collection can invalidate a captured element. The drivers report a
-    /// removed element as <see cref="StaleElementException"/>, a recycled row answers for another
-    /// item, and a removed one can keep answering with collapsed bounds. Each means "find the item
-    /// again", and the key decides which element that is.
-    /// </remarks>
     protected override IMauiElement FindContainerRootElement()
     {
         if (IsUsable(_itemRoot) && Key.IsHeldBy(_itemRoot))
@@ -94,10 +82,6 @@ public abstract class ItemObjectBase<TCollection, TSelf>
         => new($"Item [{Key}] is no longer in its collection, or not realized now.");
 
     /// <inheritdoc />
-    /// <remarks>
-    /// The row's element must still hold this item. When it holds another one, the row forgets it,
-    /// and the next attempt finds the item again by its key.
-    /// </remarks>
     protected override ScopeReadiness ProbeContentReadiness(IMauiElement root)
     {
         if (Key.IsHeldBy(root))

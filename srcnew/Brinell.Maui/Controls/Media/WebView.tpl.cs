@@ -29,10 +29,6 @@ public partial class WebView<TScope> : Base.ViewBase<TScope>
     /// <summary>
     /// Gets the current URL of the WebView.
     /// </summary>
-    /// <remarks>
-    /// Read from the element's text, which is where WebView2 surfaces its address on Windows. In a
-    /// web context, ask with a script instead.
-    /// </remarks>
     /// <param name="element">The pre-found element (may be null).</param>
     /// <returns>The current URL, or null if not available.</returns>
     [GenerateComparisons(Comparison.Equals | Comparison.Contains)]

@@ -74,7 +74,6 @@ public class NavMenuControl<TScope> : ControlBase<TScope>
         return items.Any(i => string.Equals(i, itemText, StringComparison.OrdinalIgnoreCase));
     }
 
-    // Assertions
     public TScope AssertActiveItem(string? expected, string? message = null)
     {
         var actual = GetActiveItem();

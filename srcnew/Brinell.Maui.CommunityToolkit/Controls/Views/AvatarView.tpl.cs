@@ -62,10 +62,6 @@ public partial class AvatarView<TScope> : ComponentObjectBase<TScope, AvatarView
     /// <summary>
     /// Whether the avatar shows an image rather than initials.
     /// </summary>
-    /// <remarks>
-    /// Shown rather than exists: an existence check scrolls the app when the image is missing and
-    /// can find another image on the page.
-    /// </remarks>
     protected bool? IsShowingImageShortcut() => Image.IsShown();
 
     #endregion

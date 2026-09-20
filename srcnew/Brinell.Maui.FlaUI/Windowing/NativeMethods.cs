@@ -5,10 +5,6 @@ namespace Brinell.Maui.FlaUI.Windowing;
 /// <summary>
 /// The Win32 calls the driver makes about the app's window, in one place.
 /// </summary>
-/// <remarks>
-/// Step 104. They were scattered through <c>FlaUIMauiDriver</c> between the members that used them,
-/// and two of them were declared twice under slightly different signatures.
-/// </remarks>
 internal static class NativeMethods
 {
     internal const int SmCxScreen = 0;

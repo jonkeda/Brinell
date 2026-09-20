@@ -23,7 +23,7 @@ public enum ItemKeyKind
 
 /// <summary>
 /// Which item a row holds, recorded when the row object is created, so the row can be found again
-/// and checked (<c>.my/stale-readiness/design.md</c>, section 7.6, Q7).
+/// and checked.
 /// </summary>
 /// <param name="Kind">What the key identifies the row by.</param>
 /// <param name="Value">The logical index, automation id or position.</param>

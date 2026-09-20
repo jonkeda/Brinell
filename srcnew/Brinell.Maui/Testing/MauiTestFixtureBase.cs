@@ -37,7 +37,6 @@ public abstract class MauiTestFixtureBase : IDisposable
         _instanceId = Interlocked.Increment(ref _instanceCount);
         Console.WriteLine($"[FIXTURE] {GetType().Name} #{_instanceId} CREATING at {DateTime.Now:HH:mm:ss.fff}");
         
-        // Load configuration from config file (or defaults if not found)
         Configuration = BrinellMauiConfiguration.Load();
         
         _options = CreateTestContextOptions();
@@ -153,10 +152,8 @@ public abstract class MauiTestFixtureBase : IDisposable
         ArgumentNullException.ThrowIfNull(Configuration, nameof(Configuration));
         ArgumentNullException.ThrowIfNull(Configuration.Maui, nameof(Configuration.Maui));
 
-        // Create driver options from configuration
         var driverOptions = MauiDriverOptions.FromConfiguration(Configuration.Maui);
         
-        // Set timeouts
         driverOptions.Timeouts = new TimeoutSettings
         {
             DefaultWait = 5000,
@@ -168,7 +165,6 @@ public abstract class MauiTestFixtureBase : IDisposable
         };
         driverOptions.AppPath = GetDefaultAppPath(Configuration.Maui.Platform);
         
-        // Configure platform-specific options
         switch (Configuration.Maui.Platform)
         {
             case MauiPlatform.Android:
@@ -194,7 +190,6 @@ public abstract class MauiTestFixtureBase : IDisposable
     /// </summary>
     protected virtual void ConfigureAndroidOptions(MauiDriverOptions options)
     {
-        // Use configuration values, fall back to defaults
         var serverUri = Configuration?.Maui?.ServerUri ?? "http://127.0.0.1:4723";
         var deviceName = Configuration?.Maui?.DeviceName ?? "emulator-5554";
         
@@ -208,7 +203,6 @@ public abstract class MauiTestFixtureBase : IDisposable
     /// </summary>
     protected virtual void ConfigureiOSOptions(MauiDriverOptions options)
     {
-        // Use configuration values, fall back to defaults
         var serverUri = Configuration?.Maui?.ServerUri ?? "http://127.0.0.1:4723";
         var deviceName = Configuration?.Maui?.DeviceName ?? "iPhone 15";
         var platformVersion = Configuration?.Maui?.PlatformVersion ?? "17.0";

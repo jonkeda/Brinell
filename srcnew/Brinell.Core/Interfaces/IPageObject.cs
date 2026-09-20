@@ -11,8 +11,6 @@ public interface IPageObject : IElementScope
     /// </summary>
     string Name { get; }
     
-    // Page state
-    
     /// <summary>
     /// Check instantaneously whether the current usable page root exists.
     /// </summary>
@@ -50,8 +48,6 @@ public interface IPageObject : IElementScope
     /// </summary>
     void AssertLoaded(bool? expected, string? message = null, int? timeoutMs = null);
     
-    // Title
-    
     /// <summary>
     /// Get the page title.
     /// </summary>
@@ -69,8 +65,6 @@ public interface IPageObject : IElementScope
     /// </summary>
     void AssertTitle(string? expected, string? message = null, int? timeoutMs = null);
     
-    // Page operations
-    
     /// <summary>
     /// Take a screenshot of the current page.
     /// </summary>
@@ -83,8 +77,4 @@ public interface IPageObject : IElementScope
 /// </summary>
 public interface IPageObject<TElement> : IPageObject, IElementScope<TElement>
 {
-    // Inherits from IElementScope<TElement>:
-    // TElement? TryFindElement(Locator locator);
-    // TElement FindElement(Locator locator);
-    // IReadOnlyList<TElement> FindElements(Locator locator);
 }

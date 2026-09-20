@@ -34,11 +34,6 @@ public abstract partial class FocusableControlBase<TScope> : ViewBase<TScope>, I
     /// <summary>
     /// Focuses the control.
     /// </summary>
-    /// <remarks>
-    /// The element picks the route. On Windows that is the app's <c>Focus</c> verb, or a tap where
-    /// the element declares only <c>Tap</c>, and otherwise a throw naming the verb. On Android and
-    /// iOS it is an ordinary tap.
-    /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
     protected virtual void FocusCore(IMauiElement element, int? timeoutMs = null)
@@ -49,10 +44,6 @@ public abstract partial class FocusableControlBase<TScope> : ViewBase<TScope>, I
     /// <summary>
     /// Removes focus from the control.
     /// </summary>
-    /// <remarks>
-    /// Windows drops focus through the app's <c>Unfocus</c> verb. Android and iOS send Tab, which
-    /// moves focus on to the next control.
-    /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
     protected virtual void BlurCore(IMauiElement element, int? timeoutMs = null)
@@ -63,9 +54,6 @@ public abstract partial class FocusableControlBase<TScope> : ViewBase<TScope>, I
     /// <summary>
     /// Gets focus state from the pre-found element.
     /// </summary>
-    /// <remarks>
-    /// Null when there is no element - unknown, rather than "not focused".
-    /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <returns>True if focused, false if not, null if there is no element.</returns>
     protected virtual bool? IsFocusedCore(IMauiElement? element)

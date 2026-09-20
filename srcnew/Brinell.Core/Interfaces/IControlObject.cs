@@ -8,8 +8,6 @@ namespace Brinell.Core.Interfaces;
 /// <typeparam name="TScope">The containing scope type for fluent chaining.</typeparam>
 public interface IControlObject<TScope> : IElementObject<TScope>
 {
-    // Attributes
-
     /// <summary>
     /// Get an attribute value from the element.
     /// Returns null if attribute or element doesn't exist.

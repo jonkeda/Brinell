@@ -88,11 +88,17 @@ debug-only pauses.
 ## Documentation Rules
 
 - Active docs live in `docs/`; do not copy `docs2/` back wholesale.
+- Durable decisions, invariants and contracts live in `.docs/`; record a decision once,
+  there, never also in code prose.
 - Use `Brinell.*` namespaces in examples.
 - Keep links relative and valid.
 - Mark command working directories.
 - Do not reference missing `.specs`, `.cnv2`, or old numbered docs.
 - Specs need status: proposed, active, implemented, superseded, or archived.
+- Comment policy (see `.github/instructions/csharp-comments.instructions.md`): keep short
+  `<summary>`/`<param>`/`<returns>` on public and protected members and a one-line `// why`
+  with a pointer where a decision surprises; delete `<remarks>` that restate the code and all
+  XML doc on private/internal members.
 
 ## Package Rules
 

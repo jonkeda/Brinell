@@ -71,8 +71,9 @@ public interface IMauiElement
     /// <summary>Scrolls the element into the visible viewport.</summary>
     /// <param name="timeoutMs">
     /// The most time the scroll may take. No default: a caller passes what is left of its call's
-    /// budget, so a scroll never outlasts the call it is part of (<c>.my/stale-readiness/design.md</c>,
-    /// R2 and R3). A driver that scrolls in steps makes at least one step, even on zero.
+    /// budget, so a scroll never outlasts the call it is part of (see
+    /// <c>.docs/contracts/call-model.md</c>, R2 and R3). A driver that scrolls in steps makes at
+    /// least one step, even on zero.
     /// </param>
     void ScrollIntoView(int timeoutMs);
 

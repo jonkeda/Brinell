@@ -48,11 +48,6 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     protected virtual bool CacheContainerRoot => true;
 
     /// <summary>Checks whether a cached root still represents this scope.</summary>
-    /// <remarks>
-    /// By default: the root is still there. Reading its <see cref="IMauiElement.InstanceKey"/> is
-    /// a live read, and a removed root answers it with <see cref="StaleElementException"/> on every
-    /// platform (<c>.my/stale-readiness/design.md</c>, R6). A page adds "and shown".
-    /// </remarks>
     protected virtual bool IsCachedRootValid(IMauiElement root)
     {
         _ = root.InstanceKey;
@@ -109,9 +104,6 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     /// <summary>
     /// Gets this container's own element, or null when it is absent.
     /// </summary>
-    /// <remarks>
-    /// For a container this is its root.
-    /// </remarks>
     protected IMauiElement? TryFindElement() => TryGetContainerRoot();
 
     /// <summary>
@@ -133,11 +125,6 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     /// Runs <paramref name="read"/> against the root. When the root turns out to be gone, forgets
     /// it, finds it again once, and runs <paramref name="read"/> on the new one.
     /// </summary>
-    /// <remarks>
-    /// The one place the scope layer handles a stale root (<c>.my/stale-readiness/design.md</c>,
-    /// section 7.3; F9). A second stale answer propagates: the call's poll decides what to do
-    /// with it.
-    /// </remarks>
     /// <param name="read">What to do with the root.</param>
     /// <param name="whenAbsent">The answer when there is no root.</param>
     /// <returns>What <paramref name="read"/> returned, or <paramref name="whenAbsent"/>.</returns>
@@ -281,7 +268,6 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     /// <summary>
     /// The readiness this scope inherits: its parent's when it asks the parent, otherwise ready.
     /// </summary>
-    /// <remarks>None for a page, which has no parent.</remarks>
     protected virtual ScopeReadiness ProbeParentReadiness() => ScopeReadiness.Ready(ScopeName);
 
     /// <summary>
@@ -293,11 +279,6 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     /// <summary>
     /// This scope's own readiness beyond "the root is there": one attempt, no waiting.
     /// </summary>
-    /// <remarks>
-    /// Override for a scope whose content loads asynchronously, checking concrete UI state - a
-    /// spinner gone, at least one row - and answering <see cref="ContentReady"/> or
-    /// <see cref="ContentNotReady"/>. Never sleep here: the call's poll repeats the probe.
-    /// </remarks>
     /// <param name="root">The scope's root, just found or checked.</param>
     protected virtual ScopeReadiness ProbeContentReadiness(IMauiElement root) => ContentReady();
 
@@ -514,11 +495,6 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     /// Waits, inside a Core method, for the effect of an action the method has already done on the
     /// root.
     /// </summary>
-    /// <remarks>
-    /// The container counterpart of the control base's <c>Confirm</c>: no readiness check, no log
-    /// entry, never a repeat, because the generated wrapper did the rest. A stale read ends the wait
-    /// as <see cref="Controls.Base.ConfirmationResult.Replaced"/> at once.
-    /// </remarks>
     /// <param name="read">Reads the value.</param>
     /// <param name="done">Whether the value is the one waited for.</param>
     /// <param name="timeoutMs">Maximum time to wait; null for the default.</param>
@@ -609,9 +585,6 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     /// Reads a value that is meaningful when the container root is absent: once, with the root
     /// resolved optionally.
     /// </summary>
-    /// <remarks>
-    /// Used by generated <c>Get*</c> members whose Core method carries <c>[AbsenceTolerant]</c>.
-    /// </remarks>
     protected T? RunGetWithOptionalElement<T>(Func<IMauiElement?, T> coreOperation,
         int? timeoutMs = null, [CallerMemberName] string? caller = null)
     {
@@ -652,10 +625,6 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     /// <summary>
     /// Polls a predicate that is meaningful when the container root is absent.
     /// </summary>
-    /// <remarks>
-    /// Used by generated members whose Core method carries <c>[AbsenceTolerant]</c>: the root may
-    /// be null, because the predicate may be asking about absence.
-    /// </remarks>
     protected bool RunWaitWithOptionalElement<T>(T? expected,
         Func<IMauiElement?, bool> coreOperation,
         int? timeoutMs = null, [CallerMemberName] string? caller = null)
@@ -674,10 +643,6 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     /// <summary>
     /// Asserts a value that is meaningful when the container root is absent.
     /// </summary>
-    /// <remarks>
-    /// Resolves the root optionally so a missing container fails the comparison rather than
-    /// raising <c>ElementNotFoundException</c>.
-    /// </remarks>
     protected TSelf RunAssertWithOptionalElement<T>(T? expected,
         Func<IMauiElement?, T?> getActual, Func<T?, T?, bool> compare,
         string? message = null, int? timeoutMs = null,
@@ -755,7 +720,6 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     /// What an action or a set on this scope requires of its root beyond being there: one check,
     /// inside the call's poll, throwing <see cref="ElementNotReadyException"/> when not met.
     /// </summary>
-    /// <remarks>Nothing by default; a clickable item adds "enabled".</remarks>
     /// <param name="root">The root, just found.</param>
     protected virtual void EnsureReadyForActionCore(IMauiElement root)
     {
@@ -765,11 +729,6 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     /// Resolves the root, then runs <paramref name="act"/> on it: once, unless it reports that it
     /// did not act.
     /// </summary>
-    /// <remarks>
-    /// As the control base's <c>ActOnce</c>: a Core method throws <see cref="ElementNotReadyException"/>
-    /// only before it acts, so resolving again and asking again within the budget repeats nothing
-    /// (R0). Any other exception ends the call at once.
-    /// </remarks>
     private void ActOnceOnRoot(AttemptContext context, string caller, int budgetMs, Action<IMauiElement> act)
     {
         while (true)
@@ -889,12 +848,10 @@ public abstract class ContainerObjectBase<TParent, TSelf>
     // Element-object members, so a container can declare a control capability
     // (IRefreshableControlObject, ISwipeableControlObject) the way a view does.
 
+    // R9: timeoutMs is unused - it exists only because Core's IControlObject declares it, and a
+    // container that declares a control capability implements that interface. Core is unchanged by
+    // this work; see .docs/decisions/ad-010-maui-ahead-of-core.md.
     /// <summary>Reads a named attribute from the container's root, in the platform's own vocabulary, now.</summary>
-    /// <remarks>
-    /// <paramref name="timeoutMs"/> is not used. It is there because Core's <c>IControlObject</c>
-    /// declares it, and a container that declares a control capability implements that interface
-    /// (R9: Core is not changed by this work; see <c>move-down.md</c>).
-    /// </remarks>
     public string? GetAttribute(string name, int? timeoutMs = null)
         => TryGetContainerRoot()?.GetAttribute(name);
 }

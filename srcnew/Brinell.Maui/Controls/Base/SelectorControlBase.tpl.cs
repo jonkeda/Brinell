@@ -35,10 +35,6 @@ public abstract partial class SelectorControlBase<TScope> : FocusableControlBase
     /// <summary>
     /// Selects item by text on pre-found element.
     /// </summary>
-    /// <remarks>
-    /// Windows asks the app, or opens the dropdown where the app declares no verb; Android and iOS
-    /// tap the picker and the item. See <see cref="IMauiElement.SelectByText"/>.
-    /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <param name="text">The text to select. Null skips the operation.</param>
     /// <param name="timeoutMs">Optional timeout.</param>
@@ -52,7 +48,6 @@ public abstract partial class SelectorControlBase<TScope> : FocusableControlBase
     /// <summary>
     /// Selects item by index on pre-found element.
     /// </summary>
-    /// <remarks>See <see cref="IMauiElement.SelectIndex"/>.</remarks>
     /// <param name="element">The pre-found element.</param>
     /// <param name="index">The 0-based index to select. Null skips the operation.</param>
     /// <param name="timeoutMs">Optional timeout.</param>
@@ -74,7 +69,6 @@ public abstract partial class SelectorControlBase<TScope> : FocusableControlBase
     {
         if (value == null) return;
 
-        // Default: treat value same as text
         SelectByTextCore(element, value, timeoutMs);
     }
 
@@ -85,7 +79,6 @@ public abstract partial class SelectorControlBase<TScope> : FocusableControlBase
     /// <summary>
     /// Gets selected text from pre-found element.
     /// </summary>
-    /// <remarks>See <see cref="IMauiElement.SelectedItemText"/>.</remarks>
     /// <param name="element">The pre-found element.</param>
     /// <returns>The selected text, or null if not available.</returns>
     protected virtual string? GetSelectedTextCore(IMauiElement? element)
@@ -123,9 +116,6 @@ public abstract partial class SelectorControlBase<TScope> : FocusableControlBase
     /// Gets all item texts from pre-found element.
     /// Override in derived classes for picker-specific implementation.
     /// </summary>
-    /// <remarks>
-    /// Generates <c>GetItemTexts</c> with sequence comparisons rather than plain equality.
-    /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <returns>List of item texts, or null if not available.</returns>
     [GenerateComparisons(Comparison.SequenceEquals | Comparison.HasItem | Comparison.Count)]

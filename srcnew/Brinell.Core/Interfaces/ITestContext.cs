@@ -56,11 +56,4 @@ public interface ITestContext : IDisposable
 /// </summary>
 public interface ITestContext<TElement> : ITestContext, IElementScope<TElement>
 {
-    // Inherits from ITestContext:
-    // - Timeouts, Logger, Navigation, Screenshots, ResetAppState
-    
-    // Inherits from IElementScope<TElement>:
-    // - TElement? TryFindElement(Locator locator);
-    // - TElement FindElement(Locator locator);
-    // - IReadOnlyList<TElement> FindElements(Locator locator);
 }

@@ -11,6 +11,9 @@ internal static class Poller
     /// Runs <paramref name="attempt"/> until it reports <see cref="ObservationKind.Done"/> or the
     /// deadline passes.
     /// </summary>
+    /// <param name="attempt">The work performed on each poll tick.</param>
+    /// <param name="context">The attempt context passed to <paramref name="attempt"/>.</param>
+    /// <param name="pollingIntervalMs">Pause between attempts, in milliseconds.</param>
     /// <param name="stop">
     /// Whether an observation ends the loop early, as a final answer that is not Done: the end of a
     /// list a search has scrolled through. Null never stops early.

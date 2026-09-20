@@ -51,7 +51,6 @@ public class ScreenshotTestAttribute : BeforeAfterTestAttribute
     /// </summary>
     public override void After(MethodInfo methodUnderTest)
     {
-        // Clear test context
         _currentTestClass.Value = null;
         _currentTestMethod.Value = null;
         _testFailed.Value = false;

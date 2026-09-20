@@ -34,9 +34,6 @@ public partial class RadioButton<TScope> : Base.ToggleControlBase<TScope>
     /// <summary>
     /// A radio button is chosen from a group, not flipped.
     /// </summary>
-    /// <remarks>
-    /// Selecting one member deselects the rest; toggling does not.
-    /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <param name="timeoutMs">Optional timeout for clickable check.</param>
     protected override void ClickCore(IMauiElement element, int? timeoutMs = null)
@@ -46,9 +43,6 @@ public partial class RadioButton<TScope> : Base.ToggleControlBase<TScope>
     }
 
     /// <inheritdoc />
-    /// <remarks>
-    /// Selects the radio button, and throws when the selection does not take.
-    /// </remarks>
     protected override void ToggleCore(IMauiElement element, int? timeoutMs = null)
     {
         var before = IsCheckedCore(element);
@@ -71,17 +65,10 @@ public partial class RadioButton<TScope> : Base.ToggleControlBase<TScope>
     protected virtual bool? IsSelectedCore(IMauiElement? element) => IsCheckedCore(element);
 
     /// <inheritdoc />
-    /// <remarks>
-    /// Checked where the platform publishes it - Android's <c>checked</c>, Windows' Toggle
-    /// pattern - and chosen otherwise, because a radio button is fundamentally one of a group.
-    /// </remarks>
     protected override bool? IsCheckedCore(IMauiElement? element)
         => element == null ? null : element.Checked ?? element.Selected;
 
     /// <inheritdoc />
-    /// Checking a radio button selects it. Unchecking one throws <see cref="NotSupportedException"/>:
-    /// select another member of the group instead.
-    /// </remarks>
     protected override void SetCheckedCore(IMauiElement element, bool? @checked, int? timeoutMs = null)
     {
         if (@checked == null || IsCheckedCore(element) == @checked)

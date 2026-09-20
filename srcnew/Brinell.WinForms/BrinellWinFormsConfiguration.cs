@@ -14,8 +14,6 @@ public sealed class BrinellWinFormsConfiguration : BrinellConfigurationBase
     /// </summary>
     public WinFormsOptions WinForms { get; set; } = new();
 
-    // Artifacts inherited from BrinellConfigurationBase
-
     /// <summary>
     /// Loads WinForms configuration from brinell.winforms.config.json
     /// </summary>

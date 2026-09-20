@@ -33,7 +33,6 @@ public class IFrameControl<TScope> : ControlBase<TScope>
         return Poll(() => ElementExistsInside(selector), timeout);
     }
 
-    // Assertions
     public TScope AssertSource(string? expected, string? message = null) => RunAssert(e =>
     {
         var actual = e.GetDomAttribute("src");

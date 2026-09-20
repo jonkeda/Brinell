@@ -33,7 +33,6 @@ public abstract class ClickableControlBase<TScope> : ControlBase<TScope>, IClick
     public TScope DoubleClick(int? timeoutMs = null)
     {
         AssertClickable(true, timeoutMs: timeoutMs);
-        // Server-side: raise Click event twice
         var cmd = Brinell.Stride.Communication.AutomationCommand.Action("Click", AutomationId);
         Context.SendCommand(cmd);
         Context.SendCommand(cmd);

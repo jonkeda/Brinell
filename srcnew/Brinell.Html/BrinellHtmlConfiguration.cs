@@ -19,8 +19,6 @@ public sealed class BrinellHtmlConfiguration : BrinellConfigurationBase
     /// </summary>
     public BrowserOptions Browser { get; set; } = new();
 
-    // Artifacts inherited from BrinellConfigurationBase
-
     /// <summary>
     /// Loads HTML configuration from brinell.html.config.json
     /// </summary>

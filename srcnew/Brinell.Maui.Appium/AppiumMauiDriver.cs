@@ -67,11 +67,6 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable
     /// <summary>
     /// Finds a piece of app chrome the driver acts on itself, waiting for it to appear.
     /// </summary>
-    /// <remarks>
-    /// Only for the driver's own actions (the drawer opener, a toolbar item raised by id), which
-    /// run inside a control's action rather than inside its poll. Everything a control looks up
-    /// goes through <see cref="FindElements"/>, which never waits.
-    /// </remarks>
     /// <param name="locator">The chrome element's locator.</param>
     /// <param name="timeoutMs">How long to wait for it to appear.</param>
     /// <returns>The element.</returns>
@@ -95,10 +90,6 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable
     /// <summary>
     /// Finds every match for a piece of app chrome, waiting for at least one to appear.
     /// </summary>
-    /// <remarks>
-    /// As <see cref="FindChrome"/>: for the driver's own actions only, such as reading a picker's
-    /// items after opening it.
-    /// </remarks>
     /// <param name="locator">The chrome elements' locator.</param>
     /// <param name="timeoutMs">How long to wait for the first to appear.</param>
     /// <returns>The matches; empty when none appeared in time.</returns>
@@ -256,10 +247,6 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable
     /// <summary>
     /// The toolbar's up button, which a <c>NavigationPage</c> shows on every page above its root.
     /// </summary>
-    /// <remarks>
-    /// Android's English content description (<c>abc_action_bar_up_description</c>); a device in
-    /// another language shows a translated one.
-    /// </remarks>
     private static readonly By AndroidNavigateUp =
         By.XPath("//android.widget.ImageButton[@content-desc='Navigate up']");
 
@@ -336,11 +323,6 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable
     /// Finds an element by scrolling a container until it enters the tree. Answers
     /// <c>IMauiElement.TryFindByScrolling</c>.
     /// </summary>
-    /// <remarks>
-    /// Android only. iOS would be served by <c>mobile: scroll</c> with the container as
-    /// <c>element</c>; until that is written and run on a device, answering null keeps the
-    /// caller on the plain-lookup result rather than on an untested path.
-    /// </remarks>
     /// <param name="container">The container to scroll, or null for the first scrollable on screen.</param>
     /// <param name="locator">The locator for the element.</param>
     internal IMauiElement? TryFindByScrollingWithin(IMauiElement? container, Locator locator)
@@ -383,12 +365,6 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable
     /// <summary>
     /// The <c>UiSelector</c> naming the container to scroll.
     /// </summary>
-    /// <remarks>
-    /// A named container is scrolled by its own resource-id. Without one there is nothing to
-    /// name, so the selector falls back to the first scrollable container on screen — which is
-    /// wrong wherever an outer <c>ScrollView</c> wraps the container that actually scrolls, and
-    /// is why the parameter exists.
-    /// </remarks>
     private static string ScrollableSelector(IMauiElement? container)
     {
         var resourceId = TryGetResourceId(container);
@@ -420,13 +396,6 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable
     /// Looks the element up again by its own locator once <c>UiScrollable</c> has brought it
     /// into view.
     /// </summary>
-    /// <remarks>
-    /// <c>UiScrollable(...).scrollIntoView(...)</c> is a scrolling command that happens to
-    /// return a node. Acting on that node is not the same as acting on the element: it is
-    /// matched by a <c>resourceIdMatches</c> regex during the scroll rather than by the caller's
-    /// own locator. Re-resolving costs one lookup, now that the element is on screen, and gives
-    /// the caller the element it actually asked for.
-    /// </remarks>
     /// <param name="locator">The caller's locator.</param>
     /// <returns>The freshly resolved element, or null to fall back to the scroll result.</returns>
     private IMauiElement? ReResolveAfterScrolling(Locator locator)

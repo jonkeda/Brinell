@@ -125,6 +125,12 @@ belong: the control exists so nothing above it touches them.
 
 ### Documentation
 
+Follow the comment policy in
+[.github/instructions/csharp-comments.instructions.md](../../instructions/csharp-comments.instructions.md).
+A control's route/evidence `<remarks>` is the one sanctioned `<remarks>` use: it records
+measured, per-platform facts that cannot be re-derived from the code. Do not add `<remarks>`
+that merely restate what a member does.
+
 - `<summary>` on every member, written for the caller of the generated member.
 - `<remarks>` records the route per platform and the measured evidence ("Windows: no
   ExpandCollapse pattern; the app declares `Tap,GetState`. Android: touch; no state read, so

@@ -32,9 +32,6 @@ public partial class CheckBox<TScope> : Base.ToggleControlBase<TScope>
     #region Core Methods (Element-Aware, No Logging)
 
     /// <inheritdoc />
-    /// <remarks>
-    /// Toggles only when the state differs, then verifies the result.
-    /// </remarks>
     protected override void SetCheckedCore(IMauiElement element, bool? @checked, int? timeoutMs = null)
     {
         if (@checked == null || IsCheckedCore(element) == @checked)

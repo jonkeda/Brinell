@@ -7,18 +7,6 @@ namespace Brinell.Uia.Provider;
 /// The root of the bridge's fragment: one element per instrumented target, hanging off the
 /// bridge window.
 /// </summary>
-/// <remarks>
-/// <para>
-/// Carries no pattern itself. It exists to be somewhere for the target elements to hang, and
-/// to be the thing <c>WM_GETOBJECT</c> returns.
-/// </para>
-/// <para>
-/// <b>The child list is swapped, never mutated.</b> UI Automation walks the fragment from
-/// arbitrary threads and will interleave a walk with a registration; handing every walk an
-/// immutable snapshot means a walk in progress sees a consistent tree even when it is one
-/// revision out of date.
-/// </para>
-/// </remarks>
 [ComVisible(true)]
 [System.Runtime.Versioning.SupportedOSPlatform("windows")]
 internal sealed class BridgeFragmentRoot

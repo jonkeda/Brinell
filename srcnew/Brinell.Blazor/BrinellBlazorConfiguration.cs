@@ -19,8 +19,6 @@ public sealed class BrinellBlazorConfiguration : BrinellConfigurationBase
     /// </summary>
     public BrowserOptions Browser { get; set; } = new();
 
-    // Artifacts inherited from BrinellConfigurationBase
-
     /// <summary>
     /// Loads Blazor configuration from brinell.blazor.config.json
     /// </summary>

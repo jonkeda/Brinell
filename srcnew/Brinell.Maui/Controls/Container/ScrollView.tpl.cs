@@ -40,7 +40,6 @@ public partial class ScrollView<TParent, TSelf> : ContainerObjectBase<TParent, T
     /// <summary>
     /// Scrolls one viewport toward the end of the content.
     /// </summary>
-    /// <remarks>At the end of the content this does nothing.</remarks>
     /// <param name="element">The container's own element.</param>
     protected virtual void ScrollForwardCore(IMauiElement element)
         => ScrollHelper.StepForward(element);
@@ -64,7 +63,7 @@ public partial class ScrollView<TParent, TSelf> : ContainerObjectBase<TParent, T
     /// <remarks>
     /// One call: it waits for the scope chain, then scrolls once, within the call's budget. Does
     /// nothing when the element is not present; use
-    /// <see cref="ContainerObjectBase{TParent, TSelf}.FindElement"/> first if absence should be an
+    /// <c>FindElement</c> first if absence should be an
     /// error.
     /// </remarks>
     public TSelf ScrollTo(Locator locator)

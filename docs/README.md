@@ -24,7 +24,7 @@ rebuilt.
 - [Codebase Structure](architecture/structure.md)
 - [Technology Stack](architecture/stack.md)
 - [Testing](architecture/testing.md)
-- [Architectural Decisions](architecture/decisions.md)
+- [Architectural Decisions, Invariants, Contracts](../.docs/README.md)
 
 ## Controls
 

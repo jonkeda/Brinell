@@ -19,12 +19,6 @@ public interface ITextControlObject<TScope> : IControlObject<TScope>
     bool WaitTextContains(string? expected, int? timeoutMs = null);
     
     /// <summary>
-    /// Assert text matches pattern (regex).
-    /// If pattern is null, returns immediately (skip).
-    /// </summary>
-    //TScope AssertTextMatches(string? pattern, string? message = null, int? timeoutMs = null);
-    
-    /// <summary>
     /// Assert text starts with expected prefix.
     /// If expected is null, returns immediately (skip).
     /// </summary>
@@ -43,6 +37,8 @@ public interface ITextControlObject<TScope> : IControlObject<TScope>
     /// If expected is null, returns immediately (skip).
     /// </summary>
     /// <param name="expected">True to assert empty, false to assert not empty, null to skip.</param>
+    /// <param name="message">Optional custom assertion message.</param>
+    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
     /// <returns>The containing scope for fluent chaining.</returns>
     TScope AssertTextEmpty(bool? expected, string? message = null, int? timeoutMs = null);
 }

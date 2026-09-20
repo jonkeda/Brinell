@@ -30,13 +30,11 @@ public static class StrideAutomationExtensions
     /// </summary>
     public static bool IsAutomationEnabled(BrinellStrideConfiguration? config = null)
     {
-        // Check configuration first
         if (config?.Stride?.AutomationEnabled == true)
         {
             return true;
         }
 
-        // Fall back to command line args or environment variable
         return Environment.GetCommandLineArgs().Contains("--automation") ||
                Environment.GetEnvironmentVariable("BRINELL_AUTOMATION") == "1";
     }

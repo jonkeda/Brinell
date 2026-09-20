@@ -48,7 +48,6 @@ public static class WaitHelper
             Pause(pollingIntervalMs);
         }
         
-        // Final check
         try
         {
             return condition();
@@ -88,7 +87,6 @@ public static class WaitHelper
             Pause(pollingIntervalMs);
         }
         
-        // Final check
         try
         {
             var value = getValue();
@@ -170,7 +168,6 @@ public static class WaitHelper
             Pause(pollingIntervalMs);
         }
         
-        // Final check
         try
         {
             return getValue();
@@ -207,7 +204,6 @@ public static class WaitHelper
             Pause(pollingIntervalMs);
         }
         
-        // Final check
         try
         {
             if (condition())

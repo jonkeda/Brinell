@@ -23,7 +23,6 @@ public abstract class TextControlBase<TScope> : ControlBase<TScope>
         if (!IsEditable)
             throw new InvalidOperationException($"Control '{AutomationId}' is read-only.");
 
-        // Server-side: append text to current value
         var current = GetText() ?? "";
         Context.SetElementText(AutomationId, current + text);
         LogAction("Enter", text);
@@ -35,7 +34,6 @@ public abstract class TextControlBase<TScope> : ControlBase<TScope>
         if (!IsEditable)
             throw new InvalidOperationException($"Control '{AutomationId}' is read-only.");
 
-        // Server-side: set text to empty directly via automation pipe
         Context.SetElementText(AutomationId, "");
         LogAction("Clear");
         return ContainingScope;
@@ -55,7 +53,6 @@ public abstract class TextControlBase<TScope> : ControlBase<TScope>
         if (!IsEditable)
             throw new InvalidOperationException($"Control '{AutomationId}' is read-only.");
 
-        // Server-side: append text to current value via automation pipe
         var current = GetText() ?? "";
         Context.SetElementText(AutomationId, current + text);
         LogAction("Append", text);

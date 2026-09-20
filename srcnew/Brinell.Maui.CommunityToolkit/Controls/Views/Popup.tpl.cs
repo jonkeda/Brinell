@@ -45,17 +45,9 @@ public partial class Popup<TParent, TSelf> : ContainerObjectBase<TParent, TSelf>
     protected override bool CacheContainerRoot => false;
 
     /// <inheritdoc />
-    /// <remarks>
-    /// <b>A popup answers for itself, not for the page under it.</b> It is shown over that page,
-    /// and on Android it is a modal page that takes the page out of the tree entirely - so waiting
-    /// for the page to be ready before touching the popup fails exactly while the popup is open
-    /// ("MissingRoot"). Its own root being there is the readiness that matters. <see cref="Page"/>
-    /// still names the page, for the log.
-    /// </remarks>
     protected override bool AsksParent => false;
 
     /// <inheritdoc />
-    /// <remarks>Searches the whole app: the popup is not a descendant of the raising page.</remarks>
     protected override IMauiElement FindContainerRootElement()
         => Context.AppElement.TryFindElement(Locator)
             ?? throw new ElementNotFoundException($"No open popup was found by '{Locator}'.");

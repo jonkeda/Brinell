@@ -27,7 +27,6 @@ public class Slider<TScope> : RangeControlBase<TScope>
         if (!success)
             throw new InvalidOperationException($"Server-side SetSliderValue failed for '{AutomationId}'");
 
-        // Wait for the value to actually change
         WaitValue(value, tolerance: 0.5, timeoutMs: 500);
 
         return ContainingScope;

@@ -89,7 +89,6 @@ public class StrideUIHandler : IAutomationHandler
 
         if (command.Method == "Exit")
         {
-            // Graceful exit request
             return AutomationResponse.Ok(true);
         }
 

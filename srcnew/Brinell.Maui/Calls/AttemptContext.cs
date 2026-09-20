@@ -4,11 +4,6 @@ namespace Brinell.Maui.Calls;
 /// The state of one phase of one call: its deadline, what each attempt saw, and the scroll
 /// throttles.
 /// </summary>
-/// <remarks>
-/// Control and scope objects are often created fresh on every property access
-/// (<c>=&gt; new(this, "Id")</c>), so this state cannot live on them. It lives for one phase of one
-/// call instead, which is also the right unit for "at most once per Animation interval".
-/// </remarks>
 internal sealed class AttemptContext
 {
     private static readonly AsyncLocal<AttemptContext?> CurrentContext = new();

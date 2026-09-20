@@ -12,11 +12,9 @@ public abstract class MediaControlBase<TScope> : ClickableControlBase<TScope>
     protected MediaControlBase(IHtmlScope<TScope> scope, Locator locator) : base(scope, locator) { }
     protected MediaControlBase(IHtmlScope<TScope> scope, string selectorOrId) : base(scope, selectorOrId) { }
 
-    // Playback control
     public TScope Play() => RunWithElement(e => e.Evaluate("el => el.play()"));
     public TScope Pause() => RunWithElement(e => e.Evaluate("el => el.pause()"));
 
-    // Playback state
     public bool IsPlaying() => RunWithElement(e =>
         !(e.GetDomProperty("paused") == "True" || e.GetDomProperty("paused") == "true")
         && !(e.GetDomProperty("ended") == "True" || e.GetDomProperty("ended") == "true"));
@@ -25,7 +23,6 @@ public abstract class MediaControlBase<TScope> : ClickableControlBase<TScope>
     public bool IsEnded() => RunWithElement(e =>
         e.GetDomProperty("ended") == "True" || e.GetDomProperty("ended") == "true");
 
-    // Time control
     public double GetCurrentTime() => RunWithElement(e =>
         double.Parse(e.GetDomProperty("currentTime") ?? "0", CultureInfo.InvariantCulture));
     public TScope Seek(double seconds) => RunWithElement(e =>
@@ -33,7 +30,6 @@ public abstract class MediaControlBase<TScope> : ClickableControlBase<TScope>
     public double GetDuration() => RunWithElement(e =>
         double.Parse(e.GetDomProperty("duration") ?? "0", CultureInfo.InvariantCulture));
 
-    // Volume control
     public double GetVolume() => RunWithElement(e =>
         double.Parse(e.GetDomProperty("volume") ?? "1", CultureInfo.InvariantCulture));
     public TScope SetVolume(double volume) => RunWithElement(e =>
@@ -43,11 +39,9 @@ public abstract class MediaControlBase<TScope> : ClickableControlBase<TScope>
     public TScope Mute() => RunWithElement(e => e.Evaluate("el => el.muted = true"));
     public TScope Unmute() => RunWithElement(e => e.Evaluate("el => el.muted = false"));
 
-    // Source
     public string? GetSource() => RunWithElement(e =>
         e.GetDomAttribute("src") ?? e.GetDomProperty("currentSrc"));
 
-    // Assertions
     public TScope AssertPlaying(string? message = null) => RunAssert(e =>
     {
         var paused = e.GetDomProperty("paused");

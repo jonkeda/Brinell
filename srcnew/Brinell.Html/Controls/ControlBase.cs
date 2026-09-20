@@ -343,6 +343,7 @@ public abstract class ControlBase<TScope> : ObjectBase, IControlObject<TScope>, 
     /// Optimized to find element once and reuse.
     /// </summary>
     /// <param name="keys">The keys to send.</param>
+    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
     /// <returns>The containing scope for fluent chaining.</returns>
     public virtual TScope SendKeys(string keys, int? timeoutMs = null)
     {
@@ -386,7 +387,6 @@ public abstract class ControlBase<TScope> : ObjectBase, IControlObject<TScope>, 
     /// <inheritdoc />
     public bool WaitVisible(bool? expected, int? timeoutMs = null)
     {
-        // Nullable skip pattern
         if (expected == null)
             return true;
 

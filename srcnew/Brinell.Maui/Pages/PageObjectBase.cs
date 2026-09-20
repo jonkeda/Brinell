@@ -126,7 +126,7 @@ public abstract class PageObjectBase<TSelf> : RootedScopeBase<TSelf, TSelf>, IMa
         }, timeoutMs ?? Context.Timeouts.PageLoad);
     }
 
-    /// <summary>Waits until the loaded page is not busy: <see cref="WaitReady"/>.</summary>
+    /// <summary>Waits until the loaded page is not busy: <c>WaitReady</c>.</summary>
     public bool WaitIdle(int? timeoutMs = null) => WaitReady(timeoutMs);
 
     /// <summary>
@@ -174,8 +174,6 @@ public abstract class PageObjectBase<TSelf> : RootedScopeBase<TSelf, TSelf>, IMa
     /// <inheritdoc />
     public virtual string? GetTitle()
     {
-        // Default implementation returns page name
-        // Override for platforms that support page titles
         return Name;
     }
 

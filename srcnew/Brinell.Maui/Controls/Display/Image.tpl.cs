@@ -38,10 +38,6 @@ public partial class Image<TScope> : Base.ViewBase<TScope>
     /// <summary>
     /// Whether the image has finished loading a bitmap.
     /// </summary>
-    /// <remarks>
-    /// Asked of the app where it can answer. Otherwise falls back to whether the image occupies
-    /// space, which a broken image also does.
-    /// </remarks>
     /// <param name="element">The pre-found element (may be null).</param>
     /// <returns>True if loaded, false otherwise, null if not found.</returns>
     protected virtual bool? IsLoadedCore(IMauiElement? element)
@@ -66,10 +62,6 @@ public partial class Image<TScope> : Base.ViewBase<TScope>
     /// <summary>
     /// Where the image's bitmap comes from, as the app declared it.
     /// </summary>
-    /// <remarks>
-    /// Only the app can answer this. Null where the app does not report it, so "no source" and
-    /// "cannot tell" stay distinguishable.
-    /// </remarks>
     /// <param name="element">The pre-found element (may be null).</param>
     /// <returns>The source, or null when it cannot be read.</returns>
     protected virtual string? GetSourceCore(IMauiElement? element)

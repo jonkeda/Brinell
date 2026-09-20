@@ -5,6 +5,14 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+
+    <!-- Emit XML doc files so kept summaries reach IntelliSense/help. CS1591 (missing
+         doc on a public member) is suppressed for now; see .my/documentation/plan.md phase 0.
+         CS1710 (duplicate typeparam) is suppressed because Brinell.Generator copies the
+         class-level doc onto the generated .gen.cs partial of every generic control, so both
+         partials legitimately carry the same <typeparam>; the doc is authored once in .tpl.cs. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591;CS1710</NoWarn>
     
     <!-- Versioning -->
     <Version>0.1.0</Version>

@@ -40,8 +40,6 @@ public sealed class Locator
         Parent = parent;
     }
 
-    // Factory methods
-
     /// <summary>
     /// Create a locator by AutomationId (MAUI, WPF).
     /// </summary>

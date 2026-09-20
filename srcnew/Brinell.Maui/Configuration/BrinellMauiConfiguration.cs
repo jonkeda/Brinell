@@ -19,8 +19,6 @@ public class BrinellMauiConfiguration : BrinellConfigurationBase
     /// </summary>
     public MauiOptions Maui { get; set; } = new();
 
-    // Artifacts inherited from BrinellConfigurationBase
-
     /// <summary>
     /// Loads MAUI configuration from brinell.maui.config.json
     /// </summary>
@@ -61,9 +59,6 @@ public class BrinellMauiConfiguration : BrinellConfigurationBase
     /// <summary>
     /// Applies the <c>APPIUM_PLATFORM</c> override, when set.
     /// </summary>
-    /// <remarks>
-    /// An unrecognized value throws rather than falling back to Windows.
-    /// </remarks>
     private static void ApplyPlatformOverride(BrinellMauiConfiguration configuration)
     {
         var requested = Environment.GetEnvironmentVariable("APPIUM_PLATFORM");

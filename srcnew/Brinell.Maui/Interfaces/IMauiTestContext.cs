@@ -2,15 +2,12 @@ using Brinell.Maui.Enums;
 
 namespace Brinell.Maui.Interfaces;
 
+// R9: implements Core's non-generic ITestContext (unchanged by this work) and MAUI's own scope,
+// not Core's generic ITestContext<T>. See .docs/decisions/ad-010-maui-ahead-of-core.md.
 /// <summary>
 /// MAUI test context: the driver, timeouts, logging and navigation, and the app-wide lookup scope.
+/// As a scope, <see cref="IMauiElementScope.Context"/> returns the context itself.
 /// </summary>
-/// <remarks>
-/// Implements Core's non-generic <see cref="ITestContext"/>, whose shape this work does not
-/// change, and MAUI's own scope. It does not implement Core's generic <c>ITestContext&lt;T&gt;</c>
-/// (see <c>.my/stale-readiness/design.md</c>, R9). As a scope, <see cref="IMauiElementScope.Context"/>
-/// returns the context itself.
-/// </remarks>
 public interface IMauiTestContext : ITestContext, IMauiElementScope
 {
     /// <summary>

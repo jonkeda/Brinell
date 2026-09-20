@@ -5,37 +5,15 @@ namespace Brinell.Uia.Interop;
 /// <summary>
 /// The subset of <c>UIAutomationCore</c>'s type system the registrar needs.
 /// </summary>
-/// <remarks>
-/// <para>
-/// Hand-declared because it has to be. <c>Interop.UIAutomationClient</c>, the interop
-/// assembly FlaUI embeds, contains the client-side automation interfaces and none of the
-/// registration machinery - no <c>IUIAutomationRegistrar</c>, no
-/// <c>IUIAutomationPatternHandler</c>, none of the descriptor structs. Every declaration in
-/// this folder was checked against <c>uiautomationcore.h</c>; a wrong field order here
-/// produces a corrupt read rather than an error, so treat changes as interop changes.
-/// </para>
-/// </remarks>
 internal static class UiaTypes
 {
     /// <summary>
     /// Every descriptor below is blittable on purpose.
     /// </summary>
-    /// <remarks>
-    /// UI Automation keeps the pointers it is handed at registration - the method table, and
-    /// every name in it - for the life of the process. A <c>string</c> field marshalled by the
-    /// runtime would be copied into a native buffer freed when the call returns, leaving UI
-    /// Automation reading released memory at some later and entirely unrelated moment. So the
-    /// names are <see cref="IntPtr"/> fields, allocated and deliberately never freed by
-    /// <see cref="NativeTable"/>, and the structs cross the boundary as raw addresses.
-    /// </remarks>
     internal const bool DescriptorsAreBlittable = true;
 }
 
 /// <summary>The type of one parameter or property in a custom pattern.</summary>
-/// <remarks>
-/// The flags matter: <c>Out</c> (0x20000) or'd into a base type gives the by-reference form,
-/// which is how a method declares that a parameter is a result rather than an argument.
-/// </remarks>
 internal enum UIAutomationType
 {
     Int = 0x1,
@@ -54,12 +32,6 @@ internal enum UIAutomationType
 }
 
 /// <summary>One argument in a dispatched call: a type tag and a pointer to the storage.</summary>
-/// <remarks>
-/// For an in-parameter, <see cref="Data"/> points at the value. For an out-parameter it points
-/// at the caller's storage, which the provider writes. Getting that backwards writes over the
-/// caller's stack, so both directions are handled in one place - see
-/// <see cref="NativeParameters"/>.
-/// </remarks>
 [StructLayout(LayoutKind.Sequential)]
 internal struct UIAutomationParameter
 {
@@ -94,10 +66,6 @@ internal struct UIAutomationMethodInfo
 }
 
 /// <summary>Describes one custom property. Unused: the contract registers no properties.</summary>
-/// <remarks>
-/// Kept declared because <see cref="UIAutomationPatternInfo"/> has a field of this type and a
-/// reader should be able to see what the null pointer stands for.
-/// </remarks>
 [StructLayout(LayoutKind.Sequential)]
 internal struct UIAutomationPropertyInfo
 {
@@ -170,7 +138,6 @@ internal enum ProviderOptions
 }
 
 /// <summary>A rectangle in screen coordinates, as UI Automation expresses it.</summary>
-/// <remarks>Width and height, not right and bottom. Easy to get wrong and silent when wrong.</remarks>
 [StructLayout(LayoutKind.Sequential)]
 internal struct UiaRect
 {
@@ -192,11 +159,6 @@ internal enum StructureChangeType
 }
 
 /// <summary>The well-known UI Automation property and control-type ids this bridge answers.</summary>
-/// <remarks>
-/// Literal values rather than a reference to an interop assembly: this file compiles into the
-/// app under test, which must not acquire a dependency to carry the bridge. The numbers are
-/// part of the UI Automation ABI and have not changed since Windows 7.
-/// </remarks>
 internal static class UiaPropertyIds
 {
     internal const int ControlType = 30003;

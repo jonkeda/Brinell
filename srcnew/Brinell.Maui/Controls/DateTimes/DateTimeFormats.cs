@@ -7,7 +7,6 @@ namespace Brinell.Maui.Controls.DateTimes;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <para>
 /// Nothing on either platform publishes a date format, so it has to be declared rather than
 /// inferred - <c>03/04/2025</c> is 3 April in one culture and 4 March in another.
 /// </para>

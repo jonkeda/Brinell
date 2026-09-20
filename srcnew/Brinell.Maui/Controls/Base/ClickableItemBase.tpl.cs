@@ -45,11 +45,6 @@ public abstract partial class ClickableItemBase<TCollection, TSelf>
     /// <summary>
     /// Reads the item's caption: its text, or failing that its accessibility name.
     /// </summary>
-    /// <remarks>
-    /// An item drawn by the platform rather than by the app often has no text at all - an
-    /// Android tab carries its title as a content description - and the name is then the only
-    /// caption there is. Windows needs no fallback: its text already reads through to the name.
-    /// </remarks>
     /// <param name="element">The item's root element.</param>
     [GenerateComparisons(Comparison.Equals | Comparison.Contains | Comparison.Empty)]
     protected virtual string? GetTextCore(IMauiElement element)
@@ -88,7 +83,6 @@ public abstract partial class ClickableItemBase<TCollection, TSelf>
     protected virtual void EnsureClickableCore(IMauiElement element) => EnsureEnabledCore(element);
 
     /// <inheritdoc />
-    /// <remarks>An item is acted on only when it is clickable: checked while the call resolves it.</remarks>
     protected override void EnsureReadyForActionCore(IMauiElement root) => EnsureClickableCore(root);
 
     #endregion

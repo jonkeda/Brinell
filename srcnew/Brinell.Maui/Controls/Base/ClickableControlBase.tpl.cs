@@ -36,11 +36,6 @@ public abstract partial class ClickableControlBase<TScope> : FocusableControlBas
     /// <summary>
     /// Performs click on pre-found element. No logging - caller handles logging.
     /// </summary>
-    /// <remarks>
-    /// Invokes the element: the Invoke pattern on Windows, a tap on Android and iOS. Controls that
-    /// activate differently override this - <c>ToggleControlBase</c> toggles, <c>RadioButton</c>
-    /// selects, <c>ToolbarButton</c> raises a toolbar item.
-    /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <param name="timeoutMs">Unused: the call checks that the element is enabled while it resolves it.</param>
     protected virtual void ClickCore(IMauiElement element, int? timeoutMs = null)
@@ -93,10 +88,6 @@ public abstract partial class ClickableControlBase<TScope> : FocusableControlBas
     /// <summary>
     /// Activates the button through keyboard input after focusing it.
     /// </summary>
-    /// <remarks>
-    /// Not available on Windows, where the driver does not type; use <c>ToolbarButton</c> for a
-    /// toolbar item. On Android and iOS the key is delivered by Appium.
-    /// </remarks>
     /// <param name="element">The pre-found element.</param>
     /// <param name="timeoutMs">Unused: the call checks that the element is enabled while it resolves it.</param>
     protected virtual void PressCore(IMauiElement element, int? timeoutMs = null)
@@ -136,9 +127,6 @@ public abstract partial class ClickableControlBase<TScope> : FocusableControlBas
     }
 
     /// <inheritdoc />
-    /// <remarks>
-    /// Also requires the control to be enabled, so a control enabled a moment late is waited for.
-    /// </remarks>
     protected override void EnsureReadyForActionCore(IMauiElement element)
     {
         EnsureClickableCore(element);

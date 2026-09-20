@@ -88,10 +88,6 @@ public partial class Menu<TParent>
     /// <summary>
     /// Opens the menu by clicking its trigger.
     /// </summary>
-    /// <remarks>
-    /// A disclosure menu's trigger toggles, so calling this on an open menu closes it. Ask
-    /// <c>IsOpen</c> rather than assuming.
-    /// </remarks>
     /// <param name="element">The menu's own element.</param>
     /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
     protected virtual void OpenCore(IMauiElement element, int? timeoutMs = null)
@@ -106,10 +102,6 @@ public partial class Menu<TParent>
     /// <summary>
     /// Whether the menu is showing its items.
     /// </summary>
-    /// <remarks>
-    /// Read from the item host, since the menu's own element is present whether it is open or
-    /// not.
-    /// </remarks>
     /// <param name="element">The menu's own element (may be null).</param>
     /// <returns>True when open, false when shut, null when the menu is not on the page.</returns>
     [AbsenceTolerant]

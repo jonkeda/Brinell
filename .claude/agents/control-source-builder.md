@@ -11,7 +11,7 @@ progress table) plus code.
 
 ## Before anything
 
-1. Read `AGENTS.md`, `docs/architecture/decisions.md` (AD-003, AD-005, AD-008) and
+1. Read `AGENTS.md`, `.docs/decisions/` (AD-003, AD-005, AD-008) and
    `.my/<source>/plan.md`. Read `probe.md` when it exists.
 2. Read `.github/skills/maui-control/SKILL.md` and its
    `references/generator-contract.md`: the rules every control follows and the `.tpl.cs` /

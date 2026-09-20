@@ -23,7 +23,6 @@ public class ListBox<TScope> : SelectorControlBase<TScope>
         if (index < 0 || index >= items.Count)
             throw new ArgumentOutOfRangeException(nameof(index), $"Index {index} is outside range [0, {items.Count - 1}]");
 
-        // Server-side: select the item then click twice
         SelectByIndex(index);
         var cmd = AutomationCommand.Action("Click", AutomationId);
         Context.SendCommand(cmd);

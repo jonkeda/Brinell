@@ -41,10 +41,6 @@ public partial class Slider<TScope> : Base.RangeControlBase<TScope>
     /// The element picks the route: the RangeValue pattern on Windows, the accessibility
     /// set-progress action on Android.
     /// </summary>
-    /// <remarks>
-    /// A bound that is not published does not clamp: the app clamps anyway, and assuming 0-100
-    /// sent the wrong value to every slider with another range.
-    /// </remarks>
     /// <param name="element">The slider element.</param>
     /// <param name="value">The target value. Null skips the operation.</param>
     /// <param name="timeoutMs">Optional timeout in milliseconds.</param>

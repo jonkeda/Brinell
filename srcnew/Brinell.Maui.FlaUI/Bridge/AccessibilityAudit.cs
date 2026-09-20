@@ -68,12 +68,6 @@ public static class AccessibilityAudit
     /// <summary>
     /// Asks the real element what routes it offers, and decides what that makes it.
     /// </summary>
-    /// <remarks>
-    /// <b>Ordinary search, not the raw walk the bridge needs.</b> The question is what assistive
-    /// technology can reach, and assistive technology walks the control view. An element only a
-    /// raw walk can find is, for this purpose, not there - which is what the audit is trying to
-    /// establish.
-    /// </remarks>
     private static AccessibilityFinding Examine(
         AutomationElement root,
         string automationId,
@@ -110,12 +104,6 @@ public static class AccessibilityAudit
             AccessKey: Safe(() => element.Properties.AccessKey.Value, string.Empty));
     }
 
-    /// <remarks>
-    /// A property read can throw when the element goes away mid-audit, and an audit that falls
-    /// over on one element reports nothing about the rest. An unreadable property is recorded as
-    /// absent, which is the conservative direction: it can add a false finding to the backlog,
-    /// never hide a real one.
-    /// </remarks>
     private static T Safe<T>(Func<T> read, T whenUnavailable)
     {
         try

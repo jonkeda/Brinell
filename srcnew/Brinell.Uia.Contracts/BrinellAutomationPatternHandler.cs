@@ -7,18 +7,6 @@ namespace Brinell.Uia;
 /// Translates between UI Automation's index-and-parameter-array calling convention and the
 /// two methods of the contract.
 /// </summary>
-/// <remarks>
-/// <para>
-/// One class, both directions, because they have to agree.
-/// <see cref="CreateClientWrapper"/> runs in the test assembly and
-/// <see cref="Dispatch"/> runs in the app under test, and the parameter array one builds is
-/// the parameter array the other reads. Splitting them across two files is how they drift.
-/// </para>
-/// <para>
-/// <b>The index switch is the other half of the frozen method table.</b> The cases here must
-/// match <see cref="NativeTable"/> exactly - not by name, by number.
-/// </para>
-/// </remarks>
 [ComVisible(true)]
 [System.Runtime.Versioning.SupportedOSPlatform("windows")]
 internal sealed class BrinellAutomationPatternHandler : IUIAutomationPatternHandler
@@ -116,11 +104,6 @@ internal sealed class BrinellAutomationPatternHandler : IUIAutomationPatternHand
 /// <summary>
 /// What <c>GetCurrentPattern</c> hands back in the test assembly.
 /// </summary>
-/// <remarks>
-/// Packs each call into the parameter array UI Automation expects, and unpacks the result.
-/// Every allocation made here is released before the method returns, except the result BSTR,
-/// which the provider allocated and this side frees - the ordinary COM out-parameter rule.
-/// </remarks>
 [ComVisible(true)]
 [System.Runtime.Versioning.SupportedOSPlatform("windows")]
 internal sealed class BrinellAutomationPatternClient : IBrinellAutomationPattern

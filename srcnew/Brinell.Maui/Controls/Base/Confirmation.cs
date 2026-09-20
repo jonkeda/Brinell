@@ -16,14 +16,12 @@ public enum ConfirmationResult
     Replaced
 }
 
+// R0: the action is never repeated - a control that ignores it is an app bug the test must
+// report. See .docs/contracts/call-model.md and .docs/decisions/ad-009-app-bugs-stay-failures.md.
 /// <summary>
-/// What a Core method saw while it waited for the effect of an action it had already done.
+/// What a Core method saw while it waited for the effect of an action it had already done. It
+/// words its failure by <see cref="Result"/>, usually through <see cref="Failure"/>.
 /// </summary>
-/// <remarks>
-/// The action is never repeated (<c>.my/stale-readiness/design.md</c>, section 6.5 and R0): a
-/// control that ignores it is an app bug the test must report. A Core method words its failure
-/// by <see cref="Result"/>, usually through <see cref="Failure"/>.
-/// </remarks>
 /// <typeparam name="T">The value read.</typeparam>
 /// <param name="Result">How the wait ended.</param>
 /// <param name="LastValue">The last value read.</param>

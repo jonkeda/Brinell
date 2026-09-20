@@ -5,20 +5,6 @@ namespace Brinell.Uia.Interop;
 /// <summary>
 /// Builds the frozen method table in unmanaged memory and keeps it there.
 /// </summary>
-/// <remarks>
-/// <para>
-/// <b>Nothing here is ever freed, on purpose.</b> UI Automation reads the method table long
-/// after <c>RegisterPattern</c> returns, and registration happens once per process, so the
-/// allocation is bounded and its lifetime is the process. Adding cleanup would introduce a
-/// use-after-free with no upside; that is a decision, not an oversight.
-/// </para>
-/// <para>
-/// <b>The order of the methods is the contract.</b> Index 0 is <c>Invoke</c>, index 1 is
-/// <c>Exchange</c>, and UI Automation dispatches by that index alone.
-/// <c>BrinellAutomationPatternHandler.Dispatch</c> switches on the same numbers; the two are
-/// pinned together by <c>MethodTableMatchesDispatchTests</c>.
-/// </para>
-/// </remarks>
 internal static class NativeTable
 {
     /// <summary>Index of <see cref="IBrinellAutomationProvider.Invoke"/> in the method table.</summary>
@@ -156,20 +142,6 @@ internal static class NativeTable
 /// <summary>
 /// Reads and writes one dispatched call's <c>UIAutomationParameter</c> array.
 /// </summary>
-/// <remarks>
-/// <para>
-/// The one place in the bridge where a mistake is silent. Every parameter arrives as a type
-/// tag and a <c>void*</c>, and the pointer means different things in the two directions: for
-/// an in-parameter it addresses the value, for an out-parameter it addresses the caller's
-/// storage that the provider must fill. Reading an out-slot or writing an in-slot corrupts
-/// memory belonging to UI Automation rather than raising anything.
-/// </para>
-/// <para>
-/// Strings are the subtle case. Both <c>String</c> and <c>OutString</c> slots hold a
-/// <c>BSTR*</c> - a pointer to a BSTR variable, not the BSTR itself - so both directions go
-/// through one level of indirection.
-/// </para>
-/// </remarks>
 internal static class NativeParameters
 {
     private static readonly int ParameterSize = Marshal.SizeOf<UIAutomationParameter>();
@@ -193,20 +165,12 @@ internal static class NativeParameters
     /// <summary>
     /// Writes an out-parameter holding a BSTR.
     /// </summary>
-    /// <remarks>
-    /// The BSTR is allocated here and freed by the caller, which is the COM convention for an
-    /// out-parameter and is what UI Automation does on the client's behalf. Do not free it.
-    /// </remarks>
     internal static void WriteString(IntPtr parameters, uint index, string value)
         => Marshal.WriteIntPtr(At(parameters, index).Data, Marshal.StringToBSTR(value));
 
     /// <summary>
     /// Fills one slot of an outgoing parameter array.
     /// </summary>
-    /// <remarks>
-    /// Used by the client wrapper, which owns the storage the slots point at for the duration
-    /// of the call and no longer.
-    /// </remarks>
     internal static void Set(IntPtr parameters, int index, UIAutomationType type, IntPtr data)
     {
         var slot = new UIAutomationParameter { Type = type, Data = data };

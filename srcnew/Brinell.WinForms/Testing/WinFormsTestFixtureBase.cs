@@ -33,7 +33,6 @@ public abstract class WinFormsTestFixtureBase : IDisposable
         _instanceId = Interlocked.Increment(ref _instanceCount);
         Console.WriteLine($"[FIXTURE] {GetType().Name} #{_instanceId} CREATING at {DateTime.Now:HH:mm:ss.fff}");
 
-        // Load configuration from config file (or defaults if not found)
         Configuration = BrinellWinFormsConfiguration.Load();
 
         var options = CreateTestContextOptions();

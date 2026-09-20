@@ -28,10 +28,6 @@ public partial class TabItem<TParent> : Base.SelectableItemBase<TabMenu<TParent>
     /// <summary>
     /// Invokes the tab's button surface, falling back to the tab itself.
     /// </summary>
-    /// <remarks>
-    /// The tab's root is a layout; the button inside it carries the command. The tab is invoked
-    /// rather than selected because the tab bar is built from plain buttons.
-    /// </remarks>
     /// <param name="element">The tab's root element.</param>
     /// <param name="timeoutMs">Optional timeout.</param>
     protected override void ClickCore(IMauiElement element, int? timeoutMs = null)
@@ -42,17 +38,12 @@ public partial class TabItem<TParent> : Base.SelectableItemBase<TabMenu<TParent>
     }
 
     /// <inheritdoc />
-    /// <remarks>The button inside the tab carries the command, so it is the one that must be enabled.</remarks>
     protected override void EnsureClickableCore(IMauiElement element)
         => base.EnsureClickableCore(TabMenuMarkup.ButtonWithin(element) ?? element);
 
     /// <summary>
     /// Reads the tab's caption from its caption label, then its button, then the tab itself.
     /// </summary>
-    /// <remarks>
-    /// On Windows the tab's own element reports an empty string, so the caption label is read
-    /// first.
-    /// </remarks>
     /// <param name="element">The tab's root element.</param>
     protected override string? GetTextCore(IMauiElement element)
     {
@@ -68,11 +59,6 @@ public partial class TabItem<TParent> : Base.SelectableItemBase<TabMenu<TParent>
     /// <summary>
     /// Whether this is the current tab.
     /// </summary>
-    /// <remarks>
-    /// Asked of the tab and then of its button, since either may be the surface the platform
-    /// marks. A tab bar built from plain buttons marks neither and answers false - see
-    /// <see cref="Base.SelectableItemBase{TCollection, TSelf}.IsMarkedSelected"/>.
-    /// </remarks>
     /// <param name="element">The tab's root element (may be null).</param>
     protected override bool? IsSelectedCore(IMauiElement? element)
     {

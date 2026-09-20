@@ -7,27 +7,6 @@ namespace Brinell.Maui.FlaUI.Bridge;
 /// <summary>
 /// Sends one verb to the app under test, and says what came back.
 /// </summary>
-/// <remarks>
-/// <para>
-/// The general form. <see cref="GestureRunner"/> is this with a gesture's vocabulary on top and
-/// an exception instead of a return value; the focus and text ladders in
-/// <c>FlaUIMauiElement</c> use it directly, because there the bridge is the preferred rung of a
-/// ladder rather than the only route, and a refusal is something to fall back from rather than
-/// something to report.
-/// </para>
-/// <para>
-/// <b>Nothing here throws for an ordinary negative.</b> No bridge in the app, no target for this
-/// element, a verb the element does not answer: all three are answers, and all three are
-/// distinguished in <see cref="BridgeVerbResult.Reason"/> rather than collapsed, because they
-/// call for different fixes - build the app with the automation sources, add a declaration to
-/// its markup, or use another route.
-/// </para>
-/// <para>
-/// <b>And nothing is cached.</b> A page can be navigated away from and back; its bridge targets
-/// are republished each time with new runtime ids, so an answer held over from the last visit
-/// would be about elements that no longer exist.
-/// </para>
-/// </remarks>
 internal static class BridgeVerbRunner
 {
     /// <summary>What the app under test declared an element can do.</summary>
@@ -62,21 +41,6 @@ internal static class BridgeVerbRunner
     /// <summary>
     /// Sends a verb on whichever of the two contract methods it travels on.
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>The entry point every ladder should use.</b> The method table has two entries, and a
-    /// verb sent down the wrong one reaches a provider that has never heard of it - refused with
-    /// <c>UIA_E_NOTSUPPORTED</c>, which is exactly what "this element does not support that"
-    /// looks like. The failure is silent, plausible and points at the app rather than at the
-    /// call, which is a bad combination; it cost a green test that was quietly falling back to
-    /// the keyboard.
-    /// </para>
-    /// <para>
-    /// So the choice is not made here or by the caller. <see cref="BrinellVerbs.TransportFor"/>
-    /// is in the contracts assembly next to the numbers, which is the only place both ends can
-    /// read it from.
-    /// </para>
-    /// </remarks>
     /// <param name="root">The app's top-level window.</param>
     /// <param name="automation">The session.</param>
     /// <param name="automationId">The MAUI <c>AutomationId</c> of the target.</param>
@@ -159,12 +123,6 @@ internal static class BridgeVerbRunner
     /// Invokes a verb only where the target declares it, telling "not declared" apart from
     /// "declared and refused" in a single walk.
     /// </summary>
-    /// <remarks>
-    /// The no-strings counterpart of <see cref="SendIfDeclared"/>, for the same reason: a caller
-    /// that must take a different route when the app never declared the verb cannot learn that
-    /// from <see cref="Invoke"/>'s result, because a refusal and an absence arrive alike.
-    /// <c>ScrollTowards</c> is that caller - it steps instead of jumping.
-    /// </remarks>
     /// <param name="root">The app's top-level window.</param>
     /// <param name="automation">The session.</param>
     /// <param name="automationId">The MAUI <c>AutomationId</c> of the target.</param>
@@ -214,22 +172,6 @@ internal static class BridgeVerbRunner
     /// Exchanges a verb only where the target declares it, telling "not declared" apart from
     /// "declared and refused" in a single walk.
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>Why this exists when <see cref="Exchange"/> deliberately skips the capability list.</b>
-    /// Exchange is right for a caller that is going to act regardless: the verb's own return value
-    /// says what happened, and checking the declaration first would cost a round trip to learn
-    /// something the call establishes anyway. But a provider answers <c>UIA_E_NOTSUPPORTED</c>
-    /// both for a verb it never declared and for a name it declared but does not handle, so a
-    /// caller that must report "this platform does not answer" separately from "that name is
-    /// wrong" cannot get it from Exchange's result.
-    /// </para>
-    /// <para>
-    /// That caller is <c>ReadState</c>, which returns null for the first and throws for the
-    /// second. It used to ask <c>SupportsStateReads</c> and then read, walking the bridge twice.
-    /// This resolves once and answers both questions off the element it already holds.
-    /// </para>
-    /// </remarks>
     /// <param name="root">The app's top-level window.</param>
     /// <param name="automation">The session.</param>
     /// <param name="automationId">The MAUI <c>AutomationId</c> of the target.</param>
@@ -280,36 +222,6 @@ internal static class BridgeVerbRunner
     /// <summary>
     /// Sends a verb to whichever published element answers it, without naming one.
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// For the verbs that are about the app rather than about a control. Going back is the first
-    /// of them: the caller has no <c>AutomationId</c> for it, because the thing being asked for
-    /// is not a control - and on Windows the affordance that would carry one, a
-    /// <c>ToolbarItem</c>, is drawn into native chrome and cannot be activated by any automation
-    /// pattern at all.
-    /// </para>
-    /// <para>
-    /// <b>The first element to <i>perform</i> the verb wins, not the first to declare it.</b>
-    /// That distinction is the whole correctness of this method. Several elements can answer a
-    /// whole-app verb at once - every page that has been visited leaves a bridge target behind
-    /// until its registration is withdrawn - and the walk finds the oldest first. Stopping at
-    /// the first declaration meant asking a page that had long since been popped, taking its
-    /// refusal as the app's answer, and reporting a failure the live page would have handled.
-    /// </para>
-    /// <para>
-    /// So a refusal moves on to the next candidate, and only <see cref="HResults.S_OK"/> ends
-    /// the loop.
-    /// </para>
-    /// <para>
-    /// <b>That rule was written when a refusal could not be heard, and step 43 fixed the other
-    /// end.</b> A stale page used to answer <see cref="HResults.S_FALSE"/>, which UI Automation
-    /// delivers as <c>S_OK</c> - so the walk stopped at the first stale page it found, reported a
-    /// pop that never happened, and left the caller waiting for a page change that was never
-    /// coming. That was step 36, and it looked like flakiness scattered across unrelated areas.
-    /// A declining target now says <see cref="HResults.UIA_E_ELEMENTNOTAVAILABLE"/> - ask somebody
-    /// else - or <see cref="HResults.BRINELL_E_DECLINED"/>, and both cross intact.
-    /// </para>
-    /// </remarks>
     /// <param name="root">The app's top-level window.</param>
     /// <param name="automation">The session.</param>
     /// <param name="verb">The verb.</param>
@@ -357,20 +269,6 @@ internal static class BridgeVerbRunner
     /// <summary>
     /// Asks any element on the app's bridge a question about the app itself.
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// The reading counterpart of <see cref="InvokeAnywhere"/>, and it can be simpler than that
-    /// method for a reason worth stating: <b>staleness does not matter here.</b> A popped page
-    /// that still answers will report the <i>live</i> navigation stack, because that is what its
-    /// <c>Navigation</c> property refers to - so the first target to answer gives the same answer
-    /// as the last. Going back is the opposite: a stale page agrees to pop and then pops nothing,
-    /// which is why that method has to keep walking past a refusal.
-    /// </para>
-    /// <para>
-    /// Only <see cref="HResults.S_OK"/> counts as an answer. Anything else means this target did
-    /// not know, and the next one is asked.
-    /// </para>
-    /// </remarks>
     /// <param name="root">The app's top-level window.</param>
     /// <param name="automation">The session.</param>
     /// <param name="verb">The verb.</param>
@@ -423,13 +321,6 @@ internal static class BridgeVerbRunner
     /// <summary>
     /// Finds the pattern for an element, or explains which of the ways it was missing.
     /// </summary>
-    /// <remarks>
-    /// The capability list is not consulted. It says what the app <i>declared</i>; the verb's
-    /// own return value says what the app <i>did</i>, and asking for the declaration first would
-    /// cost a round trip to learn something the call is about to establish anyway. A verb sent
-    /// to an element that never declared it comes back <c>UIA_E_NOTSUPPORTED</c>, which is the
-    /// same answer with one less call.
-    /// </remarks>
     private static bool TryResolve(
         AutomationElement root,
         UIA3Automation automation,
@@ -486,18 +377,6 @@ internal static class BridgeVerbRunner
     }
 }
 
-/// <summary>
-/// What one verb did.
-/// </summary>
-/// <remarks>
-/// <see cref="Reason"/> is filled in on success too, and says so. A caller that logs the reason
-/// unconditionally then reports something true either way, which is what the bridge diagnostics
-/// want; a caller that only reports failures tests <see cref="Delivered"/> first.
-/// </remarks>
-/// <param name="Delivered">Whether the app performed the verb.</param>
-/// <param name="HResult">What the provider returned, for the cases that want the exact value.</param>
-/// <param name="Value">What the app returned, for <c>Exchange</c>; empty otherwise.</param>
-/// <param name="Reason">A sentence naming the verb, the outcome and what to do about it.</param>
 /// <summary>What a verb did, and how many targets were asked before this was the answer.</summary>
 /// <param name="Delivered">Whether the app performed the verb.</param>
 /// <param name="HResult">What the app answered, or what the client concluded.</param>

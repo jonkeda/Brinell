@@ -5,5 +5,4 @@ namespace Brinell.Core.Logging;
 /// </summary>
 public static class Placeholder
 {
-    // Logging infrastructure will be added here
 }

@@ -1,13 +1,11 @@
 namespace Brinell.Maui.Interfaces;
 
+// R9: MAUI owns this contract and does not derive from Core's pages. See
+// .docs/decisions/ad-010-maui-ahead-of-core.md.
 /// <summary>
-/// A page of the MAUI app under test: a root scope with load and busy state.
+/// A page of the MAUI app under test: a root scope with load and busy state. Checks
+/// (<c>Is*</c>, <c>Get*</c>) answer about now; waits (<c>Wait*</c>, <c>Assert*</c>) take a timeout.
 /// </summary>
-/// <remarks>
-/// MAUI owns this contract; it does not derive from Brinell.Core's page interfaces (see
-/// <c>.my/stale-readiness/design.md</c>, R9). Checks (<c>Is*</c>, <c>Get*</c>) answer about now;
-/// waits (<c>Wait*</c>, <c>Assert*</c>) take a timeout.
-/// </remarks>
 public interface IMauiPage : IMauiElementScope
 {
     /// <summary>The page's name; its root is located by this AutomationId.</summary>

@@ -28,7 +28,6 @@ public class ImageControl<TScope> : ClickableControlBase<TScope>
     public int GetNaturalHeight() => RunWithElement(e =>
         e.Evaluate<int>("img => img.naturalHeight"));
 
-    // Assertions
     public TScope AssertSource(string? expected, string? message = null) => RunAssert(e =>
     {
         var actual = e.GetDomAttribute("src");

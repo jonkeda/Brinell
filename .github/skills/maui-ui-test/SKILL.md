@@ -107,6 +107,9 @@ public class MediaElementTests
   session was lost, reported at once. A near-miss
   warning in the call log means the call passed only after trouble; set `BRINELL_CALL_LOG` to a
   folder to write every call to CSV.
+- Comments follow the policy in
+  [.github/instructions/csharp-comments.instructions.md](../../instructions/csharp-comments.instructions.md):
+  one `<summary>` line on the test class; no `<remarks>` restating what a test does.
 
 ## The never-list
 

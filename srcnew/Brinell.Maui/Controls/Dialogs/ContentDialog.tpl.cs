@@ -25,10 +25,6 @@ public partial class ContentDialog<TParent> : ContainerObjectBase<TParent, Conte
     protected override bool CacheContainerRoot => false;
 
     /// <inheritdoc />
-    /// <remarks>
-    /// A dialog answers for itself: it is shown over the page that raised it, which may be busy
-    /// (waiting for the answer) for as long as the dialog is open.
-    /// </remarks>
     protected override bool AsksParent => false;
 
     /// <inheritdoc />
@@ -59,7 +55,6 @@ public partial class ContentDialog<TParent> : ContainerObjectBase<TParent, Conte
     /// <summary>
     /// The dialog's title, as the platform publishes it.
     /// </summary>
-    /// <remarks>Read from the dialog's accessible name.</remarks>
     /// <param name="element">The dialog root.</param>
     /// <returns>The title.</returns>
     protected virtual string? GetTitleCore(IMauiElement? element)
@@ -85,10 +80,6 @@ public partial class ContentDialog<TParent> : ContainerObjectBase<TParent, Conte
     /// <summary>
     /// The text on every button the dialog is offering.
     /// </summary>
-    /// <remarks>
-    /// Worth asserting on its own: a confirmation with the wrong buttons still passes a test that
-    /// presses a button by name.
-    /// </remarks>
     /// <param name="element">The dialog root.</param>
     /// <returns>The button texts, in tree order.</returns>
     [GenerateComparisons(Comparison.SequenceEquals | Comparison.HasItem | Comparison.Count)]
@@ -101,10 +92,6 @@ public partial class ContentDialog<TParent> : ContainerObjectBase<TParent, Conte
     /// <summary>
     /// The question the dialog is asking, as the app phrased it.
     /// </summary>
-    /// <remarks>
-    /// Asked of the app rather than read from the dialog, so the app must report its alerts. The
-    /// dialog root is still resolved first, so the question is read while the dialog is open.
-    /// </remarks>
     /// <param name="element">The dialog root.</param>
     /// <returns>The message.</returns>
     /// <exception cref="NotSupportedException">

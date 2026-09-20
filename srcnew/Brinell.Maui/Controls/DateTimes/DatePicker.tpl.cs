@@ -64,11 +64,6 @@ public partial class DatePicker<TScope> : Base.FocusableControlBase<TScope>
     /// <summary>
     /// Parses a rendered date using the declared format.
     /// </summary>
-    /// <remarks>
-    /// When a format is declared through <see cref="WithFormat"/>, only that format is tried and a
-    /// mismatch throws. Otherwise the suite default is tried first and the culture's own patterns
-    /// second.
-    /// </remarks>
     protected System.DateTime? ParseDate(string? text)
     {
         var cleaned = DateTimeFormats.Clean(text);
@@ -101,9 +96,6 @@ public partial class DatePicker<TScope> : Base.FocusableControlBase<TScope>
     /// <summary>
     /// Reads the date the control is showing.
     /// </summary>
-    /// <remarks>
-    /// Reads the Value pattern on Windows, and the DateText child on platforms without one.
-    /// </remarks>
     protected virtual System.DateTime? ReadDate(IMauiElement? element)
     {
         if (element == null) return null;
@@ -123,9 +115,6 @@ public partial class DatePicker<TScope> : Base.FocusableControlBase<TScope>
     /// <summary>
     /// Sets the date.
     /// </summary>
-    /// <remarks>
-    /// Requires the app under test to declare the <c>SetDate</c> verb; throws otherwise.
-    /// </remarks>
     protected virtual void SetDateCore(IMauiElement element, System.DateTime? date, int? timeoutMs = null)
     {
         if (date == null) return;
