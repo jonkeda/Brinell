@@ -12,12 +12,14 @@ public interface IEditableTextControlObject<TScope> : ITextControlObject<TScope>
     /// If text is null, returns immediately (skip).
     /// </summary>
     /// <returns>The containing scope for fluent chaining.</returns>
+    [UatStep(UatEffectiveStepKeyword.When, "I enter {value} into {control}", CommandId = "Control.Enter")]
     TScope Enter(string? text, int? timeoutMs = null);
     
     /// <summary>
     /// Clear the control's text content.
     /// </summary>
     /// <returns>The containing scope for fluent chaining.</returns>
+    [UatStep(UatEffectiveStepKeyword.When, "I clear {control}", CommandId = "Control.Clear")]
     TScope Clear(int? timeoutMs = null);
     
     /// <summary>
@@ -25,6 +27,7 @@ public interface IEditableTextControlObject<TScope> : ITextControlObject<TScope>
     /// If text is null, returns immediately (skip).
     /// </summary>
     /// <returns>The containing scope for fluent chaining.</returns>
+    [UatStep(UatEffectiveStepKeyword.When, "I set {control} to {value}", CommandId = "Control.SetText")]
     TScope SetText(string? text, int? timeoutMs = null);
     
     /// <summary>

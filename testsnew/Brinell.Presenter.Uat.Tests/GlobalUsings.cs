@@ -1,4 +1,5 @@
 global using Xunit;
 global using Brinell.Core.Composition;
+global using Brinell.Core.Testing;
 global using Brinell.Maui.Interfaces;
 global using Microsoft.Extensions.DependencyInjection;

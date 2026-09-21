@@ -12,6 +12,7 @@ public interface ISelectorControlObject<TScope> : IControlObject<TScope>
     /// If text is null, returns immediately (skip).
     /// </summary>
     /// <returns>The containing scope for fluent chaining.</returns>
+    [UatStep(UatEffectiveStepKeyword.When, "I select {value} from {control}", CommandId = "Control.SelectByText")]
     TScope SelectByText(string? text, int? timeoutMs = null);
     
     /// <summary>
@@ -45,6 +46,7 @@ public interface ISelectorControlObject<TScope> : IControlObject<TScope>
     /// If expected is null, returns immediately (skip).
     /// </summary>
     /// <returns>The containing scope for fluent chaining.</returns>
+    [UatStep(UatEffectiveStepKeyword.Then, "{control} should have selected {value}", CommandId = "Control.AssertSelectedText")]
     TScope AssertSelectedText(string? expected, string? message = null, int? timeoutMs = null);
     
     /// <summary>

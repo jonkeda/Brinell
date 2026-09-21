@@ -26,5 +26,8 @@ The short list that must not be broken. Each links the decision that explains it
 - **MAUI is ahead of Core on purpose.** No adapters between the MAUI interfaces and Core's;
   Core is not changed ahead of the move-down.
   [AD-010](decisions/ad-010-maui-ahead-of-core.md)
+- **UAT step vocabulary is attribute-declared.** Control phrases live as `[UatStep]` on Core
+  interfaces; no hand-written phrase table. Every catalog comes from one discovery pass.
+  [AD-011](decisions/ad-011-uat-vocabulary-is-attribute-declared.md)
 - **The generator output is not hand-edited.** `.gen.cs` mirrors `.tpl.cs` through
   `Brinell.Generator`. [control-object](contracts/control-object.md)

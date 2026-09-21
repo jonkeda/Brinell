@@ -26,7 +26,7 @@ public sealed class UatWorkspaceService : IUatWorkspaceService
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(folderPath);
 
-        var catalog = CreatePreviewCatalog();
+        var catalog = UatSpecCommandCatalog.CreateDefault();
         List<UatFileLoadResult> files = [];
         List<UatScenarioLoadResult> scenarios = [];
         List<string> diagnostics = [];
@@ -125,29 +125,6 @@ public sealed class UatWorkspaceService : IUatWorkspaceService
         return path.Contains(
             $"{Path.DirectorySeparatorChar}ExpectedFailures{Path.DirectorySeparatorChar}",
             StringComparison.OrdinalIgnoreCase);
-    }
-
-    private static UatCommandCatalog CreatePreviewCatalog()
-    {
-        var catalog = new UatCommandCatalog();
-        catalog.Register(UatEffectiveStepKeyword.Given, "I am on the {page} page", "Builtin.Page.Open");
-        catalog.Register(UatEffectiveStepKeyword.Then, "I should be on the {page} page", "Builtin.Page.AssertOpen");
-        catalog.Register(UatEffectiveStepKeyword.When, "I tap {control}", "Builtin.Control.Tap", allowsTable: false);
-        catalog.Register(UatEffectiveStepKeyword.When, "I enter {value} into {control}", "Builtin.Control.Enter", allowsTable: false);
-        catalog.Register(UatEffectiveStepKeyword.When, "I set {control} to {value}", "Builtin.Control.SetText", allowsTable: false);
-        catalog.Register(UatEffectiveStepKeyword.When, "I clear {control}", "Builtin.Control.Clear", allowsTable: false);
-        catalog.Register(UatEffectiveStepKeyword.When, "I check {control}", "Builtin.Control.Check", allowsTable: false);
-        catalog.Register(UatEffectiveStepKeyword.When, "I uncheck {control}", "Builtin.Control.Uncheck", allowsTable: false);
-        catalog.Register(UatEffectiveStepKeyword.When, "I select {value} from {control}", "Builtin.Control.SelectByText", allowsTable: false);
-        catalog.Register(UatEffectiveStepKeyword.Then, "{control} should contain {value}", "Builtin.Control.AssertTextContains", allowsTable: false);
-        catalog.Register(UatEffectiveStepKeyword.Then, "{control} should equal {value}", "Builtin.Control.AssertText", allowsTable: false);
-        catalog.Register(UatEffectiveStepKeyword.Then, "{control} should be visible", "Builtin.Control.AssertVisible", allowsTable: false);
-        catalog.Register(UatEffectiveStepKeyword.Then, "{control} should be enabled", "Builtin.Control.AssertEnabled", allowsTable: false);
-        catalog.Register(UatEffectiveStepKeyword.Then, "{control} should be checked", "Builtin.Control.AssertChecked.True", allowsTable: false);
-        catalog.Register(UatEffectiveStepKeyword.Then, "{control} should be unchecked", "Builtin.Control.AssertChecked.False", allowsTable: false);
-        catalog.Register(UatEffectiveStepKeyword.Then, "{control} should have selected {value}", "Builtin.Control.AssertSelectedText", allowsTable: false);
-        catalog.Register(UatEffectiveStepKeyword.Then, "I should see {text}", "Builtin.Page.AssertTextVisible", allowsTable: false);
-        return catalog;
     }
 
     private static IReadOnlyList<string> FormatDiagnostics(IEnumerable<UatDiagnostic> diagnostics)

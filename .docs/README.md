@@ -29,6 +29,7 @@ How this differs from the other trees:
 - [AD-008: Gestures and semantic actions go through UI Automation](decisions/ad-008-gestures-and-semantic-actions-go-through-ui-automation.md)
 - [AD-009: App bugs stay failures](decisions/ad-009-app-bugs-stay-failures.md)
 - [AD-010: MAUI ahead of Core, on purpose](decisions/ad-010-maui-ahead-of-core.md)
+- [AD-011: UAT step vocabulary is declared by attributes on Core interfaces](decisions/ad-011-uat-vocabulary-is-attribute-declared.md)
 
 ## Contracts
 

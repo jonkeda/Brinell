@@ -93,3 +93,8 @@ identical; only *where the phrase is declared in code* moves.
 2. [02-attribute-catalog.md](02-attribute-catalog.md) — the attribute schema,
    the discovery algorithm, worked examples, and how both catalogs are built.
 3. [03-migration.md](03-migration.md) — staged rollout, back-compat, tests, risks.
+4. [04-implementation-plan.md](04-implementation-plan.md) — the executable plan:
+   deletes every hand-written phrase table, moves the `[UatStep]` vocabulary into
+   `Brinell.Core` on the control interfaces, reduces `Brinell.Uat` to a pure
+   execution engine that discovers the vocabulary, and lists the staged tasks,
+   tests, risks and files to touch.

@@ -41,4 +41,20 @@ public interface ITextControlObject<TScope> : IControlObject<TScope>
     /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
     /// <returns>The containing scope for fluent chaining.</returns>
     TScope AssertTextEmpty(bool? expected, string? message = null, int? timeoutMs = null);
+
+    /// <summary>
+    /// Assert text equals expected value.
+    /// If expected is null, returns immediately (skip).
+    /// </summary>
+    /// <returns>The containing scope for fluent chaining.</returns>
+    [UatStep(UatEffectiveStepKeyword.Then, "{control} should equal {value}", CommandId = "Control.AssertText")]
+    TScope AssertText(string? expected, string? message = null, int? timeoutMs = null);
+
+    /// <summary>
+    /// Assert text contains expected substring.
+    /// If expected is null, returns immediately (skip).
+    /// </summary>
+    /// <returns>The containing scope for fluent chaining.</returns>
+    [UatStep(UatEffectiveStepKeyword.Then, "{control} should contain {value}", CommandId = "Control.AssertTextContains")]
+    TScope AssertTextContains(string? expected, string? message = null, int? timeoutMs = null);
 }

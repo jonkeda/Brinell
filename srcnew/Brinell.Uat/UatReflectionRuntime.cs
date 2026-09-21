@@ -132,6 +132,8 @@ public sealed class UatReflectionRuntime
     public UatCommandCatalog CreateCommandCatalog()
     {
         var catalog = new UatCommandCatalog();
+
+        // The engine's three intrinsic page-graph verbs — defined once, here.
         catalog.Register(
             UatEffectiveStepKeyword.Given,
             "I am on the {page} page",
@@ -143,101 +145,26 @@ public sealed class UatReflectionRuntime
             "Builtin.Page.AssertOpen",
             handler: AssertPageAsync);
         catalog.Register(
-            UatEffectiveStepKeyword.When,
-            "I tap {control}",
-            "Builtin.Control.Tap",
-            allowsTable: false,
-            handler: (context, invocation, _) => InvokeControlMethodAsync(context, invocation, "control", "Click"));
-        catalog.Register(
-            UatEffectiveStepKeyword.When,
-            "I enter {value} into {control}",
-            "Builtin.Control.Enter",
-            allowsTable: false,
-            handler: (context, invocation, _) => InvokeControlMethodAsync(context, invocation, "control", "Enter", "value"));
-        catalog.Register(
-            UatEffectiveStepKeyword.When,
-            "I set {control} to {value}",
-            "Builtin.Control.SetText",
-            allowsTable: false,
-            handler: (context, invocation, _) => InvokeControlMethodAsync(context, invocation, "control", "SetText", "value"));
-        catalog.Register(
-            UatEffectiveStepKeyword.When,
-            "I clear {control}",
-            "Builtin.Control.Clear",
-            allowsTable: false,
-            handler: (context, invocation, _) => InvokeControlMethodAsync(context, invocation, "control", "Clear"));
-        catalog.Register(
-            UatEffectiveStepKeyword.When,
-            "I check {control}",
-            "Builtin.Control.Check",
-            allowsTable: false,
-            handler: (context, invocation, _) => InvokeControlMethodAsync(context, invocation, "control", "Check"));
-        catalog.Register(
-            UatEffectiveStepKeyword.When,
-            "I uncheck {control}",
-            "Builtin.Control.Uncheck",
-            allowsTable: false,
-            handler: (context, invocation, _) => InvokeControlMethodAsync(context, invocation, "control", "Uncheck"));
-        catalog.Register(
-            UatEffectiveStepKeyword.When,
-            "I select {value} from {control}",
-            "Builtin.Control.SelectByText",
-            allowsTable: false,
-            handler: (context, invocation, _) => InvokeControlMethodAsync(context, invocation, "control", "SelectByText", "value"));
-        catalog.Register(
-            UatEffectiveStepKeyword.Then,
-            "{control} should contain {value}",
-            "Builtin.Control.AssertTextContains",
-            allowsTable: false,
-            handler: (context, invocation, _) => InvokeControlMethodAsync(context, invocation, "control", "AssertTextContains", "value"));
-        catalog.Register(
-            UatEffectiveStepKeyword.Then,
-            "{control} should equal {value}",
-            "Builtin.Control.AssertText",
-            allowsTable: false,
-            handler: (context, invocation, _) => InvokeControlMethodAsync(context, invocation, "control", "AssertText", "value"));
-        catalog.Register(
-            UatEffectiveStepKeyword.Then,
-            "{control} should be visible",
-            "Builtin.Control.AssertVisible",
-            allowsTable: false,
-            handler: (context, invocation, _) => InvokeControlMethodAsync(context, invocation, "control", "AssertVisible", literalArgument: true));
-        catalog.Register(
-            UatEffectiveStepKeyword.Then,
-            "{control} should not be visible",
-            "Builtin.Control.AssertVisible.False",
-            allowsTable: false,
-            handler: (context, invocation, _) => InvokeControlMethodAsync(context, invocation, "control", "AssertVisible", literalArgument: false));
-        catalog.Register(
-            UatEffectiveStepKeyword.Then,
-            "{control} should be enabled",
-            "Builtin.Control.AssertEnabled",
-            allowsTable: false,
-            handler: (context, invocation, _) => InvokeControlMethodAsync(context, invocation, "control", "AssertEnabled", literalArgument: true));
-        catalog.Register(
-            UatEffectiveStepKeyword.Then,
-            "{control} should be checked",
-            "Builtin.Control.AssertChecked.True",
-            allowsTable: false,
-            handler: (context, invocation, _) => InvokeControlMethodAsync(context, invocation, "control", "AssertChecked", literalArgument: true));
-        catalog.Register(
-            UatEffectiveStepKeyword.Then,
-            "{control} should be unchecked",
-            "Builtin.Control.AssertChecked.False",
-            allowsTable: false,
-            handler: (context, invocation, _) => InvokeControlMethodAsync(context, invocation, "control", "AssertChecked", literalArgument: false));
-        catalog.Register(
-            UatEffectiveStepKeyword.Then,
-            "{control} should have selected {value}",
-            "Builtin.Control.AssertSelectedText",
-            allowsTable: false,
-            handler: (context, invocation, _) => InvokeControlMethodAsync(context, invocation, "control", "AssertSelectedText", "value"));
-        catalog.Register(
             UatEffectiveStepKeyword.Then,
             "I should see {text}",
             "Builtin.Page.AssertTextVisible",
             allowsTable: false,
             handler: AssertAnyControlTextContainsAsync);
+
+        // Everything control-shaped is discovered from [UatStep] on Brinell.Core interfaces
+        // and any decorated app control types found during page discovery.
+        UatCatalogBuilder.RegisterControlVerbs(
+            catalog,
+            ControlStepTypes(),
+            "Builtin.",
+            binding => (context, invocation, _) =>
+                InvokeControlMethodAsync(
+                    context,
+                    invocation,
+                    "control",
+                    binding.MethodName,
+                    binding.ValueArgumentName,
+                    binding.Literal));
 
         RegisterPhraseClassPhrases(
             catalog,
@@ -251,6 +178,14 @@ public sealed class UatReflectionRuntime
                     cancellationToken));
         RegisterRootPhrases(catalog);
         return catalog;
+    }
+
+    private IEnumerable<Type> ControlStepTypes()
+    {
+        var discovered = _pages.Values
+            .SelectMany(page => page.Controls)
+            .Select(control => control.Property.PropertyType);
+        return UatCatalogBuilder.CoreStepTypes.Concat(discovered).Distinct();
     }
 
     private static void RegisterPhraseClassPhrases(

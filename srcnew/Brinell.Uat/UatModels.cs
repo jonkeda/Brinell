@@ -29,13 +29,6 @@ public enum UatStepKeyword
     But
 }
 
-public enum UatEffectiveStepKeyword
-{
-    Given,
-    When,
-    Then
-}
-
 public sealed record UatDocument(
     string Title,
     IReadOnlyDictionary<string, string> Metadata,

@@ -17,6 +17,7 @@ public interface IClickableControlObject<TScope> : IControlObject<TScope>
     /// Perform a single click on the control.
     /// </summary>
     /// <returns>The containing scope for fluent chaining.</returns>
+    [UatStep(UatEffectiveStepKeyword.When, "I tap {control}", CommandId = "Control.Tap")]
     TScope Click(int? timeoutMs = null);
     
     /// <summary>
