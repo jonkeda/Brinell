@@ -13,6 +13,8 @@
     <ProjectReference Include="..\..\..\..\srcnew\Brinell.Maui.FlaUI\Brinell.Maui.FlaUI.csproj" />
     <!-- Loaded by name for an Android run; see Brinell.Maui.UITests.csproj. -->
     <ProjectReference Include="..\..\..\..\srcnew\Brinell.Maui.Appium\Brinell.Maui.Appium.csproj" />
+    <!-- UAT opt-in naming ([UatName]) for controls the name inference does not reach, e.g. Status. -->
+    <ProjectReference Include="..\..\..\..\srcnew\Brinell.Uat\Brinell.Uat.csproj" />
     <!-- Scenarios, the database seeder and the WireMock fake backend, shared with the integration tier. -->
     <ProjectReference Include="..\Brinell.Samples.Todo.TestSupport\Brinell.Samples.Todo.TestSupport.csproj" />
     <!-- The real API, started in process by the live tier (Live/LiveTodoAppFixture). -->

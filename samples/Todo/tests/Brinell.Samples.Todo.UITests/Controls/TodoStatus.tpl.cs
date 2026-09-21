@@ -1,3 +1,5 @@
+using Brinell.Core.Testing;
+
 namespace Brinell.Samples.Todo.UITests.Controls;
 
 /// <summary>
@@ -89,6 +91,7 @@ public partial class TodoStatus<TScope> : ComponentObjectBase<TScope, TodoStatus
     /// </remarks>
     /// <param name="expected">Open, In progress, Done or Overdue.</param>
     /// <param name="timeoutMs">How long to wait after each press.</param>
+    [UatStep(UatEffectiveStepKeyword.When, "I advance {control} to {value}")]
     public TodoStatus<TScope> AdvanceTo(string? expected, int? timeoutMs = null)
     {
         if (expected is null)
@@ -113,6 +116,15 @@ public partial class TodoStatus<TScope> : ComponentObjectBase<TScope, TodoStatus
 
         return this;
     }
+
+    /// <summary>Asserts the status name shown (see <see cref="AssertStatus"/>).</summary>
+    /// <remarks>The UAT verb <c>{control} should show status {value}</c>; delegates to the generated assert.</remarks>
+    /// <param name="expected">Open, In progress, Done or Overdue.</param>
+    /// <param name="message">An optional message for the failure.</param>
+    /// <param name="timeoutMs">How long to wait for the name.</param>
+    [UatStep(UatEffectiveStepKeyword.Then, "{control} should show status {value}")]
+    public TodoStatus<TScope> AssertShowsStatus(string? expected, string? message = null, int? timeoutMs = null)
+        => AssertStatus(expected, message, timeoutMs);
 
     #endregion
 }

@@ -1,3 +1,4 @@
+using Brinell.Core.Testing;
 using Brinell.Samples.Todo.UITests.Controls;
 using Brinell.Samples.Todo.UITests.Pages;
 
@@ -41,6 +42,7 @@ public sealed class TodoList : CollectionObjectBase<TodoListPage, TodoList, Todo
         => RunWait(() => (FindItem(row => row.Title.GetText() == title) is not null) == present, timeoutMs);
 
     /// <summary>Asserts a row with this title is shown (or, with <c>false</c>, is not).</summary>
+    [UatStep(UatEffectiveStepKeyword.Then, "{control} should have todo {value}")]
     public TodoList AssertRow(string title, bool present = true, int? timeoutMs = null)
     {
         if (!WaitRow(title, present, timeoutMs))

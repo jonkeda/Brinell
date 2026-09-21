@@ -1,5 +1,6 @@
 using Brinell.Samples.Todo.UITests.Containers;
 using Brinell.Samples.Todo.UITests.Controls;
+using Brinell.Uat;
 
 namespace Brinell.Samples.Todo.UITests.Pages;
 
@@ -46,6 +47,7 @@ public class TodoDetailPage(IMauiTestContext context) : PageObjectBase<TodoDetai
     public Label<TodoDetailPage> Title => new(this, "TodoDetail_Title");
 
     /// <summary>The status, changeable here with Next.</summary>
+    [UatName("Status")]
     public TodoStatus<TodoDetailPage> Status => new(this, "TodoDetail_Status");
 
     /// <summary>The Details card: due, created, updated.</summary>

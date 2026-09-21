@@ -1,5 +1,6 @@
 using Brinell.Samples.Todo.UITests.Containers;
 using Brinell.Samples.Todo.UITests.Controls;
+using Brinell.Uat;
 
 namespace Brinell.Samples.Todo.UITests.Pages;
 
@@ -63,6 +64,7 @@ public class TodoEditPage(IMauiTestContext context) : PageObjectBase<TodoEditPag
     public DatePicker<SectionCard<TodoEditPage>> DueDate => new(ScheduleCard, "TodoEdit_Due");
 
     /// <summary>The status, set with Next.</summary>
+    [UatName("Status")]
     public TodoStatus<TodoEditPage> Status => new(this, "TodoEdit_Status");
 
     /// <summary>Replaces the title.</summary>

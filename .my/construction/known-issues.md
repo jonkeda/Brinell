@@ -203,3 +203,36 @@ surface), and the nav helper `ConstructionFixture.TrySelectTab` was updated for
 srcnew's Click semantics (raw physical `Click()` throws on Windows; tabs are now
 activated by matching `TabMenuView_Grid` on its caption and `Invoke()`-ing it).
 
+---
+
+### UPDATE (2026-09-21) — the "Invoke no-op" was a misdiagnosis; bundle refreshed to `.2`; gesture bridge removed
+
+Two corrections to the analysis above:
+
+1. **The peer's `Invoke()` is NOT a no-op.** Construction's
+   `LayoutAutomationPeer` (`Platforms/Windows/Automation/`) implements
+   `IInvokeProvider` and its `Invoke()` executes `container.Command.Execute(param)`
+   directly (dispatcher-queued) for any `ClickableContainer`. So `Invoke()` **does**
+   fire the gear's command — the earlier "`TouchBehavior` pointer command can't be
+   raised" theory was wrong for this app; the custom peer bypasses `TouchBehavior`
+   entirely. This is the same route the bottom tabs use. The gear's real blocker is
+   **downstream of activation**: the command runs but navigation to `SettingsView`
+   still does not occur — a deeper app-side issue, still unresolved.
+2. **A gesture-bridge experiment (`BrinellClickableContainerGestures`) was removed.**
+   Publishing a `Tap` verb via the Brinell UIA bridge routed to the *same*
+   `container.Command.Execute` the peer already calls — fully redundant. Per the
+   Option-A decision the bridge sink (`ClickableContainerTapSink`) and its
+   `MauiProgram` wiring were deleted; the `LayoutAutomationPeer` `IInvokeProvider`
+   is kept (it drives both tabs and the gear command). `MorePage.OpenSettings`
+   drives the gear via `Invoke()` first, `Select()` fallback.
+
+**Binary mode restored.** The committed bundle was rebaked to
+`lib/brinell/0.1.0-construction.2` (Brinell commit `919790f`, `dirtySource:false`),
+which carries the srcnew `IMauiElement.Invoke()`/`Swipe()` verbs and the
+`IMauiItemObject<,>` collection API. `-p:UseBrinellSource=false` (the CI default)
+now builds and runs green (Dashboard 3/3). The Option-A source-mode branch note
+above is superseded — the suite runs on the binary bundle again.
+
+`SettingsSmokeTests.Settings_PageLoads_KeyControlsExist` stays `[Fact(Skip=…)]`:
+still Option **(B)** (app-side) — the gear command fires but does not navigate.
+

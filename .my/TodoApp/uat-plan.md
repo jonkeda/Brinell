@@ -10,7 +10,9 @@ Goal: two connected deliverables for the Todo showcase.
    attribute-driven UAT structure** (AD-011), bound to the Todo page objects that already
    exist.
 
-Status: plan / ready to execute.
+Status: done. Implemented 2026-09-21 — `Brinell.Samples.Todo.Uat` project with four
+`.uat.md` scenarios (all passing) and the `todo-user-journeys.md` checklist shipped inside
+the project.
 Date: 2026-09-21
 Area: `samples/Todo/` (journeys doc + new `Brinell.Samples.Todo.Uat` project).
 
