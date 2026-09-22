@@ -53,6 +53,102 @@ public sealed class PresenterUserSettingsServiceTests
     }
 
     [Fact]
+    public void Theme_RoundTripsThroughTheSettingsFile()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "BrinellPresenterTheme", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+
+        try
+        {
+            var settingsPath = Path.Combine(root, "settings.json");
+            var service = new PresenterUserSettingsService(settingsPath);
+
+            Assert.Equal(PresenterTheme.System, service.Load().Theme);
+
+            service.Save(new PresenterUserSettings
+            {
+                LastOpenedFolder = root,
+                RecentFolders = [root],
+                Theme = PresenterTheme.Dark
+            });
+
+            var reloaded = service.Load();
+            Assert.Equal(PresenterTheme.Dark, reloaded.Theme);
+            Assert.Equal(root, reloaded.LastOpenedFolder);
+            Assert.Equal(root, Assert.Single(reloaded.RecentFolders));
+
+            // Written by name, so the file stays readable and survives enum reordering.
+            Assert.Contains("\"Dark\"", File.ReadAllText(settingsPath), StringComparison.Ordinal);
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+            {
+                Directory.Delete(root, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
+    public void Theme_DefaultsToSystemForASettingsFileWrittenBeforeTheThemeExisted()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "BrinellPresenterLegacyTheme", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+
+        try
+        {
+            var settingsPath = Path.Combine(root, "settings.json");
+            File.WriteAllText(
+                settingsPath,
+                """
+                {
+                  "LastOpenedFolder": "C:/Workspace",
+                  "RecentFolders": [ "C:/Workspace" ]
+                }
+                """);
+
+            var settings = new PresenterUserSettingsService(settingsPath).Load();
+
+            Assert.Equal(PresenterTheme.System, settings.Theme);
+            Assert.Equal("C:/Workspace", settings.LastOpenedFolder);
+            Assert.Single(settings.RecentFolders);
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+            {
+                Directory.Delete(root, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
+    public void RecordOpenedFolder_KeepsTheSavedTheme()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "BrinellPresenterThemeKeep", Guid.NewGuid().ToString("N"));
+        var workspace = Path.Combine(root, "Workspace");
+        Directory.CreateDirectory(workspace);
+
+        try
+        {
+            var settingsPath = Path.Combine(root, "settings.json");
+            var service = new PresenterUserSettingsService(settingsPath);
+            service.Save(new PresenterUserSettings { Theme = PresenterTheme.Dark });
+
+            service.RecordOpenedFolder(workspace);
+
+            Assert.Equal(PresenterTheme.Dark, service.Load().Theme);
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+            {
+                Directory.Delete(root, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
     public void PresenterShell_LoadsFirstExistingRecentFolderOnStartup()
     {
         var root = Path.Combine(Path.GetTempPath(), "BrinellPresenterStartup", Guid.NewGuid().ToString("N"));

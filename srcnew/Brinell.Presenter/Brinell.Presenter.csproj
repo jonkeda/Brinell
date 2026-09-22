@@ -22,6 +22,14 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Maui.Controls" />
     <PackageReference Include="Microsoft.Extensions.Logging.Debug" />
+    <!-- Version is pinned centrally in Directory.Packages.props - do not add one here. -->
+    <PackageReference Include="CommunityToolkit.Maui" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Color is PresenterAccent, matching Resources/Styles/Colors.xaml. -->
+    <MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#2563EB" />
+    <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#2563EB" BaseSize="128,128" />
   </ItemGroup>
 
   <ItemGroup>

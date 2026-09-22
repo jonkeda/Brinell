@@ -1,6 +1,41 @@
 # Development Roadmap
 
+Status: Delivered through Phase 13; Phase 14 open, Phase 15 partly open
+Date: 2026-07-07, status pass 2026-09-21
+Area: `srcnew/Brinell.Uat`, `srcnew/Brinell.Presenter`
+Related:
+
+- [Runner code binding](03%20runner%20code%20binding.md) — the binding model as shipped
+- [UAT phrases and flows](../../docs/guides/uat-phrases-and-flows.md)
+- [The Gherkin language, formalised](../uat/attribute-catalog/01-grammar.md)
+
 This roadmap turns the Markdown-driven UAT runner idea into a first MAUI-capable implementation.
+
+## Phase Status At A Glance
+
+| Phase | State | Note |
+| --- | --- | --- |
+| 1 Core UAT model | ✅ | |
+| 2 Markdown parser | ✅ | Grammar later formalised — see Phase 2 |
+| 3 Grammar validation | ✅ | Diagnostics carry `UATB*` / `UATD*` codes |
+| 4 Command binding core | ✅ | |
+| 5 UAT attributes | ✅ **changed** | `[UatStep]` added; see Phase 5 |
+| 6 Assembly discovery | ✅ | `uat.config.md` shipped, 8 in the tree |
+| 7 Built-in MAUI commands | ✅ **changed** | Now discovered, not registered; see Phase 7 |
+| 8 Execution engine | ✅ | Auto and step modes both ship |
+| 9 Diagnostics | ✅ | |
+| 10 MAUI runner app shell | ✅ | Shipped as `Brinell.Presenter` |
+| 11 MAUI runner execution UI | ✅ | Presenter run toolbar, step mode, delay |
+| 12 First real app smoke | ✅ | MAUI sample + an intentional failing scenario |
+| 13 Reports | 🟡 partial | Per-scenario JSON + artifact manifest; no Markdown report, no export button |
+| 14 CI and headless | 🟡 partial | Runs headless **as xUnit**; no CLI entry point, no CLI flags |
+| 15 Hardening | 🟡 partial | Catalog browser and validate-without-running shipped in Presenter; no dry-run/parse-only mode |
+
+The runner was not built as one MAUI app plus a CLI, as Phases 10–14 assumed. It
+became **two front ends over one core**: `Brinell.Presenter` for interactive and
+demo use, and xUnit test projects (`Brinell.*.Uat.Tests`) for CI. That is why
+Phase 14's CLI never appeared — the CI half of its job was already done by
+`dotnet test`, and only the standalone command-line entry point is missing.
 
 ## Goal
 
@@ -58,7 +93,15 @@ Acceptance checks:
 
 ## Phase 2: Markdown Parser
 
-Implement the grammar from `02 uat markdown grammar.md`.
+Implement the grammar from
+[01-grammar.md](../uat/attribute-catalog/01-grammar.md).
+
+> **Note (2026-09):** this phase originally cited `02 uat markdown grammar.md`,
+> which was never written at the time. The grammar the parser actually accepts was
+> written down afterwards, from the shipped parser, as `01-grammar.md` in the
+> attribute-catalog folder — document grammar (§1), phrase mini-language (§2) and
+> lexicon (§3).
+> [02](02%20uat%20markdown%20grammar.md) now exists as a pointer to it.
 
 Deliverables:
 
@@ -135,6 +178,8 @@ Deliverables:
 - `[UatPhrase]`
 - `[UatAction]`
 - `[UatIgnore]`
+- `[UatPhraseClass]` — added during implementation
+- `[UatStep]` — **added 2026-09**, see below
 
 Acceptance checks:
 
@@ -142,6 +187,15 @@ Acceptance checks:
 - `[UatIgnore]` prevents discovery.
 - `[UatPhrase]` methods become command catalog entries.
 - No alias support exists in v1.
+
+> **Superseded (2026-09):** this set had no way to declare a *built-in* phrase, so
+> the built-in vocabulary went into hand-written tables instead — one in the
+> runtime, one in the spec catalog, one in the Presenter. `[UatStep]` closed that
+> gap: it lives in `Brinell.Core/Testing`, sits on the control interface method it
+> calls, and all three tables were deleted. `[UatAction]` survives but marks a
+> capability only — it contributes no phrase. See
+> [03](03%20runner%20code%20binding.md) §UAT Attributes and
+> [AD-011](../../.docs/decisions/ad-011-uat-vocabulary-is-attribute-declared.md).
 
 ## Phase 6: Assembly Discovery
 
@@ -173,25 +227,37 @@ Implement the first MAUI command set.
 
 These commands call existing Brinell PageObject and ControlObject APIs. They do not implement platform automation directly.
 
-Deliverables:
+Deliverables — as shipped, 18 phrases:
 
-- App running assertion.
-- Page open assertion.
-- Tap command.
-- Enter text command.
-- Table-driven form entry command.
-- Select command.
-- Check command.
-- Uncheck command.
-- Text visible assertion.
-- Control value assertion.
-- Table visible assertion.
+- Page open and page assertion (`I am on the {page} page`, `I should be on the {page} page`).
+- Text visible assertion (`I should see {text}`).
+- Tap, enter, set, clear.
+- Select, check, uncheck.
+- Text equality and contains assertions.
+- Visible / not visible, enabled, checked / unchecked, selected-value assertions.
 
 Acceptance checks:
 
 - Commands bind only to compatible controls.
 - Commands produce structured step results.
 - Failed commands include page/control/method diagnostics.
+
+> **Superseded (2026-09):** two of the original deliverables were dropped rather
+> than built. There is no **app running assertion** — a scenario starts from a
+> page verb — and no built-in **table-driven form entry** or **table visible
+> assertion**; a step that needs a table is a custom `[UatPhrase]` method reading
+> `invocation.Table`. The "control value assertion" shipped as two phrases,
+> `should equal` and `should contain`.
+>
+> More importantly, these are no longer "MAUI commands" at all. They are declared
+> once on the `Brinell.Core` control interfaces and inherited by every technology
+> that implements them — which is what made WPF, WinForms, Blazor, HTML and
+> STRIDE UAT possible without re-declaring the vocabulary six times. See
+> [11](11%20uat%20for%20brinell%20dotnet%20techs.md).
+>
+> The authoritative phrase list is
+> [uat-phrases-and-flows.md](../../docs/guides/uat-phrases-and-flows.md)
+> §Built-In Phrases.
 
 ## Phase 8: Execution Engine
 
@@ -326,6 +392,15 @@ Acceptance checks:
 - Reports can be exported after a run.
 - Reports include enough detail for CI artifacts later.
 
+> **Partly delivered (2026-09).** What ships: a per-scenario `__result.json`
+> written to `UatConfig.Reporting.OutputDirectory` and registered as a
+> `uat-scenario` artifact in the shared artifact manifest, plus screenshots and
+> runtime traces gated by `ScreenshotOnFailure` / `IncludeRuntimeTrace` in
+> `uat.config.md`. What does not: a **Markdown** report, and any "export report
+> after a run" action — reports are a by-product of a run, not something a user
+> asks for. See [reporting-artifacts.md](../../docs/guides/reporting-artifacts.md)
+> §UAT Reporting.
+
 ## Phase 14: CI And Headless Preparation
 
 Prepare the core for non-UI runner execution.
@@ -343,6 +418,18 @@ Acceptance checks:
 - A UAT suite can run without the MAUI runner UI.
 - Failed scenarios produce a non-zero exit code.
 - JSON output can be consumed by CI.
+
+> **Partly delivered (2026-09) — and the shape changed.** All three acceptance
+> checks pass, but none of them via a headless *runner*. A UAT suite runs in CI as
+> an **xUnit test project**: `UatScenarioTestBase` turns `Scenarios/**/*.uat.md`
+> into a theory, so `dotnet test` gives the headless run, the non-zero exit code
+> and the JSON artifacts for free. Seven such projects exist, one per target; the
+> gates are listed in [11](11%20uat%20for%20brinell%20dotnet%20techs.md) §Test Gates.
+>
+> Nothing on the deliverables list was built: there is no headless entry point, no
+> command-line file/folder or profile selection. Whether a standalone CLI is still
+> wanted is an open question, not a pending task — `dotnet test` covers CI, and
+> the Presenter covers interactive use.
 
 ## Phase 15: Hardening
 
@@ -363,6 +450,17 @@ Acceptance checks:
 - Users can see why a step will bind before running it.
 - Users can validate a folder without launching the app.
 - Common binding mistakes produce direct, useful messages.
+
+> **Partly delivered (2026-09).** All three acceptance checks are met by the
+> Presenter rather than by modes on a runner: it has a **Command Catalog** tab and
+> a **Discovery** tab (so you can see the vocabulary and the resolved pages and
+> controls before running), and a **Validate** button that parses and binds a
+> folder without launching the app under test. Binding failures carry
+> `UATB001`–`UATB004`, and a missing page or control names what *was* found.
+>
+> Not built as such: named **dry-run** and **parse-only** modes, and improved
+> table-schema diagnostics. Given that Validate covers the use case, these are
+> probably obsolete rather than pending.
 
 ## Suggested First MVP
 

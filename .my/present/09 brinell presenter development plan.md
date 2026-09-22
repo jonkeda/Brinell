@@ -1,5 +1,29 @@
 # Brinell Presenter Development Plan
 
+Status: Delivered — shipped, with the UI shape superseded by [10](10%20presenter%20tabbed%20tree%20redesign.md)
+Date: 2026-07-07, status pass 2026-09-21
+Area: `srcnew/Brinell.Presenter`, `testsnew/Brinell.Presenter.Uat.Tests`
+Related:
+
+- [Presenter current UI and execution design](10%20presenter%20tabbed%20tree%20redesign.md) — what the UI actually became
+- [UAT runner UI design](01%20uat%20runner%20ui%20design.md) — the original sketch
+- [UAT for Brinell .NET techs](11%20uat%20for%20brinell%20dotnet%20techs.md)
+
+> **Delivered (2026-09).** `Brinell.Presenter` ships, and it dogfoods itself:
+> `testsnew/Brinell.Presenter.Uat.Tests` drives the Presenter through the Markdown
+> UAT runner, as this plan intended.
+>
+> Two things landed differently, both worth knowing before reading on:
+>
+> 1. **The UI is a tabbed tree, not the flat file/scenario/step lists sketched
+>    here.** [10](10%20presenter%20tabbed%20tree%20redesign.md) is the current
+>    design; where the two disagree, 10 wins.
+> 2. **The Presenter no longer owns a phrase table.** It had a third copy of the
+>    built-in vocabulary; `UatWorkspaceService` now calls
+>    `UatSpecCommandCatalog.CreateDefault()` and gets the same projection as
+>    everything else. See
+>    [AD-011](../../.docs/decisions/ad-011-uat-vocabulary-is-attribute-declared.md).
+
 This document defines the first build plan for `Brinell.Presenter`, the MAUI application that presents, validates, and runs Markdown UAT suites.
 
 ## Readiness
@@ -161,6 +185,25 @@ Responsibilities:
 
 The first implementation can be local and direct. Avoid a plugin system in the UI MVP.
 
+> **As shipped (2026-09).** The responsibilities all landed; three of the four
+> names did not, and one type was dropped:
+>
+> | Planned | Shipped |
+> | --- | --- |
+> | `IUatWorkspaceService` | `IUatWorkspaceService` |
+> | `IFilePickerService` | `IFolderPickerService` — folder-only; there is no Open File |
+> | `IUatPresenterRuntimeService` | folded into `UatWorkspaceService` |
+> | `IUatExecutionCoordinator` | `IUatExecutionService` |
+>
+> Plus two the plan did not foresee: `UatTargetRegistry` (validates the six target
+> names) and `PresenterUserSettingsService` (recent folders).
+>
+> The ViewModels went the same way: `PresenterShellViewModel`, `UatFileViewModel`,
+> `UatScenarioViewModel` and `UatStepViewModel` shipped as named;
+> `UatWorkspaceViewModel` became `UatWorkspaceNodeViewModel` (the tree of
+> [10](10%20presenter%20tabbed%20tree%20redesign.md)), and there is no
+> `UatDiagnosticsViewModel` — diagnostics are tabs on the shell instead.
+
 ## Runtime Scope For First UI
 
 Start with parse, bind, and display for any folder containing `.uat.md` files.
@@ -218,6 +261,23 @@ StatusSummaryLabel
 
 The Presenter UATs should use these IDs through PageObjects.
 
+> **Superseded (2026-09).** The discipline held — every important control has an
+> `AutomationId` — but the list changed with the tabbed-tree redesign. Kept as
+> named: `PresenterRoot`, `OpenFolderButton`, `ReloadButton`, `ValidateButton`,
+> `StopButton`. Renamed: `RunButton`, `NextButton`, `DelayMillisecondsInput`,
+> `WorkspaceSummaryLabel`. Dropped: `OpenFileButton` (folder-only), and the three
+> flat lists, replaced by one `WorkspaceTree`. Added: `OpenRecentButton`,
+> `RecentFoldersList`, and a tab button per panel — `TreeTabButton`,
+> `ConfigTabButton`, `DiagnosticsTabButton`, `DiscoveryTabButton`,
+> `CommandCatalogTabButton`.
+>
+> Those last two are worth noting: the Discovery and Command Catalog tabs are
+> where [08](08%20uat%20diagnostics%20and%20config%20hardening.md)'s discovery
+> report and command catalog report ended up, and between them they satisfy
+> [04](04%20development%20roadmap.md)'s Phase 15 "command catalog browser".
+>
+> Current IDs live in `srcnew/Brinell.Presenter/Views/PresenterPage.xaml`.
+
 ## Presenter UAT Project
 
 Create a UAT project for Presenter itself:
@@ -240,6 +300,17 @@ testsnew/Brinell.Presenter.Uat.Tests/
 ```
 
 This is dogfooding: Presenter should be tested by the Markdown UAT runner.
+
+> **Delivered (2026-09), near enough to the sketch.** The project exists with
+> `uat.config.md`, `PageObjects/PresenterPage.cs`, `Runtime/` and three scenarios:
+> `load-workspace.uat.md`, `validate-workspace.uat.md` and
+> `run-selected-sample.uat.md` — the third exercises a run rather than step mode
+> specifically. `Runtime/` holds `PresenterFixture`, `PresenterUatCollection`,
+> `PresenterUatScenarioTests` and `PresenterWorkspaceTreeTests`.
+>
+> It also grew a `Services/` folder the sketch did not have, with ordinary unit
+> tests for the workspace service, user settings and target handling. So the
+> project is the dogfooding UAT *and* the Presenter's unit test project.
 
 ## First Presenter UATs
 

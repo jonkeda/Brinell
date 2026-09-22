@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "Brinell.Samples.Todo.Api": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:53640;http://localhost:53641"
+    }
+  }
+}

@@ -78,13 +78,27 @@ public sealed class UatWorkspaceNodeViewModel : ViewModelBase
             if (SetProperty(ref _isExpanded, value))
             {
                 OnPropertyChanged(nameof(ExpansionText));
+                OnPropertyChanged(nameof(ExpansionGlyph));
                 OnPropertyChanged(nameof(DisplayText));
                 _expansionChanged?.Invoke(this);
             }
         }
     }
 
+    /// <summary>
+    /// The ASCII expansion marker, used <b>only</b> by <see cref="DisplayText"/>.
+    /// </summary>
+    /// <remarks>
+    /// The visible row binds <see cref="ExpansionGlyph"/> instead. Keeping the two apart is what
+    /// stops a private-use-area codepoint leaking into <c>WorkspaceTreeText</c>, which the UAT
+    /// suite asserts against.
+    /// </remarks>
     public string ExpansionText => CanExpand ? (IsExpanded ? "v" : ">") : string.Empty;
+
+    /// <summary>The chevron the row's toggle button shows. Never reaches <see cref="DisplayText"/>.</summary>
+    public string ExpansionGlyph => CanExpand
+        ? (IsExpanded ? PresenterIcons.ChevronDown : PresenterIcons.ChevronRight)
+        : string.Empty;
 
     public bool IsRunnable => Kind is UatWorkspaceNodeKind.Folder
         or UatWorkspaceNodeKind.MarkdownFile
@@ -104,6 +118,22 @@ public sealed class UatWorkspaceNodeViewModel : ViewModelBase
         _ => "[ ]"
     };
 
+    /// <summary>
+    /// The glyph the row's icon label shows. The <see cref="Icon"/> above stays ASCII for
+    /// <see cref="DisplayText"/>; this is the same meaning drawn in the Segoe icon font.
+    /// </summary>
+    public string IconGlyph => Kind switch
+    {
+        UatWorkspaceNodeKind.Folder => AggregateStatusGlyph() ?? PresenterIcons.KindFolder,
+        UatWorkspaceNodeKind.MarkdownFile => AggregateStatusGlyph() ?? PresenterIcons.KindMarkdown,
+        UatWorkspaceNodeKind.WorkflowConfig => PresenterIcons.KindConfig,
+        UatWorkspaceNodeKind.File => PresenterIcons.KindFile,
+        UatWorkspaceNodeKind.Suite => AggregateStatusGlyph() ?? PresenterIcons.KindSuite,
+        UatWorkspaceNodeKind.Scenario => UatStatusPresentation.Glyph(Scenario?.Status ?? "wait"),
+        UatWorkspaceNodeKind.Step => UatStatusPresentation.Glyph(Step?.Status ?? "wait"),
+        _ => PresenterIcons.KindFile
+    };
+
     public string StatusDescription => Kind switch
     {
         UatWorkspaceNodeKind.Scenario => Scenario?.StatusDescription ?? UatStatusPresentation.Description("wait"),
@@ -115,17 +145,34 @@ public sealed class UatWorkspaceNodeViewModel : ViewModelBase
         _ => "File"
     };
 
-    public Color IconColor => Kind switch
+    /// <summary>
+    /// Resolved against the effective theme every time it is read, so the shell only has
+    /// to re-raise <see cref="INotifyPropertyChanged.PropertyChanged" /> when the theme
+    /// flips - see <see cref="RefreshThemeColors" />.
+    /// </summary>
+    public Color IconColor
     {
-        UatWorkspaceNodeKind.Scenario => Scenario?.StatusColor ?? UatStatusPresentation.Color("wait"),
-        UatWorkspaceNodeKind.Step => Step?.StatusColor ?? UatStatusPresentation.Color("wait"),
-        _ when AggregateStatus() is { } status => UatStatusPresentation.Color(status),
-        UatWorkspaceNodeKind.WorkflowConfig => Color.FromArgb("#2563EB"),
-        UatWorkspaceNodeKind.MarkdownFile => Color.FromArgb("#0F766E"),
-        UatWorkspaceNodeKind.Suite => Color.FromArgb("#7C3AED"),
-        UatWorkspaceNodeKind.Folder => Color.FromArgb("#475569"),
-        _ => Color.FromArgb("#64748B")
-    };
+        get
+        {
+            var theme = UatStatusPresentation.CurrentTheme;
+            return Kind switch
+            {
+                UatWorkspaceNodeKind.Scenario => UatStatusPresentation.Color(Scenario?.Status ?? "wait", theme),
+                UatWorkspaceNodeKind.Step => UatStatusPresentation.Color(Step?.Status ?? "wait", theme),
+                _ when AggregateStatus() is { } status => UatStatusPresentation.Color(status, theme),
+                _ => UatStatusPresentation.KindColor(Kind, theme)
+            };
+        }
+    }
+
+    /// <summary>
+    /// Re-reads <see cref="IconColor" /> against the current theme. The shell calls this
+    /// on every node when the effective theme changes.
+    /// </summary>
+    public void RefreshThemeColors()
+    {
+        OnPropertyChanged(nameof(IconColor));
+    }
 
     public string DisplayText => $"{new string(' ', Depth * 2)}{ExpansionText.PadRight(1)} {Icon} {Name}";
 
@@ -136,6 +183,7 @@ public sealed class UatWorkspaceNodeViewModel : ViewModelBase
         Children.Add(child);
         OnPropertyChanged(nameof(CanExpand));
         OnPropertyChanged(nameof(ExpansionText));
+        OnPropertyChanged(nameof(ExpansionGlyph));
         OnPropertyChanged(nameof(DisplayText));
     }
 
@@ -146,10 +194,12 @@ public sealed class UatWorkspaceNodeViewModel : ViewModelBase
             or nameof(UatStepViewModel.Status)
             or nameof(UatStepViewModel.StatusIcon)
             or nameof(Icon)
+            or nameof(IconGlyph)
             or nameof(IconColor)
             or nameof(DisplayText))
         {
             OnPropertyChanged(nameof(Icon));
+            OnPropertyChanged(nameof(IconGlyph));
             OnPropertyChanged(nameof(IconColor));
             OnPropertyChanged(nameof(StatusDescription));
             OnPropertyChanged(nameof(DisplayText));
@@ -168,6 +218,12 @@ public sealed class UatWorkspaceNodeViewModel : ViewModelBase
     {
         var status = AggregateStatus();
         return status is null ? null : UatStatusPresentation.Icon(status);
+    }
+
+    private string? AggregateStatusGlyph()
+    {
+        var status = AggregateStatus();
+        return status is null ? null : UatStatusPresentation.Glyph(status);
     }
 
     private string? AggregateStatus()

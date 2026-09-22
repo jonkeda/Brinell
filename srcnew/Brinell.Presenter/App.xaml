@@ -4,23 +4,10 @@
              x:Class="Brinell.Presenter.App">
     <Application.Resources>
         <ResourceDictionary>
-            <Color x:Key="PresenterBackground">#F6F7F9</Color>
-            <Color x:Key="PresenterPanel">#FFFFFF</Color>
-            <Color x:Key="PresenterBorder">#D9DEE7</Color>
-            <Color x:Key="PresenterText">#1F2937</Color>
-            <Color x:Key="PresenterMuted">#667085</Color>
-            <Color x:Key="PresenterAccent">#2563EB</Color>
-
-            <Style TargetType="Label">
-                <Setter Property="TextColor" Value="{StaticResource PresenterText}" />
-                <Setter Property="FontSize" Value="13" />
-            </Style>
-
-            <Style TargetType="Button">
-                <Setter Property="FontSize" Value="12" />
-                <Setter Property="Padding" Value="10,6" />
-                <Setter Property="CornerRadius" Value="4" />
-            </Style>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Resources/Styles/Colors.xaml" />
+                <ResourceDictionary Source="Resources/Styles/Styles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

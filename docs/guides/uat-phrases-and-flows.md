@@ -103,9 +103,19 @@ Common diagnostics:
 
 ## Built-In Phrases
 
-`UatReflectionRuntime.CreateCommandCatalog()` registers the built-in runtime
-phrases. `UatSpecCommandCatalog.CreateDefault()` registers the equivalent
-binding-only phrases for spec format tests.
+There are 18 built-in phrases, and they come from two different places.
+
+The **three page verbs** are registered by hand in
+`UatReflectionRuntime.CreateCommandCatalog()` (and, phrases-only, in
+`UatSpecCommandCatalog.RegisterDefault()`). They are not control methods, so
+they have nowhere else to live.
+
+The **fifteen control verbs** are not registered anywhere. Each is declared by a
+`[UatStep]` attribute on the `Brinell.Core` control interface method it calls,
+and `UatCatalogBuilder` discovers them into both catalogs on the same pass — so
+the runtime surface and the spec surface cannot drift. To add a control verb,
+put a `[UatStep]` on the method; do not add a row to a table. See
+[AD-011](../../.docs/decisions/ad-011-uat-vocabulary-is-attribute-declared.md).
 
 | Keyword | Phrase | Runtime command |
 | --- | --- | --- |
@@ -337,6 +347,9 @@ binding and execution code does not consume them automatically.
 
 ## Source Files
 
+- `srcnew/Brinell.Core/Testing/UatStepAttribute.cs` — where built-in control phrases are declared
+- `srcnew/Brinell.Core/Interfaces/*.cs` — the `[UatStep]` declarations themselves
+- `srcnew/Brinell.Uat/UatCatalogBuilder.cs` — the discovery pass and both projections
 - `srcnew/Brinell.Uat/UatMarkdownParser.cs`
 - `srcnew/Brinell.Uat/UatCommandCatalog.cs`
 - `srcnew/Brinell.Uat/UatBinder.cs`

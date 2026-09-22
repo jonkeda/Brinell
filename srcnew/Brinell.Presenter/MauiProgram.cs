@@ -1,3 +1,4 @@
+using CommunityToolkit.Maui;
 using Microsoft.Extensions.Logging;
 
 namespace Brinell.Presenter;
@@ -8,7 +9,8 @@ public static class MauiProgram
     {
         var builder = MauiApp.CreateBuilder();
         builder
-            .UseMauiApp<App>();
+            .UseMauiApp<App>()
+            .UseMauiCommunityToolkit();
 
 #if DEBUG
         builder.Logging.AddDebug();

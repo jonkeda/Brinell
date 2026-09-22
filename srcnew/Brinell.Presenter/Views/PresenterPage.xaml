@@ -1,80 +1,125 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              x:Class="Brinell.Presenter.Views.PresenterPage"
              Title="Brinell Presenter"
-             BackgroundColor="{StaticResource PresenterBackground}">
+             Style="{StaticResource PresenterPageStyle}">
 
+    <!--
+        Colours live in Resources/Styles. Panels take the implicit Border style
+        (stroke, thickness, panel fill) and only declare their own corner shape;
+        every colour goes through AppThemeBinding so the theme toggle repaints live.
+
+        The two toolkit Expanders each keep a real Button in the header (WP3 "Route A").
+        The Expander publishes no ExpandCollapse or Invoke pattern on Windows and its own
+        header tap is a toolkit-internal handler, so without that Button neither panel
+        would be reachable from a UI Automation test. IsExpanded stays TwoWay-bound to the
+        view model, which is still the single source of truth - ReloadWorkspace force-
+        collapses the recent folders through it.
+    -->
     <Grid AutomationId="PresenterRoot"
           Padding="12"
-          RowDefinitions="Auto,Auto,Auto,Auto,*"
+          RowDefinitions="Auto,Auto,Auto,*"
           RowSpacing="8"
           HorizontalOptions="Fill"
           VerticalOptions="Fill">
-        <HorizontalStackLayout Grid.Row="0"
-                               Spacing="6">
-            <Button Text="Open"
-                    AutomationId="OpenFolderButton"
-                    Command="{Binding OpenFolderCommand}" />
-            <Button Text="{Binding RecentFoldersButtonText}"
-                    AutomationId="OpenRecentButton"
-                    WidthRequest="38"
-                    Command="{Binding ToggleRecentFoldersCommand}" />
-            <Button Text="Reload"
-                    AutomationId="ReloadButton"
-                    Command="{Binding ReloadCommand}" />
-            <Button Text="Validate"
-                    AutomationId="ValidateButton"
-                    Command="{Binding ValidateCommand}" />
-        </HorizontalStackLayout>
+        <toolkit:Expander Grid.Row="0"
+                          IsExpanded="{Binding IsRecentFoldersExpanded, Mode=TwoWay}">
+            <!--
+                The whole action row is the header, so the recent-folders list still drops
+                out directly beneath the button that opens it and the toolbar keeps its
+                one-row layout. OpenRecentButton stays a real Button with its own command.
+            -->
+            <toolkit:Expander.Header>
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                    <HorizontalStackLayout Grid.Column="0"
+                                           Spacing="6">
+                        <Button Text="&#xE838;"
+                                AutomationId="OpenFolderButton"
+                                Style="{StaticResource PresenterIconButton}"
+                                Command="{Binding OpenFolderCommand}"
+                                SemanticProperties.Description="Open workspace folder"
+                                ToolTipProperties.Text="Open workspace folder" />
+                        <Button Text="{Binding RecentFoldersGlyph}"
+                                AutomationId="OpenRecentButton"
+                                Style="{StaticResource PresenterIconButton}"
+                                Command="{Binding ToggleRecentFoldersCommand}"
+                                SemanticProperties.Description="Recent folders"
+                                ToolTipProperties.Text="Recent folders" />
+                        <Button Text="&#xE72C;"
+                                AutomationId="ReloadButton"
+                                Style="{StaticResource PresenterIconButton}"
+                                Command="{Binding ReloadCommand}"
+                                SemanticProperties.Description="Reload workspace"
+                                ToolTipProperties.Text="Reload workspace" />
+                        <Button Text="&#xE73E;"
+                                AutomationId="ValidateButton"
+                                Style="{StaticResource PresenterIconButton}"
+                                Command="{Binding ValidateCommand}"
+                                SemanticProperties.Description="Validate workspace"
+                                ToolTipProperties.Text="Validate workspace" />
+                    </HorizontalStackLayout>
+                    <Button Grid.Column="2"
+                            Text="{Binding ThemeGlyph}"
+                            AutomationId="ThemeToggleButton"
+                            Style="{StaticResource PresenterIconButton}"
+                            Command="{Binding ToggleThemeCommand}"
+                            SemanticProperties.Description="{Binding ThemeDescription}"
+                            ToolTipProperties.Text="{Binding ThemeDescription}" />
+                </Grid>
+            </toolkit:Expander.Header>
+
+            <Border Padding="6"
+                    Margin="0,8,0,0">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="6" />
+                </Border.StrokeShape>
+                <CollectionView AutomationId="RecentFoldersList"
+                                ItemsSource="{Binding RecentFolders}"
+                                HeightRequest="160">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Button Text="{Binding DisplayText}"
+                                    AutomationId="{Binding AutomationId}"
+                                    Command="{Binding OpenCommand}"
+                                    HorizontalOptions="Fill"
+                                    SemanticProperties.Description="{Binding AutomationText}" />
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                    <CollectionView.EmptyView>
+                        <Label Text="No recent folders"
+                               Style="{StaticResource PresenterMutedLabel}" />
+                    </CollectionView.EmptyView>
+                </CollectionView>
+            </Border>
+        </toolkit:Expander>
 
         <Border Grid.Row="1"
-                Stroke="{StaticResource PresenterBorder}"
-                StrokeThickness="1"
-                BackgroundColor="{StaticResource PresenterPanel}"
-                Padding="6"
-                IsVisible="{Binding IsRecentFoldersExpanded}">
-            <Border.StrokeShape>
-                <RoundRectangle CornerRadius="6" />
-            </Border.StrokeShape>
-            <CollectionView AutomationId="RecentFoldersList"
-                            ItemsSource="{Binding RecentFolders}"
-                            HeightRequest="160">
-                <CollectionView.ItemTemplate>
-                    <DataTemplate>
-                        <Button Text="{Binding DisplayText}"
-                                AutomationId="{Binding AutomationId}"
-                                Command="{Binding OpenCommand}"
-                                HorizontalOptions="Fill"
-                                SemanticProperties.Description="{Binding AutomationText}" />
-                    </DataTemplate>
-                </CollectionView.ItemTemplate>
-                <CollectionView.EmptyView>
-                    <Label Text="No recent folders"
-                           TextColor="{StaticResource PresenterMuted}" />
-                </CollectionView.EmptyView>
-            </CollectionView>
-        </Border>
-
-        <Border Grid.Row="2"
-                Stroke="{StaticResource PresenterBorder}"
-                StrokeThickness="1"
-                BackgroundColor="{StaticResource PresenterPanel}"
                 Padding="10">
             <Border.StrokeShape>
                 <RoundRectangle CornerRadius="6" />
             </Border.StrokeShape>
             <HorizontalStackLayout Spacing="6"
                                    VerticalOptions="Center">
-                <Button Text="Run"
+                <Button Text="&#xE768;"
                         AutomationId="RunButton"
-                        Command="{Binding RunCommand}" />
-                <Button Text="Stop"
+                        Style="{StaticResource PresenterIconButton}"
+                        Command="{Binding RunCommand}"
+                        SemanticProperties.Description="Run"
+                        ToolTipProperties.Text="Run" />
+                <Button Text="&#xE71A;"
                         AutomationId="StopButton"
-                        Command="{Binding StopCommand}" />
-                <Button Text="Next"
+                        Style="{StaticResource PresenterIconButton}"
+                        Command="{Binding StopCommand}"
+                        SemanticProperties.Description="Stop"
+                        ToolTipProperties.Text="Stop" />
+                <Button Text="&#xE893;"
                         AutomationId="NextButton"
-                        Command="{Binding NextStepCommand}" />
+                        Style="{StaticResource PresenterIconButton}"
+                        Command="{Binding NextStepCommand}"
+                        SemanticProperties.Description="Next step"
+                        ToolTipProperties.Text="Next step" />
                 <Label Text="Delay"
                        Margin="10,0,0,0"
                        VerticalTextAlignment="Center" />
@@ -89,42 +134,114 @@
             </HorizontalStackLayout>
         </Border>
 
-        <HorizontalStackLayout Grid.Row="3"
+        <!--
+            Icon tabs. The [Brackets] convention that used to mark the selected tab is gone:
+            the DataTrigger fills the selected one instead, which is what lets five tabs plus
+            the theme button fit on one row at quarter-screen width.
+        -->
+        <HorizontalStackLayout Grid.Row="2"
                                Spacing="4">
-            <Button Text="{Binding TreeTabText}"
+            <Button Text="&#xF168;"
                     AutomationId="TreeTabButton"
-                    Command="{Binding ShowTreeTabCommand}" />
-            <Button Text="{Binding ConfigTabText}"
+                    Style="{StaticResource PresenterIconButton}"
+                    Command="{Binding ShowTreeTabCommand}"
+                    SemanticProperties.Description="Tree"
+                    ToolTipProperties.Text="Tree">
+                <Button.Triggers>
+                    <DataTrigger TargetType="Button"
+                                 Binding="{Binding IsTreeTabSelected}"
+                                 Value="True">
+                        <Setter Property="BackgroundColor"
+                                Value="{AppThemeBinding Light={StaticResource PresenterSelectedLight}, Dark={StaticResource PresenterSelectedDark}}" />
+                        <Setter Property="BorderColor"
+                                Value="{AppThemeBinding Light={StaticResource PresenterAccentLight}, Dark={StaticResource PresenterAccentDark}}" />
+                    </DataTrigger>
+                </Button.Triggers>
+            </Button>
+            <Button Text="&#xE713;"
                     AutomationId="ConfigTabButton"
-                    Command="{Binding ShowConfigTabCommand}" />
-            <Button Text="{Binding DiagnosticsTabText}"
+                    Style="{StaticResource PresenterIconButton}"
+                    Command="{Binding ShowConfigTabCommand}"
+                    SemanticProperties.Description="Config"
+                    ToolTipProperties.Text="Config">
+                <Button.Triggers>
+                    <DataTrigger TargetType="Button"
+                                 Binding="{Binding IsConfigTabSelected}"
+                                 Value="True">
+                        <Setter Property="BackgroundColor"
+                                Value="{AppThemeBinding Light={StaticResource PresenterSelectedLight}, Dark={StaticResource PresenterSelectedDark}}" />
+                        <Setter Property="BorderColor"
+                                Value="{AppThemeBinding Light={StaticResource PresenterAccentLight}, Dark={StaticResource PresenterAccentDark}}" />
+                    </DataTrigger>
+                </Button.Triggers>
+            </Button>
+            <Button Text="&#xE9D9;"
                     AutomationId="DiagnosticsTabButton"
-                    Command="{Binding ShowDiagnosticsTabCommand}" />
-            <Button Text="{Binding DiscoveryTabText}"
+                    Style="{StaticResource PresenterIconButton}"
+                    Command="{Binding ShowDiagnosticsTabCommand}"
+                    SemanticProperties.Description="Diagnostics"
+                    ToolTipProperties.Text="Diagnostics">
+                <Button.Triggers>
+                    <DataTrigger TargetType="Button"
+                                 Binding="{Binding IsDiagnosticsTabSelected}"
+                                 Value="True">
+                        <Setter Property="BackgroundColor"
+                                Value="{AppThemeBinding Light={StaticResource PresenterSelectedLight}, Dark={StaticResource PresenterSelectedDark}}" />
+                        <Setter Property="BorderColor"
+                                Value="{AppThemeBinding Light={StaticResource PresenterAccentLight}, Dark={StaticResource PresenterAccentDark}}" />
+                    </DataTrigger>
+                </Button.Triggers>
+            </Button>
+            <Button Text="&#xE721;"
                     AutomationId="DiscoveryTabButton"
-                    Command="{Binding ShowDiscoveryTabCommand}" />
-            <Button Text="{Binding CommandCatalogTabText}"
+                    Style="{StaticResource PresenterIconButton}"
+                    Command="{Binding ShowDiscoveryTabCommand}"
+                    SemanticProperties.Description="Discovery"
+                    ToolTipProperties.Text="Discovery">
+                <Button.Triggers>
+                    <DataTrigger TargetType="Button"
+                                 Binding="{Binding IsDiscoveryTabSelected}"
+                                 Value="True">
+                        <Setter Property="BackgroundColor"
+                                Value="{AppThemeBinding Light={StaticResource PresenterSelectedLight}, Dark={StaticResource PresenterSelectedDark}}" />
+                        <Setter Property="BorderColor"
+                                Value="{AppThemeBinding Light={StaticResource PresenterAccentLight}, Dark={StaticResource PresenterAccentDark}}" />
+                    </DataTrigger>
+                </Button.Triggers>
+            </Button>
+            <Button Text="&#xE8FD;"
                     AutomationId="CommandCatalogTabButton"
-                    Command="{Binding ShowCommandCatalogTabCommand}" />
+                    Style="{StaticResource PresenterIconButton}"
+                    Command="{Binding ShowCommandCatalogTabCommand}"
+                    SemanticProperties.Description="Command Catalog"
+                    ToolTipProperties.Text="Command Catalog">
+                <Button.Triggers>
+                    <DataTrigger TargetType="Button"
+                                 Binding="{Binding IsCommandCatalogTabSelected}"
+                                 Value="True">
+                        <Setter Property="BackgroundColor"
+                                Value="{AppThemeBinding Light={StaticResource PresenterSelectedLight}, Dark={StaticResource PresenterSelectedDark}}" />
+                        <Setter Property="BorderColor"
+                                Value="{AppThemeBinding Light={StaticResource PresenterAccentLight}, Dark={StaticResource PresenterAccentDark}}" />
+                    </DataTrigger>
+                </Button.Triggers>
+            </Button>
         </HorizontalStackLayout>
 
-        <Grid Grid.Row="4"
+        <Grid Grid.Row="3"
               VerticalOptions="Fill">
-            <Grid RowDefinitions="Auto,*,Auto,Auto,Auto"
+            <Grid RowDefinitions="Auto,*,Auto,Auto"
                   RowSpacing="8"
                   IsVisible="{Binding IsTreeTabSelected}">
                 <VerticalStackLayout Grid.Row="0"
                                      Spacing="2">
                     <Label Text="{Binding WorkspaceSummaryText}"
                            FontSize="12"
-                           TextColor="{StaticResource PresenterMuted}"
+                           Style="{StaticResource PresenterMutedLabel}"
                            AutomationId="WorkspaceSummaryLabel" />
                 </VerticalStackLayout>
 
                 <Border Grid.Row="1"
-                        Stroke="{StaticResource PresenterBorder}"
-                        StrokeThickness="1"
-                        BackgroundColor="{StaticResource PresenterPanel}"
                         Padding="8"
                         VerticalOptions="Fill">
                     <Border.StrokeShape>
@@ -142,21 +259,20 @@
                                       AutomationId="{Binding AutomationId}">
                                     <BoxView WidthRequest="{Binding IndentWidth}"
                                              Color="Transparent" />
+                                    <!-- ExpansionGlyph and IconGlyph, never ExpansionText/Icon:
+                                         those two stay ASCII for the hidden text mirrors. -->
                                     <Button Grid.Column="1"
-                                            Text="{Binding ExpansionText}"
+                                            Text="{Binding ExpansionGlyph}"
                                             AutomationId="{Binding ToggleAutomationId}"
+                                            Style="{StaticResource PresenterRowGlyphButton}"
                                             Command="{Binding ToggleExpansionCommand}"
                                             IsEnabled="{Binding CanExpand}"
-                                            WidthRequest="26"
-                                            HeightRequest="26"
-                                            Padding="0" />
+                                            SemanticProperties.Description="Expand or collapse" />
                                     <Label Grid.Column="2"
-                                           Text="{Binding Icon}"
+                                           Text="{Binding IconGlyph}"
                                            TextColor="{Binding IconColor}"
-                                           FontAttributes="Bold"
+                                           Style="{StaticResource PresenterGlyphLabel}"
                                            FontSize="12"
-                                           HorizontalTextAlignment="Center"
-                                           VerticalTextAlignment="Center"
                                            SemanticProperties.Description="{Binding StatusDescription}" />
                                     <Label Grid.Column="3"
                                            Text="{Binding Name}"
@@ -175,67 +291,63 @@
                            AutomationId="StatusSummaryLabel" />
                     <Label Text="{Binding WorkspaceTreeText}"
                            AutomationId="WorkspaceTreeText"
-                           FontSize="1"
-                           HeightRequest="1"
-                           Opacity="0.01" />
+                           Style="{StaticResource PresenterMirrorLabel}" />
                     <Label Text="{Binding AllWorkspaceTreeText}"
                            AutomationId="AllWorkspaceTreeText"
-                           FontSize="1"
-                           HeightRequest="1"
-                           Opacity="0.01" />
+                           Style="{StaticResource PresenterMirrorLabel}" />
                     <Label Text="{Binding StepListText}"
                            AutomationId="StepListText"
-                           FontSize="1"
-                           HeightRequest="1"
-                           Opacity="0.01" />
+                           Style="{StaticResource PresenterMirrorLabel}" />
                     <Label Text="{Binding ExecutionTimingText}"
                            AutomationId="ExecutionTimingText"
-                           FontSize="1"
-                           HeightRequest="1"
-                           Opacity="0.01" />
+                           Style="{StaticResource PresenterMirrorLabel}" />
                     <Label Text="{Binding RunScopeText}"
                            AutomationId="RunScopeText"
-                           FontSize="1"
-                           HeightRequest="1"
-                           Opacity="0.01" />
+                           Style="{StaticResource PresenterMirrorLabel}" />
                     <Label Text="{Binding RecentFoldersText}"
                            AutomationId="RecentFoldersText"
-                           FontSize="1"
-                           HeightRequest="1"
-                           Opacity="0.01" />
+                           Style="{StaticResource PresenterMirrorLabel}" />
                     <Label Text="{Binding AutPlacementText}"
                            AutomationId="AutPlacementText"
-                           FontSize="1"
-                           HeightRequest="1"
-                           Opacity="0.01" />
+                           Style="{StaticResource PresenterMirrorLabel}" />
                 </VerticalStackLayout>
 
-                <Button Grid.Row="3"
-                        Text="{Binding SelectionExpanderText}"
-                        AutomationId="SelectionExpander"
-                        Command="{Binding ToggleSelectionCommand}" />
-                <Border Grid.Row="4"
-                        Stroke="{StaticResource PresenterBorder}"
-                        StrokeThickness="1"
-                        BackgroundColor="{StaticResource PresenterPanel}"
-                        Padding="10"
-                        IsVisible="{Binding IsSelectionExpanded}">
-                    <Border.StrokeShape>
-                        <RoundRectangle CornerRadius="6" />
-                    </Border.StrokeShape>
-                    <VerticalStackLayout Spacing="6">
-                        <Label Text="{Binding SelectedWorkspaceNodeDetailsText}"
-                               AutomationId="SelectionDetailsText"
-                               FontSize="11"
-                               TextColor="{StaticResource PresenterMuted}" />
-                    </VerticalStackLayout>
-                </Border>
+                <toolkit:Expander Grid.Row="3"
+                                  IsExpanded="{Binding IsSelectionExpanded, Mode=TwoWay}">
+                    <toolkit:Expander.Header>
+                        <!-- The caption is a plain label again; the chevron is a separate
+                             glyph label laid over the button's right edge, InputTransparent
+                             so the whole button stays one click target. -->
+                        <Grid>
+                            <Button Text="{Binding SelectionExpanderText}"
+                                    AutomationId="SelectionExpander"
+                                    Command="{Binding ToggleSelectionCommand}"
+                                    HorizontalOptions="Fill" />
+                            <Label Text="{Binding SelectionExpanderGlyph}"
+                                   Style="{StaticResource PresenterGlyphLabel}"
+                                   FontSize="11"
+                                   HorizontalOptions="End"
+                                   VerticalOptions="Center"
+                                   Margin="0,0,12,0"
+                                   InputTransparent="True" />
+                        </Grid>
+                    </toolkit:Expander.Header>
+                    <Border Padding="10"
+                            Margin="0,8,0,0">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="6" />
+                        </Border.StrokeShape>
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="{Binding SelectedWorkspaceNodeDetailsText}"
+                                   AutomationId="SelectionDetailsText"
+                                   FontSize="11"
+                                   Style="{StaticResource PresenterMutedLabel}" />
+                        </VerticalStackLayout>
+                    </Border>
+                </toolkit:Expander>
             </Grid>
 
-            <Border Stroke="{StaticResource PresenterBorder}"
-                    StrokeThickness="1"
-                    BackgroundColor="{StaticResource PresenterPanel}"
-                    Padding="10"
+            <Border Padding="10"
                     IsVisible="{Binding IsConfigTabSelected}">
                 <Border.StrokeShape>
                     <RoundRectangle CornerRadius="6" />
@@ -244,14 +356,11 @@
                     <Label Text="{Binding WorkspaceConfigText}"
                            AutomationId="WorkspaceConfigText"
                            FontSize="11"
-                           TextColor="{StaticResource PresenterMuted}" />
+                           Style="{StaticResource PresenterMutedLabel}" />
                 </ScrollView>
             </Border>
 
-            <Border Stroke="{StaticResource PresenterBorder}"
-                    StrokeThickness="1"
-                    BackgroundColor="{StaticResource PresenterPanel}"
-                    Padding="10"
+            <Border Padding="10"
                     IsVisible="{Binding IsDiagnosticsTabSelected}">
                 <Border.StrokeShape>
                     <RoundRectangle CornerRadius="6" />
@@ -260,14 +369,11 @@
                     <Label Text="{Binding DiagnosticsText}"
                            AutomationId="DiagnosticsText"
                            FontSize="11"
-                           TextColor="{StaticResource PresenterMuted}" />
+                           Style="{StaticResource PresenterMutedLabel}" />
                 </ScrollView>
             </Border>
 
-            <Border Stroke="{StaticResource PresenterBorder}"
-                    StrokeThickness="1"
-                    BackgroundColor="{StaticResource PresenterPanel}"
-                    Padding="10"
+            <Border Padding="10"
                     IsVisible="{Binding IsDiscoveryTabSelected}">
                 <Border.StrokeShape>
                     <RoundRectangle CornerRadius="6" />
@@ -276,14 +382,11 @@
                     <Label Text="{Binding DiscoveryText}"
                            AutomationId="DiscoveryText"
                            FontSize="11"
-                           TextColor="{StaticResource PresenterMuted}" />
+                           Style="{StaticResource PresenterMutedLabel}" />
                 </ScrollView>
             </Border>
 
-            <Border Stroke="{StaticResource PresenterBorder}"
-                    StrokeThickness="1"
-                    BackgroundColor="{StaticResource PresenterPanel}"
-                    Padding="10"
+            <Border Padding="10"
                     IsVisible="{Binding IsCommandCatalogTabSelected}">
                 <Border.StrokeShape>
                     <RoundRectangle CornerRadius="6" />
@@ -292,7 +395,7 @@
                     <Label Text="{Binding CommandCatalogText}"
                            AutomationId="CommandCatalogText"
                            FontSize="11"
-                           TextColor="{StaticResource PresenterMuted}" />
+                           Style="{StaticResource PresenterMutedLabel}" />
                 </ScrollView>
             </Border>
         </Grid>

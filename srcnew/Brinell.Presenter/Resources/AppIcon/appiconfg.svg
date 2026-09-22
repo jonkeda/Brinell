@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    The Presenter is the UAT runner: a Brinell indenter mark (the round impression a
+    hardness test leaves) with the runner's play triangle taken out of it.
+
+    One shape, no text, so it survives 16px in the taskbar. Drawn as a single path with
+    fill-rule="evenodd" rather than a white disc plus a coloured triangle on top: the
+    triangle is then a real hole, so the plate colour shows through it and the glyph still
+    reads correctly if it is ever composited over something other than #2563EB.
+
+    Circle: centre (228,228), r=140, as two arcs.
+    Triangle: (179,142) (179,314) (325,228).
+      - Centroid x = (179+179+325)/3 = 227.7, so it sits optically centred rather than
+        geometrically left-heavy, which is how a right-pointing triangle reads.
+      - Sized against the 16px downscale, not by eye at full size: a smaller triangle
+        leaves the white ring wide but dissolves the arrow, a larger one erases the ring.
+        Its furthest point is 95px from centre, leaving ~45px of ring - about 1.6px once
+        456 is scaled to 16.
+-->
+<svg width="456" height="456" viewBox="0 0 456 456" xmlns="http://www.w3.org/2000/svg">
+    <path fill="#FFFFFF" fill-rule="evenodd"
+          d="M 228 88
+             A 140 140 0 1 1 227.9 88
+             Z
+             M 179 142
+             L 179 314
+             L 325 228
+             Z"/>
+</svg>

@@ -1,5 +1,14 @@
 # UAT For Brinell .NET Techs
 
+Status: Phases 1–8 delivered; Phase 9 (scenario parity) open; Phase 2 template doc open
+Date: 2026-09-21
+Area: `testsnew/Brinell.*.Uat.Tests`, `srcnew/Brinell.Presenter`
+Related:
+
+- [UAT phrases and flows](../../docs/guides/uat-phrases-and-flows.md) — authoritative phrase list
+- [Runner code binding](03%20runner%20code%20binding.md) — why one vocabulary serves six techs
+- [AD-011](../../.docs/decisions/ad-011-uat-vocabulary-is-attribute-declared.md)
+
 Status: implemented first pass.
 
 This plan adds first-class Markdown UAT coverage across the Brinell .NET technology adapters. The goal is not to duplicate every UI test. The goal is to make each supported app technology runnable from the same `.uat.md` grammar, the same reflection runtime, and the same Presenter workflow.
@@ -91,9 +100,21 @@ Common built-in phrases must work where the tech can reasonably support them:
 - `Then {control} should be checked`
 - `Then {control} should be unchecked`
 - `Then {control} should have selected {value}`
+- `Then {control} should not be visible`
 - `Then I should see {text}`
 
 Custom `[UatPhrase]` methods remain the extension point for tech-specific or app-specific behavior.
+
+> **Note (2026-09):** this is the complete list — 18 phrases, and it is the same
+> 18 for every technology. That is not a convention the techs agree to follow; it
+> is structural. Fifteen of the phrases are declared by `[UatStep]` on the
+> `Brinell.Core` control interfaces, so a technology inherits a phrase exactly
+> when its control implements the interface that declares it. The remaining three
+> are the engine's page verbs. No technology package declares a phrase of its own.
+>
+> This is what made the six-target rollout cheap, and it is why "keep
+> `Brinell.Uat` generic" below became easy to hold rather than a discipline to
+> maintain. See [03](03%20runner%20code%20binding.md) §Two Projections, One Source.
 
 ## Architecture Direction
 
@@ -165,6 +186,15 @@ Work items:
 Acceptance:
 
 - A new tech UAT project can be scaffolded by copying the template and replacing fixture/page objects.
+
+> **Mostly delivered (2026-09).** The pattern itself is real and consistent —
+> every tech project has the same shape (`uat.config.md`, `Scenarios/`,
+> `Runtime/`, `TestSettings/`) and the xUnit theory over `Scenarios/**/*.uat.md`
+> comes from the shared `UatScenarioTestBase`. Scaffolding by copying a
+> neighbouring project works today.
+>
+> The **README/template doc was never written**, which is the one open item: the
+> pattern is discoverable only by reading an existing project.
 
 ## Phase 3: MAUI UAT Hardening
 
@@ -277,6 +307,31 @@ Acceptance:
 
 - The same Markdown scenario set runs across at least MAUI, WPF, WinForms, Blazor, HTML, and STRIDE where practical.
 - Any phrase gap is documented as unsupported with a reason.
+
+> **Open (2026-09) — this is the one phase that did not land.** Every tech has
+> scenarios, but they are named and worded per tech, so the parity the phase was
+> for does not exist:
+>
+> | Target | Scenarios |
+> | --- | --- |
+> | MAUI | `main-page-greeting`, `main-page-validation`, `user-form-basic-input`, `main-page-missing-control` |
+> | STRIDE | `main-page-greeting` |
+> | WPF | `home-page-visible`, `login-valid-credentials` |
+> | WinForms | `login-basic-input` |
+> | Blazor | `counter-basic`, `login-invalid-credentials` |
+> | HTML | `counter-basic`, `form-controls-basic` |
+>
+> Only MAUI and STRIDE share a scenario name. The four baseline names this phase
+> proposed exist in MAUI alone, and `missing-control-diagnostics` shipped there as
+> `main-page-missing-control`.
+>
+> Worth being clear about what is and is not lost. The *vocabulary* is provably
+> shared — one catalog, discovered from one set of attributes — so the phrases bind
+> identically everywhere. What is missing is the cross-tech comparison this phase
+> wanted: because no two techs run the same scenario, an adapter difference shows
+> up as a per-tech test failure rather than as one scenario passing on MAUI and
+> failing on WPF. The phase is still worth doing, and it is now a naming and
+> sample-app exercise rather than an engine one.
 
 ## Phase 10: Presenter Tech Workspaces
 

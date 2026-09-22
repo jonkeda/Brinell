@@ -1,5 +1,25 @@
 # First UAT Project Targets
 
+Status: Delivered — all three targets shipped, plus three more
+Date: 2026-07-07, status pass 2026-09-21
+Area: `testsnew/Brinell.*.Uat.Tests`
+Related:
+
+- [UAT for Brinell .NET techs](11%20uat%20for%20brinell%20dotnet%20techs.md) — the full six-target rollout
+- [UAT phrases and flows](../../docs/guides/uat-phrases-and-flows.md)
+
+> **Delivered (2026-09).** MAUI shipped as the reference implementation, with
+> exactly the three scenarios sketched below —
+> `main-page-greeting.uat.md`, `main-page-validation.uat.md` and
+> `user-form-basic-input.uat.md` in `testsnew/Brinell.Maui.Uat.Tests/Scenarios/`,
+> plus `ExpectedFailures/main-page-missing-control.uat.md` for the diagnostics
+> case that [08](08%20uat%20diagnostics%20and%20config%20hardening.md) asked for.
+>
+> The second and third targets below (WPF, then HTML/Blazor) also shipped — and so
+> did WinForms and STRIDE. Seven UAT test projects exist. The sequencing argument
+> in this document is therefore history rather than plan; what it got right was
+> starting with MAUI and keeping the first command surface small.
+
 This document picks the first existing UITest projects that should get corresponding UAT projects.
 
 The goal is not to replace the existing UITests. The existing UITests remain useful as framework and control-level coverage. The UAT projects should sit beside them and express the same important user flows in Markdown so the new runner can prove its parser, binding, discovery, and execution model against real Brinell PageObjects and ControlObjects.
@@ -162,6 +182,23 @@ The first MAUI UAT project should only need these commands:
 
 This is intentionally limited. More commands can be added after the first UAT project runs green.
 
+> **Delivered, and it stayed small (2026-09).** The eleven above are all built-in.
+> The full surface is 18 — this list is missing seven:
+> `Then I should be on the {page} page`, `When I set {control} to {value}`,
+> `Then {control} should equal {value}`, `Then {control} should not be visible`,
+> `Then {control} should be checked`, `Then {control} should be unchecked` and
+> `Then {control} should have selected {value}`.
+>
+> That is the whole vocabulary — it never grew past 18, across six technologies.
+> The prediction that "more commands can be added" turned out to be the wrong
+> axis: what got added was not more built-in phrases but a way for projects to
+> declare their own, via `[UatStep]` on an app control or `[UatPhrase]` for
+> anything that is not a single control action.
+>
+> Authoritative list:
+> [uat-phrases-and-flows.md](../../docs/guides/uat-phrases-and-flows.md)
+> §Built-In Phrases.
+
 ## Config Shape
 
 The first `uat.config.md` should be folder-local:
@@ -270,3 +307,10 @@ This slice is done when:
 - The execution can run step by step.
 - A failing scenario returns a useful UAT-level diagnostic.
 - Existing `Brinell.Maui.UITests` remain unchanged and still useful as lower-level coverage.
+
+> **Met (2026-09).** `Brinell.Maui.Uat.Tests` holds four `.uat.md` files (three
+> scenarios plus one expected failure), auto and step execution both ship — step
+> mode via `RunNextAsync`/`HasNext` on the Presenter's execution service — and
+> `Brinell.Maui.UITests` is untouched and still carries the lower-level coverage.
+> Both later targets landed too: WPF as `Brinell.Wpf.Uat.Tests`, and HTML and
+> Blazor as separate projects rather than a choice between them.

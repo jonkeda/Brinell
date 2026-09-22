@@ -38,6 +38,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
     private UatWorkspaceNodeViewModel? _selectedWorkspaceNode;
     private string _selectedWorkspaceNodeDetailsText = "No selection";
     private string _statusSummary = "No workspace loaded";
+    private PresenterTheme _theme = PresenterTheme.System;
     private string _stepListText = string.Empty;
     private string _workspaceConfigText = string.Empty;
     private string _workspaceName = "No workspace";
@@ -78,8 +79,18 @@ public sealed class PresenterShellViewModel : ViewModelBase
         ShowDiagnosticsTabCommand = new RelayCommand(() => SelectedTab = DiagnosticsTabName);
         ShowDiscoveryTabCommand = new RelayCommand(() => SelectedTab = DiscoveryTabName);
         ShowCommandCatalogTabCommand = new RelayCommand(() => SelectedTab = CommandCatalogTabName);
+        ToggleThemeCommand = new RelayCommand(ToggleTheme);
 
-        RefreshRecentFolders(_settingsService.Load());
+        var settings = _settingsService.Load();
+        _theme = settings.Theme;
+        ApplyTheme();
+
+        if (Application.Current is { } application)
+        {
+            application.RequestedThemeChanged += OnRequestedThemeChanged;
+        }
+
+        RefreshRecentFolders(settings);
         LoadDefaultWorkspace();
     }
 
@@ -118,6 +129,8 @@ public sealed class PresenterShellViewModel : ViewModelBase
     public ICommand ShowDiscoveryTabCommand { get; }
 
     public ICommand ShowCommandCatalogTabCommand { get; }
+
+    public ICommand ToggleThemeCommand { get; }
 
     public string WorkspaceName
     {
@@ -222,12 +235,14 @@ public sealed class PresenterShellViewModel : ViewModelBase
         {
             if (SetProperty(ref _isRecentFoldersExpanded, value))
             {
-                OnPropertyChanged(nameof(RecentFoldersButtonText));
+                OnPropertyChanged(nameof(RecentFoldersGlyph));
             }
         }
     }
 
-    public string RecentFoldersButtonText => IsRecentFoldersExpanded ? "^" : "v";
+    public string RecentFoldersGlyph => IsRecentFoldersExpanded
+        ? PresenterIcons.ChevronUp
+        : PresenterIcons.ChevronDown;
 
     public string ExecutionTimingText
     {
@@ -332,11 +347,6 @@ public sealed class PresenterShellViewModel : ViewModelBase
                 OnPropertyChanged(nameof(IsDiagnosticsTabSelected));
                 OnPropertyChanged(nameof(IsDiscoveryTabSelected));
                 OnPropertyChanged(nameof(IsCommandCatalogTabSelected));
-                OnPropertyChanged(nameof(TreeTabText));
-                OnPropertyChanged(nameof(ConfigTabText));
-                OnPropertyChanged(nameof(DiagnosticsTabText));
-                OnPropertyChanged(nameof(DiscoveryTabText));
-                OnPropertyChanged(nameof(CommandCatalogTabText));
             }
         }
     }
@@ -351,16 +361,6 @@ public sealed class PresenterShellViewModel : ViewModelBase
 
     public bool IsCommandCatalogTabSelected => SelectedTab == CommandCatalogTabName;
 
-    public string TreeTabText => IsTreeTabSelected ? "[Tree]" : "Tree";
-
-    public string ConfigTabText => IsConfigTabSelected ? "[Config]" : "Config";
-
-    public string DiagnosticsTabText => IsDiagnosticsTabSelected ? "[Diagnostics]" : "Diagnostics";
-
-    public string DiscoveryTabText => IsDiscoveryTabSelected ? "[Discovery]" : "Discovery";
-
-    public string CommandCatalogTabText => IsCommandCatalogTabSelected ? "[Command Catalog]" : "Command Catalog";
-
     public bool IsSelectionExpanded
     {
         get => _isSelectionExpanded;
@@ -368,12 +368,117 @@ public sealed class PresenterShellViewModel : ViewModelBase
         {
             if (SetProperty(ref _isSelectionExpanded, value))
             {
-                OnPropertyChanged(nameof(SelectionExpanderText));
+                OnPropertyChanged(nameof(SelectionExpanderGlyph));
             }
         }
     }
 
-    public string SelectionExpanderText => IsSelectionExpanded ? "Selection ^" : "Selection v";
+    /// <summary>The header caption, now static - the chevron moved to <see cref="SelectionExpanderGlyph"/>.</summary>
+    public string SelectionExpanderText => "Selection";
+
+    public string SelectionExpanderGlyph => IsSelectionExpanded
+        ? PresenterIcons.ChevronUp
+        : PresenterIcons.ChevronDown;
+
+    /// <summary>
+    /// The persisted choice. <see cref="PresenterTheme.System" /> until the user presses
+    /// the toggle for the first time.
+    /// </summary>
+    public PresenterTheme CurrentTheme
+    {
+        get => _theme;
+        private set
+        {
+            if (SetProperty(ref _theme, value))
+            {
+                RaiseThemeProperties();
+            }
+        }
+    }
+
+    /// <summary>True when what is on screen right now is the dark theme.</summary>
+    public bool IsDarkThemeActive => _theme switch
+    {
+        PresenterTheme.Dark => true,
+        PresenterTheme.Light => false,
+        _ => Application.Current?.RequestedTheme == AppTheme.Dark
+    };
+
+    /// <summary>
+    /// The glyph on the toggle button. It names the destination, not the current state,
+    /// so a two-state button needs no separate state indicator. WP2 replaces these two
+    /// characters with Segoe Fluent codepoints.
+    /// </summary>
+    public string ThemeGlyph => IsDarkThemeActive ? PresenterIcons.ThemeLight : PresenterIcons.ThemeDark;
+
+    /// <summary>
+    /// Tooltip and UI Automation name for the toggle. An icon-only button is still
+    /// findable and still named because of this string.
+    /// </summary>
+    public string ThemeDescription => IsDarkThemeActive ? "Switch to light theme" : "Switch to dark theme";
+
+    /// <summary>
+    /// Two-state toggle: it flips between light and dark, taking the current effective
+    /// theme as the starting point, and never returns to <see cref="PresenterTheme.System" />
+    /// once pressed. A tri-state cycle would need a visible state indicator the top row
+    /// has no room for.
+    /// </summary>
+    private void ToggleTheme()
+    {
+        CurrentTheme = IsDarkThemeActive ? PresenterTheme.Light : PresenterTheme.Dark;
+        ApplyTheme();
+        PersistTheme();
+    }
+
+    private void ApplyTheme()
+    {
+        if (Application.Current is not { } application)
+        {
+            return;
+        }
+
+        application.UserAppTheme = _theme switch
+        {
+            PresenterTheme.Light => AppTheme.Light,
+            PresenterTheme.Dark => AppTheme.Dark,
+            _ => AppTheme.Unspecified
+        };
+    }
+
+    private void PersistTheme()
+    {
+        try
+        {
+            var settings = _settingsService.Load();
+            settings.Theme = _theme;
+            _settingsService.Save(settings);
+        }
+        catch (Exception ex)
+        {
+            DiagnosticsText = $"Could not save the theme choice: {ex.Message}";
+        }
+    }
+
+    private void OnRequestedThemeChanged(object? sender, AppThemeChangedEventArgs e)
+    {
+        RaiseThemeProperties();
+    }
+
+    /// <summary>
+    /// XAML colours ride AppThemeBinding and repaint themselves. The C#-side glyph
+    /// colours do not, so every node has to be told to re-read <c>IconColor</c>.
+    /// </summary>
+    private void RaiseThemeProperties()
+    {
+        OnPropertyChanged(nameof(IsDarkThemeActive));
+        OnPropertyChanged(nameof(ThemeGlyph));
+        OnPropertyChanged(nameof(ThemeDescription));
+
+        foreach (var node in _allWorkspaceNodes)
+        {
+            node.RefreshThemeColors();
+        }
+    }
 
     private void LoadDefaultWorkspace()
     {

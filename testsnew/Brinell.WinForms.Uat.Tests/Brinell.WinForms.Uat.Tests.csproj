@@ -8,7 +8,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\srcnew\Brinell.Uat\Brinell.Uat.csproj" />
     <ProjectReference Include="..\Brinell.WinForms.UITests\Brinell.WinForms.UITests.csproj" />
-    <ProjectReference Include="..\..\samples\Brinell.Samples.WinForms.App\Brinell.Samples.WinForms.App.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <ItemGroup>

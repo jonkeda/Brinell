@@ -1,5 +1,14 @@
 # MVP Task Checklist
 
+Status: Closed — every item delivered
+Date: 2026-07-07, closed 2026-09-21
+Area: `srcnew/Brinell.Uat`, `testsnew/Brinell.Uat.Tests`
+Related:
+
+- [Development roadmap](04%20development%20roadmap.md) — the phases this slice opened
+- [UAT diagnostics and config hardening](08%20uat%20diagnostics%20and%20config%20hardening.md) — the slice that followed
+- [Attribute-driven UAT catalog](../uat/attribute-catalog/README.md) — what replaced Slice 5's phrase model
+
 This checklist defines the first implementation slice for the Markdown-driven UAT runner.
 
 ## MVP Target
@@ -79,6 +88,14 @@ Defer until binding preview works.
 - [x] Add PageObject discovery tests.
 - [x] Add ControlObject discovery tests.
 
+> **Superseded (2026-09):** this slice shipped as written, but the attribute set
+> was incomplete in a way that only showed up later. None of these four can
+> declare a *built-in* phrase, so the built-in vocabulary went into hand-written
+> tables — and by the time there were three copies of it, the cost was obvious.
+> `[UatStep]` was added to `Brinell.Core/Testing` and all three tables deleted.
+> `[UatAction]` remains, but as a capability marker only; it contributes no
+> phrase. See [AD-011](../../.docs/decisions/ad-011-uat-vocabulary-is-attribute-declared.md).
+
 ## Slice 6: Execution
 
 Defer until discovery works.
@@ -108,3 +125,21 @@ The first slice is done when:
 - Valid examples from the design docs parse successfully.
 - Invalid examples return line-numbered diagnostics.
 - The UAT core test project runs without requiring MAUI, Appium, FlaUI, or a launched app.
+
+## Closed
+
+All six slices are delivered, and `Brinell.Uat.Tests` still runs without MAUI,
+Appium, FlaUI or a launched app — the property this checklist was built around.
+
+Every non-goal on the list above also held: no aliases, no `if`/`for`, no ANTLR,
+no source generation. The one thing that changed is that "no source generation"
+turned out not to mean "no discovery" —
+[the vocabulary is now found by reflection over attributes](../uat/attribute-catalog/README.md),
+which gets the benefit a generator would have given without adding a build step.
+
+What came next, in order: the diagnostics and config work in
+[08](08%20uat%20diagnostics%20and%20config%20hardening.md), the Presenter in
+[09](09%20brinell%20presenter%20development%20plan.md) and
+[10](10%20presenter%20tabbed%20tree%20redesign.md), the six-technology rollout in
+[11](11%20uat%20for%20brinell%20dotnet%20techs.md), and the attribute-catalog
+rework.
