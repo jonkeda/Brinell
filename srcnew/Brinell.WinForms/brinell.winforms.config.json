@@ -1,0 +1,13 @@
+{
+  "artifacts": {
+    "rootDirectory": null,
+    "runId": null,
+    "suite": "WinForms"
+  },
+  "winForms": {
+    "appPath": null,
+    "processName": null,
+    "windowHandle": null,
+    "attachToRunning": false
+  }
+}

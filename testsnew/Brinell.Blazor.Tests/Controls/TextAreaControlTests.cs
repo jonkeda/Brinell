@@ -1,0 +1,66 @@
+namespace Brinell.Blazor.Tests.Controls;
+
+public class TextAreaControlTests
+{
+    private readonly Mock<IHtmlTestContext> _mockContext;
+    private readonly Mock<IHtmlElement> _mockElement;
+    private readonly TestPage _page;
+
+    public TextAreaControlTests()
+    {
+        _mockContext = MockHtmlFactory.CreateMockContext();
+        _mockElement = MockHtmlFactory.CreateMockElement();
+        MockHtmlFactory.SetupFindElement(_mockContext, _mockElement);
+        _page = new TestPage(_mockContext.Object);
+    }
+
+    [Fact]
+    public void SetText_FillsElement()
+    {
+        _page.TestTextArea.SetText("hello");
+
+        _mockElement.Verify(e => e.Fill("hello"), Times.Once);
+    }
+
+    [Fact]
+    public void GetValue_ReturnsInputValue()
+    {
+        Assert.Equal("Test Text", _page.TestTextArea.GetValue());
+    }
+
+    [Fact]
+    public void AppendText_FocusesAndSendsKeys()
+    {
+        _page.TestTextArea.AppendText("appended");
+
+        _mockElement.Verify(e => e.Focus(), Times.Once);
+        _mockElement.Verify(e => e.SendKeys("appended", It.IsAny<Brinell.Core.TextInputMethod>()), Times.Once);
+    }
+
+    [Fact]
+    public void IsExists_WhenExists_ReturnsTrue()
+    {
+        Assert.True(_page.TestTextArea.IsExists());
+    }
+
+    [Fact]
+    public void IsVisible_WhenVisible_ReturnsTrue()
+    {
+        Assert.Equal(true, _page.TestTextArea.IsVisible());
+    }
+
+    [Fact]
+    public void Clear_CallsElementClear()
+    {
+        _page.TestTextArea.Clear();
+
+        _mockElement.Verify(e => e.Clear(), Times.Once);
+    }
+
+    private sealed class TestPage : BlazorPageObjectBase<TestPage>
+    {
+        public TestPage(IHtmlTestContext context) : base(context) { }
+
+        public TextAreaControl<TestPage> TestTextArea => new(this, "test-textarea");
+    }
+}

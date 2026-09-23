@@ -1,0 +1,22 @@
+{
+  "artifacts": {
+    "rootDirectory": null,
+    "runId": null,
+    "suite": "MAUI"
+  },
+  "framework": {
+    "automation": {
+      "enabled": false
+    }
+  },
+  "maui": {
+    "serverUri": "http://127.0.0.1:4723",
+    "platform": "windows",
+    "appPath": null,
+    "processName": null,
+    "windowHandle": null,
+    "deviceName": null,
+    "platformVersion": null,
+    "attachToRunning": false
+  }
+}

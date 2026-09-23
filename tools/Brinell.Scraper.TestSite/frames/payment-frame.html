@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Payment Frame</title>
+  <style>
+    body { font-family: "Segoe UI", Tahoma, sans-serif; margin: 0; padding: 12px; }
+    label { display: block; margin-bottom: 10px; font-weight: 600; }
+    input, select { width: 100%; margin-top: 4px; padding: 8px; border-radius: 6px; border: 1px solid #d1d5db; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    button { width: 100%; padding: 9px; background: #0369a1; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h3 data-testid="payment-frame-title">Secure Payment</h3>
+  <label>Cardholder Name
+    <input type="text" data-testid="card-name" placeholder="Alex Rivera">
+  </label>
+  <label>Card Number
+    <input type="text" data-testid="card-number" placeholder="4111 1111 1111 1111">
+  </label>
+  <div class="row">
+    <label>Expiry
+      <input type="text" data-testid="card-expiry" placeholder="12/29">
+    </label>
+    <label>CVV
+      <input type="password" data-testid="card-cvv" placeholder="123">
+    </label>
+  </div>
+  <label>Card Type
+    <select data-testid="card-type">
+      <option>Visa</option>
+      <option>Mastercard</option>
+      <option>Amex</option>
+    </select>
+  </label>
+  <button type="button" data-testid="pay-now">Pay Now</button>
+</body>
+</html>

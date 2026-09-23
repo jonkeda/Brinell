@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+    The sample app's entry point: one button per page, flat, with no tabs.
+
+    This replaces Shell navigation. Shell's tab bar does not survive going cross-platform:
+    Android's BottomNavigationView shows five tabs and hides the rest behind an overflow
+    menu, so a page was not merely addressed differently per platform, it was not on screen.
+    Windows had the mirror-image problem already - only nine tabs are clickable, which is why
+    four pages had to be registered as routes instead.
+
+    A flat list has neither problem, and no navigation stack to leak state between tests.
+    See .my/maui/sample-app-navigation-redesign.md.
+
+    The buttons are built in code-behind from SamplePages.All rather than listed here, so
+    adding a page stays a one-line change to the registry.
+-->
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Brinell.Samples.Maui.App.HubPage"
+             AutomationId="PageHub"
+             Title="Brinell MAUI Sample">
+
+    <ScrollView AutomationId="PageHubScroll">
+        <VerticalStackLayout Padding="16" Spacing="12">
+
+            <Label AutomationId="PageHubTitle"
+                   Text="Brinell MAUI Sample"
+                   FontSize="24"
+                   FontAttributes="Bold" />
+
+            <Label AutomationId="PageHubSubtitle"
+                   Text="Choose a page to test."
+                   FontSize="14" />
+
+            <!-- Populated from SamplePages.All in the code-behind. -->
+            <VerticalStackLayout x:Name="PageList"
+                                 AutomationId="PageHubList"
+                                 Spacing="8" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

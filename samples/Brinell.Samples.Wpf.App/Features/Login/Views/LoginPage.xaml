@@ -1,0 +1,130 @@
+<UserControl x:Class="Brinell.Samples.Wpf.App.Features.Login.Views.LoginPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:viewmodels="clr-namespace:Brinell.Samples.Wpf.App.Features.Login.ViewModels"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance Type=viewmodels:LoginViewModel}"
+             AutomationProperties.AutomationId="LoginPage">
+    
+    <Grid>
+        <Border Background="White"
+                CornerRadius="8"
+                Padding="32"
+                MaxWidth="400"
+                MaxHeight="500"
+                VerticalAlignment="Center"
+                HorizontalAlignment="Center"
+                AutomationProperties.AutomationId="LoginFormContainer">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                
+                <!-- Header -->
+                <TextBlock Grid.Row="0"
+                           Text="Sign In"
+                           Style="{StaticResource HeaderStyle}"
+                           HorizontalAlignment="Center"
+                           AutomationProperties.AutomationId="LoginHeader"/>
+                
+                <!-- Username Field -->
+                <StackPanel Grid.Row="1" Margin="0,16,0,0">
+                    <TextBlock Text="Username"
+                               Margin="4,0,0,4"
+                               AutomationProperties.AutomationId="UsernameLabel"/>
+                    <TextBox Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}"
+                             AutomationProperties.AutomationId="UsernameTextBox"
+                             IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}, FallbackValue=True}"/>
+                    <TextBlock Text="{Binding UsernameError}"
+                               Style="{StaticResource ErrorTextStyle}"
+                               Visibility="{Binding UsernameError, Converter={StaticResource NullToVisibilityConverter}}"
+                               AutomationProperties.AutomationId="UsernameErrorText"/>
+                </StackPanel>
+                
+                <!-- Password Field -->
+                <StackPanel Grid.Row="2" Margin="0,8,0,0">
+                    <TextBlock Text="Password"
+                               Margin="4,0,0,4"
+                               AutomationProperties.AutomationId="PasswordLabel"/>
+                    <!-- Note: Password binding requires special handling in code-behind -->
+                    <PasswordBox x:Name="PasswordBox"
+                                 AutomationProperties.AutomationId="PasswordBox"
+                                 PasswordChanged="PasswordBox_PasswordChanged"
+                                 IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}, FallbackValue=True}"/>
+                    <TextBlock Text="{Binding PasswordError}"
+                               Style="{StaticResource ErrorTextStyle}"
+                               Visibility="{Binding PasswordError, Converter={StaticResource NullToVisibilityConverter}}"
+                               AutomationProperties.AutomationId="PasswordErrorText"/>
+                </StackPanel>
+                
+                <!-- Login Error -->
+                <Border Grid.Row="3"
+                        Background="#FFEBEE"
+                        CornerRadius="4"
+                        Padding="12,8"
+                        Margin="0,16,0,0"
+                        Visibility="{Binding LoginError, Converter={StaticResource NullToVisibilityConverter}}"
+                        AutomationProperties.AutomationId="LoginErrorContainer">
+                    <TextBlock Text="{Binding LoginError}"
+                               Foreground="#C62828"
+                               TextWrapping="Wrap"
+                               AutomationProperties.AutomationId="LoginErrorText"/>
+                </Border>
+                
+                <!-- Busy Indicator -->
+                <StackPanel Grid.Row="4"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Center"
+                            Margin="0,16,0,0"
+                            Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibilityConverter}}"
+                            AutomationProperties.AutomationId="BusyIndicator">
+                    <ProgressBar IsIndeterminate="True"
+                                 Width="100"
+                                 Height="4"
+                                 Margin="0,0,8,0"/>
+                    <TextBlock Text="Signing in..."
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+                
+                <!-- Buttons -->
+                <StackPanel Grid.Row="5"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Center"
+                            Margin="0,24,0,0">
+                    <Button Content="Sign In"
+                            Command="{Binding LoginCommand}"
+                            IsDefault="True"
+                            MinWidth="100"
+                            AutomationProperties.AutomationId="LoginButton"/>
+                    <Button Content="Cancel"
+                            Command="{Binding CancelCommand}"
+                            IsCancel="True"
+                            MinWidth="100"
+                            AutomationProperties.AutomationId="CancelButton"/>
+                </StackPanel>
+                
+                <!-- Success Message -->
+                <Border Grid.Row="6"
+                        Background="#E8F5E9"
+                        CornerRadius="4"
+                        Padding="12,8"
+                        Margin="0,16,0,0"
+                        Visibility="{Binding IsLoginSuccessful, Converter={StaticResource BoolToVisibilityConverter}}"
+                        AutomationProperties.AutomationId="SuccessContainer">
+                    <TextBlock Text="Login successful! Redirecting..."
+                               Foreground="#2E7D32"
+                               HorizontalAlignment="Center"
+                               AutomationProperties.AutomationId="SuccessText"/>
+                </Border>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

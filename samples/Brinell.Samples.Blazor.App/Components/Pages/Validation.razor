@@ -1,0 +1,400 @@
+@page "/validation"
+@using System.Text.RegularExpressions
+@using Brinell.Samples.Blazor.App.Models
+
+<PageTitle>Validation - Brinell Blazor Sample</PageTitle>
+
+<div data-automation-id="ValidationPage">
+    <h1 data-automation-id="ValidationTitle">Form Validation</h1>
+    <p class="text-muted" data-automation-id="ValidationSubtitle">
+        Enter values to see validation in action
+    </p>
+
+    <!-- Validation Summary -->
+    @if (errors.Any())
+    {
+        <div class="alert alert-danger" data-automation-id="ValidationSummary">
+            <h5 data-automation-id="ErrorCount">Validation Errors: @errors.Count</h5>
+            <ul class="mb-0" data-automation-id="ErrorList">
+                @foreach (var error in errors)
+                {
+                    <li>@error</li>
+                }
+            </ul>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <div class="alert alert-success" data-automation-id="SuccessMessage">
+            @successMessage
+        </div>
+    }
+
+    <form @onsubmit="HandleSubmit" @onsubmit:preventDefault>
+        <!-- Required Field -->
+        <div class="card mb-3" data-automation-id="RequiredSection">
+            <div class="card-body">
+                <label class="form-label" for="required">Required Field *</label>
+                <input type="text" id="required"
+                       class="form-control @(GetValidationClass(nameof(model.RequiredField)))"
+                       @bind="model.RequiredField" @bind:event="oninput"
+                       @onfocusout="() => ValidateField(nameof(model.RequiredField))"
+                       placeholder="This field is required"
+                       data-automation-id="RequiredInput" />
+                @if (fieldErrors.ContainsKey(nameof(model.RequiredField)))
+                {
+                    <div class="invalid-feedback d-block" data-automation-id="RequiredError">
+                        @fieldErrors[nameof(model.RequiredField)]
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Email Field -->
+        <div class="card mb-3" data-automation-id="EmailSection">
+            <div class="card-body">
+                <label class="form-label" for="email">Email Address</label>
+                <input type="email" id="email"
+                       class="form-control @(GetValidationClass(nameof(model.EmailField)))"
+                       @bind="model.EmailField" @bind:event="oninput"
+                       @onfocusout="() => ValidateField(nameof(model.EmailField))"
+                       placeholder="user@example.com"
+                       data-automation-id="EmailInput" />
+                @if (fieldErrors.ContainsKey(nameof(model.EmailField)))
+                {
+                    <div class="invalid-feedback d-block" data-automation-id="EmailError">
+                        @fieldErrors[nameof(model.EmailField)]
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Phone Field -->
+        <div class="card mb-3" data-automation-id="PhoneSection">
+            <div class="card-body">
+                <label class="form-label" for="phone">Phone Number (format: 123-456-7890)</label>
+                <input type="tel" id="phone"
+                       class="form-control @(GetValidationClass(nameof(model.PhoneField)))"
+                       @bind="model.PhoneField" @bind:event="oninput"
+                       @onfocusout="() => ValidateField(nameof(model.PhoneField))"
+                       placeholder="123-456-7890"
+                       data-automation-id="PhoneInput" />
+                @if (fieldErrors.ContainsKey(nameof(model.PhoneField)))
+                {
+                    <div class="invalid-feedback d-block" data-automation-id="PhoneError">
+                        @fieldErrors[nameof(model.PhoneField)]
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Min Length Field -->
+        <div class="card mb-3" data-automation-id="MinLengthSection">
+            <div class="card-body">
+                <label class="form-label" for="minlength">Minimum Length (5 characters)</label>
+                <input type="text" id="minlength"
+                       class="form-control @(GetValidationClass(nameof(model.MinLengthField)))"
+                       @bind="model.MinLengthField" @bind:event="oninput"
+                       @onfocusout="() => ValidateField(nameof(model.MinLengthField))"
+                       placeholder="Enter at least 5 characters"
+                       data-automation-id="MinLengthInput" />
+                <small class="text-muted" data-automation-id="MinLengthCounter">
+                    Characters: @model.MinLengthField.Length
+                </small>
+                @if (fieldErrors.ContainsKey(nameof(model.MinLengthField)))
+                {
+                    <div class="invalid-feedback d-block" data-automation-id="MinLengthError">
+                        @fieldErrors[nameof(model.MinLengthField)]
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Max Length Field -->
+        <div class="card mb-3" data-automation-id="MaxLengthSection">
+            <div class="card-body">
+                <label class="form-label" for="maxlength">Maximum Length (20 characters)</label>
+                <input type="text" id="maxlength" maxlength="25"
+                       class="form-control @(GetValidationClass(nameof(model.MaxLengthField)))"
+                       @bind="model.MaxLengthField" @bind:event="oninput"
+                       @onfocusout="() => ValidateField(nameof(model.MaxLengthField))"
+                       placeholder="Maximum 20 characters"
+                       data-automation-id="MaxLengthInput" />
+                <small class="text-muted" data-automation-id="MaxLengthCounter">
+                    Characters: @model.MaxLengthField.Length / 20
+                </small>
+                @if (fieldErrors.ContainsKey(nameof(model.MaxLengthField)))
+                {
+                    <div class="invalid-feedback d-block" data-automation-id="MaxLengthError">
+                        @fieldErrors[nameof(model.MaxLengthField)]
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Range Field -->
+        <div class="card mb-3" data-automation-id="RangeSection">
+            <div class="card-body">
+                <label class="form-label" for="range">Number Range (1-100)</label>
+                <input type="number" id="range" min="0" max="200"
+                       class="form-control @(GetValidationClass(nameof(model.RangeField)))"
+                       @bind="model.RangeField" @bind:event="oninput"
+                       @onfocusout="() => ValidateField(nameof(model.RangeField))"
+                       placeholder="Enter a number between 1 and 100"
+                       data-automation-id="RangeInput" />
+                @if (fieldErrors.ContainsKey(nameof(model.RangeField)))
+                {
+                    <div class="invalid-feedback d-block" data-automation-id="RangeError">
+                        @fieldErrors[nameof(model.RangeField)]
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Regex Field -->
+        <div class="card mb-3" data-automation-id="RegexSection">
+            <div class="card-body">
+                <label class="form-label" for="regex">Alphanumeric Only (regex)</label>
+                <input type="text" id="regex"
+                       class="form-control @(GetValidationClass(nameof(model.RegexField)))"
+                       @bind="model.RegexField" @bind:event="oninput"
+                       @onfocusout="() => ValidateField(nameof(model.RegexField))"
+                       placeholder="Letters and numbers only"
+                       data-automation-id="RegexInput" />
+                @if (fieldErrors.ContainsKey(nameof(model.RegexField)))
+                {
+                    <div class="invalid-feedback d-block" data-automation-id="RegexError">
+                        @fieldErrors[nameof(model.RegexField)]
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Password Fields -->
+        <div class="card mb-3" data-automation-id="PasswordSection">
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label" for="password">Password</label>
+                    <input type="password" id="password"
+                           class="form-control @(GetValidationClass(nameof(model.PasswordField)))"
+                           @bind="model.PasswordField" @bind:event="oninput"
+                           @onfocusout="() => ValidateField(nameof(model.PasswordField))"
+                           placeholder="Enter password (min 8 chars)"
+                           data-automation-id="PasswordInput" />
+                    @if (fieldErrors.ContainsKey(nameof(model.PasswordField)))
+                    {
+                        <div class="invalid-feedback d-block" data-automation-id="PasswordError">
+                            @fieldErrors[nameof(model.PasswordField)]
+                        </div>
+                    }
+                </div>
+                <div>
+                    <label class="form-label" for="confirmPassword">Confirm Password</label>
+                    <input type="password" id="confirmPassword"
+                           class="form-control @(GetValidationClass(nameof(model.ConfirmPasswordField)))"
+                           @bind="model.ConfirmPasswordField" @bind:event="oninput"
+                           @onfocusout="() => ValidateField(nameof(model.ConfirmPasswordField))"
+                           placeholder="Re-enter password"
+                           data-automation-id="ConfirmPasswordInput" />
+                    @if (fieldErrors.ContainsKey(nameof(model.ConfirmPasswordField)))
+                    {
+                        <div class="invalid-feedback d-block" data-automation-id="ConfirmPasswordError">
+                            @fieldErrors[nameof(model.ConfirmPasswordField)]
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="d-flex gap-2" data-automation-id="ActionButtons">
+            <button type="submit" class="btn btn-primary" data-automation-id="SubmitButton">
+                Validate & Submit
+            </button>
+            <button type="button" class="btn btn-outline-secondary" @onclick="ValidateAll"
+                    data-automation-id="ValidateButton">
+                Validate Only
+            </button>
+            <button type="button" class="btn btn-outline-danger" @onclick="ClearForm"
+                    data-automation-id="ClearButton">
+                Clear Form
+            </button>
+        </div>
+    </form>
+
+    <!-- Validation Rules Reference -->
+    <div class="card mt-4" data-automation-id="RulesSection">
+        <div class="card-header">
+            <h5 data-automation-id="RulesTitle">Validation Rules Applied</h5>
+        </div>
+        <div class="card-body">
+            <ul class="list-unstyled" data-automation-id="RulesList">
+                <li data-automation-id="Rule1">• <strong>Required:</strong> Field must not be empty</li>
+                <li data-automation-id="Rule2">• <strong>Email:</strong> Valid email format (user@domain.tld)</li>
+                <li data-automation-id="Rule3">• <strong>Phone:</strong> Format 123-456-7890</li>
+                <li data-automation-id="Rule4">• <strong>MinLength:</strong> At least 5 characters</li>
+                <li data-automation-id="Rule5">• <strong>MaxLength:</strong> Maximum 20 characters</li>
+                <li data-automation-id="Rule6">• <strong>Range:</strong> Number between 1-100</li>
+                <li data-automation-id="Rule7">• <strong>Regex:</strong> Alphanumeric characters only</li>
+                <li data-automation-id="Rule8">• <strong>Password:</strong> Minimum 8 characters</li>
+                <li data-automation-id="Rule9">• <strong>Compare:</strong> Passwords must match</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+@code {
+    private ValidationModel model = new();
+    private Dictionary<string, string> fieldErrors = new();
+    private List<string> errors = new();
+    private string successMessage = "";
+
+    private void ValidateField(string fieldName)
+    {
+        fieldErrors.Remove(fieldName);
+        successMessage = "";
+
+        var error = fieldName switch
+        {
+            nameof(model.RequiredField) => ValidateRequired(),
+            nameof(model.EmailField) => ValidateEmail(),
+            nameof(model.PhoneField) => ValidatePhone(),
+            nameof(model.MinLengthField) => ValidateMinLength(),
+            nameof(model.MaxLengthField) => ValidateMaxLength(),
+            nameof(model.RangeField) => ValidateRange(),
+            nameof(model.RegexField) => ValidateRegex(),
+            nameof(model.PasswordField) => ValidatePassword(),
+            nameof(model.ConfirmPasswordField) => ValidateConfirmPassword(),
+            _ => null
+        };
+
+        if (!string.IsNullOrEmpty(error))
+        {
+            fieldErrors[fieldName] = error;
+        }
+
+        UpdateErrorSummary();
+    }
+
+    private string? ValidateRequired()
+    {
+        return string.IsNullOrWhiteSpace(model.RequiredField) 
+            ? "This field is required" 
+            : null;
+    }
+
+    private string? ValidateEmail()
+    {
+        if (string.IsNullOrEmpty(model.EmailField)) return null;
+        var regex = new Regex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$");
+        return !regex.IsMatch(model.EmailField) 
+            ? "Invalid email format" 
+            : null;
+    }
+
+    private string? ValidatePhone()
+    {
+        if (string.IsNullOrEmpty(model.PhoneField)) return null;
+        var regex = new Regex(@"^\d{3}-\d{3}-\d{4}$");
+        return !regex.IsMatch(model.PhoneField) 
+            ? "Invalid phone format (use: 123-456-7890)" 
+            : null;
+    }
+
+    private string? ValidateMinLength()
+    {
+        if (string.IsNullOrEmpty(model.MinLengthField)) return null;
+        return model.MinLengthField.Length < 5 
+            ? "Minimum 5 characters required" 
+            : null;
+    }
+
+    private string? ValidateMaxLength()
+    {
+        return model.MaxLengthField.Length > 20 
+            ? "Maximum 20 characters allowed" 
+            : null;
+    }
+
+    private string? ValidateRange()
+    {
+        if (!model.RangeField.HasValue) return null;
+        return (model.RangeField < 1 || model.RangeField > 100) 
+            ? "Value must be between 1 and 100" 
+            : null;
+    }
+
+    private string? ValidateRegex()
+    {
+        if (string.IsNullOrEmpty(model.RegexField)) return null;
+        var regex = new Regex(@"^[a-zA-Z0-9]+$");
+        return !regex.IsMatch(model.RegexField) 
+            ? "Only alphanumeric characters allowed" 
+            : null;
+    }
+
+    private string? ValidatePassword()
+    {
+        if (string.IsNullOrEmpty(model.PasswordField)) return null;
+        return model.PasswordField.Length < 8 
+            ? "Password must be at least 8 characters" 
+            : null;
+    }
+
+    private string? ValidateConfirmPassword()
+    {
+        if (string.IsNullOrEmpty(model.ConfirmPasswordField)) return null;
+        return model.ConfirmPasswordField != model.PasswordField 
+            ? "Passwords do not match" 
+            : null;
+    }
+
+    private void ValidateAll()
+    {
+        fieldErrors.Clear();
+        successMessage = "";
+
+        ValidateField(nameof(model.RequiredField));
+        ValidateField(nameof(model.EmailField));
+        ValidateField(nameof(model.PhoneField));
+        ValidateField(nameof(model.MinLengthField));
+        ValidateField(nameof(model.MaxLengthField));
+        ValidateField(nameof(model.RangeField));
+        ValidateField(nameof(model.RegexField));
+        ValidateField(nameof(model.PasswordField));
+        ValidateField(nameof(model.ConfirmPasswordField));
+
+        UpdateErrorSummary();
+    }
+
+    private void UpdateErrorSummary()
+    {
+        errors = fieldErrors.Values.ToList();
+    }
+
+    private void HandleSubmit()
+    {
+        ValidateAll();
+        
+        if (!errors.Any())
+        {
+            successMessage = "Form submitted successfully!";
+        }
+    }
+
+    private void ClearForm()
+    {
+        model = new ValidationModel();
+        fieldErrors.Clear();
+        errors.Clear();
+        successMessage = "Form cleared";
+    }
+
+    private string GetValidationClass(string fieldName)
+    {
+        if (fieldErrors.ContainsKey(fieldName))
+            return "is-invalid";
+        return "";
+    }
+}

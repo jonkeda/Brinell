@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Brinell.Samples.Maui.ShellApp.Pages.ControlsPage"
+             Title="Controls">
+    <VerticalStackLayout AutomationId="ShellControlsPage" Padding="20" Spacing="10">
+        <Label AutomationId="ShellControlsLabel" Text="Controls" />
+        <Button AutomationId="ShellControlsButton" Text="Record" Clicked="OnRecord" />
+        <Label x:Name="ShellControlsResult" AutomationId="ShellControlsResult" Text="none" />
+    </VerticalStackLayout>
+</ContentPage>

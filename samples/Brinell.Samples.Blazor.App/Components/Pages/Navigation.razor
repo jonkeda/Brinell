@@ -1,0 +1,416 @@
+@page "/navigation"
+
+<PageTitle>Navigation - Brinell Blazor Sample</PageTitle>
+
+<div data-automation-id="NavigationPage">
+    <h1 data-automation-id="NavigationTitle">Navigation and Layout</h1>
+
+    @if (!string.IsNullOrEmpty(actionResult))
+    {
+        <div class="alert alert-info" data-automation-id="ActionResult">
+            @actionResult
+        </div>
+    }
+
+    <!-- Breadcrumb Section -->
+    <div class="card mb-4" data-automation-id="BreadcrumbSection">
+        <div class="card-header">
+            <h5 data-automation-id="BreadcrumbTitle">Breadcrumb Navigation</h5>
+        </div>
+        <div class="card-body">
+            <nav aria-label="breadcrumb" data-automation-id="Breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a href="/" @onclick="OnHomeClick" @onclick:preventDefault
+                           data-automation-id="BreadcrumbHome">Home</a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a href="#" @onclick="OnProductsClick" @onclick:preventDefault
+                           data-automation-id="BreadcrumbProducts">Products</a>
+                    </li>
+                    <li class="breadcrumb-item active" aria-current="page"
+                        data-automation-id="BreadcrumbCurrent">Navigation</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Accordion/Expander Section -->
+    <div class="card mb-4" data-automation-id="AccordionSection">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 data-automation-id="AccordionTitle">Accordion / Expanders</h5>
+            <div class="btn-group">
+                <button class="btn btn-sm btn-outline-primary" @onclick="ExpandAll"
+                        data-automation-id="ExpandAllButton">Expand All</button>
+                <button class="btn btn-sm btn-outline-secondary" @onclick="CollapseAll"
+                        data-automation-id="CollapseAllButton">Collapse All</button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="accordion" data-automation-id="Accordion">
+                @for (int idx = 0; idx < accordionSections.Count; idx++)
+                {
+                    var index = idx;
+                    var acc = accordionSections[index];
+                    <div class="accordion-item" data-automation-id="@("AccordionItem_" + index)">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button @(acc.IsExpanded ? "" : "collapsed")"
+                                    type="button" @onclick="() => ToggleAccordion(index)"
+                                    data-automation-id="@("AccordionHeader_" + index)">
+                                @acc.Title
+                            </button>
+                        </h2>
+                        <div class="accordion-collapse @(acc.IsExpanded ? "show" : "collapse")"
+                             data-automation-id="@("AccordionContent_" + index)">
+                            <div class="accordion-body">
+                                @acc.Content
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab Navigation Section -->
+    <div class="card mb-4" data-automation-id="TabSection">
+        <div class="card-header">
+            <h5 data-automation-id="TabSectionTitle">Tab Navigation</h5>
+        </div>
+        <div class="card-body">
+            <ul class="nav nav-tabs" data-automation-id="TabList">
+                @for (int idx = 0; idx < tabs.Count; idx++)
+                {
+                    var index = idx;
+                    var tab = tabs[index];
+                    <li class="nav-item">
+                        <button class="nav-link @(activeTabIndex == index ? "active" : "")"
+                                @onclick="() => activeTabIndex = index"
+                                data-automation-id="@("Tab_" + tab.Id)">
+                            @tab.Title
+                        </button>
+                    </li>
+                }
+            </ul>
+            <div class="tab-content p-3 border border-top-0 rounded-bottom"
+                 data-automation-id="TabContent">
+                <div class="tab-pane fade show active"
+                     data-automation-id="@("TabPanel_" + tabs[activeTabIndex].Id)">
+                    <h5>@tabs[activeTabIndex].Title</h5>
+                    <p>@tabs[activeTabIndex].Content</p>
+                </div>
+            </div>
+
+            <h6 class="mt-4">Pills Style</h6>
+            <ul class="nav nav-pills" data-automation-id="PillsList">
+                @for (int idx = 0; idx < tabs.Count; idx++)
+                {
+                    var index = idx;
+                    var tab = tabs[index];
+                    <li class="nav-item">
+                        <button class="nav-link @(activePillIndex == index ? "active" : "")"
+                                @onclick="() => activePillIndex = index"
+                                data-automation-id="@("Pill_" + tab.Id)">
+                            @tab.Title
+                        </button>
+                    </li>
+                }
+            </ul>
+        </div>
+    </div>
+
+    <!-- Toolbar Section -->
+    <div class="card mb-4" data-automation-id="ToolbarSection">
+        <div class="card-header">
+            <h5 data-automation-id="ToolbarTitle">Toolbar</h5>
+        </div>
+        <div class="card-body">
+            <div class="btn-toolbar mb-3" role="toolbar" data-automation-id="Toolbar">
+                <div class="btn-group me-2" data-automation-id="ToolbarGroup1">
+                    <button type="button" class="btn btn-primary" @onclick="OnNewClick"
+                            data-automation-id="ToolbarNew">New</button>
+                    <button type="button" class="btn btn-primary" @onclick="OnOpenClick"
+                            data-automation-id="ToolbarOpen">Open</button>
+                    <button type="button" class="btn btn-primary" @onclick="OnSaveClick"
+                            data-automation-id="ToolbarSave">Save</button>
+                </div>
+                <div class="btn-group me-2" data-automation-id="ToolbarGroup2">
+                    <button type="button" class="btn btn-secondary" @onclick="OnCutClick"
+                            data-automation-id="ToolbarCut">Cut</button>
+                    <button type="button" class="btn btn-secondary" @onclick="OnCopyClick"
+                            data-automation-id="ToolbarCopy">Copy</button>
+                    <button type="button" class="btn btn-secondary" @onclick="OnPasteClick"
+                            data-automation-id="ToolbarPaste">Paste</button>
+                </div>
+                <div class="btn-group" data-automation-id="ToolbarGroup3">
+                    <button type="button" class="btn btn-danger" @onclick="OnDeleteClick"
+                            data-automation-id="ToolbarDelete">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dropdown Menu Section -->
+    <div class="card mb-4" data-automation-id="DropdownSection">
+        <div class="card-header">
+            <h5 data-automation-id="DropdownTitle">Dropdown Menus</h5>
+        </div>
+        <div class="card-body">
+            <div class="d-flex gap-3 flex-wrap">
+                <div class="dropdown" data-automation-id="BasicDropdown">
+                    <button class="btn btn-secondary dropdown-toggle" type="button"
+                            @onclick="() => ToggleDropdown(0)"
+                            data-automation-id="DropdownButton1">
+                        Actions
+                    </button>
+                    <ul class="dropdown-menu @(activeDropdown == 0 ? "show" : "")"
+                        data-automation-id="DropdownMenu1">
+                        <li><a class="dropdown-item" href="#" @onclick="OnAction1" @onclick:preventDefault
+                               data-automation-id="DropdownItem1_1">Action 1</a></li>
+                        <li><a class="dropdown-item" href="#" @onclick="OnAction2" @onclick:preventDefault
+                               data-automation-id="DropdownItem1_2">Action 2</a></li>
+                        <li><hr class="dropdown-divider" data-automation-id="DropdownDivider1" /></li>
+                        <li><a class="dropdown-item" href="#" @onclick="OnAction3" @onclick:preventDefault
+                               data-automation-id="DropdownItem1_3">Action 3</a></li>
+                    </ul>
+                </div>
+
+                <div class="btn-group" data-automation-id="SplitDropdown">
+                    <button type="button" class="btn btn-primary" @onclick="OnPrimaryAction"
+                            data-automation-id="SplitMainButton">Primary</button>
+                    <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split"
+                            @onclick="() => ToggleDropdown(1)"
+                            data-automation-id="SplitDropdownToggle">
+                    </button>
+                    <ul class="dropdown-menu @(activeDropdown == 1 ? "show" : "")"
+                        data-automation-id="SplitDropdownMenu">
+                        <li><a class="dropdown-item" href="#" @onclick="OnOptionA" @onclick:preventDefault
+                               data-automation-id="SplitItem1">Option A</a></li>
+                        <li><a class="dropdown-item" href="#" @onclick="OnOptionB" @onclick:preventDefault
+                               data-automation-id="SplitItem2">Option B</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Links Section -->
+    <div class="card mb-4" data-automation-id="LinksSection">
+        <div class="card-header">
+            <h5 data-automation-id="LinksTitle">Hyperlinks</h5>
+        </div>
+        <div class="card-body">
+            <ul class="list-unstyled" data-automation-id="LinksList">
+                <li class="mb-2">
+                    <a href="https://docs.microsoft.com" target="_blank"
+                       data-automation-id="Link1">Microsoft Documentation</a>
+                </li>
+                <li class="mb-2">
+                    <a href="https://github.com" target="_blank"
+                       data-automation-id="Link2">GitHub Repository</a>
+                </li>
+                <li class="mb-2">
+                    <a href="#" @onclick="OnInternalLink" @onclick:preventDefault
+                       data-automation-id="Link3">Internal Navigation Link</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Pagination Section -->
+    <div class="card mb-4" data-automation-id="PaginationSection">
+        <div class="card-header">
+            <h5 data-automation-id="PaginationTitle">Pagination</h5>
+        </div>
+        <div class="card-body">
+            <nav aria-label="Page navigation" data-automation-id="Pagination">
+                <ul class="pagination">
+                    <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                        <button class="page-link" @onclick="GoPrevPage"
+                                data-automation-id="PrevPage">Previous</button>
+                    </li>
+                    @for (int i = 1; i <= totalPages; i++)
+                    {
+                        var pageNum = i;
+                        <li class="page-item @(currentPage == pageNum ? "active" : "")">
+                            <button class="page-link" @onclick="() => GoToPage(pageNum)"
+                                    data-automation-id="@("Page_" + pageNum)">@pageNum</button>
+                        </li>
+                    }
+                    <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                        <button class="page-link" @onclick="GoNextPage"
+                                data-automation-id="NextPage">Next</button>
+                    </li>
+                </ul>
+            </nav>
+            <p class="text-muted" data-automation-id="PageInfo">Current page: @currentPage of @totalPages</p>
+        </div>
+    </div>
+
+    <!-- Modal Trigger Section -->
+    <div class="card" data-automation-id="ModalSection">
+        <div class="card-header">
+            <h5 data-automation-id="ModalTitle">Modal Dialogs</h5>
+        </div>
+        <div class="card-body">
+            <button class="btn btn-primary me-2" @onclick="ShowInfoModal"
+                    data-automation-id="ShowInfoModal">Info Modal</button>
+            <button class="btn btn-warning me-2" @onclick="ShowConfirmModal"
+                    data-automation-id="ShowConfirmModal">Confirm Modal</button>
+            <button class="btn btn-danger" @onclick="ShowAlertModal"
+                    data-automation-id="ShowAlertModal">Alert Modal</button>
+        </div>
+    </div>
+
+    @if (isModalVisible)
+    {
+        <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);"
+             data-automation-id="Modal">
+            <div class="modal-dialog" data-automation-id="ModalDialog">
+                <div class="modal-content">
+                    <div class="modal-header" data-automation-id="ModalHeader">
+                        <h5 class="modal-title" data-automation-id="ModalTitleText">@modalTitle</h5>
+                        <button type="button" class="btn-close" @onclick="CloseModal"
+                                data-automation-id="ModalClose"></button>
+                    </div>
+                    <div class="modal-body" data-automation-id="ModalBody">
+                        <p>@modalContent</p>
+                    </div>
+                    <div class="modal-footer" data-automation-id="ModalFooter">
+                        <button type="button" class="btn btn-secondary" @onclick="CloseModal"
+                                data-automation-id="ModalCancelButton">Cancel</button>
+                        <button type="button" class="btn btn-primary" @onclick="ConfirmModal"
+                                data-automation-id="ModalConfirmButton">OK</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private string actionResult = "";
+    private int activeTabIndex = 0;
+    private int activePillIndex = 0;
+    private int activeDropdown = -1;
+    private int currentPage = 1;
+    private int totalPages = 5;
+    private bool isModalVisible = false;
+    private string modalTitle = "";
+    private string modalContent = "";
+
+    private List<AccordionItem> accordionSections = new()
+    {
+        new("Getting Started", "This section covers the basics of getting started.", true),
+        new("Configuration", "Detailed configuration options.", false),
+        new("Advanced Features", "Advanced features like parallel execution.", false),
+        new("Troubleshooting", "Common issues and their solutions.", false)
+    };
+
+    private List<TabData> tabs = new()
+    {
+        new("home", "Home", "Welcome to the home tab."),
+        new("profile", "Profile", "View and edit your profile."),
+        new("settings", "Settings", "Application settings."),
+        new("help", "Help", "Get help and support.")
+    };
+
+    private void HandleAction(string action)
+    {
+        actionResult = "Action: " + action + " at " + DateTime.Now.ToString("HH:mm:ss");
+        activeDropdown = -1;
+    }
+
+    private void OnHomeClick() => HandleAction("Home clicked");
+    private void OnProductsClick() => HandleAction("Products clicked");
+    private void OnNewClick() => HandleAction("New clicked");
+    private void OnOpenClick() => HandleAction("Open clicked");
+    private void OnSaveClick() => HandleAction("Save clicked");
+    private void OnCutClick() => HandleAction("Cut clicked");
+    private void OnCopyClick() => HandleAction("Copy clicked");
+    private void OnPasteClick() => HandleAction("Paste clicked");
+    private void OnDeleteClick() => HandleAction("Delete clicked");
+    private void OnAction1() => HandleAction("Action 1");
+    private void OnAction2() => HandleAction("Action 2");
+    private void OnAction3() => HandleAction("Action 3");
+    private void OnPrimaryAction() => HandleAction("Primary action");
+    private void OnOptionA() => HandleAction("Option A");
+    private void OnOptionB() => HandleAction("Option B");
+    private void OnInternalLink() => HandleAction("Internal link clicked");
+
+    private void ToggleAccordion(int index)
+    {
+        accordionSections[index].IsExpanded = !accordionSections[index].IsExpanded;
+    }
+
+    private void ExpandAll()
+    {
+        foreach (var s in accordionSections)
+            s.IsExpanded = true;
+    }
+
+    private void CollapseAll()
+    {
+        foreach (var s in accordionSections)
+            s.IsExpanded = false;
+    }
+
+    private void ToggleDropdown(int index)
+    {
+        activeDropdown = activeDropdown == index ? -1 : index;
+    }
+
+    private void GoToPage(int page)
+    {
+        currentPage = Math.Max(1, Math.Min(page, totalPages));
+        HandleAction("Navigated to page " + currentPage);
+    }
+
+    private void GoPrevPage() => GoToPage(currentPage - 1);
+    private void GoNextPage() => GoToPage(currentPage + 1);
+
+    private void ShowInfoModal()
+    {
+        modalTitle = "Information";
+        modalContent = "This is an informational message.";
+        isModalVisible = true;
+    }
+
+    private void ShowConfirmModal()
+    {
+        modalTitle = "Confirmation";
+        modalContent = "Are you sure you want to proceed?";
+        isModalVisible = true;
+    }
+
+    private void ShowAlertModal()
+    {
+        modalTitle = "Alert";
+        modalContent = "Warning! This action cannot be undone.";
+        isModalVisible = true;
+    }
+
+    private void CloseModal() => isModalVisible = false;
+
+    private void ConfirmModal()
+    {
+        HandleAction("Modal confirmed: " + modalTitle);
+        isModalVisible = false;
+    }
+
+    private class AccordionItem
+    {
+        public string Title { get; set; }
+        public string Content { get; set; }
+        public bool IsExpanded { get; set; }
+
+        public AccordionItem(string title, string content, bool expanded)
+        {
+            Title = title;
+            Content = content;
+            IsExpanded = expanded;
+        }
+    }
+
+    private record TabData(string Id, string Title, string Content);
+}

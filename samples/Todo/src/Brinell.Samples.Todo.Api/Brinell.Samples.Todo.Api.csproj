@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Brinell.Samples.Todo.Api</RootNamespace>
+    <Description>The Todo backend: a minimal API storing todos in its own SQLite file.</Description>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Brinell.Samples.Todo.Contracts\Brinell.Samples.Todo.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,53 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Windows first; Android is phase 7 of .my/TodoApp/plan.md. -->
+    <TargetFrameworks>net10.0-windows10.0.19041.0;net10.0-android</TargetFrameworks>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Brinell.Samples.Todo.App</RootNamespace>
+    <UseMaui>true</UseMaui>
+    <SingleProject>true</SingleProject>
+    <IsPackable>false</IsPackable>
+
+    <!-- Compiled bindings everywhere (x:DataType), so a binding typo is a build error. -->
+    <MauiEnableXamlCBindingWithSourceCompilation>true</MauiEnableXamlCBindingWithSourceCompilation>
+
+    <!-- Unpackaged and self-contained on Windows: a test launches the .exe directly. -->
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+
+    <ApplicationTitle>Brinell Todo</ApplicationTitle>
+    <ApplicationId>com.brinell.samples.todo</ApplicationId>
+    <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+    <ApplicationVersion>1</ApplicationVersion>
+
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
+    <TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">21.0</SupportedOSPlatformVersion>
+
+    <!-- A UI test installs only the APK; see the sample app for why Debug must embed assemblies. -->
+    <EmbedAssembliesIntoApk Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">true</EmbedAssembliesIntoApk>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Maui.Controls" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Debug" />
+    <PackageReference Include="CommunityToolkit.Maui" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Brinell.Samples.Todo.Core\Brinell.Samples.Todo.Core.csproj" />
+    <ProjectReference Include="..\Brinell.Samples.Todo.Infrastructure\Brinell.Samples.Todo.Infrastructure.csproj" />
+    <!--
+      The Brinell automation handlers and gesture bridge, referenced as a project - the route the
+      MAUI sample app demonstrates. Copying its sources is the other supported route.
+    -->
+    <ProjectReference Include="..\..\..\Brinell.Maui.AppSupport\Brinell.Maui.AppSupport.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#512BD4" />
+    <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#512BD4" BaseSize="128,128" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Brinell.Html.UITests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\srcnew\Brinell.Core\Brinell.Core.csproj" />
+    <ProjectReference Include="..\..\srcnew\Brinell.Html\Brinell.Html.csproj" />
+    <ProjectReference Include="..\..\srcnew\Brinell.Html.Playwright\Brinell.Html.Playwright.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="coverlet.collector">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

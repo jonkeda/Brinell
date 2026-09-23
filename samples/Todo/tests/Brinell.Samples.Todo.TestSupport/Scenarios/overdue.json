@@ -1,0 +1,16 @@
+// Due dates around "now" (2026-03-10): two overdue, one done in the past, one due today.
+{
+  "now": "2026-03-10T09:00:00Z",
+  "server": [
+    { "id": "33333333-0000-0000-0000-000000000001", "title": "Renew passport", "notes": null, "dueDate": "2026-03-01", "status": "Open", "createdAt": "2026-02-01T08:00:00Z", "updatedAt": "2026-02-01T08:00:00Z" },
+    { "id": "33333333-0000-0000-0000-000000000002", "title": "Pay rent", "notes": null, "dueDate": "2026-03-09", "status": "InProgress", "createdAt": "2026-02-02T08:00:00Z", "updatedAt": "2026-02-02T08:00:00Z" },
+    { "id": "33333333-0000-0000-0000-000000000003", "title": "Water plants", "notes": null, "dueDate": "2026-03-05", "status": "Done", "createdAt": "2026-02-03T08:00:00Z", "updatedAt": "2026-03-05T08:00:00Z" },
+    { "id": "33333333-0000-0000-0000-000000000004", "title": "Plan trip", "notes": null, "dueDate": "2026-03-10", "status": "Open", "createdAt": "2026-02-04T08:00:00Z", "updatedAt": "2026-02-04T08:00:00Z" }
+  ],
+  "local": [
+    { "id": "33333333-0000-0000-0000-000000000001", "title": "Renew passport", "notes": null, "dueDate": "2026-03-01", "status": "Open", "createdAt": "2026-02-01T08:00:00Z", "updatedAt": "2026-02-01T08:00:00Z", "syncState": "Synced", "isDeleted": false },
+    { "id": "33333333-0000-0000-0000-000000000002", "title": "Pay rent", "notes": null, "dueDate": "2026-03-09", "status": "InProgress", "createdAt": "2026-02-02T08:00:00Z", "updatedAt": "2026-02-02T08:00:00Z", "syncState": "Synced", "isDeleted": false },
+    { "id": "33333333-0000-0000-0000-000000000003", "title": "Water plants", "notes": null, "dueDate": "2026-03-05", "status": "Done", "createdAt": "2026-02-03T08:00:00Z", "updatedAt": "2026-03-05T08:00:00Z", "syncState": "Synced", "isDeleted": false },
+    { "id": "33333333-0000-0000-0000-000000000004", "title": "Plan trip", "notes": null, "dueDate": "2026-03-10", "status": "Open", "createdAt": "2026-02-04T08:00:00Z", "updatedAt": "2026-02-04T08:00:00Z", "syncState": "Synced", "isDeleted": false }
+  ]
+}

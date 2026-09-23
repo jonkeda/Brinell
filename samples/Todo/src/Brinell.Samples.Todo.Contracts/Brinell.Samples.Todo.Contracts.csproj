@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Brinell.Samples.Todo.Contracts</RootNamespace>
+    <Description>The wire format shared by the Todo app and the Todo API.</Description>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+</Project>

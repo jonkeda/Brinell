@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+    One todo. The status control is interactive here: Next saves the new status at once.
+    The three SectionCards reuse ids (DueValue and friends) only inside their own card.
+-->
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Brinell.Samples.Todo.Core.ViewModels;assembly=Brinell.Samples.Todo.Core"
+             xmlns:views="clr-namespace:Brinell.Samples.Todo.App.Views"
+             x:Class="Brinell.Samples.Todo.App.Pages.TodoDetailPage"
+             x:DataType="vm:TodoDetailViewModel"
+             AutomationId="TodoDetailPage"
+             Title="Todo">
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Edit" AutomationId="TodoDetail_Edit" Command="{Binding EditCommand}" />
+        <ToolbarItem Text="Delete" AutomationId="TodoDetail_Delete" Command="{Binding DeleteCommand}" />
+    </ContentPage.ToolbarItems>
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="12">
+
+            <Label AutomationId="TodoDetail_Title"
+                   Text="{Binding Title}"
+                   FontSize="22"
+                   FontAttributes="Bold" />
+
+            <views:TodoStatusView AutomationId="TodoDetail_Status"
+                                  Status="{Binding Status}"
+                                  IsPastDue="{Binding IsPastDue}" />
+
+            <views:SectionCard AutomationId="TodoDetail_Info" Header="Details">
+                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="4">
+                    <Label Text="Due" />
+                    <Label Grid.Column="1" AutomationId="DueValue" Text="{Binding DueText}" />
+                    <Label Grid.Row="1" Text="Created" />
+                    <Label Grid.Row="1" Grid.Column="1" AutomationId="CreatedValue" Text="{Binding CreatedText}" />
+                    <Label Grid.Row="2" Text="Updated" />
+                    <Label Grid.Row="2" Grid.Column="1" AutomationId="UpdatedValue" Text="{Binding UpdatedText}" />
+                </Grid>
+            </views:SectionCard>
+
+            <views:SectionCard AutomationId="TodoDetail_Notes" Header="Notes">
+                <Label AutomationId="NotesValue" Text="{Binding Notes}" />
+            </views:SectionCard>
+
+            <views:SectionCard AutomationId="TodoDetail_Sync" Header="Sync">
+                <Label AutomationId="SyncValue" Text="{Binding SyncText}" />
+            </views:SectionCard>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

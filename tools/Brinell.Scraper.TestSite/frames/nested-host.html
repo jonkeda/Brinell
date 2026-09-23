@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nested Host Frame</title>
+  <style>
+    body { font-family: "Segoe UI", Tahoma, sans-serif; margin: 0; padding: 10px; }
+    iframe { width: 100%; min-height: 180px; border: 1px solid #d1d5db; border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <h3 data-testid="nested-host-title">Nested Diagnostics Host</h3>
+  <p data-testid="nested-host-text">This frame contains another iframe for nested traversal testing.</p>
+  <iframe src="nested-inner.html" title="Nested inner frame" data-testid="nested-inner-frame"></iframe>
+</body>
+</html>

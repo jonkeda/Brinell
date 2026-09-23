@@ -1,0 +1,53 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "appium": true,
+        "Start-Process": true,
+        "Write-Host": true,
+        "Test-NetConnection": true,
+        "Start-Job": true,
+        "/^Start-Sleep -Seconds 5; Invoke-WebRequest -Uri \"http://localhost:5180\" -UseBasicParsing -TimeoutSec 5 \\| Select-Object StatusCode$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "Get-Content": true,
+        "Get-Job": true,
+        "Measure-Object": true,
+        "/^Start-Sleep -Seconds 3; \\(Invoke-WebRequest -Uri \"http://127\\.0\\.0\\.1:4723/status\" -UseBasicParsing\\)\\.Content$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "Out-File": true,
+        "Get-Item": true,
+        "Join-Path": true,
+        "/^Start-Sleep -Seconds 4; \\(Invoke-WebRequest -Uri \"http://127\\.0\\.0\\.1:4723/status\" -UseBasicParsing\\)\\.Content$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^Stop-Process -Name \"Brinell\\*\" -Force -ErrorAction SilentlyContinue; taskkill /f /im \"Brinell\\.Samples\\.Maui\\.App\\.exe\" 2>\\$null; \"Cleaned up\"$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "taskkill": true,
+        "Get-WinEvent": true,
+        "Get-Date": true,
+        "Format-List": true,
+        "dotnet publish": true,
+        "dotnet list": true,
+        "findstr": true,
+        "dotnet nuget": true,
+        "dotnet workload": true,
+        "aapt": true,
+        "&": true,
+        "Out-String": true,
+        "/^Start-Sleep 10; Invoke-RestMethod \"http://127\\.0\\.0\\.1:4723/status\" -TimeoutSec 10$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    },
+    "cSpell.words": [
+        "Brinell"
+    ],
+    "hveCore.artifacts.initialized": true,
+    "spxCode.artifacts.initialized": true,
+    "spxCode.artifacts.lastInstalledVersion": "2.2.57"
+}

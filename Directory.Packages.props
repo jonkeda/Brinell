@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Testing -->
+    <PackageVersion Include="xunit" Version="2.9.3" />
+    <PackageVersion Include="xunit.extensibility.core" Version="2.9.3" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.10.0" />
+    <PackageVersion Include="coverlet.collector" Version="10.0.1" />
+    <PackageVersion Include="FluentAssertions" Version="7.2.2" />
+    <PackageVersion Include="Moq" Version="4.20.72" />
+    <PackageVersion Include="NSubstitute" Version="6.2.0" />
+    <PackageVersion Include="AutoFixture" Version="4.18.1" />
+    <PackageVersion Include="AutoFixture.Xunit2" Version="4.18.1" />
+    <PackageVersion Include="Bogus" Version="35.6.5" />
+    <PackageVersion Include="Microsoft.Extensions.TimeProvider.Testing" Version="10.0.0" />
+    <!-- FlaUI for WPF -->
+    <PackageVersion Include="FlaUI.Core" Version="5.0.0" />
+    <PackageVersion Include="FlaUI.UIA3" Version="5.0.0" />
+    <!-- Selenium for HTML/Web -->
+    <PackageVersion Include="Selenium.WebDriver" Version="4.29.0" />
+    <PackageVersion Include="Selenium.Support" Version="4.29.0" />
+    <PackageVersion Include="WebDriverManager" Version="2.17.5" />
+    <!-- Playwright for HTML/Web (alternative to Selenium) -->
+    <PackageVersion Include="Microsoft.Playwright" Version="1.62.0" />
+    <!-- Appium for MAUI/Mobile -->
+    <PackageVersion Include="Appium.WebDriver" Version="8.3.2" />
+    <!-- MAUI -->
+    <PackageVersion Include="Microsoft.Maui.Controls" Version="10.0.90" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Debug" Version="10.0.9" />
+    <PackageVersion Include="CommunityToolkit.Maui" Version="15.0.1" />
+    <PackageVersion Include="CommunityToolkit.Maui.MediaElement" Version="10.0.0" />
+    <!-- WireMock for API mocking -->
+    <PackageVersion Include="WireMock.Net" Version="2.15.0" />
+    <!-- Source Link -->
+    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.401" />
+    <!-- Stride 3D Engine -->
+    <PackageVersion Include="Stride.Engine" Version="4.3.0.2507" />
+    <PackageVersion Include="Stride.UI" Version="4.3.0.2507" />
+    <PackageVersion Include="Stride.Graphics" Version="4.3.0.2507" />
+    <PackageVersion Include="Stride.Rendering" Version="4.3.0.2507" />
+    <PackageVersion Include="Stride.CommunityToolkit.Windows" Version="1.0.0-preview.62" />
+    <PackageVersion Include="Stride.CommunityToolkit.Bepu" Version="1.0.0-preview.62" />
+    <!-- Entity Framework Core -->
+    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.0" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.0" />
+    <!-- Serilog -->
+    <PackageVersion Include="Serilog" Version="4.3.1" />
+    <PackageVersion Include="Serilog.Sinks.Console" Version="6.0.0" />
+    <!-- Scraper Tool -->
+    <PackageVersion Include="Microsoft.Web.WebView2" Version="1.0.4078.44" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.9" />
+    <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.9" />
+    <PackageVersion Include="Serilog.Extensions.Logging" Version="10.0.0" />
+    <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="5.6.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="5.6.0" />
+    <PackageVersion Include="GitHub.Copilot.SDK" Version="1.0.5" />
+  </ItemGroup>
+</Project>

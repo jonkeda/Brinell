@@ -1,0 +1,36 @@
+<UserControl x:Class="Brinell.Scraper.Views.CorpusBrowserView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <DockPanel>
+        <!-- Header + Filter -->
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="8,4">
+            <TextBlock Text="📚 Corpus Browser" FontSize="16" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,16,0"/>
+            <TextBlock Text="Filter:" VerticalAlignment="Center" Margin="0,0,4,0"/>
+            <TextBox Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}" MinWidth="200"/>
+        </StackPanel>
+
+        <!-- Action buttons -->
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="8,4">
+            <Button Content="View Snapshot" Command="{Binding ViewSnapshotCommand}" Padding="8,4" Margin="0,0,4,0"/>
+            <Button Content="View Diff" Command="{Binding ViewDiffCommand}" Padding="8,4" Margin="0,0,4,0"/>
+            <Button Content="Re-record" Command="{Binding ReRecordCommand}" Padding="8,4" Margin="0,0,4,0"/>
+            <Button Content="Delete Page" Command="{Binding DeletePageCommand}" Padding="8,4"/>
+        </StackPanel>
+
+        <!-- Snapshot grid -->
+        <DataGrid ItemsSource="{Binding FilteredSnapshots}"
+                  SelectedItem="{Binding SelectedSnapshot}"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  SelectionMode="Single"
+                  Margin="8,4">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Page" Binding="{Binding PageName}" Width="*"/>
+                <DataGridTextColumn Header="URL" Binding="{Binding PageUrl}" Width="*"/>
+                <DataGridTextColumn Header="Recorded" Binding="{Binding CapturedAt, StringFormat='{}{0:MMM dd\, yyyy}'}" Width="120"/>
+                <DataGridTextColumn Header="Elements" Binding="{Binding ElementCount}" Width="80"/>
+                <DataGridTextColumn Header="Size" Binding="{Binding SnapshotSizeBytes, StringFormat=N0}" Width="80"/>
+            </DataGrid.Columns>
+        </DataGrid>
+    </DockPanel>
+</UserControl>

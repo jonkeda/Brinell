@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Brinell.Samples.Todo.IntegrationTests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NSubstitute" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Brinell.Samples.Todo.TestSupport\Brinell.Samples.Todo.TestSupport.csproj" />
+    <!-- The real API, run in process by the contract tests. -->
+    <ProjectReference Include="..\..\src\Brinell.Samples.Todo.Api\Brinell.Samples.Todo.Api.csproj" />
+  </ItemGroup>
+
+</Project>

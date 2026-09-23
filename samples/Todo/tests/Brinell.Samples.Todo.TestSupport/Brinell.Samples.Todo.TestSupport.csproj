@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Brinell.Samples.Todo.TestSupport</RootNamespace>
+    <Description>Scenarios, the database seeder and the WireMock fake backend shared by the integration and UI tiers.</Description>
+    <!-- A library the test projects use, not a test project itself. -->
+    <IsTestProject>false</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\srcnew\Brinell.Mocking\Brinell.Mocking.csproj" />
+    <ProjectReference Include="..\..\src\Brinell.Samples.Todo.Contracts\Brinell.Samples.Todo.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Brinell.Samples.Todo.Infrastructure\Brinell.Samples.Todo.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Scenarios travel inside the assembly, so every consumer reads the same files. -->
+    <EmbeddedResource Include="Scenarios\*.json" LogicalName="Scenarios.%(Filename)%(Extension)" />
+    <!-- Recorded API responses, served by ReturnsSample and checked by the contract tests. -->
+    <None Include="ContractSamples\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

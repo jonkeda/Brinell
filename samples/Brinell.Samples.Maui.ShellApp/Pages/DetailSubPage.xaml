@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Brinell.Samples.Maui.ShellApp.Pages.DetailSubPage"
+             Title="Detail sub-page">
+    <VerticalStackLayout AutomationId="ShellDetailSubPage" Padding="20" Spacing="10">
+        <Label AutomationId="ShellDetailSubLabel" Text="Detail sub-page" />
+
+        <!--
+            The app's own way back. A fixture pops the stack by clicking this rather than by
+            re-selecting the tab, because re-selecting a tab does not pop it.
+        -->
+        <Button AutomationId="ShellDetailSubBackButton"
+                Text="Back"
+                Clicked="OnGoBack" />
+    </VerticalStackLayout>
+</ContentPage>

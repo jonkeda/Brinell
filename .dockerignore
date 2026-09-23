@@ -1,0 +1,31 @@
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Build outputs
+bin/
+obj/
+*.user
+*.suo
+*.cache
+
+# IDE
+.vs/
+.vscode/
+*.sln.docstates
+
+# NuGet
+*.nupkg
+packages/
+
+# Test results
+TestResults/
+*.trx
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Documentation build
+docs/_site/

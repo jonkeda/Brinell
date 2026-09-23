@@ -1,0 +1,9 @@
+global using Xunit;
+global using Xunit.Abstractions;
+global using Brinell.Core.Interfaces;
+global using Brinell.Stride.Context;
+global using Brinell.Stride.Controls;
+global using Brinell.Stride.Infrastructure;
+global using Brinell.Stride.Interfaces;
+global using Brinell.Stride.Pages;
+global using Brinell.Stride.Testing;

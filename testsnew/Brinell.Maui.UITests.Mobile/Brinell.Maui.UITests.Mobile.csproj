@@ -1,0 +1,65 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Brinell.Maui.UITests</RootNamespace>
+    <!--
+      Plain net10.0, not a platform TFM: this project does not build the app, it drives an
+      already-installed one through an Appium server. The device-specific part is the app
+      package, produced by the sample app's own android/ios heads.
+    -->
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <!--
+    The test sources are LINKED from Brinell.Maui.UITests rather than copied or moved.
+
+    That is the whole point of the phase 4 split: one set of page objects, containers and
+    test bodies, compiled into a Windows head that references the FlaUI driver and a mobile
+    head that references the Appium driver. A test is written once and runs on all three
+    platforms unchanged - goal (c) in .my/maui/maui-control-architecture-plan.md.
+
+    Linking rather than moving keeps the Windows project's layout untouched, so the existing
+    suite and its tooling carry on working exactly as before.
+  -->
+  <!--
+    Two folders are excluded, and they are the only exclusions that are not build output.
+
+    Tests\Diagnostics is about the Windows driver's own screenshot mechanism, so it uses
+    System.Drawing and user32 directly - neither of which exists on this plain net10.0 head.
+
+    Tests\Background is about running the suite without touching the machine: real mouse,
+    keyboard, clipboard and foreground window. All four are desktop concepts, and the tests
+    assert on them directly - the foreground window through user32, the clipboard through
+    System.Windows.Forms. The behaviour they cover is Windows-only too: on Android and iOS
+    there is no bridge, because there is no shared desktop to protect.
+
+    Excluding them by name keeps the break visible: a shared test that stops being shared
+    should say so here rather than hide behind a platform #if.
+
+    AssemblyInfo.cs is excluded too, and this project has its own. The two heads genuinely
+    disagree about test parallelism - the Windows one is limited by the desktop, which stage B
+    freed, and this one by an emulator that two Appium sessions still have to share. See both
+    files.
+  -->
+  <ItemGroup>
+    <Compile Include="..\Brinell.Maui.UITests\**\*.cs"
+             Exclude="..\Brinell.Maui.UITests\bin\**;..\Brinell.Maui.UITests\obj\**;..\Brinell.Maui.UITests\Tests\Diagnostics\**;..\Brinell.Maui.UITests\Tests\Background\**;..\Brinell.Maui.UITests\AssemblyInfo.cs"
+             Link="%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\srcnew\Brinell.Core\Brinell.Core.csproj" />
+    <ProjectReference Include="..\..\srcnew\Brinell.Maui\Brinell.Maui.csproj" />
+    <ProjectReference Include="..\..\srcnew\Brinell.Maui.CommunityToolkit\Brinell.Maui.CommunityToolkit.csproj" />
+    <!-- The only difference from the Windows head: Appium instead of FlaUI. -->
+    <ProjectReference Include="..\..\srcnew\Brinell.Maui.Appium\Brinell.Maui.Appium.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="coverlet.collector">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

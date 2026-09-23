@@ -1,0 +1,52 @@
+using Brinell.Maui.Appium;
+using Brinell.Maui.Enums;
+
+namespace Brinell.Maui.Tests;
+
+/// <summary>How Brinell locators become Appium selectors.</summary>
+public class AppiumLocatorTests
+{
+    [Fact]
+    public void ByName_OnAndroid_MatchesTheAccessibleName_NotACssName()
+    {
+        var by = Locator.ByName("Delete").ToBy(MauiPlatform.Android);
+
+        Assert.Equal("By.XPath: //*[@content-desc='Delete' or @text='Delete']", by.ToString());
+    }
+
+    [Fact]
+    public void ByName_OnAndroid_QuotesANameWithAnApostrophe()
+    {
+        var by = Locator.ByName("Don't save").ToBy(MauiPlatform.Android);
+
+        Assert.Equal("By.XPath: //*[@content-desc=\"Don't save\" or @text=\"Don't save\"]", by.ToString());
+    }
+
+    [Fact]
+    public void ByName_OnIos_StaysAName()
+        => Assert.StartsWith("By.Name", Locator.ByName("Delete").ToBy(MauiPlatform.iOS).ToString(), StringComparison.Ordinal);
+
+    [Fact]
+    public void AnAutomationId_OnAndroid_IsSentAsTheIdStrategy_NotAsCss()
+    {
+        // By.Id goes out as the CSS selector "#TodoRow_Due", which UiAutomator2 lets escape the
+        // element it is searched from.
+        var by = Locator.ByAutomationId("TodoRow_Due").ToChildBy(MauiPlatform.Android);
+
+        Assert.Equal(("id", "TodoRow_Due"), (by.Mechanism, by.Criteria));
+    }
+
+    [Fact]
+    public void UnderAnElement_OnAndroid_ANameIsRelative()
+    {
+        var by = Locator.ByName("Delete").ToChildBy(MauiPlatform.Android);
+
+        Assert.Equal("By.XPath: .//*[@content-desc='Delete' or @text='Delete']", by.ToString());
+    }
+
+    [Fact]
+    public void UnderAnElement_OnIos_IsTheSameAsAtTheTop()
+        => Assert.Equal(
+            Locator.ByAutomationId("Row").ToBy(MauiPlatform.iOS).ToString(),
+            Locator.ByAutomationId("Row").ToChildBy(MauiPlatform.iOS).ToString());
+}

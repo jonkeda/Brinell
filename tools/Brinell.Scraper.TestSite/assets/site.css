@@ -1,0 +1,150 @@
+:root {
+  color-scheme: light;
+  --bg: #f7f9fc;
+  --surface: #ffffff;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --border: #d1d5db;
+  --accent: #0f766e;
+  --accent-2: #0369a1;
+  --danger: #b91c1c;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", Tahoma, sans-serif;
+  color: var(--text);
+  background: linear-gradient(180deg, #eef2ff 0%, var(--bg) 180px, var(--bg) 100%);
+}
+
+header {
+  background: #111827;
+  color: #f9fafb;
+  padding: 1rem 1.5rem;
+}
+
+header h1 {
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+}
+
+nav {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+nav a {
+  color: #93c5fd;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+main {
+  padding: 1rem 1.5rem 2rem;
+}
+
+.grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.04);
+}
+
+h2 {
+  margin-top: 0;
+}
+
+label {
+  display: block;
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+}
+
+input,
+select,
+textarea,
+button {
+  width: 100%;
+  margin-top: 0.35rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+
+button {
+  background: var(--accent);
+  color: #ffffff;
+  border: none;
+  cursor: pointer;
+}
+
+button.secondary {
+  background: var(--accent-2);
+}
+
+button.danger {
+  background: var(--danger);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  border: 1px solid var(--border);
+  padding: 0.5rem;
+  text-align: left;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.2rem 0.45rem;
+  border-radius: 999px;
+  background: #e0f2fe;
+  color: #075985;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+iframe {
+  width: 100%;
+  min-height: 220px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fff;
+}
+
+footer {
+  padding: 1rem 1.5rem;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.stack {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.inline {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.inline > * {
+  flex: 1;
+}

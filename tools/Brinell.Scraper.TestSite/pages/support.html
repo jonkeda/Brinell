@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Phase 14 Demo Site - Support</title>
+  <link rel="stylesheet" href="../assets/site.css">
+  <script defer src="../assets/components.js"></script>
+  <script defer src="../assets/site.js"></script>
+</head>
+<body>
+  <header>
+    <h1 data-testid="support-title">Support Center</h1>
+    <nav>
+      <a href="../index.html">Home</a>
+      <a href="catalog.html">Catalog</a>
+      <a href="checkout.html">Checkout</a>
+      <a href="support.html">Support</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="grid">
+      <article class="card" data-testid="ticket-form-card">
+        <h2>Open Ticket</h2>
+        <form class="stack">
+          <label>Topic
+            <select data-testid="ticket-topic">
+              <option>Order Problem</option>
+              <option>Payment Issue</option>
+              <option>Technical Bug</option>
+            </select>
+          </label>
+          <label>Description
+            <textarea rows="5" data-testid="ticket-description" placeholder="Describe your issue"></textarea>
+          </label>
+          <button type="button" data-testid="submit-ticket" data-toast="Ticket submitted">Submit Ticket</button>
+        </form>
+      </article>
+
+      <article class="card" data-testid="faq-card">
+        <h2>FAQ</h2>
+        <demo-collapse title="Where is my order?">
+          Track your order from the Orders page after login.
+        </demo-collapse>
+        <demo-collapse title="How do I update payment?">
+          Use Checkout and update card details in the payment frame.
+        </demo-collapse>
+      </article>
+    </section>
+
+    <section class="card" style="margin-top:1rem" data-testid="nested-frame-host-section">
+      <h2>Diagnostics (Nested IFrame)</h2>
+      <iframe src="../frames/nested-host.html" title="Nested host frame" data-testid="support-nested-frame"></iframe>
+    </section>
+
+    <div id="toastHost" aria-live="polite"></div>
+  </main>
+</body>
+</html>

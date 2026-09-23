@@ -1,0 +1,9 @@
+<Application x:Class="Brinell.Scraper.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:converters="clr-namespace:Brinell.Scraper.Converters">
+    <Application.Resources>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibility" />
+        <converters:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibility" />
+    </Application.Resources>
+</Application>

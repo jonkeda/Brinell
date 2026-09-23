@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Brinell.Samples.Todo.Uat</RootNamespace>
+    <!-- FlaUI drives the Windows app, same as the UI test project it reuses. -->
+    <TargetFramework>net10.0-windows</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The UAT engine, and the page objects and controls its scenarios drive. -->
+    <ProjectReference Include="..\..\..\..\srcnew\Brinell.Uat\Brinell.Uat.csproj" />
+    <ProjectReference Include="..\Brinell.Samples.Todo.UITests\Brinell.Samples.Todo.UITests.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="uat.config.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Scenarios\**\*.uat.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="TestSettings\**\*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The acceptance backbone the scenarios draw from; shipped with the project, not copied out. -->
+    <None Include="todo-user-journeys.md" />
+  </ItemGroup>
+
+</Project>

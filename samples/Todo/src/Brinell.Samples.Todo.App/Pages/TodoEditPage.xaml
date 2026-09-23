@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+    New and edit. Shell's back button runs Cancel, so leaving by any route asks about unsaved
+    changes (TOD.04.4).
+-->
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Brinell.Samples.Todo.Core.ViewModels;assembly=Brinell.Samples.Todo.Core"
+             xmlns:views="clr-namespace:Brinell.Samples.Todo.App.Views"
+             x:Class="Brinell.Samples.Todo.App.Pages.TodoEditPage"
+             x:DataType="vm:TodoEditViewModel"
+             AutomationId="TodoEditPage"
+             Title="{Binding PageTitle}">
+
+    <Shell.BackButtonBehavior>
+        <BackButtonBehavior Command="{Binding CancelCommand}" />
+    </Shell.BackButtonBehavior>
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Cancel" AutomationId="TodoEdit_Cancel" Command="{Binding CancelCommand}" />
+        <ToolbarItem Text="Save" AutomationId="TodoEdit_Save" Command="{Binding SaveCommand}" />
+    </ContentPage.ToolbarItems>
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="12">
+
+            <views:SectionCard AutomationId="TodoEdit_Basics" Header="Basics">
+                <VerticalStackLayout Spacing="6">
+                    <Entry AutomationId="TodoEdit_Title"
+                           Placeholder="Title"
+                           Text="{Binding Title}" />
+                    <Label AutomationId="TodoEdit_TitleError"
+                           Text="{Binding TitleError}"
+                           TextColor="Red"
+                           IsVisible="{Binding HasTitleError}" />
+                    <Editor AutomationId="TodoEdit_Notes"
+                            Placeholder="Notes"
+                            AutoSize="TextChanges"
+                            Text="{Binding Notes}" />
+                </VerticalStackLayout>
+            </views:SectionCard>
+
+            <views:SectionCard AutomationId="TodoEdit_Schedule" Header="Schedule">
+                <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="12">
+                    <Label Text="Due date" VerticalOptions="Center" />
+                    <Switch Grid.Column="1"
+                            AutomationId="TodoEdit_HasDue"
+                            IsToggled="{Binding HasDueDate}" />
+                    <DatePicker Grid.Column="2"
+                                AutomationId="TodoEdit_Due"
+                                Date="{Binding DueDate}"
+                                IsEnabled="{Binding HasDueDate}" />
+                </Grid>
+            </views:SectionCard>
+
+            <Label Text="Status" FontAttributes="Bold" />
+            <views:TodoStatusView AutomationId="TodoEdit_Status"
+                                  Status="{Binding Status}"
+                                  IsPastDue="{Binding IsPastDue}" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

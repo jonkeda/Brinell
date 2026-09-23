@@ -1,0 +1,55 @@
+<UserControl x:Class="Brinell.Scraper.Views.AnalysisView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <DockPanel>
+        <!-- Header -->
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="8,4">
+            <TextBlock Text="🔬 Corpus Analysis" FontSize="16" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,16,0"/>
+            <Button Content="Run Analysis" Command="{Binding AnalyzeCommand}" Padding="8,4" Margin="0,0,8,0"/>
+            <Button Content="Approve All" Command="{Binding ApproveAllCommand}" Padding="8,4"/>
+        </StackPanel>
+
+        <!-- Status -->
+        <StackPanel DockPanel.Dock="Top" Margin="8,2">
+            <TextBlock Text="{Binding StatusText}" Foreground="Gray"/>
+            <ProgressBar IsIndeterminate="{Binding IsAnalyzing}" Height="3" Margin="0,4,0,0"
+                         Visibility="{Binding IsAnalyzing, Converter={StaticResource BoolToVisibility}}"/>
+        </StackPanel>
+
+        <!-- Locator Report -->
+        <Expander DockPanel.Dock="Bottom" Header="Locator Report" Margin="8,4"
+                  IsExpanded="False">
+            <StackPanel Margin="8">
+                <TextBlock Text="{Binding LocatorReport.Recommendations}" TextWrapping="Wrap"/>
+            </StackPanel>
+        </Expander>
+
+        <!-- Proposed Controls -->
+        <DataGrid ItemsSource="{Binding ProposedControls}"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  SelectionMode="Single"
+                  Margin="8,4">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Control Name" Binding="{Binding Name}" Width="180"/>
+                <DataGridTextColumn Header="DOM Signature" Binding="{Binding DomSignature}" Width="*"/>
+                <DataGridTextColumn Header="Frequency" Binding="{Binding Frequency}" Width="80"/>
+                <DataGridTextColumn Header="Confidence" Binding="{Binding Confidence, StringFormat={}{0}%}" Width="80"/>
+                <DataGridTemplateColumn Header="Actions" Width="140">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="✓" ToolTip="Approve"
+                                        Command="{Binding DataContext.ApproveCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                        CommandParameter="{Binding}" Padding="4,2" Margin="0,0,4,0"/>
+                                <Button Content="✗" ToolTip="Reject"
+                                        Command="{Binding DataContext.RejectCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                        CommandParameter="{Binding}" Padding="4,2"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+    </DockPanel>
+</UserControl>

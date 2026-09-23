@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Brinell.NativeAndroid</RootNamespace>
+    <Description>Native Android Appium driver, page object, and control primitives for Brinell UI testing.</Description>
+    <PackageId>Brinell.NativeAndroid</PackageId>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Brinell.Core\Brinell.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Appium.WebDriver" />
+  </ItemGroup>
+
+</Project>

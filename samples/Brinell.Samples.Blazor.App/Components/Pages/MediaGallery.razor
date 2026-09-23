@@ -1,0 +1,329 @@
+@page "/mediagallery"
+@using Brinell.Samples.Blazor.App.Models
+@inject Brinell.Samples.Blazor.App.Services.MediaService MediaService
+
+<PageTitle>Media Gallery - Brinell Blazor Sample</PageTitle>
+
+<div data-automation-id="MediaGalleryPage">
+    <h1 data-automation-id="MediaGalleryTitle">Media Gallery</h1>
+
+    <!-- Filter Tabs -->
+    <ul class="nav nav-tabs mb-4" data-automation-id="MediaTabs">
+        <li class="nav-item">
+            <button class="nav-link @(activeFilter == null ? "active" : "")" 
+                    @onclick="() => FilterByType(null)"
+                    data-automation-id="TabAll">All</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link @(activeFilter == MediaType.Image ? "active" : "")" 
+                    @onclick="() => FilterByType(MediaType.Image)"
+                    data-automation-id="TabImages">Images</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link @(activeFilter == MediaType.Video ? "active" : "")" 
+                    @onclick="() => FilterByType(MediaType.Video)"
+                    data-automation-id="TabVideos">Videos</button>
+        </li>
+    </ul>
+
+    <!-- Main Image Viewer -->
+    <div class="card mb-4" data-automation-id="ImageViewerSection">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 data-automation-id="ViewerTitle">@(selectedMedia?.Title ?? "Select an image")</h5>
+            <div class="btn-group" data-automation-id="ViewerControls">
+                <button class="btn btn-sm btn-outline-secondary" @onclick="PreviousImage"
+                        disabled="@(selectedIndex <= 0)"
+                        data-automation-id="PreviousButton">← Previous</button>
+                <button class="btn btn-sm btn-outline-secondary" @onclick="NextImage"
+                        disabled="@(selectedIndex >= mediaItems.Count - 1)"
+                        data-automation-id="NextButton">Next →</button>
+            </div>
+        </div>
+        <div class="card-body text-center" style="min-height: 400px; background: #f8f9fa;"
+             data-automation-id="ImageContainer">
+            @if (selectedMedia != null)
+            {
+                <img src="@selectedMedia.FullUrl" alt="@selectedMedia.Title" 
+                     class="img-fluid" style="max-height: 380px;"
+                     data-automation-id="MainImage" />
+            }
+            else
+            {
+                <p class="text-muted mt-5" data-automation-id="NoSelectionMessage">
+                    Click on a thumbnail to view the full image
+                </p>
+            }
+        </div>
+        @if (selectedMedia != null)
+        {
+            <div class="card-footer" data-automation-id="ImageInfo">
+                <small class="text-muted">
+                    @selectedMedia.Description | Uploaded: @selectedMedia.UploadedAt.ToString("g")
+                </small>
+            </div>
+        }
+    </div>
+
+    <!-- Thumbnail Gallery -->
+    <div class="card mb-4" data-automation-id="ThumbnailSection">
+        <div class="card-header">
+            <h5 data-automation-id="GalleryTitle">Gallery (@mediaItems.Count items)</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3" data-automation-id="ThumbnailGrid">
+                @foreach (var (media, index) in mediaItems.Select((m, i) => (m, i)))
+                {
+                    <div class="col-6 col-md-3 col-lg-2">
+                        <div class="card h-100 @(selectedMedia?.Id == media.Id ? "border-primary" : "")"
+                             style="cursor: pointer;"
+                             @onclick="() => SelectMedia(media, index)"
+                             data-automation-id="@($"Thumbnail_{media.Id}")">
+                            <img src="@media.ThumbnailUrl" class="card-img-top" alt="@media.Title"
+                                 style="height: 100px; object-fit: cover;"
+                                 data-automation-id="@($"ThumbnailImage_{media.Id}")" />
+                            <div class="card-body p-2">
+                                <small class="card-title text-truncate d-block"
+                                       data-automation-id="@($"ThumbnailTitle_{media.Id}")">
+                                    @media.Title
+                                </small>
+                                @if (media.Type == MediaType.Video)
+                                {
+                                    <span class="badge bg-info" data-automation-id="@($"VideoBadge_{media.Id}")">
+                                        Video
+                                    </span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Video Player Section -->
+    <div class="card mb-4" data-automation-id="VideoPlayerSection">
+        <div class="card-header">
+            <h5 data-automation-id="VideoPlayerTitle">Media Player</h5>
+        </div>
+        <div class="card-body">
+            <!-- Video Placeholder -->
+            <div class="bg-dark text-white d-flex align-items-center justify-content-center"
+                 style="height: 200px; border-radius: 8px;"
+                 data-automation-id="VideoContainer">
+                <span class="display-4">▶</span>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="mt-3" data-automation-id="MediaProgress">
+                <div class="d-flex justify-content-between mb-1">
+                    <span data-automation-id="CurrentTime">@FormatTime(currentPosition)</span>
+                    <span data-automation-id="Duration">@FormatTime(duration)</span>
+                </div>
+                <input type="range" class="form-range" min="0" max="@duration" 
+                       @bind="currentPosition"
+                       data-automation-id="ProgressSlider" />
+            </div>
+
+            <!-- Playback Controls -->
+            <div class="d-flex justify-content-center gap-2 mt-3" data-automation-id="PlaybackControls">
+                <button class="btn btn-outline-secondary" @onclick="Stop"
+                        data-automation-id="StopButton">⏹ Stop</button>
+                <button class="btn btn-primary btn-lg" @onclick="TogglePlay"
+                        data-automation-id="PlayPauseButton">
+                    @(isPlaying ? "⏸ Pause" : "▶ Play")
+                </button>
+                <button class="btn btn-outline-secondary" @onclick="() => Skip(10)"
+                        data-automation-id="SkipButton">+10s</button>
+            </div>
+
+            <!-- Volume Control -->
+            <div class="row mt-3 align-items-center" data-automation-id="VolumeSection">
+                <div class="col-auto">
+                    <span data-automation-id="VolumeIcon">🔊</span>
+                </div>
+                <div class="col-4">
+                    <input type="range" class="form-range" min="0" max="100" 
+                           @bind="volume"
+                           data-automation-id="VolumeSlider" />
+                </div>
+                <div class="col-auto">
+                    <span data-automation-id="VolumeValue">@volume%</span>
+                </div>
+                <div class="col-auto">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" @bind="isMuted"
+                               data-automation-id="MuteSwitch" />
+                        <label class="form-check-label">Mute</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Web Content Section -->
+    <div class="card mb-4" data-automation-id="WebContentSection">
+        <div class="card-header">
+            <h5 data-automation-id="WebContentTitle">Web Content</h5>
+        </div>
+        <div class="card-body">
+            <!-- URL Bar -->
+            <div class="input-group mb-3" data-automation-id="UrlBar">
+                <button class="btn btn-outline-secondary" @onclick="GoBack"
+                        data-automation-id="BackButton">←</button>
+                <button class="btn btn-outline-secondary" @onclick="GoForward"
+                        data-automation-id="ForwardButton">→</button>
+                <button class="btn btn-outline-secondary" @onclick="Reload"
+                        data-automation-id="ReloadButton">⟳</button>
+                <input type="url" class="form-control" @bind="currentUrl" 
+                       placeholder="Enter URL..."
+                       data-automation-id="UrlInput" />
+                <button class="btn btn-primary" @onclick="Navigate"
+                        data-automation-id="GoButton">Go</button>
+            </div>
+
+            @if (isWebLoading)
+            {
+                <div class="text-center py-3" data-automation-id="WebLoadingIndicator">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            }
+
+            <!-- Iframe Placeholder -->
+            <div class="border rounded p-3" style="min-height: 300px; background: #fff;"
+                 data-automation-id="WebViewFrame">
+                <p class="text-center text-muted mt-5">
+                    Web content would be displayed here via iframe
+                </p>
+                <p class="text-center">
+                    <code data-automation-id="DisplayedUrl">@currentUrl</code>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- File Upload Section -->
+    <div class="card" data-automation-id="UploadSection">
+        <div class="card-header">
+            <h5 data-automation-id="UploadTitle">File Upload</h5>
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <label class="form-label">Select Files</label>
+                <input type="file" class="form-control" multiple accept="image/*,video/*"
+                       data-automation-id="FileInput" />
+            </div>
+            <div class="mb-3" data-automation-id="DropZone"
+                 style="border: 2px dashed #ccc; padding: 40px; text-align: center; border-radius: 8px;">
+                <p class="mb-0 text-muted">Drag and drop files here or click to browse</p>
+            </div>
+            <button class="btn btn-success" data-automation-id="UploadButton">
+                Upload Files
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<MediaItem> mediaItems = new();
+    private MediaItem? selectedMedia;
+    private int selectedIndex = -1;
+    private MediaType? activeFilter = null;
+
+    // Video player state
+    private bool isPlaying = false;
+    private bool isMuted = false;
+    private int volume = 80;
+    private int currentPosition = 0;
+    private int duration = 180;
+
+    // Web viewer state
+    private string currentUrl = "https://dotnet.microsoft.com";
+    private bool isWebLoading = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadMedia();
+    }
+
+    private async Task LoadMedia()
+    {
+        mediaItems = await MediaService.GetMediaItemsAsync(activeFilter);
+        if (mediaItems.Any())
+        {
+            SelectMedia(mediaItems[0], 0);
+        }
+    }
+
+    private async Task FilterByType(MediaType? type)
+    {
+        activeFilter = type;
+        await LoadMedia();
+    }
+
+    private void SelectMedia(MediaItem media, int index)
+    {
+        selectedMedia = media;
+        selectedIndex = index;
+    }
+
+    private void PreviousImage()
+    {
+        if (selectedIndex > 0)
+        {
+            selectedIndex--;
+            selectedMedia = mediaItems[selectedIndex];
+        }
+    }
+
+    private void NextImage()
+    {
+        if (selectedIndex < mediaItems.Count - 1)
+        {
+            selectedIndex++;
+            selectedMedia = mediaItems[selectedIndex];
+        }
+    }
+
+    private void TogglePlay()
+    {
+        isPlaying = !isPlaying;
+    }
+
+    private void Stop()
+    {
+        isPlaying = false;
+        currentPosition = 0;
+    }
+
+    private void Skip(int seconds)
+    {
+        currentPosition = Math.Min(currentPosition + seconds, duration);
+    }
+
+    private string FormatTime(int seconds)
+    {
+        var ts = TimeSpan.FromSeconds(seconds);
+        return $"{(int)ts.TotalMinutes}:{ts.Seconds:D2}";
+    }
+
+    private void GoBack() { }
+    private void GoForward() { }
+
+    private async Task Reload()
+    {
+        isWebLoading = true;
+        StateHasChanged();
+        await Task.Delay(500);
+        isWebLoading = false;
+    }
+
+    private async Task Navigate()
+    {
+        isWebLoading = true;
+        StateHasChanged();
+        await Task.Delay(500);
+        isWebLoading = false;
+    }
+}

@@ -1,0 +1,57 @@
+<Application x:Class="Brinell.Samples.Wpf.App.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:converters="clr-namespace:Brinell.Samples.Wpf.App.Infrastructure.Converters"
+             StartupUri="Features/Shell/Views/ShellWindow.xaml">
+    <Application.Resources>
+        <ResourceDictionary>
+            <!-- Converters -->
+            <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+            <converters:InverseBoolConverter x:Key="InverseBoolConverter"/>
+            <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
+            
+            <!-- Global Styles -->
+            <Style TargetType="Button">
+                <Setter Property="Padding" Value="16,8"/>
+                <Setter Property="Margin" Value="4"/>
+                <Setter Property="MinWidth" Value="80"/>
+            </Style>
+            
+            <Style TargetType="TextBox">
+                <Setter Property="Padding" Value="8,6"/>
+                <Setter Property="Margin" Value="4"/>
+            </Style>
+            
+            <Style TargetType="PasswordBox">
+                <Setter Property="Padding" Value="8,6"/>
+                <Setter Property="Margin" Value="4"/>
+            </Style>
+            
+            <Style x:Key="NavButtonStyle" TargetType="Button">
+                <Setter Property="Padding" Value="12,8"/>
+                <Setter Property="Margin" Value="2"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="BorderThickness" Value="0"/>
+            </Style>
+            
+            <Style x:Key="HeaderStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="24"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="Margin" Value="0,0,0,16"/>
+            </Style>
+            
+            <Style x:Key="SubHeaderStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="16"/>
+                <Setter Property="FontWeight" Value="Medium"/>
+                <Setter Property="Margin" Value="0,0,0,8"/>
+            </Style>
+            
+            <Style x:Key="ErrorTextStyle" TargetType="TextBlock">
+                <Setter Property="Foreground" Value="Red"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="Margin" Value="4,2"/>
+            </Style>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

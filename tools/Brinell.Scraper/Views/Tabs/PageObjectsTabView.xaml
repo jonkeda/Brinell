@@ -1,0 +1,307 @@
+<UserControl x:Class="Brinell.Scraper.Views.Tabs.PageObjectsTabView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:models="clr-namespace:Brinell.Scraper.Models">
+    <DockPanel LastChildFill="True">
+        <!-- Toolbar -->
+        <Border DockPanel.Dock="Top"
+                Background="#FAFBFD"
+                BorderBrush="#E2E2E6"
+                BorderThickness="0,0,0,1">
+            <StackPanel Orientation="Horizontal" Margin="8,6">
+                <Button Content="⚡ Generate All"
+                        Command="{Binding GenerateAllCommand}"
+                        Padding="10,4" Margin="0,0,4,0"/>
+                <Button Content="🔄 Regenerate Selected"
+                        Command="{Binding RegenerateSelectedCommand}"
+                        Padding="10,4" Margin="0,0,12,0"/>
+                <Button Content="📤 Export"
+                        Command="{Binding ExportCommand}"
+                        Padding="10,4" Margin="0,0,4,0"/>
+                <Button Content="📂 Open Output Folder"
+                        Command="{Binding OpenOutputFolderCommand}"
+                        Padding="10,4"/>
+            </StackPanel>
+        </Border>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="300"/>
+                <ColumnDefinition Width="4"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Left panel -->
+            <DockPanel Grid.Column="0" Margin="6">
+                <TextBox DockPanel.Dock="Top"
+                         Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}"
+                         Padding="6,4" Margin="0,0,0,6"
+                         ToolTip="Filter by page name or URL"/>
+
+                <Border DockPanel.Dock="Bottom"
+                        BorderBrush="#E2E2E6" BorderThickness="0,1,0,0"
+                        Padding="4,6" Margin="0,6,0,0">
+                    <StackPanel>
+                        <TextBlock>
+                            <Run Text="Total: "/>
+                            <Run Text="{Binding TotalCount, Mode=OneWay}"/>
+                        </TextBlock>
+                        <TextBlock Foreground="#22863A">
+                            <Run Text="✓ Generated: "/>
+                            <Run Text="{Binding GeneratedCount, Mode=OneWay}"/>
+                        </TextBlock>
+                        <TextBlock Foreground="#B08800">
+                            <Run Text="⏳ Pending: "/>
+                            <Run Text="{Binding PendingCount, Mode=OneWay}"/>
+                        </TextBlock>
+                        <TextBlock Foreground="#B31D28">
+                            <Run Text="✗ Errors: "/>
+                            <Run Text="{Binding ErrorCount, Mode=OneWay}"/>
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+
+                <ListBox x:Name="PageObjectsList"
+                         ItemsSource="{Binding FilteredPageObjects}"
+                         SelectedItem="{Binding SelectedPageObject}"
+                         HorizontalContentAlignment="Stretch">
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                            <Setter Property="Tag"
+                                    Value="{Binding DataContext, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                            <Setter Property="ContextMenu">
+                                <Setter.Value>
+                                    <ContextMenu>
+                                        <MenuItem Header="Regenerate"
+                                                  Command="{Binding PlacementTarget.Tag.RegenerateSelectedCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                        <MenuItem Header="Copy Code"
+                                                  Command="{Binding PlacementTarget.Tag.CopyCodeCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                  CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                        <MenuItem Header="Open Source Page"
+                                                  Command="{Binding PlacementTarget.Tag.OpenSourcePageCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                  CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                        <MenuItem Header="Export Page Object"
+                                                  Command="{Binding PlacementTarget.Tag.ExportCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                        <Separator/>
+                                        <MenuItem Header="Delete"
+                                                  Command="{Binding PlacementTarget.Tag.DeleteCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                  CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                    </ContextMenu>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate DataType="{x:Type models:PageObjectListItem}">
+                            <Grid Margin="2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="22"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0"
+                                           Text="{Binding StatusIcon}"
+                                           VerticalAlignment="Center"
+                                           FontSize="14"/>
+                                <StackPanel Grid.Column="1" Margin="6,0">
+                                    <TextBlock Text="{Binding PageName}"
+                                               FontWeight="SemiBold"
+                                               TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Text="{Binding StatusLabel}"
+                                               Foreground="#888"
+                                               FontSize="11"/>
+                                </StackPanel>
+                                <TextBlock Grid.Column="2"
+                                           Text="{Binding ElementCount, StringFormat='{}{0} els'}"
+                                           Foreground="#666"
+                                           VerticalAlignment="Center"
+                                           FontSize="11"/>
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+
+            <GridSplitter Grid.Column="1" Width="4"
+                          ResizeBehavior="PreviousAndNext"
+                          HorizontalAlignment="Stretch"
+                          Background="#E2E2E6"/>
+
+            <!-- Detail -->
+            <ScrollViewer Grid.Column="2"
+                          VerticalScrollBarVisibility="Auto"
+                          Margin="6">
+                <StackPanel DataContext="{Binding SelectedPageObject}">
+                    <!-- 1. Header card -->
+                    <Border BorderBrush="#E2E2E6" BorderThickness="1"
+                            CornerRadius="4" Padding="10" Margin="0,0,0,8"
+                            Background="#FAFBFD">
+                        <StackPanel>
+                            <TextBlock Text="{Binding ClassName, FallbackValue='(no selection)'}"
+                                       FontSize="18" FontWeight="Bold"/>
+                            <TextBlock Text="{Binding Namespace}"
+                                       Foreground="#666" Margin="0,2,0,0"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                <TextBlock Text="Source:" Foreground="#666" Margin="0,0,4,0"/>
+                                <TextBlock Text="{Binding PageUrl}"
+                                           TextTrimming="CharacterEllipsis"
+                                           MaxWidth="500"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                <TextBlock Text="Elements:" Foreground="#666" Margin="0,0,4,0"/>
+                                <TextBlock Text="{Binding ElementCount}" Margin="0,0,16,0"/>
+                                <TextBlock Text="ControlObjects:" Foreground="#666" Margin="0,0,4,0"/>
+                                <TextBlock Text="{Binding UsedControlObjects.Count, Mode=OneWay}"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                <TextBlock Text="Status:" Foreground="#666" Margin="0,0,4,0"/>
+                                <TextBlock Text="{Binding StatusIcon}" Margin="0,0,2,0"/>
+                                <TextBlock Text="{Binding StatusLabel}"/>
+                            </StackPanel>
+                            <TextBlock Text="{Binding GeneratedAt, StringFormat='Generated: {0:yyyy-MM-dd HH:mm}', TargetNullValue='Not generated yet'}"
+                                       Foreground="#888" Margin="0,6,0,0" FontSize="11"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 2. Properties -->
+                    <DockPanel Margin="0,0,0,8">
+                        <TextBlock DockPanel.Dock="Top"
+                                   Text="Properties"
+                                   FontWeight="SemiBold" Margin="0,0,0,4"/>
+                        <DataGrid ItemsSource="{Binding Properties}"
+                                  AutoGenerateColumns="False"
+                                  IsReadOnly="True"
+                                  CanUserAddRows="False"
+                                  CanUserDeleteRows="False"
+                                  HeadersVisibility="Column"
+                                  GridLinesVisibility="Horizontal"
+                                  BorderBrush="#E2E2E6"
+                                  MinHeight="80"
+                                  MaxHeight="240">
+                            <DataGrid.RowStyle>
+                                <Style TargetType="DataGridRow">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsCustomControlObject}" Value="True">
+                                            <Setter Property="Background" Value="#FFF8E1"/>
+                                            <Setter Property="FontWeight" Value="SemiBold"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGrid.RowStyle>
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Name"
+                                                    Binding="{Binding Name}"
+                                                    Width="*"/>
+                                <DataGridTextColumn Header="Type"
+                                                    Binding="{Binding ControlType}"
+                                                    Width="*"/>
+                                <DataGridTextColumn Header="Locator"
+                                                    Binding="{Binding Locator}"
+                                                    Width="2*"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </DockPanel>
+
+                    <!-- 3. Generated code -->
+                    <DockPanel Margin="0,0,0,8">
+                        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,4">
+                            <TextBlock Text="Generated Code"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <Button Content="Copy" Padding="6,2" Margin="0,0,4,0"
+                                    Command="{Binding DataContext.CopyCodeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommandParameter="{Binding}"/>
+                            <Button Content="Regenerate" Padding="6,2"
+                                    Command="{Binding DataContext.RegenerateSelectedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                        </StackPanel>
+                        <StackPanel>
+                            <TextBox Text="{Binding MainCode, Mode=OneWay}"
+                                     IsReadOnly="True"
+                                     FontFamily="Consolas" FontSize="12"
+                                     VerticalScrollBarVisibility="Auto"
+                                     HorizontalScrollBarVisibility="Auto"
+                                     TextWrapping="NoWrap" AcceptsReturn="True"
+                                     MinHeight="180" MaxHeight="320"/>
+                            <ItemsControl ItemsSource="{Binding ContainerCodes}" Margin="0,4,0,0">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Expander Header="Container code"
+                                                  Margin="0,2,0,0">
+                                            <TextBox Text="{Binding Mode=OneWay}"
+                                                     IsReadOnly="True"
+                                                     FontFamily="Consolas" FontSize="12"
+                                                     VerticalScrollBarVisibility="Auto"
+                                                     HorizontalScrollBarVisibility="Auto"
+                                                     TextWrapping="NoWrap" AcceptsReturn="True"
+                                                     MinHeight="120" MaxHeight="240"/>
+                                        </Expander>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </DockPanel>
+
+                    <!-- 4. Validation -->
+                    <DockPanel Margin="0,0,0,8">
+                        <TextBlock DockPanel.Dock="Top"
+                                   Text="Validation"
+                                   FontWeight="SemiBold" Margin="0,0,0,4"/>
+                        <ItemsControl ItemsSource="{Binding ValidationEntries}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type models:ValidationEntry}">
+                                    <Grid Margin="0,1">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="22"/>
+                                            <ColumnDefinition Width="100"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="{Binding Icon}" FontSize="13"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding Category}"
+                                                   Foreground="#666" FontSize="12"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding Message}"
+                                                   TextWrapping="Wrap" FontSize="12"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </DockPanel>
+
+                    <!-- 5. Used ControlObjects -->
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Top"
+                                   Text="Used Control Objects"
+                                   FontWeight="SemiBold" Margin="0,0,0,4"/>
+                        <ItemsControl ItemsSource="{Binding UsedControlObjects}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type models:ControlObjectReference}">
+                                    <Border BorderBrush="#E2E2E6" BorderThickness="1"
+                                            CornerRadius="3" Padding="6,4" Margin="0,2">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Grid.Column="0">
+                                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
+                                                <TextBlock Text="{Binding DomSignature}"
+                                                           Foreground="#666"
+                                                           FontFamily="Consolas" FontSize="11"
+                                                           TextTrimming="CharacterEllipsis"/>
+                                            </StackPanel>
+                                            <Button Grid.Column="1"
+                                                    Content="Open in Control Objects tab"
+                                                    Padding="6,2"
+                                                    Command="{Binding DataContext.NavigateToControlObjectCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding}"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </DockPanel>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+    </DockPanel>
+</UserControl>

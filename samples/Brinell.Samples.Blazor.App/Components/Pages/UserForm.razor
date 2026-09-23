@@ -1,0 +1,307 @@
+@page "/userform"
+@using Brinell.Samples.Blazor.App.Models
+
+<PageTitle>User Form - Brinell Blazor Sample</PageTitle>
+
+<div data-automation-id="UserFormPage">
+    <h1 data-automation-id="UserFormTitle">User Registration</h1>
+    <p class="text-muted" data-automation-id="UserFormSubtitle">Complete the form below to register</p>
+
+    @if (!string.IsNullOrEmpty(resultMessage))
+    {
+        <div class="alert @(isSuccess ? "alert-success" : "alert-info")" data-automation-id="ResultMessage">
+            @resultMessage
+        </div>
+    }
+
+    <form @onsubmit="HandleSubmit" @onsubmit:preventDefault>
+        <!-- Text Input Section -->
+        <div class="card mb-4" data-automation-id="TextInputSection">
+            <div class="card-header">
+                <h5 data-automation-id="PersonalInfoLabel">Personal Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label" for="firstName">First Name</label>
+                        <input type="text" class="form-control" id="firstName"
+                               @bind="profile.FirstName" placeholder="Enter first name"
+                               data-automation-id="FirstNameInput" />
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label" for="lastName">Last Name</label>
+                        <input type="text" class="form-control" id="lastName"
+                               @bind="profile.LastName" placeholder="Enter last name"
+                               data-automation-id="LastNameInput" />
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label" for="email">Email</label>
+                        <input type="email" class="form-control" id="email"
+                               @bind="profile.Email" placeholder="user@example.com"
+                               data-automation-id="EmailInput" />
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label" for="phone">Phone</label>
+                        <input type="tel" class="form-control" id="phone"
+                               @bind="profile.Phone" placeholder="123-456-7890"
+                               data-automation-id="PhoneInput" />
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="bio">Bio</label>
+                    <textarea class="form-control" id="bio" rows="3"
+                              @bind="profile.Bio" placeholder="Tell us about yourself..."
+                              data-automation-id="BioTextarea"></textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="search">Search Users</label>
+                    <div class="input-group">
+                        <input type="search" class="form-control" id="search"
+                               @bind="searchText" placeholder="Search..."
+                               data-automation-id="SearchInput" />
+                        <button type="button" class="btn btn-outline-secondary" @onclick="HandleSearch"
+                                data-automation-id="SearchButton">Search</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toggle Section -->
+        <div class="card mb-4" data-automation-id="ToggleSection">
+            <div class="card-header">
+                <h5 data-automation-id="PreferencesLabel">Preferences</h5>
+            </div>
+            <div class="card-body">
+                <!-- Switches -->
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="newsletter"
+                           @bind="profile.SubscribeNewsletter"
+                           data-automation-id="NewsletterSwitch" />
+                    <label class="form-check-label" for="newsletter">Subscribe to Newsletter</label>
+                </div>
+
+                <!-- Checkboxes -->
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="terms"
+                           @bind="profile.AcceptTerms"
+                           data-automation-id="TermsCheckbox" />
+                    <label class="form-check-label" for="terms">I accept the Terms of Service</label>
+                </div>
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="privacy"
+                           @bind="profile.AcceptPrivacy"
+                           data-automation-id="PrivacyCheckbox" />
+                    <label class="form-check-label" for="privacy">I accept the Privacy Policy</label>
+                </div>
+
+                <!-- Radio Buttons -->
+                <label class="form-label">Subscription Tier</label>
+                <div class="mb-3" data-automation-id="SubscriptionRadioGroup">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="subscription" id="basic"
+                               value="Basic" @onchange="@(() => profile.SubscriptionTier = "Basic")"
+                               checked="@(profile.SubscriptionTier == "Basic")"
+                               data-automation-id="BasicRadio" />
+                        <label class="form-check-label" for="basic">Basic</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="subscription" id="professional"
+                               value="Professional" @onchange="@(() => profile.SubscriptionTier = "Professional")"
+                               checked="@(profile.SubscriptionTier == "Professional")"
+                               data-automation-id="ProfessionalRadio" />
+                        <label class="form-check-label" for="professional">Professional</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="subscription" id="enterprise"
+                               value="Enterprise" @onchange="@(() => profile.SubscriptionTier = "Enterprise")"
+                               checked="@(profile.SubscriptionTier == "Enterprise")"
+                               data-automation-id="EnterpriseRadio" />
+                        <label class="form-check-label" for="enterprise">Enterprise</label>
+                    </div>
+                </div>
+
+                <!-- Contact Preference Radio -->
+                <label class="form-label">Contact Preference</label>
+                <div class="mb-3" data-automation-id="ContactRadioGroup">
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="contact" id="contactEmail"
+                               value="Email" @onchange="@(() => profile.ContactPreference = "Email")"
+                               checked="@(profile.ContactPreference == "Email")"
+                               data-automation-id="ContactEmailRadio" />
+                        <label class="form-check-label" for="contactEmail">Email</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="contact" id="contactPhone"
+                               value="Phone" @onchange="@(() => profile.ContactPreference = "Phone")"
+                               checked="@(profile.ContactPreference == "Phone")"
+                               data-automation-id="ContactPhoneRadio" />
+                        <label class="form-check-label" for="contactPhone">Phone</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="contact" id="contactSms"
+                               value="SMS" @onchange="@(() => profile.ContactPreference = "SMS")"
+                               checked="@(profile.ContactPreference == "SMS")"
+                               data-automation-id="ContactSmsRadio" />
+                        <label class="form-check-label" for="contactSms">SMS</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Selection Section -->
+        <div class="card mb-4" data-automation-id="SelectionSection">
+            <div class="card-header">
+                <h5 data-automation-id="SelectionLabel">Selection Controls</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label" for="country">Country</label>
+                        <select class="form-select" id="country" @bind="profile.Country"
+                                data-automation-id="CountrySelect">
+                            <option value="">Select Country...</option>
+                            @foreach (var country in countries)
+                            {
+                                <option value="@country" data-automation-id="@($"CountryOption_{country}")">@country</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label" for="department">Department</label>
+                        <select class="form-select" id="department" @bind="profile.Department"
+                                data-automation-id="DepartmentSelect">
+                            <option value="">Select Department...</option>
+                            @foreach (var dept in departments)
+                            {
+                                <option value="@dept" data-automation-id="@($"DeptOption_{dept}")">@dept</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label" for="birthdate">Birth Date</label>
+                        <input type="date" class="form-control" id="birthdate"
+                               @bind="profile.BirthDate"
+                               data-automation-id="BirthDateInput" />
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Multiple Select</label>
+                        <select class="form-select" multiple size="4"
+                                data-automation-id="MultiSelect">
+                            <option value="opt1" data-automation-id="MultiOpt1">Option 1</option>
+                            <option value="opt2" data-automation-id="MultiOpt2">Option 2</option>
+                            <option value="opt3" data-automation-id="MultiOpt3">Option 3</option>
+                            <option value="opt4" data-automation-id="MultiOpt4">Option 4</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Range Section -->
+        <div class="card mb-4" data-automation-id="RangeSection">
+            <div class="card-header">
+                <h5 data-automation-id="RangeLabel">Range Controls</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label" for="fontSize">Font Size: @profile.FontSize pt</label>
+                    <input type="range" class="form-range" id="fontSize"
+                           min="8" max="72" @bind="profile.FontSize"
+                           data-automation-id="FontSizeSlider" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="volume">Volume: @profile.Volume%</label>
+                    <input type="range" class="form-range" id="volume"
+                           min="0" max="100" @bind="profile.Volume"
+                           data-automation-id="VolumeSlider" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="quantity">Quantity</label>
+                    <div class="input-group" style="width: 150px;" data-automation-id="QuantityStepper">
+                        <button type="button" class="btn btn-outline-secondary" @onclick="DecrementQuantity"
+                                data-automation-id="DecrementButton">-</button>
+                        <input type="number" class="form-control text-center" id="quantity"
+                               @bind="profile.Quantity" min="1" max="99"
+                               data-automation-id="QuantityInput" />
+                        <button type="button" class="btn btn-outline-secondary" @onclick="IncrementQuantity"
+                                data-automation-id="IncrementButton">+</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="d-flex gap-2" data-automation-id="ActionButtons">
+            <button type="submit" class="btn btn-primary" data-automation-id="SubmitButton">
+                Submit
+            </button>
+            <button type="button" class="btn btn-secondary" @onclick="SaveDraft"
+                    data-automation-id="SaveDraftButton">
+                Save Draft
+            </button>
+            <button type="button" class="btn btn-outline-danger" @onclick="ClearForm"
+                    data-automation-id="ClearButton">
+                Clear
+            </button>
+        </div>
+    </form>
+</div>
+
+@code {
+    private UserProfile profile = new();
+    private string searchText = "";
+    private string resultMessage = "";
+    private bool isSuccess = false;
+
+    private List<string> countries = new()
+    {
+        "United States", "Canada", "United Kingdom", "Germany", "France", "Australia", "Japan"
+    };
+
+    private List<string> departments = new()
+    {
+        "Engineering", "Sales", "Marketing", "Human Resources", "Finance", "Operations"
+    };
+
+    private void HandleSubmit()
+    {
+        resultMessage = $"Form submitted for {profile.FirstName} {profile.LastName}";
+        isSuccess = true;
+    }
+
+    private void HandleSearch()
+    {
+        resultMessage = $"Searched for: {searchText}";
+        isSuccess = false;
+    }
+
+    private void SaveDraft()
+    {
+        resultMessage = "Draft saved successfully";
+        isSuccess = true;
+    }
+
+    private void ClearForm()
+    {
+        profile = new UserProfile();
+        searchText = "";
+        resultMessage = "Form cleared";
+        isSuccess = false;
+    }
+
+    private void IncrementQuantity()
+    {
+        if (profile.Quantity < 99)
+            profile.Quantity++;
+    }
+
+    private void DecrementQuantity()
+    {
+        if (profile.Quantity > 1)
+            profile.Quantity--;
+    }
+}

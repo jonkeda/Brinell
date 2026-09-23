@@ -1,0 +1,12 @@
+{
+  "artifacts": {
+    "rootDirectory": null,
+    "runId": null,
+    "suite": "Stride"
+  },
+  "stride": {
+    "appPath": null,
+    "processName": null,
+    "attachToRunning": false
+  }
+}

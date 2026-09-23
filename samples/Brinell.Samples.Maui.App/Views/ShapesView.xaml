@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+    Shapes and Graphics module test view.
+
+    Covers test-pages-design.md sections 12 (Shapes) and 7 (Graphics). They share a view
+    because both are non-interactive: the design's validation points for each are
+    "renders without error" and "dimensions correct". Two pages for eight controls that
+    only need existence and geometry checks would be ceremony.
+
+    Every shape carries an explicit WidthRequest/HeightRequest so the geometry assertions
+    have something deterministic to check. Without that the bounds depend on layout and the
+    tests would pin whatever the platform happened to compute.
+-->
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:shapes="clr-namespace:Microsoft.Maui.Controls.Shapes;assembly=Microsoft.Maui.Controls"
+             x:Class="Brinell.Samples.Maui.App.Views2.TestViews.ShapesView"
+             BackgroundColor="{AppThemeBinding Light=White, Dark=#1F1F1F}">
+
+    <ScrollView AutomationId="ShapesRootScroll">
+        <VerticalStackLayout Padding="20" Spacing="15">
+
+            <Label AutomationId="PageTitle"
+                   Text="Shapes and Graphics Module Test"
+                   FontSize="24"
+                   FontAttributes="Bold" />
+
+            <Label Text="Shapes" FontSize="16" FontAttributes="Bold" />
+
+            <shapes:Ellipse AutomationId="TestEllipse"
+                            WidthRequest="80" HeightRequest="40"
+                            Fill="CornflowerBlue"
+                            HorizontalOptions="Start" />
+
+            <shapes:Rectangle AutomationId="TestRectangle"
+                              WidthRequest="80" HeightRequest="40"
+                              Fill="IndianRed"
+                              HorizontalOptions="Start" />
+
+            <shapes:RoundRectangle AutomationId="TestRoundRectangle"
+                                   WidthRequest="80" HeightRequest="40"
+                                   CornerRadius="8"
+                                   Fill="MediumSeaGreen"
+                                   HorizontalOptions="Start" />
+
+            <shapes:Line AutomationId="TestLine"
+                         X1="0" Y1="0" X2="120" Y2="0"
+                         Stroke="Gray"
+                         StrokeThickness="3"
+                         HeightRequest="10"
+                         HorizontalOptions="Start" />
+
+            <shapes:Polygon AutomationId="TestPolygon"
+                            Points="0,40 40,0 80,40"
+                            Fill="Goldenrod"
+                            WidthRequest="80" HeightRequest="40"
+                            HorizontalOptions="Start" />
+
+            <shapes:Polyline AutomationId="TestPolyline"
+                             Points="0,0 30,30 60,0 90,30"
+                             Stroke="SlateBlue"
+                             StrokeThickness="3"
+                             WidthRequest="90" HeightRequest="30"
+                             HorizontalOptions="Start" />
+
+            <shapes:Path AutomationId="TestPath"
+                         Data="M 0,0 L 60,0 L 30,40 Z"
+                         Fill="DarkOrange"
+                         WidthRequest="60" HeightRequest="40"
+                         HorizontalOptions="Start" />
+
+            <Label Text="Graphics" FontSize="16" FontAttributes="Bold" />
+
+            <!--
+                GraphicsView with no Drawable renders an empty canvas. That is enough for
+                the design's validation points, which are about the control existing and
+                sizing rather than about drawing content. A Drawable would need a
+                code-behind painter and would still be unassertable through automation.
+            -->
+            <GraphicsView AutomationId="TestGraphicsView"
+                          WidthRequest="120"
+                          HeightRequest="60"
+                          BackgroundColor="{AppThemeBinding Light=#EEEEEE, Dark=#333333}"
+                          HorizontalOptions="Start" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentView>

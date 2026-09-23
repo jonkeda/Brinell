@@ -1,0 +1,61 @@
+name: Release
+
+# Publishing a GitHub release tagged vX.Y.Z (or vX.Y.Z-suffix) packs the libraries with
+# that version and pushes them to this organisation's GitHub Packages feed. The repo is
+# private, so nothing goes to nuget.org.
+
+on:
+  release:
+    types: [ published ]
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  publish:
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET (global.json)
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Version from tag
+        id: version
+        shell: pwsh
+        run: |
+          $tag = '${{ github.event.release.tag_name }}'
+          if ($tag -notmatch '^v(\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?)$') {
+            Write-Error "Tag '$tag' is not vX.Y.Z or vX.Y.Z-suffix"; exit 1
+          }
+          "value=$($Matches[1])" >> $env:GITHUB_OUTPUT
+
+      - name: Restore workloads
+        run: dotnet workload restore srcnew/Brinell.Maui.Extensions/Brinell.Maui.Extensions.csproj srcnew/Brinell.Maui.CommunityToolkit/Brinell.Maui.CommunityToolkit.csproj
+
+      - name: Pack libraries
+        shell: pwsh
+        run: ./tools/Scripts/pack.ps1 -Version "${{ steps.version.outputs.value }}" -Output artifacts
+
+      - name: Push to GitHub Packages
+        shell: pwsh
+        run: |
+          dotnet nuget push "artifacts/*.nupkg" `
+            --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" `
+            --api-key "${{ secrets.GITHUB_TOKEN }}" --skip-duplicate
+
+      - name: Attach packages to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" artifacts/*.nupkg --clobber

@@ -1,0 +1,12 @@
+global using System.Diagnostics;
+global using Brinell.Core.Configuration;
+global using Brinell.Core.Exceptions;
+global using Brinell.Core.Interfaces;
+global using Brinell.Core.Locators;
+global using Brinell.Core.Logging;
+global using Brinell.Maui.Controls.Buttons;
+global using Brinell.Maui.Controls.Text;
+global using Brinell.Maui.Enums;
+global using Brinell.Maui.Interfaces;
+global using Brinell.Maui.Exceptions;
+global using Brinell.Maui.Scopes;

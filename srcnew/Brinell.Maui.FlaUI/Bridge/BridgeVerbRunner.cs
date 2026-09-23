@@ -1,0 +1,396 @@
+using Brinell.Uia;
+using FlaUI.Core.AutomationElements;
+using FlaUI.UIA3;
+
+namespace Brinell.Maui.FlaUI.Bridge;
+
+/// <summary>
+/// Sends one verb to the app under test, and says what came back.
+/// </summary>
+internal static class BridgeVerbRunner
+{
+    /// <summary>What the app under test declared an element can do.</summary>
+    /// <param name="root">The app's top-level window.</param>
+    /// <param name="automation">The session.</param>
+    /// <param name="automationId">The MAUI <c>AutomationId</c> of the target.</param>
+    /// <returns>The verbs, or empty if there is no bridge target for it.</returns>
+    internal static IReadOnlyList<BrinellVerb> Verbs(
+        AutomationElement root, UIA3Automation automation, string? automationId)
+    {
+        if (string.IsNullOrWhiteSpace(automationId))
+        {
+            return [];
+        }
+
+        return BrinellBridgeLookup.Find(root, automation, automationId)?.SupportedVerbs() ?? [];
+    }
+
+    /// <summary>Whether an element declares a verb.</summary>
+    /// <param name="root">The app's top-level window.</param>
+    /// <param name="automation">The session.</param>
+    /// <param name="automationId">The MAUI <c>AutomationId</c> of the target.</param>
+    /// <param name="verb">The verb.</param>
+    /// <returns>Whether the app declared it for this element.</returns>
+    internal static bool Supports(
+        AutomationElement root,
+        UIA3Automation automation,
+        string? automationId,
+        BrinellVerb verb)
+        => Verbs(root, automation, automationId).Contains(verb);
+
+    /// <summary>
+    /// Sends a verb on whichever of the two contract methods it travels on.
+    /// </summary>
+    /// <param name="root">The app's top-level window.</param>
+    /// <param name="automation">The session.</param>
+    /// <param name="automationId">The MAUI <c>AutomationId</c> of the target.</param>
+    /// <param name="verb">The verb.</param>
+    /// <param name="argument">Its argument, for a verb that takes one.</param>
+    /// <returns>What happened, and what the app returned.</returns>
+    internal static BridgeVerbResult Send(
+        AutomationElement root,
+        UIA3Automation automation,
+        string? automationId,
+        BrinellVerb verb,
+        string argument = "")
+        => BrinellVerbs.TransportFor(verb) == BrinellVerbTransport.Exchange
+            ? Exchange(root, automation, automationId, verb, argument)
+            : Invoke(root, automation, automationId, verb);
+
+    /// <summary>
+    /// Sends a verb that carries no strings.
+    /// </summary>
+    /// <param name="root">The app's top-level window.</param>
+    /// <param name="automation">The session.</param>
+    /// <param name="automationId">The MAUI <c>AutomationId</c> of the target.</param>
+    /// <param name="verb">The verb.</param>
+    /// <param name="arg1">The verb's first argument, where it takes one.</param>
+    /// <param name="arg2">The verb's second argument, where it takes one.</param>
+    /// <returns>What happened.</returns>
+    internal static BridgeVerbResult Invoke(
+        AutomationElement root,
+        UIA3Automation automation,
+        string? automationId,
+        BrinellVerb verb,
+        int arg1 = 0,
+        int arg2 = 0)
+    {
+        if (!TryResolve(root, automation, automationId, verb, out var pattern, out var failure, out _))
+        {
+            return failure;
+        }
+
+        var hr = pattern!.Invoke((int)verb, arg1, arg2);
+
+        return new BridgeVerbResult(
+            BrinellVerbFailure.Succeeded(hr),
+            hr,
+            string.Empty,
+            BrinellVerbFailure.Describe(verb, hr));
+    }
+
+    /// <summary>
+    /// Sends a verb that carries a string in, a string out, or both.
+    /// </summary>
+    /// <param name="root">The app's top-level window.</param>
+    /// <param name="automation">The session.</param>
+    /// <param name="automationId">The MAUI <c>AutomationId</c> of the target.</param>
+    /// <param name="verb">The verb.</param>
+    /// <param name="argument">The verb's argument, or empty where it takes none.</param>
+    /// <returns>What happened, and what the app returned.</returns>
+    internal static BridgeVerbResult Exchange(
+        AutomationElement root,
+        UIA3Automation automation,
+        string? automationId,
+        BrinellVerb verb,
+        string argument = "")
+    {
+        if (!TryResolve(root, automation, automationId, verb, out var pattern, out var failure, out _))
+        {
+            return failure;
+        }
+
+        var hr = pattern!.Exchange((int)verb, argument, out var value);
+
+        return new BridgeVerbResult(
+            BrinellVerbFailure.Succeeded(hr),
+            hr,
+            value,
+            BrinellVerbFailure.Describe(verb, hr));
+    }
+
+    /// <summary>
+    /// Invokes a verb only where the target declares it, telling "not declared" apart from
+    /// "declared and refused" in a single walk.
+    /// </summary>
+    /// <param name="root">The app's top-level window.</param>
+    /// <param name="automation">The session.</param>
+    /// <param name="automationId">The MAUI <c>AutomationId</c> of the target.</param>
+    /// <param name="verb">The verb.</param>
+    /// <param name="arg1">The verb's first argument.</param>
+    /// <param name="arg2">The verb's second argument.</param>
+    /// <param name="declared">Whether the target declared the verb at all.</param>
+    /// <returns>What happened.</returns>
+    internal static BridgeVerbResult InvokeIfDeclared(
+        AutomationElement root,
+        UIA3Automation automation,
+        string? automationId,
+        BrinellVerb verb,
+        int arg1,
+        int arg2,
+        out bool declared)
+    {
+        declared = false;
+
+        if (!TryResolve(root, automation, automationId, verb, out var pattern, out var failure,
+                out var target))
+        {
+            return failure;
+        }
+
+        if (!target!.SupportedVerbs().Contains(verb))
+        {
+            return new BridgeVerbResult(
+                false,
+                HResults.UIA_E_NOTSUPPORTED,
+                string.Empty,
+                $"the app under test does not declare {verb} on '{automationId}'.");
+        }
+
+        declared = true;
+
+        var hr = pattern!.Invoke((int)verb, arg1, arg2);
+
+        return new BridgeVerbResult(
+            BrinellVerbFailure.Succeeded(hr),
+            hr,
+            string.Empty,
+            BrinellVerbFailure.Describe(verb, hr));
+    }
+
+    /// <summary>
+    /// Exchanges a verb only where the target declares it, telling "not declared" apart from
+    /// "declared and refused" in a single walk.
+    /// </summary>
+    /// <param name="root">The app's top-level window.</param>
+    /// <param name="automation">The session.</param>
+    /// <param name="automationId">The MAUI <c>AutomationId</c> of the target.</param>
+    /// <param name="verb">The verb.</param>
+    /// <param name="argument">The verb's argument, or empty where it takes none.</param>
+    /// <param name="declared">Whether the target declared the verb at all.</param>
+    /// <returns>What happened. Not delivered, with <paramref name="declared"/> false, when the
+    /// target does not declare the verb or could not be resolved.</returns>
+    internal static BridgeVerbResult SendIfDeclared(
+        AutomationElement root,
+        UIA3Automation automation,
+        string? automationId,
+        BrinellVerb verb,
+        string argument,
+        out bool declared)
+    {
+        declared = false;
+
+        if (!TryResolve(root, automation, automationId, verb, out var pattern, out var failure,
+                out var target))
+        {
+            return failure;
+        }
+
+        // The declaration is read off the target TryResolve already resolved. Calling
+        // BrinellBridgeLookup.Find again here would walk the bridge a second time, which is the
+        // cost this method exists to remove.
+        if (!target!.SupportedVerbs().Contains(verb))
+        {
+            return new BridgeVerbResult(
+                false,
+                HResults.UIA_E_NOTSUPPORTED,
+                string.Empty,
+                $"the app under test does not declare {verb} on '{automationId}'.");
+        }
+
+        declared = true;
+
+        var hr = pattern!.Exchange((int)verb, argument, out var value);
+
+        return new BridgeVerbResult(
+            BrinellVerbFailure.Succeeded(hr),
+            hr,
+            value,
+            BrinellVerbFailure.Describe(verb, hr));
+    }
+
+    /// <summary>
+    /// Sends a verb to whichever published element answers it, without naming one.
+    /// </summary>
+    /// <param name="root">The app's top-level window.</param>
+    /// <param name="automation">The session.</param>
+    /// <param name="verb">The verb.</param>
+    /// <returns>What happened, including that nothing answered.</returns>
+    internal static BridgeVerbResult InvokeAnywhere(
+        AutomationElement root, UIA3Automation automation, BrinellVerb verb)
+    {
+        var declined = 0;
+        var lastReason = string.Empty;
+
+        foreach (var target in BrinellBridgeLookup.Targets(root, automation))
+        {
+            if (!target.SupportedVerbs().Contains(verb)
+                || !target.TryGetBrinellPattern(out var pattern))
+            {
+                continue;
+            }
+
+            var hr = pattern!.Invoke((int)verb, 0, 0);
+
+            if (hr == HResults.S_OK)
+            {
+                return new BridgeVerbResult(true, hr, string.Empty, BrinellVerbFailure.Describe(verb, hr));
+            }
+
+            declined++;
+            lastReason = BrinellVerbFailure.Describe(verb, hr);
+        }
+
+        return declined == 0
+            ? new BridgeVerbResult(
+                false,
+                HResults.UIA_E_NOTSUPPORTED,
+                string.Empty,
+                $"no element published on the app's bridge answers {verb}.")
+            : new BridgeVerbResult(
+                false,
+                HResults.BRINELL_E_DECLINED,
+                string.Empty,
+                $"{declined} element(s) on the app's bridge were asked to {verb} and none did. "
+                + $"The last said: {lastReason}",
+                declined);
+    }
+
+    /// <summary>
+    /// Asks any element on the app's bridge a question about the app itself.
+    /// </summary>
+    /// <param name="root">The app's top-level window.</param>
+    /// <param name="automation">The session.</param>
+    /// <param name="verb">The verb.</param>
+    /// <param name="argument">The argument, if the verb takes one.</param>
+    /// <returns>What was answered, including that nothing answered.</returns>
+    internal static BridgeVerbResult ExchangeAnywhere(
+        AutomationElement root,
+        UIA3Automation automation,
+        BrinellVerb verb,
+        string argument = "")
+    {
+        var declinedHr = HResults.UIA_E_NOTSUPPORTED;
+        var declined = 0;
+
+        foreach (var target in BrinellBridgeLookup.Targets(root, automation))
+        {
+            if (!target.SupportedVerbs().Contains(verb)
+                || !target.TryGetBrinellPattern(out var pattern))
+            {
+                continue;
+            }
+
+            var hr = pattern!.Exchange((int)verb, argument, out var answer);
+
+            if (hr == HResults.S_OK)
+            {
+                return new BridgeVerbResult(
+                    true, hr, answer, BrinellVerbFailure.Describe(verb, hr));
+            }
+
+            // Remembered, not discarded. A target that answered something other than S_OK said
+            // something about the app - the item is disabled, the argument was nonsense - and
+            // reporting all of those as "nothing answers" sends the caller looking for a missing
+            // declaration, which is the one explanation that has already been ruled out.
+            declined++;
+            declinedHr = hr;
+        }
+
+        return new BridgeVerbResult(
+            false,
+            declinedHr,
+            string.Empty,
+            declined == 0
+                ? $"no element published on the app's bridge answers {verb}."
+                : $"{declined} element(s) were asked and none answered. The last said: "
+                  + BrinellVerbFailure.Describe(verb, declinedHr),
+            declined);
+    }
+
+    /// <summary>
+    /// Finds the pattern for an element, or explains which of the ways it was missing.
+    /// </summary>
+    private static bool TryResolve(
+        AutomationElement root,
+        UIA3Automation automation,
+        string? automationId,
+        BrinellVerb verb,
+        out IBrinellAutomationPattern? pattern,
+        out BridgeVerbResult failure,
+        out AutomationElement? target)
+    {
+        pattern = null;
+        target = null;
+
+        if (string.IsNullOrWhiteSpace(automationId))
+        {
+            failure = new BridgeVerbResult(
+                false,
+                HResults.E_INVALIDARG,
+                string.Empty,
+                "the target has no AutomationId, which is the only join between an element and its "
+                + "bridge element. Give it one in the app's markup.");
+            return false;
+        }
+
+        var element = target = BrinellBridgeLookup.Find(root, automation, automationId);
+
+        if (element is null)
+        {
+            failure = new BridgeVerbResult(
+                false,
+                HResults.UIA_E_ELEMENTNOTAVAILABLE,
+                string.Empty,
+                BrinellBridgeLookup.HasBridge(root, automation)
+                    ? "the app under test publishes a Brinell bridge but this element is not on it. "
+                      + "Add GestureAutomation.Verbs to the element in the app's markup."
+                    : "the app under test publishes no Brinell bridge. It needs the "
+                      + "Brinell.Maui.AppSupport UI Automation sources, and at least one element "
+                      + "declaring GestureAutomation.Verbs.");
+            return false;
+        }
+
+        if (!element.TryGetBrinellPattern(out pattern))
+        {
+            failure = new BridgeVerbResult(
+                false,
+                HResults.E_FAIL,
+                string.Empty,
+                "its bridge element carries no Brinell pattern. The app under test and this test "
+                + "assembly were built against different contract GUIDs.");
+            return false;
+        }
+
+        failure = default;
+        return true;
+    }
+}
+
+/// <summary>What a verb did, and how many targets were asked before this was the answer.</summary>
+/// <param name="Delivered">Whether the app performed the verb.</param>
+/// <param name="HResult">What the app answered, or what the client concluded.</param>
+/// <param name="Value">The payload, for the verbs that return one.</param>
+/// <param name="Reason">A sentence naming the cause and the remedy.</param>
+/// <param name="Declined">
+/// How many published targets were asked and refused.
+/// <para>
+/// <b>Zero and non-zero mean opposite things and used to be told apart only by reading the
+/// sentence.</b> Zero says nothing on the app's bridge implements this verb - a configuration
+/// error that waiting cannot fix. Non-zero says targets that could have answered did not, which
+/// during a page transition is a state that lasts milliseconds. A caller that cannot tell them
+/// apart either throws on a transient or hangs on a permanent one.
+/// </para>
+/// </param>
+internal readonly record struct BridgeVerbResult(
+    bool Delivered, int HResult, string Value, string Reason, int Declined = 0);

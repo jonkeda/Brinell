@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+    Dialogs module test view.
+
+    Covers ContentDialog from test-pages-design.md section 5. ContentDialog<TParent> binds
+    the WinUI3 popups that DisplayAlert and DisplayPromptAsync produce - it is not a control
+    declared in markup, so this view supplies the buttons that raise them and a label
+    recording the result.
+
+    ContentDialog is one of the few Brinell containers that finds its root outside the
+    normal scope chain: it overrides FindContainerRootElement to search the popup surface.
+-->
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewModels="using:Brinell.Samples.Maui.App.ViewModels"
+             x:Class="Brinell.Samples.Maui.App.Views2.TestViews.DialogsView"
+             x:DataType="viewModels:DialogsViewModel"
+             BackgroundColor="{AppThemeBinding Light=White, Dark=#1F1F1F}">
+
+    <ContentView.BindingContext>
+        <viewModels:DialogsViewModel />
+    </ContentView.BindingContext>
+
+    <ScrollView AutomationId="DialogsRootScroll">
+        <VerticalStackLayout Padding="20" Spacing="15">
+
+            <Label AutomationId="PageTitle"
+                   Text="Dialogs Module Test"
+                   FontSize="24"
+                   FontAttributes="Bold" />
+
+            <Label AutomationId="DialogResultLabel"
+                   Text="{Binding LastResult}" />
+
+            <Label Text="Alert with one button" FontSize="16" FontAttributes="Bold" />
+            <Button AutomationId="ShowAlertButton"
+                    Text="Show alert"
+                    Clicked="OnShowAlert" />
+
+            <Label Text="Confirmation with two buttons" FontSize="16" FontAttributes="Bold" />
+            <Button AutomationId="ShowConfirmButton"
+                    Text="Show confirmation"
+                    Clicked="OnShowConfirm" />
+
+            <Label Text="Prompt with text input" FontSize="16" FontAttributes="Bold" />
+            <Button AutomationId="ShowPromptButton"
+                    Text="Show prompt"
+                    Clicked="OnShowPrompt" />
+
+            <Button AutomationId="DialogsResetButton"
+                    Text="Reset"
+                    Command="{Binding ResetCommand}" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentView>

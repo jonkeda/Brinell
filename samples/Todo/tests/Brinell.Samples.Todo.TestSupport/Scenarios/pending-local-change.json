@@ -1,0 +1,13 @@
+// The device has changes the server has not seen: an edit, and a todo created offline.
+{
+  "now": "2026-03-10T09:00:00Z",
+  "server": [
+    { "id": "22222222-0000-0000-0000-000000000001", "title": "Buy milk", "notes": null, "dueDate": null, "status": "Open", "createdAt": "2026-03-01T08:00:00Z", "updatedAt": "2026-03-01T08:00:00Z" },
+    { "id": "22222222-0000-0000-0000-000000000002", "title": "Book dentist", "notes": null, "dueDate": null, "status": "Open", "createdAt": "2026-03-02T08:00:00Z", "updatedAt": "2026-03-02T08:00:00Z" }
+  ],
+  "local": [
+    { "id": "22222222-0000-0000-0000-000000000001", "title": "Buy oat milk", "notes": null, "dueDate": null, "status": "Open", "createdAt": "2026-03-01T08:00:00Z", "updatedAt": "2026-03-09T18:00:00Z", "syncState": "Pending", "isDeleted": false },
+    { "id": "22222222-0000-0000-0000-000000000002", "title": "Book dentist", "notes": null, "dueDate": null, "status": "Open", "createdAt": "2026-03-02T08:00:00Z", "updatedAt": "2026-03-02T08:00:00Z", "syncState": "Synced", "isDeleted": false },
+    { "id": "22222222-0000-0000-0000-000000000003", "title": "Call plumber", "notes": null, "dueDate": null, "status": "Open", "createdAt": "2026-03-09T19:00:00Z", "updatedAt": "2026-03-09T19:00:00Z", "syncState": "LocalOnly", "isDeleted": false }
+  ]
+}

@@ -1,0 +1,440 @@
+@page "/advanced"
+
+<PageTitle>Advanced - Brinell Blazor Sample</PageTitle>
+
+<div data-automation-id="AdvancedPage">
+    <h1 data-automation-id="AdvancedTitle">Advanced Controls</h1>
+    <p class="text-muted" data-automation-id="AdvancedSubtitle">
+        Interactive elements and advanced UI patterns
+    </p>
+
+    <!-- Event Log -->
+    <div class="card mb-4" data-automation-id="EventLogSection">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 data-automation-id="EventLogTitle">Event Log</h5>
+            <button class="btn btn-sm btn-outline-secondary" @onclick="ClearLog"
+                    data-automation-id="ClearLogButton">Clear</button>
+        </div>
+        <div class="card-body" style="max-height: 120px; overflow-y: auto; font-family: monospace; font-size: 12px;"
+             data-automation-id="EventLogContent">
+            @foreach (var log in eventLog.Take(10))
+            {
+                <div>[@log.Time] @log.Message</div>
+            }
+        </div>
+    </div>
+
+    <!-- Click Events Section -->
+    <div class="card mb-4" data-automation-id="ClickSection">
+        <div class="card-header">
+            <h5 data-automation-id="ClickTitle">Click Events</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <div class="p-4 bg-primary text-white text-center rounded"
+                         style="cursor: pointer;"
+                         @onclick="HandleSingleClick"
+                         data-automation-id="SingleClickArea">
+                        <h5>Single Click Area</h5>
+                        <p class="mb-0">Click count: @singleClickCount</p>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="p-4 bg-success text-white text-center rounded"
+                         style="cursor: pointer;"
+                         @ondblclick="HandleDoubleClick"
+                         data-automation-id="DoubleClickArea">
+                        <h5>Double Click Area</h5>
+                        <p class="mb-0">Double click count: @doubleClickCount</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Click Context -->
+            <div class="p-4 bg-warning text-dark text-center rounded mb-3"
+                 @oncontextmenu="HandleRightClick" @oncontextmenu:preventDefault
+                 data-automation-id="RightClickArea">
+                <h5>Right Click Area (Context Menu)</h5>
+                <p class="mb-0">Right click to trigger context menu event</p>
+            </div>
+
+            @if (showContextMenu)
+            {
+                <div class="dropdown-menu show" style="position: absolute;"
+                     data-automation-id="ContextMenu">
+                    <a class="dropdown-item" href="#" @onclick="OnContextCut" @onclick:preventDefault
+                       data-automation-id="ContextCut">Cut</a>
+                    <a class="dropdown-item" href="#" @onclick="OnContextCopy" @onclick:preventDefault
+                       data-automation-id="ContextCopy">Copy</a>
+                    <a class="dropdown-item" href="#" @onclick="OnContextPaste" @onclick:preventDefault
+                       data-automation-id="ContextPaste">Paste</a>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item" href="#" @onclick="CloseContextMenu" @onclick:preventDefault
+                       data-automation-id="ContextClose">Close</a>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Mouse Events Section -->
+    <div class="card mb-4" data-automation-id="MouseSection">
+        <div class="card-header">
+            <h5 data-automation-id="MouseTitle">Mouse Events</h5>
+        </div>
+        <div class="card-body">
+            <div class="p-4 border rounded text-center mb-3"
+                 @onmouseenter="OnMouseEnter"
+                 @onmouseleave="OnMouseLeave"
+                 style="background: @hoverBackground; transition: background 0.2s;"
+                 data-automation-id="HoverArea">
+                <h5>Hover Area</h5>
+                <p class="mb-0">Status: @(isHovering ? "Hovering" : "Not hovering")</p>
+            </div>
+
+            <div class="p-4 border rounded"
+                 @onmousemove="HandleMouseMove"
+                 data-automation-id="MouseTrackArea">
+                <h5>Mouse Position Tracker</h5>
+                <p data-automation-id="MousePosition">
+                    Position: X=@mouseX, Y=@mouseY
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Keyboard Events Section -->
+    <div class="card mb-4" data-automation-id="KeyboardSection">
+        <div class="card-header">
+            <h5 data-automation-id="KeyboardTitle">Keyboard Events</h5>
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <label class="form-label">Type here to capture key events:</label>
+                <input type="text" class="form-control"
+                       @onkeydown="HandleKeyDown"
+                       @onkeyup="HandleKeyUp"
+                       placeholder="Press any key..."
+                       data-automation-id="KeyboardInput" />
+            </div>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="p-3 border rounded" data-automation-id="LastKeyInfo">
+                        <strong>Last Key:</strong>
+                        <div data-automation-id="LastKeyValue">@lastKey</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3 border rounded" data-automation-id="KeyCodeInfo">
+                        <strong>Key Code:</strong>
+                        <div data-automation-id="KeyCodeValue">@keyCode</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3 border rounded" data-automation-id="ModifiersInfo">
+                        <strong>Modifiers:</strong>
+                        <div data-automation-id="ModifiersValue">@modifiers</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Focus Events Section -->
+    <div class="card mb-4" data-automation-id="FocusSection">
+        <div class="card-header">
+            <h5 data-automation-id="FocusTitle">Focus Events</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Input 1</label>
+                    <input type="text" class="form-control"
+                           @onfocus="OnFocus1"
+                           @onblur="OnBlur1"
+                           placeholder="Focus me"
+                           data-automation-id="FocusInput1" />
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Input 2</label>
+                    <input type="text" class="form-control"
+                           @onfocus="OnFocus2"
+                           @onblur="OnBlur2"
+                           placeholder="Focus me"
+                           data-automation-id="FocusInput2" />
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Input 3</label>
+                    <input type="text" class="form-control"
+                           @onfocus="OnFocus3"
+                           @onblur="OnBlur3"
+                           placeholder="Focus me"
+                           data-automation-id="FocusInput3" />
+                </div>
+            </div>
+            <p data-automation-id="FocusStatus">Current focus: @currentFocus</p>
+        </div>
+    </div>
+
+    <!-- Drag and Drop Section -->
+    <div class="card mb-4" data-automation-id="DragDropSection">
+        <div class="card-header">
+            <h5 data-automation-id="DragDropTitle">Drag and Drop</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <h6>Draggable Items</h6>
+                    <div class="d-flex gap-2 flex-wrap" data-automation-id="DraggableContainer">
+                        @foreach (var item in draggableItems)
+                        {
+                            var localItem = item;
+                            <div class="p-2 border rounded bg-light"
+                                 draggable="true"
+                                 @ondragstart="() => StartDrag(localItem)"
+                                 style="cursor: grab;"
+                                 data-automation-id="@($"Draggable_{localItem}")">
+                                @localItem
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <h6>Drop Zone</h6>
+                    <div class="p-4 rounded text-center"
+                         style="min-height: 100px; border: 2px dashed #ccc; background: @dropZoneBackground;"
+                         @ondragover="HandleDragOver" @ondragover:preventDefault
+                         @ondragleave="HandleDragLeave"
+                         @ondrop="HandleDrop"
+                         data-automation-id="DropZone">
+                        @if (droppedItems.Any())
+                        {
+                            <div class="d-flex gap-2 flex-wrap justify-content-center">
+                                @foreach (var item in droppedItems)
+                                {
+                                    <span class="badge bg-primary" data-automation-id="@($"Dropped_{item}")">@item</span>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <span class="text-muted">Drop items here</span>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Layout Containers Section -->
+    <div class="card mb-4" data-automation-id="LayoutSection">
+        <div class="card-header">
+            <h5 data-automation-id="LayoutTitle">Layout Containers</h5>
+        </div>
+        <div class="card-body">
+            <h6>Grid Layout</h6>
+            <div class="row g-2 mb-4" data-automation-id="GridLayout">
+                @for (int i = 0; i < 6; i++)
+                {
+                    var cellNum = i;
+                    <div class="col-4">
+                        <div class="p-3 text-center rounded" 
+                             style="background: @GetCellColor(cellNum);"
+                             data-automation-id="@($"GridCell_{cellNum}")">
+                            Cell @(cellNum + 1)
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <h6>Flex Layout</h6>
+            <div class="d-flex gap-2 flex-wrap" data-automation-id="FlexLayout">
+                @for (int i = 0; i < 5; i++)
+                {
+                    var itemNum = i;
+                    <div class="p-3 rounded" 
+                         style="background: @GetCellColor(itemNum); min-width: 80px; text-align: center;"
+                         data-automation-id="@($"FlexItem_{itemNum}")">
+                        Flex @(itemNum + 1)
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Tooltip and Popover Section -->
+    <div class="card mb-4" data-automation-id="TooltipSection">
+        <div class="card-header">
+            <h5 data-automation-id="TooltipTitle">Tooltips and Popovers</h5>
+        </div>
+        <div class="card-body">
+            <div class="d-flex gap-3 flex-wrap">
+                <button class="btn btn-primary" title="This is a tooltip!"
+                        data-automation-id="TooltipButton">
+                    Hover for Tooltip
+                </button>
+                <div class="position-relative d-inline-block">
+                    <button class="btn btn-secondary" @onclick="TogglePopover"
+                            data-automation-id="PopoverButton">
+                        Click for Popover
+                    </button>
+                    @if (showPopover)
+                    {
+                        <div class="position-absolute bg-white border rounded shadow p-3"
+                             style="top: 100%; left: 0; min-width: 200px; z-index: 1000;"
+                             data-automation-id="Popover">
+                            <h6>Popover Title</h6>
+                            <p class="mb-0">This is popover content.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reset Button -->
+    <div class="mt-4">
+        <button class="btn btn-danger" @onclick="ResetAll"
+                data-automation-id="ResetButton">Reset All</button>
+    </div>
+</div>
+
+@code {
+    private List<LogEntry> eventLog = new();
+    private int singleClickCount = 0;
+    private int doubleClickCount = 0;
+    private bool showContextMenu = false;
+    private bool isHovering = false;
+    private int mouseX = 0;
+    private int mouseY = 0;
+    private string lastKey = "-";
+    private string keyCode = "-";
+    private string modifiers = "None";
+    private string currentFocus = "None";
+    private bool isDragOver = false;
+    private string? draggedItem = null;
+    private List<string> draggableItems = new() { "Item A", "Item B", "Item C", "Item D" };
+    private List<string> droppedItems = new();
+    private bool showPopover = false;
+
+    private string hoverBackground => isHovering ? "#e3f2fd" : "#fff";
+    private string dropZoneBackground => isDragOver ? "#e8f5e9" : "#f8f9fa";
+
+    private void LogEvent(string message)
+    {
+        eventLog.Insert(0, new LogEntry(DateTime.Now.ToString("HH:mm:ss"), message));
+        if (eventLog.Count > 50) eventLog.RemoveAt(eventLog.Count - 1);
+    }
+
+    private void ClearLog()
+    {
+        eventLog.Clear();
+        LogEvent("Log cleared");
+    }
+
+    private void HandleSingleClick()
+    {
+        singleClickCount++;
+        LogEvent($"Single click #{singleClickCount}");
+    }
+
+    private void HandleDoubleClick()
+    {
+        doubleClickCount++;
+        LogEvent($"Double click #{doubleClickCount}");
+    }
+
+    private void HandleRightClick()
+    {
+        showContextMenu = true;
+        LogEvent("Right click - context menu shown");
+    }
+
+    private void OnContextCut() { LogEvent("Context menu: Cut"); showContextMenu = false; }
+    private void OnContextCopy() { LogEvent("Context menu: Copy"); showContextMenu = false; }
+    private void OnContextPaste() { LogEvent("Context menu: Paste"); showContextMenu = false; }
+    private void CloseContextMenu() => showContextMenu = false;
+
+    private void OnMouseEnter() { isHovering = true; LogEvent("Mouse entered hover area"); }
+    private void OnMouseLeave() { isHovering = false; LogEvent("Mouse left hover area"); }
+
+    private void HandleMouseMove(MouseEventArgs e)
+    {
+        mouseX = (int)e.ClientX;
+        mouseY = (int)e.ClientY;
+    }
+
+    private void HandleKeyDown(KeyboardEventArgs e)
+    {
+        lastKey = e.Key;
+        keyCode = e.Code;
+        var mods = new List<string>();
+        if (e.CtrlKey) mods.Add("Ctrl");
+        if (e.ShiftKey) mods.Add("Shift");
+        if (e.AltKey) mods.Add("Alt");
+        modifiers = mods.Any() ? string.Join("+", mods) : "None";
+        LogEvent($"Key down: {e.Key}");
+    }
+
+    private void HandleKeyUp(KeyboardEventArgs e)
+    {
+        LogEvent($"Key up: {e.Key}");
+    }
+
+    private void OnFocus1() { currentFocus = "Input 1"; LogEvent("Input 1 focused"); }
+    private void OnBlur1() { currentFocus = "None"; LogEvent("Input 1 blurred"); }
+    private void OnFocus2() { currentFocus = "Input 2"; LogEvent("Input 2 focused"); }
+    private void OnBlur2() { currentFocus = "None"; LogEvent("Input 2 blurred"); }
+    private void OnFocus3() { currentFocus = "Input 3"; LogEvent("Input 3 focused"); }
+    private void OnBlur3() { currentFocus = "None"; LogEvent("Input 3 blurred"); }
+
+    private void StartDrag(string item)
+    {
+        draggedItem = item;
+        LogEvent($"Started dragging: {item}");
+    }
+
+    private void HandleDragOver(DragEventArgs e)
+    {
+        isDragOver = true;
+    }
+
+    private void HandleDragLeave()
+    {
+        isDragOver = false;
+    }
+
+    private void HandleDrop()
+    {
+        isDragOver = false;
+        if (draggedItem != null && !droppedItems.Contains(draggedItem))
+        {
+            droppedItems.Add(draggedItem);
+            draggableItems.Remove(draggedItem);
+            LogEvent($"Dropped: {draggedItem}");
+        }
+        draggedItem = null;
+    }
+
+    private string GetCellColor(int index)
+    {
+        var colors = new[] { "#FFCDD2", "#F8BBD0", "#E1BEE7", "#D1C4E9", "#C5CAE9", "#BBDEFB" };
+        return colors[index % colors.Length];
+    }
+
+    private void TogglePopover() => showPopover = !showPopover;
+
+    private void ResetAll()
+    {
+        singleClickCount = 0;
+        doubleClickCount = 0;
+        showContextMenu = false;
+        showPopover = false;
+        droppedItems.Clear();
+        draggableItems = new() { "Item A", "Item B", "Item C", "Item D" };
+        eventLog.Clear();
+        LogEvent("All reset");
+    }
+
+    private record LogEntry(string Time, string Message);
+}

@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewModels="using:Brinell.Samples.Maui.App.ViewModels"
+             xmlns:uia="clr-namespace:Brinell.Maui.AppSupport.Uia;assembly=Brinell.Maui.AppSupport"
+             x:Class="Brinell.Samples.Maui.App.Views2.TestViews.GesturesView"
+             BackgroundColor="{AppThemeBinding Light=White, Dark=#1F1F1F}">
+
+    <ContentView.BindingContext>
+        <viewModels:GesturesViewModel />
+    </ContentView.BindingContext>
+
+    <!--
+        One row per way a gesture can reach a MAUI element, including the two ways it cannot.
+
+        Every row is a Border with an AutomationId, a gesture recognizer or a sink, and a status
+        label. The label is what makes a row a test rather than a demonstration: a verb that
+        returned success and changed nothing is the failure this page exists to catch, and only
+        an observable outcome can tell the two apart.
+    -->
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="15">
+
+            <Label Text="Gestures Module Test"
+                   FontSize="24"
+                   FontAttributes="Bold"
+                   TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+
+            <Label Text="Each row declares what it answers. The last two declare nothing it can do."
+                   FontSize="14"
+                   TextColor="{AppThemeBinding Light=Gray, Dark=LightGray}" />
+
+            <!-- Tap: the simplest binding there is - one recognizer, one command. -->
+            <Border AutomationId="GestureTapTarget"
+                    uia:GestureAutomation.Verbs="Tap"
+                    Padding="15"
+                    BackgroundColor="{AppThemeBinding Light=#E8F0FE, Dark=#2A3A52}">
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer NumberOfTapsRequired="1"
+                                          Command="{Binding TapCommand}" />
+                </Border.GestureRecognizers>
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="Tap target" FontAttributes="Bold"
+                           TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+                    <Label AutomationId="GestureTapStatus"
+                           Text="{Binding TapStatus}"
+                           TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!--
+                DoubleTap: the same recognizer type, and the reason the binding has to look at
+                NumberOfTapsRequired rather than at the type. A Tap verb sent here must not be
+                answered by a recognizer that means something else.
+            -->
+            <Border AutomationId="GestureDoubleTapTarget"
+                    uia:GestureAutomation.Verbs="DoubleTap"
+                    Padding="15"
+                    BackgroundColor="{AppThemeBinding Light=#E8F0FE, Dark=#2A3A52}">
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer NumberOfTapsRequired="2"
+                                          Command="{Binding DoubleTapCommand}" />
+                </Border.GestureRecognizers>
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="Double-tap target" FontAttributes="Bold"
+                           TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+                    <Label AutomationId="GestureDoubleTapStatus"
+                           Text="{Binding DoubleTapStatus}"
+                           TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!--
+                Swipe: one recognizer declaring two directions, because Direction is a flags enum
+                and that is how it is normally written. The binding has to match on the flag, not
+                on equality, and this row is what would catch it if it stopped doing so.
+            -->
+            <Border AutomationId="GestureSwipeTarget"
+                    uia:GestureAutomation.Verbs="SwipeLeft,SwipeRight"
+                    Padding="15"
+                    BackgroundColor="{AppThemeBinding Light=#E8F0FE, Dark=#2A3A52}">
+                <Border.GestureRecognizers>
+                    <SwipeGestureRecognizer Direction="Left,Right"
+                                            Command="{Binding SwipeCommand}"
+                                            CommandParameter="Left or Right" />
+                </Border.GestureRecognizers>
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="Swipe target" FontAttributes="Bold"
+                           TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+                    <Label AutomationId="GestureSwipeStatus"
+                           Text="{Binding SwipeStatus}"
+                           TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!--
+                LongPress: no MAUI recognizer exists for it, so the app answers it itself. The
+                PointerGestureRecognizer here is what a person would use, and is deliberately NOT
+                what the verb binds to - pressing is not holding, and a bridge that quietly
+                substituted one for the other would report a hold that never happened.
+            -->
+            <Border AutomationId="GestureLongPressTarget"
+                    uia:GestureAutomation.Verbs="LongPress"
+                    uia:GestureAutomation.Sink="{Binding Sink}"
+                    Padding="15"
+                    BackgroundColor="{AppThemeBinding Light=#FFF4E5, Dark=#4A3A22}">
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="Long-press target (sink)" FontAttributes="Bold"
+                           TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+                    <Label AutomationId="GestureLongPressStatus"
+                           Text="{Binding LongPressStatus}"
+                           TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!--
+                Pan: SendPan is internal in MAUI 10 and nothing here reflects into MAUI
+                internals, so this is the other verb only the app can answer. It carries
+                arguments, which is what makes it worth having a second sink row.
+            -->
+            <Border AutomationId="GestureSinkTarget"
+                    uia:GestureAutomation.Verbs="Pan"
+                    uia:GestureAutomation.Sink="{Binding Sink}"
+                    Padding="15"
+                    BackgroundColor="{AppThemeBinding Light=#FFF4E5, Dark=#4A3A22}">
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="Pan target (sink)" FontAttributes="Bold"
+                           TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+                    <Label AutomationId="GestureSinkStatus"
+                           Text="{Binding SinkStatus}"
+                           TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!--
+                The negative case, and it has a working recognizer on purpose. It declares
+                nothing, so it is not on the bridge at all - which is the claim "declared, never
+                inferred" makes. A test asking this row for a Tap must be told the element is
+                unknown, not be quietly obliged.
+            -->
+            <Border AutomationId="GestureNoDeclarationTarget"
+                    Padding="15"
+                    BackgroundColor="{AppThemeBinding Light=#F1F1F1, Dark=#333333}">
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer NumberOfTapsRequired="1"
+                                          Command="{Binding NoDeclarationCommand}" />
+                </Border.GestureRecognizers>
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="Undeclared target" FontAttributes="Bold"
+                           TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+                    <Label AutomationId="GestureNoDeclarationStatus"
+                           Text="{Binding NoDeclarationStatus}"
+                           TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!--
+                The other negative case: a declaration the element cannot honour. It says
+                DoubleTap and carries a single-tap recognizer, so there is nothing to bind the
+                verb to. The app reports that when it publishes the element, by name, at startup
+                - rather than leaving a test to discover it as an unexplained refusal later.
+            -->
+            <Border AutomationId="GestureUnbindableTarget"
+                    uia:GestureAutomation.Verbs="DoubleTap"
+                    Padding="15"
+                    BackgroundColor="{AppThemeBinding Light=#F1F1F1, Dark=#333333}">
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer NumberOfTapsRequired="1"
+                                          Command="{Binding UnbindableCommand}" />
+                </Border.GestureRecognizers>
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="Misdeclared target" FontAttributes="Bold"
+                           TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+                    <Label AutomationId="GestureUnbindableStatus"
+                           Text="{Binding UnbindableStatus}"
+                           TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+                </VerticalStackLayout>
+            </Border>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentView>
