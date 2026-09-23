@@ -16,8 +16,8 @@
     <Product>Brinell UI Test Framework</Product>
     <Copyright>Copyright © 2024-$([System.DateTime]::Now.Year) Brinell Contributors</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/Iosk/Brinell</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/Iosk/Brinell</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/exact-mobile-apps/test-tooling</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/exact-mobile-apps/test-tooling</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>ui-testing;automation;wpf;maui;selenium;flaui;testing;page-object</PackageTags>

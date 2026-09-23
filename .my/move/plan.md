@@ -15,7 +15,7 @@
 - [x] Cleanup commit: removed `.gitmodules` and `test-output.txt`, ignored
       `test-output.txt`, added a Repository section to the README.
 - [x] `move` pushed to `org`.
-- [ ] PR `move` → `main` (merge commit). **CI will fail**, see
+- [ ] PR `move` → `main` (merge commit). CI rewritten and verified locally, see
       [CI and packages](#ci-and-packages).
 - [ ] Licence decision, org secrets, local remote switch, archive personal repo.
 
@@ -74,23 +74,35 @@ Make these as normal commits on `move` and push them. They become part of the PR
 
 ## CI and packages
 
-- Workflows (`build.yml`, `build-and-test.yml`, `release.yml`,
-  `release-and-deploy.yml`) push to nuget.org with `NUGET_API_KEY`, and to GitHub
-  Packages via `github.repository_owner`. The Packages target switches to
-  `exact-mobile-apps` automatically.
-- [ ] Add `NUGET_API_KEY` to the org repo secrets, or disable the nuget.org push
-      if packages should be internal only.
-- [ ] Check that the org Actions policy allows the actions and Windows runners used.
-- [ ] `build.yml` and `build-and-test.yml` only run on `main`/`develop` and on PRs
-      into them. A push to `move` triggers nothing. The PR into `main` is the first
-      real CI run.
-- [ ] **All four workflows are stale, and CI fails before this move is involved.**
-      They set up .NET 8/9, but `global.json` pins SDK `10.0.100`. `build-and-test.yml`
-      and `release-and-deploy.yml` build `src/Brinell.Maui.Controls/`, which no
-      longer exists (the code is in `srcnew/`). `build-and-test.yml` path-filters
-      on `src/**` and `tests/**`. This was left out of the move on purpose. Rewrite
-      CI as its own change, targeting `srcnew\Brinell.sln` with .NET 10 on
-      `windows-latest`.
+The four old workflows (stale since the `src/` → `srcnew/` move and .NET 10) were
+replaced on `move` by two:
+
+- **`ci.yml`** runs on PRs into `main`, pushes to `main`, and by hand. Job 1: .NET from
+  `global.json`, `dotnet workload restore`, a **Debug** build of `srcnew\Brinell.sln`
+  (the UI Automation bridge only compiles in Debug), and the 9 unit-test projects
+  (Core, Maui, Wpf, WinForms, Blazor, Automation, Mocking, Uat, Generator). The UI and
+  UAT suites launch real apps and stay local. Job 2: packs the 15 libraries in
+  Release with `tools/Scripts/pack.ps1` and uploads them as an artifact.
+- **`release.yml`**: publishing a GitHub release tagged `vX.Y.Z` packs with that
+  version, pushes to the org's GitHub Packages feed, and attaches the `.nupkg` files
+  to the release. **No nuget.org push**, because the repo is private.
+- `RepositoryUrl`/`PackageProjectUrl` in both `Directory.Build.props` files now
+  point at the org repo. They previously pointed at `github.com/Iosk/Brinell`.
+
+Verified locally from a fresh checkout of `move`:
+
+- Debug build: 0 errors (32 min cold, mostly the Android/iOS heads of the sample app).
+- Unit tests: 696 passed, 1 skipped, about 1 min.
+- `pack.ps1`: 15 `.nupkg` + `.snupkg`, about 1 min, with the org repo URL in the nuspec.
+
+A Release build of the whole solution fails
+(`Brinell.Samples.Maui.App` cannot find `Brinell.Maui.AppSupport.pri`), which is why
+CI builds Debug and packs project by project.
+
+- [ ] Check that the org Actions policy allows `actions/checkout`, `setup-dotnet`,
+      `setup-java` and `upload-artifact`, and Windows runners.
+- [ ] First real run is the PR into `main`. `workflow_dispatch` only works once
+      `ci.yml` is on the default branch.
 
 ## Pull request `move` → `main`
 
