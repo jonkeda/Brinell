@@ -452,3 +452,6 @@ FodyWeavers.xsd
 .graphify-out/**/GRAPH_TREE.html
 .graphify-out/**/*-callflow.html
 .graphify-out/**/cost.json
+
+# Local test run output
+test-output.txt

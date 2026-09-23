@@ -3,7 +3,16 @@
 Brinell is a cross-platform UI testing framework for .NET applications. It
 provides shared page-object, control-object, synchronization, artifact, mocking,
 and UAT patterns across desktop, web, MAUI, Stride, native Android, and the
-Presenter shell..
+Presenter shell.
+
+## Repository
+
+Brinell lives in [exact-mobile-apps/test-tooling](https://github.com/exact-mobile-apps/test-tooling).
+It was moved there from `jonkeda/Brinell` with its full history.
+
+```powershell
+git clone https://github.com/exact-mobile-apps/test-tooling.git Brinell
+```
 
 ## Current Docs
 
