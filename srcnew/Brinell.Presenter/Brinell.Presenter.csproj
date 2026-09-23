@@ -22,6 +22,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Maui.Controls" />
     <PackageReference Include="Microsoft.Extensions.Logging.Debug" />
+    <PackageReference Include="System.Reflection.MetadataLoadContext" />
     <!-- Version is pinned centrally in Directory.Packages.props - do not add one here. -->
     <PackageReference Include="CommunityToolkit.Maui" />
   </ItemGroup>

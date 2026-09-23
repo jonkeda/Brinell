@@ -1,3 +1,4 @@
+using Brinell.Core.Locators;
 using Brinell.Maui.Controls.Buttons;
 using Brinell.Maui.Controls.Display;
 using Brinell.Maui.Controls.Selection;
@@ -18,6 +19,12 @@ public sealed class PresenterPage : PageObjectBase<PresenterPage>
     }
 
     public override string Name => "Presenter";
+
+    /// <summary>
+    /// The page's root element. The default locator is the page <see cref="Name"/>, which is
+    /// "Presenter" because that is what scenarios say; the root grid is <c>PresenterRoot</c>.
+    /// </summary>
+    protected override Locator Locator => new(LocatorStrategy.AutomationId, "PresenterRoot");
 
     [UatName("Status Summary")]
     public PresenterStatusLabel<PresenterPage> StatusSummary => new(this, "StatusSummaryLabel");
@@ -67,6 +74,63 @@ public sealed class PresenterPage : PageObjectBase<PresenterPage>
     [UatName("Delay")]
     public Entry<PresenterPage> DelayMillisecondsInput => new(this, "DelayMillisecondsInput");
 
+    /// <summary>The Config tab's state header: clean, unsaved, or problems.</summary>
+    [UatName("Config State")]
+    public Label<PresenterPage> ConfigState => new(this, "ConfigStateLabel");
+
+    /// <summary>The one editable path: the UAT project.</summary>
+    [UatName("Config Project")]
+    public Entry<PresenterPage> ConfigProjectInput => new(this, "ConfigProjectInput");
+
+    /// <summary>The fixture name.</summary>
+    [UatName("Config Fixture")]
+    public Entry<PresenterPage> ConfigFixtureInput => new(this, "ConfigFixtureInput");
+
+    /// <summary>The problem attached to the fixture row, empty when there is none.</summary>
+    [UatName("Config Fixture Problem")]
+    public Label<PresenterPage> ConfigFixtureProblem => new(this, "ConfigDiagnosticRuntimeFixture");
+
+    /// <summary>The target, derived from the fixture's base type.</summary>
+    [UatName("Config Derived Target")]
+    public Label<PresenterPage> ConfigDerivedTarget => new(this, "ConfigDerivedTarget");
+
+    /// <summary>Where the Pages assembly resolved, and how.</summary>
+    [UatName("Config Derived Pages")]
+    public Label<PresenterPage> ConfigDerivedPages => new(this, "ConfigDerivedPages");
+
+    /// <summary>What owns the app path.</summary>
+    [UatName("Config Derived App")]
+    public Label<PresenterPage> ConfigDerivedApp => new(this, "ConfigDerivedApp");
+
+    /// <summary>What the last save did.</summary>
+    [UatName("Config Save Message")]
+    public Label<PresenterPage> ConfigSaveMessage => new(this, "ConfigSaveMessage");
+
+    [UatName("Config Save")]
+    public Button<PresenterPage> ConfigSaveButton => new(this, "ConfigSaveButton");
+
+    [UatName("Config Revert")]
+    public Button<PresenterPage> ConfigRevertButton => new(this, "ConfigRevertButton");
+
+    [UatName("Config Rescan Fixtures")]
+    public Button<PresenterPage> ConfigFixtureRescanButton => new(this, "ConfigFixtureRescanButton");
+
+    /// <summary>The Diagnostics tab's text, which carries a failed run's exception.</summary>
+    [UatName("Diagnostics Text")]
+    public Label<PresenterPage> DiagnosticsText => new(this, "DiagnosticsText");
+
+    [UatName("Config")]
+    public Button<PresenterPage> ConfigTabButton => new(this, "ConfigTabButton");
+
+    [UatName("Tree")]
+    public Button<PresenterPage> TreeTabButton => new(this, "TreeTabButton");
+
+    [UatName("Diagnostics")]
+    public Button<PresenterPage> DiagnosticsTabButton => new(this, "DiagnosticsTabButton");
+
+    /// <summary>The workspace tree control; <see cref="WorkspaceTree"/> is its hidden text mirror.</summary>
+    public PresenterWorkspaceTree WorkspaceTreeView => new(this);
+
     public Button<PresenterPage> TreeToggle(UatWorkspaceNodeKind kind, string name)
     {
         return new(this, $"WorkspaceNodeToggle_{SanitizeAutomationId($"{kind}_{name}")}");
@@ -80,14 +144,13 @@ public sealed class PresenterPage : PageObjectBase<PresenterPage>
             return;
         }
 
-        TreeToggle(kind, name).Click();
+        WorkspaceTreeView.Node(kind, name).Expand(timeoutMs);
         WorkspaceTree.AssertTextContains(expectedVisibleText, timeoutMs: timeoutMs);
     }
 
-    public override bool IsLoaded()
-    {
-        return StatusSummary.IsExists();
-    }
+    // No IsLoaded override: the base checks the page root, which every tab shares.
+    // Probing a tab-specific element instead made the page look unloaded the moment
+    // anything but the tree tab was selected.
 
     private static string SanitizeAutomationId(string value)
     {

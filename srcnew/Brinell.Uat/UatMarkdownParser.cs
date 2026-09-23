@@ -619,12 +619,23 @@ public static class UatMarkdownParser
 
         private static Line[] SplitLines(string markdown)
         {
+            // Fence delimiters are dropped here, so a scenario whose steps are fenced for
+            // rendering parses exactly like a bare one. Numbers are assigned before the drop,
+            // which keeps diagnostics pointing at the line the author sees.
             return markdown
                 .Replace("\r\n", "\n", StringComparison.Ordinal)
                 .Replace('\r', '\n')
                 .Split('\n')
                 .Select((text, index) => new Line(text, index + 1))
+                .Where(line => !IsCodeFenceDelimiter(line.Text))
                 .ToArray();
+        }
+
+        private static bool IsCodeFenceDelimiter(string text)
+        {
+            var trimmed = text.Trim();
+            return trimmed.StartsWith("```", StringComparison.Ordinal) ||
+                   trimmed.StartsWith("~~~", StringComparison.Ordinal);
         }
     }
 

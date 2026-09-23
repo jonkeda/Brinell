@@ -49,12 +49,12 @@ public sealed class UatExecutionService : IUatExecutionService
 
         try
         {
-            var appPath = UatWorkspaceConfigInspector.ResolveRequiredAppPath(workspacePath, config);
+            var appPath = UatWorkspaceConfigInspector.ResolveConfiguredAppPath(workspacePath, config);
             environment = new DisposableGroup(
                 [.. CreateTargetEnvironment(config, appPath, placementReportPath),
                  workingDirectory is null ? null : new CurrentDirectoryScope(workingDirectory)]);
 
-            var pagesAssembly = resolver.LoadRequired(GetRegisteredAssembly(config, "Pages"));
+            var pagesAssembly = resolver.LoadRequired(ResolvePagesAssembly(workspacePath, config));
             fixture = CreateFixture(config, pagesAssembly);
             var autPlacementReport = TryReadPlacementReport(placementReportPath);
 
@@ -158,20 +158,27 @@ public sealed class UatExecutionService : IUatExecutionService
                 $"UAT config '{configPath}' must set Runtime Fixture.");
         }
 
-        if (config.Assemblies.Count == 0)
+        // A Project row replaces the Pages registration, so either is enough.
+        if (config.Assemblies.Count == 0 &&
+            !config.Runtime.ContainsKey(UatConfigFields.Project))
         {
             throw new InvalidOperationException(
-                $"UAT config '{configPath}' must register at least one assembly.");
+                $"UAT config '{configPath}' must set Runtime Project or register at least one assembly.");
         }
     }
 
     private static IEnumerable<IDisposable?> CreateTargetEnvironment(
         UatConfig config,
-        string appPath,
+        string? appPath,
         string placementReportPath)
     {
         var target = UatTargetRegistry.GetRequired(config);
-        yield return new EnvironmentVariableScope(target.AppPathEnvironmentVariable, appPath);
+
+        // Only an explicit override travels to the environment. With no AppPath the fixture
+        // resolves the app itself, which is what every fixture base already requires of it.
+        yield return appPath is null
+            ? null
+            : new EnvironmentVariableScope(target.AppPathEnvironmentVariable, appPath);
 
         if (target.SupportsPresenterAutPlacement)
         {
@@ -186,6 +193,33 @@ public sealed class UatExecutionService : IUatExecutionService
             assembly.Kind.Equals(kind, StringComparison.OrdinalIgnoreCase));
         return registration?.Assembly
                ?? throw new InvalidOperationException($"UAT config must register a {kind} assembly.");
+    }
+
+    /// <summary>
+    /// The Pages assembly: an explicit registration when there is one, otherwise the output
+    /// of the project named by <c>Runtime Project</c>.
+    /// </summary>
+    private static string ResolvePagesAssembly(string workspacePath, UatConfig config)
+    {
+        var registration = config.Assemblies.FirstOrDefault(assembly =>
+            assembly.Kind.Equals("Pages", StringComparison.OrdinalIgnoreCase));
+        if (registration is not null)
+        {
+            return registration.Assembly;
+        }
+
+        var inspection = UatWorkspaceConfigInspector.Inspect(workspacePath);
+        if (inspection.Project is { PagesAssemblyPath.Length: > 0 } project)
+        {
+            return project.PagesAssemblyExists
+                ? project.PagesAssemblyPath
+                : throw new InvalidOperationException(
+                    $"{Path.GetFileNameWithoutExtension(project.ResolvedPath)} is not built. " +
+                    $"Its output belongs at {project.PagesAssemblyPath}.");
+        }
+
+        throw new InvalidOperationException(
+            "UAT config must set Runtime Project or register a Pages assembly.");
     }
 
     private static object CreateFixture(UatConfig config, Assembly pagesAssembly)
@@ -230,6 +264,7 @@ internal sealed class UatRuntimeAssemblyResolver : IDisposable
 {
     private readonly Func<AssemblyLoadContext, AssemblyName, Assembly?> _handler;
     private readonly IReadOnlyList<string> _probeDirectories;
+    private readonly UatSessionLoadContext _sessionContext;
     private bool _disposed;
 
     public UatRuntimeAssemblyResolver(string workspacePath, UatConfig config, string? workingDirectory)
@@ -239,6 +274,7 @@ internal sealed class UatRuntimeAssemblyResolver : IDisposable
                     UatWorkspaceConfigInspector.FindSolutionRoot(workspacePath) ??
                     workspacePath;
         _probeDirectories = BuildProbeDirectories(workspacePath, config, ProbeRoot, workingDirectory);
+        _sessionContext = new UatSessionLoadContext(ResolveAssemblyPath);
         _handler = ResolveAssembly;
         AssemblyLoadContext.Default.Resolving += _handler;
     }
@@ -258,15 +294,16 @@ internal sealed class UatRuntimeAssemblyResolver : IDisposable
         }
 
         var explicitPath = UatWorkspaceConfigInspector.ResolveAssemblyPath(WorkspacePath, assemblyName);
-        if (explicitPath is not null && File.Exists(explicitPath))
-        {
-            return AssemblyLoadContext.Default.LoadFromAssemblyPath(explicitPath);
-        }
+        var path = explicitPath is not null && File.Exists(explicitPath)
+            ? explicitPath
+            : ResolveAssemblyPath(fileName)
+              ?? throw new InvalidOperationException(
+                  $"Assembly '{fileName}' was not found. Build the UAT page-object project first.");
 
-        var path = ResolveAssemblyPath(fileName)
-                   ?? throw new InvalidOperationException(
-                       $"Assembly '{fileName}' was not found. Build the UAT page-object project first.");
-        return AssemblyLoadContext.Default.LoadFromAssemblyPath(path);
+        // Into the session's own collectible context, so the file is released when the session
+        // ends and the next build can overwrite it. The default context can never unload, and
+        // a workspace that has been run once would otherwise be unbuildable until restart.
+        return _sessionContext.LoadFromAssemblyPath(path);
     }
 
     public void Dispose()
@@ -277,7 +314,16 @@ internal sealed class UatRuntimeAssemblyResolver : IDisposable
         }
 
         AssemblyLoadContext.Default.Resolving -= _handler;
+        _sessionContext.Unload();
         _disposed = true;
+
+        // Unload is asynchronous: the file stays mapped until the context is collected, and
+        // "build now" has to work immediately after a run.
+        for (var attempt = 0; attempt < 2; attempt++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
     }
 
     private Assembly? ResolveAssembly(AssemblyLoadContext context, AssemblyName assemblyName)

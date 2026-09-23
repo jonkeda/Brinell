@@ -19,7 +19,7 @@ public sealed class UatRuntime
         ConfigFilePath = Path.GetFullPath(configFilePath);
         ConfigDirectory = Path.GetDirectoryName(ConfigFilePath) ?? Directory.GetCurrentDirectory();
         Config = UatConfigParser.ParseFile(ConfigFilePath, root.GetType().Assembly.GetName().Name);
-        ValidateConfig(Config, ConfigFilePath, validationOptions ?? UatRuntimeValidationOptions.Default);
+        ValidateConfig(root, Config, ConfigFilePath, validationOptions ?? UatRuntimeValidationOptions.Default);
         Composition = ResolveComposition(root);
         _reflectionRuntime = Composition is null
             ? UatReflectionRuntime.FromRoot(root)
@@ -77,16 +77,36 @@ public sealed class UatRuntime
     }
 
     private static void ValidateConfig(
+        object root,
         UatConfig config,
         string configFilePath,
         UatRuntimeValidationOptions options)
     {
-        if (!string.IsNullOrWhiteSpace(options.Target) &&
-            (!config.Runtime.TryGetValue("Target", out var target) ||
-             !target.Equals(options.Target, StringComparison.OrdinalIgnoreCase)))
+        // The declared target is checked against the fixture, not against a string in the
+        // config: the fixture's base is what a target actually is. A config row still counts,
+        // for a fixture that derives from no Brinell base.
+        if (!string.IsNullOrWhiteSpace(options.Target))
         {
-            throw new InvalidOperationException(
-                $"UAT config '{configFilePath}' must set Runtime Target to {options.Target}.");
+            var derived = UatTargetConventions.FromFixture(root);
+            var declared = config.Runtime.TryGetValue("Target", out var configured) ? configured : null;
+            var actual = derived ?? declared;
+
+            if (actual is null || !actual.Equals(options.Target, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException(
+                    derived is not null
+                        ? $"{root.GetType().Name} is a {derived} fixture, but {options.Target} was expected."
+                        : $"UAT config '{configFilePath}' must set Runtime Target to {options.Target}.");
+            }
+
+            if (derived is not null &&
+                declared is not null &&
+                !declared.Equals(derived, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException(
+                    $"UAT config '{configFilePath}' sets Runtime Target to {declared}, " +
+                    $"but {root.GetType().Name} is a {derived} fixture.");
+            }
         }
 
         if (!string.IsNullOrWhiteSpace(options.Fixture) &&

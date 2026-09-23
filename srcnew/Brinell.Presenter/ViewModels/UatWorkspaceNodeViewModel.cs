@@ -27,10 +27,11 @@ public sealed class UatWorkspaceNodeViewModel : ViewModelBase
         Scenario = scenario;
         Step = step;
         _expansionChanged = expansionChanged;
-        var stableId = SanitizeAutomationId($"{kind}_{name}_{filePath}");
-        var toggleId = SanitizeAutomationId($"{kind}_{name}");
+        // One key for both ids, so a tree node object addresses the row and its toggle from the
+        // same kind and name.
+        var stableId = SanitizeAutomationId($"{kind}_{name}");
         AutomationId = $"WorkspaceNode_{stableId}";
-        ToggleAutomationId = $"WorkspaceNodeToggle_{toggleId}";
+        ToggleAutomationId = $"WorkspaceNodeToggle_{stableId}";
         ToggleExpansionCommand = new RelayCommand(ToggleExpansion, () => CanExpand);
 
         if (Scenario is not null)
@@ -60,6 +61,16 @@ public sealed class UatWorkspaceNodeViewModel : ViewModelBase
 
     public UatWorkspaceNodeViewModel? Parent { get; private set; }
 
+    /// <summary>
+    /// This node's position in the tree, as kinds and names from the root.
+    /// </summary>
+    /// <remarks>
+    /// A reload rebuilds every node, so expansion and selection are carried across by this
+    /// rather than by reference. Name alone is not unique - two folders can hold a file of the
+    /// same name - so the whole chain is the key.
+    /// </remarks>
+    public string NodePath => Parent is null ? $"{Kind}:{Name}" : $"{Parent.NodePath}/{Kind}:{Name}";
+
     public string AutomationId { get; }
 
     public string ToggleAutomationId { get; }
@@ -79,6 +90,7 @@ public sealed class UatWorkspaceNodeViewModel : ViewModelBase
             {
                 OnPropertyChanged(nameof(ExpansionText));
                 OnPropertyChanged(nameof(ExpansionGlyph));
+                OnPropertyChanged(nameof(ExpansionDescription));
                 OnPropertyChanged(nameof(DisplayText));
                 _expansionChanged?.Invoke(this);
             }
@@ -94,6 +106,15 @@ public sealed class UatWorkspaceNodeViewModel : ViewModelBase
     /// suite asserts against.
     /// </remarks>
     public string ExpansionText => CanExpand ? (IsExpanded ? "v" : ">") : string.Empty;
+
+    /// <summary>
+    /// The toggle button's accessible name. It states the node's expansion rather than the action,
+    /// because that name is the only route a UI Automation test has to read it: the row itself is a
+    /// layout, which publishes no peer and no ExpandCollapse pattern.
+    /// </summary>
+    public string ExpansionDescription => CanExpand
+        ? (IsExpanded ? "Expanded" : "Collapsed")
+        : "Leaf";
 
     /// <summary>The chevron the row's toggle button shows. Never reaches <see cref="DisplayText"/>.</summary>
     public string ExpansionGlyph => CanExpand
@@ -184,6 +205,7 @@ public sealed class UatWorkspaceNodeViewModel : ViewModelBase
         OnPropertyChanged(nameof(CanExpand));
         OnPropertyChanged(nameof(ExpansionText));
         OnPropertyChanged(nameof(ExpansionGlyph));
+        OnPropertyChanged(nameof(ExpansionDescription));
         OnPropertyChanged(nameof(DisplayText));
     }
 

@@ -36,5 +36,5 @@ public sealed class TodoUatScenarioTests : UatScenarioTestBase<TodoUatFixture>
 
     /// <inheritdoc />
     protected override UatRuntimeValidationOptions RuntimeValidation { get; } =
-        new(Target: "MAUI", Fixture: "FlaUI");
+        new(Target: "MAUI", Fixture: "TodoUatFixture");
 }

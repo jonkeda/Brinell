@@ -13,6 +13,7 @@
 @smoke @maui @create @validation
 ## Scenario: Saving with an empty title shows the error and stays
 
+```gherkin
 Given I am on the Todo List page
 When I tap Add
 Then I should be on the Todo Edit page
@@ -20,3 +21,4 @@ When I clear Title
 And I tap Save
 Then Title Error should be visible
 And Title Error should contain "Title is required"
+```

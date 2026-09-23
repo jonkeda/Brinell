@@ -11,6 +11,12 @@ namespace Brinell.Samples.Maui.App.Navigation;
 /// </remarks>
 public enum SamplePage
 {
+    /// <summary>The greeting demo the Markdown UAT sample scenarios drive.</summary>
+    Main,
+
+    /// <summary>The profile form the Markdown UAT sample scenarios fill in.</summary>
+    UserForm,
+
     /// <summary>Button and ImageButton controls.</summary>
     Buttons,
 

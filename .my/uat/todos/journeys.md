@@ -16,11 +16,12 @@ subtask and tagged.
 
 > **Presentation note.** In these spec files the steps are shown inside a fenced
 > ` ```gherkin ` block so they render as a step list instead of collapsing into
-> one paragraph. The Brinell parser wants **bare** step lines (each starting with
-> `Given`/`When`/`Then`/`And`/`But`, no fence, no `-` bullet): a list marker or a
-> code fence would fail `TryParseStep`. When these move into a runnable
-> `Brinell.Samples.Todo.Uat.Tests` project, drop the fence lines and keep the
-> steps bare.
+> one paragraph. That fence is now safe to keep: the parser drops fence
+> delimiters during tokenisation, so a fenced scenario runs exactly like a bare
+> one and diagnostics still report the authored line number. A `-` bullet is
+> still not allowed — only the fence is transparent, not the step's own prefix.
+> The runnable copies in `samples/Todo/tests/Brinell.Samples.Todo.Uat` keep their
+> fences for this reason.
 
 ---
 

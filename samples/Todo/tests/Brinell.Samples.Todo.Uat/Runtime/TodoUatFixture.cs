@@ -1,5 +1,7 @@
 using Brinell.Core.Composition;
+using Brinell.Maui.Enums;
 using Brinell.Maui.Interfaces;
+using Brinell.Maui.Testing;
 using Brinell.Samples.Todo.UITests;
 using Brinell.Samples.Todo.UITests.Pages;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,6 +20,7 @@ namespace Brinell.Samples.Todo.Uat.Runtime;
 /// <c>BeforeScenario</c>.
 /// </remarks>
 [TestModuleScan(typeof(TodoListPage), NamespacePrefix = "Brinell.Samples.Todo.UITests.Pages")]
+[UatPlatforms(MauiPlatform.Windows, MauiPlatform.Android)]
 public sealed class TodoUatFixture : TodoAppFixture
 {
     /// <summary>Builds the composition the UAT runtime reads for page discovery and construction.</summary>

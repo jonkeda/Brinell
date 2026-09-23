@@ -63,13 +63,13 @@ public class OccludedScreenshotTests
     [Fact]
     public void Screenshot_OfOccludedWindow_ShowsTheApp()
     {
-        // Two waits, and both are load-bearing. NavigateToMain only clicks — it does not wait
+        // Two waits, and both are load-bearing. NavigateToButtons only clicks — it does not wait
         // for the page it opens — so without the marker the captures race the navigation and
         // compare two different pages. And a marker appearing in the UIA tree does not mean the
         // frame is painted, which for a test about pixels is the state that actually matters.
-        _fixture.NavigateToMain();
+        var page = _fixture.NavigateToButtons();
         Assert.True(
-            new ButtonsTestPage(_fixture.Context).StatusLabel.WaitExists(),
+            page.StatusLabel.WaitExists(),
             "The page did not open, so the captures below would be racing navigation.");
 
         // A third wait, and it is the one the other two cannot cover: let the page finish

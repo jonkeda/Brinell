@@ -12,6 +12,8 @@ namespace Brinell.Maui.UITests.Pages;
 /// </remarks>
 public enum SamplePage
 {
+    Main,
+    UserForm,
     Buttons,
     DateTime,
     Display,

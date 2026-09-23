@@ -248,6 +248,80 @@ public sealed class UatMarkdownParserTests
         Assert.Contains(result.Diagnostics, x => x.Code == "UAT015");
     }
 
+    [Theory]
+    [InlineData("```")]
+    [InlineData("```gherkin")]
+    [InlineData("~~~")]
+    public void Parse_FencedSteps_ParseLikeBareSteps(string fence)
+    {
+        var markdown = $"""
+            # UAT: Login
+
+            ## Scenario: Valid user can sign in
+
+            {fence}
+            Given I am on the Login page
+            When I tap Sign in
+            Then I should see "Welcome Ada"
+            ```
+            """;
+
+        var result = UatMarkdownParser.Parse(markdown, "login.uat.md");
+
+        Assert.True(result.Success, FormatDiagnostics(result));
+        var scenario = Assert.Single(result.Document!.Scenarios);
+        Assert.Equal(3, scenario.Steps.Count);
+        Assert.Equal("I am on the Login page", scenario.Steps[0].Text);
+        Assert.Equal(UatEffectiveStepKeyword.Then, scenario.Steps[2].EffectiveKeyword);
+    }
+
+    [Fact]
+    public void Parse_FencedStepsWithTable_KeepsTheTable()
+    {
+        var markdown = """
+            # UAT: Login
+
+            ## Scenario: Valid user can sign in
+
+            ```gherkin
+            Given I am on the Login page
+            When I sign in with credentials
+            | Field | Value |
+            | --- | --- |
+            | User name | ada@example.com |
+            ```
+            """;
+
+        var result = UatMarkdownParser.Parse(markdown, "login.uat.md");
+
+        Assert.True(result.Success, FormatDiagnostics(result));
+        var scenario = Assert.Single(result.Document!.Scenarios);
+        Assert.Equal(2, scenario.Steps.Count);
+        Assert.Equal("ada@example.com", scenario.Steps[1].Table!.Rows[0].Cells["Value"]);
+    }
+
+    [Fact]
+    public void Parse_FencedSteps_ReportDiagnosticsAtTheAuthoredLineNumber()
+    {
+        // The fence occupies line 5, so the bad step is on line 7 of the file as written.
+        var markdown = """
+            # UAT: Login
+
+            ## Scenario: Valid user can sign in
+
+            ```gherkin
+            Given I am on the Login page
+            Sign in without a keyword
+            ```
+            """;
+
+        var result = UatMarkdownParser.Parse(markdown, "login.uat.md");
+
+        Assert.False(result.Success);
+        var diagnostic = Assert.Single(result.Diagnostics, x => x.Code == "UAT011");
+        Assert.Equal(7, diagnostic.Location.LineNumber);
+    }
+
     private static string FormatDiagnostics(UatParseResult result)
     {
         return string.Join(

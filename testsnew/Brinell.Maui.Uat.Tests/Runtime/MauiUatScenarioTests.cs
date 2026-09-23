@@ -32,5 +32,5 @@ public sealed class MauiUatScenarioTests
             Path.GetFileName(filePath));
 
     protected override UatRuntimeValidationOptions RuntimeValidation { get; } =
-        new(Target: "MAUI", Fixture: "Appium");
+        new(Target: "MAUI", Fixture: "MauiFixture");
 }

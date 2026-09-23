@@ -54,6 +54,12 @@ public static class SamplePages
     /// </summary>
     public static IReadOnlyList<SamplePageEntry> All { get; } =
     [
+        new(SamplePage.Main, "Main", "The greeting demo the UAT sample scenarios drive",
+            () => new GreetingPage()),
+
+        new(SamplePage.UserForm, "User Form", "The profile form the UAT sample scenarios fill in",
+            () => new UserFormPage()),
+
         new(SamplePage.Buttons, "Buttons", "Button and ImageButton",
             () => new ButtonsPage()),
 

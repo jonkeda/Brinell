@@ -13,7 +13,6 @@
     -->
     <ProjectReference Include="..\Brinell.Samples.Todo.UnitTests\Brinell.Samples.Todo.UnitTests.csproj" />
     <ProjectReference Include="..\Brinell.Samples.Todo.IntegrationTests\Brinell.Samples.Todo.IntegrationTests.csproj" />
-    <ProjectReference Include="..\Brinell.Samples.Todo.UITests.Mobile\Brinell.Samples.Todo.UITests.Mobile.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -53,10 +53,13 @@ the *effective* keyword, which is only `{Given, When, Then}`
 why `[UatStep]` and `[UatPhrase]` take a `UatEffectiveStepKeyword` and why there
 is no way to declare an `And` phrase.
 
-**A step line must be bare.** `Given …` at the start of the line, with no list
-marker and no code fence. A fenced or bulleted step does not parse. This matters
-when copying steps out of a document that fences them for rendering — see the
-presentation note in `.my/uat/todos/journeys.md`.
+**A step line may be fenced, but not bulleted.** `Given …` at the start of the
+line, with no list marker. A bulleted step does not parse. A **fenced** one does:
+fence delimiters are dropped during tokenisation, so steps wrapped in
+```gherkin for rendering execute exactly like bare ones, and diagnostics still
+report the authored line number. This is why the Todo sample's scenarios are
+fenced — unfenced consecutive step lines collapse into one paragraph in a Markdown
+preview.
 
 **Parse errors are line-numbered and coded.** `UAT000`–`UAT022` come from the
 parser — exactly one `# UAT:` heading (`UAT001`), scenarios must have a name

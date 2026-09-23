@@ -13,6 +13,7 @@
 @maui @status
 ## Scenario: Next cycles the status to Done, and it is saved
 
+```gherkin
 Given I am on the Todo List page
 When I tap Add
 Then I should be on the Todo Edit page
@@ -22,3 +23,4 @@ Then Status should show status "Done"
 When I tap Save
 Then I should be on the Todo List page
 And Todos should have todo "Plan the sprint"
+```

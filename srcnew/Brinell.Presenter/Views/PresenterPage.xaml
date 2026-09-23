@@ -2,6 +2,7 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             xmlns:controls="clr-namespace:Brinell.Presenter.Controls"
              x:Class="Brinell.Presenter.Views.PresenterPage"
              Title="Brinell Presenter"
              Style="{StaticResource PresenterPageStyle}">
@@ -20,7 +21,7 @@
     -->
     <Grid AutomationId="PresenterRoot"
           Padding="12"
-          RowDefinitions="Auto,Auto,Auto,*"
+          RowDefinitions="Auto,Auto,Auto,Auto,*"
           RowSpacing="8"
           HorizontalOptions="Fill"
           VerticalOptions="Fill">
@@ -135,11 +136,42 @@
         </Border>
 
         <!--
+            Session choices, not config: a configuration and a platform are things you switch
+            while demoing. Platform sets APPIUM_PLATFORM, which the fixture reads before it
+            resolves its own app binary; both persist per workspace.
+        -->
+        <Border Grid.Row="2"
+                Padding="10">
+            <Border.StrokeShape>
+                <RoundRectangle CornerRadius="6" />
+            </Border.StrokeShape>
+            <HorizontalStackLayout Spacing="6"
+                                   VerticalOptions="Center">
+                <Picker AutomationId="BuildConfigurationPicker"
+                        WidthRequest="96"
+                        ItemsSource="{Binding BuildConfigurations}"
+                        SelectedItem="{Binding BuildConfiguration, Mode=TwoWay}"
+                        SemanticProperties.Description="Build configuration" />
+                <Picker AutomationId="PlatformPicker"
+                        WidthRequest="96"
+                        ItemsSource="{Binding Platforms}"
+                        SelectedItem="{Binding Platform, Mode=TwoWay}"
+                        SemanticProperties.Description="Platform" />
+                <Button Text="&#xE9F5;"
+                        AutomationId="BuildButton"
+                        Style="{StaticResource PresenterIconButton}"
+                        Command="{Binding BuildCommand}"
+                        SemanticProperties.Description="Build the workspace project"
+                        ToolTipProperties.Text="Build the workspace project" />
+            </HorizontalStackLayout>
+        </Border>
+
+        <!--
             Icon tabs. The [Brackets] convention that used to mark the selected tab is gone:
             the DataTrigger fills the selected one instead, which is what lets five tabs plus
             the theme button fit on one row at quarter-screen width.
         -->
-        <HorizontalStackLayout Grid.Row="2"
+        <HorizontalStackLayout Grid.Row="3"
                                Spacing="4">
             <Button Text="&#xF168;"
                     AutomationId="TreeTabButton"
@@ -228,7 +260,7 @@
             </Button>
         </HorizontalStackLayout>
 
-        <Grid Grid.Row="3"
+        <Grid Grid.Row="4"
               VerticalOptions="Fill">
             <Grid RowDefinitions="Auto,*,Auto,Auto"
                   RowSpacing="8"
@@ -247,41 +279,49 @@
                     <Border.StrokeShape>
                         <RoundRectangle CornerRadius="6" />
                     </Border.StrokeShape>
-                    <CollectionView AutomationId="WorkspaceTree"
-                                    ItemsSource="{Binding WorkspaceTreeNodes}"
-                                    SelectedItem="{Binding SelectedWorkspaceNode, Mode=TwoWay}"
-                                    SelectionMode="Single"
-                                    VerticalOptions="Fill">
-                        <CollectionView.ItemTemplate>
+                    <!--
+                        The tree nests its own rows, so the row template carries no indent
+                        BoxView: TreeViewNode draws the indent from its depth. ShowExpandButton
+                        is False because the row keeps its own toggle Button - the node's built-in
+                        chevron is a tap target, which UI Automation cannot invoke on Windows.
+                    -->
+                    <controls:TreeView AutomationId="WorkspaceTree"
+                                       ItemsSource="{Binding WorkspaceRootNodes}"
+                                       ChildrenPath="Children"
+                                       IsExpandedPath="IsExpanded"
+                                       SelectedValue="{Binding SelectedWorkspaceNode, Mode=TwoWay}"
+                                       ShowExpandButton="False"
+                                       VerticalOptions="Fill">
+                        <controls:TreeView.ItemTemplate>
                             <DataTemplate>
                                 <Grid Padding="0,4"
-                                      ColumnDefinitions="Auto,28,42,*"
-                                      AutomationId="{Binding AutomationId}">
-                                    <BoxView WidthRequest="{Binding IndentWidth}"
-                                             Color="Transparent" />
+                                      ColumnDefinitions="28,42,*">
                                     <!-- ExpansionGlyph and IconGlyph, never ExpansionText/Icon:
-                                         those two stay ASCII for the hidden text mirrors. -->
-                                    <Button Grid.Column="1"
+                                         those two stay ASCII for the hidden text mirrors.
+                                         The description states expanded/collapsed because it is
+                                         the only expansion state a UIA test can read here. -->
+                                    <Button Grid.Column="0"
                                             Text="{Binding ExpansionGlyph}"
                                             AutomationId="{Binding ToggleAutomationId}"
                                             Style="{StaticResource PresenterRowGlyphButton}"
                                             Command="{Binding ToggleExpansionCommand}"
                                             IsEnabled="{Binding CanExpand}"
-                                            SemanticProperties.Description="Expand or collapse" />
-                                    <Label Grid.Column="2"
+                                            SemanticProperties.Description="{Binding ExpansionDescription}" />
+                                    <Label Grid.Column="1"
                                            Text="{Binding IconGlyph}"
                                            TextColor="{Binding IconColor}"
                                            Style="{StaticResource PresenterGlyphLabel}"
                                            FontSize="12"
                                            SemanticProperties.Description="{Binding StatusDescription}" />
-                                    <Label Grid.Column="3"
+                                    <Label Grid.Column="2"
                                            Text="{Binding Name}"
+                                           AutomationId="{Binding AutomationId}"
                                            LineBreakMode="TailTruncation"
                                            VerticalTextAlignment="Center" />
                                 </Grid>
                             </DataTemplate>
-                        </CollectionView.ItemTemplate>
-                    </CollectionView>
+                        </controls:TreeView.ItemTemplate>
+                    </controls:TreeView>
                 </Border>
 
                 <VerticalStackLayout Grid.Row="2"
@@ -347,16 +387,111 @@
                 </toolkit:Expander>
             </Grid>
 
+            <!--
+                The config editor. Two editable rows - the project and the fixture - and a
+                read-only panel for everything derived from them, each line saying how it was
+                resolved. WorkspaceConfigText stays as the text mirror the UAT suite asserts on.
+            -->
             <Border Padding="10"
                     IsVisible="{Binding IsConfigTabSelected}">
                 <Border.StrokeShape>
                     <RoundRectangle CornerRadius="6" />
                 </Border.StrokeShape>
                 <ScrollView>
-                    <Label Text="{Binding WorkspaceConfigText}"
-                           AutomationId="WorkspaceConfigText"
-                           FontSize="11"
-                           Style="{StaticResource PresenterMutedLabel}" />
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="{Binding ConfigEditor.StateText}"
+                               AutomationId="ConfigStateLabel"
+                               FontAttributes="Bold" />
+
+                        <Label Text="Project" />
+                        <Grid ColumnDefinitions="*,Auto"
+                              ColumnSpacing="4">
+                            <Entry Grid.Column="0"
+                                   AutomationId="ConfigProjectInput"
+                                   Text="{Binding ConfigEditor.ProjectText, Mode=TwoWay}" />
+                            <Button Grid.Column="1"
+                                    Text="&#xE838;"
+                                    AutomationId="ConfigProjectBrowseButton"
+                                    Style="{StaticResource PresenterIconButton}"
+                                    Command="{Binding ConfigEditor.BrowseProjectCommand}"
+                                    SemanticProperties.Description="Browse for a project"
+                                    ToolTipProperties.Text="Browse for a project" />
+                        </Grid>
+                        <Label Text="{Binding ConfigEditor.ProjectProblem}"
+                               AutomationId="ConfigDiagnosticRuntimeProject"
+                               FontSize="11"
+                               Style="{StaticResource PresenterMutedLabel}" />
+
+                        <Label Text="Fixture" />
+                        <Grid ColumnDefinitions="*,Auto"
+                              ColumnSpacing="4">
+                            <Entry Grid.Column="0"
+                                   AutomationId="ConfigFixtureInput"
+                                   Text="{Binding ConfigEditor.FixtureText, Mode=TwoWay}" />
+                            <Button Grid.Column="1"
+                                    Text="&#xE72C;"
+                                    AutomationId="ConfigFixtureRescanButton"
+                                    Style="{StaticResource PresenterIconButton}"
+                                    Command="{Binding ConfigEditor.RescanFixturesCommand}"
+                                    SemanticProperties.Description="Rescan fixtures"
+                                    ToolTipProperties.Text="Rescan fixtures" />
+                        </Grid>
+                        <Label Text="{Binding ConfigEditor.FixtureProblem}"
+                               AutomationId="ConfigDiagnosticRuntimeFixture"
+                               FontSize="11"
+                               Style="{StaticResource PresenterMutedLabel}" />
+                        <CollectionView AutomationId="ConfigFixtureCandidateList"
+                                        ItemsSource="{Binding ConfigEditor.FixtureCandidates}"
+                                        HeightRequest="90">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate>
+                                    <Label Text="{Binding .}"
+                                           FontSize="11" />
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                            <CollectionView.EmptyView>
+                                <Label Text="No fixtures found - build the project"
+                                       Style="{StaticResource PresenterMutedLabel}" />
+                            </CollectionView.EmptyView>
+                        </CollectionView>
+
+                        <Label Text="Derived"
+                               FontAttributes="Bold" />
+                        <Label Text="{Binding ConfigEditor.DerivedTarget}"
+                               AutomationId="ConfigDerivedTarget"
+                               FontSize="11"
+                               Style="{StaticResource PresenterMutedLabel}" />
+                        <Label Text="{Binding ConfigEditor.DerivedPages}"
+                               AutomationId="ConfigDerivedPages"
+                               FontSize="11"
+                               Style="{StaticResource PresenterMutedLabel}" />
+                        <Label Text="{Binding ConfigEditor.DerivedApp}"
+                               AutomationId="ConfigDerivedApp"
+                               FontSize="11"
+                               Style="{StaticResource PresenterMutedLabel}" />
+
+                        <HorizontalStackLayout Spacing="6">
+                            <Button Text="Save"
+                                    AutomationId="ConfigSaveButton"
+                                    Command="{Binding ConfigEditor.SaveCommand}" />
+                            <Button Text="Revert"
+                                    AutomationId="ConfigRevertButton"
+                                    Command="{Binding ConfigEditor.RevertCommand}" />
+                            <Button Text="Create"
+                                    AutomationId="ConfigCreateButton"
+                                    IsVisible="{Binding ConfigEditor.CanCreate}"
+                                    Command="{Binding ConfigEditor.CreateCommand}" />
+                        </HorizontalStackLayout>
+                        <Label Text="{Binding ConfigEditor.SaveMessage}"
+                               AutomationId="ConfigSaveMessage"
+                               FontSize="11"
+                               Style="{StaticResource PresenterMutedLabel}" />
+
+                        <Label Text="{Binding WorkspaceConfigText}"
+                               AutomationId="WorkspaceConfigText"
+                               FontSize="11"
+                               Style="{StaticResource PresenterMirrorLabel}" />
+                    </VerticalStackLayout>
                 </ScrollView>
             </Border>
 

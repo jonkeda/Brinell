@@ -5,6 +5,21 @@ namespace Brinell.Presenter.Services;
 
 public sealed class UatWorkspaceService : IUatWorkspaceService
 {
+    private readonly IProjectEvaluator? _projectEvaluator;
+
+    /// <summary>Creates the service with the shared MSBuild evaluator.</summary>
+    public UatWorkspaceService()
+        : this(null)
+    {
+    }
+
+    /// <summary>Creates the service with a specific project evaluator.</summary>
+    /// <param name="projectEvaluator">The evaluator to resolve <c>Runtime Project</c> with, or null for the default.</param>
+    public UatWorkspaceService(IProjectEvaluator? projectEvaluator)
+    {
+        _projectEvaluator = projectEvaluator;
+    }
+
     public string? FindDefaultWorkspace()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
@@ -31,7 +46,7 @@ public sealed class UatWorkspaceService : IUatWorkspaceService
         List<UatScenarioLoadResult> scenarios = [];
         List<string> diagnostics = [];
 
-        var configInfo = UatWorkspaceConfigInspector.Inspect(folderPath);
+        var configInfo = UatWorkspaceConfigInspector.Inspect(folderPath, _projectEvaluator);
         diagnostics.AddRange(configInfo.Diagnostics);
 
         var configPath = Path.Combine(folderPath, "uat.config.md");

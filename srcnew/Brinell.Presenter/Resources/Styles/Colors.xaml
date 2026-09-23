@@ -4,38 +4,43 @@
     them with AppThemeBinding (see Styles.xaml) so a change to Application.UserAppTheme
     repaints live without a restart.
 
-    Contrast (WCAG 2.1, measured against both PresenterBackground and PresenterPanel
-    of the matching theme): text roles >= 4.5:1, borders and status glyphs >= 3:1.
-    Do not tweak a value here without re-measuring both surfaces.
+    Contrast (WCAG 2.1, measured against PresenterBackground, PresenterPanel and
+    PresenterSelected of the matching theme): text roles >= 6:1, borders >= 5:1,
+    status glyphs >= 4.5:1 - one tier above AA on every surface, including a
+    selected row. Do not tweak a value here without re-measuring all three surfaces.
 -->
 <ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
 
-    <!-- Surfaces -->
-    <Color x:Key="PresenterBackgroundLight">#F6F7F9</Color>
-    <Color x:Key="PresenterBackgroundDark">#0D0D0F</Color>
+    <!-- Surfaces. Panel/background separate by 1.14:1 light and 1.21:1 dark, so a
+         panel reads as a panel before its border is considered. -->
+    <Color x:Key="PresenterBackgroundLight">#EDF0F5</Color>
+    <Color x:Key="PresenterBackgroundDark">#08090C</Color>
 
     <Color x:Key="PresenterPanelLight">#FFFFFF</Color>
-    <Color x:Key="PresenterPanelDark">#17181C</Color>
+    <Color x:Key="PresenterPanelDark">#1C1F26</Color>
 
-    <!-- 3.34:1 / 3.58:1 light, 3.47:1 / 3.17:1 dark. Deliberately stronger than a
-         hairline: panel and background differ by only ~1.08:1, so the border is the
-         only thing separating them. -->
-    <Color x:Key="PresenterBorderLight">#7E8899</Color>
-    <Color x:Key="PresenterBorderDark">#626875</Color>
+    <!-- 8.08:1 / 9.23:1 light, 6.53:1 / 5.41:1 dark - a visible edge, not a hairline. -->
+    <Color x:Key="PresenterBorderLight">#3F4857</Color>
+    <Color x:Key="PresenterBorderDark">#8B94A6</Color>
 
-    <!-- Text -->
-    <Color x:Key="PresenterTextLight">#1F2937</Color>
-    <Color x:Key="PresenterTextDark">#F2F3F5</Color>
+    <!-- Body text is pure black on light and pure white on dark - the maximum a screen
+         can render: 18.38:1 / 21:1 light, 19.91:1 / 16.49:1 dark. -->
+    <Color x:Key="PresenterTextLight">#000000</Color>
+    <Color x:Key="PresenterTextDark">#FFFFFF</Color>
 
-    <Color x:Key="PresenterMutedLight">#667085</Color>
-    <Color x:Key="PresenterMutedDark">#A6ADBA</Color>
+    <!-- Muted text is quieter by weight and size, not by fading toward the background:
+         11.14:1 / 12.73:1 light, 12.35:1 / 10.23:1 dark. -->
+    <Color x:Key="PresenterMutedLight">#2B3340</Color>
+    <Color x:Key="PresenterMutedDark">#C5CCDA</Color>
 
-    <Color x:Key="PresenterAccentLight">#2563EB</Color>
-    <Color x:Key="PresenterAccentDark">#7AA5FF</Color>
+    <Color x:Key="PresenterAccentLight">#1D4ED8</Color>
+    <Color x:Key="PresenterAccentDark">#9CC0FF</Color>
 
-    <!-- Selected tab / row fill. Body text on top measures 12.18:1 light, 11.87:1 dark. -->
-    <Color x:Key="PresenterSelectedLight">#E3EAFB</Color>
-    <Color x:Key="PresenterSelectedDark">#243049</Color>
+    <!-- Selected tab / row fill. 1.42:1 light and 1.48:1 dark against the panel, so
+         selection is legible without color; body text on top measures 13.15:1 light,
+         11.15:1 dark. -->
+    <Color x:Key="PresenterSelectedLight">#C7D9FB</Color>
+    <Color x:Key="PresenterSelectedDark">#2B3B5C</Color>
 
 </ResourceDictionary>

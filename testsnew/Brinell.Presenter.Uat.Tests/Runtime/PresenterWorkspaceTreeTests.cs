@@ -1,3 +1,4 @@
+using Brinell.Presenter.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Brinell.Presenter.Uat.Tests.PageObjects;
 
@@ -30,6 +31,30 @@ public sealed class PresenterWorkspaceTreeTests : IDisposable
         Assert.DoesNotContain(".dll", allTree, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("bin", allTree, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("obj", allTree, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Reload rebuilds every node, so it has to carry expansion and selection across. Saving the
+    /// config reloads, and a save that drops your place is worse than no reload at all.
+    /// </summary>
+    [Fact]
+    public void Reload_KeepsExpandedNodesExpanded()
+    {
+        ReloadWorkspace();
+
+        const string collapsedFile = "main-page-validation.uat.md";
+        const string revealedSuite = "MAUI Main Page Greeting Validation";
+
+        _page.ExpandTreeNode(UatWorkspaceNodeKind.MarkdownFile, collapsedFile, revealedSuite);
+        Assert.Contains(revealedSuite, _page.WorkspaceTree.GetText(timeoutMs: 10000) ?? string.Empty, StringComparison.Ordinal);
+
+        _page.ReloadButton.Click();
+        _page.StatusSummary.AssertTextContains("Ready", timeoutMs: 30000);
+
+        Assert.Contains(
+            revealedSuite,
+            _page.WorkspaceTree.GetText(timeoutMs: 10000) ?? string.Empty,
+            StringComparison.Ordinal);
     }
 
     private void ReloadWorkspace()

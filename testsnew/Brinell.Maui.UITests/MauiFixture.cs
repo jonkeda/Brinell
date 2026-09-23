@@ -238,11 +238,37 @@ public class MauiFixture : MauiTestFixtureBase
 
 
     /// <summary>
-    /// Navigates to the Buttons page.
+    /// Opens the greeting demo, which the UAT runtime calls for <c>I am on the Main page</c>.
     /// </summary>
+    /// <remarks>
+    /// The name is the convention the UAT engine navigates by: <c>NavigateTo</c> plus the page
+    /// name with its spaces removed. It used to open the Buttons page, which left every Main
+    /// scenario looking at the wrong page.
+    /// </remarks>
     public void NavigateToMain()
     {
+        Open(SamplePage.Main);
+    }
+
+    /// <summary>
+    /// Opens the profile form, which the UAT runtime calls for <c>I am on the User Form page</c>.
+    /// </summary>
+    public void NavigateToUserForm()
+    {
+        Open(SamplePage.UserForm);
+    }
+
+    /// <summary>
+    /// Opens the Buttons page and returns its page object.
+    /// </summary>
+    /// <remarks>
+    /// Clicks only; the caller waits for what it needs. <see cref="NavigateToMain"/> used to
+    /// open this page, which was a name that told its callers nothing about where they landed.
+    /// </remarks>
+    public ButtonsTestPage NavigateToButtons()
+    {
         Open(SamplePage.Buttons);
+        return new ButtonsTestPage(Context);
     }
 
     /// <summary>

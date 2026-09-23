@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+    The profile form the Markdown UAT sample suite fills in: two entries, an email, a checkbox
+    and a picker. One control per kind, so a scenario can show text, toggle and selection verbs
+    on one page.
+-->
+<ContentView
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:viewModels="using:Brinell.Samples.Maui.App.ViewModels"
+    x:Class="Brinell.Samples.Maui.App.Views2.TestViews.UserFormView"
+    BackgroundColor="{AppThemeBinding Light=White, Dark=#1F1F1F}">
+
+    <ContentView.BindingContext>
+        <viewModels:UserFormViewModel />
+    </ContentView.BindingContext>
+
+    <ScrollView AutomationId="UserFormScrollView">
+        <VerticalStackLayout Padding="16" Spacing="12">
+
+            <Label Text="User Form"
+                   FontSize="20"
+                   FontAttributes="Bold" />
+
+            <Label Text="First name" />
+            <Entry AutomationId="FirstNameEntry"
+                   Placeholder="First name"
+                   Text="{Binding FirstName}" />
+
+            <Label Text="Last name" />
+            <Entry AutomationId="LastNameEntry"
+                   Placeholder="Last name"
+                   Text="{Binding LastName}" />
+
+            <Label Text="Email" />
+            <Entry AutomationId="EmailEntry"
+                   Placeholder="Email"
+                   Keyboard="Email"
+                   Text="{Binding Email}" />
+
+            <HorizontalStackLayout Spacing="8">
+                <CheckBox AutomationId="TermsCheckBox"
+                          IsChecked="{Binding AgreedToTerms}" />
+                <Label Text="I agree to the terms"
+                       VerticalOptions="Center" />
+            </HorizontalStackLayout>
+
+            <Label Text="Country" />
+            <Picker AutomationId="CountryPicker"
+                    Title="Select a country"
+                    ItemsSource="{Binding Countries}"
+                    SelectedItem="{Binding Country}" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentView>

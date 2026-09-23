@@ -64,6 +64,13 @@ Rules the parser enforces that EBNF alone does not show:
   Outline:` line.
 - A `## Scenario Outline:` requires an `### Examples` table; each `<column>`
   placeholder in a step is expanded per row.
+- **Code-fence delimiters are transparent.** A line that is a ``` or `~~~` fence,
+  with or without an info string, is dropped during tokenisation
+  ([UatMarkdownParser.cs](../../../srcnew/Brinell.Uat/UatMarkdownParser.cs),
+  `SplitLines`), so a scenario whose steps are fenced for rendering parses exactly
+  like a bare one. Line numbers are assigned before the drop, so diagnostics still
+  point at the line the author sees. A list marker (`-`) is still not allowed:
+  only the fence is transparent, not the step's own prefix.
 
 ### Worked example, annotated
 
@@ -77,10 +84,12 @@ Rules the parser enforces that EBNF alone does not show:
 
 @smoke @todo                         ← tag-line (abuts the Scenario)
 ## Scenario: Saving with a blank title is refused
+```gherkin                           ← optional; fences are dropped before parsing
 Given I am on the Todo List page     ← step, effective keyword Given
 When I tap Add                       ← step, effective When
 And I clear Title                    ← And inherits When
 Then Title Error should contain "Title is required"   ← step, effective Then
+```
 ```
 
 ---

@@ -46,6 +46,12 @@ public sealed class PresenterShellViewModel : ViewModelBase
     private UatWorkspaceNodeViewModel? _workspaceRoot;
     private string _workspaceSummaryText = string.Empty;
     private string _workspaceTreeText = string.Empty;
+    private readonly IProjectBuilder _projectBuilder = new MsBuildProjectBuilder();
+    private CancellationTokenSource? _buildCancellation;
+    private string _buildLogText = string.Empty;
+    private string _buildConfiguration = "Debug";
+    private string _platform = "windows";
+    private bool _isBuilding;
 
     private const int MaxExecutionDelayMilliseconds = 99999;
 
@@ -80,6 +86,12 @@ public sealed class PresenterShellViewModel : ViewModelBase
         ShowDiscoveryTabCommand = new RelayCommand(() => SelectedTab = DiscoveryTabName);
         ShowCommandCatalogTabCommand = new RelayCommand(() => SelectedTab = CommandCatalogTabName);
         ToggleThemeCommand = new RelayCommand(ToggleTheme);
+        BuildCommand = new AsyncRelayCommand(BuildWorkspaceProjectAsync, () => !_isBuilding);
+
+        ConfigEditor = new ConfigEditorViewModel(
+            new FixtureInspector(),
+            () => _folderPickerService.PickProjectAsync(),
+            ReloadWorkspace);
 
         var settings = _settingsService.Load();
         _theme = settings.Theme;
@@ -94,13 +106,23 @@ public sealed class PresenterShellViewModel : ViewModelBase
         LoadDefaultWorkspace();
     }
 
+    /// <summary>The Config tab's editor for the workspace's two config rows.</summary>
+    public ConfigEditorViewModel ConfigEditor { get; }
+
     public ObservableCollection<UatFileViewModel> Files { get; } = [];
 
     public ObservableCollection<UatScenarioViewModel> Scenarios { get; } = [];
 
     public ObservableCollection<UatStepViewModel> Steps { get; } = [];
 
+    /// <summary>
+    /// The visible rows, flattened. Still the source of <c>WorkspaceTreeText</c>, which the UAT
+    /// suite asserts against; the on-screen tree binds <see cref="WorkspaceRootNodes"/>.
+    /// </summary>
     public ObservableCollection<UatWorkspaceNodeViewModel> WorkspaceTreeNodes { get; } = [];
+
+    /// <summary>The workspace root, as the one item the tree control nests everything under.</summary>
+    public ObservableCollection<UatWorkspaceNodeViewModel> WorkspaceRootNodes { get; } = [];
 
     public ObservableCollection<RecentFolderViewModel> RecentFolders { get; } = [];
 
@@ -131,6 +153,68 @@ public sealed class PresenterShellViewModel : ViewModelBase
     public ICommand ShowCommandCatalogTabCommand { get; }
 
     public ICommand ToggleThemeCommand { get; }
+
+    /// <summary>Builds the workspace's project, streaming MSBuild's own output.</summary>
+    public ICommand BuildCommand { get; }
+
+    /// <summary>The build configurations offered in the toolbar.</summary>
+    public IReadOnlyList<string> BuildConfigurations { get; } = ["Debug", "Release"];
+
+    /// <summary>
+    /// The platforms offered in the toolbar. Setting one sets <c>APPIUM_PLATFORM</c>, which the
+    /// fixture reads before resolving its own app binary.
+    /// </summary>
+    /// <remarks>
+    /// Narrowed to what the fixture declares through <c>[UatPlatforms]</c> when it declares
+    /// anything: offering a platform the fixture has no binary for only produces a throw later.
+    /// </remarks>
+    public IReadOnlyList<string> Platforms
+    {
+        get
+        {
+            var declared = ConfigEditor.DeclaredPlatforms;
+            return declared.Count == 0
+                ? AllPlatforms
+                : [.. AllPlatforms.Where(platform => declared.Any(name =>
+                    name.Equals(platform, StringComparison.OrdinalIgnoreCase)))];
+        }
+    }
+
+    private static IReadOnlyList<string> AllPlatforms { get; } = ["windows", "android", "ios"];
+
+    /// <summary>The configuration the Build button uses.</summary>
+    public string BuildConfiguration
+    {
+        get => _buildConfiguration;
+        set
+        {
+            if (SetProperty(ref _buildConfiguration, value))
+            {
+                SaveWorkspacePreferences();
+            }
+        }
+    }
+
+    /// <summary>The platform a run targets.</summary>
+    public string Platform
+    {
+        get => _platform;
+        set
+        {
+            if (SetProperty(ref _platform, value))
+            {
+                Environment.SetEnvironmentVariable("APPIUM_PLATFORM", value);
+                SaveWorkspacePreferences();
+            }
+        }
+    }
+
+    /// <summary>What the last build printed.</summary>
+    public string BuildLogText
+    {
+        get => _buildLogText;
+        private set => SetProperty(ref _buildLogText, value);
+    }
 
     public string WorkspaceName
     {
@@ -521,7 +605,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
         catch (Exception ex)
         {
             StatusSummary = "Failed to open folder";
-            DiagnosticsText = ex.Message;
+            DiagnosticsText = Describe(ex);
             SelectedTab = DiagnosticsTabName;
         }
     }
@@ -630,6 +714,10 @@ public sealed class PresenterShellViewModel : ViewModelBase
         CommandCatalogText = result.CommandCatalogReport;
         WorkspaceSummaryText = $"{result.Config.Summary}  {Files.Count} files  {Scenarios.Count} scenarios";
         WorkspaceConfigText = FormatWorkspaceConfig(result.Config);
+        ConfigEditor.Load(result.FolderPath, result.Config);
+        _projectPath = result.Config.Project?.ResolvedPath;
+        ApplyWorkspacePreferences(result.FolderPath);
+        OnPropertyChanged(nameof(Platforms));
         BuildWorkspaceTree(result);
         UpdateScenarioListText();
         AutPlacementText = string.Empty;
@@ -648,8 +736,17 @@ public sealed class PresenterShellViewModel : ViewModelBase
 
     private void BuildWorkspaceTree(UatWorkspaceLoadResult result)
     {
+        // A reload rebuilds every node, so where you were is carried across by NodePath.
+        // Saving the config reloads, and a save that drops your place is worse than no reload.
+        var expandedBefore = _allWorkspaceNodes
+            .Where(node => node.IsExpanded)
+            .Select(node => node.NodePath)
+            .ToHashSet(StringComparer.Ordinal);
+        var selectedBefore = SelectedWorkspaceNode?.NodePath;
+
         _allWorkspaceNodes.Clear();
         WorkspaceTreeNodes.Clear();
+        WorkspaceRootNodes.Clear();
         _workspaceRoot = null;
 
         var root = new UatWorkspaceNodeViewModel(
@@ -739,14 +836,18 @@ public sealed class PresenterShellViewModel : ViewModelBase
         SortTree(root);
         ApplyInitialExpansion(root);
         AddAllNode(root);
+        RestoreExpansion(expandedBefore);
         var preferredScenario = SelectedScenario ?? Scenarios.FirstOrDefault();
-        var preferredNode = _allWorkspaceNodes.FirstOrDefault(
+        var preferredNode = FindByNodePath(selectedBefore)
+                            ?? _allWorkspaceNodes.FirstOrDefault(
                                 node => node.Kind == UatWorkspaceNodeKind.Scenario
                                         && ReferenceEquals(node.Scenario, preferredScenario))
                             ?? _allWorkspaceNodes.FirstOrDefault(node => node.Kind == UatWorkspaceNodeKind.Scenario)
                             ?? root;
         ExpandAncestors(preferredNode);
         _workspaceRoot = root;
+        // Added once expansion is settled, so the tree control's nodes bind the final state.
+        WorkspaceRootNodes.Add(root);
         RefreshVisibleWorkspaceTree();
         SelectedWorkspaceNode = preferredNode;
 
@@ -758,6 +859,173 @@ public sealed class PresenterShellViewModel : ViewModelBase
                 AddAllNode(child);
             }
         }
+    }
+
+    /// <summary>
+    /// Builds the workspace's project and reloads, so the fixture list and the Pages assembly
+    /// reflect what was just built.
+    /// </summary>
+    /// <remarks>
+    /// The build's own output is shown verbatim: NETSDK1147 names the missing workload and the
+    /// command that installs it, which is better than anything this could paraphrase.
+    /// </remarks>
+    private async Task BuildWorkspaceProjectAsync()
+    {
+        var project = _projectPath;
+        if (string.IsNullOrWhiteSpace(project))
+        {
+            BuildLogText = "This workspace has no Runtime Project to build.";
+            return;
+        }
+
+        // A run maps the Pages assembly; the session's load context releases it on dispose,
+        // and building over a mapped file would fail.
+        StopActiveSession();
+
+        _isBuilding = true;
+        (BuildCommand as AsyncRelayCommand)?.NotifyCanExecuteChanged();
+        _buildCancellation?.Dispose();
+        _buildCancellation = new CancellationTokenSource();
+        BuildLogText = $"Building {Path.GetFileName(project)}...";
+
+        try
+        {
+            var result = await _projectBuilder.BuildAsync(
+                project,
+                null,
+                BuildConfiguration,
+                line => BuildLogText += Environment.NewLine + line,
+                _buildCancellation.Token).ConfigureAwait(true);
+
+            BuildLogText = result.Output.Length == 0
+                ? result.Succeeded ? "Build succeeded." : "Build failed."
+                : result.Output;
+
+            if (result.Succeeded)
+            {
+                ReloadWorkspace();
+            }
+        }
+        finally
+        {
+            _isBuilding = false;
+            (BuildCommand as AsyncRelayCommand)?.NotifyCanExecuteChanged();
+        }
+    }
+
+    /// <summary>The resolved project path of the loaded workspace, when it has one.</summary>
+    private string? _projectPath;
+
+    /// <summary>Remembers this workspace's configuration and platform for next time.</summary>
+    private void SaveWorkspacePreferences()
+    {
+        if (WorkspacePath is not { Length: > 0 } workspace)
+        {
+            return;
+        }
+
+        var settings = _settingsService.Load();
+        settings.WorkspacePreferences[workspace] = new PresenterWorkspacePreferences
+        {
+            Configuration = BuildConfiguration,
+            Platform = Platform
+        };
+        _settingsService.Save(settings);
+    }
+
+    /// <summary>Applies the configuration and platform this workspace was last run as.</summary>
+    private void ApplyWorkspacePreferences(string workspacePath)
+    {
+        var settings = _settingsService.Load();
+        if (!settings.WorkspacePreferences.TryGetValue(workspacePath, out var preferences))
+        {
+            return;
+        }
+
+        SetProperty(ref _buildConfiguration, preferences.Configuration, nameof(BuildConfiguration));
+        SetProperty(ref _platform, preferences.Platform, nameof(Platform));
+        Environment.SetEnvironmentVariable("APPIUM_PLATFORM", preferences.Platform);
+    }
+
+    /// <summary>
+    /// The message to show for a failure, with reflection's wrapper removed.
+    /// </summary>
+    /// <remarks>
+    /// Constructing a fixture goes through reflection, so anything it throws arrives wrapped in
+    /// a <see cref="System.Reflection.TargetInvocationException" /> whose own message is
+    /// "Exception has been thrown by the target of an invocation" — which says nothing about
+    /// what went wrong. The inner exception is the reason; the wrapper is an implementation
+    /// detail of how the fixture was created.
+    /// </remarks>
+    /// <param name="exception">The failure.</param>
+    /// <returns>The innermost message, with the outer ones kept when they add anything.</returns>
+    private static string Describe(Exception exception)
+    {
+        List<string> messages = [];
+        for (var current = exception; current is not null; current = current.InnerException)
+        {
+            if (current is System.Reflection.TargetInvocationException)
+            {
+                continue;
+            }
+
+            if (!messages.Contains(current.Message, StringComparer.Ordinal))
+            {
+                messages.Add(current.Message);
+            }
+        }
+
+        return messages.Count == 0 ? exception.Message : string.Join(Environment.NewLine, messages);
+    }
+
+    /// <summary>Re-expands the nodes that were expanded before a reload.</summary>
+    /// <param name="expandedPaths">The <see cref="UatWorkspaceNodeViewModel.NodePath" />s to expand.</param>
+    private void RestoreExpansion(IReadOnlySet<string> expandedPaths)
+    {
+        if (expandedPaths.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var node in _allWorkspaceNodes.Where(node =>
+                     node.CanExpand && expandedPaths.Contains(node.NodePath)))
+        {
+            node.IsExpanded = true;
+        }
+    }
+
+    /// <summary>
+    /// The node at a path, or the nearest surviving ancestor when that node is gone.
+    /// </summary>
+    /// <param name="nodePath">The path to find, or null.</param>
+    /// <returns>The node, an ancestor of it, or null.</returns>
+    private UatWorkspaceNodeViewModel? FindByNodePath(string? nodePath)
+    {
+        if (string.IsNullOrEmpty(nodePath))
+        {
+            return null;
+        }
+
+        var candidate = nodePath;
+        while (candidate.Length > 0)
+        {
+            var match = _allWorkspaceNodes.FirstOrDefault(node =>
+                node.NodePath.Equals(candidate, StringComparison.Ordinal));
+            if (match is not null)
+            {
+                return match;
+            }
+
+            var lastSeparator = candidate.LastIndexOf('/');
+            if (lastSeparator < 0)
+            {
+                return null;
+            }
+
+            candidate = candidate[..lastSeparator];
+        }
+
+        return null;
     }
 
     private void OnWorkspaceNodeExpansionChanged(UatWorkspaceNodeViewModel node)
@@ -971,7 +1239,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
         {
             scenario.Status = "fail";
             StatusSummary = $"Failed to start: {scenario.Name}";
-            DiagnosticsText = ex.Message;
+            DiagnosticsText = Describe(ex);
             FinishActiveSession();
         }
         finally
@@ -1040,8 +1308,8 @@ public sealed class PresenterShellViewModel : ViewModelBase
         catch (Exception ex)
         {
             scenario.Status = "fail";
-            StatusSummary = $"Failed: {scenario.Name}: {ex.Message}";
-            DiagnosticsText = ex.Message;
+            StatusSummary = $"Failed: {scenario.Name}: {Describe(ex)}";
+            DiagnosticsText = Describe(ex);
             MarkRunningSteps("fail");
             RefreshSelectedNodeDetails();
             return false;

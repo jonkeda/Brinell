@@ -3,6 +3,12 @@
   <PropertyGroup>
     <RootNamespace>Brinell.Presenter.Uat.Tests</RootNamespace>
     <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <!--
+      This is a test host, not an app: it needs no image assets of its own. Left on, the
+      resizetizer collects MauiIcon items from every referenced project - the Presenter and the
+      sample app both ship an `appicon` - and fails the build on the duplicate output name.
+    -->
+    <DisableResizetizer>true</DisableResizetizer>
   </PropertyGroup>
 
   <ItemGroup>

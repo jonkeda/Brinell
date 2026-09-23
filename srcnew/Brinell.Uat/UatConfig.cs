@@ -351,12 +351,12 @@ public static class UatConfigParser
              value.Equals("on", StringComparison.OrdinalIgnoreCase));
     }
 
-    private static bool IsTableRow(string line)
+    internal static bool IsTableRow(string line)
     {
         return line.StartsWith('|') && line.EndsWith('|') && line.Count(x => x == '|') >= 2;
     }
 
-    private static bool IsSeparatorRow(string line)
+    internal static bool IsSeparatorRow(string line)
     {
         return IsTableRow(line) && SplitTableRow(line).All(cell =>
         {
@@ -365,7 +365,7 @@ public static class UatConfigParser
         });
     }
 
-    private static IReadOnlyList<string> SplitTableRow(string line)
+    internal static IReadOnlyList<string> SplitTableRow(string line)
     {
         return line.Trim()[1..^1].Split('|').Select(x => x.Trim()).ToArray();
     }

@@ -29,6 +29,8 @@
     <!-- Stride 3D Engine -->
     <PackageVersion Include="Stride.Engine" Version="4.3.0.2507" />
     <PackageVersion Include="Stride.UI" Version="4.3.0.2507" />
+    <!-- Reflection-only inspection: Presenter lists fixtures without loading an assembly -->
+    <PackageVersion Include="System.Reflection.MetadataLoadContext" Version="9.0.0" />
     <!-- Source Link -->
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.401" />
   </ItemGroup>
