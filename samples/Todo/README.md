@@ -10,6 +10,8 @@ that can prove it, and every test traced back to a user journey. It shows:
 - **A seeded SQLite database** for the app's local state, built with the app's own migrations.
 - **A test pyramid** from unit tests to manual charters, kept honest by a report that compares
   the tests with [journeys.md](journeys.md).
+- **UAT scenarios in Markdown** - `Given/When/Then` files a non-programmer can read, running
+  against the same app through the same page objects.
 
 ## The app
 
@@ -42,6 +44,7 @@ Two custom controls, each with a matching ControlObject on the test side:
 | `tests/…TestSupport` | Scenarios (`Scenarios/*.json`), the WireMock fake of the API, temp databases. |
 | `tests/…UITests` | Tiers 3 and 4 on Windows: page objects, ControlObjects, fixtures, tests. |
 | `tests/…UITests.Mobile` | The same UI test sources, built for Android (Appium). |
+| `tests/…Uat` | Markdown UAT scenarios over tier 3's app and page objects. |
 | `tests/…JourneyCoverage` | The journey coverage report. |
 | `manual/charters.md` | Tier 5. |
 
@@ -227,6 +230,44 @@ half of CH-2: a save is all or nothing (`ASave_IsAllOrNothing_ToAReaderOnAnother
 When a charter finds something reproducible, it moves down into an automated tier, and the
 charter records where it went.
 
+## UAT: the journeys, in Markdown
+
+`tests/Brinell.Samples.Todo.Uat` runs [`Scenarios/*.uat.md`](tests/Brinell.Samples.Todo.Uat/Scenarios)
+against the same hermetic app tier 3 uses - WireMock backend, seeded database - but the test
+is the Markdown, not C#:
+
+```markdown
+Given I am on the Todo List page
+When I tap Add
+Then I should be on the Todo Edit page
+When I set Title to "Write the report"
+And I tap Save
+Then I should be on the Todo List page
+And Todos should have todo "Write the report"
+```
+
+`Add`, `Title`, `Save` and `Todos` are members of `TodoListPage` and `TodoEditPage`; the verbs
+are `[UatStep]` attributes on the control methods they call, so the vocabulary and the code
+that runs it are one declaration
+([AD-011](../../.docs/decisions/ad-011-uat-vocabulary-is-attribute-declared.md)). Two verbs are
+Todo's own: `I advance {control} to {value}` and `{control} should show status {value}`,
+declared on `TodoStatus`.
+
+The acceptance backbone is
+[todo-user-journeys.md](tests/Brinell.Samples.Todo.Uat/todo-user-journeys.md), a plain
+checklist of what a user must be able to do. It is not `journeys.md`: that one decides *where*
+a behaviour is tested, this one states *what* the user can do, and each scenario names the
+subtask it proves in its `Journey` metadata.
+
+Four scenarios ship today - create, create-needs-title, cancel, set-status - covering
+TOD.02.2, TOD.02.3, TOD.04.3 and TOD.05.1. The checklist marks the rest honestly: `[!]` where
+another tier already proves it (rule tables, sync, persistence), `[-]` where UAT cannot
+(real hardware, a real network, a human). Windows only; Android UAT and a live-backend UAT
+are out of scope.
+
+[One Todo UAT, end to end](uat-walkthrough.md) walks a single scenario from Markdown to the
+running app.
+
 ## Test data: scenarios, not a database bridge
 
 A scenario (`TestSupport/Scenarios/*.json`) has a local half and a server half, plus a pinned
@@ -263,6 +304,9 @@ dotnet test tests/Brinell.Samples.Todo.UITests --filter Journey=TOD.02.3
 
 # Tier 4: also start the real API, in process on a free port.
 BRINELL_UAT_LIVE_API=1 dotnet test tests/Brinell.Samples.Todo.UITests --filter Pyramid=UiLive
+
+# The Markdown UAT scenarios: same app, same build-the-app-first rule.
+dotnet test tests/Brinell.Samples.Todo.Uat
 ```
 
 To run tier 4 against an API that is already deployed, set `TODO_LIVE_API_BASEURL` and

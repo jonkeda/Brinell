@@ -2,8 +2,15 @@
 
 Brinell UAT scenarios are markdown files whose steps bind to a command catalog.
 There is no separate flow-file format. In current code, a flow is the ordered
-execution of parsed and bound steps. Reusable domain flows are implemented as
-custom UAT phrases on the fixture or on DI-backed phrase classes.
+execution of parsed and bound steps.
+
+A phrase reaches the catalog in one of three ways:
+
+| Origin | Declared with | Use it for |
+| --- | --- | --- |
+| Control verb | `[UatStep]` on the control method | anything a control does: tap, set, assert |
+| Root phrase | `[UatPhrase]` on a fixture method | fixture state, navigation, setup |
+| Phrase class | `[UatPhrase]` in a `[UatPhraseClass]` | domain flows needing DI services or scoped state |
 
 ## Mental Model
 
@@ -44,13 +51,12 @@ And Terms should be checked
 
 ## Phrase Patterns
 
-Catalog phrases use `{parameter}` placeholders:
+Every phrase, however it is declared, uses `{parameter}` placeholders and matches
+the same way:
 
 ```csharp
-catalog.Register(
-    UatEffectiveStepKeyword.When,
-    "I enter {value} into {control}",
-    "InputCommands.EnterText");
+[UatStep(UatEffectiveStepKeyword.When, "I enter {value} into {control}")]
+TScope Enter(string? text, int? timeoutMs = null);
 ```
 
 This matches:
@@ -103,46 +109,111 @@ Common diagnostics:
 
 ## Built-In Phrases
 
-There are 18 built-in phrases, and they come from two different places.
-
-The **three page verbs** are registered by hand in
-`UatReflectionRuntime.CreateCommandCatalog()` (and, phrases-only, in
-`UatSpecCommandCatalog.RegisterDefault()`). They are not control methods, so
-they have nowhere else to live.
-
-The **fifteen control verbs** are not registered anywhere. Each is declared by a
-`[UatStep]` attribute on the `Brinell.Core` control interface method it calls,
-and `UatCatalogBuilder` discovers them into both catalogs on the same pass — so
-the runtime surface and the spec surface cannot drift. To add a control verb,
-put a `[UatStep]` on the method; do not add a row to a table. See
+The 18 built-in phrases have two sources. Three page verbs are registered
+directly by `UatReflectionRuntime.CreateCommandCatalog()` and
+`UatSpecCommandCatalog.RegisterDefault()`, since they do not bind to control
+methods. The other fifteen are `[UatStep]` attributes on `Brinell.Core` control
+interfaces. `UatCatalogBuilder` discovers them for the runtime catalog, the
+spec catalog and the Presenter's preview, so the phrase and its method cannot
+drift apart. To add a control verb, annotate its method rather than registering
+another catalog entry. See
 [AD-011](../../.docs/decisions/ad-011-uat-vocabulary-is-attribute-declared.md).
 
-| Keyword | Phrase | Runtime command |
+Three verbs are the engine's own. They bind to no control method, so they are
+registered directly in the runtime and spec catalogs:
+
+| Keyword | Phrase | What it does |
 | --- | --- | --- |
 | `Given` | `I am on the {page} page` | Opens or asserts the page and sets the current page. |
 | `Then` | `I should be on the {page} page` | Asserts the page and sets the current page. |
-| `When` | `I tap {control}` | Calls `Click` on the current page control. |
-| `When` | `I enter {value} into {control}` | Calls `Enter(value)`. |
-| `When` | `I set {control} to {value}` | Calls `SetText(value)`. |
-| `When` | `I clear {control}` | Calls `Clear()`. |
-| `When` | `I check {control}` | Calls `Check()`. |
-| `When` | `I uncheck {control}` | Calls `Uncheck()`. |
-| `When` | `I select {value} from {control}` | Calls `SelectByText(value)`. |
-| `Then` | `{control} should contain {value}` | Calls `AssertTextContains(value)`. |
-| `Then` | `{control} should equal {value}` | Calls `AssertText(value)`. |
-| `Then` | `{control} should be visible` | Calls `AssertVisible(true)`. |
-| `Then` | `{control} should not be visible` | Calls `AssertVisible(false)`. |
-| `Then` | `{control} should be enabled` | Calls `AssertEnabled(true)`. |
-| `Then` | `{control} should be checked` | Calls `AssertChecked(true)`. |
-| `Then` | `{control} should be unchecked` | Calls `AssertChecked(false)`. |
-| `Then` | `{control} should have selected {value}` | Calls `AssertSelectedText(value)`. |
 | `Then` | `I should see {text}` | Searches controls on the current page with `GetText()`. |
+
+Everything else is discovered. The built-in set is 15 phrases over 13 methods on
+six interfaces in `Brinell.Core/Interfaces/`:
+
+| Keyword | Phrase | Declared on | Method called |
+| --- | --- | --- | --- |
+| `When` | `I tap {control}` | `IClickableControlObject` | `Click()` |
+| `When` | `I enter {value} into {control}` | `IEditableTextControlObject` | `Enter(value)` |
+| `When` | `I set {control} to {value}` | `IEditableTextControlObject` | `SetText(value)` |
+| `When` | `I clear {control}` | `IEditableTextControlObject` | `Clear()` |
+| `When` | `I check {control}` | `IToggleControlObject` | `Check()` |
+| `When` | `I uncheck {control}` | `IToggleControlObject` | `Uncheck()` |
+| `When` | `I select {value} from {control}` | `ISelectorControlObject` | `SelectByText(value)` |
+| `Then` | `{control} should equal {value}` | `ITextControlObject` | `AssertText(value)` |
+| `Then` | `{control} should contain {value}` | `ITextControlObject` | `AssertTextContains(value)` |
+| `Then` | `{control} should have selected {value}` | `ISelectorControlObject` | `AssertSelectedText(value)` |
+| `Then` | `{control} should be visible` | `IElementObject` | `AssertVisible(true)` |
+| `Then` | `{control} should not be visible` | `IElementObject` | `AssertVisible(false)` |
+| `Then` | `{control} should be enabled` | `IElementObject` | `AssertEnabled(true)` |
+| `Then` | `{control} should be checked` | `IToggleControlObject` | `AssertChecked(true)` |
+| `Then` | `{control} should be unchecked` | `IToggleControlObject` | `AssertChecked(false)` |
+
+A control phrase reaches a method only if the named control actually implements
+it. `I check Terms` on a `Label` fails at execution, not at binding.
 
 Control phrases need a current page. Start most UI flows with:
 
 ```markdown
 Given I am on the Main page
 ```
+
+## Custom Control Verbs
+
+To add a verb, put a `[UatStep]` on the control method that performs it. The
+attribute lives in `Brinell.Core.Testing`, so a control project needs no
+reference to `Brinell.Uat` to declare one. Do **not** add a
+`catalog.Register(...)` call for a control verb - that is the hand-written table
+AD-011 removed.
+
+From the Todo sample's `TodoStatus` component:
+
+```csharp
+using Brinell.Core.Testing;
+
+[UatStep(UatEffectiveStepKeyword.When, "I advance {control} to {value}")]
+public TodoStatus<TScope> AdvanceTo(string? expected, int? timeoutMs = null) { ... }
+
+[UatStep(UatEffectiveStepKeyword.Then, "{control} should show status {value}")]
+public TodoStatus<TScope> AssertShowsStatus(
+    string? expected, string? message = null, int? timeoutMs = null) { ... }
+```
+
+and from its `TodoList` collection:
+
+```csharp
+[UatStep(UatEffectiveStepKeyword.Then, "{control} should have todo {value}")]
+public TodoList AssertRow(string title, bool present = true, int? timeoutMs = null) { ... }
+```
+
+which the scenarios then read as:
+
+```markdown
+When I advance Status to "Done"
+Then Status should show status "Done"
+And Todos should have todo "Plan the sprint"
+```
+
+Rules for a `[UatStep]` phrase:
+
+- `{control}` is the control name, resolved on the current page. Exactly one
+  other placeholder may appear; its captured value is passed as the method's
+  first parameter. With no value placeholder and no literal, the method is called
+  with no arguments, so its remaining parameters must be optional.
+- For an on/off pair of phrases over one method, set `HasLiteral = true` and
+  `Literal` to the boolean to pass, as `AssertVisible` does for
+  `should be visible` / `should not be visible`.
+- `CommandId` sets the stable command-id suffix; it defaults to the method name.
+  The projections prepend their own prefix (`Builtin.` / `Spec.`), so one
+  attribute serves both.
+- The attribute allows multiples: declare each phrase variant on the same method.
+- A `(keyword, phrase)` pair is registered once. A verb inherited through several
+  interfaces does not collide.
+
+**Reach.** The Core interfaces are always scanned. An app control type is scanned
+only when the runtime met it during page discovery - that is, when it is the type
+of a control property on a discovered page object. A `[UatStep]` on a control no
+page exposes is never registered, and its steps fail to bind with `UATB001`.
 
 ## Page And Control Names
 
@@ -261,9 +332,8 @@ Supported returns:
 
 Exceptions fail the step and are included in the step result.
 
-`[UatAction]` is discovery metadata. It does not create a phrase by itself, and
-the current runtime built-in phrases invoke known control method names such as
-`Click`, `Enter`, `Clear`, and `AssertTextContains`.
+`[UatAction]` is discovery metadata. It does not create a phrase by itself; a
+control verb comes from `[UatStep]` (see [Custom Control Verbs](#custom-control-verbs)).
 
 ## Phrase Classes
 
@@ -335,8 +405,9 @@ binding and execution code does not consume them automatically.
 ## Authoring Guidance
 
 - Use built-in control phrases for simple interactions.
-- Use custom phrases for domain intent, cross-page actions, or behavior that
-  needs fixture state, settings, or DI services.
+- When a verb belongs to a control, declare it there with `[UatStep]`. Reach for
+  a fixture phrase only when no control owns the behavior - cross-page actions,
+  fixture state, settings, or DI services.
 - Keep the scenario readable as a user workflow.
 - Keep locator details in page objects and controls.
 - Prefer exact, unambiguous phrases over broad patterns.
@@ -354,7 +425,9 @@ binding and execution code does not consume them automatically.
 - `srcnew/Brinell.Uat/UatCommandCatalog.cs`
 - `srcnew/Brinell.Uat/UatBinder.cs`
 - `srcnew/Brinell.Uat/UatExecution.cs`
+- `srcnew/Brinell.Uat/UatCatalogBuilder.cs`
 - `srcnew/Brinell.Uat/UatReflectionRuntime.cs`
 - `srcnew/Brinell.Uat/UatScenarioTestBase.cs`
 - `srcnew/Brinell.Uat/UatSpecCommandCatalog.cs`
 - `srcnew/Brinell.Uat/UatAttributes.cs`
+- `srcnew/Brinell.Core/Testing/UatStepAttribute.cs`

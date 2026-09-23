@@ -1,34 +1,37 @@
 # One Todo UAT, end to end
 
-This walks through **a single UAT** for the Todo sample so you can see how a
+This walks through **a single UAT** from
+[tests/Brinell.Samples.Todo.Uat](tests/Brinell.Samples.Todo.Uat) so you can see how a
 plain-Markdown scenario becomes something Brinell actually runs against the app.
 
 The scenario we follow is **TOD.02.3 — "A todo needs a title"** from
-[journeys.md](journeys.md). In words: on an empty list, adding a todo with a
-blank title must show *"Title is required"* and must not save.
+[todo-user-journeys.md](tests/Brinell.Samples.Todo.Uat/todo-user-journeys.md). In words:
+adding a todo with a blank title must show *"Title is required"* and must not save.
 
 ---
 
 ## 1. The shape of a UAT
 
-A UAT is not code. It is two Markdown files:
+A UAT is not code. It is two Markdown files, plus a small project that points them at a
+running app:
 
 | File | Job |
 | --- | --- |
-| `uat.config.md` | Where the app is, which assemblies hold the pages/controls/phrases, how to report. One per test project. |
+| `uat.config.md` | Where the app is, which assemblies hold the pages and controls, how to report. One per test project. |
 | `Scenarios/*.uat.md` | The executable scenarios themselves, in `Given / When / Then`. |
+| `Runtime/*.cs` | The fixture, the xUnit collection and the scenario test class. Written once. |
 
-Brinell reads the scenario, matches each line to a **phrase**, and calls the
-matching **page object** method against the running app. Nothing is generated to
-`.cs`; the Markdown *is* the test.
+Brinell reads the scenario, matches each line to a **phrase**, and calls the matching
+**page object** method against the running app. Nothing is generated to `.cs`; the
+Markdown *is* the test.
 
 ```mermaid
 flowchart LR
     MD[create-needs-title.uat.md<br/>Given/When/Then] --> P[Parser]
-    P --> C[Command catalog<br/>known phrases]
+    P --> C[Command catalog<br/>discovered phrases]
     C --> B[Binder<br/>one phrase per step]
     B --> R[Runner]
-    R --> APP[(Todo app<br/>on device/emulator)]
+    R --> APP[(Todo app<br/>on Windows, via FlaUI)]
     R -.->|on failure| SHOT[screenshot + trace]
 ```
 
@@ -36,67 +39,73 @@ flowchart LR
 
 ## 2. The scenario file
 
-`Scenarios/create-needs-title.uat.md`:
+[`Scenarios/create-needs-title.uat.md`](tests/Brinell.Samples.Todo.Uat/Scenarios/create-needs-title.uat.md):
 
 ```markdown
-# UAT: A new todo needs a title
+# UAT: Todo saving a new todo needs a title
 
 ## Metadata
 
 | Field | Value |
 | --- | --- |
 | App | Brinell.Samples.Todo.App |
-| Area | Create a todo |
+| Area | Create |
 | Target | MAUI |
-| Tags | smoke, todo, validation |
-| Mode | Automated |
-| Requires | Deterministic |
-| Priority | Smoke |
-| Evidence | none |
+| Journey | TOD.02.3 |
+| Tags | smoke, maui, create, validation |
 
-@smoke @todo @validation @automated @deterministic
-## Scenario: Saving with a blank title is refused
+@smoke @maui @create @validation
+## Scenario: Saving with an empty title shows the error and stays
 
 Given I am on the Todo List page
 When I tap Add
-And I clear Title
+Then I should be on the Todo Edit page
+When I clear Title
 And I tap Save
-Then Title Error should contain "Title is required"
-And Title Error should be visible
+Then Title Error should be visible
+And Title Error should contain "Title is required"
 ```
 
 Notes on why each part is there:
 
 - **`# UAT: <title>`** — exactly one per file; it names the scenario.
-- **`## Metadata`** — the traceable header. `Tags` feeds the `@tag` gate line;
-  `Area` and `App` are documentation. Keeping `Journey: TOD.02.3` here (or as a
-  tag) is what lets the coverage report tie this file back to the journey.
-- **`@smoke @todo ...`** — tag line. It must sit **immediately above**
-  `## Scenario:`. These drive filtering and the skip rules in the config.
-- **The steps** — each starts with `Given/When/Then/And/But`. `And` inherits the
-  previous keyword (so `And I clear Title` is still a *When*).
+- **`## Metadata`** — the traceable header. `Journey: TOD.02.3` is what ties this file
+  back to the journey checklist; `Area` and `App` are documentation.
+- **`@smoke @maui ...`** — the tag line. It must sit **immediately above**
+  `## Scenario:`. These, not the `Tags` metadata row, drive filtering and skip rules.
+- **The steps** — each starts with `Given/When/Then/And/But`. `And` inherits the previous
+  keyword (so `And I tap Save` is still a *When*), and a `When` after a `Then` is fine:
+  the scenario alternates as the user does.
 
 ---
 
 ## 3. How each step binds
 
-Every step matches exactly one built-in phrase. The phrase decides which page
-object method runs:
+Every step matches exactly one phrase. The phrase decides which page object method runs:
 
 | Step | Phrase | What runs |
 | --- | --- | --- |
 | `Given I am on the Todo List page` | `I am on the {page} page` | Opens/asserts the page, sets it current |
 | `When I tap Add` | `I tap {control}` | `AddButton.Click()` |
-| `And I clear Title` | `I clear {control}` | `Title.Clear()` |
+| `Then I should be on the Todo Edit page` | `I should be on the {page} page` | Asserts the page, sets it current |
+| `When I clear Title` | `I clear {control}` | `Title.Clear()` |
 | `And I tap Save` | `I tap {control}` | `SaveButton.Click()` |
-| `Then Title Error should contain "Title is required"` | `{control} should contain {value}` | `TitleError.AssertTextContains(...)` |
 | `Then Title Error should be visible` | `{control} should be visible` | `TitleError.AssertVisible(true)` |
+| `And Title Error should contain "Title is required"` | `{control} should contain {value}` | `TitleError.AssertTextContains(...)` |
 
-The important idea: **"Add", "Title", "Save", "Title Error"** are not string
-lookups against the screen. They are *names of members on the page object*. The
-runtime already has a `TodoListPage` and `TodoEditPage` (in
-[tests/Brinell.Samples.Todo.UITests/Pages](tests/Brinell.Samples.Todo.UITests/Pages)),
-and their members provide the names:
+Those control phrases are not a list someone maintains. Each is a `[UatStep]` attribute on
+the `Brinell.Core` interface method it calls — `I clear {control}` sits on
+`IEditableTextControlObject.Clear`, `{control} should be visible` on
+`IElementObject.AssertVisible` — and the engine discovers them by reflection
+([AD-011](../../.docs/decisions/ad-011-uat-vocabulary-is-attribute-declared.md)). Only the
+three page verbs (`I am on the …`, `I should be on the …`, `I should see …`) are the
+engine's own.
+
+The important idea: **"Add", "Title", "Save", "Title Error"** are not string lookups
+against the screen. They are *names of members on the page object*. The runtime has a
+`TodoListPage` and a `TodoEditPage` (in
+[tests/Brinell.Samples.Todo.UITests/Pages](tests/Brinell.Samples.Todo.UITests/Pages)), and
+their members provide the names:
 
 ```csharp
 // TodoListPage.cs — the Add toolbar button
@@ -107,58 +116,81 @@ public Entry<SectionCard<TodoEditPage>> Title      => BasicsCard.Entry("TodoEdit
 public Label<SectionCard<TodoEditPage>> TitleError => BasicsCard.Label("TodoEdit_TitleError");
 ```
 
-With `AllowNameInference` on, `AddButton` → **Add**, `Title` → **Title**,
-`TitleError` → **Title Error**, `TodoListPage` → **Todo List**. If you want the
-name in the scenario to differ from the code, pin it explicitly:
+With `AllowNameInference` on, `AddButton` → **Add**, `Title` → **Title**, `TitleError` →
+**Title Error**, `TodoListPage` → **Todo List**. Where inference does not reach — a custom
+component type such as `TodoStatus` — pin the name:
 
 ```csharp
-[UatName("Title Error")]
-public Label<SectionCard<TodoEditPage>> TitleError => BasicsCard.Label("TodoEdit_TitleError");
+[UatName("Status")]
+public TodoStatus<TodoEditPage> Status => new(this, "TodoEdit_Status");
 ```
 
 So the chain for one step is:
 
 ```text
-"Then Title Error should contain \"Title is required\""
-   -> phrase   {control} should contain {value}
+"And Title Error should contain \"Title is required\""
+   -> phrase   {control} should contain {value}   ([UatStep] on ITextControlObject.AssertTextContains)
    -> control  "Title Error"  == TodoEditPage.TitleError
    -> id       TodoEdit_TitleError  (from the XAML)
    -> call     AssertTextContains("Title is required")
 ```
 
-The AutomationIds (`TodoEdit_Title`, `TodoEdit_TitleError`) come from the app
-XAML in
+The AutomationIds (`TodoEdit_Title`, `TodoEdit_TitleError`) come from the app XAML in
 [src/Brinell.Samples.Todo.App/Pages/TodoEditPage.xaml](src/Brinell.Samples.Todo.App/Pages/TodoEditPage.xaml).
-That is the anchor that survives rebuilds — the page object binds to the id, the
-scenario binds to the page object's name.
+That is the anchor that survives rebuilds — the page object binds to the id, the scenario
+binds to the page object's name.
 
 ---
 
-## 4. The config that points at the Todo app
+## 4. A verb the framework does not have
 
-`uat.config.md` for a Todo UAT project mirrors the existing MAUI one
-([testsnew/Brinell.Maui.Uat.Tests/uat.config.md](../../testsnew/Brinell.Maui.Uat.Tests/uat.config.md)),
-just pointing at the Todo binaries:
+Cycling the status with **Next** is Todo's own behaviour, so Todo declares its own verb: a
+`[UatStep]` on the method of the ControlObject that performs it
+([`TodoStatus.tpl.cs`](tests/Brinell.Samples.Todo.UITests/Controls/TodoStatus.tpl.cs)).
+
+```csharp
+[UatStep(UatEffectiveStepKeyword.When, "I advance {control} to {value}")]
+public TodoStatus<TScope> AdvanceTo(string? expected, int? timeoutMs = null) { ... }
+
+[UatStep(UatEffectiveStepKeyword.Then, "{control} should show status {value}")]
+public TodoStatus<TScope> AssertShowsStatus(string? expected, ...) { ... }
+```
+
+No registration, no catalog edit: the attribute *is* the registration, and
+[`set-status-on-a-new-todo.uat.md`](tests/Brinell.Samples.Todo.Uat/Scenarios/set-status-on-a-new-todo.uat.md)
+reads
 
 ```markdown
-# UAT Config
+When I advance Status to "Done"
+Then Status should show status "Done"
+```
 
+The same move gives the list its row assertion — `[UatStep]` on `TodoList.AssertRow`
+produces `Then Todos should have todo "Write the report"`.
+
+---
+
+## 5. The config that points at the Todo app
+
+[`uat.config.md`](tests/Brinell.Samples.Todo.Uat/uat.config.md):
+
+```markdown
 ## Runtime
 
 | Field | Value |
 | --- | --- |
 | Target | MAUI |
-| Fixture | Appium |
-| AppPath | ../src/Brinell.Samples.Todo.App/bin/Debug/net10.0-windows10.0.19041.0/win-x64/Brinell.Samples.Todo.App.exe |
-| WorkingDirectory | .. |
+| Fixture | FlaUI |
+| AppPath | ../../src/Brinell.Samples.Todo.App/bin/Debug/net10.0-windows10.0.19041.0/win10-x64/Brinell.Samples.Todo.App.exe |
+| WorkingDirectory | ../../../.. |
 
 ## Assemblies
 
 | Kind | Assembly |
 | --- | --- |
-| Pages | ../tests/Brinell.Samples.Todo.UITests/bin/Debug/net10.0-windows7.0/Brinell.Samples.Todo.UITests.dll |
-| Controls | ../../../srcnew/Brinell.Maui/bin/Debug/net10.0/Brinell.Maui.dll |
-| Commands | ../../../srcnew/Brinell.Uat/bin/Debug/net10.0/Brinell.Uat.dll |
+| Pages | ../Brinell.Samples.Todo.UITests/bin/Debug/net10.0-windows/Brinell.Samples.Todo.UITests.dll |
+| Controls | ../../../../srcnew/Brinell.Maui/bin/Debug/net10.0/Brinell.Maui.dll |
+| Commands | ../../../../srcnew/Brinell.Uat/bin/Debug/net10.0/Brinell.Uat.dll |
 
 ## Discovery
 
@@ -166,66 +198,104 @@ just pointing at the Todo binaries:
 | --- | --- |
 | RequireExplicitUatAttributes | false |
 | AllowNameInference | true |
-
-## Reporting
-
-| Field | Value |
-| --- | --- |
-| ScreenshotOnFailure | true |
-| IncludeRuntimeTrace | true |
-
-## Skip Rules
-
-| Tag | EnvironmentVariable |
-| --- | --- |
-| live-api | BRINELL_UAT_LIVE_API |
 ```
 
-- **`AppPath`** launches the real Todo app.
-- **`Pages`** is the assembly that carries `TodoListPage` / `TodoEditPage` — the
-  source of the control names.
-- **`Commands`** carries the phrase catalog (`Brinell.Uat`).
-- **`AllowNameInference = true`** is why `AddButton` works as **Add** with no
-  attribute.
+- **`Pages`** is the assembly carrying `TodoListPage` / `TodoEditPage` — the source of the
+  control names, and of Todo's custom `[UatStep]` verbs.
+- **`AllowNameInference = true`** is why `AddButton` works as **Add** with no attribute.
+- **`Fixture = FlaUI`** is the Windows head. `TodoUatScenarioTests` asserts this at load
+  time, so a config pointed at the wrong driver fails before any scenario runs.
 
 ---
 
-## 5. What happens when it runs
+## 6. The fixture: the same hermetic app the UI tier uses
 
-1. The runner launches `Brinell.Samples.Todo.App.exe` via Appium.
-2. `Given I am on the Todo List page` waits for the list to be on screen (the
-   page object's own readiness gate), not a fixed sleep.
-3. `When I tap Add` clicks the toolbar Add; the edit page opens.
-4. `And I clear Title` empties the title entry.
-5. `And I tap Save` presses Save. Validation refuses it and shows the error.
-6. `Then Title Error should contain "Title is required"` asserts the label text.
-7. `And Title Error should be visible` asserts it is on screen.
+The UAT project reuses tier 3's fixture rather than standing up its own app.
+[`TodoUatFixture`](tests/Brinell.Samples.Todo.Uat/Runtime/TodoUatFixture.cs) adds the two
+things the UAT runtime needs:
 
-If any *Then* fails, the runner stops that scenario, captures a screenshot and a
-runtime trace (because `ScreenshotOnFailure` / `IncludeRuntimeTrace` are on), and
-reports the failing step.
+```csharp
+[TestModuleScan(typeof(TodoListPage), NamespacePrefix = "Brinell.Samples.Todo.UITests.Pages")]
+public sealed class TodoUatFixture : TodoAppFixture
+{
+    public TodoUatFixture()
+    {
+        Composition = TestComposition.ForFixture(this, services =>
+            services.AddSingleton<IMauiTestContext>(Context));
+    }
+
+    protected override string ScenarioName => "three-todos";
+
+    public TestComposition Composition { get; }
+}
+```
+
+`Composition` is where the runtime finds the page objects and how it constructs them. The
+backend is WireMock and the database is seeded with the `three-todos` scenario, exactly as
+in tier 3 — a UAT here is hermetic, not a smoke test against a real server.
+
+Scenarios share one app process, so
+[`TodoUatScenarioTests`](tests/Brinell.Samples.Todo.Uat/Runtime/TodoUatScenarioTests.cs)
+resets it between them:
+
+```csharp
+protected override void BeforeScenario(UatBoundScenario scenario) => Fixture.StartTest();
+```
+
+Online again, backend back to `three-todos`, list on screen. That is what keeps the four
+scenarios independent of order and of each other's edits.
 
 ---
 
-## 6. Why this is worth it
+## 7. What happens when it runs
 
-- A product owner can read `create-needs-title.uat.md` and sign off on it —
-  there is no C# to understand.
+1. The collection fixture launches `Brinell.Samples.Todo.App.exe` and the WireMock backend.
+2. `BeforeScenario` resets the app to the seeded list.
+3. `Given I am on the Todo List page` waits for the list to be on screen (the page object's
+   own readiness gate), not a fixed sleep.
+4. `When I tap Add` clicks the toolbar Add; the edit page opens.
+5. `Then I should be on the Todo Edit page` confirms the navigation before going on.
+6. `When I clear Title` empties the title entry; `And I tap Save` presses Save. Validation
+   refuses it and shows the error.
+7. The two `Then` steps assert the error label is visible and says "Title is required".
+
+If any step fails, the runner stops that scenario, captures a screenshot and a runtime
+trace (`ScreenshotOnFailure` / `IncludeRuntimeTrace`), and reports the failing step.
+
+---
+
+## 8. Running it
+
+From `samples/Todo`, with no other UI or UAT process running:
+
+```bash
+# The UAT project launches the app, so build the app first.
+dotnet build src/Brinell.Samples.Todo.App -f net10.0-windows10.0.19041.0
+dotnet test tests/Brinell.Samples.Todo.Uat
+```
+
+---
+
+## 9. Why this is worth it
+
+- A product owner can read `create-needs-title.uat.md` and sign off on it — there is no C#
+  to understand.
 - It runs deterministically against the real app; no LLM in the loop at run time.
-- It stays traceable: `TOD.02.3` in the journey → this `.uat.md` → green/red on a
-  device.
+- It stays traceable: `TOD.02.3` in the journey checklist → this `.uat.md` → green/red.
 
-When a scenario outgrows the phrase vocabulary (needs data seeding, a custom
-assertion, IDE debugging), that one scenario can drop to a `.cs` page-object test
-— the escape hatch described in
-[.my/uat/rethinking-uat.md](../../.my/uat/rethinking-uat.md). Everything else
-stays as readable Markdown.
+When a scenario outgrows the phrase vocabulary, there are two escapes before giving up on
+Markdown: a `[UatStep]` on the control that does the work (§4), or a `[UatPhrase]` on the
+fixture for something no control owns. Only past those does the scenario drop to a `.cs`
+page-object test — the hatch described in
+[.my/uat/rethinking-uat.md](../../.my/uat/rethinking-uat.md).
 
 ---
 
 ## Reference
 
-- Journey backbone: [journeys.md](journeys.md)
+- Journey checklist: [todo-user-journeys.md](tests/Brinell.Samples.Todo.Uat/todo-user-journeys.md)
+- Pyramid backbone: [journeys.md](journeys.md)
 - Config and file shape: [docs/guides/uat-template-guide.md](../../docs/guides/uat-template-guide.md)
 - Phrase catalog and binding: [docs/guides/uat-phrases-and-flows.md](../../docs/guides/uat-phrases-and-flows.md)
+- Why the vocabulary is attribute-declared: [AD-011](../../.docs/decisions/ad-011-uat-vocabulary-is-attribute-declared.md)
 - Todo page objects: [tests/Brinell.Samples.Todo.UITests/Pages](tests/Brinell.Samples.Todo.UITests/Pages)

@@ -12,7 +12,9 @@ Goal: two connected deliverables for the Todo showcase.
 
 Status: done. Implemented 2026-09-21 — `Brinell.Samples.Todo.Uat` project with four
 `.uat.md` scenarios (all passing) and the `todo-user-journeys.md` checklist shipped inside
-the project.
+the project. Phase B3 closed 2026-09-21: `uat-walkthrough.md` rewritten against the shipped
+project, a UAT section and gap list added to `samples/Todo/README.md`, and the framework
+guides (`docs/guides/uat-*.md`) brought onto AD-011.
 Date: 2026-09-21
 Area: `samples/Todo/` (journeys doc + new `Brinell.Samples.Todo.Uat` project).
 

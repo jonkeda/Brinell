@@ -1,7 +1,13 @@
 # UAT Template Guide
 
 Brinell UAT tests execute markdown scenarios using a `uat.config.md` file and
-one or more `.uat.md` scenario files.
+one or more `.uat.md` scenario files. A small C# project ties them to a running
+app.
+
+A complete working example is
+[`samples/Todo/tests/Brinell.Samples.Todo.Uat`](../../samples/Todo/tests/Brinell.Samples.Todo.Uat):
+four scenarios against the hermetic Todo app on Windows, walked through step by
+step in [One Todo UAT, end to end](../../samples/Todo/uat-walkthrough.md).
 
 ## Project Layout
 
@@ -13,8 +19,76 @@ testsnew/Brinell.<Platform>.Uat.Tests/
   ExpectedFailures/
     known-failure.uat.md
   TestSettings/
-    settings.json
+    testsettings.json
+  Runtime/
+    <App>UatFixture.cs
+    <App>UatCollection.cs
+    <App>UatScenarioTests.cs
 ```
+
+Put `uat.config.md`, `Scenarios/**/*.uat.md` and `TestSettings/**/*.json` in the
+csproj as `CopyToOutputDirectory="PreserveNewest"`; the runtime reads them from
+the output folder.
+
+## The Test Project
+
+Three small pieces. The **fixture** launches the app and exposes the page graph:
+
+```csharp
+[TestModuleScan(typeof(TodoListPage), NamespacePrefix = "Brinell.Samples.Todo.UITests.Pages")]
+public sealed class TodoUatFixture : TodoAppFixture
+{
+    public TodoUatFixture()
+    {
+        Composition = TestComposition.ForFixture(this, services =>
+            services.AddSingleton<IMauiTestContext>(Context));
+    }
+
+    public TestComposition Composition { get; }
+}
+```
+
+`Composition` is what the runtime discovers pages from and constructs them
+through. Without it, discovery falls back to page-typed properties on the
+fixture itself.
+
+A **collection** shares one app across every scenario class:
+
+```csharp
+[CollectionDefinition(CollectionName)]
+public sealed class TodoUatCollection : ICollectionFixture<TodoUatFixture>
+{
+    public const string CollectionName = "Todo UAT";
+}
+```
+
+The **test class** derives from `UatScenarioTestBase<TFixture>` and turns each
+scenario file into a theory case:
+
+```csharp
+[Collection(TodoUatCollection.CollectionName)]
+public sealed class TodoUatScenarioTests : UatScenarioTestBase<TodoUatFixture>
+{
+    public TodoUatScenarioTests(TodoUatFixture fixture) : base(fixture) { }
+
+    public static IEnumerable<object[]> ScenarioFiles => GetScenarioFiles();
+
+    [Theory(Timeout = 120000)]
+    [MemberData(nameof(ScenarioFiles))]
+    public Task UatFile_Passes(string filePath) => RunUatFileAsync(filePath);
+
+    // Reset the app between scenarios so they stay order-independent.
+    protected override void BeforeScenario(UatBoundScenario scenario) => Fixture.StartTest();
+
+    protected override UatRuntimeValidationOptions RuntimeValidation { get; } =
+        new(Target: "MAUI", Fixture: "FlaUI");
+}
+```
+
+`RuntimeValidation` asserts the config at load time: a config whose `Target` or
+`Fixture` disagrees, or that registers no assemblies, throws rather than running
+scenarios against the wrong head. Override `BeforeScenario` to give each scenario
+a clean start - scenarios share one app process.
 
 ## Config Shape
 
@@ -26,7 +100,24 @@ testsnew/Brinell.<Platform>.Uat.Tests/
 | Field | Value |
 | --- | --- |
 | Target | MAUI |
-| Fixture | Appium |
+| Fixture | FlaUI |
+| AppPath | ../../src/…App/bin/Debug/net10.0-windows10.0.19041.0/win10-x64/…App.exe |
+| WorkingDirectory | ../../../.. |
+
+## Assemblies
+
+| Kind | Assembly |
+| --- | --- |
+| Pages | ../…UITests/bin/Debug/net10.0-windows/…UITests.dll |
+| Controls | ../../../../srcnew/Brinell.Maui/bin/Debug/net10.0/Brinell.Maui.dll |
+| Commands | ../../../../srcnew/Brinell.Uat/bin/Debug/net10.0/Brinell.Uat.dll |
+
+## Discovery
+
+| Field | Value |
+| --- | --- |
+| RequireExplicitUatAttributes | false |
+| AllowNameInference | true |
 
 ## Reporting
 
@@ -55,6 +146,24 @@ testsnew/Brinell.<Platform>.Uat.Tests/
 
 `$(BrinellTestResults)` resolves through the shared Brinell artifact provider.
 If `OutputDirectory` is omitted, UAT should use the suite `uat/` folder.
+
+What each section carries:
+
+| Section | Field | Meaning |
+| --- | --- | --- |
+| Runtime | `Target` | The platform head, e.g. `MAUI`. Checked against `RuntimeValidation`. |
+| Runtime | `Fixture` | The driver: `FlaUI` for the Windows head, `Appium` for Android. |
+| Runtime | `AppPath` | The app to launch, relative to `WorkingDirectory`. |
+| Runtime | `WorkingDirectory` | The base the relative paths resolve against. |
+| Assemblies | `Pages` | The assembly holding the page objects - the source of control names. |
+| Assemblies | `Controls` | The ControlObject assembly for the platform. |
+| Assemblies | `Commands` | `Brinell.Uat`, which carries the engine's own verbs. |
+| Discovery | `AllowNameInference` | `true` lets `AddButton` be **Add** without `[UatName]`. |
+| Discovery | `RequireExplicitUatAttributes` | `true` limits discovery to members carrying UAT attributes. |
+
+`Assemblies` is required by default: `UatRuntimeValidationOptions` fails a config
+that registers none. Pass `RequireAssemblies: false` if a project drives the app
+purely through its fixture's composition.
 
 ## Scenario File Shape
 
@@ -109,9 +218,25 @@ can keep executable specs in module folders such as
 `Scenarios/Contacts/00-smoke.uat.md` and
 `Scenarios/Projects/01-list-basic.uat.md`.
 
-## Standard Metadata
+## Metadata Fields
+
+`UatMetadataFields` names the fields the format tests expect: `App`, `Area`,
+`Target`, `Tags`, `Mode`, `Requires`, `Owner`, `Priority`, `Evidence`. The table
+is a plain `Field`/`Value` table, so a project can add rows of its own. The Todo
+sample adds `Journey`, which ties each scenario to a subtask id in its
+[journey checklist](../../samples/Todo/tests/Brinell.Samples.Todo.Uat/todo-user-journeys.md):
+
+```markdown
+| Journey | TOD.02.3 |
+```
+
+Metadata is documentation and traceability. It does not drive execution - the
+`@tag` line above `## Scenario:` is what skip rules read, not the `Tags` row.
+
 For how step text binds to executable commands, see
 [UAT Phrases And Flows](uat-phrases-and-flows.md).
+
+## Step Tables
 
 Scenario steps may include an immediate markdown table:
 

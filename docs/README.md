@@ -1,9 +1,9 @@
 # Brinell Documentation
 
 Brinell is a multi-platform .NET UI test automation framework. These docs are
-the active, curated set. The previous documentation tree is preserved in
-[`docs2`](../docs2/README.md) for historical reference while the new docs are
-rebuilt.
+the active, curated set: guides for someone *using* Brinell. The decisions and
+invariants behind it - what must stay true when *changing* Brinell - are in
+[`.docs`](../.docs/README.md).
 
 ## Start Here
 
@@ -17,6 +17,8 @@ rebuilt.
 - [Todo: one MAUI app, five test tiers](../samples/Todo/README.md): page objects and
   ControlObjects, WireMock, a seeded SQLite database, and a test pyramid traced to user journeys,
   on Windows and Android.
+- [One Todo UAT, end to end](../samples/Todo/uat-walkthrough.md): a Markdown scenario from
+  `Given` to the running app - phrases, page objects, config and fixture.
 
 ## Architecture
 
@@ -35,8 +37,10 @@ rebuilt.
 ## Guides
 
 - [Test Writing](guides/test-writing.md)
-- [UAT Template Guide](guides/uat-template-guide.md)
-- [UAT Phrases And Flows](guides/uat-phrases-and-flows.md)
+- [UAT Template Guide](guides/uat-template-guide.md) - project layout, `uat.config.md`,
+  scenario file shape
+- [UAT Phrases And Flows](guides/uat-phrases-and-flows.md) - the step vocabulary and how to
+  extend it
 - [Test Settings](guides/settings.md)
 - [Reporting And Artifacts](guides/reporting-artifacts.md)
 - [Migration Notes](guides/migration.md)
@@ -71,5 +75,5 @@ rebuilt.
 - Keep links relative and valid.
 - Use `Brinell.*` namespaces only.
 - Mark every command with its working directory.
-- Keep current docs in `docs/`; keep historical material in `docs2/`.
+- Keep guides here; keep decisions and invariants in `.docs/`.
 - Do not add generated test artifacts under `docs/` or `.my/reports/`.
