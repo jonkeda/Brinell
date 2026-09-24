@@ -1,6 +1,6 @@
 # Proposal: one UAT file per journey - TOD.02 Create a todo
 
-Status: proposal
+Status: implemented (see [AD-012](../../.docs/decisions/ad-012-test-data-is-typed-validated-and-chosen-by-the-scenario.md) and [Test Data](../../docs/guides/test-data.md))
 Date: 2026-09-24
 Target: `samples/Todo/tests/Brinell.Samples.Todo.Uat`
 Related:

@@ -29,5 +29,9 @@ The short list that must not be broken. Each links the decision that explains it
 - **UAT step vocabulary is attribute-declared.** Control phrases live as `[UatStep]` on Core
   interfaces; no hand-written phrase table. Every catalog comes from one discovery pass.
   [AD-011](decisions/ad-011-uat-vocabulary-is-attribute-declared.md)
+- **Test data is typed and validated.** Test sets are read strictly into the app's real types
+  and checked by one engine (gate and `brinell-data` alike); mock bodies are contract types,
+  never anonymous (`BRINELL001`); a UAT file names its own `TestData`.
+  [AD-012](decisions/ad-012-test-data-is-typed-validated-and-chosen-by-the-scenario.md)
 - **The generator output is not hand-edited.** `.gen.cs` mirrors `.tpl.cs` through
   `Brinell.Generator`. [control-object](contracts/control-object.md)

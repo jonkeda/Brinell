@@ -1,6 +1,6 @@
 # Implementation plan: test data + journey UAT files
 
-Status: plan
+Status: phases 0-8 implemented; phase 9 (other journeys, Construction) open (see [AD-012](../../.docs/decisions/ad-012-test-data-is-typed-validated-and-chosen-by-the-scenario.md) and [Test Data](../../docs/guides/test-data.md))
 Date: 2026-09-24
 Implements:
 

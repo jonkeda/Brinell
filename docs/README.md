@@ -41,6 +41,8 @@ invariants behind it - what must stay true when *changing* Brinell - are in
   scenario file shape
 - [UAT Phrases And Flows](guides/uat-phrases-and-flows.md) - the step vocabulary and how to
   extend it
+- [Test Data](guides/test-data.md) - test sets, the `brinell-data` tool, `TestData` in UAT
+  files, typed mock bodies (`BRINELL001`)
 - [Test Settings](guides/settings.md)
 - [Reporting And Artifacts](guides/reporting-artifacts.md)
 - [Migration Notes](guides/migration.md)

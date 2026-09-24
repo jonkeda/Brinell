@@ -30,6 +30,7 @@ How this differs from the other trees:
 - [AD-009: App bugs stay failures](decisions/ad-009-app-bugs-stay-failures.md)
 - [AD-010: MAUI ahead of Core, on purpose](decisions/ad-010-maui-ahead-of-core.md)
 - [AD-011: UAT step vocabulary is declared by attributes on Core interfaces](decisions/ad-011-uat-vocabulary-is-attribute-declared.md)
+- [AD-012: Test data is typed, validated, and chosen by the scenario file](decisions/ad-012-test-data-is-typed-validated-and-chosen-by-the-scenario.md)
 
 ## Contracts
 

@@ -63,19 +63,23 @@ public sealed class TodoUatCollection : ICollectionFixture<TodoUatFixture>
 ```
 
 The **test class** derives from `UatScenarioTestBase<TFixture>` and turns each
-scenario file into a theory case:
+scenario - each outline row too - into a theory case of its own:
 
 ```csharp
 [Collection(TodoUatCollection.CollectionName)]
+[TestCaseOrderer(UatScenarioOrderer.TypeName, UatScenarioOrderer.AssemblyName)]
 public sealed class TodoUatScenarioTests : UatScenarioTestBase<TodoUatFixture>
 {
     public TodoUatScenarioTests(TodoUatFixture fixture) : base(fixture) { }
 
-    public static IEnumerable<object[]> ScenarioFiles => GetScenarioFiles();
+    public static IEnumerable<object[]> Scenarios => GetScenarioTheoryData();
 
     [Theory(Timeout = 120000)]
-    [MemberData(nameof(ScenarioFiles))]
-    public Task UatFile_Passes(string filePath) => RunUatFileAsync(filePath);
+    [MemberData(nameof(Scenarios))]
+    public Task Scenario_Passes(string filePath, string scenarioName) => RunUatScenarioAsync(filePath, scenarioName);
+
+    // Load the file's TestData before its first scenario (the fixture may restart the app).
+    protected override void BeforeFile(UatDocument document) => Fixture.UseTestSet(...);
 
     // Reset the app between scenarios so they stay order-independent.
     protected override void BeforeScenario(UatBoundScenario scenario) => Fixture.StartTest();
@@ -88,7 +92,15 @@ public sealed class TodoUatScenarioTests : UatScenarioTestBase<TodoUatFixture>
 `RuntimeValidation` asserts the config at load time: a config whose `Target` or
 `Fixture` disagrees, or that registers no assemblies, throws rather than running
 scenarios against the wrong head. Override `BeforeScenario` to give each scenario
-a clean start - scenarios share one app process.
+a clean start - scenarios share one app process. Override `BeforeFile` to load
+what a file's metadata asks for; it runs before the file is bound, once per file.
+
+`GetScenarioTheoryData` orders cases by the files' `TestData`, then file, then
+position (`UatScenarioSource.GetOrderKey`). xUnit 2 runs theory cases in case-id
+order unless told otherwise, so the Todo sample adds a small `ITestCaseOrderer`
+(`UatScenarioOrderer`) that sorts by that key: the app then restarts once per test
+set, not once per scenario. `GetScenarioFiles` / `RunUatFileAsync` still run a
+whole file as one case.
 
 ## Config Shape
 
@@ -227,11 +239,39 @@ sample adds `Journey`, which ties each scenario to a subtask id in its
 [journey checklist](../../samples/Todo/tests/Brinell.Samples.Todo.Uat/todo-user-journeys.md):
 
 ```markdown
-| Journey | TOD.02.3 |
+| Journey | TOD.02 |
+| TestData | one-todo |
 ```
 
-Metadata is documentation and traceability. It does not drive execution - the
+Metadata is documentation and traceability, with one exception: `TestData`
+(`UatMetadataFields.TestData`) names the test set the file runs on, and a fixture
+that overrides `BeforeFile` loads it; `DefaultTestData` in the config's `Runtime`
+table covers files that name none. See [Test Data](test-data.md). Otherwise the
 `@tag` line above `## Scenario:` is what skip rules read, not the `Tags` row.
+
+## One File Per Journey
+
+A file may hold many scenarios, so one journey can be one file: the journey in
+the `# UAT:` title and `Journey` metadata, each subtask a scenario whose heading
+starts with its id and whose tag line carries it. The shared start goes in
+`## Background`. Fenced ```` ```gherkin ```` blocks are only for rendering - the
+parser drops the fence lines - and are the only prose-free way to lay the steps
+out under a heading; any other heading or text is a parse error.
+
+````markdown
+@TOD.02.1 @maui @create
+## Scenario: TOD.02.1 Add opens an empty edit form with status Open
+
+```gherkin
+Then Title should equal ""
+And Status should show status "Open"
+And Title Error should not exist
+```
+````
+
+The Todo sample's
+[`TOD.02-create-a-todo.uat.md`](../../samples/Todo/tests/Brinell.Samples.Todo.Uat/Scenarios/TOD.02-create-a-todo.uat.md)
+is a complete one.
 
 For how step text binds to executable commands, see
 [UAT Phrases And Flows](uat-phrases-and-flows.md).
@@ -272,6 +312,26 @@ Then I should see "<result>"
 | ada@example.com | correct-password | Dashboard |
 | locked@example.com | correct-password | Account locked |
 ```
+
+Table cells are trimmed. To pass a value whose spaces matter, quote it in the
+cell and leave the placeholder unquoted in the step: `When I set Title to <title>`
+with a `"   "` row.
+
+A custom phrase receives the step's table by taking a `UatTable` parameter, and
+binds it to the app's real types with `UatTableBinding`:
+
+```csharp
+[UatPhrase(UatEffectiveStepKeyword.Then, "the database should have todos")]
+public void DatabaseHas(UatTable table)
+    => table.AssertContains(TodoDbReader.Todos(fixture.DatabasePath), fixture.TestSet.Now);
+```
+
+`Bind<T>` builds records through their widest constructor; `AssertContains`,
+`AssertExactly` and `AssertDoesNotContain` compare only the listed columns and
+print the expected rows, the actual rows and the closest difference. Columns match
+members without case or spaces (`Due Date` is `DueDate`); an unknown column is an
+error naming the known ones. An empty cell or `null` is `null` where the type
+allows it, and dates may be relative to the test set's now: `today`, `+2d`, `-1d`.
 
 ## Authoring Rules
 

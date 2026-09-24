@@ -1,11 +1,11 @@
 # Proposal: test data - defining, seeding and checking it
 
-Status: proposal
+Status: implemented (see [AD-012](../../.docs/decisions/ad-012-test-data-is-typed-validated-and-chosen-by-the-scenario.md) and [Test Data](../../docs/guides/test-data.md))
 Date: 2026-09-24
 Target: `samples/Todo` first, then Construction
 Related:
 
-- [TodoScenario.cs](../../samples/Todo/tests/Brinell.Samples.Todo.TestSupport/TodoScenario.cs) - today's named scenarios
+- [TodoTestSet.cs](../../samples/Todo/tests/Brinell.Samples.Todo.TestSupport/TodoTestSet.cs) - the named test sets (was TodoScenario.cs)
 - [TodoServerStub.cs](../../samples/Todo/tests/Brinell.Samples.Todo.TestSupport/TodoServerStub.cs) - today's stateful WireMock fake
 - [complex/02-service-validations.md](complex/02-service-validations.md) - checking requests the app sent
 - [complex/03-database-checks.md](complex/03-database-checks.md) - checking what the app stored

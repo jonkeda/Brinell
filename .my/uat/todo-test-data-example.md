@@ -1,6 +1,6 @@
 # Example: test data + a journey UAT file, end to end (Todo)
 
-Status: example for the two proposals
+Status: implemented (see [AD-012](../../.docs/decisions/ad-012-test-data-is-typed-validated-and-chosen-by-the-scenario.md) and [Test Data](../../docs/guides/test-data.md))
 Date: 2026-09-24
 Builds on:
 

@@ -299,6 +299,9 @@ dotnet test tests/Brinell.Samples.Todo.UnitTests
 dotnet test tests/Brinell.Samples.Todo.IntegrationTests
 dotnet test tests/Brinell.Samples.Todo.JourneyCoverage
 
+# The test sets (TestSupport/TestData), from the command line - see docs/guides/test-data.md.
+cd tests/Brinell.Samples.Todo.Uat; dotnet run --project ../../../../tools/Brinell.DataValidator -- validate; cd ../..
+
 # Tier 3 on Windows: build the app first; the fixture finds it under src/…App/bin.
 dotnet build src/Brinell.Samples.Todo.App -f net10.0-windows10.0.19041.0
 dotnet test tests/Brinell.Samples.Todo.UITests                          # everything, ~30 s
