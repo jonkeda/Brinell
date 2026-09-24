@@ -377,6 +377,16 @@ public sealed class UatReflectionRuntime
                 continue;
             }
 
+            if (parameter.ParameterType == typeof(UatTable))
+            {
+                arguments[i] = invocation.Step.Table
+                    ?? (parameter.IsOptional
+                        ? null
+                        : throw new InvalidOperationException(
+                            $"Custom UAT step '{method.Name}' needs a table under the step ({invocation.Step.Source})."));
+                continue;
+            }
+
             if (IsSettingsParameterType(parameter.ParameterType, method.DeclaringType?.Assembly))
             {
                 arguments[i] = context.GetSettings(parameter.ParameterType);

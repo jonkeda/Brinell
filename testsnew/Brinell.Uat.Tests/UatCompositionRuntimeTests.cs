@@ -48,6 +48,35 @@ public sealed class UatCompositionRuntimeTests
     }
 
     [Fact]
+    public async Task APhraseWithATableParameter_ReceivesTheStepsTable()
+    {
+        var directory = CreateTempDirectory();
+        try
+        {
+            var configFilePath = WriteConfig(directory);
+            var scenarioFilePath = WriteScenario(directory, """
+                # UAT: Tables
+
+                ## Scenario: Rows reach the phrase
+
+                When I store these rows
+                | Title |
+                | --- |
+                | One |
+                | Two |
+                Then 2 rows should be stored
+                """);
+            var harness = new CompositionScenarioHarness(new CompositionFixture(), configFilePath);
+
+            await harness.RunFileAsync(scenarioFilePath);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
     public void UatRuntime_AcceptsTestCompositionPropertyAlias()
     {
         var directory = CreateTempDirectory();
@@ -199,6 +228,18 @@ public sealed class UatCompositionRuntimeTests
             _state.ActionCount++;
         }
 
+        [UatPhrase(UatEffectiveStepKeyword.When, "I store these rows")]
+        public void StoreRows(UatTable table)
+        {
+            _state.StoredRows = table.Rows.Count;
+        }
+
+        [UatPhrase(UatEffectiveStepKeyword.Then, "{count} rows should be stored")]
+        public void AssertStoredRows(int count)
+        {
+            Assert.Equal(count, _state.StoredRows);
+        }
+
         [UatPhrase(UatEffectiveStepKeyword.Then, "scoped action count should be {count}")]
         public void AssertScopedActionCount(int count)
         {
@@ -212,6 +253,8 @@ public sealed class UatCompositionRuntimeTests
         public int ReadyCount { get; set; }
 
         public int ActionCount { get; set; }
+
+        public int StoredRows { get; set; }
     }
 
     public sealed class CompositionSaveButton

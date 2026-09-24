@@ -192,6 +192,124 @@ public sealed class UatTestBaseTests
         }
     }
 
+    [Fact]
+    public async Task ScenarioTestBase_RunUatScenarioAsync_RunsOnlyTheNamedScenario_AndEntersEachFileOnce()
+    {
+        var directory = CreateTempDirectory();
+        try
+        {
+            var configFilePath = WriteConfig(directory);
+            var first = WriteScenario(directory, """
+                # UAT: First file
+
+                ## Scenario: One
+
+                When I run the custom action
+
+                ## Scenario: Two
+
+                When I run the custom action
+                """);
+            var second = Path.Combine(directory, "second.uat.md");
+            File.WriteAllText(second, """
+                # UAT: Second file
+
+                ## Scenario: Three
+
+                When I run the custom action
+                """);
+            var fixture = new HarnessFixture();
+            var harness = new ScenarioHarness(fixture, configFilePath, CreatePassingCatalog(fixture));
+
+            await harness.RunScenarioAsync(first, "Two");
+            await harness.RunScenarioAsync(first, "One");
+            await harness.RunScenarioAsync(second, "Three");
+
+            Assert.Equal(3, fixture.ActionCount);
+            Assert.Equal(["First file", "Second file"], harness.FilesEntered);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task ScenarioTestBase_RunUatScenarioAsync_NamesTheScenariosWhenTheNameIsUnknown()
+    {
+        var directory = CreateTempDirectory();
+        try
+        {
+            var configFilePath = WriteConfig(directory);
+            var file = WriteScenario(directory, """
+                # UAT: Named
+
+                ## Scenario: Present
+
+                When I run the custom action
+                """);
+            var fixture = new HarnessFixture();
+            var harness = new ScenarioHarness(fixture, configFilePath, CreatePassingCatalog(fixture));
+
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => harness.RunScenarioAsync(file, "Absent"));
+
+            Assert.Contains("'Present'", exception.Message);
+            Assert.Equal(0, fixture.ActionCount);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ScenarioSource_GivesOneCasePerScenario_GroupedByTestData()
+    {
+        var directory = CreateTempDirectory();
+        try
+        {
+            var scenarios = Directory.CreateDirectory(Path.Combine(directory, "Scenarios")).FullName;
+            File.WriteAllText(Path.Combine(scenarios, "a.uat.md"), ScenarioFile("A", "two", "A1", "A2"));
+            File.WriteAllText(Path.Combine(scenarios, "b.uat.md"), ScenarioFile("B", "one", "B1"));
+            File.WriteAllText(Path.Combine(scenarios, "c.uat.md"), ScenarioFile("C", null, "C1"));
+            File.WriteAllText(Path.Combine(scenarios, "d.uat.md"), """
+                # UAT: D
+
+                ## Scenario Outline: Row
+
+                When I run the custom action <n>
+
+                ### Examples
+
+                | n |
+                | --- |
+                | 1 |
+                | 2 |
+                """);
+            File.WriteAllText(Path.Combine(scenarios, "e.uat.md"), "not a uat file");
+
+            var cases = UatScenarioSource.GetScenarioTheoryData(baseDirectory: directory)
+                .Select(data => $"{Path.GetFileName((string)data[0])}:{data[1]}")
+                .ToList();
+
+            Assert.Equal(["c.uat.md:C1", "d.uat.md:Row [1]", "d.uat.md:Row [2]", "e.uat.md:", "b.uat.md:B1", "a.uat.md:A1", "a.uat.md:A2"], cases);
+            Assert.True(
+                string.CompareOrdinal(
+                    UatScenarioSource.GetOrderKey(Path.Combine(scenarios, "b.uat.md"), "B1"),
+                    UatScenarioSource.GetOrderKey(Path.Combine(scenarios, "a.uat.md"), "A1")) < 0);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    private static string ScenarioFile(string title, string? testData, params string[] scenarios)
+    {
+        var metadata = testData is null ? string.Empty : $"## Metadata\n\n| Field | Value |\n| --- | --- |\n| TestData | {testData} |\n\n";
+        return $"# UAT: {title}\n\n{metadata}" + string.Concat(scenarios.Select(name => $"## Scenario: {name}\n\nWhen I run the custom action\n\n"));
+    }
+
     private static UatCommandCatalog CreatePassingCatalog(HarnessFixture fixture)
     {
         var catalog = new UatCommandCatalog();
@@ -281,6 +399,12 @@ public sealed class UatTestBaseTests
             new(RequireAssemblies: false);
 
         public Task RunFileAsync(string filePath) => RunUatFileAsync(filePath);
+
+        public Task RunScenarioAsync(string filePath, string scenarioName) => RunUatScenarioAsync(filePath, scenarioName);
+
+        public List<string> FilesEntered { get; } = [];
+
+        protected override void BeforeFile(UatDocument document) => FilesEntered.Add(document.Title);
 
         public Task RunExpectedFailureFileAsync(string filePath, params string[] expectedDiagnostics) =>
             RunExpectedFailureUatFileAsync(filePath, expectedDiagnostics);

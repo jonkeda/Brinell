@@ -83,29 +83,95 @@ public abstract class UatScenarioTestBase<TFixture>
             configurationFilter: configurationFilter);
     }
 
+    /// <summary>One theory case per scenario, <c>[filePath, scenarioName]</c>; run each with <see cref="RunUatScenarioAsync"/>.</summary>
+    protected static IEnumerable<object[]> GetScenarioTheoryData(
+        string folderName = "Scenarios",
+        string? configurationFilter = null)
+    {
+        return UatScenarioSource.GetScenarioTheoryData(
+            folderName,
+            configurationFilter: configurationFilter);
+    }
+
+    /// <summary>
+    /// Called before the first scenario of a file runs, and again whenever the file changes: the
+    /// place to load what the file's metadata asks for, such as its <c>TestData</c>.
+    /// </summary>
+    /// <param name="document">The file, as parsed.</param>
+    protected virtual void BeforeFile(UatDocument document)
+    {
+    }
+
     protected async Task RunUatFileAsync(
         string filePath,
         CancellationToken cancellationToken = default)
     {
+        EnterFile(filePath);
         var context = BindUatFile(filePath);
 
         foreach (var scenario in context.Document.Scenarios)
         {
-            var execution = await RunScenarioAsync(scenario, context.Runtime, cancellationToken)
-                .ConfigureAwait(false);
+            await RunBoundScenarioAsync(context, scenario, cancellationToken).ConfigureAwait(false);
+        }
+    }
 
-            RecordScenarioResult(context, scenario, execution);
+    /// <summary>Runs one scenario of a file and asserts it passes.</summary>
+    /// <param name="filePath">The scenario file.</param>
+    /// <param name="scenarioName">The scenario's name, as <see cref="GetScenarioTheoryData"/> gives it.</param>
+    /// <param name="cancellationToken">Cancels the run.</param>
+    protected async Task RunUatScenarioAsync(
+        string filePath,
+        string scenarioName,
+        CancellationToken cancellationToken = default)
+    {
+        EnterFile(filePath);
+        var context = BindUatFile(filePath);
+        var matches = context.Document.Scenarios.Where(scenario => scenario.Source.Name == scenarioName).ToList();
+        if (matches.Count != 1)
+        {
+            throw new InvalidOperationException(matches.Count == 0
+                ? $"'{filePath}' has no scenario named '{scenarioName}'. It has: {string.Join(", ", context.Document.Scenarios.Select(s => $"'{s.Source.Name}'"))}."
+                : $"'{filePath}' has {matches.Count} scenarios named '{scenarioName}'. Give each scenario a name of its own.");
+        }
 
-            if (!IsAcceptableResult(execution))
-            {
-                throw new InvalidOperationException(
-                    UatDiagnosticsFormatter.FormatResults(
-                        execution.Result,
-                        execution.Context,
-                        context.Runtime.DiscoveryReport,
-                        context.Catalog,
-                        execution.EvidencePath));
-            }
+        await RunBoundScenarioAsync(context, matches[0], cancellationToken).ConfigureAwait(false);
+    }
+
+    // xUnit creates a test-class instance per case, so the file last entered is kept per closed type.
+    private static string? _currentFile;
+
+    // Before binding: BeforeFile may restart the app, and binding reads the fixture's composition.
+    private void EnterFile(string filePath)
+    {
+        var fullPath = Path.GetFullPath(filePath);
+        if (_currentFile == fullPath || UatMarkdownParser.ParseFile(filePath).Document is not { } document)
+        {
+            return;
+        }
+
+        BeforeFile(document);
+        _currentFile = fullPath;
+    }
+
+    private async Task RunBoundScenarioAsync(
+        UatBoundFileContext context,
+        UatBoundScenario scenario,
+        CancellationToken cancellationToken)
+    {
+        var execution = await RunScenarioAsync(scenario, context.Runtime, cancellationToken)
+            .ConfigureAwait(false);
+
+        RecordScenarioResult(context, scenario, execution);
+
+        if (!IsAcceptableResult(execution))
+        {
+            throw new InvalidOperationException(
+                UatDiagnosticsFormatter.FormatResults(
+                    execution.Result,
+                    execution.Context,
+                    context.Runtime.DiscoveryReport,
+                    context.Catalog,
+                    execution.EvidencePath));
         }
     }
 
