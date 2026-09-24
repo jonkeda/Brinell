@@ -120,6 +120,9 @@ public static class UatMetadataFields
     public const string Owner = "Owner";
     public const string Priority = "Priority";
     public const string Evidence = "Evidence";
+
+    /// <summary>The test set the file runs on, e.g. <c>one-todo</c>.</summary>
+    public const string TestData = "TestData";
 }
 
 public static class UatTagConventions

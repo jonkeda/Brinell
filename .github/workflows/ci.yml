@@ -49,6 +49,9 @@ jobs:
       - name: Build generator tests
         run: dotnet build testsnew/Brinell.Generator.Tests/Brinell.Generator.Tests.csproj -v:minimal /nr:false
 
+      - name: Build data validator tests
+        run: dotnet build testsnew/Brinell.DataValidator.Tests/Brinell.DataValidator.Tests.csproj -v:minimal /nr:false
+
       # Unit tests only. The *.UITests and *.Uat.Tests projects launch real apps and
       # stay local; see AGENTS.md "Match the test scope to the change".
       - name: Unit tests
@@ -63,6 +66,8 @@ jobs:
             'Brinell.Automation.Tests',
             'Brinell.Mocking.Tests',
             'Brinell.Uat.Tests',
+            'Brinell.TestData.Tests',
+            'Brinell.DataValidator.Tests',
             'Brinell.Generator.Tests'
           )
           $failed = @()

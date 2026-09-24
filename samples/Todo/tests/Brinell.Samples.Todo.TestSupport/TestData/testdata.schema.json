@@ -126,9 +126,6 @@
           "isDeleted": {
             "type": "boolean",
             "default": false
-          },
-          "isSameAsServer": {
-            "type": "boolean"
           }
         },
         "required": [

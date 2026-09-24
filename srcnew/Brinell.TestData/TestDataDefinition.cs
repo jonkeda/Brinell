@@ -22,6 +22,9 @@ public interface ITestDataDefinition
     /// <summary>The folder holding the test-set files, as an absolute path.</summary>
     string Folder { get; }
 
+    /// <summary>The folder holding the definition's project file, when the sources are on this machine.</summary>
+    string? ProjectDirectory { get; }
+
     /// <summary>The serializer settings files are read with. They should be strict.</summary>
     JsonSerializerOptions JsonOptions { get; }
 
@@ -89,7 +92,7 @@ public abstract class TestDataDefinition<TSet> : ITestDataDefinition
         }
     }
 
-    /// <summary>The folder holding the definition's project file, when the sources are on this machine.</summary>
+    /// <inheritdoc />
     public string? ProjectDirectory
         => ProjectDirectoryOf(GetType().Assembly.GetName().Name!, Path.GetDirectoryName(GetType().Assembly.Location) ?? AppContext.BaseDirectory);
 

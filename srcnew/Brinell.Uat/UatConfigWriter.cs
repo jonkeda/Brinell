@@ -127,6 +127,12 @@ public static class UatConfigFields
 
     /// <summary>The working directory a run uses.</summary>
     public const string WorkingDirectory = "WorkingDirectory";
+
+    /// <summary>The test set a scenario file runs on when its metadata names none.</summary>
+    public const string DefaultTestData = "DefaultTestData";
+
+    /// <summary>The <c>Assemblies</c> kind of the assembly holding the test-data definitions.</summary>
+    public const string TestDataAssemblyKind = "TestData";
 }
 
 /// <summary>What a new config starts with.</summary>

@@ -6,6 +6,16 @@ namespace Brinell.TestData;
 /// <summary>What the types of a test set look like on the wire: their fields, for suggestions and <c>describe</c>.</summary>
 public static class TestDataTypes
 {
+    private static readonly Dictionary<Type, string> Keywords = new()
+    {
+        [typeof(string)] = "string",
+        [typeof(bool)] = "bool",
+        [typeof(int)] = "int",
+        [typeof(long)] = "long",
+        [typeof(decimal)] = "decimal",
+        [typeof(double)] = "double",
+    };
+
     /// <summary>The fields of <paramref name="type"/> as a file writes them.</summary>
     public static IReadOnlyList<TestDataField> FieldsOf(JsonSerializerOptions options, Type type)
     {
@@ -88,7 +98,7 @@ public static class TestDataTypes
 
         if (!type.IsGenericType)
         {
-            return type.Name;
+            return Keywords.TryGetValue(type, out var keyword) ? keyword : type.Name;
         }
 
         var name = type.Name[..type.Name.IndexOf('`')];

@@ -16,6 +16,7 @@
 | Pages | bin/Debug/net10.0-windows/Brinell.Samples.Todo.Uat.dll |
 | Controls | ../../../../srcnew/Brinell.Maui/bin/Debug/net10.0/Brinell.Maui.dll |
 | Commands | ../../../../srcnew/Brinell.Uat/bin/Debug/net10.0/Brinell.Uat.dll |
+| TestData | ../Brinell.Samples.Todo.TestSupport/bin/Debug/net10.0/Brinell.Samples.Todo.TestSupport.dll |
 
 ## Discovery
 

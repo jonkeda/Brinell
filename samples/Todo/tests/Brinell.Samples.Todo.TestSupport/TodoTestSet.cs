@@ -147,6 +147,7 @@ public sealed record LocalTodoData(
     bool IsDeleted = false)
 {
     /// <summary>Whether this entry is the "same as the server" shortcut.</summary>
+    [JsonIgnore]
     public bool IsSameAsServer => Title is null;
 
     /// <summary>The device's todo, with the shortcut resolved against <paramref name="server"/>.</summary>
