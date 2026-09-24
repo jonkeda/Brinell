@@ -1,5 +1,6 @@
 // The device has changes the server has not seen: an edit, and a todo created offline.
 {
+  "$schema": "./testdata.schema.json",
   "now": "2026-03-10T09:00:00Z",
   "server": [
     { "id": "22222222-0000-0000-0000-000000000001", "title": "Buy milk", "notes": null, "dueDate": null, "status": "Open", "createdAt": "2026-03-01T08:00:00Z", "updatedAt": "2026-03-01T08:00:00Z" },

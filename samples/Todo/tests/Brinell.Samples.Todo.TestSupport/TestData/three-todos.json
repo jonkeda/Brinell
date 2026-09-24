@@ -1,5 +1,6 @@
 // The server has three todos and the device has the same three, synced.
 {
+  "$schema": "./testdata.schema.json",
   "now": "2026-03-10T09:00:00Z",
   "server": [
     { "id": "11111111-0000-0000-0000-000000000001", "title": "Buy milk", "notes": "Oat, not dairy", "dueDate": "2026-03-12", "status": "Open", "createdAt": "2026-03-01T08:00:00Z", "updatedAt": "2026-03-01T08:00:00Z" },

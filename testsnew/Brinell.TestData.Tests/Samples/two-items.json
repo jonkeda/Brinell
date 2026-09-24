@@ -1,0 +1,8 @@
+// Two items, both valid.
+{
+  "now": "2026-03-10T09:00:00Z",
+  "items": [
+    { "id": 1, "title": "First", "status": "Open" },
+    { "id": 2, "title": "Second", "status": "Done", "notes": "with notes" }
+  ]
+}

@@ -5,6 +5,7 @@ using Brinell.Samples.Todo.Contracts;
 using Brinell.Samples.Todo.Core.Models;
 using Brinell.Samples.Todo.Infrastructure.Api;
 using Brinell.Samples.Todo.Infrastructure.Data;
+using Brinell.TestData;
 
 namespace Brinell.Samples.Todo.TestSupport;
 
@@ -32,14 +33,7 @@ public sealed class TodoTestSet
     private const string ResourcePrefix = "TestData.";
 
     /// <summary>The serializer settings test-set files are read with.</summary>
-    public static JsonSerializerOptions JsonOptions { get; } = new(TodoApi.JsonOptions)
-    {
-        ReadCommentHandling = JsonCommentHandling.Skip,
-        UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
-        RespectNullableAnnotations = true,
-        RespectRequiredConstructorParameters = true,
-        Converters = { new JsonStringEnumConverter<SyncState>() },
-    };
+    public static JsonSerializerOptions JsonOptions { get; } = CreateJsonOptions();
 
     private TodoTestSet(string name, TodoTestSetFile file)
     {
@@ -108,6 +102,13 @@ public sealed class TodoTestSet
     /// <summary>Serves the server half from <paramref name="mock"/>, as a fake that remembers writes.</summary>
     public TodoServerStub StubServer(MockApiServer mock, string apiKey = TodoApi.DevelopmentApiKey)
         => TodoServerStub.Install(mock, Server, apiKey);
+
+    private static JsonSerializerOptions CreateJsonOptions()
+    {
+        var options = TestDataJson.Strict(TodoApi.JsonOptions);
+        options.Converters.Add(new JsonStringEnumConverter<SyncState>());
+        return options;
+    }
 }
 
 /// <summary>The shape of a <c>TestData/*.json</c> file.</summary>
@@ -152,30 +153,35 @@ public sealed record LocalTodoData(
     /// <exception cref="InvalidDataException">The shortcut names no server todo, or a complete entry misses a field.</exception>
     public TodoItem ToItem(IReadOnlyList<TodoDto> server, string testSetName)
     {
-        var dto = IsSameAsServer ? FromServer(server, testSetName) : Complete(testSetName);
+        if (FindProblem(server) is { } problem)
+        {
+            throw new InvalidDataException($"TestData/{testSetName}.json: local todo {Id}: {problem}");
+        }
+
+        var dto = IsSameAsServer
+            ? server.First(todo => todo.Id == Id)
+            : new TodoDto(Id, Title!, Notes, DueDate, Status!.Value, CreatedAt!.Value, UpdatedAt!.Value);
         return TodoMapping.ToItem(dto) with { SyncState = SyncState, IsDeleted = IsDeleted };
     }
 
-    private TodoDto FromServer(IReadOnlyList<TodoDto> server, string testSetName)
+    /// <summary>Why this entry cannot become a todo, or <c>null</c> when it can.</summary>
+    public string? FindProblem(IReadOnlyList<TodoDto> server)
     {
-        if (Notes is not null || DueDate is not null || Status is not null || CreatedAt is not null || UpdatedAt is not null)
+        if (IsSameAsServer)
         {
-            throw Invalid(testSetName, "gives content fields but no title. Give all of them, or only id and syncState to copy the server's todo.");
+            if (Notes is not null || DueDate is not null || Status is not null || CreatedAt is not null || UpdatedAt is not null)
+            {
+                return "gives content fields but no title. Give all of them, or only id and syncState to copy the server's todo.";
+            }
+
+            return server.Any(todo => todo.Id == Id)
+                ? null
+                : "copies the server's todo, but the server has no todo with this id.";
         }
 
-        return server.FirstOrDefault(todo => todo.Id == Id)
-            ?? throw Invalid(testSetName, "copies the server's todo, but the server has no todo with this id.");
+        return Status is null ? "has a title but no status."
+            : CreatedAt is null ? "has a title but no createdAt."
+            : UpdatedAt is null ? "has a title but no updatedAt."
+            : null;
     }
-
-    private TodoDto Complete(string testSetName) => new(
-        Id,
-        Title!,
-        Notes,
-        DueDate,
-        Status ?? throw Invalid(testSetName, "has a title but no status."),
-        CreatedAt ?? throw Invalid(testSetName, "has a title but no createdAt."),
-        UpdatedAt ?? throw Invalid(testSetName, "has a title but no updatedAt."));
-
-    private InvalidDataException Invalid(string testSetName, string problem)
-        => new($"TestData/{testSetName}.json: local todo {Id} {problem}");
 }

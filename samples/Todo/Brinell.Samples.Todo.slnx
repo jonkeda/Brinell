@@ -21,6 +21,7 @@
   <Project Path="../../srcnew/Brinell.Maui.FlaUI/Brinell.Maui.FlaUI.csproj" />
   <Project Path="../../srcnew/Brinell.Maui/Brinell.Maui.csproj" />
   <Project Path="../../srcnew/Brinell.Mocking/Brinell.Mocking.csproj" />
+  <Project Path="../../srcnew/Brinell.TestData/Brinell.TestData.csproj" />
   <Project Path="../../srcnew/Brinell.Uia.Contracts/Brinell.Uia.Contracts.csproj" />
   <Project Path="../Brinell.Maui.AppSupport/Brinell.Maui.AppSupport.csproj" />
   <Project Path="../Brinell.Samples.Shared/Brinell.Samples.Shared.csproj" />
