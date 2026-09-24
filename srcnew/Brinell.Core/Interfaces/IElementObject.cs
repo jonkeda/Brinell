@@ -48,6 +48,8 @@ public interface IElementObject<TScope>
     /// If expected is null, returns immediately (skip).
     /// </summary>
     /// <returns>The containing scope for fluent chaining.</returns>
+    [UatStep(UatEffectiveStepKeyword.Then, "{control} should exist", HasLiteral = true, Literal = true, CommandId = "Control.AssertExists")]
+    [UatStep(UatEffectiveStepKeyword.Then, "{control} should not exist", HasLiteral = true, Literal = false, CommandId = "Control.AssertExists.False")]
     TScope AssertExists(bool? expected, string? message = null, int? timeoutMs = null);
     
     /// <summary>
@@ -65,6 +67,7 @@ public interface IElementObject<TScope>
     /// </summary>
     /// <returns>The containing scope for fluent chaining.</returns>
     [UatStep(UatEffectiveStepKeyword.Then, "{control} should be enabled", HasLiteral = true, Literal = true, CommandId = "Control.AssertEnabled")]
+    [UatStep(UatEffectiveStepKeyword.Then, "{control} should be disabled", HasLiteral = true, Literal = false, CommandId = "Control.AssertEnabled.False")]
     TScope AssertEnabled(bool? expected, string? message = null, int? timeoutMs = null);
     
 }

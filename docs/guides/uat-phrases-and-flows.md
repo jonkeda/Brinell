@@ -146,6 +146,9 @@ six interfaces in `Brinell.Core/Interfaces/`:
 | `Then` | `{control} should be visible` | `IElementObject` | `AssertVisible(true)` |
 | `Then` | `{control} should not be visible` | `IElementObject` | `AssertVisible(false)` |
 | `Then` | `{control} should be enabled` | `IElementObject` | `AssertEnabled(true)` |
+| `Then` | `{control} should be disabled` | `IElementObject` | `AssertEnabled(false)` |
+| `Then` | `{control} should exist` | `IElementObject` | `AssertExists(true)` |
+| `Then` | `{control} should not exist` | `IElementObject` | `AssertExists(false)` - for a MAUI element hidden with `IsVisible="False"`, which leaves the Windows UI Automation tree |
 | `Then` | `{control} should be checked` | `IToggleControlObject` | `AssertChecked(true)` |
 | `Then` | `{control} should be unchecked` | `IToggleControlObject` | `AssertChecked(false)` |
 

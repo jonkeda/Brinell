@@ -1,8 +1,9 @@
 # Todo (TOD) - user journeys
 
 User journeys for the Todo sample, one checklist item per observable behaviour. This is the
-acceptance backbone the UAT scenarios in [Scenarios](Scenarios) draw from: a scenario file that
-proves a subtask names it in its `Journey` metadata.
+acceptance backbone the UAT scenarios in [Scenarios](Scenarios) draw from: a journey file
+(`TOD.02-create-a-todo.uat.md`) names each subtask in its scenario heading and an `@TOD.xx.y` tag;
+an older single-scenario file names it in its `Journey` metadata.
 
 The statements are the user-facing halves of the pyramid backbone in
 [../../journeys.md](../../journeys.md), with the tier and rationale columns dropped - a journey doc
@@ -39,12 +40,12 @@ A journey line is checked when every one of its subtasks is.
 
 ## TOD.02 Create a todo
 
-- [ ] **Journey passed**
-  - [ ] **TOD.02.1** Add opens an empty edit form with status Open
+- [x] **Journey passed**
+  - [x] **TOD.02.1** Add opens an empty edit form with status Open
   - [x] **TOD.02.2** Saving a valid title returns to the list, which shows the new todo
   - [x] **TOD.02.3** An empty or whitespace title shows "Title is required" and does not save
   - [!] **TOD.02.4** A title over 100 characters is refused
-  - [ ] **TOD.02.5** A due date is optional; switching it off clears it
+  - [x] **TOD.02.5** A due date is optional; switching it off clears it
   - [!] **TOD.02.6** A new todo is stored locally with a client id and marked pending
 
 ## TOD.03 Read a todo

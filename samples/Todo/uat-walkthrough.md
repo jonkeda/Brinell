@@ -27,7 +27,7 @@ Markdown *is* the test.
 
 ```mermaid
 flowchart LR
-    MD[create-needs-title.uat.md<br/>Given/When/Then] --> P[Parser]
+    MD[TOD.02-create-a-todo.uat.md<br/>Given/When/Then] --> P[Parser]
     P --> C[Command catalog<br/>discovered phrases]
     C --> B[Binder<br/>one phrase per step]
     B --> R[Runner]
@@ -39,10 +39,11 @@ flowchart LR
 
 ## 2. The scenario file
 
-[`Scenarios/create-needs-title.uat.md`](tests/Brinell.Samples.Todo.Uat/Scenarios/create-needs-title.uat.md):
+One file per journey. [`Scenarios/TOD.02-create-a-todo.uat.md`](tests/Brinell.Samples.Todo.Uat/Scenarios/TOD.02-create-a-todo.uat.md)
+holds every UAT subtask of TOD.02; here is its header and TOD.02.3:
 
-```markdown
-# UAT: Todo saving a new todo needs a title
+````markdown
+# UAT: TOD.02 Create a todo
 
 ## Metadata
 
@@ -51,31 +52,54 @@ flowchart LR
 | App | Brinell.Samples.Todo.App |
 | Area | Create |
 | Target | MAUI |
-| Journey | TOD.02.3 |
-| Tags | smoke, maui, create, validation |
+| Journey | TOD.02 |
+| TestData | one-todo |
+| Tags | maui, create |
 
-@smoke @maui @create @validation
-## Scenario: Saving with an empty title shows the error and stays
+## Background
 
+```gherkin
 Given I am on the Todo List page
 When I tap Add
 Then I should be on the Todo Edit page
-When I clear Title
-And I tap Save
-Then Title Error should be visible
-And Title Error should contain "Title is required"
 ```
+
+@TOD.02.3 @smoke @maui @create @validation
+## Scenario Outline: TOD.02.3 An empty or whitespace title shows "Title is required" and does not save
+
+```gherkin
+When I set Title to <title>
+And I tap Save
+Then Title Error should contain "Title is required"
+And I should be on the Todo Edit page
+And the database should not have a todo with a blank title
+And the database should have todos
+  | Title    | SyncState |
+  | -------- | --------- |
+  | Buy milk | Synced    |
+```
+
+### Examples
+
+| title |
+| --- |
+| "" |
+| "   " |
+````
 
 Notes on why each part is there:
 
-- **`# UAT: <title>`** — exactly one per file; it names the scenario.
-- **`## Metadata`** — the traceable header. `Journey: TOD.02.3` is what ties this file
-  back to the journey checklist; `Area` and `App` are documentation.
-- **`@smoke @maui ...`** — the tag line. It must sit **immediately above**
-  `## Scenario:`. These, not the `Tags` metadata row, drive filtering and skip rules.
+- **`# UAT: <title>`** — exactly one per file; it names the journey.
+- **`## Metadata`** — the traceable header. `Journey: TOD.02` ties the file to the checklist;
+  `TestData: one-todo` is the starting data the app is launched on (one synced todo, "Buy milk").
+- **`## Background`** — steps put in front of every scenario in the file.
+- **`@TOD.02.3 @smoke ...`** — the tag line, **immediately above** the scenario heading. The
+  subtask id is both a tag and the start of the heading, so reports and screenshots carry it.
+- **`Scenario Outline` + `Examples`** — one run per row; the quotes keep the whitespace title.
 - **The steps** — each starts with `Given/When/Then/And/But`. `And` inherits the previous
-  keyword (so `And I tap Save` is still a *When*), and a `When` after a `Then` is fine:
-  the scenario alternates as the user does.
+  keyword, and a `When` after a `Then` is fine: the scenario alternates as the user does. The
+  `the database should ...` steps read the app's SQLite file and compare the listed columns.
+- **Fenced blocks** — the ```` ```gherkin ```` fences are only for rendering; the parser ignores them.
 
 ---
 
@@ -278,7 +302,7 @@ dotnet test tests/Brinell.Samples.Todo.Uat
 
 ## 9. Why this is worth it
 
-- A product owner can read `create-needs-title.uat.md` and sign off on it — there is no C#
+- A product owner can read `TOD.02-create-a-todo.uat.md` and sign off on it — there is no C#
   to understand.
 - It runs deterministically against the real app; no LLM in the loop at run time.
 - It stays traceable: `TOD.02.3` in the journey checklist → this `.uat.md` → green/red.
