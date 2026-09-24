@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Text.Json;
 using WireMock;
 using WireMock.Matchers;
@@ -90,15 +91,24 @@ public sealed class ApiStubBuilder
         return this;
     }
 
+    /// <summary>Answers with <paramref name="body"/>, a contract type of the API, serialized as JSON.</summary>
+    /// <typeparam name="TBody">The API's DTO (or a collection of them). Not an anonymous type: see AD-012.</typeparam>
+    /// <param name="body">The body; serialized with <paramref name="options"/> as its runtime type.</param>
+    /// <param name="statusCode">The status code; 200 by default.</param>
+    /// <param name="options">Serializer options; <see cref="MockApiServer.DefaultJsonOptions"/> when omitted.</param>
+    public MockApiServer ReturnsJson<TBody>(TBody body, int statusCode = 200, JsonSerializerOptions? options = null)
+        => ReturnsJson((object?)body, statusCode, options);
+
     /// <summary>Answers with <paramref name="body"/> serialized as JSON.</summary>
     /// <param name="body">The body; serialized with <paramref name="options"/>.</param>
     /// <param name="statusCode">The status code; 200 by default.</param>
     /// <param name="options">Serializer options; <see cref="MockApiServer.DefaultJsonOptions"/> when omitted.</param>
-    public MockApiServer ReturnsJson(object body, int statusCode = 200, JsonSerializerOptions? options = null)
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public MockApiServer ReturnsJson(object? body, int statusCode = 200, JsonSerializerOptions? options = null)
         => Register(Response.Create()
             .WithStatusCode(statusCode)
             .WithHeader("Content-Type", "application/json")
-            .WithBody(JsonSerializer.Serialize(body, options ?? MockApiServer.DefaultJsonOptions)));
+            .WithBody(JsonSerializer.Serialize(body, body?.GetType() ?? typeof(object), options ?? MockApiServer.DefaultJsonOptions)));
 
     /// <summary>Answers with <paramref name="body"/> as it is.</summary>
     public MockApiServer ReturnsText(string body, int statusCode = 200, string contentType = "text/plain")
@@ -233,9 +243,15 @@ public sealed class ApiStubBuilder
 /// <param name="ContentType">The body's content type.</param>
 public sealed record MockResponse(int StatusCode, string? Body = null, string ContentType = "application/json")
 {
+    /// <summary>A JSON body of a contract type, serialized with <see cref="MockApiServer.DefaultJsonOptions"/> unless given others.</summary>
+    /// <typeparam name="TBody">The API's DTO (or a collection of them). Not an anonymous type: see AD-012.</typeparam>
+    public static MockResponse Json<TBody>(TBody body, int statusCode = 200, JsonSerializerOptions? options = null)
+        => Json((object?)body, statusCode, options);
+
     /// <summary>A JSON body, serialized with <see cref="MockApiServer.DefaultJsonOptions"/> unless given others.</summary>
-    public static MockResponse Json(object body, int statusCode = 200, JsonSerializerOptions? options = null)
-        => new(statusCode, JsonSerializer.Serialize(body, options ?? MockApiServer.DefaultJsonOptions));
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public static MockResponse Json(object? body, int statusCode = 200, JsonSerializerOptions? options = null)
+        => new(statusCode, JsonSerializer.Serialize(body, body?.GetType() ?? typeof(object), options ?? MockApiServer.DefaultJsonOptions));
 
     /// <summary>A status code with no body.</summary>
     public static MockResponse Status(int statusCode) => new(statusCode);

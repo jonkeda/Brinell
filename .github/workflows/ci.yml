@@ -65,6 +65,7 @@ jobs:
             'Brinell.Blazor.Tests',
             'Brinell.Automation.Tests',
             'Brinell.Mocking.Tests',
+            'Brinell.Mocking.Analyzers.Tests',
             'Brinell.Uat.Tests',
             'Brinell.TestData.Tests',
             'Brinell.DataValidator.Tests',

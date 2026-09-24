@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Brinell.Mocking.Analyzers.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\srcnew\Brinell.Mocking.Analyzers\Brinell.Mocking.Analyzers.csproj" />
+    <!-- Compiled against by the test snippets. -->
+    <ProjectReference Include="..\..\srcnew\Brinell.Mocking\Brinell.Mocking.csproj" />
+  </ItemGroup>
+
+</Project>

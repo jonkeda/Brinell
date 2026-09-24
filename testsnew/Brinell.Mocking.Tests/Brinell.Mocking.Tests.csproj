@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <RootNamespace>Brinell.Mocking.Tests</RootNamespace>
+    <!-- These tests exercise the mock server itself with throwaway bodies, not an API's contract (AD-012). -->
+    <NoWarn>$(NoWarn);BRINELL001</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
