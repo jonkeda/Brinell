@@ -161,6 +161,10 @@ public static class DataValidatorApp
                     output.WriteLine($"{Display(options, path)} is out of date. Run 'brinell-data schema' to regenerate it.");
                     stale++;
                 }
+                else
+                {
+                    output.WriteLine($"{Display(options, path)} is up to date.");
+                }
             }
             else if (current != schema)
             {

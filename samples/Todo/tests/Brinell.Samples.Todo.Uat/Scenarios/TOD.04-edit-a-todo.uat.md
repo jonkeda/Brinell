@@ -1,18 +1,18 @@
-# UAT: Todo cancelling a new todo
+# UAT: TOD.04 Edit a todo
 
 ## Metadata
 
 | Field | Value |
 | --- | --- |
 | App | Brinell.Samples.Todo.App |
-| Area | Create |
+| Area | Edit |
 | Target | MAUI |
-| Journey | TOD.04.3 |
-| TestData | three-todos |
-| Tags | maui, create, navigation |
+| Journey | TOD.04 |
+| TestData | one-todo |
+| Tags | maui, edit |
 
-@maui @create @navigation
-## Scenario: Cancel on an untouched new todo returns to the list
+@TOD.04.3 @maui @navigation
+## Scenario: TOD.04.3 Cancel on an unchanged form leaves without asking
 
 ```gherkin
 Given I am on the Todo List page

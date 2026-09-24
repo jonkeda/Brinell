@@ -181,7 +181,7 @@ public TodoStatus<TScope> AssertShowsStatus(string? expected, ...) { ... }
 ```
 
 No registration, no catalog edit: the attribute *is* the registration, and
-[`set-status-on-a-new-todo.uat.md`](tests/Brinell.Samples.Todo.Uat/Scenarios/set-status-on-a-new-todo.uat.md)
+[`TOD.05-change-status.uat.md`](tests/Brinell.Samples.Todo.Uat/Scenarios/TOD.05-change-status.uat.md)
 reads
 
 ```markdown

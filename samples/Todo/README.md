@@ -256,12 +256,12 @@ declared on `TodoStatus`.
 The acceptance backbone is
 [todo-user-journeys.md](tests/Brinell.Samples.Todo.Uat/todo-user-journeys.md), a plain
 checklist of what a user must be able to do. It is not `journeys.md`: that one decides *where*
-a behaviour is tested, this one states *what* the user can do. A journey file
-(`Scenarios/TOD.02-create-a-todo.uat.md`) holds one scenario per subtask, named and tagged with
-its id (`@TOD.02.3`); an older single-scenario file names its subtask in `Journey` metadata.
+a behaviour is tested, this one states *what* the user can do. There is one file per
+journey (`Scenarios/TOD.02-create-a-todo.uat.md`, `TOD.04-...`, `TOD.05-...`), with one scenario
+per subtask, named and tagged with its id (`@TOD.02.3`).
 
-Each file names its starting data in `TestData` metadata (`one-todo`, `three-todos`, from
-`TestSupport/TestData/`), and steps such as `the database should have todos` check what the app
+Each file names its starting data in `TestData` metadata (`one-todo`, from `TestSupport/TestData/`;
+`DefaultTestData` in `uat.config.md` is the fallback), and steps such as `the database should have todos` check what the app
 stored. Every scenario is its own test case. Today that is TOD.02 complete (02.1, 02.2, 02.3,
 02.5) plus TOD.04.3 and TOD.05.1. The checklist marks the rest honestly: `[!]` where
 another tier already proves it (rule tables, sync, persistence), `[-]` where UAT cannot
