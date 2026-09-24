@@ -9,7 +9,7 @@ namespace Brinell.Samples.Todo.UITests;
 /// </summary>
 /// <remarks>
 /// The fake is the stateful <see cref="TodoServerStub"/>, which the integration tier's contract
-/// tests hold to the real API's behaviour. Between tests it is reset to the scenario's server
+/// tests hold to the real API's behaviour. Between tests it is reset to the test set's server
 /// state, with any per-test override (a 500, a delay) removed.
 /// </remarks>
 public abstract class TodoAppFixture : TodoAppFixtureBase
@@ -39,23 +39,23 @@ public abstract class TodoAppFixture : TodoAppFixtureBase
     public string ServerHasTodo(string title, TodoStatusDto status = TodoStatusDto.Open, DateOnly? dueDate = null)
     {
         var unique = $"{title} {Guid.NewGuid().ToString("N")[..6]}";
-        var yesterday = Scenario.Now.AddDays(-1);
+        var yesterday = TestSet.Now.AddDays(-1);
         Server.Store(new TodoDto(Guid.NewGuid(), unique, null, dueDate, status, yesterday, yesterday));
         return unique;
     }
 
-    /// <summary>Removes every per-test backend override and restores the scenario's server state.</summary>
+    /// <summary>Removes every per-test backend override and restores the test set's server state.</summary>
     public void ResetBackend()
     {
         Backend.Reset();
-        _server = Scenario.StubServer(Backend);
+        _server = TestSet.StubServer(Backend);
     }
 
     /// <inheritdoc />
-    protected override string StartBackend(TodoScenario scenario, string runFolder)
+    protected override string StartBackend(TodoTestSet testSet, string runFolder)
     {
         _backend = MockApiServer.Start();
-        _server = scenario.StubServer(_backend);
+        _server = testSet.StubServer(_backend);
         return _backend.BaseUrl;
     }
 

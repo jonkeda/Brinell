@@ -6,25 +6,25 @@ namespace Brinell.Samples.Todo.UITests;
 public sealed class ThreeTodosFixture : TodoAppFixture
 {
     /// <inheritdoc />
-    protected override string ScenarioName => "three-todos";
+    protected override string TestDataName => "three-todos";
 }
 
 /// <summary>No todos, locally or on the server.</summary>
 public sealed class EmptyFixture : TodoAppFixture
 {
     /// <inheritdoc />
-    protected override string ScenarioName => "empty";
+    protected override string TestDataName => "empty";
 }
 
 /// <summary>
 /// Local changes the server has not seen: an edit (Buy oat milk) and a todo created offline
 /// (Call plumber), beside a synced one (Book dentist).
 /// </summary>
-/// <remarks>No sync on start: the changes this scenario exists to show would be pushed at once.</remarks>
+/// <remarks>No sync on start: the changes this test set exists to show would be pushed at once.</remarks>
 public sealed class PendingChangesFixture : TodoAppFixture
 {
     /// <inheritdoc />
-    protected override string ScenarioName => "pending-local-change";
+    protected override string TestDataName => "pending-local-change";
 
     /// <inheritdoc />
     protected override LaunchSettings AdjustSettings(LaunchSettings settings) => settings with { SyncOnStart = false };
@@ -37,14 +37,14 @@ public sealed class PendingChangesFixture : TodoAppFixture
 public sealed class OverdueFixture : TodoAppFixture
 {
     /// <inheritdoc />
-    protected override string ScenarioName => "overdue";
+    protected override string TestDataName => "overdue";
 }
 
 /// <summary>Three todos on the device, and a backend nothing listens on.</summary>
 public sealed class UnreachableServerFixture : TodoAppFixture
 {
     /// <inheritdoc />
-    protected override string ScenarioName => "three-todos";
+    protected override string TestDataName => "three-todos";
 
     /// <inheritdoc />
     /// <remarks>Port 1: refused at once, so the app learns quickly that nobody is there.</remarks>

@@ -24,7 +24,7 @@ namespace Brinell.Samples.Todo.UITests;
 /// <para>
 /// <b>Because the base calls that override from its constructor</b>, it runs before any field of
 /// a subclass is set. So a fixture describes itself with members that answer constants
-/// (<see cref="ScenarioName"/>, <see cref="AdjustSettings"/>), and what it builds for the run -
+/// (<see cref="TestDataName"/>, <see cref="AdjustSettings"/>), and what it builds for the run -
 /// the backend included (<see cref="StartBackend"/>) - is created inside the override.
 /// </para>
 /// <para>
@@ -37,17 +37,17 @@ public abstract class TodoAppFixtureBase : MauiTestFixtureBase
 {
     private Arrangement? _arrangement;
 
-    /// <summary>Launches the app for <see cref="ScenarioName"/> and waits for the list to settle.</summary>
+    /// <summary>Launches the app for <see cref="TestDataName"/> and waits for the list to settle.</summary>
     protected TodoAppFixtureBase()
     {
         WaitForTheList();
     }
 
-    /// <summary>The scenario the app starts in. Answer with a constant: it is read during base construction.</summary>
-    protected abstract string ScenarioName { get; }
+    /// <summary>The test set the app starts in. Answer with a constant: it is read during base construction.</summary>
+    protected abstract string TestDataName { get; }
 
-    /// <summary>The scenario, as seeded.</summary>
-    public TodoScenario Scenario => Arranged.Scenario;
+    /// <summary>The test set, as seeded.</summary>
+    public TodoTestSet TestSet => Arranged.TestSet;
 
     /// <summary>Takes the app offline and back.</summary>
     public NetworkStateFile Network => Arranged.Network;
@@ -113,9 +113,9 @@ public abstract class TodoAppFixtureBase : MauiTestFixtureBase
     /// Runs during base construction, after the database is seeded and before the app launches.
     /// Anything it starts is the subclass's to stop in <see cref="StopBackend"/>.
     /// </remarks>
-    /// <param name="scenario">The scenario: its server half is what the backend should hold.</param>
+    /// <param name="testSet">The test set: its server half is what the backend should hold.</param>
     /// <param name="runFolder">A folder of this run's own, for files the backend needs.</param>
-    protected abstract string StartBackend(TodoScenario scenario, string runFolder);
+    protected abstract string StartBackend(TodoTestSet testSet, string runFolder);
 
     /// <summary>Stops whatever <see cref="StartBackend"/> started. Called after the app has closed.</summary>
     protected abstract void StopBackend();
@@ -126,7 +126,7 @@ public abstract class TodoAppFixtureBase : MauiTestFixtureBase
     }
 
     /// <summary>
-    /// Changes the launch settings a fixture needs beyond the scenario. Answer from constants: this
+    /// Changes the launch settings a fixture needs beyond the test set. Answer from constants: this
     /// runs during base construction.
     /// </summary>
     protected virtual LaunchSettings AdjustSettings(LaunchSettings settings) => settings;
@@ -134,23 +134,23 @@ public abstract class TodoAppFixtureBase : MauiTestFixtureBase
     /// <inheritdoc />
     protected override MauiTestContextOptions CreateTestContextOptions()
     {
-        var scenario = TodoScenario.Load(ScenarioName);
-        var database = new TempDatabase("ui-" + scenario.Name);
-        scenario.SeedDatabaseAsync(database.Path).GetAwaiter().GetResult();
+        var testSet = TodoTestSet.Load(TestDataName);
+        var database = new TempDatabase("ui-" + testSet.Name);
+        testSet.SeedDatabaseAsync(database.Path).GetAwaiter().GetResult();
 
         var network = NetworkStateFile.Create(Path.Combine(database.Folder, "network-state.txt"));
-        var apiBaseUrl = StartBackend(scenario, database.Folder);
+        var apiBaseUrl = StartBackend(testSet, database.Folder);
 
         var settings = AdjustSettings(new LaunchSettings
         {
             DatabasePath = database.Path,
             ApiBaseUrl = apiBaseUrl,
-            FixedNow = scenario.Now,
+            FixedNow = testSet.Now,
             NetworkStateFile = network.Path,
             ApiTimeout = TimeSpan.FromSeconds(5),
         });
 
-        _arrangement = new Arrangement(scenario, database, network);
+        _arrangement = new Arrangement(testSet, database, network);
 
         var options = base.CreateTestContextOptions();
         foreach (var (name, value) in LaunchValuesFor(settings, database.Folder))
@@ -169,7 +169,7 @@ public abstract class TodoAppFixtureBase : MauiTestFixtureBase
     /// <para>
     /// On Android the device cannot open files on this machine, so the database path, the
     /// network-state file and the crash log are left out: the app uses its own database, which
-    /// the install at session start leaves empty. The scenario's local half therefore does not
+    /// the install at session start leaves empty. The test set's local half therefore does not
     /// reach an Android app; its server half does, through the first sync. The backend URL is
     /// rewritten to the emulator's address for this machine (<c>AndroidHost</c>, plan item B4).
     /// </para>
@@ -333,9 +333,9 @@ public abstract class TodoAppFixtureBase : MauiTestFixtureBase
         return TodoListPage.Arrived(Context);
     }
 
-    private sealed class Arrangement(TodoScenario scenario, TempDatabase database, NetworkStateFile network)
+    private sealed class Arrangement(TodoTestSet testSet, TempDatabase database, NetworkStateFile network)
     {
-        public TodoScenario Scenario { get; } = scenario;
+        public TodoTestSet TestSet { get; } = testSet;
 
         public TempDatabase Database { get; } = database;
 

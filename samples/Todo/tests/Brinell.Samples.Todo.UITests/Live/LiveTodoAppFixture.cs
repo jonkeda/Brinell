@@ -16,7 +16,7 @@ namespace Brinell.Samples.Todo.UITests.Live;
 /// deployed instance instead - the stand-in for an acceptance environment.
 /// </para>
 /// <para>
-/// <b>What is arranged.</b> The scenario's local half goes into the app's database as usual; its
+/// <b>What is arranged.</b> The test set's local half goes into the app's database as usual; its
 /// server half is PUT to the API over HTTP, so a deployed API is arranged the same way as a local
 /// one. Tests add todos of their own with unique titles and never rely on the server being empty.
 /// </para>
@@ -42,7 +42,7 @@ public sealed class LiveTodoAppFixture : TodoAppFixtureBase
         ?? throw new InvalidOperationException("The API was used before it was started.");
 
     /// <inheritdoc />
-    protected override string ScenarioName => "three-todos";
+    protected override string TestDataName => "three-todos";
 
     /// <summary>A unique title, so a todo from this test cannot be confused with any other.</summary>
     public static string Unique(string title) => $"{title} {Guid.NewGuid().ToString("N")[..6]}";
@@ -50,12 +50,12 @@ public sealed class LiveTodoAppFixture : TodoAppFixtureBase
     /// <summary>A new todo as another device would store it.</summary>
     public TodoDto NewTodo(string title)
     {
-        var yesterday = Scenario.Now.AddDays(-1);
+        var yesterday = TestSet.Now.AddDays(-1);
         return new TodoDto(Guid.NewGuid(), title, null, null, TodoStatusDto.Open, yesterday, yesterday);
     }
 
     /// <inheritdoc />
-    protected override string StartBackend(TodoScenario scenario, string runFolder)
+    protected override string StartBackend(TodoTestSet testSet, string runFolder)
     {
         var deployed = Environment.GetEnvironmentVariable(BaseUrlVariable);
         var apiKey = Environment.GetEnvironmentVariable(ApiKeyVariable) is { Length: > 0 } key
@@ -79,7 +79,7 @@ public sealed class LiveTodoAppFixture : TodoAppFixtureBase
 
         _apiKey = apiKey;
         _api = new LiveTodoApi(baseUrl, apiKey);
-        foreach (var todo in scenario.Server)
+        foreach (var todo in testSet.Server)
         {
             _api.PutAsync(todo).GetAwaiter().GetResult();
         }

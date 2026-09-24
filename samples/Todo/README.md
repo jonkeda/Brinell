@@ -41,7 +41,7 @@ Two custom controls, each with a matching ControlObject on the test side:
 | `src/…App` | The MAUI app (Windows and Android). |
 | `tests/…UnitTests` | Tier 1. |
 | `tests/…IntegrationTests` | Tier 2: headless, against WireMock and SQLite; the contract tests against the real API. |
-| `tests/…TestSupport` | Scenarios (`Scenarios/*.json`), the WireMock fake of the API, temp databases. |
+| `tests/…TestSupport` | Test sets (`TestData/*.json`), the WireMock fake of the API, temp databases. |
 | `tests/…UITests` | Tiers 3 and 4 on Windows: page objects, ControlObjects, fixtures, tests. |
 | `tests/…UITests.Mobile` | The same UI test sources, built for Android (Appium). |
 | `tests/…Uat` | Markdown UAT scenarios over tier 3's app and page objects. |
@@ -154,8 +154,8 @@ changes, these fail before the hermetic UI tests can pass against a stale fake.
 
 ### 3. UI hermetic: one example on the real screen
 
-The fixture seeds a database from a scenario (`TestSupport/Scenarios/three-todos.json`), starts
-WireMock with the scenario's server half, and launches the app with launch settings pointing
+The fixture seeds a database from a test set (`TestSupport/TestData/three-todos.json`), starts
+WireMock with the test set's server half, and launches the app with launch settings pointing
 at both. The test only uses page objects. `UITests/Tests/Journeys/CreateEditJourneyTests.cs`:
 
 ```csharp
@@ -270,7 +270,7 @@ running app.
 
 ## Test data: scenarios, not a database bridge
 
-A scenario (`TestSupport/Scenarios/*.json`) has a local half and a server half, plus a pinned
+A test set (`TestSupport/TestData/*.json`) has a local half and a server half, plus a pinned
 "now":
 
 - The **local half** goes into a fresh SQLite file, created by the app's own `TodoDatabase`

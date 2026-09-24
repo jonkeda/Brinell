@@ -41,7 +41,7 @@ public sealed class SyncTests
     public async Task ATodoCreatedOnTheServer_AppearsAfterSync()
     {
         using var host = await TodoHost.StartAsync("three-todos");
-        var elsewhere = new TodoDto(Guid.NewGuid(), "From my phone", null, null, TodoStatusDto.Open, host.Scenario.Now, host.Scenario.Now);
+        var elsewhere = new TodoDto(Guid.NewGuid(), "From my phone", null, null, TodoStatusDto.Open, host.TestSet.Now, host.TestSet.Now);
         host.Server.Store(elsewhere);
 
         var result = await host.Sync.SyncAsync();
@@ -57,7 +57,7 @@ public sealed class SyncTests
     public async Task ATodoDeletedOnTheServer_DisappearsAfterSync()
     {
         using var host = await TodoHost.StartAsync("three-todos");
-        var milk = host.Scenario.Local[0];
+        var milk = host.TestSet.Local[0];
         host.Server.Remove(milk.Id);
 
         var result = await host.Sync.SyncAsync();
@@ -71,7 +71,7 @@ public sealed class SyncTests
     public async Task ADeletedTodo_IsDeletedOnTheServer_ThenPurged()
     {
         using var host = await TodoHost.StartAsync("three-todos");
-        var milk = host.Scenario.Local[0];
+        var milk = host.TestSet.Local[0];
         await host.Todos.DeleteAsync(milk.Id);
 
         var result = await host.Sync.SyncAsync();
@@ -120,7 +120,7 @@ public sealed class SyncTests
     {
         using var host = await TodoHost.StartAsync("pending-local-change", settings => settings with { ApiKey = "secret-key" });
         host.Mock.Reset();
-        host.Scenario.StubServer(host.Mock, apiKey: "secret-key");
+        host.TestSet.StubServer(host.Mock, apiKey: "secret-key");
 
         var result = await host.Sync.SyncAsync();
 
@@ -134,8 +134,8 @@ public sealed class SyncTests
     public async Task AConflict_TheNewerServerVersionWins_AndTheOlderLocalOneIsReplaced()
     {
         using var host = await TodoHost.StartAsync("pending-local-change");
-        var milk = host.Scenario.Server[0];
-        host.Server.Store(milk with { Title = "Buy almond milk", UpdatedAt = host.Scenario.Now });
+        var milk = host.TestSet.Server[0];
+        host.Server.Store(milk with { Title = "Buy almond milk", UpdatedAt = host.TestSet.Now });
 
         await host.Sync.SyncAsync();
 
@@ -168,7 +168,7 @@ public sealed class SyncTests
 
         Assert.Equal(SyncError.ServerError, (await host.Sync.SyncAsync()).Error);
         host.Mock.Reset();
-        host.Scenario.StubServer(host.Mock);
+        host.TestSet.StubServer(host.Mock);
 
         Assert.True((await host.Sync.SyncAsync()).Succeeded);
         Assert.All(await host.LocalAsync(), todo => Assert.Equal(SyncState.Synced, todo.SyncState));

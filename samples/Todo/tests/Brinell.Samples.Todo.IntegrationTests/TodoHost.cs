@@ -31,9 +31,9 @@ internal sealed class TodoHost : IDisposable
 {
     private ServiceProvider _services;
 
-    private TodoHost(TodoScenario scenario, LaunchSettings settings, MockApiServer mock, TempDatabase database, TodoServerStub server)
+    private TodoHost(TodoTestSet testSet, LaunchSettings settings, MockApiServer mock, TempDatabase database, TodoServerStub server)
     {
-        Scenario = scenario;
+        TestSet = testSet;
         Settings = settings;
         Mock = mock;
         Database = database;
@@ -41,7 +41,7 @@ internal sealed class TodoHost : IDisposable
         _services = Build(settings);
     }
 
-    public TodoScenario Scenario { get; }
+    public TodoTestSet TestSet { get; }
 
     public LaunchSettings Settings { get; }
 
@@ -59,27 +59,27 @@ internal sealed class TodoHost : IDisposable
 
     public ITodoRepository Repository => Get<ITodoRepository>();
 
-    /// <summary>Starts a host from a scenario: local half in the database, server half in WireMock.</summary>
+    /// <summary>Starts a host from a test set: local half in the database, server half in WireMock.</summary>
     public static async Task<TodoHost> StartAsync(
-        string scenarioName = "empty",
+        string testSetName = "empty",
         Func<LaunchSettings, LaunchSettings>? adjust = null)
     {
-        var scenario = TodoScenario.Load(scenarioName);
+        var testSet = TodoTestSet.Load(testSetName);
         var database = new TempDatabase("integration");
         var mock = MockApiServer.Start();
 
-        await scenario.SeedDatabaseAsync(database.Path);
-        var server = scenario.StubServer(mock);
+        await testSet.SeedDatabaseAsync(database.Path);
+        var server = testSet.StubServer(mock);
 
         var settings = new LaunchSettings
         {
             DatabasePath = database.Path,
             ApiBaseUrl = mock.BaseUrl,
-            FixedNow = scenario.Now,
+            FixedNow = testSet.Now,
             ApiTimeout = TimeSpan.FromSeconds(5),
         };
 
-        return new TodoHost(scenario, adjust?.Invoke(settings) ?? settings, mock, database, server);
+        return new TodoHost(testSet, adjust?.Invoke(settings) ?? settings, mock, database, server);
     }
 
     public T Get<T>()

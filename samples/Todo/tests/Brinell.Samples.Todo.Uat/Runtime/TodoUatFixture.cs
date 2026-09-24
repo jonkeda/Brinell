@@ -9,7 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Brinell.Samples.Todo.Uat.Runtime;
 
 /// <summary>
-/// The Todo app, hermetic and seeded with the <c>three-todos</c> scenario, presented to the UAT
+/// The Todo app, hermetic and seeded with the <c>three-todos</c> test set, presented to the UAT
 /// engine as its root.
 /// </summary>
 /// <remarks>
@@ -31,7 +31,7 @@ public sealed class TodoUatFixture : TodoAppFixture
     }
 
     /// <inheritdoc />
-    protected override string ScenarioName => "three-todos";
+    protected override string TestDataName => "three-todos";
 
     /// <summary>The page graph and DI scope the UAT runtime resolves controls through.</summary>
     public TestComposition Composition { get; }
