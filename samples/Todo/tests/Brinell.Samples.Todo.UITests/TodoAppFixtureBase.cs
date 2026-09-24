@@ -35,7 +35,10 @@ namespace Brinell.Samples.Todo.UITests;
 /// </remarks>
 public abstract class TodoAppFixtureBase : MauiTestFixtureBase
 {
+    private readonly List<TempDatabase> _retired = [];
     private Arrangement? _arrangement;
+    private LaunchSettings? _settings;
+    private IDictionary<string, string>? _launchValues;
 
     /// <summary>Launches the app for <see cref="TestDataName"/> and waits for the list to settle.</summary>
     protected TodoAppFixtureBase()
@@ -95,6 +98,7 @@ public abstract class TodoAppFixtureBase : MauiTestFixtureBase
     public TodoListPage Restart()
     {
         RestartApp();
+        OnAppRestarted();
         return WaitForTheList();
     }
 
@@ -151,14 +155,70 @@ public abstract class TodoAppFixtureBase : MauiTestFixtureBase
         });
 
         _arrangement = new Arrangement(testSet, database, network);
+        _settings = settings;
 
         var options = base.CreateTestContextOptions();
+        _launchValues = options.DriverOptions!.LaunchSettings;
         foreach (var (name, value) in LaunchValuesFor(settings, database.Folder))
         {
-            options.DriverOptions!.LaunchSettings[name] = value;
+            _launchValues[name] = value;
         }
 
         return options;
+    }
+
+    /// <summary>
+    /// Starts the app over on the test set called <paramref name="name"/>: a fresh database seeded
+    /// from it, the backend reset to its server half, the clock at its now. Nothing happens when it
+    /// is the test set already loaded.
+    /// </summary>
+    /// <remarks>
+    /// The app restarts, so page objects built before are stale. The network state carries over.
+    /// On Android only the server half and the clock change: the device's database is the app's own.
+    /// </remarks>
+    /// <param name="name">The test set, e.g. <c>one-todo</c>.</param>
+    /// <returns>The list, loaded.</returns>
+    public TodoListPage UseTestSet(string name)
+    {
+        if (name == Arranged.TestSet.Name)
+        {
+            return List;
+        }
+
+        if (!CanChangeTestSet)
+        {
+            throw new NotSupportedException($"{GetType().Name} cannot change its test set: its backend is seeded once, at start.");
+        }
+
+        var testSet = TodoTestSet.Load(name);
+        var database = new TempDatabase("ui-" + testSet.Name);
+        testSet.SeedDatabaseAsync(database.Path).GetAwaiter().GetResult();
+
+        _settings = _settings! with { DatabasePath = database.Path, FixedNow = testSet.Now };
+        foreach (var (key, value) in LaunchValuesFor(_settings, database.Folder))
+        {
+            _launchValues![key] = value;
+        }
+
+        // The first database's folder holds the network-state file, so earlier ones stay until Dispose.
+        _retired.Add(Arranged.Database);
+        _arrangement = new Arrangement(testSet, database, Arranged.Network);
+        ResetBackendForTest();
+
+        RestartApp();
+        OnAppRestarted();
+        return WaitForTheList();
+    }
+
+    /// <summary>Whether <see cref="UseTestSet"/> can reseed the backend. A live backend is seeded once.</summary>
+    protected virtual bool CanChangeTestSet => true;
+
+    /// <summary>The app's database file on this machine, for read-only checks of what it stored.</summary>
+    public string DatabasePath => Arranged.Database.Path;
+
+    /// <summary>Called after the app has restarted, when <see cref="MauiTestFixtureBase.Context"/> is a new object.</summary>
+    protected virtual void OnAppRestarted()
+    {
     }
 
     /// <summary>
@@ -282,6 +342,7 @@ public abstract class TodoAppFixtureBase : MauiTestFixtureBase
             StopBackend();
             arranged.Network.Dispose();
             arranged.Database.Dispose();
+            _retired.ForEach(database => database.Dispose());
         }
     }
 

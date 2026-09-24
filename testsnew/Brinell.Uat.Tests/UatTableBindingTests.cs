@@ -91,6 +91,17 @@ public sealed class UatTableBindingTests
     }
 
     [Fact]
+    public void AssertContains_ShowsDatesAsTheyAreWritten()
+    {
+        var exception = Assert.Throws<InvalidOperationException>(() => Table("""
+            | Title    | Due Date   |
+            | Buy milk | 2026-03-13 |
+            """).AssertContains(Rows()));
+
+        Assert.Contains("closest differs in Due Date: 2026-03-12", exception.Message);
+    }
+
+    [Fact]
     public void AssertExactly_AnExtraRow_IsReported()
     {
         var exception = Assert.Throws<InvalidOperationException>(() => Table("""

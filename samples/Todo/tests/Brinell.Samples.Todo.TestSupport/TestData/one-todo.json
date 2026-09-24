@@ -1,0 +1,11 @@
+// The server and the device both have "Buy milk", synced. The smallest set with data in it.
+{
+  "$schema": "./testdata.schema.json",
+  "now": "2026-03-10T09:00:00Z",
+  "server": [
+    { "id": "55555555-0000-0000-0000-000000000001", "title": "Buy milk", "notes": null, "dueDate": "2026-03-12", "status": "Open", "createdAt": "2026-03-01T08:00:00Z", "updatedAt": "2026-03-01T08:00:00Z" }
+  ],
+  "local": [
+    { "id": "55555555-0000-0000-0000-000000000001", "syncState": "Synced" }
+  ]
+}

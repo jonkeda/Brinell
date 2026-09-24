@@ -182,6 +182,9 @@ public static partial class UatTableBinding
         null => "null",
         "" => "\"\"",
         string text when string.IsNullOrWhiteSpace(text) => $"\"{text}\"",
+        DateOnly date => date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+        DateTimeOffset time => time.ToString("O", CultureInfo.InvariantCulture),
+        DateTime time => time.ToString("O", CultureInfo.InvariantCulture),
         IFormattable formattable => formattable.ToString(null, CultureInfo.InvariantCulture),
         _ => value.ToString() ?? string.Empty,
     };

@@ -44,6 +44,9 @@ public sealed class LiveTodoAppFixture : TodoAppFixtureBase
     /// <inheritdoc />
     protected override string TestDataName => "three-todos";
 
+    /// <inheritdoc />
+    protected override bool CanChangeTestSet => false;
+
     /// <summary>A unique title, so a todo from this test cannot be confused with any other.</summary>
     public static string Unique(string title) => $"{title} {Guid.NewGuid().ToString("N")[..6]}";
 

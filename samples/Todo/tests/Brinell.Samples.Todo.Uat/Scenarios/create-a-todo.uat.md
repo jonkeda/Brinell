@@ -8,6 +8,7 @@
 | Area | Create |
 | Target | MAUI |
 | Journey | TOD.02.2 |
+| TestData | three-todos |
 | Tags | smoke, maui, create |
 
 @smoke @maui @create

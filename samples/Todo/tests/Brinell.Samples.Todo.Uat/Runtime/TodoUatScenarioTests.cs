@@ -3,14 +3,24 @@ using Brinell.Uat;
 namespace Brinell.Samples.Todo.Uat.Runtime;
 
 /// <summary>
-/// Runs every <c>Scenarios/*.uat.md</c> against the hermetic Todo app.
+/// Runs every scenario of every <c>Scenarios/*.uat.md</c> against the hermetic Todo app, one test
+/// case per scenario (and per outline row).
 /// </summary>
 /// <remarks>
-/// Each scenario gets a clean start through <see cref="BeforeScenario"/>, which calls the fixture's
-/// <c>StartTest</c>: online again, backend reset to <c>three-todos</c>, the list on screen. Scenarios
-/// therefore stay independent of order and of each other's edits.
+/// <para>
+/// Before a file's first scenario, <see cref="BeforeFile"/> loads the file's <c>TestData</c> (or
+/// <c>DefaultTestData</c>); <see cref="UatScenarioOrderer"/> keeps files on the same test set
+/// together, so the app restarts once per test set.
+/// </para>
+/// <para>
+/// Each scenario then gets a clean start through <see cref="BeforeScenario"/>, which calls the
+/// fixture's <c>StartTest</c>: online again, backend reset to the test set's server half, the list
+/// on screen. The device's database is not reset, so scenarios add their own todos and check only
+/// those.
+/// </para>
 /// </remarks>
 [Collection(TodoUatCollection.CollectionName)]
+[TestCaseOrderer(UatScenarioOrderer.TypeName, UatScenarioOrderer.AssemblyName)]
 [Trait("Category", "UAT")]
 [Trait("Target", "MAUI")]
 public sealed class TodoUatScenarioTests : UatScenarioTestBase<TodoUatFixture>
@@ -22,14 +32,21 @@ public sealed class TodoUatScenarioTests : UatScenarioTestBase<TodoUatFixture>
     {
     }
 
-    /// <summary>The <c>Scenarios</c> folder's UAT files, one theory case each.</summary>
-    public static IEnumerable<object[]> ScenarioFiles => GetScenarioFiles();
+    /// <summary>One case per scenario: <c>[filePath, scenarioName]</c>.</summary>
+    public static IEnumerable<object[]> Scenarios => GetScenarioTheoryData();
 
-    /// <summary>Runs one UAT file and asserts it passes.</summary>
+    /// <summary>Runs one scenario and asserts it passes.</summary>
     /// <param name="filePath">The scenario file.</param>
+    /// <param name="scenarioName">The scenario in it.</param>
     [Theory(Timeout = 120000)]
-    [MemberData(nameof(ScenarioFiles))]
-    public Task UatFile_Passes(string filePath) => RunUatFileAsync(filePath);
+    [MemberData(nameof(Scenarios))]
+    public Task Scenario_Passes(string filePath, string scenarioName) => RunUatScenarioAsync(filePath, scenarioName);
+
+    /// <inheritdoc />
+    protected override void BeforeFile(UatDocument document)
+        => Fixture.UseTestSet(document.Metadata.TryGetValue(UatMetadataFields.TestData, out var name) && name.Length > 0
+            ? name
+            : TodoUatFixture.DefaultTestData);
 
     /// <inheritdoc />
     protected override void BeforeScenario(UatBoundScenario scenario) => Fixture.StartTest();
