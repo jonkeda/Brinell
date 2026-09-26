@@ -47,7 +47,7 @@ Status values: `todo`, `doing`, `done`, `blocked`.
 | **0. Rename** | todo | Nothing on the same scale as MAUI's `ItemContainerBase` rename. `HtmlPageObjectBase.IsLoaded(int? timeoutMs)`, `GetTitle(int? timeoutMs)` and any other member with an ignored timeout lose it in step 1; the sync/async split (`IAsync*` shims) is addressed in step 1. If a rename is needed, it lands here | Empty diff after review, or the renames done with tests still passing |
 | **1. Html stands alone** | todo | Html stops implementing Core's `IElement<>`, `IDriver<>`, `IElementScope<>`, `IPageObject<>`, `ITestContext<>`, `IContainerControl<>` and `IContainerObject<>`, and stops using `ControlObjectBase<>`. New or reshaped: `IHtmlElement`, `IHtmlDriver`, `IHtmlElementScope`, `IHtmlPage`, `IHtmlTestContext` (design 4.2). Html copies of the geometry and scope helpers. Finds make **one attempt**, and the timeout finds (`FindElement(locator, timeoutMs)`) are gone. `IsLoaded()`, `GetTitle()`, `TakeScreenshot(string?)` lose their unused timeouts. **UAT discovery kept:** `HtmlPageObjectBase` carries Core's `[TestPage]` once it stops implementing `IPageObject` (MAUI step 1 note). **Otherwise no behaviour change:** `ProbeReadiness` and the readiness chain arrive in step 5. Decision **?A1**: do the `IHtmlAsync*` decorative interfaces survive step 1, or move to a `Brinell.Html.Async` project, or go? See design section 4.6 | Solution builds; `Brinell.Html.Tests`, `Brinell.Html.Uat.Tests`, `Brinell.Blazor.Tests`, `Brinell.Blazor.Uat.Tests` green; the Html and Blazor UAT runs discover the same pages as before; `Brinell.Core` untouched (`git diff --stat srcnew/Brinell.Core` empty); grep finds no `IElement<`, `IElementScope<`, `IPageObject<`, `IDriver<`, `IContainerControl<` or `ControlObjectBase<` in `srcnew/Brinell.Html*` or `srcnew/Brinell.Blazor` |
 | **T1. Todo web app** | done (2026-09-26, see 2.1) | The Todo app as a Blazor Server head, `samples/Todo/src/Brinell.Samples.Todo.Web`, on the shared `Core`, `Contracts` and `Infrastructure` ([todo-blazor.md](todo-blazor.md) section 2). `data-testid`s equal to the MAUI AutomationIds; `data-busy` from `IsBusy`; `data-item-key` on rows; `LaunchSettings` from the environment, so one host process is one device. An `X-Todo-Client` header, from a new `TODO_CLIENT_ID` launch setting, sent by the API client and recorded by `TodoServerStub` and `Todo.Api`. No Html UI tests yet (?T1) | The app builds and runs against `Todo.Api` by hand; Todo unit, integration and contract tests green; MAUI Todo UI suite unchanged (the header is additive) |
-| **2. Pin it down** | todo | Failing unit tests that force each following step: (a) `Click` finds the element again (b) the caller's 300 ms budget is honoured (c) one log pair per call (d) `Get` / `WaitVisible` / `AssertText` re-resolve (e) an action that throws is not repeated (f) an attribute read below a call cannot outlast the call. **R0 guard tests:** a button that never re-enables → `Click` fails with "disabled" within its budget; a `Fill` that has no effect on the model → `NotConfirmed`, `Fill` `Times.Once`; a component re-rendered every 100 ms → the call passes **and** a near-miss `Warning` is logged; the Playwright browser closed mid-call → `AppUnavailableException` without waiting out the budget. **Baseline:** the current `Brinell.Html.UITests` and `Brinell.Blazor.UITests` suites run N times and its failures classified (framework race / app bug / environment / driver gap); a per-call count of `Locator.CountAsync` calls; the slowest 5 tests | Tests fail for the stated reason; baseline recorded in section 4 |
+| **2. Pin it down** | doing: baseline done 2026-09-26 (section 4); tests todo | Failing unit tests that force each following step: (a) `Click` finds the element again (b) the caller's 300 ms budget is honoured (c) one log pair per call (d) `Get` / `WaitVisible` / `AssertText` re-resolve (e) an action that throws is not repeated (f) an attribute read below a call cannot outlast the call. **R0 guard tests:** a button that never re-enables → `Click` fails with "disabled" within its budget; a `Fill` that has no effect on the model → `NotConfirmed`, `Fill` `Times.Once`; a component re-rendered every 100 ms → the call passes **and** a near-miss `Warning` is logged; the Playwright browser closed mid-call → `AppUnavailableException` without waiting out the budget. **Baseline:** the current `Brinell.Html.UITests` and `Brinell.Blazor.UITests` suites run N times and its failures classified (framework race / app bug / environment / driver gap); a per-call count of `Locator.CountAsync` calls; the slowest 5 tests | Tests fail for the stated reason; baseline recorded in section 4 |
 | **3. Stale signal** | todo | Html exceptions (design 4.3): `StaleElementException`, `ElementNotReadyException`, `ScopeNotReadyException`, `AppUnavailableException`. `InstanceKey`; a `Live<T>` wrapper in `PlaywrightTestContext` and `PlaywrightHtmlElement`; a browser-closed / context-closed / target-closed check that raises `AppUnavailableException` (design section 5). Every `catch { }` in `ObjectBase.Poll` and `PlaywrightHtmlElement.TryFindElement` gone. All catch-alls in the ControlBase layer removed. `HtmlPageObjectBase.WaitLoaded` throws `ScopeNotReadyException`, not Core's `PageLoadException`. `RouteUnavailableException` (MAUI review-2 fix D3): a permanent "no route" ends the call; a plain `NotSupportedException` is still retried | Mapping unit tests; grep finds no `catch\s*\(?` without a named type in `srcnew/Brinell.Html*` or `srcnew/Brinell.Blazor` (JSON config and other named ones stay); `PageLoadException` no longer raised by Html or Blazor code |
 | **4. Calls** | todo | `Calls/*` (`ControlCall`, `Poller`, `Deadline`, `AttemptContext`, `Observation`, `ObservationLog`, `ScopeGate`, `Confirmer`), copied from MAUI's shape. `ViewBase` and `RootedScopeBase` moved onto the calls layer, replacing `ControlBase.RunPoll` and its bare `catch (Exception ex)`. `ObjectBase.Poll` deleted. `RunDoWithElement` **no longer retries the action**: phase 1 resolves and gates on readiness within the budget; phase 2 acts **once** (R0). One `LogEntry`/`LogExit` pair per public call. Near-miss `Warning` logging. `Assert*` resolves per attempt, like `Get*` (MAUI review-2 fix S1). `BRINELL_CALL_LOG`, and the context `Name` in the log line (?A10) | The step 2 pinned tests pass; one log pair per call; the near-miss test passes; `RunDoWithElement` shows `Invoke` `Times.Once` on an action that has no effect |
 | **5. Scope readiness** | todo | `ScopeReadiness` and the `ProbeReadiness` chain; `AsksParent`; `ProbeContentReadiness`; `CanResolveElements` and `EnsureLoaded` (if present in Html) removed; `AppRoot` for the browser page/frame; the busy signal for a Blazor page is read from a well-known data attribute (design 7.2, sample-app.md item 3); `ScopeNotReadyException` replaces `PageLoadException` throughout Html; the frame model (`ForFrame`) becomes a scope wrapper. `AppRoot.WaitReady` is a call unit with its own budget (MAUI review-2 fix 8). **The UI test bases:** `BlazorSampleTestBase` (in both UI test projects) loses its `Thread.Yield`/`Task.Delay` loop and its `Context.FindElement`: the page's `WaitReady` covers "circuit up". The fixture starts the sample host on a free port, instead of expecting one at `BLAZOR_APP_URL` | Scope tests pass; a busy page defers the child call within its budget |
@@ -127,14 +127,57 @@ Deferred until enough is known. Kept here so the same questions do not get re-as
 
 ## 4. Baselines
 
-TODO. Recorded before step 2 starts and never edited after that (a new baseline is a new file).
+Recorded 2026-09-26, before any framework change, at `50fcce9`. Not edited after this; a new
+baseline is a new file. Playwright 1.62 (Chromium 1234), headless; the gallery sample
+(`Brinell.Samples.Blazor.App`) running at `http://localhost:5180` from `.claude/launch.json`.
+The repeat runs used `tools/Scripts/repeat-run.ps1` (`-AllowProcess Brinell.Samples.Blazor.App`).
+Their summaries are in [baseline/](baseline/).
 
-- `Brinell.Html.Tests`: N passed / N failed.
-- `Brinell.Html.Uat.Tests`: N passed / N failed.
-- `Brinell.Html.UITests`, 5 runs: pass/fail counts and each failure's class (framework race,
-  app bug, environment, driver gap).
-- The 5 slowest UI tests, in seconds.
-- `Locator.CountAsync` and `IsVisibleAsync` calls per completed `Click`, averaged over the suite.
+**Unit and UAT:**
+
+| Project | Result |
+| --- | --- |
+| `Brinell.Html.Tests` | **no tests.** One `GlobalUsings.cs`, `IsTestProject=false`. Step 2's pinned tests need a real project; this is where they go |
+| `Brinell.Blazor.Tests` | 172 passed / 0 failed. This is where the Html framework's unit tests live today |
+| `Brinell.Html.Uat.Tests` | 2 passed / 0 failed |
+| `Brinell.Blazor.Uat.Tests` | 2 passed / 0 failed |
+| `Brinell.Core.Tests` | 16 passed / 0 failed |
+
+**UI, 5 runs each:**
+
+| Suite | Tests | Time per run | Failures |
+| --- | ---: | ---: | --- |
+| `Brinell.Html.UITests` | 36 | ~15 s | `LoginFlow_EmptyCredentials_ShowsError` 5/5, `..._Async` 4/5 |
+| `Brinell.Blazor.UITests` | 31 | ~12 s | `Button_MultipleClicks_AllRegister`, `Counter_CountDisplay_UpdatesAfterClick`, `Counter_MultipleIncrements_AccumulatesCorrectly`, each 5/5 |
+
+Each failure's class, decided by reading it:
+
+- **Counter and button, framework race (readiness).** Exactly one click is lost every time: count
+  2 after 3 clicks, 0 after Reset + Increment. The sample prerenders (`InteractiveServer` with the
+  default prerender). `BlazorSampleTestBase` counts "`window.Blazor` is defined" as ready, which is
+  true before the circuit is connected, so the first click lands on dead prerendered HTML. Steps 5
+  and 6 must make these pass by waiting for the circuit, not by retrying the click (R0).
+- **Login with empty credentials, framework race (a one-shot read) in the test.** The test reads
+  `Context.FindElements(".text-danger")` straight after `Click`, with no wait, so it races the
+  render: 5/5 sync, 4/5 async. It is also a forbidden API in a test. Step 2 rewrites it through
+  the page object.
+- App bugs: none. Environment: none (after installing Chromium 1234; before that, both UAT
+  projects failed with "Executable doesn't exist"). Driver gaps: none.
+
+The 5 slowest tests: the login tests, about 2.2-2.5 s each (mean). Everything in
+`Brinell.Blazor.UITests` is under 0.7 s. The tables are in [baseline/](baseline/).
+
+**Static counts** (grep, `srcnew`):
+
+| Project | Uses of Core interfaces Html leaves (step 1 list, plus `WaitHelper` and `PageLoadException`) | Catch-alls (`catch` / `catch (Exception)`) | Files |
+| --- | ---: | ---: | ---: |
+| `Brinell.Html` | 16 | 5 (`ControlBase.RunPoll` 1, `ObjectBase` 4) | 49 |
+| `Brinell.Html.Playwright` | 1 | 4 (`PlaywrightTestContext`) | 3 |
+| `Brinell.Blazor` | 1 | 0 | 25 |
+
+**Not measured:** Playwright calls per completed `Click`. That needs a counting driver, which
+does not exist yet. Step 2 adds it as a fake `IHtmlElement` in the pinned unit tests, and the
+number is taken there, on the old code, before step 4 replaces `RunDoWithElement`.
 
 ## 5. Verification, per step
 
