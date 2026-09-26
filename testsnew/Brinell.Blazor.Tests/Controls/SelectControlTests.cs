@@ -9,10 +9,9 @@ public class SelectControlTests
     public SelectControlTests()
     {
         _mockContext = MockHtmlFactory.CreateMockContext();
-        _mockElement = MockHtmlFactory.CreateMockElement();
+        // The select starts on "option1"; selecting another option changes it (step 6 confirms that).
+        _mockElement = MockHtmlFactory.CreateMockElement("option1");
         MockHtmlFactory.SetupFindElement(_mockContext, _mockElement);
-
-        _mockElement.Setup(e => e.InputValue).Returns("option1");
 
         _page = new TestPage(_mockContext.Object);
     }

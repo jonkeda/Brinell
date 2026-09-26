@@ -55,7 +55,9 @@ public class CheckBoxControlTests
     [Fact]
     public void Toggle_WhenChecked_CallsUncheck()
     {
-        _mockElement.Setup(e => e.IsChecked).Returns(true);
+        var isChecked = true;
+        _mockElement.Setup(e => e.IsChecked).Returns(() => isChecked);
+        _mockElement.Setup(e => e.Uncheck()).Callback(() => isChecked = false);
 
         _page.TestCheckBox.Toggle();
 

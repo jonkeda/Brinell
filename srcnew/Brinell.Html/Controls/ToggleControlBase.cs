@@ -25,16 +25,21 @@ public abstract class ToggleControlBase<TScope> : ClickableControlBase<TScope>, 
 
     public TScope SetChecked(bool value, int? timeoutMs = null)
     {
-        return RunWithElement(element =>
-        {
-            if (value)
+        return RunWithElement(element => ActAndConfirm(
+            value ? "Check" : "Uncheck",
+            () =>
             {
-                element.Check();
-                return;
-            }
-
-            element.Uncheck();
-        }, timeoutMs);
+                if (value)
+                {
+                    element.Check();
+                }
+                else
+                {
+                    element.Uncheck();
+                }
+            },
+            () => element.IsChecked, isChecked => isChecked == value,
+            value ? "checked" : "unchecked", timeoutMs), timeoutMs);
     }
 
     public bool WaitChecked(bool expected, int? timeoutMs = null)

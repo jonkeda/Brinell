@@ -288,6 +288,31 @@ public abstract class ControlBase<TScope> : ObjectBase, IControlObject<TScope>, 
         => Confirmer.Run(read, done, timeoutMs ?? DefaultTimeoutMs, PollingIntervalMs);
 
     /// <summary>
+    /// Inside an action: runs <paramref name="act"/> on the element once, then confirms its effect
+    /// with a budget of its own (R3). An effect that never shows fails the call, naming what was
+    /// read; the action is never repeated (R0).
+    /// </summary>
+    /// <param name="action">The action's name, for the message ("Fill", "Check").</param>
+    /// <param name="act">The action.</param>
+    /// <param name="read">Reads the effect, typically from the element just acted on.</param>
+    /// <param name="done">Whether the value read is the effect asked for.</param>
+    /// <param name="expected">What was asked for, in words, for the message.</param>
+    /// <param name="timeoutMs">The confirmation's budget; the caller's timeout, or the default.</param>
+    protected void ActAndConfirm<T>(string action, Action act, Func<T?> read, Func<T?, bool> done,
+        string expected, int? timeoutMs)
+    {
+        act();
+        var confirmation = Confirm(read, done, timeoutMs);
+        if (!confirmation.IsConfirmed)
+        {
+            throw confirmation.Failure(Locator, action, lastError => new InvalidOperationException(
+                $"The element '{Locator}' accepted {action} and did not take it: expected {expected}, "
+                + $"it reads '{confirmation.LastValue}'. The action ran once and is not repeated.",
+                lastError));
+        }
+    }
+
+    /// <summary>
     /// Checks any readiness this control needs before it is acted on. Throw
     /// <see cref="ElementNotReadyException"/> when it is not ready; the call asks again.
     /// </summary>

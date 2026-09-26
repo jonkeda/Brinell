@@ -18,28 +18,28 @@ public class SelectControl<TScope> : SelectorControlBase<TScope>
 
     public override TScope SelectByValue(string value)
     {
-        return RunWithElement(element => element.SelectOption(value));
+        return RunWithElement(element => Select(element, value, null));
     }
 
+    /// <summary>Selects the option whose text is <paramref name="text"/>, as one call.</summary>
     public override TScope SelectByText(string text)
     {
-        var root = FindElement();
-        var options = root.FindElements(Locator.ByCss("option"));
-
-        foreach (var option in options)
+        return RunWithElement(element =>
         {
-            if (!string.Equals(option.Text?.Trim(), text.Trim(), StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
+            var option = element.FindElements(Locator.ByCss("option"))
+                .FirstOrDefault(candidate => string.Equals(candidate.Text?.Trim(), text.Trim(), StringComparison.OrdinalIgnoreCase))
+                ?? throw new InvalidOperationException($"Select option with text '{text}' was not found.");
 
             var optionValue = option.GetAttribute("value");
-            root.SelectOption(string.IsNullOrEmpty(optionValue) ? text : optionValue);
-            return ContainingScope;
-        }
-
-        throw new InvalidOperationException($"Select option with text '{text}' was not found.");
+            Select(element, string.IsNullOrEmpty(optionValue) ? text : optionValue, null);
+        });
     }
+
+    private void Select(IHtmlElement element, string value, int? timeoutMs)
+        => ActAndConfirm(
+            "SelectOption", () => element.SelectOption(value),
+            () => element.InputValue, selected => selected == value,
+            $"'{value}' selected", timeoutMs);
 
     public override string? GetSelectedValue()
     {

@@ -29,7 +29,10 @@ public class TextInputControl<TScope> : FocusableControlBase<TScope>, IHtmlAsync
     /// </summary>
     public TScope SetText(string text, int? timeoutMs = null)
     {
-        return RunSetWithElement(text, element => element.Fill(text), timeoutMs);
+        return RunSetWithElement(text, element => ActAndConfirm(
+            "Fill", () => element.Fill(text),
+            () => element.InputValue, value => value == text,
+            $"'{text}'", timeoutMs), timeoutMs);
     }
 
     /// <summary>
@@ -45,7 +48,10 @@ public class TextInputControl<TScope> : FocusableControlBase<TScope>, IHtmlAsync
     /// </summary>
     public TScope TypeText(string text, int? timeoutMs = null)
     {
-        return RunSetWithElement(text, element => element.SendKeys(text), timeoutMs);
+        return RunSetWithElement(text, element => ActAndConfirm(
+            "SendKeys", () => element.SendKeys(text),
+            () => element.InputValue, value => value?.Contains(text, StringComparison.Ordinal) == true,
+            $"a value containing '{text}'", timeoutMs), timeoutMs);
     }
 
     /// <summary>

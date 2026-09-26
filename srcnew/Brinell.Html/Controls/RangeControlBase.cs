@@ -37,9 +37,12 @@ public abstract class RangeControlBase<TScope> : FocusableControlBase<TScope>, I
         return RunWithElement(element => element.InputValue);
     }
 
-    public TScope SetValue(string value)
+    public TScope SetValue(string value, int? timeoutMs = null)
     {
-        return RunWithElement(element => element.Fill(value));
+        return RunWithElement(element => ActAndConfirm(
+            "Fill", () => element.Fill(value),
+            () => element.InputValue, actual => actual == value,
+            $"'{value}'", timeoutMs), timeoutMs);
     }
 
     #region IHtmlAsyncRange<TScope> explicit implementation

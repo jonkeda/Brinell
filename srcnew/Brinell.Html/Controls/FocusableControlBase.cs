@@ -17,14 +17,22 @@ public abstract class FocusableControlBase<TScope> : ClickableControlBase<TScope
     {
     }
 
-    public TScope Focus()
+    private const string HasFocusScript = "el => document.activeElement === el";
+
+    public TScope Focus(int? timeoutMs = null)
     {
-        return RunWithElement(element => element.Focus());
+        return RunWithElement(element => ActAndConfirm(
+            "Focus", element.Focus,
+            () => element.Evaluate<bool>(HasFocusScript), focused => focused,
+            "focus", timeoutMs), timeoutMs);
     }
 
-    public TScope Blur()
+    public TScope Blur(int? timeoutMs = null)
     {
-        return RunWithElement(element => element.Blur());
+        return RunWithElement(element => ActAndConfirm(
+            "Blur", element.Blur,
+            () => element.Evaluate<bool>(HasFocusScript), focused => !focused,
+            "no focus", timeoutMs), timeoutMs);
     }
 
     public bool HasFocus()

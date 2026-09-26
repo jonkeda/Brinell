@@ -26,9 +26,21 @@ public static class MockHtmlFactory
         mock.Setup(e => e.Text).Returns(text);
         mock.Setup(e => e.Visible).Returns(visible);
         mock.Setup(e => e.Enabled).Returns(enabled);
-        mock.Setup(e => e.InputValue).Returns(text ?? "");
         // What a live Blazor app shows once it is interactive; Blazor pages wait for it (html plan, step 5).
         mock.Setup(e => e.GetAttribute("data-busy")).Returns("false");
+
+        // Actions have their effect, as on a real element: controls confirm them (html plan, step 6),
+        // and a mock that ignored them would be an app bug the call must report.
+        var value = text ?? "";
+        var focused = false;
+        mock.Setup(e => e.InputValue).Returns(() => value);
+        mock.Setup(e => e.Fill(It.IsAny<string>())).Callback<string>(filled => value = filled);
+        mock.Setup(e => e.SendKeys(It.IsAny<string>(), It.IsAny<Brinell.Core.TextInputMethod>()))
+            .Callback<string, Brinell.Core.TextInputMethod>((typed, _) => value += typed);
+        mock.Setup(e => e.SelectOption(It.IsAny<string>())).Callback<string>(selected => value = selected);
+        mock.Setup(e => e.Focus()).Callback(() => focused = true);
+        mock.Setup(e => e.Blur()).Callback(() => focused = false);
+        mock.Setup(e => e.Evaluate<bool>("el => document.activeElement === el")).Returns(() => focused);
         return mock;
     }
 
@@ -39,7 +51,10 @@ public static class MockHtmlFactory
         bool enabled = true)
     {
         var mock = CreateMockElement(text, visible, enabled);
-        mock.Setup(e => e.IsChecked).Returns(isChecked);
+        var state = isChecked;
+        mock.Setup(e => e.IsChecked).Returns(() => state);
+        mock.Setup(e => e.Check()).Callback(() => state = true);
+        mock.Setup(e => e.Uncheck()).Callback(() => state = false);
         return mock;
     }
 

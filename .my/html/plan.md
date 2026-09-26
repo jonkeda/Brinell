@@ -51,7 +51,7 @@ Status values: `todo`, `doing`, `done`, `blocked`.
 | **3. Stale signal** | done (2026-09-26, see 2.1) | Html exceptions (design 4.3): `StaleElementException`, `ElementNotReadyException`, `ScopeNotReadyException`, `AppUnavailableException`. `InstanceKey`; a `Live<T>` wrapper in `PlaywrightTestContext` and `PlaywrightHtmlElement`; a browser-closed / context-closed / target-closed check that raises `AppUnavailableException` (design section 5). Every `catch { }` in `ObjectBase.Poll` and `PlaywrightHtmlElement.TryFindElement` gone. All catch-alls in the ControlBase layer removed. `HtmlPageObjectBase.WaitLoaded` throws `ScopeNotReadyException`, not Core's `PageLoadException`. `RouteUnavailableException` (MAUI review-2 fix D3): a permanent "no route" ends the call; a plain `NotSupportedException` is still retried | Mapping unit tests; grep finds no `catch\s*\(?` without a named type in `srcnew/Brinell.Html*` or `srcnew/Brinell.Blazor` (JSON config and other named ones stay); `PageLoadException` no longer raised by Html or Blazor code |
 | **4. Calls** | done (2026-09-26, see 2.1) | `Calls/*` (`ControlCall`, `Poller`, `Deadline`, `AttemptContext`, `Observation`, `ObservationLog`, `ScopeGate`, `Confirmer`), copied from MAUI's shape. `ViewBase` and `RootedScopeBase` moved onto the calls layer, replacing `ControlBase.RunPoll` and its bare `catch (Exception ex)`. `ObjectBase.Poll` deleted. `RunDoWithElement` **no longer retries the action**: phase 1 resolves and gates on readiness within the budget; phase 2 acts **once** (R0). One `LogEntry`/`LogExit` pair per public call. Near-miss `Warning` logging. `Assert*` resolves per attempt, like `Get*` (MAUI review-2 fix S1). `BRINELL_CALL_LOG`, and the context `Name` in the log line (?A10) | The step 2 pinned tests pass; one log pair per call; the near-miss test passes; `RunDoWithElement` shows `Invoke` `Times.Once` on an action that has no effect |
 | **5. Scope readiness** | done (2026-09-26, see 2.1) | `ScopeReadiness` and the `ProbeReadiness` chain; `AsksParent`; `ProbeContentReadiness`; `CanResolveElements` and `EnsureLoaded` (if present in Html) removed; `AppRoot` for the browser page/frame; the busy signal for a Blazor page is read from a well-known data attribute (design 7.2, sample-app.md item 3); `ScopeNotReadyException` replaces `PageLoadException` throughout Html; the frame model (`ForFrame`) becomes a scope wrapper. `AppRoot.WaitReady` is a call unit with its own budget (MAUI review-2 fix 8). **The UI test bases:** `BlazorSampleTestBase` (in both UI test projects) loses its `Thread.Yield`/`Task.Delay` loop and its `Context.FindElement`: the page's `WaitReady` covers "circuit up". The fixture starts the sample host on a free port, instead of expecting one at `BLAZOR_APP_URL` | Scope tests pass; a busy page defers the child call within its budget |
-| **6. Confirm** | todo | `Confirm` replaces the "loop the whole call until the effect is seen" pattern that today lives inside `RunPoll`. The act-then-confirm Cores (`Click` on a busy-triggering button, `Fill`, `Check`/`Uncheck`, `SelectOption`, `Focus`/`Blur`) get a second phase that reads the effect once per attempt and never repeats the action | Replaced element: new message, action `Times.Once`; the R0 "no effect" test from step 2 passes |
+| **6. Confirm** | done (2026-09-26, see 2.1) | `Confirm` replaces the "loop the whole call until the effect is seen" pattern that today lives inside `RunPoll`. The act-then-confirm Cores (`Click` on a busy-triggering button, `Fill`, `Check`/`Uncheck`, `SelectOption`, `Focus`/`Blur`) get a second phase that reads the effect once per attempt and never repeats the action | Replaced element: new message, action `Times.Once`; the R0 "no effect" test from step 2 passes |
 | **7. Collections** | todo | `ItemKey` for Html rows (design 7.6, differences item 5: DOM node id, or `data-item-key`, or position). `MaterializeAttempts` for a Blazor `Virtualize` scroll. `ListControl` and `TableControl` move onto a `CollectionObjectBase<TParent, TSelf, TItem>` + `ItemObjectBase<TCollection, TSelf>`. `Item(index)` and `SelectItem` become waiting call units; `TryItem` / `TrySelectItem` answer now (R7) | Collection tests pass; the row-recycling test from sample-app.md item 4 fails when a row is asked to click after its key changed |
 | **T2. Todo web tests** | todo | `tests/Brinell.Samples.Todo.Web.UITests`: hermetic and live fixtures (`TodoWebFixture` starts the host process on a free port with the test set's launch settings), Html page objects and ControlObjects (`TodoStatus`, `SectionCard`), and the TOD journeys with a `Head=Web` trait. The Todo `.uat.md` files run with `Target: Html` (?T2). `JourneyCoverage` learns the `Head` trait ([todo-blazor.md](todo-blazor.md) section 3) | Hermetic suite green in 5 of 5 runs; live tests green with `BRINELL_UAT_LIVE_API=1`; a `WaitForRequest` on `X-Todo-Client` passes; every UAT file that passes on MAUI passes on the web head, or carries a head tag and a reason |
 | **8. Prove it** | todo | On a branch: (a) re-introduce the login-button `disabled`-forever bug (sample-app.md item 2) and prove the login test fails with "disabled for N ms" instead of timing out silently; (a2) re-introduce the Todo `CanExecuteChanged` bug in the shared view model and prove TOD.04.4 fails on **both** heads, naming what it saw; (b) re-introduce the "action retried" bug in `ControlBase` and prove a step-4 test catches it; (c) run `Brinell.Html.UITests`, `Brinell.Blazor.UITests` and the Todo web suite in full against a saved timing baseline; (d) run the repeat-run script against the step 2 baseline | R0 proofs both fail against their bugs, and name what they saw. No new failures against the timing baseline. Framework-race failures down, and none moved from "app bug" to "pass" |
@@ -65,6 +65,41 @@ constraints in its section 4.2, so that project stays possible.
 
 Filled in as steps finish, in the same shape as `../stale-readiness/plan.md` section 2.1: what
 was proved, what the design was wrong about, and what was deferred to a later step on purpose.
+
+**Step 6 (2026-09-26).**
+
+- **Evidence.**
+  - `Brinell.Html.Tests` **32/32**: every pin from step 2 passes, the step 6 one included, plus
+    two new `ConfirmTests`:
+    - an element replaced after the action fails as stale, saying the action "ran once";
+    - the confirmation has a budget of its own. This test fails with the fix below undone
+      (checked).
+  - `Brinell.Blazor.Tests` 172/172; both UAT projects 2/2.
+  - `Brinell.Html.UITests` 38/38 and `Brinell.Blazor.UITests` 31/31, 3 of 3 runs each.
+- **What changed.**
+  - `ControlBase.ActAndConfirm`: act once, then `Confirm` the effect with the caller's timeout
+    as a second phase (R3). An effect that never shows fails as "accepted X and did not take
+    it: expected ..., it reads ...". A replaced element fails as `StaleElementException`.
+    Neither repeats the action.
+  - Confirmed actions:
+    - `TextInputControl.SetText` (value equals) and `TypeText` (value contains);
+    - `TextAreaControl.AppendText` (value ends with);
+    - `ToggleControlBase.SetChecked`, and so `Check` and `Uncheck`;
+    - `SelectControl.SelectByValue` and `SelectByText`. `SelectByText` is now one call; it used
+      to look up the options outside any call;
+    - `RangeControlBase.SetValue`;
+    - `FocusableControlBase.Focus` and `Blur` (`document.activeElement`).
+  - `SelectMultiple` is not confirmed yet (it needs a multi-value read).
+- **An Html-only finding: a confirmation must run under its own attempt context.** Playwright
+  reads take their timeout from the running call (?A5). Inside a confirmation, that must be
+  the confirmation's own deadline, not the resolve phase's, which the action may have left all
+  but spent. `Confirmer` now sets its own `AttemptContext` while it polls. MAUI's reads take no
+  timeout, so MAUI does not need this.
+- **Test doubles act like elements now.** `MockHtmlFactory`'s element keeps state: `Fill` sets
+  the value, `SendKeys` appends, `SelectOption` selects, `Check` and `Uncheck` toggle, and
+  `Focus` and `Blur` move focus. Five Blazor unit tests set fixed return values that ignored the
+  action, which is exactly the app bug R0 must report. They now start from a value and let the
+  action change it.
 
 **Step 5 (2026-09-26).**
 

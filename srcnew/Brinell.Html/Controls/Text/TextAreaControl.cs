@@ -16,12 +16,16 @@ public class TextAreaControl<TScope> : TextInputControl<TScope>
     {
     }
 
-    public TScope AppendText(string text)
+    public TScope AppendText(string text, int? timeoutMs = null)
     {
-        return RunWithElement(element =>
-        {
-            element.Focus();
-            element.SendKeys(text);
-        });
+        return RunWithElement(element => ActAndConfirm(
+            "AppendText",
+            () =>
+            {
+                element.Focus();
+                element.SendKeys(text);
+            },
+            () => element.InputValue, value => value?.EndsWith(text, StringComparison.Ordinal) == true,
+            $"a value ending in '{text}'", timeoutMs), timeoutMs);
     }
 }

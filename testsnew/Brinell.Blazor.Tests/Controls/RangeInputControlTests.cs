@@ -9,10 +9,10 @@ public class RangeInputControlTests
     public RangeInputControlTests()
     {
         _mockContext = MockHtmlFactory.CreateMockContext();
-        _mockElement = MockHtmlFactory.CreateMockElement();
+        // The range starts at 75; filling another value changes it (step 6 confirms that).
+        _mockElement = MockHtmlFactory.CreateMockElement("75");
         MockHtmlFactory.SetupFindElement(_mockContext, _mockElement);
 
-        _mockElement.Setup(e => e.InputValue).Returns("75");
         _mockElement.Setup(e => e.GetAttribute("min")).Returns("0");
         _mockElement.Setup(e => e.GetAttribute("max")).Returns("100");
         _mockElement.Setup(e => e.GetAttribute("step")).Returns("1");
