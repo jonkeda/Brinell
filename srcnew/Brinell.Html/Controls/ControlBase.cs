@@ -1,12 +1,11 @@
 using Brinell.Core.Exceptions;
 using Brinell.Core.Interfaces;
 using Brinell.Core.Locators;
-using Brinell.Core.Logging;
 using Brinell.Core.Utilities;
+using Brinell.Html.Calls;
 using Brinell.Html.Exceptions;
 using Brinell.Html.Interfaces;
 using Brinell.Html.Interfaces.Async;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace Brinell.Html.Controls;
@@ -33,124 +32,269 @@ public abstract class ControlBase<TScope> : ObjectBase, IControlObject<TScope>, 
 
     public override IHtmlTestContext Context => _scope.Context;
 
+    /// <summary>The element, found in one attempt, or null.</summary>
     protected IHtmlElement? TryFindElement() => _scope.TryFindElement(Locator);
 
-    protected IHtmlElement FindElement() => _scope.FindElement(Locator);
+    /// <summary>The element, found in one attempt.</summary>
+    /// <exception cref="ElementNotFoundException">It is not there.</exception>
+    protected IHtmlElement FindElement() => TryFindElement() ?? throw NotFound();
 
-    #region
+    /// <summary>The error for a control that could not be found.</summary>
+    protected virtual ElementNotFoundException NotFound() => new(Locator);
+
+    #region Calls
+
+    // Every public member is one call (.docs/contracts/call-model.md, R1): one log pair, one
+    // budget, one poll. Each attempt checks the scope, finds the element again, makes one
+    // visibility check, then reads, compares or checks readiness. Nothing inside a call waits
+    // with a budget of its own (R2). An action runs once, after the poll (R0): this closes X2.
+
+    private string PageName => _scope.Page?.GetType().Name ?? "Unknown";
+
+    private string ControlId => Locator.Value;
+
+    private ControlCall Call => new(Context, PageName, ControlId);
+
+    private int Budget(int? timeoutMs) => timeoutMs ?? DefaultTimeoutMs;
+
+    private int AnimationMs => Context.Timeouts.Animation;
 
     /// <summary>
-    /// Gets logging context information.
+    /// What is left of the running call's budget, for a wait below the call (a scroll); the
+    /// default wait outside a call.
     /// </summary>
-    private string TestName => "Test";
-    private string PageName => "Unknown";
-    private string ControlId => Locator.Value;
-    private ITestLogger? Logger => Context.Logger;
+    protected int CallRemainingMs => CallBudget.RemainingOr(DefaultTimeoutMs);
 
+    private Exception Failure(AttemptContext attempt, string caller, int budgetMs)
+        => attempt.Log.ToException(
+            Locator,
+            budgetMs,
+            NotFound,
+            scope => new WaitTimeoutException(
+                $"Scope '{scope}' was not ready for {caller} on control '{Locator}' within {budgetMs} ms.", budgetMs));
 
-    #endregion
-    
-    #region RunPoll
+    // Until step 5 brings ScopeReadiness, the scope answers a plain "ready now?".
+    private Observation? CheckScope()
+        => _scope.IsReady() ? null : Observation.ScopeNotReady(_scope.Page?.Name ?? _scope.GetType().Name);
 
-    private bool RunPoll(string? value, Func<bool> condition,
-        int? timeoutMs = null, [CallerMemberName] string? caller = null)
+    /// <summary>
+    /// One attempt against the element: the scope, then a fresh lookup, then (optionally) one
+    /// visibility check, then <paramref name="body"/>.
+    /// </summary>
+    private Observation Attempt(AttemptContext attempt, bool ensureVisible, Func<IHtmlElement, Observation> body)
     {
-        var stopwatch = Stopwatch.StartNew();
-        Logger?.LogEntry(TestName, PageName, ControlId, caller ?? string.Empty, value);
-
-        var ok = false;
-        Exception? lastException = null;
-        while (stopwatch.ElapsedMilliseconds < (timeoutMs ?? DefaultTimeoutMs))
+        if (CheckScope() is { } notReady)
         {
-            try
-            {
-                if (condition())
-                {
-                    ok = true;
-                    break;
-                }
-            }
-            catch (AppUnavailableException gone)
-            {
-                // The browser is gone: waiting cannot bring it back, so the call ends now (R0).
-                Logger?.LogExit(TestName, PageName, ControlId, caller ?? string.Empty,
-                    LogResult.Error, (int)stopwatch.ElapsedMilliseconds, gone.Message);
-                throw;
-            }
-            catch (Exception ex)
-            {
-                lastException = ex;
-                // Polling expects transient failures (stale elements, not-yet-rendered). This
-                // catch-all, and the retried action (X2), go in plan step 4.
-            }
-
-            WaitHelper.Pause(PollingIntervalMs);
+            return notReady;
         }
-        stopwatch.Stop();
-        if (ok)
+
+        var element = TryFindElement();
+        if (element == null)
         {
-            Logger?.LogExit(TestName, PageName, ControlId, caller ?? string.Empty,
-                LogResult.Success, (int)stopwatch.ElapsedMilliseconds);
-
+            return Observation.Missing();
         }
-        else
+
+        try
         {
-            Logger?.LogExit(TestName, PageName, ControlId, caller ?? string.Empty,
-                LogResult.Error, (int)stopwatch.ElapsedMilliseconds, lastException?.Message);
-
-            if (lastException != null)
+            if (ensureVisible)
             {
-                throw lastException;
+                EnsureVisible(element, attempt);
             }
+
+            return body(element);
         }
-        return ok;
+        catch (StaleElementException error)
+        {
+            return Observation.Stale(error, null);
+        }
+        catch (ElementNotReadyException error)
+        {
+            return Observation.NotReady(error, null);
+        }
+        catch (AssertionException error)
+        {
+            return Observation.Mismatch(error, null);
+        }
+    }
+
+    private void AwaitScope(AttemptContext attempt, string caller, int budgetMs)
+    {
+        if (!Poller.Until(_ => CheckScope() ?? Observation.Done(), attempt, PollingIntervalMs))
+        {
+            throw Failure(attempt, caller, budgetMs);
+        }
     }
 
     protected bool RunWait(Func<bool> operation, int? timeoutMs = null,
         [CallerMemberName] string? caller = null)
     {
-        return RunPoll(null, () =>
+        var budget = Budget(timeoutMs);
+        caller ??= nameof(RunWait);
+        return Call.Run(caller, null, budget, AnimationMs, attempt =>
         {
-            return operation();
-        }, timeoutMs, caller);
+            if (Poller.Until(_ => CheckScope() ?? (operation() ? Observation.Done() : Observation.Pending()),
+                    attempt, PollingIntervalMs))
+            {
+                return true;
+            }
+
+            return attempt.Log.Last.Kind == ObservationKind.Pending ? false : throw Failure(attempt, caller, budget);
+        }, succeeded: met => met);
     }
 
     protected bool RunWaitWithElement(Func<IHtmlElement, bool> coreOperation,
         int? timeoutMs = null, [CallerMemberName] string? caller = null)
     {
-        return RunPoll(null, () =>
+        var budget = Budget(timeoutMs);
+        caller ??= nameof(RunWaitWithElement);
+        return Call.Run(caller, null, budget, AnimationMs, attempt =>
         {
-            var element = FindElement();
-            EnsureVisible(element);
-            return coreOperation(element);
-        }, timeoutMs, caller);
+            if (Poller.Until(a => Attempt(a, ensureVisible: true,
+                    element => coreOperation(element) ? Observation.Done() : Observation.Pending()),
+                    attempt, PollingIntervalMs))
+            {
+                return true;
+            }
+
+            // A predicate that stayed false answers false; a call that never got to ask fails.
+            return attempt.Log.Last.Kind == ObservationKind.Pending ? false : throw Failure(attempt, caller, budget);
+        }, succeeded: met => met);
     }
 
+    /// <summary>Polls a predicate that is meaningful when the element is absent.</summary>
+    protected bool RunWaitWithOptionalElement(Func<IHtmlElement?, bool> coreOperation,
+        int? timeoutMs = null, [CallerMemberName] string? caller = null)
+    {
+        var budget = Budget(timeoutMs);
+        caller ??= nameof(RunWaitWithOptionalElement);
+        return Call.Run(caller, null, budget, AnimationMs, attempt =>
+        {
+            if (Poller.Until(_ => CheckScope() ?? (coreOperation(TryFindElement()) ? Observation.Done() : Observation.Pending()),
+                    attempt, PollingIntervalMs))
+            {
+                return true;
+            }
+
+            return attempt.Log.Last.Kind == ObservationKind.Pending ? false : throw Failure(attempt, caller, budget);
+        }, succeeded: met => met);
+    }
+
+    /// <summary>Asserts a value that is meaningful when the element is absent.</summary>
+    protected TScope RunAssertWithOptionalElement<T>(T? expected,
+        Func<IHtmlElement?, T?> getActual, Func<T?, T?, bool> compare,
+        string? message = null, int? timeoutMs = null, [CallerMemberName] string? caller = null)
+    {
+        if (expected == null)
+        {
+            return ContainingScope;
+        }
+
+        var budget = Budget(timeoutMs);
+        caller ??= nameof(RunAssertWithOptionalElement);
+        return Call.Run(caller, null, budget, AnimationMs, attempt =>
+        {
+            if (!Poller.Until(_ =>
+                {
+                    if (CheckScope() is { } notReady)
+                    {
+                        return notReady;
+                    }
+
+                    var actual = getActual(TryFindElement());
+                    return compare(actual, expected)
+                        ? Observation.Done()
+                        : Observation.Mismatch(new AssertionException(message ?? "Assert exception", expected, actual), null);
+                }, attempt, PollingIntervalMs))
+            {
+                throw Failure(attempt, caller, budget);
+            }
+
+            return ContainingScope;
+        });
+    }
+
+    /// <summary>Runs an operation as one call: waits for the scope, then runs it once.</summary>
     protected TScope RunDo(Action operation, int? timeoutMs = null,
         [CallerMemberName] string? caller = null)
     {
-        RunPoll(null, () =>
+        var budget = Budget(timeoutMs);
+        caller ??= nameof(RunDo);
+        return Call.Run(caller, null, budget, AnimationMs, attempt =>
         {
+            AwaitScope(attempt, caller, budget);
             operation();
-            return true;
-        }, timeoutMs, caller);
-        return ContainingScope;
+            return ContainingScope;
+        });
     }
 
+    /// <summary>Whether an action waits for the element to be visible before it runs.</summary>
+    protected virtual bool RequiresVisibilityForAction => true;
+
+    /// <summary>An action as one call: polls until the control is ready to be acted on, then acts once.</summary>
     protected TScope RunDoWithElement(Action<IHtmlElement> coreOperation,
-        int? timeoutMs = null, bool doEnsureVisible = true, [CallerMemberName] string? caller = null)
+        int? timeoutMs = null, [CallerMemberName] string? caller = null)
     {
-        RunPoll(null, () =>
+        var budget = Budget(timeoutMs);
+        caller ??= nameof(RunDoWithElement);
+        return Call.Run(caller, null, budget, AnimationMs, attempt =>
         {
-            var element = FindElement();
-            if (doEnsureVisible)
+            ActOnce(attempt, RequiresVisibilityForAction, caller, budget, coreOperation);
+            return ContainingScope;
+        });
+    }
+
+    /// <summary>
+    /// Resolves the control, then runs <paramref name="act"/> on it: once, unless it reports that
+    /// it did not act (<see cref="ElementNotReadyException"/>).
+    /// </summary>
+    private void ActOnce(AttemptContext attempt, bool ensureVisible, string caller, int budgetMs,
+        Action<IHtmlElement> act)
+    {
+        while (true)
+        {
+            var element = ResolveReady(attempt, ensureVisible, caller, budgetMs);
+            try
             {
-                EnsureVisible(element);
+                act(element);
+                return;
             }
-            coreOperation(element);
-            return true;
-        }, timeoutMs, caller);
-        return ContainingScope;
+            catch (ElementNotReadyException error) when (attempt.Deadline.RemainingMs > 0)
+            {
+                attempt.Log.Add(Observation.NotReady(error, null), attempt.Deadline.ElapsedMs);
+                WaitHelper.Pause(Math.Max(1, Math.Min(PollingIntervalMs, attempt.Deadline.RemainingMs)));
+            }
+        }
+    }
+
+    private IHtmlElement ResolveReady(AttemptContext attempt, bool ensureVisible, string caller, int budgetMs)
+    {
+        IHtmlElement? ready = null;
+        if (!Poller.Until(a => Attempt(a, ensureVisible, element =>
+            {
+                EnsureReadyForActionCore(element);
+                ready = element;
+                return Observation.Done();
+            }), attempt, PollingIntervalMs))
+        {
+            throw Failure(attempt, caller, budgetMs);
+        }
+
+        return ready!;
+    }
+
+    /// <summary>
+    /// Waits, inside an action, for the effect of what the action has already done. Never repeats
+    /// the action (R0).
+    /// </summary>
+    protected Confirmation<T> Confirm<T>(Func<T?> read, Func<T?, bool> done, int? timeoutMs)
+        => Confirmer.Run(read, done, timeoutMs ?? DefaultTimeoutMs, PollingIntervalMs);
+
+    /// <summary>
+    /// Checks any readiness this control needs before it is acted on. Throw
+    /// <see cref="ElementNotReadyException"/> when it is not ready; the call asks again.
+    /// </summary>
+    protected virtual void EnsureReadyForActionCore(IHtmlElement element)
+    {
     }
 
     protected TScope RunSetWithElement<T>(T? value, Action<IHtmlElement> coreOperation,
@@ -160,34 +304,38 @@ public abstract class ControlBase<TScope> : ObjectBase, IControlObject<TScope>, 
         {
             return ContainingScope;
         }
-        RunPoll(value?.ToString(), () =>
+
+        var budget = Budget(timeoutMs);
+        caller ??= nameof(RunSetWithElement);
+        return Call.Run(caller, value.ToString(), budget, AnimationMs, attempt =>
         {
-            var element = FindElement();
-            EnsureVisible(element);
-            coreOperation(element);
-            return true;
-        }, timeoutMs, caller);
-        return ContainingScope;
+            ActOnce(attempt, ensureVisible: true, caller, budget, coreOperation);
+            return ContainingScope;
+        });
     }
 
     protected T? RunGetWithElement<T>(Func<IHtmlElement, T> coreOperation,
         int? timeoutMs = null, [CallerMemberName] string? caller = null)
     {
-        var value = default(T);
-        RunPoll(null, () =>
+        var budget = Budget(timeoutMs);
+        caller ??= nameof(RunGetWithElement);
+        return Call.Run(caller, null, budget, AnimationMs, attempt =>
         {
-            var element = FindElement();
-            EnsureVisible(element);
-            value = coreOperation(element);
-            return true;
-        }, timeoutMs, caller);
-        return value;
+            var value = default(T);
+            if (!Poller.Until(a => Attempt(a, ensureVisible: true, element =>
+                {
+                    value = coreOperation(element);
+                    return Observation.Done();
+                }), attempt, PollingIntervalMs))
+            {
+                throw Failure(attempt, caller, budget);
+            }
+
+            return value;
+        });
     }
 
-
-    /// <summary>
-    /// Run assertion with custom comparison function.
-    /// </summary>
+    /// <summary>Run assertion with custom comparison function.</summary>
     protected TScope RunAssert<T>(T? expected, Func<T?> getActual,
         Func<T?, T?, bool> compare, string? message = null,
         int? timeoutMs = null, [CallerMemberName] string? caller = null)
@@ -196,18 +344,32 @@ public abstract class ControlBase<TScope> : ObjectBase, IControlObject<TScope>, 
         {
             return ContainingScope;
         }
-        RunPoll(null, () =>
+
+        var budget = Budget(timeoutMs);
+        caller ??= nameof(RunAssert);
+        return Call.Run(caller, null, budget, AnimationMs, attempt =>
         {
-            var actual = getActual();
-            if (!compare(actual, expected))
+            if (!Poller.Until(_ =>
+                {
+                    if (CheckScope() is { } notReady)
+                    {
+                        return notReady;
+                    }
+
+                    var actual = getActual();
+                    return compare(actual, expected)
+                        ? Observation.Done()
+                        : Observation.Mismatch(new AssertionException(message ?? "Assert exception", expected, actual), null);
+                }, attempt, PollingIntervalMs))
             {
-                throw new AssertionException(message ?? "Assert exception", expected, actual);
+                throw Failure(attempt, caller, budget);
             }
-            return true;
-        }, timeoutMs, caller);
-        return ContainingScope;
+
+            return ContainingScope;
+        });
     }
 
+    /// <summary>An assertion as one call: finds the element again on every attempt, then compares.</summary>
     protected TScope RunAssertWithElement<T>(T? expected, Func<IHtmlElement, T?> getActual,
         Func<T?, T?, bool> compare, string? message = null,
         int? timeoutMs = null, [CallerMemberName] string? caller = null)
@@ -216,38 +378,62 @@ public abstract class ControlBase<TScope> : ObjectBase, IControlObject<TScope>, 
         {
             return ContainingScope;
         }
-        RunPoll(null, () =>
-        {
-            var element = FindElement();
-            EnsureVisible(element);
 
-            var actual = getActual(element);
-            if (!compare(actual, expected))
+        var budget = Budget(timeoutMs);
+        caller ??= nameof(RunAssertWithElement);
+        return Call.Run(caller, null, budget, AnimationMs, attempt =>
+        {
+            if (!Poller.Until(a => Attempt(a, ensureVisible: true, element =>
+                {
+                    var actual = getActual(element);
+                    return compare(actual, expected)
+                        ? Observation.Done()
+                        : Observation.Mismatch(
+                            new AssertionException(message ?? "Assert exception", expected, actual), null);
+                }), attempt, PollingIntervalMs))
             {
-                throw new AssertionException(message ?? "Assert exception", expected, actual);
+                throw Failure(attempt, caller, budget);
             }
-            return true;
-        }, timeoutMs, caller);
-        return ContainingScope;
+
+            return ContainingScope;
+        });
     }
 
     #endregion
 
-    protected TScope RunWithElement(Action<IHtmlElement> action)
-    {
-        return RunDoWithElement(action);
-    }
+    /// <summary>An action on the element, as one call.</summary>
+    protected TScope RunWithElement(Action<IHtmlElement> action, int? timeoutMs = null,
+        [CallerMemberName] string? caller = null)
+        => RunDoWithElement(action, timeoutMs, caller);
 
-    protected TResult? RunWithElement<TResult>(Func<IHtmlElement, TResult> action)
-    {
-        return RunGetWithElement(action);
-    }
+    /// <summary>A read of the element, as one call.</summary>
+    protected TResult? RunWithElement<TResult>(Func<IHtmlElement, TResult> action, int? timeoutMs = null,
+        [CallerMemberName] string? caller = null)
+        => RunGetWithElement(action, timeoutMs, caller);
 
-    protected TScope RunAssert(Action<IHtmlElement> assertion)
+    /// <summary>
+    /// An assertion on the element, as one call: <paramref name="assertion"/> throws
+    /// <see cref="AssertionException"/> while it does not hold, and is asked again until the budget
+    /// runs out (R7).
+    /// </summary>
+    protected TScope RunAssert(Action<IHtmlElement> assertion, int? timeoutMs = null,
+        [CallerMemberName] string? caller = null)
     {
-        var element = FindElement();
-        assertion(element);
-        return ContainingScope;
+        var budget = Budget(timeoutMs);
+        caller ??= nameof(RunAssert);
+        return Call.Run(caller, null, budget, AnimationMs, attempt =>
+        {
+            if (!Poller.Until(a => Attempt(a, ensureVisible: true, element =>
+                {
+                    assertion(element);
+                    return Observation.Done();
+                }), attempt, PollingIntervalMs))
+            {
+                throw Failure(attempt, caller, budget);
+            }
+
+            return ContainingScope;
+        });
     }
 
     protected static Locator ResolveLocator(string selectorOrId)
@@ -339,7 +525,6 @@ public abstract class ControlBase<TScope> : ObjectBase, IControlObject<TScope>, 
 
     #endregion
 
-
     #region Basic Interactions
 
     protected void EnsureSettableCore(IHtmlElement element)
@@ -347,26 +532,12 @@ public abstract class ControlBase<TScope> : ObjectBase, IControlObject<TScope>, 
         EnsureEnabledCore(element);
     }
 
-    /// <summary>
-    /// Sends keyboard keys to the control. Uses framework's Run for logging.
-    /// Optimized to find element once and reuse.
-    /// </summary>
-    /// <param name="keys">The keys to send.</param>
-    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
-    /// <returns>The containing scope for fluent chaining.</returns>
+    /// <summary>Sends keyboard keys to the control, as one call.</summary>
     public virtual TScope SendKeys(string keys, int? timeoutMs = null)
     {
-        return RunSetWithElement(keys, element =>
-        {
-            SendKeysCore(element, keys);
-        }, timeoutMs);
+        return RunSetWithElement(keys, element => SendKeysCore(element, keys), timeoutMs);
     }
 
-    /// <summary>
-    /// Core implementation of SendKeys using pre-found element.
-    /// </summary>
-    /// <param name="element">The pre-found element.</param>
-    /// <param name="keys">The keys to send.</param>
     protected virtual void SendKeysCore(IHtmlElement element, string keys)
     {
         element.SendKeys(keys);
@@ -376,12 +547,6 @@ public abstract class ControlBase<TScope> : ObjectBase, IControlObject<TScope>, 
 
     #region Visible
 
-    /// <summary>
-    /// Checks if element is visible using pre-found element.
-    /// No stale element handling - element is found once at operation start.
-    /// </summary>
-    /// <param name="element">The pre-found element.</param>
-    /// <returns>True if visible, false otherwise.</returns>
     protected bool? IsVisibleCore(IHtmlElement? element)
     {
         return element?.Visible;
@@ -399,88 +564,57 @@ public abstract class ControlBase<TScope> : ObjectBase, IControlObject<TScope>, 
         if (expected == null)
             return true;
 
-        return RunWaitWithElement(
-            element => IsVisibleCore(element) == expected.Value,
-            timeoutMs);
+        return RunWaitWithOptionalElement(element => (IsVisibleCore(element) ?? false) == expected.Value, timeoutMs);
     }
 
     /// <summary>
-    /// Polls visible state using pre-found element.
+    /// One attempt at "visible": visible now, or scroll it into view (throttled) and look once
+    /// more. Throws <see cref="ElementNotReadyException"/> when it is still not visible.
     /// </summary>
-    /// <param name="element">The pre-found element.</param>
-    /// <param name="expected">The expected visible state.</param>
-    /// <param name="timeoutMs">Maximum time to wait in milliseconds.</param>
-    /// <returns>True if condition was met, false if timeout reached.</returns>
-    protected bool WaitVisibleCore(IHtmlElement element, bool expected, int timeoutMs)
+    private void EnsureVisible(IHtmlElement element, AttemptContext attempt)
     {
-        return RunPoll(null, () => IsVisibleCore(element) == expected, timeoutMs);
-    }
-
-    protected virtual void EnsureVisibleCore(IHtmlElement element, int timeout)
-    {
-        if (!ContainingScope.IsReady(timeout))
+        if (IsVisibleCore(element) == true)
         {
-            throw new TimeoutException(
-                $"Element was not visible within {timeout}ms. Locator: {Locator}");
+            return;
         }
-        if (IsVisibleCore(element) != true)
-        {
-            element.ScrollIntoView();
 
-            if (!WaitVisibleCore(element, true, timeout))
+        if (attempt.MayScrollIntoView(Locator.ToString()))
+        {
+            element.ScrollIntoView(Math.Max(1, attempt.Deadline.RemainingMs));
+
+            if (IsVisibleCore(element) == true)
             {
-                throw new TimeoutException(
-                    $"Element was not visible within {timeout}ms after scrolling into view. Locator: {Locator}");
+                return;
             }
         }
+
+        throw new ElementNotReadyException(Locator, NotReadyReason.NotVisible);
     }
 
-    /// <summary>
-    /// Ensures element is scrolled into view before performing an action.
-    /// Called automatically by interaction methods.
-    /// </summary>
-    /// <param name="element">The element to ensure visibility for.</param>
-    protected void EnsureVisible(IHtmlElement element)
-    {
-        EnsureVisibleCore(element, DefaultTimeoutMs);
-    }
-
-    /// <summary>
-    /// Asserts the element is visible. Throws if it isn't.
-    /// </summary>
-    /// <param name="message">Optional custom message for the assertion failure.</param>
-    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
-    /// <returns>The containing scope for fluent chaining.</returns>
     public TScope AssertVisible(string? message = null, int? timeoutMs = null)
         => AssertVisible(true, message, timeoutMs);
 
     /// <inheritdoc />
     public TScope AssertVisible(bool? expected, string? message = null, int? timeoutMs = null)
     {
-        return RunAssertWithElement(expected,
-            e => IsVisibleCore(e), (actual, expected1) => (actual == expected1),
-            null, timeoutMs);
+        return RunAssertWithOptionalElement(expected,
+            e => IsVisibleCore(e) ?? false, (actual, expected1) => actual == expected1,
+            message ?? $"Expected Visible to be '{expected}'. Locator: {Locator}", timeoutMs);
     }
 
     #endregion
 
     #region Enabled
 
+    /// <summary>Throws <see cref="ElementNotReadyException"/> (Disabled) when the element is not enabled.</summary>
     protected virtual void EnsureEnabledCore(IHtmlElement element)
     {
         if (IsEnabledCore(element) != true)
         {
-            throw new TimeoutException(
-                $"Element was not enabled. Locator: {Locator}");
+            throw new ElementNotReadyException(Locator, NotReadyReason.Disabled, "not enabled");
         }
     }
 
-    /// <summary>
-    /// Checks if element is enabled using pre-found element.
-    /// No stale element handling - element is found once at operation start.
-    /// </summary>
-    /// <param name="element">The pre-found element.</param>
-    /// <returns>True if enabled, false otherwise.</returns>
     protected bool? IsEnabledCore(IHtmlElement? element)
     {
         return element?.Enabled;
@@ -491,29 +625,15 @@ public abstract class ControlBase<TScope> : ObjectBase, IControlObject<TScope>, 
         return IsEnabledCore(TryFindElement());
     }
 
-    /// <summary>
-    /// Polls enabled state using pre-found element.
-    /// </summary>
-    /// <param name="expected">The expected enabled state.</param>
-    /// <param name="timeoutMs">Maximum time to wait in milliseconds.</param>
-    /// <returns>True if condition was met, false if timeout reached.</returns>
     /// <inheritdoc />
     public bool WaitEnabled(bool? expected, int? timeoutMs = null)
     {
         if (expected == null)
             return true;
 
-        return RunWaitWithElement(
-            element => IsEnabledCore(element) == expected.Value,
-            timeoutMs);
+        return RunWaitWithElement(element => IsEnabledCore(element) == expected.Value, timeoutMs);
     }
 
-    /// <summary>
-    /// Asserts the element is enabled. Throws if it isn't.
-    /// </summary>
-    /// <param name="message">Optional custom message for the assertion failure.</param>
-    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
-    /// <returns>The containing scope for fluent chaining.</returns>
     public TScope AssertEnabled(string? message = null, int? timeoutMs = null)
         => AssertEnabled(true, message, timeoutMs);
 
@@ -521,8 +641,8 @@ public abstract class ControlBase<TScope> : ObjectBase, IControlObject<TScope>, 
     public TScope AssertEnabled(bool? expected, string? message = null, int? timeoutMs = null)
     {
         return RunAssertWithElement(expected,
-            IsEnabledCore, (actual, expected1) => (actual == expected1),
-            null, timeoutMs);
+            IsEnabledCore, (actual, expected1) => actual == expected1,
+            message ?? $"Expected Enabled to be '{expected}'. Locator: {Locator}", timeoutMs);
     }
 
     #endregion
@@ -543,38 +663,28 @@ public abstract class ControlBase<TScope> : ObjectBase, IControlObject<TScope>, 
     /// <inheritdoc />
     public bool WaitExists(bool? expected, int? timeoutMs = null)
     {
-        return RunWaitWithElement(
-            element => IsExistsCore(element) == expected!.Value,
-            timeoutMs);
+        if (expected == null)
+            return true;
+
+        return RunWaitWithOptionalElement(element => IsExistsCore(element) == expected.Value, timeoutMs);
     }
 
-    /// <summary>
-    /// Asserts the element exists. Throws if it doesn't.
-    /// </summary>
-    /// <param name="message">Optional custom message for the assertion failure.</param>
-    /// <param name="timeoutMs">Optional timeout in milliseconds.</param>
-    /// <returns>The containing scope for fluent chaining.</returns>
     public TScope AssertExists(string? message = null, int? timeoutMs = null)
         => AssertExists(true, message, timeoutMs);
 
     /// <inheritdoc />
     public TScope AssertExists(bool? expected, string? message = null, int? timeoutMs = null)
     {
-        return RunAssertWithElement(expected,
-            IsExistsCore, (actual, expected1) => (actual == expected1),
-            null, timeoutMs);
+        return RunAssertWithOptionalElement(expected,
+            IsExistsCore, (actual, expected1) => actual == expected1,
+            message ?? $"Expected Exists to be '{expected}'. Locator: {Locator}", timeoutMs);
     }
 
     #endregion
 
     #region Text
 
-    /// <summary>
-    /// Gets the text of the element using pre-found element.
-    /// Override in derived classes for platform-specific text retrieval.
-    /// </summary>
-    /// <param name="element">The pre-found element (may be null).</param>
-    /// <returns>The element text, or null if element is null.</returns>
+    /// <summary>The element's text; override for control-specific text.</summary>
     protected virtual string? GetTextCore(IHtmlElement element)
     {
         return element.Text;
@@ -590,43 +700,42 @@ public abstract class ControlBase<TScope> : ObjectBase, IControlObject<TScope>, 
         if (expected == null)
             return true;
 
-        return RunWaitWithElement(
-            element => GetTextCore(element) == expected, timeoutMs);
+        return RunWaitWithElement(element => GetTextCore(element) == expected, timeoutMs);
     }
 
     public TScope AssertText(string? expected, string? message = null, int? timeoutMs = null)
     {
         return RunAssertWithElement(expected,
-            GetTextCore, (actual, expected1) => (actual == expected1),
-            null, timeoutMs);
+            GetTextCore, (actual, expected1) => actual == expected1,
+            message, timeoutMs);
     }
 
     public TScope AssertTextContains(string? expected, string? message = null, int? timeoutMs = null)
     {
         return RunAssertWithElement(expected,
-            GetTextCore, (actual, expected1) => (actual?.Contains(expected!) == true),
-            null, timeoutMs);
+            GetTextCore, (actual, expected1) => actual?.Contains(expected!) == true,
+            message, timeoutMs);
     }
 
     public TScope AssertTextStartsWith(string? expected, string? message = null, int? timeoutMs = null)
     {
         return RunAssertWithElement(expected,
-            GetTextCore, (actual, expected1) => (actual?.StartsWith(expected!) == true),
-            null, timeoutMs);
+            GetTextCore, (actual, expected1) => actual?.StartsWith(expected!) == true,
+            message, timeoutMs);
     }
 
     public TScope AssertTextEndsWith(string? expected, string? message = null, int? timeoutMs = null)
     {
         return RunAssertWithElement(expected,
-            GetTextCore, (actual, expected1) => (actual?.EndsWith(expected!) == true),
-            null, timeoutMs);
+            GetTextCore, (actual, expected1) => actual?.EndsWith(expected!) == true,
+            message, timeoutMs);
     }
 
     public TScope AssertTextEmpty(bool? expected, string? message = null, int? timeoutMs = null)
     {
         return RunAssertWithElement<bool?>(expected,
-            e => { return string.IsNullOrEmpty(GetTextCore(e)); },
-            (actual, expected1) => actual == expected1, null, timeoutMs);
+            e => string.IsNullOrEmpty(GetTextCore(e)),
+            (actual, expected1) => actual == expected1, message, timeoutMs);
     }
 
     #endregion
@@ -650,15 +759,14 @@ public abstract class ControlBase<TScope> : ObjectBase, IControlObject<TScope>, 
         if (expected == null)
             return true;
 
-        return RunWaitWithElement(
-            element => GetAttributeCore(element, name) == expected, timeoutMs);
+        return RunWaitWithElement(element => GetAttributeCore(element, name) == expected, timeoutMs);
     }
 
     public TScope AssertAttribute(string name, string? expected, string? message = null, int? timeoutMs = null)
     {
         return RunAssertWithElement(expected,
-            element => GetAttributeCore(element, name), (actual, expected1) => (actual == expected1),
-            null, timeoutMs);
+            element => GetAttributeCore(element, name), (actual, expected1) => actual == expected1,
+            message, timeoutMs);
     }
 
     #endregion
@@ -666,27 +774,33 @@ public abstract class ControlBase<TScope> : ObjectBase, IControlObject<TScope>, 
     #region ScrollIntoView
 
     /// <summary>
-    /// Scrolls the element into the visible viewport if not already visible.
+    /// Scrolls the element into the visible viewport, as one call. Scrolling is how the element
+    /// becomes visible, so this call does not wait for visibility first.
     /// </summary>
-    /// <param name="timeoutMs">Optional timeout for finding the element.</param>
-    /// <returns>The containing scope for fluent chaining.</returns>
     public TScope ScrollIntoView(int? timeoutMs = null)
     {
-        return RunDoWithElement(element =>
+        var budget = Budget(timeoutMs);
+        const string caller = nameof(ScrollIntoView);
+        return Call.Run(caller, null, budget, AnimationMs, attempt =>
         {
-            ScrollIntoViewCore(element);
-        }, timeoutMs, true);
+            if (!Poller.Until(a => Attempt(a, ensureVisible: false, element =>
+                {
+                    ScrollIntoViewCore(element);
+                    return Observation.Done();
+                }), attempt, PollingIntervalMs))
+            {
+                throw Failure(attempt, caller, budget);
+            }
+
+            return ContainingScope;
+        });
     }
 
-    /// <summary>
-    /// Core scroll implementation. Uses element's ScrollIntoView method.
-    /// </summary>
-    /// <param name="element">The element to scroll into view.</param>
+    /// <summary>Core scroll: gives the scroll what is left of the call's budget.</summary>
     protected virtual void ScrollIntoViewCore(IHtmlElement element)
     {
-        element.ScrollIntoView();
+        element.ScrollIntoView(CallRemainingMs);
     }
 
     #endregion
-
 }

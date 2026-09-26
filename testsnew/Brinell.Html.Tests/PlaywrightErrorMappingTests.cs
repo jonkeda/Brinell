@@ -69,7 +69,7 @@ public class PlaywrightErrorMappingTests
     public void InstanceKey_IsReadFromTheNode_AndReportsADetachedOneAsStale()
     {
         var locator = Locator();
-        locator.SetupSequence(l => l.EvaluateAsync<string>(It.IsAny<string>(), It.IsAny<object?>()))
+        locator.SetupSequence(l => l.EvaluateAsync<string>(It.IsAny<string>(), It.IsAny<object?>(), It.IsAny<LocatorEvaluateOptions?>()))
             .ReturnsAsync("key-1")
             .ThrowsAsync(new PlaywrightException(Detached));
         var element = new PlaywrightHtmlElement(locator.Object);

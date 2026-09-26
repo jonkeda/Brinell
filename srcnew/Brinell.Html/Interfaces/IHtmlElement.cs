@@ -98,8 +98,11 @@ public interface IHtmlElement
     /// <summary>Presses and holds.</summary>
     void LongPress(int durationMs = 1000);
 
-    /// <summary>Scrolls the element into view, waiting at most <paramref name="timeoutMs"/>.</summary>
-    void ScrollIntoView(int timeoutMs = 5000);
+    /// <summary>
+    /// Scrolls the element into view, waiting at most <paramref name="timeoutMs"/>. No default:
+    /// inside a call, pass what is left of its budget (<c>CallBudget.RemainingOr</c>, R3).
+    /// </summary>
+    void ScrollIntoView(int timeoutMs);
 
     /// <summary>Drags from one page point to another.</summary>
     void Swipe(int startX, int startY, int endX, int endY, int durationMs = 500);

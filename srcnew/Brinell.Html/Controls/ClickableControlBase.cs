@@ -17,28 +17,27 @@ public abstract class ClickableControlBase<TScope> : Control<TScope>, IHtmlAsync
     {
     }
 
-    public new TScope Click()
+    // A disabled control is not acted on; the call asks again within its budget (R0).
+    protected override void EnsureReadyForActionCore(IHtmlElement element) => EnsureEnabledCore(element);
+
+    public new TScope Click(int? timeoutMs = null)
     {
-        return RunWithElement(element =>
-        {
-            EnsureEnabledCore(element);
-            element.Click();
-        });
+        return RunWithElement(element => element.Click(), timeoutMs);
     }
 
-    public TScope DoubleClick()
+    public TScope DoubleClick(int? timeoutMs = null)
     {
-        return RunDoWithElement(element => element.DoubleClick());
+        return RunDoWithElement(element => element.DoubleClick(), timeoutMs);
     }
 
-    public TScope RightClick()
+    public TScope RightClick(int? timeoutMs = null)
     {
-        return RunWithElement(element => element.RightClick());
+        return RunWithElement(element => element.RightClick(), timeoutMs);
     }
 
-    public TScope Hover()
+    public TScope Hover(int? timeoutMs = null)
     {
-        return RunWithElement(element => element.Hover());
+        return RunWithElement(element => element.Hover(), timeoutMs);
     }
 
     #region IHtmlAsyncClickable<TScope> explicit implementation

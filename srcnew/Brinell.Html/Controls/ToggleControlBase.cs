@@ -23,7 +23,7 @@ public abstract class ToggleControlBase<TScope> : ClickableControlBase<TScope>, 
         return RunWithElement(element => element.IsChecked);
     }
 
-    public TScope SetChecked(bool value)
+    public TScope SetChecked(bool value, int? timeoutMs = null)
     {
         return RunWithElement(element =>
         {
@@ -34,24 +34,26 @@ public abstract class ToggleControlBase<TScope> : ClickableControlBase<TScope>, 
             }
 
             element.Uncheck();
-        });
+        }, timeoutMs);
     }
 
     public bool WaitChecked(bool expected, int? timeoutMs = null)
     {
-        return Poll(() => IsChecked() == expected, timeoutMs ?? DefaultTimeoutMs);
+        return RunWaitWithElement(element => element.IsChecked == expected, timeoutMs);
     }
 
-    public TScope AssertChecked(bool expected)
+    /// <summary>Asserts the checked state, waiting for it (R7).</summary>
+    public TScope AssertChecked(bool expected, int? timeoutMs = null)
     {
-        if (!WaitChecked(expected))
+        return RunAssert(element =>
         {
-            var actual = IsChecked();
-            throw new AssertionException(
-                $"Checked state mismatch. Expected: {expected}, Actual: {actual}");
-        }
-
-        return ContainingScope;
+            var actual = element.IsChecked;
+            if (actual != expected)
+            {
+                throw new AssertionException(
+                    $"Checked state mismatch. Expected: {expected}, Actual: {actual}");
+            }
+        }, timeoutMs);
     }
 
     #region IHtmlAsyncToggle<TScope> explicit implementation

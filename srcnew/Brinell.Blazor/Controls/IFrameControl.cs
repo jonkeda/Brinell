@@ -29,8 +29,9 @@ public class IFrameControl<TScope> : ControlBase<TScope>
 
     public bool WaitForElementInside(string selector, int? timeoutMs = null)
     {
-        var timeout = timeoutMs ?? DefaultTimeoutMs;
-        return Poll(() => ElementExistsInside(selector), timeout);
+        return RunWaitWithElement(e =>
+            e.Evaluate<bool>($"(iframe) => iframe.contentDocument.querySelector('{EscapeSelector(selector)}') !== null"),
+            timeoutMs);
     }
 
     public TScope AssertSource(string? expected, string? message = null) => RunAssert(e =>

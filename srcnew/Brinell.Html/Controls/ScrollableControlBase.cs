@@ -21,7 +21,7 @@ public abstract class ScrollableControlBase<TScope> : ClickableControlBase<TScop
     {
         return RunWithElement(element =>
         {
-            element.ScrollIntoView();
+            element.ScrollIntoView(CallRemainingMs);
 
             if (x == 0 && y == 0)
             {
@@ -41,7 +41,7 @@ public abstract class ScrollableControlBase<TScope> : ClickableControlBase<TScop
 
     public TScope ScrollToTop()
     {
-        return RunWithElement(element => element.ScrollIntoView());
+        return RunWithElement(element => element.ScrollIntoView(CallRemainingMs));
     }
 
     #region IHtmlAsyncScrollable<TScope> explicit implementation

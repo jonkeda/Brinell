@@ -1,6 +1,7 @@
 using System.Drawing;
 using Brinell.Core;
 using Brinell.Core.Locators;
+using Brinell.Html.Calls;
 using Brinell.Html.Interfaces;
 using Microsoft.Playwright;
 using static Brinell.Html.Playwright.PlaywrightErrors;
@@ -12,8 +13,17 @@ namespace Brinell.Html.Playwright;
 /// <see cref="PlaywrightErrors.Live{T}"/>, so a closed browser and a detached element arrive as
 /// Brinell's signals, not as <see cref="PlaywrightException"/>.
 /// </summary>
+/// <remarks>
+/// Every Playwright call that can wait is given what is left of the running call's budget as its
+/// timeout (?A5 in .my/html/plan.md), so no Playwright wait outlasts the caller's
+/// <c>timeoutMs</c>. Outside a call (a plain <c>Is*</c>) the cap is <see cref="OutsideACallMs"/>,
+/// not Playwright's 30 s default.
+/// </remarks>
 public sealed class PlaywrightHtmlElement : IHtmlElement
 {
+    /// <summary>The longest a Playwright call made outside a Brinell call may wait.</summary>
+    public const int OutsideACallMs = 5000;
+
     // The key the element carries for InstanceKey; written once, on first read. A replaced node
     // has none, so it gets a new key, and "the same element" is a string comparison.
     private const string InstanceKeyScript =
@@ -27,18 +37,20 @@ public sealed class PlaywrightHtmlElement : IHtmlElement
         _locator = locator ?? throw new ArgumentNullException(nameof(locator));
     }
 
+    private static float Budget => CallBudget.RemainingOr(OutsideACallMs);
+
     /// <inheritdoc />
-    public string InstanceKey => Live(() => _locator.EvaluateAsync<string>(InstanceKeyScript).GetAwaiter().GetResult());
+    public string InstanceKey => Evaluate<string>(InstanceKeyScript);
 
     public bool Visible => Live(() => _locator.IsVisibleAsync().GetAwaiter().GetResult());
 
-    public bool Enabled => Live(() => _locator.IsEnabledAsync().GetAwaiter().GetResult());
+    public bool Enabled => Live(() => _locator.IsEnabledAsync(new() { Timeout = Budget }).GetAwaiter().GetResult());
 
     public bool Selected => IsChecked;
 
-    public string? Text => Live(() => _locator.InnerTextAsync().GetAwaiter().GetResult());
+    public string? Text => Live(() => _locator.InnerTextAsync(new() { Timeout = Budget }).GetAwaiter().GetResult());
 
-    public string? TagName => Live(() => _locator.EvaluateAsync<string>("el => el.tagName.toLowerCase()").GetAwaiter().GetResult());
+    public string? TagName => Evaluate<string>("el => el.tagName.toLowerCase()");
 
     public Point Location => EvaluateRect(box => new Point((int)box.X, (int)box.Y));
 
@@ -46,7 +58,7 @@ public sealed class PlaywrightHtmlElement : IHtmlElement
 
     public Rectangle Rect => EvaluateRect(box => new Rectangle((int)box.X, (int)box.Y, (int)box.Width, (int)box.Height));
 
-    public void Click() => Live(() => _locator.ClickAsync().GetAwaiter().GetResult());
+    public void Click() => Live(() => _locator.ClickAsync(new() { Timeout = Budget }).GetAwaiter().GetResult());
 
     public void SendKeys(string text, TextInputMethod method = TextInputMethod.Keys) => Live(() =>
     {
@@ -54,26 +66,28 @@ public sealed class PlaywrightHtmlElement : IHtmlElement
         {
             case TextInputMethod.SetValue:
             case TextInputMethod.Paste:
-                _locator.FillAsync(text).GetAwaiter().GetResult();
+                _locator.FillAsync(text, new() { Timeout = Budget }).GetAwaiter().GetResult();
                 break;
             default:
-                _locator.PressSequentiallyAsync(text).GetAwaiter().GetResult();
+                _locator.PressSequentiallyAsync(text, new() { Timeout = Budget }).GetAwaiter().GetResult();
                 break;
         }
     });
 
-    public void Clear() => Live(() => _locator.ClearAsync().GetAwaiter().GetResult());
+    public void Clear() => Live(() => _locator.ClearAsync(new() { Timeout = Budget }).GetAwaiter().GetResult());
 
-    public void DoubleClick() => Live(() => _locator.DblClickAsync().GetAwaiter().GetResult());
+    public void DoubleClick() => Live(() => _locator.DblClickAsync(new() { Timeout = Budget }).GetAwaiter().GetResult());
 
-    public void RightClick() => Live(() => _locator.ClickAsync(new LocatorClickOptions { Button = MouseButton.Right }).GetAwaiter().GetResult());
+    public void RightClick()
+        => Live(() => _locator.ClickAsync(new() { Button = MouseButton.Right, Timeout = Budget }).GetAwaiter().GetResult());
 
-    public void Hover() => Live(() => _locator.HoverAsync().GetAwaiter().GetResult());
+    public void Hover() => Live(() => _locator.HoverAsync(new() { Timeout = Budget }).GetAwaiter().GetResult());
 
-    public void LongPress(int durationMs = 1000) => Live(() => _locator.ClickAsync(new LocatorClickOptions { Delay = durationMs }).GetAwaiter().GetResult());
+    public void LongPress(int durationMs = 1000)
+        => Live(() => _locator.ClickAsync(new() { Delay = durationMs, Timeout = Budget + durationMs }).GetAwaiter().GetResult());
 
-    public void ScrollIntoView(int timeoutMs = 5000)
-        => Live(() => _locator.ScrollIntoViewIfNeededAsync(new LocatorScrollIntoViewIfNeededOptions { Timeout = timeoutMs }).GetAwaiter().GetResult());
+    public void ScrollIntoView(int timeoutMs)
+        => Live(() => _locator.ScrollIntoViewIfNeededAsync(new() { Timeout = timeoutMs }).GetAwaiter().GetResult());
 
     public void Swipe(int startX, int startY, int endX, int endY, int durationMs = 500) => Live(() =>
     {
@@ -84,7 +98,8 @@ public sealed class PlaywrightHtmlElement : IHtmlElement
         page.Mouse.UpAsync().GetAwaiter().GetResult();
     });
 
-    public string? GetAttribute(string name) => Live(() => _locator.GetAttributeAsync(name).GetAwaiter().GetResult());
+    public string? GetAttribute(string name)
+        => Live(() => _locator.GetAttributeAsync(name, new() { Timeout = Budget }).GetAwaiter().GetResult());
 
     public IHtmlElement? TryFindElement(Locator locator) => Live<IHtmlElement?>(() =>
     {
@@ -110,50 +125,50 @@ public sealed class PlaywrightHtmlElement : IHtmlElement
     public string? GetDomAttribute(string attributeName) => GetAttribute(attributeName);
 
     public string? GetDomProperty(string propertyName)
-        => Live(() => _locator.EvaluateAsync<string?>("(el, propertyName) => el[propertyName]", propertyName).GetAwaiter().GetResult());
+        => Live(() => _locator.EvaluateAsync<string?>("(el, propertyName) => el[propertyName]", propertyName, new() { Timeout = Budget }).GetAwaiter().GetResult());
 
     public string? GetCssValue(string propertyName)
-        => Live(() => _locator.EvaluateAsync<string>("(el, propertyName) => getComputedStyle(el).getPropertyValue(propertyName)", propertyName).GetAwaiter().GetResult());
+        => Live(() => _locator.EvaluateAsync<string>("(el, propertyName) => getComputedStyle(el).getPropertyValue(propertyName)", propertyName, new() { Timeout = Budget }).GetAwaiter().GetResult());
 
     public void Submit()
-        => Live(() => _locator.EvaluateAsync("el => { const form = el.form || el.closest('form'); if (form) form.submit(); }").GetAwaiter().GetResult());
+        => Evaluate("el => { const form = el.form || el.closest('form'); if (form) form.submit(); }");
 
-    public string InnerHtml => Live(() => _locator.InnerHTMLAsync().GetAwaiter().GetResult());
+    public string InnerHtml => Live(() => _locator.InnerHTMLAsync(new() { Timeout = Budget }).GetAwaiter().GetResult());
 
-    public string OuterHtml => Live(() => _locator.EvaluateAsync<string>("el => el.outerHTML").GetAwaiter().GetResult());
+    public string OuterHtml => Evaluate<string>("el => el.outerHTML");
 
-    public bool IsChecked => Live(() => _locator.IsCheckedAsync().GetAwaiter().GetResult());
+    public bool IsChecked => Live(() => _locator.IsCheckedAsync(new() { Timeout = Budget }).GetAwaiter().GetResult());
 
-    public string InputValue => Live(() => _locator.InputValueAsync().GetAwaiter().GetResult());
+    public string InputValue => Live(() => _locator.InputValueAsync(new() { Timeout = Budget }).GetAwaiter().GetResult());
 
     public void Evaluate(string expression)
-        => Live(() => _locator.EvaluateAsync(expression).GetAwaiter().GetResult());
+        => Live(() => _locator.EvaluateAsync(expression, null, new() { Timeout = Budget }).GetAwaiter().GetResult());
 
     public T Evaluate<T>(string expression)
-        => Live(() => _locator.EvaluateAsync<T>(expression).GetAwaiter().GetResult());
+        => Live(() => _locator.EvaluateAsync<T>(expression, null, new() { Timeout = Budget }).GetAwaiter().GetResult());
 
-    public void Fill(string value) => Live(() => _locator.FillAsync(value).GetAwaiter().GetResult());
+    public void Fill(string value) => Live(() => _locator.FillAsync(value, new() { Timeout = Budget }).GetAwaiter().GetResult());
 
     public void SelectOption(string value)
-        => Live(() => _locator.SelectOptionAsync(new SelectOptionValue { Value = value }).GetAwaiter().GetResult());
+        => Live(() => _locator.SelectOptionAsync(new SelectOptionValue { Value = value }, new() { Timeout = Budget }).GetAwaiter().GetResult());
 
     public void SelectOption(string[] values)
     {
         var options = values.Select(value => new SelectOptionValue { Value = value }).ToArray();
-        Live(() => _locator.SelectOptionAsync(options).GetAwaiter().GetResult());
+        Live(() => _locator.SelectOptionAsync(options, new() { Timeout = Budget }).GetAwaiter().GetResult());
     }
 
-    public void Check() => Live(() => _locator.CheckAsync().GetAwaiter().GetResult());
+    public void Check() => Live(() => _locator.CheckAsync(new() { Timeout = Budget }).GetAwaiter().GetResult());
 
-    public void Uncheck() => Live(() => _locator.UncheckAsync().GetAwaiter().GetResult());
+    public void Uncheck() => Live(() => _locator.UncheckAsync(new() { Timeout = Budget }).GetAwaiter().GetResult());
 
-    public void Focus() => Live(() => _locator.FocusAsync().GetAwaiter().GetResult());
+    public void Focus() => Live(() => _locator.FocusAsync(new() { Timeout = Budget }).GetAwaiter().GetResult());
 
-    public void Blur() => Live(() => _locator.BlurAsync().GetAwaiter().GetResult());
+    public void Blur() => Live(() => _locator.BlurAsync(new() { Timeout = Budget }).GetAwaiter().GetResult());
 
     private TResult EvaluateRect<TResult>(Func<LocatorBoundingBoxResult, TResult> selector)
     {
-        var box = Live(() => _locator.BoundingBoxAsync().GetAwaiter().GetResult());
+        var box = Live(() => _locator.BoundingBoxAsync(new() { Timeout = Budget }).GetAwaiter().GetResult());
         return box == null ? default! : selector(box);
     }
 }

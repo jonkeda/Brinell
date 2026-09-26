@@ -21,38 +21,37 @@ public class TextInputControl<TScope> : FocusableControlBase<TScope>, IHtmlAsync
     {
     }
 
+    // A disabled field is not filled; the call asks again within its budget (R0).
+    protected override void EnsureReadyForActionCore(IHtmlElement element) => EnsureEnabledCore(element);
+
     /// <summary>
     /// Clear and fill with new text (uses Playwright Fill for reliable input).
     /// </summary>
-    public TScope SetText(string text)
+    public TScope SetText(string text, int? timeoutMs = null)
     {
-        return RunWithElement(element =>
-        {
-            EnsureEnabledCore(element);
-            element.Fill(text);
-        });
+        return RunSetWithElement(text, element => element.Fill(text), timeoutMs);
     }
 
     /// <summary>
     /// Get the current input value.
     /// </summary>
-    public string? GetValue()
+    public string? GetValue(int? timeoutMs = null)
     {
-        return RunWithElement(element => element.InputValue);
+        return RunWithElement(element => element.InputValue, timeoutMs);
     }
 
     /// <summary>
     /// Type text character by character (for inputs with keystroke handlers).
     /// </summary>
-    public TScope TypeText(string text)
+    public TScope TypeText(string text, int? timeoutMs = null)
     {
-        return RunWithElement(element => element.SendKeys(text));
+        return RunSetWithElement(text, element => element.SendKeys(text), timeoutMs);
     }
 
     /// <summary>
-    /// Assert current input value matches expected.
+    /// Assert the input value matches <paramref name="expected"/>, waiting for it (R7).
     /// </summary>
-    public TScope AssertValue(string? expected)
+    public TScope AssertValue(string? expected, int? timeoutMs = null)
     {
         return RunAssert(element =>
         {
@@ -62,7 +61,7 @@ public class TextInputControl<TScope> : FocusableControlBase<TScope>, IHtmlAsync
                 throw new AssertionException(
                     $"Input value mismatch. Expected: '{expected}', Actual: '{actual}'");
             }
-        });
+        }, timeoutMs);
     }
 
     /// <summary>
@@ -70,13 +69,7 @@ public class TextInputControl<TScope> : FocusableControlBase<TScope>, IHtmlAsync
     /// </summary>
     public TScope WaitValue(string? expected, int? timeoutMs = null)
     {
-        var matched = Poll(() =>
-        {
-            var element = TryFindElement();
-            return element != null && string.Equals(element.InputValue, expected, StringComparison.Ordinal);
-        }, timeoutMs ?? DefaultTimeoutMs);
-
-        if (!matched)
+        if (!RunWaitWithElement(element => string.Equals(element.InputValue, expected, StringComparison.Ordinal), timeoutMs))
         {
             throw new TimeoutException($"Input value did not match '{expected}' within timeout");
         }

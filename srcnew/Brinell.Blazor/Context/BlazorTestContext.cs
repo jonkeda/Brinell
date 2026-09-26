@@ -22,6 +22,8 @@ public sealed class BlazorTestContext : IHtmlTestContext, IAsyncDisposable
 
     public IHtmlTestContext Context => this;
     public IHtmlDriver Driver => _inner.Driver;
+    public string? Name => _inner.Name;
+    public NearMissSettings NearMiss => _inner.NearMiss;
     public TimeoutSettings Timeouts => _inner.Timeouts;
     public ITestLogger Logger => _inner.Logger;
     public LocatorStrategy DefaultLocatorStrategy => _inner.DefaultLocatorStrategy;

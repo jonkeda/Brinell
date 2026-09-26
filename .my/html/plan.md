@@ -49,7 +49,7 @@ Status values: `todo`, `doing`, `done`, `blocked`.
 | **T1. Todo web app** | done (2026-09-26, see 2.1) | The Todo app as a Blazor Server head, `samples/Todo/src/Brinell.Samples.Todo.Web`, on the shared `Core`, `Contracts` and `Infrastructure` ([todo-blazor.md](todo-blazor.md) section 2). `data-testid`s equal to the MAUI AutomationIds; `data-busy` from `IsBusy`; `data-item-key` on rows; `LaunchSettings` from the environment, so one host process is one device. An `X-Todo-Client` header, from a new `TODO_CLIENT_ID` launch setting, sent by the API client and recorded by `TodoServerStub` and `Todo.Api`. No Html UI tests yet (?T1) | The app builds and runs against `Todo.Api` by hand; Todo unit, integration and contract tests green; MAUI Todo UI suite unchanged (the header is additive) |
 | **2. Pin it down** | done (2026-09-26, see 2.1) | Failing unit tests that force each following step: (a) `Click` finds the element again (b) the caller's 300 ms budget is honoured (c) one log pair per call (d) `Get` / `WaitVisible` / `AssertText` re-resolve (e) an action that throws is not repeated (f) an attribute read below a call cannot outlast the call. **R0 guard tests:** a button that never re-enables → `Click` fails with "disabled" within its budget; a `Fill` that has no effect on the model → `NotConfirmed`, `Fill` `Times.Once`; a component re-rendered every 100 ms → the call passes **and** a near-miss `Warning` is logged; the Playwright browser closed mid-call → `AppUnavailableException` without waiting out the budget. **Baseline:** the current `Brinell.Html.UITests` and `Brinell.Blazor.UITests` suites run N times and its failures classified (framework race / app bug / environment / driver gap); a per-call count of `Locator.CountAsync` calls; the slowest 5 tests | Tests fail for the stated reason; baseline recorded in section 4 |
 | **3. Stale signal** | done (2026-09-26, see 2.1) | Html exceptions (design 4.3): `StaleElementException`, `ElementNotReadyException`, `ScopeNotReadyException`, `AppUnavailableException`. `InstanceKey`; a `Live<T>` wrapper in `PlaywrightTestContext` and `PlaywrightHtmlElement`; a browser-closed / context-closed / target-closed check that raises `AppUnavailableException` (design section 5). Every `catch { }` in `ObjectBase.Poll` and `PlaywrightHtmlElement.TryFindElement` gone. All catch-alls in the ControlBase layer removed. `HtmlPageObjectBase.WaitLoaded` throws `ScopeNotReadyException`, not Core's `PageLoadException`. `RouteUnavailableException` (MAUI review-2 fix D3): a permanent "no route" ends the call; a plain `NotSupportedException` is still retried | Mapping unit tests; grep finds no `catch\s*\(?` without a named type in `srcnew/Brinell.Html*` or `srcnew/Brinell.Blazor` (JSON config and other named ones stay); `PageLoadException` no longer raised by Html or Blazor code |
-| **4. Calls** | todo | `Calls/*` (`ControlCall`, `Poller`, `Deadline`, `AttemptContext`, `Observation`, `ObservationLog`, `ScopeGate`, `Confirmer`), copied from MAUI's shape. `ViewBase` and `RootedScopeBase` moved onto the calls layer, replacing `ControlBase.RunPoll` and its bare `catch (Exception ex)`. `ObjectBase.Poll` deleted. `RunDoWithElement` **no longer retries the action**: phase 1 resolves and gates on readiness within the budget; phase 2 acts **once** (R0). One `LogEntry`/`LogExit` pair per public call. Near-miss `Warning` logging. `Assert*` resolves per attempt, like `Get*` (MAUI review-2 fix S1). `BRINELL_CALL_LOG`, and the context `Name` in the log line (?A10) | The step 2 pinned tests pass; one log pair per call; the near-miss test passes; `RunDoWithElement` shows `Invoke` `Times.Once` on an action that has no effect |
+| **4. Calls** | done (2026-09-26, see 2.1) | `Calls/*` (`ControlCall`, `Poller`, `Deadline`, `AttemptContext`, `Observation`, `ObservationLog`, `ScopeGate`, `Confirmer`), copied from MAUI's shape. `ViewBase` and `RootedScopeBase` moved onto the calls layer, replacing `ControlBase.RunPoll` and its bare `catch (Exception ex)`. `ObjectBase.Poll` deleted. `RunDoWithElement` **no longer retries the action**: phase 1 resolves and gates on readiness within the budget; phase 2 acts **once** (R0). One `LogEntry`/`LogExit` pair per public call. Near-miss `Warning` logging. `Assert*` resolves per attempt, like `Get*` (MAUI review-2 fix S1). `BRINELL_CALL_LOG`, and the context `Name` in the log line (?A10) | The step 2 pinned tests pass; one log pair per call; the near-miss test passes; `RunDoWithElement` shows `Invoke` `Times.Once` on an action that has no effect |
 | **5. Scope readiness** | todo | `ScopeReadiness` and the `ProbeReadiness` chain; `AsksParent`; `ProbeContentReadiness`; `CanResolveElements` and `EnsureLoaded` (if present in Html) removed; `AppRoot` for the browser page/frame; the busy signal for a Blazor page is read from a well-known data attribute (design 7.2, sample-app.md item 3); `ScopeNotReadyException` replaces `PageLoadException` throughout Html; the frame model (`ForFrame`) becomes a scope wrapper. `AppRoot.WaitReady` is a call unit with its own budget (MAUI review-2 fix 8). **The UI test bases:** `BlazorSampleTestBase` (in both UI test projects) loses its `Thread.Yield`/`Task.Delay` loop and its `Context.FindElement`: the page's `WaitReady` covers "circuit up". The fixture starts the sample host on a free port, instead of expecting one at `BLAZOR_APP_URL` | Scope tests pass; a busy page defers the child call within its budget |
 | **6. Confirm** | todo | `Confirm` replaces the "loop the whole call until the effect is seen" pattern that today lives inside `RunPoll`. The act-then-confirm Cores (`Click` on a busy-triggering button, `Fill`, `Check`/`Uncheck`, `SelectOption`, `Focus`/`Blur`) get a second phase that reads the effect once per attempt and never repeats the action | Replaced element: new message, action `Times.Once`; the R0 "no effect" test from step 2 passes |
 | **7. Collections** | todo | `ItemKey` for Html rows (design 7.6, differences item 5: DOM node id, or `data-item-key`, or position). `MaterializeAttempts` for a Blazor `Virtualize` scroll. `ListControl` and `TableControl` move onto a `CollectionObjectBase<TParent, TSelf, TItem>` + `ItemObjectBase<TCollection, TSelf>`. `Item(index)` and `SelectItem` become waiting call units; `TryItem` / `TrySelectItem` answer now (R7) | Collection tests pass; the row-recycling test from sample-app.md item 4 fails when a row is asked to click after its key changed |
@@ -65,6 +65,61 @@ constraints in its section 4.2, so that project stays possible.
 
 Filled in as steps finish, in the same shape as `../stale-readiness/plan.md` section 2.1: what
 was proved, what the design was wrong about, and what was deferred to a later step on purpose.
+
+**Step 4 (2026-09-26).**
+
+- **Evidence.**
+  - `Brinell.Html.Tests`: 23 of 24 pass. That is every step 3 and step 4 pin, every guard, the
+    mapping tests and the measurement. The one still failing is the step 6 pin (`SetText` that
+    does not take), for its step 2 reason.
+  - `Brinell.Blazor.Tests` 172/172; both UAT projects 2/2.
+  - `Brinell.Html.UITests` 37/37 in 3 of 3 runs.
+  - `Brinell.Blazor.UITests` **31/31** in 3 of 3 runs, plus one more after the last fix. The
+    three counter and button tests the baseline classed as framework races now pass: pin (i)'s
+    fix, a waiting `AssertTextContaining`.
+  - Playwright calls per completed `Click`: still 4.
+- **What changed.**
+  - `Brinell.Html/Calls`: `ControlCall`, `Poller`, `Deadline`, `AttemptContext`, `Observation`,
+    `ObservationLog`, `Confirmer`, `Confirmation<T>`, copied from MAUI's shape and typed on
+    `IHtmlTestContext`. Also a public `CallBudget.RemainingOr` for the driver.
+  - `ControlBase` runs every public member as one call: one log pair, one budget, one poll.
+    Each attempt finds the element again. `EnsureVisible` is one check and one throttled
+    scroll.
+  - **X2 is closed.** `RunDoWithElement` and `RunSetWithElement` resolve the control until it
+    is ready, then act **once** (`ActOnce`). `RunPoll` and its `catch (Exception)` are gone.
+  - Enabled checks moved into `EnsureReadyForActionCore` (clickables, text inputs), as in MAUI.
+  - `RunAssert(Action<IHtmlElement>)` waits (R7). `LabelControl`, `ToggleControlBase`,
+    `TextInputControl`, and the Blazor `IFrameControl` and `ImageControl` no longer nest one call
+    inside another's poll.
+  - `WaitExists(false)`, `WaitVisible` and `AssertVisible`/`AssertExists` work on an absent
+    element (pin h).
+  - Actions take `int? timeoutMs = null`: `Click`, `DoubleClick`, `RightClick`, `Hover`, `Clear`,
+    `SetText`, `TypeText`, `SetChecked`. `AssertValue`, `AssertChecked`, `AssertTextContaining`
+    and `GetValue` also take one.
+  - `PlaywrightTestContext.FindElement` makes one attempt (pin f1).
+  - ?A5 (pin f2): every Playwright call that can wait gets `Timeout` = what is left of the call.
+    Outside a call it is at most `PlaywrightHtmlElement.OutsideACallMs` (5 s), not Playwright's
+    30 s.
+  - `IHtmlElement.ScrollIntoView(int)` has no default any more; callers pass `CallRemainingMs`.
+  - The context has a `Name` (?A10: the test name in the log line, "Test" when unset) and
+    `NearMiss` settings. `BRINELL_CALL_LOG` opens a CSV call log, as in MAUI.
+- **An Html-only finding: a cut-off attempt is not an observation.** Once driver calls get the
+  remaining budget, the last attempt of an exhausted call starts with about 1 ms, and Playwright's
+  own timeout fires mid-read. The UI guard then reported "1 of 44 attempts raised
+  TimeoutException", instead of what the other 43 saw ("disabled"). `Poller` now ends the poll on
+  a `TimeoutException` raised after the deadline, and reports the last complete attempt. It is
+  pinned by `Guard_Click_OnAButtonThatNeverEnables_SaysDisabled_WhenTheLastReadIsCutOff`. MAUI's
+  drivers take no timeout on reads, so MAUI does not hit this.
+- **Pin setup corrected.** The near-miss pin had used a plain `InvalidOperationException` to
+  stand in for "detached", because the stale type did not exist in step 2. It now throws
+  `StaleElementException`, which the driver has reported since step 3.
+- **Deliberately not done here.**
+  - `ObjectBase.Poll` stays for page and container waits (`WaitLoaded`, `WaitTitle`,
+    `ContainerBase.WaitReady`). Those become call units in step 5, and `Poll` goes with them.
+  - `ControlBase` keeps its name. The design's `ViewBase` rename is churn with no behaviour, so
+    it is left for step 9, if at all.
+- **Fixed on the way:** `ScrollableControlBase` and `ScrollContainerControl` scrolled with a
+  nested 5 s default inside a call.
 
 **Step 3 (2026-09-26).**
 

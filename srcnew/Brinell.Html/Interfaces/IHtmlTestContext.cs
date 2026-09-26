@@ -1,4 +1,5 @@
 using Brinell.Core.Interfaces;
+using Brinell.Html.Context;
 
 namespace Brinell.Html.Interfaces;
 
@@ -12,6 +13,15 @@ public interface IHtmlTestContext : ITestContext, IHtmlElementScope
 {
     /// <summary>The driver that talks to the browser.</summary>
     IHtmlDriver Driver { get; }
+
+    /// <summary>
+    /// A name for this context in logs and messages, or <c>null</c>. Tells several apps in one
+    /// scenario apart (?A10).
+    /// </summary>
+    string? Name { get; }
+
+    /// <summary>When a call that passed is logged as a near-miss.</summary>
+    NearMissSettings NearMiss { get; }
 
     /// <summary>The page's URL now.</summary>
     string CurrentUrl { get; }

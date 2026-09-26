@@ -22,13 +22,13 @@ public class LabelControl<TScope> : ControlBase<TScope>
     }
 
     /// <summary>
-    /// Check if text contains the specified substring.
+    /// Whether the text contains <paramref name="substring"/> now; with a timeout, waits for it.
     /// </summary>
     public bool IsTextContaining(string substring, int? timeoutMs = null)
     {
-        return Poll(
-            () => TryFindElement()?.Text?.Contains(substring, StringComparison.OrdinalIgnoreCase) == true,
-            timeoutMs ?? 0);
+        return timeoutMs is null or 0
+            ? TryFindElement()?.Text?.Contains(substring, StringComparison.OrdinalIgnoreCase) == true
+            : RunWaitWithElement(element => Contains(element, substring), timeoutMs);
     }
 
     /// <summary>
@@ -36,7 +36,7 @@ public class LabelControl<TScope> : ControlBase<TScope>
     /// </summary>
     public TScope WaitTextContaining(string substring, int? timeoutMs = null)
     {
-        if (!IsTextContaining(substring, timeoutMs ?? DefaultTimeoutMs))
+        if (!RunWaitWithElement(element => Contains(element, substring), timeoutMs))
         {
             throw new TimeoutException($"Text did not contain '{substring}' within timeout");
         }
@@ -48,20 +48,24 @@ public class LabelControl<TScope> : ControlBase<TScope>
         => Task.FromResult(WaitTextContaining(substring, timeoutMs));
 
     /// <summary>
-    /// Assert text contains the specified substring.
+    /// Assert text contains the specified substring, waiting for it (R7).
     /// </summary>
-    public TScope AssertTextContaining(string substring)
+    public TScope AssertTextContaining(string substring, int? timeoutMs = null)
     {
-        var text = GetText();
-        if (text?.Contains(substring, StringComparison.OrdinalIgnoreCase) != true)
+        return RunAssert(element =>
         {
-            throw new AssertionException(
-                $"Text does not contain '{substring}'. Actual: '{text}'");
-        }
-
-        return ContainingScope;
+            var text = GetTextCore(element);
+            if (text?.Contains(substring, StringComparison.OrdinalIgnoreCase) != true)
+            {
+                throw new AssertionException(
+                    $"Text does not contain '{substring}'. Actual: '{text}'");
+            }
+        }, timeoutMs);
     }
 
     public Task<TScope> AssertTextContainingAsync(string substring)
         => Task.FromResult(AssertTextContaining(substring));
+
+    private bool Contains(IHtmlElement element, string substring)
+        => GetTextCore(element)?.Contains(substring, StringComparison.OrdinalIgnoreCase) == true;
 }

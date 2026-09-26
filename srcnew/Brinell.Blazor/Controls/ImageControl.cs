@@ -19,8 +19,7 @@ public class ImageControl<TScope> : ClickableControlBase<TScope>
 
     public bool WaitLoaded(bool expected = true, int? timeoutMs = null)
     {
-        var timeout = timeoutMs ?? DefaultTimeoutMs;
-        return Poll(() => IsLoaded() == expected, timeout);
+        return RunWaitWithElement(e => e.Evaluate<bool>("img => img.complete && img.naturalWidth > 0") == expected, timeoutMs);
     }
 
     public int GetNaturalWidth() => RunWithElement(e =>

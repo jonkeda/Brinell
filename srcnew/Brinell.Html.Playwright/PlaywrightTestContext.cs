@@ -16,6 +16,7 @@ public sealed class PlaywrightTestContext : IHtmlTestContext, IAsyncDisposable
     private readonly bool _ownsLifecycle;
     private readonly TimeoutSettings _timeouts;
     private readonly ITestLogger _logger;
+    private readonly HtmlTestContextOptions _options;
 
     private IPlaywright? _playwright;
     private IBrowser? _browser;
@@ -27,30 +28,31 @@ public sealed class PlaywrightTestContext : IHtmlTestContext, IAsyncDisposable
         IBrowser browser,
         IBrowserContext browserContext,
         IPage page,
-        TimeoutSettings timeouts,
-        ITestLogger logger)
+        HtmlTestContextOptions options)
     {
+        _options = options;
         _playwright = playwright;
         _browser = browser;
         _browserContext = browserContext;
         _page = page;
         _driver = new PlaywrightHtmlDriver(page);
-        _timeouts = timeouts;
-        _logger = logger;
+        _timeouts = options.Timeouts;
+        _logger = options.Logger ?? (ITestLogger?)OpenCallLog() ?? NullTestLogger.Instance;
         _ownsLifecycle = true;
     }
 
     private PlaywrightTestContext(
         IPage page,
         IFrame? frame,
-        TimeoutSettings timeouts,
+        HtmlTestContextOptions options,
         ITestLogger logger,
         bool ownsLifecycle)
     {
+        _options = options;
         _page = page;
         _frame = frame;
         _driver = new PlaywrightHtmlDriver(page, frame);
-        _timeouts = timeouts;
+        _timeouts = options.Timeouts;
         _logger = logger;
         _ownsLifecycle = ownsLifecycle;
     }
@@ -81,13 +83,7 @@ public sealed class PlaywrightTestContext : IHtmlTestContext, IAsyncDisposable
             await page.GotoAsync(options.BaseUrl).ConfigureAwait(false);
         }
 
-        return new PlaywrightTestContext(
-            playwright,
-            browser,
-            browserContext,
-            page,
-            options.Timeouts,
-            options.Logger ?? NullTestLogger.Instance);
+        return new PlaywrightTestContext(playwright, browser, browserContext, page, options);
     }
 
     public static PlaywrightTestContext ForPage(IPage page, HtmlTestContextOptions? options = null)
@@ -98,8 +94,8 @@ public sealed class PlaywrightTestContext : IHtmlTestContext, IAsyncDisposable
         return new PlaywrightTestContext(
             page,
             frame: null,
-            options.Timeouts,
-            options.Logger ?? NullTestLogger.Instance,
+            options,
+            options.Logger ?? (ITestLogger?)OpenCallLog() ?? NullTestLogger.Instance,
             ownsLifecycle: false);
     }
 
@@ -120,7 +116,7 @@ public sealed class PlaywrightTestContext : IHtmlTestContext, IAsyncDisposable
         return new PlaywrightTestContext(
             _page,
             frame,
-            _timeouts,
+            _options,
             _logger,
             ownsLifecycle: false);
     }
@@ -128,6 +124,10 @@ public sealed class PlaywrightTestContext : IHtmlTestContext, IAsyncDisposable
     public IHtmlTestContext Context => this;
 
     public IHtmlDriver Driver => _driver;
+
+    public string? Name => _options.Name;
+
+    public NearMissSettings NearMiss => _options.NearMiss;
 
     public TimeoutSettings Timeouts => _timeouts;
 
@@ -171,26 +171,9 @@ public sealed class PlaywrightTestContext : IHtmlTestContext, IAsyncDisposable
         return _driver.FindElements(locator).FirstOrDefault();
     }
 
+    // One attempt (R2): the call around it is what waits.
     public IHtmlElement FindElement(Locator locator)
-    {
-        ArgumentNullException.ThrowIfNull(locator);
-
-        var timeout = _timeouts.ElementFind;
-        var deadline = DateTime.UtcNow.AddMilliseconds(timeout);
-
-        while (DateTime.UtcNow < deadline)
-        {
-            var element = TryFindElement(locator);
-            if (element != null)
-            {
-                return element;
-            }
-
-            Thread.Sleep(100);
-        }
-
-        throw new ElementNotFoundException(locator, timeout);
-    }
+        => TryFindElement(locator) ?? throw new ElementNotFoundException(locator);
 
     public IReadOnlyList<IHtmlElement> FindElements(Locator locator)
     {
@@ -231,6 +214,20 @@ public sealed class PlaywrightTestContext : IHtmlTestContext, IAsyncDisposable
     public void ResetAppState()
     {
         _browserContext?.ClearCookiesAsync().GetAwaiter().GetResult();
+    }
+
+    /// <summary>
+    /// A call log in the folder <c>BRINELL_CALL_LOG</c> names, when it is set: one CSV file per
+    /// context, with every call's entry and exit, near-miss warnings included. Only when the
+    /// options give no logger of their own. The same switch as MAUI's.
+    /// </summary>
+    private static CsvTestLogger? OpenCallLog()
+    {
+        var folder = Environment.GetEnvironmentVariable("BRINELL_CALL_LOG");
+        return string.IsNullOrWhiteSpace(folder)
+            ? null
+            : new CsvTestLogger(Path.Combine(folder,
+                $"calls-html-{DateTime.Now:yyyyMMdd-HHmmss}-{Environment.ProcessId}-{Guid.NewGuid().ToString("N")[..8]}.csv"));
     }
 
     public void Dispose()

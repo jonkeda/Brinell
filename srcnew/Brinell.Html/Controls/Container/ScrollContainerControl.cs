@@ -1,3 +1,4 @@
+using Brinell.Html.Calls;
 using Brinell.Core.Locators;
 using Brinell.Html.Interfaces;
 using Brinell.Html.Interfaces.Async;
@@ -17,7 +18,7 @@ public class ScrollContainerControl<TParent, TScope> : ContainerBase<TParent, TS
 
     public TScope ScrollToTop()
     {
-        ContainerRoot.ScrollIntoView();
+        ContainerRoot.ScrollIntoView(CallBudget.RemainingOr(DefaultTimeoutMs));
         return Self;
     }
 
@@ -42,7 +43,7 @@ public class ScrollContainerControl<TParent, TScope> : ContainerBase<TParent, TS
         }
         else
         {
-            root.ScrollIntoView();
+            root.ScrollIntoView(CallBudget.RemainingOr(DefaultTimeoutMs));
         }
         return Self;
     }

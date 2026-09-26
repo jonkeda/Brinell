@@ -16,23 +16,18 @@ public abstract class Control<TScope> : ControlBase<TScope>
     {
     }
 
-    public TScope Click()
+    public TScope Click(int? timeoutMs = null)
     {
-        return RunWithElement(element => element.Click());
+        return RunWithElement(element => element.Click(), timeoutMs);
     }
 
     public TScope SendKeys(string text)
     {
-        return RunWithElement(element => element.SendKeys(text));
+        return SendKeys(text, null);
     }
 
-    public TScope Clear()
+    public TScope Clear(int? timeoutMs = null)
     {
-        return RunWithElement(element => element.Clear());
-    }
-
-    public TScope ScrollIntoView(int timeoutMs = 5000)
-    {
-        return RunWithElement(element => element.ScrollIntoView(timeoutMs));
+        return RunWithElement(element => element.Clear(), timeoutMs);
     }
 }

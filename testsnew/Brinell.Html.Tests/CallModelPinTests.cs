@@ -368,7 +368,7 @@ public class CallModelPinTests
             var element = Element(text: "good");
             if (++lookups <= 3)
             {
-                element.Setup(e => e.Text).Throws(new InvalidOperationException("Element is not attached to the DOM"));
+                element.Setup(e => e.Text).Throws(new Brinell.Html.Exceptions.StaleElementException());
             }
 
             return element.Object;
@@ -423,6 +423,28 @@ public class CallModelPinTests
 
         Assert.IsType<Brinell.Html.Exceptions.AppUnavailableException>(error);
         Assert.True(elapsed < 500, $"The call took {elapsed} ms after the browser closed; it must end at once.");
+    }
+
+    /// <summary>
+    /// A disabled button still fails as "disabled" when the budget runs out in the middle of the
+    /// last attempt's read (a Playwright call given the last millisecond times out). Found in the
+    /// step 4 UI run: the cut-off read was reported instead of what every earlier attempt saw.
+    /// </summary>
+    [Fact]
+    [Trait("Pin", "guard")]
+    public void Guard_Click_OnAButtonThatNeverEnables_SaysDisabled_WhenTheLastReadIsCutOff()
+    {
+        var disabled = Element();
+        disabled.Setup(e => e.Enabled).Returns(() => Brinell.Html.Calls.CallBudget.RemainingOr(1000) <= 1
+            ? throw new TimeoutException("Timeout 1ms exceeded.")
+            : false);
+        GivenTarget(() => disabled.Object);
+
+        var error = Record.Exception(() => NewPage().Target.Click(timeoutMs: 300));
+
+        var notReady = Assert.IsType<Brinell.Html.Exceptions.ElementNotReadyException>(error);
+        Assert.Equal(Brinell.Html.Exceptions.NotReadyReason.Disabled, notReady.Reason);
+        disabled.Verify(e => e.Click(), Times.Never);
     }
 
     /// <summary>An element that never becomes visible is never clicked.</summary>
