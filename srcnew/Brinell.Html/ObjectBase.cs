@@ -1,7 +1,7 @@
 using System.Runtime.CompilerServices;
-using Brinell.Html.Calls;
+using Brinell.Core.Calls;
+using Brinell.Core.Scopes;
 using Brinell.Html.Interfaces;
-using Brinell.Html.Scopes;
 
 namespace Brinell.Html;
 
@@ -31,7 +31,7 @@ public abstract class ObjectBase
         [CallerMemberName] string? caller = null)
     {
         caller ??= nameof(RunProbe);
-        return new ControlCall(Context, ScopeName, ScopeName).Run(caller, null, budgetMs, Context.Timeouts.Animation, attempt =>
+        return new ControlCall(Context.Logger, Context.Name, Context.NearMiss, ScopeName, ScopeName).Run(caller, null, budgetMs, Context.Timeouts.Animation, attempt =>
         {
             if (Poller.Until(_ => probe(), attempt, PollingIntervalMs))
             {

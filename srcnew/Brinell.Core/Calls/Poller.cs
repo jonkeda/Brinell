@@ -1,9 +1,10 @@
+using Brinell.Core.Exceptions;
 using Brinell.Core.Utilities;
 
-namespace Brinell.Maui.Calls;
+namespace Brinell.Core.Calls;
 
 /// <summary>
-/// The one retry loop of a MAUI call.
+/// The one retry loop of a call.
 /// </summary>
 internal static class Poller
 {
@@ -28,6 +29,13 @@ internal static class Poller
             try
             {
                 observation = attempt(context);
+            }
+            catch (TimeoutException) when (context.Deadline.RemainingMs <= 0 && context.Log.Attempts > 0)
+            {
+                // The budget ran out in the middle of this attempt: a driver call below it was
+                // given what was left (?A5) and used it up. That is not something the attempt saw,
+                // so the call is reported by the last attempt that completed.
+                return false;
             }
             catch (Exception error) when (!IsFatal(error))
             {

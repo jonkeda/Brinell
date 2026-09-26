@@ -1,9 +1,8 @@
+using Brinell.Core.Calls;
 using Brinell.Core.Exceptions;
 using Brinell.Core.Interfaces;
 using Brinell.Core.Locators;
 using Brinell.Core.Utilities;
-using Brinell.Html.Calls;
-using Brinell.Html.Exceptions;
 using Brinell.Html.Interfaces;
 using Brinell.Html.Interfaces.Async;
 using System.Runtime.CompilerServices;
@@ -53,7 +52,7 @@ public abstract class ControlBase<TScope> : ObjectBase, IControlObject<TScope>, 
 
     private string ControlId => Locator.Value;
 
-    private ControlCall Call => new(Context, PageName, ControlId);
+    private ControlCall Call => new(Context.Logger, Context.Name, Context.NearMiss, PageName, ControlId);
 
     private int Budget(int? timeoutMs) => timeoutMs ?? DefaultTimeoutMs;
 
@@ -73,7 +72,7 @@ public abstract class ControlBase<TScope> : ObjectBase, IControlObject<TScope>, 
             readiness => ScopeGate.NotReady(readiness, caller, $"control '{Locator}'", budgetMs));
 
     // The scope chain, one probe per attempt (R4): the scope answers for itself and its parents.
-    private Observation? CheckScope() => ScopeGate.Check(_scope);
+    private Observation? CheckScope() => ScopeGate.Check(_scope.ProbeReadiness());
 
     /// <summary>
     /// One attempt against the element: the scope, then a fresh lookup, then (optionally) one

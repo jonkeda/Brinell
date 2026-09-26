@@ -1,7 +1,7 @@
 using System.Diagnostics;
-using Brinell.Html.Calls;
+using Brinell.Core.Calls;
+using Brinell.Core.Exceptions;
 using Brinell.Html.Controls.Text;
-using Brinell.Html.Exceptions;
 
 namespace Brinell.Html.Tests;
 

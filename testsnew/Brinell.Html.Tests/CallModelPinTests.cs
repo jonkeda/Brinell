@@ -368,7 +368,7 @@ public class CallModelPinTests
             var element = Element(text: "good");
             if (++lookups <= 3)
             {
-                element.Setup(e => e.Text).Throws(new Brinell.Html.Exceptions.StaleElementException());
+                element.Setup(e => e.Text).Throws(new Brinell.Core.Exceptions.StaleElementException());
             }
 
             return element.Object;
@@ -421,7 +421,7 @@ public class CallModelPinTests
         Exception? error = null;
         var elapsed = Timed(() => error = Record.Exception(() => new PinPage(context).Status.GetText(timeoutMs: 2000)));
 
-        Assert.IsType<Brinell.Html.Exceptions.AppUnavailableException>(error);
+        Assert.IsType<Brinell.Core.Exceptions.AppUnavailableException>(error);
         Assert.True(elapsed < 500, $"The call took {elapsed} ms after the browser closed; it must end at once.");
     }
 
@@ -435,15 +435,15 @@ public class CallModelPinTests
     public void Guard_Click_OnAButtonThatNeverEnables_SaysDisabled_WhenTheLastReadIsCutOff()
     {
         var disabled = Element();
-        disabled.Setup(e => e.Enabled).Returns(() => Brinell.Html.Calls.CallBudget.RemainingOr(1000) <= 1
+        disabled.Setup(e => e.Enabled).Returns(() => Brinell.Core.Calls.CallBudget.RemainingOr(1000) <= 1
             ? throw new TimeoutException("Timeout 1ms exceeded.")
             : false);
         GivenTarget(() => disabled.Object);
 
         var error = Record.Exception(() => NewPage().Target.Click(timeoutMs: 300));
 
-        var notReady = Assert.IsType<Brinell.Html.Exceptions.ElementNotReadyException>(error);
-        Assert.Equal(Brinell.Html.Exceptions.NotReadyReason.Disabled, notReady.Reason);
+        var notReady = Assert.IsType<Brinell.Core.Exceptions.ElementNotReadyException>(error);
+        Assert.Equal(Brinell.Core.Exceptions.NotReadyReason.Disabled, notReady.Reason);
         disabled.Verify(e => e.Click(), Times.Never);
     }
 

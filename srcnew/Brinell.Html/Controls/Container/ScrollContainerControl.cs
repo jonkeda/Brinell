@@ -1,4 +1,4 @@
-using Brinell.Html.Calls;
+using Brinell.Core.Calls;
 using Brinell.Core.Locators;
 using Brinell.Html.Interfaces;
 using Brinell.Html.Interfaces.Async;

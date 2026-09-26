@@ -1,4 +1,6 @@
-namespace Brinell.Maui.Calls;
+using System.Diagnostics;
+
+namespace Brinell.Core.Calls;
 
 /// <summary>
 /// The point in time a phase of a call must finish by. Created once per phase and passed down,

@@ -1,6 +1,6 @@
 using Brinell.Core.Exceptions;
 using Brinell.Core.Locators;
-using Brinell.Html.Scopes;
+using Brinell.Core.Scopes;
 
 namespace Brinell.Html.Interfaces;
 

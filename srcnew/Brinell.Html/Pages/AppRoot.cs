@@ -1,7 +1,7 @@
+using Brinell.Core.Calls;
 using Brinell.Core.Locators;
-using Brinell.Html.Calls;
+using Brinell.Core.Scopes;
 using Brinell.Html.Interfaces;
-using Brinell.Html.Scopes;
 
 namespace Brinell.Html.Pages;
 

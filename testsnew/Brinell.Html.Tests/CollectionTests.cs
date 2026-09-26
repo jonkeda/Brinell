@@ -1,8 +1,7 @@
 using Brinell.Core.Exceptions;
+using Brinell.Core.Scopes;
 using Brinell.Html.Collections;
 using Brinell.Html.Controls.Buttons;
-using Brinell.Html.Exceptions;
-using Brinell.Html.Scopes;
 
 namespace Brinell.Html.Tests;
 

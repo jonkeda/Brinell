@@ -1,14 +1,16 @@
-namespace Brinell.Maui.Context;
+using Brinell.Core.Logging;
+
+namespace Brinell.Core.Calls;
 
 /// <summary>
 /// When a call that succeeded is still reported, as a near-miss (see
-/// <c>.docs/contracts/call-model.md</c>, R0).
+/// <c>.docs/contracts/call-model.md</c>, R0): its element was replaced
+/// <paramref name="Replacements"/> times or more, or it needed more than one attempt and more than
+/// <paramref name="BudgetShare"/> of its budget.
 /// </summary>
 /// <remarks>
 /// A near-miss is logged as <see cref="LogResult.Warning"/> with a "near-miss:" summary, so a UI
 /// that keeps re-rendering, or a page slow to become idle, shows up although the test passed.
-/// Step 8 of the plan measured the defaults: 1 near-miss in 4,833 logged calls on the full Windows
-/// suite, which is not noise.
 /// </remarks>
 /// <param name="Replacements">Element replacements seen during the call at or above which it is a near-miss.</param>
 /// <param name="BudgetShare">The share of the call's budget above which it is a near-miss.</param>

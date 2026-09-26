@@ -1,4 +1,4 @@
-namespace Brinell.Maui.Scopes;
+namespace Brinell.Core.Scopes;
 
 /// <summary>What one readiness probe of a scope found.</summary>
 public enum ScopeReadinessState
@@ -12,7 +12,10 @@ public enum ScopeReadinessState
     /// <summary>The root was there, went stale, and was not there again when looked for once more.</summary>
     StaleRoot,
 
-    /// <summary>The page's root is there, but the page does not report itself loaded.</summary>
+    /// <summary>
+    /// The page's root is there, but the page does not report itself loaded (its URL, its load
+    /// state, its busy signal not yet set).
+    /// </summary>
     NotLoaded,
 
     /// <summary>The page reports itself busy.</summary>
@@ -27,7 +30,7 @@ public enum ScopeReadinessState
     /// <summary>The page requires a busy signal and has none: a configuration error.</summary>
     MissingBusySignal,
 
-    /// <summary>The page's busy signal is not "True" or "False": a configuration error.</summary>
+    /// <summary>The page's busy signal is not "true" or "false": a configuration error.</summary>
     InvalidBusySignal
 }
 

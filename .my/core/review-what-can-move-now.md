@@ -1,7 +1,15 @@
 # Review: what can move to Core now
 
 Date: 2026-09-26, after the Html plan finished (`../html/plan.md`). Checked against the source
-on `move`. The question: can classes such as the calls layer or the exceptions move from
+on `move`.
+
+**Status: L1 done (2026-09-26).** Every "Yes" row below is in Core, merged as in section 2,
+with no copies left in MAUI or Html. Namespaces: `Brinell.Core.Calls`, `Brinell.Core.Exceptions`,
+`Brinell.Core.Scopes` (no `Core` prefix). No backward-compatibility shims. AD-010, R9 and the
+CHANGELOG are updated. Verified: solution and every test/sample project build; Core, MAUI,
+Html, Blazor and Generator unit tests; Html, Blazor and Todo web UI suites; MAUI UI tier 3
+(351 passed, only the opt-in stress and probe skips). L2 (busy signal) and the rows marked
+"No" still wait. The question: can classes such as the calls layer or the exceptions move from
 `Brinell.Maui` and `Brinell.Html` into `Brinell.Core`?
 
 ## Short answer

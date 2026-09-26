@@ -1,13 +1,11 @@
 using System.Diagnostics;
 using Brinell.Core.Logging;
-using Brinell.Html.Context;
-using Brinell.Html.Interfaces;
 
-namespace Brinell.Html.Calls;
+namespace Brinell.Core.Calls;
 
 /// <summary>
 /// One public call on a control or scope: one log entry/exit pair around the whole of it, the
-/// action included (R1). The log line format is MAUI's, so one log analyser reads both stacks.
+/// action included (R1). Every stack logs in the same format, so one log analyser reads them all.
 /// </summary>
 internal sealed class ControlCall
 {
@@ -17,22 +15,33 @@ internal sealed class ControlCall
     private readonly string _controlId;
     private readonly NearMissSettings _nearMiss;
 
-    public ControlCall(IHtmlTestContext context, string pageName, string controlId)
+    /// <param name="logger">Where the entry and exit go, or null for none.</param>
+    /// <param name="testName">
+    /// The test context's name, so a scenario with several apps can tell their calls apart (?A10);
+    /// "Test" when null.
+    /// </param>
+    /// <param name="nearMiss">When a call that succeeded is still reported; the defaults when null.</param>
+    /// <param name="pageName">The scope the call stands in, for the log.</param>
+    /// <param name="controlId">The control, for the log.</param>
+    public ControlCall(ITestLogger? logger, string? testName, NearMissSettings? nearMiss, string pageName, string controlId)
     {
-        _logger = context.Logger;
-        // The context's name, so a scenario with several apps can tell their calls apart (?A10).
-        _testName = context.Name ?? "Test";
+        _logger = logger;
+        _testName = testName ?? "Test";
+        _nearMiss = nearMiss ?? NearMissSettings.Default;
         _pageName = pageName;
         _controlId = controlId;
-        _nearMiss = context.NearMiss ?? NearMissSettings.Default;
     }
 
     /// <summary>
     /// Runs <paramref name="body"/> as one call: logs its entry, gives it a fresh
     /// <see cref="AttemptContext"/> with a <paramref name="budgetMs"/> deadline, and logs its exit.
-    /// <paramref name="succeeded"/> is for a call that answers false rather than throwing (a
-    /// <c>Wait*</c>): whether the answer counts as success in the log.
     /// </summary>
+    /// <param name="caller">The public member's name, for the log.</param>
+    /// <param name="value">The value the member was given, for the log.</param>
+    /// <param name="budgetMs">The call's budget: the caller's timeout, or the default wait.</param>
+    /// <param name="animationMs">The scroll throttle interval.</param>
+    /// <param name="body">The call. Its first phase polls with the context it is given.</param>
+    /// <param name="succeeded">For a call that answers false rather than throwing (a <c>Wait*</c>): whether the answer counts as success in the log.</param>
     public T Run<T>(
         string caller,
         string? value,

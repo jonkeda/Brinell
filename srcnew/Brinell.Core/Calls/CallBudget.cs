@@ -1,8 +1,8 @@
-namespace Brinell.Html.Calls;
+namespace Brinell.Core.Calls;
 
 /// <summary>
 /// What is left of the running call's budget, for a wait below the call: a driver passes it to
-/// every Playwright call, so no Playwright wait outlasts the caller's timeout (?A5, R2, R3).
+/// every platform wait, so no wait outlasts the caller's timeout (?A5, R2, R3).
 /// </summary>
 public static class CallBudget
 {

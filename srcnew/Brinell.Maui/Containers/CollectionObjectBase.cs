@@ -1,4 +1,4 @@
-using Brinell.Maui.Calls;
+using Brinell.Core.Calls;
 using Brinell.Maui.Configuration;
 using Brinell.Maui.Controls;
 

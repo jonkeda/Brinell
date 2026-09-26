@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Html on the call model (`.my/html/plan.md`): `Brinell.Html` owns its interfaces
   (`IHtmlElement` with `InstanceKey`, `IHtmlDriver`, `IHtmlElementScope`, `IHtmlPage`,
   `IHtmlTestContext`) and runs every control, page, container and row member as one call
-  (`Brinell.Html.Calls`), with near-miss warnings and `BRINELL_CALL_LOG` (AD-009, AD-010).
+  (`Brinell.Core.Calls`), with near-miss warnings and `BRINELL_CALL_LOG` (AD-009, AD-010).
 - Html exceptions: `StaleElementException`, `ElementNotReadyException`,
   `ScopeNotReadyException`, `AppUnavailableException`, `RouteUnavailableException`. A closed
   browser is `AppUnavailableException` and ends the call at once.
@@ -99,6 +99,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Request/response recording
 
 ### Changed
+- **Breaking:** the calls layer, its exceptions and scope readiness moved from `Brinell.Maui`
+  and `Brinell.Html` into Core, one copy for both stacks (AD-010,
+  `.my/core/review-what-can-move-now.md`). `Brinell.Maui.Calls`, `Brinell.Html.Calls`,
+  `Brinell.Maui.Exceptions`, `Brinell.Html.Exceptions` and `Brinell.Maui.Scopes` are gone:
+  - `Brinell.Core.Calls`: `Confirmation<T>`, `ConfirmationResult` (was
+    `Brinell.Maui.Controls.Base`), `CallBudget`, `NearMissSettings` (was
+    `Brinell.Maui.Context` / `Brinell.Html.Context`); the internal call types.
+  - `Brinell.Core.Exceptions`: `StaleElementException`, `ElementNotReadyException`,
+    `NotReadyReason`, `ScopeNotReadyException`, `AppUnavailableException`,
+    `RouteUnavailableException`. One type across stacks: a catch works for either.
+  - `Brinell.Core.Scopes`: `ScopeReadiness` (with `RootReacquired`, on both stacks now),
+    `ScopeReadinessState`. Html's `BusySignal` stays in `Brinell.Html.Scopes`.
+- The merged calls layer is the union of both copies. MAUI gains the confirmation's own
+  budget context and the cut-off rule for a driver timeout after the deadline; Html gains
+  `ItemChanged`, the scroll-to-find throttle and the poll's `stop`. `ControlCall` takes the
+  logger, test name and near-miss settings instead of a stack's context (MAUI still logs
+  "Test": `IMauiTestContext` has no name yet). `AttemptContext.RemainingOr` is replaced by `CallBudget.RemainingOr`,
+  which never answers less than 1 ms inside a call.
+- `StaleElementException`'s message is platform-neutral: "is no longer there: it was removed
+  or replaced".
 - `CommunityToolkit.Maui` 9.0.0 -> 15.0.1 and `Microsoft.Maui.Controls` -> 10.0.90 (required by the
   toolkit). Added `CommunityToolkit.Maui.MediaElement` 10.0.0.
 - `Brinell.Maui.CommunityToolkit` no longer references CommunityToolkit.Maui, is centrally

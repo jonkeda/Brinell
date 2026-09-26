@@ -1,6 +1,6 @@
+using Brinell.Core.Exceptions;
+using Brinell.Core.Scopes;
 using Brinell.Core.Testing;
-using Brinell.Maui.Exceptions;
-using Brinell.Maui.Scopes;
 using Brinell.Samples.Todo.UITests.Controls;
 using Brinell.Samples.Todo.UITests.Pages;
 

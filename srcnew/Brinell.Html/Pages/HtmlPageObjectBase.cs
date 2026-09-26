@@ -1,9 +1,9 @@
+using Brinell.Core.Calls;
 using Brinell.Core.Composition;
 using Brinell.Core.Exceptions;
 using Brinell.Core.Locators;
-using Brinell.Html.Calls;
+using Brinell.Core.Scopes;
 using Brinell.Html.Context;
-using Brinell.Html.Exceptions;
 using Brinell.Html.Interfaces;
 using Brinell.Html.Scopes;
 

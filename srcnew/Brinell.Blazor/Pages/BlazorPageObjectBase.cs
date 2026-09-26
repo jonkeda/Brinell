@@ -1,6 +1,7 @@
-using Brinell.Html.Scopes;
+using Brinell.Core.Scopes;
 using Brinell.Html.Interfaces;
 using Brinell.Html.Pages;
+using Brinell.Html.Scopes;
 
 namespace Brinell.Blazor.Pages;
 

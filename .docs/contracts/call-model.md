@@ -20,7 +20,7 @@ adopts the same rules). Enforces
 | **R6** | One check that a cached root is still alive, used by every scope that caches a root (`InstanceKey` read through the driver's `Live` helper). |
 | **R7** | Non-`Try` members wait; `Try*` members answer about now. |
 | **R8** | The generator does not change: same `Run*` names and signatures on both hierarchies. |
-| **R9** | MAUI and Html own the interfaces they change; Core is not changed by this work. See [AD-010](../decisions/ad-010-maui-ahead-of-core.md). |
+| **R9** | MAUI and Html own the interfaces and bases they change. The calls layer, its exceptions and `ScopeReadiness` are one copy, in Core (`Brinell.Core.Calls`, `.Exceptions`, `.Scopes`). See [AD-010](../decisions/ad-010-maui-ahead-of-core.md). |
 
 ## What a call may absorb, and what it must report (R0)
 

@@ -1,4 +1,7 @@
-namespace Brinell.Maui.Calls;
+using Brinell.Core.Exceptions;
+using Brinell.Core.Scopes;
+
+namespace Brinell.Core.Calls;
 
 /// <summary>
 /// Every observation of one phase of a call, and the failure built from them.
@@ -54,7 +57,7 @@ internal sealed class ObservationLog
             return "no attempt was made";
         }
 
-        var replaced = Replacements > 0 ? $"; replaced {Replacements} time{(Replacements == 1 ? "" : "s")}" : string.Empty;
+        var replaced = Replacements > 0 ? $"; replaced {Times(Replacements)}" : string.Empty;
         var (last, at) = _entries[^1];
         return $"{Attempts} attempt{(Attempts == 1 ? "" : "s")}{replaced}; last: {last} at {at} ms";
     }
@@ -73,7 +76,7 @@ internal sealed class ObservationLog
         Func<ScopeReadiness, Exception> scopeNotReady)
     {
         var last = Last;
-        var history = Replacements > 0 ? $"(replaced {Replacements} time{(Replacements == 1 ? "" : "s")} in {budgetMs} ms)" : null;
+        var history = Replacements > 0 ? $"(replaced {Times(Replacements)} in {budgetMs} ms)" : null;
 
         return last.Kind switch
         {
@@ -87,6 +90,7 @@ internal sealed class ObservationLog
                 locator,
                 last.Error,
                 Join(last.Kind == ObservationKind.ItemChanged ? last.Detail : "It was found, then gone", history)),
+            ObservationKind.Mismatch when last.Error is { } mismatch => mismatch,
             ObservationKind.Pending => new WaitTimeoutException(
                 $"'{locator}' did not reach the state waited for within {budgetMs} ms. {Summary()}.", budgetMs),
             ObservationKind.Failed when last.Error is { } error => Unexpected(error, $"'{locator}'", budgetMs),
@@ -97,14 +101,10 @@ internal sealed class ObservationLog
 
     /// <summary>
     /// The failure of a phase whose last attempt raised <paramref name="error"/>, an exception no
-    /// observation explains (design 2.1: "names its type and how many attempts raised it").
+    /// observation explains. After one attempt it is the answer as it is; after retries it is
+    /// wrapped in a <see cref="WaitTimeoutException"/> naming its type, how many attempts raised
+    /// it, and its message. It is never reported as "not found".
     /// </summary>
-    /// <remarks>
-    /// After a single attempt the exception is the answer and is returned as it is. After retries
-    /// it is wrapped, as the inner exception of a <see cref="WaitTimeoutException"/> whose message
-    /// names its type, how many of the attempts raised it, and its message. It is never reported
-    /// as "not found".
-    /// </remarks>
     /// <param name="error">The last attempt's exception.</param>
     /// <param name="subject">What the call was about, for the message.</param>
     /// <param name="budgetMs">The phase's budget.</param>
@@ -121,6 +121,8 @@ internal sealed class ObservationLog
             $"{error.GetType().Name}. Last: {error.Message}",
             error);
     }
+
+    private static string Times(int count) => count == 1 ? "1 time" : $"{count} times";
 
     private static string Join(params string?[] parts)
         => string.Join(" ", parts.Where(part => !string.IsNullOrWhiteSpace(part)));

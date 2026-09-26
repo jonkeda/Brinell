@@ -4,16 +4,29 @@
 `IMauiDriver`, `IMauiElementScope`, `IMauiPage`, `IMauiTestContext`) and no longer
 implements Core's element, driver, scope and page interfaces. Since 2026-09-26
 `Brinell.Html` does the same, with its own set (`IHtmlElement`, `IHtmlDriver`,
-`IHtmlElementScope`, `IHtmlPage`, `IHtmlTestContext`) and its own copy of the calls
-layer. Core was not changed to get there, either time. The stacks where the model was
+`IHtmlElementScope`, `IHtmlPage`, `IHtmlTestContext`). The stacks where the model was
 designed and proven keep their own shapes; the other stacks keep Core's until the proven
-shape moves down to Core, one stack at a time, as its own project
+shape moves down to Core, one layer at a time, as its own step
 (`.my/stale-readiness/move-down.md`).
 
-Until then, expect the MAUI and Html types to differ from their Core counterparts, and
-from each other where the platform differs (Html's `BusySignal`, for instance). Do not
-add adapters between them and Core: a bridge now would have to be undone in the move
-down.
+**The leaf layer has moved down** (2026-09-26, `.my/core/review-what-can-move-now.md`).
+It names no element, driver or scope type, so it needed none of the interfaces:
 
-**Broken when:** an adapter is added between the MAUI or Html interfaces and Core's, or
-Core is changed to match either of them ahead of the deliberate move-down.
+- `Brinell.Core.Calls`: `Deadline`, `AttemptContext`, `Observation`, `ObservationLog`,
+  `Poller`, `Confirmer`, `ControlCall`, `ScopeGate` (internal, visible to `Brinell.Maui`,
+  `Brinell.Html` and their test projects), and `Confirmation<T>`, `CallBudget`,
+  `NearMissSettings` (public);
+- `Brinell.Core.Exceptions`: `StaleElementException`, `ElementNotReadyException` with
+  `NotReadyReason`, `ScopeNotReadyException`, `AppUnavailableException`,
+  `RouteUnavailableException`;
+- `Brinell.Core.Scopes`: `ScopeReadiness`, `ScopeReadinessState`.
+
+MAUI and Html have no copies of these. What is still per stack: the interfaces, the
+control and scope bases, pages, collections and item keys, and Html's `BusySignal`.
+Expect those to differ from their Core counterparts, and from each other where the
+platform differs. Do not add adapters between them and Core: a bridge now would have to
+be undone in the move down.
+
+**Broken when:** an adapter is added between the MAUI or Html interfaces and Core's;
+Core is changed to match either stack's interfaces or bases ahead of their deliberate
+move-down; or a stack grows its own copy of a leaf-layer type again.

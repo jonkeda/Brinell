@@ -1,5 +1,5 @@
+using Brinell.Core.Calls;
 using Brinell.Core.Utilities;
-using Brinell.Maui.Calls;
 using System.Runtime.CompilerServices;
 
 namespace Brinell.Maui.Controls.Base;
@@ -83,7 +83,7 @@ public abstract partial class ViewBase<TScope> : IElementObject<TScope>
     private string PageName => Page?.GetType().Name ?? "Unknown";
     private string ControlId => Locator.Value;
 
-    private ControlCall Call => new(Context, PageName, ControlId);
+    private ControlCall Call => new(Context.Logger, null, Context.NearMiss, PageName, ControlId);
 
     private int Budget(int? timeoutMs) => timeoutMs ?? DefaultTimeoutMs;
 
@@ -93,7 +93,7 @@ public abstract partial class ViewBase<TScope> : IElementObject<TScope>
     /// What is left of the running call's budget, for a wait below the call (a scroll); the
     /// default wait outside a call. Nothing inside a call starts a budget of its own (R2, R3).
     /// </summary>
-    protected int CallRemainingMs => AttemptContext.RemainingOr(DefaultTimeoutMs);
+    protected int CallRemainingMs => CallBudget.RemainingOr(DefaultTimeoutMs);
 
     /// <summary>The failure of a phase that ran out of budget, from what it last saw.</summary>
     private Exception Failure(AttemptContext attempt, string caller, int budgetMs)
@@ -109,7 +109,7 @@ public abstract partial class ViewBase<TScope> : IElementObject<TScope>
     /// </summary>
     private Observation Attempt(AttemptContext attempt, bool ensureVisible, Func<IMauiElement, Observation> body)
     {
-        if (ScopeGate.Check(_mauiScope) is { } notReady)
+        if (ScopeGate.Check(_mauiScope.ProbeReadiness()) is { } notReady)
         {
             return notReady;
         }
@@ -162,7 +162,7 @@ public abstract partial class ViewBase<TScope> : IElementObject<TScope>
     /// <summary>Polls the page alone until it is ready, or fails the call.</summary>
     private void AwaitScope(AttemptContext attempt, string caller, int budgetMs)
     {
-        if (!Poller.Until(_ => ScopeGate.Check(_mauiScope) ?? Observation.Done(), attempt, PollingIntervalMs))
+        if (!Poller.Until(_ => ScopeGate.Check(_mauiScope.ProbeReadiness()) ?? Observation.Done(), attempt, PollingIntervalMs))
         {
             throw Failure(attempt, caller, budgetMs);
         }
@@ -192,7 +192,7 @@ public abstract partial class ViewBase<TScope> : IElementObject<TScope>
         caller ??= nameof(RunWait);
         return Call.Run(caller, null, budget, AnimationMs, attempt =>
         {
-            if (Poller.Until(_ => ScopeGate.Check(_mauiScope) ?? (operation() ? Observation.Done() : Observation.Pending()),
+            if (Poller.Until(_ => ScopeGate.Check(_mauiScope.ProbeReadiness()) ?? (operation() ? Observation.Done() : Observation.Pending()),
                     attempt, PollingIntervalMs))
             {
                 return true;
@@ -244,7 +244,7 @@ public abstract partial class ViewBase<TScope> : IElementObject<TScope>
         var find = resolve ?? TryFindElement;
         return Call.Run(caller, null, budget, AnimationMs, attempt =>
         {
-            if (Poller.Until(_ => ScopeGate.Check(_mauiScope)
+            if (Poller.Until(_ => ScopeGate.Check(_mauiScope.ProbeReadiness())
                     ?? (coreOperation(find()) ? Observation.Done() : Observation.Pending()),
                     attempt, PollingIntervalMs))
             {
@@ -275,7 +275,7 @@ public abstract partial class ViewBase<TScope> : IElementObject<TScope>
         {
             if (!Poller.Until(_ =>
                 {
-                    if (ScopeGate.Check(_mauiScope) is { } notReady)
+                    if (ScopeGate.Check(_mauiScope.ProbeReadiness()) is { } notReady)
                     {
                         return notReady;
                     }
@@ -456,7 +456,7 @@ public abstract partial class ViewBase<TScope> : IElementObject<TScope>
         {
             if (!Poller.Until(_ =>
                 {
-                    if (ScopeGate.Check(_mauiScope) is { } notReady)
+                    if (ScopeGate.Check(_mauiScope.ProbeReadiness()) is { } notReady)
                     {
                         return notReady;
                     }

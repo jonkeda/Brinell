@@ -1,6 +1,6 @@
+using Brinell.Core.Exceptions;
+using Brinell.Core.Scopes;
 using Brinell.Html.Collections;
-using Brinell.Html.Exceptions;
-using Brinell.Html.Scopes;
 using Brinell.Html.UITests.PageObjects;
 using Brinell.Html.UITests.TestBase;
 

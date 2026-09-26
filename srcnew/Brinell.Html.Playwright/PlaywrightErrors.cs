@@ -1,4 +1,4 @@
-using Brinell.Html.Exceptions;
+using Brinell.Core.Exceptions;
 using Microsoft.Playwright;
 
 namespace Brinell.Html.Playwright;

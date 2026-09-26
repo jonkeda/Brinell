@@ -1,3 +1,4 @@
+using Brinell.Core.Scopes;
 using Brinell.Html.Scopes;
 
 namespace Brinell.Html.UITests.PageObjects;

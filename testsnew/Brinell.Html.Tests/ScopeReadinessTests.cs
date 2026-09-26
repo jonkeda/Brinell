@@ -1,8 +1,9 @@
 using System.Diagnostics;
+using Brinell.Core.Exceptions;
+using Brinell.Core.Scopes;
 using Brinell.Html.Controls;
 using Brinell.Html.Controls.Buttons;
 using Brinell.Html.Controls.Display;
-using Brinell.Html.Exceptions;
 using Brinell.Html.Scopes;
 
 namespace Brinell.Html.Tests;

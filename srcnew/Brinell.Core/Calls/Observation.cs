@@ -1,7 +1,7 @@
-using Brinell.Html.Exceptions;
-using Brinell.Html.Scopes;
+using Brinell.Core.Exceptions;
+using Brinell.Core.Scopes;
 
-namespace Brinell.Html.Calls;
+namespace Brinell.Core.Calls;
 
 /// <summary>What one attempt of a call saw.</summary>
 internal enum ObservationKind
@@ -9,7 +9,7 @@ internal enum ObservationKind
     /// <summary>The attempt succeeded; the call is done.</summary>
     Done,
 
-    /// <summary>The scope the call stands in (a page or container) was not ready.</summary>
+    /// <summary>A scope in the chain the call stands in (a page, container or row) was not ready.</summary>
     ScopeNotReady,
 
     /// <summary>The element was not found.</summary>
@@ -21,6 +21,9 @@ internal enum ObservationKind
     /// <summary>The element was found, then turned out to be gone.</summary>
     Stale,
 
+    /// <summary>A row now holds another item.</summary>
+    ItemChanged,
+
     /// <summary>A comparison did not hold (an assertion's actual value was not the expected one).</summary>
     Mismatch,
 
@@ -28,10 +31,10 @@ internal enum ObservationKind
     Pending,
 
     /// <summary>An unexpected exception.</summary>
-    Failed,
+    Failed
 }
 
-/// <summary>What one attempt of a call saw.</summary>
+/// <summary>What one attempt of a call saw, and when.</summary>
 /// <param name="Kind">The outcome.</param>
 /// <param name="InstanceKey">The element seen, when one was found and could say who it was.</param>
 /// <param name="Reason">For <see cref="ObservationKind.NotReady"/>: what the element was short of.</param>
@@ -73,6 +76,6 @@ internal readonly record struct Observation(
         ObservationKind.NotReady => $"NotReady({Reason})",
         ObservationKind.Failed or ObservationKind.Mismatch when Error != null => $"{Kind}({Error.GetType().Name})",
         _ when Detail != null => $"{Kind}({Detail})",
-        _ => Kind.ToString(),
+        _ => Kind.ToString()
     };
 }

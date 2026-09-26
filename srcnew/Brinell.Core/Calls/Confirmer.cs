@@ -1,10 +1,10 @@
+using Brinell.Core.Exceptions;
 using Brinell.Core.Utilities;
-using Brinell.Html.Exceptions;
 
-namespace Brinell.Html.Calls;
+namespace Brinell.Core.Calls;
 
 /// <summary>
-/// The wait for an action's effect, behind <c>Confirm</c> on controls.
+/// The wait for an action's effect, behind <c>Confirm</c> on controls and scopes.
 /// </summary>
 internal static class Confirmer
 {

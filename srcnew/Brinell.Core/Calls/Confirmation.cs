@@ -1,4 +1,6 @@
-namespace Brinell.Maui.Controls.Base;
+using Brinell.Core.Exceptions;
+
+namespace Brinell.Core.Calls;
 
 /// <summary>How the wait for an action's effect ended.</summary>
 public enum ConfirmationResult

@@ -1,4 +1,7 @@
-namespace Brinell.Maui.Calls;
+using Brinell.Core.Exceptions;
+using Brinell.Core.Scopes;
+
+namespace Brinell.Core.Calls;
 
 /// <summary>
 /// The readiness step every attempt of a call starts with, and the failure it produces.
@@ -6,17 +9,13 @@ namespace Brinell.Maui.Calls;
 internal static class ScopeGate
 {
     /// <summary>
-    /// One probe of <paramref name="scope"/>: null when it is ready, otherwise the observation to
-    /// report.
+    /// One probe of a scope: null when it is ready, otherwise the observation to report.
     /// </summary>
+    /// <param name="readiness">What the scope's probe found.</param>
     /// <exception cref="ScopeNotReadyException">
     /// The scope is misconfigured (a busy signal that is missing or unreadable). No amount of
     /// waiting fixes that, so the call fails at once (R0).
     /// </exception>
-    public static Observation? Check(IMauiElementScope scope) => Check(scope.ProbeReadiness());
-
-    /// <inheritdoc cref="Check(IMauiElementScope)"/>
-    /// <param name="readiness">A probe already made.</param>
     public static Observation? Check(ScopeReadiness readiness)
     {
         if (readiness.IsReady)

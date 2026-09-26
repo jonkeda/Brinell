@@ -35,5 +35,5 @@ public interface IMauiTestContext : ITestContext, IMauiElementScope
     ShellChromeLocators ShellChrome { get; }
 
     /// <summary>When a call that succeeded is still logged as a near-miss.</summary>
-    Context.NearMissSettings NearMiss { get; }
+    NearMissSettings NearMiss { get; }
 }
