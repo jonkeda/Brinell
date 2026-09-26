@@ -7,6 +7,7 @@ namespace Brinell.Uat;
 public sealed class UatRuntime
 {
     private readonly UatReflectionRuntime _reflectionRuntime;
+    private readonly object _root;
 
     public UatRuntime(
         object root,
@@ -16,6 +17,7 @@ public sealed class UatRuntime
         ArgumentNullException.ThrowIfNull(root);
         ArgumentException.ThrowIfNullOrWhiteSpace(configFilePath);
 
+        _root = root;
         ConfigFilePath = Path.GetFullPath(configFilePath);
         ConfigDirectory = Path.GetDirectoryName(ConfigFilePath) ?? Directory.GetCurrentDirectory();
         Config = UatConfigParser.ParseFile(ConfigFilePath, root.GetType().Assembly.GetName().Name);
@@ -38,7 +40,13 @@ public sealed class UatRuntime
 
     public UatCommandCatalog CreateCommandCatalog()
     {
-        return _reflectionRuntime.CreateCommandCatalog();
+        var catalog = _reflectionRuntime.CreateCommandCatalog();
+        if (_root is IUatSessionHost host)
+        {
+            UatSessionSteps.Register(catalog, host, Config);
+        }
+
+        return catalog;
     }
 
     public IServiceScope? CreateScope()

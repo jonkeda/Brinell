@@ -42,6 +42,8 @@ Controls should not:
 - CommunityToolkit.Maui controls: `srcnew/Brinell.Maui.CommunityToolkit/Controls` - see
   [CommunityToolkit.Maui Controls](community-toolkit.md)
 - WPF/WinForms controls: `srcnew/Brinell.Wpf`, `srcnew/Brinell.WinForms`
-- Web controls: `srcnew/Brinell.Html`, `srcnew/Brinell.Html.Playwright`
+- Web controls: `srcnew/Brinell.Html/Controls` and `srcnew/Brinell.Blazor/Controls`. They are
+  generated from `.tpl.cs` templates like MAUI's and implement the same Core interfaces, so a
+  member has the same name on both stacks. The Playwright driver is `srcnew/Brinell.Html.Playwright`.
 
 See [Core Interfaces](interfaces.md).

@@ -82,13 +82,13 @@ public sealed class TextInputTests : BlazorSampleTestBase
     }
 
     [Fact]
-    public void Input_AssertTextContaining_MatchesPartial()
+    public void Input_AssertTextContains_MatchesPartial()
     {
         NavigateToPage("/login");
         var page = new LoginPage(Context);
 
         page.UsernameInput.SetText("Hello World");
 
-        Assert.Contains("World", page.UsernameInput.GetValue());
+        page.UsernameInput.AssertTextContains("World");
     }
 }

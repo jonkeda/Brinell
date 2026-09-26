@@ -5,15 +5,18 @@ description: Create or extend a Brinell Html ControlObject - a simple control, a
 
 # Write an Html ControlObject
 
-Html controls are hand-written (no generator): `ControlBase<TScope>` in
-`srcnew/Brinell.Html/Controls`. The rules are MAUI's (`.docs/contracts/call-model.md`,
-`.docs/contracts/control-object.md`). Only the base classes and the platform probe differ.
+Html controls are generated, as MAUI's are: a template `Foo.tpl.cs` holds the constructors,
+`*Core` methods and hand-written members, and `Brinell.Generator` writes the public API into
+`Foo.gen.cs`. The rules are MAUI's (`.docs/contracts/call-model.md`,
+`.docs/contracts/control-object.md`), and so is the generator contract
+([generator-contract.md](../maui-control/references/generator-contract.md)), with `IHtmlElement` as
+the element type. Only the base classes and the platform probe differ.
 
 ## Choose the kind
 
 | Kind | Base | Example |
 | --- | --- | --- |
-| Simple control | `ControlBase<TScope>` or a family base (`ClickableControlBase`, `FocusableControlBase`, `ToggleControlBase`, `RangeControlBase`, `SelectorControlBase`) | `TextInputControl<TScope>` |
+| Simple control | `ControlBase<TScope>` or a family base (`ClickableControlBase`, `FocusableControlBase`, `ToggleControlBase`, `RangeControlBase`, `SelectorControlBase`, `ScrollableControlBase`) | `TextInputControl<TScope>` |
 | Container or component | `ContainerBase<TParent, TSelf>`; parts are controls declared on it | `TodoStatus<TParent>` in the Todo web tests |
 | Frame | `FrameScope<TParent>` | `FramesPage.Inner` |
 | Collection with rows | `CollectionObjectBase<TParent, TSelf, TItem>` plus `ItemObjectBase<TSelf>` | `RecyclingListPage.TodoRows` |
@@ -26,14 +29,28 @@ the `data-testid`, and the attributes the control reads (`disabled`, `aria-check
 
 ## Write the members
 
-- **Every public member is one call.** Reads go through `RunGetWithElement`/`RunWithElement(func)`.
-  Waits go through `RunWaitWithElement`, or `RunWaitWithOptionalElement` when "absent" is an
-  answer. Assertions go through `RunAssertWithElement` or `RunAssert(element => ...)`, which
-  wait (R7). `Try*` members answer about now.
-- **Actions act once.** Use `RunDoWithElement` or `RunSetWithElement`. When the action changes
-  state, confirm it inside the action with
+A simple control is a template: declare `protected virtual` `*Core` methods, element first, and
+generate (from the Brinell root):
+
+```
+tools\Scripts\CreateHtml.Bat
+```
+
+It regenerates every `.tpl.cs` under `srcnew\Brinell.Html\Controls` and
+`srcnew\Brinell.Blazor\Controls`. A control with no `*Core` methods of its own (only
+constructors) stays a plain `.cs`.
+
+- **`Get*Core` / `Is*Core` give `GetX`/`WaitX`/`AssertX`**, with `[GenerateComparisons]` for
+  `Contains`, `GreaterThan` and the rest; `[AbsenceTolerant]` when "absent" is an answer. An
+  `Is*Core` takes `IHtmlElement?`: the generated `IsX()` passes `TryFindElement()`.
+- **Every other `*Core` gives an action.** It acts once. When it changes state, confirm it inside
+  the Core method with
   `ActAndConfirm("Fill", () => e.Fill(v), () => e.InputValue, x => x == v, $"'{v}'", timeoutMs)`.
   Never loop over the action.
+- **Hand-written members** (an alias such as `Check()`, a member spanning parts) call the same
+  `Run*` helpers as the generated ones: `RunGetWithElement`, `RunWaitWithElement(expected, ...)`,
+  `RunAssertWithElement(expected, ...)`, their `Optional` forms, `RunDoWithElement`,
+  `RunSetWithElement`. `Try*` members answer about now.
 - **Readiness before acting** goes in `EnsureReadyForActionCore` (enabled, for example), and
   throws `ElementNotReadyException`.
 - **Every public member takes `int? timeoutMs = null`.** A wait below the call (a scroll) takes

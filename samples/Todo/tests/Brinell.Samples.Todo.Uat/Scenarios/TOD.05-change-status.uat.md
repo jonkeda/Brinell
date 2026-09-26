@@ -6,12 +6,12 @@
 | --- | --- |
 | App | Brinell.Samples.Todo.App |
 | Area | Status |
-| Target | MAUI |
+| Target | MAUI, BLAZOR |
 | Journey | TOD.05 |
 | TestData | one-todo |
-| Tags | maui, status |
+| Tags | maui, web, status |
 
-@TOD.05.1 @maui @status
+@TOD.05.1 @maui @web @status
 ## Scenario: TOD.05.1 Next cycles the status to Done, and it is saved
 
 ```gherkin
@@ -30,7 +30,7 @@ And the database should have todos
   | Plan the sprint | Done   |
 ```
 
-@TOD.05.3 @maui @status
+@TOD.05.3 @maui @web @status
 ## Scenario: TOD.05.3 Overdue shows in the list row and on the detail
 
 ```gherkin
@@ -49,7 +49,7 @@ Then I should be on the Todo Detail page
 And Status should show status "Overdue"
 ```
 
-@TOD.05.4 @maui @status
+@TOD.05.4 @maui @web @status
 ## Scenario: TOD.05.4 The status in a list row is read-only, with no Next button
 
 ```gherkin
@@ -58,7 +58,7 @@ Then Todos should have todo "Buy milk"
 And the todo "Buy milk" should have a read-only status
 ```
 
-@TOD.05.5 @maui @status
+@TOD.05.5 @maui @web @status
 ## Scenario: TOD.05.5 Changing status on the detail page is saved without opening Edit
 
 ```gherkin

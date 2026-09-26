@@ -3,6 +3,7 @@ using Brinell.Html.Controls.DateTime;
 using Brinell.Html.Controls.Display;
 using Brinell.Html.Controls.Text;
 using Brinell.Html.Controls.Toggle;
+using Brinell.Uat;
 
 namespace Brinell.Samples.Todo.Web.UITests.Pages;
 
@@ -36,6 +37,7 @@ public sealed class TodoEditPage : BlazorPageObjectBase<TodoEditPage>
 
     public DateInputControl<TodoEditPage> DueDate => new(this, Locator.ByDataTestId("TodoEdit_Due"));
 
+    [UatName("Status")]
     public TodoStatus<TodoEditPage> Status => new(this, "TodoEdit_Status");
 
     public ButtonControl<TodoEditPage> Save => new(this, Locator.ByDataTestId("TodoEdit_Save"));

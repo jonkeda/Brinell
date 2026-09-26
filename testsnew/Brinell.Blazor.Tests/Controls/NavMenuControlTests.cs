@@ -38,6 +38,7 @@ public class NavMenuControlTests
     public void GetItems_ReturnsItemTexts()
     {
         var items = _page.TestNav.GetItems();
+        Assert.NotNull(items);
         Assert.Equal(3, items.Count);
         Assert.Equal("Home", items[0]);
         Assert.Equal("About", items[1]);
@@ -71,15 +72,15 @@ public class NavMenuControlTests
     }
 
     [Fact]
-    public void HasItem_WhenExists_ReturnsTrue()
+    public void WaitItemsHasItem_WhenExists_ReturnsTrue()
     {
-        Assert.True(_page.TestNav.HasItem("Home"));
+        Assert.True(_page.TestNav.WaitItemsHasItem("Home"));
     }
 
     [Fact]
-    public void HasItem_WhenNotExists_ReturnsFalse()
+    public void WaitItemsHasItem_WhenNotExists_ReturnsFalse()
     {
-        Assert.False(_page.TestNav.HasItem("Missing"));
+        Assert.False(_page.TestNav.WaitItemsHasItem("Missing", 0));
     }
 
     [Fact]
@@ -102,15 +103,15 @@ public class NavMenuControlTests
     }
 
     [Fact]
-    public void AssertHasItem_WhenExists_DoesNotThrow()
+    public void AssertItemsHasItem_WhenExists_DoesNotThrow()
     {
-        _page.TestNav.AssertHasItem("Home");
+        _page.TestNav.AssertItemsHasItem("Home");
     }
 
     [Fact]
-    public void AssertHasItem_WhenNotExists_Throws()
+    public void AssertItemsHasItem_WhenNotExists_Throws()
     {
-        Assert.Throws<AssertionException>(() => _page.TestNav.AssertHasItem("Missing"));
+        Assert.Throws<AssertionException>(() => _page.TestNav.AssertItemsHasItem("Missing", timeoutMs: 0));
     }
 
     [Fact]

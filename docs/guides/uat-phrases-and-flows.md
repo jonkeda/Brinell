@@ -128,6 +128,10 @@ registered directly in the runtime and spec catalogs:
 | `Then` | `I should be on the {page} page` | Asserts the page and sets the current page. |
 | `Then` | `I should see {text}` | Searches controls on the current page with `GetText()`. |
 
+A fourth is registered only when the fixture hosts several apps (`IUatSessionHost`):
+`{app} uses the app`, as a `Given` or a `When`, makes an app of the config's `Apps` table current.
+See [Several Apps In One Scenario](uat-template-guide.md#several-apps-in-one-scenario).
+
 Everything else is discovered. The built-in set is 15 phrases over 13 methods on
 six interfaces in `Brinell.Core/Interfaces/`:
 

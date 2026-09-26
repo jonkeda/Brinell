@@ -15,6 +15,7 @@
     <Project Path="tests/Brinell.Samples.Todo.UITests.Mobile/Brinell.Samples.Todo.UITests.Mobile.csproj" />
     <Project Path="tests/Brinell.Samples.Todo.UITests/Brinell.Samples.Todo.UITests.csproj" />
     <Project Path="tests/Brinell.Samples.Todo.UnitTests/Brinell.Samples.Todo.UnitTests.csproj" />
+    <Project Path="tests/Brinell.Samples.Todo.Web.Uat/Brinell.Samples.Todo.Web.Uat.csproj" />
     <Project Path="tests/Brinell.Samples.Todo.Web.UITests/Brinell.Samples.Todo.Web.UITests.csproj" />
   </Folder>
   <Project Path="../../srcnew/Brinell.Core/Brinell.Core.csproj" />

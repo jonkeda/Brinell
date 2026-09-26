@@ -6,12 +6,12 @@
 | --- | --- |
 | App | Brinell.Samples.Todo.App |
 | Area | Screens |
-| Target | MAUI |
+| Target | MAUI, BLAZOR |
 | Journey | TOD.10 |
 | TestData | one-todo |
-| Tags | maui, screens |
+| Tags | maui, web, screens |
 
-@TOD.10.1 @smoke @maui @screens
+@TOD.10.1 @smoke @maui @web @screens
 ## Scenario: TOD.10.1 Every screen loads and its key controls exist
 
 ```gherkin

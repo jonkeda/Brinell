@@ -154,6 +154,9 @@ async surface beyond internal tests, dropped. A real async Html driver (a `Brine
 project that keeps Playwright's async model instead of blocking on `.GetAwaiter().GetResult()`)
 is a separate project, out of scope here.
 
+**Outcome (2026-09-26):** dropped. No consumer used it beyond duplicate UI tests; Html is
+synchronous, as MAUI is (AD-013).
+
 ## 9. What Html does not need from MAUI
 
 For completeness. These MAUI concepts have no Html analog and do not move over:

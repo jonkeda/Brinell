@@ -1,6 +1,7 @@
 using System.Drawing;
 using Brinell.Core;
 using Brinell.Core.Calls;
+using Brinell.Core.Exceptions;
 using Brinell.Core.Locators;
 using Brinell.Html.Interfaces;
 using Microsoft.Playwright;
@@ -17,7 +18,8 @@ namespace Brinell.Html.Playwright;
 /// Every Playwright call that can wait is given what is left of the running call's budget as its
 /// timeout (?A5 in .my/html/plan.md), so no Playwright wait outlasts the caller's
 /// <c>timeoutMs</c>. Outside a call (a plain <c>Is*</c>) the cap is <see cref="OutsideACallMs"/>,
-/// not Playwright's 30 s default.
+/// not Playwright's 30 s default. A read waits for its element no longer than
+/// <see cref="ReadAttachMs"/>: see <see cref="Read{T}"/>.
 /// </remarks>
 public sealed class PlaywrightHtmlElement : IHtmlElement
 {
@@ -37,18 +39,52 @@ public sealed class PlaywrightHtmlElement : IHtmlElement
         _locator = locator ?? throw new ArgumentNullException(nameof(locator));
     }
 
+    /// <summary>The longest a read waits for its element to be attached.</summary>
+    public const int ReadAttachMs = 250;
+
     private static float Budget => CallBudget.RemainingOr(OutsideACallMs);
+
+    /// <summary>
+    /// A read of the element's state, which is about now (R2): an attached element answers at once,
+    /// so the read waits for attachment only <see cref="ReadAttachMs"/>, and a node that is gone by
+    /// then is stale (R5), for the poll to find again. Without the cap, a locator whose node was
+    /// re-rendered away waits for the rest of the call, and one read ends the poll.
+    /// </summary>
+    /// <remarks>
+    /// When the call has less than the cap left, the read gets what is left and a timeout stays a
+    /// timeout: the call's own cut-off.
+    /// </remarks>
+    private T Read<T>(Func<float, Task<T>> read)
+    {
+        var budget = Budget;
+        if (budget <= ReadAttachMs)
+        {
+            return Live(() => read(budget).GetAwaiter().GetResult());
+        }
+
+        return Live(() =>
+        {
+            try
+            {
+                return read(ReadAttachMs).GetAwaiter().GetResult();
+            }
+            catch (TimeoutException error)
+            {
+                throw new StaleElementException(platformError: error);
+            }
+        });
+    }
 
     /// <inheritdoc />
     public string InstanceKey => Evaluate<string>(InstanceKeyScript);
 
     public bool Visible => Live(() => _locator.IsVisibleAsync().GetAwaiter().GetResult());
 
-    public bool Enabled => Live(() => _locator.IsEnabledAsync(new() { Timeout = Budget }).GetAwaiter().GetResult());
+    public bool Enabled => Read(timeout => _locator.IsEnabledAsync(new() { Timeout = timeout }));
 
     public bool Selected => IsChecked;
 
-    public string? Text => Live(() => _locator.InnerTextAsync(new() { Timeout = Budget }).GetAwaiter().GetResult());
+    public string? Text => Read<string?>(async timeout => await _locator.InnerTextAsync(new() { Timeout = timeout }));
 
     public string? TagName => Evaluate<string>("el => el.tagName.toLowerCase()");
 
@@ -99,7 +135,7 @@ public sealed class PlaywrightHtmlElement : IHtmlElement
     });
 
     public string? GetAttribute(string name)
-        => Live(() => _locator.GetAttributeAsync(name, new() { Timeout = Budget }).GetAwaiter().GetResult());
+        => Read(timeout => _locator.GetAttributeAsync(name, new() { Timeout = timeout }));
 
     public IHtmlElement? TryFindElement(Locator locator) => Live<IHtmlElement?>(() =>
     {
@@ -131,27 +167,27 @@ public sealed class PlaywrightHtmlElement : IHtmlElement
     public string? GetDomAttribute(string attributeName) => GetAttribute(attributeName);
 
     public string? GetDomProperty(string propertyName)
-        => Live(() => _locator.EvaluateAsync<string?>("(el, propertyName) => el[propertyName]", propertyName, new() { Timeout = Budget }).GetAwaiter().GetResult());
+        => Read(timeout => _locator.EvaluateAsync<string?>("(el, propertyName) => el[propertyName]", propertyName, new() { Timeout = timeout }));
 
     public string? GetCssValue(string propertyName)
-        => Live(() => _locator.EvaluateAsync<string>("(el, propertyName) => getComputedStyle(el).getPropertyValue(propertyName)", propertyName, new() { Timeout = Budget }).GetAwaiter().GetResult());
+        => Read(timeout => _locator.EvaluateAsync<string>("(el, propertyName) => getComputedStyle(el).getPropertyValue(propertyName)", propertyName, new() { Timeout = timeout }));
 
     public void Submit()
         => Evaluate("el => { const form = el.form || el.closest('form'); if (form) form.submit(); }");
 
-    public string InnerHtml => Live(() => _locator.InnerHTMLAsync(new() { Timeout = Budget }).GetAwaiter().GetResult());
+    public string InnerHtml => Read(timeout => _locator.InnerHTMLAsync(new() { Timeout = timeout }));
 
     public string OuterHtml => Evaluate<string>("el => el.outerHTML");
 
-    public bool IsChecked => Live(() => _locator.IsCheckedAsync(new() { Timeout = Budget }).GetAwaiter().GetResult());
+    public bool IsChecked => Read(timeout => _locator.IsCheckedAsync(new() { Timeout = timeout }));
 
-    public string InputValue => Live(() => _locator.InputValueAsync(new() { Timeout = Budget }).GetAwaiter().GetResult());
+    public string InputValue => Read(timeout => _locator.InputValueAsync(new() { Timeout = timeout }));
 
     public void Evaluate(string expression)
         => Live(() => _locator.EvaluateAsync(expression, null, new() { Timeout = Budget }).GetAwaiter().GetResult());
 
     public T Evaluate<T>(string expression)
-        => Live(() => _locator.EvaluateAsync<T>(expression, null, new() { Timeout = Budget }).GetAwaiter().GetResult());
+        => Read(timeout => _locator.EvaluateAsync<T>(expression, null, new() { Timeout = timeout }));
 
     public void Fill(string value) => Live(() => _locator.FillAsync(value, new() { Timeout = Budget }).GetAwaiter().GetResult());
 
@@ -174,7 +210,7 @@ public sealed class PlaywrightHtmlElement : IHtmlElement
 
     private TResult EvaluateRect<TResult>(Func<LocatorBoundingBoxResult, TResult> selector)
     {
-        var box = Live(() => _locator.BoundingBoxAsync(new() { Timeout = Budget }).GetAwaiter().GetResult());
+        var box = Read(timeout => _locator.BoundingBoxAsync(new() { Timeout = timeout }));
         return box == null ? default! : selector(box);
     }
 }

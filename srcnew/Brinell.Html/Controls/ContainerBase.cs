@@ -77,6 +77,52 @@ public abstract class ContainerBase<TParent, TScope> : ObjectBase, IHtmlContaine
     public bool WaitReady(int? timeoutMs = null)
         => RunProbe(() => ScopeGate.Check(ProbeReadiness()) ?? Observation.Done(), timeoutMs ?? DefaultTimeoutMs);
 
+    #region State
+
+    /// <summary>Whether the container's root element exists, now. <see cref="WaitExists"/> waits.</summary>
+    public bool IsExists() => TryFindRootElement() != null;
+
+    /// <summary>Whether the container's root element is visible, now; null when it does not exist.</summary>
+    public bool? IsVisible() => TryFindRootElement()?.Visible;
+
+    /// <summary>Waits until the container's existence matches <paramref name="expected"/>; null skips.</summary>
+    public bool WaitExists(bool? expected = true, int? timeoutMs = null)
+        => WaitRoot(expected, root => root != null, timeoutMs, nameof(WaitExists));
+
+    /// <summary>Waits until the container's visibility matches <paramref name="expected"/>; null skips.</summary>
+    public bool WaitVisible(bool? expected = true, int? timeoutMs = null)
+        => WaitRoot(expected, root => root?.Visible == true, timeoutMs, nameof(WaitVisible));
+
+    /// <summary>Asserts the container's existence, returning the container so a chain stays inside it.</summary>
+    public TScope AssertExists(bool? expected = true, string? message = null, int? timeoutMs = null)
+        => WaitRoot(expected, root => root != null, timeoutMs, nameof(AssertExists))
+            ? Self
+            : throw new AssertionException(message
+                ?? $"Expected container {(expected == true ? "to exist" : "not to exist")}. Locator: {_locator}");
+
+    /// <summary>Asserts the container's visibility, returning the container so a chain stays inside it.</summary>
+    public TScope AssertVisible(bool? expected = true, string? message = null, int? timeoutMs = null)
+        => WaitRoot(expected, root => root?.Visible == true, timeoutMs, nameof(AssertVisible))
+            ? Self
+            : throw new AssertionException(message ?? $"Expected container visibility '{expected}'. Locator: {_locator}");
+
+    // One call (R1): each attempt asks the parent first (R4), then reads the root once.
+    private bool WaitRoot(bool? expected, Func<IHtmlElement?, bool> state, int? timeoutMs, string caller)
+    {
+        if (expected is not { } wanted)
+        {
+            return true;
+        }
+
+        return RunProbe(
+            () => (AsksParent ? ScopeGate.Check(_parentScope.ProbeReadiness()) : null)
+                ?? (state(TryFindRootElement()) == wanted ? Observation.Done() : Observation.Pending()),
+            timeoutMs ?? DefaultTimeoutMs,
+            caller: caller);
+    }
+
+    #endregion
+
     public IHtmlElement ContainerRoot => TryFindRootElement() ?? throw new ElementNotFoundException(_locator);
 
     public IHtmlElement? TryFindElement(Locator locator)
@@ -93,6 +139,4 @@ public abstract class ContainerBase<TParent, TScope> : ObjectBase, IHtmlContaine
     {
         return TryFindRootElement()?.FindElements(locator) ?? [];
     }
-
-    public Task<bool> WaitReadyAsync(int? timeoutMs = null) => Task.FromResult(WaitReady(timeoutMs));
 }

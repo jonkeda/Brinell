@@ -20,29 +20,8 @@ internal static class BlazorSample
             return running.TrimEnd('/');
         }
 
-        var host = WebAppHost.Start(new WebAppHostOptions { AppPath = SampleAssembly(), Name = "Blazor sample" });
+        var host = WebAppHost.Start(new WebAppHostOptions { AppPath = WebAppHost.FindBuiltApp("samples/Brinell.Samples.Blazor.App"), Name = "Blazor sample" });
         AppDomain.CurrentDomain.ProcessExit += (_, _) => host.Dispose();
         return host.BaseUrl;
-    }
-
-    /// <summary>The sample's built assembly; the project reference in the .csproj builds it with the tests.</summary>
-    private static string SampleAssembly()
-    {
-        const string project = "Brinell.Samples.Blazor.App";
-#if DEBUG
-        const string configuration = "Debug";
-#else
-        const string configuration = "Release";
-#endif
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory != null; directory = directory.Parent)
-        {
-            var candidate = Path.Combine(directory.FullName, "samples", project, "bin", configuration, "net10.0", project + ".dll");
-            if (File.Exists(candidate))
-            {
-                return candidate;
-            }
-        }
-
-        throw new FileNotFoundException($"{project}.dll was not found above {AppContext.BaseDirectory}. Build the sample first.");
     }
 }

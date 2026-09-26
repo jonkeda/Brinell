@@ -3,6 +3,10 @@ using Brinell.Html.Interfaces;
 
 namespace Brinell.Html.Controls.Text;
 
+/// <summary>
+/// HTML text area control. Wraps &lt;textarea&gt;; its members come from
+/// <see cref="TextInputControl{TScope}"/>.
+/// </summary>
 public class TextAreaControl<TScope> : TextInputControl<TScope>
     where TScope : IHtmlScope<TScope>
 {
@@ -14,18 +18,5 @@ public class TextAreaControl<TScope> : TextInputControl<TScope>
     public TextAreaControl(IHtmlScope<TScope> scope, string selectorOrId)
         : base(scope, selectorOrId)
     {
-    }
-
-    public TScope AppendText(string text, int? timeoutMs = null)
-    {
-        return RunWithElement(element => ActAndConfirm(
-            "AppendText",
-            () =>
-            {
-                element.Focus();
-                element.SendKeys(text);
-            },
-            () => element.InputValue, value => value?.EndsWith(text, StringComparison.Ordinal) == true,
-            $"a value ending in '{text}'", timeoutMs), timeoutMs);
     }
 }

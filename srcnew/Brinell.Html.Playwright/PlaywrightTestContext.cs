@@ -168,8 +168,6 @@ public sealed class PlaywrightTestContext : IHtmlTestContext, IAsyncDisposable
 
     public bool IsIdle() => _driver.IsIdle();
 
-    public Task<bool> IsIdleAsync() => Task.FromResult(_driver.IsIdle());
-
     public void Refresh() => _driver.Reload();
 
     public byte[] TakeScreenshot() => _driver.TakeScreenshot();

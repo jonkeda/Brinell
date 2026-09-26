@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Brinell.Samples.Todo.Web.Uat</RootNamespace>
+    <Description>The Todo UAT scenarios on the web head: the MAUI suite's scenario files, run through the web page objects.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The UAT engine, and the web page objects and fixture its scenarios drive. -->
+    <ProjectReference Include="..\..\..\..\srcnew\Brinell.Uat\Brinell.Uat.csproj" />
+    <ProjectReference Include="..\Brinell.Samples.Todo.Web.UITests\Brinell.Samples.Todo.Web.UITests.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="uat.config.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="TestSettings\**\*.json" CopyToOutputDirectory="PreserveNewest" />
+    <!-- One set of scenario files for both heads: the MAUI suite's, run here where tagged @web. -->
+    <None Include="..\Brinell.Samples.Todo.Uat\Scenarios\*.uat.md" Link="Scenarios\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <!-- And the scenarios only the web head can run yet: several apps in one scenario. -->
+    <None Update="Scenarios\*.uat.md" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

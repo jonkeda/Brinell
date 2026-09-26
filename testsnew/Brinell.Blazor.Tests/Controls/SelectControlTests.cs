@@ -33,7 +33,7 @@ public class SelectControlTests
     [Fact]
     public void SelectMultiple_CallsSelectOptionArray()
     {
-        _page.TestSelect.SelectMultiple("a", "b");
+        _page.TestSelect.SelectMultiple(["a", "b"]);
 
         _mockElement.Verify(e => e.SelectOption(It.Is<string[]>(v => v.Length == 2 && v[0] == "a" && v[1] == "b")), Times.Once);
     }

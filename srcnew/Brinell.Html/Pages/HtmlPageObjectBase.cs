@@ -232,26 +232,4 @@ public abstract class HtmlPageObjectBase<TSelf> : ObjectBase, IHtmlPage<TSelf>
     }
 
     protected HtmlTestContextOptions DefaultOptions() => new();
-
-    #region Async Methods
-
-    public Task<bool> WaitLoadedAsync(bool? expected, int? timeoutMs = null)
-        => Task.FromResult(WaitLoaded(expected, timeoutMs));
-
-    public Task AssertLoadedAsync(bool? expected, string? message = null, int? timeoutMs = null)
-    {
-        AssertLoaded(expected, message, timeoutMs);
-        return Task.CompletedTask;
-    }
-
-    public Task<bool> WaitTitleAsync(string? expected, int? timeoutMs = null)
-        => Task.FromResult(WaitTitle(expected, timeoutMs));
-
-    public Task AssertTitleAsync(string? expected, string? message = null, int? timeoutMs = null)
-    {
-        AssertTitle(expected, message, timeoutMs);
-        return Task.CompletedTask;
-    }
-
-    #endregion
 }

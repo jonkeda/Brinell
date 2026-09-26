@@ -1,11 +1,17 @@
+using Brinell.Core.Exceptions;
+using Brinell.Core.Testing;
 using Brinell.Html.Collections;
 using Brinell.Html.Controls.Buttons;
 using Brinell.Html.Controls.Display;
 using Brinell.Html.Controls.Selection;
+using Brinell.Uat;
 
 namespace Brinell.Samples.Todo.Web.UITests.Pages;
 
-/// <summary>The list page. Test ids as in the MAUI app (TodoListPage.xaml).</summary>
+/// <summary>
+/// The list page. Test ids as in the MAUI app (TodoListPage.xaml), and member names as on the MAUI
+/// page object, so one scenario file reads the same on both heads.
+/// </summary>
 public sealed class TodoListPage : BlazorPageObjectBase<TodoListPage>
 {
     public TodoListPage(IHtmlTestContext context)
@@ -13,33 +19,43 @@ public sealed class TodoListPage : BlazorPageObjectBase<TodoListPage>
     {
     }
 
-    public override bool IsLoaded() => base.IsLoaded() && Add.IsExists();
+    public override bool IsLoaded() => base.IsLoaded() && AddButton.IsExists();
 
     protected override bool CompareUrl() => new Uri(Context.CurrentUrl).LocalPath is "/" or "/todos";
 
     public ButtonControl<TodoListPage> SyncButton => new(this, Locator.ByDataTestId("TodoList_Sync"));
 
-    public ButtonControl<TodoListPage> Add => new(this, Locator.ByDataTestId("TodoList_Add"));
+    public ButtonControl<TodoListPage> AddButton => new(this, Locator.ByDataTestId("TodoList_Add"));
 
     public SelectControl<TodoListPage> Filter => new(this, Locator.ByDataTestId("TodoList_Filter"));
 
     public LabelControl<TodoListPage> LastSync => new(this, Locator.ByDataTestId("TodoList_LastSync"));
 
-    public LabelControl<TodoListPage> EmptyLabel => new(this, Locator.ByDataTestId("TodoList_EmptyLabel"));
+    /// <summary>Loading, Empty, Error or the rows: exactly one shows.</summary>
+    public TodoListState State => new(this);
 
+    [UatName("Empty Message")]
+    public LabelControl<TodoListPage> EmptyMessage => new(this, Locator.ByDataTestId("TodoList_EmptyLabel"));
+
+    [UatName("Error Message")]
+    public LabelControl<TodoListPage> ErrorMessage => new(this, Locator.ByDataTestId("TodoList_ErrorLabel"));
+
+    public ButtonControl<TodoListPage> RetryButton => new(this, Locator.ByDataTestId("TodoList_Retry"));
+
+    [UatName("Todos")]
     public TodoRows Todos => new(this);
 
     /// <summary>Opens a new, empty edit form.</summary>
     public TodoEditPage AddTodo()
     {
-        Add.Click();
+        AddButton.Click();
         return TodoEditPage.Arrived(Context);
     }
 
     /// <summary>Adds a todo with <paramref name="title"/> and returns to the list.</summary>
     public TodoListPage CreateTodo(string title) => AddTodo().EnterTitle(title).SaveNew();
 
-    /// <summary>Syncs, and waits until the sync is over.</summary>
+    /// <summary>Syncs, and waits until the sync has finished.</summary>
     public TodoListPage Sync()
     {
         SyncButton.Click();
@@ -47,14 +63,14 @@ public sealed class TodoListPage : BlazorPageObjectBase<TodoListPage>
         return this;
     }
 
-    /// <summary>Opens the todo with <paramref name="title"/>.</summary>
+    /// <summary>Opens the todo titled <paramref name="title"/>.</summary>
     public TodoDetailPage Open(string title)
     {
         Todos.Row(title).Open.Click();
         return TodoDetailPage.Arrived(Context);
     }
 
-    /// <summary>The rows, by their <c>data-item-key</c> (the todo's id).</summary>
+    /// <summary>The rows, one per todo shown. Each row follows its todo by key.</summary>
     public sealed class TodoRows(IHtmlScope<TodoListPage> page)
         : CollectionObjectBase<TodoListPage, TodoRows, TodoRow>(
             page, Locator.ByDataTestId("TodoList_Items"), Locator.ByDataTestId("TodoRow"))
@@ -63,36 +79,35 @@ public sealed class TodoListPage : BlazorPageObjectBase<TodoListPage>
 
         protected override TodoRow CreateItem(ItemKey key, int position) => new(this, key, position);
 
-        /// <summary>The row with <paramref name="title"/>, waiting for it.</summary>
+        /// <summary>The row titled <paramref name="title"/>, waiting for it.</summary>
         public TodoRow Row(string title, int? timeoutMs = null)
             => ItemWhere(row => row.Title.TryGetText() == title, timeoutMs);
 
-        /// <summary>Waits for a row with <paramref name="title"/>, or for none.</summary>
+        /// <summary>Waits until a row titled <paramref name="title"/> is shown, or is not.</summary>
+        [UatStep(UatEffectiveStepKeyword.Then, "{control} should have todo {value}")]
         public TodoRows AssertRow(string title, bool present = true, int? timeoutMs = null)
         {
             if (present)
             {
                 Row(title, timeoutMs);
             }
-            else
+            else if (!WaitNoItemWhere(row => row.Title.TryGetText() == title, timeoutMs))
             {
-                WaitGone(title, timeoutMs);
+                throw new AssertionException($"Expected no row titled '{title}' in the list.");
             }
 
             return this;
         }
+
+        /// <summary>Waits until no row titled <paramref name="title"/> is shown.</summary>
+        [UatStep(UatEffectiveStepKeyword.Then, "{control} should not have todo {value}")]
+        public TodoRows AssertNoRow(string title, int? timeoutMs = null) => AssertRow(title, present: false, timeoutMs);
 
         /// <summary>Waits until the row with <paramref name="title"/> shows the pending marker, or does not.</summary>
         public TodoRows AssertPending(string title, bool expected = true, int? timeoutMs = null)
         {
             Row(title, timeoutMs).Pending.AssertExists(expected, timeoutMs: timeoutMs);
             return this;
-        }
-
-        private void WaitGone(string title, int? timeoutMs)
-        {
-            var row = Items.FirstOrDefault(candidate => candidate.Title.TryGetText() == title);
-            row?.Title.AssertExists(false, timeoutMs: timeoutMs);
         }
     }
 

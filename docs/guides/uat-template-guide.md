@@ -115,6 +115,7 @@ whole file as one case.
 | Fixture | FlaUI |
 | AppPath | ../../src/…App/bin/Debug/net10.0-windows10.0.19041.0/win10-x64/…App.exe |
 | WorkingDirectory | ../../../.. |
+| Head | maui |
 
 ## Assemblies
 
@@ -163,13 +164,16 @@ What each section carries:
 
 | Section | Field | Meaning |
 | --- | --- | --- |
-| Runtime | `Target` | The platform head, e.g. `MAUI`. Checked against `RuntimeValidation`. |
-| Runtime | `Fixture` | The driver: `FlaUI` for the Windows head, `Appium` for Android. |
+| Runtime | `Target` | The platform: `MAUI`, `HTML`, `BLAZOR`, `WPF`, `WINFORMS`, `STRIDE`. Derived from the fixture's base class when it has a Brinell one (`BlazorTestFixtureBase` is `BLAZOR`); otherwise this row. Checked against `RuntimeValidation`. |
+| Runtime | `Fixture` | The fixture type, or for MAUI the driver: `FlaUI` for the Windows head, `Appium` for Android. |
+| Runtime | `Head` | Optional: the head this suite drives (`maui`, `web`). A scenario tagged `@maui` or `@web` runs only on its head. See [Heads](#heads-one-scenario-file-several-apps). |
+| Runtime | `DefaultTestData` | The test set for a scenario file whose metadata names none. |
 | Runtime | `AppPath` | The app to launch, relative to `WorkingDirectory`. |
 | Runtime | `WorkingDirectory` | The base the relative paths resolve against. |
 | Assemblies | `Pages` | The assembly holding the page objects - the source of control names. |
 | Assemblies | `Controls` | The ControlObject assembly for the platform. |
 | Assemblies | `Commands` | `Brinell.Uat`, which carries the engine's own verbs. |
+| Apps | `Name` (+ the fixture's columns) | Optional: the apps a scenario can switch between with `{app} uses the app`. See [Several Apps In One Scenario](#several-apps-in-one-scenario). |
 | Discovery | `AllowNameInference` | `true` lets `AddButton` be **Add** without `[UatName]`. |
 | Discovery | `RequireExplicitUatAttributes` | `true` limits discovery to members carrying UAT attributes. |
 
@@ -374,3 +378,50 @@ See [Reporting And Artifacts](reporting-artifacts.md).
 Skip rules connect scenario tags to environment variables. A scenario tagged
 with `@hardware` is skipped unless its configured environment variable is
 enabled with `1`, `true`, `yes`, or `on`.
+
+## Heads: one scenario file, several apps
+
+One set of scenario files can run on two heads of the same app: the Todo sample's MAUI suite
+and its web suite (`samples/Todo/tests/Brinell.Samples.Todo.Web.Uat`) run the same
+`TOD.*.uat.md` files, the web project linking them from the MAUI one.
+
+- `Head` in the config's `Runtime` names the head a suite drives: `maui` or `web`.
+- A scenario tagged with head tags (`@maui`, `@web`) runs only on a suite whose `Head` is one of
+  them; the engine skips it elsewhere, with the reason in the result. A scenario with no head tag
+  runs on every head. A suite without `Head` runs everything.
+- Each suite has its own page objects and phrase classes with the same names and phrases: the
+  scenario text is the contract between them. Steps that do not touch the screen can be one class
+  for both heads (`TodoDataPhrases`, over an `ITodoArrangement` both fixtures implement).
+
+## Several Apps In One Scenario
+
+A scenario can drive more than one running app: two devices on one backend, or two users. The
+config lists them in an `Apps` table; the other columns are the fixture's to read.
+
+```markdown
+## Apps
+
+| Name | ClientId |
+| --- | --- |
+| Alice | web-alice |
+| Bob | web-bob |
+```
+
+`{app} uses the app` (a `Given` or a `When`) makes an app current; the steps after it run on that
+app until the next switch. A failure after a switch names the app (`[Alice] ...`).
+
+```gherkin
+Given Bob uses the app
+And Alice uses the app
+When I tap Add
+...
+When Bob uses the app
+And I tap Sync
+Then Todos should have todo "Pack for the trip"
+```
+
+The fixture implements `IUatSessionHost`: `UseSession(name)` starts the app the first time,
+makes it current, and returns the services its page objects and phrases resolve through (its own
+test context). The apps share the suite's page and phrase types, so all of them run one head.
+The Todo web suite's `TodoWebUatFixture` is the worked example: each app is another device on the
+same fake backend, with its own database, host, browser context and `X-Todo-Client`.

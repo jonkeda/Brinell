@@ -36,13 +36,19 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem> : ContainerBas
     protected abstract TItem CreateItem(ItemKey key, int position);
 
     /// <inheritdoc />
+    /// <remarks>
+    /// A keyed row is found by its key, not by where it is: an element found by position is found
+    /// again by position on every read, so after a re-render it would read whichever row is now
+    /// there, and a row object would answer for another item.
+    /// </remarks>
     public IHtmlElement? TryGetItemRoot(ItemKey key)
-    {
-        var rows = TryGetItemRoots();
-        return key.Kind == ItemKeyKind.Logical
-            ? rows.FirstOrDefault(row => row.GetAttribute(ItemKey.Attribute) == key.Value)
-            : rows.ElementAtOrDefault(int.Parse(key.Value, System.Globalization.CultureInfo.InvariantCulture));
-    }
+        => key.Kind == ItemKeyKind.Logical
+            ? TryFindRootElement()?.TryFindElement(KeySelector(key.Value))
+            : TryGetItemRoots().ElementAtOrDefault(int.Parse(key.Value, System.Globalization.CultureInfo.InvariantCulture));
+
+    /// <summary>The row whose <c>data-item-key</c> is <paramref name="key"/>, as a CSS selector.</summary>
+    private static Locator KeySelector(string key)
+        => Locator.ByCss($"[{ItemKey.Attribute}=\"{key.Replace("\\", "\\\\").Replace("\"", "\\\"")}\"]");
 
     /// <summary>The rows now. One attempt.</summary>
     protected IReadOnlyList<IHtmlElement> TryGetItemRoots() => FindElements(_itemLocator);
@@ -90,6 +96,19 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem> : ContainerBas
     public TItem ItemWhere(Func<TItem, bool> predicate, int? timeoutMs = null)
         => WaitFor(() => Items.FirstOrDefault(predicate), "a row that matches", timeoutMs);
 
+    /// <summary>
+    /// Waits until no row matches <paramref name="predicate"/>. A collection that is not shown at all
+    /// has no rows, so its missing root is an answer, not a wait.
+    /// </summary>
+    public bool WaitNoItemWhere(Func<TItem, bool> predicate, int? timeoutMs = null)
+        => RunProbe(() => ProbeReadiness() switch
+            {
+                { IsReady: true } => Items.Any(predicate) ? Observation.Pending("a row still matches") : Observation.Done(),
+                { State: ScopeReadinessState.MissingRoot } own when own.ScopeName == ScopeName => Observation.Done(),
+                var notReady => ScopeGate.Check(notReady) ?? Observation.Done(),
+            },
+            timeoutMs ?? DefaultTimeoutMs);
+
     /// <summary>Waits until there are <paramref name="expected"/> rows.</summary>
     public bool WaitItemCount(int expected, int? timeoutMs = null)
         => RunProbe(() => ScopeGate.Check(ProbeReadiness())
@@ -118,7 +137,7 @@ public abstract class CollectionObjectBase<TParent, TSelf, TItem> : ContainerBas
         RunProbe(
             () => ScopeGate.Check(ProbeReadiness()) ?? ((found = find()) != null ? Observation.Done() : Observation.Missing(what)),
             budget,
-            _ => new ElementNotFoundException($"{ScopeName} had no {what} within {budget} ms."));
+            last => new ElementNotFoundException($"{ScopeName} had no {what} within {budget} ms. Last seen: {last}."));
         return found!;
     }
 }

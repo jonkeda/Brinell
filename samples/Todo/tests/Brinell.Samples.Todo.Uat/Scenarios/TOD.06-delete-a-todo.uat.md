@@ -6,12 +6,12 @@
 | --- | --- |
 | App | Brinell.Samples.Todo.App |
 | Area | Delete |
-| Target | MAUI |
+| Target | MAUI, BLAZOR |
 | Journey | TOD.06 |
 | TestData | one-todo |
-| Tags | maui, delete |
+| Tags | maui, web, delete |
 
-@TOD.06.1 @maui @delete
+@TOD.06.1 @maui @web @delete
 ## Scenario: TOD.06.1 Delete asks for confirmation
 
 ```gherkin
@@ -30,7 +30,7 @@ When I choose "Cancel" in the dialog
 Then no dialog should be shown
 ```
 
-@TOD.06.2 @smoke @maui @delete
+@TOD.06.2 @smoke @maui @web @delete
 ## Scenario: TOD.06.2 Confirming returns to the list and the row is gone
 
 ```gherkin
@@ -51,7 +51,7 @@ And Todos should not have todo "Cancel gym"
 And Todos should have todo "Buy milk"
 ```
 
-@TOD.06.3 @maui @delete
+@TOD.06.3 @maui @web @delete
 ## Scenario: TOD.06.3 Cancelling keeps the todo and stays on the detail
 
 ```gherkin

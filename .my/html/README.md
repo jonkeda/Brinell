@@ -34,7 +34,8 @@ departures in [differences-from-maui.md](differences-from-maui.md).
   `samples/Brinell.Samples.Blazor.App`, `testsnew/Brinell.Html.*`, `testsnew/Brinell.Blazor.*`,
   the Todo web head (`samples/Todo/src/…Web` and its tests), the two new skills.
 - **Later, not here:** several apps in one scenario (MAUI and web against one backend,
-  multi-user). [todo-blazor.md](todo-blazor.md) section 4 keeps it possible.
+  multi-user). [todo-blazor.md](todo-blazor.md) section 4 keeps it possible. (2026-09-26: built
+  since for apps of one head; see that section's status.)
 - **Out:** Core. This project does **not** change `Brinell.Core` (R9). The proven shape moves
   down to Core with the last stack, as its own project (design 4.5 of stale-readiness).
 - **Out:** WPF, WinForms, NativeAndroid, Stride. Each has its own move-down slice.
@@ -43,4 +44,6 @@ departures in [differences-from-maui.md](differences-from-maui.md).
 
 Accepted and built, 2026-09-26: see `plan.md` (status, step notes, baseline). What the design
 turned out to need in practice is in the step notes (`plan.md` 2.1), not back-ported into
-`design.md`.
+`design.md`. The follow-ups of [review-html-vs-maui.md](review-html-vs-maui.md) are done too
+(generated controls, no async members, the Todo UAT on the web head, several apps in one
+scenario): the decisions are AD-013 and AD-014.

@@ -6,6 +6,7 @@
 | --- | --- |
 | Target | MAUI |
 | Fixture | TodoUatFixture |
+| Head | maui |
 | AppPath | ../../src/Brinell.Samples.Todo.App/bin/Debug/net10.0-windows10.0.19041.0/win-x64/Brinell.Samples.Todo.App.exe |
 | WorkingDirectory | ../../../.. |
 | DefaultTestData | one-todo |

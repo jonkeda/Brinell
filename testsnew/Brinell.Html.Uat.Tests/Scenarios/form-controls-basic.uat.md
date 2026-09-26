@@ -16,6 +16,9 @@ Given I am on the Form Controls page
 When I check Terms
 And I uncheck Newsletter
 And I select Germany from Country Select
+And I enter "Nice form" into Comments
 Then Terms should be checked
 And Newsletter should be unchecked
 And Select Status should contain "Country: de"
+And Country Select should have selected "Germany"
+And Comments should equal "Nice form"

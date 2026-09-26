@@ -1,18 +1,23 @@
 namespace Brinell.Blazor.Uat.Tests.Runtime;
 
 using Brinell.Core.Configuration;
+using Brinell.Html.Testing;
 
 [TestModuleScan(typeof(CounterPage), NamespacePrefix = "Brinell.Blazor.UITests.PageObjects")]
 public sealed class BlazorUatFixture : IDisposable
 {
-    private readonly BlazorSampleHost _host;
+    private readonly WebAppHost _host;
     private readonly BlazorTestContext _context;
     private bool _disposed;
 
     public BlazorUatFixture()
     {
         var config = BrinellBlazorConfiguration.Load();
-        _host = BlazorSampleHost.Start(config?.Blazor);
+        _host = WebAppHost.Start(new WebAppHostOptions
+        {
+            AppPath = config?.Blazor?.AppPath ?? WebAppHost.FindBuiltApp("samples/Brinell.Samples.Blazor.App"),
+            Name = "Blazor sample",
+        });
         try
         {
             _context = BlazorTestContext.CreateAsync(new HtmlTestContextOptions
@@ -64,6 +69,6 @@ public sealed class BlazorUatFixture : IDisposable
 
     private void NavigateTo(string path)
     {
-        _context.NavigateTo($"{_host.BaseUrl.TrimEnd('/')}/{path.TrimStart('/')}");
+        _context.NavigateTo($"{_host.BaseUrl}/{path.TrimStart('/')}");
     }
 }

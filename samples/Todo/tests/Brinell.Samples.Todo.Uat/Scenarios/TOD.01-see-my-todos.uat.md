@@ -6,12 +6,12 @@
 | --- | --- |
 | App | Brinell.Samples.Todo.App |
 | Area | List |
-| Target | MAUI |
+| Target | MAUI, BLAZOR |
 | Journey | TOD.01 |
 | TestData | empty |
-| Tags | maui, list |
+| Tags | maui, web, list |
 
-@TOD.01.1 @smoke @maui @list
+@TOD.01.1 @smoke @maui @web @list
 ## Scenario: TOD.01.1 Opening the app shows the list; a loading state shows first, then the content
 
 ```gherkin
@@ -27,7 +27,7 @@ And the list should show the Content state
 And Todos should have todo "Buy bread"
 ```
 
-@TOD.01.2 @maui @list
+@TOD.01.2 @maui @web @list
 ## Scenario: TOD.01.2 Each row shows its title, due date and status
 
 ```gherkin
@@ -48,7 +48,7 @@ And the todo "Paint the fence" should show no due date
 And the todo "Paint the fence" should show status "In progress"
 ```
 
-@TOD.01.3 @smoke @maui @list
+@TOD.01.3 @smoke @maui @web @list
 ## Scenario: TOD.01.3 With no todos the list shows "Nothing to do" and Add stays reachable
 
 ```gherkin
@@ -59,7 +59,7 @@ And Empty Message should equal "Nothing to do"
 And Add should be enabled
 ```
 
-@TOD.01.4 @maui @list @windows
+@TOD.01.4 @maui @web @list @windows
 ## Scenario: TOD.01.4 Filtering by status shows only the matching rows
 
 ```gherkin
@@ -78,7 +78,7 @@ And Todos should not have todo "Mow the lawn"
 And Todos should not have todo "Sand the door"
 ```
 
-@TOD.01.6 @maui @list
+@TOD.01.6 @maui @web @list
 ## Scenario: TOD.01.6 A row with unsynced changes shows the pending marker
 
 ```gherkin

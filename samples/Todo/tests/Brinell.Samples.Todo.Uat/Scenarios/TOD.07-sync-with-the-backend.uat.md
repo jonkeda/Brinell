@@ -6,12 +6,12 @@
 | --- | --- |
 | App | Brinell.Samples.Todo.App |
 | Area | Sync |
-| Target | MAUI |
+| Target | MAUI, BLAZOR |
 | Journey | TOD.07 |
 | TestData | one-todo |
-| Tags | maui, sync |
+| Tags | maui, web, sync |
 
-@TOD.07.2 @smoke @maui @sync
+@TOD.07.2 @smoke @maui @web @sync
 ## Scenario: TOD.07.2 After a successful sync the pending markers disappear
 
 ```gherkin

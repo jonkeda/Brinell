@@ -37,11 +37,20 @@ public class CheckBoxControlTests
     }
 
     [Fact]
-    public void Uncheck_CallsElementUncheck()
+    public void Uncheck_WhenChecked_CallsElementUncheck()
     {
+        _page.TestCheckBox.Check();
         _page.TestCheckBox.Uncheck();
 
         _mockElement.Verify(e => e.Uncheck(), Times.Once);
+    }
+
+    [Fact]
+    public void Uncheck_WhenUnchecked_DoesNothing()
+    {
+        _page.TestCheckBox.Uncheck();
+
+        _mockElement.Verify(e => e.Uncheck(), Times.Never);
     }
 
     [Fact]

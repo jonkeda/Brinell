@@ -357,6 +357,15 @@ nothing needs to be running first:
 dotnet test tests/Brinell.Samples.Todo.Web.UITests
 ```
 
+The UAT scenarios run on the web head too: `tests/Brinell.Samples.Todo.Web.Uat` runs the same
+`Scenarios/*.uat.md` files as the MAUI suite (a scenario tagged `@web` runs there), through web
+page objects with the MAUI member names. It also has a scenario with two devices on one backend
+(`TOD.07-two-devices.uat.md`: Alice syncs a todo, Bob syncs and sees it):
+
+```bash
+dotnet test tests/Brinell.Samples.Todo.Web.Uat
+```
+
 ### On Android
 
 Start an emulator and an Appium server (`127.0.0.1:4723`, UiAutomator2 driver). Then, from

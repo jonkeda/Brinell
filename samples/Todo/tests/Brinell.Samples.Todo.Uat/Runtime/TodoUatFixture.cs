@@ -2,6 +2,7 @@ using Brinell.Core.Composition;
 using Brinell.Maui.Enums;
 using Brinell.Maui.Interfaces;
 using Brinell.Maui.Testing;
+using Brinell.Samples.Todo.TestSupport.Uat;
 using Brinell.Samples.Todo.Uat.Phrases;
 using Brinell.Samples.Todo.UITests;
 using Brinell.Samples.Todo.UITests.Pages;
@@ -22,7 +23,8 @@ namespace Brinell.Samples.Todo.Uat.Runtime;
 /// <see cref="IMauiTestContext"/>). It is rebuilt after a restart, when the context is new.
 /// </remarks>
 [TestModuleScan(typeof(TodoListPage), NamespacePrefix = "Brinell.Samples.Todo.UITests.Pages")]
-[TestModuleScan(typeof(TodoDataPhrases), NamespacePrefix = "Brinell.Samples.Todo.Uat.Phrases")]
+[TestModuleScan(typeof(TodoScreenPhrases), NamespacePrefix = "Brinell.Samples.Todo.Uat.Phrases")]
+[TestModuleScan(typeof(TodoDataPhrases), NamespacePrefix = "Brinell.Samples.Todo.TestSupport.Uat")]
 [UatPlatforms(MauiPlatform.Windows, MauiPlatform.Android)]
 public sealed class TodoUatFixture : TodoAppFixture
 {

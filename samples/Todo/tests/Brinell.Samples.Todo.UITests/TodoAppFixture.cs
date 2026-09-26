@@ -1,6 +1,7 @@
 using Brinell.Mocking;
 using Brinell.Samples.Todo.Contracts;
 using Brinell.Samples.Todo.TestSupport;
+using Brinell.Samples.Todo.TestSupport.Uat;
 
 namespace Brinell.Samples.Todo.UITests;
 
@@ -12,7 +13,7 @@ namespace Brinell.Samples.Todo.UITests;
 /// tests hold to the real API's behaviour. Between tests it is reset to the test set's server
 /// state, with any per-test override (a 500, a delay) removed.
 /// </remarks>
-public abstract class TodoAppFixture : TodoAppFixtureBase
+public abstract class TodoAppFixture : TodoAppFixtureBase, ITodoArrangement
 {
     private MockApiServer? _backend;
     private TodoServerStub? _server;

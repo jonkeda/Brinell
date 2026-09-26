@@ -317,19 +317,19 @@ public class CallModelPinTests
     }
 
     /// <summary>
-    /// (i) A non-Try member waits (R7). Fails today: <c>LabelControl.AssertTextContaining</c> reads
+    /// (i) A non-Try member waits (R7). Fails today: <c>LabelControl.AssertTextContains</c> reads
     /// once and fails at once, which is why the counter tests in the baseline lose "one click".
     /// </summary>
     [Fact]
     [Trait("Pin", "step4")]
-    public void I_AssertTextContaining_WaitsForTheText()
+    public void I_AssertTextContains_WaitsForTheText()
     {
         var reads = 0;
         var element = Element();
         element.Setup(e => e.Text).Returns(() => ++reads < 3 ? "count: 0" : "count: 1");
         GivenTarget(() => element.Object);
 
-        NewPage().Status.AssertTextContaining("1");
+        NewPage().Status.AssertTextContains("1");
     }
 
     #endregion

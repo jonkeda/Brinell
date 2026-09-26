@@ -179,6 +179,50 @@ public sealed class UatConfigParserTests
         Assert.Null(decision.Reason);
     }
 
+    [Theory]
+    [InlineData("web", new[] { "maui" }, true)]
+    [InlineData("web", new[] { "maui", "web" }, false)]
+    [InlineData("web", new[] { "@web", "smoke" }, false)]
+    [InlineData("web", new[] { "smoke" }, false)]
+    [InlineData("maui", new[] { "web" }, true)]
+    [InlineData("MAUI", new[] { "maui", "windows" }, false)]
+    public void EvaluateSkip_HeadTags_RunOnlyOnTheirHead(string head, string[] tags, bool skipped)
+    {
+        var config = UatConfigParser.Parse($"""
+            # UAT Config
+
+            ## Runtime
+
+            | Field | Value |
+            | --- | --- |
+            | Head | {head} |
+            """);
+
+        var decision = config.EvaluateSkip(tags, _ => null);
+
+        Assert.Equal(skipped, decision.ShouldSkip);
+        if (skipped)
+        {
+            Assert.Contains($"'{head}' head", decision.Reason);
+        }
+    }
+
+    [Fact]
+    public void EvaluateSkip_NoHead_RunsEveryHeadTag()
+    {
+        var config = UatConfigParser.Parse("""
+            # UAT Config
+
+            ## Runtime
+
+            | Field | Value |
+            | --- | --- |
+            | Target | MAUI |
+            """);
+
+        Assert.False(config.EvaluateSkip(["web"], _ => null).ShouldSkip);
+    }
+
     [Fact]
     public void EvaluateSkip_NoMatchingTag_ReturnsRunDecision()
     {

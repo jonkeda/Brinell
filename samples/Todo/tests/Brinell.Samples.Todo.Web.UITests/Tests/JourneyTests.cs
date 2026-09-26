@@ -180,7 +180,7 @@ public sealed class EmptyListTests(EmptyWebFixture fixture)
     {
         var list = fixture.StartTest();
 
-        list.EmptyLabel.AssertText("Nothing to do");
-        list.Add.AssertEnabled(true);
+        list.EmptyMessage.AssertText("Nothing to do");
+        list.AddButton.AssertEnabled(true);
     }
 }

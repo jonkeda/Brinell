@@ -6,12 +6,12 @@
 | --- | --- |
 | App | Brinell.Samples.Todo.App |
 | Area | Edit |
-| Target | MAUI |
+| Target | MAUI, BLAZOR |
 | Journey | TOD.04 |
 | TestData | one-todo |
-| Tags | maui, edit |
+| Tags | maui, web, edit |
 
-@TOD.04.1 @maui @edit
+@TOD.04.1 @maui @web @edit
 ## Scenario: TOD.04.1 Edit opens the form filled with the current values
 
 ```gherkin
@@ -34,7 +34,7 @@ When I tap Cancel
 Then I should be on the Todo Detail page
 ```
 
-@TOD.04.2 @smoke @maui @edit
+@TOD.04.2 @smoke @maui @web @edit
 ## Scenario: TOD.04.2 Saving updates the detail and the list and marks the todo pending
 
 ```gherkin
@@ -65,7 +65,7 @@ And the database should have todos
   | Call dad | Pending   |
 ```
 
-@TOD.04.3 @maui @navigation
+@TOD.04.3 @maui @web @navigation
 ## Scenario: TOD.04.3 Cancel on an unchanged form leaves without asking
 
 ```gherkin
@@ -76,7 +76,7 @@ When I tap Cancel
 Then I should be on the Todo List page
 ```
 
-@TOD.04.4 @maui @edit
+@TOD.04.4 @maui @web @edit
 ## Scenario: TOD.04.4 Cancel on a changed form asks; Keep editing stays, Discard leaves it unchanged
 
 ```gherkin

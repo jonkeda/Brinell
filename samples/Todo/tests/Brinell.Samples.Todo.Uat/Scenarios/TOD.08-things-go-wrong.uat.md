@@ -6,12 +6,12 @@
 | --- | --- |
 | App | Brinell.Samples.Todo.App |
 | Area | Errors |
-| Target | MAUI |
+| Target | MAUI, BLAZOR |
 | Journey | TOD.08 |
 | TestData | empty |
-| Tags | maui, errors |
+| Tags | maui, web, errors |
 
-@TOD.08.1 @smoke @maui @errors
+@TOD.08.1 @smoke @maui @web @errors
 ## Scenario: TOD.08.1 A server error on sync shows the Error state with Retry; local data is kept
 
 ```gherkin
@@ -38,7 +38,7 @@ Then the list should show the Content state
 And Todos should have todo "Pay the bills"
 ```
 
-@TOD.08.2 @maui @errors
+@TOD.08.2 @maui @web @errors
 ## Scenario: TOD.08.2 Retry after the server recovers shows the content
 
 ```gherkin
@@ -55,7 +55,7 @@ Then the list should show the Content state
 And Todos should have todo "Renew the lease"
 ```
 
-@TOD.08.3 @maui @errors
+@TOD.08.3 @maui @web @errors
 ## Scenario: TOD.08.3 A slow server shows Loading until the answer arrives
 
 ```gherkin
@@ -68,7 +68,7 @@ Then the list should show the Loading state
 And the list should show the Empty state
 ```
 
-@TOD.08.8 @maui @errors @offline @windows
+@TOD.08.8 @maui @web @errors @offline @windows
 ## Scenario: TOD.08.8 Offline disables Sync and shows "Offline"; back online, Sync clears the pending edits
 
 ```gherkin

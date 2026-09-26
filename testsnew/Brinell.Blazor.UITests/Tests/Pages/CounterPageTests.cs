@@ -61,7 +61,7 @@ public sealed class CounterPageTests : BlazorSampleTestBase
         page.IncrementButton.Click();
         page.IncrementButton.Click();
 
-        page.CountDisplay.AssertTextContaining("5");
+        page.CountDisplay.AssertTextContains("5");
     }
 
     [Fact]
@@ -93,6 +93,6 @@ public sealed class CounterPageTests : BlazorSampleTestBase
         page.ResetButton.Click();
         page.IncrementButton.Click();
 
-        page.CountDisplay.AssertTextContaining("1");
+        page.CountDisplay.AssertTextContains("1");
     }
 }

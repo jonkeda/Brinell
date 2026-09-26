@@ -6,10 +6,10 @@
 | --- | --- |
 | App | Brinell.Samples.Todo.App |
 | Area | Create |
-| Target | MAUI |
+| Target | MAUI, BLAZOR |
 | Journey | TOD.02 |
 | TestData | one-todo |
-| Tags | maui, create |
+| Tags | maui, web, create |
 
 ## Background
 
@@ -19,7 +19,7 @@ When I tap Add
 Then I should be on the Todo Edit page
 ```
 
-@TOD.02.1 @maui @create
+@TOD.02.1 @maui @web @create
 ## Scenario: TOD.02.1 Add opens an empty edit form with status Open
 
 ```gherkin
@@ -28,7 +28,7 @@ And Status should show status "Open"
 And Title Error should not exist
 ```
 
-@TOD.02.2 @smoke @maui @create
+@TOD.02.2 @smoke @maui @web @create
 ## Scenario: TOD.02.2 Saving a valid title returns to the list, which shows the new todo
 
 ```gherkin
@@ -43,7 +43,7 @@ And the database should have todos
   | Write the report | Open   | LocalOnly |
 ```
 
-@TOD.02.3 @smoke @maui @create @validation
+@TOD.02.3 @smoke @maui @web @create @validation
 ## Scenario Outline: TOD.02.3 An empty or whitespace title shows "Title is required" and does not save
 
 ```gherkin
@@ -65,7 +65,7 @@ And the database should have todos
 | "" |
 | "   " |
 
-@TOD.02.5 @maui @create
+@TOD.02.5 @maui @web @create
 ## Scenario: TOD.02.5 A due date is optional; switching it off clears it
 
 ```gherkin

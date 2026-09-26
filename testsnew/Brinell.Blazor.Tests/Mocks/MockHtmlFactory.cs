@@ -38,9 +38,45 @@ public static class MockHtmlFactory
         mock.Setup(e => e.SendKeys(It.IsAny<string>(), It.IsAny<Brinell.Core.TextInputMethod>()))
             .Callback<string, Brinell.Core.TextInputMethod>((typed, _) => value += typed);
         mock.Setup(e => e.SelectOption(It.IsAny<string>())).Callback<string>(selected => value = selected);
+        mock.Setup(e => e.Clear()).Callback(() => value = "");
         mock.Setup(e => e.Focus()).Callback(() => focused = true);
         mock.Setup(e => e.Blur()).Callback(() => focused = false);
         mock.Setup(e => e.Evaluate<bool>("el => document.activeElement === el")).Returns(() => focused);
+        return mock;
+    }
+
+    /// <summary>
+    /// An &lt;audio&gt; or &lt;video&gt; whose DOM properties follow the scripts run on it: play,
+    /// pause, and assignments such as <c>el =&gt; el.volume = 0.5</c>.
+    /// </summary>
+    public static Mock<IHtmlElement> CreateMockMediaElement()
+    {
+        var mock = CreateMockElement();
+        var properties = new Dictionary<string, string?>
+        {
+            ["paused"] = "true",
+            ["ended"] = "false",
+            ["muted"] = "false",
+            ["volume"] = "1",
+            ["currentTime"] = "0",
+            ["duration"] = "0",
+        };
+        mock.Setup(e => e.GetDomProperty(It.IsAny<string>())).Returns<string>(name => properties.GetValueOrDefault(name));
+        mock.Setup(e => e.Evaluate(It.IsAny<string>())).Callback<string>(script =>
+        {
+            if (script == "el => el.play()")
+            {
+                properties["paused"] = "false";
+            }
+            else if (script == "el => el.pause()")
+            {
+                properties["paused"] = "true";
+            }
+            else if (System.Text.RegularExpressions.Regex.Match(script, @"^el => el\.(\w+) = (.+)$") is { Success: true } assignment)
+            {
+                properties[assignment.Groups[1].Value] = assignment.Groups[2].Value;
+            }
+        });
         return mock;
     }
 

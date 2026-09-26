@@ -24,7 +24,7 @@ Tests and UAT scenarios
 | `Brinell.Maui.FlaUI` | Windows/FlaUI driver adapter for MAUI desktop |
 | `Brinell.Wpf` | WPF automation through FlaUI |
 | `Brinell.WinForms` | WinForms automation through FlaUI |
-| `Brinell.Html` | HTML/web abstractions and Selenium support |
+| `Brinell.Html` | HTML/web abstractions, control objects, pages, containers and collections |
 | `Brinell.Html.Playwright` | Playwright-backed web driver |
 | `Brinell.Blazor` | Blazor-focused web testing helpers |
 | `Brinell.Stride` and `Brinell.Automation` | Stride UI automation and in-game hooks |

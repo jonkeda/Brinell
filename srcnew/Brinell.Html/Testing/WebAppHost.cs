@@ -121,6 +121,35 @@ public sealed class WebAppHost : IDisposable
         return host;
     }
 
+    /// <summary>
+    /// The built assembly of a web app in the repository: the first
+    /// <c>&lt;projectDirectory&gt;/bin/&lt;configuration&gt;/&lt;framework&gt;/&lt;project&gt;.dll</c> found above the
+    /// test's own directory, in the test's own configuration. A project reference with
+    /// <c>ReferenceOutputAssembly="false"</c> builds it with the tests.
+    /// </summary>
+    /// <param name="projectDirectory">The project's folder, relative to the repository root (<c>samples/My.App</c>).</param>
+    /// <param name="framework">The target framework folder.</param>
+    /// <exception cref="FileNotFoundException">It has not been built.</exception>
+    public static string FindBuiltApp(string projectDirectory, string framework = "net10.0")
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(projectDirectory);
+        var project = Path.GetFileName(projectDirectory.TrimEnd('/', '\\'));
+        var configuration = AppContext.BaseDirectory.Contains($"{Path.DirectorySeparatorChar}Release{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
+            ? "Release"
+            : "Debug";
+
+        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory != null; directory = directory.Parent)
+        {
+            var candidate = Path.Combine(directory.FullName, projectDirectory, "bin", configuration, framework, project + ".dll");
+            if (File.Exists(candidate))
+            {
+                return candidate;
+            }
+        }
+
+        throw new FileNotFoundException($"{project}.dll ({configuration}, {framework}) was not found above {AppContext.BaseDirectory}. Build it first.");
+    }
+
     /// <summary>Stops the app.</summary>
     public void Dispose()
     {

@@ -10,6 +10,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\srcnew\Brinell.Mocking\Brinell.Mocking.csproj" />
     <ProjectReference Include="..\..\..\..\srcnew\Brinell.TestData\Brinell.TestData.csproj" />
+    <!-- The head-neutral UAT steps (Uat/), shared by the MAUI and web UAT suites. -->
+    <ProjectReference Include="..\..\..\..\srcnew\Brinell.Uat\Brinell.Uat.csproj" />
     <ProjectReference Include="..\..\src\Brinell.Samples.Todo.Contracts\Brinell.Samples.Todo.Contracts.csproj" />
     <ProjectReference Include="..\..\src\Brinell.Samples.Todo.Infrastructure\Brinell.Samples.Todo.Infrastructure.csproj" />
   </ItemGroup>

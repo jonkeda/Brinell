@@ -4,6 +4,9 @@ public sealed class UatExecutionContext
 {
     public string? CurrentPageName { get; set; }
 
+    /// <summary>The app the scenario is using, after an <c>{app} uses the app</c> step; null before one.</summary>
+    public string? CurrentSession { get; set; }
+
     public IDictionary<string, object?> Items { get; } = new Dictionary<string, object?>(StringComparer.Ordinal);
 
     public IList<string> Diagnostics { get; } = [];
@@ -144,7 +147,7 @@ public sealed class UatStepExecutionSession
 
         try
         {
-            var result = await invocation.Command.Handler(_context, invocation, cancellationToken).ConfigureAwait(false);
+            var result = NameTheSession(await invocation.Command.Handler(_context, invocation, cancellationToken).ConfigureAwait(false));
             _results.Add(result);
             return result;
         }
@@ -156,11 +159,17 @@ public sealed class UatStepExecutionSession
         }
         catch (Exception ex)
         {
-            var failed = UatStepResult.Failed(invocation, ex.Message, ex);
+            var failed = NameTheSession(UatStepResult.Failed(invocation, ex.Message, ex));
             _results.Add(failed);
             return failed;
         }
     }
+
+    // In a scenario that uses several apps, a failure says which one it came from.
+    private UatStepResult NameTheSession(UatStepResult result)
+        => result.Status == UatStepResultStatus.Failed && _context.CurrentSession is { } session
+            ? result with { Message = $"[{session}] {result.Message}" }
+            : result;
 
     public UatScenarioRunResult ToResult()
     {

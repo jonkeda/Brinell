@@ -9,7 +9,7 @@ public class VideoControlTests
     public VideoControlTests()
     {
         _mockContext = MockHtmlFactory.CreateMockContext();
-        _mockElement = MockHtmlFactory.CreateMockElement();
+        _mockElement = MockHtmlFactory.CreateMockMediaElement();
         MockHtmlFactory.SetupFindElement(_mockContext, _mockElement);
         _page = new TestPage(_mockContext.Object);
     }

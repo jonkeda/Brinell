@@ -6,12 +6,12 @@
 | --- | --- |
 | App | Brinell.Samples.Todo.App |
 | Area | Detail |
-| Target | MAUI |
+| Target | MAUI, BLAZOR |
 | Journey | TOD.03 |
 | TestData | one-todo |
-| Tags | maui, detail |
+| Tags | maui, web, detail |
 
-@TOD.03.1 @smoke @maui @detail
+@TOD.03.1 @smoke @maui @web @detail
 ## Scenario: TOD.03.1 Tapping a row opens its detail with all its fields
 
 ```gherkin
@@ -33,7 +33,7 @@ And Updated should exist
 And Sync State should equal "Synced"
 ```
 
-@TOD.03.3 @maui @detail @sync
+@TOD.03.3 @maui @web @detail @sync
 ## Scenario: TOD.03.3 The Sync card shows "Synced", "Waiting to sync" or "Local only"
 
 ```gherkin
@@ -61,7 +61,7 @@ Then I should be on the Todo Detail page
 And Sync State should equal "Local only"
 ```
 
-@TOD.03.4 @maui @detail @windows
+@TOD.03.4 @maui @web @detail @windows
 ## Scenario: TOD.03.4 Back returns to the list at the same filter
 
 ```gherkin

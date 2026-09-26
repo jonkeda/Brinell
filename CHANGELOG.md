@@ -8,6 +8,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Generated Html and Blazor controls: every Html and Blazor control is a `.tpl.cs` template and a
+  generated `.gen.cs`, as on MAUI (`tools/Scripts/CreateHtml.Bat`). The Html capability bases
+  implement the same Core interfaces as MAUI's (`IClickableControlObject`,
+  `IFocusableControlObject`, `IToggleControlObject`, `IRangeControlObject`,
+  `ISelectorControlObject`, `IEditableTextControlObject`, `ITextControlObject`), so the public
+  surface matches and every built-in UAT phrase works on Html, `Enter` and `AssertSelectedText`
+  included.
+- Html `ContainerBase`: `IsExists`, `IsVisible`, `WaitExists`, `WaitVisible`, `AssertExists`,
+  `AssertVisible`, as on MAUI containers. `CollectionObjectBase.WaitNoItemWhere`.
+- `WebAppHost.FindBuiltApp`: the built assembly of a web app in the repository, for fixtures that
+  start one.
+- UAT heads: `Head` in `uat.config.md` and the `@maui` / `@web` tags. One scenario file runs on
+  every head it is tagged for and is skipped on the others.
+- UAT with several apps in one scenario: an `Apps` table in `uat.config.md`, `IUatSessionHost`
+  on the fixture, and the built-in step `{app} uses the app`. A failure names the app.
+- The Todo sample's UAT on the web head (`Brinell.Samples.Todo.Web.Uat`): the MAUI suite's
+  scenario files, run through the web page objects, and a two-device scenario (Alice and Bob on
+  one backend). The web detail page has a Back button, as the MAUI navigation bar does.
 - Html on the call model (`.my/html/plan.md`): `Brinell.Html` owns its interfaces
   (`IHtmlElement` with `InstanceKey`, `IHtmlDriver`, `IHtmlElementScope`, `IHtmlPage`,
   `IHtmlTestContext`) and runs every control, page, container and row member as one call
@@ -21,8 +39,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Html collections: `CollectionObjectBase`, `ItemObjectBase` and `ItemKey`. A row follows its
   item by `data-item-key`, and never acts on another.
 - `ControlBase.ActAndConfirm`: Html actions that change state confirm their effect and are
-  never repeated. `SetText`, `TypeText`, `AppendText`, `SetChecked`, `SelectByValue`,
-  `SelectByText`, `SetValue`, `Focus` and `Blur` use it.
+  never repeated. `SetText`, `TypeText`, `Append`, `Clear`, `SetChecked`, `Toggle`,
+  `SelectByValue`, `SelectByText`, `SelectByIndex`, `SetValue`, `Focus` and `Blur` use it.
 - `Brinell.Html.Testing.WebAppHost`: starts a web app on a free port with explicit launch
   settings.
 - The Todo sample's web head (`samples/Todo/src/Brinell.Samples.Todo.Web`) and its UI tests;
@@ -99,6 +117,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Request/response recording
 
 ### Changed
+- **Breaking:** Html's `ControlBase` `Run*` helpers have MAUI's names and signatures (R8):
+  `RunWaitWithElement` and `RunWaitWithOptionalElement` take `expected` first, and
+  `RunGetWithOptionalElement` is new. `RunWithElement` and `RunAssert(Action<IHtmlElement>)` are
+  gone; use `RunGetWithElement`, `RunDoWithElement` and `RunAssertWithElement`.
+- **Breaking:** Html and Blazor control members follow the generated names: `LabelControl`'s
+  `AssertTextContaining` and `IsTextContaining` are `AssertTextContains` and `WaitTextContains`;
+  `LinkControl.Href` is `GetHref()`; `ListControl.ItemCount` and `TableControl.RowCount` /
+  `ColumnCount` are `GetItemCount()`, `GetRowCount()`, `GetColumnCount()`; `RangeControlBase` reads
+  and sets `double?` (`GetValue`, `SetValue`, `GetMinimum`, `GetMaximum`, `GetStep`, `Increment`,
+  `Decrement`); date and time inputs read and set `DateOnly?` / `TimeOnly?` (`GetDate`,
+  `SetDate`, `GetMinimum`, ...); `TextAreaControl.AppendText` is `Append`; `SelectMultiple` takes
+  an array; `IFrameControl.ElementExistsInside` is `IsElementInside`; `NavMenuControl.HasItem`
+  and `AssertHasItem` are `WaitItemsHasItem` and `AssertItemsHasItem`. `ToggleControlBase.Check`
+  and `Uncheck` do nothing when the box is already in that state, as on MAUI.
+- The Html and Blazor UAT fixtures start the Blazor sample with `WebAppHost`; `HtmlSampleHost`
+  and `BlazorSampleHost` are gone.
+- `TodoDataPhrases` moved to `Brinell.Samples.Todo.TestSupport.Uat`, over `ITodoArrangement`, so
+  both heads' UAT suites share it. The Todo web fixture runs devices (`TodoWebDevice`) on one
+  fake backend, and can restart and change test set.
 - **Breaking:** the calls layer, its exceptions and scope readiness moved from `Brinell.Maui`
   and `Brinell.Html` into Core, one copy for both stacks (AD-010,
   `.my/core/review-what-can-move-now.md`). `Brinell.Maui.Calls`, `Brinell.Html.Calls`,
@@ -196,6 +233,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Migrated from Oravey.UITestFramework namespace
 
 ### Removed
+- **Breaking:** Html's async members: `Brinell.Html.Interfaces.Async` (`IAsyncHtmlElement`,
+  `IHtmlAsyncControlObject` and the capability interfaces), `HtmlAsyncExtensions`,
+  `ControlBase.RunWithElementAsync`, `HtmlPageObjectBase.WaitLoadedAsync` and the other `*Async`
+  page, container and context wrappers. They wrapped the synchronous calls and added nothing;
+  every member is one synchronous call, as on MAUI.
+- Html's `Control<TScope>` and `List<TScope>`: use `ClickableControlBase` and `ListControl`.
 - Html: `RunDoWithElement` no longer retries an action that threw (X2). `ObjectBase.Poll`,
   `ControlBase.RunPoll`, the element finds with a timeout, `PlaywrightTestContext.ForFrame`
   and `BlazorTestContext.WaitForBlazorReady` are gone. `IsLoaded()`, `GetTitle()` and
@@ -212,6 +255,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `PageReadinessSnapshot` from the MAUI page contract.
 
 ### Fixed
+- Html: a read of an element that a re-render removed waited out the rest of the call, so one
+  read ended the poll (R2). Playwright reads now wait for their element at most
+  `PlaywrightHtmlElement.ReadAttachMs` and report a node that is gone as stale.
+- Html: a keyed row was found again by position, so after a re-render it read another item's row
+  and answered for the wrong item. It is found by its `data-item-key` now.
+- Html: `CollectionObjectBase`'s "no row matches" failure names what the wait last saw.
 - `Brinell.Maui.UITests`' `NavigationDemoPage` looked up by name through an XPath locator the
   FlaUI driver does not support, so its "unreachable by name" probes never looked.
 - N/A (initial release)

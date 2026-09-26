@@ -6,8 +6,9 @@ lives in `../stale-readiness/`.
 
 Status: **done**, 2026-09-26. Steps 0-9 and T1-T2 are done; the step notes are in 2.1 and the
 baseline in section 4. The draft was checked against MAUI's current state on 2026-09-26
-(section 7). Deferred on purpose: the Todo `.uat.md` files on the web head (step T2), and
-several apps in one scenario (a later project, [todo-blazor.md](todo-blazor.md) section 4).
+(section 7). Deferred on purpose at the time, and done since (2026-09-26, follow-ups 7 and 8 of
+[review-html-vs-maui.md](review-html-vs-maui.md)): the Todo `.uat.md` files on the web head
+(step T2), and several apps in one scenario ([todo-blazor.md](todo-blazor.md) section 4).
 
 ## 1. Goal
 
@@ -170,7 +171,8 @@ was proved, what the design was wrong about, and what was deferred to a later st
   - A `BlazorPageObjectBase(context, url)` constructor.
   - Page objects locate by `Locator.ByDataTestId`. This settles the step 1 note:
     `ByAutomationId` keeps its meaning.
-- **Deferred, on purpose:** the Todo `.uat.md` files on the web head (?T2). The UAT runtime's
+- **Deferred, on purpose (done since, 2026-09-26):** the Todo `.uat.md` files on the web head (?T2).
+  `Brinell.Samples.Todo.Web.Uat` runs them, 33/33, through `Head: web` and the `@web` tag. The UAT runtime's
   Todo fixture is MAUI's (`Target: MAUI`), and an Html target for the same scenario files needs
   its own fixture, plus page classes with the MAUI page names. That belongs with several apps
   in one scenario (todo-blazor.md section 4), where a scenario picks its app.

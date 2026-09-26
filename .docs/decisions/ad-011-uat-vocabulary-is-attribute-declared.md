@@ -9,7 +9,8 @@ projects it into every catalog it needs.
 
 The three intrinsic page-graph verbs (`I am on the {page} page`,
 `I should be on the {page} page`, `I should see {text}`) are the engine's own and stay
-registered directly in the runtime and spec catalogs - they bind to no control method.
+registered directly in the runtime and spec catalogs - they bind to no control method. So is
+`{app} uses the app`, registered only when the fixture hosts several apps (AD-014).
 
 **Ruled out:** hand-written phrase tables. There is no second place that lists the
 control phrases. The runtime catalog, the spec catalog and any preview all come from the

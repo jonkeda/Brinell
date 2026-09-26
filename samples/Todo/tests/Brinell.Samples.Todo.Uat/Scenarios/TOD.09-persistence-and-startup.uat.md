@@ -6,12 +6,12 @@
 | --- | --- |
 | App | Brinell.Samples.Todo.App |
 | Area | Persistence |
-| Target | MAUI |
+| Target | MAUI, BLAZOR |
 | Journey | TOD.09 |
 | TestData | one-todo |
-| Tags | maui, persistence |
+| Tags | maui, web, persistence |
 
-@TOD.09.3 @maui @persistence @windows
+@TOD.09.3 @maui @web @persistence @windows
 ## Scenario: TOD.09.3 Todos survive an app restart
 
 ```gherkin
@@ -31,7 +31,7 @@ And the database should have todos
   | Survives restart |
 ```
 
-@TOD.09.4 @maui @persistence @windows
+@TOD.09.4 @maui @web @persistence @windows
 ## Scenario: TOD.09.4 The app starts with the backend unreachable and shows local todos
 
 ```gherkin

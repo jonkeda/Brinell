@@ -1,3 +1,5 @@
+using Brinell.Core.Exceptions;
+using Brinell.Core.Testing;
 using Brinell.Html.Controls;
 using Brinell.Html.Controls.Buttons;
 using Brinell.Html.Controls.Display;
@@ -6,7 +8,8 @@ namespace Brinell.Samples.Todo.Web.UITests.Pages;
 
 /// <summary>
 /// The status component (web <c>TodoStatusView</c>): a container whose parts' ids repeat in every
-/// row, so they are found within it. The web version of the MAUI <c>TodoStatus</c> ControlObject.
+/// row, so they are found within it. The web version of the MAUI <c>TodoStatus</c> ControlObject,
+/// with its members and steps.
 /// </summary>
 public sealed class TodoStatus<TParent>(IHtmlScope<TParent> parent, string testId)
     : ContainerBase<TParent, TodoStatus<TParent>>(parent, Locator.ByDataTestId(testId))
@@ -20,11 +23,109 @@ public sealed class TodoStatus<TParent>(IHtmlScope<TParent> parent, string testI
     /// <summary>Next: cycles the status. Absent where the control is read-only.</summary>
     public ButtonControl<TodoStatus<TParent>> Next => new(this, Locator.ByDataTestId("StatusNext"));
 
+    /// <summary>The status name shown.</summary>
+    public string? GetStatus(int? timeoutMs = null) => Text.GetText(timeoutMs);
+
+    /// <summary>Waits until the status name shown is <paramref name="expected"/>.</summary>
+    public bool WaitStatus(string? expected, int? timeoutMs = null) => Text.WaitText(expected, timeoutMs);
+
     /// <summary>Asserts the status shown, waiting for it.</summary>
     public TParent AssertStatus(string expected, int? timeoutMs = null)
     {
         Text.AssertText(expected, timeoutMs: timeoutMs);
         return Parent;
+    }
+
+    /// <summary>Asserts the status shown, waiting for it: the MAUI step.</summary>
+    [UatStep(UatEffectiveStepKeyword.Then, "{control} should show status {value}")]
+    public TodoStatus<TParent> AssertShowsStatus(string? expected, string? message = null, int? timeoutMs = null)
+    {
+        Text.AssertText(expected, message, timeoutMs);
+        return this;
+    }
+
+    /// <summary>Asserts whether the status can be changed here: whether it has a Next button.</summary>
+    public TodoStatus<TParent> AssertChangeable(bool expected = true, int? timeoutMs = null)
+    {
+        Next.AssertExists(expected, timeoutMs: timeoutMs);
+        return this;
+    }
+
+    /// <summary>Presses Next until the status reads <paramref name="expected"/>, at most one full cycle.</summary>
+    [UatStep(UatEffectiveStepKeyword.When, "I advance {control} to {value}")]
+    public TodoStatus<TParent> AdvanceTo(string? expected, int? timeoutMs = null)
+    {
+        if (expected is null)
+        {
+            return this;
+        }
+
+        // A press that lands on another name costs this much; the last press gets the full timeout.
+        const int intermediateWaitMs = 750;
+
+        for (var press = 0; press < 3 && Text.TryGetText() != expected; press++)
+        {
+            Next.Click(timeoutMs);
+            WaitStatus(expected, press == 2 ? timeoutMs : intermediateWaitMs);
+        }
+
+        if (Text.TryGetText() is var shown && shown != expected)
+        {
+            throw new TimeoutException(
+                $"TodoStatus '{Locator}' never read '{expected}' in a full cycle; it reads '{shown}'.");
+        }
+
+        return this;
+    }
+}
+
+/// <summary>
+/// The list's state (<c>TodoList_State</c>): exactly one of Loading, Empty, Error or the rows shows,
+/// each with its own id, as in the MAUI <c>StateContainer</c>.
+/// </summary>
+/// <remarks>
+/// It does not ask its page: the page is busy while a sync runs, and Loading is what a sync shows.
+/// </remarks>
+public sealed class TodoListState(IHtmlScope<TodoListPage> page)
+    : ContainerBase<TodoListPage, TodoListState>(page, Locator.ByDataTestId("TodoList_State"))
+{
+    public const string Loading = "TodoList_Loading";
+
+    public const string Empty = "TodoList_Empty";
+
+    public const string Error = "TodoList_Error";
+
+    public const string Content = "TodoList_Items";
+
+    public override TodoListState Self => this;
+
+    protected override bool AsksParent => false;
+
+    /// <summary>Whether the state with test id <paramref name="state"/> is the one shown now.</summary>
+    public bool IsShowing(string state) => TryFindElement(Locator.ByDataTestId(state)) != null;
+
+    /// <summary>Waits until the state with test id <paramref name="state"/> is shown, or is not.</summary>
+    public bool WaitShowing(string state, bool expected = true, int? timeoutMs = null)
+        => new ShownPart(this, state).WaitExists(expected, timeoutMs);
+
+    /// <summary>Asserts that the state with test id <paramref name="state"/> is shown, waiting for it.</summary>
+    public TodoListState AssertShowing(string state, bool expected = true, int? timeoutMs = null)
+    {
+        if (!WaitShowing(state, expected, timeoutMs))
+        {
+            throw new AssertionException($"Expected the list {(expected ? "to show" : "not to show")} {state}.");
+        }
+
+        return this;
+    }
+
+    // One state's element, as a container of the state: its presence is the question.
+    private sealed class ShownPart(IHtmlScope<TodoListState> state, string testId)
+        : ContainerBase<TodoListState, ShownPart>(state, Locator.ByDataTestId(testId))
+    {
+        public override ShownPart Self => this;
+
+        protected override bool AsksParent => false;
     }
 }
 
@@ -58,4 +159,21 @@ public sealed class TodoDialog<TParent>(IHtmlScope<TParent> parent)
     public ButtonControl<TodoDialog<TParent>> Accept => new(this, Locator.ByDataTestId("Dialog_Accept"));
 
     public ButtonControl<TodoDialog<TParent>> Cancel => new(this, Locator.ByDataTestId("Dialog_Cancel"));
+
+    /// <summary>The dialog's button whose text is <paramref name="text"/>, as the MAUI dialog finds its buttons.</summary>
+    /// <exception cref="ElementNotFoundException">Neither button reads <paramref name="text"/>.</exception>
+    public ButtonControl<TodoDialog<TParent>> Button(string text)
+    {
+        AssertExists(true);
+        foreach (var button in new[] { Accept, Cancel })
+        {
+            if (string.Equals(button.TryGetText()?.Trim(), text, StringComparison.Ordinal))
+            {
+                return button;
+            }
+        }
+
+        throw new ElementNotFoundException(
+            $"The dialog has no button '{text}'. It has '{Accept.TryGetText()}' and '{Cancel.TryGetText()}'.");
+    }
 }

@@ -49,13 +49,13 @@ public class TableControlTests
     [Fact]
     public void RowCount_ReturnsCorrectCount()
     {
-        Assert.Equal(2, _page.TestTable.RowCount);
+        Assert.Equal(2, _page.TestTable.GetRowCount());
     }
 
     [Fact]
     public void ColumnCount_ReturnsHeaderCount()
     {
-        Assert.Equal(3, _page.TestTable.ColumnCount);
+        Assert.Equal(3, _page.TestTable.GetColumnCount());
     }
 
     [Fact]
@@ -86,6 +86,8 @@ public class TableControlTests
     public void GetRowTexts_ReturnsRow()
     {
         var texts = _page.TestTable.GetRowTexts(0);
+
+        Assert.NotNull(texts);
 
         Assert.Equal(2, texts.Count);
         Assert.Equal("Cell1", texts[0]);

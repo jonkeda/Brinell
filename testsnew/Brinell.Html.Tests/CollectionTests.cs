@@ -20,7 +20,13 @@ public class CollectionTests
         _context.Setup(c => c.IsIdle()).Returns(true);
         _context.Setup(c => c.TryFindElement(It.Is<Locator>(l => l.Value == "List"))).Returns(_list.Object);
         _list.Setup(l => l.FindElements(It.Is<Locator>(l => l.Value == "Row"))).Returns(() => _rows.ToArray());
+
+        // A keyed row is found by its key (a CSS attribute selector), as a browser would.
+        _list.Setup(l => l.TryFindElement(It.Is<Locator>(l => l.Value.StartsWith("[" + ItemKey.Attribute))))
+            .Returns((Locator selector) => _rows.FirstOrDefault(row => selector.Value == KeySelectorOf(row.GetAttribute(ItemKey.Attribute))));
     }
+
+    private static string KeySelectorOf(string? key) => $"[{ItemKey.Attribute}=\"{key}\"]";
 
     private sealed class Page(IHtmlTestContext context) : HtmlPageObjectBase<Page>(context)
     {
@@ -66,6 +72,22 @@ public class CollectionTests
 
         a.Delete.Verify(d => d.Click(), Times.Once);
         b.Delete.Verify(d => d.Click(), Times.Never);
+    }
+
+    /// <summary>
+    /// A keyed row is found by its key, never by its position: an element found by position is
+    /// found again by position on every read, and after a re-render reads another item's row.
+    /// </summary>
+    [Fact]
+    public void AKeyedRow_IsFoundByItsKey_NotByItsPosition()
+    {
+        var a = RowFor("a");
+        _rows.Add(a.Row.Object);
+        var row = new Page(_context.Object).List.Item(0);
+
+        row.Delete.Click();
+
+        _list.Verify(l => l.TryFindElement(It.Is<Locator>(selector => selector.Value == KeySelectorOf("a"))), Times.AtLeastOnce);
     }
 
     [Fact]

@@ -34,5 +34,9 @@ The short list that must not be broken. Each links the decision that explains it
   and checked by one engine (gate and `brinell-data` alike); mock bodies are contract types,
   never anonymous (`BRINELL001`); a UAT file names its own `TestData`.
   [AD-012](decisions/ad-012-test-data-is-typed-validated-and-chosen-by-the-scenario.md)
+- **Html controls have MAUI's shape.** Generated from `.tpl.cs`, MAUI's `Run*` signatures and
+  Core interfaces, no async members. [AD-013](decisions/ad-013-html-controls-have-mauis-shape.md)
+- **One scenario file serves every head.** Head tags decide where it runs; no per-head copies.
+  [AD-014](decisions/ad-014-one-scenario-file-serves-every-head.md)
 - **The generator output is not hand-edited.** `.gen.cs` mirrors `.tpl.cs` through
   `Brinell.Generator`. [control-object](contracts/control-object.md)

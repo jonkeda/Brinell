@@ -131,6 +131,12 @@ public static class UatConfigFields
     /// <summary>The test set a scenario file runs on when its metadata names none.</summary>
     public const string DefaultTestData = "DefaultTestData";
 
+    /// <summary>
+    /// The head this suite drives (<c>maui</c>, <c>web</c>): a scenario tagged with heads runs only
+    /// on theirs. See <see cref="UatTagConventions.Heads"/>.
+    /// </summary>
+    public const string Head = "Head";
+
     /// <summary>The <c>Assemblies</c> kind of the assembly holding the test-data definitions.</summary>
     public const string TestDataAssemblyKind = "TestData";
 }

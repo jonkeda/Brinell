@@ -21,55 +21,57 @@ public class RangeInputControlTests
     }
 
     [Fact]
-    public void GetNumericValue_ReturnsDoubleValue()
+    public void GetValue_ReturnsDoubleValue()
     {
-        Assert.Equal(75, _page.TestRange.GetNumericValue());
+        Assert.Equal(75, _page.TestRange.GetValue());
     }
 
     [Fact]
-    public void GetNumericValue_WhenNonNumeric_ReturnsZero()
+    public void GetValue_WhenNonNumeric_ReturnsNull()
     {
         _mockElement.Setup(e => e.InputValue).Returns("abc");
 
-        Assert.Equal(0, _page.TestRange.GetNumericValue());
+        Assert.Null(_page.TestRange.GetValue());
     }
 
     [Fact]
-    public void SetNumericValue_FillsValue()
+    public void SetValue_FillsValue()
     {
-        _page.TestRange.SetNumericValue(50.5);
+        _page.TestRange.SetValue(50.5);
 
         _mockElement.Verify(e => e.Fill("50.5"), Times.Once);
     }
 
     [Fact]
-    public void GetMin_ReturnsAttribute()
+    public void GetMinimum_ReturnsAttribute()
     {
-        Assert.Equal("0", _page.TestRange.GetMin());
+        Assert.Equal(0, _page.TestRange.GetMinimum());
     }
 
     [Fact]
-    public void GetMax_ReturnsAttribute()
+    public void GetMaximum_ReturnsAttribute()
     {
-        Assert.Equal("100", _page.TestRange.GetMax());
+        Assert.Equal(100, _page.TestRange.GetMaximum());
     }
 
     [Fact]
     public void GetStep_ReturnsAttribute()
     {
-        Assert.Equal("1", _page.TestRange.GetStep());
+        Assert.Equal(1, _page.TestRange.GetStep());
     }
 
     [Fact]
-    public void GetValue_ReturnsInputValue()
+    public void Increment_FillsTheNextStep()
     {
-        Assert.Equal("75", _page.TestRange.GetValue());
+        _page.TestRange.Increment();
+
+        _mockElement.Verify(e => e.Fill("76"), Times.Once);
     }
 
     [Fact]
-    public void SetValue_FillsStringValue()
+    public void SetValue_FillsWholeNumber()
     {
-        _page.TestRange.SetValue("42");
+        _page.TestRange.SetValue(42);
 
         _mockElement.Verify(e => e.Fill("42"), Times.Once);
     }

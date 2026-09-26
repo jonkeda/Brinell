@@ -33,6 +33,24 @@ public class PlaywrightErrorMappingTests
         Assert.IsType<PlaywrightException>(error.InnerException);
     }
 
+    /// <summary>
+    /// A read waits for its element no longer than <see cref="PlaywrightHtmlElement.ReadAttachMs"/>,
+    /// and a node that is gone by then is stale: the poll finds the element again, instead of one
+    /// read waiting out the call (R2, R5).
+    /// </summary>
+    [Fact]
+    public void ARead_OfANodeThatIsGone_IsStale_AfterAShortWait()
+    {
+        var locator = Locator();
+        locator.Setup(l => l.InnerTextAsync(It.IsAny<LocatorInnerTextOptions?>()))
+            .ThrowsAsync(new TimeoutException("Timeout 250ms exceeded."));
+
+        Assert.Throws<StaleElementException>(() => new PlaywrightHtmlElement(locator.Object).Text);
+
+        locator.Verify(l => l.InnerTextAsync(
+            It.Is<LocatorInnerTextOptions?>(o => o != null && o.Timeout == PlaywrightHtmlElement.ReadAttachMs)), Times.Once);
+    }
+
     [Fact]
     public void AClosedBrowser_IsAppUnavailable_OnAnElement()
     {

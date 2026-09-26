@@ -45,6 +45,11 @@ verbs of its own the same way.
 A UAT project drives a real app, so it costs what a UI run costs: build the app first, and run
 one UI or UAT process at a time.
 
+An app with a MAUI and a web head has one set of scenario files; each head's UAT project runs the
+scenarios tagged for it (`Head` in `uat.config.md`, `@maui` / `@web` tags). A scenario can also
+use several apps of one head, such as two devices on one backend
+([AD-014](../../.docs/decisions/ad-014-one-scenario-file-serves-every-head.md)).
+
 See [UAT Template Guide](../guides/uat-template-guide.md),
 [UAT Phrases And Flows](../guides/uat-phrases-and-flows.md), and the worked example in
 [One Todo UAT, end to end](../../samples/Todo/uat-walkthrough.md).

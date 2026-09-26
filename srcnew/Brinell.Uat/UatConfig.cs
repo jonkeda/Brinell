@@ -18,18 +18,18 @@ public sealed record UatConfig(
     {
     }
 
+    /// <summary>
+    /// The apps a scenario can switch between (<c>{app} uses the app</c>), from the <c>Apps</c>
+    /// table. Empty for a single-app suite.
+    /// </summary>
+    public IReadOnlyList<UatAppConfig> Apps { get; init; } = [];
+
     public UatSkipDecision EvaluateSkip(
         IEnumerable<string> tags,
         Func<string, string?>? getEnvironmentVariable = null)
     {
         ArgumentNullException.ThrowIfNull(tags);
 
-        if (SkipRules.Count == 0)
-        {
-            return UatSkipDecision.Run;
-        }
-
-        getEnvironmentVariable ??= Environment.GetEnvironmentVariable;
         HashSet<string> normalizedTags = new(StringComparer.OrdinalIgnoreCase);
         foreach (var tag in tags)
         {
@@ -39,6 +39,26 @@ public sealed record UatConfig(
                 normalizedTags.Add(normalized);
             }
         }
+
+        // One scenario file can serve several heads; a scenario tagged with heads runs only on theirs.
+        if (Runtime.TryGetValue(UatConfigFields.Head, out var head) && head.Trim() is { Length: > 0 } suiteHead)
+        {
+            var heads = UatTagConventions.Heads.Where(normalizedTags.Contains).ToList();
+            if (heads.Count > 0 && !heads.Contains(suiteHead, StringComparer.OrdinalIgnoreCase))
+            {
+                return new UatSkipDecision(
+                    ShouldSkip: true,
+                    Reason: $"Scenario is for {string.Join(", ", heads.Select(tag => $"@{tag}"))}; this suite runs the '{suiteHead}' head.",
+                    Rule: null);
+            }
+        }
+
+        if (SkipRules.Count == 0)
+        {
+            return UatSkipDecision.Run;
+        }
+
+        getEnvironmentVariable ??= Environment.GetEnvironmentVariable;
 
         foreach (var rule in SkipRules)
         {
@@ -62,6 +82,14 @@ public sealed record UatConfig(
 }
 
 public sealed record UatAssemblyRegistration(string Kind, string Assembly);
+
+/// <summary>
+/// One app of a multi-app suite: a row of the <c>Apps</c> table. <see cref="Name"/> is what a
+/// scenario calls it; the other columns are the fixture's to read (a user, a head, a test set).
+/// </summary>
+/// <param name="Name">The app's name in scenarios, such as <c>Alice</c>.</param>
+/// <param name="Values">Every column of the row, by column name.</param>
+public sealed record UatAppConfig(string Name, IReadOnlyDictionary<string, string> Values);
 
 public sealed record UatDiscoverySettings(
     bool RequireExplicitUatAttributes = false,
@@ -135,11 +163,18 @@ public static class UatTagConventions
     public const string Hardware = "hardware";
     public const string LiveApi = "live-api";
     public const string Maui = "maui";
+    public const string Web = "web";
     public const string Windows = "windows";
     public const string Android = "android";
     public const string Ios = "ios";
     public const string Deterministic = "deterministic";
     public const string OpenAiLive = "openai-live";
+
+    /// <summary>
+    /// The head tags. A scenario tagged with one or more runs only on a suite whose
+    /// <see cref="UatConfigFields.Head"/> is among them; one with none runs on every head.
+    /// </summary>
+    public static IReadOnlyList<string> Heads { get; } = [Maui, Web];
 
     public static string NormalizeTag(string tag)
     {
@@ -160,6 +195,7 @@ public static class UatConfigParser
         Dictionary<string, string> reporting = new(StringComparer.OrdinalIgnoreCase);
         Dictionary<string, string> settings = new(StringComparer.OrdinalIgnoreCase);
         List<UatSkipRule> skipRules = [];
+        List<UatAppConfig> apps = [];
 
         var sections = ParseSections(markdown);
         if (sections.TryGetValue("Runtime", out var runtimeTable))
@@ -210,6 +246,17 @@ public static class UatConfigParser
             }
         }
 
+        if (sections.TryGetValue("Apps", out var appsTable))
+        {
+            foreach (var row in appsTable.Rows)
+            {
+                if (row.Cells.TryGetValue("Name", out var name) && name.Length > 0)
+                {
+                    apps.Add(new UatAppConfig(name, new Dictionary<string, string>(row.Cells, StringComparer.OrdinalIgnoreCase)));
+                }
+            }
+        }
+
         return new UatConfig(
             runtime,
             assemblies,
@@ -227,7 +274,10 @@ public static class UatConfigParser
                 ReadString(settings, "DefaultFile", UatSettingsConfig.Default.DefaultFile),
                 ReadNullableString(settings, "LocalFile", UatSettingsConfig.Default.LocalFile),
                 ReadNullableString(settings, "ScenarioConvention", UatSettingsConfig.Default.ScenarioConvention)),
-            skipRules);
+            skipRules)
+        {
+            Apps = apps,
+        };
     }
 
     public static UatConfig ParseFile(string filePath, string? suiteName = null)

@@ -27,7 +27,7 @@ public class ListControlTests
     [Fact]
     public void ItemCount_ReturnsCorrectCount()
     {
-        Assert.Equal(3, _page.TestList.ItemCount);
+        Assert.Equal(3, _page.TestList.GetItemCount());
     }
 
     [Fact]
@@ -52,6 +52,8 @@ public class ListControlTests
     public void GetItemTexts_ReturnsAllTexts()
     {
         var texts = _page.TestList.GetItemTexts();
+
+        Assert.NotNull(texts);
 
         Assert.Equal(3, texts.Count);
         Assert.Equal("Item 1", texts[0]);

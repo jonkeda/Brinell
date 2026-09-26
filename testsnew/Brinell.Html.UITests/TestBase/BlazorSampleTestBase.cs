@@ -39,13 +39,6 @@ public abstract class BlazorSampleTestBase : IAsyncLifetime
         new SampleShell(Context).AssertIdle();
     }
 
-    /// <inheritdoc cref="NavigateToPage"/>
-    protected Task NavigateToPageAsync(string path)
-    {
-        NavigateToPage(path);
-        return Task.CompletedTask;
-    }
-
     private static bool ParseBool(string? value, bool defaultValue)
     {
         return bool.TryParse(value, out var parsed)

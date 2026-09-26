@@ -41,40 +41,4 @@ public sealed class CheckBoxControlTests : BlazorSampleTestBase
 
         Assert.NotEqual(initial, page.TermsCheckBox.IsChecked());
     }
-
-    [Fact]
-    public async Task CheckBox_Check_SetsCheckedTrue_Async()
-    {
-        await NavigateToPageAsync("/form-controls");
-        var page = new FormControlsPage(Context);
-
-        await page.TermsCheckBox.UncheckAsync();
-        await page.TermsCheckBox.CheckAsync();
-
-        Assert.True(await page.TermsCheckBox.IsCheckedAsync());
-    }
-
-    [Fact]
-    public async Task CheckBox_Uncheck_SetsCheckedFalse_Async()
-    {
-        await NavigateToPageAsync("/form-controls");
-        var page = new FormControlsPage(Context);
-
-        await page.NewsletterCheckBox.CheckAsync();
-        await page.NewsletterCheckBox.UncheckAsync();
-
-        Assert.False(await page.NewsletterCheckBox.IsCheckedAsync());
-    }
-
-    [Fact]
-    public async Task CheckBox_Toggle_FlipsCheckedState_Async()
-    {
-        await NavigateToPageAsync("/form-controls");
-        var page = new FormControlsPage(Context);
-
-        var initial = await page.TermsCheckBox.IsCheckedAsync();
-        await page.TermsCheckBox.ToggleAsync();
-
-        Assert.NotEqual(initial, await page.TermsCheckBox.IsCheckedAsync());
-    }
 }

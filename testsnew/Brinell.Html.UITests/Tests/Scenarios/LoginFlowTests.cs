@@ -17,7 +17,7 @@ public sealed class LoginFlowTests : BlazorSampleTestBase
         page.LoginButton.Click();
 
         page.SuccessMessage.WaitVisible(true);
-        page.SuccessMessage.AssertTextContaining("Login successful");
+        page.SuccessMessage.AssertTextContains("Login successful");
     }
 
     [Fact]
@@ -49,30 +49,5 @@ public sealed class LoginFlowTests : BlazorSampleTestBase
 
         Assert.NotNull(error);
         Assert.Contains("enabled", error.Message, StringComparison.OrdinalIgnoreCase);
-    }
-
-    [Fact]
-    public async Task LoginFlow_ValidCredentials_ShowsSuccessMessage_Async()
-    {
-        await NavigateToPageAsync("/login");
-        var page = new LoginPage(Context);
-
-        await page.EmailInput.SetTextAsync("test@example.com");
-        await page.PasswordInput.SetTextAsync("password123");
-        await page.LoginButton.ClickAsync();
-
-        await page.SuccessMessage.WaitVisibleAsync(true);
-        await page.SuccessMessage.AssertTextContainingAsync("Login successful");
-    }
-
-    [Fact]
-    public async Task LoginFlow_EmptyCredentials_ShowsError_Async()
-    {
-        await NavigateToPageAsync("/login");
-        var page = new LoginPage(Context);
-
-        await page.LoginButton.ClickAsync();
-
-        page.ValidationMessage.AssertVisible(true);
     }
 }

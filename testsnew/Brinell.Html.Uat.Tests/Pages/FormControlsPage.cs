@@ -1,5 +1,6 @@
 using Brinell.Html.Controls.Display;
 using Brinell.Html.Controls.Selection;
+using Brinell.Html.Controls.Text;
 using Brinell.Html.Controls.Toggle;
 
 namespace Brinell.Html.Uat.Tests.Pages;
@@ -19,4 +20,6 @@ public sealed class FormControlsPage : HtmlPageObjectBase<FormControlsPage>
     public SelectControl<FormControlsPage> CountrySelect => new(this, "#country-select");
 
     public LabelControl<FormControlsPage> SelectStatus => new(this, "#select-status");
+
+    public TextAreaControl<FormControlsPage> Comments => new(this, "#comments-textarea");
 }

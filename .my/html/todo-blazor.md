@@ -67,6 +67,15 @@ saw. Because the view model is shared, one bug gives a matched pair of proofs.
 
 ## 4. Several apps in one scenario (later project; do not rule it out now)
 
+**Status, 2026-09-26: built for one head.** The `Apps` table, `IUatSessionHost` and the step
+`{app} uses the app` are in `Brinell.Uat`; a failure names the app. `TodoWebUatFixture` runs each
+app as another web device on one fake backend (own database, host, browser context and
+`X-Todo-Client`), and `TOD.07-two-devices.uat.md` has Alice sync a todo that Bob then syncs and
+sees. Not built: apps of **different** heads in one scenario (the MAUI app and the web app).
+The sessions share the suite's page and phrase types, and a MAUI page and a web page with the
+same name would need a page catalog per session. Also not built: users (a per-user list on the
+server, ?T3), and one artifact subfolder per session.
+
 Examples: the MAUI app and the web app sync through one backend, and the backend has each
 client's messages. Alice creates a todo, Bob syncs and sees it. Two users edit the same todo and
 the conflict rule decides.
@@ -100,7 +109,9 @@ These cost little now and a lot to retrofit, so steps 1-7 keep to them:
    process-global environment variables at test time. This is also the fix for today's
    `BlazorSampleTestBase` (plan step 5).
 4. **Brinell.Uat's static `_currentFile`** (`UatScenarioTestBase`) is noted as a blocker for
-   section 4. It is not changed in this plan.
+   section 4. It is not changed in this plan. (2026-09-26: not a blocker in the end. It is per closed
+   generic type, it tracks the file for `BeforeFile` (the test set), and sessions switch within a
+   scenario, below it.)
 
 MAUI and Html can run in one test process: FlaUI drives the Windows app without physical input
 ([AD-005](../../.docs/decisions/ad-005-physical-input-is-opt-in.md)), and Playwright drives the

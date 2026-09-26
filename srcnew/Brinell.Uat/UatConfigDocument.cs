@@ -7,7 +7,7 @@ internal sealed class MarkdownDocument
 {
     // The order a section is created in when it is missing; an unknown section is appended last.
     private static readonly string[] CanonicalSections =
-        ["Runtime", "Assemblies", "Discovery", "Reporting", "Settings", "Skip Rules"];
+        ["Runtime", "Apps", "Assemblies", "Discovery", "Reporting", "Settings", "Skip Rules"];
 
     private readonly List<string> _lines;
     private readonly string _newLine;

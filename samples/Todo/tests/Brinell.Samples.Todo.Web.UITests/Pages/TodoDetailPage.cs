@@ -1,9 +1,10 @@
 using Brinell.Html.Controls.Buttons;
 using Brinell.Html.Controls.Display;
+using Brinell.Uat;
 
 namespace Brinell.Samples.Todo.Web.UITests.Pages;
 
-/// <summary>One todo. Test ids as in TodoDetailPage.xaml.</summary>
+/// <summary>One todo. Test ids as in TodoDetailPage.xaml, member names as on the MAUI page object.</summary>
 public sealed class TodoDetailPage : BlazorPageObjectBase<TodoDetailPage>
 {
     public TodoDetailPage(IHtmlTestContext context)
@@ -24,9 +25,24 @@ public sealed class TodoDetailPage : BlazorPageObjectBase<TodoDetailPage>
 
     public LabelControl<TodoDetailPage> Title => new(this, Locator.ByDataTestId("TodoDetail_Title"));
 
+    [UatName("Status")]
     public TodoStatus<TodoDetailPage> Status => new(this, "TodoDetail_Status");
 
-    public SectionCard<TodoDetailPage> Info => new(this, "TodoDetail_Info");
+    public SectionCard<TodoDetailPage> InfoCard => new(this, "TodoDetail_Info");
+
+    public SectionCard<TodoDetailPage> NotesCard => new(this, "TodoDetail_Notes");
+
+    public LabelControl<SectionCard<TodoDetailPage>> Due => InfoCard.Value("DueValue");
+
+    public LabelControl<SectionCard<TodoDetailPage>> Created => InfoCard.Value("CreatedValue");
+
+    public LabelControl<SectionCard<TodoDetailPage>> Updated => InfoCard.Value("UpdatedValue");
+
+    public LabelControl<SectionCard<TodoDetailPage>> Notes => NotesCard.Value("NotesValue");
+
+    /// <summary>Back to the list: the MAUI navigation bar's back button.</summary>
+    [UatName("Back")]
+    public ButtonControl<TodoDetailPage> BackButton => new(this, Locator.ByDataTestId("TodoDetail_Back"));
 
     public SectionCard<TodoDetailPage> SyncCard => new(this, "TodoDetail_Sync");
 
@@ -60,7 +76,7 @@ public sealed class TodoDetailPage : BlazorPageObjectBase<TodoDetailPage>
     /// <summary>The browser's back button, to the list.</summary>
     public TodoListPage Back()
     {
-        Context.NavigateBack();
+        BackButton.Click();
         var list = new TodoListPage(Context);
         list.AssertIdle();
         return list;

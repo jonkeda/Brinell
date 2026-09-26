@@ -47,7 +47,7 @@ public sealed class ButtonClickTests : BlazorSampleTestBase
         page.IncrementButton.Click();
         page.IncrementButton.Click();
 
-        page.CountDisplay.AssertTextContaining("3");
+        page.CountDisplay.AssertTextContains("3");
     }
 
     [Fact]

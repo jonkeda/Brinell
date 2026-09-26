@@ -1,8 +1,7 @@
-using Brinell.Html.Context;
-using Brinell.Html.Playwright;
 using Brinell.Html.Testing;
 using Brinell.Mocking;
 using Brinell.Samples.Todo.Infrastructure;
+using Brinell.Samples.Todo.TestSupport.Uat;
 using Brinell.Samples.Todo.Web.UITests.Pages;
 
 namespace Brinell.Samples.Todo.Web.UITests;
@@ -13,20 +12,20 @@ namespace Brinell.Samples.Todo.Web.UITests;
 /// the web head's own host (<see cref="WebAppHost"/>).
 /// </summary>
 /// <remarks>
-/// One host per fixture: the host process is one device, so tests in a collection share its
-/// database, as the MAUI tests share their app. Each test starts from the list, online, with the
-/// backend reset (<see cref="StartTest"/>).
+/// One device per fixture (<see cref="TodoWebDevice"/>): the host process is one device, so tests
+/// in a collection share its database, as the MAUI tests share their app. Each test starts from the
+/// list, online, with the backend reset (<see cref="StartTest"/>). A fixture that runs several
+/// devices on the one backend starts them with <see cref="StartDeviceAsync"/> and makes one
+/// <see cref="Device"/>.
 /// </remarks>
-public abstract class TodoWebFixture : IAsyncLifetime
+public abstract class TodoWebFixture : IAsyncLifetime, ITodoArrangement
 {
     /// <summary>The name this app sends in <c>X-Todo-Client</c>.</summary>
     public const string ClientId = "web-hermetic";
 
-    private TempDatabase? _database;
-    private NetworkStateFile? _network;
     private MockApiServer? _backend;
-    private WebAppHost? _host;
-    private PlaywrightTestContext? _context;
+    private TodoWebDevice? _main;
+    private TodoWebDevice? _device;
 
     /// <summary>The test set the fixture seeds from.</summary>
     protected abstract string TestDataName { get; }
@@ -40,74 +39,98 @@ public abstract class TodoWebFixture : IAsyncLifetime
 
     public TodoServerStub Server { get; private set; } = null!;
 
-    public IHtmlTestContext Context => _context ?? throw new InvalidOperationException("The fixture is not started.");
+    /// <summary>The device the fixture started with.</summary>
+    public TodoWebDevice MainDevice => _main ?? throw new InvalidOperationException("The fixture is not started.");
 
-    public string BaseUrl => _host?.BaseUrl ?? throw new InvalidOperationException("The fixture is not started.");
+    /// <summary>The device the members below act on: <see cref="MainDevice"/> unless a subclass chose another.</summary>
+    public TodoWebDevice Device
+    {
+        get => _device ?? throw new InvalidOperationException("The fixture is not started.");
+        protected set => _device = value;
+    }
 
-    public TodoListPage List => new(Context);
+    /// <summary>The device's network: the app reads it from a file.</summary>
+    public NetworkStateFile Network => Device.Network;
 
-    public async Task InitializeAsync()
+    /// <summary>The app's SQLite file.</summary>
+    public string DatabasePath => Device.DatabasePath;
+
+    public IHtmlTestContext Context => Device.Context;
+
+    public string BaseUrl => Device.BaseUrl;
+
+    public TodoListPage List => Device.List;
+
+    public virtual async Task InitializeAsync()
     {
         TestSet = TodoTestSet.Load(TestDataName);
-        _database = new TempDatabase("web-" + TestSet.Name);
-        await TestSet.SeedDatabaseAsync(_database.Path);
-        _network = NetworkStateFile.Create(Path.Combine(_database.Folder, "network-state.txt"));
         _backend = MockApiServer.Start();
         Server = TestSet.StubServer(_backend);
-
-        var settings = AdjustSettings(new LaunchSettings
-        {
-            DatabasePath = _database.Path,
-            ApiBaseUrl = _backend.BaseUrl,
-            FixedNow = TestSet.Now,
-            NetworkStateFile = _network.Path,
-            ApiTimeout = TimeSpan.FromSeconds(5),
-            ClientId = ClientId,
-        });
-
-        _host = WebAppHost.Start(new WebAppHostOptions
-        {
-            AppPath = WebApp.Assembly(),
-            Environment = settings.ToVariables(),
-            ReadyPath = "/health",
-            Name = "Todo web",
-        });
-        _context = await PlaywrightTestContext.CreateAsync(new HtmlTestContextOptions
-        {
-            Headless = !string.Equals(Environment.GetEnvironmentVariable("HEADLESS"), "false", StringComparison.OrdinalIgnoreCase),
-            Name = "todo-web",
-        });
+        _main = await StartDeviceAsync("todo-web", ClientId);
+        _device = _main;
     }
 
-    public async Task DisposeAsync()
+    public virtual async Task DisposeAsync()
     {
-        if (_context != null)
+        if (_main != null)
         {
-            await _context.DisposeAsync();
+            await _main.DisposeAsync();
         }
 
-        _host?.Dispose();
         _backend?.Dispose();
-        _network?.Dispose();
-        _database?.Dispose();
     }
 
-    /// <summary>Online, the backend back to the test set, and the list open.</summary>
-    public TodoListPage StartTest()
+    /// <summary>Starts another device on the fixture's backend and test set.</summary>
+    /// <param name="name">The device's name, for its browser context and the call log.</param>
+    /// <param name="clientId">What the app sends in <c>X-Todo-Client</c>.</param>
+    protected Task<TodoWebDevice> StartDeviceAsync(string name, string clientId)
+        => TodoWebDevice.StartAsync(name, TestSet, Backend.BaseUrl, clientId, AdjustSettings);
+
+    /// <summary>Online, the backend back to the test set, and the list open, showing every todo.</summary>
+    public virtual TodoListPage StartTest()
     {
-        _network!.SetOnline();
-        Backend.Reset();
-        Server = TestSet.StubServer(Backend);
+        Network.SetOnline();
+        ResetBackend();
         return OpenList();
     }
 
-    /// <summary>Opens the list in a fresh page load and waits until it is interactive.</summary>
+    /// <summary>The fake server back to the test set's server half, with nothing arranged on it.</summary>
+    public void ResetBackend()
+    {
+        Backend.Reset();
+        Server = TestSet.StubServer(Backend);
+    }
+
+    /// <summary>Opens the list in a fresh page load, waits until it is interactive, and shows every todo.</summary>
     public TodoListPage OpenList()
     {
-        Context.NavigateTo(BaseUrl + "/");
-        var list = List;
-        list.AssertIdle();
+        var list = Device.OpenList();
+
+        // The list's view model outlives a page load, and with it the filter a test chose.
+        list.Filter.SelectByText("All");
         return list;
+    }
+
+    /// <summary>Stops the app and starts it again on the same database and backend, then opens the list.</summary>
+    public TodoListPage Restart() => Device.Restart();
+
+    /// <summary>Restarts with changed launch settings; <see cref="RestoreLaunchSettings"/> puts them back.</summary>
+    public TodoListPage RestartWith(Func<LaunchSettings, LaunchSettings> change) => Device.RestartWith(change);
+
+    /// <summary>Undoes <see cref="RestartWith"/>, restarting only when something was changed.</summary>
+    public void RestoreLaunchSettings() => Device.RestoreLaunchSettings();
+
+    /// <summary>Moves the app to another test set: a new seeded database, the backend reset, a restart.</summary>
+    public virtual TodoListPage UseTestSet(string name)
+    {
+        if (name == TestSet.Name)
+        {
+            return List;
+        }
+
+        TestSet = TodoTestSet.Load(name);
+        ResetBackend();
+        return MainDevice.UseTestSet(TestSet);
     }
 
     /// <summary>A todo on the server only, with a unique title; the app has it after a sync.</summary>
@@ -121,27 +144,9 @@ public abstract class TodoWebFixture : IAsyncLifetime
 }
 
 /// <summary>Where the built web head is.</summary>
-internal static class WebApp
+public static class WebApp
 {
-    public static string Assembly()
-    {
-        const string project = "Brinell.Samples.Todo.Web";
-#if DEBUG
-        const string configuration = "Debug";
-#else
-        const string configuration = "Release";
-#endif
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory != null; directory = directory.Parent)
-        {
-            var candidate = Path.Combine(directory.FullName, "src", project, "bin", configuration, "net10.0", project + ".dll");
-            if (File.Exists(candidate))
-            {
-                return candidate;
-            }
-        }
-
-        throw new FileNotFoundException($"{project}.dll was not found above {AppContext.BaseDirectory}. Build it first.");
-    }
+    public static string Assembly() => WebAppHost.FindBuiltApp("src/Brinell.Samples.Todo.Web");
 }
 
 public sealed class ThreeTodosWebFixture : TodoWebFixture
