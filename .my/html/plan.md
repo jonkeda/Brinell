@@ -50,7 +50,7 @@ Status values: `todo`, `doing`, `done`, `blocked`.
 | **2. Pin it down** | done (2026-09-26, see 2.1) | Failing unit tests that force each following step: (a) `Click` finds the element again (b) the caller's 300 ms budget is honoured (c) one log pair per call (d) `Get` / `WaitVisible` / `AssertText` re-resolve (e) an action that throws is not repeated (f) an attribute read below a call cannot outlast the call. **R0 guard tests:** a button that never re-enables → `Click` fails with "disabled" within its budget; a `Fill` that has no effect on the model → `NotConfirmed`, `Fill` `Times.Once`; a component re-rendered every 100 ms → the call passes **and** a near-miss `Warning` is logged; the Playwright browser closed mid-call → `AppUnavailableException` without waiting out the budget. **Baseline:** the current `Brinell.Html.UITests` and `Brinell.Blazor.UITests` suites run N times and its failures classified (framework race / app bug / environment / driver gap); a per-call count of `Locator.CountAsync` calls; the slowest 5 tests | Tests fail for the stated reason; baseline recorded in section 4 |
 | **3. Stale signal** | done (2026-09-26, see 2.1) | Html exceptions (design 4.3): `StaleElementException`, `ElementNotReadyException`, `ScopeNotReadyException`, `AppUnavailableException`. `InstanceKey`; a `Live<T>` wrapper in `PlaywrightTestContext` and `PlaywrightHtmlElement`; a browser-closed / context-closed / target-closed check that raises `AppUnavailableException` (design section 5). Every `catch { }` in `ObjectBase.Poll` and `PlaywrightHtmlElement.TryFindElement` gone. All catch-alls in the ControlBase layer removed. `HtmlPageObjectBase.WaitLoaded` throws `ScopeNotReadyException`, not Core's `PageLoadException`. `RouteUnavailableException` (MAUI review-2 fix D3): a permanent "no route" ends the call; a plain `NotSupportedException` is still retried | Mapping unit tests; grep finds no `catch\s*\(?` without a named type in `srcnew/Brinell.Html*` or `srcnew/Brinell.Blazor` (JSON config and other named ones stay); `PageLoadException` no longer raised by Html or Blazor code |
 | **4. Calls** | done (2026-09-26, see 2.1) | `Calls/*` (`ControlCall`, `Poller`, `Deadline`, `AttemptContext`, `Observation`, `ObservationLog`, `ScopeGate`, `Confirmer`), copied from MAUI's shape. `ViewBase` and `RootedScopeBase` moved onto the calls layer, replacing `ControlBase.RunPoll` and its bare `catch (Exception ex)`. `ObjectBase.Poll` deleted. `RunDoWithElement` **no longer retries the action**: phase 1 resolves and gates on readiness within the budget; phase 2 acts **once** (R0). One `LogEntry`/`LogExit` pair per public call. Near-miss `Warning` logging. `Assert*` resolves per attempt, like `Get*` (MAUI review-2 fix S1). `BRINELL_CALL_LOG`, and the context `Name` in the log line (?A10) | The step 2 pinned tests pass; one log pair per call; the near-miss test passes; `RunDoWithElement` shows `Invoke` `Times.Once` on an action that has no effect |
-| **5. Scope readiness** | todo | `ScopeReadiness` and the `ProbeReadiness` chain; `AsksParent`; `ProbeContentReadiness`; `CanResolveElements` and `EnsureLoaded` (if present in Html) removed; `AppRoot` for the browser page/frame; the busy signal for a Blazor page is read from a well-known data attribute (design 7.2, sample-app.md item 3); `ScopeNotReadyException` replaces `PageLoadException` throughout Html; the frame model (`ForFrame`) becomes a scope wrapper. `AppRoot.WaitReady` is a call unit with its own budget (MAUI review-2 fix 8). **The UI test bases:** `BlazorSampleTestBase` (in both UI test projects) loses its `Thread.Yield`/`Task.Delay` loop and its `Context.FindElement`: the page's `WaitReady` covers "circuit up". The fixture starts the sample host on a free port, instead of expecting one at `BLAZOR_APP_URL` | Scope tests pass; a busy page defers the child call within its budget |
+| **5. Scope readiness** | done (2026-09-26, see 2.1) | `ScopeReadiness` and the `ProbeReadiness` chain; `AsksParent`; `ProbeContentReadiness`; `CanResolveElements` and `EnsureLoaded` (if present in Html) removed; `AppRoot` for the browser page/frame; the busy signal for a Blazor page is read from a well-known data attribute (design 7.2, sample-app.md item 3); `ScopeNotReadyException` replaces `PageLoadException` throughout Html; the frame model (`ForFrame`) becomes a scope wrapper. `AppRoot.WaitReady` is a call unit with its own budget (MAUI review-2 fix 8). **The UI test bases:** `BlazorSampleTestBase` (in both UI test projects) loses its `Thread.Yield`/`Task.Delay` loop and its `Context.FindElement`: the page's `WaitReady` covers "circuit up". The fixture starts the sample host on a free port, instead of expecting one at `BLAZOR_APP_URL` | Scope tests pass; a busy page defers the child call within its budget |
 | **6. Confirm** | todo | `Confirm` replaces the "loop the whole call until the effect is seen" pattern that today lives inside `RunPoll`. The act-then-confirm Cores (`Click` on a busy-triggering button, `Fill`, `Check`/`Uncheck`, `SelectOption`, `Focus`/`Blur`) get a second phase that reads the effect once per attempt and never repeats the action | Replaced element: new message, action `Times.Once`; the R0 "no effect" test from step 2 passes |
 | **7. Collections** | todo | `ItemKey` for Html rows (design 7.6, differences item 5: DOM node id, or `data-item-key`, or position). `MaterializeAttempts` for a Blazor `Virtualize` scroll. `ListControl` and `TableControl` move onto a `CollectionObjectBase<TParent, TSelf, TItem>` + `ItemObjectBase<TCollection, TSelf>`. `Item(index)` and `SelectItem` become waiting call units; `TryItem` / `TrySelectItem` answer now (R7) | Collection tests pass; the row-recycling test from sample-app.md item 4 fails when a row is asked to click after its key changed |
 | **T2. Todo web tests** | todo | `tests/Brinell.Samples.Todo.Web.UITests`: hermetic and live fixtures (`TodoWebFixture` starts the host process on a free port with the test set's launch settings), Html page objects and ControlObjects (`TodoStatus`, `SectionCard`), and the TOD journeys with a `Head=Web` trait. The Todo `.uat.md` files run with `Target: Html` (?T2). `JourneyCoverage` learns the `Head` trait ([todo-blazor.md](todo-blazor.md) section 3) | Hermetic suite green in 5 of 5 runs; live tests green with `BRINELL_UAT_LIVE_API=1`; a `WaitForRequest` on `X-Todo-Client` passes; every UAT file that passes on MAUI passes on the web head, or carries a head tag and a reason |
@@ -65,6 +65,68 @@ constraints in its section 4.2, so that project stays possible.
 
 Filled in as steps finish, in the same shape as `../stale-readiness/plan.md` section 2.1: what
 was proved, what the design was wrong about, and what was deferred to a later step on purpose.
+
+**Step 5 (2026-09-26).**
+
+- **Evidence.**
+  - `Brinell.Html.Tests`: 29 of 30 pass, including 6 new `ScopeReadinessTests`:
+    - a busy page defers the call and it acts once;
+    - an unreadable busy signal fails at once, within 500 ms, and never acts;
+    - a Required signal that never appears fails as `NotLoaded` within the budget;
+    - a container's content readiness is on its child's path (MAUI's A1);
+    - `AssertLoaded` throws `ScopeNotReadyException`;
+    - `AppRoot.WaitReady` is one call.
+    The one still failing is the step 6 pin.
+  - `Brinell.Blazor.Tests` 172/172; both UAT projects 2/2.
+  - `Brinell.Html.UITests` **38/38** (a new frame test) and `Brinell.Blazor.UITests` **31/31**,
+    3 of 3 runs each. The fixtures started the sample themselves.
+  - No bare `catch`, no `Thread.Sleep`, and no `PageLoadException` in `srcnew/Brinell.Html*` or
+    `Brinell.Blazor`. The one catch left is `ControlCall`'s log-and-rethrow.
+- **What changed.**
+  - `Brinell.Html.Scopes.ScopeReadiness`, the same type as MAUI's.
+  - `IHtmlElementScope.ProbeReadiness()`. `IsReady()` has no timeout any more, and `WaitReady`
+    is a call unit.
+  - `ScopeGate`: a configuration error ends the call at once.
+  - `ScopeNotReadyException` replaces `PageLoadException`.
+  - Every page, container and `AppRoot` wait is a call unit (`ObjectBase.RunProbe`).
+    `ObjectBase.Poll` and `PollAsync` are gone.
+  - **Pages:** the probe checks URL, idle, then `<body data-busy>` through the new
+    `BusySignal` (Ignore, Optional, Required). `HtmlPageObjectBase` is Optional.
+    `BlazorPageObjectBase` is **Required**: a Blazor app sets the attribute when it becomes
+    interactive, so a prerendered page is `NotLoaded` until then. Html's Required differs from
+    Core's `BusySignalPolicy.Required`, where a missing signal is a configuration error. That is
+    why Html has its own enum.
+  - **Containers:** `ContainerBase` asks its parent (`AsksParent`), then its root, then
+    `ProbeContentReadiness`.
+  - **`FrameScope<TParent>`** (?A6): the iframe's document as a container, through
+    `IHtmlElement.TryGetFrameDocument()` (Playwright `ContentFrame`). `PlaywrightTestContext.ForFrame`
+    is gone.
+  - **`AppRoot`** is the whole page as a scope.
+  - `PlaywrightTestContext.ProbeReadiness` throws `AppUnavailableException` on a closed page.
+    `BlazorTestContext.WaitForBlazorReady`, a sleep loop, is gone.
+  - **`Brinell.Html.Testing.WebAppHost`** starts a web app on a free port with explicit launch
+    settings, then waits for a ready path. This is the host T2's `TodoWebFixture` and multi-app
+    scenarios need.
+- **Samples.**
+  - Gallery: `brinell-busy.js`, set by the layout's first interactive render (sample-app.md
+    item 3). It only says "interactive"; nothing sets `true` during handlers yet.
+  - Gallery: a `/frames` page with a same-origin iframe (item 7).
+  - Todo web head: `<body>` no longer starts with a static `data-busy="false"`, which would
+    have claimed "interactive" too early.
+- **UI test bases (both projects).**
+  - The sample is started once per run by `TestBase/BlazorSample` on a free port, and built by
+    a `ReferenceOutputAssembly="false"` project reference. `BLAZOR_APP_URL` still selects a
+    running one.
+  - `NavigateToPage` waits with `SampleShell.AssertIdle()`, a page object with a Required busy
+    signal. The `Thread.Yield`/`Task.Delay` loop and the `Context.FindElement` in the test base
+    are gone.
+  - **"Run the sample by hand before the UI suite" is no longer needed.**
+- **Not done here, on purpose.**
+  - `BusySignal` stays Html's own; its shape moves down with Core's in step 9's notes.
+  - The UAT fixture keeps its own `HtmlSampleHost` (`dotnet run`, with empty catches in test
+    code). Switching it to `WebAppHost` is a small follow-up.
+  - `ContainerRoot` is not renamed to `Root` (design 7.3); that goes with the collections in
+    step 7.
 
 **Step 4 (2026-09-26).**
 

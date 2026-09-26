@@ -147,5 +147,11 @@ public interface IHtmlElement
     /// <summary>Every matching descendant. One attempt; never waits.</summary>
     IReadOnlyList<IHtmlElement> FindElements(Locator locator);
 
+    /// <summary>
+    /// For an <c>&lt;iframe&gt;</c>: the <c>&lt;body&gt;</c> of the document inside it, or
+    /// <c>null</c> when the element is not a frame or its document has no body yet. One attempt.
+    /// </summary>
+    IHtmlElement? TryGetFrameDocument() => null;
+
     #endregion
 }

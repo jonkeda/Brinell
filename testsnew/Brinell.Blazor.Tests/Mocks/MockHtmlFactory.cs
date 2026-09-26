@@ -27,6 +27,8 @@ public static class MockHtmlFactory
         mock.Setup(e => e.Visible).Returns(visible);
         mock.Setup(e => e.Enabled).Returns(enabled);
         mock.Setup(e => e.InputValue).Returns(text ?? "");
+        // What a live Blazor app shows once it is interactive; Blazor pages wait for it (html plan, step 5).
+        mock.Setup(e => e.GetAttribute("data-busy")).Returns("false");
         return mock;
     }
 

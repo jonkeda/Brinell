@@ -1,13 +1,12 @@
-using System.Diagnostics;
-using Brinell.Core.Exceptions;
-using Brinell.Core.Utilities;
-using Brinell.Html.Exceptions;
+using System.Runtime.CompilerServices;
+using Brinell.Html.Calls;
 using Brinell.Html.Interfaces;
+using Brinell.Html.Scopes;
 
 namespace Brinell.Html;
 
 /// <summary>
-/// Base class for HTML page objects and controls.
+/// Base class for HTML page objects, containers and controls.
 /// </summary>
 public abstract class ObjectBase
 {
@@ -17,72 +16,37 @@ public abstract class ObjectBase
 
     protected int PollingIntervalMs => Context.Timeouts.PollingInterval;
 
-    protected bool Poll(Func<bool> condition, int timeoutMs)
-    {
-        var stopwatch = Stopwatch.StartNew();
-
-        while (stopwatch.ElapsedMilliseconds < timeoutMs)
-        {
-            try
-            {
-                if (condition())
-                {
-                    return true;
-                }
-            }
-            catch (Exception error) when (IsTransient(error))
-            {
-                // Asked again on the next tick; anything else is not a signal and ends the wait (R5).
-            }
-
-            WaitHelper.Pause(PollingIntervalMs);
-        }
-
-        try
-        {
-            return condition();
-        }
-        catch (Exception error) when (IsTransient(error))
-        {
-            return false;
-        }
-    }
+    /// <summary>The name this object's own calls are logged under.</summary>
+    protected virtual string ScopeName => GetType().Name;
 
     /// <summary>
-    /// The signals a wait may ask again after: the element went away, is not there yet, or is not
-    /// ready yet. A closed browser, and every other error, are not among them.
+    /// A scope-level wait as one call (R1): polls <paramref name="probe"/> until it reports Done or
+    /// the budget runs out. Answers false when it ran out, or throws what
+    /// <paramref name="fail"/> builds from the last readiness seen.
     /// </summary>
-    protected static bool IsTransient(Exception error)
-        => error is StaleElementException or ElementNotFoundException or ElementNotReadyException;
-
-    protected async Task<bool> PollAsync(Func<Task<bool>> condition, int timeoutMs)
+    private protected bool RunProbe(
+        Func<Observation> probe,
+        int budgetMs,
+        Func<ScopeReadiness, Exception>? fail = null,
+        [CallerMemberName] string? caller = null)
     {
-        var stopwatch = Stopwatch.StartNew();
-
-        while (stopwatch.ElapsedMilliseconds < timeoutMs)
+        caller ??= nameof(RunProbe);
+        return new ControlCall(Context, ScopeName, ScopeName).Run(caller, null, budgetMs, Context.Timeouts.Animation, attempt =>
         {
-            try
+            if (Poller.Until(_ => probe(), attempt, PollingIntervalMs))
             {
-                if (await condition().ConfigureAwait(false))
-                {
-                    return true;
-                }
-            }
-            catch (Exception error) when (IsTransient(error))
-            {
-                // As in Poll.
+                return true;
             }
 
-            await Task.Delay(PollingIntervalMs).ConfigureAwait(false);
-        }
+            var last = attempt.Log.Last;
+            if (fail != null)
+            {
+                throw fail(last.Scope ?? new ScopeReadiness(ScopeName, ScopeReadinessState.NotLoaded, last.ToString()));
+            }
 
-        try
-        {
-            return await condition().ConfigureAwait(false);
-        }
-        catch (Exception error) when (IsTransient(error))
-        {
-            return false;
-        }
+            return last.Kind == ObservationKind.Failed && last.Error is { } error
+                ? throw attempt.Log.Unexpected(error, $"'{ScopeName}'", budgetMs)
+                : false;
+        }, succeeded: ok => ok);
     }
 }

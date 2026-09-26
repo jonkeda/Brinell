@@ -1,5 +1,10 @@
+using Brinell.Html.UITests.PageObjects;
+
 namespace Brinell.Html.UITests.TestBase;
 
+/// <summary>
+/// One browser per test, on the shared Blazor sample (<see cref="BlazorSample"/>).
+/// </summary>
 public abstract class BlazorSampleTestBase : IAsyncLifetime
 {
     private PlaywrightTestContext? _context;
@@ -7,8 +12,7 @@ public abstract class BlazorSampleTestBase : IAsyncLifetime
     protected IHtmlTestContext Context => _context
         ?? throw new InvalidOperationException("Context has not been initialized.");
 
-    protected string BaseUrl => Environment.GetEnvironmentVariable("BLAZOR_APP_URL")
-        ?? "http://localhost:5180";
+    protected string BaseUrl => BlazorSample.BaseUrl;
 
     public virtual async Task InitializeAsync()
     {
@@ -28,51 +32,18 @@ public abstract class BlazorSampleTestBase : IAsyncLifetime
         }
     }
 
+    /// <summary>Opens <paramref name="path"/> and waits until the app on it is interactive.</summary>
     protected void NavigateToPage(string path)
     {
-        var destination = $"{BaseUrl.TrimEnd('/')}/{path.TrimStart('/')}";
-        Context.NavigateTo(destination);
-        WaitForBlazorCircuit();
+        Context.NavigateTo($"{BaseUrl}/{path.TrimStart('/')}");
+        new SampleShell(Context).AssertIdle();
     }
 
-    protected async Task NavigateToPageAsync(string path)
+    /// <inheritdoc cref="NavigateToPage"/>
+    protected Task NavigateToPageAsync(string path)
     {
-        var destination = $"{BaseUrl.TrimEnd('/')}/{path.TrimStart('/')}";
-        if (_context is PlaywrightTestContext pwContext)
-        {
-            await pwContext.NavigateToAsync(destination).ConfigureAwait(false);
-        }
-        else
-        {
-            Context.NavigateTo(destination);
-        }
-        await WaitForBlazorCircuitAsync().ConfigureAwait(false);
-    }
-
-    private void WaitForBlazorCircuit()
-    {
-        var body = Context.FindElement(new Locator(LocatorStrategy.Css, "body"));
-        var deadline = DateTime.UtcNow.AddMilliseconds(10_000);
-        while (DateTime.UtcNow < deadline)
-        {
-            var ready = body.Evaluate<bool>("() => typeof window.Blazor !== 'undefined' || typeof window._blazor !== 'undefined'");
-            if (ready) return;
-            Thread.Yield();
-        }
-        throw new TimeoutException("Blazor circuit was not ready within 10 s.");
-    }
-
-    private async Task WaitForBlazorCircuitAsync()
-    {
-        var body = Context.FindElement(new Locator(LocatorStrategy.Css, "body"));
-        var deadline = DateTime.UtcNow.AddMilliseconds(10_000);
-        while (DateTime.UtcNow < deadline)
-        {
-            var ready = body.Evaluate<bool>("() => typeof window.Blazor !== 'undefined' || typeof window._blazor !== 'undefined'");
-            if (ready) return;
-            await Task.Delay(50).ConfigureAwait(false);
-        }
-        throw new TimeoutException("Blazor circuit was not ready within 10 s.");
+        NavigateToPage(path);
+        return Task.CompletedTask;
     }
 
     private static bool ParseBool(string? value, bool defaultValue)

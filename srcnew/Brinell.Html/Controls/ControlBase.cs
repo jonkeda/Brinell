@@ -70,12 +70,10 @@ public abstract class ControlBase<TScope> : ObjectBase, IControlObject<TScope>, 
             Locator,
             budgetMs,
             NotFound,
-            scope => new WaitTimeoutException(
-                $"Scope '{scope}' was not ready for {caller} on control '{Locator}' within {budgetMs} ms.", budgetMs));
+            readiness => ScopeGate.NotReady(readiness, caller, $"control '{Locator}'", budgetMs));
 
-    // Until step 5 brings ScopeReadiness, the scope answers a plain "ready now?".
-    private Observation? CheckScope()
-        => _scope.IsReady() ? null : Observation.ScopeNotReady(_scope.Page?.Name ?? _scope.GetType().Name);
+    // The scope chain, one probe per attempt (R4): the scope answers for itself and its parents.
+    private Observation? CheckScope() => ScopeGate.Check(_scope);
 
     /// <summary>
     /// One attempt against the element: the scope, then a fresh lookup, then (optionally) one

@@ -23,6 +23,15 @@ public interface IHtmlPage : IHtmlElementScope
     /// <summary>Fails when the page's load state does not reach <paramref name="expected"/>.</summary>
     void AssertLoaded(bool? expected, string? message = null, int? timeoutMs = null);
 
+    /// <summary>Whether the page reports itself busy now (<c>data-busy</c>).</summary>
+    bool IsBusy();
+
+    /// <summary>Waits for the page to be busy, or not.</summary>
+    bool WaitBusy(bool? expected, int? timeoutMs = null);
+
+    /// <summary>Fails when the page does not become ready (loaded and idle).</summary>
+    void AssertIdle(string? message = null, int? timeoutMs = null);
+
     /// <summary>The document title now.</summary>
     string? GetTitle();
 

@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Inner frame</title>
+</head>
+<body>
+    <!-- The document inside /frames' iframe: a control and its visible effect, for FrameScope tests. -->
+    <p data-testid="inner-status">Not clicked</p>
+    <button type="button" data-testid="inner-btn"
+            onclick="document.querySelector('[data-testid=inner-status]').textContent = 'Clicked in the frame'">
+        Click me
+    </button>
+</body>
+</html>

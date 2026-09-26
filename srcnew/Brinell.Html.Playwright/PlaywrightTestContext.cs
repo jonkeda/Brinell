@@ -3,6 +3,8 @@ using Brinell.Core.Exceptions;
 using Brinell.Core.Locators;
 using Brinell.Core.Logging;
 using Brinell.Html.Context;
+using Brinell.Html.Exceptions;
+using Brinell.Html.Scopes;
 using Brinell.Html.Interfaces;
 using Microsoft.Playwright;
 
@@ -99,28 +101,6 @@ public sealed class PlaywrightTestContext : IHtmlTestContext, IAsyncDisposable
             ownsLifecycle: false);
     }
 
-    public PlaywrightTestContext ForFrame(string urlPattern)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(urlPattern);
-
-        var frame = _page.Frames.FirstOrDefault(f =>
-            f.Url.Contains(urlPattern, StringComparison.OrdinalIgnoreCase));
-
-        if (frame == null)
-        {
-            var frameUrls = string.Join(", ", _page.Frames.Select(f => f.Url));
-            throw new InvalidOperationException(
-                $"Frame matching URL pattern '{urlPattern}' not found. Available frames: {frameUrls}");
-        }
-
-        return new PlaywrightTestContext(
-            _page,
-            frame,
-            _options,
-            _logger,
-            ownsLifecycle: false);
-    }
-
     public IHtmlTestContext Context => this;
 
     public IHtmlDriver Driver => _driver;
@@ -145,25 +125,14 @@ public sealed class PlaywrightTestContext : IHtmlTestContext, IAsyncDisposable
 
     public IFrame? InternalFrame => _frame;
 
-    public bool IsReady(int? timeoutMs = null) => !_page.IsClosed;
+    /// <summary>Ready while the page is open; a closed page is gone, not "not ready yet" (R0).</summary>
+    public ScopeReadiness ProbeReadiness()
+        => _page.IsClosed
+            ? throw new AppUnavailableException("the browser page has closed.")
+            : ScopeReadiness.Ready(nameof(PlaywrightTestContext));
 
-    public bool WaitReady(int? timeoutMs = null)
-    {
-        var timeout = timeoutMs ?? _timeouts.PageLoad;
-        var deadline = DateTime.UtcNow.AddMilliseconds(timeout);
-
-        while (DateTime.UtcNow < deadline)
-        {
-            if (IsReady())
-            {
-                return true;
-            }
-
-            Thread.Sleep(100);
-        }
-
-        return IsReady();
-    }
+    /// <summary>The page is either open or gone; there is nothing to wait for.</summary>
+    public bool WaitReady(int? timeoutMs = null) => ProbeReadiness().IsReady;
 
     public IHtmlElement? TryFindElement(Locator locator)
     {

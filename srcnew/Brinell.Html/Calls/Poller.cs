@@ -52,5 +52,7 @@ internal static class Poller
     }
 
     /// <summary>Whether <paramref name="error"/> must end the call at once rather than be retried.</summary>
-    public static bool IsFatal(Exception error) => error is AppUnavailableException or RouteUnavailableException;
+    public static bool IsFatal(Exception error) => error is AppUnavailableException
+        or RouteUnavailableException
+        or ScopeNotReadyException { Readiness.IsConfigurationError: true };
 }

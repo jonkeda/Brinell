@@ -122,6 +122,12 @@ public sealed class PlaywrightHtmlElement : IHtmlElement
         return elements;
     });
 
+    public IHtmlElement? TryGetFrameDocument() => Live<IHtmlElement?>(() =>
+    {
+        var body = _locator.ContentFrame.Locator("body");
+        return body.CountAsync().GetAwaiter().GetResult() > 0 ? new PlaywrightHtmlElement(body.First) : null;
+    });
+
     public string? GetDomAttribute(string attributeName) => GetAttribute(attributeName);
 
     public string? GetDomProperty(string propertyName)

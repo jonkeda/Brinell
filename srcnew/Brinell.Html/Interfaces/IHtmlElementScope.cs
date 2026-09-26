@@ -1,12 +1,13 @@
 using Brinell.Core.Exceptions;
 using Brinell.Core.Locators;
+using Brinell.Html.Scopes;
 
 namespace Brinell.Html.Interfaces;
 
 // R9: Html owns this contract and does not derive from Core's scopes. See .my/html/design.md 4.2.
 
 /// <summary>
-/// Anything controls can be declared in: the test context, a page, a container.
+/// Anything controls can be declared in: the test context, a page, a container, a frame.
 /// </summary>
 public interface IHtmlElementScope
 {
@@ -19,10 +20,16 @@ public interface IHtmlElementScope
     /// <summary>The page the scope is on, for naming; <c>null</c> for the context itself.</summary>
     IHtmlPage? Page { get; }
 
-    /// <summary>Whether the scope is ready for its controls.</summary>
-    bool IsReady(int? timeoutMs = null);
+    /// <summary>
+    /// One readiness probe: the scope answers for itself, after asking its parent (R4). One
+    /// attempt; never waits.
+    /// </summary>
+    ScopeReadiness ProbeReadiness();
 
-    /// <summary>Waits until the scope is ready.</summary>
+    /// <summary>Whether the scope is ready now.</summary>
+    bool IsReady() => ProbeReadiness().IsReady;
+
+    /// <summary>Waits until the scope is ready, as one call.</summary>
     bool WaitReady(int? timeoutMs = null);
 
     /// <summary>The first matching element in the scope, or <c>null</c>.</summary>

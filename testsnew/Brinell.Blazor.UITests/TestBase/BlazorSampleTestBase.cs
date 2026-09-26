@@ -1,5 +1,10 @@
+using Brinell.Blazor.UITests.PageObjects;
+
 namespace Brinell.Blazor.UITests.TestBase;
 
+/// <summary>
+/// One browser per test, on the shared Blazor sample (<see cref="BlazorSample"/>).
+/// </summary>
 public abstract class BlazorSampleTestBase : IAsyncLifetime
 {
     private BlazorTestContext? _context;
@@ -7,8 +12,7 @@ public abstract class BlazorSampleTestBase : IAsyncLifetime
     protected IHtmlTestContext Context => _context
         ?? throw new InvalidOperationException("Context has not been initialized.");
 
-    protected string BaseUrl => Environment.GetEnvironmentVariable("BLAZOR_APP_URL")
-        ?? "http://localhost:5180";
+    protected string BaseUrl => BlazorSample.BaseUrl;
 
     public virtual async Task InitializeAsync()
     {
@@ -28,11 +32,11 @@ public abstract class BlazorSampleTestBase : IAsyncLifetime
         }
     }
 
+    /// <summary>Opens <paramref name="path"/> and waits until the app on it is interactive.</summary>
     protected void NavigateToPage(string path)
     {
-        var destination = $"{BaseUrl.TrimEnd('/')}/{path.TrimStart('/')}";
-        Context.NavigateTo(destination);
-        _context!.WaitForBlazorReady();
+        Context.NavigateTo($"{BaseUrl}/{path.TrimStart('/')}");
+        new SampleShell(Context).AssertIdle();
     }
 
     private static bool ParseBool(string? value, bool defaultValue)

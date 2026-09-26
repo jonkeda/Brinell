@@ -1,4 +1,5 @@
 using Brinell.Html.Exceptions;
+using Brinell.Html.Scopes;
 
 namespace Brinell.Html.Calls;
 
@@ -36,12 +37,14 @@ internal enum ObservationKind
 /// <param name="Reason">For <see cref="ObservationKind.NotReady"/>: what the element was short of.</param>
 /// <param name="Detail">Anything a message should repeat, in words.</param>
 /// <param name="Error">The exception behind the observation, when there was one.</param>
+/// <param name="Scope">For <see cref="ObservationKind.ScopeNotReady"/>: which scope, and what it found.</param>
 internal readonly record struct Observation(
     ObservationKind Kind,
     string? InstanceKey = null,
     NotReadyReason? Reason = null,
     string? Detail = null,
-    Exception? Error = null)
+    Exception? Error = null,
+    ScopeReadiness? Scope = null)
 {
     public static Observation Done(string? instanceKey = null) => new(ObservationKind.Done, instanceKey);
 
@@ -50,7 +53,8 @@ internal readonly record struct Observation(
     public static Observation Pending(string? detail = null, string? instanceKey = null)
         => new(ObservationKind.Pending, instanceKey, Detail: detail);
 
-    public static Observation ScopeNotReady(string scopeName) => new(ObservationKind.ScopeNotReady, Detail: scopeName);
+    public static Observation ScopeNotReady(ScopeReadiness readiness)
+        => new(ObservationKind.ScopeNotReady, Detail: readiness.ToString(), Scope: readiness);
 
     public static Observation NotReady(ElementNotReadyException error, string? instanceKey)
         => new(ObservationKind.NotReady, instanceKey, error.Reason, error.Detail, error);

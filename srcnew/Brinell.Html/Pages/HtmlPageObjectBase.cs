@@ -1,8 +1,11 @@
 using Brinell.Core.Composition;
 using Brinell.Core.Exceptions;
 using Brinell.Core.Locators;
+using Brinell.Html.Calls;
 using Brinell.Html.Context;
+using Brinell.Html.Exceptions;
 using Brinell.Html.Interfaces;
+using Brinell.Html.Scopes;
 
 namespace Brinell.Html.Pages;
 
@@ -12,6 +15,11 @@ namespace Brinell.Html.Pages;
 public abstract class HtmlPageObjectBase<TSelf> : ObjectBase, IHtmlPage<TSelf>
     where TSelf : HtmlPageObjectBase<TSelf>
 {
+    /// <summary>The attribute on <c>&lt;body&gt;</c> that carries the busy signal (design 7.2).</summary>
+    public const string BusyAttribute = "data-busy";
+
+    private static readonly Locator Body = Locator.ByCss("body");
+
     private readonly IHtmlTestContext _context;
 
     protected HtmlPageObjectBase(IHtmlTestContext context)
@@ -33,7 +41,14 @@ public abstract class HtmlPageObjectBase<TSelf> : ObjectBase, IHtmlPage<TSelf>
 
     public virtual string Name => GetType().Name;
 
+    protected override string ScopeName => Name;
+
     public LocatorStrategy DefaultLocatorStrategy => _context.DefaultLocatorStrategy;
+
+    public IHtmlPage? Page => this;
+
+    /// <summary>How this page reads <c>data-busy</c>. Html pages: optional; Blazor pages: required.</summary>
+    protected virtual BusySignal BusySignal => BusySignal.Optional;
 
     protected virtual bool CompareUrl()
     {
@@ -47,11 +62,47 @@ public abstract class HtmlPageObjectBase<TSelf> : ObjectBase, IHtmlPage<TSelf>
         return uri.LocalPath == Url;
     }
 
+    /// <summary>Whether the page is loaded now: its URL, and the browser idle. The override point.</summary>
     public virtual bool IsLoaded()
     {
         return CompareUrl()
             && _context.IsIdle();
     }
+
+    /// <summary>
+    /// One probe of the page (design 7.2): loaded, then the busy signal. A page has no parent to
+    /// ask.
+    /// </summary>
+    public virtual ScopeReadiness ProbeReadiness()
+    {
+        if (!IsLoaded())
+        {
+            return new ScopeReadiness(Name, ScopeReadinessState.NotLoaded);
+        }
+
+        if (BusySignal == BusySignal.Ignore)
+        {
+            return ScopeReadiness.Ready(Name);
+        }
+
+        var value = _context.TryFindElement(Body)?.GetAttribute(BusyAttribute);
+        return value switch
+        {
+            null when BusySignal == BusySignal.Required
+                => new ScopeReadiness(Name, ScopeReadinessState.NotLoaded, $"no {BusyAttribute} on <body> yet: the app is not interactive"),
+            null => ScopeReadiness.Ready(Name),
+            _ when string.Equals(value, "false", StringComparison.OrdinalIgnoreCase) => ScopeReadiness.Ready(Name),
+            _ when string.Equals(value, "true", StringComparison.OrdinalIgnoreCase)
+                => new ScopeReadiness(Name, ScopeReadinessState.Busy, $"{BusyAttribute}: '{value}'"),
+            _ => new ScopeReadiness(Name, ScopeReadinessState.InvalidBusySignal,
+                $"Page '{Name}': {BusyAttribute} on <body> must be 'true' or 'false', but is '{value}'."),
+        };
+    }
+
+    public bool IsReady() => ProbeReadiness().IsReady;
+
+    public bool WaitReady(int? timeoutMs = null)
+        => RunProbe(() => ScopeGate.Check(ProbeReadiness()) ?? Observation.Done(), timeoutMs ?? _context.Timeouts.PageLoad);
 
     public bool WaitLoaded(bool? expected, int? timeoutMs = null)
     {
@@ -60,8 +111,9 @@ public abstract class HtmlPageObjectBase<TSelf> : ObjectBase, IHtmlPage<TSelf>
             return true;
         }
 
-        var timeout = timeoutMs ?? _context.Timeouts.PageLoad;
-        return Poll(() => IsLoaded() == expected.Value, timeout);
+        return RunProbe(
+            () => IsLoaded() == expected.Value ? Observation.Done() : Observation.Pending(),
+            timeoutMs ?? _context.Timeouts.PageLoad);
     }
 
     public void AssertLoaded(bool? expected, string? message = null, int? timeoutMs = null)
@@ -71,12 +123,56 @@ public abstract class HtmlPageObjectBase<TSelf> : ObjectBase, IHtmlPage<TSelf>
             return;
         }
 
-        if (!WaitLoaded(expected, timeoutMs))
+        RunProbe(
+            () => IsLoaded() == expected.Value ? Observation.Done() : Observation.Pending(),
+            timeoutMs ?? _context.Timeouts.PageLoad,
+            readiness => new ScopeNotReadyException(
+                readiness,
+                message ?? $"Expected page '{Name}' {(expected.Value ? "to be loaded" : "not to be loaded")} but it is {(expected.Value ? "not" : "still loaded")}."));
+    }
+
+    public bool IsBusy()
+    {
+        var readiness = ProbeReadiness();
+        if (readiness.IsConfigurationError)
         {
-            var actual = IsLoaded();
-            throw new PageLoadException(
-                message ?? $"Expected page '{Name}' {(expected.Value ? "to be loaded" : "not to be loaded")} but loaded state is {actual}.");
+            throw ScopeGate.Misconfigured(readiness);
         }
+
+        return readiness.IsBusy;
+    }
+
+    public bool WaitBusy(bool? expected, int? timeoutMs = null)
+    {
+        if (expected == null)
+        {
+            return true;
+        }
+
+        return RunProbe(() =>
+        {
+            var readiness = ProbeReadiness();
+            if (readiness.IsConfigurationError)
+            {
+                throw ScopeGate.Misconfigured(readiness);
+            }
+
+            return readiness.IsLoaded && readiness.IsBusy == expected.Value
+                ? Observation.Done()
+                : Observation.ScopeNotReady(readiness);
+        }, timeoutMs ?? _context.Timeouts.PageLoad);
+    }
+
+    public void AssertIdle(string? message = null, int? timeoutMs = null)
+    {
+        var budget = timeoutMs ?? _context.Timeouts.PageLoad;
+        RunProbe(
+            () => ScopeGate.Check(ProbeReadiness()) ?? Observation.Done(),
+            budget,
+            readiness => new ScopeNotReadyException(
+                readiness,
+                message ?? $"Page '{Name}' did not become ready within {budget} ms. Last readiness state: {readiness.State}" +
+                    (readiness.Detail is null ? "." : $" ({readiness.Detail}).")));
     }
 
     public virtual string? GetTitle()
@@ -91,8 +187,9 @@ public abstract class HtmlPageObjectBase<TSelf> : ObjectBase, IHtmlPage<TSelf>
             return true;
         }
 
-        var timeout = timeoutMs ?? _context.Timeouts.DefaultWait;
-        return Poll(() => GetTitle() == expected, timeout);
+        return RunProbe(
+            () => GetTitle() == expected ? Observation.Done() : Observation.Pending(),
+            timeoutMs ?? _context.Timeouts.DefaultWait);
     }
 
     public void AssertTitle(string? expected, string? message = null, int? timeoutMs = null)
@@ -102,37 +199,21 @@ public abstract class HtmlPageObjectBase<TSelf> : ObjectBase, IHtmlPage<TSelf>
             return;
         }
 
-        if (!WaitTitle(expected, timeoutMs))
-        {
-            var actual = GetTitle();
-            throw new PageLoadException(message ?? $"Expected page title '{expected}' but got '{actual ?? "(null)"}'.");
-        }
+        RunProbe(
+            () => GetTitle() == expected ? Observation.Done() : Observation.Pending(),
+            timeoutMs ?? _context.Timeouts.DefaultWait,
+            _ =>
+            {
+                var actual = GetTitle();
+                return new AssertionException(
+                    message ?? $"Expected page title '{expected}' but got '{actual ?? "(null)"}'.", expected, actual);
+            });
     }
 
     public void TakeScreenshot(string? filename = null)
     {
         var path = filename ?? $"{Name}_{DateTime.Now:yyyyMMdd_HHmmss}.png";
         _context.SaveScreenshot(path);
-    }
-
-    public IHtmlPage? Page => this;
-
-    public bool IsReady(int? timeoutMs = null)
-    {
-        return IsLoaded();
-    }
-
-    public bool WaitReady(int? timeoutMs = null)
-    {
-        return WaitLoaded(true, timeoutMs);
-    }
-
-    public void EnsureReady(int? timeoutMs = null)
-    {
-        if (!IsReady(timeoutMs))
-        {
-            throw new Exception($" Pager {Url} Not ready.");
-        }
     }
 
     public IHtmlElement? TryFindElement(Locator locator)
@@ -154,40 +235,22 @@ public abstract class HtmlPageObjectBase<TSelf> : ObjectBase, IHtmlPage<TSelf>
 
     #region Async Methods
 
-    public async Task<bool> WaitLoadedAsync(bool? expected, int? timeoutMs = null)
+    public Task<bool> WaitLoadedAsync(bool? expected, int? timeoutMs = null)
+        => Task.FromResult(WaitLoaded(expected, timeoutMs));
+
+    public Task AssertLoadedAsync(bool? expected, string? message = null, int? timeoutMs = null)
     {
-        if (expected == null) return true;
-        var timeout = timeoutMs ?? _context.Timeouts.PageLoad;
-        return await PollAsync(async () => IsLoaded() == expected.Value, timeout).ConfigureAwait(false);
+        AssertLoaded(expected, message, timeoutMs);
+        return Task.CompletedTask;
     }
 
-    public async Task AssertLoadedAsync(bool? expected, string? message = null, int? timeoutMs = null)
-    {
-        if (expected == null) return;
-        if (!await WaitLoadedAsync(expected, timeoutMs).ConfigureAwait(false))
-        {
-            var actual = IsLoaded();
-            throw new PageLoadException(
-                message ?? $"Expected page '{Name}' {(expected.Value ? "to be loaded" : "not to be loaded")} but loaded state is {actual}.");
-        }
-    }
+    public Task<bool> WaitTitleAsync(string? expected, int? timeoutMs = null)
+        => Task.FromResult(WaitTitle(expected, timeoutMs));
 
-    public async Task<bool> WaitTitleAsync(string? expected, int? timeoutMs = null)
+    public Task AssertTitleAsync(string? expected, string? message = null, int? timeoutMs = null)
     {
-        if (expected == null) return true;
-        var timeout = timeoutMs ?? _context.Timeouts.DefaultWait;
-        return await PollAsync(async () => GetTitle() == expected, timeout).ConfigureAwait(false);
-    }
-
-    public async Task AssertTitleAsync(string? expected, string? message = null, int? timeoutMs = null)
-    {
-        if (expected == null) return;
-        if (!await WaitTitleAsync(expected, timeoutMs).ConfigureAwait(false))
-        {
-            var actual = GetTitle();
-            throw new PageLoadException(
-                message ?? $"Expected page title '{expected}' but got '{actual ?? "(null)"}'.");
-        }
+        AssertTitle(expected, message, timeoutMs);
+        return Task.CompletedTask;
     }
 
     #endregion

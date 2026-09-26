@@ -2,6 +2,7 @@ using Brinell.Core.Configuration;
 using Brinell.Core.Locators;
 using Brinell.Core.Logging;
 using Brinell.Html.Context;
+using Brinell.Html.Scopes;
 using Brinell.Html.Interfaces;
 using Brinell.Html.Playwright;
 using Microsoft.Playwright;
@@ -31,7 +32,7 @@ public sealed class BlazorTestContext : IHtmlTestContext, IAsyncDisposable
     public string CurrentUrl => _inner.CurrentUrl;
     public string PageTitle => _inner.PageTitle;
 
-    public bool IsReady(int? timeoutMs = null) => _inner.IsReady(timeoutMs);
+    public ScopeReadiness ProbeReadiness() => _inner.ProbeReadiness();
     public bool WaitReady(int? timeoutMs = null) => _inner.WaitReady(timeoutMs);
     public IHtmlElement? TryFindElement(Locator locator) => _inner.TryFindElement(locator);
     public IHtmlElement FindElement(Locator locator) => _inner.FindElement(locator);
@@ -46,23 +47,6 @@ public sealed class BlazorTestContext : IHtmlTestContext, IAsyncDisposable
     public void SaveScreenshot(string path) => _inner.SaveScreenshot(path);
 
     public void ResetAppState() => _inner.ResetAppState();
-
-    public void WaitForBlazorReady(int? timeoutMs = null)
-    {
-        var timeout = timeoutMs ?? Timeouts.PageLoad;
-        var deadline = DateTime.UtcNow.AddMilliseconds(timeout);
-
-        while (DateTime.UtcNow < deadline)
-        {
-            var ready = _inner.InternalPage
-                .EvaluateAsync<bool>("() => typeof window.Blazor !== 'undefined' || typeof window._blazor !== 'undefined'")
-                .GetAwaiter().GetResult();
-            if (ready) return;
-            Thread.Sleep(100);
-        }
-
-        throw new TimeoutException($"Blazor was not ready within {timeout}ms.");
-    }
 
     internal IPage InternalPage => _inner.InternalPage;
 

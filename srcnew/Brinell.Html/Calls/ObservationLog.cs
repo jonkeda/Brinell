@@ -1,6 +1,7 @@
 using Brinell.Core.Exceptions;
 using Brinell.Core.Locators;
 using Brinell.Html.Exceptions;
+using Brinell.Html.Scopes;
 
 namespace Brinell.Html.Calls;
 
@@ -67,19 +68,19 @@ internal sealed class ObservationLog
     /// <param name="locator">The control's locator, for the message.</param>
     /// <param name="budgetMs">The phase's budget, for the message.</param>
     /// <param name="notFound">The control's own "not found" exception.</param>
-    /// <param name="scopeNotReady">The exception for a scope that never became ready, given its name.</param>
+    /// <param name="scopeNotReady">The exception for a scope that never became ready.</param>
     public Exception ToException(
         Locator? locator,
         int budgetMs,
         Func<ElementNotFoundException> notFound,
-        Func<string, Exception> scopeNotReady)
+        Func<ScopeReadiness, Exception> scopeNotReady)
     {
         var last = Last;
         var history = Replacements > 0 ? $"(replaced {Times(Replacements)} in {budgetMs} ms)" : null;
 
         return last.Kind switch
         {
-            ObservationKind.ScopeNotReady => scopeNotReady(last.Detail ?? "scope"),
+            ObservationKind.ScopeNotReady when last.Scope is { } scope => scopeNotReady(scope),
             ObservationKind.Missing => notFound(),
             ObservationKind.NotReady when locator is not null => new ElementNotReadyException(
                 locator,

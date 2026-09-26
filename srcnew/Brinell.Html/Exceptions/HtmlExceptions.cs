@@ -4,7 +4,6 @@ using Brinell.Core.Locators;
 namespace Brinell.Html.Exceptions;
 
 // The same set, and the same messages, as Brinell.Maui.Exceptions (.my/html/design.md 4.3).
-// ScopeNotReadyException arrives with ScopeReadiness in plan step 5.
 
 /// <summary>
 /// The element was removed from the page or replaced. A signal, not a failure: the call finds its
@@ -76,6 +75,23 @@ public sealed class ElementNotReadyException : BrinellException
             ? $"The element '{locator}' {state}."
             : $"The element '{locator}' {state}: {detail}";
     }
+}
+
+/// <summary>
+/// A scope (a page, a container, a frame) did not become ready for a call, or is misconfigured.
+/// Replaces Core's <c>PageLoadException</c> in Html.
+/// </summary>
+public sealed class ScopeNotReadyException : BrinellException
+{
+    /// <summary>Reports a scope that was not ready.</summary>
+    public ScopeNotReadyException(Brinell.Html.Scopes.ScopeReadiness readiness, string message)
+        : base(message)
+    {
+        Readiness = readiness;
+    }
+
+    /// <summary>What the last probe found.</summary>
+    public Brinell.Html.Scopes.ScopeReadiness Readiness { get; }
 }
 
 /// <summary>
