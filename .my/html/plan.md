@@ -54,7 +54,7 @@ Status values: `todo`, `doing`, `done`, `blocked`.
 | **6. Confirm** | done (2026-09-26, see 2.1) | `Confirm` replaces the "loop the whole call until the effect is seen" pattern that today lives inside `RunPoll`. The act-then-confirm Cores (`Click` on a busy-triggering button, `Fill`, `Check`/`Uncheck`, `SelectOption`, `Focus`/`Blur`) get a second phase that reads the effect once per attempt and never repeats the action | Replaced element: new message, action `Times.Once`; the R0 "no effect" test from step 2 passes |
 | **7. Collections** | done (2026-09-26, see 2.1) | `ItemKey` for Html rows (design 7.6, differences item 5: DOM node id, or `data-item-key`, or position). `MaterializeAttempts` for a Blazor `Virtualize` scroll. `ListControl` and `TableControl` move onto a `CollectionObjectBase<TParent, TSelf, TItem>` + `ItemObjectBase<TCollection, TSelf>`. `Item(index)` and `SelectItem` become waiting call units; `TryItem` / `TrySelectItem` answer now (R7) | Collection tests pass; the row-recycling test from sample-app.md item 4 fails when a row is asked to click after its key changed |
 | **T2. Todo web tests** | done (2026-09-26, see 2.1); UAT on the web head deferred | `tests/Brinell.Samples.Todo.Web.UITests`: hermetic and live fixtures (`TodoWebFixture` starts the host process on a free port with the test set's launch settings), Html page objects and ControlObjects (`TodoStatus`, `SectionCard`), and the TOD journeys with a `Head=Web` trait. The Todo `.uat.md` files run with `Target: Html` (?T2). `JourneyCoverage` learns the `Head` trait ([todo-blazor.md](todo-blazor.md) section 3) | Hermetic suite green in 5 of 5 runs; live tests green with `BRINELL_UAT_LIVE_API=1`; a `WaitForRequest` on `X-Todo-Client` passes; every UAT file that passes on MAUI passes on the web head, or carries a head tag and a reason |
-| **8. Prove it** | todo | On a branch: (a) re-introduce the login-button `disabled`-forever bug (sample-app.md item 2) and prove the login test fails with "disabled for N ms" instead of timing out silently; (a2) re-introduce the Todo `CanExecuteChanged` bug in the shared view model and prove TOD.04.4 fails on **both** heads, naming what it saw; (b) re-introduce the "action retried" bug in `ControlBase` and prove a step-4 test catches it; (c) run `Brinell.Html.UITests`, `Brinell.Blazor.UITests` and the Todo web suite in full against a saved timing baseline; (d) run the repeat-run script against the step 2 baseline | R0 proofs both fail against their bugs, and name what they saw. No new failures against the timing baseline. Framework-race failures down, and none moved from "app bug" to "pass" |
+| **8. Prove it** | done (2026-09-26, see 2.1) | On a branch: (a) re-introduce the login-button `disabled`-forever bug (sample-app.md item 2) and prove the login test fails with "disabled for N ms" instead of timing out silently; (a2) re-introduce the Todo `CanExecuteChanged` bug in the shared view model and prove TOD.04.4 fails on **both** heads, naming what it saw; (b) re-introduce the "action retried" bug in `ControlBase` and prove a step-4 test catches it; (c) run `Brinell.Html.UITests`, `Brinell.Blazor.UITests` and the Todo web suite in full against a saved timing baseline; (d) run the repeat-run script against the step 2 baseline | R0 proofs both fail against their bugs, and name what they saw. No new failures against the timing baseline. Framework-race failures down, and none moved from "app bug" to "pass" |
 | **9. Write it down** | todo | In `.docs/` (a decision is recorded once, there): widen AD-010 from "MAUI ahead of Core" to "MAUI and Html ahead of Core"; widen the call-model and control-object contracts from "the MAUI stack" to both stacks; close X2 with a note under AD-009. AD-004 and AD-009 are already stack-neutral, so no new AD mirrors them, and AD-011 and AD-012 are taken. `samples/Todo/README.md` gains the web head; the two new skills merged (`skills.md`); `AGENTS.md` and `.github/copilot-instructions.md` updated; `CHANGELOG.md` list; a note in `../stale-readiness/move-down.md` that the Html slice is done | Docs merged |
 
 After step 9, and **not in this plan**: several apps in one scenario (MAUI and web against one
@@ -65,6 +65,49 @@ constraints in its section 4.2, so that project stays possible.
 
 Filled in as steps finish, in the same shape as `../stale-readiness/plan.md` section 2.1: what
 was proved, what the design was wrong about, and what was deferred to a later step on purpose.
+
+**Step 8 (2026-09-26).**
+
+- **(a) The login that never re-enables.** `/login?login-bug=stuck-disabled` (step 2).
+  `LoginFlow_WhenLoginNeverReenables_TheSecondLoginFailsSayingDisabled` passes in every run
+  since step 4: the second Login fails within its 5 s budget with `ElementNotReadyException`
+  ("was found but is disabled: not enabled still after 5000 ms"), and never clicks. Before
+  step 4, the same call would have retried the click (X2).
+- **(a2) The Todo `CanExecuteChanged` bug (MAUI's R0 proof), put back in
+  `AsyncRelayCommand`.** This notifies before `ExecutionTask` is set, so a running command
+  looks executable and a press during the run is dropped.
+  - **On the web head, TOD.04.4 passed against the bug, 3 of 3.** That is not the framework
+    hiding it. The web head's busy signal comes from the same `IsBusy` that the command sets,
+    which the bug does not touch. Every call waits for the page to be idle (R4), so Brinell
+    never presses inside the window where the bug drops presses. MAUI's Todo pages have no busy
+    signal, so there the test pressed into the window and failed.
+  - **The bug is still caught, at the tier `journeys.md` gives it:**
+    `TodoListViewModelTests.Sync_WhileRunning_TellsTheUiItIsDisabled` fails against it (113/114).
+  - The fix is restored: no diff, and 114/114.
+  - **Lesson:** a busy signal protects a journey from racing the app, and also stops the
+    journey from seeing a bug that only shows inside the busy window. "Disabled while
+    running" belongs in the unit tier, which is where the Todo sample already tests it.
+- **(b) X2 put back:** `ActOnce` retries the action on any exception.
+  - Pin (e) fails: `Click` called **66** times.
+  - `AnElementReplacedAfterTheAction_FailsAsStale_AndTheActionRanOnce` fails: `Fill` called 20
+    times.
+  - The fix is restored: no diff, and 37/37.
+- **(c) and (d) Suites against the baseline** (section 4), 3 repeat runs each after steps 4-7,
+  and 5 for the web head:
+
+  | Suite | Baseline (5 runs) | Now |
+  | --- | --- | --- |
+  | `Brinell.Html.UITests` | 36 tests; 2 framework races (5/5 and 4/5) | 40 tests, **0 failures** in 3 of 3 runs |
+  | `Brinell.Blazor.UITests` | 31 tests; 3 framework races (5/5 each) | 31 tests, **0 failures** in 3 of 3 runs |
+  | Todo web head | - | 10 hermetic in 5 of 5 runs; live 1/1 |
+
+  - No failure moved from "app bug" to "pass": the baseline had no app bugs, and all five
+    races are gone for their stated causes (a waiting `AssertTextContaining`, a page-object
+    validation read).
+  - **Timing.** The login tests take 2.4 s mean, against 2.2-2.5 s in the baseline.
+    The counter tests take 0.3-1.1 s, against 0.3-0.4 s: they now wait for the app to be
+    interactive, where before they raced it. The new UI guard takes 7.4 s, which is its 5 s
+    budget spent on a button that never enables, by design.
 
 **Step T2 (2026-09-26).**
 
