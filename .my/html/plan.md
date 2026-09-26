@@ -52,7 +52,7 @@ Status values: `todo`, `doing`, `done`, `blocked`.
 | **4. Calls** | done (2026-09-26, see 2.1) | `Calls/*` (`ControlCall`, `Poller`, `Deadline`, `AttemptContext`, `Observation`, `ObservationLog`, `ScopeGate`, `Confirmer`), copied from MAUI's shape. `ViewBase` and `RootedScopeBase` moved onto the calls layer, replacing `ControlBase.RunPoll` and its bare `catch (Exception ex)`. `ObjectBase.Poll` deleted. `RunDoWithElement` **no longer retries the action**: phase 1 resolves and gates on readiness within the budget; phase 2 acts **once** (R0). One `LogEntry`/`LogExit` pair per public call. Near-miss `Warning` logging. `Assert*` resolves per attempt, like `Get*` (MAUI review-2 fix S1). `BRINELL_CALL_LOG`, and the context `Name` in the log line (?A10) | The step 2 pinned tests pass; one log pair per call; the near-miss test passes; `RunDoWithElement` shows `Invoke` `Times.Once` on an action that has no effect |
 | **5. Scope readiness** | done (2026-09-26, see 2.1) | `ScopeReadiness` and the `ProbeReadiness` chain; `AsksParent`; `ProbeContentReadiness`; `CanResolveElements` and `EnsureLoaded` (if present in Html) removed; `AppRoot` for the browser page/frame; the busy signal for a Blazor page is read from a well-known data attribute (design 7.2, sample-app.md item 3); `ScopeNotReadyException` replaces `PageLoadException` throughout Html; the frame model (`ForFrame`) becomes a scope wrapper. `AppRoot.WaitReady` is a call unit with its own budget (MAUI review-2 fix 8). **The UI test bases:** `BlazorSampleTestBase` (in both UI test projects) loses its `Thread.Yield`/`Task.Delay` loop and its `Context.FindElement`: the page's `WaitReady` covers "circuit up". The fixture starts the sample host on a free port, instead of expecting one at `BLAZOR_APP_URL` | Scope tests pass; a busy page defers the child call within its budget |
 | **6. Confirm** | done (2026-09-26, see 2.1) | `Confirm` replaces the "loop the whole call until the effect is seen" pattern that today lives inside `RunPoll`. The act-then-confirm Cores (`Click` on a busy-triggering button, `Fill`, `Check`/`Uncheck`, `SelectOption`, `Focus`/`Blur`) get a second phase that reads the effect once per attempt and never repeats the action | Replaced element: new message, action `Times.Once`; the R0 "no effect" test from step 2 passes |
-| **7. Collections** | todo | `ItemKey` for Html rows (design 7.6, differences item 5: DOM node id, or `data-item-key`, or position). `MaterializeAttempts` for a Blazor `Virtualize` scroll. `ListControl` and `TableControl` move onto a `CollectionObjectBase<TParent, TSelf, TItem>` + `ItemObjectBase<TCollection, TSelf>`. `Item(index)` and `SelectItem` become waiting call units; `TryItem` / `TrySelectItem` answer now (R7) | Collection tests pass; the row-recycling test from sample-app.md item 4 fails when a row is asked to click after its key changed |
+| **7. Collections** | done (2026-09-26, see 2.1) | `ItemKey` for Html rows (design 7.6, differences item 5: DOM node id, or `data-item-key`, or position). `MaterializeAttempts` for a Blazor `Virtualize` scroll. `ListControl` and `TableControl` move onto a `CollectionObjectBase<TParent, TSelf, TItem>` + `ItemObjectBase<TCollection, TSelf>`. `Item(index)` and `SelectItem` become waiting call units; `TryItem` / `TrySelectItem` answer now (R7) | Collection tests pass; the row-recycling test from sample-app.md item 4 fails when a row is asked to click after its key changed |
 | **T2. Todo web tests** | todo | `tests/Brinell.Samples.Todo.Web.UITests`: hermetic and live fixtures (`TodoWebFixture` starts the host process on a free port with the test set's launch settings), Html page objects and ControlObjects (`TodoStatus`, `SectionCard`), and the TOD journeys with a `Head=Web` trait. The Todo `.uat.md` files run with `Target: Html` (?T2). `JourneyCoverage` learns the `Head` trait ([todo-blazor.md](todo-blazor.md) section 3) | Hermetic suite green in 5 of 5 runs; live tests green with `BRINELL_UAT_LIVE_API=1`; a `WaitForRequest` on `X-Todo-Client` passes; every UAT file that passes on MAUI passes on the web head, or carries a head tag and a reason |
 | **8. Prove it** | todo | On a branch: (a) re-introduce the login-button `disabled`-forever bug (sample-app.md item 2) and prove the login test fails with "disabled for N ms" instead of timing out silently; (a2) re-introduce the Todo `CanExecuteChanged` bug in the shared view model and prove TOD.04.4 fails on **both** heads, naming what it saw; (b) re-introduce the "action retried" bug in `ControlBase` and prove a step-4 test catches it; (c) run `Brinell.Html.UITests`, `Brinell.Blazor.UITests` and the Todo web suite in full against a saved timing baseline; (d) run the repeat-run script against the step 2 baseline | R0 proofs both fail against their bugs, and name what they saw. No new failures against the timing baseline. Framework-race failures down, and none moved from "app bug" to "pass" |
 | **9. Write it down** | todo | In `.docs/` (a decision is recorded once, there): widen AD-010 from "MAUI ahead of Core" to "MAUI and Html ahead of Core"; widen the call-model and control-object contracts from "the MAUI stack" to both stacks; close X2 with a note under AD-009. AD-004 and AD-009 are already stack-neutral, so no new AD mirrors them, and AD-011 and AD-012 are taken. `samples/Todo/README.md` gains the web head; the two new skills merged (`skills.md`); `AGENTS.md` and `.github/copilot-instructions.md` updated; `CHANGELOG.md` list; a note in `../stale-readiness/move-down.md` that the Html slice is done | Docs merged |
@@ -65,6 +65,50 @@ constraints in its section 4.2, so that project stays possible.
 
 Filled in as steps finish, in the same shape as `../stale-readiness/plan.md` section 2.1: what
 was proved, what the design was wrong about, and what was deferred to a later step on purpose.
+
+**Step 7 (2026-09-26).**
+
+- **Evidence.**
+  - `Brinell.Html.Tests` 37/37, including 5 new `CollectionTests`:
+    - a row acts on its own item after the list is reordered;
+    - a row whose item is gone fails as `ItemChanged` and acts on nothing;
+    - rows without a key are kept by position;
+    - `Item(index)` waits, and `TryItem` answers now;
+    - `Item` fails as not found when the row never comes.
+  - `Brinell.Blazor.Tests` 172/172; both UAT projects 2/2.
+  - `Brinell.Html.UITests` **40/40** and `Brinell.Blazor.UITests` 31/31, 3 of 3 runs each.
+- **What changed.**
+  - `Brinell.Html.Collections`:
+    - `ItemKey` (Logical, from `data-item-key`; or Position);
+    - `IHtmlCollection`;
+    - `CollectionObjectBase<TParent, TSelf, TItem>`: `Item(index)`, `Item(key)` and
+      `ItemWhere` wait, as one call each; `TryItem` answers now (R7); `GetItemCount`,
+      `WaitItemCount`, `AssertItemCount`;
+    - `ItemObjectBase<TSelf>`.
+  - A row re-finds its element by key on every lookup, so it follows its item through reordering
+    and node reuse. When its item is gone, it reports `ItemChanged`: a call on one of its
+    controls waits within its budget, then fails naming the item, and never acts on the row now
+    in its place. This follows MAUI's rule, a row never acts on another item. It does not follow
+    the design's wording "row 3 now shows another item": with a logical key, the row has no
+    position to lose.
+  - `ItemKey` has no `AutomationId` or `DomNode` kinds (design 7.6 listed four). A shared
+    `data-testid` ("todo-row") names every row alike, so it cannot key one. `InstanceKey` (step 3)
+    already covers node identity, where a scope needs it.
+- **Sample (sample-app.md item 4):** `/recycling-list`, 200 rows in `<Virtualize>` with
+  `data-item-key` and no `@key`, so Blazor reuses row nodes. Recycle rotates the items after
+  300 ms; Delete and Reset.
+- **UI tests** (`RecyclingListTests`):
+  - The row object for position 3 still deletes *its* item after Recycle, when position 3
+    shows another title.
+  - A row whose item was deleted fails with `ScopeNotReadyException` (`ItemChanged`); no other
+    item is deleted.
+- **Deliberately not done.**
+  - `ListControl` and `TableControl` stay text-reading controls. They are already call units, and
+    moving them onto the row base would change their API for no behaviour. New row-level
+    work uses `CollectionObjectBase`.
+  - No `MaterializeAttempts`. Html rows are in the DOM or not; `<Virtualize>` renders what is in
+    view, and a far row needs a scroll. That is a `ScrollToItem` to add when a test needs it.
+  - `ContainerRoot` is not renamed to `Root`: the name is only used inside Html.
 
 **Step 6 (2026-09-26).**
 
