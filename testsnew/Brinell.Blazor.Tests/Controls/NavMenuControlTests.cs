@@ -22,7 +22,7 @@ public class NavMenuControlTests
         _mockItem3 = CreateNavItem("Contact");
 
         var items = new List<IHtmlElement> { _mockItem1.Object, _mockItem2.Object, _mockItem3.Object }.AsReadOnly();
-        _mockElement.Setup(e => e.FindElements(It.IsAny<Locator>(), It.IsAny<int>()))
+        _mockElement.Setup(e => e.FindElements(It.IsAny<Locator>()))
             .Returns(items);
 
         _page = new TestPage(_mockContext.Object);

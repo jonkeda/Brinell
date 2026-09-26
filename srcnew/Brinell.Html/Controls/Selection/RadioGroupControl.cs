@@ -36,9 +36,9 @@ public class RadioGroupControl<TScope> : SelectorControlBase<TScope>
                 continue;
             }
 
-            if (label.TryFindElement(Locator.ByCss("input[type='radio']"), out var nestedRadio))
+            if (label.TryFindElement(Locator.ByCss("input[type='radio']")) is { } nestedRadio)
             {
-                nestedRadio!.Click();
+                nestedRadio.Click();
                 return ContainingScope;
             }
 
@@ -57,8 +57,7 @@ public class RadioGroupControl<TScope> : SelectorControlBase<TScope>
     public override string? GetSelectedValue()
     {
         var root = FindElement();
-        var found = root.TryFindElement(Locator.ByCss("input[type='radio']:checked"), out var selected);
-        return found ? selected?.GetAttribute("value") : null;
+        return root.TryFindElement(Locator.ByCss("input[type='radio']:checked"))?.GetAttribute("value");
     }
 
     private static string EscapeCssValue(string value)

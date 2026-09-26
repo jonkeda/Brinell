@@ -1,6 +1,5 @@
 using Brinell.Core.Configuration;
 using Brinell.Core.Exceptions;
-using Brinell.Core.Interfaces;
 using Brinell.Core.Locators;
 using Brinell.Core.Logging;
 using Brinell.Html.Context;
@@ -13,6 +12,7 @@ public sealed class PlaywrightTestContext : IHtmlTestContext, IAsyncDisposable
 {
     private readonly IPage _page;
     private readonly IFrame? _frame;
+    private readonly PlaywrightHtmlDriver _driver;
     private readonly bool _ownsLifecycle;
     private readonly TimeoutSettings _timeouts;
     private readonly ITestLogger _logger;
@@ -34,6 +34,7 @@ public sealed class PlaywrightTestContext : IHtmlTestContext, IAsyncDisposable
         _browser = browser;
         _browserContext = browserContext;
         _page = page;
+        _driver = new PlaywrightHtmlDriver(page);
         _timeouts = timeouts;
         _logger = logger;
         _ownsLifecycle = true;
@@ -48,6 +49,7 @@ public sealed class PlaywrightTestContext : IHtmlTestContext, IAsyncDisposable
     {
         _page = page;
         _frame = frame;
+        _driver = new PlaywrightHtmlDriver(page, frame);
         _timeouts = timeouts;
         _logger = logger;
         _ownsLifecycle = ownsLifecycle;
@@ -125,17 +127,19 @@ public sealed class PlaywrightTestContext : IHtmlTestContext, IAsyncDisposable
 
     public IHtmlTestContext Context => this;
 
+    public IHtmlDriver Driver => _driver;
+
     public TimeoutSettings Timeouts => _timeouts;
 
     public ITestLogger Logger => _logger;
 
     public LocatorStrategy DefaultLocatorStrategy => LocatorStrategy.Css;
 
-    public IPageObject? Page => null;
+    public IHtmlPage? Page => null;
 
-    public string CurrentUrl => _page.Url;
+    public string CurrentUrl => _driver.CurrentUrl;
 
-    public string PageTitle => _page.TitleAsync().GetAwaiter().GetResult();
+    public string PageTitle => _driver.PageTitle;
 
     public IPage InternalPage => _page;
 
@@ -178,9 +182,7 @@ public sealed class PlaywrightTestContext : IHtmlTestContext, IAsyncDisposable
 
         try
         {
-            var playwrightLocator = LocatorExtensions.ToPlaywrightLocator(this, locator);
-            var count = playwrightLocator.CountAsync().GetAwaiter().GetResult();
-            return count > 0 ? new PlaywrightHtmlElement(playwrightLocator.First) : null;
+            return _driver.FindElements(locator).FirstOrDefault();
         }
         catch
         {
@@ -215,15 +217,7 @@ public sealed class PlaywrightTestContext : IHtmlTestContext, IAsyncDisposable
 
         try
         {
-            var playwrightLocator = LocatorExtensions.ToPlaywrightLocator(this, locator);
-            var count = playwrightLocator.CountAsync().GetAwaiter().GetResult();
-            var elements = new List<IHtmlElement>(count);
-            for (var i = 0; i < count; i++)
-            {
-                elements.Add(new PlaywrightHtmlElement(playwrightLocator.Nth(i)));
-            }
-
-            return elements;
+            return _driver.FindElements(locator);
         }
         catch
         {
@@ -234,7 +228,7 @@ public sealed class PlaywrightTestContext : IHtmlTestContext, IAsyncDisposable
     public void NavigateTo(string destination)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(destination);
-        _page.GotoAsync(destination).GetAwaiter().GetResult();
+        _driver.GoTo(destination);
     }
 
     public async Task NavigateToAsync(string destination)
@@ -243,51 +237,22 @@ public sealed class PlaywrightTestContext : IHtmlTestContext, IAsyncDisposable
         await _page.GotoAsync(destination).ConfigureAwait(false);
     }
 
-    public void NavigateBack()
-    {
-        _page.GoBackAsync().GetAwaiter().GetResult();
-    }
+    public void NavigateBack() => _driver.GoBack();
 
-    public void GoForward()
-    {
-        _page.GoForwardAsync().GetAwaiter().GetResult();
-    }
+    public void GoForward() => _driver.GoForward();
 
-    public bool IsIdle()
-    {
-        return IsIdleAsync().GetAwaiter().GetResult();
-    }
+    public bool IsIdle() => _driver.IsIdle();
 
-    public async Task<bool> IsIdleAsync()
-    {
-        try
-        {
-            await _page.WaitForLoadStateAsync(LoadState.NetworkIdle, new()
-            {
-                Timeout = 10
-            });
-            return true;
-        }
-        catch
-        {
-            return false;
-        }
-    }
+    public Task<bool> IsIdleAsync() => Task.FromResult(_driver.IsIdle());
 
-    public void Refresh()
-    {
-        _page.ReloadAsync().GetAwaiter().GetResult();
-    }
+    public void Refresh() => _driver.Reload();
 
-    public byte[] TakeScreenshot()
-    {
-        return _page.ScreenshotAsync().GetAwaiter().GetResult();
-    }
+    public byte[] TakeScreenshot() => _driver.TakeScreenshot();
 
     public void SaveScreenshot(string path)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
-        _page.ScreenshotAsync(new PageScreenshotOptions { Path = path }).GetAwaiter().GetResult();
+        _driver.SaveScreenshot(path);
     }
 
     public void ResetAppState()

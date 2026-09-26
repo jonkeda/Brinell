@@ -1,6 +1,5 @@
 using System.Drawing;
 using Brinell.Core;
-using Brinell.Core.Exceptions;
 using Brinell.Core.Locators;
 using Brinell.Html.Interfaces;
 using Microsoft.Playwright;
@@ -74,65 +73,17 @@ public sealed class PlaywrightHtmlElement : IHtmlElement
 
     public string? GetAttribute(string name) => _locator.GetAttributeAsync(name).GetAwaiter().GetResult();
 
-    public IHtmlElement FindElement(Locator locator, int timeoutMs = 5000)
+    public IHtmlElement? TryFindElement(Locator locator)
     {
         var childLocator = LocatorExtensions.ToPlaywrightLocator(_locator, locator);
-        
-        if (timeoutMs > 0)
-        {
-            try
-            {
-                childLocator.First.WaitForAsync(new LocatorWaitForOptions
-                {
-                    State = WaitForSelectorState.Visible,
-                    Timeout = timeoutMs
-                }).GetAwaiter().GetResult();
-            }
-            catch (TimeoutException)
-            {
-                throw new ElementNotFoundException(locator, timeoutMs);
-            }
-            catch (PlaywrightException)
-            {
-                throw new ElementNotFoundException(locator, timeoutMs);
-            }
-        }
-
-        var count = childLocator.CountAsync().GetAwaiter().GetResult();
-        if (count <= 0)
-        {
-            throw timeoutMs > 0
-                ? new ElementNotFoundException(locator, timeoutMs)
-                : new ElementNotFoundException(locator);
-        }
-
-        return new PlaywrightHtmlElement(childLocator.First);
+        return childLocator.CountAsync().GetAwaiter().GetResult() > 0
+            ? new PlaywrightHtmlElement(childLocator.First)
+            : null;
     }
 
-    public IReadOnlyList<IHtmlElement> FindElements(Locator locator, int timeoutMs = 0)
+    public IReadOnlyList<IHtmlElement> FindElements(Locator locator)
     {
         var childLocator = LocatorExtensions.ToPlaywrightLocator(_locator, locator);
-
-        if (timeoutMs > 0)
-        {
-            try
-            {
-                childLocator.First.WaitForAsync(new LocatorWaitForOptions
-                {
-                    State = WaitForSelectorState.Attached,
-                    Timeout = timeoutMs
-                }).GetAwaiter().GetResult();
-            }
-            catch (TimeoutException)
-            {
-                return [];
-            }
-            catch (PlaywrightException)
-            {
-                return [];
-            }
-        }
-
         var count = childLocator.CountAsync().GetAwaiter().GetResult();
         var elements = new List<IHtmlElement>(count);
         for (var i = 0; i < count; i++)
@@ -141,20 +92,6 @@ public sealed class PlaywrightHtmlElement : IHtmlElement
         }
 
         return elements;
-    }
-
-    public bool TryFindElement(Locator locator, out IHtmlElement? element, int timeoutMs = 0)
-    {
-        try
-        {
-            element = FindElement(locator, timeoutMs);
-            return true;
-        }
-        catch (ElementNotFoundException)
-        {
-            element = null;
-            return false;
-        }
     }
 
     public string? GetDomAttribute(string attributeName) => GetAttribute(attributeName);

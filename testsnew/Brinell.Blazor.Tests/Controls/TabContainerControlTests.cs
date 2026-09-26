@@ -21,7 +21,7 @@ public class TabContainerControlTests
         };
 
         var tabElements = _tabMocks.Select(m => m.Object).ToList().AsReadOnly();
-        _mockElement.Setup(e => e.FindElements(It.IsAny<Locator>(), It.IsAny<int>()))
+        _mockElement.Setup(e => e.FindElements(It.IsAny<Locator>()))
             .Returns(tabElements);
 
         _page = new TestPage(_mockContext.Object);

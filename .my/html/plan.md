@@ -44,8 +44,8 @@ Status values: `todo`, `doing`, `done`, `blocked`.
 
 | Step | Status | Contents | Done when |
 | --- | --- | --- | --- |
-| **0. Rename** | todo | Nothing on the same scale as MAUI's `ItemContainerBase` rename. `HtmlPageObjectBase.IsLoaded(int? timeoutMs)`, `GetTitle(int? timeoutMs)` and any other member with an ignored timeout lose it in step 1; the sync/async split (`IAsync*` shims) is addressed in step 1. If a rename is needed, it lands here | Empty diff after review, or the renames done with tests still passing |
-| **1. Html stands alone** | todo | Html stops implementing Core's `IElement<>`, `IDriver<>`, `IElementScope<>`, `IPageObject<>`, `ITestContext<>`, `IContainerControl<>` and `IContainerObject<>`, and stops using `ControlObjectBase<>`. New or reshaped: `IHtmlElement`, `IHtmlDriver`, `IHtmlElementScope`, `IHtmlPage`, `IHtmlTestContext` (design 4.2). Html copies of the geometry and scope helpers. Finds make **one attempt**, and the timeout finds (`FindElement(locator, timeoutMs)`) are gone. `IsLoaded()`, `GetTitle()`, `TakeScreenshot(string?)` lose their unused timeouts. **UAT discovery kept:** `HtmlPageObjectBase` carries Core's `[TestPage]` once it stops implementing `IPageObject` (MAUI step 1 note). **Otherwise no behaviour change:** `ProbeReadiness` and the readiness chain arrive in step 5. Decision **?A1**: do the `IHtmlAsync*` decorative interfaces survive step 1, or move to a `Brinell.Html.Async` project, or go? See design section 4.6 | Solution builds; `Brinell.Html.Tests`, `Brinell.Html.Uat.Tests`, `Brinell.Blazor.Tests`, `Brinell.Blazor.Uat.Tests` green; the Html and Blazor UAT runs discover the same pages as before; `Brinell.Core` untouched (`git diff --stat srcnew/Brinell.Core` empty); grep finds no `IElement<`, `IElementScope<`, `IPageObject<`, `IDriver<`, `IContainerControl<` or `ControlObjectBase<` in `srcnew/Brinell.Html*` or `srcnew/Brinell.Blazor` |
+| **0. Rename** | done (2026-09-26): nothing to rename; the timeouts went in step 1 | Nothing on the same scale as MAUI's `ItemContainerBase` rename. `HtmlPageObjectBase.IsLoaded(int? timeoutMs)`, `GetTitle(int? timeoutMs)` and any other member with an ignored timeout lose it in step 1; the sync/async split (`IAsync*` shims) is addressed in step 1. If a rename is needed, it lands here | Empty diff after review, or the renames done with tests still passing |
+| **1. Html stands alone** | done (2026-09-26, see 2.1) | Html stops implementing Core's `IElement<>`, `IDriver<>`, `IElementScope<>`, `IPageObject<>`, `ITestContext<>`, `IContainerControl<>` and `IContainerObject<>`, and stops using `ControlObjectBase<>`. New or reshaped: `IHtmlElement`, `IHtmlDriver`, `IHtmlElementScope`, `IHtmlPage`, `IHtmlTestContext` (design 4.2). Html copies of the geometry and scope helpers. Finds make **one attempt**, and the timeout finds (`FindElement(locator, timeoutMs)`) are gone. `IsLoaded()`, `GetTitle()`, `TakeScreenshot(string?)` lose their unused timeouts. **UAT discovery kept:** `HtmlPageObjectBase` carries Core's `[TestPage]` once it stops implementing `IPageObject` (MAUI step 1 note). **Otherwise no behaviour change:** `ProbeReadiness` and the readiness chain arrive in step 5. Decision **?A1**: do the `IHtmlAsync*` decorative interfaces survive step 1, or move to a `Brinell.Html.Async` project, or go? See design section 4.6 | Solution builds; `Brinell.Html.Tests`, `Brinell.Html.Uat.Tests`, `Brinell.Blazor.Tests`, `Brinell.Blazor.Uat.Tests` green; the Html and Blazor UAT runs discover the same pages as before; `Brinell.Core` untouched (`git diff --stat srcnew/Brinell.Core` empty); grep finds no `IElement<`, `IElementScope<`, `IPageObject<`, `IDriver<`, `IContainerControl<` or `ControlObjectBase<` in `srcnew/Brinell.Html*` or `srcnew/Brinell.Blazor` |
 | **T1. Todo web app** | done (2026-09-26, see 2.1) | The Todo app as a Blazor Server head, `samples/Todo/src/Brinell.Samples.Todo.Web`, on the shared `Core`, `Contracts` and `Infrastructure` ([todo-blazor.md](todo-blazor.md) section 2). `data-testid`s equal to the MAUI AutomationIds; `data-busy` from `IsBusy`; `data-item-key` on rows; `LaunchSettings` from the environment, so one host process is one device. An `X-Todo-Client` header, from a new `TODO_CLIENT_ID` launch setting, sent by the API client and recorded by `TodoServerStub` and `Todo.Api`. No Html UI tests yet (?T1) | The app builds and runs against `Todo.Api` by hand; Todo unit, integration and contract tests green; MAUI Todo UI suite unchanged (the header is additive) |
 | **2. Pin it down** | doing: baseline done 2026-09-26 (section 4); tests todo | Failing unit tests that force each following step: (a) `Click` finds the element again (b) the caller's 300 ms budget is honoured (c) one log pair per call (d) `Get` / `WaitVisible` / `AssertText` re-resolve (e) an action that throws is not repeated (f) an attribute read below a call cannot outlast the call. **R0 guard tests:** a button that never re-enables → `Click` fails with "disabled" within its budget; a `Fill` that has no effect on the model → `NotConfirmed`, `Fill` `Times.Once`; a component re-rendered every 100 ms → the call passes **and** a near-miss `Warning` is logged; the Playwright browser closed mid-call → `AppUnavailableException` without waiting out the budget. **Baseline:** the current `Brinell.Html.UITests` and `Brinell.Blazor.UITests` suites run N times and its failures classified (framework race / app bug / environment / driver gap); a per-call count of `Locator.CountAsync` calls; the slowest 5 tests | Tests fail for the stated reason; baseline recorded in section 4 |
 | **3. Stale signal** | todo | Html exceptions (design 4.3): `StaleElementException`, `ElementNotReadyException`, `ScopeNotReadyException`, `AppUnavailableException`. `InstanceKey`; a `Live<T>` wrapper in `PlaywrightTestContext` and `PlaywrightHtmlElement`; a browser-closed / context-closed / target-closed check that raises `AppUnavailableException` (design section 5). Every `catch { }` in `ObjectBase.Poll` and `PlaywrightHtmlElement.TryFindElement` gone. All catch-alls in the ControlBase layer removed. `HtmlPageObjectBase.WaitLoaded` throws `ScopeNotReadyException`, not Core's `PageLoadException`. `RouteUnavailableException` (MAUI review-2 fix D3): a permanent "no route" ends the call; a plain `NotSupportedException` is still retried | Mapping unit tests; grep finds no `catch\s*\(?` without a named type in `srcnew/Brinell.Html*` or `srcnew/Brinell.Blazor` (JSON config and other named ones stay); `PageLoadException` no longer raised by Html or Blazor code |
@@ -65,6 +65,41 @@ constraints in its section 4.2, so that project stays possible.
 
 Filled in as steps finish, in the same shape as `../stale-readiness/plan.md` section 2.1: what
 was proved, what the design was wrong about, and what was deferred to a later step on purpose.
+
+**Step 1 (2026-09-26).**
+
+- **Evidence**, against the section 4 baseline:
+  - `srcnew/Brinell.sln` builds with 0 errors. Its 26 warnings are all old ones in the MAUI
+    samples.
+  - `Brinell.Blazor.Tests` 172/172, `Brinell.Html.Uat.Tests` 2/2, `Brinell.Blazor.Uat.Tests`
+    2/2 and `Brinell.Core.Tests` 16/16: identical to the baseline.
+  - One run of each UI suite fails exactly the baseline's tests (2 and 3), and nothing else.
+  - `git diff --stat srcnew/Brinell.Core` is empty.
+  - The step's grep matches only comments.
+- **What changed.**
+  - `IHtmlElement`, `IHtmlElementScope`, `IHtmlPage`, `IHtmlTestContext` and `IHtmlContainer`
+    stand alone.
+  - New: `IHtmlDriver` with `PlaywrightHtmlDriver` (?A2). The context delegates lookups,
+    navigation and screenshots to it.
+  - Element lookups make one attempt: `TryFindElement(Locator)` and `FindElements(Locator)`.
+    The throwing form is `HtmlElementExtensions.FindElement`, as in MAUI. The timeout finds, and
+    their `catch (PlaywrightException)`, are gone.
+  - `IsLoaded()`, `GetTitle()` and `TakeScreenshot(string?)` lost their unused timeouts.
+  - `HtmlPageObjectBase` carries `[TestPage]`.
+  - The Blazor unit-test mocks changed mechanically (`FindElements(locator)`).
+- **Deliberately not changed yet** (behaviour stays for later steps):
+  - `PlaywrightTestContext.FindElement` still loops for `ElementFind` (step 4, as MAUI).
+  - `IHtmlElement.ScrollIntoView(int timeoutMs = 5000)` keeps its default. It takes
+    `CallRemainingMs` in step 4.
+  - `ForFrame` stays (step 5, `FrameScope`).
+  - The async shims stay (?A1).
+  - The context's three catch-alls stay (step 3).
+- **One small difference from "no behaviour change".** `IsIdle` moved into the driver and now
+  catches only `TimeoutException`. A closed page used to answer "not idle", and now throws.
+  That is step 3's direction (R5), and no baseline test depends on it.
+- **For T2.** Playwright maps `Locator.ByAutomationId` to `data-automation-id` or `id`, not to
+  `data-testid`, which the Todo web head (and `sample-app.md` item 9) use. T2's page objects
+  either use `Locator.ByDataTestId`, or `ByAutomationId` learns `data-testid`. Decide in T2.
 
 **Step T1 (2026-09-26).** Done.
 

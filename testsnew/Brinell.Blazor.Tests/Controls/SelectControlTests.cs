@@ -46,7 +46,7 @@ public class SelectControlTests
         optionElement.Setup(e => e.Text).Returns("Option One");
         optionElement.Setup(e => e.GetAttribute("value")).Returns("opt1");
 
-        _mockElement.Setup(e => e.FindElements(It.IsAny<Locator>(), It.IsAny<int>()))
+        _mockElement.Setup(e => e.FindElements(It.IsAny<Locator>()))
             .Returns(new List<IHtmlElement> { optionElement.Object }.AsReadOnly());
 
         _page.TestSelect.SelectByText("Option One");
@@ -57,7 +57,7 @@ public class SelectControlTests
     [Fact]
     public void SelectByText_NotFound_Throws()
     {
-        _mockElement.Setup(e => e.FindElements(It.IsAny<Locator>(), It.IsAny<int>()))
+        _mockElement.Setup(e => e.FindElements(It.IsAny<Locator>()))
             .Returns(new List<IHtmlElement>().AsReadOnly());
 
         Assert.Throws<InvalidOperationException>(() => _page.TestSelect.SelectByText("Nonexistent"));

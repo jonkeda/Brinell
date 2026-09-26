@@ -1,11 +1,14 @@
+using Brinell.Core.Composition;
 using Brinell.Core.Exceptions;
-using Brinell.Core.Interfaces;
 using Brinell.Core.Locators;
 using Brinell.Html.Context;
 using Brinell.Html.Interfaces;
 
 namespace Brinell.Html.Pages;
 
+// Core's [TestPage], because Html pages no longer implement Core's IPageObject: test composition
+// and UAT find them by the attribute (the same step MAUI took, .my/stale-readiness/plan.md 2.1).
+[TestPage]
 public abstract class HtmlPageObjectBase<TSelf> : ObjectBase, IHtmlPage<TSelf>
     where TSelf : HtmlPageObjectBase<TSelf>
 {
@@ -44,7 +47,7 @@ public abstract class HtmlPageObjectBase<TSelf> : ObjectBase, IHtmlPage<TSelf>
         return uri.LocalPath == Url;
     }
 
-    public virtual bool IsLoaded(int? timeoutMs = null)
+    public virtual bool IsLoaded()
     {
         return CompareUrl()
             && _context.IsIdle();
@@ -76,7 +79,7 @@ public abstract class HtmlPageObjectBase<TSelf> : ObjectBase, IHtmlPage<TSelf>
         }
     }
 
-    public virtual string? GetTitle(int? timeoutMs = null)
+    public virtual string? GetTitle()
     {
         return _context.PageTitle;
     }
@@ -106,17 +109,17 @@ public abstract class HtmlPageObjectBase<TSelf> : ObjectBase, IHtmlPage<TSelf>
         }
     }
 
-    public void TakeScreenshot(string? filename = null, int? timeoutMs = null)
+    public void TakeScreenshot(string? filename = null)
     {
         var path = filename ?? $"{Name}_{DateTime.Now:yyyyMMdd_HHmmss}.png";
         _context.SaveScreenshot(path);
     }
 
-    public IPageObject? Page => this;
+    public IHtmlPage? Page => this;
 
     public bool IsReady(int? timeoutMs = null)
     {
-        return IsLoaded(timeoutMs);
+        return IsLoaded();
     }
 
     public bool WaitReady(int? timeoutMs = null)
@@ -132,17 +135,17 @@ public abstract class HtmlPageObjectBase<TSelf> : ObjectBase, IHtmlPage<TSelf>
         }
     }
 
-    IHtmlElement? IElementScope<IHtmlElement>.TryFindElement(Locator locator)
+    public IHtmlElement? TryFindElement(Locator locator)
     {
         return _context.TryFindElement(locator);
     }
 
-    IHtmlElement IElementScope<IHtmlElement>.FindElement(Locator locator)
+    public IHtmlElement FindElement(Locator locator)
     {
         return _context.FindElement(locator);
     }
 
-    IReadOnlyList<IHtmlElement> IElementScope<IHtmlElement>.FindElements(Locator locator)
+    public IReadOnlyList<IHtmlElement> FindElements(Locator locator)
     {
         return _context.FindElements(locator);
     }

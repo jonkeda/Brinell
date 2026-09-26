@@ -32,15 +32,15 @@ public class TableControlTests
         };
 
         _mockElement.Setup(e => e.FindElements(
-                It.Is<Locator>(l => l.Value == "thead th"), It.IsAny<int>()))
+                It.Is<Locator>(l => l.Value == "thead th")))
             .Returns(headerElements.AsReadOnly());
 
         _mockElement.Setup(e => e.FindElements(
-                It.Is<Locator>(l => l.Value == "tbody tr"), It.IsAny<int>()))
+                It.Is<Locator>(l => l.Value == "tbody tr")))
             .Returns(rowElements.AsReadOnly());
 
         _mockElement.Setup(e => e.FindElements(
-                It.Is<Locator>(l => l.Value.StartsWith("tbody tr:nth-child(")), It.IsAny<int>()))
+                It.Is<Locator>(l => l.Value.StartsWith("tbody tr:nth-child("))))
             .Returns(cellElements.AsReadOnly());
 
         _page = new TestPage(_mockContext.Object);

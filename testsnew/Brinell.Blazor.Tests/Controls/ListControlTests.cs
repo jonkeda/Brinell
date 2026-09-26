@@ -18,7 +18,7 @@ public class ListControlTests
             CreateChildElement("Item 2").Object,
             CreateChildElement("Item 3").Object,
         };
-        _mockElement.Setup(e => e.FindElements(It.IsAny<Locator>(), It.IsAny<int>()))
+        _mockElement.Setup(e => e.FindElements(It.IsAny<Locator>()))
             .Returns(childElements.AsReadOnly());
 
         _page = new TestPage(_mockContext.Object);

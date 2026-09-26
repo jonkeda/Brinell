@@ -1,5 +1,4 @@
 using Brinell.Core.Configuration;
-using Brinell.Core.Interfaces;
 using Brinell.Core.Locators;
 using Brinell.Core.Logging;
 using Brinell.Html.Context;
@@ -22,10 +21,11 @@ public sealed class BlazorTestContext : IHtmlTestContext, IAsyncDisposable
         => new(PlaywrightTestContext.ForPage(page, options));
 
     public IHtmlTestContext Context => this;
+    public IHtmlDriver Driver => _inner.Driver;
     public TimeoutSettings Timeouts => _inner.Timeouts;
     public ITestLogger Logger => _inner.Logger;
     public LocatorStrategy DefaultLocatorStrategy => _inner.DefaultLocatorStrategy;
-    public IPageObject? Page => _inner.Page;
+    public IHtmlPage? Page => _inner.Page;
     public string CurrentUrl => _inner.CurrentUrl;
     public string PageTitle => _inner.PageTitle;
 

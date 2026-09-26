@@ -1,4 +1,3 @@
-using Brinell.Core.Interfaces;
 using Brinell.Core.Locators;
 using Brinell.Html.Interfaces;
 
@@ -25,7 +24,7 @@ public abstract class ContainerBase<TParent, TScope> : ObjectBase, IHtmlContaine
 
     public LocatorStrategy DefaultLocatorStrategy => _parentScope.DefaultLocatorStrategy;
 
-    public IPageObject? Page => _parentScope.Page;
+    public IHtmlPage? Page => _parentScope.Page;
 
     public bool IsReady(int? timeoutMs = null)
     {
@@ -52,7 +51,7 @@ public abstract class ContainerBase<TParent, TScope> : ObjectBase, IHtmlContaine
             return null;
         }
 
-        return root.TryFindElement(locator, out var child) ? child : null;
+        return root.TryFindElement(locator);
     }
 
     public IHtmlElement FindElement(Locator locator)
