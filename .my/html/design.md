@@ -236,6 +236,8 @@ public enum NotReadyReason { NotVisible, Disabled, Other }
 public class ScopeNotReadyException(ScopeReadiness readiness, int budgetMs) : BrinellException;
 
 public class AppUnavailableException(string detail, Exception? platformError = null) : BrinellException;
+
+public sealed class RouteUnavailableException(string detail) : NotSupportedException;   // fatal, as MAUI's (review-2 D3)
 ```
 
 Html **stops throwing Core's `PageLoadException`**. The tests and pages that catch it change,
@@ -247,6 +249,10 @@ Same mechanism as MAUI's 4.4. `ControlCall` writes the near-miss through
 `ITestLogger.LogExit` with `LogResult.Warning` and a message starting with `near-miss:`. Nothing
 is added to `ITestLogger`. Threshold defaults come from `HtmlTestContextOptions.NearMiss` (parallel
 to `MauiTestContextOptions.NearMiss`).
+
+`BRINELL_CALL_LOG` opens a CSV call log per context, as in `MauiTestContext`. Every log line and
+failure message carries the context's `Name` (`HtmlTestContextOptions.Name`, plan ?A10), so a
+scenario with several apps can tell them apart ([todo-blazor.md](todo-blazor.md) 4.2).
 
 ### 4.5 Moving to Core later
 
@@ -416,7 +422,7 @@ If the login command never re-enables, the call fails within 2000 ms with
 | **Control authors** | Override `TryFindElement()` + `NotFound()`, not `FindElement()`. Throw `ElementNotReadyException` from `EnsureReadyForActionCore`. Use `Confirm`. Never call `EnsureVisible` from a Core method. A wait below the call (a scroll) takes `CallRemainingMs`. |
 | **Container authors** | Override `ProbeContentReadiness`, not `WaitContentReadyCore`. Use `AsksParent => false` for a scope shown over its parent. |
 | **Page authors** | `IsLoaded()` takes no parameter. The busy signal is `data-busy` on `<body>`; a Blazor page host injects one line of JavaScript once. Overrides in Html page objects change mechanically. |
-| **Test authors** | App bugs fail with a message naming what was seen (R0). Near-misses show in the log. Budgets mean what they say. Item and select methods wait. `ScopeNotReadyException` replaces `PageLoadException` from Html. |
+| **Test authors** | App bugs fail with a message naming what was seen (R0). Near-misses show in the log. Budgets mean what they say. Item and select methods wait. `ScopeNotReadyException` replaces `PageLoadException` from Html. The fixture starts the web host on a free port; no fixed URL, no circuit-wait loop in the test base. |
 | **Driver authors** | Implement `IHtmlElement` / `IHtmlDriver` directly. `InstanceKey`. `Live` maps staleness. Finds make one attempt. Report a closed target as `AppUnavailableException`. |
 | **Core** | Nothing. Core is unchanged (R9). |
 | **Skills** | Two new skills: `html-control` and `html-ui-test`, modelled on the MAUI ones (see [skills.md](skills.md)). |

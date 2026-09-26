@@ -161,7 +161,10 @@ For completeness. These MAUI concepts have no Html analog and do not move over:
 - **`ShellChromeLocators`.** No shell chrome; the browser toolbar is not the app.
 - **`GestureAutomation` and the bridge verbs.** No custom gestures; Playwright covers what a
   test needs (`Hover`, `Swipe` if ever needed).
-- **`BRINELL_ALLOW_POINTER_INPUT`.** No physical input gating.
+- **`BRINELL_ALLOW_POINTER_INPUT`.** No physical input gating. Html already meets AD-005:
+  Playwright sends input over the browser protocol, with no OS input and no foreground window.
+  This is also what lets several browser contexts, and a MAUI app, run side by side in one
+  test process ([todo-blazor.md](todo-blazor.md) section 4).
 - **`Platform`** as a first-class enum. Html has one platform (a browser). If more than one
   Playwright browser needs branching, it is an option on the driver, not part of the interface.
 - **`MediaElement.Play` bridge verbs.** Media playback in the browser is a plain DOM action.

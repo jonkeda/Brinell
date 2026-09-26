@@ -64,7 +64,8 @@ absence of a spinner class - only works for pages that have one.
 
 ## 4. A virtualized list with row recycling
 
-A new page `/todos` with:
+A new page `/recycling-list` (not `/todos`: the Todo app has its own web head now,
+[todo-blazor.md](todo-blazor.md)) with:
 
 - an in-memory `List<TodoItem>` of ~200 items;
 - Blazor `<Virtualize>` for the list;
@@ -123,7 +124,7 @@ A page `/frames` with two `<iframe>`s: one same-origin (`/frames/inner`) and one
 
 ## 8. Test data and reset
 
-Every mutating page (`/todos`, `/state`) exposes a hidden endpoint or a top-of-page button
+Every mutating page (`/recycling-list`, `/state`) exposes a hidden endpoint or a top-of-page button
 `data-testid="reset"` that puts the page back to its seed state. The UI test fixture calls it
 between tests instead of navigating and starting a new session, matching the MAUI sample's
 `ResetAppState`.

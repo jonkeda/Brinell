@@ -134,6 +134,8 @@ Same as MAUI's, restated for Html:
 - No arbitrary sleeps or longer waits to fix a test.
 - Wait for concrete UI state: page loaded, element visible/enabled/selected/gone, text or
   value changed, `data-busy = "false"`, a request observed by Playwright's `RouteAsync`.
+- `timeoutMs` bounds the poll, not the whole call: a confirmation phase gets its own budget
+  (MAUI review-2 finding 7, already in `maui-ui-test`).
 
 ### File layout
 
@@ -193,6 +195,13 @@ Two changes.
 The architecture rules, synchronization rules, UI interaction rules and error-handling rules
 all apply to Html as-is: Html is a Brinell stack, and the rules were never MAUI-specific in the
 first place.
+
+## Update: `.docs/`
+
+Decisions are recorded once, in `.docs/`, not in the skills or `docs/`. Step 9 widens
+AD-010 and the `call-model` and `control-object` contracts to cover Html, and notes the
+closing of X2 under AD-009. There is no new AD: AD-011 and AD-012 are already used for UAT
+and test data.
 
 ## Update: `docs/architecture/`
 

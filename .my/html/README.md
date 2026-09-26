@@ -8,6 +8,7 @@ Start here.
 | [design.md](design.md) | Rules (R0-R9), classes, what changes, open decisions | **what to build** |
 | [differences-from-maui.md](differences-from-maui.md) | Where Playwright and the Blazor sample force a departure from `../stale-readiness/design.md` | **only** the deltas; everything else follows the MAUI design |
 | [sample-app.md](sample-app.md) | Blazor sample updates needed to pin the design's rules with tests | The sample app changes |
+| [todo-blazor.md](todo-blazor.md) | The Todo app as a Blazor head (plan steps T1, T2), and the later project of several apps in one scenario | The Todo web app; the constraints that keep multi-app scenarios possible |
 | [skills.md](skills.md) | Instruction and skill files to add or update (`.github/skills/html-control`, `.github/skills/html-ui-test`, `AGENTS.md`, `copilot-instructions.md`) | The docs changes |
 
 ## Origin
@@ -29,7 +30,10 @@ departures in [differences-from-maui.md](differences-from-maui.md).
 ## Scope
 
 - **In:** `srcnew/Brinell.Html`, `srcnew/Brinell.Html.Playwright`, `srcnew/Brinell.Blazor`,
-  `samples/Brinell.Samples.Blazor.App`, `testsnew/Brinell.Html.*`, the two new skills.
+  `samples/Brinell.Samples.Blazor.App`, `testsnew/Brinell.Html.*`, `testsnew/Brinell.Blazor.*`,
+  the Todo web head (`samples/Todo/src/…Web` and its tests), the two new skills.
+- **Later, not here:** several apps in one scenario (MAUI and web against one backend,
+  multi-user). [todo-blazor.md](todo-blazor.md) section 4 keeps it possible.
 - **Out:** Core. This project does **not** change `Brinell.Core` (R9). The proven shape moves
   down to Core with the last stack, as its own project (design 4.5 of stale-readiness).
 - **Out:** WPF, WinForms, NativeAndroid, Stride. Each has its own move-down slice.
