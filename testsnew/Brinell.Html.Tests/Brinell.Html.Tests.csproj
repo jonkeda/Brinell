@@ -2,7 +2,6 @@
 
   <PropertyGroup>
     <RootNamespace>Brinell.Html.Tests</RootNamespace>
-    <IsTestProject>false</IsTestProject>
   </PropertyGroup>
 
   <ItemGroup>
@@ -12,6 +11,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\srcnew\Brinell.Core\Brinell.Core.csproj" />
     <ProjectReference Include="..\..\srcnew\Brinell.Html\Brinell.Html.csproj" />
+    <ProjectReference Include="..\..\srcnew\Brinell.Html.Playwright\Brinell.Html.Playwright.csproj" />
   </ItemGroup>
 
   <ItemGroup>

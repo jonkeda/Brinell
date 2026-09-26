@@ -22,4 +22,7 @@ public sealed class LoginPage : HtmlPageObjectBase<LoginPage>
     public LabelControl<LoginPage> ErrorMessage => new(this, "[data-testid='error-message']");
 
     public LabelControl<LoginPage> SuccessMessage => new(this, "[data-testid='success-message']");
+
+    /// <summary>The first field validation message on the form.</summary>
+    public LabelControl<LoginPage> ValidationMessage => new(this, "[data-testid='login-form'] .text-danger");
 }

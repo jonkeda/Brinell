@@ -28,8 +28,27 @@ public sealed class LoginFlowTests : BlazorSampleTestBase
 
         page.LoginButton.Click();
 
-        var validationMessages = Context.FindElements(Locator.ByCss(".text-danger"));
-        Assert.NotEmpty(validationMessages);
+        page.ValidationMessage.AssertVisible(true);
+    }
+
+    /// <summary>
+    /// R0 guard at the UI level: with the "never re-enables" bug switched on, the second Login
+    /// fails and says the button is disabled. It must never pass, and never click a disabled button.
+    /// </summary>
+    [Fact]
+    public void LoginFlow_WhenLoginNeverReenables_TheSecondLoginFailsSayingDisabled()
+    {
+        NavigateToPage("/login?login-bug=stuck-disabled");
+        var page = new LoginPage(Context);
+        page.EmailInput.SetText("test@example.com");
+        page.PasswordInput.SetText("wrong-password");
+        page.LoginButton.Click();
+        page.ErrorMessage.WaitVisible(true);
+
+        var error = Record.Exception(() => page.LoginButton.Click());
+
+        Assert.NotNull(error);
+        Assert.Contains("enabled", error.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -54,7 +73,6 @@ public sealed class LoginFlowTests : BlazorSampleTestBase
 
         await page.LoginButton.ClickAsync();
 
-        var validationMessages = Context.FindElements(Locator.ByCss(".text-danger"));
-        Assert.NotEmpty(validationMessages);
+        page.ValidationMessage.AssertVisible(true);
     }
 }
