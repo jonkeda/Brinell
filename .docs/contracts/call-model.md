@@ -1,8 +1,9 @@
 # Contract: The call model
 
-The MAUI stack runs every public control/page/container/collection/row member as one
-**call**. This is the shape all MAUI code must keep. Source of record:
-`.my/stale-readiness/design.md` section 2. Enforces
+The MAUI and Html stacks run every public control/page/container/collection/row member
+as one **call**. This is the shape all MAUI and Html code must keep. Sources of record:
+`.my/stale-readiness/design.md` section 2 (MAUI) and `.my/html/design.md` (Html, which
+adopts the same rules). Enforces
 [AD-004](../decisions/ad-004-wait-for-state.md) and
 [AD-009](../decisions/ad-009-app-bugs-stay-failures.md).
 
@@ -19,7 +20,7 @@ The MAUI stack runs every public control/page/container/collection/row member as
 | **R6** | One check that a cached root is still alive, used by every scope that caches a root (`InstanceKey` read through the driver's `Live` helper). |
 | **R7** | Non-`Try` members wait; `Try*` members answer about now. |
 | **R8** | The generator does not change: same `Run*` names and signatures on both hierarchies. |
-| **R9** | MAUI owns the interfaces it changes; Core is not changed by this work. See [AD-010](../decisions/ad-010-maui-ahead-of-core.md). |
+| **R9** | MAUI and Html own the interfaces they change; Core is not changed by this work. See [AD-010](../decisions/ad-010-maui-ahead-of-core.md). |
 
 ## What a call may absorb, and what it must report (R0)
 
@@ -42,3 +43,20 @@ The MAUI stack runs every public control/page/container/collection/row member as
 - An action is repeated instead of confirmed (violates R0; see
   [control-object](control-object.md)).
 - A budget is extended past the caller's `timeoutMs`.
+
+## Html specifics
+
+The rules above hold unchanged. Where Playwright differs from UI Automation and Appium:
+
+- **Every Playwright call below a call is given what is left of the call's budget** as its
+  timeout (`CallBudget`), never Playwright's own default. A read or action cut off by the
+  budget ends the poll; the call is reported by the last attempt that completed.
+- **A confirmation is a phase with its own budget**, down to the driver: the reads that confirm
+  an action get the confirmation's time, not what the resolve phase left (R3).
+- **A page's busy signal is `data-busy` on `<body>`.** A Blazor page requires it: a page
+  without it is not loaded yet (a prerendered page is not acted on), not misconfigured. A
+  value other than `true`/`false` is a configuration error and ends the call at once.
+- **A row stands for its item.** It finds its element again by `data-item-key` on every
+  lookup; when the item is gone it reports `ItemChanged` and never acts on the row now in
+  its place.
+- **A scope shown over a busy page** (a dialog) does not ask its page (`AsksParent => false`).

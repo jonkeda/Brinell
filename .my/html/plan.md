@@ -4,8 +4,10 @@ The work plan and its status. What to build is in [design.md](design.md); the Pl
 deltas are in [differences-from-maui.md](differences-from-maui.md). Why the shape is what it is
 lives in `../stale-readiness/`.
 
-Status: **draft**, 2026-09-20; checked against MAUI's current state on 2026-09-26 (section 7).
-Nothing built yet. Numbers under "baseline" are TODO.
+Status: **done**, 2026-09-26. Steps 0-9 and T1-T2 are done; the step notes are in 2.1 and the
+baseline in section 4. The draft was checked against MAUI's current state on 2026-09-26
+(section 7). Deferred on purpose: the Todo `.uat.md` files on the web head (step T2), and
+several apps in one scenario (a later project, [todo-blazor.md](todo-blazor.md) section 4).
 
 ## 1. Goal
 
@@ -55,7 +57,7 @@ Status values: `todo`, `doing`, `done`, `blocked`.
 | **7. Collections** | done (2026-09-26, see 2.1) | `ItemKey` for Html rows (design 7.6, differences item 5: DOM node id, or `data-item-key`, or position). `MaterializeAttempts` for a Blazor `Virtualize` scroll. `ListControl` and `TableControl` move onto a `CollectionObjectBase<TParent, TSelf, TItem>` + `ItemObjectBase<TCollection, TSelf>`. `Item(index)` and `SelectItem` become waiting call units; `TryItem` / `TrySelectItem` answer now (R7) | Collection tests pass; the row-recycling test from sample-app.md item 4 fails when a row is asked to click after its key changed |
 | **T2. Todo web tests** | done (2026-09-26, see 2.1); UAT on the web head deferred | `tests/Brinell.Samples.Todo.Web.UITests`: hermetic and live fixtures (`TodoWebFixture` starts the host process on a free port with the test set's launch settings), Html page objects and ControlObjects (`TodoStatus`, `SectionCard`), and the TOD journeys with a `Head=Web` trait. The Todo `.uat.md` files run with `Target: Html` (?T2). `JourneyCoverage` learns the `Head` trait ([todo-blazor.md](todo-blazor.md) section 3) | Hermetic suite green in 5 of 5 runs; live tests green with `BRINELL_UAT_LIVE_API=1`; a `WaitForRequest` on `X-Todo-Client` passes; every UAT file that passes on MAUI passes on the web head, or carries a head tag and a reason |
 | **8. Prove it** | done (2026-09-26, see 2.1) | On a branch: (a) re-introduce the login-button `disabled`-forever bug (sample-app.md item 2) and prove the login test fails with "disabled for N ms" instead of timing out silently; (a2) re-introduce the Todo `CanExecuteChanged` bug in the shared view model and prove TOD.04.4 fails on **both** heads, naming what it saw; (b) re-introduce the "action retried" bug in `ControlBase` and prove a step-4 test catches it; (c) run `Brinell.Html.UITests`, `Brinell.Blazor.UITests` and the Todo web suite in full against a saved timing baseline; (d) run the repeat-run script against the step 2 baseline | R0 proofs both fail against their bugs, and name what they saw. No new failures against the timing baseline. Framework-race failures down, and none moved from "app bug" to "pass" |
-| **9. Write it down** | todo | In `.docs/` (a decision is recorded once, there): widen AD-010 from "MAUI ahead of Core" to "MAUI and Html ahead of Core"; widen the call-model and control-object contracts from "the MAUI stack" to both stacks; close X2 with a note under AD-009. AD-004 and AD-009 are already stack-neutral, so no new AD mirrors them, and AD-011 and AD-012 are taken. `samples/Todo/README.md` gains the web head; the two new skills merged (`skills.md`); `AGENTS.md` and `.github/copilot-instructions.md` updated; `CHANGELOG.md` list; a note in `../stale-readiness/move-down.md` that the Html slice is done | Docs merged |
+| **9. Write it down** | done (2026-09-26, see 2.1) | In `.docs/` (a decision is recorded once, there): widen AD-010 from "MAUI ahead of Core" to "MAUI and Html ahead of Core"; widen the call-model and control-object contracts from "the MAUI stack" to both stacks; close X2 with a note under AD-009. AD-004 and AD-009 are already stack-neutral, so no new AD mirrors them, and AD-011 and AD-012 are taken. `samples/Todo/README.md` gains the web head; the two new skills merged (`skills.md`); `AGENTS.md` and `.github/copilot-instructions.md` updated; `CHANGELOG.md` list; a note in `../stale-readiness/move-down.md` that the Html slice is done | Docs merged |
 
 After step 9, and **not in this plan**: several apps in one scenario (MAUI and web against one
 backend, multi-user). See [todo-blazor.md](todo-blazor.md) section 4. Steps 1-7 keep to the
@@ -65,6 +67,34 @@ constraints in its section 4.2, so that project stays possible.
 
 Filled in as steps finish, in the same shape as `../stale-readiness/plan.md` section 2.1: what
 was proved, what the design was wrong about, and what was deferred to a later step on purpose.
+
+**Step 9 (2026-09-26).**
+
+- **Decisions.**
+  - AD-010 now reads "MAUI and Html ahead of Core, on purpose", and the invariant line and
+    the `.docs` index match.
+  - AD-009 gains an Html paragraph: X2 closed; driver waits bounded by the call; a busy page
+    hides bugs that only show while it is busy, so those are proven below the UI.
+  - No new AD: AD-004 and AD-009 are stack-neutral (the decision-record skill says to amend).
+- **Contracts.** `call-model.md` covers MAUI and Html, with an "Html specifics" section: the
+  driver budget, a confirmation's own budget, the busy signal, rows by key, dialogs over a busy
+  page. `control-object.md` gains an "Html controls" section (hand-written, the same rules,
+  `ActAndConfirm`).
+- **Skills.** `html-control` and `html-ui-test` (with `references/forbidden-apis.md`) in
+  `.github/skills`, with stubs in `.claude/skills`.
+- **Instructions.** `AGENTS.md` (the skills, the Html forbidden-API pointer, verification
+  commands, the Chromium install) and `.github/copilot-instructions.md` (the skills, the build
+  and test commands).
+- **Docs.** `docs/run/Html.md` rewritten: `Brinell.Html.Tests` is a real suite, the UI suites
+  host the sample themselves, and the Todo web tests. `docs/architecture/stack.md` says
+  `BLAZOR_APP_URL` is optional.
+- **CI.** `Brinell.Html.Tests` is in the unit test list: every pin passes now, 37/37.
+- **CHANGELOG** has Added and Removed entries for the Html work. `move-down.md` marks the
+  Html slice done, with what it adds to the move down and the one conflict to reconcile
+  (Html's `BusySignal` against Core's `BusySignalPolicy`).
+- **Not written.** No `docs/architecture/html.md`: `docs-upkeep` says not to store a
+  description of a subsystem, which would go stale. The rules live in `.docs/`, and the how-to
+  in the skills and `docs/run/Html.md`.
 
 **Step 8 (2026-09-26).**
 

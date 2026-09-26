@@ -39,4 +39,12 @@ Proven on 2026-09-19 (`.my/stale-readiness/plan.md`, step 8): with the bug put b
 the Todo journey TOD.04.4 failed 3 times out of 3, naming the dialog that never
 appeared.
 
+**Html holds the same rules since 2026-09-26** (`.my/html/plan.md`, step 8). Its old
+`RunDoWithElement` retried an action that threw until the budget ran out (X2: 64 clicks
+for one `Click`); that is closed. A driver call below a call waits only for what is left of
+the call's budget, and a read cut off by that budget is not an observation. A busy page
+keeps a journey from racing the app, and so also from seeing a bug that only shows while the
+page is busy: such a bug is proven below the UI (the Todo `CanExecuteChanged` bug is caught
+by its view model unit test, not by the web journey).
+
 See [call-model](../contracts/call-model.md) for the R0-R9 rules this rests on.

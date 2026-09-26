@@ -8,6 +8,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Html on the call model (`.my/html/plan.md`): `Brinell.Html` owns its interfaces
+  (`IHtmlElement` with `InstanceKey`, `IHtmlDriver`, `IHtmlElementScope`, `IHtmlPage`,
+  `IHtmlTestContext`) and runs every control, page, container and row member as one call
+  (`Brinell.Html.Calls`), with near-miss warnings and `BRINELL_CALL_LOG` (AD-009, AD-010).
+- Html exceptions: `StaleElementException`, `ElementNotReadyException`,
+  `ScopeNotReadyException`, `AppUnavailableException`, `RouteUnavailableException`. A closed
+  browser is `AppUnavailableException` and ends the call at once.
+- Html scope readiness: `ScopeReadiness`, the `data-busy` busy signal (`BusySignal`; Blazor
+  pages require it, so a prerendered page is not acted on), `AppRoot`, `FrameScope<T>` for
+  iframes, `ContainerBase.ProbeContentReadiness` and `AsksParent`.
+- Html collections: `CollectionObjectBase`, `ItemObjectBase` and `ItemKey`. A row follows its
+  item by `data-item-key`, and never acts on another.
+- `ControlBase.ActAndConfirm`: Html actions that change state confirm their effect and are
+  never repeated. `SetText`, `TypeText`, `AppendText`, `SetChecked`, `SelectByValue`,
+  `SelectByText`, `SetValue`, `Focus` and `Blur` use it.
+- `Brinell.Html.Testing.WebAppHost`: starts a web app on a free port with explicit launch
+  settings.
+- The Todo sample's web head (`samples/Todo/src/Brinell.Samples.Todo.Web`) and its UI tests;
+  `X-Todo-Client` (`TODO_CLIENT_ID`) and `Todo.Api`'s request log.
+- `html-control` and `html-ui-test` skills.
 - `Brinell.Maui.CommunityToolkit` control objects for CommunityToolkit.Maui: `Expander`,
   `AvatarView`, `RatingView`, `DrawingView`, `Popup`, `StateContainer` and `MediaElement`, each
   with a sample page section and Windows UI tests. Routes and platform gaps are in
@@ -156,6 +176,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Migrated from Oravey.UITestFramework namespace
 
 ### Removed
+- Html: `RunDoWithElement` no longer retries an action that threw (X2). `ObjectBase.Poll`,
+  `ControlBase.RunPoll`, the element finds with a timeout, `PlaywrightTestContext.ForFrame`
+  and `BlazorTestContext.WaitForBlazorReady` are gone. `IsLoaded()`, `GetTitle()` and
+  `TakeScreenshot(string?)` on Html pages lost their unused timeouts. Html no longer throws
+  `PageLoadException`.
 - MAUI: `DriverRootScope` (use `AppRoot`), `Popup.Page => null`, `CanResolveElements`,
   `CreateScopeNotReadyException`, `IsParentReady` / `WaitParentReady`, `WaitContentReady` /
   `WaitContentReadyCore` (use `ProbeContentReadiness`), `IsReady(int?)` (now `IsReady()`), the

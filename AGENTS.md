@@ -41,6 +41,10 @@ Task workflows live in `.github/skills/` (Claude Code reads them through stubs i
   objects.
 - [convert-control](.github/skills/convert-control/SKILL.md) - convert a hand-written
   control to the `.tpl.cs` / `.gen.cs` format.
+- [html-control](.github/skills/html-control/SKILL.md) - create or extend an Html or Blazor
+  ControlObject, container, frame or collection.
+- [html-ui-test](.github/skills/html-ui-test/SKILL.md) - write Html and Blazor UI tests and
+  page objects (the Html UI tests, the Blazor UI tests, the Todo web head).
 
 Read the matching skill before doing that task.
 
@@ -57,7 +61,9 @@ fix:
 
 Use or add a page-object or control member instead. The reasons and the one exception
 (driver and bridge framework tests) are in
-[forbidden-apis.md](.github/skills/maui-ui-test/references/forbidden-apis.md).
+[forbidden-apis.md](.github/skills/maui-ui-test/references/forbidden-apis.md). The same holds
+for Html (`IHtmlElement`, `IHtmlDriver`, Playwright types):
+[Html forbidden-apis.md](.github/skills/html-ui-test/references/forbidden-apis.md).
 
 ## Core Rules
 
@@ -125,7 +131,13 @@ dotnet build srcnew\Brinell.sln -v:minimal /nr:false
 dotnet test testsnew\Brinell.Core.Tests\Brinell.Core.Tests.csproj -v:minimal /nr:false
 dotnet test testsnew\Brinell.Maui.Tests\Brinell.Maui.Tests.csproj -v:minimal /nr:false
 dotnet build srcnew\Brinell.Maui.FlaUI\Brinell.Maui.FlaUI.csproj -f net10.0-windows -v:minimal /nr:false
+dotnet test testsnew\Brinell.Html.Tests\Brinell.Html.Tests.csproj -v:minimal /nr:false
+dotnet test testsnew\Brinell.Blazor.Tests\Brinell.Blazor.Tests.csproj -v:minimal /nr:false
 ```
+
+The Html and Blazor UI suites (`testsnew\Brinell.Html.UITests`, `testsnew\Brinell.Blazor.UITests`)
+start the Blazor sample themselves on a free port and need Playwright's Chromium installed
+(`pwsh testsnew\Brinell.Html.UITests\bin\Debug\net10.0\playwright.ps1 install chromium`).
 
 ### Match the test scope to the change
 

@@ -64,7 +64,7 @@ then Stride. Notes per stack, from what is known now:
 | --- | --- | --- |
 | **NativeAndroid** | The Appium driver side: `AppiumErrors`, the `Live` wrapper, session-gone handling | `AndroidContainerBase.IsReady` asks its parent and then the root: the chain exists, as booleans. It becomes `ProbeReadiness`. |
 | **WPF, WinForms** | The FlaUI side: `FlaUIErrors` (`UIA_E_ELEMENTNOTAVAILABLE`), `InstanceKey` from the runtime id | Their `PageObjectBase` throws `PageLoadException` and has `IsReady(int?)`. The WPF login baseline has 2 failing tests before any change (memory: WPF login baseline). Measure it before moving. |
-| **Html, Playwright, Blazor** | The Calls layer as is | X2: `Brinell.Html`'s `RunDoWithElement` retries actions. That is an R0 violation, fixed when Html moves, not before. `ControlBase` gates on `ContainingScope.IsReady(timeout)`. |
+| **Html, Playwright, Blazor** | **Done on 2026-09-26, on Html's own interfaces** (`.my/html/plan.md`): X2 closed, calls, scope readiness, confirm and collections. What moves to Core from Html: the same shapes as MAUI's, plus two Html-only lessons - a driver call gets the call's remaining budget and a cut-off attempt is not an observation; a confirmation runs under its own attempt context. Html's `BusySignal` (Optional/Required with "missing = not loaded") differs from Core's `BusySignalPolicy` and must be reconciled in the move. | - |
 | **Stride** | The Calls layer | `PageObjectBase.IsReady` polls with `WaitHelper`. |
 
 Each stack's move is a step like MAUI's steps 1-7, with a step 8 of its own: prove it with its

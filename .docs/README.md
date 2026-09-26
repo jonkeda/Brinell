@@ -28,13 +28,13 @@ How this differs from the other trees:
 - [AD-007: Shared artifact layout](decisions/ad-007-shared-artifact-layout.md)
 - [AD-008: Gestures and semantic actions go through UI Automation](decisions/ad-008-gestures-and-semantic-actions-go-through-ui-automation.md)
 - [AD-009: App bugs stay failures](decisions/ad-009-app-bugs-stay-failures.md)
-- [AD-010: MAUI ahead of Core, on purpose](decisions/ad-010-maui-ahead-of-core.md)
+- [AD-010: MAUI and Html ahead of Core, on purpose](decisions/ad-010-maui-ahead-of-core.md)
 - [AD-011: UAT step vocabulary is declared by attributes on Core interfaces](decisions/ad-011-uat-vocabulary-is-attribute-declared.md)
 - [AD-012: Test data is typed, validated, and chosen by the scenario file](decisions/ad-012-test-data-is-typed-validated-and-chosen-by-the-scenario.md)
 
 ## Contracts
 
-- [Call model](contracts/call-model.md) - one call, one budget, one log pair (R0-R9).
+- [Call model](contracts/call-model.md) - one call, one budget, one log pair (R0-R9); MAUI and Html.
 - [Control object](contracts/control-object.md) - the `.tpl.cs` / `.gen.cs` contract,
   act-once and `Confirm`.
 - [Bridge](contracts/bridge.md) - `GestureAutomation.Verbs`: what an app must publish.

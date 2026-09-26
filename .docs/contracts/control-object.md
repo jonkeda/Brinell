@@ -40,3 +40,12 @@ element replaced before it can be read - fails the call and returns
 - A `Core` method retries its own action instead of confirming its effect (R0).
 - A `Core` method opens its own wait loop instead of relying on the call's poll (R2).
 - The element type in a `.tpl.cs` is a platform driver type rather than `IMauiElement`.
+
+## Html controls
+
+Html control objects are hand-written, not generated: `ControlBase<TScope>` in
+`srcnew/Brinell.Html/Controls`. The same rules apply. A public member runs through a `Run*`
+helper (one call). An action that changes state acts once and confirms its effect with
+`ActAndConfirm`, never pressing again. A readiness check before acting goes in
+`EnsureReadyForActionCore` and throws `ElementNotReadyException`. A read below the call gets
+`CallRemainingMs`.

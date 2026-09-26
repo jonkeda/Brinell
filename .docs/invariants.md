@@ -23,8 +23,8 @@ The short list that must not be broken. Each links the decision that explains it
 - **App bugs stay failures.** An action runs once and is confirmed, never repeated;
   defects are reported, not absorbed. [AD-009](decisions/ad-009-app-bugs-stay-failures.md),
   [control-object](contracts/control-object.md)
-- **MAUI is ahead of Core on purpose.** No adapters between the MAUI interfaces and Core's;
-  Core is not changed ahead of the move-down.
+- **MAUI and Html are ahead of Core on purpose.** No adapters between their interfaces and
+  Core's; Core is not changed ahead of the move-down.
   [AD-010](decisions/ad-010-maui-ahead-of-core.md)
 - **UAT step vocabulary is attribute-declared.** Control phrases live as `[UatStep]` on Core
   interfaces; no hand-written phrase table. Every catalog comes from one discovery pass.
