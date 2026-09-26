@@ -27,8 +27,10 @@ The short list that must not be broken. Each links the decision that explains it
   Core's; Core is not changed ahead of the move-down. The calls layer, its exceptions and
   `ScopeReadiness` have moved down: one copy, in Core.
   [AD-010](decisions/ad-010-maui-ahead-of-core.md)
-- **UAT step vocabulary is attribute-declared.** Control phrases live as `[UatStep]` on Core
-  interfaces; no hand-written phrase table. Every catalog comes from one discovery pass.
+- **UAT step vocabulary is attribute-declared.** Every step is a `[UatGiven]`, `[UatWhen]` or
+  `[UatThen]` (base `UatPhraseAttribute`): a control verb on a control method, a phrase on a
+  fixture or phrase-class method. No hand-written phrase table; every catalog comes from one
+  discovery pass.
   [AD-011](decisions/ad-011-uat-vocabulary-is-attribute-declared.md)
 - **Test data is typed and validated.** Test sets are read strictly into the app's real types
   and checked by one engine (gate and `brinell-data` alike); mock bodies are contract types,

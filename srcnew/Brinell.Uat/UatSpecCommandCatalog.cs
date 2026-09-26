@@ -18,7 +18,7 @@ public static class UatSpecCommandCatalog
         catalog.Register(UatEffectiveStepKeyword.Then, "I should be on the {page} page", "Spec.Page.AssertOpen");
         catalog.Register(UatEffectiveStepKeyword.Then, "I should see {text}", "Spec.Page.AssertTextVisible");
 
-        // Control vocabulary is discovered from the same [UatStep] attributes the runtime uses,
+        // Control vocabulary is discovered from the same [UatWhen]/[UatThen] attributes the runtime uses,
         // so the spec surface and the executable surface can never drift.
         UatCatalogBuilder.RegisterControlVerbs(
             catalog,

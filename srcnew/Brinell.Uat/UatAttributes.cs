@@ -15,26 +15,6 @@ public sealed class UatNameAttribute : Attribute
 }
 
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-public sealed class UatPhraseAttribute : Attribute
-{
-    public UatPhraseAttribute(string phrase)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(phrase);
-        Phrase = phrase.Trim();
-    }
-
-    public UatPhraseAttribute(UatEffectiveStepKeyword keyword, string phrase)
-        : this(phrase)
-    {
-        Keyword = keyword;
-    }
-
-    public string Phrase { get; }
-
-    public UatEffectiveStepKeyword? Keyword { get; }
-}
-
-[AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
 public sealed class UatActionAttribute : Attribute
 {
     public UatActionAttribute(string actionName)

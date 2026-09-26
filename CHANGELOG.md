@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `[UatGiven]`, `[UatWhen]` and `[UatThen]` (`Brinell.Core.Testing`): the one way to declare a
+  UAT step, on control methods, fixture methods and phrase-class methods alike (AD-011).
 - Generated Html and Blazor controls: every Html and Blazor control is a `.tpl.cs` template and a
   generated `.gen.cs`, as on MAUI (`tools/Scripts/CreateHtml.Bat`). The Html capability bases
   implement the same Core interfaces as MAUI's (`IClickableControlObject`,
@@ -117,6 +119,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Request/response recording
 
 ### Changed
+- `UatPhraseAttribute` is abstract, lives in `Brinell.Core.Testing`, has a non-null `Keyword`
+  and carries `CommandId`, `Literal` and `HasLiteral`. A phrase method that sets any of those
+  three fails discovery with an error naming the method (`UATD004` in `UatDiscovery`).
+  `UatCommandBinding.Keyword` and `UatPhraseMethodPhrase.Keyword` are non-null.
 - **Breaking:** Html's `ControlBase` `Run*` helpers have MAUI's names and signatures (R8):
   `RunWaitWithElement` and `RunWaitWithOptionalElement` take `expected` first, and
   `RunGetWithOptionalElement` is new. `RunWithElement` and `RunAssert(Action<IHtmlElement>)` are
@@ -233,6 +239,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Migrated from Oravey.UITestFramework namespace
 
 ### Removed
+- `UatStepAttribute`, the writable `[UatPhrase(keyword, phrase)]` and the `[UatPhrase(phrase)]`
+  form without a keyword. Use `[UatGiven]`, `[UatWhen]` or `[UatThen]`.
 - **Breaking:** Html's async members: `Brinell.Html.Interfaces.Async` (`IAsyncHtmlElement`,
   `IHtmlAsyncControlObject` and the capability interfaces), `HtmlAsyncExtensions`,
   `ControlBase.RunWithElementAsync`, `HtmlPageObjectBase.WaitLoadedAsync` and the other `*Async`

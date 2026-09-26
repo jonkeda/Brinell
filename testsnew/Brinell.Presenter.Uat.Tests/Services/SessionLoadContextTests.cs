@@ -110,6 +110,6 @@ public sealed class SessionLoadContextTests
 public sealed class UnloadProbeFixture
 {
     /// <summary>The one phrase the probe scenario uses.</summary>
-    [UatPhrase(Brinell.Core.Testing.UatEffectiveStepKeyword.Given, "the probe is ready")]
+    [UatGiven("the probe is ready")]
     public bool Ready() => true;
 }

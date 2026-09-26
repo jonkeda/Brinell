@@ -37,7 +37,7 @@ public sealed class TodoStatus<TParent>(IHtmlScope<TParent> parent, string testI
     }
 
     /// <summary>Asserts the status shown, waiting for it: the MAUI step.</summary>
-    [UatStep(UatEffectiveStepKeyword.Then, "{control} should show status {value}")]
+    [UatThen("{control} should show status {value}")]
     public TodoStatus<TParent> AssertShowsStatus(string? expected, string? message = null, int? timeoutMs = null)
     {
         Text.AssertText(expected, message, timeoutMs);
@@ -52,7 +52,7 @@ public sealed class TodoStatus<TParent>(IHtmlScope<TParent> parent, string testI
     }
 
     /// <summary>Presses Next until the status reads <paramref name="expected"/>, at most one full cycle.</summary>
-    [UatStep(UatEffectiveStepKeyword.When, "I advance {control} to {value}")]
+    [UatWhen("I advance {control} to {value}")]
     public TodoStatus<TParent> AdvanceTo(string? expected, int? timeoutMs = null)
     {
         if (expected is null)

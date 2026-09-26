@@ -4,13 +4,15 @@ Brinell UAT scenarios are markdown files whose steps bind to a command catalog.
 There is no separate flow-file format. In current code, a flow is the ordered
 execution of parsed and bound steps.
 
-A phrase reaches the catalog in one of three ways:
+Every step is declared with one of three attributes from `Brinell.Core.Testing`:
+`[UatGiven]`, `[UatWhen]` or `[UatThen]`. What the step becomes depends on the
+method the attribute sits on:
 
-| Origin | Declared with | Use it for |
+| Origin | Declared on | Use it for |
 | --- | --- | --- |
-| Control verb | `[UatStep]` on the control method | anything a control does: tap, set, assert |
-| Root phrase | `[UatPhrase]` on a fixture method | fixture state, navigation, setup |
-| Phrase class | `[UatPhrase]` in a `[UatPhraseClass]` | domain flows needing DI services or scoped state |
+| Control verb | a control method | anything a control does: tap, set, assert |
+| Root phrase | a fixture method | fixture state, navigation, setup |
+| Phrase class | a method of a `[UatPhraseClass]` | domain flows needing DI services or scoped state |
 
 ## Mental Model
 
@@ -39,7 +41,8 @@ Step lines must start with one of these exact keywords:
 `And` and `But` inherit the previous effective keyword. For example, after a
 `When` step, `And I tap Save` is treated as a `When` step for phrase matching.
 After a `Then` step, `And Status should be visible` is treated as a `Then`
-step.
+step. So there is no `[UatAnd]` or `[UatBut]`: a negative check written after
+`But` is declared with `[UatThen]`.
 
 ```markdown
 Given I am on the User Form page
@@ -55,7 +58,7 @@ Every phrase, however it is declared, uses `{parameter}` placeholders and matche
 the same way:
 
 ```csharp
-[UatStep(UatEffectiveStepKeyword.When, "I enter {value} into {control}")]
+[UatWhen("I enter {value} into {control}")]
 TScope Enter(string? text, int? timeoutMs = null);
 ```
 
@@ -112,7 +115,7 @@ Common diagnostics:
 The 18 built-in phrases have two sources. Three page verbs are registered
 directly by `UatReflectionRuntime.CreateCommandCatalog()` and
 `UatSpecCommandCatalog.RegisterDefault()`, since they do not bind to control
-methods. The other fifteen are `[UatStep]` attributes on `Brinell.Core` control
+methods. The other fifteen are `[UatWhen]` / `[UatThen]` attributes on `Brinell.Core` control
 interfaces. `UatCatalogBuilder` discovers them for the runtime catalog, the
 spec catalog and the Presenter's preview, so the phrase and its method cannot
 drift apart. To add a control verb, annotate its method rather than registering
@@ -167,8 +170,8 @@ Given I am on the Main page
 
 ## Custom Control Verbs
 
-To add a verb, put a `[UatStep]` on the control method that performs it. The
-attribute lives in `Brinell.Core.Testing`, so a control project needs no
+To add a verb, put a `[UatWhen]` or `[UatThen]` on the control method that
+performs it. The attribute lives in `Brinell.Core.Testing`, so a control project needs no
 reference to `Brinell.Uat` to declare one. Do **not** add a
 `catalog.Register(...)` call for a control verb - that is the hand-written table
 AD-011 removed.
@@ -178,10 +181,10 @@ From the Todo sample's `TodoStatus` component:
 ```csharp
 using Brinell.Core.Testing;
 
-[UatStep(UatEffectiveStepKeyword.When, "I advance {control} to {value}")]
+[UatWhen("I advance {control} to {value}")]
 public TodoStatus<TScope> AdvanceTo(string? expected, int? timeoutMs = null) { ... }
 
-[UatStep(UatEffectiveStepKeyword.Then, "{control} should show status {value}")]
+[UatThen("{control} should show status {value}")]
 public TodoStatus<TScope> AssertShowsStatus(
     string? expected, string? message = null, int? timeoutMs = null) { ... }
 ```
@@ -189,7 +192,7 @@ public TodoStatus<TScope> AssertShowsStatus(
 and from its `TodoList` collection:
 
 ```csharp
-[UatStep(UatEffectiveStepKeyword.Then, "{control} should have todo {value}")]
+[UatThen("{control} should have todo {value}")]
 public TodoList AssertRow(string title, bool present = true, int? timeoutMs = null) { ... }
 ```
 
@@ -201,7 +204,7 @@ Then Status should show status "Done"
 And Todos should have todo "Plan the sprint"
 ```
 
-Rules for a `[UatStep]` phrase:
+Rules for a control verb:
 
 - `{control}` is the control name, resolved on the current page. Exactly one
   other placeholder may appear; its captured value is passed as the method's
@@ -213,13 +216,16 @@ Rules for a `[UatStep]` phrase:
 - `CommandId` sets the stable command-id suffix; it defaults to the method name.
   The projections prepend their own prefix (`Builtin.` / `Spec.`), so one
   attribute serves both.
+- `CommandId`, `Literal` and `HasLiteral` are for control verbs only. On a
+  fixture or phrase-class method they fail discovery with an error naming the
+  method.
 - The attribute allows multiples: declare each phrase variant on the same method.
 - A `(keyword, phrase)` pair is registered once. A verb inherited through several
   interfaces does not collide.
 
 **Reach.** The Core interfaces are always scanned. An app control type is scanned
 only when the runtime met it during page discovery - that is, when it is the type
-of a control property on a discovered page object. A `[UatStep]` on a control no
+of a control property on a discovered page object. A step on a control no
 page exposes is never registered, and its steps fail to bind with `UATB001`.
 
 ## Page And Control Names
@@ -293,24 +299,22 @@ Presenter uses the same bound model, but drives it through
 
 ## Custom Root Phrases
 
-Fixture methods can register custom phrases with `[UatPhrase]`.
+Fixture methods can register custom phrases with `[UatGiven]`, `[UatWhen]` or
+`[UatThen]`.
 
 ```csharp
-[UatPhrase(UatEffectiveStepKeyword.Given, "I remember {name} as a trained player")]
+[UatGiven("I remember {name} as a trained player")]
 public void RememberTrainedPlayer(string name)
 {
     RememberedTrainedPlayer = name;
 }
 
-[UatPhrase(UatEffectiveStepKeyword.Then, "remembered trained player should be {name}")]
+[UatThen("remembered trained player should be {name}")]
 public void AssertRememberedTrainedPlayer(string name)
 {
     Assert.Equal(name, RememberedTrainedPlayer);
 }
 ```
-
-Prefer the constructor that includes `UatEffectiveStepKeyword`. The constructor
-that only takes a phrase registers the phrase for every effective keyword.
 
 Supported custom phrase method inputs include:
 
@@ -340,7 +344,7 @@ Supported returns:
 Exceptions fail the step and are included in the step result.
 
 `[UatAction]` is discovery metadata. It does not create a phrase by itself; a
-control verb comes from `[UatStep]` (see [Custom Control Verbs](#custom-control-verbs)).
+control verb comes from `[UatWhen]` / `[UatThen]` on a control method (see [Custom Control Verbs](#custom-control-verbs)).
 
 ## Phrase Classes
 
@@ -358,13 +362,13 @@ public sealed class CompositionPhrases : UatPhraseClassBase
         _state = state;
     }
 
-    [UatPhrase(UatEffectiveStepKeyword.When, "I choose DI flow")]
+    [UatWhen("I choose DI flow")]
     public void ChooseDiFlow()
     {
         _state.ActionCount++;
     }
 
-    [UatPhrase(UatEffectiveStepKeyword.Then, "scoped action count should be {count}")]
+    [UatThen("scoped action count should be {count}")]
     public void AssertScopedActionCount(int count)
     {
         Assert.Equal(count, _state.ActionCount);
@@ -376,7 +380,7 @@ Phrase classes are discovered from the fixture's `TestComposition` scan. They
 require an active DI scope at execution time. A class is treated as a phrase
 class when it has `[UatPhraseClass]` or derives from `UatPhraseClassBase`.
 
-Phrase-class methods can use `[UatPhrase]`. If a phrase-class method has no
+Phrase-class methods use the same attributes. If a phrase-class method has no
 attribute, the runtime can infer a phrase from a method name starting with
 `Given`, `When`, or `Then`, but explicit attributes are clearer and are required
 when the phrase needs parameters.
@@ -412,7 +416,7 @@ binding and execution code does not consume them automatically.
 ## Authoring Guidance
 
 - Use built-in control phrases for simple interactions.
-- When a verb belongs to a control, declare it there with `[UatStep]`. Reach for
+- When a verb belongs to a control, declare it there with `[UatWhen]` or `[UatThen]`. Reach for
   a fixture phrase only when no control owns the behavior - cross-page actions,
   fixture state, settings, or DI services.
 - Keep the scenario readable as a user workflow.
@@ -425,8 +429,8 @@ binding and execution code does not consume them automatically.
 
 ## Source Files
 
-- `srcnew/Brinell.Core/Testing/UatStepAttribute.cs` — where built-in control phrases are declared
-- `srcnew/Brinell.Core/Interfaces/*.cs` — the `[UatStep]` declarations themselves
+- `srcnew/Brinell.Core/Testing/UatPhraseAttribute.cs` and `UatKeywordAttributes.cs` — the step attributes
+- `srcnew/Brinell.Core/Interfaces/*.cs` — the built-in control-verb declarations
 - `srcnew/Brinell.Uat/UatCatalogBuilder.cs` — the discovery pass and both projections
 - `srcnew/Brinell.Uat/UatMarkdownParser.cs`
 - `srcnew/Brinell.Uat/UatCommandCatalog.cs`
@@ -437,4 +441,3 @@ binding and execution code does not consume them automatically.
 - `srcnew/Brinell.Uat/UatScenarioTestBase.cs`
 - `srcnew/Brinell.Uat/UatSpecCommandCatalog.cs`
 - `srcnew/Brinell.Uat/UatAttributes.cs`
-- `srcnew/Brinell.Core/Testing/UatStepAttribute.cs`

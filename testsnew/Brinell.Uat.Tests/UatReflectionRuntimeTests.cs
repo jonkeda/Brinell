@@ -135,6 +135,49 @@ public sealed class UatReflectionRuntimeTests
     }
 
     [Fact]
+    public void UatGiven_OnFixtureMethod_RegistersARootPhrase()
+    {
+        var catalog = UatReflectionRuntime.FromRoot(new Fixture()).CreateCommandCatalog();
+
+        var pattern = Assert.Single(catalog.Patterns, pattern =>
+            pattern.Phrase == "I remember {name} as a trained player");
+        Assert.Equal(UatEffectiveStepKeyword.Given, pattern.Keyword);
+        Assert.Equal($"{typeof(Fixture).FullName}.{nameof(Fixture.RememberTrainedPlayer)}", pattern.CommandId);
+    }
+
+    [Fact]
+    public async Task UatThen_Phrase_RunsWhenWrittenAfterBut()
+    {
+        var fixture = new Fixture();
+        var runtime = UatReflectionRuntime.FromRoot(fixture);
+        var scenario = BindScenario(runtime, """
+            # UAT: But
+
+            ## Scenario: A Then phrase follows But
+
+            Given I remember "Rush Alpha" as a trained player
+            Then remembered trained player should be "Rush Alpha"
+            But no other player should be remembered than "Rush Alpha"
+            """);
+
+        var result = await new UatScenarioRunner().RunAsync(scenario);
+
+        Assert.True(result.Passed, FormatResults(result));
+        Assert.Equal(1, fixture.OtherPlayerChecks);
+    }
+
+    [Fact]
+    public void PhraseMethod_WithCommandId_FailsDiscoveryNamingTheMethod()
+    {
+        var runtime = UatReflectionRuntime.FromRoot(new CommandIdFixture());
+
+        var error = Assert.Throws<InvalidOperationException>(() => runtime.CreateCommandCatalog());
+
+        Assert.Contains(nameof(CommandIdFixture.Remember), error.Message, StringComparison.Ordinal);
+        Assert.Contains(nameof(UatPhraseAttribute.CommandId), error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task CreatedCatalog_InjectsRawAndTypedTestSettingsIntoRootPhrases()
     {
         var fixture = new SettingsFixture();
@@ -195,6 +238,8 @@ public sealed class UatReflectionRuntimeTests
 
         public string RememberedTrainedPlayer { get; private set; } = string.Empty;
 
+        public int OtherPlayerChecks { get; private set; }
+
         public void NavigateToMain()
         {
             MainPage.Navigated = true;
@@ -205,16 +250,31 @@ public sealed class UatReflectionRuntimeTests
             UserFormPage.Navigated = true;
         }
 
-        [UatPhrase(UatEffectiveStepKeyword.Given, "I remember {name} as a trained player")]
+        [UatGiven("I remember {name} as a trained player")]
         public void RememberTrainedPlayer(string name)
         {
             RememberedTrainedPlayer = name;
         }
 
-        [UatPhrase(UatEffectiveStepKeyword.Then, "remembered trained player should be {name}")]
+        [UatThen("remembered trained player should be {name}")]
         public void AssertRememberedTrainedPlayer(string name)
         {
             Assert.Equal(name, RememberedTrainedPlayer);
+        }
+
+        [UatThen("no other player should be remembered than {name}")]
+        public void AssertNoOtherPlayer(string name)
+        {
+            OtherPlayerChecks++;
+            Assert.Equal(name, RememberedTrainedPlayer);
+        }
+    }
+
+    private sealed class CommandIdFixture
+    {
+        [UatGiven("I remember something", CommandId = "Remember")]
+        public void Remember()
+        {
         }
     }
 
@@ -224,7 +284,7 @@ public sealed class UatReflectionRuntimeTests
 
         public string RawHost { get; private set; } = string.Empty;
 
-        [UatPhrase(UatEffectiveStepKeyword.Given, "the A9 camera settings are available")]
+        [UatGiven("the A9 camera settings are available")]
         public void UseTypedSettings(ExampleA9CameraSettings camera)
         {
             TypedHost = camera.Host;
@@ -232,7 +292,7 @@ public sealed class UatReflectionRuntimeTests
             Assert.Equal("secret", camera.Password);
         }
 
-        [UatPhrase(UatEffectiveStepKeyword.Then, "the raw A9 host setting should match")]
+        [UatThen("the raw A9 host setting should match")]
         public void UseRawSettings(TestSettings settings)
         {
             RawHost = settings.GetRequired<string>("hardware.a9Camera.host");

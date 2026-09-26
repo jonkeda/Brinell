@@ -77,14 +77,14 @@ public sealed class StridePresenterExecutionFixture
 {
     private readonly string? _appPathAtCreation = Environment.GetEnvironmentVariable("STRIDE_APP_PATH");
 
-    [UatPhrase(UatEffectiveStepKeyword.Given, "STRIDE app path is available")]
+    [UatGiven("STRIDE app path is available")]
     public bool StrideAppPathIsAvailable()
     {
         return !string.IsNullOrWhiteSpace(_appPathAtCreation) &&
                File.Exists(_appPathAtCreation);
     }
 
-    [UatPhrase(UatEffectiveStepKeyword.Then, "STRIDE app path should still be available")]
+    [UatThen("STRIDE app path should still be available")]
     public bool StrideAppPathShouldStillBeAvailable()
     {
         var current = Environment.GetEnvironmentVariable("STRIDE_APP_PATH");

@@ -59,6 +59,20 @@ public sealed class UatDiscoveryTests
             x.Phrase == "the settings are saved");
     }
 
+    [Fact]
+    public void Discover_StepOnAControlMethod_IsNotACommandPhrase()
+    {
+        var result = UatDiscovery.Discover(
+            new UatDiscoveryOptions(),
+            typeof(UatDiscoveryTests).Assembly);
+
+        Assert.True(result.Success, FormatDiagnostics(result));
+        Assert.Contains(
+            Assert.Single(result.Pages, x => x.Name == "Settings").Controls,
+            x => x.MemberName == nameof(SettingsPage.BrightnessSlider));
+        Assert.DoesNotContain(result.Commands, x => x.Phrase == "I dim {control}");
+    }
+
     private static string FormatDiagnostics(UatDiscoveryResult result)
     {
         return string.Join(
@@ -74,6 +88,8 @@ public sealed class UatDiscoveryTests
 
         public SaveButton SaveButton { get; } = new();
 
+        public BrightnessSlider BrightnessSlider { get; } = new();
+
         [UatIgnore]
         public SaveButton InternalButton { get; } = new();
     }
@@ -84,7 +100,7 @@ public sealed class UatDiscoveryTests
         [UatName("Sign in")]
         public SaveButton SubmitButton { get; } = new();
 
-        [UatPhrase(UatEffectiveStepKeyword.When, "I sign in with credentials")]
+        [UatWhen("I sign in with credentials")]
         public void SignInWithCredentials()
         {
         }
@@ -92,8 +108,8 @@ public sealed class UatDiscoveryTests
 
     public sealed class PhraseCatalogPage
     {
-        [UatPhrase(UatEffectiveStepKeyword.When, "I save the settings")]
-        [UatPhrase(UatEffectiveStepKeyword.Then, "the settings are saved")]
+        [UatWhen("I save the settings")]
+        [UatThen("the settings are saved")]
         public void SaveSettings()
         {
         }
@@ -111,6 +127,14 @@ public sealed class UatDiscoveryTests
     {
         [UatAction("check")]
         public void Check()
+        {
+        }
+    }
+
+    public sealed class BrightnessSlider
+    {
+        [UatWhen("I dim {control}")]
+        public void Dim()
         {
         }
     }

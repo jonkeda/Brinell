@@ -325,7 +325,7 @@ A custom phrase receives the step's table by taking a `UatTable` parameter, and
 binds it to the app's real types with `UatTableBinding`:
 
 ```csharp
-[UatPhrase(UatEffectiveStepKeyword.Then, "the database should have todos")]
+[UatThen("the database should have todos")]
 public void DatabaseHas(UatTable table)
     => table.AssertContains(TodoDbReader.Todos(fixture.DatabasePath), fixture.TestSet.Now);
 ```

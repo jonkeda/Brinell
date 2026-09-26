@@ -37,7 +37,7 @@ UAT test projects combine:
 - one or more `.uat.md` scenario files;
 - a fixture, an xUnit collection and a `UatScenarioTestBase<TFixture>` class.
 
-A scenario step binds to a phrase, and the built-in phrases are `[UatStep]` attributes on the
+A scenario step binds to a phrase, and the built-in phrases are `[UatWhen]` / `[UatThen]` attributes on the
 `Brinell.Core` control interfaces, discovered by the engine rather than listed anywhere
 ([AD-011](../../.docs/decisions/ad-011-uat-vocabulary-is-attribute-declared.md)). An app adds
 verbs of its own the same way.

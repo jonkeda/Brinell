@@ -27,35 +27,35 @@ public sealed class TodoScreenPhrases(TodoUatFixture fixture) : UatPhraseClassBa
     private ContentDialog<AppRoot> Dialog => new TodoDetailPage(fixture.Context).Dialog;
 
     /// <summary>Opens the row's detail page, as tapping the row does.</summary>
-    [UatPhrase(UatEffectiveStepKeyword.When, "I open the todo {title}")]
+    [UatWhen("I open the todo {title}")]
     public void OpenTodo(string title) => fixture.List.Open(title);
 
     /// <summary>The row shows this status name: Open, In progress, Done or Overdue.</summary>
-    [UatPhrase(UatEffectiveStepKeyword.Then, "the todo {title} should show status {status}")]
+    [UatThen("the todo {title} should show status {status}")]
     public void RowShowsStatus(string title, string status) => Row(title).Status.AssertStatus(status);
 
     /// <summary>The row's status cannot be changed there: it has no Next button.</summary>
-    [UatPhrase(UatEffectiveStepKeyword.Then, "the todo {title} should have a read-only status")]
+    [UatThen("the todo {title} should have a read-only status")]
     public void RowStatusIsReadOnly(string title) => Row(title).Status.AssertChangeable(false);
 
     /// <summary>The row shows "Due …".</summary>
-    [UatPhrase(UatEffectiveStepKeyword.Then, "the todo {title} should show a due date")]
+    [UatThen("the todo {title} should show a due date")]
     public void RowShowsDueDate(string title) => Row(title).Due.AssertTextStartsWith("Due ");
 
     /// <summary>The row shows no due date.</summary>
-    [UatPhrase(UatEffectiveStepKeyword.Then, "the todo {title} should show no due date")]
+    [UatThen("the todo {title} should show no due date")]
     public void RowShowsNoDueDate(string title) => Row(title).Due.AssertShown(false);
 
     /// <summary>The row shows the "not synced yet" marker.</summary>
-    [UatPhrase(UatEffectiveStepKeyword.Then, "the todo {title} should be waiting to sync")]
+    [UatThen("the todo {title} should be waiting to sync")]
     public void RowIsPending(string title) => Todos.AssertPending(title, timeoutMs: TestConstants.PageTimeoutMs);
 
     /// <summary>The row no longer shows the "not synced yet" marker.</summary>
-    [UatPhrase(UatEffectiveStepKeyword.Then, "the todo {title} should be synced")]
+    [UatThen("the todo {title} should be synced")]
     public void RowIsSynced(string title) => Todos.AssertPending(title, expected: false, timeoutMs: TestConstants.PageTimeoutMs);
 
     /// <summary>The list shows the Loading, Empty, Error or Content state.</summary>
-    [UatPhrase(UatEffectiveStepKeyword.Then, "the list should show the {state} state")]
+    [UatThen("the list should show the {state} state")]
     public void ListShowsState(string state)
     {
         var view = state switch
@@ -71,33 +71,33 @@ public sealed class TodoScreenPhrases(TodoUatFixture fixture) : UatPhraseClassBa
     }
 
     /// <summary>A confirmation dialog is shown with this title.</summary>
-    [UatPhrase(UatEffectiveStepKeyword.Then, "the dialog should ask {title}")]
+    [UatThen("the dialog should ask {title}")]
     public void DialogAsks(string title) => Dialog.AssertExists(true, timeoutMs: TestConstants.PageTimeoutMs).AssertTitle(title);
 
     /// <summary>Presses a button of the confirmation dialog.</summary>
-    [UatPhrase(UatEffectiveStepKeyword.When, "I choose {button} in the dialog")]
+    [UatWhen("I choose {button} in the dialog")]
     public void ChooseInDialog(string button) => Dialog.DialogButton(button).Click();
 
     /// <summary>No confirmation dialog is shown.</summary>
-    [UatPhrase(UatEffectiveStepKeyword.Then, "no dialog should be shown")]
+    [UatThen("no dialog should be shown")]
     public void NoDialog() => Dialog.AssertExists(false, timeoutMs: TestConstants.PageTimeoutMs);
 
     /// <summary>Every request for the todo list fails with this status until the next scenario.</summary>
-    [UatPhrase(UatEffectiveStepKeyword.Given, "the server fails with status {status}")]
+    [UatGiven("the server fails with status {status}")]
     public void ServerFails(int status) => fixture.Backend.Get(TodoApi.TodosPath).AtPriority(1).Fails(status);
 
     /// <summary>The next request for the todo list fails with this status; later ones succeed.</summary>
-    [UatPhrase(UatEffectiveStepKeyword.Given, "the server fails once with status {status}")]
+    [UatGiven("the server fails once with status {status}")]
     public void ServerFailsOnce(int status)
         => fixture.Backend.Get(TodoApi.TodosPath).AtPriority(1).FailsFirst(1, status).ReturnsJson(fixture.Server.Todos);
 
     /// <summary>The todo list comes back only after this many seconds.</summary>
-    [UatPhrase(UatEffectiveStepKeyword.Given, "the server answers after {seconds} seconds")]
+    [UatGiven("the server answers after {seconds} seconds")]
     public void ServerIsSlow(int seconds)
         => fixture.Backend.Get(TodoApi.TodosPath).AtPriority(1).WithDelay(TimeSpan.FromSeconds(seconds)).ReturnsJson(fixture.Server.Todos);
 
     /// <summary>Drops the failures arranged above: the server answers normally again, with the todos it held.</summary>
-    [UatPhrase(UatEffectiveStepKeyword.When, "the server recovers")]
+    [UatWhen("the server recovers")]
     public void ServerRecovers()
     {
         var todos = fixture.Server.Todos.ToList();
@@ -109,15 +109,15 @@ public sealed class TodoScreenPhrases(TodoUatFixture fixture) : UatPhraseClassBa
     }
 
     /// <summary>The device loses its network.</summary>
-    [UatPhrase(UatEffectiveStepKeyword.Given, "the device is offline")]
+    [UatGiven("the device is offline")]
     public void Offline() => fixture.Network.SetOffline();
 
     /// <summary>The device has its network back.</summary>
-    [UatPhrase(UatEffectiveStepKeyword.When, "the device is back online")]
+    [UatWhen("the device is back online")]
     public void Online() => fixture.Network.SetOnline();
 
     /// <summary>Closes the app and starts it again on the same database and backend.</summary>
-    [UatPhrase(UatEffectiveStepKeyword.When, "I restart the app")]
+    [UatWhen("I restart the app")]
     public void RestartApp(UatExecutionContext context)
     {
         fixture.Restart();
@@ -125,7 +125,7 @@ public sealed class TodoScreenPhrases(TodoUatFixture fixture) : UatPhraseClassBa
     }
 
     /// <summary>Restarts the app pointed at an address nothing listens on; the next scenario restores it.</summary>
-    [UatPhrase(UatEffectiveStepKeyword.When, "I restart the app with the server unreachable")]
+    [UatWhen("I restart the app with the server unreachable")]
     public void RestartUnreachable(UatExecutionContext context)
     {
         fixture.RestartWith(settings => settings with { ApiBaseUrl = "http://127.0.0.1:1" });

@@ -151,7 +151,7 @@ public sealed class UatReflectionRuntime
             allowsTable: false,
             handler: AssertAnyControlTextContainsAsync);
 
-        // Everything control-shaped is discovered from [UatStep] on Brinell.Core interfaces
+        // Everything control-shaped is discovered from [UatWhen]/[UatThen] on Brinell.Core interfaces
         // and any decorated app control types found during page discovery.
         UatCatalogBuilder.RegisterControlVerbs(
             catalog,
@@ -199,14 +199,11 @@ public sealed class UatReflectionRuntime
             {
                 foreach (var phrase in method.Phrases)
                 {
-                    foreach (var keyword in ExpandKeywords(phrase.Keyword))
-                    {
-                        catalog.Register(
-                            keyword,
-                            phrase.Phrase,
-                            $"{method.Method.DeclaringType!.FullName}.{method.Method.Name}",
-                            handler: handlerFactory?.Invoke(phraseClass.Type, method.Method));
-                    }
+                    catalog.Register(
+                        phrase.Keyword,
+                        phrase.Phrase,
+                        $"{method.Method.DeclaringType!.FullName}.{method.Method.Name}",
+                        handler: handlerFactory?.Invoke(phraseClass.Type, method.Method));
                 }
             }
         }
@@ -233,23 +230,20 @@ public sealed class UatReflectionRuntime
                      .GetMethods(BindingFlags.Instance | BindingFlags.Public)
                      .Where(method => method.GetCustomAttribute<UatIgnoreAttribute>() is null))
         {
-            foreach (var phrase in method.GetCustomAttributes<UatPhraseAttribute>())
+            foreach (var phrase in UatPhraseMethods.GetPhrases(method))
             {
-                foreach (var keyword in ExpandKeywords(phrase.Keyword))
+                if (catalog.Patterns.Any(pattern =>
+                        pattern.Keyword == phrase.Keyword &&
+                        pattern.Phrase.Equals(phrase.Phrase, StringComparison.Ordinal)))
                 {
-                    if (catalog.Patterns.Any(pattern =>
-                            pattern.Keyword == keyword &&
-                            pattern.Phrase.Equals(phrase.Phrase, StringComparison.Ordinal)))
-                    {
-                        continue;
-                    }
-
-                    catalog.Register(
-                        keyword,
-                        phrase.Phrase,
-                        $"{method.DeclaringType!.FullName}.{method.Name}",
-                        handler: handlerFactory?.Invoke(method));
+                    continue;
                 }
+
+                catalog.Register(
+                    phrase.Keyword,
+                    phrase.Phrase,
+                    $"{method.DeclaringType!.FullName}.{method.Name}",
+                    handler: handlerFactory?.Invoke(method));
             }
         }
     }
@@ -456,13 +450,6 @@ public sealed class UatReflectionRuntime
         return Convert.ChangeType(value, effectiveType, System.Globalization.CultureInfo.InvariantCulture);
     }
 
-    private static IEnumerable<UatEffectiveStepKeyword> ExpandKeywords(UatEffectiveStepKeyword? keyword)
-    {
-        return keyword.HasValue
-            ? [keyword.Value]
-            : Enum.GetValues<UatEffectiveStepKeyword>();
-    }
-
     private static IReadOnlyList<UatRuntimeControl> DiscoverControls(object page)
     {
         return DiscoverControls(page.GetType());
@@ -530,8 +517,8 @@ public sealed class UatReflectionRuntime
 
     private static IReadOnlyList<UatPhraseMethodPhrase> ResolvePhraseClassMethodPhrases(MethodInfo method)
     {
-        var attributes = method
-            .GetCustomAttributes<UatPhraseAttribute>()
+        var attributes = UatPhraseMethods
+            .GetPhrases(method)
             .Select(attribute => new UatPhraseMethodPhrase(attribute.Phrase, attribute.Keyword))
             .ToArray();
         if (attributes.Length > 0)
@@ -1089,4 +1076,4 @@ public sealed record UatPhraseClassMethodBinding(
 
 public sealed record UatPhraseMethodPhrase(
     string Phrase,
-    UatEffectiveStepKeyword? Keyword);
+    UatEffectiveStepKeyword Keyword);

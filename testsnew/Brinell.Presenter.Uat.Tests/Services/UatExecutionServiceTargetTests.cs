@@ -97,7 +97,7 @@ public sealed class PresenterTargetExecutionFixture
         ["STRIDE_APP_PATH"] = Environment.GetEnvironmentVariable("STRIDE_APP_PATH")
     };
 
-    [UatPhrase(UatEffectiveStepKeyword.Given, "app path is available from {environmentVariable}")]
+    [UatGiven("app path is available from {environmentVariable}")]
     public bool AppPathIsAvailable(string environmentVariable)
     {
         return _capturedEnvironment.TryGetValue(environmentVariable, out var appPath) &&
@@ -105,7 +105,7 @@ public sealed class PresenterTargetExecutionFixture
                File.Exists(appPath);
     }
 
-    [UatPhrase(UatEffectiveStepKeyword.Then, "app path should still be available from {environmentVariable}")]
+    [UatThen("app path should still be available from {environmentVariable}")]
     public bool AppPathShouldStillBeAvailable(string environmentVariable)
     {
         var current = Environment.GetEnvironmentVariable(environmentVariable);

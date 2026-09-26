@@ -5,7 +5,7 @@ using Brinell.Core.Interfaces;
 namespace Brinell.Uat;
 
 /// <summary>
-/// A control step discovered from a <see cref="UatStepAttribute"/>. The engine invokes
+/// A control step discovered from a <see cref="UatPhraseAttribute"/> on a control method. The engine invokes
 /// <see cref="MethodName"/> by name, so no reference to the control type is needed.
 /// </summary>
 internal sealed record UatStepBinding(
@@ -17,13 +17,13 @@ internal sealed record UatStepBinding(
     bool? Literal);
 
 /// <summary>
-/// Discovers control-step vocabulary from <see cref="UatStepAttribute"/> declarations and
+/// Discovers control-step vocabulary from <see cref="UatPhraseAttribute"/> declarations on control methods and
 /// projects it into a <see cref="UatCommandCatalog"/>. This replaces the hand-written phrase
 /// tables: the runtime and spec catalogs are the same discovery pass with and without handlers.
 /// </summary>
 internal static class UatCatalogBuilder
 {
-    // The Brinell.Core assembly declares the built-in control vocabulary via [UatStep].
+    // The Brinell.Core assembly declares the built-in control vocabulary via [UatWhen]/[UatThen].
     private static readonly Type[] BuiltinStepTypes = typeof(IElementObject<>).Assembly.GetTypes();
 
     public static IReadOnlyList<Type> CoreStepTypes => BuiltinStepTypes;
@@ -59,7 +59,7 @@ internal static class UatCatalogBuilder
             foreach (var method in type.GetMethods(
                          BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly))
             {
-                foreach (var attribute in method.GetCustomAttributes<UatStepAttribute>(inherit: false))
+                foreach (var attribute in method.GetCustomAttributes<UatPhraseAttribute>(inherit: false))
                 {
                     if (!seen.Add((attribute.Keyword, attribute.Phrase)))
                     {

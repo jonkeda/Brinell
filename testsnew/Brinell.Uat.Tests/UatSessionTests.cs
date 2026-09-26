@@ -159,10 +159,10 @@ public sealed class UatSessionTests
     [UatIgnore]
     public sealed class SessionPhrases(AppName app, SessionFixture fixture) : UatPhraseClassBase
     {
-        [UatPhrase(UatEffectiveStepKeyword.When, "I note the app")]
+        [UatWhen("I note the app")]
         public void Note() => fixture.Noted.Add(app.Value);
 
-        [UatPhrase(UatEffectiveStepKeyword.Then, "the step fails")]
+        [UatThen("the step fails")]
         public void Fail() => throw new InvalidOperationException("boom");
     }
 }

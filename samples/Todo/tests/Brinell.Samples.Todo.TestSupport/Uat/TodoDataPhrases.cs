@@ -18,7 +18,7 @@ namespace Brinell.Samples.Todo.TestSupport.Uat;
 public sealed class TodoDataPhrases(ITodoArrangement fixture) : UatPhraseClassBase
 {
     /// <summary>Adds the table's todos to the fake server, as another device would.</summary>
-    [UatPhrase(UatEffectiveStepKeyword.Given, "the server also has todos")]
+    [UatGiven("the server also has todos")]
     public void ServerAlsoHas(UatTable table)
     {
         var data = new TodoData(fixture.TestSet.Now);
@@ -29,19 +29,19 @@ public sealed class TodoDataPhrases(ITodoArrangement fixture) : UatPhraseClassBa
     }
 
     /// <summary>The fake server holds a todo like each row.</summary>
-    [UatPhrase(UatEffectiveStepKeyword.Then, "the server should have todos")]
+    [UatThen("the server should have todos")]
     public void ServerHas(UatTable table) => table.AssertContains(fixture.Server.Todos, fixture.TestSet.Now);
 
     /// <summary>The app's database holds a todo like each row.</summary>
-    [UatPhrase(UatEffectiveStepKeyword.Then, "the database should have todos")]
+    [UatThen("the database should have todos")]
     public void DatabaseHas(UatTable table) => table.AssertContains(TodoDbReader.Todos(fixture.DatabasePath), fixture.TestSet.Now);
 
     /// <summary>The app's database holds exactly the rows' todos. Order-dependent unless the database is reset per scenario.</summary>
-    [UatPhrase(UatEffectiveStepKeyword.Then, "the database should have only todos")]
+    [UatThen("the database should have only todos")]
     public void DatabaseHasOnly(UatTable table) => table.AssertExactly(TodoDbReader.Todos(fixture.DatabasePath), fixture.TestSet.Now);
 
     /// <summary>No todo in the app's database has an empty or whitespace title.</summary>
-    [UatPhrase(UatEffectiveStepKeyword.Then, "the database should not have a todo with a blank title")]
+    [UatThen("the database should not have a todo with a blank title")]
     public void DatabaseHasNoBlankTitle()
     {
         var blank = TodoDbReader.Todos(fixture.DatabasePath).Where(todo => string.IsNullOrWhiteSpace(todo.Title)).ToList();

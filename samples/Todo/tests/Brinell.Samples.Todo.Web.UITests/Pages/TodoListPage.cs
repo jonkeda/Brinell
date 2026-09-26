@@ -84,7 +84,7 @@ public sealed class TodoListPage : BlazorPageObjectBase<TodoListPage>
             => ItemWhere(row => row.Title.TryGetText() == title, timeoutMs);
 
         /// <summary>Waits until a row titled <paramref name="title"/> is shown, or is not.</summary>
-        [UatStep(UatEffectiveStepKeyword.Then, "{control} should have todo {value}")]
+        [UatThen("{control} should have todo {value}")]
         public TodoRows AssertRow(string title, bool present = true, int? timeoutMs = null)
         {
             if (present)
@@ -100,7 +100,7 @@ public sealed class TodoListPage : BlazorPageObjectBase<TodoListPage>
         }
 
         /// <summary>Waits until no row titled <paramref name="title"/> is shown.</summary>
-        [UatStep(UatEffectiveStepKeyword.Then, "{control} should not have todo {value}")]
+        [UatThen("{control} should not have todo {value}")]
         public TodoRows AssertNoRow(string title, int? timeoutMs = null) => AssertRow(title, present: false, timeoutMs);
 
         /// <summary>Waits until the row with <paramref name="title"/> shows the pending marker, or does not.</summary>

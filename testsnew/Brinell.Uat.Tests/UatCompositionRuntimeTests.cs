@@ -77,6 +77,50 @@ public sealed class UatCompositionRuntimeTests
     }
 
     [Fact]
+    public async Task UatThen_OnAPhraseClassMethod_RunsAfterBut()
+    {
+        var directory = CreateTempDirectory();
+        try
+        {
+            var configFilePath = WriteConfig(directory);
+            var scenarioFilePath = WriteScenario(directory, """
+                # UAT: But
+
+                ## Scenario: A phrase-class Then follows But
+
+                Given the composition state is fresh
+                When I store these rows
+                | Title |
+                | --- |
+                | One |
+                Then 1 rows should be stored
+                But no action should have run
+                """);
+            var harness = new CompositionScenarioHarness(new CompositionFixture(), configFilePath);
+
+            await harness.RunFileAsync(scenarioFilePath);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void UatGiven_OnAPhraseClassMethod_IsAPhraseNotAControlVerb()
+    {
+        var fixture = new CompositionFixture();
+        var catalog = UatReflectionRuntime.FromComposition(fixture, fixture.Composition).CreateCommandCatalog();
+
+        var pattern = Assert.Single(catalog.Patterns, pattern =>
+            pattern.Phrase == "the composition state is fresh");
+        Assert.Equal(UatEffectiveStepKeyword.Given, pattern.Keyword);
+        Assert.Equal(
+            $"{typeof(CompositionPhrases).FullName}.{nameof(CompositionPhrases.AssertFresh)}",
+            pattern.CommandId);
+    }
+
+    [Fact]
     public void UatRuntime_AcceptsTestCompositionPropertyAlias()
     {
         var directory = CreateTempDirectory();
@@ -171,7 +215,7 @@ public sealed class UatCompositionRuntimeTests
             NavigationCalls++;
         }
 
-        [UatPhrase(UatEffectiveStepKeyword.When, "I choose DI flow")]
+        [UatWhen("I choose DI flow")]
         public void ChooseDiFlowOnFixture()
         {
             RootPhraseCalls++;
@@ -222,25 +266,37 @@ public sealed class UatCompositionRuntimeTests
             _state = state;
         }
 
-        [UatPhrase(UatEffectiveStepKeyword.When, "I choose DI flow")]
+        [UatGiven("the composition state is fresh")]
+        public void AssertFresh()
+        {
+            Assert.Equal(0, _state.StoredRows);
+        }
+
+        [UatWhen("I choose DI flow")]
         public void ChooseDiFlow()
         {
             _state.ActionCount++;
         }
 
-        [UatPhrase(UatEffectiveStepKeyword.When, "I store these rows")]
+        [UatWhen("I store these rows")]
         public void StoreRows(UatTable table)
         {
             _state.StoredRows = table.Rows.Count;
         }
 
-        [UatPhrase(UatEffectiveStepKeyword.Then, "{count} rows should be stored")]
+        [UatThen("{count} rows should be stored")]
         public void AssertStoredRows(int count)
         {
             Assert.Equal(count, _state.StoredRows);
         }
 
-        [UatPhrase(UatEffectiveStepKeyword.Then, "scoped action count should be {count}")]
+        [UatThen("no action should have run")]
+        public void AssertNoAction()
+        {
+            Assert.Equal(0, _state.ActionCount);
+        }
+
+        [UatThen("scoped action count should be {count}")]
         public void AssertScopedActionCount(int count)
         {
             Assert.Equal(1, _state.ReadyCount);

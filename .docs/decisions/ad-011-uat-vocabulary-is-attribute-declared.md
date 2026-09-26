@@ -1,23 +1,41 @@
-# AD-011: UAT Step Vocabulary Is Declared By Attributes On Core Interfaces
+# AD-011: UAT Step Vocabulary Is Declared By Attributes
 
-The built-in UAT step vocabulary lives as `[UatStep]` attributes on the
-`Brinell.Core` control interfaces (`IClickableControlObject`, `IEditableTextControlObject`,
-`IToggleControlObject`, `ISelectorControlObject`, `ITextControlObject`, `IElementObject`).
-Each attribute maps a phrase to the control method it invokes. `Brinell.Uat` is the
-execution engine: it discovers the vocabulary by reflection over those attributes and
-projects it into every catalog it needs.
+Every UAT step is declared by one of three attributes: `[UatGiven]`, `[UatWhen]` and
+`[UatThen]`. They derive from the abstract `UatPhraseAttribute` in `Brinell.Core.Testing`,
+which is the type discovery reads. There is no other way to declare a step, and no attribute
+for `And` or `But`: those take the keyword of the step before them, so a check written after
+`But` is a `[UatThen]`.
+
+What a step is follows from the method it sits on, not from the attribute:
+
+- On a control method it is a **control verb**. The built-in vocabulary lives on the
+  `Brinell.Core` control interfaces (`IClickableControlObject`, `IEditableTextControlObject`,
+  `IToggleControlObject`, `ISelectorControlObject`, `ITextControlObject`, `IElementObject`);
+  an app adds its own on its control types. `CommandId`, `Literal` and `HasLiteral` belong to
+  control verbs.
+- On a fixture or phrase-class method it is a **phrase**. Phrase discovery rejects
+  `CommandId`, `Literal` and `HasLiteral` there, naming the method.
+
+`Brinell.Uat` is the execution engine: it discovers the vocabulary by reflection over those
+attributes and projects it into every catalog it needs.
 
 The three intrinsic page-graph verbs (`I am on the {page} page`,
 `I should be on the {page} page`, `I should see {text}`) are the engine's own and stay
 registered directly in the runtime and spec catalogs - they bind to no control method. So is
 `{app} uses the app`, registered only when the fixture hosts several apps (AD-014).
 
-**Ruled out:** hand-written phrase tables. There is no second place that lists the
-control phrases. The runtime catalog, the spec catalog and any preview all come from the
-same `UatCatalogBuilder.DiscoverBindings` pass, so a phrase and the surface that runs it
-cannot drift.
+**Ruled out:**
 
-**Broken when:** a control phrase is added by editing a `catalog.Register(...)` call for a
-control verb instead of adding a `[UatStep]` to the Core interface method; or a projection
-(runtime, spec, presenter preview) re-lists control phrases by hand instead of calling the
-discovery.
+- Hand-written phrase tables. There is no second place that lists the control phrases. The
+  runtime catalog, the spec catalog and any preview all come from the same
+  `UatCatalogBuilder.DiscoverBindings` pass, so a phrase and the surface that runs it cannot
+  drift.
+- A second attribute for control verbs (the former `[UatStep]`).
+- A writable long form (`[UatPhrase(keyword, phrase)]`) next to the short forms, and a form
+  without a keyword.
+- `[UatAnd]` / `[UatBut]` attributes.
+
+**Broken when:** a step is declared by any attribute other than `[UatGiven]`, `[UatWhen]` or
+`[UatThen]`; a control phrase is added by editing a `catalog.Register(...)` call for a control
+verb instead of attributing the control method; or a projection (runtime, spec, presenter
+preview) re-lists control phrases by hand instead of calling the discovery.

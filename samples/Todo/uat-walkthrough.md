@@ -117,7 +117,7 @@ Every step matches exactly one phrase. The phrase decides which page object meth
 | `Then Title Error should be visible` | `{control} should be visible` | `TitleError.AssertVisible(true)` |
 | `And Title Error should contain "Title is required"` | `{control} should contain {value}` | `TitleError.AssertTextContains(...)` |
 
-Those control phrases are not a list someone maintains. Each is a `[UatStep]` attribute on
+Those control phrases are not a list someone maintains. Each is a `[UatWhen]` or `[UatThen]` attribute on
 the `Brinell.Core` interface method it calls — `I clear {control}` sits on
 `IEditableTextControlObject.Clear`, `{control} should be visible` on
 `IElementObject.AssertVisible` — and the engine discovers them by reflection
@@ -153,7 +153,7 @@ So the chain for one step is:
 
 ```text
 "And Title Error should contain \"Title is required\""
-   -> phrase   {control} should contain {value}   ([UatStep] on ITextControlObject.AssertTextContains)
+   -> phrase   {control} should contain {value}   ([UatThen] on ITextControlObject.AssertTextContains)
    -> control  "Title Error"  == TodoEditPage.TitleError
    -> id       TodoEdit_TitleError  (from the XAML)
    -> call     AssertTextContains("Title is required")
@@ -169,14 +169,14 @@ binds to the page object's name.
 ## 4. A verb the framework does not have
 
 Cycling the status with **Next** is Todo's own behaviour, so Todo declares its own verb: a
-`[UatStep]` on the method of the ControlObject that performs it
+`[UatWhen]` on the method of the ControlObject that performs it
 ([`TodoStatus.tpl.cs`](tests/Brinell.Samples.Todo.UITests/Controls/TodoStatus.tpl.cs)).
 
 ```csharp
-[UatStep(UatEffectiveStepKeyword.When, "I advance {control} to {value}")]
+[UatWhen("I advance {control} to {value}")]
 public TodoStatus<TScope> AdvanceTo(string? expected, int? timeoutMs = null) { ... }
 
-[UatStep(UatEffectiveStepKeyword.Then, "{control} should show status {value}")]
+[UatThen("{control} should show status {value}")]
 public TodoStatus<TScope> AssertShowsStatus(string? expected, ...) { ... }
 ```
 
@@ -189,7 +189,7 @@ When I advance Status to "Done"
 Then Status should show status "Done"
 ```
 
-The same move gives the list its row assertion — `[UatStep]` on `TodoList.AssertRow`
+The same move gives the list its row assertion — `[UatThen]` on `TodoList.AssertRow`
 produces `Then Todos should have todo "Write the report"`.
 
 ---
@@ -225,7 +225,7 @@ produces `Then Todos should have todo "Write the report"`.
 ```
 
 - **`Pages`** is the assembly carrying `TodoListPage` / `TodoEditPage` — the source of the
-  control names, and of Todo's custom `[UatStep]` verbs.
+  control names, and of Todo's custom `[UatWhen]` / `[UatThen]` verbs.
 - **`AllowNameInference = true`** is why `AddButton` works as **Add** with no attribute.
 - **`Fixture = FlaUI`** is the Windows head. `TodoUatScenarioTests` asserts this at load
   time, so a config pointed at the wrong driver fails before any scenario runs.
@@ -308,7 +308,7 @@ dotnet test tests/Brinell.Samples.Todo.Uat
 - It stays traceable: `TOD.02.3` in the journey checklist → this `.uat.md` → green/red.
 
 When a scenario outgrows the phrase vocabulary, there are two escapes before giving up on
-Markdown: a `[UatStep]` on the control that does the work (§4), or a `[UatPhrase]` on the
+Markdown: a `[UatWhen]` or `[UatThen]` on the control that does the work (§4), or one on a
 fixture for something no control owns. Only past those does the scenario drop to a `.cs`
 page-object test — the hatch described in
 [.my/uat/rethinking-uat.md](../../.my/uat/rethinking-uat.md).

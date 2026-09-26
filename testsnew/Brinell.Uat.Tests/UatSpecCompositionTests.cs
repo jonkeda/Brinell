@@ -60,7 +60,7 @@ public sealed class UatSpecCompositionTests
     [UatIgnore]
     public sealed class SpecCompositionPhrases : UatPhraseClassBase
     {
-        [UatPhrase(UatEffectiveStepKeyword.When, "I run the composition-only phrase")]
+        [UatWhen("I run the composition-only phrase")]
         public void RunCompositionOnlyPhrase()
         {
         }

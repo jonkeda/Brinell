@@ -379,7 +379,7 @@ public sealed class UatTestBaseTests
 
         public FakeScreenshotService ScreenshotService { get; } = new();
 
-        [UatPhrase(UatEffectiveStepKeyword.When, "I run the custom action")]
+        [UatWhen("I run the custom action")]
         public void RunCustomAction()
         {
         }

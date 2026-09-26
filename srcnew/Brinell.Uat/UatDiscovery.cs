@@ -42,21 +42,36 @@ public static class UatDiscovery
             pages.Add(new UatPageBinding(pageName, type, controls));
         }
 
-        foreach (var method in types.SelectMany(GetCandidateMethods))
+        // A step on a control method is a control verb, not a phrase.
+        var controlTypes = pages
+            .SelectMany(page => page.Controls)
+            .Select(control => control.ControlType)
+            .ToHashSet();
+
+        foreach (var method in types
+                     .Where(type => !controlTypes.Contains(type) && !IsControlObjectType(type))
+                     .SelectMany(GetCandidateMethods))
         {
             foreach (var phrase in method.GetCustomAttributes<UatPhraseAttribute>())
             {
+                var error = UatPhraseMethods.ControlVerbOnlyError(method, phrase);
+                if (error is not null)
+                {
+                    diagnostics.Add(new UatDiagnostic(
+                        UatDiagnosticSeverity.Error,
+                        "UATD004",
+                        error,
+                        new UatSourceLocation(null, 1)));
+                    continue;
+                }
+
                 var command = new UatCommandBinding(
                     phrase.Phrase,
                     phrase.Keyword,
                     $"{method.DeclaringType!.FullName}.{method.Name}",
                     method);
                 commands.Add(command);
-
-                foreach (var keyword in ExpandKeywords(phrase.Keyword))
-                {
-                    catalog.Register(keyword, phrase.Phrase, command.CommandId);
-                }
+                catalog.Register(phrase.Keyword, phrase.Phrase, command.CommandId);
             }
         }
 
@@ -125,7 +140,7 @@ public static class UatDiscovery
             return true;
         }
 
-        if (property.PropertyType.GetInterfaces().Any(IsControlObjectInterface))
+        if (IsControlObjectType(property.PropertyType))
         {
             return true;
         }
@@ -141,6 +156,11 @@ public static class UatDiscovery
                !options.RequireExplicitUatAttributes &&
                (UatNameInference.HasKnownSuffix(property.Name) ||
                 UatNameInference.HasKnownSuffix(property.PropertyType.Name));
+    }
+
+    private static bool IsControlObjectType(Type type)
+    {
+        return type.GetInterfaces().Any(IsControlObjectInterface);
     }
 
     private static bool IsControlObjectInterface(Type type)
@@ -171,13 +191,6 @@ public static class UatDiscovery
             .GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public)
             .Where(method => method.GetCustomAttribute<UatIgnoreAttribute>() is null)
             .Where(method => method.GetCustomAttributes<UatPhraseAttribute>().Any());
-    }
-
-    private static IEnumerable<UatEffectiveStepKeyword> ExpandKeywords(UatEffectiveStepKeyword? keyword)
-    {
-        return keyword.HasValue
-            ? [keyword.Value]
-            : Enum.GetValues<UatEffectiveStepKeyword>();
     }
 
     private static IReadOnlyList<Type> GetLoadableTypes(Assembly assembly)
@@ -227,10 +240,7 @@ public static class UatDiscovery
         IReadOnlyList<UatCommandBinding> commands,
         ICollection<UatDiagnostic> diagnostics)
     {
-        var expanded = commands.SelectMany(command => ExpandKeywords(command.Keyword)
-            .Select(keyword => new { command.Phrase, Keyword = keyword }));
-
-        foreach (var duplicate in expanded.GroupBy(x => $"{x.Keyword}:{x.Phrase}", StringComparer.Ordinal).Where(x => x.Count() > 1))
+        foreach (var duplicate in commands.GroupBy(x => $"{x.Keyword}:{x.Phrase}", StringComparer.Ordinal).Where(x => x.Count() > 1))
         {
             diagnostics.Add(new UatDiagnostic(
                 UatDiagnosticSeverity.Error,
@@ -264,6 +274,6 @@ public sealed record UatControlBinding(
 
 public sealed record UatCommandBinding(
     string Phrase,
-    UatEffectiveStepKeyword? Keyword,
+    UatEffectiveStepKeyword Keyword,
     string CommandId,
     MethodInfo Method);
