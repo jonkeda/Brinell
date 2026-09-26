@@ -10,6 +10,7 @@ Start here.
 | [sample-app.md](sample-app.md) | Blazor sample updates needed to pin the design's rules with tests | The sample app changes |
 | [todo-blazor.md](todo-blazor.md) | The Todo app as a Blazor head (plan steps T1, T2), and the later project of several apps in one scenario | The Todo web app; the constraints that keep multi-app scenarios possible |
 | [skills.md](skills.md) | Instruction and skill files to add or update (`.github/skills/html-control`, `.github/skills/html-ui-test`, `AGENTS.md`, `copilot-instructions.md`) | The docs changes |
+| [review-html-vs-maui.md](review-html-vs-maui.md) | Review after the plan: how alike Html, Blazor and MAUI are, whether the generator can make Html controls (a tested probe), and how far the UAT runs on Html | The follow-ups after the plan |
 
 ## Origin
 
