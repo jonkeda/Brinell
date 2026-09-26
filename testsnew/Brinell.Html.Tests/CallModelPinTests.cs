@@ -405,6 +405,26 @@ public class CallModelPinTests
         disabled.Verify(e => e.Click(), Times.Never);
     }
 
+    /// <summary>
+    /// The browser closing mid-call ends the call at once with <c>AppUnavailableException</c>; it
+    /// does not wait out the budget (written in step 3, which introduces the type).
+    /// </summary>
+    [Fact]
+    [Trait("Pin", "guard")]
+    public void Guard_BrowserClosedMidCall_FailsAtOnce_AsAppUnavailable()
+    {
+        var element = PlaywrightElement();
+        element.Setup(l => l.InnerTextAsync(It.IsAny<LocatorInnerTextOptions?>()))
+            .ThrowsAsync(new PlaywrightException("Target page, context or browser has been closed"));
+        using var context = PlaywrightContext(PageAnswering(element).Object);
+
+        Exception? error = null;
+        var elapsed = Timed(() => error = Record.Exception(() => new PinPage(context).Status.GetText(timeoutMs: 2000)));
+
+        Assert.IsType<Brinell.Html.Exceptions.AppUnavailableException>(error);
+        Assert.True(elapsed < 500, $"The call took {elapsed} ms after the browser closed; it must end at once.");
+    }
+
     /// <summary>An element that never becomes visible is never clicked.</summary>
     [Fact]
     [Trait("Pin", "guard")]

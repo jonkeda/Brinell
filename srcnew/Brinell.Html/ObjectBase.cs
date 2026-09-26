@@ -1,5 +1,7 @@
 using System.Diagnostics;
+using Brinell.Core.Exceptions;
 using Brinell.Core.Utilities;
+using Brinell.Html.Exceptions;
 using Brinell.Html.Interfaces;
 
 namespace Brinell.Html;
@@ -28,9 +30,9 @@ public abstract class ObjectBase
                     return true;
                 }
             }
-            catch
+            catch (Exception error) when (IsTransient(error))
             {
-                // Ignore exceptions while polling.
+                // Asked again on the next tick; anything else is not a signal and ends the wait (R5).
             }
 
             WaitHelper.Pause(PollingIntervalMs);
@@ -40,11 +42,18 @@ public abstract class ObjectBase
         {
             return condition();
         }
-        catch
+        catch (Exception error) when (IsTransient(error))
         {
             return false;
         }
     }
+
+    /// <summary>
+    /// The signals a wait may ask again after: the element went away, is not there yet, or is not
+    /// ready yet. A closed browser, and every other error, are not among them.
+    /// </summary>
+    protected static bool IsTransient(Exception error)
+        => error is StaleElementException or ElementNotFoundException or ElementNotReadyException;
 
     protected async Task<bool> PollAsync(Func<Task<bool>> condition, int timeoutMs)
     {
@@ -59,9 +68,9 @@ public abstract class ObjectBase
                     return true;
                 }
             }
-            catch
+            catch (Exception error) when (IsTransient(error))
             {
-                // Ignore exceptions while polling.
+                // As in Poll.
             }
 
             await Task.Delay(PollingIntervalMs).ConfigureAwait(false);
@@ -71,7 +80,7 @@ public abstract class ObjectBase
         {
             return await condition().ConfigureAwait(false);
         }
-        catch
+        catch (Exception error) when (IsTransient(error))
         {
             return false;
         }

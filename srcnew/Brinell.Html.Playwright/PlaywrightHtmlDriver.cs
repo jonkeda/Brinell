@@ -1,6 +1,7 @@
 using Brinell.Core.Locators;
 using Brinell.Html.Interfaces;
 using Microsoft.Playwright;
+using static Brinell.Html.Playwright.PlaywrightErrors;
 
 namespace Brinell.Html.Playwright;
 
@@ -31,14 +32,14 @@ public sealed class PlaywrightHtmlDriver : IHtmlDriver
     public string CurrentUrl => _page.Url;
 
     /// <inheritdoc />
-    public string PageTitle => _page.TitleAsync().GetAwaiter().GetResult();
+    public string PageTitle => Live(() => _page.TitleAsync().GetAwaiter().GetResult());
 
     /// <inheritdoc />
     public bool IsIdle()
     {
         try
         {
-            _page.WaitForLoadStateAsync(LoadState.NetworkIdle, new() { Timeout = 10 }).GetAwaiter().GetResult();
+            Live(() => _page.WaitForLoadStateAsync(LoadState.NetworkIdle, new() { Timeout = 10 }).GetAwaiter().GetResult());
             return true;
         }
         catch (TimeoutException)
@@ -48,7 +49,7 @@ public sealed class PlaywrightHtmlDriver : IHtmlDriver
     }
 
     /// <inheritdoc />
-    public IReadOnlyList<IHtmlElement> FindElements(Locator locator)
+    public IReadOnlyList<IHtmlElement> FindElements(Locator locator) => Live<IReadOnlyList<IHtmlElement>>(() =>
     {
         var playwrightLocator = LocatorExtensions.ToPlaywrightLocator(_page, _frame, locator);
         var count = playwrightLocator.CountAsync().GetAwaiter().GetResult();
@@ -59,34 +60,34 @@ public sealed class PlaywrightHtmlDriver : IHtmlDriver
         }
 
         return elements;
-    }
+    });
 
     /// <inheritdoc />
-    public void GoTo(string url) => _page.GotoAsync(url).GetAwaiter().GetResult();
+    public void GoTo(string url) => Live(() => _page.GotoAsync(url).GetAwaiter().GetResult());
 
     /// <inheritdoc />
-    public void GoBack() => _page.GoBackAsync().GetAwaiter().GetResult();
+    public void GoBack() => Live(() => _page.GoBackAsync().GetAwaiter().GetResult());
 
     /// <inheritdoc />
-    public void GoForward() => _page.GoForwardAsync().GetAwaiter().GetResult();
+    public void GoForward() => Live(() => _page.GoForwardAsync().GetAwaiter().GetResult());
 
     /// <inheritdoc />
-    public void Reload() => _page.ReloadAsync().GetAwaiter().GetResult();
+    public void Reload() => Live(() => _page.ReloadAsync().GetAwaiter().GetResult());
 
     /// <inheritdoc />
-    public byte[] TakeScreenshot() => _page.ScreenshotAsync().GetAwaiter().GetResult();
+    public byte[] TakeScreenshot() => Live(() => _page.ScreenshotAsync().GetAwaiter().GetResult());
 
     /// <inheritdoc />
     public void SaveScreenshot(string path)
-        => _page.ScreenshotAsync(new PageScreenshotOptions { Path = path }).GetAwaiter().GetResult();
+        => Live(() => _page.ScreenshotAsync(new PageScreenshotOptions { Path = path }).GetAwaiter().GetResult());
 
     /// <inheritdoc />
     public string GetPageSource()
-        => (_frame != null ? _frame.ContentAsync() : _page.ContentAsync()).GetAwaiter().GetResult();
+        => Live(() => (_frame != null ? _frame.ContentAsync() : _page.ContentAsync()).GetAwaiter().GetResult());
 
     /// <inheritdoc />
     public string GetAutomationTree()
-        => (_frame != null ? _frame.Locator("body") : _page.Locator("body")).AriaSnapshotAsync().GetAwaiter().GetResult();
+        => Live(() => (_frame != null ? _frame.Locator("body") : _page.Locator("body")).AriaSnapshotAsync().GetAwaiter().GetResult());
 
     /// <summary>Nothing to release: the context owns the page.</summary>
     public void Dispose()

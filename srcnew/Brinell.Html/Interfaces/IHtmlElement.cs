@@ -12,6 +12,17 @@ namespace Brinell.Html.Interfaces;
 /// </summary>
 public interface IHtmlElement
 {
+    #region Identity
+
+    /// <summary>
+    /// Identifies this DOM node: two reads give the same key only for the same node. Read live, so
+    /// the read doubles as the "still there" check (R6); a removed element throws
+    /// <c>StaleElementException</c>.
+    /// </summary>
+    string InstanceKey { get; }
+
+    #endregion
+
     #region State
 
     /// <summary>Whether the element is visible.</summary>

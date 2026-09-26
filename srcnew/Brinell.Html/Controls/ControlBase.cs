@@ -3,6 +3,7 @@ using Brinell.Core.Interfaces;
 using Brinell.Core.Locators;
 using Brinell.Core.Logging;
 using Brinell.Core.Utilities;
+using Brinell.Html.Exceptions;
 using Brinell.Html.Interfaces;
 using Brinell.Html.Interfaces.Async;
 using System.Diagnostics;
@@ -69,10 +70,18 @@ public abstract class ControlBase<TScope> : ObjectBase, IControlObject<TScope>, 
                     break;
                 }
             }
+            catch (AppUnavailableException gone)
+            {
+                // The browser is gone: waiting cannot bring it back, so the call ends now (R0).
+                Logger?.LogExit(TestName, PageName, ControlId, caller ?? string.Empty,
+                    LogResult.Error, (int)stopwatch.ElapsedMilliseconds, gone.Message);
+                throw;
+            }
             catch (Exception ex)
             {
                 lastException = ex;
-                // Polling expects transient failures (stale elements, not-yet-rendered)
+                // Polling expects transient failures (stale elements, not-yet-rendered). This
+                // catch-all, and the retried action (X2), go in plan step 4.
             }
 
             WaitHelper.Pause(PollingIntervalMs);

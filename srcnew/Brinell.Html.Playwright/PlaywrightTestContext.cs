@@ -145,18 +145,7 @@ public sealed class PlaywrightTestContext : IHtmlTestContext, IAsyncDisposable
 
     public IFrame? InternalFrame => _frame;
 
-    public bool IsReady(int? timeoutMs = null)
-    {
-        try
-        {
-            _ = _page.Url;
-            return true;
-        }
-        catch
-        {
-            return false;
-        }
-    }
+    public bool IsReady(int? timeoutMs = null) => !_page.IsClosed;
 
     public bool WaitReady(int? timeoutMs = null)
     {
@@ -179,15 +168,7 @@ public sealed class PlaywrightTestContext : IHtmlTestContext, IAsyncDisposable
     public IHtmlElement? TryFindElement(Locator locator)
     {
         ArgumentNullException.ThrowIfNull(locator);
-
-        try
-        {
-            return _driver.FindElements(locator).FirstOrDefault();
-        }
-        catch
-        {
-            return null;
-        }
+        return _driver.FindElements(locator).FirstOrDefault();
     }
 
     public IHtmlElement FindElement(Locator locator)
@@ -214,15 +195,7 @@ public sealed class PlaywrightTestContext : IHtmlTestContext, IAsyncDisposable
     public IReadOnlyList<IHtmlElement> FindElements(Locator locator)
     {
         ArgumentNullException.ThrowIfNull(locator);
-
-        try
-        {
-            return _driver.FindElements(locator);
-        }
-        catch
-        {
-            return [];
-        }
+        return _driver.FindElements(locator);
     }
 
     public void NavigateTo(string destination)
