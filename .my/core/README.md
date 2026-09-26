@@ -9,6 +9,7 @@ Start here.
 | [naming.md](naming.md) | The full rename table (existing Core name -> new `ICore*` name; per-stack aliases) | **what things are called** |
 | [migration.md](migration.md) | Per-stack playbook: MAUI, Html, WPF, WinForms, NativeAndroid, Stride | **how each stack moves** |
 | [coexistence.md](coexistence.md) | How the existing `Brinell.Core.Interfaces.IElement<T>` and the new `ICoreElement` live in the same solution while stacks migrate | **the migration invariants** |
+| [review-what-can-move-now.md](review-what-can-move-now.md) | Review after the Html plan (2026-09-26): which MAUI and Html classes can move to Core now (exceptions, readiness, the calls) and a proposed re-sequencing | The leaf-layer move (L1) |
 
 ## Origin
 
