@@ -38,7 +38,7 @@ departures in [differences-from-maui.md](differences-from-maui.md).
   down to Core with the last stack, as its own project (design 4.5 of stale-readiness).
 - **Out:** WPF, WinForms, NativeAndroid, Stride. Each has its own move-down slice.
 
-## Not decided yet
+## Status
 
 Accepted and built, 2026-09-26: see `plan.md` (status, step notes, baseline). What the design
 turned out to need in practice is in the step notes (`plan.md` 2.1), not back-ported into
