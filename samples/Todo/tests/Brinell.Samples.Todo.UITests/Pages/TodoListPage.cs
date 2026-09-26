@@ -1,4 +1,5 @@
 using Brinell.Samples.Todo.UITests.Containers;
+using Brinell.Uat;
 
 namespace Brinell.Samples.Todo.UITests.Pages;
 
@@ -33,6 +34,17 @@ public class TodoListPage(IMauiTestContext context) : PageObjectBase<TodoListPag
 
     /// <summary>The rows.</summary>
     public TodoList Todos => new(this, "TodoList_Items");
+
+    /// <summary>"Nothing to do", in the Empty state.</summary>
+    [UatName("Empty Message")]
+    public Label<TodoListState> EmptyMessage => State.EmptyLabel;
+
+    /// <summary>What went wrong, in the Error state.</summary>
+    [UatName("Error Message")]
+    public Label<TodoListState> ErrorMessage => State.ErrorLabel;
+
+    /// <summary>Retries the sync, in the Error state.</summary>
+    public Button<TodoListState> RetryButton => State.Retry;
 
     /// <summary>Opens a new, empty edit page.</summary>
     public TodoEditPage Add()

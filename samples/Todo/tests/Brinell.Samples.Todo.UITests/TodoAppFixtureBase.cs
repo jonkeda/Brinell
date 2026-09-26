@@ -38,6 +38,7 @@ public abstract class TodoAppFixtureBase : MauiTestFixtureBase
     private readonly List<TempDatabase> _retired = [];
     private Arrangement? _arrangement;
     private LaunchSettings? _settings;
+    private LaunchSettings? _unchangedSettings;
     private IDictionary<string, string>? _launchValues;
 
     /// <summary>Launches the app for <see cref="TestDataName"/> and waits for the list to settle.</summary>
@@ -100,6 +101,32 @@ public abstract class TodoAppFixtureBase : MauiTestFixtureBase
         RestartApp();
         OnAppRestarted();
         return WaitForTheList();
+    }
+
+    /// <summary>
+    /// Restarts the app with changed launch settings, e.g. an unreachable backend. The change holds
+    /// until <see cref="RestoreLaunchSettings"/>.
+    /// </summary>
+    /// <param name="change">Derives the new settings from the current ones.</param>
+    /// <returns>The list, loaded.</returns>
+    public TodoListPage RestartWith(Func<LaunchSettings, LaunchSettings> change)
+    {
+        _unchangedSettings ??= _settings;
+        ApplySettings(change(_settings!));
+        return Restart();
+    }
+
+    /// <summary>Undoes <see cref="RestartWith"/>, restarting the app. Nothing happens when nothing was changed.</summary>
+    public void RestoreLaunchSettings()
+    {
+        if (_unchangedSettings is not { } unchanged)
+        {
+            return;
+        }
+
+        _unchangedSettings = null;
+        ApplySettings(unchanged);
+        Restart();
     }
 
     /// <summary>
@@ -190,6 +217,10 @@ public abstract class TodoAppFixtureBase : MauiTestFixtureBase
             throw new NotSupportedException($"{GetType().Name} cannot change its test set: its backend is seeded once, at start.");
         }
 
+        // Drop a RestartWith change; the restart below applies every launch value again.
+        _settings = _unchangedSettings ?? _settings;
+        _unchangedSettings = null;
+
         var testSet = TodoTestSet.Load(name);
         var database = new TempDatabase("ui-" + testSet.Name);
         testSet.SeedDatabaseAsync(database.Path).GetAwaiter().GetResult();
@@ -208,6 +239,15 @@ public abstract class TodoAppFixtureBase : MauiTestFixtureBase
         RestartApp();
         OnAppRestarted();
         return WaitForTheList();
+    }
+
+    private void ApplySettings(LaunchSettings settings)
+    {
+        _settings = settings;
+        foreach (var (key, value) in LaunchValuesFor(settings, Arranged.Database.Folder))
+        {
+            _launchValues![key] = value;
+        }
     }
 
     /// <summary>Whether <see cref="UseTestSet"/> can reseed the backend. A live backend is seeded once.</summary>

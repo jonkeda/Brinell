@@ -26,6 +26,8 @@ namespace Brinell.Samples.Todo.Uat.Runtime;
 [UatPlatforms(MauiPlatform.Windows, MauiPlatform.Android)]
 public sealed class TodoUatFixture : TodoAppFixture
 {
+    private IServiceScope? _restartScope;
+
     /// <summary>Builds the composition the UAT runtime reads for page discovery and construction.</summary>
     public TodoUatFixture()
     {
@@ -43,6 +45,29 @@ public sealed class TodoUatFixture : TodoAppFixture
 
     /// <inheritdoc />
     protected override void OnAppRestarted() => Composition = CreateComposition();
+
+    /// <summary>
+    /// Points a running scenario at the restarted app: its own scope still resolves pages against
+    /// the context the restart closed.
+    /// </summary>
+    /// <param name="context">The scenario's execution context.</param>
+    public void RescopeAfterRestart(UatExecutionContext context)
+    {
+        _restartScope?.Dispose();
+        _restartScope = Composition.CreateScope();
+        UatRuntime.ConfigureScope(context, _restartScope.ServiceProvider);
+    }
+
+    /// <inheritdoc />
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _restartScope?.Dispose();
+        }
+
+        base.Dispose(disposing);
+    }
 
     private TestComposition CreateComposition()
         => TestComposition.ForFixture(this, services => services.AddSingleton<IMauiTestContext>(Context));

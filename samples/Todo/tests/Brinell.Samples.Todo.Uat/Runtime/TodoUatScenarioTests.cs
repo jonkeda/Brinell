@@ -52,6 +52,17 @@ public sealed class TodoUatScenarioTests : UatScenarioTestBase<TodoUatFixture>
     protected override void BeforeScenario(UatBoundScenario scenario) => Fixture.StartTest();
 
     /// <inheritdoc />
+    /// <remarks>
+    /// An earlier scenario may have restarted the app with other launch settings; they are put back
+    /// here, before the runtime reads the fixture's composition, so it binds to the app as restarted.
+    /// </remarks>
+    protected override UatRuntime CreateRuntime()
+    {
+        Fixture.RestoreLaunchSettings();
+        return base.CreateRuntime();
+    }
+
+    /// <inheritdoc />
     protected override UatRuntimeValidationOptions RuntimeValidation { get; } =
         new(Target: "MAUI", Fixture: "TodoUatFixture");
 }

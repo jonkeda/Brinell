@@ -1,4 +1,6 @@
 using Brinell.Core.Testing;
+using Brinell.Maui.Exceptions;
+using Brinell.Maui.Scopes;
 using Brinell.Samples.Todo.UITests.Controls;
 using Brinell.Samples.Todo.UITests.Pages;
 
@@ -31,15 +33,18 @@ public sealed class TodoList : CollectionObjectBase<TodoListPage, TodoList, Todo
     {
     }
 
+    // A row gone mid-read costs this, not a full default wait.
+    private const int VanishedRowReadMs = 250;
+
     /// <summary>The row with this title. Throws when there is none.</summary>
-    public TodoRow Row(string title) => ItemWhere(row => row.Title.GetText() == title);
+    public TodoRow Row(string title) => ItemWhere(row => TryReadTitle(row) == title);
 
     /// <summary>The titles of the rows, in the order shown.</summary>
-    public IReadOnlyList<string> Titles() => [.. Items.Select(row => row.Title.GetText() ?? string.Empty)];
+    public IReadOnlyList<string> Titles() => [.. Items.Select(row => TryReadTitle(row) ?? string.Empty)];
 
     /// <summary>Waits until a row with this title is shown (or, with <c>false</c>, is gone).</summary>
     public bool WaitRow(string title, bool present = true, int? timeoutMs = null)
-        => RunWait(() => (FindItem(row => row.Title.GetText() == title) is not null) == present, timeoutMs);
+        => RunWait(() => (FindItem(row => TryReadTitle(row) == title) is not null) == present, timeoutMs);
 
     /// <summary>Asserts a row with this title is shown (or, with <c>false</c>, is not).</summary>
     [UatStep(UatEffectiveStepKeyword.Then, "{control} should have todo {value}")]
@@ -55,6 +60,10 @@ public sealed class TodoList : CollectionObjectBase<TodoListPage, TodoList, Todo
         return Self;
     }
 
+    /// <summary>Asserts no row with this title is shown.</summary>
+    [UatStep(UatEffectiveStepKeyword.Then, "{control} should not have todo {value}")]
+    public TodoList AssertNoRow(string title, int? timeoutMs = null) => AssertRow(title, present: false, timeoutMs);
+
     /// <summary>
     /// Waits until the row with this title shows (or, with <c>false</c>, no longer shows) the
     /// "not synced yet" marker.
@@ -65,13 +74,27 @@ public sealed class TodoList : CollectionObjectBase<TodoListPage, TodoList, Todo
     /// </remarks>
     public TodoList AssertPending(string title, bool expected = true, int? timeoutMs = null)
     {
-        if (!RunWait(() => FindItem(row => row.Title.GetText() == title)?.Pending.IsShown() == expected, timeoutMs))
+        if (!RunWait(() => FindItem(row => TryReadTitle(row) == title)?.Pending.IsShown() == expected, timeoutMs))
         {
             throw new AssertionException(
                 $"Expected the row titled '{title}' in '{Locator.Value}' to {(expected ? "show" : "not show")} the pending marker.");
         }
 
         return Self;
+    }
+
+    // A sync reloads the list, so a row listed a moment ago can be gone before its title is read.
+    // Such a row is not the one asked for: null, and the caller's wait looks again.
+    private static string? TryReadTitle(TodoRow row)
+    {
+        try
+        {
+            return row.Title.GetText(VanishedRowReadMs);
+        }
+        catch (ScopeNotReadyException vanished) when (vanished.Readiness.State == ScopeReadinessState.MissingRoot)
+        {
+            return null;
+        }
     }
 
     /// <summary>Opens a row's detail page, as tapping it does.</summary>
