@@ -713,6 +713,9 @@ public abstract class ControlBase<TScope> : ObjectBase, IControlObject<TScope>, 
         return element.Text;
     }
 
+    /// <summary>The text now, or <c>null</c> when the control is not there. Does not wait (R7).</summary>
+    public string? TryGetText() => TryFindElement() is { } element ? GetTextCore(element) : null;
+
     public string? GetText(int? timeoutMs = null)
     {
         return RunGetWithElement(element => GetTextCore(element), timeoutMs);

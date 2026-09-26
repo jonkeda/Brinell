@@ -53,7 +53,7 @@ Status values: `todo`, `doing`, `done`, `blocked`.
 | **5. Scope readiness** | done (2026-09-26, see 2.1) | `ScopeReadiness` and the `ProbeReadiness` chain; `AsksParent`; `ProbeContentReadiness`; `CanResolveElements` and `EnsureLoaded` (if present in Html) removed; `AppRoot` for the browser page/frame; the busy signal for a Blazor page is read from a well-known data attribute (design 7.2, sample-app.md item 3); `ScopeNotReadyException` replaces `PageLoadException` throughout Html; the frame model (`ForFrame`) becomes a scope wrapper. `AppRoot.WaitReady` is a call unit with its own budget (MAUI review-2 fix 8). **The UI test bases:** `BlazorSampleTestBase` (in both UI test projects) loses its `Thread.Yield`/`Task.Delay` loop and its `Context.FindElement`: the page's `WaitReady` covers "circuit up". The fixture starts the sample host on a free port, instead of expecting one at `BLAZOR_APP_URL` | Scope tests pass; a busy page defers the child call within its budget |
 | **6. Confirm** | done (2026-09-26, see 2.1) | `Confirm` replaces the "loop the whole call until the effect is seen" pattern that today lives inside `RunPoll`. The act-then-confirm Cores (`Click` on a busy-triggering button, `Fill`, `Check`/`Uncheck`, `SelectOption`, `Focus`/`Blur`) get a second phase that reads the effect once per attempt and never repeats the action | Replaced element: new message, action `Times.Once`; the R0 "no effect" test from step 2 passes |
 | **7. Collections** | done (2026-09-26, see 2.1) | `ItemKey` for Html rows (design 7.6, differences item 5: DOM node id, or `data-item-key`, or position). `MaterializeAttempts` for a Blazor `Virtualize` scroll. `ListControl` and `TableControl` move onto a `CollectionObjectBase<TParent, TSelf, TItem>` + `ItemObjectBase<TCollection, TSelf>`. `Item(index)` and `SelectItem` become waiting call units; `TryItem` / `TrySelectItem` answer now (R7) | Collection tests pass; the row-recycling test from sample-app.md item 4 fails when a row is asked to click after its key changed |
-| **T2. Todo web tests** | todo | `tests/Brinell.Samples.Todo.Web.UITests`: hermetic and live fixtures (`TodoWebFixture` starts the host process on a free port with the test set's launch settings), Html page objects and ControlObjects (`TodoStatus`, `SectionCard`), and the TOD journeys with a `Head=Web` trait. The Todo `.uat.md` files run with `Target: Html` (?T2). `JourneyCoverage` learns the `Head` trait ([todo-blazor.md](todo-blazor.md) section 3) | Hermetic suite green in 5 of 5 runs; live tests green with `BRINELL_UAT_LIVE_API=1`; a `WaitForRequest` on `X-Todo-Client` passes; every UAT file that passes on MAUI passes on the web head, or carries a head tag and a reason |
+| **T2. Todo web tests** | done (2026-09-26, see 2.1); UAT on the web head deferred | `tests/Brinell.Samples.Todo.Web.UITests`: hermetic and live fixtures (`TodoWebFixture` starts the host process on a free port with the test set's launch settings), Html page objects and ControlObjects (`TodoStatus`, `SectionCard`), and the TOD journeys with a `Head=Web` trait. The Todo `.uat.md` files run with `Target: Html` (?T2). `JourneyCoverage` learns the `Head` trait ([todo-blazor.md](todo-blazor.md) section 3) | Hermetic suite green in 5 of 5 runs; live tests green with `BRINELL_UAT_LIVE_API=1`; a `WaitForRequest` on `X-Todo-Client` passes; every UAT file that passes on MAUI passes on the web head, or carries a head tag and a reason |
 | **8. Prove it** | todo | On a branch: (a) re-introduce the login-button `disabled`-forever bug (sample-app.md item 2) and prove the login test fails with "disabled for N ms" instead of timing out silently; (a2) re-introduce the Todo `CanExecuteChanged` bug in the shared view model and prove TOD.04.4 fails on **both** heads, naming what it saw; (b) re-introduce the "action retried" bug in `ControlBase` and prove a step-4 test catches it; (c) run `Brinell.Html.UITests`, `Brinell.Blazor.UITests` and the Todo web suite in full against a saved timing baseline; (d) run the repeat-run script against the step 2 baseline | R0 proofs both fail against their bugs, and name what they saw. No new failures against the timing baseline. Framework-race failures down, and none moved from "app bug" to "pass" |
 | **9. Write it down** | todo | In `.docs/` (a decision is recorded once, there): widen AD-010 from "MAUI ahead of Core" to "MAUI and Html ahead of Core"; widen the call-model and control-object contracts from "the MAUI stack" to both stacks; close X2 with a note under AD-009. AD-004 and AD-009 are already stack-neutral, so no new AD mirrors them, and AD-011 and AD-012 are taken. `samples/Todo/README.md` gains the web head; the two new skills merged (`skills.md`); `AGENTS.md` and `.github/copilot-instructions.md` updated; `CHANGELOG.md` list; a note in `../stale-readiness/move-down.md` that the Html slice is done | Docs merged |
 
@@ -65,6 +65,44 @@ constraints in its section 4.2, so that project stays possible.
 
 Filled in as steps finish, in the same shape as `../stale-readiness/plan.md` section 2.1: what
 was proved, what the design was wrong about, and what was deferred to a later step on purpose.
+
+**Step T2 (2026-09-26).**
+
+- **Evidence.**
+  - `samples/Todo/tests/Brinell.Samples.Todo.Web.UITests`: hermetic tier **10/10 in 5 of 5
+    runs**. The live tier is 1/1 with `BRINELL_UAT_LIVE_API=1`, and skips without it.
+  - The TOD.07.10 checks pass at both tiers: the WireMock `PUT` carries
+    `X-Todo-Client: web-hermetic`, and the real API's request log has the `PUT` from `web-live`.
+- **What was built.**
+  - `TodoWebFixture`, the web version of `TodoAppFixture`: a test set seeded into a temp SQLite
+    file, the WireMock `TodoServerStub`, a network-state file and a pinned clock. The web head
+    runs in its own process through `WebAppHost`, on a free port, with those settings, and
+    `StartTest()` resets it to online and the list.
+  - Fixtures three-todos, empty and pending-changes.
+  - Page objects:
+    - `TodoListPage`, with a `TodoRows` collection keyed by `data-item-key`;
+    - `TodoEditPage` and `TodoDetailPage`;
+    - the parts: `TodoStatus<T>` (component), `SectionCard<T>` (container), and `TodoDialog<T>`
+      with `AsksParent => false`, because the page is busy while the command that opened the
+      dialog waits for its answer.
+  - The tests: TOD.01.2, 01.3, 02.1, 02.2, 02.3, 04.2, 04.4, 05.1, 06.1, 07.2 + 07.10, and
+    live 07.4 + 07.10. Each has `Journey`, `Pyramid` and `Head=Web` traits.
+- **Found by the tests: a web-head bug.** `WebNavigator.GoBackAsync` navigated *forward* to
+  the previous URL. After edit and save, the browser history was list, detail, edit, detail,
+  and the browser's back button went to the edit page. It now goes back with
+  `history.back()`, as Shell pops.
+- **Framework additions T2 needed.**
+  - `ControlBase.TryGetText()`: an immediate read (R7). Row predicates use it, so they do not
+    run a call inside a call.
+  - A `BlazorPageObjectBase(context, url)` constructor.
+  - Page objects locate by `Locator.ByDataTestId`. This settles the step 1 note:
+    `ByAutomationId` keeps its meaning.
+- **Deferred, on purpose:** the Todo `.uat.md` files on the web head (?T2). The UAT runtime's
+  Todo fixture is MAUI's (`Target: MAUI`), and an Html target for the same scenario files needs
+  its own fixture, plus page classes with the MAUI page names. That belongs with several apps
+  in one scenario (todo-blazor.md section 4), where a scenario picks its app.
+- **Also not done:** `JourneyCoverage` does not learn the `Head` trait. It has been red since
+  `a781b11` (a separate task was proposed).
 
 **Step 7 (2026-09-26).**
 

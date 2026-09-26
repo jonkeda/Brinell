@@ -348,7 +348,14 @@ To try it, start the API as above, then:
 dotnet run --project src/Brinell.Samples.Todo.Web    # http://localhost:5090
 ```
 
-It has no UI tests yet. They come with the Html call model (`.my/html/plan.md`, step T2).
+Its UI tests are `tests/Brinell.Samples.Todo.Web.UITests`: the TOD journeys through Html page
+objects, hermetic (WireMock, a seeded database, a pinned clock) and live (the real `Todo.Api`,
+with `BRINELL_UAT_LIVE_API=1`). The fixtures start the web head themselves on a free port, so
+nothing needs to be running first:
+
+```bash
+dotnet test tests/Brinell.Samples.Todo.Web.UITests
+```
 
 ### On Android
 

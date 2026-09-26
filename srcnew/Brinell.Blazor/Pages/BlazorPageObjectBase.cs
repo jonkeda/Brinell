@@ -9,6 +9,8 @@ public abstract class BlazorPageObjectBase<TSelf> : HtmlPageObjectBase<TSelf>
 {
     protected BlazorPageObjectBase(IHtmlTestContext context) : base(context) { }
 
+    protected BlazorPageObjectBase(IHtmlTestContext context, string url) : base(context, url) { }
+
     /// <summary>
     /// A Blazor page is loaded once the app is interactive, which the app shows by setting
     /// <c>data-busy</c> on <c>&lt;body&gt;</c>. Before that, a prerendered page shows buttons whose
