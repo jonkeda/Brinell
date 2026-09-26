@@ -17,14 +17,25 @@ namespace Brinell.Samples.Todo.Infrastructure.Api;
 public sealed class TodoApiClient(HttpClient http) : ITodoApi
 {
     /// <summary>
-    /// Creates the <see cref="HttpClient"/> the client expects: base address, key header, timeout.
+    /// Creates the <see cref="HttpClient"/> the client expects: base address, key header, timeout,
+    /// and the client header when <paramref name="clientId"/> is set.
     /// </summary>
-    public static HttpClient CreateHttpClient(string baseUrl, string apiKey, TimeSpan timeout, HttpMessageHandler? handler = null)
+    public static HttpClient CreateHttpClient(
+        string baseUrl,
+        string apiKey,
+        TimeSpan timeout,
+        HttpMessageHandler? handler = null,
+        string? clientId = null)
     {
         var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
         client.BaseAddress = new Uri(baseUrl.TrimEnd('/') + "/");
         client.Timeout = timeout;
         client.DefaultRequestHeaders.Add(TodoApi.ApiKeyHeader, apiKey);
+        if (clientId is not null)
+        {
+            client.DefaultRequestHeaders.Add(TodoApi.ClientHeader, clientId);
+        }
+
         return client;
     }
 

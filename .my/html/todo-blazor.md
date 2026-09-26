@@ -29,10 +29,10 @@ rendering. WebAssembly stays out, as in [plan.md](plan.md) section 6.
 | --- | --- |
 | `INavigator` | Implemented on `NavigationManager` |
 | `IDialogs` | A modal component for the delete and discard confirmations. Its buttons get `data-testid`s so page objects can find them |
-| `IConnectivityState` | The network-state file only. A server host has no device connectivity |
+| `IConnectivityState` | Nothing new: `AddTodoServices` without device connectivity uses the network-state file only, or always online |
 | Pages `List`, `Detail`, `Edit` | Same behaviour and the same three states on List (Empty, Loading, Error) as the MAUI app |
 | Components `TodoStatus`, `SectionCard` | Web versions of `TodoStatusView` and `SectionCard`. The Html ControlObjects are `TodoStatus<TScope>` (a component) and `SectionCard<TParent>` (a container) |
-| Busy signal | `<body data-busy>` bound to the page view model's `IsBusy`. This is the Todo version of [sample-app.md](sample-app.md) item 3 and [design.md](design.md) 7.2 |
+| Busy signal | `<body data-busy>` written from the page view model's `IsBusy` (JS interop after each render in which it changed). This is the Todo version of [sample-app.md](sample-app.md) item 3 and [design.md](design.md) 7.2 |
 | Rows | `data-item-key="@todo.Id"` on every list row (design 7.6, `Logical` key) |
 
 **One host process is one device.** It reads the same `LaunchSettings` environment variables as
@@ -77,7 +77,7 @@ the conflict rule decides.
 | --- | --- |
 | **Named app sessions** | A scenario holds N sessions: name, stack (MAUI, Html), app path or host, launch settings, user. Each session has its own test context, driver and page objects. |
 | **One backend, shared** | One `TodoServerStub` (hermetic) or one `Todo.Api` (live) for all sessions. The server half of the test set is loaded once. Each session gets its own local half. |
-| **Who sent it** | Every API request carries `X-Todo-Client` (set from a new `TODO_CLIENT_ID` launch setting). `WaitForRequest` can filter on it, so "the backend received Alice's PUT" is a wait on a request, not a count. |
+| **Who sent it** | Every API request carries `X-Todo-Client` (set from the `TODO_CLIENT_ID` launch setting, **built in T1**). WireMock records it, and `Todo.Api` logs it (`RunningTodoApi.Requests`). `WaitForRequest` can filter on it, so "the backend received Alice's PUT" is a wait on a request, not a count. |
 | **Who the user is** | `Todo.Api` has one shared list today. Multi-user needs a user identity (per-user API key, or an `X-Todo-User` header the API scopes by) and a per-user list on the server. This is a change to `Contracts` and the API, see ?T3. |
 | **UAT** | `uat.config.md` gains an `Apps` table (Name, Target, Fixture, AppPath or Url, User, local TestData). A step switches the current session (`Given Alice uses the web app`, or a leading `As Alice,`). A single-app file keeps working unchanged. |
 | **Artifacts** | [AD-007](../../.docs/decisions/ad-007-shared-artifact-layout.md) layout, with one subfolder per session under the suite, for screenshots and call logs. |

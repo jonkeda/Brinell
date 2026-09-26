@@ -41,6 +41,9 @@ public sealed record LaunchSettings
     /// <summary>The API timeout in seconds.</summary>
     public const string ApiTimeoutVariable = "TODO_API_TIMEOUT_SECONDS";
 
+    /// <summary>The name this app instance gives the backend in <see cref="TodoApi.ClientHeader"/>.</summary>
+    public const string ClientIdVariable = "TODO_CLIENT_ID";
+
     /// <summary>The SQLite file.</summary>
     public required string DatabasePath { get; init; }
 
@@ -61,6 +64,9 @@ public sealed record LaunchSettings
 
     /// <summary>How long an API call may take.</summary>
     public TimeSpan ApiTimeout { get; init; } = TimeSpan.FromSeconds(10);
+
+    /// <summary>The client name sent with every request; <c>null</c> sends none.</summary>
+    public string? ClientId { get; init; }
 
     /// <summary>
     /// Builds settings from named values (environment variables, intent extras), falling back to
@@ -86,6 +92,7 @@ public sealed record LaunchSettings
             ApiTimeout = Value(ApiTimeoutVariable) is { } seconds
                 ? TimeSpan.FromSeconds(Parse(ApiTimeoutVariable, seconds, text => double.Parse(text, CultureInfo.InvariantCulture)))
                 : TimeSpan.FromSeconds(10),
+            ClientId = Value(ClientIdVariable),
         };
     }
 
@@ -109,6 +116,11 @@ public sealed record LaunchSettings
         if (NetworkStateFile is { } file)
         {
             variables[NetworkStateFileVariable] = file;
+        }
+
+        if (ClientId is { } client)
+        {
+            variables[ClientIdVariable] = client;
         }
 
         return variables;

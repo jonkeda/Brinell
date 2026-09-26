@@ -130,6 +130,31 @@ public sealed class SyncTests
     }
 
     [Fact]
+    [Trait("Journey", "TOD.07.10")]
+    public async Task EveryRequest_NamesTheClient_WhenOneIsSet()
+    {
+        using var host = await TodoHost.StartAsync("pending-local-change", settings => settings with { ClientId = "web-alice" });
+
+        var result = await host.Sync.SyncAsync();
+
+        Assert.True(result.Succeeded);
+        Assert.NotEmpty(host.Mock.Requests());
+        Assert.All(host.Mock.Requests(), request => Assert.Equal("web-alice", request.Headers[TodoApi.ClientHeader]));
+    }
+
+    [Fact]
+    [Trait("Journey", "TOD.07.10")]
+    public async Task WithoutAClientId_NoClientHeaderIsSent()
+    {
+        using var host = await TodoHost.StartAsync("pending-local-change");
+
+        await host.Sync.SyncAsync();
+
+        Assert.NotEmpty(host.Mock.Requests());
+        Assert.All(host.Mock.Requests(), request => Assert.False(request.Headers.ContainsKey(TodoApi.ClientHeader)));
+    }
+
+    [Fact]
     [Trait("Journey", "TOD.07.6")]
     public async Task AConflict_TheNewerServerVersionWins_AndTheOlderLocalOneIsReplaced()
     {

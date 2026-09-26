@@ -39,6 +39,7 @@ Two custom controls, each with a matching ControlObject on the test side:
 | `src/…Infrastructure` | SQLite repository, API client, sync service, launch settings. |
 | `src/…Api` | `Todo.Api`, the backend: a minimal API with its own SQLite file. |
 | `src/…App` | The MAUI app (Windows and Android). |
+| `src/…Web` | The web head: the same app in Blazor Server, on the same `Core`, `Contracts` and `Infrastructure`. See "The web head" below. |
 | `tests/…UnitTests` | Tier 1. |
 | `tests/…IntegrationTests` | Tier 2: headless, against WireMock and SQLite; the contract tests against the real API. |
 | `tests/…TestSupport` | Test sets (`TestData/*.json`), the WireMock fake of the API, temp databases. |
@@ -323,6 +324,31 @@ have nothing to do with the app.
 
 To try the app by hand, start `dotnet run --project src/Brinell.Samples.Todo.Api` (it listens
 on port 5080) and then run the app.
+
+## The web head
+
+`src/Brinell.Samples.Todo.Web` is the same app in the browser: Blazor Server with interactive
+server rendering. It reuses the MAUI app's view models, rules, sync and SQLite store unchanged.
+Only navigation, dialogs and the pages are its own. Its test ids are the MAUI AutomationIds
+(`data-testid="TodoEdit_Title"`), so both heads offer page objects the same contract. It exists to
+prove Brinell.Html on a real app, and later to run the MAUI and web apps against one backend in
+one test ([`.my/html/todo-blazor.md`](../../.my/html/todo-blazor.md)).
+
+- **One host process is one device.** It reads the same launch settings as the MAUI app
+  (`TODO_DB_PATH`, `TODO_API_BASEURL`, `TODO_NOW`, ...) from its environment, and has its own
+  SQLite file. Two hosts are two devices. Two browser tabs on one host share one app.
+- **Who sent it.** Set `TODO_CLIENT_ID` (on either head) and every request carries it in
+  `X-Todo-Client`. WireMock records the header. `Todo.Api` keeps an in-memory log of accepted
+  requests with their client (`RunningTodoApi.Requests`). See TOD.07.10.
+- **Busy signal.** `<body data-busy>` is `true` while the page's view model is busy.
+
+To try it, start the API as above, then:
+
+```bash
+dotnet run --project src/Brinell.Samples.Todo.Web    # http://localhost:5090
+```
+
+It has no UI tests yet. They come with the Html call model (`.my/html/plan.md`, step T2).
 
 ### On Android
 

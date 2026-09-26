@@ -89,6 +89,7 @@ a navigation, a real wire). Where a subtask lists two tiers, the second checks o
 | TOD.07.7 | A second sync with no changes sends no writes and adds no rows | I | Idempotence |
 | TOD.07.8 | Requests carry the API key header | I | WireMock request log |
 | TOD.07.9 | The app's DTOs match what the real API sends and accepts | C | Keeps the WireMock stubs honest |
+| TOD.07.10 | Requests name the client that sent them (`X-Todo-Client`), and the real API records it | I + C | WireMock request log in I; the API's request log in C. What lets several apps share one backend in a test |
 
 ## TOD.08 Things go wrong
 
@@ -130,8 +131,8 @@ Counts are per assignment, so a subtask with two tiers counts twice.
 | Tier | Count | Share |
 | --- | --- | --- |
 | Unit | 21 | |
-| Integration | 17 | |
-| Contract | 1 | |
+| Integration | 18 | |
+| Contract | 2 | |
 | UI hermetic | 27 | one example per behaviour |
 | UI live | 3 | real wire only |
 | Manual | 4 | |

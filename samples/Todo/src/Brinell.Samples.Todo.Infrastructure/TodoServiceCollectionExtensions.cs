@@ -68,7 +68,7 @@ public static class TodoServiceCollectionExtensions
         services.AddSingleton(provider =>
         {
             var launch = provider.GetRequiredService<LaunchSettings>();
-            return TodoApiClient.CreateHttpClient(launch.ApiBaseUrl, launch.ApiKey, launch.ApiTimeout, platform.HttpHandler);
+            return TodoApiClient.CreateHttpClient(launch.ApiBaseUrl, launch.ApiKey, launch.ApiTimeout, platform.HttpHandler, launch.ClientId);
         });
         services.AddSingleton<ITodoApi>(provider => new TodoApiClient(provider.GetRequiredService<HttpClient>()));
 

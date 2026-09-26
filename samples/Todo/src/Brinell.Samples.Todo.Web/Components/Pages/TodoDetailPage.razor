@@ -1,0 +1,58 @@
+@page "/detail"
+@inherits ViewModelPage<TodoDetailViewModel>
+@inject TodoDetailViewModel Model
+
+@*
+    One todo. The status control is interactive here: Next saves the new status at once. The
+    three cards reuse ids (DueValue and friends) only inside their own card. Ids as in
+    TodoDetailPage.xaml.
+*@
+<PageTitle>Todo</PageTitle>
+
+<div class="page" data-testid="TodoDetailPage">
+    <div class="toolbar">
+        <h1>Todo</h1>
+        <CommandButton Command="Model.EditCommand" AutomationId="TodoDetail_Edit">Edit</CommandButton>
+        <CommandButton Command="Model.DeleteCommand" AutomationId="TodoDetail_Delete">Delete</CommandButton>
+    </div>
+
+    <p data-testid="TodoDetail_Title" class="detail-title">@Model.Title</p>
+
+    <TodoStatusView AutomationId="TodoDetail_Status" @bind-Status="Model.Status" IsPastDue="Model.IsPastDue" />
+
+    <SectionCard AutomationId="TodoDetail_Info" Header="Details">
+        <dl class="fields">
+            <dt>Due</dt>
+            <dd data-testid="DueValue">@Model.DueText</dd>
+            <dt>Created</dt>
+            <dd data-testid="CreatedValue">@Model.CreatedText</dd>
+            <dt>Updated</dt>
+            <dd data-testid="UpdatedValue">@Model.UpdatedText</dd>
+        </dl>
+    </SectionCard>
+
+    <SectionCard AutomationId="TodoDetail_Notes" Header="Notes">
+        <p data-testid="NotesValue">@Model.Notes</p>
+    </SectionCard>
+
+    <SectionCard AutomationId="TodoDetail_Sync" Header="Sync">
+        <p data-testid="SyncValue">@Model.SyncText</p>
+    </SectionCard>
+</div>
+
+@code {
+    /// <summary>The todo to show, from <c>?id=</c>.</summary>
+    [SupplyParameterFromQuery(Name = TodoRoutes.IdParameter)]
+    public Guid? Id { get; set; }
+
+    protected override TodoDetailViewModel ViewModel => Model;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        if (Id is { } id)
+        {
+            _ = Model.LoadAsync(id);
+        }
+    }
+}

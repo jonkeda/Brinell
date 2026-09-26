@@ -60,6 +60,34 @@ public sealed class ContractTests : IAsyncLifetime
     }
 
     [Fact]
+    [Trait("Journey", "TOD.07.10")]
+    public async Task TheRealApi_RecordsWhichClientSentEachRequest()
+    {
+        using var aliceHttp = TodoApiClient.CreateHttpClient(_api.BaseUrl, TodoApi.DevelopmentApiKey, TimeSpan.FromSeconds(5), clientId: "web-alice");
+        using var bobHttp = TodoApiClient.CreateHttpClient(_api.BaseUrl, TodoApi.DevelopmentApiKey, TimeSpan.FromSeconds(5), clientId: "maui-bob");
+        using var anonymousHttp = TodoApiClient.CreateHttpClient(_api.BaseUrl, TodoApi.DevelopmentApiKey, TimeSpan.FromSeconds(5));
+        var todo = new TodoItem
+        {
+            Id = Guid.NewGuid(),
+            Title = "Two clients",
+            CreatedAt = new DateTimeOffset(2026, 3, 1, 8, 0, 0, TimeSpan.Zero),
+            UpdatedAt = new DateTimeOffset(2026, 3, 1, 8, 0, 0, TimeSpan.Zero),
+        };
+
+        await new TodoApiClient(aliceHttp).PutAsync(todo);
+        await new TodoApiClient(bobHttp).GetAllAsync();
+        await new TodoApiClient(anonymousHttp).GetAllAsync();
+
+        Assert.Equal(
+            [
+                new ServerRequest("PUT", TodoApi.TodoPath(todo.Id), "web-alice"),
+                new ServerRequest("GET", TodoApi.TodosPath, "maui-bob"),
+                new ServerRequest("GET", TodoApi.TodosPath, null),
+            ],
+            _api.Requests);
+    }
+
+    [Fact]
     public async Task TheRealApi_KeepsTheNewerVersion_AsThePlannerAssumes()
     {
         using var http = TodoApiClient.CreateHttpClient(_api.BaseUrl, TodoApi.DevelopmentApiKey, TimeSpan.FromSeconds(5));

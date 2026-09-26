@@ -51,6 +51,12 @@ public static class TodoApi
     /// <summary>The header carrying the API key.</summary>
     public const string ApiKeyHeader = "X-Api-Key";
 
+    /// <summary>
+    /// The header naming the client that sent a request (a device, an app instance). Optional: the
+    /// API accepts requests without it, and records it when present.
+    /// </summary>
+    public const string ClientHeader = "X-Todo-Client";
+
     /// <summary>Where a development API listens, and where the app looks when nothing says otherwise.</summary>
     public const string DevelopmentBaseUrl = "http://localhost:5080";
 

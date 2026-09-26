@@ -5,6 +5,7 @@
     <Project Path="src/Brinell.Samples.Todo.Contracts/Brinell.Samples.Todo.Contracts.csproj" />
     <Project Path="src/Brinell.Samples.Todo.Core/Brinell.Samples.Todo.Core.csproj" />
     <Project Path="src/Brinell.Samples.Todo.Infrastructure/Brinell.Samples.Todo.Infrastructure.csproj" />
+    <Project Path="src/Brinell.Samples.Todo.Web/Brinell.Samples.Todo.Web.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Brinell.Samples.Todo.IntegrationTests/Brinell.Samples.Todo.IntegrationTests.csproj" />

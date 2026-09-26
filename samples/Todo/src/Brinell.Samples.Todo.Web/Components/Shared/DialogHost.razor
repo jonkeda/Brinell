@@ -1,0 +1,31 @@
+@implements IDisposable
+@inject WebDialogs Dialogs
+
+@*
+    The web head's alert: what DisplayAlert is in the MAUI app. A modal over the page, with fixed
+    test ids, so page objects find it the way they find the MAUI alert.
+*@
+@if (Dialogs.Current is { } dialog)
+{
+    <div class="dialog-backdrop">
+        <div role="alertdialog" aria-modal="true" aria-labelledby="Dialog_Title" data-testid="Dialog" class="dialog">
+            <h2 id="Dialog_Title" data-testid="Dialog_Title">@dialog.Title</h2>
+            <p data-testid="Dialog_Message">@dialog.Message</p>
+            <div class="dialog-buttons">
+                @if (dialog.Cancel is { } cancel)
+                {
+                    <button type="button" data-testid="Dialog_Cancel" @onclick="() => Dialogs.Answer(false)">@cancel</button>
+                }
+                <button type="button" data-testid="Dialog_Accept" @onclick="() => Dialogs.Answer(true)">@dialog.Accept</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    protected override void OnInitialized() => Dialogs.Changed += OnChanged;
+
+    public void Dispose() => Dialogs.Changed -= OnChanged;
+
+    private void OnChanged(object? sender, EventArgs e) => _ = InvokeAsync(StateHasChanged);
+}

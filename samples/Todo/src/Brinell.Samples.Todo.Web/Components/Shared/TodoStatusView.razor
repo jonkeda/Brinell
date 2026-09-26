@@ -1,0 +1,49 @@
+@*
+    A todo's status: a glyph, its name, and - unless read-only - a Next button that cycles it.
+
+    A component, as in the MAUI app (same name): the page gives the whole control its test id,
+    and the parts' ids (StatusGlyph, StatusText, StatusNext) are the same as the MAUI ones and only
+    unique inside it, so it can repeat in every list row. Overdue is shown, not stored.
+*@
+<span class="todo-status" data-testid="@AutomationId" aria-label="@($"Status: {_text}")">
+    <span data-testid="StatusGlyph" class="glyph" aria-hidden="true">@_glyph</span>
+    <span data-testid="StatusText">@_text</span>
+    @if (!IsReadOnly)
+    {
+        <button type="button" data-testid="StatusNext" aria-label="Next status" @onclick="NextAsync">Next</button>
+    }
+</span>
+
+@code {
+    private string _glyph = string.Empty;
+    private string _text = string.Empty;
+
+    /// <summary>The test id of the whole control.</summary>
+    [Parameter, EditorRequired]
+    public string AutomationId { get; set; } = null!;
+
+    /// <summary>The status. Two-way: Next writes it back.</summary>
+    [Parameter]
+    public TodoStatus Status { get; set; }
+
+    /// <summary>Raised when Next changes the status.</summary>
+    [Parameter]
+    public EventCallback<TodoStatus> StatusChanged { get; set; }
+
+    /// <summary>Whether the due date has passed.</summary>
+    [Parameter]
+    public bool IsPastDue { get; set; }
+
+    /// <summary>Whether Next is hidden.</summary>
+    [Parameter]
+    public bool IsReadOnly { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        var shown = TodoStatusRules.Display(Status, IsPastDue);
+        _glyph = TodoStatusRules.Glyph(shown);
+        _text = TodoStatusRules.Text(shown);
+    }
+
+    private Task NextAsync() => StatusChanged.InvokeAsync(TodoStatusRules.Next(Status));
+}
