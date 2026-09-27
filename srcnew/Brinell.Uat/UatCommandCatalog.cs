@@ -23,9 +23,13 @@ public sealed class UatCommandCatalog
         bool allowsTable = true,
         UatCommandHandler? handler = null,
         IReadOnlyList<UatPhraseParameter>? parameters = null,
-        UatPhraseProblem? problem = null)
+        UatPhraseProblem? problem = null,
+        bool namesPage = false)
     {
-        var pattern = new UatCommandPattern(keyword, phrase, commandId, requiresTable, allowsTable, handler, parameters, problem);
+        var pattern = new UatCommandPattern(keyword, phrase, commandId, requiresTable, allowsTable, handler, parameters, problem)
+        {
+            NamesPage = namesPage,
+        };
         _patterns.Add(pattern);
         return pattern;
     }
@@ -37,13 +41,23 @@ public sealed class UatCommandCatalog
         _unmatchable.Add(declaration);
     }
 
-    public IReadOnlyList<UatCommandMatch> Match(UatStep step)
-    {
-        var matches = _patterns
+    public IReadOnlyList<UatCommandMatch> Match(UatStep step) => Select(Candidates(step));
+
+    /// <summary>Every pattern the step's text fits, before <see cref="Select"/> picks among them.</summary>
+    public IReadOnlyList<UatCommandMatch> Candidates(UatStep step)
+        => _patterns
             .Where(x => x.Keyword == step.EffectiveKeyword)
             .Select(x => x.TryMatch(step))
             .OfType<UatCommandMatch>()
             .ToArray();
+
+    /// <summary>
+    /// The matches a step binds to: exact phrases before parameterised ones, then the most
+    /// specific. One rule for C# phrases and callable phrases alike, so neither shadows the other.
+    /// </summary>
+    public static IReadOnlyList<UatCommandMatch> Select(IReadOnlyList<UatCommandMatch> matches)
+    {
+        ArgumentNullException.ThrowIfNull(matches);
 
         var exactMatches = matches.Where(x => x.Pattern.IsExact).ToArray();
         if (exactMatches.Length > 0)
@@ -51,7 +65,7 @@ public sealed class UatCommandCatalog
             return exactMatches;
         }
 
-        if (matches.Length <= 1)
+        if (matches.Count <= 1)
         {
             return matches;
         }
@@ -110,6 +124,12 @@ public sealed class UatCommandPattern
     /// <summary>Why the phrase cannot run, reported when a step binds to it; null when it is fine.</summary>
     public UatPhraseProblem? Problem { get; }
 
+    /// <summary>The callable phrase this pattern calls; null for a C# phrase.</summary>
+    public UatCallable? Callable { get; init; }
+
+    /// <summary>Whether the step says which page the user is on (<c>I am on the {page} page</c>).</summary>
+    public bool NamesPage { get; init; }
+
     public bool IsExact { get; }
 
     public int Specificity { get; }
@@ -137,6 +157,10 @@ public sealed class UatCommandPattern
 
         return new UatCommandMatch(this, arguments) { RawArguments = raw };
     }
+
+    /// <summary>The <c>{x}</c> placeholders of a phrase, in order.</summary>
+    public static IReadOnlyList<string> ParameterNames(string phrase)
+        => Regex.Matches(phrase, @"\{([A-Za-z][A-Za-z0-9_-]*)\}").Select(match => match.Groups[1].Value).ToArray();
 
     private static (Regex Regex, IReadOnlyList<string> Parameters) Compile(string phrase)
     {

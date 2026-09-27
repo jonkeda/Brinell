@@ -6,7 +6,8 @@ public static class UatMarkdownParser
 {
     private const string DocStringDelimiter = "\"\"\"";
 
-    private static readonly Regex OutlineParameterRegex = new("<([^<>]+)>", RegexOptions.Compiled);
+    private const string TableMarker = "<table>";
+    private const string DocStringMarker = "<doc string>";
 
     public static UatParseResult Parse(string markdown, string? filePath = null)
     {
@@ -20,6 +21,15 @@ public static class UatMarkdownParser
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
         return Parse(File.ReadAllText(filePath), filePath);
+    }
+
+    /// <summary>Parses a <c>*.phrases.md</c> file: one <c># Phrases:</c> heading and only phrase sections.</summary>
+    /// <param name="markdown">The file's text.</param>
+    /// <param name="filePath">The file, for locations.</param>
+    public static UatPhrasesParseResult ParsePhrases(string markdown, string? filePath = null)
+    {
+        ArgumentNullException.ThrowIfNull(markdown);
+        return new Parser(markdown, filePath).ParsePhrases();
     }
 
     private sealed class Parser
@@ -43,6 +53,7 @@ public static class UatMarkdownParser
             List<UatStep> background = [];
             List<UatNamedDataTable> dataTables = [];
             List<UatScenario> scenarios = [];
+            List<UatCallable> callables = [];
             List<string> pendingTags = [];
 
             while (!End)
@@ -136,6 +147,17 @@ public static class UatMarkdownParser
                     continue;
                 }
 
+                if (level == 2 && TryParsePhraseHeading(headingText, out var kind, out var phrase))
+                {
+                    _index++;
+                    if (ParsePhraseSection(kind, phrase, line) is { } callable)
+                    {
+                        callables.Add(callable);
+                    }
+
+                    continue;
+                }
+
                 if (level == 2 && headingText.StartsWith("Scenario Outline:", StringComparison.Ordinal))
                 {
                     var scenarioName = headingText["Scenario Outline:".Length..].Trim();
@@ -207,9 +229,172 @@ public static class UatMarkdownParser
                     background,
                     dataTables,
                     scenarios,
-                    titleSource ?? new UatSourceLocation(_filePath, 1));
+                    titleSource ?? new UatSourceLocation(_filePath, 1))
+                {
+                    Callables = callables,
+                };
 
             return new UatParseResult(document, _diagnostics);
+        }
+
+        public UatPhrasesParseResult ParsePhrases()
+        {
+            string? title = null;
+            UatSourceLocation? titleSource = null;
+            List<UatCallable> callables = [];
+
+            while (!End)
+            {
+                SkipBlankLines();
+                if (End)
+                {
+                    break;
+                }
+
+                var line = Current;
+                var trimmed = line.Text.Trim();
+                if (!TryParseHeading(trimmed, out var level, out var headingText))
+                {
+                    AddError("UAT028", $"A phrase file holds only '## Phrase:' sections; found '{trimmed}'.", line);
+                    _index++;
+                    continue;
+                }
+
+                if (level == 1 && headingText.StartsWith("Phrases:", StringComparison.Ordinal))
+                {
+                    if (title is not null)
+                    {
+                        AddError("UAT028", "A phrase file has exactly one '# Phrases:' heading.", line);
+                    }
+
+                    title = headingText["Phrases:".Length..].Trim();
+                    titleSource = Location(line);
+                    _index++;
+                    continue;
+                }
+
+                if (title is null)
+                {
+                    AddError("UAT028", "A phrase file starts with a '# Phrases:' heading.", line);
+                    title = string.Empty;
+                }
+
+                if (level == 2 && TryParsePhraseHeading(headingText, out var kind, out var phrase))
+                {
+                    _index++;
+                    if (ParsePhraseSection(kind, phrase, line) is { } callable)
+                    {
+                        callables.Add(callable);
+                    }
+
+                    continue;
+                }
+
+                AddError("UAT028", $"A phrase file holds only phrase sections; '{trimmed}' belongs in a .uat.md file.", line);
+                _index++;
+                SkipToNextSection();
+            }
+
+            if (title is null)
+            {
+                AddError("UAT028", "A phrase file starts with a '# Phrases:' heading.", new UatSourceLocation(_filePath, 1));
+            }
+
+            var document = new UatPhrasesDocument(title ?? string.Empty, callables, titleSource ?? new UatSourceLocation(_filePath, 1));
+            return new UatPhrasesParseResult(document, _diagnostics);
+        }
+
+        private void SkipToNextSection()
+        {
+            while (!End && !(TryParseHeading(Current.Text.Trim(), out var level, out _) && level <= 2))
+            {
+                _index++;
+            }
+        }
+
+        private static bool TryParsePhraseHeading(string headingText, out UatCallableKind kind, out string phrase)
+        {
+            foreach (var (prefix, candidate) in new[] { ("Phrase for each row:", UatCallableKind.EachRow), ("Phrase:", UatCallableKind.Once) })
+            {
+                if (headingText.StartsWith(prefix, StringComparison.Ordinal))
+                {
+                    kind = candidate;
+                    phrase = headingText[prefix.Length..].Trim();
+                    return true;
+                }
+            }
+
+            kind = default;
+            phrase = string.Empty;
+            return false;
+        }
+
+        // An optional Parameters table, then the body. What needs the catalog is checked later, as
+        // the callable's problems, so a wrong callable does not stop the file (AD-016 A10).
+        private UatCallable? ParsePhraseSection(UatCallableKind kind, string phrase, Line heading)
+        {
+            if (phrase.Length == 0)
+            {
+                AddError("UAT025", "A '## Phrase:' heading names the phrase: '## Phrase: a project {name}'.", heading);
+            }
+
+            SkipBlankLines();
+            IReadOnlyList<UatCallableParameterDeclaration> declared = [];
+            if (!End && IsTableRow(Current.Text) && SplitTableRow(Current.Text) is { Count: > 0 } header &&
+                header[0].Equals("Parameter", StringComparison.OrdinalIgnoreCase))
+            {
+                var table = TryParseCurrentTable();
+                if (table is null)
+                {
+                    AddError("UAT027", "A Parameters table needs a separator row under its header.", Current);
+                    _index++;
+                }
+                else
+                {
+                    declared = ReadParameters(table);
+                }
+            }
+
+            var steps = ParseStepBlock(stopAtExamples: false, inPhrase: true);
+            if (steps.Count == 0)
+            {
+                AddError("UAT026", $"The phrase '{phrase}' has no steps.", heading);
+            }
+
+            return phrase.Length == 0 ? null : new UatCallable(kind, phrase, declared, steps, Location(heading));
+        }
+
+        private List<UatCallableParameterDeclaration> ReadParameters(UatTable table)
+        {
+            string? Column(string name) => table.Columns.FirstOrDefault(column => column.Equals(name, StringComparison.OrdinalIgnoreCase));
+
+            List<UatCallableParameterDeclaration> declared = [];
+            if (Column("Parameter") is not { } parameter || Column("Type") is not { } type)
+            {
+                AddError("UAT027", "A Parameters table has the columns 'Parameter' and 'Type', and optionally 'Example'.", table.Source);
+                return declared;
+            }
+
+            var example = Column("Example");
+            foreach (var row in table.Rows)
+            {
+                var name = row.Cells[parameter];
+                if (name.Length == 0 || row.Cells[type].Length == 0)
+                {
+                    AddError("UAT027", "A Parameters row names a parameter and its type.", row.Source);
+                    continue;
+                }
+
+                if (declared.Any(existing => existing.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
+                {
+                    AddError("UAT027", $"The Parameters table lists '{name}' twice.", row.Source);
+                    continue;
+                }
+
+                declared.Add(new UatCallableParameterDeclaration(name, row.Cells[type], example is null ? null : row.Cells[example], row.Source));
+            }
+
+            return declared;
         }
 
         private Dictionary<string, string> ParseMetadataTable()
@@ -244,7 +429,7 @@ public static class UatMarkdownParser
             return metadata;
         }
 
-        private List<UatStep> ParseStepBlock(bool stopAtExamples)
+        private List<UatStep> ParseStepBlock(bool stopAtExamples, bool inPhrase = false)
         {
             List<UatStep> steps = [];
             UatEffectiveStepKeyword? currentEffectiveKeyword = null;
@@ -278,6 +463,13 @@ public static class UatMarkdownParser
                     break;
                 }
 
+                if (trimmed is TableMarker or DocStringMarker)
+                {
+                    AddError("UAT024", $"'{trimmed}' goes directly under a step in a '## Phrase:' section.", line);
+                    _index++;
+                    continue;
+                }
+
                 if (!TryParseStep(trimmed, out var keyword, out var text))
                 {
                     AddError("UAT011", $"Expected a UAT step but found '{trimmed}'.", line);
@@ -291,7 +483,22 @@ public static class UatMarkdownParser
 
                 var table = TryParseCurrentTable();
                 var docString = TryParseDocString();
-                steps.Add(new UatStep(keyword, effectiveKeyword, text, table, Location(line), docString));
+                var passes = UatPassedBlock.None;
+                if (table is null && docString is null && !End && Current.Text.Trim() is TableMarker or DocStringMarker)
+                {
+                    if (inPhrase)
+                    {
+                        passes = Current.Text.Trim() == TableMarker ? UatPassedBlock.Table : UatPassedBlock.DocString;
+                    }
+                    else
+                    {
+                        AddError("UAT024", $"'{Current.Text.Trim()}' passes a call's block, so it is only allowed in a '## Phrase:' section.", Current);
+                    }
+
+                    _index++;
+                }
+
+                steps.Add(new UatStep(keyword, effectiveKeyword, text, table, Location(line), docString) { Passes = passes });
             }
 
             return steps;
@@ -342,7 +549,7 @@ public static class UatMarkdownParser
             var columns = new HashSet<string>(examples.Columns, StringComparer.Ordinal);
             foreach (var step in outlineSteps)
             {
-                foreach (var parameter in FindParameters(step))
+                foreach (var parameter in UatOutline.Placeholders(step))
                 {
                     if (!columns.Contains(parameter))
                     {
@@ -360,7 +567,7 @@ public static class UatMarkdownParser
             {
                 var row = examples.Rows[i];
                 var expandedSteps = outlineSteps
-                    .Select(step => ExpandStep(step, row.Cells))
+                    .Select(step => UatOutline.Substitute(step, row.Cells))
                     .ToArray();
 
                 scenarios.Add(new UatScenario(
@@ -373,69 +580,6 @@ public static class UatMarkdownParser
             }
 
             return scenarios;
-        }
-
-        private UatStep ExpandStep(UatStep step, IReadOnlyDictionary<string, string> values)
-        {
-            var text = Substitute(step.Text, values);
-            UatTable? table = null;
-
-            if (step.Table is not null)
-            {
-                var rows = step.Table.Rows
-                    .Select(row => new UatTableRow(
-                        row.Cells.ToDictionary(
-                            x => x.Key,
-                            x => Substitute(x.Value, values),
-                            StringComparer.Ordinal),
-                        row.Source))
-                    .ToArray();
-
-                table = new UatTable(step.Table.Columns, rows, step.Table.Source);
-            }
-
-            return step with { Text = text, Table = table, DocString = step.DocString is null ? null : Substitute(step.DocString, values) };
-        }
-
-        private static string Substitute(string text, IReadOnlyDictionary<string, string> values)
-        {
-            return OutlineParameterRegex.Replace(text, match =>
-            {
-                var parameter = match.Groups[1].Value;
-                return values.TryGetValue(parameter, out var value) ? value : match.Value;
-            });
-        }
-
-        private static IEnumerable<string> FindParameters(UatStep step)
-        {
-            foreach (Match match in OutlineParameterRegex.Matches(step.Text))
-            {
-                yield return match.Groups[1].Value;
-            }
-
-            if (step.DocString is not null)
-            {
-                foreach (Match match in OutlineParameterRegex.Matches(step.DocString))
-                {
-                    yield return match.Groups[1].Value;
-                }
-            }
-
-            if (step.Table is null)
-            {
-                yield break;
-            }
-
-            foreach (var row in step.Table.Rows)
-            {
-                foreach (var cell in row.Cells.Values)
-                {
-                    foreach (Match match in OutlineParameterRegex.Matches(cell))
-                    {
-                        yield return match.Groups[1].Value;
-                    }
-                }
-            }
         }
 
         private UatEffectiveStepKeyword ResolveEffectiveKeyword(

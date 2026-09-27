@@ -64,6 +64,9 @@ public sealed class UatArgumentTypes
         return result;
     }
 
+    /// <summary>The types registered with an attribute or a converter.</summary>
+    public IEnumerable<Type> Registered => _parse.Keys.Concat(_converters.Keys);
+
     /// <summary>Whether <paramref name="type"/> is read by one of these.</summary>
     public bool IsRegistered(Type type) => _parse.ContainsKey(type) || _converters.ContainsKey(type) || ParseOf(type) is not null;
 

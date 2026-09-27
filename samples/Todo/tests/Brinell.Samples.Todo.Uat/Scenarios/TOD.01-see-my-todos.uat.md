@@ -31,18 +31,19 @@ And Todos should have todo "Buy bread"
 ## Scenario: TOD.01.2 Each row shows its title, due date and status
 
 ```gherkin
-Given I am on the Todo List page
-And the server also has todos
+Given the synced list has todos
   | Title            | Status      | Due Date |
   | ---------------- | ----------- | -------- |
   | Post the letters | Open        | +2d      |
   | Paint the fence  | In Progress |          |
-When I tap Sync
 Then the list should show "Post the letters" and "Paint the fence"
+And each todo shows its status
+  | Title            | Status      |
+  | ---------------- | ----------- |
+  | Post the letters | Open        |
+  | Paint the fence  | In progress |
 And the todo "Post the letters" should show a due date
-And the todo "Post the letters" should show status "Open"
 And the todo "Paint the fence" should show no due date
-And the todo "Paint the fence" should show status "In progress"
 ```
 
 @TOD.01.3 @smoke @maui @web @list

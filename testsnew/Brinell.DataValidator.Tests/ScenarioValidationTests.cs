@@ -129,6 +129,41 @@ public sealed class ScenarioValidationTests : IDisposable
     }
 
     [Fact]
+    public void Validate_ChecksCallsToCallablePhrases_AndWarnsAboutBrokenOnes()
+    {
+        PhraseFile();
+        var file = Scenario("""
+            Given a loan of "Dune" to Eva on 2026-05-12
+            """);
+
+        var (exit, output, errors) = Run("validate");
+
+        Assert.Equal(1, exit);
+        Assert.Contains("Scenarios/library.uat.md:5: UATA002", output);
+        Assert.Contains("Scenarios/Library.phrases.md:7: UATC001", errors);
+        Assert.Contains("does not copy to its output", errors);
+
+        (exit, output, _) = Run("validate", "--fix");
+
+        Assert.Equal(0, exit);
+        Assert.Contains("Fixed 1 value(s) in Scenarios/library.uat.md.", output);
+        Assert.Contains("Given a loan of \"Dune\" to Eva on 12-May-2026", File.ReadAllText(file));
+    }
+
+    [Fact]
+    public void Phrases_ListsCallablePhrases_WithTheirTypes()
+    {
+        PhraseFile();
+
+        var (exit, output, _) = Run("phrases");
+
+        Assert.Equal(0, exit);
+        Assert.Contains("Callable a loan of {title: text} to {reader: user} on {due: date}  <- ", output);
+        Assert.Contains("Library.phrases.md:3", output);
+        Assert.Contains("warning UATC001", output);
+    }
+
+    [Fact]
     public void Snippet_WritesAMethodForAStepThatBindsToNothing()
     {
         Scenario("""
@@ -148,6 +183,18 @@ public sealed class ScenarioValidationTests : IDisposable
         ## Scenario: Lending
 
         {steps}
+        """);
+
+    private void PhraseFile() => Write(Path.Combine("Scenarios", "Library.phrases.md"), """
+        # Phrases: Library
+
+        ## Phrase: a loan of {title} to {reader} on {due}
+
+        When I lend <title> to <reader> until <due>
+
+        ## Phrase: a broken one {spare}
+
+        When I shelve the books
         """);
 
     private (int Exit, string Output, string Errors) Run(params string[] args)

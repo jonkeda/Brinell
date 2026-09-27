@@ -22,6 +22,12 @@ public sealed record UatDiagnostic(
 {
     /// <summary>The value rewritten on the diagnostic's line, when there is exactly one right answer.</summary>
     public UatTextFix? Fix { get; init; }
+
+    /// <summary>
+    /// For a problem inside a callable phrase, reported at the call: the steps it passed through
+    /// in the callables' bodies, outermost first. Empty otherwise.
+    /// </summary>
+    public IReadOnlyList<UatSourceLocation> Within { get; init; } = [];
 }
 
 public enum UatStepKeyword
@@ -39,7 +45,11 @@ public sealed record UatDocument(
     IReadOnlyList<UatStep> Background,
     IReadOnlyList<UatNamedDataTable> DataTables,
     IReadOnlyList<UatScenario> Scenarios,
-    UatSourceLocation Source);
+    UatSourceLocation Source)
+{
+    /// <summary>The file's own callable phrases (<c>## Phrase:</c> sections).</summary>
+    public IReadOnlyList<UatCallable> Callables { get; init; } = [];
+}
 
 public sealed record UatNamedDataTable(
     string Name,
@@ -60,7 +70,11 @@ public sealed record UatStep(
     string Text,
     UatTable? Table,
     UatSourceLocation Source,
-    string? DocString = null);
+    string? DocString = null)
+{
+    /// <summary>In a callable phrase's body: the call's table or doc string goes under this step.</summary>
+    public UatPassedBlock Passes { get; init; }
+}
 
 public sealed record UatTable(
     IReadOnlyList<string> Columns,

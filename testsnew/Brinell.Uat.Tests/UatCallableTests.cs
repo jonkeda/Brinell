@@ -1,0 +1,487 @@
+using Microsoft.Extensions.DependencyInjection;
+using Xunit;
+
+namespace Brinell.Uat.Tests.ArgumentCases;
+
+/// <summary>Callable phrases: steps written in scenario language, called like a phrase.</summary>
+public sealed class UatCallableTests
+{
+    private const string Apps = """
+        # UAT Config
+
+        ## Apps
+
+        | Name | User | Role |
+        | --- | --- | --- |
+        | Eva's PC | Eva | Planner |
+        | Bob | | |
+        """;
+
+    private const string Assigned = """
+        ## Phrase: a todo {title} for {who} with {hours} hours
+
+        ```gherkin
+        When I assign <title> to <who> due 12-May-2026 for <hours> hours as Open
+        And I open the todo <title>
+        ```
+        """;
+
+    [Fact]
+    public async Task ACall_RunsItsSteps_InOrder_WithTheCallsValues()
+    {
+        var (fixture, scenario) = await Run("""
+            Given a todo "Buy milk" for Eva with 1,250.5 hours
+            """, Assigned);
+
+        var assigned = Assert.Single(fixture.State.Assigned);
+        Assert.Equal(("Buy milk", "Eva", 1250.5m), (assigned.Todo, assigned.Assignee.Name, assigned.Hours));
+        Assert.Equal(["Buy milk"], fixture.State.Opened);
+        Assert.All(scenario.Invocations, invocation => Assert.Equal("a todo {title} for {who} with {hours} hours", invocation.Call?.Callable.Phrase));
+        Assert.Equal(5, scenario.Invocations[0].Call!.Location.LineNumber);
+    }
+
+    [Fact]
+    public void Types_AreInferredFromWhereTheValuesGo()
+    {
+        var prepared = Prepare(Assigned);
+
+        Assert.Null(prepared.Problem);
+        Assert.Equal(typeof(string), prepared.Types["title"]);
+        Assert.Equal(typeof(UatUserRole), prepared.Types["who"]);
+        Assert.Equal(typeof(decimal), prepared.Types["hours"]);
+        Assert.Equal("a todo {title: text} for {who: user} with {hours: number} hours", prepared.ToString());
+    }
+
+    [Fact]
+    public void ABadValueInTheCall_IsReportedAtTheCall_WithTheWayToWriteIt()
+    {
+        var error = Assert.Single(Bind("""
+            Given a todo "Buy milk" for Eva with 8,5 hours
+            """, Assigned));
+
+        Assert.Equal("UATA003", error.Code);
+        Assert.Equal(5, error.Location.LineNumber);
+        Assert.Contains("'hours'", error.Message, StringComparison.Ordinal);
+        Assert.Contains("8.5", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AStepOfTheBodyThatBindsToNothing_IsReportedAtTheCall_WithWhereItIs()
+    {
+        var error = Assert.Single(Bind("""
+            Given a misspelled todo "Buy milk"
+            """, """
+            ## Phrase: a misspelled todo {title}
+
+            When I opn the todo <title>
+            """));
+
+        Assert.Equal("UATB001", error.Code);
+        Assert.Equal(5, error.Location.LineNumber);
+        Assert.Equal([9], error.Within.Select(inner => inner.LineNumber));
+        Assert.Contains("I opn the todo \"Buy milk\"", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ABrokenCallable_LoadsWithTheRest_AndFailsOnlyItsCalls()
+    {
+        const string Conflict = """
+            ## Phrase: a clash {x}
+
+            When I assign "T" to Eva due <x> for <x> hours as Open
+            """;
+
+        Assert.Empty(Bind("When I open the todo \"Tea\"", Conflict));
+
+        var error = Assert.Single(Bind("Given a clash 3", Conflict));
+        Assert.Equal("UATC002", error.Code);
+        Assert.Contains("no value is both date and number", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AnUnusedOrUnknownPlaceholder_IsBroken()
+    {
+        Assert.Equal("UATC001", Prepare("""
+            ## Phrase: a todo {title} and {spare}
+
+            When I open the todo <title>
+            """).Problem?.Code);
+        Assert.Equal("UATC001", Prepare("""
+            ## Phrase: a todo
+
+            When I open the todo <title>
+            """).Problem?.Code);
+    }
+
+    [Fact]
+    public void ALiteralValueInTheBody_ThatDoesNotFit_IsBroken()
+    {
+        var prepared = Prepare("""
+            ## Phrase: a wrong todo {title}
+
+            When I assign <title> to Eva due 12-May-2026 for 8,5 hours as Open
+            """);
+
+        Assert.Equal("UATC008", prepared.Problem?.Code);
+        Assert.Contains("UATA003", prepared.Problem!.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ADeclaredType_ChecksAValueInferenceCannotSee_AndMustAgreeWithUse()
+    {
+        const string Declared = """
+            ## Phrase: the report of {due}
+
+            | Parameter | Type | Example     |
+            | --------- | ---- | ----------- |
+            | due       | date | 12-May-2026 |
+
+            When I open the todo "Report <due>"
+            """;
+
+        Assert.Equal(typeof(DateOnly), Prepare(Declared).Types["due"]);
+        var error = Assert.Single(Bind("Given the report of 2026-05-12", Declared));
+        Assert.Equal("UATA002", error.Code);
+
+        Assert.Equal("UATC002", Prepare("""
+            ## Phrase: a todo {title} for {hours} hours
+
+            | Parameter | Type |
+            | --------- | ---- |
+            | hours     | date |
+
+            When I assign <title> to Eva due 12-May-2026 for <hours> hours as Open
+            """).Problem?.Code);
+
+        Assert.Equal("UATC003", Prepare("""
+            ## Phrase: the todo {title}
+
+            | Parameter | Type    |
+            | --------- | ------- |
+            | title     | colour  |
+
+            When I open the todo <title>
+            """).Problem?.Code);
+    }
+
+    [Fact]
+    public async Task ATable_IsPassedWhole_AndABadCellIsReportedAtItsRowOfTheCall()
+    {
+        const string Server = """
+            ## Phrase: the server knows
+
+            Given the server has todos
+              <table>
+            """;
+
+        var (fixture, _) = await Run("""
+            Given the server knows
+              | Title    | Status      |
+              | -------- | ----------- |
+              | Buy milk | Open        |
+              | Tea      | In Progress |
+            """, Server);
+        Assert.Equal(["Buy milk", "Tea"], fixture.State.Server.Select(todo => todo.Title));
+        Assert.Equal(typeof(IReadOnlyList<TodoRow>), Prepare(Server).BlockType);
+
+        var error = Assert.Single(Bind("""
+            Given the server knows
+              | Title    | Status  |
+              | -------- | ------- |
+              | Buy milk | Open    |
+              | Tea      | Waiting |
+            """, Server));
+        Assert.Equal("UATA004", error.Code);
+        Assert.Equal(9, error.Location.LineNumber);
+
+        Assert.Equal("UATA007", Assert.Single(Bind("Given the server knows", Server)).Code);
+        Assert.Equal("UATB004", Assert.Single(Bind("""
+            Given a todo "Tea" for Eva with 1 hours
+              | Title |
+              | ----- |
+              | Tea   |
+            """, Assigned)).Code);
+    }
+
+    [Fact]
+    public async Task APerRowCallable_RunsItsBodyOncePerRow()
+    {
+        const string PerRow = """
+            ## Phrase for each row: todos for {who}
+
+            When I assign <title> to <who> due <due> for 1 hours as Open
+            """;
+
+        var (fixture, scenario) = await Run("""
+            Given todos for Eva
+              | Title    | Due         |
+              | -------- | ----------- |
+              | Buy milk | 12-May-2026 |
+              | Tea      | 13-May-2026 |
+            """, PerRow);
+
+        Assert.Equal([("Buy milk", new DateOnly(2026, 5, 12)), ("Tea", new DateOnly(2026, 5, 13))], fixture.State.Assigned.Select(a => (a.Todo, a.Due)));
+        Assert.Equal([1, 2], scenario.Invocations.Select(invocation => invocation.Call!.Row!.Value));
+        Assert.Equal([8, 9], scenario.Invocations.Select(invocation => invocation.Call!.Location.LineNumber));
+
+        var badCell = Assert.Single(Bind("""
+            Given todos for Eva
+              | Title    | Due         |
+              | -------- | ----------- |
+              | Buy milk | 12-May-2026 |
+              | Tea      | 2026-05-13  |
+            """, PerRow));
+        Assert.Equal(("UATA002", 9), (badCell.Code, badCell.Location.LineNumber));
+        Assert.NotNull(badCell.Fix);
+
+        var unknown = Bind("""
+            Given todos for Eva
+              | Title    | When        |
+              | -------- | ----------- |
+              | Buy milk | 12-May-2026 |
+            """, PerRow);
+        Assert.Equal(["UATA006", "UATA006"], unknown.Select(d => d.Code));
+        Assert.Equal("UATA007", Assert.Single(Bind("Given todos for Eva", PerRow)).Code);
+    }
+
+    [Fact]
+    public async Task ACallableCanCallAnother_ButNotItself_AndNotTooDeep()
+    {
+        var (fixture, _) = await Run("Given two todos", $$"""
+            ## Phrase: two todos
+
+            Given a todo "One" for Eva with 1 hours
+            And a todo "Two" for Bob with 2 hours
+
+            {{Assigned}}
+            """);
+        Assert.Equal(["One", "Two"], fixture.State.Assigned.Select(a => a.Todo));
+
+        var cycle = Assert.Single(Bind("Given ping", """
+            ## Phrase: ping
+
+            Given pong
+
+            ## Phrase: pong
+
+            Given ping
+            """));
+        Assert.Equal("UATC004", cycle.Code);
+
+        var deep = Assert.Single(Bind("Given level 1", """
+            ## Phrase: level 1
+
+            Given level 2
+
+            ## Phrase: level 2
+
+            Given level 3
+
+            ## Phrase: level 3
+
+            Given level 4
+
+            ## Phrase: level 4
+
+            When I open the todo "Deep"
+            """));
+        Assert.Equal("UATC005", deep.Code);
+        Assert.Equal(5, deep.Location.LineNumber);
+        Assert.Equal(3, deep.Within.Count);
+    }
+
+    [Fact]
+    public void ACallableThatNamesAPage_EndsOnOne_AndARowEndsWhereItStarted()
+    {
+        var unsaid = Assert.Single(Bind("Given a detour", """
+            ## Phrase: a detour
+
+            Given I am on the Todo page
+            When I open the todo "Tea"
+            """));
+        Assert.Equal("UATC006", unsaid.Code);
+        Assert.Contains("does not end on one", unsaid.Message, StringComparison.Ordinal);
+
+        Assert.Empty(Bind("Given a round trip", """
+            ## Phrase: a round trip
+
+            Given I am on the Todo page
+            When I open the todo "Tea"
+            Then I should be on the Detail page
+            """));
+
+        var wandering = Assert.Single(Bind("""
+            Given each todo opened
+              | Title |
+              | ----- |
+              | Tea   |
+            """, """
+            ## Phrase for each row: each todo opened
+
+            Given I am on the Todo page
+            When I open the todo <title>
+            Then I should be on the Detail page
+            """));
+        Assert.Equal(("UATC006", 8), (wandering.Code, wandering.Location.LineNumber));
+    }
+
+    [Fact]
+    public async Task ACallableWithAUserFirst_IsASubject_AndIIsTheCurrentUser()
+    {
+        var (fixture, _) = await Run("""
+            When Eva grabs "Milk"
+            And the todo "Tea" goes to I
+            """, """
+            ## Phrase: {user} grabs {todo}
+
+            When <user> takes <todo>
+
+            ## Phrase: the todo {todo} goes to {user}
+
+            When <user> takes <todo>
+            """);
+
+        Assert.Equal([("Eva", "Milk"), ("Eva", "Tea")], fixture.State.Taken);
+    }
+
+    [Fact]
+    public void ACallableWithTheTextOfACSharpPhrase_IsAmbiguous()
+    {
+        var error = Assert.Single(Bind("When I pay 3.00 EUR", """
+            ## Phrase: I pay {amount}
+
+            When I open the todo <amount>
+            """));
+
+        Assert.Equal("UATB002", error.Code);
+    }
+
+    [Fact]
+    public void TheTrace_IndentsACallsSteps_UnderTheCallAndItsRows()
+    {
+        var parse = UatMarkdownParser.Parse(Document("""
+            Given todos for Eva
+              | Title | Due         |
+              | ----- | ----------- |
+              | Milk  | 12-May-2026 |
+              | Tea   | 13-May-2026 |
+            """, """
+            ## Phrase for each row: todos for {who}
+
+            When I assign <title> to <who> due <due> for 1 hours as Open
+            And I open the todo <title>
+            """));
+        var bind = UatBinder.Bind(parse.Document!, CatalogSet(new ArgumentFixture()));
+        var results = Assert.Single(bind.Document!.Scenarios).Invocations.Select(invocation => UatStepResult.Passed(invocation));
+
+        var lines = UatDiagnosticsFormatter.FormatSteps(results).ToArray();
+
+        Assert.Equal(7, lines.Length);
+        Assert.StartsWith("Call: 5: Given todos for Eva", lines[0], StringComparison.Ordinal);
+        Assert.Equal("  row 1 (Milk, 12-May-2026)", lines[1]);
+        Assert.StartsWith("    Passed: 13: ", lines[2], StringComparison.Ordinal);
+        Assert.Equal("  row 2 (Tea, 13-May-2026)", lines[4]);
+    }
+
+    [Fact]
+    public void GlobalPhraseFiles_AreSeenFromTheScenarioRoot_AndSubfolderOnesAreNot()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "brinell-callables-" + Guid.NewGuid().ToString("N"), "Scenarios");
+        Directory.CreateDirectory(Path.Combine(root, "Todo"));
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "Todo.phrases.md"), "# Phrases: Todo\n\n## Phrase: a global one\n\nWhen I open the todo \"Tea\"\n");
+            File.WriteAllText(Path.Combine(root, "Todo", "Later.phrases.md"), "# Phrases: Module\n\n## Phrase: a module one\n\nWhen I open the todo \"Tea\"\n");
+            var scenario = Path.Combine(root, "Todo", "TOD.uat.md");
+            File.WriteAllText(scenario, Document("Given a global one", string.Empty));
+
+            var file = UatScenarioFiles.Load(scenario);
+
+            Assert.True(file.Success, UatDiagnosticsFormatter.FormatDiagnostics(file.Diagnostics));
+            Assert.Equal(["a global one"], file.Callables.Callables.Select(callable => callable.Phrase));
+            Assert.True(file.Bind(CatalogSet(new ArgumentFixture())).Success);
+        }
+        finally
+        {
+            Directory.Delete(Path.GetDirectoryName(root)!, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData("When I open the todo \"Tea\"\n  <table>", "UAT024")]
+    [InlineData("When I open the todo \"Tea\"\n\n## Phrase:\n\nWhen I open the todo \"Tea\"", "UAT025")]
+    [InlineData("When I open the todo \"Tea\"\n\n## Phrase: nothing\n", "UAT026")]
+    [InlineData("When I open the todo \"Tea\"\n\n## Phrase: bad {x}\n\n| Parameter | Kind |\n| --- | --- |\n| x | text |\n\nWhen I open the todo <x>", "UAT027")]
+    public void AWrongPhraseSection_IsAParseError(string steps, string code)
+    {
+        var parse = UatMarkdownParser.Parse(Document(steps, string.Empty));
+
+        Assert.Contains(parse.Diagnostics, diagnostic => diagnostic.Code == code);
+    }
+
+    [Fact]
+    public void APhraseFile_HoldsOnlyPhraseSections()
+    {
+        var parse = UatMarkdownParser.ParsePhrases("""
+            # Phrases: Todo
+
+            ## Scenario: Not here
+
+            When I open the todo "Tea"
+
+            ## Phrase: a good one
+
+            When I open the todo "Tea"
+            """);
+
+        var error = Assert.Single(parse.Diagnostics);
+        Assert.Equal(("UAT028", 3), (error.Code, error.Location.LineNumber));
+        Assert.Equal("a good one", Assert.Single(parse.Document!.Callables).Phrase);
+        Assert.Equal("UAT028", Assert.Single(UatMarkdownParser.ParsePhrases("## Phrase: headless\n\nWhen I open the todo \"Tea\"").Diagnostics).Code);
+    }
+
+    private static UatCatalogSet CatalogSet(ArgumentFixture fixture)
+        => new(UatReflectionRuntime.FromComposition(fixture, fixture.Composition).CreateCommandCatalog(), UatConfigParser.Parse(Apps).Apps, suiteHead: null, new Dictionary<string, UatCommandCatalog>(), []);
+
+    private static UatPreparedCallable Prepare(string phrases)
+    {
+        var parse = UatMarkdownParser.Parse(Document("When I open the todo \"Tea\"", phrases));
+        Assert.True(parse.Success, UatDiagnosticsFormatter.FormatDiagnostics(parse.Diagnostics));
+        return new UatCallableSet(parse.Document!.Callables).Prepare(CatalogSet(new ArgumentFixture())).All[0];
+    }
+
+    private static IReadOnlyList<UatDiagnostic> Bind(string steps, string phrases)
+    {
+        var parse = UatMarkdownParser.Parse(Document(steps, phrases));
+        Assert.True(parse.Success, UatDiagnosticsFormatter.FormatDiagnostics(parse.Diagnostics));
+        return UatBinder.Bind(parse.Document!, CatalogSet(new ArgumentFixture())).Diagnostics;
+    }
+
+    private static async Task<(ArgumentFixture Fixture, UatBoundScenario Scenario)> Run(string steps, string phrases)
+    {
+        var fixture = new ArgumentFixture();
+        var parse = UatMarkdownParser.Parse(Document(steps, phrases));
+        Assert.True(parse.Success, UatDiagnosticsFormatter.FormatDiagnostics(parse.Diagnostics));
+        var bind = UatBinder.Bind(parse.Document!, CatalogSet(fixture));
+        Assert.True(bind.Success, UatDiagnosticsFormatter.FormatDiagnostics(bind.Diagnostics));
+
+        using var scope = fixture.Composition.CreateScope();
+        var context = new UatExecutionContext { Now = fixture.Now, Apps = UatConfigParser.Parse(Apps).Apps, SessionHost = fixture };
+        UatReflectionRuntime.SetServiceProvider(context, scope.ServiceProvider);
+        var scenario = Assert.Single(bind.Document!.Scenarios);
+        var result = await new UatScenarioRunner(context).RunAsync(scenario);
+        Assert.True(result.Passed, string.Join(Environment.NewLine, UatDiagnosticsFormatter.FormatSteps(result.Steps)));
+        return (fixture, scenario);
+    }
+
+    // The scenario's steps start on line 5; its phrases follow them.
+    private static string Document(string steps, string phrases) => $"""
+        # UAT: Callables
+
+        ## Scenario: Callables
+
+        {steps}
+
+        {phrases}
+        """;
+}

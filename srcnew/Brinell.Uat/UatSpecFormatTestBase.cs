@@ -76,14 +76,14 @@ public abstract class UatSpecFormatTestBase
 
     protected void AssertUatFileBindsThroughCatalog(string filePath)
     {
-        var parse = UatMarkdownParser.ParseFile(filePath);
-        if (!parse.Success || parse.Document is null)
+        var file = UatScenarioFiles.Load(filePath);
+        if (!file.Success)
         {
             throw new InvalidOperationException(
-                UatDiagnosticsFormatter.FormatDiagnostics(parse.Diagnostics));
+                UatDiagnosticsFormatter.FormatDiagnostics(file.Diagnostics));
         }
 
-        var bind = UatBinder.Bind(parse.Document, CreateCatalog());
+        var bind = file.Bind(new UatCatalogSet(CreateCatalog()));
         if (!bind.Success || bind.Document is null)
         {
             throw new InvalidOperationException(

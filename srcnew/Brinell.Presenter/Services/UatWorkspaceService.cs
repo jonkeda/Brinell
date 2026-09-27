@@ -62,13 +62,13 @@ public sealed class UatWorkspaceService : IUatWorkspaceService
 
         foreach (var filePath in EnumerateUatFiles(folderPath))
         {
-            var parse = UatMarkdownParser.ParseFile(filePath);
+            var parse = UatScenarioFiles.Load(filePath);
             var parseDiagnostics = FormatDiagnostics(parse.Diagnostics);
             UatBindResult? bind = null;
 
             if (parse.Document is not null)
             {
-                bind = UatBinder.Bind(parse.Document, catalogs);
+                bind = parse.Bind(catalogs);
             }
 
             var bindDiagnostics = bind is null ? [] : FormatDiagnostics(bind.Diagnostics);
@@ -94,9 +94,11 @@ public sealed class UatWorkspaceService : IUatWorkspaceService
                         scenario.Source.Tags,
                         scenario.Invocations.Select(invocation => new UatStepLoadResult(
                             "wait",
-                            invocation.Step.Text,
+                            invocation.Call is { } call ? $"{new string(' ', 2 * call.Depth)}{invocation.Step.Text}" : invocation.Step.Text,
                             invocation.CommandId,
-                            invocation.Step.Source.LineNumber)).ToArray())));
+                            // One row per step keeps the run pointer's index; a callable's step opens the call.
+                            invocation.Call is { } frame ? frame.Chain[0].Location.LineNumber : invocation.Step.Source.LineNumber,
+                            invocation.Call is { } root ? $"{root.Chain[0].Call.Keyword} {root.Chain[0].Call.Text}" : null)).ToArray())));
             }
             else if (parse.Document is not null)
             {

@@ -60,13 +60,13 @@ public sealed class UatExecutionService : IUatExecutionService
 
             var runtime = new UatRuntime(fixture, configPath);
             var catalog = runtime.CreateCommandCatalog();
-            var parse = UatMarkdownParser.ParseFile(scenarioFilePath);
-            if (!parse.Success || parse.Document is null)
+            var file = UatScenarioFiles.Load(scenarioFilePath);
+            if (!file.Success)
             {
-                throw new InvalidOperationException(FormatDiagnostics(parse.Diagnostics));
+                throw new InvalidOperationException(FormatDiagnostics(file.Diagnostics));
             }
 
-            var bind = UatBinder.Bind(parse.Document, runtime.CreateCatalogSet(catalog));
+            var bind = file.Bind(runtime.CreateCatalogSet(catalog));
             if (!bind.Success || bind.Document is null)
             {
                 throw new InvalidOperationException(string.Join(

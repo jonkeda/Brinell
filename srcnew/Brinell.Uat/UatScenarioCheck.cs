@@ -78,14 +78,52 @@ public static partial class UatScenarioCheck
     public static IReadOnlyList<UatDiagnostic> CheckFile(string filePath, UatCatalogSet catalogs)
     {
         ArgumentNullException.ThrowIfNull(catalogs);
-        var parse = UatMarkdownParser.ParseFile(filePath);
+        var file = UatScenarioFiles.Load(filePath);
+        if (file.Document is null)
+        {
+            return file.Diagnostics;
+        }
+
+        // The file's own broken callables are warnings at their headings; a call to one is the error.
+        var own = new UatCallableSet(file.Document.Callables).Prepare(catalogs).All;
+        return [.. file.Diagnostics, .. file.Bind(catalogs).Diagnostics, .. BrokenCallables(own)];
+    }
+
+    /// <summary>
+    /// A phrase file's problems: parse errors, and each broken callable as a warning at its heading.
+    /// A call to a broken callable is the error, in the scenario that makes it.
+    /// </summary>
+    public static IReadOnlyList<UatDiagnostic> CheckPhraseFile(string filePath, UatCatalogSet catalogs)
+    {
+        ArgumentNullException.ThrowIfNull(catalogs);
+        var parse = UatScenarioFiles.ParsePhraseFile(filePath);
         if (parse.Document is null)
         {
             return parse.Diagnostics;
         }
 
-        return [.. parse.Diagnostics, .. UatBinder.Bind(parse.Document, catalogs).Diagnostics];
+        return [.. parse.Diagnostics, .. BrokenCallables(new UatCallableSet(parse.Document.Callables).Prepare(catalogs).All)];
     }
+
+    /// <summary>The callable phrases as the phrase list shows them: types, where each is declared, and problems.</summary>
+    public static IReadOnlyList<string> DescribeCallables(IEnumerable<UatPreparedCallable> callables)
+    {
+        ArgumentNullException.ThrowIfNull(callables);
+        return callables
+            .OrderBy(callable => callable.Callable.Phrase, StringComparer.Ordinal)
+            .Select(callable => $"Callable {callable}  <- {callable.Callable.Source}"
+                + (callable.Problem is { } problem ? $"  warning {problem.Code}: {problem.Message}" : string.Empty))
+            .ToList();
+    }
+
+    private static IEnumerable<UatDiagnostic> BrokenCallables(IEnumerable<UatPreparedCallable> callables)
+        => callables
+            .Where(callable => callable.Problem is not null)
+            .Select(callable => new UatDiagnostic(
+                UatDiagnosticSeverity.Warning,
+                callable.Problem!.Code,
+                $"The phrase '{callable.Callable.Phrase}' {callable.Problem.Message} Steps that call it fail.",
+                callable.Callable.Source));
 
     /// <summary>The text of a file with every diagnostic's <see cref="UatDiagnostic.Fix"/> applied on its line.</summary>
     /// <returns>The new text, and how many values it rewrote.</returns>

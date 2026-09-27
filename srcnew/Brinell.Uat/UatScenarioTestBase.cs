@@ -314,7 +314,13 @@ public abstract class UatScenarioTestBase<TFixture>
                     app = step.Invocation.App,
                     commandId = step.Invocation.CommandId,
                     text = step.Invocation.Step.Text,
-                    message = step.Message
+                    message = step.Message,
+                    call = step.Invocation.Call?.Chain.Select(frame => new
+                    {
+                        phrase = frame.Callable.Phrase,
+                        source = frame.Location.ToString(),
+                        row = frame.Row,
+                    }).ToArray(),
                 }).ToArray()
                 : [];
             string[] diagnostics = includeTrace
@@ -389,16 +395,16 @@ public abstract class UatScenarioTestBase<TFixture>
 
     private UatBoundFileContext BindUatFile(string filePath)
     {
-        var parse = UatMarkdownParser.ParseFile(filePath);
-        if (!parse.Success || parse.Document is null)
+        var file = UatScenarioFiles.Load(filePath);
+        if (!file.Success)
         {
             throw new InvalidOperationException(
-                UatDiagnosticsFormatter.FormatDiagnostics(parse.Diagnostics));
+                UatDiagnosticsFormatter.FormatDiagnostics(file.Diagnostics));
         }
 
         var runtime = CreateRuntime();
         var catalog = CreateCommandCatalog(runtime);
-        var bind = UatBinder.Bind(parse.Document, runtime.CreateCatalogSet(catalog));
+        var bind = file.Bind(runtime.CreateCatalogSet(catalog));
         if (!bind.Success || bind.Document is null)
         {
             throw new InvalidOperationException(

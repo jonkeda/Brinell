@@ -5,6 +5,11 @@ namespace Brinell.Uat;
 public static class UatBinder
 {
     private const string UserParameter = "user";
+    private const string PageParameter = "page";
+
+    // A callable that calls a callable that calls a callable is already hard to follow in a
+    // failure report; a fourth level is refused.
+    private const int MaxCallDepth = 3;
 
     public static UatBindResult Bind(UatDocument document, UatCommandCatalog catalog)
     {
@@ -22,24 +27,39 @@ public static class UatBinder
     public static UatBindResult Bind(UatDocument document, UatCatalogSet catalogs)
     {
         ArgumentNullException.ThrowIfNull(document);
+        return Bind(document, catalogs, new UatCallableSet(document.Callables));
+    }
+
+    /// <summary>
+    /// Binds every step, and expands every call to a callable phrase into its steps, bound where
+    /// the call is. A problem inside a call is reported at the call.
+    /// </summary>
+    /// <param name="document">The parsed document.</param>
+    /// <param name="catalogs">The catalogs and the apps.</param>
+    /// <param name="callables">The callable phrases the document can see (<see cref="UatScenarioFiles.Load"/>).</param>
+    public static UatBindResult Bind(UatDocument document, UatCatalogSet catalogs, UatCallableSet callables)
+    {
+        ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(catalogs);
+        ArgumentNullException.ThrowIfNull(callables);
 
         List<UatDiagnostic> diagnostics = [.. catalogs.CheckNames(document.Source)];
         List<UatBoundScenario> scenarios = [];
+        var prepared = callables.Prepare(catalogs);
 
         foreach (var scenario in document.Scenarios)
         {
             List<UatStepInvocation> invocations = [];
-            var apps = new AppTracker(catalogs);
+            var walk = new Walk(catalogs, prepared, scenario.Name, invocations, inference: null);
 
             foreach (var step in document.Background)
             {
-                BindStep(catalogs, apps, scenario, step, fromBackground: true, invocations, diagnostics);
+                walk.Step(step, fromBackground: true, frame: null, diagnostics);
             }
 
             foreach (var step in scenario.Steps)
             {
-                BindStep(catalogs, apps, scenario, step, fromBackground: false, invocations, diagnostics);
+                walk.Step(step, fromBackground: false, frame: null, diagnostics);
             }
 
             scenarios.Add(new UatBoundScenario(scenario, invocations));
@@ -52,157 +72,16 @@ public static class UatBinder
         return new UatBindResult(boundDocument, diagnostics);
     }
 
-    private static void BindStep(
-        UatCatalogSet catalogs,
-        AppTracker apps,
-        UatScenario scenario,
-        UatStep step,
-        bool fromBackground,
-        ICollection<UatStepInvocation> invocations,
-        ICollection<UatDiagnostic> diagnostics)
+    // Binds a callable's body with its placeholders in, against the suite's own catalog, to learn
+    // the types of its values. Only a problem that no call could avoid makes it broken.
+    internal static void Infer(UatCallable callable, UatCatalogSet catalogs, UatPreparedCallables callables, UatInference inference)
     {
-        var app = apps.Current;
-        UatCommandMatch? match = null;
-        IReadOnlyList<string> named = [];
-
-        if (catalogs.TryFindSubject(step.Text, out var subject, out _))
+        var walk = new Walk(catalogs, callables, callable.Phrase, [], inference);
+        List<UatDiagnostic> ignored = [];
+        foreach (var step in callable.Steps)
         {
-            if (!apps.TryResolve(subject, out var subjectApp, out var error))
-            {
-                diagnostics.Add(new UatDiagnostic(UatDiagnosticSeverity.Error, "UATB006", error, step.Source));
-                return;
-            }
-
-            // Only a phrase declared with the subject in its first parameter binds it: {user} taps
-            // {control}, {app} uses the app. The engine infers no verb forms (AD-015).
-            var catalog = catalogs.CatalogFor(subjectApp);
-            var declared = catalog.Match(step)
-                .Where(candidate => FirstArgument(candidate) == subject)
-                .ToArray();
-            if (declared.Length > 1)
-            {
-                diagnostics.Add(new UatDiagnostic(
-                    UatDiagnosticSeverity.Error,
-                    "UATB002",
-                    $"Step '{step.Text}' is ambiguous: as {subject}, it matches {string.Join(", ", declared.Select(candidate => $"'{candidate.Pattern.Phrase}'"))}.",
-                    step.Source));
-                return;
-            }
-
-            if (declared.Length == 1)
-            {
-                match = declared[0];
-                app = subjectApp;
-            }
-            else
-            {
-                named = NamedPhrases(catalog, step.EffectiveKeyword);
-            }
+            walk.Step(step, fromBackground: false, frame: null, ignored);
         }
-
-        if (match is null)
-        {
-            var matches = catalogs.CatalogFor(app).Match(step);
-            if (matches.Count == 0)
-            {
-                diagnostics.Add(new UatDiagnostic(
-                    UatDiagnosticSeverity.Error,
-                    "UATB001",
-                    subject.Length == 0
-                        ? $"No command binding matches step '{step.Text}'."
-                        : $"No command binding matches step '{step.Text}'. A step that names {subject} binds only to a phrase declared with {{{UserParameter}}} first; "
-                          + (named.Count == 0
-                              ? $"no {step.EffectiveKeyword} phrase is."
-                              : $"the {step.EffectiveKeyword} ones are {string.Join(", ", named.Select(phrase => $"'{phrase}'"))}."),
-                    step.Source));
-                return;
-            }
-
-            if (matches.Count > 1)
-            {
-                diagnostics.Add(new UatDiagnostic(
-                    UatDiagnosticSeverity.Error,
-                    "UATB002",
-                    $"Step '{step.Text}' is ambiguous and matches {matches.Count} command bindings.",
-                    step.Source));
-                return;
-            }
-
-            match = matches[0];
-        }
-
-        if (match.Pattern.RequiresTable && step.Table is null)
-        {
-            diagnostics.Add(new UatDiagnostic(
-                UatDiagnosticSeverity.Error,
-                "UATB003",
-                $"Step '{step.Text}' requires a table.",
-                step.Source));
-            return;
-        }
-
-        if (!match.Pattern.AllowsTable && step.Table is not null)
-        {
-            diagnostics.Add(new UatDiagnostic(
-                UatDiagnosticSeverity.Error,
-                "UATB004",
-                $"Step '{step.Text}' does not accept a table.",
-                step.Table.Source));
-            return;
-        }
-
-        var arguments = match.Arguments;
-        var rawArguments = match.RawArguments;
-        if (catalogs.Apps.Count == 0 && arguments.TryGetValue(UserParameter, out var namedUser) && namedUser != "I")
-        {
-            diagnostics.Add(new UatDiagnostic(
-                UatDiagnosticSeverity.Error,
-                "UATB007",
-                $"Step '{step.Text}' names the user '{namedUser}', but the config has no Apps table to say whose app that is.",
-                step.Source));
-            return;
-        }
-
-        if (catalogs.Apps.Count > 0 && arguments.TryGetValue(UserParameter, out var user))
-        {
-            if (!TryBindUser(catalogs, apps, match, user, ref app, out var boundUser, out var error))
-            {
-                diagnostics.Add(new UatDiagnostic(UatDiagnosticSeverity.Error, "UATB007", $"Step '{step.Text}': {error}", step.Source));
-                return;
-            }
-
-            arguments = new Dictionary<string, string>(arguments, StringComparer.Ordinal) { [UserParameter] = boundUser };
-            rawArguments = new Dictionary<string, string>(rawArguments, StringComparer.Ordinal) { [UserParameter] = boundUser };
-        }
-
-        // A broken phrase and a value that does not fit fail here, before any app starts (AD-016).
-        var argumentProblems = UatArguments.Check(
-            match.Pattern,
-            step,
-            rawArguments,
-            new UatValueContext(DateTimeOffset.UtcNow, catalogs.Apps, catalogs.CatalogFor(app).ArgumentTypes));
-        if (argumentProblems.Count > 0)
-        {
-            foreach (var problem in argumentProblems)
-            {
-                diagnostics.Add(problem);
-            }
-
-            return;
-        }
-
-        apps.Use(app);
-        invocations.Add(new UatStepInvocation(
-            scenario.Name,
-            step,
-            match.Pattern,
-            arguments,
-            step.Table,
-            fromBackground)
-        {
-            App = app?.Name,
-            RawArguments = rawArguments,
-        });
     }
 
     // {user} is the acting user: "I" is the current app's user, and a name is checked against the
@@ -252,11 +131,468 @@ public static class UatBinder
             .Order(StringComparer.Ordinal)
             .ToArray();
 
-        private static string? FirstArgument(UatCommandMatch match)
+    private static string? FirstArgument(UatCommandMatch match)
         => FirstParameterName(match.Pattern) is { } name && match.Arguments.TryGetValue(name, out var value) ? value : null;
 
     private static string? FirstParameterName(UatCommandPattern pattern)
         => Regex.Match(pattern.Phrase, @"^\{([A-Za-z][A-Za-z0-9_-]*)\}") is { Success: true } found ? found.Groups[1].Value : null;
+
+    private static UatDiagnostic Error(string code, string message, UatSourceLocation location)
+        => new(UatDiagnosticSeverity.Error, code, message, location);
+
+    // One scenario's steps in order, with the current app. Inference walks a callable's body
+    // instead: it learns types and drops what only a call can decide.
+    private sealed class Walk(
+        UatCatalogSet catalogs,
+        UatPreparedCallables callables,
+        string scenarioName,
+        List<UatStepInvocation> invocations,
+        UatInference? inference)
+    {
+        private readonly AppTracker _apps = new(catalogs);
+
+        public void Step(UatStep step, bool fromBackground, UatCallFrame? frame, List<UatDiagnostic> diagnostics)
+        {
+            var app = _apps.Current;
+            UatCommandMatch? match = null;
+            IReadOnlyList<string> named = [];
+
+            if (catalogs.TryFindSubject(step.Text, out var subject, out _))
+            {
+                if (!_apps.TryResolve(subject, out var subjectApp, out var error))
+                {
+                    diagnostics.Add(Error("UATB006", error, step.Source));
+                    return;
+                }
+
+                // Only a phrase declared with the subject in its first parameter binds it: {user} taps
+                // {control}, {app} uses the app. The engine infers no verb forms (AD-015).
+                var catalog = catalogs.CatalogFor(subjectApp);
+                var declared = Match(catalog, step)
+                    .Where(candidate => FirstArgument(candidate) == subject)
+                    .ToArray();
+                if (declared.Length > 1)
+                {
+                    diagnostics.Add(Error(
+                        "UATB002",
+                        $"Step '{step.Text}' is ambiguous: as {subject}, it matches {string.Join(", ", declared.Select(candidate => $"'{candidate.Pattern.Phrase}'"))}.",
+                        step.Source));
+                    return;
+                }
+
+                if (declared.Length == 1)
+                {
+                    match = declared[0];
+                    app = subjectApp;
+                }
+                else
+                {
+                    named = NamedPhrases(catalog, step.EffectiveKeyword);
+                }
+            }
+
+            if (match is null)
+            {
+                var matches = Match(catalogs.CatalogFor(app), step);
+                if (matches.Count == 0)
+                {
+                    diagnostics.Add(Error(
+                        "UATB001",
+                        subject.Length == 0
+                            ? $"No command binding matches step '{step.Text}'."
+                            : $"No command binding matches step '{step.Text}'. A step that names {subject} binds only to a phrase declared with {{{UserParameter}}} first; "
+                              + (named.Count == 0
+                                  ? $"no {step.EffectiveKeyword} phrase is."
+                                  : $"the {step.EffectiveKeyword} ones are {string.Join(", ", named.Select(phrase => $"'{phrase}'"))}."),
+                        step.Source));
+                    return;
+                }
+
+                if (matches.Count > 1)
+                {
+                    diagnostics.Add(Error(
+                        "UATB002",
+                        $"Step '{step.Text}' is ambiguous and matches {matches.Count} command bindings: {string.Join(", ", matches.Select(Describe))}.",
+                        step.Source));
+                    return;
+                }
+
+                match = matches[0];
+            }
+
+            // A body step that passes the call's table has none yet: only a call can check it.
+            if (match.Pattern.Callable is null && !(inference is not null && step.Passes != UatPassedBlock.None))
+            {
+                if (match.Pattern.RequiresTable && step.Table is null)
+                {
+                    diagnostics.Add(Error("UATB003", $"Step '{step.Text}' requires a table.", step.Source));
+                    return;
+                }
+
+                if (!match.Pattern.AllowsTable && step.Table is not null)
+                {
+                    diagnostics.Add(Error("UATB004", $"Step '{step.Text}' does not accept a table.", step.Table.Source));
+                    return;
+                }
+            }
+
+            var arguments = match.Arguments;
+            var rawArguments = match.RawArguments;
+            if (arguments.TryGetValue(UserParameter, out var user) && inference is not null && UatOutline.WholePlaceholder(user) is { } userPlaceholder)
+            {
+                inference.Record(userPlaceholder, typeof(UatUserRole));
+            }
+            else if (catalogs.Apps.Count == 0 && user is not null && user != "I")
+            {
+                diagnostics.Add(Error(
+                    "UATB007",
+                    $"Step '{step.Text}' names the user '{user}', but the config has no Apps table to say whose app that is.",
+                    step.Source));
+                return;
+            }
+            else if (catalogs.Apps.Count > 0 && user is not null)
+            {
+                if (!TryBindUser(catalogs, _apps, match, user, ref app, out var boundUser, out var error))
+                {
+                    diagnostics.Add(Error("UATB007", $"Step '{step.Text}': {error}", step.Source));
+                    return;
+                }
+
+                arguments = new Dictionary<string, string>(arguments, StringComparer.Ordinal) { [UserParameter] = boundUser };
+                rawArguments = new Dictionary<string, string>(rawArguments, StringComparer.Ordinal) { [UserParameter] = boundUser };
+            }
+
+            if (match.Pattern.Callable is { } callable)
+            {
+                if (inference is not null)
+                {
+                    InferThroughCall(step, callable, rawArguments);
+                }
+                else
+                {
+                    Call(step, callables.Get(callable), rawArguments, app, fromBackground, frame, diagnostics);
+                }
+
+                return;
+            }
+
+            // A broken phrase and a value that does not fit fail here, before any app starts (AD-016).
+            var argumentProblems = UatArguments.Check(
+                match.Pattern,
+                step,
+                rawArguments,
+                new UatValueContext(DateTimeOffset.UtcNow, catalogs.Apps, catalogs.CatalogFor(app).ArgumentTypes)
+                {
+                    Placeholders = inference is null ? null : inference.Record,
+                });
+            if (inference is not null)
+            {
+                // What the body writes itself cannot be fixed by a call: the callable is broken.
+                var avoidable = step.Passes == UatPassedBlock.None ? [] : new[] { "UATA007" };
+                if (argumentProblems.FirstOrDefault(problem => !avoidable.Contains(problem.Code)) is { } problem)
+                {
+                    inference.Fail("UATC008", $"has a step that cannot run: {problem.Code} {problem.Message}");
+                }
+
+                if (step.Passes == UatPassedBlock.Table)
+                {
+                    inference.BlockTypes.Add(match.Pattern.Parameters.FirstOrDefault(p => p.Source == UatParameterSource.Table)?.Type ?? typeof(UatTable));
+                }
+
+                _apps.Use(app);
+                return;
+            }
+
+            if (argumentProblems.Count > 0)
+            {
+                diagnostics.AddRange(argumentProblems);
+                return;
+            }
+
+            _apps.Use(app);
+            invocations.Add(new UatStepInvocation(
+                scenarioName,
+                step,
+                match.Pattern,
+                arguments,
+                step.Table,
+                fromBackground)
+            {
+                App = app?.Name,
+                RawArguments = rawArguments,
+                Call = frame,
+            });
+        }
+
+        private IReadOnlyList<UatCommandMatch> Match(UatCommandCatalog catalog, UatStep step)
+            => UatCommandCatalog.Select([.. catalog.Candidates(step), .. callables.Candidates(step)]);
+
+        private static string Describe(UatCommandMatch match)
+            => match.Pattern.Callable is { } callable ? $"'{callable.Phrase}' ({callable.Source})" : $"'{match.Pattern.Phrase}'";
+
+        // A body step that calls another callable: its placeholders take that callable's types.
+        private void InferThroughCall(UatStep step, UatCallable callable, IReadOnlyDictionary<string, string> rawArguments)
+        {
+            var called = callables.Get(callable);
+            if (called.Problem is { } problem)
+            {
+                inference!.Fail(problem.Code == "UATC004" ? "UATC004" : "UATC008", $"calls '{callable.Phrase}' ({callable.Source}), which {problem.Message.TrimEnd('.')}.");
+                return;
+            }
+
+            foreach (var (name, value) in rawArguments)
+            {
+                if (UatOutline.WholePlaceholder(value) is { } placeholder && called.Types.TryGetValue(name, out var type))
+                {
+                    inference!.Record(placeholder, type);
+                }
+            }
+
+            if (step.Passes == UatPassedBlock.Table && called.Passes == UatPassedBlock.Table && called.BlockType is { } blockType)
+            {
+                inference!.BlockTypes.Add(blockType);
+            }
+
+            if (callable.Kind == UatCallableKind.EachRow && step.Table is { } table)
+            {
+                foreach (var column in table.Columns)
+                {
+                    var parameter = called.Columns.FirstOrDefault(name => UatTableBinding.Key(name) == UatTableBinding.Key(column));
+                    foreach (var row in table.Rows)
+                    {
+                        if (parameter is not null && UatOutline.WholePlaceholder(row.Cells[column]) is { } placeholder)
+                        {
+                            inference!.Record(placeholder, called.Types[parameter]);
+                        }
+                    }
+                }
+            }
+        }
+
+        private void Call(
+            UatStep step,
+            UatPreparedCallable prepared,
+            IReadOnlyDictionary<string, string> rawArguments,
+            UatAppConfig? app,
+            bool fromBackground,
+            UatCallFrame? frame,
+            List<UatDiagnostic> diagnostics)
+        {
+            var callable = prepared.Callable;
+            if (prepared.Problem is { } broken)
+            {
+                diagnostics.Add(Error(broken.Code, $"Step '{step.Text}': the phrase '{callable.Phrase}' from {callable.Source} {broken.Message}", step.Source));
+                return;
+            }
+
+            if (frame?.Chain.FirstOrDefault(outer => outer.Callable == callable) is not null)
+            {
+                var chain = frame.Chain.Select(outer => $"'{outer.Callable.Phrase}'").Append($"'{callable.Phrase}'");
+                diagnostics.Add(Error("UATC004", $"Step '{step.Text}' calls a phrase that is already running: {string.Join(" -> ", chain)}.", step.Source));
+                return;
+            }
+
+            if ((frame?.Depth ?? 0) >= MaxCallDepth)
+            {
+                diagnostics.Add(Error("UATC005", $"Step '{step.Text}' calls '{callable.Phrase}' at depth {frame!.Depth + 1}; callable phrases nest at most {MaxCallDepth} deep. Call it from the scenario, or make one of them a C# phrase.", step.Source));
+                return;
+            }
+
+            if (!CheckBlocks(step, prepared, diagnostics) || !CheckValues(step, prepared, rawArguments, app, diagnostics, out var rows))
+            {
+                return;
+            }
+
+            _apps.Use(app);
+            foreach (var (row, rowValues) in rows)
+            {
+                var values = new Dictionary<string, string>(rawArguments, StringComparer.Ordinal);
+                foreach (var (name, value) in rowValues)
+                {
+                    values[name] = value;
+                }
+
+                var callFrame = new UatCallFrame(callable, step, row, values, frame);
+                var first = invocations.Count;
+                List<UatDiagnostic> inner = [];
+                foreach (var body in callable.Steps)
+                {
+                    var expanded = UatOutline.Substitute(body, values, quoteAware: true) with { Passes = UatPassedBlock.None };
+                    expanded = body.Passes switch
+                    {
+                        UatPassedBlock.Table => expanded with { Table = step.Table },
+                        UatPassedBlock.DocString => expanded with { DocString = step.DocString },
+                        _ => expanded,
+                    };
+                    Step(expanded, fromBackground, callFrame, inner);
+                }
+
+                diagnostics.AddRange(inner.Select(diagnostic => Relocate(diagnostic, step, callFrame)));
+                if (inner.Count == 0 && PageProblem(callable, invocations.Skip(first).ToList()) is { } pageProblem)
+                {
+                    diagnostics.Add(Error("UATC006", $"Step '{step.Text}': the phrase '{callable.Phrase}' from {callable.Source} {pageProblem}", callFrame.Location));
+                }
+            }
+        }
+
+        private static bool CheckBlocks(UatStep step, UatPreparedCallable prepared, List<UatDiagnostic> diagnostics)
+        {
+            var phrase = prepared.Callable.Phrase;
+            string? problem = prepared.Callable.Kind == UatCallableKind.EachRow
+                ? step.Table is null || step.Table.Rows.Count == 0 ? "UATA007" : step.DocString is not null ? "UATB004" : null
+                : prepared.Passes switch
+                {
+                    UatPassedBlock.Table when step.Table is null => "UATA007",
+                    UatPassedBlock.DocString when step.DocString is null => "UATA007",
+                    not UatPassedBlock.Table when step.Table is not null => "UATB004",
+                    not UatPassedBlock.DocString when step.DocString is not null => "UATB004",
+                    _ => null,
+                };
+
+            if (problem is null)
+            {
+                return true;
+            }
+
+            var message = (problem, prepared.Callable.Kind, prepared.Passes) switch
+            {
+                ("UATA007", UatCallableKind.EachRow, _) => $"Step '{step.Text}' needs a table under it: '{phrase}' runs once per row, with the columns {string.Join(", ", prepared.Columns)}.",
+                ("UATA007", _, UatPassedBlock.Table) => $"Step '{step.Text}' needs a table under it, which '{phrase}' passes on.",
+                ("UATA007", _, _) => $"Step '{step.Text}' needs a doc string (\"\"\") under it, which '{phrase}' passes on.",
+                _ => $"Step '{step.Text}' does not accept a {(step.Table is not null ? "table" : "doc string")}: '{phrase}' does not pass one on.",
+            };
+            diagnostics.Add(Error(problem, message, problem == "UATB004" && step.Table is not null ? step.Table.Source : step.Source));
+            return false;
+        }
+
+        // Every value of the call is read as its type now, so a wrong one is reported once, at
+        // the call's line or its row, and nothing is expanded.
+        private bool CheckValues(
+            UatStep step,
+            UatPreparedCallable prepared,
+            IReadOnlyDictionary<string, string> rawArguments,
+            UatAppConfig? app,
+            List<UatDiagnostic> diagnostics,
+            out IReadOnlyList<(int? Row, IReadOnlyDictionary<string, string> Values)> rows)
+        {
+            var callable = prepared.Callable;
+            var context = new UatValueContext(DateTimeOffset.UtcNow, catalogs.Apps, catalogs.CatalogFor(app).ArgumentTypes);
+            var count = diagnostics.Count;
+            void Check(string name, string text, UatSourceLocation location)
+            {
+                var type = prepared.Types[name];
+                if (!UatValues.TryRead(text, type, context, out _, out var problem, allowNull: true))
+                {
+                    diagnostics.Add(Error(problem!.Code, $"Step '{step.Text}': '{name}' of '{callable.Phrase}' is a {UatValues.Describe(type)}; {problem.Message}", location) with
+                    {
+                        Fix = problem is { Fix: { } fix, Original: { } original } ? new UatTextFix(original, fix) : null,
+                    });
+                }
+            }
+
+            foreach (var name in callable.HeadingParameters)
+            {
+                if (rawArguments.TryGetValue(name, out var text))
+                {
+                    Check(name, text, step.Source);
+                }
+            }
+
+            rows = [(null, new Dictionary<string, string>())];
+            if (callable.Kind == UatCallableKind.EachRow && step.Table is { } table)
+            {
+                Dictionary<string, string> byColumn = new(StringComparer.Ordinal);
+                foreach (var column in table.Columns)
+                {
+                    if (prepared.Columns.FirstOrDefault(name => UatTableBinding.Key(name) == UatTableBinding.Key(column)) is { } name)
+                    {
+                        byColumn[column] = name;
+                    }
+                    else
+                    {
+                        diagnostics.Add(Error("UATA006", $"Step '{step.Text}': '{column}' is not a column of '{callable.Phrase}'. Its columns are {string.Join(", ", prepared.Columns)}.", table.Source));
+                    }
+                }
+
+                foreach (var name in prepared.Columns.Where(name => !byColumn.ContainsValue(name)))
+                {
+                    diagnostics.Add(Error("UATA006", $"Step '{step.Text}': the table needs a column '{name}' for '{callable.Phrase}'.", table.Source));
+                }
+
+                if (diagnostics.Count > count)
+                {
+                    return false;
+                }
+
+                List<(int?, IReadOnlyDictionary<string, string>)> perRow = [];
+                for (var i = 0; i < table.Rows.Count; i++)
+                {
+                    var row = table.Rows[i];
+                    Dictionary<string, string> values = new(StringComparer.Ordinal);
+                    foreach (var (column, name) in byColumn)
+                    {
+                        Check(name, row.Cells[column], row.Source);
+                        values[name] = row.Cells[column];
+                    }
+
+                    perRow.Add((i + 1, values));
+                }
+
+                rows = perRow;
+            }
+
+            if (prepared.Passes == UatPassedBlock.Table && step.Table is { } passed && prepared.BlockType is { } blockType && blockType != typeof(UatTable))
+            {
+                diagnostics.AddRange(UatTableBinding.Check(passed, blockType, context).Select(found =>
+                    Error(found.Problem.Code, $"Step '{step.Text}': the table '{callable.Phrase}' passes on: {found.Problem.Message}", found.Location) with
+                    {
+                        Fix = found.Problem is { Fix: { } fix, Original: { } original } ? new UatTextFix(original, fix) : null,
+                    }));
+            }
+
+            return diagnostics.Count == count;
+        }
+
+        // A problem inside the call is reported at the call (or its row), and the steps it came
+        // through are kept. A cell of the table the call passed on already has the call's line.
+        private static UatDiagnostic Relocate(UatDiagnostic diagnostic, UatStep call, UatCallFrame frame)
+        {
+            if (call.Table is { } table && (diagnostic.Location == table.Source || table.Rows.Any(row => row.Source == diagnostic.Location)))
+            {
+                return diagnostic;
+            }
+
+            return diagnostic with
+            {
+                Location = frame.Location,
+                Within = [diagnostic.Location, .. diagnostic.Within],
+                Message = $"{diagnostic.Message} (in '{frame.Callable.Phrase}' at {diagnostic.Location})",
+            };
+        }
+
+        // Without page tracking, only what the steps say is checked: a callable that names a page
+        // ends on one, and a row ends on the page it started on.
+        private static string? PageProblem(UatCallable callable, IReadOnlyList<UatStepInvocation> bound)
+        {
+            var pages = bound.Where(invocation => invocation.Command.NamesPage).ToList();
+            if (pages.Count == 0 || bound.Count == 0)
+            {
+                return null;
+            }
+
+            if (!bound[^1].Command.NamesPage)
+            {
+                return $"names the {Page(pages[^1])} page but does not end on one. End it with a step that says where it ends: 'Then I should be on the ... page'.";
+            }
+
+            return callable.Kind == UatCallableKind.EachRow && !string.Equals(Page(pages[0]), Page(bound[^1]), StringComparison.OrdinalIgnoreCase)
+                ? $"runs once per row, so each row ends on the page it started on; this one starts on the {Page(pages[0])} page and ends on the {Page(bound[^1])} page."
+                : null;
+        }
+
+        private static string Page(UatStepInvocation invocation)
+            => invocation.Arguments.TryGetValue(PageParameter, out var page) ? page : "?";
+    }
 
     // The current app as binding walks a scenario, and which app of each user was used last.
     private sealed class AppTracker(UatCatalogSet catalogs)
@@ -344,4 +680,7 @@ public sealed record UatStepInvocation(
 
     /// <summary>The arguments as written, quotes kept, which typed parameters are read from.</summary>
     public IReadOnlyDictionary<string, string> RawArguments { get; init; } = Arguments;
+
+    /// <summary>The call that put this step here, for a step of a callable phrase; null for a step written in the scenario.</summary>
+    public UatCallFrame? Call { get; init; }
 }

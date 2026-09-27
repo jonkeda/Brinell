@@ -174,12 +174,12 @@ public sealed class UatReflectionRuntime
         // form for a scenario with several users (AD-015).
         foreach (var phrase in new[] { "I am on the {page} page", "{user} is on the {page} page" })
         {
-            catalog.Register(UatEffectiveStepKeyword.Given, phrase, "Builtin.Page.Open", handler: OpenPageAsync);
+            catalog.Register(UatEffectiveStepKeyword.Given, phrase, "Builtin.Page.Open", handler: OpenPageAsync, namesPage: true);
         }
 
         foreach (var phrase in new[] { "I should be on the {page} page", "{user} should be on the {page} page" })
         {
-            catalog.Register(UatEffectiveStepKeyword.Then, phrase, "Builtin.Page.AssertOpen", handler: AssertPageAsync);
+            catalog.Register(UatEffectiveStepKeyword.Then, phrase, "Builtin.Page.AssertOpen", handler: AssertPageAsync, namesPage: true);
         }
 
         foreach (var phrase in new[] { "I should see {text}", "{user} should see {text}" })

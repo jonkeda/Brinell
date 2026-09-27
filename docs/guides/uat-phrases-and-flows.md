@@ -114,6 +114,7 @@ Common diagnostics:
 | `UATB004` | The matched command does not accept a table. |
 | `UATA001`-`UATA007` | A value does not fit its parameter (see [Arguments](#arguments)). |
 | `UATA010`-`UATA013` | The step binds to a broken phrase (see [Broken Phrases](#broken-phrases)). |
+| `UATC001`-`UATC008` | The step calls a broken callable phrase (see [Callable Phrases](#callable-phrases)). |
 
 ## Arguments
 
@@ -208,6 +209,110 @@ loads, and a step that binds to it fails naming the method:
 | `UATA013` | has two empty attributes of one keyword, a name prefix that is not its keyword, an empty attribute on a control verb, or a control-verb property (`CommandId`, `Literal`) on a phrase method |
 
 `brinell-data phrases` lists the broken ones as warnings.
+
+## Callable Phrases
+
+A tester can give a sequence of steps a name and call it like a phrase, with no C#
+([AD-017](../../.docs/decisions/ad-017-callable-phrases-are-sequences-not-programs.md)). It is
+declared under a `## Phrase:` heading, in a scenario file (seen by that file) or in a
+`Scenarios/*.phrases.md` file (seen by every scenario under that `Scenarios` folder):
+
+````markdown
+# Phrases: Todo
+
+## Phrase: the synced list has todos
+
+```gherkin
+Given I am on the Todo List page
+And the server also has todos
+  <table>
+When I tap Sync
+Then I should be on the Todo List page
+```
+````
+
+```gherkin
+Given the synced list has todos
+  | Title            | Status | Due Date |
+  | ---------------- | ------ | -------- |
+  | Post the letters | Open   | +2d      |
+```
+
+- **The heading** says `{name}`, as a C# phrase does; **the body** says `<name>`, as an outline
+  does, and the call is expanded like an outline row. A call is matched for `Given`, `When` and
+  `Then` alike. A callable and a C# phrase with the same text are ambiguous (`UATB002`): nothing
+  shadows anything.
+- **Typed by where the value goes.** In `## Phrase: a todo {title} due {due}` whose body says
+  `When I create a todo <title> due <due>`, `<due>` fills a `DateOnly` parameter, so `{due}` is a
+  date, and the call's value is read and checked as one at the call's line. A value inside a longer
+  argument (`"Report <due>"`) is text, unless a `Parameters` table under the heading says
+  otherwise:
+
+  ```markdown
+  | Parameter | Type | Example     |
+  | --------- | ---- | ----------- |
+  | due       | date | 12-May-2026 |
+  ```
+
+  Types are written as `brinell-data phrases` shows them: `text`, `whole number`, `number`,
+  `true/false`, `date`, `date and time`, `time`, `duration`, `user`, `list of ...`, `table`, or
+  the C# name of a type a phrase already takes (`TodoStatus`). A declared type must agree with
+  the steps the value goes to.
+- **Tables.** A line `<table>` under a body step passes the call's table there whole; the table
+  is checked against that step's parameter, and a bad cell is reported at its row of the call.
+  `<doc string>` does the same for a `"""` block. Placeholders in a table the body writes are
+  filled in.
+- **Once per row.** `## Phrase for each row:` runs the body once for each row of the call's
+  table. `{x}` in the heading is written once in the call; every other `<x>` is a column:
+
+  ````markdown
+  ## Phrase for each row: each todo shows its status
+
+  ```gherkin
+  Then the todo <title> should show status <status>
+  ```
+  ````
+
+  ```gherkin
+  And each todo shows its status
+    | Title            | Status      |
+    | ---------------- | ----------- |
+    | Post the letters | Open        |
+    | Paint the fence  | In progress |
+  ```
+
+- **Where problems are reported.** Everything inside a call is bound where the call is, so a
+  problem is reported at the call's line (a row's line, per row), with `via` lines to the body
+  steps it came through. `--fix` rewrites the value in the call, never the body.
+- **No logic, ever.** A callable is a fixed sequence: no `If`, loop, variable or return value.
+  It may call other callables, three deep at most, and never itself (`UATC004`, `UATC005`).
+  Anything that decides is a C# phrase whose name says what it decides.
+- **Pages.** A callable whose steps name a page (`I am on`, `I should be on`) ends with one; a
+  per-row body ends on the page it started on (`UATC006`).
+- **The trace** shows each call once, its rows, and its steps indented under it.
+
+A callable that is declared wrongly loads with the rest and fails only its calls, naming its file
+and line:
+
+| Code | The callable |
+| --- | --- |
+| `UATC001` | has a `{x}` its body does not use, or a `<x>` its heading does not name |
+| `UATC002` | passes a value to steps that cannot agree on its type, or disagrees with its `Parameters` table |
+| `UATC003` | has a `Parameters` row that names no parameter, an unknown type, or an example that does not read |
+| `UATC004` | calls itself, directly or through others |
+| `UATC005` | is called more than three deep |
+| `UATC006` | names a page but does not end on one, or a row ends on another page than it started |
+| `UATC007` | runs once per row and passes `<table>` on |
+| `UATC008` | has a body step with a value that does not fit, or bound to a broken C# phrase |
+
+What the text alone shows is a parse error: `<table>` outside a phrase section (`UAT024`), a
+`## Phrase:` with no text (`UAT025`) or no steps (`UAT026`), a malformed `Parameters` table
+(`UAT027`), and a phrase file with anything but phrase sections under one `# Phrases:` heading
+(`UAT028`). Phrase files hold no prose, as scenario files do not.
+
+A body step that binds to nothing is not a broken callable: it may bind where it is called (in
+another app). The call reports it. `brinell-data validate` reports broken callables as warnings,
+and `phrases` lists callables with their types.
 
 ## Built-In Phrases
 
@@ -573,7 +678,9 @@ The rule is [AD-015](../../.docs/decisions/ad-015-a-steps-subject-picks-its-app.
 - `srcnew/Brinell.Uat/UatCatalogBuilder.cs` — the discovery pass and both projections
 - `srcnew/Brinell.Uat/UatMarkdownParser.cs`
 - `srcnew/Brinell.Uat/UatCommandCatalog.cs`
-- `srcnew/Brinell.Uat/UatBinder.cs` — binding, subjects and the current app
+- `srcnew/Brinell.Uat/UatBinder.cs` — binding, subjects, the current app, and expanding calls
+- `srcnew/Brinell.Uat/UatCallables.cs`, `UatPreparedCallables.cs` — callable phrases, their types and problems
+- `srcnew/Brinell.Uat/UatScenarioFiles.cs` — loading a scenario file with the phrase files it sees
 - `srcnew/Brinell.Uat/UatCatalogSet.cs` — the catalogs per head, and what a step can see
 - `srcnew/Brinell.Uat/UatValues.cs` — how every scenario value is read and written
 - `srcnew/Brinell.Uat/UatPhraseDeclarations.cs` — a method's phrases, parameters and problems

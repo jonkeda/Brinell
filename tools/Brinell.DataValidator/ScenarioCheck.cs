@@ -76,6 +76,35 @@ internal static class ScenarioCheck
         throw new ToolException($"No fixture '{fixtureName}' (the config's Runtime Fixture) in {string.Join(", ", candidates.Select(Path.GetFileName))}.");
     }
 
+    /// <summary>The global phrase files: <c>*.phrases.md</c> directly in the project's Scenarios folder.</summary>
+    public static IReadOnlyList<string> PhraseFiles(string configPath)
+    {
+        var scenarios = Path.Combine(Path.GetDirectoryName(configPath)!, "Scenarios");
+        return Directory.Exists(scenarios)
+            ? Directory.EnumerateFiles(scenarios, UatScenarioFiles.PhraseFilePattern, SearchOption.TopDirectoryOnly).Order(StringComparer.Ordinal).ToList()
+            : [];
+    }
+
+    /// <summary>
+    /// A warning when the project has phrase files its csproj does not copy: the gate reads the
+    /// build output, so its calls would bind to nothing there while this tool, reading the project
+    /// folder, passes.
+    /// </summary>
+    public static string? CopyWarning(string configPath)
+    {
+        var project = Path.GetDirectoryName(configPath)!;
+        if (PhraseFiles(configPath).Count == 0)
+        {
+            return null;
+        }
+
+        var copies = Directory.EnumerateFiles(project, "*.csproj")
+            .Any(csproj => File.ReadAllText(csproj).Contains(".phrases.md", StringComparison.OrdinalIgnoreCase));
+        return copies
+            ? null
+            : "The Scenarios folder has *.phrases.md files that the project does not copy to its output, so the xUnit gate cannot see them. Add <None Update=\"Scenarios\\*.phrases.md\" CopyToOutputDirectory=\"PreserveNewest\" /> to the csproj.";
+    }
+
     public static IReadOnlyList<string> Files(string configPath)
     {
         var scenarios = Path.Combine(Path.GetDirectoryName(configPath)!, "Scenarios");

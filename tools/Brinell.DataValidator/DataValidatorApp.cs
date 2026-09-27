@@ -77,7 +77,17 @@ public static class DataValidatorApp
             if (options.ConfigPath is { } config && ScenarioCheck.CanCheck(config))
             {
                 var files = scenarioFile is null ? ScenarioCheck.Files(config) : [scenarioFile];
-                diagnostics.AddRange(CheckScenarios(options, ScenarioCheck.Catalogs(config), files, output, errors));
+                var catalogs = ScenarioCheck.Catalogs(config);
+                if (scenarioFile is null)
+                {
+                    diagnostics.AddRange(CheckPhraseFiles(options, catalogs, ScenarioCheck.PhraseFiles(config), errors));
+                    if (ScenarioCheck.CopyWarning(config) is { } copy)
+                    {
+                        errors.WriteLine($"warning: {copy}");
+                    }
+                }
+
+                diagnostics.AddRange(CheckScenarios(options, catalogs, files, output, errors));
                 scenarios = files.Count;
             }
             else if (scenarioFile is not null)
@@ -148,10 +158,32 @@ public static class DataValidatorApp
         }
     }
 
+    private static IEnumerable<TestDataDiagnostic> CheckPhraseFiles(ToolOptions options, UatCatalogSet catalogs, IReadOnlyList<string> files, TextWriter errors)
+    {
+        foreach (var file in files)
+        {
+            var found = UatScenarioCheck.CheckPhraseFile(file, catalogs);
+            foreach (var warning in found.Where(d => d.Severity == UatDiagnosticSeverity.Warning))
+            {
+                errors.WriteLine($"warning: {Display(options, warning.Location.FilePath ?? file)}:{warning.Location.LineNumber}: {warning.Code} {warning.Message}");
+            }
+
+            foreach (var error in found.Where(d => d.Severity == UatDiagnosticSeverity.Error))
+            {
+                yield return new TestDataDiagnostic(error.Location.FilePath ?? file, error.Location.LineNumber, error.Code, null, error.Message);
+            }
+        }
+    }
+
     private static int Phrases(ToolOptions options, TextWriter output)
     {
         var config = options.ConfigPath ?? throw new ToolException($"No {ConfigFileName} here. Run from a UAT project folder, or pass --config.");
-        var catalog = ScenarioCheck.Catalogs(config).Default;
+        var catalogs = ScenarioCheck.Catalogs(config);
+        var catalog = catalogs.Default;
+        var callables = new UatCallableSet(ScenarioCheck.PhraseFiles(config)
+                .SelectMany(file => UatScenarioFiles.ParsePhraseFile(file).Document?.Callables ?? []))
+            .Prepare(catalogs)
+            .All;
         UatEffectiveStepKeyword? keyword = options.Keyword is { } name
             ? Enum.TryParse<UatEffectiveStepKeyword>(name, ignoreCase: true, out var parsed) ? parsed : throw new ToolException($"'{name}' is not Given, When or Then.")
             : null;
@@ -166,12 +198,20 @@ public static class DataValidatorApp
                     parameters = p.Parameters.Select(parameter => new { parameter.Name, type = UatValues.Describe(parameter.Type), source = parameter.Source.ToString() }),
                     declaration = p.CommandId,
                     problem = p.Problem is { } problem ? $"{problem.Code} {problem.Message}" : null,
-                }),
+                }).Concat(callables.Select(c => new
+                {
+                    // A callable has no keyword: it answers Given, When and Then alike.
+                    keyword = "Any",
+                    phrase = c.Callable.Phrase,
+                    parameters = c.Types.Select(parameter => new { Name = parameter.Key, type = UatValues.Describe(parameter.Value), source = c.Columns.Contains(parameter.Key) ? "Column" : "Phrase" }),
+                    declaration = c.Callable.Source.ToString(),
+                    problem = c.Problem is { } problem ? $"{problem.Code} {problem.Message}" : null,
+                })),
                 OutputJson));
             return 0;
         }
 
-        foreach (var line in UatScenarioCheck.DescribePhrases(catalog, keyword))
+        foreach (var line in UatScenarioCheck.DescribePhrases(catalog, keyword).Concat(UatScenarioCheck.DescribeCallables(callables)))
         {
             output.WriteLine(line);
         }

@@ -1769,8 +1769,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
         var options = _activeRunOptions;
         List<string> lines =
         [
-            .. session.StepSession.Results.Select(result =>
-                $"{result.Status}: {result.Invocation.Step.Source}: {result.Invocation.CommandId}: {result.Invocation.Step.Text} {result.Message}"),
+            .. UatDiagnosticsFormatter.FormatSteps(session.StepSession.Results),
             "Runtime trace:"
         ];
         if (!string.IsNullOrWhiteSpace(session.AutPlacementReport))

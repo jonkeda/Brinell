@@ -395,7 +395,7 @@ public static partial class UatTableBinding
             : throw new InvalidOperationException($"{source}: column '{column}': {problem!.Message.TrimEnd('.')}.", new UatValueException(problem));
     }
 
-    private static string Key(string name) => name.Replace(" ", string.Empty, StringComparison.Ordinal).Replace("_", string.Empty, StringComparison.Ordinal).ToLowerInvariant();
+    internal static string Key(string name) => name.Replace(" ", string.Empty, StringComparison.Ordinal).Replace("_", string.Empty, StringComparison.Ordinal).ToLowerInvariant();
 
     private static string Title(string name) => name.Length == 0 ? name : char.ToUpperInvariant(name[0]) + name[1..];
 

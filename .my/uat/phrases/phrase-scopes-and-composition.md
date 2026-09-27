@@ -158,7 +158,13 @@ page" has to be known **statically**, by reading the steps in order:
 | `Given I am on the X page` | X |
 | `Then I should be on the X page` | X |
 | a page phrase whose method returns a page type (`CreateTodo` returns `TodoListPage`) | that page |
+| a call to a callable phrase ([G](#g-callable-scenarios)) | the page its inner steps end on, tracked through them in the caller's page; unchanged if they name none |
 | a control verb (`I tap Save`) | **unknown**, unless the control declares it |
+
+This table is the one definition of "the page after a step". Callable phrases add no rule of their
+own: their inner steps are bound in order, in the caller's page, so the page after the call falls
+out of the rows above. The callables doc only adds checks that need no tracking (a callable that
+names a page must end on one; a per-row body ends where it started).
 
 The last row is the gap. `I tap Save` might go anywhere. Three ways to handle it, and they
 combine:
@@ -194,7 +200,8 @@ and file layout line up, which answers the original question ("how to split the 
 Named, parameterised step sequences that testers write in scenario language, with a hard line
 against control flow. They have their own discussion:
 [callable-phrases.md](../callable-phrases/callable-phrases.md). They fit the scope model above:
-declared in a file, a module or globally, and visible there.
+declared in a file, a module or globally, and visible there. The page after a call is defined in
+[the page table above](#the-hard-part-knowing-the-current-page-at-bind-time).
 
 ---
 
@@ -218,8 +225,19 @@ The top four need a developer and can contain logic. Callable phrases need no de
    page phrases, ambiguity errors across scopes.
 3. **Module scope (B):** `Module` on `[UatPhraseClass]`, matched to the scenario folder.
 
-Each step is useful on its own, and none needs the next one. Callable phrases (G) come after,
-on their own track.
+Each step is useful on its own, and none needs the next one.
+
+Callable phrases (G) do not wait for this order. Their file-local and global parts need no scope
+and are built first. They are expanded inside the binder's walk over the steps, so when static
+page tracking (2) lands it follows the page through their inner steps with no rework. Module
+phrase files wait for module scope (3). The combined order:
+
+| # | Work | Doc |
+| --- | --- | --- |
+| 1 | Callable phrases: file-local, types, tables, per-row, guardrails, global `*.phrases.md` | [callable-phrases.md](../callable-phrases/callable-phrases.md) steps 1-5, 7 |
+| 2 | Page phrases (A) | this doc, step 1 |
+| 3 | Static page tracking (F), with callables as a source of the page after a step | this doc, step 2; callables step 8 |
+| 4 | Module scope (B), then module `*.phrases.md` files | this doc, step 3; callables step 6 |
 
 ## Open questions
 

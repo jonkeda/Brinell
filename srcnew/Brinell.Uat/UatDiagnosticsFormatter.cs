@@ -6,8 +6,51 @@ public static class UatDiagnosticsFormatter
     {
         return string.Join(
             Environment.NewLine,
-            diagnostics.Select(x => $"{x.Location}: {x.Code} {x.Message}"));
+            diagnostics.SelectMany(x => x.Within.Select(inner => $"    via {inner}").Prepend($"{x.Location}: {x.Code} {x.Message}")));
     }
+
+    /// <summary>
+    /// Step results, one per line. The steps of a callable phrase are indented under their call,
+    /// and a per-row callable's under <c>row n (values)</c>, so a failure points at the real step.
+    /// </summary>
+    public static IEnumerable<string> FormatSteps(IEnumerable<UatStepResult> steps)
+    {
+        ArgumentNullException.ThrowIfNull(steps);
+
+        IReadOnlyList<UatCallFrame> open = [];
+        foreach (var step in steps)
+        {
+            var chain = step.Invocation.Call?.Chain ?? [];
+            var common = 0;
+            while (common < open.Count && common < chain.Count && ReferenceEquals(open[common], chain[common]))
+            {
+                common++;
+            }
+
+            for (var i = common; i < chain.Count; i++)
+            {
+                var frame = chain[i];
+                var indent = Indent(chain, i);
+                var sameCall = i < open.Count && ReferenceEquals(open[i].Call, frame.Call);
+                if (!sameCall)
+                {
+                    yield return $"{indent}Call: {frame.Call.Source}: {frame.Call.Keyword} {frame.Call.Text}";
+                }
+
+                if (frame.Row is not null)
+                {
+                    yield return $"{indent}  {frame.Describe()}";
+                }
+            }
+
+            open = chain;
+            var invocation = step.Invocation;
+            yield return $"{Indent(chain, chain.Count)}{step.Status}: {invocation.Step.Source}: {invocation.CommandId}: {invocation.Step.Text} {step.Message}";
+        }
+    }
+
+    private static string Indent(IReadOnlyList<UatCallFrame> chain, int level)
+        => new(' ', 2 * chain.Take(level).Sum(frame => frame.Row is null ? 1 : 2));
 
     public static string FormatBindFailure(
         IEnumerable<UatDiagnostic> diagnostics,
@@ -32,8 +75,7 @@ public static class UatDiagnosticsFormatter
     {
         List<string> lines =
         [
-            .. result.Steps.Select(x =>
-                $"{x.Status}: {x.Invocation.Step.Source}: {x.Invocation.CommandId}: {x.Invocation.Step.Text} {x.Message}"),
+            .. FormatSteps(result.Steps),
             "Runtime trace:"
         ];
 

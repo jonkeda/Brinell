@@ -18,6 +18,13 @@ public sealed record UatValueContext(
 {
     /// <summary>A context with the current time, no users and no app types.</summary>
     public static UatValueContext Default => new(DateTimeOffset.UtcNow, []);
+
+    /// <summary>
+    /// While a callable phrase's body is bound to learn its types: a value that is exactly a
+    /// placeholder (<c>&lt;hours&gt;</c>) is not read, but reported here with the type it would be
+    /// read as. Null otherwise.
+    /// </summary>
+    public Action<string, Type>? Placeholders { get; init; }
 }
 
 /// <summary>Why a value could not be read.</summary>
@@ -61,6 +68,12 @@ public static partial class UatValues
         var underlying = Nullable.GetUnderlyingType(type);
         var target = underlying ?? type;
         var trimmed = text.Trim();
+
+        if (context.Placeholders is { } placeholders && UatOutline.WholePlaceholder(trimmed) is { } placeholder)
+        {
+            placeholders(placeholder, type);
+            return true;
+        }
 
         if ((underlying is not null || (allowNull && !type.IsValueType)) && (trimmed.Length == 0 || trimmed == "null"))
         {

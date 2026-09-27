@@ -63,6 +63,8 @@ public sealed class UatCatalogSet
     /// <summary>The heads that have a catalog of their own.</summary>
     public IReadOnlyCollection<string> Heads => _byHead.Keys.ToArray();
 
+    internal IEnumerable<UatCommandCatalog> All => _byHead.Values.Prepend(Default).Distinct();
+
     /// <summary>Page and control names of every catalog.</summary>
     public IReadOnlySet<string> ReservedNames { get; }
 

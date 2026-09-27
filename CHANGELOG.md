@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Callable phrases (AD-017): a tester names a sequence of steps under `## Phrase:` in a scenario
+  file, or in `Scenarios/*.phrases.md` for every scenario, and calls it like a phrase. Its values
+  are typed by the steps they go to (or an optional `Parameters` table), `<table>` / `<doc string>`
+  pass the call's block on, and `## Phrase for each row:` runs the body once per row of the call's
+  table. Calls are expanded and checked at bind time; a problem inside one is reported at the
+  call with `via` lines to the body. No control flow, three levels deep at most, no shadowing.
+  Broken callables (`UATC001`-`UATC008`) fail only their calls. The trace indents a call's steps,
+  `brinell-data validate` checks phrase files and `phrases` lists callables with their types.
 - Typed UAT arguments (AD-016): a phrase's `{name}` takes its type from the method parameter, and
   every step value, Examples cell and table cell is read by `UatValues` in one invariant format -
   dates `12-May-2026` (or `today`, `+2d`), numbers `1,250.75`, enums by name with spaces, lists

@@ -129,8 +129,14 @@ public sealed record UatScenarioLoadResult(
     IReadOnlyList<string> Tags,
     IReadOnlyList<UatStepLoadResult> Steps);
 
+/// <param name="Status">The step's status.</param>
+/// <param name="Text">The step's text; a callable phrase's steps are indented under their call.</param>
+/// <param name="CommandId">What it binds to.</param>
+/// <param name="LineNumber">Its line in the scenario file; for a callable phrase's step, the call's.</param>
+/// <param name="CallText">For a callable phrase's step, the call as written in the scenario; null otherwise.</param>
 public sealed record UatStepLoadResult(
     string Status,
     string Text,
     string CommandId,
-    int LineNumber);
+    int LineNumber,
+    string? CallText = null);

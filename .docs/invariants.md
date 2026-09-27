@@ -49,5 +49,8 @@ The short list that must not be broken. Each links the decision that explains it
   and table cells (`12-May-2026`, `1,250.75`), checked at bind time; a broken phrase fails only the
   steps that use it; the gate and `brinell-data` check alike.
   [AD-016](decisions/ad-016-phrase-arguments-are-typed-by-the-method.md)
+- **Callable phrases are sequences, not programs.** A `## Phrase:` is steps with placeholders; no
+  branch, loop or variable; bound where it is called, problems reported at the call; no shadowing.
+  [AD-017](decisions/ad-017-callable-phrases-are-sequences-not-programs.md)
 - **The generator output is not hand-edited.** `.gen.cs` mirrors `.tpl.cs` through
   `Brinell.Generator`. [control-object](contracts/control-object.md)

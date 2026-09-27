@@ -342,6 +342,22 @@ Cells are written in the scenario format - `12-May-2026`, `1,250.75`, `In Progre
 phrase that takes a record list instead of a `UatTable` gets its rows bound and checked when the
 step binds ([Arguments](uat-phrases-and-flows.md#arguments)).
 
+## Phrase Files
+
+Steps a tester repeats can be named once, as a callable phrase
+([Callable Phrases](uat-phrases-and-flows.md#callable-phrases)). One that several files use goes
+in a `*.phrases.md` file directly in `Scenarios/`: one `# Phrases:` heading, then only
+`## Phrase:` and `## Phrase for each row:` sections. The gate reads scenarios from the build
+output, so the project copies phrase files as it copies scenarios:
+
+```xml
+<None Update="Scenarios\**\*.uat.md" CopyToOutputDirectory="PreserveNewest" />
+<None Update="Scenarios\*.phrases.md" CopyToOutputDirectory="PreserveNewest" />
+```
+
+A suite that links another suite's scenarios links its phrase files too. `brinell-data validate`
+warns when a project has phrase files it does not copy.
+
 ## Authoring Rules
 
 - Use stable user-facing intent in steps.
