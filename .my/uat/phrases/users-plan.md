@@ -7,8 +7,7 @@ section 8 are still to do.
 and a few more chosen to exercise field types). A todo is **not** linked to a user
 yet: assignment, "my" todos and the assignee filter move to [Later](#8-later). So do the UI
 tests and the UAT suite, which wait until phrase scopes and namespaces are built
-([phrase-scopes-and-composition.md](phrase-scopes-and-composition.md),
-[phrase-namespaces.md](phrase-namespaces.md)).
+([plan.md](plan.md), phase 8).
 
 This plan now does two things:
 
@@ -268,8 +267,8 @@ and namespaces are built. The decisions below are the starting point, not settle
   `UserEditPage`, H-tier tests) and `Brinell.Samples.Todo.Users.Uat` (scenarios for TOD.11-13 with
   `Using | Users`, phrases in a `Users` namespace), plus the expected-failure proof that a file
   without `Using` fails binding. They are the first real use of phrase namespaces
-  ([phrase-namespaces.md](phrase-namespaces.md)); that work, and its AD (the next free number,
-  not AD-016, which is taken), belongs with the namespaces plan rather than here.
+  ([plan.md](plan.md), phase 8); that work, and its AD (AD-019), belongs with the phrases plan
+  rather than here.
 - **The web head**, for parity (Q5).
 
 ## 9. Risks

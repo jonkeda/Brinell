@@ -16,8 +16,11 @@ Deleted topics stay in git history; the last full tree is at
 | [documentation/](documentation/plan.md) | The comment policy applied to the code, phase by phase | todo | 2026-09 |
 | [present/](present/plan.md) | Presenter: app icon, gesture bridge, Todo workspace, scenario parity, template doc, journeys | open | 2026-09-27 |
 | [uat/complex/](uat/complex/README.md) | Guidance for service, database and other complex checks; per-user isolation | discussion | 2026-09-27 |
-| [uat/phrases/](uat/phrases/users-plan.md) | Phrase scopes, namespaces, splitting (with callable steps 6 and 8); Todo users: UI tests and assignment next | discussion; users app built | 2026-09-27 |
+| [uat/phrases/](uat/phrases/plan.md) | Phrases plan: split, scope and namespace (with callable steps 6 and 8); [Todo users](uat/phrases/users-plan.md): UI tests and assignment next | plan; users app built | 2026-09-27 |
 | [uat/tools/](uat/tools/vscode-extension.md) | A VS Code extension for scenarios: editor, preview, run and debug | proposal | 2026-09-27 |
+| [uat/tools/visualstudio-extension.md](uat/tools/visualstudio-extension.md) | The same for Visual Studio, sharing the language server and runner; C# to scenario CodeLens, break at a step | proposal | 2026-09-27 |
+| [uat/tools/scraper-in-extension.md](uat/tools/scraper-in-extension.md) | The Scraper as a headless MCP service driven by Copilot from either IDE; draft scenarios from recordings | proposal | 2026-09-27 |
+| [uat/reqnroll-comparison.md](uat/reqnroll-comparison.md) | Reqnroll/SpecFlow vs Brinell.Uat: what to add (hooks, Examples blocks, set diff, Cucumber Messages) and what Brinell has extra | analysis | 2026-09-27 |
 | [uat/rethinking-uat.md](uat/rethinking-uat.md) | UAT for Construction, from user journeys | discussion | 2026-09-20 |
 | [Scraper/](Scraper/) | `tools/Brinell.Scraper`: roadmap, steps, RCAs, UAT runs | dormant since 2026-05; owner to decide (cleanup plan, section 5) | 2026-05-27 |
 
