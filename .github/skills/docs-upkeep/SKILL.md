@@ -21,8 +21,12 @@ action.
    and invariants the work touched. A contract that no longer matches the code is worse than
    none - fix the `.docs/` file (or the code, if the code drifted from the decision).
 
-4. **Is the `.my/` plan marked done?** Set the status on the plan/analysis for this work so
-   the next reader knows it landed. Do not delete it - it is the evidence a decision points at.
+4. **Is the `.my/` plan finished with?** Mark it done. Then extract, then delete: once its
+   decisions are in `.docs/`, anything a user needs is in `docs/`, and nothing links to it,
+   delete the topic and remove its row from `.my/README.md` in the same commit. An AD that
+   needs the evidence links to the plan at its last commit
+   (`https://github.com/exact-mobile-apps/test-tooling/blob/<hash>/.my/...`). Step lists,
+   progress tables, baselines and fixed-bug RCAs are not durable; git history keeps them.
 
 ## Do not
 

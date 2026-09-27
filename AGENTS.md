@@ -108,7 +108,10 @@ Four trees, each with one job:
 - **`.docs/`** - decisions, invariants and contracts: what must stay true. Read it before
   changing Brinell. A decision is recorded **once**, here, never also in code prose.
 - `docs/` - active guides for someone *using* Brinell.
-- `.my/` - plans, analyses and reviews for work in flight.
+- `.my/` - plans, analyses and reviews for work in flight, indexed in `.my/README.md`.
+  When the work is done: extract, then delete. Move its decisions to `.docs/` and anything a
+  user needs to `docs/`, repoint the links, then delete the topic. An AD that needs the
+  evidence links to it at its last commit. Code comments never point into `.my/`.
 - `docs2/` - historical archive.
 
 - Keep links valid and relative.

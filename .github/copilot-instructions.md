@@ -9,7 +9,7 @@ These instructions apply to the Brinell submodule.
 - Samples: `samples/`
 - Active docs: `docs/`
 - Previous docs archive: `docs2/`
-- Planning/research notes: `.my/reports/`
+- Planning notes for work in flight: `.my/` (index in `.my/README.md`)
 
 Use [AGENTS.md](../AGENTS.md) as the local entry point.
 
