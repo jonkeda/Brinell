@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `Brinell.Uat.Workspace` (tools/): loads a suite one way for every tool. It finds the suites (projects
+  with a `uat.config.md` or `bdd.config.md`), reads the config, knows which suites a feature file
+  is linked into, and builds the catalogs from a shadow copy of the build output in a collectible
+  load context, so a build never meets a locked file and `Reload` releases the old build.
+  `brinell-data` loads suites through it; its output is unchanged.
 - Docs: AD-020 (a tier is a head: `service`, opt-in heads, UATB013, a scenario counts for each of
   its tiers) and AD-021 (`Brinell.Bdd` under `Brinell.Uat`), with their invariants; the guide
   "Features Below The UI". AD-011, AD-014, AD-017 and AD-019 use the new words and file names.
