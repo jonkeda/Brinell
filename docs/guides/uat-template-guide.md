@@ -385,7 +385,8 @@ One set of scenario files can run on two heads of the same app: the Todo sample'
 and its web suite (`samples/Todo/tests/Brinell.Samples.Todo.Web.Uat`) run the same
 `TOD.*.uat.md` files, the web project linking them from the MAUI one.
 
-- `Head` in the config's `Runtime` names the head a suite drives: `maui` or `web`.
+- `Head` in the config's `Runtime` names the head a suite drives: `maui`, `web`, or `mixed` for
+  a suite whose apps are of several heads (see below).
 - A scenario tagged with head tags (`@maui`, `@web`) runs only on a suite whose `Head` is one of
   them; the engine skips it elsewhere, with the reason in the result. A scenario with no head tag
   runs on every head. A suite without `Head` runs everything.
@@ -395,33 +396,50 @@ and its web suite (`samples/Todo/tests/Brinell.Samples.Todo.Web.Uat`) run the sa
 
 ## Several Apps In One Scenario
 
-A scenario can drive more than one running app: two devices on one backend, or two users. The
-config lists them in an `Apps` table; the other columns are the fixture's to read.
+A scenario can drive more than one running app: two devices on one backend, two users, or apps
+of different heads. The config lists them in an `Apps` table, or names a shared file with one
+(`AppsFile | apps.md`, relative to the config). The engine reads `Name`, `User` and `Head`; the
+other columns are the fixture's.
 
 ```markdown
 ## Apps
 
-| Name | ClientId |
-| --- | --- |
-| Alice | web-alice |
-| Bob | web-bob |
+| Name | User | Head | Platform | ClientId |
+| --- | --- | --- | --- | --- |
+| Daan's PC | Daan | maui | Windows | maui-daan |
+| Finn's web | Finn | web | | web-finn |
 ```
 
-`{app} uses the app` (a `Given` or a `When`) makes an app current; the steps after it run on that
-app until the next switch. A failure after a switch names the app (`[Alice] ...`).
+`User` defaults to `Name`, and `Head` to the suite's. A step that starts with an app or a user
+runs on that app ([AD-015](../../.docs/decisions/ad-015-a-steps-subject-picks-its-app.md)):
+`Daan taps Save` is `I tap Save` on Daan's app, and the app stays current, so a later `I` step
+runs there too. `{app} uses the app` still works. A failure names the app (`[Daan's PC] ...`),
+and the result JSON records the app of every step.
 
 ```gherkin
-Given Bob uses the app
-And Alice uses the app
-When I tap Add
-...
-When Bob uses the app
-And I tap Sync
+Given Daan is on the Todo List page
+And Finn is on the Todo List page
+When Daan taps Add
+Then Daan should be on the Todo Edit page
+When Daan sets Title to "Pack for the trip"
+And Daan taps Save
+Then Daan should be on the Todo List page
+When Daan taps Sync
+Then the server should have received the todo "Pack for the trip" from Daan
+When Finn taps Sync
 Then Todos should have todo "Pack for the trip"
 ```
 
-The fixture implements `IUatSessionHost`: `UseSession(name)` starts the app the first time,
-makes it current, and returns the services its page objects and phrases resolve through (its own
-test context). The apps share the suite's page and phrase types, so all of them run one head.
-The Todo web suite's `TodoWebUatFixture` is the worked example: each app is another device on the
-same fake backend, with its own database, host, browser context and `X-Todo-Client`.
+Name the user on every step of a scenario with several users; a step with `I` is correct but
+makes the reader look back.
+
+The fixture implements `IUatSessionHost` (`UseSession(name)` returns the services the app's page
+objects resolve through), or more simply `IUatAppsHost`: it hands over a `TestAppSet` and says
+what each app's composition needs (`AddAppServices`), and sessions come from the set. The Todo
+web suite's `TodoWebUatFixture` is the one-head example.
+
+**Apps of several heads.** A suite with `Head | mixed` runs only scenarios tagged `@mixed`. Each
+app's `Head` column picks the page objects it binds against: `IUatAppsHost.ModulesFor(app)` names
+that head's modules, and the engine builds one catalog per head. The Todo sample's
+`Brinell.Samples.Todo.Mixed.Uat` runs Windows and web apps in one scenario, reading the same
+`apps.md` as its mixed UI tests.

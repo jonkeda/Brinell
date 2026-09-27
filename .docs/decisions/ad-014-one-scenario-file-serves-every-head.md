@@ -7,8 +7,11 @@ names and phrases. `Head` in a suite's `uat.config.md` names its head; a scenari
 (`@maui`, `@web`) say where it runs, and the engine skips it on any other head. A scenario with no
 head tag runs on every head.
 
-Within one scenario, several apps (`{app} uses the app`, an `Apps` table, `IUatSessionHost`) are
-apps of the suite's head: they share its page and phrase types.
+Within one scenario, several apps (an `Apps` table, `IUatSessionHost`, a step's subject per
+AD-015) are apps of the suite's head and share its page and phrase types. The exception is a
+suite whose `Head` is `mixed`: it runs only scenarios tagged `@mixed`, its apps name their own
+`Head`, and each app binds against that head's catalog (`IUatSessionHost.CompositionFor`,
+`UatCatalogSet`). Mixed scenarios live in the mixed suite, not beside the one-head files.
 
 **Why:** a journey is the same on both heads; two copies of its scenario text drift, and a
 difference between heads should show as a failing scenario, not as two files that say different
@@ -17,8 +20,9 @@ things. Evidence: `.my/html/review-html-vs-maui.md` section 4 (items 7, 8),
 
 **Ruled out:** a copy of a scenario file per head; head-specific wording for the same step; a
 skip rule or environment variable standing in for a head tag; apps of different heads in one
-scenario, until the engine has a page catalog per app.
+scenario outside a `mixed` suite.
 
 **Broken when:** a scenario file exists in two suites' folders; a step passes on one head only
 because the other head's phrase class words it differently; a suite with `Head` runs a scenario
-tagged only for another head; a session switch resolves page types from another head.
+tagged only for another head; a session switch resolves page types from another head; a one-head
+suite runs a `@mixed` scenario.

@@ -66,7 +66,7 @@ public sealed class UatExecutionService : IUatExecutionService
                 throw new InvalidOperationException(FormatDiagnostics(parse.Diagnostics));
             }
 
-            var bind = UatBinder.Bind(parse.Document, catalog);
+            var bind = UatBinder.Bind(parse.Document, runtime.CreateCatalogSet(catalog));
             if (!bind.Success || bind.Document is null)
             {
                 throw new InvalidOperationException(string.Join(
@@ -85,6 +85,7 @@ public sealed class UatExecutionService : IUatExecutionService
             }
 
             var runner = new UatScenarioRunner();
+            runtime.ConfigureContext(runner.Context);
             executionScope = runtime.CreateScope();
             if (executionScope is Microsoft.Extensions.DependencyInjection.IServiceScope serviceScope)
             {

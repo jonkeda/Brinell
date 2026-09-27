@@ -137,6 +137,12 @@ public static class UatConfigFields
     /// </summary>
     public const string Head = "Head";
 
+    /// <summary>
+    /// A markdown file with the suite's <c>Apps</c> table, relative to the config: one table for
+    /// the UAT suite and the UI tests of the same apps.
+    /// </summary>
+    public const string AppsFile = "AppsFile";
+
     /// <summary>The <c>Assemblies</c> kind of the assembly holding the test-data definitions.</summary>
     public const string TestDataAssemblyKind = "TestData";
 }

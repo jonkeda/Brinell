@@ -427,7 +427,7 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     // Every public member is one call (.my/stale-readiness/design.md, R1): one log pair, one
     // budget, one poll, whose attempts check the page and then use the root. An action runs once.
 
-    private protected ControlCall Call => new(Context.Logger, null, Context.NearMiss, PageName, ControlId);
+    private protected ControlCall Call => new(Context.Logger, Context.Name, Context.NearMiss, PageName, ControlId);
 
     private protected int Budget(int? timeoutMs) => timeoutMs ?? DefaultTimeoutMs;
 

@@ -41,7 +41,7 @@ public sealed class JourneyTests
     [Trait("Journey", "TOD.02.1")]
     public void Add_OpensAnEmptyForm_Open_WithoutADueDate()
     {
-        var edit = _list.AddTodo();
+        var edit = _list.Add();
 
         edit.Title.AssertTextEmpty(true);
         edit.Status.AssertStatus("Open");
@@ -66,7 +66,7 @@ public sealed class JourneyTests
     [Trait("Journey", "TOD.02.3")]
     public void Save_WithoutATitle_ShowsTitleRequired_AndStays()
     {
-        var edit = _list.AddTodo().SaveExpectingError();
+        var edit = _list.Add().SaveExpectingError();
 
         edit.TitleError.AssertText("Title is required");
         edit.AssertLoaded(true);

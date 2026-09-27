@@ -47,6 +47,9 @@ Two custom controls, each with a matching ControlObject on the test side:
 | `tests/…UITests.Mobile` | The same UI test sources, built for Android (Appium). |
 | `tests/…Uat` | Markdown UAT scenarios over tier 3's app and page objects. |
 | `tests/…JourneyCoverage` | The journey coverage report. |
+| `tests/…TestSupport.Apps` | Several apps of any head on one backend: `apps.md` and `TodoAppsFixture`, shared by the two mixed projects. See "Several apps in one test" below. |
+| `tests/…Mixed.UITests` | UI tests that drive Windows, web and Android apps at once. |
+| `tests/…Mixed.Uat` | UAT scenarios that do the same: `Daan taps Save` runs on Daan's app. |
 | `manual/charters.md` | Tier 5. |
 
 ## The five tiers
@@ -360,11 +363,40 @@ dotnet test tests/Brinell.Samples.Todo.Web.UITests
 The UAT scenarios run on the web head too: `tests/Brinell.Samples.Todo.Web.Uat` runs the same
 `Scenarios/*.uat.md` files as the MAUI suite (a scenario tagged `@web` runs there), through web
 page objects with the MAUI member names. It also has a scenario with two devices on one backend
-(`TOD.07-two-devices.uat.md`: Alice syncs a todo, Bob syncs and sees it):
+(`TOD.07-two-devices.uat.md`: `Alice taps Sync`, then `Bob taps Sync` and sees her todo):
 
 ```bash
 dotnet test tests/Brinell.Samples.Todo.Web.Uat
 ```
+
+### Several apps in one test
+
+`tests/Brinell.Samples.Todo.TestSupport.Apps/apps.md` lists the apps a test can use - Daan and Gus
+on Windows, Eva on Android, Finn and Hana in a browser - all on one fake backend, each with its
+own database, `X-Todo-Client` and clock (`ClockOffsetMinutes`). `TodoAppsFixture` starts an app
+the first time a test asks for it: two Windows apps go side by side, left and right.
+
+`tests/Brinell.Samples.Todo.Mixed.UITests` uses them as variables:
+
+```csharp
+var daan = apps.Maui("Daan");
+var finn = apps.Web("Finn");
+daan.List.CreateTodo(title).Sync();
+apps.WaitForTodoFrom(daan, title);
+finn.List.Sync().Todos.AssertRow(title);
+```
+
+`tests/Brinell.Samples.Todo.Mixed.Uat` reads the same table, and each step runs on the app of the
+user it names (`When Daan taps Save`, `Then Finn should be on the Todo List page`); see
+`Scenarios/TOD.07-mixed.uat.md`. A failure captures every started app, one folder each. The
+Android test and scenario run only with the emulator and `BRINELL_ANDROID=1`.
+
+```bash
+dotnet test tests/Brinell.Samples.Todo.Mixed.UITests
+dotnet test tests/Brinell.Samples.Todo.Mixed.Uat
+```
+
+Build the MAUI app for Windows first, as for tier 3.
 
 ### On Android
 

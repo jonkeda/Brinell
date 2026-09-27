@@ -102,7 +102,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
         _window = new AppWindow(_automation, window);
         _conditionFactory = new ConditionFactory(_automation.PropertyLibrary);
 
-        WindowPlacement.ApplyRequested(_window);
+        WindowPlacement.ApplyRequested(_window, environment);
         _quiet.Settle(_window.Handle);
     }
 

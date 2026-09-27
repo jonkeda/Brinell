@@ -10,6 +10,9 @@ namespace Brinell.Maui.Interfaces;
 /// </summary>
 public interface IMauiTestContext : ITestContext, IMauiElementScope
 {
+    /// <summary>The context's name in call logs, such as the app's name when a test runs several; null when unnamed.</summary>
+    string? Name => null;
+
     /// <summary>
     /// Gets the wrapped driver.
     /// </summary>

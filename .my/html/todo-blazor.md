@@ -67,7 +67,8 @@ saw. Because the view model is shared, one bug gives a matched pair of proofs.
 
 ## 4. Several apps in one scenario (later project; do not rule it out now)
 
-**Status, 2026-09-26: built for one head.** The `Apps` table, `IUatSessionHost` and the step
+**Status, 2026-09-27: several heads are built too, see [../multi/plan.md](../multi/plan.md).**
+Earlier, **2026-09-26: built for one head.** The `Apps` table, `IUatSessionHost` and the step
 `{app} uses the app` are in `Brinell.Uat`; a failure names the app. `TodoWebUatFixture` runs each
 app as another web device on one fake backend (own database, host, browser context and
 `X-Todo-Client`), and `TOD.07-two-devices.uat.md` has Alice sync a todo that Bob then syncs and

@@ -1,3 +1,4 @@
+using Brinell.Core.Testing;
 using Brinell.Html.Testing;
 using Brinell.Mocking;
 using Brinell.Samples.Todo.Infrastructure;
@@ -83,8 +84,9 @@ public abstract class TodoWebFixture : IAsyncLifetime, ITodoArrangement
     /// <summary>Starts another device on the fixture's backend and test set.</summary>
     /// <param name="name">The device's name, for its browser context and the call log.</param>
     /// <param name="clientId">What the app sends in <c>X-Todo-Client</c>.</param>
-    protected Task<TodoWebDevice> StartDeviceAsync(string name, string clientId)
-        => TodoWebDevice.StartAsync(name, TestSet, Backend.BaseUrl, clientId, AdjustSettings);
+    /// <param name="definition">The app, as a row of an <c>Apps</c> table, when it is one.</param>
+    protected Task<TodoWebDevice> StartDeviceAsync(string name, string clientId, TestAppDefinition? definition = null)
+        => TodoWebDevice.StartAsync(name, TestSet, Backend.BaseUrl, clientId, AdjustSettings, definition);
 
     /// <summary>Online, the backend back to the test set, and the list open, showing every todo.</summary>
     public virtual TodoListPage StartTest()

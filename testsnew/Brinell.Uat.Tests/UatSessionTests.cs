@@ -46,6 +46,26 @@ public sealed class UatSessionTests
     }
 
     [Fact]
+    public async Task ASubject_RunsItsStepOnThatApp_AndLaterIStepsToo()
+    {
+        using var suite = new Suite();
+        var fixture = new SessionFixture();
+
+        await suite.Run(fixture, """
+            # UAT: Two apps
+
+            ## Scenario: Subjects switch the app
+
+            When I note the app
+            And Bob notes the app
+            And I note the app
+            And Alice notes the app
+            """);
+
+        Assert.Equal(["default", "Bob", "Bob", "Alice"], fixture.Noted);
+    }
+
+    [Fact]
     public async Task UsesTheApp_AnAppNotInTheAppsTable_FailsNamingTheApps()
     {
         using var suite = new Suite();

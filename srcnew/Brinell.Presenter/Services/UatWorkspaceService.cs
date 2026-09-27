@@ -50,9 +50,15 @@ public sealed class UatWorkspaceService : IUatWorkspaceService
         diagnostics.AddRange(configInfo.Diagnostics);
 
         var configPath = Path.Combine(folderPath, "uat.config.md");
-        var discoveryReport = File.Exists(configPath)
-            ? FormatDiscoveryReport(UatConfigParser.ParseFile(configPath))
+        var config = File.Exists(configPath) ? UatConfigParser.ParseFile(configPath) : null;
+        var discoveryReport = config is not null
+            ? FormatDiscoveryReport(config)
             : "Discovery report:\n- uat.config.md not found.";
+
+        // Subject steps (Daan taps Save) bind here too; the spec catalog is the same for every head.
+        var catalogs = config is null
+            ? new UatCatalogSet(catalog)
+            : new UatCatalogSet(catalog, config.Apps, suiteHead: null, new Dictionary<string, UatCommandCatalog>(), []);
 
         foreach (var filePath in EnumerateUatFiles(folderPath))
         {
@@ -62,7 +68,7 @@ public sealed class UatWorkspaceService : IUatWorkspaceService
 
             if (parse.Document is not null)
             {
-                bind = UatBinder.Bind(parse.Document, catalog);
+                bind = UatBinder.Bind(parse.Document, catalogs);
             }
 
             var bindDiagnostics = bind is null ? [] : FormatDiagnostics(bind.Diagnostics);

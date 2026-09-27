@@ -28,6 +28,7 @@ public class MauiTestContext : IMauiTestContext
     {
         ArgumentNullException.ThrowIfNull(options);
         
+        Name = options.Name;
         _timeouts = options.Timeouts ?? TimeoutSettings.Default;
         _nearMiss = options.NearMiss ?? NearMissSettings.Default;
         _callLog = options.Logger == null ? OpenCallLog() : null;
@@ -53,6 +54,9 @@ public class MauiTestContext : IMauiTestContext
         }
     }
     
+    /// <inheritdoc />
+    public string? Name { get; }
+
     /// <inheritdoc />
     public Interfaces.IMauiDriver Driver => _driver;
     

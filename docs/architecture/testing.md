@@ -47,8 +47,25 @@ one UI or UAT process at a time.
 
 An app with a MAUI and a web head has one set of scenario files; each head's UAT project runs the
 scenarios tagged for it (`Head` in `uat.config.md`, `@maui` / `@web` tags). A scenario can also
-use several apps of one head, such as two devices on one backend
-([AD-014](../../.docs/decisions/ad-014-one-scenario-file-serves-every-head.md)).
+use several apps, such as two devices on one backend, and a `mixed` suite runs apps of several
+heads in one scenario
+([AD-014](../../.docs/decisions/ad-014-one-scenario-file-serves-every-head.md)). A step names the
+app it runs on by its user: `Daan taps Save`
+([AD-015](../../.docs/decisions/ad-015-a-steps-subject-picks-its-app.md)).
+
+## Several Apps In One Test
+
+`TestAppSet` (`Brinell.Core.Testing`) holds the apps of a fixture, as rows of an `Apps` table
+(`TestAppDefinition`): each app starts the first time a test asks for it, the started ones are
+reset between tests (`ResetStartedAsync`), and they stop together. A test finds an app by its
+name or its user's (`Get`, `Get<TApp>`), and `CaptureAll` takes a screenshot of every started app,
+one folder each. An app is an `ITestApp`: a device of the app under test with its own test
+context, named after the app in the call log.
+
+The UAT engine uses the same set (`IUatAppsHost`), so a mixed UAT suite and mixed UI tests can
+read one `apps.md`. The Todo sample's `Brinell.Samples.Todo.Mixed.UITests` drives two Windows
+apps side by side (`MauiDriverOptions.Placement`: `left-half`, `right-half`) and a browser on one
+fake backend; its Android test runs only with `BRINELL_ANDROID=1`.
 
 See [UAT Template Guide](../guides/uat-template-guide.md),
 [UAT Phrases And Flows](../guides/uat-phrases-and-flows.md), and the worked example in

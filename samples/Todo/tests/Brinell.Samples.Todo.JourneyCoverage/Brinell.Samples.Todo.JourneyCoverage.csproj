@@ -5,14 +5,24 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="System.Reflection.MetadataLoadContext" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!--
       The test projects whose traits are compared with journeys.md. Referenced only to read their
-      attributes: nothing here runs their tests or launches the app. The UI tests are read from the
-      mobile head, which compiles the same sources for plain net10.0 (the Windows head is
-      net10.0-windows), so the report runs anywhere.
+      attributes: nothing here runs their tests or launches the app. Unit and integration tests
+      are loaded, so a theory's MemberData can be counted.
     -->
     <ProjectReference Include="..\Brinell.Samples.Todo.UnitTests\Brinell.Samples.Todo.UnitTests.csproj" />
     <ProjectReference Include="..\Brinell.Samples.Todo.IntegrationTests\Brinell.Samples.Todo.IntegrationTests.csproj" />
+    <!--
+      The UI tests are only built here, for their own TFMs (the Windows and mixed ones are
+      net10.0-windows), and read from their output folders as metadata (TestCatalog.UiProjects).
+    -->
+    <ProjectReference Include="..\Brinell.Samples.Todo.UITests\Brinell.Samples.Todo.UITests.csproj" ReferenceOutputAssembly="false" SkipGetTargetFrameworkProperties="true" SetTargetFramework="TargetFramework=net10.0-windows" />
+    <ProjectReference Include="..\Brinell.Samples.Todo.Web.UITests\Brinell.Samples.Todo.Web.UITests.csproj" ReferenceOutputAssembly="false" SkipGetTargetFrameworkProperties="true" SetTargetFramework="TargetFramework=net10.0" />
+    <ProjectReference Include="..\Brinell.Samples.Todo.Mixed.UITests\Brinell.Samples.Todo.Mixed.UITests.csproj" ReferenceOutputAssembly="false" SkipGetTargetFrameworkProperties="true" SetTargetFramework="TargetFramework=net10.0-windows" />
   </ItemGroup>
 
   <ItemGroup>

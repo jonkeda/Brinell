@@ -313,6 +313,20 @@ fixture for something no control owns. Only past those does the scenario drop to
 page-object test — the hatch described in
 [.my/uat/rethinking-uat.md](../../.my/uat/rethinking-uat.md).
 
+The same file shape also carries a journey across several apps. With an `Apps` table (or a shared
+`apps.md`), a step names who does it and runs on that person's app, so a sync between Daan's
+Windows app and Finn's browser reads as what they do:
+
+```gherkin
+When Daan taps Sync
+Then the server should have received the todo "Pack for the trip" from Daan
+When Finn taps Sync
+Then Todos should have todo "Pack for the trip"
+```
+
+See `tests/Brinell.Samples.Todo.Mixed.Uat/Scenarios/TOD.07-mixed.uat.md` and
+[AD-015](../../.docs/decisions/ad-015-a-steps-subject-picks-its-app.md).
+
 ---
 
 ## Reference
@@ -322,4 +336,5 @@ page-object test — the hatch described in
 - Config and file shape: [docs/guides/uat-template-guide.md](../../docs/guides/uat-template-guide.md)
 - Phrase catalog and binding: [docs/guides/uat-phrases-and-flows.md](../../docs/guides/uat-phrases-and-flows.md)
 - Why the vocabulary is attribute-declared: [AD-011](../../.docs/decisions/ad-011-uat-vocabulary-is-attribute-declared.md)
+- Several apps in one scenario: [AD-015](../../.docs/decisions/ad-015-a-steps-subject-picks-its-app.md)
 - Todo page objects: [tests/Brinell.Samples.Todo.UITests/Pages](tests/Brinell.Samples.Todo.UITests/Pages)

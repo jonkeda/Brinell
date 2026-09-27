@@ -8,6 +8,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- UAT subjects (AD-015): a step that starts with an app or user from the `Apps` table runs on
+  that app, in the first person: `Daan taps Save` binds to `I tap Save` on Daan's app, and the app
+  stays current. `{user}` is a reserved phrase parameter for the acting user. `Apps` gains the
+  `User` and `Head` columns, and `AppsFile` in `Runtime` reads the table from a shared file.
+  New bind errors `UATB005` (an app or user named like a page or control), `UATB006` (a subject
+  that picks no app) and `UATB007` (a bad `{user}`).
+- UAT mixed suites: `Head | mixed` runs only `@mixed` scenarios, and each app binds against its
+  own head's pages (`IUatSessionHost.CompositionFor`, `UatCatalogSet`, AD-014). Each app keeps its
+  own current page, and the result JSON records the app of every step.
+- `TestAppDefinition`, `ITestApp` and `TestAppSet` (`Brinell.Core.Testing`): the apps of a
+  fixture, started on first use, reset between tests, found by name or user, and captured
+  together on a failure (`CaptureAll`, `ScreenshotTestAttribute.SetApps`). `IUatAppsHost` gives a
+  UAT fixture its sessions from a set. `MarkdownTables` (`Brinell.Core.Utilities`) reads the
+  tables of `uat.config.md` and `apps.md`.
+- `TestComposition.ForFixture(fixture, options)` and `TestCompositionDiscoveryOptions.FromScans`:
+  a composition of named modules, one per head.
+- MAUI: `MauiTestContextOptions.Name` (the app's name in the call log) and
+  `MauiDriverOptions.Placement`, a window placement for one launch; `BRINELL_AUT_PLACE` gains
+  `left-half` and `right-half`.
+- The Todo sample's mixed projects: `TestSupport.Apps` (`apps.md`, `TodoAppsFixture`,
+  `TodoMauiDevice`), `Mixed.UITests` and `Mixed.Uat`: Windows, web and Android apps in one test.
 - `[UatGiven]`, `[UatWhen]` and `[UatThen]` (`Brinell.Core.Testing`): the one way to declare a
   UAT step, on control methods, fixture methods and phrase-class methods alike (AD-011).
 - Generated Html and Blazor controls: every Html and Blazor control is a `.tpl.cs` template and a

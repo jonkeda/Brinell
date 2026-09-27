@@ -49,6 +49,56 @@ public sealed class UatRuntime
         return catalog;
     }
 
+    /// <summary>
+    /// The catalogs a document binds against: <paramref name="defaultCatalog"/> for the fixture's
+    /// own app and the apps of its head, and one more per head an app of the <c>Apps</c> table
+    /// brings (<see cref="IUatSessionHost.CompositionFor"/>).
+    /// </summary>
+    /// <param name="defaultCatalog">The fixture's own catalog; <see cref="CreateCommandCatalog"/> when null.</param>
+    public UatCatalogSet CreateCatalogSet(UatCommandCatalog? defaultCatalog = null)
+    {
+        defaultCatalog ??= CreateCommandCatalog();
+        var suiteHead = Config.Runtime.TryGetValue(UatConfigFields.Head, out var head) && head.Trim() is { Length: > 0 } trimmed
+            ? trimmed
+            : null;
+
+        Dictionary<string, UatCommandCatalog> byHead = new(StringComparer.OrdinalIgnoreCase);
+        List<UatReflectionRuntime> runtimes = [_reflectionRuntime];
+        if (_root is IUatSessionHost host)
+        {
+            foreach (var app in Config.Apps)
+            {
+                var appHead = app.Head ?? suiteHead;
+                if (appHead is null || byHead.ContainsKey(appHead) || host.CompositionFor(app.Name) is not { } composition)
+                {
+                    continue;
+                }
+
+                var runtime = UatReflectionRuntime.FromComposition(_root, composition);
+                var catalog = runtime.CreateCommandCatalog();
+                UatSessionSteps.Register(catalog, host, Config);
+                byHead[appHead] = catalog;
+                runtimes.Add(runtime);
+            }
+        }
+
+        var reserved = runtimes
+            .SelectMany(runtime => runtime.Pages)
+            .SelectMany(page => page.Controls.Select(control => control.Name).Append(page.Name));
+        return new UatCatalogSet(defaultCatalog, Config.Apps, suiteHead, byHead, reserved);
+    }
+
+    /// <summary>Gives a scenario's context what it needs to switch apps.</summary>
+    /// <param name="context">The context.</param>
+    public void ConfigureContext(UatExecutionContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        if (_root is IUatSessionHost host)
+        {
+            context.SessionHost = host;
+        }
+    }
+
     public IServiceScope? CreateScope()
     {
         return Composition?.CreateScope();

@@ -108,7 +108,7 @@ public sealed class UatReflectionRuntime
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(serviceProvider);
 
-        context.Items[ServiceProviderItemKey] = serviceProvider;
+        context.AppItems[ServiceProviderItemKey] = serviceProvider;
     }
 
     public static void RegisterRootPhrases(UatCommandCatalog catalog, Type rootType)
@@ -595,7 +595,7 @@ public sealed class UatReflectionRuntime
 
     private static bool TryGetServiceProvider(UatExecutionContext context, out IServiceProvider serviceProvider)
     {
-        if (context.Items.TryGetValue(ServiceProviderItemKey, out var value) &&
+        if (context.AppItems.TryGetValue(ServiceProviderItemKey, out var value) &&
             value is IServiceProvider found)
         {
             serviceProvider = found;
@@ -671,7 +671,7 @@ public sealed class UatReflectionRuntime
         }
 
         context.CurrentPageName = page.Name;
-        context.Items[CurrentPageItemKey] = page;
+        context.AppItems[CurrentPageItemKey] = page;
         context.Diagnostics.Add($"page:{page.Name}");
         return Task.FromResult(UatStepResult.Passed(invocation));
     }
@@ -707,7 +707,7 @@ public sealed class UatReflectionRuntime
         }
 
         context.CurrentPageName = page.Name;
-        context.Items[CurrentPageItemKey] = page;
+        context.AppItems[CurrentPageItemKey] = page;
         return Task.FromResult(UatStepResult.Passed(invocation));
     }
 
@@ -853,7 +853,7 @@ public sealed class UatReflectionRuntime
         out UatPageResolution result)
     {
         result = default;
-        if (context.Items.TryGetValue(CurrentPageItemKey, out var value) &&
+        if (context.AppItems.TryGetValue(CurrentPageItemKey, out var value) &&
             value is UatRuntimePage page)
         {
             result = new UatPageResolution(page, UatStepResult.Passed(invocation));

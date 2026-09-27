@@ -1,3 +1,7 @@
+using Brinell.Core.Configuration;
+using Brinell.Core.Interfaces;
+using Brinell.Core.Services;
+using Brinell.Core.Testing;
 using Brinell.Html.Context;
 using Brinell.Html.Playwright;
 using Brinell.Html.Testing;
@@ -16,7 +20,7 @@ namespace Brinell.Samples.Todo.Web.UITests;
 /// A restart stops the host and starts it again, on a new port, with the same database; the
 /// browser context stays, so page objects built on <see cref="Context"/> keep working.
 /// </remarks>
-public sealed class TodoWebDevice : IAsyncDisposable
+public sealed class TodoWebDevice : ITestApp
 {
     private readonly List<TempDatabase> _retired = [];
     private readonly PlaywrightTestContext _context;
@@ -25,9 +29,11 @@ public sealed class TodoWebDevice : IAsyncDisposable
     private WebAppHost? _host;
     private LaunchSettings _settings;
     private LaunchSettings? _unchangedSettings;
+    private IScreenshotService? _screenshots;
 
-    private TodoWebDevice(string name, TempDatabase database, NetworkStateFile network, LaunchSettings settings, PlaywrightTestContext context)
+    private TodoWebDevice(TestAppDefinition definition, string name, TempDatabase database, NetworkStateFile network, LaunchSettings settings, PlaywrightTestContext context)
     {
+        Definition = definition;
         Name = name;
         _database = database;
         _network = network;
@@ -37,6 +43,16 @@ public sealed class TodoWebDevice : IAsyncDisposable
 
     /// <summary>The device's name: its browser context's, for the call log.</summary>
     public string Name { get; }
+
+    /// <inheritdoc />
+    public TestAppDefinition Definition { get; }
+
+    /// <inheritdoc />
+    /// <remarks>Into a folder named after the app, beside the run's other screenshots.</remarks>
+    public IScreenshotService Screenshots => _screenshots ??= new ScreenshotService(
+        Context,
+        Context.Logger,
+        new ScreenshotSettings { OutputDirectory = Path.Combine(new ScreenshotSettings().OutputDirectory, FolderName(Definition.Name)) });
 
     /// <summary>The name the app sends in <c>X-Todo-Client</c>.</summary>
     public string? ClientId => _settings.ClientId;
@@ -62,12 +78,14 @@ public sealed class TodoWebDevice : IAsyncDisposable
     /// <param name="apiBaseUrl">The backend.</param>
     /// <param name="clientId">What the app sends in <c>X-Todo-Client</c>.</param>
     /// <param name="adjust">Changes the launch settings before the app starts.</param>
+    /// <param name="definition">The app, as a row of an <c>Apps</c> table; one named <paramref name="name"/> when null.</param>
     public static async Task<TodoWebDevice> StartAsync(
         string name,
         TodoTestSet testSet,
         string apiBaseUrl,
         string clientId,
-        Func<LaunchSettings, LaunchSettings>? adjust = null)
+        Func<LaunchSettings, LaunchSettings>? adjust = null,
+        TestAppDefinition? definition = null)
     {
         var database = new TempDatabase($"web-{name}-{testSet.Name}");
         await testSet.SeedDatabaseAsync(database.Path);
@@ -89,9 +107,21 @@ public sealed class TodoWebDevice : IAsyncDisposable
             Name = name,
         });
 
-        var device = new TodoWebDevice(name, database, network, adjust?.Invoke(settings) ?? settings, context);
+        definition ??= new TestAppDefinition(name, name, "web", new Dictionary<string, string>());
+        var device = new TodoWebDevice(definition, name, database, network, adjust?.Invoke(settings) ?? settings, context);
         device.StartHost();
         return device;
+    }
+
+    /// <inheritdoc />
+    /// <remarks>Online, and the list open in a fresh page load, showing every todo.</remarks>
+    public ValueTask ResetAsync(CancellationToken cancellationToken = default)
+    {
+        _network.SetOnline();
+
+        // The list's view model outlives a page load, and with it the filter a test chose.
+        OpenList().Filter.SelectByText("All");
+        return ValueTask.CompletedTask;
     }
 
     /// <summary>Opens the list in a fresh page load and waits until it is interactive.</summary>
@@ -154,6 +184,9 @@ public sealed class TodoWebDevice : IAsyncDisposable
         _database.Dispose();
         _retired.ForEach(database => database.Dispose());
     }
+
+    private static string FolderName(string app)
+        => string.Concat(app.Select(character => Path.GetInvalidFileNameChars().Contains(character) ? '_' : character));
 
     private void StartHost()
         => _host = WebAppHost.Start(new WebAppHostOptions

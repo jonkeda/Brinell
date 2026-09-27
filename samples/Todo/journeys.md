@@ -90,6 +90,11 @@ a navigation, a real wire). Where a subtask lists two tiers, the second checks o
 | TOD.07.8 | Requests carry the API key header | I | WireMock request log |
 | TOD.07.9 | The app's DTOs match what the real API sends and accepts | C | Keeps the WireMock stubs honest |
 | TOD.07.10 | Requests name the client that sent them (`X-Todo-Client`), and the real API records it | I + C | WireMock request log in I; the API's request log in C. What lets several apps share one backend in a test |
+| TOD.07.11 | A todo created on Windows reaches a browser after both sync | H | Several apps on one backend (`Mixed.UITests`, `Mixed.Uat`) |
+| TOD.07.12 | Two Windows apps side by side: a todo or an edit made in one reaches the other | H | Two FlaUI-driven windows in one test |
+| TOD.07.13 | Conflict between two apps: the newer edit wins on both | H | Each app's clock is pinned apart (`ClockOffsetMinutes` in `apps.md`); the rule itself is TOD.07.6 in U |
+| TOD.07.14 | An app that was offline gets the others' changes once it is back online | H | The network-state file per app |
+| TOD.07.15 | A todo created on Android reaches a Windows app | H | Needs the emulator: skipped unless `BRINELL_ANDROID=1` |
 
 ## TOD.08 Things go wrong
 

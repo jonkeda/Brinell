@@ -109,13 +109,13 @@ public sealed class TodoScreenPhrases(TodoWebUatFixture fixture) : UatPhraseClas
     }
 
     /// <summary>
-    /// The fake server received the todo from that app: a PUT of it that carries the app's
+    /// The fake server received the todo from that user's app: a PUT of it that carries the app's
     /// <c>X-Todo-Client</c>. A wait on the request, not a count (<c>todo-blazor.md</c> 4.1).
     /// </summary>
-    [UatThen("the server should have received the todo {title} from {app}")]
-    public void ServerReceivedFrom(string title, string app)
+    [UatThen("the server should have received the todo {title} from {user}")]
+    public void ServerReceivedFrom(string title, string user)
     {
-        var clientId = fixture.ClientIdOf(app);
+        var clientId = fixture.ClientIdOfUser(user);
         fixture.Backend.WaitForRequest(
             "PUT",
             TodoApi.TodosPath + "/*",

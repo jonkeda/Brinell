@@ -83,7 +83,7 @@ public abstract partial class ViewBase<TScope> : IElementObject<TScope>
     private string PageName => Page?.GetType().Name ?? "Unknown";
     private string ControlId => Locator.Value;
 
-    private ControlCall Call => new(Context.Logger, null, Context.NearMiss, PageName, ControlId);
+    private ControlCall Call => new(Context.Logger, Context.Name, Context.NearMiss, PageName, ControlId);
 
     private int Budget(int? timeoutMs) => timeoutMs ?? DefaultTimeoutMs;
 

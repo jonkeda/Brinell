@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Brinell.Samples.Todo.TestSupport.Apps</RootNamespace>
+    <Description>Several Todo apps of any head on one backend: the apps table and the fixture the mixed UI tests and the mixed UAT suite share.</Description>
+    <!-- The MAUI apps are driven through FlaUI or Appium. -->
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <!-- A library the mixed test projects use, not a test project itself. -->
+    <IsTestProject>false</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.extensibility.core" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Each head's page objects and device, which stay next to each other. -->
+    <ProjectReference Include="..\Brinell.Samples.Todo.UITests\Brinell.Samples.Todo.UITests.csproj" />
+    <ProjectReference Include="..\Brinell.Samples.Todo.Web.UITests\Brinell.Samples.Todo.Web.UITests.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- One table of apps for the mixed UI tests and the mixed UAT suite (plan: .my/multi D13). -->
+    <None Include="apps.md" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

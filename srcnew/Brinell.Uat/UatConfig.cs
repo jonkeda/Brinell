@@ -1,4 +1,6 @@
 using Brinell.Core.Artifacts;
+using Brinell.Core.Testing;
+using Brinell.Core.Utilities;
 
 namespace Brinell.Uat;
 
@@ -44,6 +46,14 @@ public sealed record UatConfig(
         if (Runtime.TryGetValue(UatConfigFields.Head, out var head) && head.Trim() is { Length: > 0 } suiteHead)
         {
             var heads = UatTagConventions.Heads.Where(normalizedTags.Contains).ToList();
+            if (heads.Count == 0 && suiteHead.Equals(UatTagConventions.Mixed, StringComparison.OrdinalIgnoreCase))
+            {
+                return new UatSkipDecision(
+                    ShouldSkip: true,
+                    Reason: $"Scenario is not tagged @{UatTagConventions.Mixed}; this suite runs only mixed-head scenarios.",
+                    Rule: null);
+            }
+
             if (heads.Count > 0 && !heads.Contains(suiteHead, StringComparer.OrdinalIgnoreCase))
             {
                 return new UatSkipDecision(
@@ -89,7 +99,14 @@ public sealed record UatAssemblyRegistration(string Kind, string Assembly);
 /// </summary>
 /// <param name="Name">The app's name in scenarios, such as <c>Alice</c>.</param>
 /// <param name="Values">Every column of the row, by column name.</param>
-public sealed record UatAppConfig(string Name, IReadOnlyDictionary<string, string> Values);
+public sealed record UatAppConfig(string Name, IReadOnlyDictionary<string, string> Values)
+{
+    /// <summary>Who uses the app: the <c>User</c> column, or the app's name when it has none.</summary>
+    public string User => Values.TryGetValue("User", out var user) && user.Trim() is { Length: > 0 } trimmed ? trimmed : Name;
+
+    /// <summary>The head whose pages and phrases the app uses: the <c>Head</c> column, or null for the suite's.</summary>
+    public string? Head => Values.TryGetValue("Head", out var head) && head.Trim() is { Length: > 0 } trimmed ? trimmed : null;
+}
 
 public sealed record UatDiscoverySettings(
     bool RequireExplicitUatAttributes = false,
@@ -164,6 +181,9 @@ public static class UatTagConventions
     public const string LiveApi = "live-api";
     public const string Maui = "maui";
     public const string Web = "web";
+
+    /// <summary>A scenario that uses apps of several heads; it runs only on a suite whose head is <c>mixed</c>.</summary>
+    public const string Mixed = "mixed";
     public const string Windows = "windows";
     public const string Android = "android";
     public const string Ios = "ios";
@@ -174,7 +194,7 @@ public static class UatTagConventions
     /// The head tags. A scenario tagged with one or more runs only on a suite whose
     /// <see cref="UatConfigFields.Head"/> is among them; one with none runs on every head.
     /// </summary>
-    public static IReadOnlyList<string> Heads { get; } = [Maui, Web];
+    public static IReadOnlyList<string> Heads { get; } = [Maui, Web, Mixed];
 
     public static string NormalizeTag(string tag)
     {
@@ -283,62 +303,29 @@ public static class UatConfigParser
     public static UatConfig ParseFile(string filePath, string? suiteName = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
-        return Parse(File.ReadAllText(filePath), suiteName);
+        var config = Parse(File.ReadAllText(filePath), suiteName);
+
+        // AppsFile names a table shared with UI tests (apps.md); an inline Apps table wins.
+        if (config.Apps.Count > 0 || !config.Runtime.TryGetValue(UatConfigFields.AppsFile, out var appsFile) || appsFile.Length == 0)
+        {
+            return config;
+        }
+
+        var path = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(Path.GetFullPath(filePath))!, appsFile));
+        return config with
+        {
+            Apps = TestAppDefinition.ReadMarkdownFile(path).Select(app => new UatAppConfig(app.Name, app.Values)).ToArray(),
+        };
     }
 
     private static Dictionary<string, UatTable> ParseSections(string markdown)
-    {
-        var lines = markdown
-            .Replace("\r\n", "\n", StringComparison.Ordinal)
-            .Replace('\r', '\n')
-            .Split('\n');
-
-        Dictionary<string, UatTable> sections = new(StringComparer.OrdinalIgnoreCase);
-        string? currentSection = null;
-
-        for (var i = 0; i < lines.Length; i++)
-        {
-            var trimmed = lines[i].Trim();
-            if (trimmed.StartsWith("## ", StringComparison.Ordinal))
-            {
-                currentSection = trimmed[3..].Trim();
-                continue;
-            }
-
-            if (currentSection is null ||
-                !IsTableRow(trimmed) ||
-                i + 1 >= lines.Length ||
-                !IsSeparatorRow(lines[i + 1].Trim()))
-            {
-                continue;
-            }
-
-            var columns = SplitTableRow(trimmed);
-            i += 2;
-            List<UatTableRow> rows = [];
-            while (i < lines.Length && IsTableRow(lines[i].Trim()))
-            {
-                var cells = SplitTableRow(lines[i].Trim());
-                if (cells.Count == columns.Count)
-                {
-                    Dictionary<string, string> row = new(StringComparer.Ordinal);
-                    for (var column = 0; column < columns.Count; column++)
-                    {
-                        row[columns[column]] = cells[column];
-                    }
-
-                    rows.Add(new UatTableRow(row, new UatSourceLocation(null, i + 1)));
-                }
-
-                i++;
-            }
-
-            sections[currentSection] = new UatTable(columns, rows, new UatSourceLocation(null, i + 1));
-            i--;
-        }
-
-        return sections;
-    }
+        => MarkdownTables.ReadSections(markdown).ToDictionary(
+            section => section.Key,
+            section => new UatTable(
+                section.Value.Columns,
+                section.Value.Rows.Select(row => new UatTableRow(row.Cells, new UatSourceLocation(null, row.LineNumber))).ToArray(),
+                new UatSourceLocation(null, section.Value.EndLineNumber)),
+            StringComparer.OrdinalIgnoreCase);
 
     private static Dictionary<string, string> ToFieldValueDictionary(UatTable table)
     {
@@ -404,22 +391,9 @@ public static class UatConfigParser
              value.Equals("on", StringComparison.OrdinalIgnoreCase));
     }
 
-    internal static bool IsTableRow(string line)
-    {
-        return line.StartsWith('|') && line.EndsWith('|') && line.Count(x => x == '|') >= 2;
-    }
+    internal static bool IsTableRow(string line) => MarkdownTables.IsTableRow(line);
 
-    internal static bool IsSeparatorRow(string line)
-    {
-        return IsTableRow(line) && SplitTableRow(line).All(cell =>
-        {
-            var trimmed = cell.Replace(" ", string.Empty, StringComparison.Ordinal);
-            return trimmed.Length >= 3 && trimmed.All(x => x is '-' or ':');
-        });
-    }
+    internal static bool IsSeparatorRow(string line) => MarkdownTables.IsSeparatorRow(line);
 
-    internal static IReadOnlyList<string> SplitTableRow(string line)
-    {
-        return line.Trim()[1..^1].Split('|').Select(x => x.Trim()).ToArray();
-    }
+    internal static IReadOnlyList<string> SplitTableRow(string line) => MarkdownTables.SplitRow(line);
 }

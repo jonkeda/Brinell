@@ -413,6 +413,38 @@ Custom root phrases and phrase classes can read the table by accepting
 Named `## Data: <name>` tables are parsed into the UAT document model. Current
 binding and execution code does not consume them automatically.
 
+## Several Users And Apps
+
+When the config has an `Apps` table (see the template guide), a step can name who does it. Any
+phrase that starts with `I` also binds with an app or user in its place, with the verb in the
+third person or not:
+
+| Written | Binds as | Runs on |
+| --- | --- | --- |
+| `Daan taps Save` | `I tap Save` | Daan's app |
+| `Daan tap Save` | `I tap Save` | Daan's app |
+| `Daan is on the Todo List page` | `I am on the Todo List page` | Daan's app |
+| `Daan should be on the Todo List page` | `I should be on the Todo List page` | Daan's app |
+| `Daan's PC sets Title to "x"` | `I set Title to "x"` | the app called Daan's PC |
+
+No phrase is declared twice: the engine tries the first word as written, `is`/`has`/`does`/`goes`
+as `am`/`have`/`do`/`go`, and the word without `s`, `es`, or with `ies` made `y`, and binds when
+exactly one first-person phrase matches. When none does, the error lists what it tried.
+
+- **The subject sticks.** The named app stays current, so `And I tap Sync` after `When Daan taps
+  Save` runs on Daan's app. Still, name the user on every step of a scenario with several users.
+- **Only names from the table count.** `Todos should have todo "x"` is not about a user called
+  Todos. A name that is also a page or control name is an error (`UATB005`).
+- **A user with several apps** picks the one used last in the scenario; before any is used, name
+  the app (`Daan's phone taps Sync`) or start with `Daan's phone uses the app`.
+- **`{user}` is the acting user.** A phrase parameter called `user` receives the subject, or the
+  current app's user when the step says `I`. In first place it also switches apps:
+  `[UatThen("{user} should have {count} todos on the server")]` binds
+  `Then Finn should have 3 todos on the server` on Finn's app. Elsewhere it is only checked:
+  `the server should have received the todo {title} from {user}`.
+
+The rule is [AD-015](../../.docs/decisions/ad-015-a-steps-subject-picks-its-app.md).
+
 ## Authoring Guidance
 
 - Use built-in control phrases for simple interactions.
@@ -434,7 +466,9 @@ binding and execution code does not consume them automatically.
 - `srcnew/Brinell.Uat/UatCatalogBuilder.cs` — the discovery pass and both projections
 - `srcnew/Brinell.Uat/UatMarkdownParser.cs`
 - `srcnew/Brinell.Uat/UatCommandCatalog.cs`
-- `srcnew/Brinell.Uat/UatBinder.cs`
+- `srcnew/Brinell.Uat/UatBinder.cs` — binding, subjects and the current app
+- `srcnew/Brinell.Uat/UatCatalogSet.cs` — the catalogs per head, and what a step can see
+- `srcnew/Brinell.Uat/UatSessions.cs` — `IUatSessionHost`, `IUatAppsHost`
 - `srcnew/Brinell.Uat/UatExecution.cs`
 - `srcnew/Brinell.Uat/UatCatalogBuilder.cs`
 - `srcnew/Brinell.Uat/UatReflectionRuntime.cs`

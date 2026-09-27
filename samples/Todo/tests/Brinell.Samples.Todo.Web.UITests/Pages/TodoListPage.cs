@@ -46,14 +46,14 @@ public sealed class TodoListPage : BlazorPageObjectBase<TodoListPage>
     public TodoRows Todos => new(this);
 
     /// <summary>Opens a new, empty edit form.</summary>
-    public TodoEditPage AddTodo()
+    public TodoEditPage Add()
     {
         AddButton.Click();
         return TodoEditPage.Arrived(Context);
     }
 
     /// <summary>Adds a todo with <paramref name="title"/> and returns to the list.</summary>
-    public TodoListPage CreateTodo(string title) => AddTodo().EnterTitle(title).SaveNew();
+    public TodoListPage CreateTodo(string title) => Add().EnterTitle(title).SaveNew();
 
     /// <summary>Syncs, and waits until the sync has finished.</summary>
     public TodoListPage Sync()

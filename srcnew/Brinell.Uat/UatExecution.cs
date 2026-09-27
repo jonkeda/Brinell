@@ -2,14 +2,61 @@ namespace Brinell.Uat;
 
 public sealed class UatExecutionContext
 {
-    public string? CurrentPageName { get; set; }
+    // The fixture's own app, before any switch, is the slot with the empty name.
+    private readonly Dictionary<string, AppState> _apps = new(StringComparer.OrdinalIgnoreCase);
+    private AppState _app = new();
 
-    /// <summary>The app the scenario is using, after an <c>{app} uses the app</c> step; null before one.</summary>
-    public string? CurrentSession { get; set; }
+    /// <summary>The current app's current page.</summary>
+    public string? CurrentPageName
+    {
+        get => _app.CurrentPageName;
+        set => _app.CurrentPageName = value;
+    }
 
+    /// <summary>The app the scenario is using, after a switch to one; null before the first.</summary>
+    public string? CurrentSession { get; private set; }
+
+    /// <summary>The fixture that starts the scenario's apps, when it hosts several.</summary>
+    public IUatSessionHost? SessionHost { get; set; }
+
+    /// <summary>Values that hold for the whole scenario, whichever app is current.</summary>
     public IDictionary<string, object?> Items { get; } = new Dictionary<string, object?>(StringComparer.Ordinal);
 
+    /// <summary>Values of the current app only, such as its page and its services.</summary>
+    public IDictionary<string, object?> AppItems => _app.Items;
+
     public IList<string> Diagnostics { get; } = [];
+
+    /// <summary>
+    /// Makes <paramref name="app"/> current: the host makes it the app page objects drive, and its
+    /// own page and services come back. Nothing happens when it is current already.
+    /// </summary>
+    /// <param name="app">The app's name, as in the <c>Apps</c> table.</param>
+    public void SwitchApp(string app)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(app);
+        if (string.Equals(CurrentSession, app, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        var host = SessionHost ?? throw new InvalidOperationException(
+            $"The scenario switches to the app '{app}', but its fixture does not host apps (IUatSessionHost).");
+        var services = host.UseSession(app);
+
+        _apps[CurrentSession ?? string.Empty] = _app;
+        _app = _apps.TryGetValue(app, out var state) ? state : new AppState();
+        CurrentSession = app;
+        UatReflectionRuntime.SetServiceProvider(this, services);
+        Diagnostics.Add($"session:{app}");
+    }
+
+    private sealed class AppState
+    {
+        public string? CurrentPageName { get; set; }
+
+        public Dictionary<string, object?> Items { get; } = new(StringComparer.Ordinal);
+    }
 }
 
 public enum UatStepResultStatus
@@ -147,6 +194,11 @@ public sealed class UatStepExecutionSession
 
         try
         {
+            if (invocation.App is { } app)
+            {
+                _context.SwitchApp(app);
+            }
+
             var result = NameTheSession(await invocation.Command.Handler(_context, invocation, cancellationToken).ConfigureAwait(false));
             _results.Add(result);
             return result;

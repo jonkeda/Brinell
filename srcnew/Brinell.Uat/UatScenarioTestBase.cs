@@ -249,6 +249,7 @@ public abstract class UatScenarioTestBase<TFixture>
                 BeforeScenario,
                 context =>
                 {
+                    runtime.ConfigureContext(context);
                     ConfigureScenarioContext(context, scenario, runtime);
                     if (scope is Microsoft.Extensions.DependencyInjection.IServiceScope serviceScope)
                     {
@@ -310,6 +311,7 @@ public abstract class UatScenarioTestBase<TFixture>
                     status = step.Status.ToString(),
                     source = step.Invocation.Step.Source.ToString(),
                     keyword = step.Invocation.Step.EffectiveKeyword.ToString(),
+                    app = step.Invocation.App,
                     commandId = step.Invocation.CommandId,
                     text = step.Invocation.Step.Text,
                     message = step.Message
@@ -396,7 +398,7 @@ public abstract class UatScenarioTestBase<TFixture>
 
         var runtime = CreateRuntime();
         var catalog = CreateCommandCatalog(runtime);
-        var bind = UatBinder.Bind(parse.Document, catalog);
+        var bind = UatBinder.Bind(parse.Document, runtime.CreateCatalogSet(catalog));
         if (!bind.Success || bind.Document is null)
         {
             throw new InvalidOperationException(
