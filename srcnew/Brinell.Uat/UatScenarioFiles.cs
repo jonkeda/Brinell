@@ -30,7 +30,7 @@ public static class UatScenarioFiles
     /// <summary>The name ending of a phrase file.</summary>
     public const string PhraseFilePattern = UatFileFormat.StepFilePattern;
 
-    private const string ScenarioFolder = "Scenarios";
+    private const string ScenarioFolder = UatFileFormat.FeatureFolder;
 
     private static readonly Dictionary<string, (DateTime Written, UatPhrasesParseResult Parse)> PhraseFiles = new(StringComparer.OrdinalIgnoreCase);
 
@@ -59,7 +59,7 @@ public static class UatScenarioFiles
     }
 
     /// <summary>
-    /// The scenario root of a file: the nearest folder named <c>Scenarios</c> that holds it, the
+    /// The scenario root of a file: the nearest folder named <c>Features</c> that holds it, the
     /// folder itself included; the file's own folder when there is none.
     /// </summary>
     public static string ScenarioRoot(string filePath)

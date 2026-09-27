@@ -28,8 +28,8 @@
   <ItemGroup>
     <!-- The scenarios, parsed as tests of the tiers their head tags name (ScenarioCatalog). -->
     <ProjectReference Include="..\..\..\..\srcnew\Brinell.Uat\Brinell.Uat.csproj" />
-    <None Include="..\Brinell.Samples.Todo.Uat\Scenarios\**\*.feature.md" Link="Scenarios\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="..\Brinell.Samples.Todo.Mixed.Uat\Scenarios\**\*.feature.md" Link="Scenarios\mixed\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\Brinell.Samples.Todo.Uat\Features\**\*.feature.md" Link="Features\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\Brinell.Samples.Todo.Mixed.Uat\Features\**\*.feature.md" Link="Features\mixed\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

@@ -121,10 +121,10 @@ namespace Brinell.Uat.Tests.HeadCases
         public void AServiceSuite_ListsOnlyItsScenarios_AndAUiSuiteStillListsEveryScenario()
         {
             var directory = Path.Combine(Path.GetTempPath(), $"brinell-uat-service-{Guid.NewGuid():N}");
-            Directory.CreateDirectory(Path.Combine(directory, "Scenarios"));
+            Directory.CreateDirectory(Path.Combine(directory, "Features"));
             try
             {
-                File.WriteAllText(Path.Combine(directory, "Scenarios", "sync.feature.md"), """
+                File.WriteAllText(Path.Combine(directory, "Features", "sync.feature.md"), """
                     # Feature: Sync
 
                     @service

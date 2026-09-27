@@ -84,9 +84,9 @@ internal static class ScenarioCheck
     }
 
     /// <summary>The folder of feature and step files beside the config.</summary>
-    public static string ScenarioFolder(string configPath) => Path.Combine(Path.GetDirectoryName(configPath)!, "Scenarios");
+    public static string ScenarioFolder(string configPath) => Path.Combine(Path.GetDirectoryName(configPath)!, UatFileFormat.FeatureFolder);
 
-    /// <summary>The step files: <c>*.steps.md</c> in the project's Scenarios folder and its subfolders.</summary>
+    /// <summary>The step files: <c>*.steps.md</c> in the project's Features folder and its subfolders.</summary>
     public static IReadOnlyList<string> PhraseFiles(string configPath)
     {
         var scenarios = ScenarioFolder(configPath);
@@ -112,7 +112,7 @@ internal static class ScenarioCheck
             .Any(csproj => File.ReadAllText(csproj).Contains(".steps.md", StringComparison.OrdinalIgnoreCase));
         return copies
             ? null
-            : "The Scenarios folder has *.steps.md files that the project does not copy to its output, so the xUnit gate cannot see them. Add <None Update=\"Scenarios\\**\\*.steps.md\" CopyToOutputDirectory=\"PreserveNewest\" /> to the csproj.";
+            : "The Features folder has *.steps.md files that the project does not copy to its output, so the xUnit gate cannot see them. Add <None Update=\"Features\\**\\*.steps.md\" CopyToOutputDirectory=\"PreserveNewest\" /> to the csproj.";
     }
 
     public static IReadOnlyList<string> Files(string configPath)

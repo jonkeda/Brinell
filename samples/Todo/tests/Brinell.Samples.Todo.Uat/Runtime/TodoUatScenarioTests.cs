@@ -3,7 +3,7 @@ using Brinell.Uat;
 namespace Brinell.Samples.Todo.Uat.Runtime;
 
 /// <summary>
-/// Runs every scenario of every <c>Scenarios/*.feature.md</c> against the hermetic Todo app, one test
+/// Runs every scenario of every <c>Features/*.feature.md</c> against the hermetic Todo app, one test
 /// case per scenario (and per outline row).
 /// </summary>
 /// <remarks>

@@ -202,6 +202,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Request/response recording
 
 ### Changed
+- The folder of feature and step files is `Features/`, not `Scenarios/`: the default of
+  `UatScenarioSource`, `UatScenarioTestBase`, `UatSpecFormatTestBase` and the tools. The files stay in
+  the projects that own them. `brinell-data validate` reports an old `Scenarios/` folder beside the
+  config as `UAT029`, and `--fix` renames it.
 - Feature and step files use the BDD words (D5 of the Bdd plan), with no period where both are
   read: `*.uat.md` is `*.feature.md` with `# Feature:`, `*.phrases.md` is `*.steps.md` with
   `# Steps:`, and `## Phrase:` / `## Phrase for each row:` are `## Step:` / `## Step for each row:`.

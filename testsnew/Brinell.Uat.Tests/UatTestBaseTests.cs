@@ -268,7 +268,7 @@ public sealed class UatTestBaseTests
         var directory = CreateTempDirectory();
         try
         {
-            var scenarios = Directory.CreateDirectory(Path.Combine(directory, "Scenarios")).FullName;
+            var scenarios = Directory.CreateDirectory(Path.Combine(directory, "Features")).FullName;
             File.WriteAllText(Path.Combine(scenarios, "a.feature.md"), ScenarioFile("A", "two", "A1", "A2"));
             File.WriteAllText(Path.Combine(scenarios, "b.feature.md"), ScenarioFile("B", "one", "B1"));
             File.WriteAllText(Path.Combine(scenarios, "c.feature.md"), ScenarioFile("C", null, "C1"));

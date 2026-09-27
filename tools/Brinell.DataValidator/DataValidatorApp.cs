@@ -141,6 +141,20 @@ public static class DataValidatorApp
     private static IEnumerable<TestDataDiagnostic> CheckOldForms(ToolOptions options, string config, TextWriter output)
     {
         var folder = ScenarioCheck.ScenarioFolder(config);
+        var oldFolder = Path.Combine(Path.GetDirectoryName(folder)!, UatFileFormat.OldFeatureFolder);
+        if (!Directory.Exists(folder) && Directory.Exists(oldFolder))
+        {
+            if (!options.Fix)
+            {
+                return [new TestDataDiagnostic(
+                    oldFolder, 1, UatFileFormat.OldFormCode, null,
+                    $"The folder '{UatFileFormat.OldFeatureFolder}' is the old name of '{UatFileFormat.FeatureFolder}'. Run 'brinell-data validate --fix' to rename it, and update the csproj's globs.")];
+            }
+
+            Directory.Move(oldFolder, folder);
+            output.WriteLine($"Renamed the folder {UatFileFormat.OldFeatureFolder} to {UatFileFormat.FeatureFolder}; update the csproj's globs.");
+        }
+
         if (!Directory.Exists(folder))
         {
             return [];
@@ -312,7 +326,7 @@ public static class DataValidatorApp
 
     private static int Snippet(ToolOptions options, TextWriter output)
     {
-        var target = options.Argument ?? throw new ToolException("snippet needs a step, e.g. 'brinell-data snippet Scenarios/TOD.01.feature.md:14'.");
+        var target = options.Argument ?? throw new ToolException("snippet needs a step, e.g. 'brinell-data snippet Features/TOD.01.feature.md:14'.");
         var colon = target.LastIndexOf(':');
         if (colon <= 1 || !int.TryParse(target[(colon + 1)..], out var line))
         {

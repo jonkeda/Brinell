@@ -14,9 +14,9 @@
 
   <ItemGroup>
     <None Update="uat.config.md" CopyToOutputDirectory="PreserveNewest" />
-    <None Update="Scenarios\**\*.feature.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Features\**\*.feature.md" CopyToOutputDirectory="PreserveNewest" />
     <!-- Callable phrases every scenario can use; the gate reads them from the output. -->
-    <None Update="Scenarios\**\*.steps.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Features\**\*.steps.md" CopyToOutputDirectory="PreserveNewest" />
     <!-- Files that must fail binding: a scenario without the Using its pages need. -->
     <None Update="ExpectedFailures\*.feature.md" CopyToOutputDirectory="PreserveNewest" />
     <None Update="TestSettings\**\*.json" CopyToOutputDirectory="PreserveNewest" />

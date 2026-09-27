@@ -14,7 +14,7 @@ step in [One Todo UAT, end to end](../../samples/Todo/uat-walkthrough.md).
 ```text
 testsnew/Brinell.<Platform>.Uat.Tests/
   uat.config.md
-  Scenarios/
+  Features/
     scenario-name.feature.md
   ExpectedFailures/
     known-failure.feature.md
@@ -29,7 +29,7 @@ testsnew/Brinell.<Platform>.Uat.Tests/
 A suite below the UI (the `service` head) names its config `bdd.config.md` instead; it is read the
 same way, and the name says which kind of suite it is.
 
-Put `uat.config.md`, `Scenarios/**/*.feature.md` and `TestSettings/**/*.json` in the
+Put `uat.config.md`, `Features/**/*.feature.md` and `TestSettings/**/*.json` in the
 csproj as `CopyToOutputDirectory="PreserveNewest"`; the runtime reads them from
 the output folder.
 
@@ -235,10 +235,10 @@ The scenario parser supports this document shape:
   `### Examples` table. Step text and step table cells can reference example
   columns with `<columnName>` placeholders.
 
-Scenario discovery scans `Scenarios/**/*.feature.md` recursively, so larger apps
+Scenario discovery scans `Features/**/*.feature.md` recursively, so larger apps
 can keep executable specs in module folders such as
-`Scenarios/Contacts/00-smoke.feature.md` and
-`Scenarios/Projects/01-list-basic.feature.md`.
+`Features/Contacts/00-smoke.feature.md` and
+`Features/Projects/01-list-basic.feature.md`.
 
 ## Metadata Fields
 
@@ -283,7 +283,7 @@ And Title Error should not exist
 ````
 
 The Todo sample's
-[`TOD.02-create-a-todo.feature.md`](../../samples/Todo/tests/Brinell.Samples.Todo.Uat/Scenarios/TOD.02-create-a-todo.feature.md)
+[`TOD.02-create-a-todo.feature.md`](../../samples/Todo/tests/Brinell.Samples.Todo.Uat/Features/TOD.02-create-a-todo.feature.md)
 is a complete one.
 
 For how step text binds to executable commands, see
@@ -354,14 +354,14 @@ step binds ([Arguments](uat-step-definitions.md#arguments)).
 Steps a tester repeats can be named once, as a callable phrase
 ([Callable Phrases](uat-step-definitions.md#callable-phrases)). One that several files use goes
 in a `*.steps.md` file: one `# Steps:` heading, then only `## Step:` and
-`## Step for each row:` sections. Put it in `Scenarios/` for every scenario, or in a module's
-folder (`Scenarios/Invoicing/`) for the scenarios in that folder and below
+`## Step for each row:` sections. Put it in `Features/` for every scenario, or in a module's
+folder (`Features/Invoicing/`) for the scenarios in that folder and below
 ([Where Phrases Live](uat-step-definitions.md#where-phrases-live)). The gate reads scenarios from
 the build output, so the project copies phrase files as it copies scenarios:
 
 ```xml
-<None Update="Scenarios\**\*.feature.md" CopyToOutputDirectory="PreserveNewest" />
-<None Update="Scenarios\**\*.steps.md" CopyToOutputDirectory="PreserveNewest" />
+<None Update="Features\**\*.feature.md" CopyToOutputDirectory="PreserveNewest" />
+<None Update="Features\**\*.steps.md" CopyToOutputDirectory="PreserveNewest" />
 ```
 
 A suite that links another suite's scenarios links its phrase files too. `brinell-data validate`

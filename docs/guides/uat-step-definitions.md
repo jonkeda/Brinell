@@ -221,7 +221,7 @@ loads, and a step that binds to it fails naming the method:
 A tester can give a sequence of steps a name and call it like a phrase, with no C#
 ([AD-017](../../.docs/decisions/ad-017-callable-phrases-are-sequences-not-programs.md)). It is
 declared under a `## Step:` heading, in a scenario file (seen by that file) or in a
-`*.steps.md` file in `Scenarios/` or a folder under it (seen by the scenarios in that folder and
+`*.steps.md` file in `Features/` or a folder under it (seen by the scenarios in that folder and
 below, [Where Phrases Live](#where-phrases-live)):
 
 ````markdown
@@ -547,15 +547,15 @@ the namespaces it uses, and the global ones.
 
 ### Folder namespaces
 
-A folder under `Scenarios/` is a namespace: `Scenarios/Invoicing/Credit notes/` is
+A folder under `Features/` is a namespace: `Features/Invoicing/Credit notes/` is
 `Invoicing/Credit notes`. A scenario sees the phrases of its own folder and every folder above it,
 never a sibling's. So two modules can each have "I add a line" without colliding.
 
 | Phrase | Seen by |
 | --- | --- |
 | a callable in a scenario file | that file |
-| a callable in `Scenarios/*.steps.md` | every scenario |
-| a callable in `Scenarios/Invoicing/*.steps.md` | the scenarios in `Invoicing/` and below |
+| a callable in `Features/*.steps.md` | every scenario |
+| a callable in `Features/Invoicing/*.steps.md` | the scenarios in `Invoicing/` and below |
 | a step-definition class with `[BddStepDefinitions(Namespace = "Invoicing")]` or `[BddNamespace("Invoicing")]` | the scenarios in `Invoicing/` and below |
 | a step-definition class in an assembly with `[assembly: BddNamespace("Invoicing")]` | the same, for every step-definition class of the assembly that names no namespace of its own |
 | any other step-definition class, the fixture's phrases, built-ins | every scenario |

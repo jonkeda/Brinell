@@ -57,7 +57,7 @@ public sealed class DataValidatorAppTests : IDisposable
     public void Validate_WithAConfig_ChecksTheTestSetsTheScenariosName()
     {
         WriteConfig(defaultTestData: "good");
-        Write(Path.Combine("Scenarios", "shelf.feature.md"), """
+        Write(Path.Combine("Features", "shelf.feature.md"), """
             # Feature: Shelf
 
             ## Metadata
@@ -74,7 +74,7 @@ public sealed class DataValidatorAppTests : IDisposable
         var (exit, output, _) = Run("validate");
 
         Assert.Equal(1, exit);
-        Assert.Contains("Scenarios/shelf.feature.md:7: DATA020", output);
+        Assert.Contains("Features/shelf.feature.md:7: DATA020", output);
         Assert.Contains("Did you mean 'good'?", output);
         Assert.DoesNotContain("uat.config.md", output);
     }

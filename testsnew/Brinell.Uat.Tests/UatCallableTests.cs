@@ -386,7 +386,7 @@ public sealed class UatCallableTests
     [Fact]
     public void PhraseFiles_AreSeenFromTheScenarioRoot_AndFromTheFilesOwnFolder_NotFromAnotherFolder()
     {
-        var root = Path.Combine(Path.GetTempPath(), "brinell-callables-" + Guid.NewGuid().ToString("N"), "Scenarios");
+        var root = Path.Combine(Path.GetTempPath(), "brinell-callables-" + Guid.NewGuid().ToString("N"), "Features");
         Directory.CreateDirectory(Path.Combine(root, "Todo"));
         Directory.CreateDirectory(Path.Combine(root, "Users"));
         try

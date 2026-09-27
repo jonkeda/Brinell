@@ -2,11 +2,17 @@ namespace Brinell.Uat;
 
 /// <summary>
 /// The names of feature and step files, and the rewrite from the forms before them
-/// (<c>*.uat.md</c>, <c># UAT:</c>, <c>*.phrases.md</c>, <c>## Phrase:</c>) that
+/// (<c>Scenarios/</c>, <c>*.uat.md</c>, <c># UAT:</c>, <c>*.phrases.md</c>, <c>## Phrase:</c>) that
 /// <c>brinell-data validate --fix</c> applies.
 /// </summary>
 public static class UatFileFormat
 {
+    /// <summary>The folder of feature and step files, beside the config.</summary>
+    public const string FeatureFolder = "Features";
+
+    /// <summary>The name <see cref="FeatureFolder"/> had before feature files.</summary>
+    public const string OldFeatureFolder = "Scenarios";
+
     /// <summary>The name ending of a feature file.</summary>
     public const string FeatureExtension = ".feature.md";
 

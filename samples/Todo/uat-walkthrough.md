@@ -18,7 +18,7 @@ running app:
 | File | Job |
 | --- | --- |
 | `uat.config.md` | Where the app is, which assemblies hold the pages and controls, how to report. One per test project. |
-| `Scenarios/*.feature.md` | The executable scenarios themselves, in `Given / When / Then`. |
+| `Features/*.feature.md` | The executable scenarios themselves, in `Given / When / Then`. |
 | `Runtime/*.cs` | The fixture, the xUnit collection and the scenario test class. Written once. |
 
 Brinell reads the scenario, matches each line to a **phrase**, and calls the matching
@@ -39,7 +39,7 @@ flowchart LR
 
 ## 2. The scenario file
 
-One file per journey. [`Scenarios/TOD.02-create-a-todo.feature.md`](tests/Brinell.Samples.Todo.Uat/Scenarios/TOD.02-create-a-todo.feature.md)
+One file per journey. [`Features/TOD.02-create-a-todo.feature.md`](tests/Brinell.Samples.Todo.Uat/Features/TOD.02-create-a-todo.feature.md)
 holds every UAT subtask of TOD.02; here is its header and TOD.02.3:
 
 ````markdown
@@ -181,7 +181,7 @@ public TodoStatus<TScope> AssertShowsStatus(string? expected, ...) { ... }
 ```
 
 No registration, no catalog edit: the attribute *is* the registration, and
-[`TOD.05-change-status.feature.md`](tests/Brinell.Samples.Todo.Uat/Scenarios/TOD.05-change-status.feature.md)
+[`TOD.05-change-status.feature.md`](tests/Brinell.Samples.Todo.Uat/Features/TOD.05-change-status.feature.md)
 reads
 
 ```markdown
@@ -324,7 +324,7 @@ When Finn taps Sync
 Then Todos should have todo "Pack for the trip"
 ```
 
-See `tests/Brinell.Samples.Todo.Mixed.Uat/Scenarios/TOD.07-mixed.feature.md` and
+See `tests/Brinell.Samples.Todo.Mixed.Uat/Features/TOD.07-mixed.feature.md` and
 [AD-015](../../.docs/decisions/ad-015-a-steps-subject-picks-its-app.md).
 
 ---

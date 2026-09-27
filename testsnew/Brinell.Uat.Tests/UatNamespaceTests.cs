@@ -10,7 +10,7 @@ namespace Brinell.Uat.Tests.NamespaceCases;
 /// <summary>Folder namespaces: a scenario sees the phrases of its folder and the folders above it.</summary>
 public sealed class UatNamespaceTests : IDisposable
 {
-    private readonly string _root = Path.Combine(Path.GetTempPath(), "brinell-namespaces-" + Guid.NewGuid().ToString("N"), "Scenarios");
+    private readonly string _root = Path.Combine(Path.GetTempPath(), "brinell-namespaces-" + Guid.NewGuid().ToString("N"), "Features");
 
     public void Dispose()
     {

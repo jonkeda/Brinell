@@ -17,8 +17,8 @@
   <ItemGroup>
     <!-- The service head (Service/): the MAUI suite's scenario files, of which it runs the @service ones. -->
     <None Update="bdd.config.md" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="..\Brinell.Samples.Todo.Uat\Scenarios\**\*.feature.md" Link="Scenarios\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="..\Brinell.Samples.Todo.Uat\Scenarios\**\*.steps.md" Link="Scenarios\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\Brinell.Samples.Todo.Uat\Features\**\*.feature.md" Link="Features\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\Brinell.Samples.Todo.Uat\Features\**\*.steps.md" Link="Features\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <None Update="ExpectedFailures\*.feature.md" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

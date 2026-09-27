@@ -15,7 +15,7 @@ namespace Brinell.Samples.Todo.JourneyCoverage;
 public static partial class ScenarioCatalog
 {
     /// <summary>Where the build links the scenario files, under this project's output.</summary>
-    public const string Folder = "Scenarios";
+    public const string Folder = "Features";
 
     /// <summary>Every scenario, once per tier it runs in.</summary>
     public static IReadOnlyList<TestMethod> Load()

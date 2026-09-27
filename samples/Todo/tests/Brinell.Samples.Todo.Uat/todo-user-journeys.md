@@ -1,7 +1,7 @@
 # Todo (TOD) - user journeys
 
 User journeys for the Todo sample, one checklist item per observable behaviour. This is the
-acceptance backbone the UAT scenarios in [Scenarios](Scenarios) draw from: one file per journey
+acceptance backbone the UAT scenarios in [Features](Features) draw from: one file per journey
 (`TOD.02-create-a-todo.feature.md`, ...) names each subtask in its scenario heading and an `@TOD.xx.y` tag.
 
 The statements are the user-facing halves of the pyramid backbone in

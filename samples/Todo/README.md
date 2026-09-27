@@ -245,7 +245,7 @@ charter records where it went.
 
 ## Feature: the journeys, in Markdown
 
-`tests/Brinell.Samples.Todo.Uat` runs [`Scenarios/*.feature.md`](tests/Brinell.Samples.Todo.Uat/Scenarios)
+`tests/Brinell.Samples.Todo.Uat` runs [`Features/*.feature.md`](tests/Brinell.Samples.Todo.Uat/Features)
 against the same hermetic app tier 3 uses - WireMock backend, seeded database - but the test
 is the Markdown, not C#:
 
@@ -270,7 +270,7 @@ The acceptance backbone is
 [todo-user-journeys.md](tests/Brinell.Samples.Todo.Uat/todo-user-journeys.md), a plain
 checklist of what a user must be able to do. It is not `journeys.md`: that one decides *where*
 a behaviour is tested, this one states *what* the user can do. There is one file per
-journey (`Scenarios/TOD.02-create-a-todo.feature.md`, `TOD.04-...`, `TOD.05-...`), with one scenario
+journey (`Features/TOD.02-create-a-todo.feature.md`, `TOD.04-...`, `TOD.05-...`), with one scenario
 per subtask, named and tagged with its id (`@TOD.02.3`).
 
 Each file names its starting data in `TestData` metadata (`one-todo`, from `TestSupport/TestData/`;
@@ -373,7 +373,7 @@ dotnet test tests/Brinell.Samples.Todo.Web.UITests
 ```
 
 The UAT scenarios run on the web head too: `tests/Brinell.Samples.Todo.Web.Uat` runs the same
-`Scenarios/*.feature.md` files as the MAUI suite (a scenario tagged `@web` runs there), through web
+`Features/*.feature.md` files as the MAUI suite (a scenario tagged `@web` runs there), through web
 page objects with the MAUI member names. It also has a scenario with two devices on one backend
 (`TOD.07-two-devices.feature.md`: `Alice taps Sync`, then `Bob taps Sync` and sees her todo):
 
@@ -400,7 +400,7 @@ finn.List.Sync().Todos.AssertRow(title);
 
 `tests/Brinell.Samples.Todo.Mixed.Uat` reads the same table, and each step runs on the app of the
 user it names (`When Daan taps Save`, `Then Finn should be on the Todo List page`); see
-`Scenarios/TOD.07-mixed.feature.md`. A failure captures every started app, one folder each. The
+`Features/TOD.07-mixed.feature.md`. A failure captures every started app, one folder each. The
 Android test and scenario run only with the emulator and `BRINELL_ANDROID=1`.
 
 ```bash

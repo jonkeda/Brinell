@@ -75,7 +75,7 @@ public abstract class UatScenarioTestBase<TFixture>
         execution.Result.Passed || execution.Result.Skipped;
 
     protected static IEnumerable<object[]> GetScenarioFiles(
-        string folderName = "Scenarios",
+        string folderName = UatFileFormat.FeatureFolder,
         string? configurationFilter = null)
     {
         return UatScenarioSource.GetScenarioFileTheoryData(
@@ -85,7 +85,7 @@ public abstract class UatScenarioTestBase<TFixture>
 
     /// <summary>One theory case per scenario, <c>[filePath, scenarioName]</c>; run each with <see cref="RunUatScenarioAsync"/>.</summary>
     protected static IEnumerable<object[]> GetScenarioTheoryData(
-        string folderName = "Scenarios",
+        string folderName = UatFileFormat.FeatureFolder,
         string? configurationFilter = null)
     {
         return UatScenarioSource.GetScenarioTheoryData(

@@ -7,7 +7,7 @@ namespace Brinell.Uat.Tests.NamespaceCases;
 /// <summary>Using: a file reaches another folder's phrases and pages by naming the namespace.</summary>
 public sealed class UatUsingTests : IDisposable
 {
-    private readonly string _root = Path.Combine(Path.GetTempPath(), "brinell-using-" + Guid.NewGuid().ToString("N"), "Scenarios");
+    private readonly string _root = Path.Combine(Path.GetTempPath(), "brinell-using-" + Guid.NewGuid().ToString("N"), "Features");
 
     public void Dispose()
     {

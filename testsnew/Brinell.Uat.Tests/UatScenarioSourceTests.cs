@@ -10,9 +10,9 @@ public sealed class UatScenarioSourceTests
         var directory = CreateTempDirectory();
         try
         {
-            WriteScenario(directory, "Scenarios", "Contacts", "00-smoke.feature.md");
-            WriteScenario(directory, "Scenarios", "Contacts", "01-list-basic.feature.md");
-            WriteScenario(directory, "Scenarios", "Projects", "00-smoke.feature.md");
+            WriteScenario(directory, "Features", "Contacts", "00-smoke.feature.md");
+            WriteScenario(directory, "Features", "Contacts", "01-list-basic.feature.md");
+            WriteScenario(directory, "Features", "Projects", "00-smoke.feature.md");
 
             var files = UatScenarioSource.EnumerateScenarioFiles(baseDirectory: directory).ToArray();
 
@@ -33,8 +33,8 @@ public sealed class UatScenarioSourceTests
         var directory = CreateTempDirectory();
         try
         {
-            WriteScenario(directory, "Scenarios", "Contacts", "00-smoke.feature.md");
-            WriteScenario(directory, "Scenarios", "Projects", "00-smoke.feature.md");
+            WriteScenario(directory, "Features", "Contacts", "00-smoke.feature.md");
+            WriteScenario(directory, "Features", "Projects", "00-smoke.feature.md");
 
             var files = UatScenarioSource
                 .ApplyFilter(

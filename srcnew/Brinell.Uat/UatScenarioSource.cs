@@ -15,7 +15,7 @@ public static class UatScenarioSource
     /// Enumerates scenario files, optionally filtered by configuration.
     /// </summary>
     public static IEnumerable<string> EnumerateScenarioFiles(
-        string folderName = "Scenarios",
+        string folderName = UatFileFormat.FeatureFolder,
         string? baseDirectory = null,
         string? configurationFilter = null)
     {
@@ -35,7 +35,7 @@ public static class UatScenarioSource
     /// Gets scenario files as theory data, optionally filtered by configuration.
     /// </summary>
     public static IEnumerable<object[]> GetScenarioFileTheoryData(
-        string folderName = "Scenarios",
+        string folderName = UatFileFormat.FeatureFolder,
         string? baseDirectory = null,
         string? configurationFilter = null)
     {
@@ -59,7 +59,7 @@ public static class UatScenarioSource
     /// scenario for another head still shows, as skipped.
     /// </remarks>
     public static IEnumerable<object[]> GetScenarioTheoryData(
-        string folderName = "Scenarios",
+        string folderName = UatFileFormat.FeatureFolder,
         string? baseDirectory = null,
         string? configurationFilter = null)
     {
@@ -74,7 +74,7 @@ public static class UatScenarioSource
 
     /// <summary>Every scenario in the scenario files, in <see cref="GetOrderKey"/> order.</summary>
     public static IReadOnlyList<UatScenarioReference> EnumerateScenarios(
-        string folderName = "Scenarios",
+        string folderName = UatFileFormat.FeatureFolder,
         string? baseDirectory = null,
         string? configurationFilter = null)
     {

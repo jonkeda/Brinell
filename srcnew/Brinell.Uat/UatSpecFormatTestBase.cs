@@ -23,7 +23,7 @@ public abstract class UatSpecFormatTestBase
     protected virtual Type? RuntimeRootType => null;
 
     protected static IEnumerable<object[]> GetScenarioFiles(
-        string folderName = "Scenarios",
+        string folderName = UatFileFormat.FeatureFolder,
         string? configurationFilter = null)
     {
         return UatScenarioSource.GetScenarioFileTheoryData(

@@ -38,6 +38,10 @@ of `Brinell.Bdd` (6) is the large, internal step. The Construction pilot is not 
 - Phase 4b done. The old forms are `UAT029` (headings from the parser, file names from
   `brinell-data validate`), and `--fix` renames and rewrites. The repo's files were moved with
   `git mv` to keep history. `.docs/` ADs keep the old words until phase 9, as planned.
+- Phase 5 done, for every suite (the engine default changed, so `testsnew/*.Uat.Tests` renamed too,
+  not only Todo). Same test lists before and after (`Brinell.Uat.Tests` 345, MAUI UAT 43, web UAT 35,
+  mixed 4, IntegrationTests 61). `SyncTests.Offline_TheSyncSendsNothing_UntilBackOnline` failed once
+  in a full IntegrationTests run and passed three times alone: flaky, for phase 8 to look at.
 
 ---
 
