@@ -4,9 +4,9 @@ Status: phases 0-8 implemented; phase 9 (other journeys, Construction) open (see
 Date: 2026-09-24
 Implements:
 
-- [test-data-proposal.md](test-data-proposal.md) - decisions D1-D8
-- [tod-02-single-journey-uat.md](tod-02-single-journey-uat.md) - one `.uat.md` per journey
-- [todo-test-data-example.md](todo-test-data-example.md) - the target end state for TOD.02
+- [test-data-proposal.md](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/uat/test-data-proposal.md) - decisions D1-D8
+- [tod-02-single-journey-uat.md](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/uat/tod-02-single-journey-uat.md) - one `.uat.md` per journey
+- [todo-test-data-example.md](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/uat/todo-test-data-example.md) - the target end state for TOD.02
 
 The phases are ordered by dependency. Each phase ends green and can be committed on its own.
 Phases 4 and 5 do not depend on 2-3 and can be done in parallel with them.
