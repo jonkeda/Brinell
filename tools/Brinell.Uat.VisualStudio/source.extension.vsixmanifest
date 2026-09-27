@@ -21,5 +21,7 @@
     <Asset Type="Microsoft.VisualStudio.VsPackage" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%;PkgdefProjectOutputGroup|" />
     <!-- The step breakpoints' glyphs in the editor (a tagger and a glyph factory). -->
     <Asset Type="Microsoft.VisualStudio.MefComponent" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%|" />
+    <!-- The UAT CodeLens on C# members, loaded by Visual Studio's CodeLens process. -->
+    <Asset Type="Microsoft.VisualStudio.CodeLensComponent" d:Source="Project" d:ProjectName="Brinell.Uat.VisualStudio.CodeLens" Path="|Brinell.Uat.VisualStudio.CodeLens|" />
   </Assets>
 </PackageManifest>

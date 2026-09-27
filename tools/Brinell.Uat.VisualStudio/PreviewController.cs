@@ -335,6 +335,13 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
         UatBreakpointStore.Instance.Toggle(path, line);
     }
 
+    /// <summary>The steps that use a C# member (CodeLens), in the suites of the solution that holds the C# file.</summary>
+    public async Task<JObject> UsagesAsync(string csharpFile, string symbol)
+    {
+        await EnsureServerAsync(csharpFile);
+        return await _server!.UsagesAsync(symbol, _package.DisposalToken);
+    }
+
     private static object Breaks(string path) => new { type = "breaks", lines = UatBreakpointStore.Instance.LinesOf(path) };
 
     // A breakpoint set or cleared, from the preview, the editor or an edit: the preview shows it.

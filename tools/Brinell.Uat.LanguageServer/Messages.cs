@@ -211,6 +211,22 @@ public sealed record RunTargetParams(string Uri, int? Line, string? Suite);
 /// <param name="Suite">The suite it runs in.</param>
 public sealed record RunTargetResult(bool CanRun, string? Reason, string? Project, string? Filter, IReadOnlyList<string> Scenarios, string? Suite);
 
+/// <summary><c>brinell/usages</c>: a C# member, as CodeLens names it (<c>Ns.Type.Method(int)</c>).</summary>
+public sealed record UsagesParams(string Symbol);
+
+/// <summary>The steps across every suite that use a C# member.</summary>
+/// <param name="Steps">How many steps.</param>
+/// <param name="Scenarios">How many scenarios they are in.</param>
+/// <param name="Usages">Each step.</param>
+public sealed record UsagesResult(int Steps, int Scenarios, IReadOnlyList<Usage> Usages);
+
+/// <summary>A step that uses a C# member.</summary>
+/// <param name="Uri">Its file.</param>
+/// <param name="Line">Its 0-based line.</param>
+/// <param name="Text">The line's text.</param>
+/// <param name="Scenario">The scenario it is in.</param>
+public sealed record Usage(string Uri, int Line, string Text, string Scenario);
+
 /// <summary>The preview's host page.</summary>
 /// <param name="Html">A whole page with the stylesheet and the page script (<c>UatPreview.HostPage</c>).</param>
 public sealed record PreviewHostResult(string Html);

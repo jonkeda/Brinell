@@ -87,5 +87,30 @@ public sealed class NavigationTests : IAsyncLifetime
         Assert.Contains(locations, location => location.Uri == steps && location.Range.Start.Line == 2);
     }
 
+    [Fact]
+    public async Task Usages_OfAStepDefinition_AreItsStepsAcrossTheSuites()
+    {
+        var hover = await _server.AtAsync<Hover>("textDocument/hover", _uri, LineOf("And the server answers after 2 seconds"), 5);
+        var method = System.Text.RegularExpressions.Regex.Match(hover.Contents.Value, "binds to\\*\\* `([^`]+)`").Groups[1].Value;
+
+        var usages = await _server.Client.InvokeWithParameterObjectAsync<UsagesResult>("brinell/usages", new { symbol = method + "(int)" });
+
+        Assert.Contains(usages.Usages, usage => usage.Uri == _uri && usage.Line == LineOf("And the server answers after 2 seconds"));
+        Assert.Equal(usages.Usages.Count, usages.Steps);
+        Assert.True(usages.Scenarios >= 1);
+    }
+
+    [Fact]
+    public async Task Usages_OfAPageControl_AreTheControlVerbsOnItsPage()
+    {
+        using var suite = Workspace.UatSuite.Open(Path.Combine(TodoPaths.Project, Bdd.UatFileFormat.UiConfigFileName));
+        var page = UatPageSet.Of(suite.TryGetCatalogs(out _)!.Default).Values.Single(model => model.Name == "Todo List");
+
+        var usages = await _server.Client.InvokeWithParameterObjectAsync<UsagesResult>("brinell/usages", new { symbol = page.PageType.FullName!.Replace('+', '.') + ".Sync" });
+
+        Assert.Contains(usages.Usages, usage => usage.Uri == _uri && usage.Line == LineOf("When I tap Sync"));
+        Assert.All(usages.Usages, usage => Assert.Contains("Sync", usage.Text));
+    }
+
     private static int LineOf(string text) => Array.IndexOf(Lines, text);
 }

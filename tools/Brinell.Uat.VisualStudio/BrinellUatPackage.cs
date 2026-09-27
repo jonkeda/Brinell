@@ -27,12 +27,19 @@ public sealed class BrinellUatPackage : AsyncPackage
 {
     private PreviewController? _controller;
 
+    /// <summary>The package once loaded, for CodeLens's callback, which runs outside it.</summary>
+    internal static BrinellUatPackage? Instance { get; private set; }
+
+    /// <summary>The preview's controller, which holds the language server.</summary>
+    internal PreviewController? Controller => _controller;
+
     /// <inheritdoc />
     protected override async Task InitializeAsync(CancellationToken cancellationToken, IProgress<ServiceProgressData> progress)
     {
         await JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
         _controller = new PreviewController(this);
         await _controller.StartAsync(cancellationToken);
+        Instance = this;
 
         if (await GetServiceAsync(typeof(IMenuCommandService)) is OleMenuCommandService commands)
         {

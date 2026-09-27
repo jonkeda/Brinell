@@ -93,6 +93,11 @@ public sealed class UatServerClient : IDisposable
         => await (await RpcAsync(cancellationToken).ConfigureAwait(false))
             .InvokeWithParameterObjectAsync<JObject>("brinell/runTarget", new { uri = Uri(path), line, suite }, cancellationToken).ConfigureAwait(false);
 
+    /// <summary><c>brinell/usages</c>: the steps across every suite that use a C# member, for CodeLens.</summary>
+    public async Task<JObject> UsagesAsync(string symbol, CancellationToken cancellationToken)
+        => await (await RpcAsync(cancellationToken).ConfigureAwait(false))
+            .InvokeWithParameterObjectAsync<JObject>("brinell/usages", new { symbol }, cancellationToken).ConfigureAwait(false);
+
     /// <inheritdoc />
     public void Dispose()
     {

@@ -123,6 +123,15 @@ Markdown editor with a language server of their own, the same `Brinell.Uat.Langu
   that binds to the same method; a C# step used inside a callable counts at the body's line. On a
   call, or on a `## Step:` heading: every call of that step.
 
+## CodeLens In C#
+
+Above a step definition, a page phrase or a page object's control, CodeLens says how many UAT
+steps use it: "used in 12 UAT steps · 5 scenarios". Click it for the list: file, line, step and
+scenario. It counts every suite of the solution, linked files included. A control counts the
+control verbs on its page (`When I tap Sync` on the Todo List page for `TodoListPage.Sync`). A
+solution without a `uat.config.md` or `bdd.config.md` never starts the server for it. The counts
+come from the last build: build to see new steps.
+
 ## Without Visual Studio
 
 The server renders one file as a page, for a look or a bug report (from the Brinell root, after
