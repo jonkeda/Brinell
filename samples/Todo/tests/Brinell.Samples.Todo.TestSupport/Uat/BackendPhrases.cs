@@ -57,6 +57,30 @@ public sealed class BackendPhrases(ITodoArrangement fixture) : UatPhraseClassBas
     [UatThen("the server should have todos")]
     public void ServerHas(UatTable table) => table.AssertContains(fixture.Server.Todos, fixture.TestSet.Now);
 
+    /// <summary>
+    /// The fake server received exactly these requests, in this order, since the scenario began:
+    /// a request's resource is the first path segment after <c>/api/</c> (<c>todos</c>, <c>users</c>).
+    /// </summary>
+    [UatThen("the server should have received, in order")]
+    public void ServerReceivedInOrder(IReadOnlyList<RequestRow> requests)
+    {
+        var expected = requests.Select(row => $"{row.Method.ToUpperInvariant()} {row.Resource}").ToList();
+        var actual = fixture.Backend.Requests().Select(request => $"{request.Method.ToUpperInvariant()} {ResourceOf(request.Path)}").ToList();
+        if (!expected.SequenceEqual(actual, StringComparer.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException(
+                $"The server received [{string.Join(", ", actual)}], not [{string.Join(", ", expected)}].");
+        }
+    }
+
+    private static string ResourceOf(string path)
+        => path.Split('/', StringSplitOptions.RemoveEmptyEntries) is [_, var resource, ..] ? resource : path;
+
+    /// <summary>A request as a step table writes it.</summary>
+    /// <param name="Method">The HTTP method, <c>GET</c>.</param>
+    /// <param name="Resource">The resource, <c>todos</c>.</param>
+    public sealed record RequestRow(string Method, string Resource);
+
     /// <summary>A server todo as a step table writes it.</summary>
     /// <param name="Title">The title.</param>
     /// <param name="Status">The status; Open when left out.</param>

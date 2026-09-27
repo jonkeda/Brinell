@@ -213,6 +213,33 @@ public sealed class UatBinderTests
     }
 
     [Fact]
+    public void Bind_OnAHead_LeavesScenariosForOtherHeadsUnbound()
+    {
+        var document = ParseValid("""
+            # UAT: Shared
+
+            ## Scenario: On screen
+
+            Given I am on the Login page
+
+            @service
+            ## Scenario: Headless
+
+            Given the application is running
+            """);
+        var catalog = new UatCommandCatalog();
+        catalog.Register(UatEffectiveStepKeyword.Given, "the application is running", "AppCommands.AssertRunning");
+        catalog.Register(UatEffectiveStepKeyword.Given, "I am on the {page} page", "Builtin.Page.Open", namesPage: true);
+        var catalogs = new UatCatalogSet(catalog, [], suiteHead: "service", new Dictionary<string, UatCommandCatalog>(), []);
+
+        var result = UatBinder.Bind(document, catalogs);
+
+        Assert.True(result.Success, FormatDiagnostics(result));
+        Assert.Empty(result.Document!.Scenarios[0].Invocations);
+        Assert.Single(result.Document.Scenarios[1].Invocations);
+    }
+
+    [Fact]
     public void Bind_OnAUiHead_TakesTheSameScreenSteps()
     {
         var document = ParseValid("""

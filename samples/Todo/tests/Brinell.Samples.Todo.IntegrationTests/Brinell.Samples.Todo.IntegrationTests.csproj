@@ -14,4 +14,12 @@
     <ProjectReference Include="..\..\src\Brinell.Samples.Todo.Api\Brinell.Samples.Todo.Api.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The service head (Service/): the MAUI suite's scenario files, of which it runs the @service ones. -->
+    <None Update="uat.config.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\Brinell.Samples.Todo.Uat\Scenarios\**\*.uat.md" Link="Scenarios\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\Brinell.Samples.Todo.Uat\Scenarios\**\*.phrases.md" Link="Scenarios\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="ExpectedFailures\*.uat.md" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

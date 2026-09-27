@@ -31,13 +31,14 @@ internal sealed class TodoHost : IDisposable
 {
     private ServiceProvider _services;
 
-    private TodoHost(TodoTestSet testSet, LaunchSettings settings, MockApiServer mock, TempDatabase database, TodoServerStub server)
+    private TodoHost(TodoTestSet testSet, LaunchSettings settings, MockApiServer mock, TempDatabase database, TodoServerStub server, NetworkStateFile network)
     {
         TestSet = testSet;
         Settings = settings;
         Mock = mock;
         Database = database;
         Server = server;
+        Network = network;
         _services = Build(settings);
     }
 
@@ -49,7 +50,10 @@ internal sealed class TodoHost : IDisposable
     public MockApiServer Mock { get; }
 
     /// <summary>The fake backend's state.</summary>
-    public TodoServerStub Server { get; }
+    public TodoServerStub Server { get; private set; }
+
+    /// <summary>The device's network, as the app reads it: online until a test says otherwise.</summary>
+    public NetworkStateFile Network { get; }
 
     public TempDatabase Database { get; }
 
@@ -67,6 +71,7 @@ internal sealed class TodoHost : IDisposable
         var testSet = TodoTestSet.Load(testSetName);
         var database = new TempDatabase("integration");
         var mock = MockApiServer.Start();
+        var network = NetworkStateFile.Create();
 
         await testSet.SeedDatabaseAsync(database.Path);
         var server = testSet.StubServer(mock);
@@ -77,9 +82,10 @@ internal sealed class TodoHost : IDisposable
             ApiBaseUrl = mock.BaseUrl,
             FixedNow = testSet.Now,
             ApiTimeout = TimeSpan.FromSeconds(5),
+            NetworkStateFile = network.Path,
         };
 
-        return new TodoHost(testSet, adjust?.Invoke(settings) ?? settings, mock, database, server);
+        return new TodoHost(testSet, adjust?.Invoke(settings) ?? settings, mock, database, server, network);
     }
 
     public T Get<T>()
@@ -93,6 +99,13 @@ internal sealed class TodoHost : IDisposable
         _services = Build(Settings);
     }
 
+    /// <summary>Drops every per-test override on the fake server and puts back the test set's server half.</summary>
+    public void ResetBackend()
+    {
+        Mock.Reset();
+        Server = TestSet.StubServer(Mock);
+    }
+
     /// <summary>Every local todo, tombstones included.</summary>
     public Task<IReadOnlyList<TodoItem>> LocalAsync() => Repository.GetAllAsync();
 
@@ -100,6 +113,7 @@ internal sealed class TodoHost : IDisposable
     {
         _services.Dispose();
         Mock.Dispose();
+        Network.Dispose();
         Database.Dispose();
     }
 

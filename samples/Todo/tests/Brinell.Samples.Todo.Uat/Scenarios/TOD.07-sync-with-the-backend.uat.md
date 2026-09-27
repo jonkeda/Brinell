@@ -11,6 +11,26 @@
 | TestData | one-todo |
 | Tags | maui, web, sync |
 
+@TOD.07.1 @service @sync
+## Scenario: TOD.07.1 A sync fetches the users, pushes local changes, then pulls the server list
+
+```gherkin
+When I create a todo "Order paint"
+And I sync
+Then the sync should succeed with 1 pushed
+And the server should have received, in order
+  | Method | Resource |
+  | ------ | -------- |
+  | GET    | users    |
+  | PUT    | todos    |
+  | GET    | todos    |
+And the todo "Order paint" should be synced
+And the server should have todos
+  | Title       |
+  | ----------- |
+  | Order paint |
+```
+
 @TOD.07.2 @smoke @maui @web @sync
 ## Scenario: TOD.07.2 After a successful sync the pending markers disappear
 

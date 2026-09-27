@@ -21,6 +21,16 @@ of `Brinell.Bdd` (6) is the large, internal step. The Construction pilot is not 
 | 8 | Run the service suite in parallel | S | 2 |
 | 9 | Close: ADs, docs, skills, delete this topic | S | all |
 
+**Progress and deviations**
+
+- Phase 1 done. The binder also leaves a scenario for another head unbound (it is skipped when it
+  runs), so a shared file with UI scenarios binds on `service`; UATB013 fires by the matched
+  pattern, not by leaving page steps out of the catalog.
+- Phase 2 done. The both-tiers scenario is a new **TOD.09.3 Stored todos survive a restart**
+  (`@service @maui`), not TOD.07.2: every MAUI page phrase needs `I am on ...` first, which the
+  service head refuses, so a both-tiers scenario uses only steps both heads declare as step classes.
+  The DataValidator finds a service suite's fixture through a `Steps` assembly row.
+
 ---
 
 ## Phase 1: the `service` head in the engine

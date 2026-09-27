@@ -10,6 +10,13 @@ internal static class ScenarioCheck
 {
     private const string PagesKind = "Pages";
 
+    // A service suite has no pages; its fixture and steps are in a Steps assembly.
+    private const string StepsKind = "Steps";
+
+    private static bool NamesFixtureAssembly(UatAssemblyRegistration assembly)
+        => string.Equals(assembly.Kind, PagesKind, StringComparison.OrdinalIgnoreCase) ||
+           string.Equals(assembly.Kind, StepsKind, StringComparison.OrdinalIgnoreCase);
+
     // The config as the suite reads it. An AppsFile the build copies (apps.md from a shared project)
     // is found in the project's output when it is not beside the config.
     public static UatConfig ReadConfig(string configPath)
@@ -41,7 +48,7 @@ internal static class ScenarioCheck
     {
         var config = UatConfigParser.Parse(File.ReadAllText(configPath));
         return config.Runtime.TryGetValue("Fixture", out var fixture) && fixture.Trim().Length > 0 &&
-               config.Assemblies.Any(a => string.Equals(a.Kind, PagesKind, StringComparison.OrdinalIgnoreCase));
+               config.Assemblies.Any(NamesFixtureAssembly);
     }
 
     public static UatCatalogSet Catalogs(string configPath)
@@ -51,10 +58,10 @@ internal static class ScenarioCheck
             ? trimmed
             : throw new ToolException($"{configPath} names no Fixture in its Runtime table, so the scenarios cannot be checked.");
 
-        // The fixture is in the UAT project's own assembly or in one of the Pages assemblies.
+        // The fixture is in the UAT project's own assembly or in one of the Pages or Steps assemblies.
         var directory = Path.GetDirectoryName(Path.GetFullPath(configPath))!;
         var candidates = config.Assemblies
-            .Where(a => string.Equals(a.Kind, PagesKind, StringComparison.OrdinalIgnoreCase))
+            .Where(NamesFixtureAssembly)
             .Select(a => Path.GetFullPath(Path.Combine(directory, a.Assembly)))
             .Concat(OwnAssemblies(directory))
             .Distinct(StringComparer.OrdinalIgnoreCase)

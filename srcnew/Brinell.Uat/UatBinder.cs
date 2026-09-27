@@ -51,6 +51,14 @@ public static class UatBinder
 
         foreach (var scenario in document.Scenarios)
         {
+            // A scenario for another head is skipped when it runs, so its steps are not this head's to bind (AD-014).
+            if (catalogs.SuiteHead is { } suiteHead &&
+                UatTagConventions.WhyNotOnHead(scenario.Tags.Select(UatTagConventions.NormalizeTag).ToHashSet(StringComparer.OrdinalIgnoreCase), suiteHead) is not null)
+            {
+                scenarios.Add(new UatBoundScenario(scenario, []));
+                continue;
+            }
+
             List<UatStepInvocation> invocations = [];
             var walk = new Walk(catalogs, prepared, scenario.Name, invocations, scope, used, inference: null);
 
