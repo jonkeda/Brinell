@@ -4,12 +4,11 @@ Start here.
 
 | File | What it is | Authoritative for |
 | --- | --- | --- |
-| [plan.md](plan.md) | Steps, order, status, verification | **what to do next, and what is done** |
+| [plan.md](plan.md) | Steps, order, status, verification. L1 (the leaf layer) is done; L2 is next | **what to do next, and what is done** |
 | [design.md](design.md) | The new interfaces, the calls layer, the exceptions, using **`ICore*`** names throughout | **what to build** |
 | [naming.md](naming.md) | The full rename table (existing Core name -> new `ICore*` name; per-stack aliases) | **what things are called** |
 | [migration.md](migration.md) | Per-stack playbook: MAUI, Html, WPF, WinForms, NativeAndroid, Stride | **how each stack moves** |
 | [coexistence.md](coexistence.md) | How the existing `Brinell.Core.Interfaces.IElement<T>` and the new `ICoreElement` live in the same solution while stacks migrate | **the migration invariants** |
-| [review-what-can-move-now.md](review-what-can-move-now.md) | Review after the Html plan (2026-09-26): which MAUI and Html classes can move to Core now (exceptions, readiness, the calls) and a proposed re-sequencing | The leaf-layer move (L1) |
 
 ## Origin
 

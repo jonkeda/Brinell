@@ -9,7 +9,7 @@ designed and proven keep their own shapes; the other stacks keep Core's until th
 shape moves down to Core, one layer at a time, as its own step
 ([move-down plan](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/stale-readiness/move-down.md)).
 
-**The leaf layer has moved down** (2026-09-26, `.my/core/review-what-can-move-now.md`).
+**The leaf layer has moved down** (2026-09-26, [review at 7162ac7](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/core/review-what-can-move-now.md)).
 It names no element, driver or scope type, so it needed none of the interfaces:
 
 - `Brinell.Core.Calls`: `Deadline`, `AttemptContext`, `Observation`, `ObservationLog`,
