@@ -19,6 +19,11 @@ internal sealed record UatServerFile(string Path, string Text, int Version, IRea
     /// <summary>The text's lines, without their line breaks.</summary>
     public string[] Lines => _lines ??= Text.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n');
 
+    private UatDocumentStructure? _structure;
+
+    /// <summary>The file's headings, fences, tables and step lines.</summary>
+    public UatDocumentStructure Structure => _structure ??= UatDocumentStructure.Read(Lines);
+
     /// <summary>A 1-based line's text; empty past the end.</summary>
     public string Line(int lineNumber) => lineNumber >= 1 && lineNumber <= Lines.Length ? Lines[lineNumber - 1] : string.Empty;
 }
@@ -37,7 +42,12 @@ public sealed partial class UatLanguageServer
     private readonly Dictionary<string, (string Text, UatCatalogSet? Catalogs, UatFileAnalysis Analysis)> _analyses = new(StringComparer.OrdinalIgnoreCase);
     private bool _publishes;
 
-    private static ServerCapabilities Capabilities() => new(new TextDocumentSyncOptions(OpenClose: true, Change: 1, new SaveOptions(IncludeText: false)));
+    private static ServerCapabilities Capabilities() => new(new TextDocumentSyncOptions(OpenClose: true, Change: 1, new SaveOptions(IncludeText: false)))
+    {
+        DocumentSymbolProvider = true,
+        FoldingRangeProvider = true,
+        SemanticTokensProvider = new SemanticTokensOptions(new SemanticTokensLegend(TokenTypes, []), Full: true),
+    };
 
     // Only an editor's LSP client takes diagnostics; the preview's client has no use for them, so none are computed for it.
     private static bool ClientTakesDiagnostics(JsonElement? capabilities)

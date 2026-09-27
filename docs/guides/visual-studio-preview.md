@@ -99,6 +99,12 @@ Markdown editor with a language server of their own, the same `Brinell.Uat.Langu
   on save and after a build. A problem inside a callable shows at the call, with the steps it went
   through. A step that failed in the last run is an error at its line (`UATRUN`), with the failure's
   message.
+- **Outline, folding and colours.** The headings show as a tree in the Document Outline and the
+  navigation bar: Feature, Scenario, Background, Examples, `## Step:` and the other sections. The
+  sections, fences, tables and doc strings fold. Step keywords, section keywords, quoted values,
+  `{x}` parameters, `<x>` placeholders, tags and comments in a fence get their own colours, from the
+  server (Visual Studio has no grammar for these files). All three work before a build and while
+  the file does not parse.
 
 ## Without Visual Studio
 

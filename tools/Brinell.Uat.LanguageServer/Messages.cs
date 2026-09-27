@@ -24,7 +24,23 @@ public sealed record InitializeResult(ServerCapabilities Capabilities, ServerInf
 
 /// <summary>LSP capabilities.</summary>
 /// <param name="TextDocumentSync">Open and close, the whole text on each change, and save.</param>
-public sealed record ServerCapabilities(TextDocumentSyncOptions TextDocumentSync);
+public sealed record ServerCapabilities(TextDocumentSyncOptions TextDocumentSync)
+{
+    /// <summary>The outline.</summary>
+    public bool DocumentSymbolProvider { get; init; }
+
+    /// <summary>Folding of sections, fences and tables.</summary>
+    public bool FoldingRangeProvider { get; init; }
+
+    /// <summary>The colours of keywords, values, placeholders and tags.</summary>
+    public SemanticTokensOptions? SemanticTokensProvider { get; init; }
+}
+
+/// <summary>LSP semantic tokens options: the whole file at once.</summary>
+public sealed record SemanticTokensOptions(SemanticTokensLegend Legend, bool Full);
+
+/// <summary>LSP semantic tokens legend.</summary>
+public sealed record SemanticTokensLegend(IReadOnlyList<string> TokenTypes, IReadOnlyList<string> TokenModifiers);
 
 /// <summary>LSP text document sync options.</summary>
 /// <param name="OpenClose">Whether the client sends open and close.</param>
@@ -84,6 +100,24 @@ public sealed record Location(string Uri, Range Range);
 /// <param name="Source">Always <c>Brinell UAT</c>.</param>
 /// <param name="Message">The gate's text, word for word.</param>
 public sealed record Diagnostic(Range Range, int Severity, string Code, string Source, string Message);
+
+/// <summary>A request about a whole file: <c>documentSymbol</c>, <c>foldingRange</c>, <c>semanticTokens/full</c>.</summary>
+public sealed record DocumentParams(TextDocumentIdentifier TextDocument);
+
+/// <summary>LSP document symbol: a heading, with the headings under it.</summary>
+/// <param name="Name">The heading's name.</param>
+/// <param name="Detail">Its kind: <c>Scenario</c>, <c>Step</c>.</param>
+/// <param name="Kind">LSP symbol kind.</param>
+/// <param name="Range">The whole section.</param>
+/// <param name="SelectionRange">The heading line.</param>
+/// <param name="Children">The headings under it.</param>
+public sealed record DocumentSymbol(string Name, string? Detail, int Kind, Range Range, Range SelectionRange, IReadOnlyList<DocumentSymbol> Children);
+
+/// <summary>LSP folding range, 0-based lines.</summary>
+public sealed record FoldingRange(int StartLine, int EndLine, string? Kind = null);
+
+/// <summary>LSP semantic tokens: five numbers per token, each relative to the one before.</summary>
+public sealed record SemanticTokens(IReadOnlyList<int> Data);
 
 /// <summary>LSP <c>textDocument/publishDiagnostics</c>: every diagnostic of a file, replacing the last.</summary>
 public sealed record PublishDiagnosticsParams(string Uri, int? Version, IReadOnlyList<Diagnostic> Diagnostics);
