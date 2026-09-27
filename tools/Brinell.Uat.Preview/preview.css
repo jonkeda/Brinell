@@ -263,4 +263,19 @@ th { background: var(--uat-surface); font-weight: 600; }
 [data-running-here]::after { content: " running\2026"; margin-left: 0.6em; font-size: 0.65em; font-weight: 400; color: var(--uat-accent); }
 .uat-cancel[hidden] { display: none; }
 
+/* Step breakpoints: a click on a step's keyword toggles one, shown as a red dot in the gutter. */
+.uat-step > .uat-kw { position: relative; cursor: pointer; }
+.uat-step[data-break] > .uat-kw::before {
+  content: "";
+  position: absolute;
+  left: 0.2em;
+  top: 0.45em;
+  width: 0.7em;
+  height: 0.7em;
+  border-radius: 50%;
+  background: var(--uat-failed);
+}
+.uat-step > .uat-kw:hover::before { content: ""; position: absolute; left: 0.2em; top: 0.45em; width: 0.7em; height: 0.7em; border-radius: 50%; outline: 1px solid var(--uat-failed); }
+.uat-run[data-debug] { color: var(--uat-failed); }
+
 a { color: var(--uat-accent); }

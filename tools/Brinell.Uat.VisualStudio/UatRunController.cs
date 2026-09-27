@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
@@ -13,7 +15,8 @@ namespace Brinell.Uat.VisualStudio;
 /// solution through Visual Studio first, so a stale app never runs; then
 /// <c>dotnet test &lt;project&gt; --no-build --filter UatScenario=&lt;address&gt;</c>, its output in the
 /// Output pane. One run at a time; a build started during a run is cancelled; Cancel stops the test
-/// process and the app it started.
+/// process and the app it started. Debug runs the same way with the testhost waiting for a debugger,
+/// and attaches Visual Studio's to it, so step breakpoints (R2) stop the run.
 /// </summary>
 internal sealed class UatRunController
 {
@@ -21,6 +24,12 @@ internal sealed class UatRunController
     private readonly UatServerClient _server;
     private readonly Action<string> _log;
     private readonly Action<object> _post;
+
+    // The testhost's line under VSTEST_HOST_DEBUG: "Process Id: 12345, Name: testhost".
+    private static readonly Regex TesthostProcess = new(@"Process Id:\s*(?<id>\d+)", RegexOptions.CultureInvariant);
+
+    // The .NET (CoreCLR) debug engine, which a net10 testhost needs.
+    private const string CoreClrEngine = "{2E36F1D4-B23C-435D-AB41-18E608940038}";
     private TaskCompletionSource<bool>? _build;
     private Process? _process;
 
@@ -42,7 +51,8 @@ internal sealed class UatRunController
     /// <param name="path">The feature file.</param>
     /// <param name="line">The scenario heading's line.</param>
     /// <param name="suite">The suite picked for a linked file; null for the first.</param>
-    public async Task RunAsync(string path, int? line, string? suite)
+    /// <param name="debug">Whether to run under Visual Studio's debugger.</param>
+    public async Task RunAsync(string path, int? line, string? suite, bool debug)
     {
         await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
         if (IsRunning)
@@ -56,7 +66,7 @@ internal sealed class UatRunController
         try
         {
             _log(string.Empty);
-            _log($"Building the solution for a UAT run of {System.IO.Path.GetFileName(path)}{(line is null ? string.Empty : $" line {line}")}...");
+            _log($"Building the solution for a UAT {(debug ? "debug " : string.Empty)}run of {System.IO.Path.GetFileName(path)}{(line is null ? string.Empty : $" line {line}")}...");
             if (!await BuildAsync())
             {
                 await StatusAsync("The build failed, so the UAT run did not start. See the Error List.");
@@ -71,7 +81,7 @@ internal sealed class UatRunController
                 return;
             }
 
-            await RunTestsAsync(project, filter);
+            await RunTestsAsync(project, filter, debug);
         }
         finally
         {
@@ -119,7 +129,7 @@ internal sealed class UatRunController
 #pragma warning restore VSTHRD003
     }
 
-    private async Task RunTestsAsync(string project, string filter)
+    private async Task RunTestsAsync(string project, string filter, bool debug)
     {
         var arguments = $"test \"{project}\" --no-build --filter \"{filter}\" --logger \"console;verbosity=normal\"";
         _log($"dotnet {arguments}");
@@ -135,6 +145,14 @@ internal sealed class UatRunController
             },
             EnableRaisingEvents = true,
         };
+        if (debug)
+        {
+            // The testhost prints its process id and waits for a debugger; VSTEST_DEBUG_NOBP skips
+            // the break it makes once one attaches, so the run goes on to the step breakpoints.
+            process.StartInfo.EnvironmentVariables["VSTEST_HOST_DEBUG"] = "1";
+            process.StartInfo.EnvironmentVariables["VSTEST_DEBUG_NOBP"] = "1";
+        }
+
         var exited = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
         process.OutputDataReceived += (_, e) => Line(e.Data);
         process.ErrorDataReceived += (_, e) => Line(e.Data);
@@ -159,10 +177,63 @@ internal sealed class UatRunController
 
         void Line(string? line)
         {
-            if (line is not null)
+            if (line is null)
             {
-                _log(line);
+                return;
             }
+
+            _log(line);
+            if (debug && TesthostProcess.Match(line) is { Success: true } match)
+            {
+                var id = int.Parse(match.Groups["id"].Value, System.Globalization.CultureInfo.InvariantCulture);
+                _package.JoinableTaskFactory.RunAsync(() => AttachAsync(id)).FileAndForget("Brinell/PreviewDebugAttach");
+            }
+        }
+    }
+
+    // Attaches Visual Studio's debugger to the waiting testhost; a testhost left waiting would hang
+    // the run, so a failed attach cancels it.
+    private async Task AttachAsync(int processId)
+    {
+        await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
+        try
+        {
+            if (await _package.GetServiceAsync(typeof(EnvDTE.DTE)) is not EnvDTE80.DTE2 dte)
+            {
+                throw new InvalidOperationException("no DTE to attach with");
+            }
+
+            EnvDTE80.Process2? testhost = null;
+            foreach (EnvDTE.Process process in dte.Debugger.LocalProcesses)
+            {
+                if (process.ProcessID == processId)
+                {
+                    testhost = process as EnvDTE80.Process2;
+                    break;
+                }
+            }
+
+            if (testhost is null)
+            {
+                throw new InvalidOperationException($"no process {processId} to attach to");
+            }
+
+            try
+            {
+                testhost.Attach2(CoreClrEngine);
+            }
+            catch (COMException)
+            {
+                // An engine this Visual Studio names differently: let it choose.
+                testhost.Attach();
+            }
+
+            _log($"The debugger is attached to the testhost (process {processId}).");
+        }
+        catch (Exception exception) when (exception is COMException or InvalidOperationException)
+        {
+            await StatusAsync($"The debugger could not attach to the testhost: {exception.Message}. The run is cancelled.");
+            Cancel();
         }
     }
 

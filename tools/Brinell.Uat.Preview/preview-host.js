@@ -1,6 +1,6 @@
 // The preview's page script, the same in every host: Visual Studio's WebView2 or VS Code's webview.
-// In:  update {html, suites, suite, bindState, reason}, scrollTo {line}, theme {vars, kind}, running {line?, file?}
-// Out: reveal {line}, pickSuite {suite}, openScreenshot {path}, run {line}, runFile, cancel
+// In:  update {html, suites, suite, bindState, reason}, scrollTo {line}, theme {vars, kind}, running {line?, file?}, breaks {lines}
+// Out: reveal {line}, pickSuite {suite}, openScreenshot {path}, run {line, debug}, runFile {debug}, cancel, toggleBreak {line}
 (function () {
   "use strict";
 
@@ -31,6 +31,7 @@
   const cancel = document.getElementById("uat-cancel");
   let current = null;
   let running = null;
+  let breaks = [];
 
   // The block for a line: the last element whose data-line is at or before it.
   function blockAt(line) {
@@ -66,6 +67,7 @@
     }
     window.scrollTo(0, top);
     showRunning();
+    showBreaks();
 
     const suites = message.suites || [];
     picker.hidden = suites.length < 2;
@@ -96,6 +98,12 @@
     }
   }
 
+  function showBreaks() {
+    for (const step of root.querySelectorAll(".uat-step[data-line]")) {
+      step.toggleAttribute("data-break", breaks.includes(Number(step.getAttribute("data-line"))));
+    }
+  }
+
   function theme(message) {
     for (const [name, value] of Object.entries(message.vars || {})) {
       document.documentElement.style.setProperty(name, value);
@@ -111,6 +119,7 @@
       case "scrollTo": scrollTo(message.line); break;
       case "theme": theme(message); break;
       case "running": running = message.line || message.file ? { line: message.line, file: message.file } : null; showRunning(); break;
+      case "breaks": breaks = message.lines || []; showBreaks(); break;
     }
   });
 
@@ -119,8 +128,14 @@
     if (run) {
       event.stopPropagation();
       if (!run.disabled) {
-        host.post(run.hasAttribute("data-run-file") ? { type: "runFile" } : { type: "run", line: Number(run.getAttribute("data-run")) });
+        const debug = run.hasAttribute("data-debug");
+        host.post(run.hasAttribute("data-run-file") ? { type: "runFile", debug } : { type: "run", line: Number(run.getAttribute("data-run")), debug });
       }
+      return;
+    }
+    const gutter = event.target.closest(".uat-step[data-line] > .uat-kw");
+    if (gutter) {
+      host.post({ type: "toggleBreak", line: Number(gutter.parentElement.getAttribute("data-line")) });
       return;
     }
     const shot = event.target.closest("[data-open]");

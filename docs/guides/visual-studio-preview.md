@@ -56,8 +56,21 @@ the test process and the app it started.
 ## Break At A Step
 
 A step breakpoint stops the debugger before that step, whichever way the test was started (the
-preview's Debug, or Test Explorer's own **Debug**). The breakpoints are a per-user file,
-`%LOCALAPPDATA%\Brinell\uat-breakpoints.json`, read only while a debugger is attached:
+preview's Debug, or Test Explorer's own **Debug**).
+
+- **Set one** by clicking a step's keyword in the preview, or with the caret on the step, by
+  right-clicking and choosing **Toggle UAT Step Breakpoint**, or by pressing **Ctrl+K, F9**. A red
+  dot shows in the preview's gutter and in the editor's glyph margin. A line that is not a step
+  gets none, and the status bar says so.
+- **Debug** beside each **Run** (and **Debug file** beside **Run file**) runs the same way, with
+  the testhost waiting for a debugger (`VSTEST_HOST_DEBUG`). The extension attaches Visual Studio's
+  debugger to the testhost and the run goes on to the first breakpoint. If the attach fails, the run
+  is cancelled. The app the fixture starts is its own process and is not attached.
+- The breakpoints move with their steps as you edit lines above them. Deleting a step's line
+  removes its breakpoint.
+
+The breakpoints are a per-user file, `%LOCALAPPDATA%\Brinell\uat-breakpoints.json`, read only
+while a debugger is attached:
 
 ```json
 { "files": { "C:\\src\\Suite\\Features\\TOD.01-see-my-todos.feature.md": [19, 25] }, "breakOnFailure": false }

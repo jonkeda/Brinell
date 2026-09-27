@@ -1,6 +1,7 @@
 # Visual Studio extension: design and implementation plan
 
-Status: **plan**, not started. Date: 2026-09-27. Updated for the Bdd renames (AD-020, AD-021):
+Status: **phases 1 and 2 built** (1.1-2.4); checklists 6.1-6.3 and the spike (phase 0) not run.
+Phase 3 next. Date: 2026-09-27. Updated for the Bdd renames (AD-020, AD-021):
 feature and step files, `Features/`, `Brinell.Bdd` under `Brinell.Uat`, and step definitions.
 Builds on the proposal [visualstudio-extension.md](visualstudio-extension.md) and on
 [vscode-extension.md](vscode-extension.md) for everything the two IDEs share. This plan sets the
@@ -130,7 +131,8 @@ order:
    Output window pane.
 3. For **Debug** in the fallback: set `VSTEST_HOST_DEBUG=1`, read the testhost's process id from
    the output, attach Visual Studio's debugger to it, and continue past the testhost's own
-   initial break.
+   initial break. As built (2.4): `VSTEST_DEBUG_NOBP=1` skips that break, so there's nothing to
+   continue past; S4 still has to confirm it with the Todo fixture.
 4. Refresh the preview from the new `__result.json`.
 
 **R4. The extension keeps the UI test rules.** While a run is going:

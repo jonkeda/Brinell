@@ -28,12 +28,23 @@
           <CommandName>Brinell.OpenScenarioPreview</CommandName>
         </Strings>
       </Button>
+      <Button guid="guidBrinellUatCommandSet" id="ToggleStepBreakpoint" priority="0x0200" type="Button">
+        <Parent guid="guidBrinellUatCommandSet" id="EditorContextGroup" />
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <Strings>
+          <ButtonText>Toggle UAT Step Breakpoint</ButtonText>
+          <CommandName>Brinell.ToggleUatStepBreakpoint</CommandName>
+        </Strings>
+      </Button>
     </Buttons>
   </Commands>
 
   <KeyBindings>
     <!-- Ctrl+K, V: as VS Code opens a Markdown preview to the side. -->
     <KeyBinding guid="guidBrinellUatCommandSet" id="OpenScenarioPreview" editor="guidVSStd97" key1="K" mod1="Control" key2="V" />
+    <!-- Ctrl+K, F9: beside F9, which the debugger keeps for C# breakpoints. -->
+    <KeyBinding guid="guidBrinellUatCommandSet" id="ToggleStepBreakpoint" editor="guidVSStd97" key1="K" mod1="Control" key2="VK_F9" />
   </KeyBindings>
 
   <Symbols>
@@ -42,6 +53,7 @@
       <IDSymbol name="EditorContextGroup" value="0x1020" />
       <IDSymbol name="ShowScenarioPreview" value="0x0100" />
       <IDSymbol name="OpenScenarioPreview" value="0x0101" />
+      <IDSymbol name="ToggleStepBreakpoint" value="0x0102" />
     </GuidSymbol>
   </Symbols>
 </CommandTable>

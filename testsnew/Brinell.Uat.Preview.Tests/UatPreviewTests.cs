@@ -115,6 +115,8 @@ public sealed class UatPreviewTests
 
         Assert.Contains("<button type=\"button\" class=\"uat-run\" data-run-file title=\"Run every scenario of the file\">", result.Html);
         Assert.Contains("<button type=\"button\" class=\"uat-run\" data-run=\"3\" title=\"Run this scenario\">", result.Html);
+        Assert.Contains("<button type=\"button\" class=\"uat-run\" data-debug data-run=\"3\" title=\"Debug this scenario, stopping at step breakpoints\">", result.Html);
+        Assert.Contains("<button type=\"button\" class=\"uat-run\" data-debug data-run-file title=\"Debug every scenario of the file, stopping at step breakpoints\">", result.Html);
     }
 
     [Fact]

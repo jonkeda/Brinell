@@ -310,8 +310,11 @@ internal sealed partial class UatPreviewWriter
             return string.Empty;
         }
 
-        var state = run.CanRun ? $"title=\"{Encode(title)}\"" : $"disabled title=\"{Encode(run.Reason ?? "This scenario cannot be run from here.")}\"";
-        return $" <span class=\"uat-actions\"><button type=\"button\" class=\"uat-run\" {attribute} {state}>\u25B6 {label}</button></span>";
+        var reason = Encode(run.Reason ?? "This scenario cannot be run from here.");
+        var runState = run.CanRun ? $"title=\"{Encode(title)}\"" : $"disabled title=\"{reason}\"";
+        var debugState = run.CanRun ? $"title=\"{Encode(title.Replace("Run", "Debug", StringComparison.Ordinal))}, stopping at step breakpoints\"" : $"disabled title=\"{reason}\"";
+        return $" <span class=\"uat-actions\"><button type=\"button\" class=\"uat-run\" {attribute} {runState}>\u25B6 {label}</button>"
+            + $" <button type=\"button\" class=\"uat-run\" data-debug {attribute} {debugState}>\u25CF {label.Replace("Run", "Debug", StringComparison.Ordinal)}</button></span>";
     }
 
     private static string RunBadge(UatScenarioRun? run)

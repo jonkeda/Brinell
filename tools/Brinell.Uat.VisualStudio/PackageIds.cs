@@ -16,5 +16,7 @@ internal static class PackageIds
 
     public const int OpenScenarioPreview = 0x0101;
 
+    public const int ToggleStepBreakpoint = 0x0102;
+
     public static readonly Guid CommandSet = new(CommandSetString);
 }

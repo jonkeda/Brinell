@@ -1,4 +1,5 @@
 using System.IO;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft;
@@ -18,12 +19,16 @@ namespace Brinell.Uat.VisualStudio;
 /// <summary>
 /// Joins the editor to the preview: follows the active feature or step file, sends its text to the
 /// server (on open, and after a pause in typing), refreshes the preview then and after each build,
-/// keeps the caret and the preview in step both ways, and passes Visual Studio's theme on.
+/// keeps the caret and the preview in step both ways, and passes Visual Studio's theme on. Keeps
+/// the step breakpoints: the preview's gutter and the editor command toggle them, and both show them.
 /// </summary>
 internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionEvents, IDisposable
 {
     // How long typing must pause before the preview is rendered again.
     private static readonly TimeSpan TypingPause = TimeSpan.FromMilliseconds(300);
+
+    // A step in the preview's HTML: the lines a step breakpoint can go on.
+    private static readonly Regex StepLine = new("<li class=\"uat-step(?! uat-not-a-step)[^\"]*\" data-line=\"(?<line>\\d+)\"", RegexOptions.CultureInvariant);
 
     private readonly AsyncPackage _package;
     private readonly Dictionary<string, string> _suites = new(StringComparer.OrdinalIgnoreCase);
@@ -68,6 +73,7 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
         _adapters = components.GetService<IVsEditorAdaptersFactoryService>();
 
         VSColorTheme.ThemeChanged += OnThemeChanged;
+        UatBreakpointStore.Instance.Changed += OnBreakpointsChanged;
 
         ErrorHandler.ThrowOnFailure(_selection.GetCurrentElementValue((uint)VSConstants.VSSELELEMID.SEID_DocumentFrame, out var frame));
         await TrackAsync(frame, cancellationToken);
@@ -99,6 +105,7 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
     {
         ThreadHelper.ThrowIfNotOnUIThread();
         VSColorTheme.ThemeChanged -= OnThemeChanged;
+        UatBreakpointStore.Instance.Changed -= OnBreakpointsChanged;
         if (_selectionCookie != 0)
         {
             _selection?.UnadviseSelectionEvents(_selectionCookie);
@@ -141,6 +148,9 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
         textView.TextBuffer.Changed += OnTextChanged;
         textView.Caret.PositionChanged += OnCaretMoved;
         textView.Closed += OnViewClosed;
+
+        // The step breakpoints' dots: the Markdown editor hides the glyph margin by default.
+        textView.Options.SetOptionValue(DefaultTextViewHostOptions.GlyphMarginName, true);
 
         await EnsureServerAsync(path);
         _version = Math.Max(_version, 1);
@@ -190,6 +200,7 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
             }
 
             _view.Post(preview);
+            _view.Post(Breaks(path));
             if (_textView is { } view)
             {
                 _view.Post(new { type = "scrollTo", line = view.Caret.Position.BufferPosition.GetContainingLine().LineNumber + 1 });
@@ -208,6 +219,15 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
         var typing = _typing = new CancellationTokenSource();
         var path = _path;
         var snapshot = e.After;
+        if (path is not null)
+        {
+            // Last change first: each one's line is then still where the file had it before.
+            foreach (var change in e.Changes.Reverse())
+            {
+                UatBreakpointStore.Instance.Shift(path, e.Before.GetLineNumberFromPosition(change.OldPosition) + 1, change.LineCountDelta);
+            }
+        }
+
         _package.JoinableTaskFactory.RunAsync(async () =>
         {
             await Task.Delay(TypingPause, typing.Token);
@@ -252,10 +272,13 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
                 view.ViewScroller.EnsureSpanVisible(new SnapshotSpan(start, 0), EnsureSpanVisibleOptions.AlwaysCenter);
                 break;
             case "run" when _path is { } file && (int?)message["line"] is { } heading:
-                Run(file, heading);
+                Run(file, heading, (bool?)message["debug"] == true);
                 break;
             case "runFile" when _path is { } file:
-                Run(file, null);
+                Run(file, null, (bool?)message["debug"] == true);
+                break;
+            case "toggleBreak" when _path is { } file && (int?)message["line"] is { } step:
+                UatBreakpointStore.Instance.Toggle(file, step);
                 break;
             case "cancel":
                 _runs?.Cancel();
@@ -270,10 +293,61 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
         }
     }
 
-    private void Run(string path, int? line)
+    private void Run(string path, int? line, bool debug)
     {
         var suite = _suites.TryGetValue(path, out var picked) ? picked : null;
-        _package.JoinableTaskFactory.RunAsync(() => _runs!.RunAsync(path, line, suite)).FileAndForget("Brinell/PreviewRun");
+        _package.JoinableTaskFactory.RunAsync(() => _runs!.RunAsync(path, line, suite, debug)).FileAndForget("Brinell/PreviewRun");
+    }
+
+    /// <summary>
+    /// The editor command: toggles the step breakpoint on the caret's line. A line that is not a step,
+    /// by the server's parse of the text as it is now, gets none, saying so.
+    /// </summary>
+    public async Task ToggleBreakpointAtCaretAsync()
+    {
+        await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
+        if (_textView is not { } view || _path is not { } path || _server is null)
+        {
+            return;
+        }
+
+        var line = view.Caret.Position.BufferPosition.GetContainingLine().LineNumber + 1;
+        if (!UatBreakpointStore.Instance.LinesOf(path).Contains(line))
+        {
+            await EnsureServerAsync(path);
+            _typing?.Cancel();
+            await _server.DidChangeAsync(path, ++_version, view.TextSnapshot.GetText(), _package.DisposalToken);
+            var preview = await _server.PreviewAsync(path, _suites.TryGetValue(path, out var suite) ? suite : null, _package.DisposalToken);
+            await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
+            var steps = StepLine.Matches((string?)preview["html"] ?? string.Empty).Cast<Match>()
+                .Select(match => int.Parse(match.Groups["line"].Value, System.Globalization.CultureInfo.InvariantCulture));
+            if (!steps.Contains(line))
+            {
+                if (await _package.GetServiceAsync(typeof(SVsStatusbar)) is IVsStatusbar status)
+                {
+                    status.SetText($"Line {line} is not a step, so it cannot have a UAT step breakpoint.");
+                }
+
+                return;
+            }
+        }
+
+        UatBreakpointStore.Instance.Toggle(path, line);
+    }
+
+    private static object Breaks(string path) => new { type = "breaks", lines = UatBreakpointStore.Instance.LinesOf(path) };
+
+    // A breakpoint set or cleared, from the preview, the editor or an edit: the preview shows it.
+    private void OnBreakpointsChanged(object sender, string path)
+    {
+        if (string.Equals(path, _path, StringComparison.OrdinalIgnoreCase))
+        {
+            _package.JoinableTaskFactory.RunAsync(async () =>
+            {
+                await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
+                _view?.Post(Breaks(path));
+            }).FileAndForget("Brinell/PreviewBreaks");
+        }
     }
 
     // A message to the page from any thread.
@@ -330,7 +404,7 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
     private void Log(string line) => _output?.OutputStringThreadSafe(line + Environment.NewLine);
 #pragma warning restore VSTHRD010
 
-    private static bool IsFeatureOrSteps(string path)
+    internal static bool IsFeatureOrSteps(string path)
         => path.EndsWith(".feature.md", StringComparison.OrdinalIgnoreCase) ||
            path.EndsWith(".steps.md", StringComparison.OrdinalIgnoreCase) ||
            path.EndsWith(".uat.md", StringComparison.OrdinalIgnoreCase) ||

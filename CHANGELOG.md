@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Debug from the preview (Visual Studio): **Debug** beside each **Run** and **Debug file** beside
+  **Run file** run with `VSTEST_HOST_DEBUG` and attach Visual Studio's debugger to the testhost; a
+  failed attach cancels the run. Step breakpoints are toggled by clicking a step's keyword in the
+  preview, or with **Toggle UAT Step Breakpoint** (editor context menu, **Ctrl+K, F9**) on a step
+  line. Either way they are written to `%LOCALAPPDATA%\Brinell\uat-breakpoints.json`, and a red dot
+  shows in the preview's gutter and in the editor's glyph margin. Breakpoints move with their lines
+  as the file is edited.
 - Run from the preview (Visual Studio): **Run** on each scenario heading and **Run file** on the title
   build the solution, then run `dotnet test --no-build --filter UatScenario=<address>` with the output
   in the Output pane. One run at a time; a build started during a run is cancelled; **Cancel run**

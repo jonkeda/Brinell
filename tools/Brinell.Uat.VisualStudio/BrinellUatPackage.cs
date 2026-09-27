@@ -40,6 +40,10 @@ public sealed class BrinellUatPackage : AsyncPackage
             var open = new OleMenuCommand((_, _) => ShowPreview(), new CommandID(PackageIds.CommandSet, PackageIds.OpenScenarioPreview));
             open.BeforeQueryStatus += (_, _) => open.Visible = _controller.ActiveIsFeatureOrSteps;
             commands.AddCommand(open);
+
+            var toggle = new OleMenuCommand((_, _) => ToggleStepBreakpoint(), new CommandID(PackageIds.CommandSet, PackageIds.ToggleStepBreakpoint));
+            toggle.BeforeQueryStatus += (_, _) => toggle.Visible = toggle.Enabled = _controller.ActiveIsFeatureOrSteps;
+            commands.AddCommand(toggle);
         }
     }
 
@@ -54,6 +58,9 @@ public sealed class BrinellUatPackage : AsyncPackage
 
         base.Dispose(disposing);
     }
+
+    private void ToggleStepBreakpoint()
+        => JoinableTaskFactory.RunAsync(() => _controller!.ToggleBreakpointAtCaretAsync()).FileAndForget("Brinell/ToggleStepBreakpoint");
 
     private void ShowPreview()
     {
