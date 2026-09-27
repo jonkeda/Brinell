@@ -260,7 +260,7 @@ And Todos should have todo "Write the report"
 ```
 
 `Add`, `Title`, `Save` and `Todos` are members of `TodoListPage` and `TodoEditPage`; the verbs
-are `[UatWhen]` / `[UatThen]` attributes on the control methods they call, so the vocabulary and the code
+are `[BddWhen]` / `[BddThen]` attributes on the control methods they call, so the vocabulary and the code
 that runs it are one declaration
 ([AD-011](../../.docs/decisions/ad-011-uat-vocabulary-is-attribute-declared.md)). Two verbs are
 Todo's own: `I advance {control} to {value}` and `{control} should show status {value}`,

@@ -15,7 +15,7 @@ Three layers, each owned by one piece of code:
    name resolution (`[UatName]`, `UatNameInference`, the `Apps` table).
 
 How to write scenarios is in the [UAT Template Guide](../guides/uat-template-guide.md); what the
-phrases are and how they bind is in [UAT Phrases And Flows](../guides/uat-phrases-and-flows.md).
+phrases are and how they bind is in [UAT Phrases And Flows](../guides/uat-step-definitions.md).
 
 ## 1. Scenario files (`*.uat.md`)
 
@@ -82,7 +82,7 @@ phrases-document = "# Phrases:" , text , NEWLINE , phrase-section* ;
 
 A phrase file holds only phrase sections. A phrase in a scenario file is seen by that file; a
 phrase in a `*.phrases.md` file in `Scenarios/` or a folder under it is seen by the scenarios in
-that folder and below (AD-017, [Where Phrases Live](../guides/uat-phrases-and-flows.md#where-phrases-live)).
+that folder and below (AD-017, [Where Phrases Live](../guides/uat-step-definitions.md#where-phrases-live)).
 
 In a phrase section:
 

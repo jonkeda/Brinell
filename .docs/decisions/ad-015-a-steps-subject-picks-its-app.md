@@ -7,8 +7,8 @@ step's **subject**, and it is an app or a user from the `Apps` table (or the fil
 second keyword attribute on the same method:
 
 ```csharp
-[UatWhen("I tap {control}", CommandId = "Control.Tap")]
-[UatWhen("{user} taps {control}", CommandId = "Control.Tap")]
+[BddWhen("I tap {control}", CommandId = "Control.Tap")]
+[BddWhen("{user} taps {control}", CommandId = "Control.Tap")]
 void Click(int? timeoutMs = null);
 ```
 

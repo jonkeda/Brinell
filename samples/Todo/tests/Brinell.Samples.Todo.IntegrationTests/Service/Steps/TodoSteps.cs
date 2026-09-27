@@ -8,15 +8,15 @@ namespace Brinell.Samples.Todo.IntegrationTests.Service.Steps;
 /// app's <see cref="TodoService"/> and repository instead. Same words, so a scenario tagged for a UI
 /// head and <c>@service</c> reads the same on both.
 /// </summary>
-[UatPhraseClass(Namespace = "Todos")]
-public sealed class TodoSteps(TodoServiceFixture fixture) : UatPhraseClassBase
+[BddStepDefinitions(Namespace = "Todos")]
+public sealed class TodoSteps(TodoServiceFixture fixture) : BddStepDefinitionsBase
 {
     /// <summary>Creates an open todo with no due date, as the Add form does with only a title.</summary>
-    [UatWhen("I create a todo {title}")]
+    [BddWhen("I create a todo {title}")]
     public Task CreateAsync(string title) => fixture.Host.Todos.CreateAsync(title, notes: null, dueDate: null, TodoStatus.Open);
 
     /// <summary>The todo has changes the server has not seen yet.</summary>
-    [UatThen("the todo {title} should be waiting to sync")]
+    [BddThen("the todo {title} should be waiting to sync")]
     public async Task WaitingToSyncAsync(string title)
     {
         var todo = await FindAsync(title);
@@ -24,7 +24,7 @@ public sealed class TodoSteps(TodoServiceFixture fixture) : UatPhraseClassBase
     }
 
     /// <summary>The server has seen every change to the todo.</summary>
-    [UatThen("the todo {title} should be synced")]
+    [BddThen("the todo {title} should be synced")]
     public async Task SyncedAsync(string title)
     {
         var todo = await FindAsync(title);

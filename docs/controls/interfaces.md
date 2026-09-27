@@ -41,7 +41,7 @@ away and back can replace a detached page instance.
 - Prefer small capability interfaces over one large control API.
 - Keep nullable and timeout behavior explicit.
 - Add tests for new contracts and default behavior.
-- Give a method that a UAT scenario should be able to say a `[UatWhen]` or `[UatThen]` phrase.
+- Give a method that a UAT scenario should be able to say a `[BddWhen]` or `[BddThen]` phrase.
   That attribute is the whole registration - the engine discovers it, and there
   is no catalog to edit
   ([AD-011](../../.docs/decisions/ad-011-uat-vocabulary-is-attribute-declared.md)).
@@ -61,6 +61,6 @@ When adding a new control capability:
 2. Implement the capability in the relevant platform controls.
 3. Add unit tests for shared behavior.
 4. Add UI tests only if live driver behavior needs coverage.
-5. Add a `[UatWhen]` or `[UatThen]` phrase if the capability belongs in the UAT vocabulary, and
-   list it in [UAT Phrases And Flows](../guides/uat-phrases-and-flows.md).
+5. Add a `[BddWhen]` or `[BddThen]` phrase if the capability belongs in the UAT vocabulary, and
+   list it in [UAT Phrases And Flows](../guides/uat-step-definitions.md).
 6. Update [Control Object Index](index.md).

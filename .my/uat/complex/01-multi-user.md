@@ -4,7 +4,7 @@ Status: **trimmed 2026-09-27** to what is still open. Most of this note is built
 run several apps, a step names its user (`Daan taps Save`, AD-015), apps of different heads meet
 in a `mixed` suite (AD-014), and a second user can still be simulated through the backend
 (`MockApiServer`). How to write those is in
-[docs/guides/uat-phrases-and-flows.md](../../../docs/guides/uat-phrases-and-flows.md) ("Several
+[docs/guides/uat-step-definitions.md](../../../docs/guides/uat-step-definitions.md) ("Several
 Users And Apps") and the [apps contract](../../../.docs/contracts/uat-apps-host.md). The full
 note is [at 7162ac7](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/uat/complex/01-multi-user.md).
 

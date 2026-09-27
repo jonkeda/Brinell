@@ -55,7 +55,7 @@ public sealed class TodoListPage : BlazorPageObjectBase<TodoListPage>
     }
 
     /// <summary>Adds a todo with <paramref name="title"/> and returns to the list.</summary>
-    [UatWhen("I create a todo {title}")]
+    [BddWhen("I create a todo {title}")]
     public TodoListPage CreateTodo(string title) => Add().EnterTitle(title).SaveNew();
 
     /// <summary>Syncs, and waits until the sync has finished.</summary>
@@ -83,7 +83,7 @@ public sealed class TodoListPage : BlazorPageObjectBase<TodoListPage>
             => ItemWhere(row => row.Title.TryGetText() == title, timeoutMs);
 
         /// <summary>Waits until a row titled <paramref name="title"/> is shown, or is not.</summary>
-        [UatThen("{control} should have todo {value}")]
+        [BddThen("{control} should have todo {value}")]
         public TodoRows AssertRow(string title, bool present = true, int? timeoutMs = null)
         {
             if (present)
@@ -99,12 +99,12 @@ public sealed class TodoListPage : BlazorPageObjectBase<TodoListPage>
         }
 
         /// <summary>Waits until no row titled <paramref name="title"/> is shown.</summary>
-        [UatThen("{control} should not have todo {value}")]
+        [BddThen("{control} should not have todo {value}")]
         public TodoRows AssertNoRow(string title, int? timeoutMs = null) => AssertRow(title, present: false, timeoutMs);
 
         /// <summary>Waits until the row with <paramref name="title"/> shows the pending marker, or does not.</summary>
-        [UatThen("the todo {item} should be waiting to sync", HasLiteral = true, Literal = true)]
-        [UatThen("the todo {item} should be synced", HasLiteral = true, Literal = false)]
+        [BddThen("the todo {item} should be waiting to sync", HasLiteral = true, Literal = true)]
+        [BddThen("the todo {item} should be synced", HasLiteral = true, Literal = false)]
         public TodoRows AssertPending(string title, bool expected = true, int? timeoutMs = null)
         {
             timeoutMs ??= StepTimeoutMs;
@@ -113,7 +113,7 @@ public sealed class TodoListPage : BlazorPageObjectBase<TodoListPage>
         }
 
         /// <summary>Opens the todo titled <paramref name="title"/>: the MAUI step.</summary>
-        [UatWhen("I open the todo {item}")]
+        [BddWhen("I open the todo {item}")]
         public TodoDetailPage Open(string title)
         {
             Row(title, StepTimeoutMs).Open.Click();
@@ -121,7 +121,7 @@ public sealed class TodoListPage : BlazorPageObjectBase<TodoListPage>
         }
 
         /// <summary>Asserts a row is shown for each title, waiting for them: the MAUI step.</summary>
-        [UatThen("the list should show {value}")]
+        [BddThen("the list should show {value}")]
         public TodoRows AssertRows(string[] titles)
         {
             foreach (var title in titles)
@@ -133,7 +133,7 @@ public sealed class TodoListPage : BlazorPageObjectBase<TodoListPage>
         }
 
         /// <summary>Asserts the row shows this status name: the MAUI step.</summary>
-        [UatThen("the todo {item} should show status {value}")]
+        [BddThen("the todo {item} should show status {value}")]
         public TodoRows AssertRowStatus(string title, string status)
         {
             Row(title, StepTimeoutMs).Status.AssertStatus(status);
@@ -141,7 +141,7 @@ public sealed class TodoListPage : BlazorPageObjectBase<TodoListPage>
         }
 
         /// <summary>Asserts the row's status has no Next button: the MAUI step.</summary>
-        [UatThen("the todo {item} should have a read-only status")]
+        [BddThen("the todo {item} should have a read-only status")]
         public TodoRows AssertRowStatusReadOnly(string title)
         {
             Row(title, StepTimeoutMs).Status.AssertChangeable(false);
@@ -149,8 +149,8 @@ public sealed class TodoListPage : BlazorPageObjectBase<TodoListPage>
         }
 
         /// <summary>Asserts the row shows "Due …", or with <c>false</c> no due date: the MAUI step.</summary>
-        [UatThen("the todo {item} should show a due date", HasLiteral = true, Literal = true)]
-        [UatThen("the todo {item} should show no due date", HasLiteral = true, Literal = false)]
+        [BddThen("the todo {item} should show a due date", HasLiteral = true, Literal = true)]
+        [BddThen("the todo {item} should show no due date", HasLiteral = true, Literal = false)]
         public TodoRows AssertRowDue(string title, bool shown)
         {
             var due = Row(title, StepTimeoutMs).Due;

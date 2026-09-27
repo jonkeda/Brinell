@@ -47,7 +47,7 @@ public sealed class TodoList : CollectionObjectBase<TodoListPage, TodoList, Todo
         => RunWait(() => (FindItem(row => TryReadTitle(row) == title) is not null) == present, timeoutMs);
 
     /// <summary>Asserts a row with this title is shown (or, with <c>false</c>, is not).</summary>
-    [UatThen("{control} should have todo {value}")]
+    [BddThen("{control} should have todo {value}")]
     public TodoList AssertRow(string title, bool present = true, int? timeoutMs = null)
     {
         if (!WaitRow(title, present, timeoutMs))
@@ -61,11 +61,11 @@ public sealed class TodoList : CollectionObjectBase<TodoListPage, TodoList, Todo
     }
 
     /// <summary>Asserts no row with this title is shown.</summary>
-    [UatThen("{control} should not have todo {value}")]
+    [BddThen("{control} should not have todo {value}")]
     public TodoList AssertNoRow(string title, int? timeoutMs = null) => AssertRow(title, present: false, timeoutMs);
 
     /// <summary>Asserts a row is shown for each title, waiting for them.</summary>
-    [UatThen("the list should show {value}")]
+    [BddThen("the list should show {value}")]
     public TodoList AssertRows(string[] titles, int? timeoutMs = null)
     {
         foreach (var title in titles)
@@ -77,7 +77,7 @@ public sealed class TodoList : CollectionObjectBase<TodoListPage, TodoList, Todo
     }
 
     /// <summary>Asserts the row shows this status name: Open, In progress, Done or Overdue.</summary>
-    [UatThen("the todo {item} should show status {value}")]
+    [BddThen("the todo {item} should show status {value}")]
     public TodoList AssertRowStatus(string title, string status)
     {
         ShownRow(title).Status.AssertStatus(status);
@@ -85,7 +85,7 @@ public sealed class TodoList : CollectionObjectBase<TodoListPage, TodoList, Todo
     }
 
     /// <summary>Asserts the row's status cannot be changed there: it has no Next button.</summary>
-    [UatThen("the todo {item} should have a read-only status")]
+    [BddThen("the todo {item} should have a read-only status")]
     public TodoList AssertRowStatusReadOnly(string title)
     {
         ShownRow(title).Status.AssertChangeable(false);
@@ -93,8 +93,8 @@ public sealed class TodoList : CollectionObjectBase<TodoListPage, TodoList, Todo
     }
 
     /// <summary>Asserts the row shows "Due …", or with <c>false</c> no due date.</summary>
-    [UatThen("the todo {item} should show a due date", HasLiteral = true, Literal = true)]
-    [UatThen("the todo {item} should show no due date", HasLiteral = true, Literal = false)]
+    [BddThen("the todo {item} should show a due date", HasLiteral = true, Literal = true)]
+    [BddThen("the todo {item} should show no due date", HasLiteral = true, Literal = false)]
     public TodoList AssertRowDue(string title, bool shown)
     {
         var due = ShownRow(title).Due;
@@ -118,8 +118,8 @@ public sealed class TodoList : CollectionObjectBase<TodoListPage, TodoList, Todo
     /// Finds the row by title on every poll rather than holding one: a sync reloads the list, and a
     /// row found before it would be the old one.
     /// </remarks>
-    [UatThen("the todo {item} should be waiting to sync", HasLiteral = true, Literal = true)]
-    [UatThen("the todo {item} should be synced", HasLiteral = true, Literal = false)]
+    [BddThen("the todo {item} should be waiting to sync", HasLiteral = true, Literal = true)]
+    [BddThen("the todo {item} should be synced", HasLiteral = true, Literal = false)]
     public TodoList AssertPending(string title, bool expected = true, int? timeoutMs = null)
     {
         if (!RunWait(() => FindItem(row => TryReadTitle(row) == title)?.Pending.IsShown() == expected, timeoutMs ?? TestConstants.PageTimeoutMs))
@@ -149,7 +149,7 @@ public sealed class TodoList : CollectionObjectBase<TodoListPage, TodoList, Todo
     }
 
     /// <summary>Opens a row's detail page, as tapping it does.</summary>
-    [UatWhen("I open the todo {item}")]
+    [BddWhen("I open the todo {item}")]
     public TodoDetailPage Open(string title, int? timeoutMs = null)
     {
         WaitRow(title, present: true, timeoutMs);

@@ -20,7 +20,7 @@ cell - with one reader, `UatValues`, in one invariant format whatever the machin
 - **Checked at bind time.** A value that does not fit is a `UATA0xx` diagnostic at the step's
   or row's line before any app starts; the step runs with the same value read again against the
   scenario's clock (`IUatClock`) and services.
-- **A phrase can be the method name.** An empty keyword attribute (`[UatWhen]`) makes the name
+- **A phrase can be the method name.** An empty keyword attribute (`[BddWhen]`) makes the name
   the phrase, parameters in capitals: `I_open_the_todo_TITLE(string title)` is
   `I open the todo {title}`. A phrase class method named `Given`/`When`/`Then...` needs no
   attribute. A `{user}` form is always declared in text (AD-015).

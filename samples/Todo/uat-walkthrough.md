@@ -117,7 +117,7 @@ Every step matches exactly one phrase. The phrase decides which page object meth
 | `Then Title Error should be visible` | `{control} should be visible` | `TitleError.AssertVisible(true)` |
 | `And Title Error should contain "Title is required"` | `{control} should contain {value}` | `TitleError.AssertTextContains(...)` |
 
-Those control phrases are not a list someone maintains. Each is a `[UatWhen]` or `[UatThen]` attribute on
+Those control phrases are not a list someone maintains. Each is a `[BddWhen]` or `[BddThen]` attribute on
 the `Brinell.Core` interface method it calls — `I clear {control}` sits on
 `IEditableTextControlObject.Clear`, `{control} should be visible` on
 `IElementObject.AssertVisible` — and the engine discovers them by reflection
@@ -153,7 +153,7 @@ So the chain for one step is:
 
 ```text
 "And Title Error should contain \"Title is required\""
-   -> phrase   {control} should contain {value}   ([UatThen] on ITextControlObject.AssertTextContains)
+   -> phrase   {control} should contain {value}   ([BddThen] on ITextControlObject.AssertTextContains)
    -> control  "Title Error"  == TodoEditPage.TitleError
    -> id       TodoEdit_TitleError  (from the XAML)
    -> call     AssertTextContains("Title is required")
@@ -169,14 +169,14 @@ binds to the page object's name.
 ## 4. A verb the framework does not have
 
 Cycling the status with **Next** is Todo's own behaviour, so Todo declares its own verb: a
-`[UatWhen]` on the method of the ControlObject that performs it
+`[BddWhen]` on the method of the ControlObject that performs it
 ([`TodoStatus.tpl.cs`](tests/Brinell.Samples.Todo.UITests/Controls/TodoStatus.tpl.cs)).
 
 ```csharp
-[UatWhen("I advance {control} to {value}")]
+[BddWhen("I advance {control} to {value}")]
 public TodoStatus<TScope> AdvanceTo(string? expected, int? timeoutMs = null) { ... }
 
-[UatThen("{control} should show status {value}")]
+[BddThen("{control} should show status {value}")]
 public TodoStatus<TScope> AssertShowsStatus(string? expected, ...) { ... }
 ```
 
@@ -189,7 +189,7 @@ When I advance Status to "Done"
 Then Status should show status "Done"
 ```
 
-The same move gives the list its row assertion — `[UatThen]` on `TodoList.AssertRow`
+The same move gives the list its row assertion — `[BddThen]` on `TodoList.AssertRow`
 produces `Then Todos should have todo "Write the report"`.
 
 ---
@@ -225,7 +225,7 @@ produces `Then Todos should have todo "Write the report"`.
 ```
 
 - **`Pages`** is the assembly carrying `TodoListPage` / `TodoEditPage` — the source of the
-  control names, and of Todo's custom `[UatWhen]` / `[UatThen]` verbs.
+  control names, and of Todo's custom `[BddWhen]` / `[BddThen]` verbs.
 - **`AllowNameInference = true`** is why `AddButton` works as **Add** with no attribute.
 - **`Fixture = FlaUI`** is the Windows head. `TodoUatScenarioTests` asserts this at load
   time, so a config pointed at the wrong driver fails before any scenario runs.
@@ -308,7 +308,7 @@ dotnet test tests/Brinell.Samples.Todo.Uat
 - It stays traceable: `TOD.02.3` in the journey checklist → this `.uat.md` → green/red.
 
 When a scenario outgrows the phrase vocabulary, there are two escapes before giving up on
-Markdown: a `[UatWhen]` or `[UatThen]` on the control that does the work (§4), or one on a
+Markdown: a `[BddWhen]` or `[BddThen]` on the control that does the work (§4), or one on a
 fixture for something no control owns. Only past those does the scenario drop to a `.cs`
 page-object test — the hatch described in
 [.my/uat/rethinking-uat.md](../../.my/uat/rethinking-uat.md).
@@ -334,7 +334,7 @@ See `tests/Brinell.Samples.Todo.Mixed.Uat/Scenarios/TOD.07-mixed.uat.md` and
 - Journey checklist: [todo-user-journeys.md](tests/Brinell.Samples.Todo.Uat/todo-user-journeys.md)
 - Pyramid backbone: [journeys.md](journeys.md)
 - Config and file shape: [docs/guides/uat-template-guide.md](../../docs/guides/uat-template-guide.md)
-- Phrase catalog and binding: [docs/guides/uat-phrases-and-flows.md](../../docs/guides/uat-phrases-and-flows.md)
+- Phrase catalog and binding: [docs/guides/uat-step-definitions.md](../../docs/guides/uat-step-definitions.md)
 - Why the vocabulary is attribute-declared: [AD-011](../../.docs/decisions/ad-011-uat-vocabulary-is-attribute-declared.md)
 - Several apps in one scenario: [AD-015](../../.docs/decisions/ad-015-a-steps-subject-picks-its-app.md)
 - Todo page objects: [tests/Brinell.Samples.Todo.UITests/Pages](tests/Brinell.Samples.Todo.UITests/Pages)

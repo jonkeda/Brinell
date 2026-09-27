@@ -96,7 +96,7 @@ public sealed class TodoWorldPhrases : UatPhraseClassBase
 
 A phrase method may also take `UatExecutionContext`, `CancellationToken`,
 `TestSettings`, or a typed `[TestSettingsSection]` class — see
-[docs/guides/uat-phrases-and-flows.md](../../../docs/guides/uat-phrases-and-flows.md#custom-root-phrases).
+[docs/guides/uat-step-definitions.md](../../../docs/guides/uat-step-definitions.md#custom-root-phrases).
 Each topic doc below shows the phrase *and* the C# that backs it.
 
 ---

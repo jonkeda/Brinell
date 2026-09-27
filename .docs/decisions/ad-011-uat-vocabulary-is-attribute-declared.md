@@ -1,10 +1,10 @@
 # AD-011: UAT Step Vocabulary Is Declared By Attributes
 
-Every UAT step is declared by one of three attributes: `[UatGiven]`, `[UatWhen]` and
-`[UatThen]`. They derive from the abstract `UatPhraseAttribute` in `Brinell.Core.Testing`,
+Every UAT step is declared by one of three attributes: `[BddGiven]`, `[BddWhen]` and
+`[BddThen]`. They derive from the abstract `BddStepAttribute` in `Brinell.Core.Testing`,
 which is the type discovery reads. There is no other way to declare a step, and no attribute
 for `And` or `But`: those take the keyword of the step before them, so a check written after
-`But` is a `[UatThen]`.
+`But` is a `[BddThen]`.
 
 What a step is follows from the method it sits on, not from the attribute:
 
@@ -35,7 +35,7 @@ registered directly in the runtime and spec catalogs - they bind to no control m
   without a keyword.
 - `[UatAnd]` / `[UatBut]` attributes.
 
-**Broken when:** a step is declared by any attribute other than `[UatGiven]`, `[UatWhen]` or
-`[UatThen]`; a control phrase is added by editing a `catalog.Register(...)` call for a control
+**Broken when:** a step is declared by any attribute other than `[BddGiven]`, `[BddWhen]` or
+`[BddThen]`; a control phrase is added by editing a `catalog.Register(...)` call for a control
 verb instead of attributing the control method; or a projection (runtime, spec, presenter
 preview) re-lists control phrases by hand instead of calling the discovery.

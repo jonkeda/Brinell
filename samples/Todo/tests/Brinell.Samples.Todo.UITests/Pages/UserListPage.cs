@@ -12,7 +12,7 @@ namespace Brinell.Samples.Todo.UITests.Pages;
 /// In the <c>Users</c> namespace, as its edit page is: a scenario names these pages after
 /// <c>Using | Users</c> (AD-019).
 /// </remarks>
-[UatNamespace("Users")]
+[BddNamespace("Users")]
 public class UserListPage(IMauiTestContext context) : PageObjectBase<UserListPage>(context)
 {
     private readonly AppRoot _appRoot = new(context);
@@ -46,7 +46,7 @@ public class UserListPage(IMauiTestContext context) : PageObjectBase<UserListPag
     }
 
     /// <summary>Adds a user with this name and every other field as it starts, and returns to the list.</summary>
-    [UatWhen("I add a user {name}")]
+    [BddWhen("I add a user {name}")]
     public UserListPage AddUser(string name) => Add().EnterName(name).SaveNew();
 
     /// <summary>Opens the user with this name.</summary>

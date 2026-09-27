@@ -37,7 +37,7 @@ public sealed class TodoStatus<TParent>(IHtmlScope<TParent> parent, string testI
     }
 
     /// <summary>Asserts the status shown, waiting for it: the MAUI step.</summary>
-    [UatThen("{control} should show status {value}")]
+    [BddThen("{control} should show status {value}")]
     public TodoStatus<TParent> AssertShowsStatus(string? expected, string? message = null, int? timeoutMs = null)
     {
         Text.AssertText(expected, message, timeoutMs);
@@ -52,7 +52,7 @@ public sealed class TodoStatus<TParent>(IHtmlScope<TParent> parent, string testI
     }
 
     /// <summary>Presses Next until the status reads <paramref name="expected"/>, at most one full cycle.</summary>
-    [UatWhen("I advance {control} to {value}")]
+    [BddWhen("I advance {control} to {value}")]
     public TodoStatus<TParent> AdvanceTo(string? expected, int? timeoutMs = null)
     {
         if (expected is null)
@@ -120,7 +120,7 @@ public sealed class TodoListState(IHtmlScope<TodoListPage> page)
     }
 
     /// <summary>Asserts that the named state (Loading, Empty, Error or Content) is shown, waiting for it: the MAUI step.</summary>
-    [UatThen("{control} should show the {value} state")]
+    [BddThen("{control} should show the {value} state")]
     public TodoListState AssertShowsState(string state, int? timeoutMs = null) => AssertShowing(
         state switch
         {
@@ -191,7 +191,7 @@ public sealed class TodoDialog<TParent>(IHtmlScope<TParent> parent)
     }
 
     /// <summary>Asserts that the dialog is shown with this title, waiting for it: the MAUI step.</summary>
-    [UatThen("{control} should ask {value}")]
+    [BddThen("{control} should ask {value}")]
     public TodoDialog<TParent> AssertAsks(string title, int? timeoutMs = null)
     {
         AssertExists(true, timeoutMs: timeoutMs);
@@ -200,8 +200,8 @@ public sealed class TodoDialog<TParent>(IHtmlScope<TParent> parent)
     }
 
     /// <summary>Presses the dialog's button with this text: the MAUI step.</summary>
-    [UatWhen("I choose {value} in {control}", Navigates = true)]
-    [UatWhen("{user} chooses {value} in {control}", Navigates = true)]
+    [BddWhen("I choose {value} in {control}", Navigates = true)]
+    [BddWhen("{user} chooses {value} in {control}", Navigates = true)]
     public TodoDialog<TParent> Choose(string text)
     {
         Button(text).Click();
@@ -209,6 +209,6 @@ public sealed class TodoDialog<TParent>(IHtmlScope<TParent> parent)
     }
 
     /// <summary>Asserts that no dialog is shown, waiting for it to close: the MAUI step.</summary>
-    [UatThen("no {control} should be shown")]
+    [BddThen("no {control} should be shown")]
     public TodoDialog<TParent> AssertNotShown(int? timeoutMs = null) => AssertExists(false, timeoutMs: timeoutMs);
 }

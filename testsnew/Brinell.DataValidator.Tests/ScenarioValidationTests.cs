@@ -257,7 +257,7 @@ public sealed class ScenarioValidationTests : IDisposable
         var (exit, output, _) = Run("snippet", "Scenarios/library.uat.md:5");
 
         Assert.Equal(0, exit);
-        Assert.Contains("[UatWhen]", output);
+        Assert.Contains("[BddWhen]", output);
         Assert.Contains("public void When_I_archive_P1_on_P2(string p1, DateOnly p2)", output);
     }
 

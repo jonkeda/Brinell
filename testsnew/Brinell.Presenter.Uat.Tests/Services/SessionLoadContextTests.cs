@@ -110,6 +110,6 @@ public sealed class SessionLoadContextTests
 public sealed class UnloadProbeFixture
 {
     /// <summary>The one phrase the probe scenario uses.</summary>
-    [UatGiven("the probe is ready")]
+    [BddGiven("the probe is ready")]
     public bool Ready() => true;
 }

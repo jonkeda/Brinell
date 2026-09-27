@@ -157,12 +157,12 @@ public sealed class UatNamespaceTests : IDisposable
     [Fact]
     public void AnAssemblysNamespace_IsItsPhraseClassesNamespace_UnlessAClassNamesItsOwn()
     {
-        // [assembly: UatNamespace] would namespace every phrase class of this test assembly, so the
+        // [assembly: BddNamespace] would namespace every phrase class of this test assembly, so the
         // assembly under test is built here.
         var assembly = AssemblyBuilder.DefineDynamicAssembly(
             new AssemblyName("Brinell.Uat.Tests.Dynamic" + Guid.NewGuid().ToString("N")),
             AssemblyBuilderAccess.Run,
-            [new CustomAttributeBuilder(typeof(UatNamespaceAttribute).GetConstructor([typeof(string)])!, ["Invoicing"])]);
+            [new CustomAttributeBuilder(typeof(BddNamespaceAttribute).GetConstructor([typeof(string)])!, ["Invoicing"])]);
         var module = assembly.DefineDynamicModule("Dynamic");
         var inherits = PhraseClass(module, "Dyn.InheritsPhrases", "I file a line {text}", ownNamespace: null);
         PhraseClass(module, "Dyn.OwnPhrases", "I order a line {text}", ownNamespace: "Purchasing");
@@ -230,21 +230,21 @@ public sealed class UatNamespaceTests : IDisposable
         return new UatCatalogSet(UatReflectionRuntime.FromComposition(fixture, fixture.Composition).CreateCommandCatalog());
     }
 
-    // public sealed class {name} : UatPhraseClassBase { [UatWhen(phrase)] public void Step(string text) { } }
+    // public sealed class {name} : BddStepDefinitionsBase { [BddWhen(phrase)] public void Step(string text) { } }
     private static Type PhraseClass(ModuleBuilder module, string name, string phrase, string? ownNamespace)
     {
-        var type = module.DefineType(name, TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.Class, typeof(UatPhraseClassBase));
+        var type = module.DefineType(name, TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.Class, typeof(BddStepDefinitionsBase));
         type.SetCustomAttribute(ownNamespace is null
-            ? new CustomAttributeBuilder(typeof(UatPhraseClassAttribute).GetConstructor(Type.EmptyTypes)!, [])
+            ? new CustomAttributeBuilder(typeof(BddStepDefinitionsAttribute).GetConstructor(Type.EmptyTypes)!, [])
             : new CustomAttributeBuilder(
-                typeof(UatPhraseClassAttribute).GetConstructor(Type.EmptyTypes)!,
+                typeof(BddStepDefinitionsAttribute).GetConstructor(Type.EmptyTypes)!,
                 [],
-                [typeof(UatPhraseClassAttribute).GetProperty(nameof(UatPhraseClassAttribute.Namespace))!],
+                [typeof(BddStepDefinitionsAttribute).GetProperty(nameof(BddStepDefinitionsAttribute.Namespace))!],
                 [ownNamespace]));
         type.DefineDefaultConstructor(MethodAttributes.Public);
         var step = type.DefineMethod("Step", MethodAttributes.Public, typeof(void), [typeof(string)]);
         step.DefineParameter(1, ParameterAttributes.None, "text");
-        step.SetCustomAttribute(new CustomAttributeBuilder(typeof(UatWhenAttribute).GetConstructor([typeof(string)])!, [phrase]));
+        step.SetCustomAttribute(new CustomAttributeBuilder(typeof(BddWhenAttribute).GetConstructor([typeof(string)])!, [phrase]));
         step.GetILGenerator().Emit(OpCodes.Ret);
         return type.CreateType();
     }
@@ -266,29 +266,29 @@ public sealed class NamespaceFixture
     public TestComposition Composition { get; }
 }
 
-[UatPhraseClass]
+[BddStepDefinitions]
 [UatIgnore]
-public sealed class GlobalPhrases(List<string> notes) : UatPhraseClassBase
+public sealed class GlobalPhrases(List<string> notes) : BddStepDefinitionsBase
 {
-    [UatWhen("I note {text}")]
+    [BddWhen("I note {text}")]
     public void Note(string text) => notes.Add(text);
 }
 
-[UatPhraseClass(Namespace = "Invoicing")]
+[BddStepDefinitions(Namespace = "Invoicing")]
 [UatIgnore]
-public sealed class InvoicingPhrases(List<string> notes) : UatPhraseClassBase
+public sealed class InvoicingPhrases(List<string> notes) : BddStepDefinitionsBase
 {
-    [UatWhen("I add a line {text}")]
+    [BddWhen("I add a line {text}")]
     public void AddLine(string text) => notes.Add($"invoice {text}");
 
-    [UatWhen("I note {text}")]
+    [BddWhen("I note {text}")]
     public void Note(string text) => notes.Add($"invoice note {text}");
 }
 
-[UatPhraseClass(Namespace = "Purchasing")]
+[BddStepDefinitions(Namespace = "Purchasing")]
 [UatIgnore]
-public sealed class PurchasingPhrases(List<string> notes) : UatPhraseClassBase
+public sealed class PurchasingPhrases(List<string> notes) : BddStepDefinitionsBase
 {
-    [UatWhen("I add a line {text}")]
+    [BddWhen("I add a line {text}")]
     public void AddLine(string text) => notes.Add($"order {text}");
 }

@@ -5,11 +5,11 @@ namespace Brinell.Uat;
 // CommandId, Literal and HasLiteral belong to control verbs; on a phrase method they break the phrase (AD-011, AD-016).
 internal static class UatPhraseMethods
 {
-    public static string? ControlVerbOnlyError(MethodInfo method, UatPhraseAttribute phrase)
+    public static string? ControlVerbOnlyError(MethodInfo method, BddStepAttribute phrase)
     {
-        string? property = phrase.CommandId is not null ? nameof(UatPhraseAttribute.CommandId)
-            : phrase.HasLiteral ? nameof(UatPhraseAttribute.HasLiteral)
-            : phrase.Literal ? nameof(UatPhraseAttribute.Literal)
+        string? property = phrase.CommandId is not null ? nameof(BddStepAttribute.CommandId)
+            : phrase.HasLiteral ? nameof(BddStepAttribute.HasLiteral)
+            : phrase.Literal ? nameof(BddStepAttribute.Literal)
             : null;
         return property is null
             ? null

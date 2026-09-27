@@ -60,11 +60,11 @@ public sealed class UatCatalogParityTests
     [Fact]
     public void SpecCatalog_ControlVerbs_ComeFromCoreStepAttributes()
     {
-        var expected = typeof(UatPhraseAttribute).Assembly
+        var expected = typeof(BddStepAttribute).Assembly
             .GetTypes()
             .SelectMany(type => type.GetMethods(
                 BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly))
-            .SelectMany(method => method.GetCustomAttributes<UatPhraseAttribute>(inherit: false))
+            .SelectMany(method => method.GetCustomAttributes<BddStepAttribute>(inherit: false))
             .Select(attribute => (attribute.Keyword, attribute.Phrase))
             .ToHashSet();
 
@@ -102,7 +102,7 @@ public sealed class UatCatalogParityTests
     }
 
     [Fact]
-    public async Task UatWhen_OnAppControl_BindsAControlVerbWithItsValueArgument()
+    public async Task BddWhen_OnAppControl_BindsAControlVerbWithItsValueArgument()
     {
         var fixture = new GadgetFixture();
         var runtime = UatReflectionRuntime.FromRoot(fixture);
@@ -123,7 +123,7 @@ public sealed class UatCatalogParityTests
     }
 
     [Fact]
-    public async Task UatThen_OnAppControl_CarriesItsLiteral()
+    public async Task BddThen_OnAppControl_CarriesItsLiteral()
     {
         var fixture = new GadgetFixture();
         var catalog = UatReflectionRuntime.FromRoot(fixture).CreateCommandCatalog();
@@ -142,7 +142,7 @@ public sealed class UatCatalogParityTests
     }
 
     [Fact]
-    public void UatThen_OnControlMethod_IsNotRegisteredAsAPhrase()
+    public void BddThen_OnControlMethod_IsNotRegisteredAsAPhrase()
     {
         var catalog = UatReflectionRuntime.FromRoot(new GadgetFixture()).CreateCommandCatalog();
 
@@ -497,7 +497,7 @@ public sealed class UatCatalogParityTests
             GadgetPage = new GadgetPage(PlainPage);
         }
 
-        [UatThen("the gadget should hum")]
+        [BddThen("the gadget should hum")]
         public void Hums()
         {
         }
@@ -532,24 +532,24 @@ public sealed class UatCatalogParityTests
     {
         public List<string> Calls { get; } = [];
 
-        [UatWhen("I open the book {item}")]
+        [BddWhen("I open the book {item}")]
         public void Open(string title) => Calls.Add($"open {title}");
 
-        [UatThen("the book {item} should be by {value}")]
+        [BddThen("the book {item} should be by {value}")]
         public void AssertAuthor(string title, string author) => Calls.Add($"{title} by {author}");
 
-        [UatThen("the book {item} should be lent", HasLiteral = true, Literal = true)]
-        [UatThen("the book {item} should be in", HasLiteral = true, Literal = false)]
+        [BddThen("the book {item} should be lent", HasLiteral = true, Literal = true)]
+        [BddThen("the book {item} should be in", HasLiteral = true, Literal = false)]
         public void AssertLent(string title, bool lent) => Calls.Add($"{title} lent {lent}");
 
-        [UatWhen("I read the book {item}")]
+        [BddWhen("I read the book {item}")]
         public PlainPage Read(string title)
         {
             Calls.Add($"read {title}");
             return new PlainPage();
         }
 
-        [UatThen("the shelf should hold {value}")]
+        [BddThen("the shelf should hold {value}")]
         public void AssertHolds(string[] titles) => Calls.Add($"holds {string.Join('|', titles)}");
     }
 
@@ -557,10 +557,10 @@ public sealed class UatCatalogParityTests
     {
         public int Turns { get; private set; }
 
-        [UatWhen("I wind the gadget {turns} times")]
+        [BddWhen("I wind the gadget {turns} times")]
         public void Wind(int turns) => Turns = turns;
 
-        [UatWhen("I leave for the plain page")]
+        [BddWhen("I leave for the plain page")]
         public PlainPage Leave() => plain;
 
         // A page that exposes itself, as Brinell page objects do: its phrases stay page phrases.
@@ -569,7 +569,7 @@ public sealed class UatCatalogParityTests
         [UatNavigatesTo(typeof(PlainPage))]
         public GadgetControl Door { get; } = new();
 
-        [UatThen("the gadget should hum")]
+        [BddThen("the gadget should hum")]
         public void Hums()
         {
         }
@@ -597,7 +597,7 @@ public sealed class UatCatalogParityTests
     {
         public string? LastState { get; private set; }
 
-        [UatThen("{control} should show the {value} state")]
+        [BddThen("{control} should show the {value} state")]
         public TSelf AssertShowsState(string state, int? timeoutMs = null)
         {
             LastState = state;
@@ -613,7 +613,7 @@ public sealed class UatCatalogParityTests
     {
         public bool Rung { get; private set; }
 
-        [UatWhen("I ring {control}")]
+        [BddWhen("I ring {control}")]
         public void Ring() => Rung = true;
     }
 
@@ -622,7 +622,7 @@ public sealed class UatCatalogParityTests
     {
         public string? Chosen { get; private set; }
 
-        [UatWhen("I choose {value} in {control}")]
+        [BddWhen("I choose {value} in {control}")]
         public void Choose(string text) => Chosen = text;
     }
 
@@ -632,24 +632,24 @@ public sealed class UatCatalogParityTests
 
         public bool? LastExpected { get; private set; }
 
-        [UatWhen("I push {control}", Navigates = true)]
+        [BddWhen("I push {control}", Navigates = true)]
         public void Push()
         {
         }
 
-        [UatWhen("I frobnicate {control}", CommandId = "Gadget.Frobnicate")]
+        [BddWhen("I frobnicate {control}", CommandId = "Gadget.Frobnicate")]
         public void Frobnicate(int? timeoutMs = null)
         {
         }
 
-        [UatWhen("I set the level of {control} to {level}")]
-        [UatWhen("{user} sets the level of {control} to {level}")]
+        [BddWhen("I set the level of {control} to {level}")]
+        [BddWhen("{user} sets the level of {control} to {level}")]
         public void SetLevel(string level, int? timeoutMs = null)
         {
             Level = level;
         }
 
-        [UatThen("{control} should not be frobnicated", HasLiteral = true, Literal = false)]
+        [BddThen("{control} should not be frobnicated", HasLiteral = true, Literal = false)]
         public void AssertFrobnicated(bool expected, int? timeoutMs = null)
         {
             LastExpected = expected;

@@ -333,40 +333,40 @@ public sealed class ArgumentFixture : IUatClock, IUatSessionHost
     public IServiceProvider UseSession(string name) => Composition.CreateScope().ServiceProvider;
 }
 
-[UatPhraseClass]
+[BddStepDefinitions]
 [UatIgnore]
-public sealed class ArgumentPhrases(ArgumentState state) : UatPhraseClassBase
+public sealed class ArgumentPhrases(ArgumentState state) : BddStepDefinitionsBase
 {
-    [UatWhen("I assign {todo} to {assignee} due {due} for {hours} hours as {status}")]
+    [BddWhen("I assign {todo} to {assignee} due {due} for {hours} hours as {status}")]
     public void Assign(string todo, UatUserRole assignee, DateOnly due, decimal hours, Status status)
         => state.Assigned.Add((todo, assignee, due, hours, status));
 
-    [UatWhen("{user} takes {todo}")]
+    [BddWhen("{user} takes {todo}")]
     public void Take(UatUserRole user, string todo) => state.Taken.Add((user.Name, todo));
 
-    [UatGiven("the server has todos")]
+    [BddGiven("the server has todos")]
     public void ServerHas(IReadOnlyList<TodoRow> todos) => state.Server.AddRange(todos);
 
-    [UatWhen("I create the todo")]
+    [BddWhen("I create the todo")]
     public void Create(TodoRow todo) => state.Server.Add(todo);
 
-    [UatThen]
+    [BddThen]
     public void The_todos_TITLES_should_be_open(string[] titles) => state.Checked.Add(titles);
 
-    [UatThen("the todos should be open")]
+    [BddThen("the todos should be open")]
     public void TodosShouldBeOpen(List<string> titles) => state.Checked.Add([.. titles]);
 
-    [UatWhen("I write the note")]
+    [BddWhen("I write the note")]
     public void Write(string note) => state.Note = note;
 
-    [UatWhen("I pay {amount}")]
+    [BddWhen("I pay {amount}")]
     public void Pay(Money amount) => state.Paid = amount;
 
-    [UatWhen]
-    [UatWhen("{user} opens the todo {title}")]
+    [BddWhen]
+    [BddWhen("{user} opens the todo {title}")]
     public void When_I_open_the_todo_TITLE(string title) => state.Opened.Add(title);
 
-    [UatWhen]
+    [BddWhen]
     public void IRestartTheApp()
     {
     }
@@ -375,13 +375,13 @@ public sealed class ArgumentPhrases(ArgumentState state) : UatPhraseClassBase
     {
     }
 
-    [UatGiven]
-    [UatWhen]
+    [BddGiven]
+    [BddWhen]
     public void The_device_is_offline()
     {
     }
 
-    [UatThen]
+    [BddThen]
     public void Then_I_export_the_PDF()
     {
     }
@@ -391,37 +391,37 @@ public sealed class ArgumentPhrases(ArgumentState state) : UatPhraseClassBase
     }
 }
 
-[UatPhraseClass]
+[BddStepDefinitions]
 [UatIgnore]
-public sealed class BrokenPhrases : UatPhraseClassBase
+public sealed class BrokenPhrases : BddStepDefinitionsBase
 {
-    [UatWhen]
+    [BddWhen]
     public void When_I_forget_the_due(DateOnly due)
     {
     }
 
-    [UatWhen]
+    [BddWhen]
     public void When_I_number_I(int i)
     {
     }
 
-    [UatWhen]
+    [BddWhen]
     public void When_I_use_TITLESTATUS(string title, string status)
     {
     }
 
-    [UatGiven("two tables")]
+    [BddGiven("two tables")]
     public void TwoTables(TodoRow[] first, TodoRow[] second)
     {
     }
 
-    [UatThen]
+    [BddThen]
     public void When_I_restart_the_app()
     {
     }
 
-    [UatWhen]
-    [UatWhen]
+    [BddWhen]
+    [BddWhen]
     public void When_I_twice()
     {
     }
@@ -439,7 +439,7 @@ public sealed class FrobPage
 
 public sealed class FrobControl
 {
-    [UatWhen]
+    [BddWhen]
     public void Frob()
     {
     }

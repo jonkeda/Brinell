@@ -1,18 +1,18 @@
-# UAT Phrases And Flows
+# UAT Step Definitions And Flows
 
 Brinell UAT scenarios are markdown files whose steps bind to a command catalog.
 There is no separate flow-file format. In current code, a flow is the ordered
 execution of parsed and bound steps.
 
 Every step is declared with one of three attributes from `Brinell.Core.Testing`:
-`[UatGiven]`, `[UatWhen]` or `[UatThen]`. What the step becomes depends on the
+`[BddGiven]`, `[BddWhen]` or `[BddThen]`. What the step becomes depends on the
 method the attribute sits on:
 
 | Origin | Declared on | Use it for |
 | --- | --- | --- |
 | Control verb | a control method | anything a control does: tap, set, assert |
 | Root phrase | a fixture method | fixture state, navigation, setup |
-| Phrase class | a method of a `[UatPhraseClass]` | domain flows needing DI services or scoped state |
+| Step-definition class | a method of a `[BddStepDefinitions]` | domain flows needing DI services or scoped state |
 
 ## Mental Model
 
@@ -44,7 +44,7 @@ Step lines must start with one of these exact keywords:
 `When` step, `And I tap Save` is treated as a `When` step for phrase matching.
 After a `Then` step, `And Status should be visible` is treated as a `Then`
 step. So there is no `[UatAnd]` or `[UatBut]`: a negative check written after
-`But` is declared with `[UatThen]`.
+`But` is declared with `[BddThen]`.
 
 ```markdown
 Given I am on the User Form page
@@ -60,7 +60,7 @@ Every phrase, however it is declared, uses `{parameter}` placeholders and matche
 the same way:
 
 ```csharp
-[UatWhen("I enter {value} into {control}")]
+[BddWhen("I enter {value} into {control}")]
 TScope Enter(string? text, int? timeoutMs = null);
 ```
 
@@ -148,16 +148,16 @@ the machine's culture, and checked when the step binds (AD-016):
 phrase does not name comes from under the step:
 
 ```csharp
-[UatGiven("the server also has todos")]
+[BddGiven("the server also has todos")]
 public void ServerAlsoHas(IReadOnlyList<ServerTodoRow> todos) { ... }   // a row per todo
 
-[UatWhen("I create the todo")]
+[BddWhen("I create the todo")]
 public void Create(TodoRow todo) { ... }                                 // a Field | Value table, or one row, or a JSON doc string
 
-[UatThen("the todos should be open")]
+[BddThen("the todos should be open")]
 public void TodosAreOpen(List<string> titles) { ... }                    // a one-column table
 
-[UatWhen("I write the note")]
+[BddWhen("I write the note")]
 public void Write(string note) { ... }                                   // a """ doc string
 ```
 
@@ -186,19 +186,19 @@ words are lowercased (`I` stays):
 
 | Method | Phrase |
 | --- | --- |
-| `[UatWhen] I_open_the_todo_TITLE(string title)` | When `I open the todo {title}` |
-| `[UatWhen] When_I_open_the_todo_TITLE(string title)` | the same; a prefix equal to the attribute's keyword is dropped |
-| `[UatThen] The_list_should_show_TITLES(string[] titles)` | Then `the list should show {titles}` |
-| `[UatGiven] [UatWhen] The_device_is_offline()` | Given and When `the device is offline` |
+| `[BddWhen] I_open_the_todo_TITLE(string title)` | When `I open the todo {title}` |
+| `[BddWhen] When_I_open_the_todo_TITLE(string title)` | the same; a prefix equal to the attribute's keyword is dropped |
+| `[BddThen] The_list_should_show_TITLES(string[] titles)` | Then `the list should show {titles}` |
+| `[BddGiven] [BddWhen] The_device_is_offline()` | Given and When `the device is offline` |
 
-In a phrase class a method with no attribute whose name starts with `Given`, `When` or `Then` is
+In a step-definition class a method with no attribute whose name starts with `Given`, `When` or `Then` is
 inferred too; on the fixture only an attribute makes a phrase. A phrase with punctuation
 (`read-only`) is written in text. A `{user}` form is always written in text, next to the empty
 attribute (AD-015):
 
 ```csharp
-[UatWhen]                                          // I open the todo {title}
-[UatWhen("{user} opens the todo {title}")]
+[BddWhen]                                          // I open the todo {title}
+[BddWhen("{user} opens the todo {title}")]
 public void I_open_the_todo_TITLE(string title) { ... }
 ```
 
@@ -328,7 +328,7 @@ and `phrases` lists callables with their types.
 The 18 built-in phrases have two sources. Three page verbs are registered
 directly by `UatReflectionRuntime.CreateCommandCatalog()` and
 `UatSpecCommandCatalog.RegisterDefault()`, since they do not bind to control
-methods. The other fifteen are `[UatWhen]` / `[UatThen]` attributes on `Brinell.Core` control
+methods. The other fifteen are `[BddWhen]` / `[BddThen]` attributes on `Brinell.Core` control
 interfaces. `UatCatalogBuilder` discovers them for the runtime catalog, the
 spec catalog and the Presenter's preview, so the phrase and its method cannot
 drift apart. To add a control verb, annotate its method rather than registering
@@ -383,7 +383,7 @@ Given I am on the Main page
 
 ## Custom Control Verbs
 
-To add a verb, put a `[UatWhen]` or `[UatThen]` on the control method that
+To add a verb, put a `[BddWhen]` or `[BddThen]` on the control method that
 performs it. The attribute lives in `Brinell.Core.Testing`, so a control project needs no
 reference to `Brinell.Uat` to declare one. Do **not** add a
 `catalog.Register(...)` call for a control verb - that is the hand-written table
@@ -394,10 +394,10 @@ From the Todo sample's `TodoStatus` component:
 ```csharp
 using Brinell.Core.Testing;
 
-[UatWhen("I advance {control} to {value}")]
+[BddWhen("I advance {control} to {value}")]
 public TodoStatus<TScope> AdvanceTo(string? expected, int? timeoutMs = null) { ... }
 
-[UatThen("{control} should show status {value}")]
+[BddThen("{control} should show status {value}")]
 public TodoStatus<TScope> AssertShowsStatus(
     string? expected, string? message = null, int? timeoutMs = null) { ... }
 ```
@@ -405,21 +405,21 @@ public TodoStatus<TScope> AssertShowsStatus(
 and from its `TodoList` collection:
 
 ```csharp
-[UatThen("{control} should have todo {value}")]
+[BddThen("{control} should have todo {value}")]
 public TodoList AssertRow(string title, bool present = true, int? timeoutMs = null) { ... }
 ```
 
 Its row phrases are item verbs, with no `{control}`:
 
 ```csharp
-[UatWhen("I open the todo {item}")]
+[BddWhen("I open the todo {item}")]
 public TodoDetailPage Open(string title, int? timeoutMs = null) { ... }
 
-[UatThen("the todo {item} should show status {value}")]
+[BddThen("the todo {item} should show status {value}")]
 public TodoList AssertRowStatus(string title, string status) { ... }
 
-[UatThen("the todo {item} should be waiting to sync", HasLiteral = true, Literal = true)]
-[UatThen("the todo {item} should be synced", HasLiteral = true, Literal = false)]
+[BddThen("the todo {item} should be waiting to sync", HasLiteral = true, Literal = true)]
+[BddThen("the todo {item} should be synced", HasLiteral = true, Literal = false)]
 public TodoList AssertPending(string title, bool expected = true, int? timeoutMs = null) { ... }
 ```
 
@@ -451,7 +451,7 @@ Rules for a control verb:
   The projections prepend their own prefix (`Builtin.` / `Spec.`), so one
   attribute serves both.
 - `CommandId`, `Literal` and `HasLiteral` are for control verbs only. On a
-  fixture or phrase-class method they fail discovery with an error naming the
+  fixture or step-definition method they fail discovery with an error naming the
   method.
 - The attribute allows multiples: declare each phrase variant on the same method.
 - A `(keyword, phrase)` pair is registered once. A verb inherited through several
@@ -481,7 +481,7 @@ A page's own workflow, several controls in one user intent, is a keyword attribu
 page-object method that already does it:
 
 ```csharp
-[UatWhen("I create a todo {title}")]
+[BddWhen("I create a todo {title}")]
 public TodoListPage CreateTodo(string title) => Add().EnterTitle(title).SaveNew();
 ```
 
@@ -491,7 +491,7 @@ When I create a todo "Oil the hinges"
 Then I should be on the Todo List page
 ```
 
-- The phrase is written as for a phrase class: placeholders name the method's parameters, which
+- The phrase is written as for a step-definition class: placeholders name the method's parameters, which
   are typed, and a `UatTable` parameter takes the step's table. Nothing is inferred from the
   method name; a page method without an attribute is not a phrase.
 - The step runs on the page object of **its own page**, and fails binding when another page is
@@ -556,16 +556,16 @@ never a sibling's. So two modules can each have "I add a line" without colliding
 | a callable in a scenario file | that file |
 | a callable in `Scenarios/*.phrases.md` | every scenario |
 | a callable in `Scenarios/Invoicing/*.phrases.md` | the scenarios in `Invoicing/` and below |
-| a phrase class with `[UatPhraseClass(Namespace = "Invoicing")]` or `[UatNamespace("Invoicing")]` | the scenarios in `Invoicing/` and below |
-| a phrase class in an assembly with `[assembly: UatNamespace("Invoicing")]` | the same, for every phrase class of the assembly that names no namespace of its own |
-| any other phrase class, the fixture's phrases, built-ins | every scenario |
+| a step-definition class with `[BddStepDefinitions(Namespace = "Invoicing")]` or `[BddNamespace("Invoicing")]` | the scenarios in `Invoicing/` and below |
+| a step-definition class in an assembly with `[assembly: BddNamespace("Invoicing")]` | the same, for every step-definition class of the assembly that names no namespace of its own |
+| any other step-definition class, the fixture's phrases, built-ins | every scenario |
 | control verbs and page phrases | the steps on their page ([Page Scope](#page-scope)) |
 
 ```csharp
-[UatPhraseClass(Namespace = "Invoicing")]
-public sealed class InvoicingPhrases(InvoiceApi api) : UatPhraseClassBase
+[BddStepDefinitions(Namespace = "Invoicing")]
+public sealed class InvoicingPhrases(InvoiceApi api) : BddStepDefinitionsBase
 {
-    [UatWhen("I add a line {text}")]
+    [BddWhen("I add a line {text}")]
     public void AddLine(string text) => api.AddLine(text);
 }
 ```
@@ -599,12 +599,12 @@ check. The Todo suites put their backend, device, app-lifecycle and stored-data 
 - **Explicit and not transitive.** A file sees what it names, not what those name.
 - A `Using` that names nothing is an error (`UATB011`), listing the namespaces there are; one no
   step needs is a warning (`UATB012`).
-- A C# phrase assembly announces its namespace with `[assembly: UatNamespace("Accounts")]`; the
-  fixture's module scan loads it, as it loads any phrase class.
+- A C# phrase assembly announces its namespace with `[assembly: BddNamespace("Accounts")]`; the
+  fixture's module scan loads it, as it loads any step-definition class.
 
 ### Pages
 
-A page belongs to a namespace too: `[UatNamespace("Accounts")]` on the page class or its assembly.
+A page belongs to a namespace too: `[BddNamespace("Accounts")]` on the page class or its assembly.
 One name in two namespaces is two pages. `Given I am on the Detail page` finds the `Detail` page
 the file sees; when it sees two, the step is ambiguous and names it with its namespace:
 `Given I am on the Accounts/Detail page`. A page of a folder the file does not see is `UATB010`.
@@ -707,17 +707,17 @@ Presenter uses the same bound model, but drives it through
 
 ## Custom Root Phrases
 
-Fixture methods can register custom phrases with `[UatGiven]`, `[UatWhen]` or
-`[UatThen]`.
+Fixture methods can register custom phrases with `[BddGiven]`, `[BddWhen]` or
+`[BddThen]`.
 
 ```csharp
-[UatGiven("I remember {name} as a trained player")]
+[BddGiven("I remember {name} as a trained player")]
 public void RememberTrainedPlayer(string name)
 {
     RememberedTrainedPlayer = name;
 }
 
-[UatThen("remembered trained player should be {name}")]
+[BddThen("remembered trained player should be {name}")]
 public void AssertRememberedTrainedPlayer(string name)
 {
     Assert.Equal(name, RememberedTrainedPlayer);
@@ -750,16 +750,16 @@ Supported returns:
 Exceptions fail the step and are included in the step result.
 
 `[UatAction]` is discovery metadata. It does not create a phrase by itself; a
-control verb comes from `[UatWhen]` / `[UatThen]` on a control method (see [Custom Control Verbs](#custom-control-verbs)).
+control verb comes from `[BddWhen]` / `[BddThen]` on a control method (see [Custom Control Verbs](#custom-control-verbs)).
 
-## Phrase Classes
+## Step-Definition Classes
 
-Use phrase classes for reusable domain-level flows that need DI services or
+Use step-definition classes for reusable domain-level flows that need DI services or
 per-scenario scoped state.
 
 ```csharp
-[UatPhraseClass]
-public sealed class CompositionPhrases : UatPhraseClassBase
+[BddStepDefinitions]
+public sealed class CompositionPhrases : BddStepDefinitionsBase
 {
     private readonly CompositionState _state;
 
@@ -768,13 +768,13 @@ public sealed class CompositionPhrases : UatPhraseClassBase
         _state = state;
     }
 
-    [UatWhen("I choose DI flow")]
+    [BddWhen("I choose DI flow")]
     public void ChooseDiFlow()
     {
         _state.ActionCount++;
     }
 
-    [UatThen("scoped action count should be {count}")]
+    [BddThen("scoped action count should be {count}")]
     public void AssertScopedActionCount(int count)
     {
         Assert.Equal(count, _state.ActionCount);
@@ -782,11 +782,11 @@ public sealed class CompositionPhrases : UatPhraseClassBase
 }
 ```
 
-Phrase classes are discovered from the fixture's `TestComposition` scan. They
+Step-definition classes are discovered from the fixture's `TestComposition` scan. They
 require an active DI scope at execution time. A class is treated as a phrase
-class when it has `[UatPhraseClass]` or derives from `UatPhraseClassBase`.
+class when it has `[BddStepDefinitions]` or derives from `BddStepDefinitionsBase`.
 
-Phrase-class methods use the same attributes. A phrase-class method with no
+Step-definition methods use the same attributes. A step-definition method with no
 attribute whose name starts with `Given`, `When` or `Then` is a phrase too; see
 [Phrases From Method Names](#phrases-from-method-names).
 
@@ -812,7 +812,7 @@ catalog.Register(
     requiresTable: true);
 ```
 
-Custom root phrases and phrase classes receive the table as a `UatTable`
+Custom root phrases and step-definition classes receive the table as a `UatTable`
 parameter, or bound to records by a record or list parameter (see [Arguments](#arguments)).
 
 Named `## Data: <name>` tables are parsed into the UAT document model. Current
@@ -825,8 +825,8 @@ When the config has an `Apps` table (see the template guide), a step can name wh
 which a method carries as a second keyword attribute beside its `I` form:
 
 ```csharp
-[UatWhen("I set {control} to {value}", CommandId = "Control.SetText")]
-[UatWhen("{user} sets {control} to {value}", CommandId = "Control.SetText")]
+[BddWhen("I set {control} to {value}", CommandId = "Control.SetText")]
+[BddWhen("{user} sets {control} to {value}", CommandId = "Control.SetText")]
 void SetText(string text, int? timeoutMs = null);
 ```
 
@@ -864,7 +864,7 @@ The rule is [AD-015](../../.docs/decisions/ad-015-a-steps-subject-picks-its-app.
 ## Authoring Guidance
 
 - Use built-in control phrases for simple interactions.
-- When a verb belongs to a control, declare it there with `[UatWhen]` or `[UatThen]`. Reach for
+- When a verb belongs to a control, declare it there with `[BddWhen]` or `[BddThen]`. Reach for
   a fixture phrase only when no control owns the behavior - cross-page actions,
   fixture state, settings, or DI services.
 - Keep the scenario readable as a user workflow.
@@ -877,7 +877,7 @@ The rule is [AD-015](../../.docs/decisions/ad-015-a-steps-subject-picks-its-app.
 
 ## Source Files
 
-- `srcnew/Brinell.Core/Testing/UatPhraseAttribute.cs` and `UatKeywordAttributes.cs` — the step attributes
+- `srcnew/Brinell.Core/Testing/BddStepAttribute.cs` and `UatKeywordAttributes.cs` — the step attributes
 - `srcnew/Brinell.Core/Interfaces/*.cs` — the built-in control-verb declarations
 - `srcnew/Brinell.Uat/UatCatalogBuilder.cs` — the discovery pass and both projections
 - `srcnew/Brinell.Uat/UatMarkdownParser.cs`

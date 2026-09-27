@@ -7,7 +7,7 @@ A step binds only to a phrase it can see from where it is written. That is the u
 2. **the file**: its own callables;
 3. **its folder and every folder above it** under `Scenarios/`. A folder is a namespace
    (`Invoicing/Credit notes`): phrase files in it, and C# phrase classes and pages declared in it
-   with `[UatPhraseClass(Namespace = ...)]` or `[UatNamespace]` (class or assembly);
+   with `[BddStepDefinitions(Namespace = ...)]` or `[BddNamespace]` (class or assembly);
 4. **the namespaces it uses**: the file's `Using` metadata row, and the config's `## Using`;
 5. **global**: built-ins, generic control verbs, the fixture's phrases and phrase classes without a
    namespace.

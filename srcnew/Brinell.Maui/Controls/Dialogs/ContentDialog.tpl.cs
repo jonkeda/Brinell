@@ -57,15 +57,15 @@ public partial class ContentDialog<TParent> : ContainerObjectBase<TParent, Conte
     /// <param name="title">The title the dialog asks.</param>
     /// <param name="timeoutMs">How long to wait; the default wait when null.</param>
     /// <returns>The dialog.</returns>
-    [UatThen("{control} should ask {value}", CommandId = "Dialog.AssertAsks")]
+    [BddThen("{control} should ask {value}", CommandId = "Dialog.AssertAsks")]
     public ContentDialog<TParent> AssertAsks(string title, int? timeoutMs = null)
         => AssertExists(true, timeoutMs: timeoutMs).AssertTitle(title, timeoutMs: timeoutMs);
 
     /// <summary>Presses the dialog's button with this text.</summary>
     /// <param name="buttonText">The button's visible text.</param>
     /// <returns>The dialog.</returns>
-    [UatWhen("I choose {value} in {control}", CommandId = "Dialog.Choose", Navigates = true)]
-    [UatWhen("{user} chooses {value} in {control}", CommandId = "Dialog.Choose", Navigates = true)]
+    [BddWhen("I choose {value} in {control}", CommandId = "Dialog.Choose", Navigates = true)]
+    [BddWhen("{user} chooses {value} in {control}", CommandId = "Dialog.Choose", Navigates = true)]
     public ContentDialog<TParent> Choose(string buttonText)
     {
         DialogButton(buttonText).Click();
@@ -75,7 +75,7 @@ public partial class ContentDialog<TParent> : ContainerObjectBase<TParent, Conte
     /// <summary>Asserts that no dialog is shown, waiting for one to close.</summary>
     /// <param name="timeoutMs">How long to wait; the default wait when null.</param>
     /// <returns>The dialog.</returns>
-    [UatThen("no {control} should be shown", CommandId = "Dialog.AssertNone")]
+    [BddThen("no {control} should be shown", CommandId = "Dialog.AssertNone")]
     public ContentDialog<TParent> AssertNotShown(int? timeoutMs = null)
         => AssertExists(false, timeoutMs: timeoutMs);
 

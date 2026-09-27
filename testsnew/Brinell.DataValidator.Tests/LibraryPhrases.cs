@@ -3,20 +3,20 @@ using Brinell.Uat;
 
 namespace Brinell.DataValidator.Tests.Library;
 
-[UatPhraseClass]
-public sealed class LibraryPhrases : UatPhraseClassBase
+[BddStepDefinitions]
+public sealed class LibraryPhrases : BddStepDefinitionsBase
 {
-    [UatWhen("I lend {title} to {reader} until {due}")]
+    [BddWhen("I lend {title} to {reader} until {due}")]
     public void Lend(string title, UatUserRole reader, DateOnly due)
     {
     }
 
-    [UatWhen("I shelve the books")]
+    [BddWhen("I shelve the books")]
     public void Shelve(IReadOnlyList<ShelvedBook> books)
     {
     }
 
-    [UatWhen]
+    [BddWhen]
     public void When_I_forget_the_day(DateOnly day)
     {
     }

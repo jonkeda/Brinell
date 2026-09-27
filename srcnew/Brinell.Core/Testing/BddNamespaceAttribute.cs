@@ -9,10 +9,10 @@ namespace Brinell.Core.Testing;
 /// namespace's phrases and pages from that folder and below, or with <c>Using</c>.
 /// </summary>
 [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Class)]
-public sealed class UatNamespaceAttribute : Attribute
+public sealed class BddNamespaceAttribute : Attribute
 {
     /// <param name="name">A folder under the scenario root, with <c>/</c> between folders.</param>
-    public UatNamespaceAttribute(string name)
+    public BddNamespaceAttribute(string name)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
         Name = name;
@@ -25,7 +25,7 @@ public sealed class UatNamespaceAttribute : Attribute
     public static string? Of(Type type)
     {
         ArgumentNullException.ThrowIfNull(type);
-        return type.GetCustomAttribute<UatNamespaceAttribute>()?.Name ??
-               type.Assembly.GetCustomAttribute<UatNamespaceAttribute>()?.Name;
+        return type.GetCustomAttribute<BddNamespaceAttribute>()?.Name ??
+               type.Assembly.GetCustomAttribute<BddNamespaceAttribute>()?.Name;
     }
 }

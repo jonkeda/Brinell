@@ -245,7 +245,7 @@ real consumer.
 | 6 | Folder namespaces | D5, D6, D9 | a scenario sees its folder and ancestors; module `*.phrases.md` files; a callable's body binds in its definition's folder |
 | 7 | `Using`, config usings, namespaced pages | D6, D8 | the `Using` row, `## Using`, assemblies announcing namespaces, pages resolved by namespace; the tooling in section 5 |
 | 8 | Todo users UI tests and UAT | all | [users-plan.md section 8](users-plan.md#8-later): `Using \| Users`, plus the expected-failure proof that a file without it fails binding |
-| later | Promote reusable subjects | - | backend faults, network and restart move behind small fixture interfaces (`IUatBackend`, `IUatNetwork`, `IUatRestartable`) when Construction needs them |
+| later | Promote reusable subjects | - | backend faults, network and restart move behind small fixture interfaces (`IUatBackend`, `IUatNetwork`, `IUatRestartable`) when Construction needs them: [subjects-plan.md](subjects-plan.md) |
 
 ### Phase 1: control verbs for dialog and list state
 
@@ -313,7 +313,7 @@ real consumer.
 - Todo moves its subject phrases behind `## Using` (`Backend`, `Device`, `AppLifecycle`,
   `StoredData`).
 - An AD (AD-019, the next free number) records D5-D10: scopes, no shadowing, folder = namespace,
-  explicit non-transitive `Using`, lexical callables. The guide `uat-phrases-and-flows.md` gets a
+  explicit non-transitive `Using`, lexical callables. The guide `uat-step-definitions.md` gets a
   "Where phrases live" section.
 - Built: the `Using` row (`UatMetadataFields.Using`, comma-separated) and `## Using`
   (`UatConfig.Usings`, carried by `UatCatalogSet.Usings`); `UatScope` sees a used namespace as
@@ -368,6 +368,6 @@ Namespaces only help if people can see them:
 | Presenter UAT flake | `run-selected-sample` asserts "Passed", which the per-scenario status matches while the run goes on; the next scenario's reset races the run's end. Fails about 1 in 3 at `ddaa395` too. **Fixed**: the step waits for "Passed: 1/1 scenarios", the run's last status (4/4 runs green). |
 | Deprecated aliases | If Accounts renames a phrase, users break. Should a phrase keep its old text as a deprecated alias for a while? |
 | A naming rule per subject | Every backend phrase starts "the server", every stored-data phrase "the database". Then the class can be read off the text. |
-| Which package owns the shared subjects (later phase)? | `Brinell.Uat` has no MAUI or mocking dependency. Interfaces in `Brinell.Uat`, implementations beside the fixtures, or a small `Brinell.Uat.Mocking`. |
+| Which package owns the shared subjects (later phase)? | Proposed in [subjects-plan.md](subjects-plan.md) S3: interfaces and phrases in `Brinell.Uat`, implementations over Brinell.Mocking in a small `Brinell.Uat.Mocking`. |
 | A call with many parameters | Five `{x}` in a heading is hard to read; a `Field / Value` table would clash with a step's one table. Not now. |
 | `## Background` as a callable | Not done; it keeps its own code. |

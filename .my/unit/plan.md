@@ -15,7 +15,7 @@ of `Brinell.Bdd` (6) is the large, internal step. The Construction pilot is not 
 | 2 | The Todo service suite | M | 1 |
 | 3 | Journey coverage counts scenarios, on every tier they run (D4) | S | 2 |
 | 4 | The words: `[BddGiven]` and step definitions (D3); `*.feature.md` and `# Feature:` (D5) | M | 2 |
-| 5 | One shared features folder for the Todo suites | S | 4 |
+| 5 | `Scenarios/` → `Features/`, the files staying in their projects | S | 4 |
 | 6 | Extract `Brinell.Bdd` | L | 1-5 green |
 | 7 | Hooks as attributes, set comparison | M | 6 |
 | 8 | Run the service suite in parallel | S | 2 |
@@ -32,6 +32,9 @@ of `Brinell.Bdd` (6) is the large, internal step. The Construction pilot is not 
   The DataValidator finds a service suite's fixture through a `Steps` assembly row.
 - Phase 3 done. The TOD.07.1 scenario also carries `@TOD.11.9` (users are fetched first), since the
   deleted C# twin covered both.
+- Phase 4a done, committed on its own (4b is a second commit): the `Bdd` attributes, the guide
+  renamed to `uat-step-definitions.md`, and `docs/guides/bdd-glossary.md`. Engine binding types
+  (`UatPhraseClassBinding`) wait for phase 6 as planned.
 
 ---
 
@@ -100,7 +103,7 @@ In `samples/Todo`. The headless host exists; this phase makes it a UAT fixture.
    Pages/Controls assemblies, `## Using` as the MAUI suite plus `Todos` and `Sync`.
    `TodoServiceScenarioTests : UatScenarioTestBase<TodoServiceFixture>` with
    `[Trait("Pyramid", "Integration")]` and `[Trait("Category", "BDD")]`. It links
-   `Brinell.Samples.Todo.Uat/Scenarios/**` the way `Web.Uat` does, until phase 5.
+   `Brinell.Samples.Todo.Uat/Scenarios/**` the way `Web.Uat` does (`Features/**` from phase 5).
 6. **First features.**
    - TOD.07.1 (sync order) as `@service`. Its C# twin
      `SyncTests.Sync_FetchesUsers_ThenPushes_ThenPulls` goes in phase 3, once the scenario counts.
@@ -156,7 +159,7 @@ which renames them as it moves them.
    generator), 19 files in `samples/` and `testsnew/`, the Presenter, `Brinell.DataValidator`'s
    `snippet` output, generator templates if they emit attributes, and diagnostic texts that name an
    attribute. Search for the string names as well as the types.
-3. Docs and skills in the same commit: [uat-phrases-and-flows.md](../../docs/guides/uat-phrases-and-flows.md)
+3. Docs and skills in the same commit: [uat-step-definitions.md](../../docs/guides/uat-step-definitions.md)
    (and its name), [uat-template-guide.md](../../docs/guides/uat-template-guide.md),
    [uat-grammar.md](../../docs/specs/uat-grammar.md), the glossary from proposal 4.2 as a `docs/`
    page, and `.github/skills/*` that show attributes.
@@ -182,20 +185,32 @@ Verify: full build, `Brinell.Core.Tests`, `Brinell.Maui.Tests`, `Brinell.Uat.Tes
 `Brinell.Generator.Tests`, the Todo service suite, `brinell-data validate` over `samples/`
 (0 errors), and the MAUI UAT suite once (every scenario file was renamed).
 
-## Phase 5: one shared features folder
+## Phase 5: the `Features` folder
 
-1. Move `Brinell.Samples.Todo.Uat/Scenarios/` to `samples/Todo/tests/Features/` (a folder, not a
-   project). `ExpectedFailures/` stay with the suite that owns them.
-2. `Uat`, `Web.Uat`, `Mixed.Uat` (its `@mixed` files move too) and IntegrationTests link
-   `..\Features\**` into their output `Scenarios/` folder, so `UatScenarioSource` and the configs are
-   unchanged.
-3. The Presenter's Todo workspace (AD-018), `brinell-data validate` and the JourneyCoverage parse
-   (phase 3) point at the new folder.
-4. Update [samples/Todo/README.md](../../samples/Todo/README.md) and
-   [uat-walkthrough.md](../../samples/Todo/uat-walkthrough.md).
+The feature files stay in the projects that own them: the shared ones in
+`Brinell.Samples.Todo.Uat`, the `@mixed` ones in `Mixed.Uat`. Nothing moves between projects. Only
+the folder name changes, `Scenarios/` → `Features/`, to match `*.feature.md` and `# Feature:` from
+phase 4.
 
-Verify: the four suites list the same cases as before the move (compare `--list-tests`); the MAUI
-UAT suite once.
+1. **Engine default.** The default folder name becomes `Features` in `UatScenarioSource`,
+   `UatScenarioFiles`, `UatScenarioTestBase` and `UatSpecFormatTestBase`. No fallback to
+   `Scenarios`: a suite that keeps the old name passes `folderName` itself.
+2. **Tools.** `Brinell.DataValidator` (`ScenarioCheck`, `ReferenceCheck`) looks for `Features/`
+   beside the config; the Presenter's workspace service (AD-018) likewise. `validate --fix` renames a
+   `Scenarios/` folder beside a config to `Features/`, as it renames the files in phase 4.
+3. **Todo.** `git mv` `Scenarios/` → `Features/` in `Brinell.Samples.Todo.Uat` and `Mixed.Uat`. The
+   projects that link the shared files (`Web.Uat`, IntegrationTests, JourneyCoverage) keep linking
+   from `Brinell.Samples.Todo.Uat`, now `..\Brinell.Samples.Todo.Uat\Features\**`, into their own
+   output `Features/`. `ScenarioCatalog.Folder` in JourneyCoverage becomes `Features`.
+   `ExpectedFailures/` stay where they are.
+4. **Tests.** The `Brinell.Uat.Tests` and `Brinell.DataValidator.Tests` that build a temp
+   `Scenarios/` folder use `Features/`.
+5. Update [samples/Todo/README.md](../../samples/Todo/README.md),
+   [uat-walkthrough.md](../../samples/Todo/uat-walkthrough.md) and the guides that name the folder.
+
+Verify: the four suites list the same cases as before the rename (compare `--list-tests`);
+`Brinell.Uat.Tests`, `Brinell.DataValidator.Tests`, JourneyCoverage, `brinell-data validate` over
+`samples/`; the MAUI UAT suite once.
 
 ## Phase 6: extract `Brinell.Bdd`
 

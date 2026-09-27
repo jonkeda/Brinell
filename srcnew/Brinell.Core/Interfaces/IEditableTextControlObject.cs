@@ -12,16 +12,16 @@ public interface IEditableTextControlObject<TScope> : ITextControlObject<TScope>
     /// If text is null, returns immediately (skip).
     /// </summary>
     /// <returns>The containing scope for fluent chaining.</returns>
-    [UatWhen("I enter {value} into {control}", CommandId = "Control.Enter")]
-    [UatWhen("{user} enters {value} into {control}", CommandId = "Control.Enter")]
+    [BddWhen("I enter {value} into {control}", CommandId = "Control.Enter")]
+    [BddWhen("{user} enters {value} into {control}", CommandId = "Control.Enter")]
     TScope Enter(string? text, int? timeoutMs = null);
     
     /// <summary>
     /// Clear the control's text content.
     /// </summary>
     /// <returns>The containing scope for fluent chaining.</returns>
-    [UatWhen("I clear {control}", CommandId = "Control.Clear")]
-    [UatWhen("{user} clears {control}", CommandId = "Control.Clear")]
+    [BddWhen("I clear {control}", CommandId = "Control.Clear")]
+    [BddWhen("{user} clears {control}", CommandId = "Control.Clear")]
     TScope Clear(int? timeoutMs = null);
     
     /// <summary>
@@ -29,8 +29,8 @@ public interface IEditableTextControlObject<TScope> : ITextControlObject<TScope>
     /// If text is null, returns immediately (skip).
     /// </summary>
     /// <returns>The containing scope for fluent chaining.</returns>
-    [UatWhen("I set {control} to {value}", CommandId = "Control.SetText")]
-    [UatWhen("{user} sets {control} to {value}", CommandId = "Control.SetText")]
+    [BddWhen("I set {control} to {value}", CommandId = "Control.SetText")]
+    [BddWhen("{user} sets {control} to {value}", CommandId = "Control.SetText")]
     TScope SetText(string? text, int? timeoutMs = null);
     
     /// <summary>

@@ -53,7 +53,7 @@ public partial class StateContainer<TParent, TSelf> : ContainerObjectBase<TParen
     /// <param name="state">The state's name, as a scenario writes it; <see cref="StateViewId"/> maps it to its view.</param>
     /// <param name="timeoutMs">How long to wait; the default wait when null.</param>
     /// <returns>The container.</returns>
-    [UatThen("{control} should show the {value} state", CommandId = "StateContainer.AssertShowsState")]
+    [BddThen("{control} should show the {value} state", CommandId = "StateContainer.AssertShowsState")]
     public TSelf AssertShowsState(string state, int? timeoutMs = null)
         => AssertShowing(StateViewId(state), timeoutMs: timeoutMs);
 

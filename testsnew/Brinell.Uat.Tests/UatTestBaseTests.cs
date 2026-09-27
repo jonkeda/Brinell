@@ -379,7 +379,7 @@ public sealed class UatTestBaseTests
 
         public FakeScreenshotService ScreenshotService { get; } = new();
 
-        [UatWhen("I run the custom action")]
+        [BddWhen("I run the custom action")]
         public void RunCustomAction()
         {
         }

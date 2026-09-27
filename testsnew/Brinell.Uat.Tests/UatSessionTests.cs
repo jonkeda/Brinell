@@ -175,15 +175,15 @@ public sealed class UatSessionTests
 
     public sealed record AppName(string Value);
 
-    [UatPhraseClass]
+    [BddStepDefinitions]
     [UatIgnore]
-    public sealed class SessionPhrases(AppName app, SessionFixture fixture) : UatPhraseClassBase
+    public sealed class SessionPhrases(AppName app, SessionFixture fixture) : BddStepDefinitionsBase
     {
-        [UatWhen("I note the app")]
-        [UatWhen("{user} notes the app")]
+        [BddWhen("I note the app")]
+        [BddWhen("{user} notes the app")]
         public void Note() => fixture.Noted.Add(app.Value);
 
-        [UatThen("the step fails")]
+        [BddThen("the step fails")]
         public void Fail() => throw new InvalidOperationException("boom");
     }
 }

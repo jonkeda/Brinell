@@ -2,16 +2,16 @@ namespace Brinell.Core.Testing;
 
 /// <summary>Declares a <c>Given</c> UAT step on the method it decorates.</summary>
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-public sealed class UatGivenAttribute : UatPhraseAttribute
+public sealed class BddGivenAttribute : BddStepAttribute
 {
     /// <param name="phrase">The phrase, e.g. <c>the server also has todos</c>.</param>
-    public UatGivenAttribute(string phrase)
+    public BddGivenAttribute(string phrase)
         : base(UatEffectiveStepKeyword.Given, phrase)
     {
     }
 
     /// <summary>A <c>Given</c> step whose phrase is the method name, with parameters in capitals.</summary>
-    public UatGivenAttribute()
+    public BddGivenAttribute()
         : base(UatEffectiveStepKeyword.Given, string.Empty)
     {
     }
@@ -19,16 +19,16 @@ public sealed class UatGivenAttribute : UatPhraseAttribute
 
 /// <summary>Declares a <c>When</c> UAT step on the method it decorates.</summary>
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-public sealed class UatWhenAttribute : UatPhraseAttribute
+public sealed class BddWhenAttribute : BddStepAttribute
 {
     /// <param name="phrase">The phrase, e.g. <c>I set {control} to {value}</c>.</param>
-    public UatWhenAttribute(string phrase)
+    public BddWhenAttribute(string phrase)
         : base(UatEffectiveStepKeyword.When, phrase)
     {
     }
 
     /// <summary>A <c>When</c> step whose phrase is the method name, with parameters in capitals.</summary>
-    public UatWhenAttribute()
+    public BddWhenAttribute()
         : base(UatEffectiveStepKeyword.When, string.Empty)
     {
     }
@@ -39,16 +39,16 @@ public sealed class UatWhenAttribute : UatPhraseAttribute
 /// <c>And</c> or <c>But</c> takes the keyword before it, so it is declared here too.
 /// </summary>
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-public sealed class UatThenAttribute : UatPhraseAttribute
+public sealed class BddThenAttribute : BddStepAttribute
 {
     /// <param name="phrase">The phrase, e.g. <c>{control} should be visible</c>.</param>
-    public UatThenAttribute(string phrase)
+    public BddThenAttribute(string phrase)
         : base(UatEffectiveStepKeyword.Then, phrase)
     {
     }
 
     /// <summary>A <c>Then</c> step whose phrase is the method name, with parameters in capitals.</summary>
-    public UatThenAttribute()
+    public BddThenAttribute()
         : base(UatEffectiveStepKeyword.Then, string.Empty)
     {
     }

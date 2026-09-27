@@ -4,7 +4,7 @@ using Brinell.Core.Interfaces;
 namespace Brinell.Uat;
 
 /// <summary>
-/// A control step discovered from a <see cref="UatPhraseAttribute"/> on a control method. The engine invokes
+/// A control step discovered from a <see cref="BddStepAttribute"/> on a control method. The engine invokes
 /// <see cref="MethodName"/> by name, so no reference to the control type is needed.
 /// </summary>
 /// <remarks>
@@ -34,7 +34,7 @@ internal sealed record UatStepBinding(
 }
 
 /// <summary>
-/// Discovers control-step vocabulary from <see cref="UatPhraseAttribute"/> declarations on control methods and
+/// Discovers control-step vocabulary from <see cref="BddStepAttribute"/> declarations on control methods and
 /// projects it into a <see cref="UatCommandCatalog"/>. This replaces the hand-written phrase
 /// tables: the runtime and spec catalogs are the same discovery pass with and without handlers.
 /// </summary>
@@ -44,7 +44,7 @@ internal static class UatCatalogBuilder
     public const string ItemParameter = "item";
     private const string UserParameter = "user";
 
-    // The Brinell.Core assembly declares the built-in control vocabulary via [UatWhen]/[UatThen].
+    // The Brinell.Core assembly declares the built-in control vocabulary via [BddWhen]/[BddThen].
     // A type whose dependency is missing (xunit, when the brinell-data tool loads Core) is skipped.
     private static readonly Type[] BuiltinStepTypes = LoadableTypes(typeof(IElementObject<>).Assembly);
 
@@ -102,7 +102,7 @@ internal static class UatCatalogBuilder
             foreach (var method in type.GetMethods(
                          BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly))
             {
-                foreach (var attribute in method.GetCustomAttributes<UatPhraseAttribute>(inherit: false))
+                foreach (var attribute in method.GetCustomAttributes<BddStepAttribute>(inherit: false))
                 {
                     // A control verb declares {control} and its command in text; it is never inferred.
                     if (attribute.IsInferred)
@@ -111,7 +111,7 @@ internal static class UatCatalogBuilder
                             attribute.Keyword,
                             new UatPhraseProblem(
                                 "UATA013",
-                                $"is a control verb with an empty [Uat{attribute.Keyword}]; a control verb writes its phrase, with {{control}}.",
+                                $"is a control verb with an empty [Bdd{attribute.Keyword}]; a control verb writes its phrase, with {{control}}.",
                                 $"{type.FullName}.{method.Name}")));
                         continue;
                     }

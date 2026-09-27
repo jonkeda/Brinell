@@ -202,6 +202,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Request/response recording
 
 ### Changed
+- Step attributes use the BDD words (D3 of the Bdd plan), with no aliases: `[UatGiven]`/`[UatWhen]`/
+  `[UatThen]` are `[BddGiven]`/`[BddWhen]`/`[BddThen]`, `UatPhraseAttribute` is `BddStepAttribute`,
+  `[UatPhraseClass]` is `[BddStepDefinitions]`, `UatPhraseClassBase` is `BddStepDefinitionsBase` and
+  `[UatNamespace]` is `[BddNamespace]`, all still in `Brinell.Core.Testing`. `[UatNavigatesTo]` keeps
+  its name. The guide `uat-phrases-and-flows.md` is now `uat-step-definitions.md`, beside a new
+  `bdd-glossary.md`.
 - `UatTableBinding` reads cells with `UatValues`: table dates are written `12-May-2026`, not
   `2026-05-12`, and failure tables print values that way. A phrase method with a `CommandId` is a
   broken phrase instead of a catalog exception; `UatDiscovery` reports it as a warning.

@@ -100,7 +100,7 @@ public sealed class UatDiscoveryTests
         [UatName("Sign in")]
         public SaveButton SubmitButton { get; } = new();
 
-        [UatWhen("I sign in with credentials")]
+        [BddWhen("I sign in with credentials")]
         public void SignInWithCredentials()
         {
         }
@@ -108,8 +108,8 @@ public sealed class UatDiscoveryTests
 
     public sealed class PhraseCatalogPage
     {
-        [UatWhen("I save the settings")]
-        [UatThen("the settings are saved")]
+        [BddWhen("I save the settings")]
+        [BddThen("the settings are saved")]
         public void SaveSettings()
         {
         }
@@ -133,7 +133,7 @@ public sealed class UatDiscoveryTests
 
     public sealed class BrightnessSlider
     {
-        [UatWhen("I dim {control}")]
+        [BddWhen("I dim {control}")]
         public void Dim()
         {
         }

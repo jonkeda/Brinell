@@ -173,7 +173,7 @@ What each section carries:
 | Assemblies | `Pages` | The assembly holding the page objects - the source of control names. |
 | Assemblies | `Controls` | The ControlObject assembly for the platform. |
 | Assemblies | `Commands` | `Brinell.Uat`, which carries the engine's own verbs. |
-| Using | `Namespace` | Optional: namespaces every scenario uses, such as the subjects outside the screen (`Backend`). See [Where Phrases Live](uat-phrases-and-flows.md#where-phrases-live). |
+| Using | `Namespace` | Optional: namespaces every scenario uses, such as the subjects outside the screen (`Backend`). See [Where Phrases Live](uat-step-definitions.md#where-phrases-live). |
 | Apps | `Name` (+ the fixture's columns) | Optional: the apps a scenario can switch between with `{app} uses the app`. See [Several Apps In One Scenario](#several-apps-in-one-scenario). |
 | Discovery | `AllowNameInference` | `true` lets `AddButton` be **Add** without `[UatName]`. |
 | Discovery | `RequireExplicitUatAttributes` | `true` limits discovery to members carrying UAT attributes. |
@@ -256,7 +256,7 @@ that overrides `BeforeFile` loads it; `DefaultTestData` in the config's `Runtime
 table covers files that name none. See [Test Data](test-data.md). `Using`
 (`UatMetadataFields.Using`) names the namespaces whose phrases and pages the file
 sees besides its folder's: `Accounts, Backend`. See
-[Where Phrases Live](uat-phrases-and-flows.md#where-phrases-live). Otherwise the
+[Where Phrases Live](uat-step-definitions.md#where-phrases-live). Otherwise the
 `@tag` line above `## Scenario:` is what skip rules read, not the `Tags` row.
 
 ## One File Per Journey
@@ -284,7 +284,7 @@ The Todo sample's
 is a complete one.
 
 For how step text binds to executable commands, see
-[UAT Phrases And Flows](uat-phrases-and-flows.md).
+[UAT Phrases And Flows](uat-step-definitions.md).
 
 ## Step Tables
 
@@ -331,7 +331,7 @@ A custom phrase receives the step's table by taking a `UatTable` parameter, and
 binds it to the app's real types with `UatTableBinding`:
 
 ```csharp
-[UatThen("the database should have todos")]
+[BddThen("the database should have todos")]
 public void DatabaseHas(UatTable table)
     => table.AssertContains(TodoDbReader.Todos(fixture.DatabasePath), fixture.TestSet.Now);
 ```
@@ -344,16 +344,16 @@ error naming the known ones. An empty cell or `null` is `null` where the type
 allows it, and dates may be relative to the test set's now: `today`, `+2d`, `-1d`.
 Cells are written in the scenario format - `12-May-2026`, `1,250.75`, `In Progress` - and a
 phrase that takes a record list instead of a `UatTable` gets its rows bound and checked when the
-step binds ([Arguments](uat-phrases-and-flows.md#arguments)).
+step binds ([Arguments](uat-step-definitions.md#arguments)).
 
 ## Phrase Files
 
 Steps a tester repeats can be named once, as a callable phrase
-([Callable Phrases](uat-phrases-and-flows.md#callable-phrases)). One that several files use goes
+([Callable Phrases](uat-step-definitions.md#callable-phrases)). One that several files use goes
 in a `*.phrases.md` file: one `# Phrases:` heading, then only `## Phrase:` and
 `## Phrase for each row:` sections. Put it in `Scenarios/` for every scenario, or in a module's
 folder (`Scenarios/Invoicing/`) for the scenarios in that folder and below
-([Where Phrases Live](uat-phrases-and-flows.md#where-phrases-live)). The gate reads scenarios from
+([Where Phrases Live](uat-step-definitions.md#where-phrases-live)). The gate reads scenarios from
 the build output, so the project copies phrase files as it copies scenarios:
 
 ```xml
@@ -417,7 +417,7 @@ and its web suite (`samples/Todo/tests/Brinell.Samples.Todo.Web.Uat`) run the sa
 - A scenario tagged with head tags (`@maui`, `@web`) runs only on a suite whose `Head` is one of
   them; the engine skips it elsewhere, with the reason in the result. A scenario with no head tag
   runs on every head. A suite without `Head` runs everything.
-- Each suite has its own page objects and phrase classes with the same names and phrases: the
+- Each suite has its own page objects and step-definition classes with the same names and phrases: the
   scenario text is the contract between them. Steps that do not touch the screen can be one class
   for both heads (`BackendPhrases`, `DevicePhrases` and `StoredDataPhrases`, over an
   `ITodoArrangement` both fixtures implement).

@@ -12,19 +12,19 @@ namespace Brinell.Samples.Todo.TestSupport.Uat;
 /// on screen), so the app's write has landed. The same steps for every head: each head's fixture is
 /// an <see cref="ITodoArrangement"/>.
 /// </remarks>
-[UatPhraseClass(Namespace = "StoredData")]
-public sealed class StoredDataPhrases(ITodoArrangement fixture) : UatPhraseClassBase
+[BddStepDefinitions(Namespace = "StoredData")]
+public sealed class StoredDataPhrases(ITodoArrangement fixture) : BddStepDefinitionsBase
 {
     /// <summary>The app's database holds a todo like each row.</summary>
-    [UatThen("the database should have todos")]
+    [BddThen("the database should have todos")]
     public void DatabaseHas(UatTable table) => table.AssertContains(TodoDbReader.Todos(fixture.DatabasePath), fixture.TestSet.Now);
 
     /// <summary>The app's database holds exactly the rows' todos. Order-dependent unless the database is reset per scenario.</summary>
-    [UatThen("the database should have only todos")]
+    [BddThen("the database should have only todos")]
     public void DatabaseHasOnly(UatTable table) => table.AssertExactly(TodoDbReader.Todos(fixture.DatabasePath), fixture.TestSet.Now);
 
     /// <summary>No todo in the app's database has an empty or whitespace title.</summary>
-    [UatThen("the database should not have a todo with a blank title")]
+    [BddThen("the database should not have a todo with a blank title")]
     public void DatabaseHasNoBlankTitle()
     {
         var blank = TodoDbReader.Todos(fixture.DatabasePath).Where(todo => string.IsNullOrWhiteSpace(todo.Title)).ToList();

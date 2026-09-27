@@ -11,23 +11,23 @@ namespace Brinell.Samples.Todo.Mixed.Uat.Phrases;
 /// Steps about a user's app rather than its screen, the same for every head: its network, and
 /// what the backend received from it.
 /// </summary>
-[UatPhraseClass]
-public sealed class TodoMixedPhrases(TodoMixedUatFixture fixture) : UatPhraseClassBase
+[BddStepDefinitions]
+public sealed class TodoMixedPhrases(TodoMixedUatFixture fixture) : BddStepDefinitionsBase
 {
     /// <summary>The backend received the todo from the user's app: a PUT that carries its <c>X-Todo-Client</c>.</summary>
-    [UatThen("the server should have received the todo {title} from {user}")]
+    [BddThen("the server should have received the todo {title} from {user}")]
     public void ServerReceivedFrom(string title, UatUserRole user) => fixture.WaitForTodoFrom(fixture.Apps.Get(user.Name), title);
 
     /// <summary>The user's app loses its network.</summary>
-    [UatGiven("{user} is offline")]
+    [BddGiven("{user} is offline")]
     public void Offline(UatUserRole user) => NetworkOf(user).SetOffline();
 
     /// <summary>The user's app loses its network.</summary>
-    [UatWhen("{user} goes offline")]
+    [BddWhen("{user} goes offline")]
     public void GoesOffline(UatUserRole user) => NetworkOf(user).SetOffline();
 
     /// <summary>The user's app has its network back.</summary>
-    [UatWhen("{user} is back online")]
+    [BddWhen("{user} is back online")]
     public void BackOnline(UatUserRole user) => NetworkOf(user).SetOnline();
 
     private NetworkStateFile NetworkOf(UatUserRole user) => fixture.Apps.Get(user.Name) switch

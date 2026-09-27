@@ -9,8 +9,8 @@ namespace Brinell.Samples.Todo.Web.Uat.Phrases;
 /// Steps about what the fake server received from each user's app. Only the web head runs several
 /// users, so only it has these; the other backend steps are the shared <c>BackendPhrases</c>.
 /// </summary>
-[UatPhraseClass(Namespace = "Backend")]
-public sealed class UserBackendPhrases(TodoWebUatFixture fixture) : UatPhraseClassBase
+[BddStepDefinitions(Namespace = "Backend")]
+public sealed class UserBackendPhrases(TodoWebUatFixture fixture) : BddStepDefinitionsBase
 {
     // The waits a scenario step gets: the MAUI suite's TestConstants.PageTimeoutMs.
     private const int PageTimeoutMs = 10_000;
@@ -19,7 +19,7 @@ public sealed class UserBackendPhrases(TodoWebUatFixture fixture) : UatPhraseCla
     /// The fake server received the todo from that user's app: a PUT of it that carries the app's
     /// <c>X-Todo-Client</c>. A wait on the request, not a count (<c>todo-blazor.md</c> 4.1).
     /// </summary>
-    [UatThen("the server should have received the todo {title} from {user}")]
+    [BddThen("the server should have received the todo {title} from {user}")]
     public void ServerReceivedFrom(string title, string user)
     {
         var clientId = fixture.ClientIdOfUser(user);

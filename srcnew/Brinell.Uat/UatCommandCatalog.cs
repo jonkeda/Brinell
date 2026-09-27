@@ -263,7 +263,7 @@ public sealed class UatCommandPattern
 /// <param name="MethodName">The method, invoked by name.</param>
 /// <param name="ArgumentCount">How many arguments the step passes: the item, then the value or literal.</param>
 /// <param name="NamesControl">Whether the phrase has <c>{control}</c>; without it, the page's one control that declares the verb runs it.</param>
-/// <param name="Navigates">Whether the verb can leave the page (<see cref="Brinell.Core.Testing.UatPhraseAttribute.Navigates"/>).</param>
+/// <param name="Navigates">Whether the verb can leave the page (<see cref="Brinell.Core.Testing.BddStepAttribute.Navigates"/>).</param>
 public sealed record UatControlVerb(string MethodName, int ArgumentCount, bool NamesControl, bool Navigates);
 
 /// <summary>A page the binder can follow: its name, its page object type and its controls.</summary>

@@ -1,6 +1,8 @@
 # Visual Studio extension for UAT scenarios: high-level design
 
-Status: **proposal**, drafted 2026-09-27. Nothing is built.
+Status: **proposal**, drafted 2026-09-27. Nothing is built. The order of work and the design
+choices that differ from this proposal are in [visualstudio-plan.md](visualstudio-plan.md): the
+preview first, rendered by the engine; then run and debug; then the editor.
 Companion to [vscode-extension.md](vscode-extension.md), which this reuses for everything that is
 not specific to the IDE. Read that first. This doc only says what is **different** in Visual Studio.
 

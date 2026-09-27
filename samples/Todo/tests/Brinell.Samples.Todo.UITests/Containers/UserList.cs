@@ -36,7 +36,7 @@ public sealed class UserList : CollectionObjectBase<UserListPage, UserList, User
         => RunWait(() => (FindItem(row => TryReadName(row) == name) is not null) == present, timeoutMs);
 
     /// <summary>Asserts a row with this name is shown (or, with <c>false</c>, is not).</summary>
-    [UatThen("{control} should have user {value}")]
+    [BddThen("{control} should have user {value}")]
     public UserList AssertRow(string name, bool present = true, int? timeoutMs = null)
     {
         if (!WaitRow(name, present, timeoutMs ?? TestConstants.PageTimeoutMs))
@@ -53,7 +53,7 @@ public sealed class UserList : CollectionObjectBase<UserListPage, UserList, User
     /// Asserts these users are shown in this order. Other users may be shown between them: tests
     /// add users of their own.
     /// </summary>
-    [UatThen("the users should be listed as {value}")]
+    [BddThen("the users should be listed as {value}")]
     public UserList AssertOrder(string[] names)
     {
         AssertRow(names[^1]);
@@ -69,7 +69,7 @@ public sealed class UserList : CollectionObjectBase<UserListPage, UserList, User
     }
 
     /// <summary>Asserts the row shows this role: Member, Lead or Admin.</summary>
-    [UatThen("the user {item} should show role {value}")]
+    [BddThen("the user {item} should show role {value}")]
     public UserList AssertRole(string name, string role)
     {
         ShownRow(name).Role.AssertText(role);
@@ -77,7 +77,7 @@ public sealed class UserList : CollectionObjectBase<UserListPage, UserList, User
     }
 
     /// <summary>Asserts the row shows this state: Expired, On leave or Inactive.</summary>
-    [UatThen("the user {item} should show state {value}")]
+    [BddThen("the user {item} should show state {value}")]
     public UserList AssertState(string name, string state)
     {
         ShownRow(name).State.AssertText(state);
@@ -85,7 +85,7 @@ public sealed class UserList : CollectionObjectBase<UserListPage, UserList, User
     }
 
     /// <summary>Asserts the row shows no state: the user is available.</summary>
-    [UatThen("the user {item} should show no state")]
+    [BddThen("the user {item} should show no state")]
     public UserList AssertNoState(string name)
     {
         ShownRow(name).State.AssertShown(false);
@@ -93,7 +93,7 @@ public sealed class UserList : CollectionObjectBase<UserListPage, UserList, User
     }
 
     /// <summary>Opens a row's user, as tapping it does.</summary>
-    [UatWhen("I open the user {item}")]
+    [BddWhen("I open the user {item}")]
     public UserEditPage Open(string name, int? timeoutMs = null)
     {
         AssertRow(name, timeoutMs: timeoutMs);

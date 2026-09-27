@@ -9,7 +9,7 @@ public sealed class UatScenarioCheckTests
     {
         var snippet = UatScenarioCheck.Snippet(Step("When I archive \"Dune\" on 12-May-2026 for 1,250.50 hours"));
 
-        Assert.Contains("[UatWhen]", snippet, StringComparison.Ordinal);
+        Assert.Contains("[BddWhen]", snippet, StringComparison.Ordinal);
         Assert.Contains("public void When_I_archive_P1_on_P2_for_P3_hours(string p1, DateOnly p2, decimal p3)", snippet, StringComparison.Ordinal);
     }
 
@@ -18,7 +18,7 @@ public sealed class UatScenarioCheckTests
     {
         var snippet = UatScenarioCheck.Snippet(Step("Then the todo \"Dune\" should have a read-only status"));
 
-        Assert.Contains("[UatThen(\"the todo {p1} should have a read-only status\")]", snippet, StringComparison.Ordinal);
+        Assert.Contains("[BddThen(\"the todo {p1} should have a read-only status\")]", snippet, StringComparison.Ordinal);
         Assert.Contains("(string p1)", snippet, StringComparison.Ordinal);
     }
 

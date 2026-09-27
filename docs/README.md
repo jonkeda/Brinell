@@ -39,8 +39,9 @@ invariants behind it - what must stay true when *changing* Brinell - are in
 - [Test Writing](guides/test-writing.md)
 - [UAT Template Guide](guides/uat-template-guide.md) - project layout, `uat.config.md`,
   scenario file shape
-- [UAT Phrases And Flows](guides/uat-phrases-and-flows.md) - the step vocabulary and how to
+- [UAT Step Definitions And Flows](guides/uat-step-definitions.md) - the step vocabulary and how to
   extend it
+- [BDD Glossary](guides/bdd-glossary.md) - Brinell's words beside Cucumber's and Reqnroll's
 - [Test Data](guides/test-data.md) - test sets, the `brinell-data` tool, `TestData` in UAT
   files, typed mock bodies (`BRINELL001`)
 - [Test Settings](guides/settings.md)

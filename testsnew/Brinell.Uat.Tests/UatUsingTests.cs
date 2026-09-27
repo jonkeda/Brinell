@@ -173,7 +173,7 @@ public sealed class UatUsingTests : IDisposable
         public AccountDetailPage Account { get; } = new();
     }
 
-    [UatNamespace("Invoicing")]
+    [BddNamespace("Invoicing")]
     private sealed class InvoiceDetailPage
     {
         public PressControl Approve { get; } = new();
@@ -181,7 +181,7 @@ public sealed class UatUsingTests : IDisposable
         public bool WaitReady(int? timeoutMs = null) => true;
     }
 
-    [UatNamespace("Accounts")]
+    [BddNamespace("Accounts")]
     private sealed class AccountDetailPage
     {
         public PressControl Approve { get; } = new();
@@ -193,7 +193,7 @@ public sealed class UatUsingTests : IDisposable
     {
         public int Pressed { get; private set; }
 
-        [UatWhen("I press {control}")]
+        [BddWhen("I press {control}")]
         public void Press() => Pressed++;
     }
 }

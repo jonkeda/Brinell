@@ -22,7 +22,7 @@ namespace Brinell.Samples.Todo.UITests.Pages;
 /// a slider and a date behind a check box.
 /// </para>
 /// </remarks>
-[UatNamespace("Users")]
+[BddNamespace("Users")]
 public class UserEditPage(IMauiTestContext context) : PageObjectBase<UserEditPage>(context)
 {
     private readonly AppRoot _appRoot = new(context);
@@ -122,7 +122,7 @@ public class UserEditPage(IMauiTestContext context) : PageObjectBase<UserEditPag
     }
 
     /// <summary>Selects one of the three statuses: Active, On leave or Inactive.</summary>
-    [UatWhen("I set the status to {status}")]
+    [BddWhen("I set the status to {status}")]
     public UserEditPage SetStatus(string status)
     {
         StatusButton(status).Select();
@@ -130,7 +130,7 @@ public class UserEditPage(IMauiTestContext context) : PageObjectBase<UserEditPag
     }
 
     /// <summary>Asserts which status is selected.</summary>
-    [UatThen("the status should be {status}")]
+    [BddThen("the status should be {status}")]
     public UserEditPage AssertStatus(string status)
     {
         StatusButton(status).AssertSelected();
@@ -138,7 +138,7 @@ public class UserEditPage(IMauiTestContext context) : PageObjectBase<UserEditPag
     }
 
     /// <summary>Gives the user an end date: checks "Has an end date" and picks the date.</summary>
-    [UatWhen("I set the end date to {date}")]
+    [BddWhen("I set the end date to {date}")]
     public UserEditPage SetEndDate(DateOnly date)
     {
         HasEndDate.SetChecked(true);
@@ -148,7 +148,7 @@ public class UserEditPage(IMauiTestContext context) : PageObjectBase<UserEditPag
     }
 
     /// <summary>Sets the hours per week with the stepper's buttons, reading the shown value to know how far.</summary>
-    [UatWhen("I set the hours per week to {hours}")]
+    [BddWhen("I set the hours per week to {hours}")]
     public UserEditPage SetHours(int hours)
     {
         var steps = hours - ShownHours();
@@ -166,7 +166,7 @@ public class UserEditPage(IMauiTestContext context) : PageObjectBase<UserEditPag
     }
 
     /// <summary>Sets when the working day starts.</summary>
-    [UatWhen("I set the start of day to {time}")]
+    [BddWhen("I set the start of day to {time}")]
     public UserEditPage SetStartOfDay(TimeOnly time)
     {
         StartOfDay.SetTime(time.ToTimeSpan());
@@ -174,7 +174,7 @@ public class UserEditPage(IMauiTestContext context) : PageObjectBase<UserEditPag
     }
 
     /// <summary>Asserts when the working day starts.</summary>
-    [UatThen("the start of day should be {time}")]
+    [BddThen("the start of day should be {time}")]
     public UserEditPage AssertStartOfDay(TimeOnly time)
     {
         StartOfDay.AssertTime(time.ToTimeSpan(), toleranceSeconds: 0);
@@ -182,7 +182,7 @@ public class UserEditPage(IMauiTestContext context) : PageObjectBase<UserEditPag
     }
 
     /// <summary>Sets the workload; the app snaps it to a step of 5.</summary>
-    [UatWhen("I set the workload to {percent} %")]
+    [BddWhen("I set the workload to {percent} %")]
     public UserEditPage SetWorkload(int percent)
     {
         Workload.SetValue(percent);

@@ -37,7 +37,7 @@ UAT test projects combine:
 - one or more `.uat.md` scenario files;
 - a fixture, an xUnit collection and a `UatScenarioTestBase<TFixture>` class.
 
-A scenario step binds to a phrase, and the built-in phrases are `[UatWhen]` / `[UatThen]` attributes on the
+A scenario step binds to a phrase, and the built-in phrases are `[BddWhen]` / `[BddThen]` attributes on the
 `Brinell.Core` control interfaces, discovered by the engine rather than listed anywhere
 ([AD-011](../../.docs/decisions/ad-011-uat-vocabulary-is-attribute-declared.md)). An app adds
 verbs of its own the same way.
@@ -68,7 +68,7 @@ apps side by side (`MauiDriverOptions.Placement`: `left-half`, `right-half`) and
 fake backend; its Android test runs only with `BRINELL_ANDROID=1`.
 
 See [UAT Template Guide](../guides/uat-template-guide.md),
-[UAT Phrases And Flows](../guides/uat-phrases-and-flows.md), and the worked example in
+[UAT Phrases And Flows](../guides/uat-step-definitions.md), and the worked example in
 [One Todo UAT, end to end](../../samples/Todo/uat-walkthrough.md).
 
 ## Artifact Layout

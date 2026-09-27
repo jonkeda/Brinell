@@ -47,7 +47,7 @@ public interface ITextControlObject<TScope> : IControlObject<TScope>
     /// If expected is null, returns immediately (skip).
     /// </summary>
     /// <returns>The containing scope for fluent chaining.</returns>
-    [UatThen("{control} should equal {value}", CommandId = "Control.AssertText")]
+    [BddThen("{control} should equal {value}", CommandId = "Control.AssertText")]
     TScope AssertText(string? expected, string? message = null, int? timeoutMs = null);
 
     /// <summary>
@@ -55,6 +55,6 @@ public interface ITextControlObject<TScope> : IControlObject<TScope>
     /// If expected is null, returns immediately (skip).
     /// </summary>
     /// <returns>The containing scope for fluent chaining.</returns>
-    [UatThen("{control} should contain {value}", CommandId = "Control.AssertTextContains")]
+    [BddThen("{control} should contain {value}", CommandId = "Control.AssertTextContains")]
     TScope AssertTextContains(string? expected, string? message = null, int? timeoutMs = null);
 }

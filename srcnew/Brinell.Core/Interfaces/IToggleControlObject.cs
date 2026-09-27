@@ -30,16 +30,16 @@ public interface IToggleControlObject<TScope> : IControlObject<TScope>
     /// Set to checked state (convenience method).
     /// </summary>
     /// <returns>The containing scope for fluent chaining.</returns>
-    [UatWhen("I check {control}", CommandId = "Control.Check")]
-    [UatWhen("{user} checks {control}", CommandId = "Control.Check")]
+    [BddWhen("I check {control}", CommandId = "Control.Check")]
+    [BddWhen("{user} checks {control}", CommandId = "Control.Check")]
     TScope Check(int? timeoutMs = null);
     
     /// <summary>
     /// Set to unchecked state (convenience method).
     /// </summary>
     /// <returns>The containing scope for fluent chaining.</returns>
-    [UatWhen("I uncheck {control}", CommandId = "Control.Uncheck")]
-    [UatWhen("{user} unchecks {control}", CommandId = "Control.Uncheck")]
+    [BddWhen("I uncheck {control}", CommandId = "Control.Uncheck")]
+    [BddWhen("{user} unchecks {control}", CommandId = "Control.Uncheck")]
     TScope Uncheck(int? timeoutMs = null);
     
     /// <summary>
@@ -47,8 +47,8 @@ public interface IToggleControlObject<TScope> : IControlObject<TScope>
     /// If expected is null, returns immediately (skip).
     /// </summary>
     /// <returns>The containing scope for fluent chaining.</returns>
-    [UatThen("{control} should be checked", HasLiteral = true, Literal = true, CommandId = "Control.AssertChecked.True")]
-    [UatThen("{control} should be unchecked", HasLiteral = true, Literal = false, CommandId = "Control.AssertChecked.False")]
+    [BddThen("{control} should be checked", HasLiteral = true, Literal = true, CommandId = "Control.AssertChecked.True")]
+    [BddThen("{control} should be unchecked", HasLiteral = true, Literal = false, CommandId = "Control.AssertChecked.False")]
     TScope AssertChecked(bool? expected, string? message = null, int? timeoutMs = null);
     
     /// <summary>

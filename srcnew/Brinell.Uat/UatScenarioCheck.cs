@@ -277,7 +277,7 @@ public static partial class UatScenarioCheck
             parameters.Add("string text");
         }
 
-        var attribute = $"Uat{step.EffectiveKeyword}";
+        var attribute = $"Bdd{step.EffectiveKeyword}";
         var signature = string.Join(", ", parameters);
         var builder = new StringBuilder();
         if (encodable)

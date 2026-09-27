@@ -8,10 +8,10 @@ namespace Brinell.Samples.Todo.IntegrationTests.Service.Steps;
 /// same database file (<see cref="TodoHost.Restart"/>). The same words as each UI head's
 /// <c>AppLifecyclePhrases</c>.
 /// </summary>
-[UatPhraseClass(Namespace = "AppLifecycle")]
-public sealed class AppLifecycleSteps(TodoServiceFixture fixture) : UatPhraseClassBase
+[BddStepDefinitions(Namespace = "AppLifecycle")]
+public sealed class AppLifecycleSteps(TodoServiceFixture fixture) : BddStepDefinitionsBase
 {
     /// <summary>Restarts the app on the same database and backend.</summary>
-    [UatWhen("I restart the app")]
+    [BddWhen("I restart the app")]
     public void Restart() => fixture.Host.Restart();
 }

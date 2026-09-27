@@ -77,7 +77,7 @@ public sealed class UatCompositionRuntimeTests
     }
 
     [Fact]
-    public async Task UatThen_OnAPhraseClassMethod_RunsAfterBut()
+    public async Task BddThen_OnAPhraseClassMethod_RunsAfterBut()
     {
         var directory = CreateTempDirectory();
         try
@@ -107,7 +107,7 @@ public sealed class UatCompositionRuntimeTests
     }
 
     [Fact]
-    public void UatGiven_OnAPhraseClassMethod_IsAPhraseNotAControlVerb()
+    public void BddGiven_OnAPhraseClassMethod_IsAPhraseNotAControlVerb()
     {
         var fixture = new CompositionFixture();
         var catalog = UatReflectionRuntime.FromComposition(fixture, fixture.Composition).CreateCommandCatalog();
@@ -143,7 +143,7 @@ public sealed class UatCompositionRuntimeTests
     }
 
     [Fact]
-    public void UatPhraseClassAttribute_RegistersPhraseClassAsScopedService()
+    public void BddStepDefinitionsAttribute_RegistersPhraseClassAsScopedService()
     {
         var fixture = new CompositionFixture();
 
@@ -215,7 +215,7 @@ public sealed class UatCompositionRuntimeTests
             NavigationCalls++;
         }
 
-        [UatWhen("I choose DI flow")]
+        [BddWhen("I choose DI flow")]
         public void ChooseDiFlowOnFixture()
         {
             RootPhraseCalls++;
@@ -255,9 +255,9 @@ public sealed class UatCompositionRuntimeTests
         }
     }
 
-    [UatPhraseClass]
+    [BddStepDefinitions]
     [UatIgnore]
-    public sealed class CompositionPhrases : UatPhraseClassBase
+    public sealed class CompositionPhrases : BddStepDefinitionsBase
     {
         private readonly CompositionState _state;
 
@@ -266,37 +266,37 @@ public sealed class UatCompositionRuntimeTests
             _state = state;
         }
 
-        [UatGiven("the composition state is fresh")]
+        [BddGiven("the composition state is fresh")]
         public void AssertFresh()
         {
             Assert.Equal(0, _state.StoredRows);
         }
 
-        [UatWhen("I choose DI flow")]
+        [BddWhen("I choose DI flow")]
         public void ChooseDiFlow()
         {
             _state.ActionCount++;
         }
 
-        [UatWhen("I store these rows")]
+        [BddWhen("I store these rows")]
         public void StoreRows(UatTable table)
         {
             _state.StoredRows = table.Rows.Count;
         }
 
-        [UatThen("{count} rows should be stored")]
+        [BddThen("{count} rows should be stored")]
         public void AssertStoredRows(int count)
         {
             Assert.Equal(count, _state.StoredRows);
         }
 
-        [UatThen("no action should have run")]
+        [BddThen("no action should have run")]
         public void AssertNoAction()
         {
             Assert.Equal(0, _state.ActionCount);
         }
 
-        [UatThen("scoped action count should be {count}")]
+        [BddThen("scoped action count should be {count}")]
         public void AssertScopedActionCount(int count)
         {
             Assert.Equal(1, _state.ReadyCount);

@@ -83,7 +83,7 @@ public sealed class UatReflectionRuntime
                 DiscoverControls(page),
                 navigation is null ? null : () => Invoke(root, navigation))
             {
-                Namespace = UatNamespaces.Normalize(UatNamespaceAttribute.Of(page.GetType())),
+                Namespace = UatNamespaces.Normalize(BddNamespaceAttribute.Of(page.GetType())),
             });
         }
 
@@ -138,7 +138,7 @@ public sealed class UatReflectionRuntime
                                    IsRuntimePageProperty(property))
                 .Select(property => new UatRuntimePage(ResolveRuntimeName(property), property.PropertyType, Instance: null, DiscoverControls(property.PropertyType), Navigate: null)
                 {
-                    Namespace = UatNamespaces.Normalize(UatNamespaceAttribute.Of(property.PropertyType)),
+                    Namespace = UatNamespaces.Normalize(BddNamespaceAttribute.Of(property.PropertyType)),
                 });
             return new UatReflectionRuntime(null, rootPages, argumentTypes: UatArgumentTypes.Discover(LoadableTypes(fixtureType.Assembly)), rootType: fixtureType);
         }
@@ -204,7 +204,7 @@ public sealed class UatReflectionRuntime
                 handler: AssertAnyControlTextContainsAsync);
         }
 
-        // Everything control-shaped is discovered from [UatWhen]/[UatThen] on Brinell.Core interfaces
+        // Everything control-shaped is discovered from [BddWhen]/[BddThen] on Brinell.Core interfaces
         // and any decorated app control types found during page discovery.
         UatCatalogBuilder.RegisterControlVerbs(
             catalog,
@@ -262,7 +262,7 @@ public sealed class UatReflectionRuntime
             foreach (var method in page.PageType.GetMethods(BindingFlags.Instance | BindingFlags.Public))
             {
                 if (method.IsSpecialName ||
-                    !method.IsDefined(typeof(UatPhraseAttribute), inherit: false) ||
+                    !method.IsDefined(typeof(BddStepAttribute), inherit: false) ||
                     method.GetCustomAttribute<UatIgnoreAttribute>() is not null)
                 {
                     continue;
@@ -708,16 +708,16 @@ public sealed class UatReflectionRuntime
         return phraseClasses;
     }
 
-    // The phrase class's own namespace, else its [UatNamespace] or its assembly's; the root without any.
+    // The phrase class's own namespace, else its [BddNamespace] or its assembly's; the root without any.
     private static string NamespaceOf(Type type)
         => UatNamespaces.Normalize(
-            type.GetCustomAttribute<UatPhraseClassAttribute>()?.Namespace ??
-            UatNamespaceAttribute.Of(type));
+            type.GetCustomAttribute<BddStepDefinitionsAttribute>()?.Namespace ??
+            BddNamespaceAttribute.Of(type));
 
     private static bool IsPhraseClassType(Type type)
     {
-        return type.GetCustomAttribute<UatPhraseClassAttribute>() is not null ||
-               typeof(UatPhraseClassBase).IsAssignableFrom(type);
+        return type.GetCustomAttribute<BddStepDefinitionsAttribute>() is not null ||
+               typeof(BddStepDefinitionsBase).IsAssignableFrom(type);
     }
 
     private static bool TryGetServiceProvider(UatExecutionContext context, out IServiceProvider serviceProvider)
@@ -750,7 +750,7 @@ public sealed class UatReflectionRuntime
         return UatNameInference.HasKnownSuffix(property.Name) ||
                UatNameInference.HasKnownSuffix(property.PropertyType.Name) ||
                property.PropertyType.GetMethods(BindingFlags.Instance | BindingFlags.Public)
-                   .Any(method => method.IsDefined(typeof(UatPhraseAttribute), inherit: false));
+                   .Any(method => method.IsDefined(typeof(BddStepAttribute), inherit: false));
     }
 
     private static string ResolveRuntimeName(MemberInfo member)
@@ -1038,7 +1038,7 @@ public sealed class UatReflectionRuntime
     private static bool Declares(Type type, UatStepBinding binding)
         => type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly)
             .Any(method => method.Name == binding.MethodName &&
-                           method.GetCustomAttributes<UatPhraseAttribute>(inherit: false)
+                           method.GetCustomAttributes<BddStepAttribute>(inherit: false)
                                .Any(attribute => attribute.Keyword == binding.Keyword && attribute.Phrase == binding.Phrase));
 
     // A step may put "the" before a control's name: "the dialog should ask ..." finds Dialog.

@@ -91,7 +91,7 @@ public partial class TodoStatus<TScope> : ComponentObjectBase<TScope, TodoStatus
     /// </remarks>
     /// <param name="expected">Open, In progress, Done or Overdue.</param>
     /// <param name="timeoutMs">How long to wait after each press.</param>
-    [UatWhen("I advance {control} to {value}")]
+    [BddWhen("I advance {control} to {value}")]
     public TodoStatus<TScope> AdvanceTo(string? expected, int? timeoutMs = null)
     {
         if (expected is null)
@@ -122,7 +122,7 @@ public partial class TodoStatus<TScope> : ComponentObjectBase<TScope, TodoStatus
     /// <param name="expected">Open, In progress, Done or Overdue.</param>
     /// <param name="message">An optional message for the failure.</param>
     /// <param name="timeoutMs">How long to wait for the name.</param>
-    [UatThen("{control} should show status {value}")]
+    [BddThen("{control} should show status {value}")]
     public TodoStatus<TScope> AssertShowsStatus(string? expected, string? message = null, int? timeoutMs = null)
         => AssertStatus(expected, message, timeoutMs);
 

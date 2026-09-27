@@ -56,11 +56,11 @@ public sealed class UatSpecCompositionTests
     {
     }
 
-    [UatPhraseClass]
+    [BddStepDefinitions]
     [UatIgnore]
-    public sealed class SpecCompositionPhrases : UatPhraseClassBase
+    public sealed class SpecCompositionPhrases : BddStepDefinitionsBase
     {
-        [UatWhen("I run the composition-only phrase")]
+        [BddWhen("I run the composition-only phrase")]
         public void RunCompositionOnlyPhrase()
         {
         }

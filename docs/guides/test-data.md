@@ -117,7 +117,7 @@ project's): rebuild, or it checks the old types.
 | `DATA004` | Not valid JSON |
 | `DATA010` / `DATA011` | A rule failed / a duplicate id |
 | `DATA020` | A `TestData` reference names no test set |
-| `UAT0xx`, `UATB0xx`, `UATA0xx`, `UATC0xx` | A scenario file's parse, bind, argument and callable-phrase errors ([Arguments](uat-phrases-and-flows.md#arguments), [Callable Phrases](uat-phrases-and-flows.md#callable-phrases)). `validate` also checks each `*.phrases.md` under `Scenarios/`, and reports a broken callable as a warning at its heading |
+| `UAT0xx`, `UATB0xx`, `UATA0xx`, `UATC0xx` | A scenario file's parse, bind, argument and callable-phrase errors ([Arguments](uat-step-definitions.md#arguments), [Callable Phrases](uat-step-definitions.md#callable-phrases)). `validate` also checks each `*.phrases.md` under `Scenarios/`, and reports a broken callable as a warning at its heading |
 
 ## In UAT
 

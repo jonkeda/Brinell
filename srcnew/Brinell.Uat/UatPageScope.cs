@@ -90,7 +90,7 @@ internal static class UatPageScope
         for (Type? type = controlType; type is not null && type != typeof(object); type = type.BaseType)
         {
             if (type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly)
-                .Any(method => method.GetCustomAttributes<UatPhraseAttribute>(inherit: false)
+                .Any(method => method.GetCustomAttributes<BddStepAttribute>(inherit: false)
                     .Any(attribute => attribute.Keyword == pattern.Keyword && attribute.Phrase == pattern.Phrase)))
             {
                 return true;

@@ -154,11 +154,11 @@ public sealed class AppCounter(string app)
     public string Next() => $"{app}#{++_count}";
 }
 
-[UatPhraseClass]
+[BddStepDefinitions]
 [UatIgnore]
-public sealed class AppsHostPhrases(AppCounter counter, AppsFixture fixture) : UatPhraseClassBase
+public sealed class AppsHostPhrases(AppCounter counter, AppsFixture fixture) : BddStepDefinitionsBase
 {
-    [UatWhen("I note the app")]
-    [UatWhen("{user} notes the app")]
+    [BddWhen("I note the app")]
+    [BddWhen("{user} notes the app")]
     public void Note() => fixture.Noted.Add(counter.Next());
 }

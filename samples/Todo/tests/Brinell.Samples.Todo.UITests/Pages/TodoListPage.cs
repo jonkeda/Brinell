@@ -61,7 +61,7 @@ public class TodoListPage(IMauiTestContext context) : PageObjectBase<TodoListPag
     }
 
     /// <summary>Creates a todo with this title through the edit page, and returns to the list.</summary>
-    [UatWhen("I create a todo {title}")]
+    [BddWhen("I create a todo {title}")]
     public TodoListPage CreateTodo(string title) => Add().EnterTitle(title).SaveNew();
 
     /// <summary>Starts a sync.</summary>

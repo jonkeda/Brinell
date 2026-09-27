@@ -130,7 +130,7 @@ public sealed class UatReflectionRuntimeTests
     }
 
     [Fact]
-    public void UatGiven_OnFixtureMethod_RegistersARootPhrase()
+    public void BddGiven_OnFixtureMethod_RegistersARootPhrase()
     {
         var catalog = UatReflectionRuntime.FromRoot(new Fixture()).CreateCommandCatalog();
 
@@ -141,7 +141,7 @@ public sealed class UatReflectionRuntimeTests
     }
 
     [Fact]
-    public async Task UatThen_Phrase_RunsWhenWrittenAfterBut()
+    public async Task BddThen_Phrase_RunsWhenWrittenAfterBut()
     {
         var fixture = new Fixture();
         var runtime = UatReflectionRuntime.FromRoot(fixture);
@@ -179,7 +179,7 @@ public sealed class UatReflectionRuntimeTests
         var error = Assert.Single(bind.Diagnostics);
         Assert.Equal("UATA013", error.Code);
         Assert.Contains(nameof(CommandIdFixture.Remember), error.Message, StringComparison.Ordinal);
-        Assert.Contains(nameof(UatPhraseAttribute.CommandId), error.Message, StringComparison.Ordinal);
+        Assert.Contains(nameof(BddStepAttribute.CommandId), error.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -265,19 +265,19 @@ public sealed class UatReflectionRuntimeTests
             UserFormPage.Navigated = true;
         }
 
-        [UatGiven("I remember {name} as a trained player")]
+        [BddGiven("I remember {name} as a trained player")]
         public void RememberTrainedPlayer(string name)
         {
             RememberedTrainedPlayer = name;
         }
 
-        [UatThen("remembered trained player should be {name}")]
+        [BddThen("remembered trained player should be {name}")]
         public void AssertRememberedTrainedPlayer(string name)
         {
             Assert.Equal(name, RememberedTrainedPlayer);
         }
 
-        [UatThen("no other player should be remembered than {name}")]
+        [BddThen("no other player should be remembered than {name}")]
         public void AssertNoOtherPlayer(string name)
         {
             OtherPlayerChecks++;
@@ -287,7 +287,7 @@ public sealed class UatReflectionRuntimeTests
 
     private sealed class CommandIdFixture
     {
-        [UatGiven("I remember something", CommandId = "Remember")]
+        [BddGiven("I remember something", CommandId = "Remember")]
         public void Remember()
         {
         }
@@ -299,7 +299,7 @@ public sealed class UatReflectionRuntimeTests
 
         public string RawHost { get; private set; } = string.Empty;
 
-        [UatGiven("the A9 camera settings are available")]
+        [BddGiven("the A9 camera settings are available")]
         public void UseTypedSettings(ExampleA9CameraSettings camera)
         {
             TypedHost = camera.Host;
@@ -307,7 +307,7 @@ public sealed class UatReflectionRuntimeTests
             Assert.Equal("secret", camera.Password);
         }
 
-        [UatThen("the raw A9 host setting should match")]
+        [BddThen("the raw A9 host setting should match")]
         public void UseRawSettings(TestSettings settings)
         {
             RawHost = settings.GetRequired<string>("hardware.a9Camera.host");

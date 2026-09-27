@@ -13,11 +13,11 @@ namespace Brinell.Samples.Todo.TestSupport.Uat;
 /// (<see cref="ServerAlsoHas"/>) gets its rows from the engine, checked when the step binds. The
 /// same steps for every head: each head's fixture is an <see cref="ITodoArrangement"/>.
 /// </remarks>
-[UatPhraseClass(Namespace = "Backend")]
-public sealed class BackendPhrases(ITodoArrangement fixture) : UatPhraseClassBase
+[BddStepDefinitions(Namespace = "Backend")]
+public sealed class BackendPhrases(ITodoArrangement fixture) : BddStepDefinitionsBase
 {
     /// <summary>Adds the table's todos to the fake server, as another device would.</summary>
-    [UatGiven("the server also has todos")]
+    [BddGiven("the server also has todos")]
     public void ServerAlsoHas(IReadOnlyList<ServerTodoRow> todos)
     {
         var data = new TodoData(fixture.TestSet.Now);
@@ -28,21 +28,21 @@ public sealed class BackendPhrases(ITodoArrangement fixture) : UatPhraseClassBas
     }
 
     /// <summary>Every request for the todo list fails with this status until the next scenario.</summary>
-    [UatGiven("the server fails with status {status}")]
+    [BddGiven("the server fails with status {status}")]
     public void ServerFails(int status) => fixture.Backend.Get(TodoApi.TodosPath).AtPriority(1).Fails(status);
 
     /// <summary>The next request for the todo list fails with this status; later ones succeed.</summary>
-    [UatGiven("the server fails once with status {status}")]
+    [BddGiven("the server fails once with status {status}")]
     public void ServerFailsOnce(int status)
         => fixture.Backend.Get(TodoApi.TodosPath).AtPriority(1).FailsFirst(1, status).ReturnsJson(fixture.Server.Todos);
 
     /// <summary>The todo list comes back only after this many seconds.</summary>
-    [UatGiven("the server answers after {seconds} seconds")]
+    [BddGiven("the server answers after {seconds} seconds")]
     public void ServerIsSlow(int seconds)
         => fixture.Backend.Get(TodoApi.TodosPath).AtPriority(1).WithDelay(TimeSpan.FromSeconds(seconds)).ReturnsJson(fixture.Server.Todos);
 
     /// <summary>Drops the failures arranged above: the server answers normally again, with the todos it held.</summary>
-    [UatWhen("the server recovers")]
+    [BddWhen("the server recovers")]
     public void ServerRecovers()
     {
         var todos = fixture.Server.Todos.ToList();
@@ -54,14 +54,14 @@ public sealed class BackendPhrases(ITodoArrangement fixture) : UatPhraseClassBas
     }
 
     /// <summary>The fake server holds a todo like each row.</summary>
-    [UatThen("the server should have todos")]
+    [BddThen("the server should have todos")]
     public void ServerHas(UatTable table) => table.AssertContains(fixture.Server.Todos, fixture.TestSet.Now);
 
     /// <summary>
     /// The fake server received exactly these requests, in this order, since the scenario began:
     /// a request's resource is the first path segment after <c>/api/</c> (<c>todos</c>, <c>users</c>).
     /// </summary>
-    [UatThen("the server should have received, in order")]
+    [BddThen("the server should have received, in order")]
     public void ServerReceivedInOrder(IReadOnlyList<RequestRow> requests)
     {
         var expected = requests.Select(row => $"{row.Method.ToUpperInvariant()} {row.Resource}").ToList();

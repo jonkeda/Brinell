@@ -157,7 +157,7 @@ public static class UatDiscovery
 
         if (property.PropertyType.GetMethods(BindingFlags.Instance | BindingFlags.Public)
             .Any(method => method.GetCustomAttributes<UatActionAttribute>().Any() ||
-                           method.GetCustomAttributes<UatPhraseAttribute>().Any()))
+                           method.GetCustomAttributes<BddStepAttribute>().Any()))
         {
             return true;
         }
@@ -200,7 +200,7 @@ public static class UatDiscovery
         return type
             .GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public)
             .Where(method => method.GetCustomAttribute<UatIgnoreAttribute>() is null)
-            .Where(method => method.GetCustomAttributes<UatPhraseAttribute>().Any());
+            .Where(method => method.GetCustomAttributes<BddStepAttribute>().Any());
     }
 
     private static IReadOnlyList<Type> GetLoadableTypes(Assembly assembly)

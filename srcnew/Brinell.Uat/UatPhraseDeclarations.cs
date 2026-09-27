@@ -63,7 +63,7 @@ internal static partial class UatPhraseDeclarations
         ArgumentNullException.ThrowIfNull(method);
 
         var declaration = $"{method.DeclaringType?.FullName}.{method.Name}";
-        var attributes = method.GetCustomAttributes<UatPhraseAttribute>().ToArray();
+        var attributes = method.GetCustomAttributes<BddStepAttribute>().ToArray();
         List<UatDeclaredPhrase> phrases = [];
         List<UatUnmatchableDeclaration> unmatchable = [];
 
@@ -83,7 +83,7 @@ internal static partial class UatPhraseDeclarations
             if (attribute.IsInferred && !inferred.Add(attribute.Keyword))
             {
                 var first = phrases.FindIndex(p => p.Keyword == attribute.Keyword);
-                var duplicate = new UatPhraseProblem("UATA013", $"has two empty [Uat{attribute.Keyword}] attributes; one says the method name is the phrase.", declaration);
+                var duplicate = new UatPhraseProblem("UATA013", $"has two empty [Bdd{attribute.Keyword}] attributes; one says the method name is the phrase.", declaration);
                 if (first >= 0)
                 {
                     phrases[first] = phrases[first] with { Problem = phrases[first].Problem ?? duplicate };
@@ -97,7 +97,7 @@ internal static partial class UatPhraseDeclarations
 
         return (phrases, unmatchable);
 
-        void Add(UatEffectiveStepKeyword keyword, UatPhraseAttribute? fromAttribute, string? controlVerbOnly)
+        void Add(UatEffectiveStepKeyword keyword, BddStepAttribute? fromAttribute, string? controlVerbOnly)
         {
             UatPhraseProblem? problem = null;
             var phrase = fromAttribute is { IsInferred: false }
@@ -133,7 +133,7 @@ internal static partial class UatPhraseDeclarations
             words = words.Skip(1).ToList();
             if (attributeKeyword is { } keyword && keyword != prefix)
             {
-                problem = new UatPhraseProblem("UATA013", $"is named {prefix}_..., but its attribute is [Uat{keyword}].", declaration);
+                problem = new UatPhraseProblem("UATA013", $"is named {prefix}_..., but its attribute is [Bdd{keyword}].", declaration);
             }
         }
 
