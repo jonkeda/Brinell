@@ -114,6 +114,7 @@ Common diagnostics:
 | `UATB004` | The matched command does not accept a table. |
 | `UATB008` | A control verb or page phrase needs the page, and no step has said it, or an earlier step may have left it (see [Page Scope](#page-scope)). |
 | `UATB009` | The step does not fit the current page, or names a page that does not exist. |
+| `UATB010` | The step matches only phrases of another folder, which this file does not see (see [Folder Namespaces](#folder-namespaces)). |
 | `UATA001`-`UATA007` | A value does not fit its parameter (see [Arguments](#arguments)). |
 | `UATA010`-`UATA013` | The step binds to a broken phrase (see [Broken Phrases](#broken-phrases)). |
 | `UATC001`-`UATC008` | The step calls a broken callable phrase (see [Callable Phrases](#callable-phrases)). |
@@ -217,7 +218,8 @@ loads, and a step that binds to it fails naming the method:
 A tester can give a sequence of steps a name and call it like a phrase, with no C#
 ([AD-017](../../.docs/decisions/ad-017-callable-phrases-are-sequences-not-programs.md)). It is
 declared under a `## Phrase:` heading, in a scenario file (seen by that file) or in a
-`Scenarios/*.phrases.md` file (seen by every scenario under that `Scenarios` folder):
+`*.phrases.md` file in `Scenarios/` or a folder under it (seen by the scenarios in that folder and
+below, [Folder Namespaces](#folder-namespaces)):
 
 ````markdown
 # Phrases: Todo
@@ -283,8 +285,10 @@ Given the synced list has todos
     | Paint the fence  | In progress |
   ```
 
-- **Where problems are reported.** Everything inside a call is bound where the call is, so a
-  problem is reported at the call's line (a row's line, per row), with `via` lines to the body
+- **Bound where it is written, run where it is called.** The body's steps use the phrases seen
+  where the callable is written: a root phrase file's callable cannot reach a module's phrases,
+  even when a module's scenario calls it. The page and the app are the call's.
+- **Where problems are reported.** A problem inside a call is reported at the call's line (a row's line, per row), with `via` lines to the body
   steps it came through. `--fix` rewrites the value in the call, never the body.
 - **No logic, ever.** A callable is a fixed sequence: no `If`, loop, variable or return value.
   It may call other callables, three deep at most, and never itself (`UATC004`, `UATC005`).
@@ -530,6 +534,42 @@ public ToolbarButton<AppRoot> AddButton => ...;
   class, a callable) is ambiguous (`UATB002`), never "the page wins".
 - A catalog without pages, and a callable's body checked on its own, bind without page scope. A
   callable's steps are followed in the caller's page when it is called.
+
+## Folder Namespaces
+
+A folder under `Scenarios/` is a namespace: `Scenarios/Invoicing/Credit notes/` is
+`Invoicing/Credit notes`. A scenario sees the phrases of its own folder and every folder above it,
+never a sibling's. So two modules can each have "I add a line" without colliding.
+
+| Phrase | Seen by |
+| --- | --- |
+| a callable in a scenario file | that file |
+| a callable in `Scenarios/*.phrases.md` | every scenario |
+| a callable in `Scenarios/Invoicing/*.phrases.md` | the scenarios in `Invoicing/` and below |
+| a phrase class with `[UatPhraseClass(Namespace = "Invoicing")]` | the scenarios in `Invoicing/` and below |
+| a phrase class in an assembly with `[assembly: UatNamespace("Invoicing")]` | the same, for every phrase class of the assembly that names no namespace of its own |
+| any other phrase class, the fixture's phrases, built-ins | every scenario |
+| control verbs and page phrases | the steps on their page ([Page Scope](#page-scope)) |
+
+```csharp
+[UatPhraseClass(Namespace = "Invoicing")]
+public sealed class InvoicingPhrases(InvoiceApi api) : UatPhraseClassBase
+{
+    [UatWhen("I add a line {text}")]
+    public void AddLine(string text) => api.AddLine(text);
+}
+```
+
+- **No shadowing.** A step that matches a phrase of its folder and a phrase of a folder above it
+  (or a global one) is ambiguous (`UATB002`), never "the nearest wins". Rename one.
+- **A phrase of another folder** is a bind error (`UATB010`) that names the folder it is in. Move
+  the scenario under that folder, or move the phrase up to a folder both see.
+- **A callable's body binds where it is written**, not where it is called: a callable in the root
+  phrase file cannot use `Invoicing`'s phrases, and a phrase file's callable cannot call a
+  scenario file's own callable.
+- A phrase file that does not parse fails only the scenarios that see it.
+- `brinell-data phrases` shows a namespaced phrase with `in Invoicing`.
+- Namespaces are folder names, compared ignoring case, with `/` between folders.
 
 ## Page And Control Names
 

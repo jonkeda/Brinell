@@ -384,22 +384,27 @@ public sealed class UatCallableTests
     }
 
     [Fact]
-    public void GlobalPhraseFiles_AreSeenFromTheScenarioRoot_AndSubfolderOnesAreNot()
+    public void PhraseFiles_AreSeenFromTheScenarioRoot_AndFromTheFilesOwnFolder_NotFromAnotherFolder()
     {
         var root = Path.Combine(Path.GetTempPath(), "brinell-callables-" + Guid.NewGuid().ToString("N"), "Scenarios");
         Directory.CreateDirectory(Path.Combine(root, "Todo"));
+        Directory.CreateDirectory(Path.Combine(root, "Users"));
         try
         {
             File.WriteAllText(Path.Combine(root, "Todo.phrases.md"), "# Phrases: Todo\n\n## Phrase: a global one\n\nWhen I open the todo \"Tea\"\n");
             File.WriteAllText(Path.Combine(root, "Todo", "Later.phrases.md"), "# Phrases: Module\n\n## Phrase: a module one\n\nWhen I open the todo \"Tea\"\n");
+            File.WriteAllText(Path.Combine(root, "Users", "Users.phrases.md"), "# Phrases: Users\n\n## Phrase: a users one\n\nWhen I open the todo \"Tea\"\n");
             var scenario = Path.Combine(root, "Todo", "TOD.uat.md");
-            File.WriteAllText(scenario, Document("Given a global one", string.Empty));
+            File.WriteAllText(scenario, Document("Given a global one\nAnd a module one", string.Empty));
 
             var file = UatScenarioFiles.Load(scenario);
 
             Assert.True(file.Success, UatDiagnosticsFormatter.FormatDiagnostics(file.Diagnostics));
-            Assert.Equal(["a global one"], file.Callables.Callables.Select(callable => callable.Phrase));
+            Assert.Equal(["Todo.phrases.md", "Later.phrases.md"], UatScenarioFiles.PhraseFilesFor(scenario).Select(Path.GetFileName));
             Assert.True(file.Bind(CatalogSet(new ArgumentFixture())).Success);
+
+            File.WriteAllText(scenario, Document("Given a users one", string.Empty));
+            Assert.Equal("UATB010", Assert.Single(UatScenarioFiles.Load(scenario).Bind(CatalogSet(new ArgumentFixture())).Diagnostics).Code);
         }
         finally
         {

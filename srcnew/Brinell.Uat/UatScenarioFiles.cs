@@ -2,7 +2,11 @@ namespace Brinell.Uat;
 
 /// <summary>A scenario file with the callable phrases it can see, ready to bind.</summary>
 /// <param name="Document">The parsed file; null when it has no <c># UAT:</c> heading.</param>
-/// <param name="Callables">The file's own callables and the global phrase files'.</param>
+/// <param name="Callables">
+/// The file's own callables and those of every phrase file under its scenario root. The binder
+/// binds a step only to those the file sees (<see cref="UatScenarioFiles.PhraseFilesFor"/>), and
+/// names where the others are.
+/// </param>
 /// <param name="Diagnostics">The parse problems of the file and of the phrase files it sees.</param>
 public sealed record UatLoadedScenarioFile(
     UatDocument? Document,
@@ -19,7 +23,7 @@ public sealed record UatLoadedScenarioFile(
 
 /// <summary>
 /// The one loader of scenario files, for the xUnit gate, the tool and the Presenter: the file, and
-/// the global <c>*.phrases.md</c> files at its scenario root.
+/// the <c>*.phrases.md</c> files of its folder and every folder above it, up to the scenario root.
 /// </summary>
 public static class UatScenarioFiles
 {
@@ -36,14 +40,20 @@ public static class UatScenarioFiles
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
         var parse = UatMarkdownParser.ParseFile(filePath);
-        var phraseFiles = PhraseFilesFor(filePath).Select(ParsePhraseFile).ToList();
+        var seen = PhraseFilesFor(filePath).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var phraseFiles = AllPhraseFiles(filePath).Select(path => (Seen: seen.Contains(path), Parse: ParsePhraseFile(path))).ToList();
 
-        List<UatCallable> callables = [.. parse.Document?.Callables ?? []];
-        callables.AddRange(phraseFiles.SelectMany(file => file.Document?.Callables ?? []));
+        // The file's own callables are seen by the file alone, and their bodies bind in its folder.
+        var fullPath = Path.GetFullPath(filePath);
+        var here = UatNamespaces.Of(fullPath);
+        List<UatCallable> callables = [.. (parse.Document?.Callables ?? []).Select(callable => callable with { Namespace = here, LocalTo = fullPath })];
+        callables.AddRange(phraseFiles.SelectMany(file => file.Parse.Document?.Callables ?? []));
+
+        // Only a phrase file the scenario sees can break it; another folder's is that folder's problem.
         return new UatLoadedScenarioFile(
             parse.Document,
             new UatCallableSet(callables),
-            [.. parse.Diagnostics, .. phraseFiles.SelectMany(file => file.Diagnostics)]);
+            [.. parse.Diagnostics, .. phraseFiles.Where(file => file.Seen).SelectMany(file => file.Parse.Diagnostics)]);
     }
 
     /// <summary>
@@ -65,16 +75,40 @@ public static class UatScenarioFiles
         return folder;
     }
 
-    /// <summary>The global phrase files a scenario file sees: the <c>*.phrases.md</c> directly in its scenario root.</summary>
+    /// <summary>
+    /// The phrase files a scenario file sees: the <c>*.phrases.md</c> in its scenario root and in
+    /// each folder down to its own, root first. A sibling folder's are not seen (D6).
+    /// </summary>
     public static IReadOnlyList<string> PhraseFilesFor(string filePath)
     {
         var root = ScenarioRoot(filePath);
+        List<string> folders = [];
+        for (var folder = new DirectoryInfo(Path.GetDirectoryName(Path.GetFullPath(filePath))!); folder is not null; folder = folder.Parent)
+        {
+            folders.Insert(0, folder.FullName);
+            if (string.Equals(folder.FullName, root, StringComparison.OrdinalIgnoreCase))
+            {
+                break;
+            }
+        }
+
+        return folders
+            .Where(Directory.Exists)
+            .SelectMany(folder => Directory.EnumerateFiles(folder, PhraseFilePattern, SearchOption.TopDirectoryOnly).Order(StringComparer.OrdinalIgnoreCase))
+            .ToArray();
+    }
+
+    // Every phrase file under the scenario root, so a step that calls another folder's callable
+    // is told where it is rather than that it does not exist.
+    private static IReadOnlyList<string> AllPhraseFiles(string filePath)
+    {
+        var root = ScenarioRoot(filePath);
         return Directory.Exists(root)
-            ? Directory.EnumerateFiles(root, PhraseFilePattern, SearchOption.TopDirectoryOnly).Order(StringComparer.OrdinalIgnoreCase).ToArray()
+            ? Directory.EnumerateFiles(root, PhraseFilePattern, SearchOption.AllDirectories).Order(StringComparer.OrdinalIgnoreCase).ToArray()
             : [];
     }
 
-    /// <summary>A phrase file, parsed; read again only when it changed.</summary>
+    /// <summary>A phrase file, parsed, its callables in its folder's namespace; read again only when it changed.</summary>
     public static UatPhrasesParseResult ParsePhraseFile(string filePath)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
@@ -89,6 +123,12 @@ public static class UatScenarioFiles
         }
 
         var parse = UatMarkdownParser.ParsePhrases(File.ReadAllText(fullPath), filePath);
+        if (parse.Document is { } document)
+        {
+            var folder = UatNamespaces.Of(fullPath);
+            parse = parse with { Document = document with { Callables = [.. document.Callables.Select(callable => callable with { Namespace = folder })] } };
+        }
+
         lock (PhraseFiles)
         {
             PhraseFiles[fullPath] = (written, parse);

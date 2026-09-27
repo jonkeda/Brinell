@@ -85,7 +85,8 @@ public static partial class UatScenarioCheck
         }
 
         // The file's own broken callables are warnings at their headings; a call to one is the error.
-        var own = new UatCallableSet(file.Document.Callables).Prepare(catalogs).All;
+        var prepared = file.Callables.Prepare(catalogs);
+        var own = file.Callables.Callables.Where(callable => callable.LocalTo is not null).Select(prepared.Get);
         return [.. file.Diagnostics, .. file.Bind(catalogs).Diagnostics, .. BrokenCallables(own)];
     }
 
@@ -112,6 +113,7 @@ public static partial class UatScenarioCheck
         return callables
             .OrderBy(callable => callable.Callable.Phrase, StringComparer.Ordinal)
             .Select(callable => $"Callable {callable}  <- {callable.Callable.Source}"
+                + (callable.Callable.Namespace.Length > 0 ? $"  in {callable.Callable.Namespace}" : string.Empty)
                 + (callable.Problem is { } problem ? $"  warning {problem.Code}: {problem.Message}" : string.Empty))
             .ToList();
     }
@@ -236,7 +238,8 @@ public static partial class UatScenarioCheck
             ? block.Source == UatParameterSource.DocString ? $"  + doc string '{block.Name}'" : $"  + table '{block.Name}': {UatValues.Describe(block.Type)}"
             : string.Empty;
         var problem = pattern.Problem is { } broken ? $"  warning {broken.Code}: {broken.Message}" : string.Empty;
-        return $"{pattern.Keyword} {text}{below}  <- {pattern.CommandId}{problem}";
+        var scope = pattern.Namespace.Length > 0 ? $"  in {pattern.Namespace}" : string.Empty;
+        return $"{pattern.Keyword} {text}{below}  <- {pattern.CommandId}{scope}{problem}";
     }
 
     private static string TypeOf(Match token)

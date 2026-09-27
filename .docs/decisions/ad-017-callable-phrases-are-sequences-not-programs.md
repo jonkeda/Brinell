@@ -12,8 +12,8 @@ When I tap Sync
 Then I should be on the Todo List page
 ```
 
-It lives in a scenario file (seen by that file) or in `Scenarios/*.phrases.md` (seen by every
-scenario under that folder). `## Phrase for each row:` runs the body once per row of the call's
+It lives in a scenario file (seen by that file) or in a `*.phrases.md` file in `Scenarios/` or a
+folder under it (seen by the scenarios in that folder and below; its body binds there too). `## Phrase for each row:` runs the body once per row of the call's
 table.
 
 - **A sequence, never a program.** No `If`, `Else`, loop, `Try`, variable or return value in a

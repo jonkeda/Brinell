@@ -15,8 +15,8 @@
     <None Update="uat.config.md" CopyToOutputDirectory="PreserveNewest" />
     <None Update="TestSettings\**\*.json" CopyToOutputDirectory="PreserveNewest" />
     <!-- One set of scenario files for both heads: the MAUI suite's, run here where tagged @web. -->
-    <None Include="..\Brinell.Samples.Todo.Uat\Scenarios\*.uat.md" Link="Scenarios\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="..\Brinell.Samples.Todo.Uat\Scenarios\*.phrases.md" Link="Scenarios\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\Brinell.Samples.Todo.Uat\Scenarios\**\*.uat.md" Link="Scenarios\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\Brinell.Samples.Todo.Uat\Scenarios\**\*.phrases.md" Link="Scenarios\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <!-- And the scenarios only the web head can run yet: several apps in one scenario. -->
     <None Update="Scenarios\*.uat.md" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

@@ -164,6 +164,39 @@ public sealed class ScenarioValidationTests : IDisposable
     }
 
     [Fact]
+    public void Validate_ChecksAFoldersPhraseFile_AndACallToItFromAnotherFolder()
+    {
+        Write(Path.Combine("Scenarios", "Lending", "Lending.phrases.md"), """
+            # Phrases: Lending
+
+            ## Phrase: a loan of {title} to {reader} on {due}
+
+            When I lend <title> to <reader> until <due>
+
+            ## Phrase: a broken one {spare}
+
+            When I shelve the books
+            """);
+        Write(Path.Combine("Scenarios", "Shelving", "shelving.uat.md"), """
+            # UAT: Shelving
+
+            ## Scenario: Borrowed first
+
+            Given a loan of "Dune" to Eva on 12-May-2026
+            """);
+
+        var (exit, output, errors) = Run("validate");
+        var (_, phrases, _) = Run("phrases");
+
+        Assert.Equal(1, exit);
+        Assert.Contains("Scenarios/Lending/Lending.phrases.md:7: UATC001", errors);
+        Assert.Contains("Scenarios/Shelving/shelving.uat.md:5: UATB010", output);
+        Assert.Contains("of the folder 'Lending'", output);
+        Assert.Contains("Callable a loan of {title: text} to {reader: user} on {due: date}  <- ", phrases);
+        Assert.Contains("  in Lending", phrases);
+    }
+
+    [Fact]
     public void Snippet_WritesAMethodForAStepThatBindsToNothing()
     {
         Scenario("""

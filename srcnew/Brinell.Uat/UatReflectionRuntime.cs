@@ -377,7 +377,8 @@ public sealed class UatReflectionRuntime
                         $"{method.Method.DeclaringType!.FullName}.{method.Method.Name}",
                         handler: handlerFactory?.Invoke(phraseClass.Type, method.Method),
                         parameters: phrase.Parameters,
-                        problem: phrase.Problem);
+                        problem: phrase.Problem,
+                        phraseNamespace: phraseClass.Namespace);
                 }
 
                 foreach (var unmatchable in method.Unmatchable)
@@ -415,10 +416,11 @@ public sealed class UatReflectionRuntime
             var commandId = $"{method.DeclaringType!.FullName}.{method.Name}";
             foreach (var phrase in phrases)
             {
-                // A phrase class's phrase takes precedence over the fixture's. A page phrase of
-                // another method does not: the same text on a page and here is ambiguous there (D5).
+                // A global phrase class's phrase takes precedence over the fixture's. A page phrase
+                // or a namespace's phrase of another method does not: the same text there and here
+                // is ambiguous where both are seen (D5).
                 if (catalog.Patterns.Any(pattern =>
-                        (!pattern.IsPageScoped || pattern.CommandId == commandId) &&
+                        ((!pattern.IsPageScoped && pattern.Namespace.Length == 0) || pattern.CommandId == commandId) &&
                         pattern.Keyword == phrase.Keyword &&
                         pattern.Phrase.Equals(phrase.Phrase, StringComparison.Ordinal)))
                 {
@@ -684,12 +686,18 @@ public sealed class UatReflectionRuntime
 
             if (methods.Count > 0)
             {
-                phraseClasses.Add(new UatPhraseClassBinding(type, methods));
+                phraseClasses.Add(new UatPhraseClassBinding(type, methods) { Namespace = NamespaceOf(type) });
             }
         }
 
         return phraseClasses;
     }
+
+    // The class's own namespace, else its assembly's; the root without either.
+    private static string NamespaceOf(Type type)
+        => UatNamespaces.Normalize(
+            type.GetCustomAttribute<UatPhraseClassAttribute>()?.Namespace ??
+            type.Assembly.GetCustomAttribute<UatNamespaceAttribute>()?.Name);
 
     private static bool IsPhraseClassType(Type type)
     {
@@ -1246,7 +1254,11 @@ public sealed record UatRuntimeControl(
 
 public sealed record UatPhraseClassBinding(
     Type Type,
-    IReadOnlyList<UatPhraseClassMethodBinding> Methods);
+    IReadOnlyList<UatPhraseClassMethodBinding> Methods)
+{
+    /// <summary>The namespace its phrases are seen in (<see cref="UatNamespaces"/>); <c>""</c> for every scenario.</summary>
+    public string Namespace { get; init; } = string.Empty;
+}
 
 public sealed record UatPhraseClassMethodBinding(
     MethodInfo Method,

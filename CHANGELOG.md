@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- UAT folder namespaces: a folder under `Scenarios/` is a namespace, and a scenario sees the
+  phrases of its own folder and the folders above it. `*.phrases.md` files may sit in any folder
+  (copy them with `Scenarios\**\*.phrases.md`); `[UatPhraseClass(Namespace = "Invoicing")]` and
+  `[assembly: UatNamespace("Invoicing")]` put a C# phrase class in one. A callable's body binds
+  where it is written. A step that matches only another folder's phrases is `UATB010`, naming the
+  folder; a phrase of the folder and a wider one for one step are ambiguous. `brinell-data`
+  checks phrase files in subfolders and lists each phrase's namespace.
 - UAT page scope: control verbs and page phrases bind against the current page, which the binder
   follows through the steps before running (the page a step names, a returned page object,
   `[UatNavigatesTo]` on a control, a callable's steps). A missing control, a verb the control

@@ -346,13 +346,15 @@ step binds ([Arguments](uat-phrases-and-flows.md#arguments)).
 
 Steps a tester repeats can be named once, as a callable phrase
 ([Callable Phrases](uat-phrases-and-flows.md#callable-phrases)). One that several files use goes
-in a `*.phrases.md` file directly in `Scenarios/`: one `# Phrases:` heading, then only
-`## Phrase:` and `## Phrase for each row:` sections. The gate reads scenarios from the build
-output, so the project copies phrase files as it copies scenarios:
+in a `*.phrases.md` file: one `# Phrases:` heading, then only `## Phrase:` and
+`## Phrase for each row:` sections. Put it in `Scenarios/` for every scenario, or in a module's
+folder (`Scenarios/Invoicing/`) for the scenarios in that folder and below
+([Folder Namespaces](uat-phrases-and-flows.md#folder-namespaces)). The gate reads scenarios from
+the build output, so the project copies phrase files as it copies scenarios:
 
 ```xml
 <None Update="Scenarios\**\*.uat.md" CopyToOutputDirectory="PreserveNewest" />
-<None Update="Scenarios\*.phrases.md" CopyToOutputDirectory="PreserveNewest" />
+<None Update="Scenarios\**\*.phrases.md" CopyToOutputDirectory="PreserveNewest" />
 ```
 
 A suite that links another suite's scenarios links its phrase files too. `brinell-data validate`

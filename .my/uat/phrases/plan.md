@@ -1,6 +1,6 @@
 # Phrases: split, scope and namespace
 
-Status: in progress. Phases 1-5 done (see the commits per phase); callable phrases were built before.
+Status: in progress. Phases 1-6 done (see the commits per phase); callable phrases were built before.
 Date: 2026-09-27
 Replaces three discussion docs, last at 5b73a4b:
 [splitting-phrases.md](https://github.com/exact-mobile-apps/test-tooling/blob/5b73a4b/.my/uat/phrases/splitting-phrases.md),
@@ -293,6 +293,16 @@ real consumer.
   `UatCallableSet` gets a scope per callable. Matching and binding don't change.
 - `[UatPhraseClass(Namespace = ...)]` and `[assembly: UatNamespace]`; a C# class with a namespace is
   visible to scenarios in that folder and its descendants.
+- Built: `UatNamespaces` (visibility, a file's namespace) and `UatScope` in the binder's walk; a
+  callable carries its `Namespace` and, for a scenario file's own, `LocalTo`; a pattern carries
+  its `Namespace`. `UatScenarioFiles.PhraseFilesFor` is the folder chain (root first).
+  `UATB010` for a step that matches only phrases the file does not see, naming their folder.
+  `brinell-data` checks phrase files in subfolders and lists namespaces (`in Invoicing`).
+- Changed from the plan: `Load` reads **every** phrase file under the root, not only the chain,
+  and the binder filters by scope. Otherwise a call to a sibling's callable was "binds to
+  nothing" (`UATB001`) while a sibling's C# phrase was `UATB010`; now both name the folder.
+  Parse errors still fail only the scenarios that see the file.
+- Not done here: Todo keeps its phrase files at the root until phase 8 has modules.
 
 ### Phase 7: `Using`, config usings, namespaced pages
 
@@ -320,7 +330,7 @@ Namespaces only help if people can see them:
 
 | Question | Notes |
 | --- | --- |
-| Folder name as the namespace, or a declared name per folder? | Folder names have spaces and get renamed. A `Namespace` field in the folder's `*.phrases.md` decouples them, at the cost of one more thing to keep in sync. Start with the folder name. |
+| Folder name as the namespace, or a declared name per folder? | Folder names have spaces and get renamed. A `Namespace` field in the folder's `*.phrases.md` decouples them, at the cost of one more thing to keep in sync. Built with the folder name (phase 6), compared ignoring case. |
 | Can a namespace phrase be used on any page, or only its own pages? | Namespace and page scope are independent axes. Start with "any page". |
 | Callables on a page scope | Could a callable belong to a page, like a page phrase? Now possible (phase 5 is built); not needed by Todo yet. |
 | Presenter UAT flake | `run-selected-sample` asserts "Passed", which the per-scenario status matches while the run goes on; the next scenario's reset races the run's end. Fails about 1 in 3 at `ddaa395` too. Fix in the scenario, separately. |

@@ -33,7 +33,8 @@ public sealed class UatCommandCatalog
         bool namesPage = false,
         string? page = null,
         string? pageAfter = null,
-        UatControlVerb? controlVerb = null)
+        UatControlVerb? controlVerb = null,
+        string? phraseNamespace = null)
     {
         var pattern = new UatCommandPattern(keyword, phrase, commandId, requiresTable, allowsTable, handler, parameters, problem)
         {
@@ -41,6 +42,7 @@ public sealed class UatCommandCatalog
             Page = page,
             PageAfter = pageAfter,
             ControlVerb = controlVerb,
+            Namespace = UatNamespaces.Normalize(phraseNamespace),
         };
         _patterns.Add(pattern);
         return pattern;
@@ -150,6 +152,9 @@ public sealed class UatCommandPattern
 
     /// <summary>What the control method is, for a control verb; null for any other phrase.</summary>
     public UatControlVerb? ControlVerb { get; init; }
+
+    /// <summary>The namespace of a C# phrase class's phrase (<see cref="UatNamespaces"/>); <c>""</c> when every scenario sees it.</summary>
+    public string Namespace { get; init; } = string.Empty;
 
     /// <summary>Whether the step binds against the current page: a control verb or a page phrase.</summary>
     public bool IsPageScoped => ControlVerb is not null || Page is not null;

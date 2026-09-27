@@ -46,11 +46,12 @@ public static class UatBinder
         List<UatDiagnostic> diagnostics = [.. catalogs.CheckNames(document.Source)];
         List<UatBoundScenario> scenarios = [];
         var prepared = callables.Prepare(catalogs);
+        var scope = UatScope.Of(document);
 
         foreach (var scenario in document.Scenarios)
         {
             List<UatStepInvocation> invocations = [];
-            var walk = new Walk(catalogs, prepared, scenario.Name, invocations, inference: null);
+            var walk = new Walk(catalogs, prepared, scenario.Name, invocations, scope, inference: null);
 
             foreach (var step in document.Background)
             {
@@ -76,7 +77,7 @@ public static class UatBinder
     // the types of its values. Only a problem that no call could avoid makes it broken.
     internal static void Infer(UatCallable callable, UatCatalogSet catalogs, UatPreparedCallables callables, UatInference inference)
     {
-        var walk = new Walk(catalogs, callables, callable.Phrase, [], inference);
+        var walk = new Walk(catalogs, callables, callable.Phrase, [], UatScope.Of(callable), inference);
         List<UatDiagnostic> ignored = [];
         foreach (var step in callable.Steps)
         {
@@ -141,12 +142,14 @@ public static class UatBinder
         => new(UatDiagnosticSeverity.Error, code, message, location);
 
     // One scenario's steps in order, with the current app. Inference walks a callable's body
-    // instead: it learns types and drops what only a call can decide.
+    // instead: it learns types and drops what only a call can decide. The scope is where the
+    // scenario is written; a step a call put there sees what its callable's own scope sees (D9).
     private sealed class Walk(
         UatCatalogSet catalogs,
         UatPreparedCallables callables,
         string scenarioName,
         List<UatStepInvocation> invocations,
+        UatScope scope,
         UatInference? inference)
     {
         private readonly AppTracker _apps = new(catalogs);
@@ -158,6 +161,7 @@ public static class UatBinder
             UatCommandMatch? match = null;
             IReadOnlyList<string> named = [];
             List<UatDiagnostic> pageProblems = [];
+            var where = frame is null ? scope : UatScope.Of(frame.Callable);
 
             if (catalogs.TryFindSubject(step.Text, out var subject, out _))
             {
@@ -170,7 +174,7 @@ public static class UatBinder
                 // Only a phrase declared with the subject in its first parameter binds it: {user} taps
                 // {control}, {app} uses the app. The engine infers no verb forms (AD-015).
                 var catalog = catalogs.CatalogFor(subjectApp);
-                var declared = Match(catalog, step, subjectApp, pageProblems)
+                var declared = Match(catalog, step, subjectApp, where, pageProblems)
                     .Where(candidate => FirstArgument(candidate) == subject)
                     .ToArray();
                 if (declared.Length > 1)
@@ -201,7 +205,7 @@ public static class UatBinder
             if (match is null)
             {
                 pageProblems.Clear();
-                var matches = Match(catalogs.CatalogFor(app), step, app, pageProblems);
+                var matches = Match(catalogs.CatalogFor(app), step, app, where, pageProblems);
                 if (matches.Count == 0 && pageProblems.Count > 0)
                 {
                     diagnostics.AddRange(pageProblems);
@@ -345,12 +349,20 @@ public static class UatBinder
             });
         }
 
-        // The phrases a step can bind to where it stands (D5): a control verb or page phrase only
-        // on the current page, and never one of those together with a phrase of wider scope. A
-        // catalog without pages, and a callable's body read on its own, bind without page scope.
-        private IReadOnlyList<UatCommandMatch> Match(UatCommandCatalog catalog, UatStep step, UatAppConfig? app, List<UatDiagnostic> problems)
+        // The phrases a step can bind to where it stands (D5): those of its folder and the folders
+        // above it, and a control verb or page phrase only on the current page, never one of those
+        // together with a phrase of wider scope. A catalog without pages, and a callable's body
+        // read on its own, bind without page scope.
+        private IReadOnlyList<UatCommandMatch> Match(UatCommandCatalog catalog, UatStep step, UatAppConfig? app, UatScope where, List<UatDiagnostic> problems)
         {
-            IReadOnlyList<UatCommandMatch> candidates = [.. catalog.Candidates(step), .. callables.Candidates(step)];
+            IReadOnlyList<UatCommandMatch> all = [.. catalog.Candidates(step), .. callables.Candidates(step)];
+            var candidates = all.Where(candidate => where.Sees(candidate.Pattern)).ToList();
+            if (candidates.Count == 0 && all.Count > 0)
+            {
+                problems.Add(Error("UATB010", NotSeen(step, all, where), step.Source));
+                return [];
+            }
+
             if (catalog.Pages.Count == 0 || inference is not null)
             {
                 return UatCommandCatalog.Select(candidates);
@@ -405,6 +417,19 @@ public static class UatBinder
             }
 
             return UatCommandCatalog.Select(fitting.Count > 0 ? fitting : wide);
+        }
+
+        private static string NotSeen(UatStep step, IReadOnlyList<UatCommandMatch> hidden, UatScope where)
+        {
+            var owners = hidden
+                .Select(match => match.Pattern.Callable is { } callable
+                    ? callable.LocalTo is { } local
+                        ? $"'{callable.Phrase}', written in {Path.GetFileName(local)} for that file only"
+                        : $"'{callable.Phrase}' of {UatNamespaces.Describe(callable.Namespace)} ({callable.Source})"
+                    : $"'{match.Pattern.Phrase}' of {UatNamespaces.Describe(match.Pattern.Namespace)}")
+                .Distinct(StringComparer.Ordinal);
+            return $"Step '{step.Text}' matches {string.Join(", ", owners)}, which {UatNamespaces.Describe(where.Namespace)} does not see. "
+                + "A scenario sees the phrases of its own folder and the folders above it: move the file there, or the phrase up.";
         }
 
         private static bool Fits(UatPageModel page, UatCommandMatch candidate, List<string> reasons)

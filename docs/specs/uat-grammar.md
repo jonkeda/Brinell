@@ -81,7 +81,8 @@ phrases-document = "# Phrases:" , text , NEWLINE , phrase-section* ;
 ```
 
 A phrase file holds only phrase sections. A phrase in a scenario file is seen by that file; a
-phrase in `Scenarios/*.phrases.md` is seen by every scenario under that folder (AD-017).
+phrase in a `*.phrases.md` file in `Scenarios/` or a folder under it is seen by the scenarios in
+that folder and below (AD-017, [Folder Namespaces](../guides/uat-phrases-and-flows.md#folder-namespaces)).
 
 In a phrase section:
 

@@ -44,6 +44,15 @@ public sealed record UatCallable(
     /// <summary>The heading's placeholders, in order.</summary>
     public IReadOnlyList<string> HeadingParameters { get; } = UatCommandPattern.ParameterNames(Phrase);
 
+    /// <summary>
+    /// The folder it is written in, under the scenario root (<see cref="UatNamespaces"/>): scenarios
+    /// there and below see it, and its body binds there. <c>""</c> for the root.
+    /// </summary>
+    public string Namespace { get; init; } = string.Empty;
+
+    /// <summary>The full path of the scenario file it is written in, when only that file sees it; null for a phrase file's.</summary>
+    public string? LocalTo { get; init; }
+
     /// <summary>The heading as a call reads it: <c>Phrase for each row: ...</c> or <c>Phrase: ...</c>.</summary>
     public override string ToString() => $"{(Kind == UatCallableKind.EachRow ? "Phrase for each row" : "Phrase")}: {Phrase}";
 }
@@ -55,7 +64,7 @@ public sealed record UatCallable(
 /// <param name="Source">The row's line.</param>
 public sealed record UatCallableParameterDeclaration(string Name, string TypeName, string? Example, UatSourceLocation Source);
 
-/// <summary>A <c>*.phrases.md</c> file: callable phrases seen by every scenario under the same root.</summary>
+/// <summary>A <c>*.phrases.md</c> file: callable phrases seen by every scenario in its folder and below.</summary>
 /// <param name="Title">The <c># Phrases:</c> heading's text.</param>
 /// <param name="Callables">Its phrases.</param>
 /// <param name="Source">The file.</param>
