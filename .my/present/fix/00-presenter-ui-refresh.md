@@ -6,8 +6,8 @@ Assets: screenshots and the glyph verification sheet in [assets/](assets/)
 Area: `srcnew/Brinell.Presenter/`, `testsnew/Brinell.Presenter.Uat.Tests/`
 Related:
 
-- [Presenter current UI and execution design](../10%20presenter%20tabbed%20tree%20redesign.md)
-- [Presenter development plan](../09%20brinell%20presenter%20development%20plan.md)
+- [Presenter current UI and execution design](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/present/10%20presenter%20tabbed%20tree%20redesign.md)
+- [Presenter development plan](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/present/09%20brinell%20presenter%20development%20plan.md)
 - [AD-008 — gestures and semantic actions go through UI Automation](../../../.docs/decisions/ad-008-gestures-and-semantic-actions-go-through-ui-automation.md)
 - [AD-005 — physical input is opt-in](../../../.docs/decisions/ad-005-physical-input-is-opt-in.md)
 - `samples/Brinell.Samples.Maui.App/Automation/ToolkitVerbSink.cs`

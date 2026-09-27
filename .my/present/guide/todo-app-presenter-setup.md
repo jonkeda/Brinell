@@ -5,7 +5,7 @@ Date: 2026-09-22
 Area: `samples/Todo/tests/Brinell.Samples.Todo.Uat`, `srcnew/Brinell.Presenter`
 Related:
 
-- [Minimal Presenter run](README.md) — the generic version of this, on the WPF sample
+- [Minimal Presenter run](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/present/guide/README.md) — the generic version of this, on the WPF sample
 - [One Todo UAT, end to end](../../../samples/Todo/uat-walkthrough.md) — the scenario itself
 - [Todo sample README](../../../samples/Todo/README.md) — the five test tiers
 - [Presenter platform guide](../../../docs/platform-guides/presenter.md)
@@ -21,7 +21,7 @@ that launches the app hermetically, and a `uat.config.md`.
 What you need is to **fix three fields in that config**. As written it runs
 under `dotnet test` but cannot run in Presenter, because the two resolve the
 fixture in completely different ways. One is a stale path; the other two are the
-same mismatch the [WPF guide](README.md) describes.
+same mismatch the [WPF guide](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/present/guide/README.md) describes.
 
 ---
 

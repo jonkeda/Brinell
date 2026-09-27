@@ -6,7 +6,7 @@ Area: `testsnew/Brinell.*.Uat.Tests`, `srcnew/Brinell.Presenter`
 Related:
 
 - [UAT phrases and flows](../../docs/guides/uat-phrases-and-flows.md) — authoritative phrase list
-- [Runner code binding](03%20runner%20code%20binding.md) — why one vocabulary serves six techs
+- [Runner code binding](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/present/03%20runner%20code%20binding.md) — why one vocabulary serves six techs
 - [AD-011](../../.docs/decisions/ad-011-uat-vocabulary-is-attribute-declared.md)
 
 Status: implemented first pass.
@@ -114,7 +114,7 @@ Custom `[UatPhrase]` methods remain the extension point for tech-specific or app
 >
 > This is what made the six-target rollout cheap, and it is why "keep
 > `Brinell.Uat` generic" below became easy to hold rather than a discipline to
-> maintain. See [03](03%20runner%20code%20binding.md) §Two Projections, One Source.
+> maintain. See [03](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/present/03%20runner%20code%20binding.md) §Two Projections, One Source.
 
 ## Architecture Direction
 
