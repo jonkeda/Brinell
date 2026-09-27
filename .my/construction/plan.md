@@ -22,7 +22,7 @@ state → inventory → phases with progress.
 
 Related references:
 
-- [.my/TodoApp/plan.md](../TodoApp/plan.md) - showcase test pyramid the module suites mirror.
+- [.my/TodoApp/plan.md](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/TodoApp/plan.md) - showcase test pyramid the module suites mirror.
 - Brinell rules (this repo, referenced from Construction): [AGENTS.md](../../AGENTS.md),
   `.github/copilot-instructions.md`, `docs/architecture/decisions.md` (AD-004 platform
   neutrality, AD-005 no physical input on MAUI Windows, AD-008 bridge admission).

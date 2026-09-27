@@ -289,7 +289,7 @@ Only start after phase 5 is green.
 
 Windows-first through phases 0-6. Android is triggered when:
 
-- The [TodoApp plan](../TodoApp/plan.md) reports the Android baseline for Selection and
+- The [TodoApp plan](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/TodoApp/plan.md) reports the Android baseline for Selection and
   DateTime inputs stops failing (currently 0/8 Picker, 6/16 Range).
 - The Todos suite on Windows is stable for one week.
 
