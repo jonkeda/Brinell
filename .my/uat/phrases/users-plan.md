@@ -1,279 +1,187 @@
-# Todo users, assignment and "my" todos: plan
+# Todo users: plan
 
-Status: **todo**, drafted 2026-09-26. No step has started.
+Status: **todo**, drafted 2026-09-26, revised 2026-09-27. No step has started.
 
-This plan does four things:
+**Revised 2026-09-27:** build the app first. A user gets more fields (status, allowed-until date, role,
+and a few more chosen to exercise field types). A todo is **not** linked to a user
+yet: assignment, "my" todos and the assignee filter move to [Later](#8-later). So do the UI
+tests and the UAT suite, which wait until phrase scopes and namespaces are built
+([phrase-scopes-and-composition.md](phrase-scopes-and-composition.md),
+[phrase-namespaces.md](phrase-namespaces.md)).
 
-1. **Users in the Todo app.** A list of users that anyone can add to, rename and deactivate.
-2. **Assignment.** A todo can have any number of assigned users.
-3. **An assignee filter** on the list: Everyone, Mine, Unassigned, or a single user. It works
-   together with the status filter.
-4. **A separate UI test project and UAT project** for the users feature. Its phrases and pages
-   live in their own `Users` namespace, which scenarios bring in with `Using`. This is the first
-   real use of [phrase-namespaces.md](phrase-namespaces.md), which is not built yet,
-   so this plan builds the minimum of it.
+This plan now does two things:
 
-It works alongside [the multi-app plan](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/multi/plan.md) (done 2026-09-27), the plan for several apps, heads and named users in one
-scenario. Neither plan needs the other, but together they let `Daan` in a step be both the app's
-signed-in user and the app Daan is using (section 3, D9).
-
-Decisions are in section 3. Each step's status and evidence go in section 6.
+1. **Users in the Todo app**: a list of users that anyone can add, edit and deactivate, synced
+   through the server, on the MAUI head.
+2. **A user form with one field of each kind** a test has to drive: text, multi-line text,
+   email, whole number, decimal, date, optional date, time, a fixed list, a choice of a few,
+   on/off, and a range. That makes the users pages the place where Brinell's controls and
+   AD-016's value kinds get tested on a real app, later.
 
 ## 1. Goal
 
-These scenarios run on the MAUI head (Windows), each in the new `Brinell.Samples.Todo.Users.Uat`
-suite:
-
-```markdown
-| Field | Value |
-| --- | --- |
-| Journey | TOD.12 |
-| TestData | team |
-| Using | Users |
-```
-
-```gherkin
-@TOD.12.1
-## Scenario: Assigning a todo to Eva shows her on the row
-
-Given I am signed in as "Daan"
-And I am on the Todo List page
-When I open the todo "Buy milk"
-And I tap Edit
-And I assign the todo to "Eva"
-And I tap Save
-Then the todo "Buy milk" should be assigned to "Eva"
-
-@TOD.13.2
-## Scenario: Mine shows only my todos
-
-Given I am signed in as "Eva"
-And I am on the Todo List page
-When I select "Mine" from Assignee
-Then Todos should have todo "Book dentist"
-And Todos should not have todo "File taxes"
-```
-
-The same steps without `Using | Users` fail at **bind time**, with an error that names the
-`Users` namespace as the one that has `I am signed in as {user}`.
+A person opens **Users** from the list, adds "Eva" as a Lead, allowed until 31 December,
+38 hours a week, and saves. Eva shows in the list with her role and status. Offline, the
+list is readable and editing is disabled. After a sync on another device, Eva is there too.
 
 Rules this plan keeps:
 
 - **Nothing that exists changes behaviour.** Todo MAUI UAT stays at 32 passing, Todo web UAT at
-  33, and the Todo UI, unit and integration tests keep their counts. The new columns and tables
-  are additions with defaults, so existing test sets still load.
-- **Journeys first.** Every new behaviour gets a `TOD.xx.y` id in `journeys.md` and a test at the
-  lowest tier that can see it (the pyramid rule at the top of that file).
-- **AutomationIds** follow the existing `Page_Element` pattern (`UserList_Add`, `TodoEdit_Assignees`).
+  33, and the Todo UI, unit and integration tests keep their counts. New columns and tables are
+  additions with defaults, so existing test sets still load.
+- **Journeys first.** Every new behaviour gets a `TOD.xx.y` id in `journeys.md` now, so the tests
+  written later have their targets.
+- **Testable from the start, tested later.** Every control gets an AutomationId in the existing
+  `Page_Element` pattern, and the app has launch settings for every state a test will need
+  (section 3, D6). Unit, integration and contract tests come with the code; only the tests that drive
+  the UI (UI tests and UAT scenarios) come later, after phrases (Q1).
 - **The app and the server share only the wire format** (the `ServerTodoStore` remark), so users
   get their own DTO and their own server table.
-- **Brinell rules hold:** no driver calls in tests, no sleeps, xUnit `Assert`, and one UI test
-  process at a time.
 
 ## 2. What exists
 
 | Area | Today | Where |
 | --- | --- | --- |
-| Wire format | `TodoDto(Id, Title, Notes, DueDate, Status, CreatedAt, UpdatedAt)`. The client chooses the id. `X-Api-Key` and `X-Todo-Client` headers. | `Contracts/TodoDto.cs` |
+| Wire format | `TodoDto(Id, Title, Notes, DueDate, Status, CreatedAt, UpdatedAt)`, enums as names. The client chooses the id. `X-Api-Key` and `X-Todo-Client` headers. | `Contracts/TodoDto.cs` |
 | Server | `ServerTodoStore` (SQLite, one `todos` table, one shared list), `ServerRequestLog` | `Todo.Api` |
 | App storage | `TodoDatabase`, schema version 2 (`todos`, then `is_deleted`) | `Infrastructure/Data` |
 | Sync | Push pending, pull all, and the newer `UpdatedAt` wins | `Core/Sync/SyncPlanner.cs`, `Infrastructure/Sync/SyncService.cs` |
-| Filter | `TodoFilter { All, Open, InProgress, Done }`, one Picker (`TodoList_Filter`) | `Core/Rules/TodoListRules.cs`, `TodoListViewModel.FilterIndex` |
+| Todo edit page | `Entry` (title), `Editor` (notes), `Switch` + `DatePicker` (optional due date), status | `Pages/TodoEditPage.xaml` |
 | Launch settings | `TODO_DB_PATH`, `TODO_API_BASEURL`, `TODO_NOW`, `TODO_CLIENT_ID`, ... | `Infrastructure/LaunchSettings.cs` |
 | Test data | `server` and `local` halves per JSON set, validated by `testdata.schema.json` | `TestSupport/TestData` |
 | Fake backend | `TodoServerStub` on WireMock | `TestSupport` |
-| UAT namespaces | **Not built.** Every phrase and page in a suite is visible to every file, and duplicate page names are a diagnostic. | `Brinell.Uat` |
+
+The todo form already covers `Entry`, `Editor`, `Switch` and `DatePicker`. The user form adds the
+controls it does not have, and repeats the common ones only where the value kind differs.
 
 ## 3. Decisions
 
-### D1. A user is small and managed by the server
+### D1. The user
 
 ```csharp
-public sealed record UserDto(Guid Id, string Name, bool IsActive, DateTimeOffset UpdatedAt);
+public sealed record UserDto(
+    Guid Id,
+    string Name,
+    string? Email,
+    UserStatusDto Status,
+    DateOnly? AllowedUntil,
+    int HoursPerWeek,
+    decimal HourlyRate,
+    TimeOnly StartOfDay,
+    UserRoleDto Role,
+    bool ReceivesReminders,
+    int Workload,
+    string? Notes,
+    DateTimeOffset UpdatedAt);
 ```
 
-- **`Name`** is required, at most 50 characters, and unique among active users, ignoring case.
-  Scenarios and the assignee filter address users by name.
-- **Deactivate, never delete.** A deactivated user keeps their assignments and name on existing
-  todos, shown as "Eva (inactive)". They drop out of the assign list and the filter. Deleting a
-  user would need the server to rewrite every todo that names them, which is a second sync problem
-  for no user gain.
-- **Changes to users need a connection.** The app sends them straight to the API
-  (`POST`/`PUT /api/users`) and caches the result. Offline, Add, Rename and Deactivate are disabled
-  and the page says why. The list is still readable from the cache. This follows Construction's
-  server-authoritative cached entities (`ICachedEntityRepository<T>` in `construction/AGENTS.md`),
-  and keeps the offline sync rules for todos only.
-- **A sync fetches users** (`GET /api/users`) before it fetches todos, and replaces the cached list
-  only after a complete fetch.
+| Field | Type | Rule | Control | Value kind a test writes (AD-016) |
+| --- | --- | --- | --- | --- |
+| **Name** | text | required, at most 50 characters, unique among users that are not `Inactive`, ignoring case | `Entry` | text |
+| **Email** | text | optional; one `@` with text on both sides and a dot after it | `Entry`, `Keyboard="Email"` | text |
+| **Status** | `Active`, `OnLeave`, `Inactive` | default `Active`; see D2 | `RadioButton` group | enum (`On Leave`) |
+| **Allowed until** | date, optional | none means no end; may be in the past (that is how access ends) | `CheckBox` "Has an end date" + `DatePicker` | date (`31-Dec-2026`, `+30d`) |
+| **Hours per week** | whole number | 1-60, default 40, step 1 | `Stepper` with the value in a label | number |
+| **Hourly rate** | decimal | 0-10,000.00, two decimals, shown as `1,250.75` | `Entry`, `Keyboard="Numeric"` | number (`1,250.75`) |
+| **Start of day** | time | default 09:00 | `TimePicker` | time (`08:30`) |
+| **Role** | fixed list: `Member`, `Lead`, `Admin` | required, default `Member`; recorded only, grants nothing (D5) | `Picker` | enum |
+| **Receives reminders** | on/off | default on | `Switch` | on/off |
+| **Workload** | 0-100 % | default 0, step 5 | `Slider` with the value in a label | number |
+| **Notes** | multi-line text | optional, at most 500 characters | `Editor` | text |
 
-### D2. A todo has any number of assignees
+Two new value kinds need `UatValues` later: **time** (`08:30`, 24-hour, invariant) and
+**on/off** for a `Switch` (`on`/`off`, or the existing bool), added when the tests are written
+(Q3). Department was considered and dropped (Q2): `Role` is the one fixed list.
 
-`TodoDto` gains `IReadOnlyList<Guid> AssigneeIds`, which defaults to empty. `TodoItem` gains the
-same. Assignment is part of the todo, so it syncs with the todo under the existing rule (the newer
-`UpdatedAt` wins), and changing it makes the todo `Pending`.
+### D2. Status and "allowed until" decide whether a user counts
 
-- The order of assignees is not meaningful. They are stored and shown sorted by name.
-- An id the app does not know (a user created elsewhere and not synced yet) is kept. It shows as
-  "Unknown user" until the next sync fetches the user. It is never dropped: a device that has not
-  synced users must not un-assign someone.
-- **Server compatibility:** an old client that sends no `assigneeIds` must not clear them. The API
-  keeps the stored assignees when the field is **missing**, and replaces them when it is present,
-  even as `[]`. A contract test pins this.
+A user is **available** when `Status` is `Active` **and** `AllowedUntil` is empty or today or
+later (the app's clock, so `TODO_NOW` pins it). The list shows each user's state:
 
-### D3. "Me" is the signed-in user, chosen in the app
+| Status | Allowed until | Shown as |
+| --- | --- | --- |
+| Active | none, or today or later | (nothing) |
+| Active | before today | "Expired" |
+| OnLeave | any | "On leave" |
+| Inactive | any | "Inactive" |
 
-There are no passwords and no login. The API key stays the only secret. "Me" is a local setting:
+- **Deactivate, never delete.** `Inactive` is the delete: it keeps the user's history for when
+  todos reference users (section 8). A user can be set back to `Active`.
+- **The name is unique among users that are not `Inactive`**, so a name can be reused once its
+  old owner is inactive.
+- "Available" is a pure rule in Core (`UserRules.IsAvailable(user, today)`), unit-tested at the
+  boundaries (yesterday, today, tomorrow, none; each status).
 
-- The Users page has a **Sign in as** action on each row. The signed-in user shows in the list
-  header ("Signed in as Daan", `TodoList_Me`).
-- A new launch setting, **`TODO_USER`** (a name), selects a user at start, as `TODO_NOW` pins the
-  clock. Tests use it, and the multi-app plan fills it from the `Apps` table (D9).
-- Nobody signed in: **Mine** is disabled in the filter, and a new todo has no assignees.
-- **A new todo is assigned to its creator by default.** Open question Q2.
-- The API receives `X-Todo-User` (the user id) beside `X-Todo-Client`, so the request log can say
-  who made a change. It is recorded only and gives no authorisation. It lets the multi-app plan's
-  "the server received it from Daan" check a user rather than a device.
+### D3. Users are managed by the server
 
-### D4. The assignee filter is a second picker
+- **Changes need a connection.** The app sends them straight to the API (`POST /api/users`,
+  `PUT /api/users/{id}`) and caches the result. Offline, Add and Save are disabled and the page
+  says why; the list is still readable from the cache. This is Construction's
+  server-authoritative cached-entity model (`ICachedEntityRepository<T>` in
+  `construction/AGENTS.md`), and keeps the offline sync rules for todos only.
+- **The server validates too**: the same rules as the app, `400` with the field name for a bad
+  value, `409` for a duplicate name. The app shows the server's message on the field.
+- **A sync fetches users** (`GET /api/users`) before todos, and replaces the cached list only
+  after a complete fetch.
+- **Enums travel as names** (`"OnLeave"`, `"Engineering"`), dates as `yyyy-MM-dd`, times as
+  `HH:mm`, the rate as a JSON number, as `TodoDto` does today.
 
-`TodoListRules` gains `AssigneeFilter`:
-
-| Choice | Shows |
-| --- | --- |
-| Everyone (default) | All todos |
-| Mine | Todos assigned to the signed-in user |
-| Unassigned | Todos with no assignees |
-| *each active user, by name* | Todos assigned to that user |
-
-- It combines with the status filter (**both** must match). `Arrange(items, statusFilter,
-  assigneeFilter)` stays pure and is unit-tested exhaustively.
-- **A second Picker, `TodoList_Assignee`**, not one merged picker: the status filter's four entries
-  and its `SelectByText` tests stay exactly as they are.
-- The Empty state text says which filters are on ("No todos assigned to you"), so an empty Mine
-  view is not confused with an empty list. A new `ListState` is not needed.
-- The list remembers the assignee choice across page appearances, as it remembers the status
-  filter today.
-
-### D5. Where it appears in the app
+### D4. Where it appears in the app
 
 | Page | Change | AutomationIds |
 | --- | --- | --- |
-| Todo List | "Users" toolbar item; "Signed in as" line; Assignee picker; each row shows its assignees' names | `TodoList_Users`, `TodoList_Me`, `TodoList_Assignee`, `TodoRow_Assignees` |
-| Todo Detail | "Assigned to" line | `TodoDetail_Assignees` |
-| Todo Edit | An "Assigned to" section card with one CheckBox row per active user | `TodoEdit_Assignees` (the section), rows keyed by user name |
-| **User List** (new) | The users (active first, then inactive), Add, a row per user with Sign in as, Rename and Deactivate/Activate, and an offline notice | `UserListPage`, `UserList_Add`, `UserList_Offline`, `UserList_Users` (the collection) |
-| **User Edit** (new) | Name, Save, Cancel, and a validation error | `UserEditPage`, `UserEdit_Name`, `UserEdit_NameError`, `UserEdit_Save`, `UserEdit_Cancel` |
+| Todo List | a **Users** toolbar item | `TodoList_Users` |
+| **User List** (new) | the users (available first, then the rest, each group by name); each row shows name, role and the state from D2; **Add**; an offline notice; tapping a row opens it | `UserListPage`, `UserList_Add`, `UserList_Offline`, `UserList_Users` (the collection), row parts `UserRow_Name`, `UserRow_Role`, `UserRow_State` |
+| **User Edit** (new) | the fields of D1 in three section cards (Person, Access, Work), Save, Cancel, and an error label per field that can fail | `UserEditPage`, `UserEdit_Name`, `UserEdit_Email`, `UserEdit_Status` (the radio group; options `UserEdit_Status_Active`, `_OnLeave`, `_Inactive`), `UserEdit_HasEndDate`, `UserEdit_AllowedUntil`, `UserEdit_Hours` (the stepper), `UserEdit_HoursValue`, `UserEdit_Rate`, `UserEdit_StartOfDay`, `UserEdit_Role`, `UserEdit_Reminders`, `UserEdit_Workload`, `UserEdit_WorkloadValue`, `UserEdit_Notes`, `UserEdit_Save`, `UserEdit_Cancel`, `UserEdit_<Field>Error` |
 
-The edit page's assignee list is a collection of toggle rows. This deliberately exercises
-Brinell's collection and toggle controls on a real page: `CheckItem("Eva")` and
-`AssertItemChecked`, with no locators in tests.
+- One edit page for add and edit, as the todo edit page does.
+- `UserEdit_AllowedUntil` is disabled while "Has an end date" is off, rather than hidden
+  (`IsVisible=False` removes it from the automation tree, and a test must be able to see it is
+  disabled).
+- The Stepper and Slider each have a label echoing the value, so a test can read the value on
+  every platform, as the sample app does.
+- Save is enabled while the form is invalid; pressing it shows the errors. That keeps "why can I
+  not save" visible to the user and to a test.
 
-### D6. Storage and test data
+### D5. What users do not do yet
 
-- **App schema version 3:** a `users` table (`id`, `name`, `is_active`, `updated_at`) and
-  `todo_assignees(todo_id, user_id)`, plus a `settings(key, value)` row for the signed-in user.
-  The migration is additive, and `MigrateAsync(2 → 3)` is covered like the existing versions.
-- **Server:** the `users` and `todo_assignees` tables in `ServerTodoStore`, and the new routes in
-  `TodoApiHost`.
-- **Test data schema:** `server.users[]`, `assigneeIds` on server todos, `local.users` (whether
-  the device has synced users), and `local.signedInAs`. The old sets have no users and stay valid.
-- **New test set `team`**: users Daan, Eva, Finn (active) and Gus (inactive). Buy milk assigned to
-  Daan; Book dentist to Eva; Plan trip to Daan and Eva; File taxes to Gus; Water plants to nobody.
-  The due dates reuse the pinned 10 March clock.
-- `TodoServerStub` (WireMock) serves users, and `TodoDataPhrases` gains
-  `the server should have user {name}` and `the todo {title} should be assigned to {user} on the server`.
+- **No link to todos.** No assignee, no "my todos", no filter by user (section 8).
+- **No signing in.** No "me", no `TODO_USER`, no `X-Todo-User` header (section 8).
+- **No permissions.** `Role` is recorded and shown, and grants nothing.
 
-### D7. A users UI test project and a users UAT project
+### D6. Storage, launch settings and test data
 
-```text
-samples/Todo/tests/
-  Brinell.Samples.Todo.Users.UITests/      page objects + H-tier UI tests for the users feature
-    Pages/UserListPage.cs, UserEditPage.cs
-    Tests/UserManagementTests.cs, AssignmentTests.cs, AssigneeFilterTests.cs
-    AssemblyInfo.cs   [assembly: UatNamespace("Users")]
-  Brinell.Samples.Todo.Users.Uat/          the users UAT suite
-    uat.config.md     Head maui, Using: (none project-wide)
-    Phrases/UserPhrases.cs     [UatPhraseClass(Namespace = "Users")]
-    Scenarios/TOD.11-manage-users.uat.md
-    Scenarios/TOD.12-assign-a-todo.uat.md
-    Scenarios/TOD.13-filter-by-assignee.uat.md
-    Runtime/TodoUsersUatFixture.cs
-```
-
-- **Why a separate UI test project:** the users pages are one team's slice of the app. Their
-  page objects, tests and namespace ship together. This is the "phrases in separate projects"
-  case in `phrase-namespaces.md` section 3.
-- **The existing Todo pages and phrases stay global,** with no namespace, so the 32 existing
-  scenarios need no `Using`.
-- The users UI tests reuse `TodoAppFixtureBase` (the `team` set, `TODO_USER`) through a project
-  reference to `Todo.UITests`. They do not copy it.
-- The Todo list and edit page objects gain the new controls (`Assignee`, `Me`, `Assignees`) in
-  `Todo.UITests`, because those pages are the Todo team's. Only the new pages live in the users
-  project.
-
-### D8. The minimum of UAT namespaces
-
-This is the recommendation in `phrase-namespaces.md`, cut down to what D7 needs. Folder-based
-visibility and callable phrases stay out.
-
-| Piece | Behaviour |
-| --- | --- |
-| `[assembly: UatNamespace("Users")]` | Every phrase class and page in the assembly belongs to `Users`. |
-| `[UatPhraseClass(Namespace = "Users")]` | One class belongs to `Users`, and overrides the assembly's namespace. |
-| No namespace | **Global**, which is today's behaviour. Always visible. |
-| `Using` metadata row (comma-separated) | The file also sees those namespaces. One per file, not per scenario. |
-| `## Using` in `uat.config.md` | Every file of the suite sees those namespaces. |
-| Binding | A pattern or page of a namespace the file does not use does not match. A step that only such a pattern would match fails with `UATB006` ("... is in namespace 'Users'; add `Using \| Users`"). |
-| Ambiguity | Two visible matches are an error, as today. Namespaces never shadow each other. |
-| Unknown `Using` | Error `UATB007`: no loaded assembly provides that namespace. |
-| Unused `Using` | Warning `UATB008`. |
-| Pages | Page names are unique **within** a namespace. The same name in two namespaces is allowed, and ambiguous only in a file that uses both. |
-| Report | The bind report and `__result.json` name each step's namespace (`Users: I am signed in as {user}`). |
-| Control verbs | They have no namespace of their own. They belong to their page's namespace, because they are reached through a page. |
-
-The spec catalog and the runtime catalog both filter by namespace, so the parity tests keep holding.
-
-**New ADR, AD-016 "Phrases and pages belong to namespaces a file uses".** It covers only the
-pieces above, and lists folder-based visibility as not decided.
-
-### D9. How this meets the multi-app plan
-
-- The `Apps` table's `User` column in [the multi-app plan](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/multi/plan.md) D4 becomes the app's `TODO_USER`. So in
-  `When Daan taps Save`, "Daan" is both the app and the signed-in user.
-- A `{user}` phrase argument (plan.md D3) is checked against the Todo app's users when the phrase
-  asks for it (`the todo {title} should be assigned to {user}`).
-- The mixed suite's scenario (c) in plan.md becomes "Daan assigns a todo to Eva on Windows, and
-  Eva's phone shows it under Mine".
-
-Neither plan waits for the other. The users UAT suite here is one-head and one-app.
+- **App schema version 3:** a `users` table with a column per field and `updated_at`. The
+  migration is additive, and `MigrateAsync(2 -> 3)` is covered like the existing versions.
+- **Server:** a `users` table in `ServerTodoStore` (`CREATE TABLE IF NOT EXISTS`, like `todos`)
+  and the routes in `TodoApiHost`.
+- **Test data schema:** `server.users[]` and `local.users[]` (the device's cached copy, which may
+  be behind). The old sets have no users and stay valid.
+- **New test set `team`**: Daan (Lead, no end date), Eva (Member, allowed until a date after
+  the pinned 10 March clock, 38 hours), Finn (Member, allowed until a date **before** the clock,
+  so "Expired"), Gus (Admin, Inactive), Hana (Member, On leave, reminders off). Rates
+  include one with thousands (`1,250.75`). Todos as in `one-todo`.
+- `TodoServerStub` (WireMock) serves and accepts users, so the offline and server-error cases can
+  be arranged later without the real API.
 
 ## 4. Journeys
 
-Add these to `journeys.md`, with the tiers from its legend:
+Add to `journeys.md`, with the tiers from its legend. The H (UI) and UAT columns are filled in
+later; U, I and C come with the build.
 
 | Id | Subtask | Tier |
 | --- | --- | --- |
 | **TOD.11 Manage users** | | |
-| TOD.11.1 | Users lists active users first, then inactive ones marked inactive | U + H |
-| TOD.11.2 | Add with a valid name shows the new user; the server has them | H + C |
-| TOD.11.3 | An empty, too-long or duplicate name is refused with a message | U + H |
-| TOD.11.4 | Rename changes the name on every todo that user is assigned to | H |
-| TOD.11.5 | Deactivate removes the user from the assign list and the filter; their todos keep the name, marked inactive | U + H |
-| TOD.11.6 | Offline, user changes are disabled and the page says so; the list still shows | U + H |
-| TOD.11.7 | Sign in as a user shows "Signed in as ..." on the list; `TODO_USER` does the same at start | H |
-| **TOD.12 Assign a todo** | | |
-| TOD.12.1 | Assigning users on the edit page shows them on the row and the detail | H |
-| TOD.12.2 | A new todo is assigned to whoever is signed in | U + H |
-| TOD.12.3 | Assignment syncs, and the other device shows it after its sync | I + H |
-| TOD.12.4 | An old client that sends no `assigneeIds` does not clear them | C |
-| TOD.12.5 | An assignee the device does not know shows as "Unknown user" and survives a sync | I |
-| TOD.12.6 | Assignment conflict: the newer `UpdatedAt` wins, as for every other field | U + I |
-| **TOD.13 Filter by assignee** | | |
-| TOD.13.1 | Everyone, Mine, Unassigned and each active user filter the rows | U + H |
-| TOD.13.2 | Mine shows only the signed-in user's todos; with nobody signed in, Mine is disabled | U + H |
-| TOD.13.3 | The assignee and status filters combine | U + H |
-| TOD.13.4 | An empty filtered list says which filter is on | U + H |
-| TOD.13.5 | The assignee choice survives opening a todo and coming back | H |
+| TOD.11.1 | Users lists available users first, then the others, each with its state (Expired, On leave, Inactive) | U + H |
+| TOD.11.2 | Add with valid values shows the new user; the server has them | H + C |
+| TOD.11.3 | Each field refuses a bad value with a message on that field: empty or too-long name, duplicate name, bad email, hours outside 1-60, a rate with three decimals or over the limit, notes over 500 characters | U + H |
+| TOD.11.4 | Editing a user changes every field shown on the list and on reopening | H |
+| TOD.11.5 | "Has an end date" off disables the date and saves no end date; on, the date is saved | U + H |
+| TOD.11.6 | A user whose end date has passed shows as Expired; tomorrow's does not (pinned clock) | U + H |
+| TOD.11.7 | Setting a user Inactive keeps them in the list as Inactive; their name can be reused | U + H + C |
+| TOD.11.8 | Offline, Add and Save are disabled and the page says so; the list still shows | U + H |
+| TOD.11.9 | A user added on one device shows on another after its sync | I + H |
+| TOD.11.10 | The server refuses what the app would refuse, naming the field (a client that skips the app's checks) | C |
 
 ## 5. Steps
 
@@ -284,11 +192,11 @@ Commands run from the Brinell root unless marked otherwise. The Todo solution is
 
 | # | Step | Tests |
 | --- | --- | --- |
-| 1.1 | `UserDto`, the users routes, `TodoDto.AssigneeIds`, and the `X-Todo-User` header in `Contracts`. | Contract tests (C): the round trip; the missing and present `assigneeIds` rule (TOD.12.4). |
-| 1.2 | `ServerTodoStore` users and assignees; `TodoApiHost` routes; name uniqueness enforced on the server too (`409`). | Contract tests against the in-process API. |
-| 1.3 | Core: `User`, `TodoItem.AssigneeIds`, `UserValidation`, `AssigneeFilter`, `TodoListRules.Arrange(items, status, assignee, me)`, and the Empty text per filter. | Unit (U): every filter combination, validation boundaries (50/51 characters, case-insensitive duplicates), ordering of assignee names. |
-| 1.4 | Infrastructure: schema v3, `SqliteUserRepository`, the signed-in setting, `TodoApiClient` users calls, sync fetching users first, `TODO_USER` in `LaunchSettings`. | Integration (I): migration 2 → 3, a sync that brings a new user, an unknown assignee surviving (TOD.12.5), conflicts (TOD.12.6). |
-| 1.5 | Test data schema, the `team` set, `TodoServerStub` users, and the new `TodoDataPhrases`. | `TestDataTests` load every set; the old sets are unchanged. |
+| 1.1 | `UserDto`, the two enums (status, role), and the routes in `Contracts`. | Contract tests (C): the round trip of every field, enums as names, date/time/decimal formats. |
+| 1.2 | `ServerTodoStore` users; `TodoApiHost` routes; the validation rules on the server (`400` naming the field, `409` for a duplicate). | Contract tests against the in-process API (TOD.11.10, TOD.11.7). |
+| 1.3 | Core: `User`, `UserValidation` (one rule per field, returning the field and the message), `UserRules.IsAvailable`, list ordering and state text. | Unit (U): each rule at its boundaries (50/51 characters, 1/60/0/61 hours, 2/3 decimals, 10,000.00/10,000.01), duplicate names ignoring case and ignoring inactive users, availability on yesterday/today/tomorrow/none for each status, ordering. |
+| 1.4 | Infrastructure: schema v3, `SqliteUserRepository`, `TodoApiClient` users calls, sync fetching users first and replacing the cache only after a complete fetch. | Integration (I): migration 2 -> 3, a sync that brings a new user (TOD.11.9), an interrupted fetch leaving the old cache. |
+| 1.5 | Test data schema, the `team` set, `TodoServerStub` users. | `TestDataTests` load every set; the old sets are unchanged. |
 
 Verify: Todo unit, integration and contract tests, then the Todo MAUI UAT (32) and web UAT (33),
 unchanged.
@@ -297,46 +205,16 @@ unchanged.
 
 | # | Step | Evidence |
 | --- | --- | --- |
-| 2.1 | ViewModels: `UserListViewModel`, `UserEditViewModel`, and the list and edit VMs' assignee members. | Unit tests on the VMs. |
-| 2.2 | XAML: User List and User Edit pages, the list header, the Assignee picker, row assignees, the edit page section, and detail. AutomationIds from D5. | Launch on Windows, visual tree and a screenshot of each new or changed page. Checked in light and dark. |
-| 2.3 | `Todo.UITests` page objects: `TodoListPage.Assignee`, `.Me`, `.Users`, row `Assignees`, and `TodoEditPage.Assignees`. | Existing Todo UI tests: same counts. |
+| 2.1 | ViewModels: `UserListViewModel`, `UserEditViewModel` (Fody, errors per field, Save enabled while invalid, offline state). | Unit tests on the VMs: errors appear on Save, the end date follows the checkbox, offline disables Add and Save. |
+| 2.2 | XAML: the Users toolbar item, User List and User Edit pages, AutomationIds from D4. | Launch on Windows: visual tree has every AutomationId, the disabled date is in the tree, a screenshot of both pages in light and dark with the `team` set, and one of the edit page with every error showing. |
+| 2.3 | Android build of the app (no Android tests). | The app builds for `net10.0-android`; one launch on the emulator if one is attached, otherwise stated as not run. |
 
-### Phase 3 - UAT namespaces in Brinell (`Brinell.Uat`, `Brinell.Core.Testing`)
+Verify: the existing Todo UI tests (36, 3 skipped) and both Todo UAT suites, unchanged.
 
-| # | Step | Tests (in `Brinell.Uat.Tests`) |
-| --- | --- | --- |
-| 3.1 | `UatNamespaceAttribute` (assembly), `UatPhraseClassAttribute.Namespace`, and the namespace recorded on each discovered page and phrase. | Discovery assigns namespaces. A class overrides its assembly. |
-| 3.2 | `Using` in file metadata and `## Using` in config (parser and writer). | Parse and round trip. |
-| 3.3 | The binder filters by visible namespaces; `UATB006`, `UATB007`, `UATB008`; pages unique per namespace. | A step outside the used namespaces fails, naming the namespace. Unknown and unused usings. The same page name in two namespaces is fine until both are used. **Every existing suite binds identically** (a snapshot of command ids per file). |
-| 3.4 | The report names the namespace; spec and runtime catalog parity. | Parity tests; report contents. |
-| 3.5 | AD-016, the `invariants.md` line, the namespaces section in `docs/guides/uat-phrases-and-flows.md` and `uat-template-guide.md`; `phrase-namespaces.md` status → "partly built", pointing here. | Doc links valid. |
+### Phase 3 - Docs
 
-Verify: `srcnew\Brinell.sln` build, then `Brinell.Uat.Tests`, `Brinell.Core.Tests`,
-`Brinell.Presenter.Uat.Tests`, and both Todo UAT suites unchanged.
-
-### Phase 4 - The users test projects
-
-| # | Step | Evidence |
-| --- | --- | --- |
-| 4.1 | `Brinell.Samples.Todo.Users.UITests`: `UserListPage` and `UserEditPage` (ControlObjects only), `[assembly: UatNamespace("Users")]`, and H-tier tests for TOD.11, TOD.12.1-2 and TOD.13 (Journey and Pyramid traits). Fixtures on `team`, with and without `TODO_USER`, and offline. | The new project's run: all pass, 3 runs in a row. `accessibility-audit.md` has no new findings. |
-| 4.2 | `Brinell.Samples.Todo.Users.Uat`: config, `TodoUsersUatFixture` (the Todo UAT fixture's composition plus the users assembly), `UserPhrases` in `Users`, and the three scenario files with `Using \| Users`. | All scenarios pass. |
-| 4.3 | **Namespace proof in the sample:** a scenario file with no `Using` fails binding with `UATB006`, run as an expected failure (`RunExpectedFailureUatFileAsync`). A second one with `Using \| Users, Nothing` fails with `UATB007`. | Both expected failures pass. |
-| 4.4 | Solution, `TestRunner.ps1`, and `JourneyCoverage` (TOD.11 to TOD.13 covered). | `JourneyCoverage` green. |
-
-### Phase 5 - The web head (parity)
-
-| # | Step | Evidence |
-| --- | --- | --- |
-| 5.1 | Razor pages and components for D5, with the same `data-testid` values as the AutomationIds. | Screenshot of each page. |
-| 5.2 | `Todo.Web.UITests` page objects for users, and a `Users` namespace for the web users pages. The users scenarios run on the web head as well (AD-014: one file serves every head), from a web users UAT suite that links the MAUI one's files. | The same scenarios pass on both heads. |
-
-Phase 5 can wait. Open question Q1.
-
-### Phase 6 - Docs
-
-`samples/Todo/README.md` (the users feature and the new projects), `uat-walkthrough.md` (one
-walk-through of a scenario with `Using`), `journeys.md` (section 4), and `CHANGELOG.md` for the
-Brinell parts (namespaces).
+`samples/Todo/README.md` (the users feature, the `team` set), `journeys.md` (section 4), and a
+note in `samples/Todo/uat-walkthrough.md` that users have no tests yet.
 
 ## 6. Progress
 
@@ -344,28 +222,56 @@ Brinell parts (namespaces).
 | --- | --- | --- |
 | - | - | - |
 
-## 7. Open questions
+## 7. Decided questions
 
-| # | Question | Proposal |
+Answered 2026-09-27.
+
+| # | Question | Decision |
 | --- | --- | --- |
-| Q0 | The request had a point 5 with nothing after it. What was it? | - |
-| Q1 | The web head: in this plan (phase 5), or later? | Later. The MAUI head proves the feature and the namespaces; the web head is parity work that follows the same steps. |
-| Q2 | Should a new todo be assigned to its creator by default? | Yes, when someone is signed in. That matches "my todos", and it can be unticked. |
-| Q3 | One assignee or several? | Several, as asked. One would make the edit page a Picker and the filter simpler, but "assign users" is plural. |
-| Q4 | Should the server enforce anything by user (for example, only an assignee can edit)? | No. `X-Todo-User` is recorded, not enforced. Permissions are a feature of their own. |
-| Q5 | Folder-based phrase visibility (`phrase-namespaces.md` section 4)? | Not in this plan. `Using` and namespace attributes first; folders once a suite has enough scenarios to need them. |
+| Q1 | Which tests wait? | Only the tests that drive the UI: the H-tier UI tests and the UAT scenarios. Unit, integration and contract tests come with the code. |
+| Q2 | `Role` and `Department`, two fixed lists? | Department is dropped. `Role` is the one fixed list in a `Picker`. |
+| Q3 | Time and on/off as `UatValues` kinds | Yes, added when the users tests are written, with AD-016 amended: `08:30` (24-hour, invariant) and `on`/`off`. |
+| Q4 | Is an `OnLeave` or expired user editable? | Yes. Every user is editable; the state only affects "available". |
+| Q5 | The web head | Later, with the tests. The Razor pages use the same `data-testid` values as the AutomationIds, so the scenarios will serve both heads (AD-014). |
+| Q6 | Any other field types? | No. Left out: a colour (no MAUI colour picker), an image or avatar (file picking is OS UI outside the app), a multi-select list (assignment will bring a collection of CheckBoxes, section 8), a date and time together (no MAUI control; `UpdatedAt` shows as a read-only label, which covers reading one). |
 
-## 8. Risks
+## 8. Later
 
-- **Bind-time filtering could change what existing files bind to.** Every existing phrase and
-  page is global, so nothing should change. Step 3.3's per-file snapshot proves it, rather than
-  relying on "should".
-- **A second Picker on the list page** adds a dialog on Android, where Picker is still broken
-  (`.my/android/plan.md` A1). The filter tests follow the status filter's lead and are Windows-only
-  until A1 is fixed.
-- **A collection of CheckBox rows** on the edit page may reveal gaps in the collection and toggle
-  controls. If it does, fix the control in Brinell (AGENTS.md: behaviour lives in controls). Do not
-  work around it in the test.
-- **The schema version 3 migration** runs on every existing device database. The additive
-  migration and its test cover this. The server table is created with `IF NOT EXISTS`, like
-  `todos`.
+These were in the first draft of this plan and wait until the users app exists and phrase scopes
+and namespaces are built. The decisions below are the starting point, not settled.
+
+- **Assignment.** `TodoDto.AssigneeIds` (a list, sorted by name when shown), syncing with the todo
+  under the newer-`UpdatedAt` rule. An unknown id is kept and shown as "Unknown user". The API
+  keeps assignees when the field is **missing** and replaces them when present, even `[]`. Only
+  available users can be assigned; an inactive or expired assignee stays on the todo, marked.
+  The edit page gets an "Assigned to" section with a CheckBox row per available user
+  (`TodoEdit_Assignees`), which exercises Brinell's collection and toggle controls.
+- **"Me".** A **Sign in as** action on a user row, `TODO_USER` as a launch setting, "Signed in as"
+  on the list (`TodoList_Me`), and `X-Todo-User` recorded by the API. No passwords. The
+  multi-app `Apps` table's `User` column fills `TODO_USER`, so `Daan` in a step is both the app
+  and the signed-in user.
+- **The assignee filter.** A second Picker (`TodoList_Assignee`): Everyone, Mine, Unassigned, each
+  available user, and perhaps each role. It combines with the status filter.
+- **Journeys TOD.12 (assign a todo) and TOD.13 (filter by assignee)**, as in the first draft at
+  [7162ac7](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/uat/phrases/users-plan.md#4-journeys).
+- **The users test projects.** `Brinell.Samples.Todo.Users.UITests` (page objects `UserListPage`,
+  `UserEditPage`, H-tier tests) and `Brinell.Samples.Todo.Users.Uat` (scenarios for TOD.11-13 with
+  `Using | Users`, phrases in a `Users` namespace), plus the expected-failure proof that a file
+  without `Using` fails binding. They are the first real use of phrase namespaces
+  ([phrase-namespaces.md](phrase-namespaces.md)); that work, and its AD (the next free number,
+  not AD-016, which is taken), belongs with the namespaces plan rather than here.
+- **The web head**, for parity (Q5).
+
+## 9. Risks
+
+- **The user form exercises controls the Todo app has not used**: `RadioButton`, `Stepper`,
+  `Slider`, `TimePicker`, `CheckBox` enabling a `DatePicker`. Some may show gaps in Brinell's
+  controls, especially on Android (Picker is still broken there, `.my/android/plan.md` A1; Stepper
+  and Slider are A2-A3). That is the point of the fields; the gaps are fixed in Brinell's controls
+  when the tests are written, never worked around in the app.
+- **`decimal` and `TimeOnly` in SQLite** have no native type. Store the rate as integer cents and
+  the time as minutes since midnight, and test the round trip in 1.4.
+- **The schema version 3 migration** runs on every existing device database. It is additive and
+  tested.
+- **A date in the past is a valid value** for "allowed until". The DatePicker must not set a
+  minimum date, or ending someone's access would need a date in the future.
