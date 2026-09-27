@@ -179,7 +179,7 @@ public sealed class AppiumMauiElement : IMauiElement
     //
     // Writing it here, once, is the point of the design. The shared ladder used to reach the
     // same conclusion by probing three patterns that are never present on this platform, on
-    // every control, on every call. See .my/fix/design-controls-know-how-to-click.md.
+    // every control, on every call.
 
     /// <inheritdoc />
     public void Invoke() => Click();
@@ -1252,7 +1252,7 @@ public sealed class AppiumMauiElement : IMauiElement
         {
             throw new PlatformNotSupportedException(
                 $"Shell chrome on {_driver.Platform} has not been mapped: nothing is known about {what}. "
-                + "Dump the tree and add it - see .my/navigation/design-shell-sample-app.md.");
+                + "Dump the tree and add it to AppiumMauiDriver.ShellChrome.");
         }
     }
 

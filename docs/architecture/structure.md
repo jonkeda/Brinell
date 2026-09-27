@@ -12,7 +12,7 @@ Working directory for paths in this document: Brinell root.
 | `tools/` | Developer tools such as the scraper |
 | `docs/` | Active curated documentation |
 | `docs2/` | Preserved previous documentation tree |
-| `.my/reports/` | Planning and research notes |
+| `.my/` | Plans for work in flight, indexed in `.my/README.md` |
 | `Brinell.sln` | Top-level solution, including tools and a selected source/test slice |
 | `srcnew/Brinell.sln` | Broad compile solution for many source, sample, and test projects |
 

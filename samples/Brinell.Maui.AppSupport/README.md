@@ -196,8 +196,7 @@ new finds it and anything still holding it fails promptly.
 
 It used to call `UiaDisconnectProvider` instead, and that was measured to make UI Automation retire
 the *client's element for the whole app window* - seven or eight times in 150 page changes - after
-which a test driver holding that element could find nothing at all. See
-`.my/fix/rca-app-freeze-was-a-stale-root.md`.
+which a test driver holding that element could find nothing at all.
 
 `UiaDisconnectProvider` is still called where it matters: when the bridge is torn down with its
 window. A provider left connected to a window that no longer exists makes clients block until their

@@ -205,7 +205,6 @@ public class EntryTests
     /// The test that was missing. <c>IsFocused</c> read three attribute names that Windows does
     /// not publish and returned false when none answered, so it reported "not focused" for a
     /// focused control on every Windows run - and nothing failed, because nothing asked.
-    /// See .my/GetAttribute/audit-what-getattribute-can-answer.md.
     /// </remarks>
     [Fact(Timeout = TestConstants.DefaultTestTimeoutMs)]
     [Trait("Method", "IsFocused")]

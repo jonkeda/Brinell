@@ -78,4 +78,4 @@ invariants behind it - what must stay true when *changing* Brinell - are in
 - Use `Brinell.*` namespaces only.
 - Mark every command with its working directory.
 - Keep guides here; keep decisions and invariants in `.docs/`.
-- Do not add generated test artifacts under `docs/` or `.my/reports/`.
+- Do not add generated test artifacts under `docs/` or `.my/`; they belong under `TestResults/`.

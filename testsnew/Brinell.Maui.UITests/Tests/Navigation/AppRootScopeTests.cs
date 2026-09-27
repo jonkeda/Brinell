@@ -19,7 +19,7 @@ namespace Brinell.Maui.UITests.Tests.Navigation;
 /// a <c>Button&lt;HubPage&gt;</c>, which is a contradiction - the hub is not loaded precisely
 /// when the way back to it is wanted - and both readiness gates refused, correctly. The fix at
 /// the time abandoned the control object for a hand-rolled lookup; <c>AppRoot</c> is the scope
-/// that was actually missing. See <c>.my/fix/rca-backtohub-is-not-a-control-object.md</c>.
+/// that was actually missing.
 /// </para>
 /// </remarks>
 [Collection("Maui")]

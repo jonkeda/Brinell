@@ -68,7 +68,7 @@ for tool-specific restore policies even when the framework projects build.
 | `samples/` | Sample applications used by tests and demos |
 | `docs/` | Active documentation |
 | `docs2/` | Preserved previous documentation |
-| `.my/reports/` | Planning and research notes |
+| `.my/` | Plans for work in flight, indexed in `.my/README.md` |
 
 ## Core Rules
 

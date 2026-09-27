@@ -170,5 +170,4 @@ Null-skip and idempotence still hold for hand-written members: `SetPlaying(null)
 
 `srcnew/Brinell.Maui.CommunityToolkit/Controls/Media/MediaElement.tpl.cs` with `MediaPlayPauseButton.tpl.cs` and
 `MediaTimeLabel.tpl.cs`; `srcnew/Brinell.Maui.CommunityToolkit/Controls/Views/AvatarView.tpl.cs` with
-`AvatarInitials.tpl.cs` and `AvatarImage.tpl.cs`. Background:
-`.my/skills/component-operations-plan.md`.
+`AvatarInitials.tpl.cs` and `AvatarImage.tpl.cs`.

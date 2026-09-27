@@ -165,7 +165,7 @@ public class ReadinessTests
     /// where a control is scoped to a page it does not belong to. The sample-app fixture had
     /// exactly that — the hub's own back button, which is attached to whichever page the hub
     /// opened — and once <c>3784e70</c> began enforcing readiness, every UI test after the first
-    /// died here. See <c>.my/fix/rca-page-readiness-gate.md</c>.
+    /// died here.
     /// </para>
     /// <para>
     /// The behaviour asserted below is the correct one and the fix was to stop asking a page for

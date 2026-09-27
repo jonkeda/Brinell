@@ -38,8 +38,7 @@ public class ShellSamplePage : PageObjectBase<ShellSamplePage>
     /// <para>
     /// <b>Not the tab strip alone.</b> A flyout item without tabs shows none on Android (Windows
     /// keeps an empty host), so on those pages the Shell never counted as loaded, every lookup
-    /// scoped under it was refused, and the fixture could not open the flyout to leave -
-    /// <c>.my/navigation/rca-android-return-to-hub.md</c>.
+    /// scoped under it was refused, and the fixture could not open the flyout to leave.
     /// </para>
     /// </remarks>
     public override bool IsLoaded()

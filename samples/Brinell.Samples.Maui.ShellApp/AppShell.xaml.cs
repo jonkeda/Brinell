@@ -47,7 +47,7 @@ public partial class AppShell : Shell
     /// </para>
     /// <para>
     /// <b>Android has the same gap</b> and was left out, so every Shell test failed there with
-    /// "Page 'AppShell' ... MissingRoot" (<c>.my/navigation/rca-android-return-to-hub.md</c>).
+    /// "Page 'AppShell' ... MissingRoot".
     /// UiAutomator2 reports an element's <c>resource-id</c> from its accessibility node, which is
     /// where MAUI puts every other control's id; the Shell's view gets it the same way, through a
     /// delegate that wraps whatever delegate the view already had.

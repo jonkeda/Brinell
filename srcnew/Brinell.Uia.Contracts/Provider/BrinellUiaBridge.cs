@@ -212,7 +212,6 @@ public sealed class BrinellUiaBridge : IDisposable
             // (step 28), and Teardown still disconnects. A target withdrawn while its window lives
             // is a different case - its provider is still hosted and still answers, so retiring it
             // makes a stale reference fail promptly without touching UI Automation's connection.
-            // See .my/fix/rca-app-freeze-was-a-stale-root.md.
             published.Retire();
             PublishChildren();
             return true;

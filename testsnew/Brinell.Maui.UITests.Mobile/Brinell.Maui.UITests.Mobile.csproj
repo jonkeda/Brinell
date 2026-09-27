@@ -16,7 +16,7 @@
     That is the whole point of the phase 4 split: one set of page objects, containers and
     test bodies, compiled into a Windows head that references the FlaUI driver and a mobile
     head that references the Appium driver. A test is written once and runs on all three
-    platforms unchanged - goal (c) in .my/maui/maui-control-architecture-plan.md.
+    platforms unchanged.
 
     Linking rather than moving keeps the Windows project's layout untouched, so the existing
     suite and its tooling carry on working exactly as before.

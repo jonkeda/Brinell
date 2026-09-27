@@ -8,7 +8,7 @@ namespace Brinell.Maui.UITests.Tests.Collection;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Measured on Windows 2026-09-14 (<c>.my/bridge/fix-remaining-skips.md</c> step C0): the row
+/// Measured on Windows 2026-09-14: the row
 /// itself publishes no set metadata, its <c>ListViewItem</c> ancestor does, and
 /// <see cref="IMauiElement.PositionInSet"/> reads the nearest ancestor that publishes it. This used
 /// to walk the ancestors through FlaUI by reflection to find that out; it now reads the interface,

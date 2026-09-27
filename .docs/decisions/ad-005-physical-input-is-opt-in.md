@@ -23,7 +23,7 @@ real mouse, keyboard, clipboard and foreground-window use pass through one gate,
 | `0`, `false`, `off`, `allow` | performed |
 
 Refusing by default would fail their suites rather than quieten them. The variable has no
-effect on MAUI. The history and the removal plan are in `.my/bridge/no-physical-input.md`.
+effect on MAUI. Evidence: [the history and the removal plan at d4917d0](https://github.com/exact-mobile-apps/test-tooling/blob/d4917d0/.my/bridge/no-physical-input.md).
 
 **Broken when:** `Brinell.Maui.FlaUI` gains pointer/keyboard/clipboard/foreground code, or a
 setting is added to re-enable physical input on MAUI.

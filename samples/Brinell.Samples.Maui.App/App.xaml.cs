@@ -14,7 +14,6 @@ public partial class App
         // and Windows only ever exposed nine, which is why four pages had to become routes.
         // The hub reaches every page with one identical click everywhere, and its flat stack
         // leaves no pushed route to leak between tests.
-        // See .my/maui/plan-sample-app-recovery-and-phase4.md.
         MainPage = new NavigationPage(new HubPage());
     }
 

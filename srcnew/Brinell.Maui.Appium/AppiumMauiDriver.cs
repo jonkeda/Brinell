@@ -134,7 +134,7 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable
     /// publishes its id), and a scope only searches down. They used to be <c>android:id/content</c>,
     /// the frame <i>above</i> the Shell, which no scoped lookup can reach: every tab and flyout
     /// collection reported zero items. Each host is named by what it holds, as measured on the
-    /// device - see <c>.my/navigation/rca-android-return-to-hub.md</c>.
+    /// device.
     /// </para>
     /// <para>
     /// The drawer's items are view groups carrying their title as a content description, inside
@@ -240,7 +240,6 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable
     /// CommunityToolkit popup, say - covers the app and reports no way back. Refusing here on that
     /// reading was tried and blocked the one press that dismisses such a page, so the judgement
     /// stays with the caller, which can see what it expected to be on screen.
-    /// See <c>.my/navigation/rca-android-return-to-hub.md</c>.
     /// </remarks>
     public void NavigateBack() => _driver.Navigate().Back();
 
