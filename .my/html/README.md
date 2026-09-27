@@ -15,7 +15,7 @@ Start here.
 ## Origin
 
 This is the **Html** slice of the "move down" project drafted in
-[`../stale-readiness/move-down.md`](../stale-readiness/move-down.md). MAUI was made right first
+[`../stale-readiness/move-down.md`](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/stale-readiness/move-down.md). MAUI was made right first
 on its own interfaces (steps 0-9, done 2026-09-19). Html is next in the move-down order after
 NativeAndroid and WPF/WinForms, but its work can be planned now because:
 

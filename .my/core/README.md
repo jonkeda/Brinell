@@ -14,7 +14,7 @@ Start here.
 ## Origin
 
 This document supersedes the "move down" draft in
-[`../stale-readiness/move-down.md`](../stale-readiness/move-down.md) with one change: the
+[`../stale-readiness/move-down.md`](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/stale-readiness/move-down.md) with one change: the
 common layer uses **new names** (`ICoreElement`, `ICoreDriver`, `ICoreScope`, ...) instead of
 reusing the existing `IElement<T>`, `IDriver<T>`, `IElementScope<T>` and friends.
 

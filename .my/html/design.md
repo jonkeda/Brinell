@@ -2,7 +2,7 @@
 
 **This is the proposed design.** It is not accepted; the plan is a draft (`plan.md` section 1).
 Where a rule or shape here matches MAUI's, this document says so and points into
-[`../stale-readiness/design.md`](../stale-readiness/design.md) instead of restating it. The
+[`../stale-readiness/design.md`](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/stale-readiness/design.md) instead of restating it. The
 departures from MAUI live in [differences-from-maui.md](differences-from-maui.md) and are cited
 inline.
 
