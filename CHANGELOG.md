@@ -8,6 +8,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- CodeLens from C# to scenarios (Visual Studio): "used in N UAT steps · M scenarios" above step
+  definitions, page phrases and page-object controls, with the steps in its details.
+  `brinell/usages` in the language server counts across every suite. A new assembly,
+  `Brinell.Uat.VisualStudio.CodeLens`, runs in Visual Studio's CodeLens process and reaches the
+  server through the extension's `ICodeLensCallbackListener`.
+- Hover, go to definition and find references in the editor (`Brinell.Uat.LanguageServer`). Hover
+  shows what a step binds to, its page and app, the method's XML `<summary>`, and each argument as
+  written and as read. A call shows the callable and its body. Definition opens a C# step's method
+  through the portable PDB (`UatSourceLocator` in `Brinell.Uat.Workspace`, which also reads a PDB
+  beside a renamed assembly), a control verb's control on the page at that line, a page step's page
+  class, and a call's `## Step:` heading. References finds every step in the suite's feature files,
+  linked files included, that binds to the same method or calls the same callable.
+  `UatSuite.FindType` finds a type of the loaded suite, and the shadow copy now takes the XML doc
+  files too.
+- Completion in the editor (`textDocument/completion`): keywords, sections, and step texts by
+  words (every typed word in the phrase, not only a prefix) as snippets with `{x}` tab stops. The
+  current page's steps come first, and the file's callable steps are included. The values of the
+  parameter at the caret are offered too: pages, the controls of the page the binder has the
+  scenario on at that line, users, apps, enum members, and an outline's Examples columns.
+- Outline, folding and semantic colours in the editor (`Brinell.Uat.LanguageServer`):
+  `textDocument/documentSymbol` gives the heading tree by kind, `foldingRange` folds the sections,
+  fences, tables and doc strings, and `semanticTokens/full` colours keywords, quoted values, `{x}`
+  and `<x>` placeholders, tags and comments. They come from the file's shape (`UatDocumentStructure`),
+  so they work before a build and while the file does not parse.
 - Diagnostics in the editor (Visual Studio, `Brinell.Uat.LanguageServer`): feature, step and config
   files get the `brinell-uat` content type (derived from Markdown) and an LSP client. The server
   publishes the gate's diagnostics word for word: the open file after a pause in typing, and every
