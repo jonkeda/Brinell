@@ -400,12 +400,27 @@ and from its `TodoList` collection:
 public TodoList AssertRow(string title, bool present = true, int? timeoutMs = null) { ... }
 ```
 
+Its row phrases are item verbs, with no `{control}`:
+
+```csharp
+[UatWhen("I open the todo {item}")]
+public TodoDetailPage Open(string title, int? timeoutMs = null) { ... }
+
+[UatThen("the todo {item} should show status {value}")]
+public TodoList AssertRowStatus(string title, string status) { ... }
+
+[UatThen("the todo {item} should be waiting to sync", HasLiteral = true, Literal = true)]
+[UatThen("the todo {item} should be synced", HasLiteral = true, Literal = false)]
+public TodoList AssertPending(string title, bool expected = true, int? timeoutMs = null) { ... }
+```
+
 which the scenarios then read as:
 
 ```markdown
 When I advance Status to "Done"
 Then Status should show status "Done"
 And Todos should have todo "Plan the sprint"
+And the todo "Plan the sprint" should be waiting to sync
 ```
 
 Rules for a control verb:
@@ -414,6 +429,12 @@ Rules for a control verb:
   other placeholder may appear; its captured value is passed as the method's
   first parameter. With no value placeholder and no literal, the method is called
   with no arguments, so its remaining parameters must be optional.
+- **Item verbs.** A verb on a collection may also declare `{item}`: the row it is about.
+  The item is passed first, then the value (or the literal), and the collection finds
+  the row itself.
+- **A verb may leave out `{control}`.** It then runs on the one control of the current
+  page whose type declares it. A page with none of them, or with two, fails the step
+  and says so; put `{control}` in the phrase when a page can have two.
 - For an on/off pair of phrases over one method, set `HasLiteral = true` and
   `Literal` to the boolean to pass, as `AssertVisible` does for
   `should be visible` / `should not be visible`.

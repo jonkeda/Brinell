@@ -1,5 +1,4 @@
 using System.Reflection;
-using System.Text.RegularExpressions;
 using Brinell.Core.Interfaces;
 
 namespace Brinell.Uat;
@@ -8,6 +7,10 @@ namespace Brinell.Uat;
 /// A control step discovered from a <see cref="UatPhraseAttribute"/> on a control method. The engine invokes
 /// <see cref="MethodName"/> by name, so no reference to the control type is needed.
 /// </summary>
+/// <remarks>
+/// An item verb names a row with <c>{item}</c>, passed first; the collection finds the row. A verb
+/// without <c>{control}</c> runs on the one control of the current page that declares it.
+/// </remarks>
 internal sealed record UatStepBinding(
     UatEffectiveStepKeyword Keyword,
     string Phrase,
@@ -15,7 +18,14 @@ internal sealed record UatStepBinding(
     string MethodName,
     string? ValueArgumentName,
     bool? Literal,
-    Type? ValueType = null);
+    Type? ValueType = null)
+{
+    /// <summary>The placeholder that names the collection's row; null for a verb on the control itself.</summary>
+    public string? ItemArgumentName { get; init; }
+
+    /// <summary>Whether the phrase names its control with <c>{control}</c>.</summary>
+    public bool NamesControl { get; init; } = true;
+}
 
 /// <summary>
 /// Discovers control-step vocabulary from <see cref="UatPhraseAttribute"/> declarations on control methods and
@@ -24,6 +34,10 @@ internal sealed record UatStepBinding(
 /// </summary>
 internal static class UatCatalogBuilder
 {
+    public const string ControlParameter = "control";
+    public const string ItemParameter = "item";
+    private const string UserParameter = "user";
+
     // The Brinell.Core assembly declares the built-in control vocabulary via [UatWhen]/[UatThen].
     // A type whose dependency is missing (xunit, when the brinell-data tool loads Core) is skipped.
     private static readonly Type[] BuiltinStepTypes = LoadableTypes(typeof(IElementObject<>).Assembly);
@@ -60,9 +74,14 @@ internal static class UatCatalogBuilder
                 commandIdPrefix + binding.CommandSuffix,
                 allowsTable: false,
                 handler: handlerFactory?.Invoke(binding),
-                parameters: binding is { ValueArgumentName: { } name, ValueType: { } type }
-                    ? [new UatPhraseParameter(name, type, UatParameterSource.Phrase, Optional: false, AllowsNull: false)]
-                    : []);
+                parameters: [
+                    .. binding.ItemArgumentName is { } item
+                        ? [new UatPhraseParameter(item, typeof(string), UatParameterSource.Phrase, Optional: false, AllowsNull: false)]
+                        : Array.Empty<UatPhraseParameter>(),
+                    .. binding is { ValueArgumentName: { } name, ValueType: { } type }
+                        ? [new UatPhraseParameter(name, type, UatParameterSource.Phrase, Optional: false, AllowsNull: false)]
+                        : Array.Empty<UatPhraseParameter>(),
+                ]);
         }
     }
 
@@ -95,7 +114,10 @@ internal static class UatCatalogBuilder
                         continue;
                     }
 
-                    var valueArgument = ResolveValueArgument(attribute.Phrase);
+                    var names = UatCommandPattern.ParameterNames(attribute.Phrase);
+                    var itemArgument = names.Contains(ItemParameter) ? ItemParameter : null;
+                    var valueArgument = ResolveValueArgument(names);
+                    var valueIndex = itemArgument is null ? 0 : 1;
                     bindings.Add(new UatStepBinding(
                         attribute.Keyword,
                         attribute.Phrase,
@@ -103,7 +125,11 @@ internal static class UatCatalogBuilder
                         method.Name,
                         valueArgument,
                         attribute.HasLiteral ? attribute.Literal : null,
-                        valueArgument is null ? null : method.GetParameters().FirstOrDefault()?.ParameterType is { IsGenericParameter: false } valueType ? valueType : null));
+                        valueArgument is null ? null : method.GetParameters().ElementAtOrDefault(valueIndex)?.ParameterType is { IsGenericParameter: false } valueType ? valueType : null)
+                    {
+                        ItemArgumentName = itemArgument,
+                        NamesControl = names.Contains(ControlParameter),
+                    });
                 }
             }
         }
@@ -111,14 +137,11 @@ internal static class UatCatalogBuilder
         return bindings;
     }
 
-    // The one placeholder that is neither {control} nor {user} (the actor, AD-015) is the value
-    // argument; literal-only phrases have none.
-    private static string? ResolveValueArgument(string phrase)
+    // The one placeholder that is not {control}, {user} (the actor, AD-015) or {item} (the row) is
+    // the value argument; literal-only phrases have none.
+    private static string? ResolveValueArgument(IReadOnlyList<string> names)
     {
-        var names = Regex.Matches(phrase, @"\{([A-Za-z][A-Za-z0-9_-]*)\}")
-            .Select(match => match.Groups[1].Value)
-            .Where(name => name is not ("control" or "user"))
-            .ToArray();
-        return names.Length == 1 ? names[0] : null;
+        var values = names.Where(name => name is not (ControlParameter or UserParameter or ItemParameter)).ToArray();
+        return values.Length == 1 ? values[0] : null;
     }
 }

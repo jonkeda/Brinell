@@ -64,6 +64,52 @@ public sealed class TodoList : CollectionObjectBase<TodoListPage, TodoList, Todo
     [UatThen("{control} should not have todo {value}")]
     public TodoList AssertNoRow(string title, int? timeoutMs = null) => AssertRow(title, present: false, timeoutMs);
 
+    /// <summary>Asserts a row is shown for each title, waiting for them.</summary>
+    [UatThen("the list should show {value}")]
+    public TodoList AssertRows(string[] titles, int? timeoutMs = null)
+    {
+        foreach (var title in titles)
+        {
+            AssertRow(title, timeoutMs: timeoutMs ?? TestConstants.PageTimeoutMs);
+        }
+
+        return Self;
+    }
+
+    /// <summary>Asserts the row shows this status name: Open, In progress, Done or Overdue.</summary>
+    [UatThen("the todo {item} should show status {value}")]
+    public TodoList AssertRowStatus(string title, string status)
+    {
+        ShownRow(title).Status.AssertStatus(status);
+        return Self;
+    }
+
+    /// <summary>Asserts the row's status cannot be changed there: it has no Next button.</summary>
+    [UatThen("the todo {item} should have a read-only status")]
+    public TodoList AssertRowStatusReadOnly(string title)
+    {
+        ShownRow(title).Status.AssertChangeable(false);
+        return Self;
+    }
+
+    /// <summary>Asserts the row shows "Due …", or with <c>false</c> no due date.</summary>
+    [UatThen("the todo {item} should show a due date", HasLiteral = true, Literal = true)]
+    [UatThen("the todo {item} should show no due date", HasLiteral = true, Literal = false)]
+    public TodoList AssertRowDue(string title, bool shown)
+    {
+        var due = ShownRow(title).Due;
+        if (shown)
+        {
+            due.AssertTextStartsWith("Due ");
+        }
+        else
+        {
+            due.AssertShown(false);
+        }
+
+        return Self;
+    }
+
     /// <summary>
     /// Waits until the row with this title shows (or, with <c>false</c>, no longer shows) the
     /// "not synced yet" marker.
@@ -72,9 +118,11 @@ public sealed class TodoList : CollectionObjectBase<TodoListPage, TodoList, Todo
     /// Finds the row by title on every poll rather than holding one: a sync reloads the list, and a
     /// row found before it would be the old one.
     /// </remarks>
+    [UatThen("the todo {item} should be waiting to sync", HasLiteral = true, Literal = true)]
+    [UatThen("the todo {item} should be synced", HasLiteral = true, Literal = false)]
     public TodoList AssertPending(string title, bool expected = true, int? timeoutMs = null)
     {
-        if (!RunWait(() => FindItem(row => TryReadTitle(row) == title)?.Pending.IsShown() == expected, timeoutMs))
+        if (!RunWait(() => FindItem(row => TryReadTitle(row) == title)?.Pending.IsShown() == expected, timeoutMs ?? TestConstants.PageTimeoutMs))
         {
             throw new AssertionException(
                 $"Expected the row titled '{title}' in '{Locator.Value}' to {(expected ? "show" : "not show")} the pending marker.");
@@ -82,6 +130,9 @@ public sealed class TodoList : CollectionObjectBase<TodoListPage, TodoList, Todo
 
         return Self;
     }
+
+    // The row with this title, once it is shown.
+    private TodoRow ShownRow(string title) => AssertRow(title, timeoutMs: TestConstants.PageTimeoutMs).Row(title);
 
     // A sync reloads the list, so a row listed a moment ago can be gone before its title is read.
     // Such a row is not the one asked for: null, and the caller's wait looks again.
@@ -98,6 +149,7 @@ public sealed class TodoList : CollectionObjectBase<TodoListPage, TodoList, Todo
     }
 
     /// <summary>Opens a row's detail page, as tapping it does.</summary>
+    [UatWhen("I open the todo {item}")]
     public TodoDetailPage Open(string title, int? timeoutMs = null)
     {
         WaitRow(title, present: true, timeoutMs);

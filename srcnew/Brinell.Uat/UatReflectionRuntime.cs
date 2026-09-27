@@ -198,15 +198,7 @@ public sealed class UatReflectionRuntime
             catalog,
             ControlStepTypes(),
             "Builtin.",
-            binding => (context, invocation, _) =>
-                InvokeControlMethodAsync(
-                    context,
-                    invocation,
-                    "control",
-                    binding.MethodName,
-                    binding.ValueArgumentName,
-                    binding.Literal,
-                    binding.ValueType));
+            binding => (context, invocation, _) => InvokeControlMethodAsync(context, invocation, binding));
 
         RegisterPhraseClassPhrases(
             catalog,
@@ -697,13 +689,14 @@ public sealed class UatReflectionRuntime
     private Task<UatStepResult> InvokeControlMethodAsync(
         UatExecutionContext context,
         UatStepInvocation invocation,
-        string controlArgumentName,
-        string methodName,
-        string? valueArgumentName = null,
-        object? literalArgument = null,
-        Type? valueType = null)
+        UatStepBinding binding)
     {
-        if (!TryGetCurrentControl(context, invocation, controlArgumentName, out var controlResult))
+        var (methodName, valueArgumentName, valueType) = (binding.MethodName, binding.ValueArgumentName, binding.ValueType);
+        object? literalArgument = binding.Literal;
+        var found = binding.NamesControl
+            ? TryGetCurrentControl(context, invocation, UatCatalogBuilder.ControlParameter, out var controlResult)
+            : TryGetDeclaringControl(context, invocation, binding, out controlResult);
+        if (!found)
         {
             return Task.FromResult(controlResult.Result);
         }
@@ -719,9 +712,10 @@ public sealed class UatReflectionRuntime
         {
             return Task.FromResult(UatStepResult.Failed(invocation, $"'{valueArgumentName}' is a {UatValues.Describe(valueType!)}; {ex.Problem.Message}", ex));
         }
-        var arguments = valueArgumentName is null && literalArgument is null
-            ? []
-            : new[] { value };
+        object?[] arguments = [
+            .. binding.ItemArgumentName is { } item ? [invocation.Arguments[item]] : Array.Empty<object?>(),
+            .. valueArgumentName is null && literalArgument is null ? Array.Empty<object?>() : [value],
+        ];
 
         try
         {
@@ -838,6 +832,59 @@ public sealed class UatReflectionRuntime
         result = new UatControlResolution(control, controlName, UatStepResult.Passed(invocation));
         return true;
     }
+
+    // A verb without {control} runs on the one control of the current page whose type declares it:
+    // "the todo {item} should be synced" on the list's collection.
+    private bool TryGetDeclaringControl(
+        UatExecutionContext context,
+        UatStepInvocation invocation,
+        UatStepBinding binding,
+        out UatControlResolution result)
+    {
+        result = default;
+        if (!TryGetCurrentPage(context, invocation, out var pageResult))
+        {
+            result = new UatControlResolution(null, string.Empty, pageResult.Result);
+            return false;
+        }
+
+        var page = pageResult.Page!;
+        var declaring = page.Controls
+            .Where(control => SelfAndBaseTypes(control.Property.PropertyType).Any(type => Declares(type, binding)))
+            .ToList();
+        if (declaring.Count != 1)
+        {
+            result = new UatControlResolution(
+                null,
+                string.Empty,
+                UatStepResult.Failed(
+                    invocation,
+                    declaring.Count == 0
+                        ? $"No control on page '{page.Name}' has the step '{binding.Phrase}'. Go to the page whose control has it first."
+                        : $"The step '{binding.Phrase}' is on several controls of page '{page.Name}' ({string.Join(", ", declaring.Select(control => control.Name))}), so it cannot tell which one is meant. Put {{control}} in the phrase."));
+            return false;
+        }
+
+        var pageInstance = GetPageInstance(context, page);
+        var control = pageInstance is null ? null : declaring[0].Get(pageInstance);
+        if (control is null)
+        {
+            result = new UatControlResolution(
+                null,
+                declaring[0].Name,
+                UatStepResult.Failed(invocation, $"UAT control '{declaring[0].Name}' on page '{page.Name}' could not be created."));
+            return false;
+        }
+
+        result = new UatControlResolution(control, declaring[0].Name, UatStepResult.Passed(invocation));
+        return true;
+    }
+
+    private static bool Declares(Type type, UatStepBinding binding)
+        => type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly)
+            .Any(method => method.Name == binding.MethodName &&
+                           method.GetCustomAttributes<UatPhraseAttribute>(inherit: false)
+                               .Any(attribute => attribute.Keyword == binding.Keyword && attribute.Phrase == binding.Phrase));
 
     // A step may put "the" before a control's name: "the dialog should ask ..." finds Dialog.
     private static UatRuntimeControl? FindControl(UatRuntimePage page, string name)

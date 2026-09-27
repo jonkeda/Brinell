@@ -65,11 +65,7 @@ public sealed class TodoListPage : BlazorPageObjectBase<TodoListPage>
     }
 
     /// <summary>Opens the todo titled <paramref name="title"/>.</summary>
-    public TodoDetailPage Open(string title)
-    {
-        Todos.Row(title).Open.Click();
-        return TodoDetailPage.Arrived(Context);
-    }
+    public TodoDetailPage Open(string title) => Todos.Open(title);
 
     /// <summary>The rows, one per todo shown. Each row follows its todo by key.</summary>
     public sealed class TodoRows(IHtmlScope<TodoListPage> page)
@@ -105,11 +101,71 @@ public sealed class TodoListPage : BlazorPageObjectBase<TodoListPage>
         public TodoRows AssertNoRow(string title, int? timeoutMs = null) => AssertRow(title, present: false, timeoutMs);
 
         /// <summary>Waits until the row with <paramref name="title"/> shows the pending marker, or does not.</summary>
+        [UatThen("the todo {item} should be waiting to sync", HasLiteral = true, Literal = true)]
+        [UatThen("the todo {item} should be synced", HasLiteral = true, Literal = false)]
         public TodoRows AssertPending(string title, bool expected = true, int? timeoutMs = null)
         {
+            timeoutMs ??= StepTimeoutMs;
             Row(title, timeoutMs).Pending.AssertExists(expected, timeoutMs: timeoutMs);
             return this;
         }
+
+        /// <summary>Opens the todo titled <paramref name="title"/>: the MAUI step.</summary>
+        [UatWhen("I open the todo {item}")]
+        public TodoDetailPage Open(string title)
+        {
+            Row(title, StepTimeoutMs).Open.Click();
+            return TodoDetailPage.Arrived(Context);
+        }
+
+        /// <summary>Asserts a row is shown for each title, waiting for them: the MAUI step.</summary>
+        [UatThen("the list should show {value}")]
+        public TodoRows AssertRows(string[] titles)
+        {
+            foreach (var title in titles)
+            {
+                Row(title, StepTimeoutMs);
+            }
+
+            return this;
+        }
+
+        /// <summary>Asserts the row shows this status name: the MAUI step.</summary>
+        [UatThen("the todo {item} should show status {value}")]
+        public TodoRows AssertRowStatus(string title, string status)
+        {
+            Row(title, StepTimeoutMs).Status.AssertStatus(status);
+            return this;
+        }
+
+        /// <summary>Asserts the row's status has no Next button: the MAUI step.</summary>
+        [UatThen("the todo {item} should have a read-only status")]
+        public TodoRows AssertRowStatusReadOnly(string title)
+        {
+            Row(title, StepTimeoutMs).Status.AssertChangeable(false);
+            return this;
+        }
+
+        /// <summary>Asserts the row shows "Due …", or with <c>false</c> no due date: the MAUI step.</summary>
+        [UatThen("the todo {item} should show a due date", HasLiteral = true, Literal = true)]
+        [UatThen("the todo {item} should show no due date", HasLiteral = true, Literal = false)]
+        public TodoRows AssertRowDue(string title, bool shown)
+        {
+            var due = Row(title, StepTimeoutMs).Due;
+            if (shown)
+            {
+                due.AssertTextStartsWith("Due ");
+            }
+            else
+            {
+                due.AssertExists(false);
+            }
+
+            return this;
+        }
+
+        // The waits a scenario step gets: the MAUI suite's TestConstants.PageTimeoutMs.
+        private const int StepTimeoutMs = 10_000;
     }
 
     /// <summary>One row: title, due date, read-only status, pending marker.</summary>

@@ -201,6 +201,72 @@ public sealed class UatCatalogParityTests
         Assert.Equal("Keep", fixture.GadgetPage.Popup.Chosen);
     }
 
+    [Fact]
+    public async Task AnItemVerb_PassesTheItemFirst_ThenTheValue()
+    {
+        var fixture = new GadgetFixture();
+        var catalog = UatReflectionRuntime.FromRoot(fixture).CreateCommandCatalog();
+
+        var pattern = Assert.Single(catalog.Patterns, pattern => pattern.Phrase == "the book {item} should be by {value}");
+        Assert.Equal(["item", "value"], pattern.Parameters.Select(parameter => parameter.Name));
+
+        var result = await RunAsync(catalog, """
+            Given I am on the Gadget page
+            When I open the book "Dune"
+            Then the book "Dune" should be by "Herbert"
+            And the book "Emma" should be lent
+            And the book "Dune" should be in
+            """);
+
+        Assert.True(result.Passed, FormatResults(result));
+        Assert.Equal(
+            ["open Dune", "Dune by Herbert", "Emma lent True", "Dune lent False"],
+            fixture.GadgetPage.Books.Calls);
+    }
+
+    [Fact]
+    public async Task AVerbWithoutControl_TakesATypedValue()
+    {
+        var fixture = new GadgetFixture();
+        var catalog = UatReflectionRuntime.FromRoot(fixture).CreateCommandCatalog();
+
+        var result = await RunAsync(catalog, """
+            Given I am on the Gadget page
+            Then the shelf should hold "Dune", "Emma" and "Ulysses"
+            """);
+
+        Assert.True(result.Passed, FormatResults(result));
+        Assert.Equal(["holds Dune|Emma|Ulysses"], fixture.GadgetPage.Books.Calls);
+    }
+
+    [Fact]
+    public async Task AVerbWithoutControl_FailsOnAPageWhereNoControlHasIt()
+    {
+        var catalog = UatReflectionRuntime.FromRoot(new GadgetFixture()).CreateCommandCatalog();
+
+        var result = await RunAsync(catalog, """
+            Given I am on the Plain page
+            When I open the book "Dune"
+            """);
+
+        var failed = Assert.Single(result.Steps, step => step.Status == UatStepResultStatus.Failed);
+        Assert.Contains("No control on page 'Plain' has the step 'I open the book {item}'", failed.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AVerbWithoutControl_FailsWhenTwoControlsOfThePageHaveIt()
+    {
+        var catalog = UatReflectionRuntime.FromRoot(new GadgetFixture()).CreateCommandCatalog();
+
+        var result = await RunAsync(catalog, """
+            Given I am on the Library page
+            When I open the book "Dune"
+            """);
+
+        var failed = Assert.Single(result.Steps, step => step.Status == UatStepResultStatus.Failed);
+        Assert.Contains("is on several controls of page 'Library' (Fiction, Poetry)", failed.Message, StringComparison.Ordinal);
+    }
+
     private static async Task<UatScenarioRunResult> RunAsync(UatCommandCatalog catalog, string steps)
     {
         var parse = UatMarkdownParser.Parse($"""
@@ -249,6 +315,43 @@ public sealed class UatCatalogParityTests
     private sealed class GadgetFixture
     {
         public GadgetPage GadgetPage { get; } = new();
+
+        public PlainPage PlainPage { get; } = new();
+
+        public LibraryPage LibraryPage { get; } = new();
+    }
+
+    private sealed class PlainPage
+    {
+        public bool WaitReady(int? timeoutMs = null) => true;
+    }
+
+    private sealed class LibraryPage
+    {
+        public BookList FictionList { get; } = new();
+
+        public BookList PoetryList { get; } = new();
+
+        public bool WaitReady(int? timeoutMs = null) => true;
+    }
+
+    // A collection with item verbs: the row is named by {item}, and the collection finds it.
+    private sealed class BookList
+    {
+        public List<string> Calls { get; } = [];
+
+        [UatWhen("I open the book {item}")]
+        public void Open(string title) => Calls.Add($"open {title}");
+
+        [UatThen("the book {item} should be by {value}")]
+        public void AssertAuthor(string title, string author) => Calls.Add($"{title} by {author}");
+
+        [UatThen("the book {item} should be lent", HasLiteral = true, Literal = true)]
+        [UatThen("the book {item} should be in", HasLiteral = true, Literal = false)]
+        public void AssertLent(string title, bool lent) => Calls.Add($"{title} lent {lent}");
+
+        [UatThen("the shelf should hold {value}")]
+        public void AssertHolds(string[] titles) => Calls.Add($"holds {string.Join('|', titles)}");
     }
 
     private sealed class GadgetPage
@@ -258,6 +361,8 @@ public sealed class UatCatalogParityTests
         public DialControl Dial { get; } = new();
 
         public Popup Popup { get; } = new();
+
+        public BookList Books { get; } = new();
 
         public bool WaitReady(int? timeoutMs = null) => true;
     }
