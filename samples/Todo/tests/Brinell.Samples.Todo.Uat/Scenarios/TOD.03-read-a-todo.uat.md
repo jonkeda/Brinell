@@ -51,10 +51,7 @@ When I advance Status to "In progress"
 Then Sync State should equal "Waiting to sync"
 When I tap Back
 Then I should be on the Todo List page
-When I tap Add
-Then I should be on the Todo Edit page
-When I set Title to "Pack a lunch"
-And I tap Save
+When I create a todo "Pack a lunch"
 Then I should be on the Todo List page
 When I open the todo "Pack a lunch"
 Then I should be on the Todo Detail page

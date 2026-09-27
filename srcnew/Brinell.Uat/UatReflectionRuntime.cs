@@ -210,16 +210,106 @@ public sealed class UatReflectionRuntime
                     context,
                     invocation,
                     cancellationToken));
+        RegisterPagePhrases(catalog);
         RegisterRootPhrases(catalog);
         return catalog;
+    }
+
+    // A page's own workflows: keyword attributes on page-object methods (D4). A method that returns
+    // a page object says which page is current after it.
+    private void RegisterPagePhrases(UatCommandCatalog catalog)
+    {
+        foreach (var page in _pages.Values)
+        {
+            foreach (var method in page.PageType.GetMethods(BindingFlags.Instance | BindingFlags.Public))
+            {
+                if (method.IsSpecialName ||
+                    !method.IsDefined(typeof(UatPhraseAttribute), inherit: false) ||
+                    method.GetCustomAttribute<UatIgnoreAttribute>() is not null)
+                {
+                    continue;
+                }
+
+                var pageAfter = _pages.Values.FirstOrDefault(candidate => candidate.PageType == method.ReturnType);
+                var (phrases, unmatchable) = UatPhraseDeclarations.Of(method, inferWithoutAttribute: false, _argumentTypes);
+                foreach (var phrase in phrases)
+                {
+                    catalog.Register(
+                        phrase.Keyword,
+                        phrase.Phrase,
+                        $"{page.PageType.FullName}.{method.Name}",
+                        handler: (context, invocation, cancellationToken) =>
+                            InvokePagePhraseAsync(page, pageAfter, method, context, invocation, cancellationToken),
+                        parameters: phrase.Parameters,
+                        problem: phrase.Problem,
+                        page: page.Name,
+                        pageAfter: pageAfter?.Name);
+                }
+
+                foreach (var declaration in unmatchable)
+                {
+                    catalog.AddUnmatchable(declaration);
+                }
+            }
+        }
+    }
+
+    private Task<UatStepResult> InvokePagePhraseAsync(
+        UatRuntimePage page,
+        UatRuntimePage? pageAfter,
+        MethodInfo method,
+        UatExecutionContext context,
+        UatStepInvocation invocation,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (!TryGetCurrentPage(context, invocation, out var current))
+        {
+            return Task.FromResult(current.Result);
+        }
+
+        if (!string.Equals(current.Page!.Name, page.Name, StringComparison.OrdinalIgnoreCase))
+        {
+            return Task.FromResult(UatStepResult.Failed(
+                invocation,
+                $"The step '{invocation.Command.Phrase}' is a phrase of the {page.Name} page, but the current page is {current.Page.Name}. Go to the {page.Name} page first."));
+        }
+
+        var instance = GetPageInstance(context, page);
+        if (instance is null)
+        {
+            return Task.FromResult(UatStepResult.Failed(invocation, $"UAT page '{page.Name}' requires an active DI scope."));
+        }
+
+        try
+        {
+            Invoke(instance, method, BuildPhraseArguments(method, context, invocation, cancellationToken));
+        }
+        catch (Exception ex)
+        {
+            return Task.FromResult(UatStepResult.Failed(invocation, $"UAT page phrase '{page.Name}.{method.Name}' failed: {ex.Message}", ex));
+        }
+
+        if (pageAfter is not null)
+        {
+            context.CurrentPageName = pageAfter.Name;
+            context.AppItems[CurrentPageItemKey] = pageAfter;
+        }
+
+        context.Diagnostics.Add($"page-phrase:{page.Name}.{method.Name}");
+        return Task.FromResult(UatStepResult.Passed(invocation));
     }
 
     private IEnumerable<Type> ControlStepTypes()
     {
         // A verb declared on a control's base class (StateContainer under an app's own state
-        // container) is found through the class that the page declares.
+        // container) is found through the class that the page declares. A page's own phrases are
+        // page phrases, even where a page exposes itself as a property (Self).
+        var pageTypes = _pages.Values.Select(page => page.PageType).ToHashSet();
         var discovered = _pages.Values
             .SelectMany(page => page.Controls)
+            .Where(control => !pageTypes.Contains(control.Property.PropertyType))
             .SelectMany(control => SelfAndBaseTypes(control.Property.PropertyType));
         return UatCatalogBuilder.CoreStepTypes.Concat(discovered).Distinct();
     }

@@ -76,10 +76,7 @@ Given I am on the Todo List page
 And the device is offline
 Then Last Sync should equal "Offline"
 And Sync should be disabled
-When I tap Add
-Then I should be on the Todo Edit page
-When I set Title to "Buy stamps"
-And I tap Save
+When I create a todo "Buy stamps"
 Then I should be on the Todo List page
 And the todo "Buy stamps" should be waiting to sync
 When the device is back online

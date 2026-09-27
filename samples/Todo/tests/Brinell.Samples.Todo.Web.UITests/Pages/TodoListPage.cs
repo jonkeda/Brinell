@@ -54,6 +54,7 @@ public sealed class TodoListPage : BlazorPageObjectBase<TodoListPage>
     }
 
     /// <summary>Adds a todo with <paramref name="title"/> and returns to the list.</summary>
+    [UatWhen("I create a todo {title}")]
     public TodoListPage CreateTodo(string title) => Add().EnterTitle(title).SaveNew();
 
     /// <summary>Syncs, and waits until the sync has finished.</summary>

@@ -24,11 +24,15 @@ public sealed class UatCommandCatalog
         UatCommandHandler? handler = null,
         IReadOnlyList<UatPhraseParameter>? parameters = null,
         UatPhraseProblem? problem = null,
-        bool namesPage = false)
+        bool namesPage = false,
+        string? page = null,
+        string? pageAfter = null)
     {
         var pattern = new UatCommandPattern(keyword, phrase, commandId, requiresTable, allowsTable, handler, parameters, problem)
         {
             NamesPage = namesPage,
+            Page = page,
+            PageAfter = pageAfter,
         };
         _patterns.Add(pattern);
         return pattern;
@@ -129,6 +133,12 @@ public sealed class UatCommandPattern
 
     /// <summary>Whether the step says which page the user is on (<c>I am on the {page} page</c>).</summary>
     public bool NamesPage { get; init; }
+
+    /// <summary>The page a page phrase belongs to; null for any other phrase.</summary>
+    public string? Page { get; init; }
+
+    /// <summary>The page that is current after the step: a page phrase's returned page; null when the step does not say.</summary>
+    public string? PageAfter { get; init; }
 
     public bool IsExact { get; }
 

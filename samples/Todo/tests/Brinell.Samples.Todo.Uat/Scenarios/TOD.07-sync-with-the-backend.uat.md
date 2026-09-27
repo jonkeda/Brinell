@@ -16,10 +16,7 @@
 
 ```gherkin
 Given I am on the Todo List page
-When I tap Add
-Then I should be on the Todo Edit page
-When I set Title to "Order paint"
-And I tap Save
+When I create a todo "Order paint"
 Then I should be on the Todo List page
 And the todo "Order paint" should be waiting to sync
 When I tap Sync

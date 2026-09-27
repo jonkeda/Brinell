@@ -267,6 +267,53 @@ public sealed class UatCatalogParityTests
         Assert.Contains("is on several controls of page 'Library' (Fiction, Poetry)", failed.Message, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void APagePhrase_RecordsItsPage_AndThePageItReturns()
+    {
+        var catalog = UatReflectionRuntime.FromRoot(new GadgetFixture()).CreateCommandCatalog();
+
+        var leave = Assert.Single(catalog.Patterns, pattern => pattern.Phrase == "I leave for the plain page");
+        Assert.Equal("Gadget", leave.Page);
+        Assert.Equal("Plain", leave.PageAfter);
+
+        var wind = Assert.Single(catalog.Patterns, pattern => pattern.Phrase == "I wind the gadget {turns} times");
+        Assert.Equal("Gadget", wind.Page);
+        Assert.Null(wind.PageAfter);
+    }
+
+    [Fact]
+    public async Task APagePhrase_RunsOnItsPage_AndLeavesTheReturnedPageCurrent()
+    {
+        var fixture = new GadgetFixture();
+        var catalog = UatReflectionRuntime.FromRoot(fixture).CreateCommandCatalog();
+
+        var result = await RunAsync(catalog, """
+            Given I am on the Gadget page
+            When I wind the gadget 3 times
+            And I leave for the plain page
+            And I choose "Stay" in the popup
+            """);
+
+        Assert.True(result.Passed, FormatResults(result));
+        Assert.Equal(3, fixture.GadgetPage.Turns);
+        Assert.Equal("Stay", fixture.PlainPage.Popup.Chosen);
+        Assert.Null(fixture.GadgetPage.Popup.Chosen);
+    }
+
+    [Fact]
+    public async Task APagePhrase_FailsOnAnotherPage()
+    {
+        var catalog = UatReflectionRuntime.FromRoot(new GadgetFixture()).CreateCommandCatalog();
+
+        var result = await RunAsync(catalog, """
+            Given I am on the Plain page
+            When I wind the gadget 3 times
+            """);
+
+        var failed = Assert.Single(result.Steps, step => step.Status == UatStepResultStatus.Failed);
+        Assert.Contains("is a phrase of the Gadget page, but the current page is Plain", failed.Message, StringComparison.Ordinal);
+    }
+
     private static async Task<UatScenarioRunResult> RunAsync(UatCommandCatalog catalog, string steps)
     {
         var parse = UatMarkdownParser.Parse($"""
@@ -314,7 +361,12 @@ public sealed class UatCatalogParityTests
 
     private sealed class GadgetFixture
     {
-        public GadgetPage GadgetPage { get; } = new();
+        public GadgetFixture()
+        {
+            GadgetPage = new GadgetPage(PlainPage);
+        }
+
+        public GadgetPage GadgetPage { get; }
 
         public PlainPage PlainPage { get; } = new();
 
@@ -323,6 +375,8 @@ public sealed class UatCatalogParityTests
 
     private sealed class PlainPage
     {
+        public Popup Popup { get; } = new();
+
         public bool WaitReady(int? timeoutMs = null) => true;
     }
 
@@ -354,8 +408,19 @@ public sealed class UatCatalogParityTests
         public void AssertHolds(string[] titles) => Calls.Add($"holds {string.Join('|', titles)}");
     }
 
-    private sealed class GadgetPage
+    private sealed class GadgetPage(PlainPage plain)
     {
+        public int Turns { get; private set; }
+
+        [UatWhen("I wind the gadget {turns} times")]
+        public void Wind(int turns) => Turns = turns;
+
+        [UatWhen("I leave for the plain page")]
+        public PlainPage Leave() => plain;
+
+        // A page that exposes itself, as Brinell page objects do: its phrases stay page phrases.
+        public GadgetPage Self => this;
+
         public GadgetControl GadgetButton { get; } = new();
 
         public DialControl Dial { get; } = new();

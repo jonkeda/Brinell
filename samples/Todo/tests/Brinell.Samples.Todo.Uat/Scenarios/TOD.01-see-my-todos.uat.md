@@ -87,10 +87,7 @@ And the server also has todos
   | Clean gutter |
 When I tap Sync
 Then the todo "Clean gutter" should be synced
-When I tap Add
-Then I should be on the Todo Edit page
-When I set Title to "Oil the hinges"
-And I tap Save
+When I create a todo "Oil the hinges"
 Then I should be on the Todo List page
 And the todo "Oil the hinges" should be waiting to sync
 And the todo "Clean gutter" should be synced

@@ -16,10 +16,7 @@
 
 ```gherkin
 Given I am on the Todo List page
-When I tap Add
-Then I should be on the Todo Edit page
-When I set Title to "Survives restart"
-And I tap Save
+When I create a todo "Survives restart"
 Then I should be on the Todo List page
 And Todos should have todo "Survives restart"
 When I restart the app

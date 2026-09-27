@@ -466,6 +466,31 @@ A page exposes them as it exposes any control: the Todo pages have a `Dialog` pr
 and the list page names its state container `List`, so the scenarios read
 `Then the dialog should ask "Delete todo?"` and `Then the list should show the Empty state`.
 
+## Page Phrases
+
+A page's own workflow, several controls in one user intent, is a keyword attribute on the
+page-object method that already does it:
+
+```csharp
+[UatWhen("I create a todo {title}")]
+public TodoListPage CreateTodo(string title) => Add().EnterTitle(title).SaveNew();
+```
+
+```markdown
+Given I am on the Todo List page
+When I create a todo "Oil the hinges"
+Then I should be on the Todo List page
+```
+
+- The phrase is written as for a phrase class: placeholders name the method's parameters, which
+  are typed, and a `UatTable` parameter takes the step's table. Nothing is inferred from the
+  method name; a page method without an attribute is not a phrase.
+- The step runs on the page object of **its own page**, and fails when another page is current.
+- **The return type is the page after the step.** A method that returns a page object makes that
+  page current, as `I should be on the ... page` does; a `void` method leaves the page as it was.
+- One user intent per page phrase. "Create a todo, open it and mark it done" is three steps, or a
+  callable phrase.
+
 ## Page And Control Names
 
 Page and control names come from the runtime model, not from the markdown file.
