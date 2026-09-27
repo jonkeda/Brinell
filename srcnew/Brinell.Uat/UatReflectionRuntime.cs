@@ -8,12 +8,8 @@ namespace Brinell.Uat;
 public sealed class UatReflectionRuntime
 {
     private const string CurrentPageItemKey = "Uat.Reflection.CurrentPage";
-    private const string ServiceProviderItemKey = "Uat.Reflection.ServiceProvider";
     private readonly Dictionary<string, UatRuntimePage> _pages;
-    private readonly IReadOnlyList<UatPhraseClassBinding> _phraseClasses;
-    private readonly object _root;
-    private readonly Type _rootType;
-    private readonly UatArgumentTypes _argumentTypes;
+    private readonly UatStepDefinitionRuntime _steps;
 
     private UatReflectionRuntime(
         object? root,
@@ -23,10 +19,7 @@ public sealed class UatReflectionRuntime
         Type? rootType = null)
     {
         // A runtime built for checking has a fixture type and no fixture; its handlers never run.
-        _root = root!;
-        _rootType = rootType ?? root!.GetType();
-        _argumentTypes = argumentTypes ?? UatArgumentTypes.Empty;
-        _phraseClasses = phraseClasses?.ToArray() ?? [];
+        _steps = new UatStepDefinitionRuntime(root, rootType ?? root!.GetType(), phraseClasses, argumentTypes ?? UatArgumentTypes.Empty);
         _pages = new Dictionary<string, UatRuntimePage>(StringComparer.OrdinalIgnoreCase);
         foreach (var page in pages)
         {
@@ -36,7 +29,7 @@ public sealed class UatReflectionRuntime
 
     public IReadOnlyCollection<UatRuntimePage> Pages => _pages.Values;
 
-    public IReadOnlyList<UatPhraseClassBinding> PhraseClasses => _phraseClasses;
+    public IReadOnlyList<UatPhraseClassBinding> PhraseClasses => _steps.PhraseClasses;
 
     public IReadOnlyList<string> DescribeDiscovery()
     {
@@ -81,13 +74,13 @@ public sealed class UatReflectionRuntime
                 page.GetType(),
                 page,
                 DiscoverControls(page),
-                navigation is null ? null : () => Invoke(root, navigation))
+                navigation is null ? null : () => UatInvoker.Invoke(root, navigation))
             {
                 Namespace = UatNamespaces.Normalize(BddNamespaceAttribute.Of(page.GetType())),
             });
         }
 
-        return new UatReflectionRuntime(root, pages, argumentTypes: UatArgumentTypes.Discover(LoadableTypes(rootType.Assembly)));
+        return new UatReflectionRuntime(root, pages, argumentTypes: UatArgumentTypes.Discover(UatStepDefinitionRuntime.LoadableTypes(rootType.Assembly)));
     }
 
     public static UatReflectionRuntime FromComposition(object root, TestComposition composition)
@@ -105,14 +98,14 @@ public sealed class UatReflectionRuntime
                     page.PageType,
                     Instance: null,
                     DiscoverControls(page.PageType),
-                    navigation is null ? null : () => Invoke(root, navigation))
+                    navigation is null ? null : () => UatInvoker.Invoke(root, navigation))
                 {
                     Namespace = UatNamespaces.Normalize(page.Namespace),
                 };
             })
             .ToArray();
-        var argumentTypes = UatArgumentTypes.Discover(composition.Catalog.ScannedTypes.Concat(LoadableTypes(rootType.Assembly)));
-        var phraseClasses = DiscoverPhraseClasses(composition.Catalog.ScannedTypes, argumentTypes);
+        var argumentTypes = UatArgumentTypes.Discover(composition.Catalog.ScannedTypes.Concat(UatStepDefinitionRuntime.LoadableTypes(rootType.Assembly)));
+        var phraseClasses = UatStepDefinitionRuntime.DiscoverPhraseClasses(composition.Catalog.ScannedTypes, argumentTypes);
 
         return new UatReflectionRuntime(root, pages, phraseClasses, argumentTypes);
     }
@@ -140,7 +133,7 @@ public sealed class UatReflectionRuntime
                 {
                     Namespace = UatNamespaces.Normalize(BddNamespaceAttribute.Of(property.PropertyType)),
                 });
-            return new UatReflectionRuntime(null, rootPages, argumentTypes: UatArgumentTypes.Discover(LoadableTypes(fixtureType.Assembly)), rootType: fixtureType);
+            return new UatReflectionRuntime(null, rootPages, argumentTypes: UatArgumentTypes.Discover(UatStepDefinitionRuntime.LoadableTypes(fixtureType.Assembly)), rootType: fixtureType);
         }
 
         var catalog = modules ?? TestCompositionCatalog.Discover(TestCompositionDiscoveryOptions.FromFixture(fixtureType));
@@ -148,21 +141,16 @@ public sealed class UatReflectionRuntime
         {
             Namespace = UatNamespaces.Normalize(page.Namespace),
         });
-        var argumentTypes = UatArgumentTypes.Discover(catalog.ScannedTypes.Concat(LoadableTypes(fixtureType.Assembly)));
-        return new UatReflectionRuntime(null, pages, DiscoverPhraseClasses(catalog.ScannedTypes, argumentTypes), argumentTypes, fixtureType);
+        var argumentTypes = UatArgumentTypes.Discover(catalog.ScannedTypes.Concat(UatStepDefinitionRuntime.LoadableTypes(fixtureType.Assembly)));
+        return new UatReflectionRuntime(null, pages, UatStepDefinitionRuntime.DiscoverPhraseClasses(catalog.ScannedTypes, argumentTypes), argumentTypes, fixtureType);
     }
 
     public static void SetServiceProvider(UatExecutionContext context, IServiceProvider serviceProvider)
-    {
-        ArgumentNullException.ThrowIfNull(context);
-        ArgumentNullException.ThrowIfNull(serviceProvider);
-
-        context.AppItems[ServiceProviderItemKey] = serviceProvider;
-    }
+        => UatStepDefinitionRuntime.SetServiceProvider(context, serviceProvider);
 
     public static void RegisterRootPhrases(UatCommandCatalog catalog, Type rootType)
     {
-        RegisterRootPhrases(catalog, rootType, handlerFactory: null);
+        UatStepDefinitionRuntime.RegisterRootPhrases(catalog, rootType, handlerFactory: null);
     }
 
     public static void RegisterCompositionPhrases(UatCommandCatalog catalog, Type rootType)
@@ -172,15 +160,15 @@ public sealed class UatReflectionRuntime
 
         var options = TestCompositionDiscoveryOptions.FromFixture(rootType);
         var compositionCatalog = TestCompositionCatalog.Discover(options);
-        RegisterPhraseClassPhrases(
+        UatStepDefinitionRuntime.RegisterPhraseClassPhrases(
             catalog,
-            DiscoverPhraseClasses(compositionCatalog.ScannedTypes, UatArgumentTypes.Discover(compositionCatalog.ScannedTypes)),
+            UatStepDefinitionRuntime.DiscoverPhraseClasses(compositionCatalog.ScannedTypes, UatArgumentTypes.Discover(compositionCatalog.ScannedTypes)),
             handlerFactory: null);
     }
 
     public UatCommandCatalog CreateCommandCatalog()
     {
-        var catalog = new UatCommandCatalog { ArgumentTypes = _argumentTypes, Pages = PageModels() };
+        var catalog = new UatCommandCatalog { ArgumentTypes = _steps.ArgumentTypes, Pages = PageModels() };
 
         // The engine's three intrinsic page-graph verbs — defined once, here, each with its named
         // form for a scenario with several users (AD-015).
@@ -212,18 +200,9 @@ public sealed class UatReflectionRuntime
             "Builtin.",
             binding => (context, invocation, _) => InvokeControlMethodAsync(context, invocation, binding));
 
-        RegisterPhraseClassPhrases(
-            catalog,
-            _phraseClasses,
-            (phraseClassType, method) => (context, invocation, cancellationToken) =>
-                InvokePhraseClassMethodAsync(
-                    phraseClassType,
-                    method,
-                    context,
-                    invocation,
-                    cancellationToken));
+        _steps.RegisterPhraseClasses(catalog);
         RegisterPagePhrases(catalog);
-        RegisterRootPhrases(catalog);
+        _steps.RegisterRootPhrases(catalog);
         return catalog;
     }
 
@@ -269,7 +248,7 @@ public sealed class UatReflectionRuntime
                 }
 
                 var pageAfter = _pages.Values.FirstOrDefault(candidate => candidate.PageType == method.ReturnType);
-                var (phrases, unmatchable) = UatPhraseDeclarations.Of(method, inferWithoutAttribute: false, _argumentTypes);
+                var (phrases, unmatchable) = UatPhraseDeclarations.Of(method, inferWithoutAttribute: false, _steps.ArgumentTypes);
                 foreach (var phrase in phrases)
                 {
                     catalog.Register(
@@ -321,7 +300,7 @@ public sealed class UatReflectionRuntime
 
         try
         {
-            Invoke(instance, method, BuildPhraseArguments(method, context, invocation, cancellationToken));
+            UatInvoker.Invoke(instance, method, _steps.BuildPhraseArguments(method, context, invocation, cancellationToken));
         }
         catch (Exception ex)
         {
@@ -375,271 +354,6 @@ public sealed class UatReflectionRuntime
         }
     }
 
-    private static void RegisterPhraseClassPhrases(
-        UatCommandCatalog catalog,
-        IEnumerable<UatPhraseClassBinding> phraseClasses,
-        Func<Type, MethodInfo, UatCommandHandler?>? handlerFactory)
-    {
-        foreach (var phraseClass in phraseClasses)
-        {
-            foreach (var method in phraseClass.Methods)
-            {
-                foreach (var phrase in method.Phrases)
-                {
-                    catalog.Register(
-                        phrase.Keyword,
-                        phrase.Phrase,
-                        $"{method.Method.DeclaringType!.FullName}.{method.Method.Name}",
-                        handler: handlerFactory?.Invoke(phraseClass.Type, method.Method),
-                        parameters: phrase.Parameters,
-                        problem: phrase.Problem,
-                        phraseNamespace: phraseClass.Namespace);
-                }
-
-                foreach (var unmatchable in method.Unmatchable)
-                {
-                    catalog.AddUnmatchable(unmatchable);
-                }
-            }
-        }
-    }
-
-    private void RegisterRootPhrases(UatCommandCatalog catalog)
-    {
-        RegisterRootPhrases(
-            catalog,
-            _rootType,
-            method => (context, invocation, cancellationToken) =>
-                InvokeRootPhraseAsync(method, context, invocation, cancellationToken));
-    }
-
-    private static void RegisterRootPhrases(
-        UatCommandCatalog catalog,
-        Type rootType,
-        Func<MethodInfo, UatCommandHandler?>? handlerFactory)
-    {
-        ArgumentNullException.ThrowIfNull(catalog);
-        ArgumentNullException.ThrowIfNull(rootType);
-
-        foreach (var method in rootType
-                     .GetMethods(BindingFlags.Instance | BindingFlags.Public)
-                     .Where(method => method.GetCustomAttribute<UatIgnoreAttribute>() is null))
-        {
-            // On the fixture only an attribute makes a phrase: a public method that happens to
-            // start with When stays a method.
-            var (phrases, unmatchable) = UatPhraseDeclarations.Of(method, inferWithoutAttribute: false, catalog.ArgumentTypes);
-            var commandId = $"{method.DeclaringType!.FullName}.{method.Name}";
-            foreach (var phrase in phrases)
-            {
-                // A global phrase class's phrase takes precedence over the fixture's. A page phrase
-                // or a namespace's phrase of another method does not: the same text there and here
-                // is ambiguous where both are seen (D5).
-                if (catalog.Patterns.Any(pattern =>
-                        ((!pattern.IsPageScoped && pattern.Namespace.Length == 0) || pattern.CommandId == commandId) &&
-                        pattern.Keyword == phrase.Keyword &&
-                        pattern.Phrase.Equals(phrase.Phrase, StringComparison.Ordinal)))
-                {
-                    continue;
-                }
-
-                catalog.Register(
-                    phrase.Keyword,
-                    phrase.Phrase,
-                    commandId,
-                    handler: handlerFactory?.Invoke(method),
-                    parameters: phrase.Parameters,
-                    problem: phrase.Problem);
-            }
-
-            foreach (var declaration in unmatchable)
-            {
-                catalog.AddUnmatchable(declaration);
-            }
-        }
-    }
-
-    private async Task<UatStepResult> InvokeRootPhraseAsync(
-        MethodInfo method,
-        UatExecutionContext context,
-        UatStepInvocation invocation,
-        CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        try
-        {
-            var result = Invoke(_root, method, BuildPhraseArguments(method, context, invocation, cancellationToken));
-            if (result is Task<UatStepResult> resultTask)
-            {
-                return await resultTask.ConfigureAwait(false);
-            }
-
-            if (result is Task task)
-            {
-                await task.ConfigureAwait(false);
-                context.Diagnostics.Add($"custom:{method.Name}");
-                return UatStepResult.Passed(invocation);
-            }
-
-            if (result is UatStepResult stepResult)
-            {
-                return stepResult;
-            }
-
-            if (result is bool boolean && !boolean)
-            {
-                return UatStepResult.Failed(invocation, $"Custom UAT step '{method.Name}' returned false.");
-            }
-
-            context.Diagnostics.Add($"custom:{method.Name}");
-            return UatStepResult.Passed(invocation, result as string);
-        }
-        catch (Exception ex)
-        {
-            return UatStepResult.Failed(invocation, $"Custom UAT step '{method.Name}' failed: {ex.Message}", ex);
-        }
-    }
-
-    private async Task<UatStepResult> InvokePhraseClassMethodAsync(
-        Type phraseClassType,
-        MethodInfo method,
-        UatExecutionContext context,
-        UatStepInvocation invocation,
-        CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        if (!TryGetServiceProvider(context, out var serviceProvider))
-        {
-            return UatStepResult.Failed(
-                invocation,
-                $"UAT phrase class '{phraseClassType.FullName}' requires an active DI scope.");
-        }
-
-        try
-        {
-            var instance = serviceProvider.GetService(phraseClassType) ??
-                           ActivatorUtilities.CreateInstance(serviceProvider, phraseClassType);
-            var result = Invoke(instance, method, BuildPhraseArguments(method, context, invocation, cancellationToken));
-            if (result is Task<UatStepResult> resultTask)
-            {
-                return await resultTask.ConfigureAwait(false);
-            }
-
-            if (result is Task task)
-            {
-                await task.ConfigureAwait(false);
-                context.Diagnostics.Add($"phrase:{method.Name}");
-                return UatStepResult.Passed(invocation);
-            }
-
-            if (result is UatStepResult stepResult)
-            {
-                return stepResult;
-            }
-
-            if (result is bool boolean && !boolean)
-            {
-                return UatStepResult.Failed(invocation, $"UAT phrase '{method.Name}' returned false.");
-            }
-
-            context.Diagnostics.Add($"phrase:{method.Name}");
-            return UatStepResult.Passed(invocation, result as string);
-        }
-        catch (Exception ex)
-        {
-            return UatStepResult.Failed(invocation, $"UAT phrase '{method.Name}' failed: {ex.Message}", ex);
-        }
-    }
-
-    private object?[] BuildPhraseArguments(
-        MethodInfo method,
-        UatExecutionContext context,
-        UatStepInvocation invocation,
-        CancellationToken cancellationToken)
-    {
-        var parameters = method.GetParameters();
-        var arguments = new object?[parameters.Length];
-        var values = ValueContext(context);
-        for (var i = 0; i < parameters.Length; i++)
-        {
-            var parameter = parameters[i];
-            if (parameter.ParameterType == typeof(UatExecutionContext))
-            {
-                arguments[i] = context;
-                continue;
-            }
-
-            if (parameter.ParameterType == typeof(UatStepInvocation))
-            {
-                arguments[i] = invocation;
-                continue;
-            }
-
-            if (parameter.ParameterType == typeof(CancellationToken))
-            {
-                arguments[i] = cancellationToken;
-                continue;
-            }
-
-            if (parameter.ParameterType == typeof(UatTable))
-            {
-                arguments[i] = invocation.Step.Table
-                    ?? (parameter.IsOptional
-                        ? null
-                        : throw new InvalidOperationException(
-                            $"Custom UAT step '{method.Name}' needs a table under the step ({invocation.Step.Source})."));
-                continue;
-            }
-
-            if (UatPhraseDeclarations.IsSettingsType(parameter.ParameterType, method.DeclaringType?.Assembly))
-            {
-                arguments[i] = context.GetSettings(parameter.ParameterType);
-                continue;
-            }
-
-            if (invocation.Command.Parameters.FirstOrDefault(p => p.Name == parameter.Name) is { } typed)
-            {
-                arguments[i] = UatArguments.Read(typed, invocation, values);
-                continue;
-            }
-
-            // A pattern registered without types (by hand, or by an older catalog): text as before.
-            if (parameter.Name is not null &&
-                invocation.RawArguments.TryGetValue(parameter.Name, out var value))
-            {
-                arguments[i] = UatValues.Read(value, parameter.ParameterType, values);
-                continue;
-            }
-
-            arguments[i] = parameter.IsOptional
-                ? Type.Missing
-                : throw new InvalidOperationException(
-                    $"Custom UAT step '{method.Name}' requires parameter '{parameter.Name}' but no matching phrase argument was found.");
-        }
-
-        return arguments;
-    }
-
-    private UatValueContext ValueContext(UatExecutionContext context)
-        => new(
-            context.Now ?? context.Clock?.Now ?? DateTimeOffset.UtcNow,
-            context.Apps,
-            _argumentTypes,
-            TryGetServiceProvider(context, out var services) ? services : null);
-
-    private static IEnumerable<Type> LoadableTypes(Assembly assembly)
-    {
-        try
-        {
-            return assembly.GetTypes();
-        }
-        catch (ReflectionTypeLoadException exception)
-        {
-            return exception.Types.OfType<Type>();
-        }
-    }
-
     private static IReadOnlyList<UatRuntimeControl> DiscoverControls(object page)
     {
         return DiscoverControls(page.GetType());
@@ -664,73 +378,6 @@ public sealed class UatReflectionRuntime
         }
 
         return controls;
-    }
-
-    private static IReadOnlyList<UatPhraseClassBinding> DiscoverPhraseClasses(IReadOnlyList<Type> types, UatArgumentTypes argumentTypes)
-    {
-        List<UatPhraseClassBinding> phraseClasses = [];
-
-        foreach (var type in types.Where(IsPhraseClassType))
-        {
-            List<UatPhraseClassMethodBinding> methods = [];
-            foreach (var method in type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly))
-            {
-                if (method.IsSpecialName ||
-                    method.GetCustomAttribute<UatIgnoreAttribute>() is not null)
-                {
-                    continue;
-                }
-
-                var (phrases, unmatchable) = UatPhraseDeclarations.Of(method, inferWithoutAttribute: true, argumentTypes);
-                if (phrases.Count == 0 && unmatchable.Count == 0)
-                {
-                    continue;
-                }
-
-                methods.Add(new UatPhraseClassMethodBinding(
-                    method,
-                    phrases.Select(phrase => new UatPhraseMethodPhrase(phrase.Phrase, phrase.Keyword)
-                    {
-                        Parameters = phrase.Parameters,
-                        Problem = phrase.Problem,
-                    }).ToArray())
-                {
-                    Unmatchable = unmatchable,
-                });
-            }
-
-            if (methods.Count > 0)
-            {
-                phraseClasses.Add(new UatPhraseClassBinding(type, methods) { Namespace = NamespaceOf(type) });
-            }
-        }
-
-        return phraseClasses;
-    }
-
-    // The phrase class's own namespace, else its [BddNamespace] or its assembly's; the root without any.
-    private static string NamespaceOf(Type type)
-        => UatNamespaces.Normalize(
-            type.GetCustomAttribute<BddStepDefinitionsAttribute>()?.Namespace ??
-            BddNamespaceAttribute.Of(type));
-
-    private static bool IsPhraseClassType(Type type)
-    {
-        return type.GetCustomAttribute<BddStepDefinitionsAttribute>() is not null ||
-               typeof(BddStepDefinitionsBase).IsAssignableFrom(type);
-    }
-
-    private static bool TryGetServiceProvider(UatExecutionContext context, out IServiceProvider serviceProvider)
-    {
-        if (context.AppItems.TryGetValue(ServiceProviderItemKey, out var value) &&
-            value is IServiceProvider found)
-        {
-            serviceProvider = found;
-            return true;
-        }
-
-        serviceProvider = null!;
-        return false;
     }
 
     private static bool IsRuntimePageProperty(PropertyInfo property)
@@ -861,7 +508,7 @@ public sealed class UatReflectionRuntime
         {
             value = valueArgumentName is null ? literalArgument
                 : valueType is null || valueType == typeof(string) ? invocation.Arguments[valueArgumentName]
-                : UatValues.Read(invocation.RawArguments[valueArgumentName], valueType, ValueContext(context));
+                : UatValues.Read(invocation.RawArguments[valueArgumentName], valueType, _steps.ValueContext(context));
         }
         catch (UatValueException ex)
         {
@@ -874,7 +521,7 @@ public sealed class UatReflectionRuntime
 
         try
         {
-            Invoke(controlResult.Control!, methodName, arguments);
+            UatInvoker.Invoke(controlResult.Control!, methodName, arguments);
             context.Diagnostics.Add($"{methodName}:{controlResult.ControlName}");
             return Task.FromResult(FollowPage(context, invocation));
         }
@@ -919,7 +566,7 @@ public sealed class UatReflectionRuntime
                 continue;
             }
 
-            var text = Invoke(control, "GetText");
+            var text = UatInvoker.Invoke(control, "GetText");
             if (text is string value &&
                 value.Contains(expected, StringComparison.Ordinal))
             {
@@ -1116,138 +763,29 @@ public sealed class UatReflectionRuntime
             return page.Instance;
         }
 
-        return TryGetServiceProvider(context, out var serviceProvider)
+        return UatStepDefinitionRuntime.TryGetServiceProvider(context, out var serviceProvider)
             ? serviceProvider.GetService(page.PageType)
             : null;
     }
 
     private static bool WaitPageReady(object page)
     {
-        if (TryInvokeBool(page, "WaitReady", 10000, out var ready))
+        if (UatInvoker.TryInvokeBool(page, "WaitReady", 10000, out var ready))
         {
             return ready;
         }
 
-        if (TryInvokeBool(page, "WaitLoaded", true, 10000, out ready))
+        if (UatInvoker.TryInvokeBool(page, "WaitLoaded", true, 10000, out ready))
         {
             return ready;
         }
 
-        if (TryInvokeBool(page, "IsLoaded", 10000, out ready))
+        if (UatInvoker.TryInvokeBool(page, "IsLoaded", 10000, out ready))
         {
             return ready;
         }
 
         return true;
-    }
-
-    private static bool TryInvokeBool(object instance, string methodName, object? argument, out bool result)
-    {
-        result = false;
-        var method = FindInvokableMethod(instance.GetType(), methodName, argument is null ? [] : [argument]);
-        if (method is null)
-        {
-            return false;
-        }
-
-        var value = Invoke(instance, method, argument);
-        if (value is bool boolean)
-        {
-            result = boolean;
-            return true;
-        }
-
-        return false;
-    }
-
-    private static bool TryInvokeBool(object instance, string methodName, object? first, object? second, out bool result)
-    {
-        result = false;
-        var method = FindInvokableMethod(instance.GetType(), methodName, [first, second]);
-        if (method is null)
-        {
-            return false;
-        }
-
-        var value = Invoke(instance, method, first, second);
-        if (value is bool boolean)
-        {
-            result = boolean;
-            return true;
-        }
-
-        return false;
-    }
-
-    private static object? Invoke(object instance, string methodName, params object?[] providedArguments)
-    {
-        var method = FindInvokableMethod(instance.GetType(), methodName, providedArguments);
-        if (method is null)
-        {
-            throw new MissingMethodException(instance.GetType().FullName, methodName);
-        }
-
-        return Invoke(instance, method, providedArguments);
-    }
-
-    private static object? Invoke(object instance, MethodInfo method, params object?[] providedArguments)
-    {
-        var parameters = method.GetParameters();
-        object?[] arguments = new object?[parameters.Length];
-        for (var i = 0; i < parameters.Length; i++)
-        {
-            arguments[i] = i < providedArguments.Length
-                ? providedArguments[i]
-                : Type.Missing;
-        }
-
-        try
-        {
-            var result = method.Invoke(instance, arguments);
-            return result;
-        }
-        catch (TargetInvocationException ex) when (ex.InnerException is not null)
-        {
-            throw ex.InnerException;
-        }
-    }
-
-    private static MethodInfo? FindInvokableMethod(Type type, string methodName, IReadOnlyList<object?> providedArguments)
-    {
-        return type
-            .GetMethods(BindingFlags.Instance | BindingFlags.Public)
-            .Where(method => method.Name.Equals(methodName, StringComparison.Ordinal))
-            .FirstOrDefault(method =>
-            {
-                var parameters = method.GetParameters();
-                if (parameters.Count(parameter => !parameter.IsOptional) > providedArguments.Count ||
-                    parameters.Length < providedArguments.Count)
-                {
-                    return false;
-                }
-
-                for (var i = 0; i < providedArguments.Count; i++)
-                {
-                    if (!CanPassArgument(providedArguments[i], parameters[i].ParameterType))
-                    {
-                        return false;
-                    }
-                }
-
-                return true;
-            });
-    }
-
-    private static bool CanPassArgument(object? argument, Type parameterType)
-    {
-        var nullableInnerType = Nullable.GetUnderlyingType(parameterType);
-        if (argument is null)
-        {
-            return nullableInnerType is not null || !parameterType.IsValueType;
-        }
-
-        var effectiveParameterType = nullableInnerType ?? parameterType;
-        return effectiveParameterType.IsInstanceOfType(argument);
     }
 
     private readonly record struct UatPageResolution(UatRuntimePage? Page, UatStepResult Result);
@@ -1278,31 +816,4 @@ public sealed record UatRuntimeControl(
     {
         return Property.GetValue(page);
     }
-}
-
-public sealed record UatPhraseClassBinding(
-    Type Type,
-    IReadOnlyList<UatPhraseClassMethodBinding> Methods)
-{
-    /// <summary>The namespace its phrases are seen in (<see cref="UatNamespaces"/>); <c>""</c> for every scenario.</summary>
-    public string Namespace { get; init; } = string.Empty;
-}
-
-public sealed record UatPhraseClassMethodBinding(
-    MethodInfo Method,
-    IReadOnlyList<UatPhraseMethodPhrase> Phrases)
-{
-    /// <summary>The method's broken declarations that have no phrase to match.</summary>
-    public IReadOnlyList<UatUnmatchableDeclaration> Unmatchable { get; init; } = [];
-}
-
-public sealed record UatPhraseMethodPhrase(
-    string Phrase,
-    UatEffectiveStepKeyword Keyword)
-{
-    /// <summary>What a step supplies, with types.</summary>
-    public IReadOnlyList<UatPhraseParameter> Parameters { get; init; } = [];
-
-    /// <summary>Why the phrase cannot run; null when it is fine.</summary>
-    public UatPhraseProblem? Problem { get; init; }
 }
