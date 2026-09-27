@@ -136,6 +136,24 @@ Markdown editor with a language server of their own, the same `Brinell.Uat.Langu
   across the suite. Each call keeps its values, so the new phrase must keep the same `{x}`
   placeholders.
 
+## Suite Configs
+
+`uat.config.md` and `bdd.config.md` are checked as you type, with diagnostics `UATG001`-`UATG009`:
+- an unknown section, field or assembly kind;
+- a Runtime table without a Fixture;
+- a head, boolean or test set that is not one;
+- an app without a name;
+- an AppsFile that is not found;
+- an assembly not built yet;
+- a `Using` namespace nothing is in;
+- a suite that cannot bind, with the reason;
+- a `testdata.schema.json` out of date with the test-data definition. **Ctrl+.** regenerates it, as
+  `brinell-data schema` does.
+
+Completion offers the fields of each table and their values (heads, `true`/`false`, test sets),
+the assembly kinds, the namespaces, and the heads in the Apps table. Hover on a field says what it
+does. In a feature file, the `TestData` metadata offers the suite's test sets.
+
 ## UAT Explorer
 
 **View > Other Windows > UAT Explorer** shows a suite of the solution; pick another in its bar.

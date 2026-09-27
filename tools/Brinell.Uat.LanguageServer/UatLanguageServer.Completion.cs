@@ -36,9 +36,14 @@ public sealed partial class UatLanguageServer
         var column = Math.Clamp(request.Position.Character, 0, text.Length);
         var before = text[..column];
         var structure = file.Structure;
+        if (IsConfig(file.Path))
+        {
+            return ConfigCompletion(file, line, column);
+        }
+
         if (!structure.InGherkin(line))
         {
-            return new CompletionList(false, SectionItems(file, line, before));
+            return MetadataCompletion(file, line, column) ?? new CompletionList(false, SectionItems(file, line, before));
         }
 
         if (structure.Blocks.Any(block => block.Kind is UatBlockKind.Table or UatBlockKind.DocString && line >= block.Start && line <= block.End))

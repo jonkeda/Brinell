@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\srcnew\Brinell.Uat\Brinell.Uat.csproj" />
+    <ProjectReference Include="..\..\srcnew\Brinell.TestData\Brinell.TestData.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -33,6 +33,12 @@ public sealed partial class UatLanguageServer
         var first = request.Range.Start.Line + 1;
         var last = Math.Max(first, request.Range.End.Line + (request.Range.End.Character == 0 && request.Range.End.Line > request.Range.Start.Line ? 0 : 1));
         List<CodeAction> actions = [];
+        if (IsConfig(file.Path))
+        {
+            RegenerateSchema(file, actions);
+            return actions;
+        }
+
         var analysis = Analyze(file);
 
         // A value with one right answer, as brinell-data validate --fix rewrites it.

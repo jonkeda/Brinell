@@ -153,7 +153,7 @@ public sealed partial class UatLanguageServer
             files = paths
                 .SelectMany(path => _workspace?.SuitesFor(path) ?? [])
                 .DistinctBy(suite => suite.ConfigPath, StringComparer.OrdinalIgnoreCase)
-                .SelectMany(suite => suite.FeatureFiles.Concat(suite.StepFiles).Concat(suite.LinkedFiles))
+                .SelectMany(suite => suite.FeatureFiles.Concat(suite.StepFiles).Concat(suite.LinkedFiles).Append(suite.ConfigPath))
                 .Concat(paths)
                 .Select(Path.GetFullPath)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -191,6 +191,11 @@ public sealed partial class UatLanguageServer
 
     internal IReadOnlyList<Diagnostic> DiagnosticsOf(UatServerFile file)
     {
+        if (IsConfig(file.Path))
+        {
+            return ConfigDiagnostics(file);
+        }
+
         var analysis = Analyze(file);
         List<Diagnostic> diagnostics = [];
         foreach (var diagnostic in analysis.Diagnostics)

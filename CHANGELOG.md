@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Config and data files in the editor: `uat.config.md` and `bdd.config.md` get diagnostics (`UATG001`-`UATG009`)
+  for what the suite would ignore or reject:
+  - an unknown section, field or assembly kind, and a Runtime table without a Fixture;
+  - a head, boolean, test set or app row that is not valid, and a missing AppsFile;
+  - an assembly not built yet, a `Using` namespace nothing is in, and a suite that cannot bind;
+  - a `testdata.schema.json` out of date with its definition, which a quick fix regenerates as
+    `brinell-data schema` would.
+  Completion and hover cover the fields, their values (heads, booleans, test sets), the assembly
+  kinds, the namespaces and the apps' heads. A feature file's `TestData` metadata offers the test
+  sets. `UatSuite.TestDataDefinitions` loads the suite's test-data definitions with its build, each
+  placed at its project rather than in the shadow copy.
 - UAT Explorer (Visual Studio, **View > Other Windows > UAT Explorer**) shows three views of a suite,
   and any entry with a source opens it:
   - **Steps**: the steps grouped by their class, page, control verbs and built-ins, then the

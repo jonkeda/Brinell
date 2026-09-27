@@ -16,6 +16,11 @@ public sealed partial class UatLanguageServer
     {
         var file = Context(Key(request.TextDocument.Uri));
         var line = request.Position.Line + 1;
+        if (IsConfig(file.Path))
+        {
+            return ConfigHover(file, line);
+        }
+
         var invocations = InvocationsAt(file, line);
         if (invocations.Count == 0)
         {

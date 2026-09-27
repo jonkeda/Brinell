@@ -52,6 +52,34 @@ internal sealed class UatSuiteLoad : IDisposable
         return list;
     }
 
+    private IReadOnlyList<Brinell.TestData.ITestDataDefinition>? _definitions;
+
+    // The test-data definitions in these assemblies, made once per load.
+    public IReadOnlyList<Brinell.TestData.ITestDataDefinition> TestDataDefinitions(IReadOnlyList<string> assemblyPaths)
+    {
+        if (_definitions is not null)
+        {
+            return _definitions;
+        }
+
+        List<Brinell.TestData.ITestDataDefinition> definitions = [];
+        foreach (var path in assemblyPaths)
+        {
+            try
+            {
+                definitions.AddRange(TypesOf(path)
+                    .Where(type => typeof(Brinell.TestData.ITestDataDefinition).IsAssignableFrom(type) && type is { IsAbstract: false, IsPublic: true } && type.GetConstructor(Type.EmptyTypes) is not null)
+                    .Select(type => UatTestDataDefinition.Placed((Brinell.TestData.ITestDataDefinition)Activator.CreateInstance(type)!, path, UatShadowCopy.Root)));
+            }
+            catch (Exception exception) when (exception is UatWorkspaceException or TargetInvocationException or MissingMethodException)
+            {
+                // An assembly or a definition that cannot load gives no definitions; the config check says why elsewhere.
+            }
+        }
+
+        return _definitions = definitions;
+    }
+
     // The loaded suite's classes marked [BddStepDefinitions], by name so the attribute's type need not load.
     public IReadOnlyList<Type> StepDefinitionTypes()
         => (_context?.Assemblies ?? [])

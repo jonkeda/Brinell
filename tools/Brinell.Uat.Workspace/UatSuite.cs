@@ -187,6 +187,39 @@ public sealed class UatSuite : IDisposable
         }
     }
 
+    /// <summary>
+    /// The test-data definitions of the config's <c>TestData</c> assemblies, loaded with the suite's
+    /// build; empty when the suite is not loaded or names none. A definition finds its folder from its
+    /// source file, so the shadow copy does not move it.
+    /// </summary>
+    public IReadOnlyList<Brinell.TestData.ITestDataDefinition> TestDataDefinitions()
+    {
+        UatConfig config;
+        try
+        {
+            config = UatConfigParser.Parse(File.ReadAllText(ConfigPath));
+        }
+        catch (IOException)
+        {
+            return [];
+        }
+
+        var paths = config.Assemblies
+            .Where(assembly => string.Equals(assembly.Kind, UatConfigFields.TestDataAssemblyKind, StringComparison.OrdinalIgnoreCase))
+            .Select(assembly => Path.GetFullPath(Path.Combine(ProjectDirectory, assembly.Assembly)))
+            .Where(File.Exists)
+            .ToList();
+        lock (_gate)
+        {
+            if (_load is not { } load || paths.Count == 0)
+            {
+                return [];
+            }
+
+            return load.TestDataDefinitions(paths);
+        }
+    }
+
     /// <summary>The loaded suite's step-definition classes (<c>[BddStepDefinitions]</c>); empty when not loaded.</summary>
     public IReadOnlyList<Type> StepDefinitionTypes()
     {
