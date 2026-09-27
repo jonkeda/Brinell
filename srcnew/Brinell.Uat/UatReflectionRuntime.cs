@@ -168,7 +168,7 @@ public sealed class UatReflectionRuntime
 
     public UatCommandCatalog CreateCommandCatalog()
     {
-        var catalog = new UatCommandCatalog { ArgumentTypes = _argumentTypes };
+        var catalog = new UatCommandCatalog { ArgumentTypes = _argumentTypes, Pages = PageModels() };
 
         // The engine's three intrinsic page-graph verbs — defined once, here, each with its named
         // form for a scenario with several users (AD-015).
@@ -215,6 +215,29 @@ public sealed class UatReflectionRuntime
         return catalog;
     }
 
+    // The pages as the binder follows them: each control with its type and where tapping it goes.
+    private Dictionary<string, UatPageModel> PageModels()
+    {
+        var nameOf = _pages.Values
+            .GroupBy(page => page.PageType)
+            .ToDictionary(group => group.Key, group => group.First().Name);
+        return _pages.Values.ToDictionary(
+            page => page.Name,
+            page => new UatPageModel(
+                page.Name,
+                page.PageType,
+                page.Controls
+                    .Select(control => new UatControlModel(
+                        control.Name,
+                        control.Property.PropertyType,
+                        control.Property.GetCustomAttribute<UatNavigatesToAttribute>() is { } goesTo
+                            ? nameOf.GetValueOrDefault(goesTo.Page) ?? throw new InvalidOperationException(
+                                $"{page.PageType.Name}.{control.MemberName} navigates to {goesTo.Page.Name}, which is not a UAT page.")
+                            : null))
+                    .ToArray()),
+            StringComparer.OrdinalIgnoreCase);
+    }
+
     // A page's own workflows: keyword attributes on page-object methods (D4). A method that returns
     // a page object says which page is current after it.
     private void RegisterPagePhrases(UatCommandCatalog catalog)
@@ -239,7 +262,7 @@ public sealed class UatReflectionRuntime
                         phrase.Phrase,
                         $"{page.PageType.FullName}.{method.Name}",
                         handler: (context, invocation, cancellationToken) =>
-                            InvokePagePhraseAsync(page, pageAfter, method, context, invocation, cancellationToken),
+                            InvokePagePhraseAsync(page, method, context, invocation, cancellationToken),
                         parameters: phrase.Parameters,
                         problem: phrase.Problem,
                         page: page.Name,
@@ -256,7 +279,6 @@ public sealed class UatReflectionRuntime
 
     private Task<UatStepResult> InvokePagePhraseAsync(
         UatRuntimePage page,
-        UatRuntimePage? pageAfter,
         MethodInfo method,
         UatExecutionContext context,
         UatStepInvocation invocation,
@@ -291,14 +313,30 @@ public sealed class UatReflectionRuntime
             return Task.FromResult(UatStepResult.Failed(invocation, $"UAT page phrase '{page.Name}.{method.Name}' failed: {ex.Message}", ex));
         }
 
-        if (pageAfter is not null)
+        context.Diagnostics.Add($"page-phrase:{page.Name}.{method.Name}");
+        return Task.FromResult(FollowPage(context, invocation));
+    }
+
+    // The page the binder worked out for after the step becomes current, as it does after
+    // "I should be on the ... page": the steps that follow were bound against it.
+    private UatStepResult FollowPage(UatExecutionContext context, UatStepInvocation invocation)
+    {
+        if (invocation.PageAfter is not { } name ||
+            string.Equals(context.CurrentPageName, name, StringComparison.OrdinalIgnoreCase) ||
+            !_pages.TryGetValue(name, out var page))
         {
-            context.CurrentPageName = pageAfter.Name;
-            context.AppItems[CurrentPageItemKey] = pageAfter;
+            return UatStepResult.Passed(invocation);
         }
 
-        context.Diagnostics.Add($"page-phrase:{page.Name}.{method.Name}");
-        return Task.FromResult(UatStepResult.Passed(invocation));
+        var instance = GetPageInstance(context, page);
+        if (instance is null || !WaitPageReady(instance))
+        {
+            return UatStepResult.Failed(invocation, $"The step should have ended on the {page.Name} page, which did not become ready.");
+        }
+
+        context.CurrentPageName = page.Name;
+        context.AppItems[CurrentPageItemKey] = page;
+        return UatStepResult.Passed(invocation);
     }
 
     private IEnumerable<Type> ControlStepTypes()
@@ -374,9 +412,13 @@ public sealed class UatReflectionRuntime
             // On the fixture only an attribute makes a phrase: a public method that happens to
             // start with When stays a method.
             var (phrases, unmatchable) = UatPhraseDeclarations.Of(method, inferWithoutAttribute: false, catalog.ArgumentTypes);
+            var commandId = $"{method.DeclaringType!.FullName}.{method.Name}";
             foreach (var phrase in phrases)
             {
+                // A phrase class's phrase takes precedence over the fixture's. A page phrase of
+                // another method does not: the same text on a page and here is ambiguous there (D5).
                 if (catalog.Patterns.Any(pattern =>
+                        (!pattern.IsPageScoped || pattern.CommandId == commandId) &&
                         pattern.Keyword == phrase.Keyword &&
                         pattern.Phrase.Equals(phrase.Phrase, StringComparison.Ordinal)))
                 {
@@ -386,7 +428,7 @@ public sealed class UatReflectionRuntime
                 catalog.Register(
                     phrase.Keyword,
                     phrase.Phrase,
-                    $"{method.DeclaringType!.FullName}.{method.Name}",
+                    commandId,
                     handler: handlerFactory?.Invoke(method),
                     parameters: phrase.Parameters,
                     problem: phrase.Problem);
@@ -811,7 +853,7 @@ public sealed class UatReflectionRuntime
         {
             Invoke(controlResult.Control!, methodName, arguments);
             context.Diagnostics.Add($"{methodName}:{controlResult.ControlName}");
-            return Task.FromResult(UatStepResult.Passed(invocation));
+            return Task.FromResult(FollowPage(context, invocation));
         }
         catch (Exception ex)
         {

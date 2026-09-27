@@ -150,12 +150,14 @@ public static class UatBinder
         UatInference? inference)
     {
         private readonly AppTracker _apps = new(catalogs);
+        private readonly Dictionary<string, PageState> _pages = new(StringComparer.OrdinalIgnoreCase);
 
         public void Step(UatStep step, bool fromBackground, UatCallFrame? frame, List<UatDiagnostic> diagnostics)
         {
             var app = _apps.Current;
             UatCommandMatch? match = null;
             IReadOnlyList<string> named = [];
+            List<UatDiagnostic> pageProblems = [];
 
             if (catalogs.TryFindSubject(step.Text, out var subject, out _))
             {
@@ -168,7 +170,7 @@ public static class UatBinder
                 // Only a phrase declared with the subject in its first parameter binds it: {user} taps
                 // {control}, {app} uses the app. The engine infers no verb forms (AD-015).
                 var catalog = catalogs.CatalogFor(subjectApp);
-                var declared = Match(catalog, step)
+                var declared = Match(catalog, step, subjectApp, pageProblems)
                     .Where(candidate => FirstArgument(candidate) == subject)
                     .ToArray();
                 if (declared.Length > 1)
@@ -185,6 +187,11 @@ public static class UatBinder
                     match = declared[0];
                     app = subjectApp;
                 }
+                else if (pageProblems.Count > 0)
+                {
+                    diagnostics.AddRange(pageProblems);
+                    return;
+                }
                 else
                 {
                     named = NamedPhrases(catalog, step.EffectiveKeyword);
@@ -193,7 +200,14 @@ public static class UatBinder
 
             if (match is null)
             {
-                var matches = Match(catalogs.CatalogFor(app), step);
+                pageProblems.Clear();
+                var matches = Match(catalogs.CatalogFor(app), step, app, pageProblems);
+                if (matches.Count == 0 && pageProblems.Count > 0)
+                {
+                    diagnostics.AddRange(pageProblems);
+                    return;
+                }
+
                 if (matches.Count == 0)
                 {
                     diagnostics.Add(Error(
@@ -309,7 +323,13 @@ public static class UatBinder
                 return;
             }
 
+            if (!Advance(step, match, arguments, app, diagnostics))
+            {
+                return;
+            }
+
             _apps.Use(app);
+            var pageAfter = match.Pattern.IsPageScoped && PageOf(app) is { LostAt: null, Page: { } known } ? known : null;
             invocations.Add(new UatStepInvocation(
                 scenarioName,
                 step,
@@ -321,11 +341,145 @@ public static class UatBinder
                 App = app?.Name,
                 RawArguments = rawArguments,
                 Call = frame,
+                PageAfter = pageAfter,
             });
         }
 
-        private IReadOnlyList<UatCommandMatch> Match(UatCommandCatalog catalog, UatStep step)
-            => UatCommandCatalog.Select([.. catalog.Candidates(step), .. callables.Candidates(step)]);
+        // The phrases a step can bind to where it stands (D5): a control verb or page phrase only
+        // on the current page, and never one of those together with a phrase of wider scope. A
+        // catalog without pages, and a callable's body read on its own, bind without page scope.
+        private IReadOnlyList<UatCommandMatch> Match(UatCommandCatalog catalog, UatStep step, UatAppConfig? app, List<UatDiagnostic> problems)
+        {
+            IReadOnlyList<UatCommandMatch> candidates = [.. catalog.Candidates(step), .. callables.Candidates(step)];
+            if (catalog.Pages.Count == 0 || inference is not null)
+            {
+                return UatCommandCatalog.Select(candidates);
+            }
+
+            var wide = candidates.Where(candidate => !candidate.Pattern.IsPageScoped).ToList();
+            var scoped = candidates.Where(candidate => candidate.Pattern.IsPageScoped).ToList();
+            if (scoped.Count == 0)
+            {
+                return UatCommandCatalog.Select(wide);
+            }
+
+            var state = PageOf(app);
+            if (state.Page is null || !catalog.Pages.TryGetValue(state.Page, out var page))
+            {
+                if (wide.Count > 0)
+                {
+                    return UatCommandCatalog.Select(wide);
+                }
+
+                problems.Add(Error(
+                    "UATB008",
+                    $"Step '{step.Text}' needs to know the page, but no step has said it yet. Start with 'Given I am on the ... page'.",
+                    step.Source));
+                return [];
+            }
+
+            List<string> reasons = [];
+            var fitting = scoped.Where(candidate => Fits(page, candidate, reasons)).ToList();
+            if (fitting.Count == 0 && wide.Count == 0 && state.LostAt is { } lost)
+            {
+                problems.Add(Error(
+                    "UATB008",
+                    $"Step '{step.Text}' does not fit the {page.Name} page, and the page may have changed at '{lost.Text}' ({lost.Source}). Say where that step ends: 'Then I should be on the ... page'.",
+                    step.Source));
+                return [];
+            }
+
+            if (fitting.Count > 0 && wide.Count > 0)
+            {
+                problems.Add(Error(
+                    "UATB002",
+                    $"Step '{step.Text}' is ambiguous: on the {page.Name} page it matches {string.Join(", ", fitting.Select(Describe))}, and also {string.Join(", ", wide.Select(Describe))}. Rename one of them.",
+                    step.Source));
+                return [];
+            }
+
+            if (fitting.Count == 0 && wide.Count == 0)
+            {
+                problems.Add(Error("UATB009", $"Step '{step.Text}' does not fit the {page.Name} page: {string.Join(" ", reasons.Distinct())}", step.Source));
+                return [];
+            }
+
+            return UatCommandCatalog.Select(fitting.Count > 0 ? fitting : wide);
+        }
+
+        private static bool Fits(UatPageModel page, UatCommandMatch candidate, List<string> reasons)
+        {
+            if (candidate.Pattern.Page is { } owner)
+            {
+                if (string.Equals(owner, page.Name, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+
+                reasons.Add($"'{candidate.Pattern.Phrase}' is a phrase of the {owner} page.");
+                return false;
+            }
+
+            if (UatPageScope.ControlFor(page, candidate, out var problem) is not null)
+            {
+                return true;
+            }
+
+            reasons.Add(char.ToUpperInvariant(problem![0]) + problem[1..]);
+            return false;
+        }
+
+        private PageState PageOf(UatAppConfig? app)
+            => _pages.TryGetValue(app?.Name ?? string.Empty, out var state) ? state : default;
+
+        // The page after the step (D7): the page a step names; a page phrase's or control verb's
+        // returned page. After a verb that can leave the page and does not say where, the page is
+        // only a guess until a step fits it. Other phrases keep it.
+        private bool Advance(UatStep step, UatCommandMatch match, IReadOnlyDictionary<string, string> arguments, UatAppConfig? app, List<UatDiagnostic> diagnostics)
+        {
+            var catalog = catalogs.CatalogFor(app);
+            if (catalog.Pages.Count == 0)
+            {
+                return true;
+            }
+
+            var key = app?.Name ?? string.Empty;
+            var pattern = match.Pattern;
+            if (pattern.NamesPage && arguments.TryGetValue(PageParameter, out var named))
+            {
+                if (!catalog.Pages.TryGetValue(named, out var namedPage))
+                {
+                    diagnostics.Add(Error(
+                        "UATB009",
+                        $"Step '{step.Text}' names the page '{named}', which does not exist. The pages are {string.Join(", ", catalog.Pages.Keys.Order(StringComparer.OrdinalIgnoreCase))}.",
+                        step.Source));
+                    return false;
+                }
+
+                _pages[key] = new PageState(namedPage.Name, null);
+                return true;
+            }
+
+            var state = PageOf(app);
+            if (state.Page is null || !catalog.Pages.TryGetValue(state.Page, out var page))
+            {
+                return true;
+            }
+
+            if (pattern.Page is not null)
+            {
+                _pages[key] = new PageState(pattern.PageAfter ?? page.Name, null);
+                return true;
+            }
+
+            if (pattern.ControlVerb is { } verb && UatPageScope.ControlFor(page, match, out _) is { } control)
+            {
+                var after = UatPageScope.PageAfter(page, control, verb, catalog.Pages);
+                _pages[key] = new PageState(after ?? page.Name, after is null ? step : null);
+            }
+
+            return true;
+        }
 
         private static string Describe(UatCommandMatch match)
             => match.Pattern.Callable is { } callable ? $"'{callable.Phrase}' ({callable.Source})" : $"'{match.Pattern.Phrase}'";
@@ -594,6 +748,10 @@ public static class UatBinder
             => invocation.Arguments.TryGetValue(PageParameter, out var page) ? page : "?";
     }
 
+    // The page an app is on as binding walks a scenario; null before any step has said it. With
+    // LostAt, only a guess: the step there may have left it.
+    private readonly record struct PageState(string? Page, UatStep? LostAt);
+
     // The current app as binding walks a scenario, and which app of each user was used last.
     private sealed class AppTracker(UatCatalogSet catalogs)
     {
@@ -683,4 +841,10 @@ public sealed record UatStepInvocation(
 
     /// <summary>The call that put this step here, for a step of a callable phrase; null for a step written in the scenario.</summary>
     public UatCallFrame? Call { get; init; }
+
+    /// <summary>
+    /// The page the binder knows is current after this control verb or page phrase; null when the
+    /// step is not page-scoped or may have left the page. The runtime follows it.
+    /// </summary>
+    public string? PageAfter { get; init; }
 }

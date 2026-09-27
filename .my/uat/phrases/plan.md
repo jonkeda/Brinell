@@ -1,6 +1,6 @@
 # Phrases: split, scope and namespace
 
-Status: in progress. Phases 1-4 done (see the commits per phase); callable phrases were built before.
+Status: in progress. Phases 1-5 done (see the commits per phase); callable phrases were built before.
 Date: 2026-09-27
 Replaces three discussion docs, last at 5b73a4b:
 [splitting-phrases.md](https://github.com/exact-mobile-apps/test-tooling/blob/5b73a4b/.my/uat/phrases/splitting-phrases.md),
@@ -185,14 +185,22 @@ of the page after a step:
 | `Given I am on the X page` / `Then I should be on the X page` | X |
 | a page phrase returning a page type | that page |
 | a call to a callable | the page its inner steps end on, tracked through them in the caller's page; unchanged if they name none |
-| a control verb (`I tap Save`) | **unknown**, unless the control declares where it goes |
+| a control verb whose method returns a page type | that page |
+| a tap on a control with `[UatNavigatesTo(typeof(X))]` | X |
+| another control verb marked `Navigates = true` (`I tap`, the dialogs' `I choose`) | **a guess**: the same page, until a step does not fit it |
+| any other step | unchanged |
 
-For the unknown case:
+For the guess:
 
-1. **Rule:** after a step that leaves the page unknown, the next page-scoped step needs an
-   `I should be on ...` first. Todo scenarios already assert the page after every navigation.
+1. **Rule:** after a verb that may leave the page, the next page-scoped step either fits the page
+   it was on, or is an error (`UATB008`) naming the verb, asking for an `I should be on ...`. Todo
+   scenarios already assert the page after every navigation.
 2. **Where free:** `[UatNavigatesTo(typeof(TodoListPage))]` on a button that always goes one place.
 3. **Not now:** falling back to run-time binding. It loses the early unbound-step error.
+
+Built as the stricter "unknown after every tap", every tap followed by a check on the same page would
+need an assert first; the guess keeps those scenarios as they are and still names the step that
+lost the page.
 
 ### D8. Pages get namespaces too
 
@@ -231,8 +239,8 @@ real consumer.
 | 2 | Item verbs | D3 | `{item}` in the catalog and binder; the seven row phrases live on `TodoList` |
 | 3 | Subject classes | D1 | `TodoScreenPhrases` is gone; `BackendPhrases`, `DevicePhrases`, `AppLifecyclePhrases`, `StoredDataPhrases` |
 | 4 | Page phrases | D4 | keyword attributes on page-object methods; the returned page type recorded as page after |
-| 5 | Static page tracking | D5, D7, D9 | page-scoped binding for control verbs and page phrases; ambiguity across scopes is an error; callables step 8 |
-| 6 | Folder namespaces | D5, D6, D9 | a scenario sees its folder and ancestors; module `*.phrases.md` files; callables step 6 |
+| 5 | Static page tracking | D5, D7, D9 | page-scoped binding for control verbs and page phrases; ambiguity across scopes is an error; the page followed through a callable's steps |
+| 6 | Folder namespaces | D5, D6, D9 | a scenario sees its folder and ancestors; module `*.phrases.md` files; a callable's body binds in its definition's folder |
 | 7 | `Using`, config usings, namespaced pages | D6, D8 | the `Using` row, `## Using`, assemblies announcing namespaces, pages resolved by namespace; the tooling in section 5 |
 | 8 | Todo users UI tests and UAT | all | [users-plan.md section 8](users-plan.md#8-later): `Using \| Users`, plus the expected-failure proof that a file without it fails binding |
 | later | Promote reusable subjects | - | backend faults, network and restart move behind small fixture interfaces (`IUatBackend`, `IUatNetwork`, `IUatRestartable`) when Construction needs them |
@@ -273,6 +281,11 @@ real consumer.
 - Control verbs and page phrases bind only against the current page. When the page is unknown, a
   page-scoped step gets a bind error that names the step that lost it.
 - `[UatNavigatesTo]` on buttons where it's free.
+- Built: `UatPageScope` and the page walk in `UatBinder`; `Navigates` on `UatPhraseAttribute`;
+  `UATB008` (no page, or lost at a named step) and `UATB009` (does not fit the page, or no such
+  page). A missing control is now a bind error, so the MAUI expected-failure file uses
+  `RunExpectedBindFailureUatFile`. Todo: `[UatNavigatesTo]` on Add, Edit and Back on both heads.
+  A fixture phrase with the text of a page phrase is no longer dropped, so the pair is ambiguous.
 
 ### Phase 6: folder namespaces
 
@@ -309,7 +322,8 @@ Namespaces only help if people can see them:
 | --- | --- |
 | Folder name as the namespace, or a declared name per folder? | Folder names have spaces and get renamed. A `Namespace` field in the folder's `*.phrases.md` decouples them, at the cost of one more thing to keep in sync. Start with the folder name. |
 | Can a namespace phrase be used on any page, or only its own pages? | Namespace and page scope are independent axes. Start with "any page". |
-| Callables on a page scope | Could a callable belong to a page, like a page phrase? Only after phase 5. |
+| Callables on a page scope | Could a callable belong to a page, like a page phrase? Now possible (phase 5 is built); not needed by Todo yet. |
+| Presenter UAT flake | `run-selected-sample` asserts "Passed", which the per-scenario status matches while the run goes on; the next scenario's reset races the run's end. Fails about 1 in 3 at `ddaa395` too. Fix in the scenario, separately. |
 | Deprecated aliases | If Accounts renames a phrase, users break. Should a phrase keep its old text as a deprecated alias for a while? |
 | A naming rule per subject | Every backend phrase starts "the server", every stored-data phrase "the database". Then the class can be read off the text. |
 | Which package owns the shared subjects (later phase)? | `Brinell.Uat` has no MAUI or mocking dependency. Interfaces in `Brinell.Uat`, implementations beside the fixtures, or a small `Brinell.Uat.Mocking`. |

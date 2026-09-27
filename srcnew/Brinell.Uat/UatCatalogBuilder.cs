@@ -25,6 +25,12 @@ internal sealed record UatStepBinding(
 
     /// <summary>Whether the phrase names its control with <c>{control}</c>.</summary>
     public bool NamesControl { get; init; } = true;
+
+    /// <summary>Whether the verb can take the user to another page.</summary>
+    public bool Navigates { get; init; }
+
+    /// <summary>How many arguments the step passes: the item, then the value or literal.</summary>
+    public int ArgumentCount => (ItemArgumentName is null ? 0 : 1) + (ValueArgumentName is null && Literal is null ? 0 : 1);
 }
 
 /// <summary>
@@ -74,6 +80,7 @@ internal static class UatCatalogBuilder
                 commandIdPrefix + binding.CommandSuffix,
                 allowsTable: false,
                 handler: handlerFactory?.Invoke(binding),
+                controlVerb: new UatControlVerb(binding.MethodName, binding.ArgumentCount, binding.NamesControl, binding.Navigates),
                 parameters: [
                     .. binding.ItemArgumentName is { } item
                         ? [new UatPhraseParameter(item, typeof(string), UatParameterSource.Phrase, Optional: false, AllowsNull: false)]
@@ -129,6 +136,7 @@ internal static class UatCatalogBuilder
                     {
                         ItemArgumentName = itemArgument,
                         NamesControl = names.Contains(ControlParameter),
+                        Navigates = attribute.Navigates,
                     });
                 }
             }

@@ -31,6 +31,24 @@ public sealed class UatIgnoreAttribute : Attribute
 {
 }
 
+/// <summary>
+/// On a page's control property: tapping the control always goes to this page, so the binder knows
+/// the page after it without an <c>I should be on ...</c> step.
+/// </summary>
+[AttributeUsage(AttributeTargets.Property)]
+public sealed class UatNavigatesToAttribute : Attribute
+{
+    /// <param name="page">The page object type the control goes to.</param>
+    public UatNavigatesToAttribute(Type page)
+    {
+        ArgumentNullException.ThrowIfNull(page);
+        Page = page;
+    }
+
+    /// <summary>The page object type the control goes to.</summary>
+    public Type Page { get; }
+}
+
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
 public sealed class UatPhraseClassAttribute : TestScenarioServiceAttribute
 {

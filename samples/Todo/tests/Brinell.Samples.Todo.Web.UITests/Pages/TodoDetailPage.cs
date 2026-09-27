@@ -41,6 +41,7 @@ public sealed class TodoDetailPage : BlazorPageObjectBase<TodoDetailPage>
     public LabelControl<SectionCard<TodoDetailPage>> Notes => NotesCard.Value("NotesValue");
 
     /// <summary>Back to the list: the MAUI navigation bar's back button.</summary>
+    [UatNavigatesTo(typeof(TodoListPage))]
     [UatName("Back")]
     public ButtonControl<TodoDetailPage> BackButton => new(this, Locator.ByDataTestId("TodoDetail_Back"));
 
@@ -48,6 +49,7 @@ public sealed class TodoDetailPage : BlazorPageObjectBase<TodoDetailPage>
 
     public LabelControl<SectionCard<TodoDetailPage>> SyncState => SyncCard.Value("SyncValue");
 
+    [UatNavigatesTo(typeof(TodoEditPage))]
     public ButtonControl<TodoDetailPage> EditButton => new(this, Locator.ByDataTestId("TodoDetail_Edit"));
 
     public ButtonControl<TodoDetailPage> DeleteButton => new(this, Locator.ByDataTestId("TodoDetail_Delete"));

@@ -22,6 +22,7 @@ public class TodoListPage(IMauiTestContext context) : PageObjectBase<TodoListPag
     public ToolbarButton<AppRoot> SyncButton => new(_appRoot, Locator.ByAccessibilityId("TodoList_Sync"));
 
     /// <summary>Opens a new, empty edit page.</summary>
+    [UatNavigatesTo(typeof(TodoEditPage))]
     public ToolbarButton<AppRoot> AddButton => new(_appRoot, Locator.ByAccessibilityId("TodoList_Add"));
 
     /// <summary>The status filter: All, Open, In progress, Done.</summary>

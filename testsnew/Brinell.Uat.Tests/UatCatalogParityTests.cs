@@ -240,31 +240,31 @@ public sealed class UatCatalogParityTests
     }
 
     [Fact]
-    public async Task AVerbWithoutControl_FailsOnAPageWhereNoControlHasIt()
+    public void AVerbWithoutControl_FailsBindingOnAPageWhereNoControlHasIt()
     {
         var catalog = UatReflectionRuntime.FromRoot(new GadgetFixture()).CreateCommandCatalog();
 
-        var result = await RunAsync(catalog, """
+        var error = BindError(catalog, """
             Given I am on the Plain page
             When I open the book "Dune"
             """);
 
-        var failed = Assert.Single(result.Steps, step => step.Status == UatStepResultStatus.Failed);
-        Assert.Contains("No control on page 'Plain' has the step 'I open the book {item}'", failed.Message, StringComparison.Ordinal);
+        Assert.Equal("UATB009", error.Code);
+        Assert.Contains("no control on the Plain page has 'I open the book {item}'", error.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public async Task AVerbWithoutControl_FailsWhenTwoControlsOfThePageHaveIt()
+    public void AVerbWithoutControl_FailsBindingWhenTwoControlsOfThePageHaveIt()
     {
         var catalog = UatReflectionRuntime.FromRoot(new GadgetFixture()).CreateCommandCatalog();
 
-        var result = await RunAsync(catalog, """
+        var error = BindError(catalog, """
             Given I am on the Library page
             When I open the book "Dune"
             """);
 
-        var failed = Assert.Single(result.Steps, step => step.Status == UatStepResultStatus.Failed);
-        Assert.Contains("is on several controls of page 'Library' (Fiction, Poetry)", failed.Message, StringComparison.Ordinal);
+        Assert.Equal("UATB009", error.Code);
+        Assert.Contains("is on several controls of the Library page (Fiction, Poetry)", error.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -301,17 +301,148 @@ public sealed class UatCatalogParityTests
     }
 
     [Fact]
-    public async Task APagePhrase_FailsOnAnotherPage()
+    public void APagePhrase_FailsBindingOnAnotherPage()
     {
         var catalog = UatReflectionRuntime.FromRoot(new GadgetFixture()).CreateCommandCatalog();
 
-        var result = await RunAsync(catalog, """
+        var error = BindError(catalog, """
             Given I am on the Plain page
             When I wind the gadget 3 times
             """);
 
-        var failed = Assert.Single(result.Steps, step => step.Status == UatStepResultStatus.Failed);
-        Assert.Contains("is a phrase of the Gadget page, but the current page is Plain", failed.Message, StringComparison.Ordinal);
+        Assert.Equal("UATB009", error.Code);
+        Assert.Contains("'I wind the gadget {turns} times' is a phrase of the Gadget page", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AfterAVerbThatNavigates_TheNextStepThatFitsThePage_KeepsIt()
+    {
+        var fixture = new GadgetFixture();
+        var catalog = UatReflectionRuntime.FromRoot(fixture).CreateCommandCatalog();
+
+        var result = await RunAsync(catalog, """
+            Given I am on the Gadget page
+            When I push Gadget
+            And I choose "Stay" in the popup
+            """);
+
+        Assert.True(result.Passed, FormatResults(result));
+        Assert.Equal("Stay", fixture.GadgetPage.Popup.Chosen);
+    }
+
+    [Fact]
+    public void AfterAVerbThatNavigates_AStepThatDoesNotFitThePage_NamesTheStepThatMayHaveLeftIt()
+    {
+        var catalog = UatReflectionRuntime.FromRoot(new GadgetFixture()).CreateCommandCatalog();
+
+        var error = BindError(catalog, """
+            Given I am on the Gadget page
+            When I push Gadget
+            And I ring Bell
+            """);
+
+        Assert.Equal("UATB008", error.Code);
+        Assert.Contains("does not fit the Gadget page, and the page may have changed at 'I push Gadget'", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AControlThatSaysWhereItGoes_MakesThatPageCurrent_ForTheBinderAndTheRun()
+    {
+        var fixture = new GadgetFixture();
+        var catalog = UatReflectionRuntime.FromRoot(fixture).CreateCommandCatalog();
+
+        var result = await RunAsync(catalog, """
+            Given I am on the Gadget page
+            When I push Door
+            And I ring Bell
+            """);
+
+        Assert.True(result.Passed, FormatResults(result));
+        Assert.True(fixture.PlainPage.Bell.Rung);
+    }
+
+    [Fact]
+    public async Task AControlVerbThatReturnsAPage_MakesThatPageCurrent()
+    {
+        var fixture = new GadgetFixture();
+        var catalog = UatReflectionRuntime.FromRoot(fixture).CreateCommandCatalog();
+
+        var result = await RunAsync(catalog, """
+            Given I am on the Gadget page
+            When I read the book "Dune"
+            And I ring Bell
+            """);
+
+        Assert.True(result.Passed, FormatResults(result));
+        Assert.True(fixture.PlainPage.Bell.Rung);
+    }
+
+    [Fact]
+    public void APhraseOfThePage_AndAWiderPhrase_ForOneStep_AreAmbiguous()
+    {
+        var catalog = UatReflectionRuntime.FromRoot(new GadgetFixture()).CreateCommandCatalog();
+
+        var error = BindError(catalog, """
+            Given I am on the Gadget page
+            Then the gadget should hum
+            """);
+
+        Assert.Equal("UATB002", error.Code);
+        Assert.Contains("on the Gadget page it matches", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void APageThatDoesNotExist_FailsBinding()
+    {
+        var catalog = UatReflectionRuntime.FromRoot(new GadgetFixture()).CreateCommandCatalog();
+
+        var error = BindError(catalog, """
+            Given I am on the Nowhere page
+            """);
+
+        Assert.Equal("UATB009", error.Code);
+        Assert.Contains("names the page 'Nowhere', which does not exist", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ThePage_IsFollowedThroughACallablesSteps()
+    {
+        var catalog = UatReflectionRuntime.FromRoot(new GadgetFixture()).CreateCommandCatalog();
+        var parse = UatMarkdownParser.Parse("""
+            # UAT: Gadget
+
+            ## Phrase: I step outside
+
+            ```gherkin
+            When I leave for the plain page
+            ```
+
+            ## Scenario: Out and ringing
+
+            ```gherkin
+            Given I am on the Gadget page
+            When I step outside
+            And I ring Bell
+            ```
+            """);
+        Assert.True(parse.Success, string.Join(Environment.NewLine, parse.Diagnostics.Select(x => $"{x.Code} {x.Message}")));
+
+        var bind = UatBinder.Bind(parse.Document!, catalog);
+
+        Assert.True(bind.Success, string.Join(Environment.NewLine, bind.Diagnostics.Select(x => $"{x.Code} {x.Message}")));
+    }
+
+    private static UatDiagnostic BindError(UatCommandCatalog catalog, string steps)
+    {
+        var parse = UatMarkdownParser.Parse($"""
+            # UAT: Gadget
+
+            ## Scenario: Gadget steps
+
+            {steps}
+            """);
+        Assert.True(parse.Success);
+        return Assert.Single(UatBinder.Bind(parse.Document!, catalog).Diagnostics, x => x.Severity == UatDiagnosticSeverity.Error);
     }
 
     private static async Task<UatScenarioRunResult> RunAsync(UatCommandCatalog catalog, string steps)
@@ -366,6 +497,11 @@ public sealed class UatCatalogParityTests
             GadgetPage = new GadgetPage(PlainPage);
         }
 
+        [UatThen("the gadget should hum")]
+        public void Hums()
+        {
+        }
+
         public GadgetPage GadgetPage { get; }
 
         public PlainPage PlainPage { get; } = new();
@@ -376,6 +512,8 @@ public sealed class UatCatalogParityTests
     private sealed class PlainPage
     {
         public Popup Popup { get; } = new();
+
+        public BellControl Bell { get; } = new();
 
         public bool WaitReady(int? timeoutMs = null) => true;
     }
@@ -404,6 +542,13 @@ public sealed class UatCatalogParityTests
         [UatThen("the book {item} should be in", HasLiteral = true, Literal = false)]
         public void AssertLent(string title, bool lent) => Calls.Add($"{title} lent {lent}");
 
+        [UatWhen("I read the book {item}")]
+        public PlainPage Read(string title)
+        {
+            Calls.Add($"read {title}");
+            return new PlainPage();
+        }
+
         [UatThen("the shelf should hold {value}")]
         public void AssertHolds(string[] titles) => Calls.Add($"holds {string.Join('|', titles)}");
     }
@@ -420,6 +565,14 @@ public sealed class UatCatalogParityTests
 
         // A page that exposes itself, as Brinell page objects do: its phrases stay page phrases.
         public GadgetPage Self => this;
+
+        [UatNavigatesTo(typeof(PlainPage))]
+        public GadgetControl Door { get; } = new();
+
+        [UatThen("the gadget should hum")]
+        public void Hums()
+        {
+        }
 
         public GadgetControl GadgetButton { get; } = new();
 
@@ -456,6 +609,14 @@ public sealed class UatCatalogParityTests
     {
     }
 
+    private sealed class BellControl
+    {
+        public bool Rung { get; private set; }
+
+        [UatWhen("I ring {control}")]
+        public void Ring() => Rung = true;
+    }
+
     // No control suffix in its name or its type's: its own verb makes it a control.
     private sealed class Popup
     {
@@ -470,6 +631,11 @@ public sealed class UatCatalogParityTests
         public string? Level { get; private set; }
 
         public bool? LastExpected { get; private set; }
+
+        [UatWhen("I push {control}", Navigates = true)]
+        public void Push()
+        {
+        }
 
         [UatWhen("I frobnicate {control}", CommandId = "Gadget.Frobnicate")]
         public void Frobnicate(int? timeoutMs = null)

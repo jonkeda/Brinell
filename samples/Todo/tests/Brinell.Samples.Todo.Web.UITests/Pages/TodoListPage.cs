@@ -25,6 +25,7 @@ public sealed class TodoListPage : BlazorPageObjectBase<TodoListPage>
 
     public ButtonControl<TodoListPage> SyncButton => new(this, Locator.ByDataTestId("TodoList_Sync"));
 
+    [UatNavigatesTo(typeof(TodoEditPage))]
     public ButtonControl<TodoListPage> AddButton => new(this, Locator.ByDataTestId("TodoList_Add"));
 
     public SelectControl<TodoListPage> Filter => new(this, Locator.ByDataTestId("TodoList_Filter"));

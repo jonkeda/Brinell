@@ -74,44 +74,39 @@ public sealed class UatReflectionRuntimeTests
     }
 
     [Fact]
-    public async Task CreatedCatalog_WithoutCurrentPage_ReturnsDiagnosticFailure()
+    public void CreatedCatalog_WithoutCurrentPage_FailsBinding()
     {
         var runtime = UatReflectionRuntime.FromRoot(new Fixture());
-        var scenario = BindScenario(runtime, """
+
+        var diagnostic = Assert.Single(BindErrors(runtime, """
             # UAT: Missing Page
 
             ## Scenario: Missing current page
 
             When I tap Greet
-            """);
+            """));
 
-        var result = await new UatScenarioRunner().RunAsync(scenario);
-
-        var step = Assert.Single(result.Steps);
-        Assert.Equal(UatStepResultStatus.Failed, step.Status);
-        Assert.Contains("No current UAT page", step.Message);
-        Assert.Contains("Available pages", step.Message);
+        Assert.Equal("UATB008", diagnostic.Code);
+        Assert.Contains("Start with 'Given I am on the ... page'", diagnostic.Message);
     }
 
     [Fact]
-    public async Task CreatedCatalog_MissingControl_ReturnsAvailableControlNames()
+    public void CreatedCatalog_MissingControl_FailsBinding_WithTheControlNames()
     {
         var runtime = UatReflectionRuntime.FromRoot(new Fixture());
-        var scenario = BindScenario(runtime, """
+
+        var diagnostic = Assert.Single(BindErrors(runtime, """
             # UAT: Missing Control
 
             ## Scenario: Missing control
 
             Given I am on the Main page
             When I tap Imaginary Button
-            """);
+            """));
 
-        var result = await new UatScenarioRunner().RunAsync(scenario);
-
-        var step = Assert.Single(result.Steps, x => x.Status == UatStepResultStatus.Failed);
-        Assert.Contains("Imaginary Button", step.Message);
-        Assert.Contains("Available controls", step.Message);
-        Assert.Contains("Greet", step.Message);
+        Assert.Equal("UATB009", diagnostic.Code);
+        Assert.Contains("the Main page has no control 'Imaginary Button'", diagnostic.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Greet", diagnostic.Message);
     }
 
     [Fact]
@@ -209,6 +204,16 @@ public sealed class UatReflectionRuntimeTests
         Assert.True(result.Passed, FormatResults(result));
         Assert.Equal("192.168.168.1", fixture.TypedHost);
         Assert.Equal("192.168.168.1", fixture.RawHost);
+    }
+
+    private static IReadOnlyList<UatDiagnostic> BindErrors(UatReflectionRuntime runtime, string markdown)
+    {
+        var parse = UatMarkdownParser.Parse(markdown);
+        Assert.True(parse.Success, FormatDiagnostics(parse));
+
+        var bind = UatBinder.Bind(parse.Document!, runtime.CreateCommandCatalog());
+        Assert.False(bind.Success);
+        return bind.Diagnostics.Where(x => x.Severity == UatDiagnosticSeverity.Error).ToList();
     }
 
     private static UatBoundScenario BindScenario(UatReflectionRuntime runtime, string markdown)

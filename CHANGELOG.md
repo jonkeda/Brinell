@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- UAT page scope: control verbs and page phrases bind against the current page, which the binder
+  follows through the steps before running (the page a step names, a returned page object,
+  `[UatNavigatesTo]` on a control, a callable's steps). A missing control, a verb the control
+  lacks, or a page phrase of another page is now a bind error (`UATB009`) instead of a run
+  failure; a page-scoped step with no known page is `UATB008`, naming the step that may have left
+  it. A phrase of the page that also matches a wider phrase is ambiguous (`UATB002`).
+  `Navigates` on `[UatWhen]` marks a verb that can leave the page (`I tap`, the dialogs' `I choose`).
+  `UatScenarioTestBase.RunExpectedBindFailureUatFile` checks a file that must fail binding.
 - Todo sample: users (journey TOD.11). A Users page and a user edit page with one field of each
   kind a test drives (`RadioButton`, `CheckBox` + `DatePicker`, `Picker`, `Stepper`, a decimal
   `Entry`, `TimePicker`, `Switch`, `Slider`, `Editor`); users are managed by `Todo.Api`

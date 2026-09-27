@@ -112,6 +112,8 @@ Common diagnostics:
 | `UATB002` | The step is ambiguous. |
 | `UATB003` | The matched command requires a table. |
 | `UATB004` | The matched command does not accept a table. |
+| `UATB008` | A control verb or page phrase needs the page, and no step has said it, or an earlier step may have left it (see [Page Scope](#page-scope)). |
+| `UATB009` | The step does not fit the current page, or names a page that does not exist. |
 | `UATA001`-`UATA007` | A value does not fit its parameter (see [Arguments](#arguments)). |
 | `UATA010`-`UATA013` | The step binds to a broken phrase (see [Broken Phrases](#broken-phrases)). |
 | `UATC001`-`UATC008` | The step calls a broken callable phrase (see [Callable Phrases](#callable-phrases)). |
@@ -485,11 +487,49 @@ Then I should be on the Todo List page
 - The phrase is written as for a phrase class: placeholders name the method's parameters, which
   are typed, and a `UatTable` parameter takes the step's table. Nothing is inferred from the
   method name; a page method without an attribute is not a phrase.
-- The step runs on the page object of **its own page**, and fails when another page is current.
+- The step runs on the page object of **its own page**, and fails binding when another page is
+  current ([Page Scope](#page-scope)).
 - **The return type is the page after the step.** A method that returns a page object makes that
   page current, as `I should be on the ... page` does; a `void` method leaves the page as it was.
 - One user intent per page phrase. "Create a todo, open it and mark it done" is three steps, or a
   callable phrase.
+
+## Page Scope
+
+Control verbs and page phrases bind against **the current page**, and the binder works that page
+out before anything runs, by reading the steps in order:
+
+| Step | Page after it |
+| --- | --- |
+| `Given I am on the X page`, `Then I should be on the X page` | X |
+| a page phrase or control verb whose method returns a page object | that page |
+| a tap on a control marked `[UatNavigatesTo(typeof(XPage))]` | X |
+| a call to a callable phrase | the page its steps end on |
+| another verb marked `Navigates = true` (`I tap {control}`, `I choose {value} in {control}`) | a guess: still the same page, until a step does not fit it |
+| any other step | unchanged |
+
+So a scenario starts with `Given I am on ...`, and after a step that may leave the page, the next
+step either fits the page it was on or says where it is now:
+
+```markdown
+When I tap Save
+Then I should be on the Todo List page
+And the todo "Oil the hinges" should be synced
+```
+
+A button that always goes to one page says so, and the assert becomes optional:
+
+```csharp
+[UatNavigatesTo(typeof(TodoEditPage))]
+public ToolbarButton<AppRoot> AddButton => ...;
+```
+
+- A control that is not on the current page, or cannot do the verb, is a bind error (`UATB009`)
+  listing the page's controls. Before, it failed only when the step ran.
+- **No shadowing.** A step that matches a phrase of the current page and a wider phrase (a phrase
+  class, a callable) is ambiguous (`UATB002`), never "the page wins".
+- A catalog without pages, and a callable's body checked on its own, bind without page scope. A
+  callable's steps are followed in the caller's page when it is called.
 
 ## Page And Control Names
 

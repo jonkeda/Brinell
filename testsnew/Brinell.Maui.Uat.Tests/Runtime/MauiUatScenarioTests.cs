@@ -22,13 +22,15 @@ public sealed class MauiUatScenarioTests
     [MemberData(nameof(ScenarioFiles))]
     public Task UatFile_Passes(string filePath) => RunUatFileAsync(filePath);
 
-    [Theory(Timeout = 120000)]
+    // A control the page does not have is a bind error: the file fails before the app is driven.
+    [Theory]
     [MemberData(nameof(ExpectedFailureScenarioFiles))]
-    public Task ExpectedFailureUatFile_ReturnsUsefulDiagnostics(string filePath) =>
-        RunExpectedFailureUatFileAsync(
+    public void ExpectedFailureUatFile_ReturnsUsefulDiagnostics(string filePath) =>
+        RunExpectedBindFailureUatFile(
             filePath,
+            "UATB009",
             "Imaginary Button",
-            "Available controls",
+            "Its controls are",
             Path.GetFileName(filePath));
 
     protected override UatRuntimeValidationOptions RuntimeValidation { get; } =

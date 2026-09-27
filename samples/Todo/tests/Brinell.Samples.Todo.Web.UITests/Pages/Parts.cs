@@ -200,8 +200,8 @@ public sealed class TodoDialog<TParent>(IHtmlScope<TParent> parent)
     }
 
     /// <summary>Presses the dialog's button with this text: the MAUI step.</summary>
-    [UatWhen("I choose {value} in {control}")]
-    [UatWhen("{user} chooses {value} in {control}")]
+    [UatWhen("I choose {value} in {control}", Navigates = true)]
+    [UatWhen("{user} chooses {value} in {control}", Navigates = true)]
     public TodoDialog<TParent> Choose(string text)
     {
         Button(text).Click();

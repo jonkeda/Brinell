@@ -15,6 +15,12 @@ public sealed class UatCommandCatalog
     /// <summary>The app's own argument types, which step values are read with.</summary>
     public UatArgumentTypes ArgumentTypes { get; set; } = UatArgumentTypes.Empty;
 
+    /// <summary>
+    /// The pages and their controls, by page name, which the binder follows the page with. Empty for
+    /// a catalog without page objects: then steps bind without page scope.
+    /// </summary>
+    public IReadOnlyDictionary<string, UatPageModel> Pages { get; set; } = new Dictionary<string, UatPageModel>();
+
     public UatCommandPattern Register(
         UatEffectiveStepKeyword keyword,
         string phrase,
@@ -26,13 +32,15 @@ public sealed class UatCommandCatalog
         UatPhraseProblem? problem = null,
         bool namesPage = false,
         string? page = null,
-        string? pageAfter = null)
+        string? pageAfter = null,
+        UatControlVerb? controlVerb = null)
     {
         var pattern = new UatCommandPattern(keyword, phrase, commandId, requiresTable, allowsTable, handler, parameters, problem)
         {
             NamesPage = namesPage,
             Page = page,
             PageAfter = pageAfter,
+            ControlVerb = controlVerb,
         };
         _patterns.Add(pattern);
         return pattern;
@@ -140,6 +148,12 @@ public sealed class UatCommandPattern
     /// <summary>The page that is current after the step: a page phrase's returned page; null when the step does not say.</summary>
     public string? PageAfter { get; init; }
 
+    /// <summary>What the control method is, for a control verb; null for any other phrase.</summary>
+    public UatControlVerb? ControlVerb { get; init; }
+
+    /// <summary>Whether the step binds against the current page: a control verb or a page phrase.</summary>
+    public bool IsPageScoped => ControlVerb is not null || Page is not null;
+
     public bool IsExact { get; }
 
     public int Specificity { get; }
@@ -233,6 +247,22 @@ public sealed class UatCommandPattern
             : trimmed;
     }
 }
+
+/// <summary>The control method a control verb invokes, which the binder checks a page's control against.</summary>
+/// <param name="MethodName">The method, invoked by name.</param>
+/// <param name="ArgumentCount">How many arguments the step passes: the item, then the value or literal.</param>
+/// <param name="NamesControl">Whether the phrase has <c>{control}</c>; without it, the page's one control that declares the verb runs it.</param>
+/// <param name="Navigates">Whether the verb can leave the page (<see cref="Brinell.Core.Testing.UatPhraseAttribute.Navigates"/>).</param>
+public sealed record UatControlVerb(string MethodName, int ArgumentCount, bool NamesControl, bool Navigates);
+
+/// <summary>A page the binder can follow: its name, its page object type and its controls.</summary>
+public sealed record UatPageModel(string Name, Type PageType, IReadOnlyList<UatControlModel> Controls);
+
+/// <summary>A control of a page, as the binder sees it.</summary>
+/// <param name="Name">The UAT name.</param>
+/// <param name="ControlType">The property's type.</param>
+/// <param name="NavigatesTo">The page tapping it always goes to (<see cref="UatNavigatesToAttribute"/>); null when not declared.</param>
+public sealed record UatControlModel(string Name, Type ControlType, string? NavigatesTo);
 
 public sealed record UatCommandMatch(
     UatCommandPattern Pattern,

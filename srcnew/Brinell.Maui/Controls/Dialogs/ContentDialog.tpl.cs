@@ -64,8 +64,8 @@ public partial class ContentDialog<TParent> : ContainerObjectBase<TParent, Conte
     /// <summary>Presses the dialog's button with this text.</summary>
     /// <param name="buttonText">The button's visible text.</param>
     /// <returns>The dialog.</returns>
-    [UatWhen("I choose {value} in {control}", CommandId = "Dialog.Choose")]
-    [UatWhen("{user} chooses {value} in {control}", CommandId = "Dialog.Choose")]
+    [UatWhen("I choose {value} in {control}", CommandId = "Dialog.Choose", Navigates = true)]
+    [UatWhen("{user} chooses {value} in {control}", CommandId = "Dialog.Choose", Navigates = true)]
     public ContentDialog<TParent> Choose(string buttonText)
     {
         DialogButton(buttonText).Click();

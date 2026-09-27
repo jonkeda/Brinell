@@ -38,4 +38,11 @@ public abstract class UatPhraseAttribute : Attribute
 
     /// <summary>Optional stable command id suffix for a control verb; defaults to the method name.</summary>
     public string? CommandId { get; init; }
+
+    /// <summary>
+    /// True when the control verb can take the user to another page (<c>I tap {control}</c>). After
+    /// it, the scenario's page is a guess, confirmed by the next step that fits it, unless the
+    /// control declares where it goes. A verb that returns a page object says where it goes itself.
+    /// </summary>
+    public bool Navigates { get; init; }
 }

@@ -215,6 +215,42 @@ public abstract class UatScenarioTestBase<TFixture>
         }
     }
 
+    /// <summary>
+    /// Binds a scenario file that must fail binding, without running it, and checks the bind
+    /// diagnostics contain each expected text.
+    /// </summary>
+    /// <param name="filePath">The scenario file.</param>
+    /// <param name="expectedDiagnostics">Texts the formatted bind diagnostics must contain.</param>
+    protected void RunExpectedBindFailureUatFile(
+        string filePath,
+        params string[] expectedDiagnostics)
+    {
+        var file = UatScenarioFiles.Load(filePath);
+        if (!file.Success)
+        {
+            throw new InvalidOperationException(
+                UatDiagnosticsFormatter.FormatDiagnostics(file.Diagnostics));
+        }
+
+        var runtime = CreateRuntime();
+        var catalog = CreateCommandCatalog(runtime);
+        var bind = file.Bind(runtime.CreateCatalogSet(catalog));
+        if (bind.Success)
+        {
+            throw new InvalidOperationException($"Expected '{filePath}' to fail binding, but it bound.");
+        }
+
+        var details = UatDiagnosticsFormatter.FormatBindFailure(bind.Diagnostics, runtime.DiscoveryReport, catalog);
+        foreach (var expected in expectedDiagnostics.Where(value => !string.IsNullOrWhiteSpace(value)))
+        {
+            if (!details.Contains(expected, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    $"Expected bind diagnostics to contain '{expected}'.{Environment.NewLine}{details}");
+            }
+        }
+    }
+
     protected virtual UatRuntime CreateRuntime()
     {
         return new UatRuntime(Fixture, ConfigFilePath, RuntimeValidation);

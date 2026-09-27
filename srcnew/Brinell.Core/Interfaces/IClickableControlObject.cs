@@ -17,8 +17,8 @@ public interface IClickableControlObject<TScope> : IControlObject<TScope>
     /// Perform a single click on the control.
     /// </summary>
     /// <returns>The containing scope for fluent chaining.</returns>
-    [UatWhen("I tap {control}", CommandId = "Control.Tap")]
-    [UatWhen("{user} taps {control}", CommandId = "Control.Tap")]
+    [UatWhen("I tap {control}", CommandId = "Control.Tap", Navigates = true)]
+    [UatWhen("{user} taps {control}", CommandId = "Control.Tap", Navigates = true)]
     TScope Click(int? timeoutMs = null);
     
     /// <summary>
