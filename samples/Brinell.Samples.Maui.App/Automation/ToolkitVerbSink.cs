@@ -18,7 +18,7 @@ namespace Brinell.Samples.Maui.App.Automation;
 /// toolkit copies this sink instead, and it names exactly the controls that app has.
 /// </para>
 /// <para>
-/// <b>Each verb passed the AD-008 checks in <c>.my/communitytoolkit/probe.md</c>.</b> Expander and
+/// <b>Each verb passed the AD-008 checks (the trees are in <c>docs/controls/community-toolkit.md</c>).</b> Expander and
 /// RatingView publish no pattern at all, and DrawingView is not even addressable by id, so there
 /// is no UI Automation route to fall back on. Every state read here is something the user sees.
 /// MediaElement is not here at all: its transport controls are in the tree and answer Invoke.

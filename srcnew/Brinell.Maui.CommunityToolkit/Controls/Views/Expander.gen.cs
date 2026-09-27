@@ -15,7 +15,7 @@ namespace Brinell.Maui.CommunityToolkit.Controls.Views;
 /// pattern, and its header tap is a toolkit-internal <c>Tapped</c> handler the bridge cannot
 /// bind. The app declares <c>Tap,GetState</c> on the expander and attaches a sink that toggles
 /// <c>IsExpanded</c> and answers <c>GetState("IsExpanded")</c>; see <c>ToolkitVerbSink</c> in the
-/// sample app and <c>.my/communitytoolkit/probe.md</c>.
+/// sample app and <c>docs/controls/community-toolkit.md</c>.
 /// </para>
 /// <para>
 /// Android and iOS tap the element with touch input. They have no state read, so

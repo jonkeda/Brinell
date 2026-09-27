@@ -8,7 +8,7 @@ namespace Brinell.Maui.UITests.Pages;
 /// <remarks>
 /// Snackbar and Toast have no control objects on Windows: both are OS notifications that an
 /// unpackaged app cannot raise, and the page records the refusal in <see cref="AlertResult"/>.
-/// See <c>.my/communitytoolkit/probe.md</c>.
+/// See <c>docs/controls/community-toolkit.md</c>.
 /// </remarks>
 public class CommunityToolkitAlertsTestPage : PageObjectBase<CommunityToolkitAlertsTestPage>
 {

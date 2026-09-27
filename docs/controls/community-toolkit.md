@@ -23,6 +23,80 @@ Microsoft.Maui.Controls 10.0.90, on Windows.
 
 `MediaElement` moved here from `Brinell.Maui.Controls.Media`, where it was an empty stub.
 
+## What UI Automation Sees
+
+Probed 2026-09-17 on Windows (`net10.0-windows10.0.19041.0`, Debug, `BRINELL_UIA_BRIDGE=1`,
+AppSupport automation handlers on) with a raw-view walk, before any bridge verb was declared.
+Android was not probed. These trees are why each route below is what it is: a control gets a
+bridge verb only where the tree has no pattern for the job and the AD-008 checks pass.
+
+**Expander**: no ExpandCollapse and no Invoke on the expander or its header. The header's tap is
+a toolkit-internal `TapGestureRecognizer` handler, not a `Command`, so the bridge's built-in
+`Tap` cannot reach it. Collapsed content is not in the tree.
+
+```text
+Group  class=ContentView id=TestExpander        patterns=[ScrollItem]
+  Group  class=Layout                            patterns=[ScrollItem]
+    Text class=TextBlock id=TestExpanderHeader name='Show details' patterns=[Text,ScrollItem]
+```
+
+**AvatarView**: the initials are the inner text's name; an image avatar has an `Image` child
+instead.
+
+```text
+Group  class=ContentView id=TestAvatarView  patterns=[ScrollItem]
+  Text class=TextBlock name='BR'            patterns=[Text,ScrollItem]
+```
+
+**RatingView**: no RangeValue, Value or Selection. The stars have no ids and no patterns, and
+filled or empty is paint only.
+
+```text
+Custom id=TestRatingView                           patterns=[ScrollItem]
+  Group class=Layout
+    Group class=ContentView  (x5, one per star)
+      Image class=Image       patterns=[ScrollItem]
+```
+
+**DrawingView**: not in the tree by AutomationId. It renders as an `Image` with no id, so it is
+reached only through the bridge declaration.
+
+**StateContainer**: the host layout is addressable, and the view the current state shows is its
+only child. Switching state swaps the child.
+
+```text
+Group class=Layout id=TestStateContainer
+  Text class=TextBlock id=StateContentView name='Loaded content'
+```
+
+**Popup**: a modal page inside the main window's tree, not a separate window. Its buttons answer
+Invoke.
+
+```text
+Group class=ContentView id=TestPopup
+  Group class=Layout
+    Text   id=PopupMessageLabel name='Popup message'
+    Button id=PopupCloseButton  name='Close'  patterns=[Invoke,ScrollItem]
+```
+
+**MediaElement** (MediaElement 10.0.0): `TestMediaElement` itself is not in the tree. The WinUI
+transport controls are, flattened into the page with fixed ids. While playing, the two clocks'
+names lose their time ('Time elapsed'); the time stays in the Text pattern only, and the seek
+slider's RangeValue advances.
+
+```text
+Image      id=PosterImage (offscreen)
+Slider     id=ProgressSlider  name='Seek'  patterns=[Value,RangeValue]  range=0[0..100]
+Text       id=TimeElapsedElement    name='Time elapsed 00:00:00'   text='00:00:00'
+Text       id=TimeRemainingElement  name='Time remaining 00:00:06'
+ApplicationBar id=MediaControlsCommandBar
+  Button id=PlayPauseButton name='Play'  patterns=[Invoke]
+  Button id=VolumeMuteButton, RepeatButton (Toggle), RewindButton, FastForwardButton, ...
+```
+
+**Snackbar and Toast** are OS notifications outside the app's tree, and `Show()` throws in an
+unpackaged app (see Platform Gaps).
+
 ## Routes On Windows
 
 Every route follows AD-005 and AD-008: a UI Automation pattern where one exists, and the gesture
@@ -79,5 +153,3 @@ own: they are plain layouts, so use `Grid`/`ContentView`-style containers or the
 # Working directory: Brinell root
 dotnet test testsnew\Brinell.Maui.UITests\Brinell.Maui.UITests.csproj --filter "Control=Expander|Control=RatingView"
 ```
-
-The probe notes, with the raw automation trees, are in `.my/communitytoolkit/probe.md`.

@@ -32,7 +32,7 @@ namespace Brinell.Maui.CommunityToolkit.Controls.Media;
 /// <b>Not the toolkit's <c>CurrentState</c>.</b> Measured on toolkit 10.0.0 / Windows: after the
 /// transport controls start playback, <c>CurrentState</c> stays <c>Opening</c> and
 /// <c>StateChanged</c> never fires, while the player plays. A state read from the app would be
-/// wrong, so this control reads what the user sees. See <c>.my/communitytoolkit/probe.md</c>.
+/// wrong, so this control reads what the user sees. See <c>docs/controls/community-toolkit.md</c>.
 /// </para>
 /// <para>
 /// <b>Limits.</b> One media element per scope on Windows: the transport ids are fixed, so put each
