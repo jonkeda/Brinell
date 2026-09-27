@@ -30,6 +30,7 @@ public class TodoListPage(IMauiTestContext context) : PageObjectBase<TodoListPag
     public Label<TodoListPage> LastSync => new(this, "TodoList_LastSync");
 
     /// <summary>Loading, Empty, Error, or the rows.</summary>
+    [UatName("List")]
     public TodoListState State => new(this, "TodoList_State");
 
     /// <summary>The rows.</summary>

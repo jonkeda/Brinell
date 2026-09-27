@@ -429,8 +429,21 @@ Rules for a control verb:
 
 **Reach.** The Core interfaces are always scanned. An app control type is scanned
 only when the runtime met it during page discovery - that is, when it is the type
-of a control property on a discovered page object. A step on a control no
-page exposes is never registered, and its steps fail to bind with `UATB001`.
+of a control property on a discovered page object - together with its base classes,
+so a verb declared on a Brinell base (`StateContainer`) reaches an app's subclass. A
+step on a control no page exposes is never registered, and its steps fail to bind
+with `UATB001`.
+
+**Brinell's own control verbs**, beyond the Core interfaces:
+
+| Control | Verbs |
+| --- | --- |
+| `ContentDialog` (MAUI) | `{control} should ask {value}` (the title), `I choose {value} in {control}` (a button), `no {control} should be shown` |
+| `StateContainer` (CommunityToolkit) | `{control} should show the {value} state`; a subclass overrides `StateViewId` to map a readable name (`Loading`) to its view's AutomationId |
+
+A page exposes them as it exposes any control: the Todo pages have a `Dialog` property,
+and the list page names its state container `List`, so the scenarios read
+`Then the dialog should ask "Delete todo?"` and `Then the list should show the Empty state`.
 
 ## Page And Control Names
 
@@ -460,7 +473,12 @@ Names can also be inferred from known suffixes:
 
 Known suffixes include `Page`, `Button`, `Input`, `Entry`, `Field`,
 `TextBox`, `CheckBox`, `Switch`, `Toggle`, `Picker`, `Dropdown`, `List`,
-`Grid`, `Label`, `Display`, `Message`, `Text`, and `Control`.
+`Grid`, `Label`, `Display`, `Message`, `Text`, and `Control`. A property with no
+known suffix is still a control when its type declares a control verb (`Dialog`, of
+type `ContentDialog`).
+
+A step may put "the" before a control name: `the dialog` finds `Dialog`. A control whose
+name itself starts with "The" is matched first.
 
 ## Page Flow
 

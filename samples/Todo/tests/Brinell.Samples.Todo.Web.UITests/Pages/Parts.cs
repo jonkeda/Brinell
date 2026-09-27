@@ -119,6 +119,19 @@ public sealed class TodoListState(IHtmlScope<TodoListPage> page)
         return this;
     }
 
+    /// <summary>Asserts that the named state (Loading, Empty, Error or Content) is shown, waiting for it: the MAUI step.</summary>
+    [UatThen("{control} should show the {value} state")]
+    public TodoListState AssertShowsState(string state, int? timeoutMs = null) => AssertShowing(
+        state switch
+        {
+            nameof(Loading) => Loading,
+            nameof(Empty) => Empty,
+            nameof(Error) => Error,
+            nameof(Content) => Content,
+            _ => throw new ArgumentException($"Unknown list state '{state}'. Use Loading, Empty, Error or Content.", nameof(state)),
+        },
+        timeoutMs: timeoutMs);
+
     // One state's element, as a container of the state: its presence is the question.
     private sealed class ShownPart(IHtmlScope<TodoListState> state, string testId)
         : ContainerBase<TodoListState, ShownPart>(state, Locator.ByDataTestId(testId))
@@ -176,4 +189,26 @@ public sealed class TodoDialog<TParent>(IHtmlScope<TParent> parent)
         throw new ElementNotFoundException(
             $"The dialog has no button '{text}'. It has '{Accept.TryGetText()}' and '{Cancel.TryGetText()}'.");
     }
+
+    /// <summary>Asserts that the dialog is shown with this title, waiting for it: the MAUI step.</summary>
+    [UatThen("{control} should ask {value}")]
+    public TodoDialog<TParent> AssertAsks(string title, int? timeoutMs = null)
+    {
+        AssertExists(true, timeoutMs: timeoutMs);
+        Title.AssertText(title, timeoutMs: timeoutMs);
+        return this;
+    }
+
+    /// <summary>Presses the dialog's button with this text: the MAUI step.</summary>
+    [UatWhen("I choose {value} in {control}")]
+    [UatWhen("{user} chooses {value} in {control}")]
+    public TodoDialog<TParent> Choose(string text)
+    {
+        Button(text).Click();
+        return this;
+    }
+
+    /// <summary>Asserts that no dialog is shown, waiting for it to close: the MAUI step.</summary>
+    [UatThen("no {control} should be shown")]
+    public TodoDialog<TParent> AssertNotShown(int? timeoutMs = null) => AssertExists(false, timeoutMs: timeoutMs);
 }

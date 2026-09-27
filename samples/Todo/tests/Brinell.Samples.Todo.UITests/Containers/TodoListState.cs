@@ -41,4 +41,14 @@ public sealed class TodoListState : StateContainer<TodoListPage, TodoListState>
 
     /// <summary>Retries the sync, in the Error state.</summary>
     public Button<TodoListState> Retry => new(this, "TodoList_Retry");
+
+    /// <inheritdoc />
+    protected override string StateViewId(string state) => state switch
+    {
+        nameof(Loading) => Loading,
+        nameof(Empty) => Empty,
+        nameof(Error) => Error,
+        nameof(Content) => Content,
+        _ => throw new ArgumentException($"Unknown list state '{state}'. Use Loading, Empty, Error or Content.", nameof(state)),
+    };
 }

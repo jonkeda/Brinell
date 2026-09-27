@@ -1,3 +1,4 @@
+using Brinell.Core.Testing;
 using Brinell.Maui.Containers;
 using Brinell.Maui.Controls.Buttons;
 using Brinell.Maui.Controls.Text;
@@ -47,6 +48,36 @@ public partial class ContentDialog<TParent> : ContainerObjectBase<TParent, Conte
     /// </summary>
     public Entry<ContentDialog<TParent>> PromptInput
         => new(this, Locator.ByControlType("entry"));
+
+    #endregion
+
+    #region Steps
+
+    /// <summary>Asserts that a dialog is shown with this title, waiting for it.</summary>
+    /// <param name="title">The title the dialog asks.</param>
+    /// <param name="timeoutMs">How long to wait; the default wait when null.</param>
+    /// <returns>The dialog.</returns>
+    [UatThen("{control} should ask {value}", CommandId = "Dialog.AssertAsks")]
+    public ContentDialog<TParent> AssertAsks(string title, int? timeoutMs = null)
+        => AssertExists(true, timeoutMs: timeoutMs).AssertTitle(title, timeoutMs: timeoutMs);
+
+    /// <summary>Presses the dialog's button with this text.</summary>
+    /// <param name="buttonText">The button's visible text.</param>
+    /// <returns>The dialog.</returns>
+    [UatWhen("I choose {value} in {control}", CommandId = "Dialog.Choose")]
+    [UatWhen("{user} chooses {value} in {control}", CommandId = "Dialog.Choose")]
+    public ContentDialog<TParent> Choose(string buttonText)
+    {
+        DialogButton(buttonText).Click();
+        return this;
+    }
+
+    /// <summary>Asserts that no dialog is shown, waiting for one to close.</summary>
+    /// <param name="timeoutMs">How long to wait; the default wait when null.</param>
+    /// <returns>The dialog.</returns>
+    [UatThen("no {control} should be shown", CommandId = "Dialog.AssertNone")]
+    public ContentDialog<TParent> AssertNotShown(int? timeoutMs = null)
+        => AssertExists(false, timeoutMs: timeoutMs);
 
     #endregion
 

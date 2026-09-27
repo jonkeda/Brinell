@@ -32,6 +32,7 @@ public sealed class TodoListPage : BlazorPageObjectBase<TodoListPage>
     public LabelControl<TodoListPage> LastSync => new(this, Locator.ByDataTestId("TodoList_LastSync"));
 
     /// <summary>Loading, Empty, Error or the rows: exactly one shows.</summary>
+    [UatName("List")]
     public TodoListState State => new(this);
 
     [UatName("Empty Message")]

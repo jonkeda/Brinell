@@ -154,6 +154,53 @@ public sealed class UatCatalogParityTests
         Assert.StartsWith("Builtin.", pattern.CommandId, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task AVerbOnABaseClass_IsFoundThroughTheControlThePageDeclares()
+    {
+        var fixture = new GadgetFixture();
+        var catalog = UatReflectionRuntime.FromRoot(fixture).CreateCommandCatalog();
+
+        var result = await RunAsync(catalog, """
+            Given I am on the Gadget page
+            Then Dial should show the Warm state
+            """);
+
+        Assert.True(result.Passed, FormatResults(result));
+        Assert.Equal("Warm", fixture.GadgetPage.Dial.LastState);
+    }
+
+    [Fact]
+    public async Task AControlName_MayTakeThe()
+    {
+        var fixture = new GadgetFixture();
+        var catalog = UatReflectionRuntime.FromRoot(fixture).CreateCommandCatalog();
+
+        var result = await RunAsync(catalog, """
+            Given I am on the Gadget page
+            Then the dial should show the Cold state
+            When I set the level of the gadget to "3"
+            """);
+
+        Assert.True(result.Passed, FormatResults(result));
+        Assert.Equal("Cold", fixture.GadgetPage.Dial.LastState);
+        Assert.Equal("3", fixture.GadgetPage.GadgetButton.Level);
+    }
+
+    [Fact]
+    public async Task APropertyWhoseTypeDeclaresVerbs_IsAControl_WhateverItIsCalled()
+    {
+        var fixture = new GadgetFixture();
+        var catalog = UatReflectionRuntime.FromRoot(fixture).CreateCommandCatalog();
+
+        var result = await RunAsync(catalog, """
+            Given I am on the Gadget page
+            When I choose "Keep" in the popup
+            """);
+
+        Assert.True(result.Passed, FormatResults(result));
+        Assert.Equal("Keep", fixture.GadgetPage.Popup.Chosen);
+    }
+
     private static async Task<UatScenarioRunResult> RunAsync(UatCommandCatalog catalog, string steps)
     {
         var parse = UatMarkdownParser.Parse($"""
@@ -208,6 +255,10 @@ public sealed class UatCatalogParityTests
     {
         public GadgetControl GadgetButton { get; } = new();
 
+        public DialControl Dial { get; } = new();
+
+        public Popup Popup { get; } = new();
+
         public bool WaitReady(int? timeoutMs = null) => true;
     }
 
@@ -215,6 +266,33 @@ public sealed class UatCatalogParityTests
     private sealed class NoServices : IUatSessionHost
     {
         public IServiceProvider UseSession(string name) => new ServiceCollection().BuildServiceProvider();
+    }
+
+    // The verb is declared on the base, as StateContainer's is under an app's own state container.
+    private abstract class StateControlBase<TSelf>
+        where TSelf : StateControlBase<TSelf>
+    {
+        public string? LastState { get; private set; }
+
+        [UatThen("{control} should show the {value} state")]
+        public TSelf AssertShowsState(string state, int? timeoutMs = null)
+        {
+            LastState = state;
+            return (TSelf)this;
+        }
+    }
+
+    private sealed class DialControl : StateControlBase<DialControl>
+    {
+    }
+
+    // No control suffix in its name or its type's: its own verb makes it a control.
+    private sealed class Popup
+    {
+        public string? Chosen { get; private set; }
+
+        [UatWhen("I choose {value} in {control}")]
+        public void Choose(string text) => Chosen = text;
     }
 
     private sealed class GadgetControl

@@ -1,6 +1,4 @@
 using Brinell.Core.Testing;
-using Brinell.Maui.Controls.Dialogs;
-using Brinell.Maui.Pages;
 using Brinell.Samples.Todo.Contracts;
 using Brinell.Samples.Todo.UITests;
 using Brinell.Samples.Todo.UITests.Containers;
@@ -12,8 +10,8 @@ using Brinell.Uat;
 namespace Brinell.Samples.Todo.Uat.Phrases;
 
 /// <summary>
-/// Steps the page graph cannot say alone: one row of the list, the list's state, the native
-/// dialog, and arranging the fake server, the network and the app process.
+/// Steps the page graph cannot say alone: one row of the list, and arranging the fake server,
+/// the network and the app process.
 /// </summary>
 /// <remarks>
 /// Each step delegates to a page object, control or fixture member; nothing here reaches the driver.
@@ -22,9 +20,6 @@ namespace Brinell.Samples.Todo.Uat.Phrases;
 public sealed class TodoScreenPhrases(TodoUatFixture fixture) : UatPhraseClassBase
 {
     private TodoList Todos => fixture.List.Todos;
-
-    // The dialog is window chrome, the same on the edit and the detail page.
-    private ContentDialog<AppRoot> Dialog => new TodoDetailPage(fixture.Context).Dialog;
 
     /// <summary>Opens the row's detail page, as tapping the row does. The phrase is the name: I open the todo {title}.</summary>
     [UatWhen]
@@ -63,34 +58,6 @@ public sealed class TodoScreenPhrases(TodoUatFixture fixture) : UatPhraseClassBa
     /// <summary>The row no longer shows the "not synced yet" marker.</summary>
     [UatThen("the todo {title} should be synced")]
     public void RowIsSynced(string title) => Todos.AssertPending(title, expected: false, timeoutMs: TestConstants.PageTimeoutMs);
-
-    /// <summary>The list shows the Loading, Empty, Error or Content state.</summary>
-    [UatThen("the list should show the {state} state")]
-    public void ListShowsState(string state)
-    {
-        var view = state switch
-        {
-            "Loading" => TodoListState.Loading,
-            "Empty" => TodoListState.Empty,
-            "Error" => TodoListState.Error,
-            "Content" => TodoListState.Content,
-            _ => throw new ArgumentException($"Unknown list state '{state}'. Use Loading, Empty, Error or Content.", nameof(state)),
-        };
-
-        fixture.List.State.AssertShowing(view, timeoutMs: TestConstants.PageTimeoutMs);
-    }
-
-    /// <summary>A confirmation dialog is shown with this title.</summary>
-    [UatThen("the dialog should ask {title}")]
-    public void DialogAsks(string title) => Dialog.AssertExists(true, timeoutMs: TestConstants.PageTimeoutMs).AssertTitle(title);
-
-    /// <summary>Presses a button of the confirmation dialog.</summary>
-    [UatWhen("I choose {button} in the dialog")]
-    public void ChooseInDialog(string button) => Dialog.DialogButton(button).Click();
-
-    /// <summary>No confirmation dialog is shown.</summary>
-    [UatThen("no dialog should be shown")]
-    public void NoDialog() => Dialog.AssertExists(false, timeoutMs: TestConstants.PageTimeoutMs);
 
     /// <summary>Every request for the todo list fails with this status until the next scenario.</summary>
     [UatGiven("the server fails with status {status}")]

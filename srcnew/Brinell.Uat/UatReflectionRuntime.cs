@@ -224,10 +224,20 @@ public sealed class UatReflectionRuntime
 
     private IEnumerable<Type> ControlStepTypes()
     {
+        // A verb declared on a control's base class (StateContainer under an app's own state
+        // container) is found through the class that the page declares.
         var discovered = _pages.Values
             .SelectMany(page => page.Controls)
-            .Select(control => control.Property.PropertyType);
+            .SelectMany(control => SelfAndBaseTypes(control.Property.PropertyType));
         return UatCatalogBuilder.CoreStepTypes.Concat(discovered).Distinct();
+    }
+
+    private static IEnumerable<Type> SelfAndBaseTypes(Type type)
+    {
+        for (Type? current = type; current is not null && current != typeof(object); current = current.BaseType)
+        {
+            yield return current;
+        }
     }
 
     private static void RegisterPhraseClassPhrases(
@@ -589,8 +599,11 @@ public sealed class UatReflectionRuntime
             return true;
         }
 
+        // A type that declares its own verbs is a control whatever it is called (ContentDialog).
         return UatNameInference.HasKnownSuffix(property.Name) ||
-               UatNameInference.HasKnownSuffix(property.PropertyType.Name);
+               UatNameInference.HasKnownSuffix(property.PropertyType.Name) ||
+               property.PropertyType.GetMethods(BindingFlags.Instance | BindingFlags.Public)
+                   .Any(method => method.IsDefined(typeof(UatPhraseAttribute), inherit: false));
     }
 
     private static string ResolveRuntimeName(MemberInfo member)
@@ -785,8 +798,8 @@ public sealed class UatReflectionRuntime
         }
 
         var controlName = invocation.Arguments[controlArgumentName];
-        var controlBinding = pageResult.Page!.Controls.FirstOrDefault(
-            control => control.Name.Equals(controlName, StringComparison.OrdinalIgnoreCase));
+        var page = pageResult.Page!;
+        var controlBinding = FindControl(page, controlName);
         if (controlBinding is null)
         {
             result = new UatControlResolution(
@@ -794,11 +807,11 @@ public sealed class UatReflectionRuntime
                 controlName,
                 UatStepResult.Failed(
                     invocation,
-                    $"UAT control '{controlName}' was not found on page '{pageResult.Page.Name}'. Available controls: {FormatControlNames(pageResult.Page)}."));
+                    $"UAT control '{controlName}' was not found on page '{page.Name}'. Available controls: {FormatControlNames(page)}."));
             return false;
         }
 
-        var pageInstance = GetPageInstance(context, pageResult.Page);
+        var pageInstance = GetPageInstance(context, page);
         if (pageInstance is null)
         {
             result = new UatControlResolution(
@@ -806,7 +819,7 @@ public sealed class UatReflectionRuntime
                 controlName,
                 UatStepResult.Failed(
                     invocation,
-                    $"UAT page '{pageResult.Page.Name}' requires an active DI scope."));
+                    $"UAT page '{page.Name}' requires an active DI scope."));
             return false;
         }
 
@@ -818,13 +831,20 @@ public sealed class UatReflectionRuntime
                 controlName,
                 UatStepResult.Failed(
                     invocation,
-                    $"UAT control '{controlName}' on page '{pageResult.Page.Name}' returned null."));
+                    $"UAT control '{controlName}' on page '{page.Name}' returned null."));
             return false;
         }
 
         result = new UatControlResolution(control, controlName, UatStepResult.Passed(invocation));
         return true;
     }
+
+    // A step may put "the" before a control's name: "the dialog should ask ..." finds Dialog.
+    private static UatRuntimeControl? FindControl(UatRuntimePage page, string name)
+        => page.Controls.FirstOrDefault(control => control.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+           ?? (name.StartsWith("the ", StringComparison.OrdinalIgnoreCase)
+               ? page.Controls.FirstOrDefault(control => control.Name.Equals(name[4..].TrimStart(), StringComparison.OrdinalIgnoreCase))
+               : null);
 
     private bool TryGetCurrentPage(
         UatExecutionContext context,

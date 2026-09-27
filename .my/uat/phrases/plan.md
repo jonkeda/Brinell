@@ -1,6 +1,6 @@
 # Phrases: split, scope and namespace
 
-Status: plan (discussion closed on the decisions below; nothing built yet except callable phrases)
+Status: in progress. Phase 1 done (see the commits per phase); callable phrases were built before.
 Date: 2026-09-27
 Replaces three discussion docs, last at 5b73a4b:
 [splitting-phrases.md](https://github.com/exact-mobile-apps/test-tooling/blob/5b73a4b/.my/uat/phrases/splitting-phrases.md),
