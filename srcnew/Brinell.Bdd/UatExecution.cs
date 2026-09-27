@@ -36,6 +36,9 @@ public sealed class UatExecutionContext
 
     public IList<string> Diagnostics { get; } = [];
 
+    /// <summary>Where the steps stop for the debugger; the IDE's step breakpoints while one is attached, null otherwise.</summary>
+    public IUatBreakHook? Breaks { get; set; } = UatBreakpoints.ForDebugger();
+
     /// <summary>
     /// Makes <paramref name="app"/> current: the host makes it the app page objects drive, and its
     /// own page and services come back. Nothing happens when it is current already.
@@ -213,7 +216,15 @@ public sealed class UatStepExecutionSession
                 _context.SwitchApp(app);
             }
 
+            if (_context.Breaks?.Before(invocation, _context) is { } stepBreak)
+            {
+                // A step breakpoint: stepBreak shows the step, its arguments, app and page; F11 on the
+                // next line goes into its step definition (R2).
+                _context.Breaks.Break(stepBreak);
+            }
+
             var result = NameTheSession(await invocation.Command.Handler(_context, invocation, cancellationToken).ConfigureAwait(false));
+            BreakOnFailure(invocation, result);
             _results.Add(result);
             return result;
         }
@@ -226,8 +237,18 @@ public sealed class UatStepExecutionSession
         catch (Exception ex)
         {
             var failed = NameTheSession(UatStepResult.Failed(invocation, ex.Message, ex));
+            BreakOnFailure(invocation, failed);
             _results.Add(failed);
             return failed;
+        }
+    }
+
+    // Break on failure: the failed step's result, with its exception, before the scenario ends.
+    private void BreakOnFailure(UatStepInvocation invocation, UatStepResult result)
+    {
+        if (result.Status == UatStepResultStatus.Failed && _context.Breaks is { } breaks && breaks.AfterFailure(result))
+        {
+            breaks.Break(UatBreakpoints.Describe(invocation, _context, result));
         }
     }
 

@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Step breakpoints (`Brinell.Bdd`): while a debugger is attached, `UatStepExecutionSession.RunNextAsync`
+  stops before a step whose line `%LOCALAPPDATA%\Brinell\uat-breakpoints.json` lists, with a
+  `UatStepBreak` local (text, arguments, app, page, call chain); a line in a `.steps.md` stops at each
+  call, a call's line once before its first step, and `breakOnFailure` after a failed step. The
+  check is behind `IUatBreakHook` (`UatExecutionContext.Breaks`); without a debugger nothing is read.
 - `[UatScenarioTheory]` (`Brinell.Uat`): `[Theory]` with a stable address per scenario, the `UatScenario`
   trait `<file relative to the config>#<slug>` (`UatScenarioAddress` in `Brinell.Bdd`), so
   `dotnet test --filter "UatScenario=..."` runs one scenario. A case whose feature file is the

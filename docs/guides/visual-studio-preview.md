@@ -37,6 +37,26 @@ To install it for everyday use, open `tools\Brinell.Uat.VisualStudio\bin\Debug\n
   thumbnail to open it. The preview finds the newest run of each scenario through the runs'
   `TestResults/<run-id>/manifest.json`, and refreshes when a run writes one.
 
+## Break At A Step
+
+A step breakpoint stops the debugger before that step, whichever way the test was started (the
+preview's Debug, or Test Explorer's own **Debug**). The breakpoints are a per-user file,
+`%LOCALAPPDATA%\Brinell\uat-breakpoints.json`, read only while a debugger is attached:
+
+```json
+{ "files": { "C:\\src\\Suite\\Features\\TOD.01-see-my-todos.feature.md": [19, 25] }, "breakOnFailure": false }
+```
+
+- A line of a feature file stops before that step; the line of a call to a callable stops once,
+  before the call's first step.
+- A line in a `.steps.md` stops at that step each time a scenario calls it.
+- `breakOnFailure` stops after a step that fails, before the scenario ends.
+
+The debugger stops in `UatStepExecutionSession.RunNextAsync`. The local `stepBreak` holds the
+step's text, its arguments as read, the app, the page and the call chain; **F11** goes into the
+step definition. A test runs the build output's copy of a feature file; a listed file matches it
+by its path below the `Features` folder.
+
 The extension starts `dotnet Server\Brinell.Uat.LanguageServer.dll` from its own folder; its log is
 the **Brinell UAT** pane of the Output window.
 
