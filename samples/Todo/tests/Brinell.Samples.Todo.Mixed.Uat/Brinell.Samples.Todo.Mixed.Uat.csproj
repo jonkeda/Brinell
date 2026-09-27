@@ -19,4 +19,8 @@
     <None Include="brinell.maui.config.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Using Include="Brinell.Bdd" />
+  </ItemGroup>
+
 </Project>

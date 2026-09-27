@@ -1,6 +1,6 @@
 using Brinell.Core.Testing;
 using Brinell.Samples.Todo.Contracts;
-using Brinell.Uat;
+using Brinell.Bdd;
 
 namespace Brinell.Samples.Todo.TestSupport.Uat;
 

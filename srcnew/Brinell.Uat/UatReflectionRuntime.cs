@@ -168,7 +168,7 @@ public sealed class UatReflectionRuntime
 
     public UatCommandCatalog CreateCommandCatalog()
     {
-        var catalog = new UatCommandCatalog { ArgumentTypes = _steps.ArgumentTypes, Pages = PageModels() };
+        var catalog = new UatCommandCatalog { ArgumentTypes = _steps.ArgumentTypes, Scope = new UatPageSet(PageModels()) };
 
         // The engine's three intrinsic page-graph verbs — defined once, here, each with its named
         // form for a scenario with several users (AD-015).

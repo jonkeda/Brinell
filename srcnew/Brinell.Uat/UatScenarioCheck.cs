@@ -5,11 +5,6 @@ using System.Text.RegularExpressions;
 
 namespace Brinell.Uat;
 
-/// <summary>A value rewritten in place: the one right answer for a near miss (<c>2026-05-12</c> to <c>12-May-2026</c>).</summary>
-/// <param name="Original">The value as written.</param>
-/// <param name="Replacement">The value as it should be written.</param>
-public sealed record UatTextFix(string Original, string Replacement);
-
 /// <summary>
 /// Checks scenario files without running them: the same parser, binder and value rules as the
 /// xUnit gate, against a catalog built from the fixture's type. Used by the <c>brinell-data</c> tool.
@@ -163,7 +158,7 @@ public static partial class UatScenarioCheck
         var catalog = catalogs.Default;
         var phrases = catalog.Patterns
             .Where(pattern => (keyword is null || pattern.Keyword == keyword) && scope.Sees(pattern.Namespace))
-            .Where(pattern => pattern.Page is null || catalog.Pages.TryGetValue(pattern.Page, out var page) && scope.Sees(page.Namespace))
+            .Where(pattern => pattern.Page is null || UatPageSet.Of(catalog).TryGetValue(pattern.Page, out var page) && scope.Sees(page.Namespace))
             .Select(pattern => (Group: pattern.Page is { } page ? $"Page {page}" : pattern.ControlVerb is not null ? "Controls on the current page" : Group(pattern.Namespace), Line: Describe(pattern)));
         var prepared = file.Callables.Prepare(catalogs);
         var callables = file.Callables.Callables

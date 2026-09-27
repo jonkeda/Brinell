@@ -202,6 +202,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Request/response recording
 
 ### Changed
+- The feature-file engine is its own package, `Brinell.Bdd`: parser and models, values, argument
+  types, tables, the catalog and binder, callable steps, namespaces, config, execution and runner,
+  the step-definition runtime, `[BddStepDefinitions]`, `BddStepDefinitionsBase`, `[UatIgnore]`,
+  `IUatClock` and `IUatSessionHost`, in the namespace `Brinell.Bdd`. `Brinell.Uat` depends on it and
+  keeps pages, controls, page scope (behind `IStepScopeModel` / `IStepScope` on the catalog's
+  `Scope`), apps, name inference and the UAT test base. A project that uses `Brinell.Uat` types adds
+  `using Brinell.Bdd;` (or `<Using Include="Brinell.Bdd" />`). Type names are unchanged.
 - The folder of feature and step files is `Features/`, not `Scenarios/`: the default of
   `UatScenarioSource`, `UatScenarioTestBase`, `UatSpecFormatTestBase` and the tools. The files stay in
   the projects that own them. `brinell-data validate` reports an old `Scenarios/` folder beside the

@@ -1,5 +1,3 @@
-using Brinell.Core.Composition;
-
 namespace Brinell.Uat;
 
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Property | AttributeTargets.Method)]
@@ -26,11 +24,6 @@ public sealed class UatActionAttribute : Attribute
     public string ActionName { get; }
 }
 
-[AttributeUsage(AttributeTargets.Class | AttributeTargets.Property | AttributeTargets.Method)]
-public sealed class UatIgnoreAttribute : Attribute
-{
-}
-
 /// <summary>
 /// On a page's control property: tapping the control always goes to this page, so the binder knows
 /// the page after it without an <c>I should be on ...</c> step.
@@ -47,20 +40,4 @@ public sealed class UatNavigatesToAttribute : Attribute
 
     /// <summary>The page object type the control goes to.</summary>
     public Type Page { get; }
-}
-
-[AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
-public sealed class BddStepDefinitionsAttribute : TestScenarioServiceAttribute
-{
-    /// <summary>
-    /// The folder under the scenario root whose scenarios, and those below it, see this class's
-    /// phrases (<c>Invoicing</c>, <c>Invoicing/Credit notes</c>). Null takes the class's or the
-    /// assembly's <see cref="Brinell.Core.Testing.BddNamespaceAttribute"/>, and without one every
-    /// scenario sees them.
-    /// </summary>
-    public string? Namespace { get; init; }
-}
-
-public abstract class BddStepDefinitionsBase : TestScenarioServiceBase
-{
 }

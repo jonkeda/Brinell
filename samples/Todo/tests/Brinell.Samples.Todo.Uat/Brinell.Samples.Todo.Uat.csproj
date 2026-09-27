@@ -27,4 +27,8 @@
     <None Include="todo-user-journeys.md" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Using Include="Brinell.Bdd" />
+  </ItemGroup>
+
 </Project>

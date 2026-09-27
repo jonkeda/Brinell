@@ -23,4 +23,8 @@
     <InternalsVisibleTo Include="Brinell.DataValidator.Tests" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Using Include="Brinell.Bdd" />
+  </ItemGroup>
+
 </Project>

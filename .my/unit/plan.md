@@ -45,7 +45,16 @@ of `Brinell.Bdd` (6) is the large, internal step. The Construction pilot is not 
 - Phase 6.1 and 6.2 done. 6.1: `UatPageTracker` behind `IStepScopeProvider` and
   `IStepWalkObserver`, two interfaces as planned. 6.2: `UatStepDefinitionRuntime` (step classes, the
   fixture's phrases, argument binding) and an internal `UatInvoker`, split from `UatReflectionRuntime`.
-- **Phase 6.3 stopped (risk rule): the catalog knows pages too, not only the binder.** Moving
+- **Phase 6.3 done with option C, simplified.** Deviations: moved types keep their `Uat` names (only
+  the namespace is `Brinell.Bdd`), to keep the move reviewable; `IUatClock` and `IUatSessionHost`
+  moved too (no UI in them; the execution context switches apps through them); `UatTargetConventions`,
+  `UatScenarioCheck`, `UatScenarioTestBase` stay in Uat. **No `BddFeatureTestBase` yet**: the service
+  suite must refuse a UI step (UATB013), which needs the page-step and control-verb patterns only Uat
+  has, so it stays on `UatScenarioTestBase` and IntegrationTests references `Brinell.Uat`. TestSupport
+  references `Brinell.Bdd` only. `Brinell.Bdd.Tests` has 8 of the 12 planned files (156 tests); the
+  argument, callable, namespace and using tests build catalogs through the page runtime and stay in
+  `Brinell.Uat.Tests` (189). 156 + 189 = 345, as before.
+- **Phase 6.3 stopped first (risk rule): the catalog knows pages too, not only the binder.** Moving
   "catalog and binder core" to `Brinell.Bdd` while it references no page or control type needs four
   more seams, not the two of 6.1:
   1. `UatCommandPattern` carries page data: `Page`, `PageAfter`, `NamesPage`, `ControlVerb`

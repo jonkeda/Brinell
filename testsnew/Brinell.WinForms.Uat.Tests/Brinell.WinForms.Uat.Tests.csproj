@@ -27,4 +27,8 @@
     <MSBuild Projects="..\..\samples\Brinell.Samples.WinForms.App\Brinell.Samples.WinForms.App.csproj" Targets="Build" Properties="Configuration=$(Configuration)" />
   </Target>
 
+  <ItemGroup>
+    <Using Include="Brinell.Bdd" />
+  </ItemGroup>
+
 </Project>

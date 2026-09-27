@@ -1,24 +1,7 @@
 namespace Brinell.Uat;
 
-// What a step can bind to at a point in the walk, beyond the folder, file, Using and global scopes
-// the binder applies itself.
-internal interface IStepScopeProvider
-{
-    IReadOnlyList<UatCommandMatch> Visible(UatCommandCatalog catalog, UatStep step, UatAppConfig? app, IReadOnlyList<UatCommandMatch> candidates, List<UatDiagnostic> problems);
-}
-
-// The walk tells it what each bound step did. False from Bound stops the step: it added a problem.
-internal interface IStepWalkObserver
-{
-    bool Bound(UatStep step, UatCommandMatch match, ref IReadOnlyDictionary<string, string> arguments, UatAppConfig? app, UatScope where, List<UatDiagnostic> diagnostics);
-
-    string? After(UatCommandPattern pattern, UatAppConfig? app);
-
-    string? CallEnded(UatCallable callable, IReadOnlyList<UatStepInvocation> bound);
-}
-
 // The page each app is on as binding walks a scenario (AD-019 D5, D7, D8).
-internal sealed class UatPageTracker(UatCatalogSet catalogs, HashSet<string>? used) : IStepScopeProvider, IStepWalkObserver
+internal sealed class UatPageTracker(UatCatalogSet catalogs, HashSet<string>? used) : IStepScope
 {
     private const string PageParameter = "page";
 
@@ -28,7 +11,7 @@ internal sealed class UatPageTracker(UatCatalogSet catalogs, HashSet<string>? us
     // phrase of wider scope. A catalog without pages binds without page scope.
     public IReadOnlyList<UatCommandMatch> Visible(UatCommandCatalog catalog, UatStep step, UatAppConfig? app, IReadOnlyList<UatCommandMatch> candidates, List<UatDiagnostic> problems)
     {
-        if (catalog.Pages.Count == 0)
+        if (UatPageSet.Of(catalog).Count == 0)
         {
             return UatCommandCatalog.Select(candidates);
         }
@@ -41,7 +24,7 @@ internal sealed class UatPageTracker(UatCatalogSet catalogs, HashSet<string>? us
         }
 
         var state = PageOf(app);
-        if (state.Page is null || !catalog.Pages.TryGetValue(state.Page, out var page))
+        if (state.Page is null || !UatPageSet.Of(catalog).TryGetValue(state.Page, out var page))
         {
             if (wide.Count > 0)
             {
@@ -90,7 +73,7 @@ internal sealed class UatPageTracker(UatCatalogSet catalogs, HashSet<string>? us
     public bool Bound(UatStep step, UatCommandMatch match, ref IReadOnlyDictionary<string, string> arguments, UatAppConfig? app, UatScope where, List<UatDiagnostic> diagnostics)
     {
         var catalog = catalogs.CatalogFor(app);
-        if (catalog.Pages.Count == 0)
+        if (UatPageSet.Of(catalog).Count == 0)
         {
             return true;
         }
@@ -115,7 +98,7 @@ internal sealed class UatPageTracker(UatCatalogSet catalogs, HashSet<string>? us
         }
 
         var state = PageOf(app);
-        if (state.Page is null || !catalog.Pages.TryGetValue(state.Page, out var page))
+        if (state.Page is null || !UatPageSet.Of(catalog).TryGetValue(state.Page, out var page))
         {
             return true;
         }
@@ -128,7 +111,7 @@ internal sealed class UatPageTracker(UatCatalogSet catalogs, HashSet<string>? us
 
         if (pattern.ControlVerb is { } verb && UatPageScope.ControlFor(page, match, out _) is { } control)
         {
-            var after = UatPageScope.PageAfter(page, control, verb, catalog.Pages);
+            var after = UatPageScope.PageAfter(page, control, verb, UatPageSet.Of(catalog));
             _pages[key] = new PageState(after ?? page.Key, after is null ? step : null);
         }
 
@@ -137,29 +120,6 @@ internal sealed class UatPageTracker(UatCatalogSet catalogs, HashSet<string>? us
 
     public string? After(UatCommandPattern pattern, UatAppConfig? app)
         => pattern.IsPageScoped && PageOf(app) is { LostAt: null, Page: { } known } ? known : null;
-
-    // Only what the steps say is checked: a callable that names a page ends on one, and a row
-    // ends on the page it started on.
-    public string? CallEnded(UatCallable callable, IReadOnlyList<UatStepInvocation> bound)
-    {
-        var pages = bound.Where(invocation => invocation.Command.NamesPage).ToList();
-        if (pages.Count == 0 || bound.Count == 0)
-        {
-            return null;
-        }
-
-        if (!bound[^1].Command.NamesPage)
-        {
-            return $"names the {Page(pages[^1])} page but does not end on one. End it with a step that says where it ends: 'Then I should be on the ... page'.";
-        }
-
-        return callable.Kind == UatCallableKind.EachRow && !string.Equals(Page(pages[0]), Page(bound[^1]), StringComparison.OrdinalIgnoreCase)
-            ? $"runs once per row, so each row ends on the page it started on; this one starts on the {Page(pages[0])} page and ends on the {Page(bound[^1])} page."
-            : null;
-    }
-
-    private static string Page(UatStepInvocation invocation)
-        => invocation.Arguments.TryGetValue(PageParameter, out var page) ? page : "?";
 
     private static bool Fits(UatPageModel page, UatCommandMatch candidate, List<string> reasons)
     {
@@ -190,7 +150,7 @@ internal sealed class UatPageTracker(UatCatalogSet catalogs, HashSet<string>? us
     // in two seen namespaces is ambiguous, as a phrase is.
     private UatPageModel? ResolvePage(UatCommandCatalog catalog, UatStep step, string named, UatScope where, List<UatDiagnostic> diagnostics)
     {
-        var all = catalog.Pages.Values
+        var all = UatPageSet.Of(catalog).Values
             .Where(page => page.Key.Equals(named, StringComparison.OrdinalIgnoreCase) || page.Name.Equals(named, StringComparison.OrdinalIgnoreCase))
             .ToList();
         var seen = all.Where(page => where.Sees(page.Namespace)).ToList();
@@ -204,7 +164,7 @@ internal sealed class UatPageTracker(UatCatalogSet catalogs, HashSet<string>? us
             ? UatBinder.Error("UATB002", $"Step '{step.Text}' names the page '{named}', which here is {string.Join(" and ", seen.Select(page => page.Key))}. Name it with its namespace: '{seen[0].Key}'.", step.Source)
             : all.Count > 0
                 ? UatBinder.Error("UATB010", $"Step '{step.Text}' names the page '{named}' of {string.Join(", ", all.Select(page => UatNamespaces.Describe(page.Namespace)))}, which {UatNamespaces.Describe(where.Namespace)} does not see. Add 'Using' for it, or move the file there.", step.Source)
-                : UatBinder.Error("UATB009", $"Step '{step.Text}' names the page '{named}', which does not exist. The pages are {string.Join(", ", catalog.Pages.Values.Where(page => where.Sees(page.Namespace)).Select(page => page.Key).Order(StringComparer.OrdinalIgnoreCase))}.", step.Source));
+                : UatBinder.Error("UATB009", $"Step '{step.Text}' names the page '{named}', which does not exist. The pages are {string.Join(", ", UatPageSet.Of(catalog).Values.Where(page => where.Sees(page.Namespace)).Select(page => page.Key).Order(StringComparer.OrdinalIgnoreCase))}.", step.Source));
         return null;
     }
 

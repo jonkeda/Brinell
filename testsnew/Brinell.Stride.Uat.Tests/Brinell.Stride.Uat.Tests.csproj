@@ -28,4 +28,8 @@
     <MSBuild Projects="..\..\samples\Brinell.Samples.Stride.App\Brinell.Samples.Stride.App.csproj" Targets="Build" Properties="Configuration=$(Configuration)" />
   </Target>
 
+  <ItemGroup>
+    <Using Include="Brinell.Bdd" />
+  </ItemGroup>
+
 </Project>

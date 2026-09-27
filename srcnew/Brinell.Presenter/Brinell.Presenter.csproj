@@ -39,4 +39,8 @@
     <ProjectReference Include="..\Brinell.Uat\Brinell.Uat.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Using Include="Brinell.Bdd" />
+  </ItemGroup>
+
 </Project>

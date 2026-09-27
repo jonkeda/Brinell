@@ -24,6 +24,7 @@ checking whether a project exists.
 `srcnew/` contains package-producing projects:
 
 - `Brinell.Automation`
+- `Brinell.Bdd` - feature files without a UI: parse, bind, values, tables, callable steps, namespaces, run
 - `Brinell.Blazor`
 - `Brinell.Core`
 - `Brinell.Html`
@@ -36,7 +37,7 @@ checking whether a project exists.
 - `Brinell.NativeAndroid`
 - `Brinell.Presenter`
 - `Brinell.Stride`
-- `Brinell.Uat`
+- `Brinell.Uat` - UAT on top of `Brinell.Bdd`: pages, controls, page scope, apps, the UAT test base
 - `Brinell.WinForms`
 - `Brinell.Wpf`
 

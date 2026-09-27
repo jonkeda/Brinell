@@ -36,4 +36,8 @@
     <MSBuild Projects="..\..\samples\Brinell.Samples.Maui.App\Brinell.Samples.Maui.App.csproj" Targets="Build" Properties="Configuration=$(Configuration);TargetFramework=net10.0-windows10.0.19041.0" />
   </Target>
 
+  <ItemGroup>
+    <Using Include="Brinell.Bdd" />
+  </ItemGroup>
+
 </Project>

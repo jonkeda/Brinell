@@ -1,5 +1,5 @@
 using Brinell.Mocking;
-using Brinell.Uat;
+using Brinell.Bdd;
 
 namespace Brinell.Samples.Todo.TestSupport.Uat;
 
