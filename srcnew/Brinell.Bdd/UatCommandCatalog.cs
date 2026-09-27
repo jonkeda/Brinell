@@ -6,8 +6,20 @@ public sealed class UatCommandCatalog
 {
     private readonly List<UatCommandPattern> _patterns = [];
     private readonly List<UatUnmatchableDeclaration> _unmatchable = [];
+    private readonly List<BddHook> _hooks = [];
 
     public IReadOnlyList<UatCommandPattern> Patterns => _patterns;
+
+    /// <summary>The hooks of the step-definition classes.</summary>
+    public IReadOnlyList<BddHook> Hooks => _hooks;
+
+    /// <summary>Adds a hook.</summary>
+    /// <param name="hook">The hook.</param>
+    public void AddHook(BddHook hook)
+    {
+        ArgumentNullException.ThrowIfNull(hook);
+        _hooks.Add(hook);
+    }
 
     /// <summary>Declarations that are broken and have no phrase text to match (AD-016).</summary>
     public IReadOnlyList<UatUnmatchableDeclaration> Unmatchable => _unmatchable;

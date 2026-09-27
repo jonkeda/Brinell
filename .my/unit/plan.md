@@ -45,6 +45,10 @@ of `Brinell.Bdd` (6) is the large, internal step. The Construction pilot is not 
 - Phase 6.1 and 6.2 done. 6.1: `UatPageTracker` behind `IStepScopeProvider` and
   `IStepWalkObserver`, two interfaces as planned. 6.2: `UatStepDefinitionRuntime` (step classes, the
   fixture's phrases, argument binding) and an internal `UatInvoker`, split from `UatReflectionRuntime`.
+- Phase 7 done. Set comparison: `UatTable.AssertExactly` (table against objects) already existed and
+  `DatabaseHasOnly` uses it; the new `BddSets.AssertSet` compares two typed lists and is used by the
+  server-order step. Hooks run in `UatScenarioRunner.RunAsync`; the Presenter's step-by-step session
+  does not run them.
 - **Phase 6.3 done with option C, simplified.** Deviations: moved types keep their `Uat` names (only
   the namespace is `Brinell.Bdd`), to keep the move reviewable; `IUatClock` and `IUatSessionHost`
   moved too (no UI in them; the execution context switches apps through them); `UatTargetConventions`,

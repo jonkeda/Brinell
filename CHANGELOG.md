@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Hooks on step-definition classes (`Brinell.Bdd`): `[BddBeforeFeature]` (static, once per feature
+  file per run), `[BddBeforeScenario(tags)]`, `[BddAfterScenario(tags)]` and `[BddAfterStep(tags)]`,
+  after the test base's own overrides and in class and method order.
+- `BddSets.AssertSet(expected, actual, ordered)`: one diff for two lists (missing, extra, the closest
+  item's different cells). The server-order step uses it. `UatStepDefinitionRuntime.FromTypes` and
+  `CreateCommandCatalog` build a catalog of step-definition classes without pages.
 - Todo sample: UI tests and UAT scenarios for users (TOD.11): `UserListPage`, `UserEditPage` and
   `UserList` in the `Users` namespace, `UsersJourneyTests` (8), `TOD.11-manage-users.uat.md`
   (8 scenarios with `Using | Users`), and an expected-failure file without the `Using` that must

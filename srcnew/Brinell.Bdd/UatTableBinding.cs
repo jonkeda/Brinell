@@ -340,7 +340,7 @@ public static partial class UatTableBinding
 
     private static string Show(object? value) => UatValues.Write(value);
 
-    private static string Format(string label, IReadOnlyList<string> columns, IEnumerable<IReadOnlyList<string>> rows, Func<int, string?> note)
+    internal static string Format(string label, IReadOnlyList<string> columns, IEnumerable<IReadOnlyList<string>> rows, Func<int, string?> note)
     {
         var all = rows.ToList();
         var widths = columns.Select((c, i) => Math.Max(c.Length, all.Count == 0 ? 0 : all.Max(r => r[i].Length))).ToList();

@@ -132,6 +132,11 @@ public sealed class UatScenarioRunner
         CancellationToken cancellationToken = default)
     {
         var session = CreateSession(scenario);
+        if (scenario.Hooks.Count > 0 && session.HasNext)
+        {
+            return await BddHooks.RunAsync(scenario, _context, session, cancellationToken).ConfigureAwait(false);
+        }
+
         while (session.HasNext)
         {
             var result = await session.RunNextAsync(cancellationToken).ConfigureAwait(false);
@@ -224,6 +229,27 @@ public sealed class UatStepExecutionSession
             _results.Add(failed);
             return failed;
         }
+    }
+
+    // A hook failed before the first step: the scenario fails there, and no step runs.
+    internal void Fail(string message)
+    {
+        _results.Add(UatStepResult.Failed(_scenario.Invocations[_nextIndex], message));
+        _nextIndex = _scenario.Invocations.Count;
+    }
+
+    // A hook failed after a step: that step's result says so.
+    internal void FailLast(string problem)
+    {
+        if (_results.Count == 0)
+        {
+            return;
+        }
+
+        var last = _results[^1];
+        _results[^1] = last.Status == UatStepResultStatus.Passed
+            ? UatStepResult.Failed(last.Invocation, $"The step passed, but {problem}")
+            : last with { Message = $"{last.Message} Also, {problem}" };
     }
 
     // In a scenario that uses several apps, a failure says which one it came from.

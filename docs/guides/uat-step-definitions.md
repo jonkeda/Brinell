@@ -815,8 +815,49 @@ catalog.Register(
 Custom root phrases and step-definition classes receive the table as a `UatTable`
 parameter, or bound to records by a record or list parameter (see [Arguments](#arguments)).
 
+To check what a step found against its table, compare in one go and get one diff (missing
+items, extra items, and the closest item's different cells):
+
+- `table.AssertExactly(items)` / `table.AssertContains(items)` for a `UatTable` against objects;
+- `BddSets.AssertSet(expected, actual, ordered: false)` for two lists, such as a table bound to
+  records against what the server received.
+
 Named `## Data: <name>` tables are parsed into the UAT document model. Current
 binding and execution code does not consume them automatically.
+
+## Hooks
+
+A step-definition class can run code around scenarios, with the scenario's tags as a filter:
+
+```csharp
+[BddStepDefinitions]
+public sealed class BackendHooks(ITodoArrangement fixture) : BddStepDefinitionsBase
+{
+    [BddBeforeFeature]
+    public static void WarmUp() { }
+
+    [BddBeforeScenario("backend")]
+    public void ResetServer() => fixture.ResetBackend();
+
+    [BddAfterStep]
+    public void Log(UatStepResult result) { }
+
+    [BddAfterScenario]
+    public void TearDown() { }
+}
+```
+
+| Attribute | Runs |
+| --- | --- |
+| `[BddBeforeFeature]` | once per feature file per test run, before its first scenario; static |
+| `[BddBeforeScenario(tags)]` | before each scenario with one of the tags (every scenario without tags) |
+| `[BddAfterStep(tags)]` | after each step; may take the step's `UatStepResult` |
+| `[BddAfterScenario(tags)]` | after each scenario, also when a step failed |
+
+The test base's own `BeforeFile` and `BeforeScenario` run first; then the hooks of one kind, by
+class and method name. A hook may take a `UatExecutionContext` and a `CancellationToken`. A hook
+that throws fails the scenario: before it, at the first step; after a step, at that step. The
+step-by-step session the Presenter drives does not run hooks.
 
 ## Several Users And Apps
 

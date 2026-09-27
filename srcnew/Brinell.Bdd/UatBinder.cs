@@ -48,6 +48,11 @@ public static class UatBinder
         var prepared = callables.Prepare(catalogs);
         var scope = UatScope.Of(document, catalogs);
         HashSet<string> used = new(StringComparer.OrdinalIgnoreCase);
+        var hooks = catalogs.All
+            .SelectMany(catalog => catalog.Hooks)
+            .DistinctBy(hook => (hook.Kind, hook.Name))
+            .OrderBy(hook => hook.Name, StringComparer.Ordinal)
+            .ToList();
 
         foreach (var scenario in document.Scenarios)
         {
@@ -72,7 +77,7 @@ public static class UatBinder
                 walk.Step(step, fromBackground: false, frame: null, diagnostics);
             }
 
-            scenarios.Add(new UatBoundScenario(scenario, invocations));
+            scenarios.Add(new UatBoundScenario(scenario, invocations) { Hooks = hooks });
         }
 
         diagnostics.AddRange(CheckUsings(document, catalogs, callables, used));
@@ -778,7 +783,11 @@ public sealed record UatBoundDocument(
 
 public sealed record UatBoundScenario(
     UatScenario Source,
-    IReadOnlyList<UatStepInvocation> Invocations);
+    IReadOnlyList<UatStepInvocation> Invocations)
+{
+    /// <summary>The hooks of the step-definition classes, in the order they run; the runner picks those for the scenario's tags.</summary>
+    public IReadOnlyList<BddHook> Hooks { get; init; } = [];
+}
 
 public sealed record UatStepInvocation(
     string ScenarioName,

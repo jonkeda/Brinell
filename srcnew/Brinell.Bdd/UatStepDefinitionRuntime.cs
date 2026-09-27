@@ -49,8 +49,29 @@ public sealed class UatStepDefinitionRuntime
         context.AppItems[ServiceProviderItemKey] = serviceProvider;
     }
 
+    /// <summary>The runtime over a fixture and the step-definition classes given, without a composition.</summary>
+    /// <param name="root">The fixture, whose own attributed methods are steps too.</param>
+    /// <param name="stepDefinitionTypes">The step-definition classes; resolved from the scope set with <see cref="SetServiceProvider"/>.</param>
+    public static UatStepDefinitionRuntime FromTypes(object root, params Type[] stepDefinitionTypes)
+    {
+        ArgumentNullException.ThrowIfNull(root);
+        var types = stepDefinitionTypes.Concat(LoadableTypes(root.GetType().Assembly)).ToArray();
+        var argumentTypes = UatArgumentTypes.Discover(types);
+        return new UatStepDefinitionRuntime(root, root.GetType(), DiscoverPhraseClasses(stepDefinitionTypes, argumentTypes), argumentTypes);
+    }
+
+    /// <summary>A catalog of the step-definition classes' steps and hooks and the fixture's steps.</summary>
+    public UatCommandCatalog CreateCommandCatalog()
+    {
+        var catalog = new UatCommandCatalog { ArgumentTypes = _argumentTypes };
+        RegisterPhraseClasses(catalog);
+        RegisterRootPhrases(catalog);
+        return catalog;
+    }
+
     internal void RegisterPhraseClasses(UatCommandCatalog catalog)
-        => RegisterPhraseClassPhrases(
+    {
+        RegisterPhraseClassPhrases(
             catalog,
             _phraseClasses,
             (phraseClassType, method) => (context, invocation, cancellationToken) =>
@@ -60,6 +81,45 @@ public sealed class UatStepDefinitionRuntime
                     context,
                     invocation,
                     cancellationToken));
+
+        foreach (var phraseClass in _phraseClasses)
+        {
+            foreach (var hook in phraseClass.Hooks)
+            {
+                catalog.AddHook(new BddHook(
+                    hook.Kind,
+                    $"{phraseClass.Type.Name}.{hook.Method.Name}",
+                    hook.Tags,
+                    (context, result, cancellationToken) => InvokeHookAsync(phraseClass.Type, hook.Method, context, result, cancellationToken)));
+            }
+        }
+    }
+
+    // A hook takes what it names of the context, the step's result and the cancellation token.
+    private static async Task InvokeHookAsync(Type type, MethodInfo method, UatExecutionContext context, UatStepResult? result, CancellationToken cancellationToken)
+    {
+        object? instance = null;
+        if (!method.IsStatic)
+        {
+            if (!TryGetServiceProvider(context, out var serviceProvider))
+            {
+                throw new InvalidOperationException($"The hook {type.Name}.{method.Name} requires an active DI scope.");
+            }
+
+            instance = serviceProvider.GetService(type) ?? ActivatorUtilities.CreateInstance(serviceProvider, type);
+        }
+
+        var arguments = method.GetParameters().Select(parameter =>
+            parameter.ParameterType == typeof(UatExecutionContext) ? context
+            : parameter.ParameterType == typeof(UatStepResult) ? result
+            : parameter.ParameterType == typeof(CancellationToken) ? (object?)cancellationToken
+            : throw new InvalidOperationException($"The hook {type.Name}.{method.Name} takes '{parameter.Name}', which no hook gets: it may take a UatExecutionContext, a UatStepResult and a CancellationToken.")).ToArray();
+
+        if (UatInvoker.Invoke(instance!, method, arguments) is Task task)
+        {
+            await task.ConfigureAwait(false);
+        }
+    }
 
     internal static void RegisterPhraseClassPhrases(
         UatCommandCatalog catalog,
@@ -359,9 +419,10 @@ public sealed class UatStepDefinitionRuntime
                 });
             }
 
-            if (methods.Count > 0)
+            var hooks = BddHooks.Discover(type);
+            if (methods.Count > 0 || hooks.Count > 0)
             {
-                phraseClasses.Add(new UatPhraseClassBinding(type, methods) { Namespace = NamespaceOf(type) });
+                phraseClasses.Add(new UatPhraseClassBinding(type, methods) { Namespace = NamespaceOf(type), Hooks = hooks });
             }
         }
 
@@ -400,6 +461,8 @@ public sealed record UatPhraseClassBinding(
 {
     /// <summary>The namespace its phrases are seen in (<see cref="UatNamespaces"/>); <c>""</c> for every scenario.</summary>
     public string Namespace { get; init; } = string.Empty;
+
+    internal IReadOnlyList<BddHookMethod> Hooks { get; init; } = [];
 }
 
 public sealed record UatPhraseClassMethodBinding(

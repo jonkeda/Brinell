@@ -64,13 +64,10 @@ public sealed class BackendPhrases(ITodoArrangement fixture) : BddStepDefinition
     [BddThen("the server should have received, in order")]
     public void ServerReceivedInOrder(IReadOnlyList<RequestRow> requests)
     {
-        var expected = requests.Select(row => $"{row.Method.ToUpperInvariant()} {row.Resource}").ToList();
-        var actual = fixture.Backend.Requests().Select(request => $"{request.Method.ToUpperInvariant()} {ResourceOf(request.Path)}").ToList();
-        if (!expected.SequenceEqual(actual, StringComparer.OrdinalIgnoreCase))
-        {
-            throw new InvalidOperationException(
-                $"The server received [{string.Join(", ", actual)}], not [{string.Join(", ", expected)}].");
-        }
+        var actual = fixture.Backend.Requests().Select(request => new RequestRow(request.Method, ResourceOf(request.Path)));
+        BddSets.AssertSet(requests.Select(Normal), actual.Select(Normal), ordered: true, what: "requests the server received");
+
+        static RequestRow Normal(RequestRow row) => new(row.Method.ToUpperInvariant(), row.Resource.ToLowerInvariant());
     }
 
     private static string ResourceOf(string path)
