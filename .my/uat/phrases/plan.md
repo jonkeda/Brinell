@@ -1,6 +1,8 @@
 # Phrases: split, scope and namespace
 
-Status: in progress. Phases 1-7 done (see the commits per phase); callable phrases were built before.
+Status: phases 1-8 done (see the commits per phase); callable phrases were built before. The
+"later" row waits for Construction to need it. When this plan is closed, its decisions are AD-019
+and the guide's "Where Phrases Live"; section 6's open questions move to their own notes.
 Date: 2026-09-27
 Replaces three discussion docs, last at 5b73a4b:
 [splitting-phrases.md](https://github.com/exact-mobile-apps/test-tooling/blob/5b73a4b/.my/uat/phrases/splitting-phrases.md),
@@ -330,6 +332,19 @@ real consumer.
   data an editor's completion needs. The config's usings are checked once per suite by
   `brinell-data validate`, not in every file; a generic catalog (`IsGeneric`, the Presenter's workspace check)
   checks no `Using`.
+
+### Phase 8: Todo users UI tests and UAT (built)
+
+- Page objects `UserListPage` and `UserEditPage` (and the `UserList` collection) in
+  `Todo.UITests`, marked `[UatNamespace("Users")]`; the Users toolbar item on the todo list goes
+  there (`[UatNavigatesTo]`). `UserPhrases` (`the server also has a user`, `the server should
+  have users`) in the `Users` namespace.
+- `TOD.11-manage-users.uat.md`: eight scenarios for TOD.11.1-11.9, `Using | Users`, on the
+  `team` set. `ExpectedFailures/TOD.11-without-using.uat.md` is the same start without the
+  `Using` row, and must fail binding with UATB010 naming `Users`.
+- `UsersJourneyTests`: the H tier of TOD.11.1-11.9.
+- Changed from users-plan section 8: the tests live in the existing Todo UI test and UAT projects,
+  not two new ones. The web suite leaves the TOD.11 file out: users have no web head yet.
 
 ## 5. Tooling
 

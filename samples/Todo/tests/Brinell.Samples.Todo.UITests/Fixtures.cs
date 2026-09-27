@@ -51,6 +51,24 @@ public sealed class UnreachableServerFixture : TodoAppFixture
     protected override LaunchSettings AdjustSettings(LaunchSettings settings) => settings with { ApiBaseUrl = "http://127.0.0.1:1" };
 }
 
+/// <summary>
+/// Five users around the pinned 10 March: Daan (Lead), Eva (until 31 December), Finn (until
+/// 1 March, so Expired), Gus (Inactive) and Hana (On leave), with one todo.
+/// </summary>
+public sealed class TeamFixture : TodoAppFixture
+{
+    /// <inheritdoc />
+    protected override string TestDataName => "team";
+}
+
+/// <summary>Tests against <see cref="TeamFixture"/>.</summary>
+[CollectionDefinition(Name)]
+public sealed class TeamCollection : ICollectionFixture<TeamFixture>
+{
+    /// <summary>The collection's name.</summary>
+    public const string Name = "Todo: team";
+}
+
 /// <summary>Tests against <see cref="ThreeTodosFixture"/>.</summary>
 [CollectionDefinition(Name)]
 public sealed class ThreeTodosCollection : ICollectionFixture<ThreeTodosFixture>

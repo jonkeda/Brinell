@@ -132,7 +132,7 @@ the machine's culture, and checked when the step binds (AD-016):
 | `string` | as is; quotes optional, needed for `""`, spaces at the ends, or `, ` in a list item; `\"` inside quotes | `Buy milk`, `"Buy milk"` |
 | `int`, `long` | digits, `,` between groups of three | `7`, `1,250` |
 | `decimal`, `double` | `.` for decimals, `,` for thousands | `0.5`, `1,250.75` |
-| `bool` | `true` or `false` | |
+| `bool` | `true` or `false`; `on` or `off` for a switch | |
 | enum | the member name, any case, spaces allowed | `Open`, `In Progress` |
 | `DateOnly` | `dd-MMM-yyyy`, English month; relative to the fixture's clock | `12-May-2026`, `3-jan-2027`, `today`, `+2d` |
 | `DateTime`, `DateTimeOffset` | `dd-MMM-yyyy HH:mm` | `12-May-2026 14:30` |

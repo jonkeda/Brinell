@@ -45,6 +45,20 @@ public abstract class TodoAppFixture : TodoAppFixtureBase, ITodoArrangement
         return unique;
     }
 
+    /// <summary>
+    /// Adds an available Member to the fake server, as another device would, with a unique name.
+    /// </summary>
+    /// <param name="name">The name's start; a short unique suffix is added.</param>
+    /// <returns>The full, unique name.</returns>
+    public string ServerHasUser(string name)
+    {
+        var unique = $"{name} {Guid.NewGuid().ToString("N")[..6]}";
+        Server.StoreUser(new UserDto(
+            Guid.NewGuid(), unique, null, UserStatusDto.Active, null, UserRoleDto.Member,
+            40, 0m, new TimeOnly(9, 0), true, 0, null, TestSet.Now.AddDays(-1)));
+        return unique;
+    }
+
     /// <summary>Removes every per-test backend override and restores the test set's server state.</summary>
     public void ResetBackend()
     {

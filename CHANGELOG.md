@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Todo sample: UI tests and UAT scenarios for users (TOD.11): `UserListPage`, `UserEditPage` and
+  `UserList` in the `Users` namespace, `UsersJourneyTests` (8), `TOD.11-manage-users.uat.md`
+  (8 scenarios with `Using | Users`), and an expected-failure file without the `Using` that must
+  fail binding. The user form's date and time pickers publish `SetDate` and `SetTime` through the
+  gesture bridge. `true`/`false` values may be written `on`/`off`.
 - UAT `Using` (AD-019): a scenario file's `Using` metadata row and the config's `## Using` table
   name the namespaces a file sees besides its folder's. A `Using` that names nothing is `UATB011`;
   one no step needs is a `UATB012` warning. Pages have namespaces too (`[UatNamespace]` on the page

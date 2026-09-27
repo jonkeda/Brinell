@@ -17,6 +17,8 @@
     <None Update="Scenarios\**\*.uat.md" CopyToOutputDirectory="PreserveNewest" />
     <!-- Callable phrases every scenario can use; the gate reads them from the output. -->
     <None Update="Scenarios\**\*.phrases.md" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Files that must fail binding: a scenario without the Using its pages need. -->
+    <None Update="ExpectedFailures\*.uat.md" CopyToOutputDirectory="PreserveNewest" />
     <None Update="TestSettings\**\*.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

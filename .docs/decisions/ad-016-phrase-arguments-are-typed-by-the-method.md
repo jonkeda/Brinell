@@ -8,6 +8,8 @@ cell - with one reader, `UatValues`, in one invariant format whatever the machin
 | --- | --- |
 | Date | `12-May-2026` (`3-jan-2027` is read too; English months), or relative: `today`, `+2d` |
 | Date and time | `12-May-2026 14:30` |
+| Time | `08:30`, 24-hour |
+| True/false | `true` or `false`; `on` or `off` for a switch |
 | Number | `1,250.75`: `.` for decimals, `,` between groups of three |
 | Enum | the member name, any case, spaces allowed (`In Progress`) |
 | List | `"A", "B" and "C"`, or a one-column table |

@@ -8,11 +8,15 @@
     automation tree. The stepper and the slider each have a label echoing their value, which a
     test reads on every platform. Save is enabled while the form is invalid; pressing it shows
     every error on its field.
+
+    The date and time pickers have no UI Automation route to set a value on Windows; they publish
+    SetDate and SetTime through Brinell's gesture bridge, as the Brinell sample's pickers do.
 -->
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:Brinell.Samples.Todo.Core.ViewModels;assembly=Brinell.Samples.Todo.Core"
              xmlns:views="clr-namespace:Brinell.Samples.Todo.App.Views"
+             xmlns:uia="clr-namespace:Brinell.Maui.AppSupport.Uia;assembly=Brinell.Maui.AppSupport"
              x:Class="Brinell.Samples.Todo.App.Pages.UserEditPage"
              x:DataType="vm:UserEditViewModel"
              AutomationId="UserEditPage"
@@ -86,7 +90,8 @@
                                     AutomationId="UserEdit_AllowedUntil"
                                     Format="dd-MMM-yyyy"
                                     Date="{Binding AllowedUntil}"
-                                    IsEnabled="{Binding HasEndDate}" />
+                                    IsEnabled="{Binding HasEndDate}"
+                                    uia:GestureAutomation.Verbs="SetDate,GetState" />
                     </Grid>
                     <Picker AutomationId="UserEdit_Role"
                             Title="Role"
@@ -133,7 +138,8 @@
                         <TimePicker Grid.Column="1"
                                     AutomationId="UserEdit_StartOfDay"
                                     Format="HH:mm"
-                                    Time="{Binding StartOfDay}" />
+                                    Time="{Binding StartOfDay}"
+                                    uia:GestureAutomation.Verbs="SetTime,GetState" />
                     </Grid>
 
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">

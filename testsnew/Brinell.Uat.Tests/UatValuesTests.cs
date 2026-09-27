@@ -154,6 +154,13 @@ public sealed class UatValuesTests
     [InlineData("\"say \\\"hi\\\"\"", "say \"hi\"")]
     public void Strings_LoseTheirQuotes(string text, string expected) => Assert.Equal(expected, Read<string>(text));
 
+    [Theory]
+    [InlineData("true", true)]
+    [InlineData("False", false)]
+    [InlineData("on", true)]
+    [InlineData("OFF", false)]
+    public void Booleans_AreTrueFalse_OrOnOffForASwitch(string text, bool expected) => Assert.Equal(expected, Read<bool>(text));
+
     [Fact]
     public void Null_IsNull_WhereTheTypeAllowsIt()
     {

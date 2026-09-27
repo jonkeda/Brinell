@@ -1,7 +1,7 @@
 # Todo users: plan
 
-Status: **app built** 2026-09-27 (phases 1-3, section 6). The UI tests, UAT scenarios and
-section 8 are still to do.
+Status: **app and tests built** 2026-09-27 (phases 1-3 and the UI tests and UAT, section 6).
+Section 8's assignment, "me", the assignee filter and the web head are still to do.
 
 **Revised 2026-09-27:** build the app first. A user gets more fields (status, allowed-until date, role,
 and a few more chosen to exercise field types). A todo is **not** linked to a user
@@ -229,7 +229,8 @@ yet), `journeys.md` (section 4), and `CHANGELOG.md`.
 | 2.3 | done 2026-09-27 | Builds for `net10.0-android`; not launched (no emulator attached). |
 | 3 | done 2026-09-27 | README, journeys (TOD.11.1-11.10, U/I/C tiers; `JourneyCoverage` green), CHANGELOG. |
 | Verify | done 2026-09-27 | Todo UI 36 passed (3 skipped), MAUI UAT 32, web UAT 33, web UI 10 (1 skipped), mixed UI 4 (1 skipped), mixed UAT 4; `Brinell.sln` and the Todo solution build. |
-| Later | todo | UI tests and UAT scenarios for TOD.11 (H tier), after phrase namespaces; section 8. |
+| Tests | done 2026-09-27 | `UserListPage`, `UserEditPage` and the `UserList` collection in `Todo.UITests`, in the `Users` namespace; `UsersJourneyTests` (8, TOD.11.1-11.9, H); `TOD.11-manage-users.uat.md` (8 scenarios, `Using | Users`) and the expected failure `ExpectedFailures/TOD.11-without-using.uat.md` (UATB010); `UserPhrases` (`Users`). The date and time pickers publish `SetDate`/`SetTime` through the gesture bridge: they have no UI Automation route on Windows. Q3: `on`/`off` reads as a bool (time already did); AD-016 lists both. Kept in the existing Todo UI test and UAT projects rather than two new ones: one fixture and one collection more, no second app launch per run. |
+| Later | todo | Section 8: assignment, "me", the assignee filter, the web head. |
 
 ## 7. Decided questions
 

@@ -146,8 +146,9 @@ public static class TodoMauiLaunch
     /// </summary>
     /// <remarks>
     /// A dialog is answered with its leaving button (Discard for unsaved changes, Cancel for a
-    /// delete), an edit page is cancelled, a detail page is left with the back arrow. Four rounds
-    /// cover the deepest case: a dirty edit page over a detail page, with its dialog open.
+    /// delete), an edit page is cancelled, a detail page and the users page are left with the back
+    /// arrow. Four rounds cover the deepest case: a dirty edit page over a detail page, with its
+    /// dialog open, and a user form over the users page.
     /// </remarks>
     /// <param name="context">The app.</param>
     public static TodoListPage ReturnToList(IMauiTestContext context)
@@ -175,6 +176,14 @@ public static class TodoMauiLaunch
             else if (new TodoDetailPage(context).IsLoaded())
             {
                 new TodoDetailPage(context).BackButton.Click();
+            }
+            else if (new UserEditPage(context).IsLoaded())
+            {
+                new UserEditPage(context).CancelButton.Click();
+            }
+            else if (new UserListPage(context).IsLoaded())
+            {
+                new UserListPage(context).BackButton.Click();
             }
 
             list.WaitLoaded(true, TestConstants.PageTimeoutMs / 4);

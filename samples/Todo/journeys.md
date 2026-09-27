@@ -129,21 +129,21 @@ a navigation, a real wire). Where a subtask lists two tiers, the second checks o
 
 ## TOD.11 Manage users
 
-Users are not linked to todos yet. The UI tiers (H, and UAT scenarios) are added once phrase
-scopes and namespaces exist (`.my/uat/phrases/users-plan.md`); until then each subtask is covered
-at the lowest tier that can see it. Test set: `team.json`.
+Users are not linked to todos yet. Each subtask is covered at the lowest tier that can see it, and
+H shows it once on screen (`UsersJourneyTests`); the UAT scenarios are `TOD.11-manage-users.uat.md`,
+which reaches the users pages with `Using | Users`. Test set: `team.json`.
 
 | Id | Subtask | Tier | Why there |
 | --- | --- | --- | --- |
-| TOD.11.1 | Users lists available users first, then the others, each with its role and state (Expired, On leave, Inactive) | U | Ordering and state text are pure rules |
-| TOD.11.2 | Add with valid values saves the user on the server and caches it | U + C | VM and service in U; the real API keeps every field in C |
-| TOD.11.3 | Each field refuses a bad value with a message on that field | U | Validation table; errors placed per field by the VM |
-| TOD.11.4 | Editing a user loads every field and saves the change | U | VM round trip |
-| TOD.11.5 | "Has an end date" off saves no end date; on, the date is saved, also one in the past | U | VM |
-| TOD.11.6 | A user whose end date has passed shows as Expired; today's and tomorrow's do not | U | Pure rule on the pinned clock |
-| TOD.11.7 | A user set Inactive stays in the list, and their name can be used again | U + C | Rule in U; the real API allows the reuse in C |
-| TOD.11.8 | Offline, Add and Save are disabled and the page says so; the list still reads | U | VM and service |
-| TOD.11.9 | A sync fetches the users first and replaces the cached list only after a complete fetch | I | WireMock + SQLite |
+| TOD.11.1 | Users lists available users first, then the others, each with its role and state (Expired, On leave, Inactive) | U + H | Ordering and state text are pure rules; H for the rendered rows |
+| TOD.11.2 | Add with valid values saves the user on the server and caches it | U + C + H | VM and service in U; the real API keeps every field in C; H drives every control kind once |
+| TOD.11.3 | Each field refuses a bad value with a message on that field | U + H | Validation table; errors placed per field by the VM; H for three errors on screen |
+| TOD.11.4 | Editing a user loads every field and saves the change | U + H | VM round trip; H for reopening the saved values |
+| TOD.11.5 | "Has an end date" off saves no end date; on, the date is saved, also one in the past | U + H | VM; H for the disabled picker |
+| TOD.11.6 | A user whose end date has passed shows as Expired; today's and tomorrow's do not | U + H | Pure rule on the pinned clock; H for the row |
+| TOD.11.7 | A user set Inactive stays in the list, and their name can be used again | U + C + H | Rule in U; the real API allows the reuse in C; H on screen |
+| TOD.11.8 | Offline, Add and Save are disabled and the page says so; the list still reads | U + H | VM and service; H for the disabled toolbar items |
+| TOD.11.9 | A sync fetches the users first and replaces the cached list only after a complete fetch | I + H | WireMock + SQLite; H for a user from another device appearing |
 | TOD.11.10 | The server refuses what the app would refuse, naming the field, and the fake answers alike | C | Real API and WireMock fake |
 
 ---
@@ -157,7 +157,7 @@ Counts are per assignment, so a subtask with two tiers counts twice.
 | Unit | 29 | |
 | Integration | 19 | |
 | Contract | 5 | |
-| UI hermetic | 27 | one example per behaviour |
+| UI hermetic | 41 | one example per behaviour |
 | UI live | 3 | real wire only |
 | Manual | 4 | |
 | Smoke / Reviews gates | 2 / 3 | |

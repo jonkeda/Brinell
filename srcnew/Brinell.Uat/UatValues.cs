@@ -311,9 +311,10 @@ public static partial class UatValues
         value = null;
         return text.ToLowerInvariant() switch
         {
-            "true" => Set(true, out value),
-            "false" => Set(false, out value),
-            _ => new UatValueProblem("UATA001", $"'{text}' is not true or false. Write true or false; a phrase says yes or no in its words."),
+            // on/off is how a switch is read aloud (a user's "Receives reminders | off").
+            "true" or "on" => Set(true, out value),
+            "false" or "off" => Set(false, out value),
+            _ => new UatValueProblem("UATA001", $"'{text}' is not true or false. Write true or false (on or off for a switch); a phrase says yes or no in its words."),
         };
     }
 

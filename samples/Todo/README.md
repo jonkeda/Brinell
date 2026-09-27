@@ -27,8 +27,10 @@ Five pages in a Shell, with a local SQLite store that syncs with `Todo.Api`:
 
 Users are managed by the server: a change goes straight to `PUT /api/users/{id}`, which checks
 the same rules as the app, and the app caches the answer. A sync fetches the users before the
-todos. Users are not linked to todos yet, and have no UI tests or UAT scenarios yet
-(`.my/uat/phrases/users-plan.md`); the `team` test set has one user in each state.
+todos. Users are not linked to todos yet; the `team` test set has one user in each state. The
+UI tests are `UsersJourneyTests` (MAUI, Windows) and the UAT scenarios `TOD.11-manage-users.uat.md`,
+whose `Using | Users` reaches the users pages and phrases in the `Users` namespace; the web head
+has no users pages yet.
 
 Two custom controls, each with a matching ControlObject on the test side:
 

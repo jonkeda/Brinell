@@ -25,6 +25,10 @@ public class TodoListPage(IMauiTestContext context) : PageObjectBase<TodoListPag
     [UatNavigatesTo(typeof(TodoEditPage))]
     public ToolbarButton<AppRoot> AddButton => new(_appRoot, Locator.ByAccessibilityId("TodoList_Add"));
 
+    /// <summary>Opens the users (TOD.11).</summary>
+    [UatNavigatesTo(typeof(UserListPage))]
+    public ToolbarButton<AppRoot> UsersButton => new(_appRoot, Locator.ByAccessibilityId("TodoList_Users"));
+
     /// <summary>The status filter: All, Open, In progress, Done.</summary>
     public Picker<TodoListPage> Filter => new(this, "TodoList_Filter");
 
@@ -70,6 +74,13 @@ public class TodoListPage(IMauiTestContext context) : PageObjectBase<TodoListPag
     {
         SyncButton.Click();
         return this;
+    }
+
+    /// <summary>Opens the users.</summary>
+    public UserListPage OpenUsers()
+    {
+        UsersButton.Click();
+        return UserListPage.Arrived(Context);
     }
 
     /// <summary>Opens the detail page of the row with this title.</summary>

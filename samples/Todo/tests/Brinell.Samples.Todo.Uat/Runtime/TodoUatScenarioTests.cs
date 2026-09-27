@@ -42,6 +42,20 @@ public sealed class TodoUatScenarioTests : UatScenarioTestBase<TodoUatFixture>
     [MemberData(nameof(Scenarios))]
     public Task Scenario_Passes(string filePath, string scenarioName) => RunUatScenarioAsync(filePath, scenarioName);
 
+    /// <summary>The files that must fail binding: <c>ExpectedFailures/*.uat.md</c>.</summary>
+    public static IEnumerable<object[]> ExpectedFailures => GetScenarioFiles("ExpectedFailures");
+
+    /// <summary>
+    /// The users pages and phrases are in the <c>Users</c> namespace: a file without
+    /// <c>Using | Users</c> does not see them, and fails binding before the app is driven, naming
+    /// the folder they are in (AD-019).
+    /// </summary>
+    /// <param name="filePath">The file.</param>
+    [Theory]
+    [MemberData(nameof(ExpectedFailures))]
+    public void ExpectedFailure_FailsBinding(string filePath)
+        => RunExpectedBindFailureUatFile(filePath, "UATB010", "the folder 'Users'", "Using");
+
     /// <inheritdoc />
     protected override void BeforeFile(UatDocument document)
         => Fixture.UseTestSet(document.Metadata.TryGetValue(UatMetadataFields.TestData, out var name) && name.Length > 0

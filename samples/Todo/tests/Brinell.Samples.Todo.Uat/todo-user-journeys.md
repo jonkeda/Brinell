@@ -120,3 +120,17 @@ A journey line is checked when every one of its subtasks is.
 - [x] **Journey passed**
   - [x] **TOD.10.1** Every screen loads and its key controls exist
   - [-] **TOD.10.2** Interactive controls have AutomationIds and accessible names
+
+## TOD.11 Manage users
+
+- [x] **Journey passed**
+  - [x] **TOD.11.1** Users lists available users first, then the others, each with its role and state
+  - [x] **TOD.11.2** Adding a user with valid values shows them, and the server has every field
+  - [x] **TOD.11.3** Each field refuses a bad value with a message on that field
+  - [x] **TOD.11.4** Editing a user changes what the list shows
+  - [x] **TOD.11.5** "Has an end date" off leaves the date disabled; on, the date is saved
+  - [x] **TOD.11.6** A user whose end date has passed shows as Expired; an available one shows no state
+  - [x] **TOD.11.7** A user set Inactive stays in the list, and their name can be used again
+  - [x] **TOD.11.8** Offline, Add is disabled and the page says so; the list still reads
+  - [x] **TOD.11.9** A user added on another device shows after a sync
+  - [!] **TOD.11.10** The server refuses what the app would refuse, naming the field
