@@ -26,6 +26,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `UatScenarioFiles.Load(path, text)`, `ParsePhrases(path, text)`, `CheckPhrases` and
   `UatLoadedScenarioFile.Check` (the gate's per-file check, which `UatScenarioCheck` now calls), and
   `UatBindResult.Scenarios`: every scenario as far as it bound, errors or not.
+- `Brinell.Uat.LanguageServer` (tools/): the one .NET process the IDEs talk to, JSON-RPC over stdio with
+  LSP framing (StreamJsonRpc). It serves `initialize` (the suites under the solution), full-text
+  document sync, `brinell/preview` (the file rendered, bound in its suite or parsed only with the
+  reason; a file linked into several suites offers each) and `brinell/buildDone` (reload the
+  catalogs). `--preview <file> --out <page.html>` renders one file as a page without an IDE.
 - Docs: AD-020 (a tier is a head: `service`, opt-in heads, UATB013, a scenario counts for each of
   its tiers) and AD-021 (`Brinell.Bdd` under `Brinell.Uat`), with their invariants; the guide
   "Features Below The UI". AD-011, AD-014, AD-017 and AD-019 use the new words and file names.
