@@ -220,6 +220,18 @@ public sealed class UatSuite : IDisposable
         }
     }
 
+    /// <summary>
+    /// Where the suite's build and this tool's Brinell differ in a major or minor version
+    /// (<see cref="UatVersionCheck"/>); empty when they agree or the suite is not loaded.
+    /// </summary>
+    public IReadOnlyList<string> VersionMismatches()
+    {
+        lock (_gate)
+        {
+            return _load is { } load ? UatVersionCheck.Mismatches(load.BrinellReferences()) : [];
+        }
+    }
+
     /// <summary>The loaded suite's step-definition classes (<c>[BddStepDefinitions]</c>); empty when not loaded.</summary>
     public IReadOnlyList<Type> StepDefinitionTypes()
     {

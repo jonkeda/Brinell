@@ -54,6 +54,13 @@ internal sealed class UatSuiteLoad : IDisposable
 
     private IReadOnlyList<Brinell.TestData.ITestDataDefinition>? _definitions;
 
+    // The Brinell assemblies the suite's own assemblies were built against.
+    public IReadOnlyList<AssemblyName> BrinellReferences()
+        => (_context?.Assemblies ?? [])
+            .SelectMany(assembly => assembly.GetReferencedAssemblies())
+            .Where(name => name.Name?.StartsWith("Brinell.", StringComparison.OrdinalIgnoreCase) == true)
+            .ToList();
+
     // The test-data definitions in these assemblies, made once per load.
     public IReadOnlyList<Brinell.TestData.ITestDataDefinition> TestDataDefinitions(IReadOnlyList<string> assemblyPaths)
     {

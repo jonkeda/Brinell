@@ -193,6 +193,11 @@ public sealed partial class UatLanguageServer
             Add(at, 1, "UATG003", "The Runtime table names no Fixture, so the scenarios cannot be bound or run.");
         }
 
+        if (catalogs is not null && file.Suite!.VersionMismatches() is { Count: > 0 } mismatches)
+        {
+            Add(1, 2, "UATG010", $"The extension may bind differently from the suite's own run: {string.Join("; ", mismatches)}. Update the extension, or the suite's Brinell packages.");
+        }
+
         return diagnostics;
 
         void Add(int line, int severity, string code, string message)

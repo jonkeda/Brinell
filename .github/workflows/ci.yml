@@ -117,3 +117,43 @@ jobs:
           path: |
             artifacts/*.nupkg
             artifacts/*.snupkg
+
+  # The IDE extensions build: the VSIX needs Visual Studio's MSBuild, so it is not in Brinell.sln.
+  # Their tests (Brinell.Uat.*.Tests) need the Todo sample built and stay local, like the UI tests.
+  ide-extensions:
+    name: IDE extensions
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET (global.json)
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Visual Studio extension
+        run: msbuild tools/Brinell.Uat.VisualStudio/Brinell.Uat.VisualStudio.slnx -restore -p:DeployExtension=false -v:minimal
+
+      - name: VS Code extension
+        shell: pwsh
+        working-directory: tools/Brinell.Uat.VsCode
+        run: |
+          npm ci
+          npm run compile
+
+      - name: Upload the VSIX
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-studio-extension
+          path: tools/Brinell.Uat.VisualStudio/bin/Debug/net48/Brinell.Uat.VisualStudio.vsix

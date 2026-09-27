@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Packaging of the IDE extensions: a release attaches the Visual Studio VSIX and the VS Code VSIX,
+  each with the language server inside and stamped with the tag's version. CI builds both on
+  every pull request (`ide-extensions`). The server warns on the suite config (`UATG010`) when the
+  suite's build references a Brinell assembly at another major or minor version than its own
+  (`UatVersionCheck`, `UatSuite.VersionMismatches`).
 - Debugging the app too: while a debugger is attached to a test, `DebuggedApps.Announce`
   (`Brinell.Core.Diagnostics`) writes each app the test starts to
   `%TEMP%\Brinell\debugged-apps\<test pid>-<app pid>.json`. The MAUI FlaUI driver and the web host

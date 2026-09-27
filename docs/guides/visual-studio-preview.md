@@ -19,6 +19,13 @@ The extension needs Visual Studio's MSBuild, so it has a solution of its own. Fr
 The build publishes `Brinell.Uat.LanguageServer` into the VSIX and deploys the extension to the
 experimental instance (`devenv /rootsuffix Exp`); pass `/p:DeployExtension=false` to only build it.
 To install it for everyday use, open `tools\Brinell.Uat.VisualStudio\bin\Debug\net48\Brinell.Uat.VisualStudio.vsix`.
+Each GitHub release carries both extensions: `Brinell.Uat.VisualStudio-<version>.vsix` for Visual
+Studio, and `brinell-uat-vscode-<version>.vsix` for VS Code (**Extensions: Install from VSIX**).
+
+The server checks that a suite is built against its own Brinell. When a Brinell assembly the
+suite's build references differs from the server's by a major or minor version, the suite's config
+gets a warning (`UATG010`), since the editor may then bind differently from the suite's own run.
+Update the extension, or the suite's Brinell packages.
 
 ## Use
 
