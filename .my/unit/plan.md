@@ -42,6 +42,42 @@ of `Brinell.Bdd` (6) is the large, internal step. The Construction pilot is not 
   not only Todo). Same test lists before and after (`Brinell.Uat.Tests` 345, MAUI UAT 43, web UAT 35,
   mixed 4, IntegrationTests 61). `SyncTests.Offline_TheSyncSendsNothing_UntilBackOnline` failed once
   in a full IntegrationTests run and passed three times alone: flaky, for phase 8 to look at.
+- Phase 6.1 and 6.2 done. 6.1: `UatPageTracker` behind `IStepScopeProvider` and
+  `IStepWalkObserver`, two interfaces as planned. 6.2: `UatStepDefinitionRuntime` (step classes, the
+  fixture's phrases, argument binding) and an internal `UatInvoker`, split from `UatReflectionRuntime`.
+- **Phase 6.3 stopped (risk rule): the catalog knows pages too, not only the binder.** Moving
+  "catalog and binder core" to `Brinell.Bdd` while it references no page or control type needs four
+  more seams, not the two of 6.1:
+  1. `UatCommandPattern` carries page data: `Page`, `PageAfter`, `NamesPage`, `ControlVerb`
+     (`UatControlVerb`), `IsPageScoped`. `UatStepDefinitionRuntime` reads `IsPageScoped` for its
+     precedence rule, and `UatScenarioCheck` groups by `Page`/`ControlVerb`.
+  2. `UatCommandCatalog.Pages` holds `UatPageModel`/`UatControlModel` (with the page's `Type`).
+  3. The binder creates `UatPageTracker` itself and decides UATB013 through `IsScreenStep`
+     (`NamesPage`, `IsPageScoped`, `Builtin.Page.*`).
+  4. `UatStepInvocation.PageAfter`, which the runtime follows.
+
+  Options, for a decision before 6.3:
+  - **A (recommended).** A pattern gets an opaque `Scope` (a Bdd marker type that Uat derives a
+    `UatPageStepScope(Page, PageAfter, NamesPage, ControlVerb)` from) and `IsScoped`; `Pages` moves
+    to a Uat-side page catalog; `BddCatalogSet` takes a factory for the scope provider and observer,
+    and the observer answers "is this a UI step" for UATB013; `PageAfter` becomes `ScopeAfter`. The
+    invariant holds as written.
+  - **B.** The catalog and binder stay in `Brinell.Uat`; `Brinell.Bdd` gets parser, values, tables,
+    config, callables' parsing, execution and runner. Smaller, but the service suite still needs
+    `Brinell.Uat`, against 6.6.
+  - **C.** Page *names* are allowed in `Brinell.Bdd` as opaque scope keys (strings), while page and
+    control *types* stay out: `UatPageModel` moves to Uat, the pattern keeps `Page`/`PageAfter` as
+    strings. The invariant is restated as "no page object or control type".
+- **Phase 8 measured, nothing to change yet.** Each `TodoHost` already has its own WireMock server
+  (`MockApiServer.Start`, not the shared lease), temp database and network file, and there is no
+  collection serialisation to remove: the service class already runs beside the assembly's other
+  classes. xUnit runs one class's cases in order, so parallel scenarios need one class per feature
+  file or a fixture per scenario; for 2 scenarios in 0.8 s that buys nothing. Revisit when a service
+  suite is large (Construction's, D6).
+  The flaky `Offline_TheSyncSendsNothing_UntilBackOnline` is likely the app side, not isolation:
+  `NetworkStateFileConnectivity.IsOnline` counts an `IOException` as online, so a read that meets
+  the test's `File.Move` replace (or a scanner holding the new file) lets the sync go out while
+  offline. A fix belongs in the sample's connectivity (retry the read, or keep the last state).
 
 ---
 
