@@ -195,7 +195,7 @@ public Task SignOut(CancellationToken ct) => _session.SignOutAsync(ct);
 create flow through the page objects, so the scenario reads at the domain level.
 `I should not see` is the built-in absent-text assertion (a custom
 `AssertTextAbsent` if the built-in set does not include it — see
-[../todos/journeys.md](../todos/journeys.md)).
+[../todos/journeys.md](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/uat/todos/journeys.md)).
 
 ---
 
