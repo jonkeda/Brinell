@@ -81,7 +81,7 @@ tree shows:
   patterns, and its children.
 - Android (Appium): resource-id / content-desc, class, and children.
 
-Write the result to `.my/communitytoolkit/probe.md`, one section per control, and update the
+Write the result to `.my/communitytoolkit/probe.md` (the Windows result is now in `docs/controls/community-toolkit.md`), one section per control, and update the
 "likely route" column above. This is where the plan will change most: it decides for each
 control whether a real pattern exists (preferred) or whether a bridge verb is justified under
 the three AD-008 tests.
@@ -145,7 +145,7 @@ device was attached for any run, so every Android cell is "not run".
 | # | Control | Phase | Windows | Android | Notes |
 | --- | --- | --- | --- | --- | --- |
 | 0 | groundwork | done | build 0 errors; generator clean; AutomationProbe 3/3 | not run | Toolkit 15.0.1 needs `Microsoft.Maui.Controls` 10.0.90: raised in both props files. csproj slimmed, in sln, generator input extended. Page split in three: views, alerts, media. |
-| - | probe | done | see probe.md | not run | Windows only. Three controls need the app sink, the rest are tree-only. |
+| - | probe | done | see docs/controls/community-toolkit.md | not run | Windows only. Three controls need the app sink, the rest are tree-only. |
 | 1 | Expander | done | 7/7 | not run | Tap + GetState through `ToolkitVerbSink` (sample app, not AppSupport: AppSupport has no toolkit reference). AD-008: blocked / tap not under test / state visible. `IsExpandedCore` null on Android. |
 | 2 | AvatarView | done | 3/3 | not run | Tree only. `GetText` (Equals, Empty), `IsShowingImage`. |
 | 3 | RatingView | done | 6/6 | not run | SelectIndex = tap star i (existing verb, sink-owned). SetValue refuses 0 and fractions: no star to tap. Increment/Decrement inherited. |
