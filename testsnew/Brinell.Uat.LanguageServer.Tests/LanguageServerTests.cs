@@ -326,6 +326,37 @@ public sealed class LanguageServerTests : IAsyncLifetime
         Assert.StartsWith("Failed in the last run of 'One'", failed.Message);
     }
 
+    [Fact]
+    public async Task Definition_OfACSharpStep_IsItsMethod_ThroughThePdb()
+    {
+        Build();
+        await InitializeAsync(_client, editor: true);
+        var uri = new Uri(Feature).AbsoluteUri;
+        await _client.NotifyWithParameterObjectAsync("textDocument/didOpen", new { textDocument = new { uri, version = 1, text = File.ReadAllText(Feature) } });
+
+        var locations = await _client.InvokeWithParameterObjectAsync<IReadOnlyList<Location>>("textDocument/definition", new { textDocument = new { uri }, position = new { line = 5, character = 3 } });
+
+        var location = Assert.Single(locations);
+        Assert.EndsWith("LanguageServerTests.cs", new Uri(location.Uri).LocalPath);
+        Assert.Contains("public void Shelve(", File.ReadAllLines(new Uri(location.Uri).LocalPath)[location.Range.Start.Line]);
+    }
+
+    [Fact]
+    public async Task Hover_ShowsWhatTheStepBindsTo_AndItsArgumentsAsRead()
+    {
+        Build();
+        await InitializeAsync(_client, editor: true);
+        var uri = new Uri(Feature).AbsoluteUri;
+        await _client.NotifyWithParameterObjectAsync("textDocument/didOpen", new { textDocument = new { uri, version = 1, text = "# Feature: Shelf\n\n## Scenario: One\n\n```gherkin\nWhen I lend \"Dune\" until 3-Mar-2027\n```\n" } });
+
+        var hover = await _client.InvokeWithParameterObjectAsync<Hover>("textDocument/hover", new { textDocument = new { uri }, position = new { line = 5, character = 3 } });
+
+        Assert.Equal("markdown", hover.Contents.Kind);
+        Assert.Contains("**binds to** `Brinell.Uat.LanguageServer.Tests.ShelfSteps.Lend`", hover.Contents.Value);
+        Assert.Contains("| `title` | \"Dune\" | Dune |", hover.Contents.Value);
+        Assert.Contains("| `due` | 3-Mar-2027 | 03-Mar-2027 |", hover.Contents.Value);
+    }
+
     private Task<InitializeResult> InitializeAsync(JsonRpc client, bool editor = false)
         => client.InvokeWithParameterObjectAsync<InitializeResult>("initialize", new
         {
@@ -342,6 +373,7 @@ public sealed class LanguageServerTests : IAsyncLifetime
     {
         Directory.CreateDirectory(Path.GetDirectoryName(Built)!);
         File.Copy(typeof(LanguageServerTests).Assembly.Location, Built, overwrite: true);
+        File.Copy(Path.ChangeExtension(typeof(LanguageServerTests).Assembly.Location, ".pdb"), Path.ChangeExtension(Built, ".pdb"), overwrite: true);
     }
 
     private static string Config(string assembly) => $"""
@@ -383,6 +415,11 @@ public sealed class ShelfSteps : BddStepDefinitionsBase
 {
     [BddWhen("I shelve {title}")]
     public void Shelve(string title)
+    {
+    }
+
+    [BddWhen("I lend {title} until {due}")]
+    public void Lend(string title, DateOnly due)
     {
     }
 }

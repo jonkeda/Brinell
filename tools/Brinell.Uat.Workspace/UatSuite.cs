@@ -177,6 +177,16 @@ public sealed class UatSuite : IDisposable
         }
     }
 
+    /// <summary>A type of the loaded suite by its full name (nested types with <c>+</c>); null when not loaded or not found.</summary>
+    /// <param name="fullName">The type's full name, as a step's command id starts.</param>
+    public Type? FindType(string fullName)
+    {
+        lock (_gate)
+        {
+            return _load?.FindType(fullName);
+        }
+    }
+
     /// <summary>The suite's project file: the first <c>*.csproj</c> beside the config; null when there is none.</summary>
     public string? ProjectFile => Directory.EnumerateFiles(ProjectDirectory, "*.csproj").Order(StringComparer.OrdinalIgnoreCase).FirstOrDefault();
 

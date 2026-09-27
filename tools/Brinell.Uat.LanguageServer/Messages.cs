@@ -37,6 +37,15 @@ public sealed record ServerCapabilities(TextDocumentSyncOptions TextDocumentSync
 
     /// <summary>Completion of keywords, sections, steps and values.</summary>
     public CompletionOptions? CompletionProvider { get; init; }
+
+    /// <summary>What a step binds to, its summary and its arguments as read.</summary>
+    public bool HoverProvider { get; init; }
+
+    /// <summary>A step to its step definition, page, control or callable.</summary>
+    public bool DefinitionProvider { get; init; }
+
+    /// <summary>Every step across the suite that binds to the same thing.</summary>
+    public bool ReferencesProvider { get; init; }
 }
 
 /// <summary>LSP completion options.</summary>
@@ -134,6 +143,18 @@ public sealed record CompletionItem(string Label, int Kind)
     /// <summary>The order in the list.</summary>
     public string? SortText { get; init; }
 }
+
+/// <summary>LSP hover.</summary>
+public sealed record Hover(MarkupContent Contents, Range? Range);
+
+/// <summary>LSP markup: <c>markdown</c>.</summary>
+public sealed record MarkupContent(string Kind, string Value);
+
+/// <summary>LSP <c>textDocument/references</c>.</summary>
+public sealed record ReferenceParams(TextDocumentIdentifier TextDocument, Position Position, ReferenceContext? Context);
+
+/// <summary>Whether the definition is one of the references.</summary>
+public sealed record ReferenceContext(bool IncludeDeclaration);
 
 /// <summary>LSP text edit.</summary>
 public sealed record TextEdit(Range Range, string NewText);

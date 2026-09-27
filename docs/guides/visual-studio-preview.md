@@ -112,6 +112,16 @@ Markdown editor with a language server of their own, the same `Brinell.Uat.Langu
   as a tab stop. In a parameter, you get its values: pages for `{page}`, the controls of the page
   the scenario is on at that line for `{control}`, users and apps, enum members, and in an outline
   the Examples columns as `<x>` (also before a build). Needs a build for the steps and values.
+- **Hover.** On a step: what it binds to (the method, or the built-in), the page and app it runs
+  on, the method's `<summary>` when the build writes an XML doc file, and each argument as written
+  and as the step definition reads it (`+2d` as a date). On a call: the `## Step:` it calls and its
+  body.
+- **Go to definition (F12).** A C# step opens its method, found through the build's portable PDB.
+  A control verb opens the control on the page the scenario is on at that line, a page step opens
+  the page class, and a call opens its `## Step:` heading.
+- **Find all references (Shift+F12).** On a step: every step across the suite (linked files too)
+  that binds to the same method; a C# step used inside a callable counts at the body's line. On a
+  call, or on a `## Step:` heading: every call of that step.
 
 ## Without Visual Studio
 

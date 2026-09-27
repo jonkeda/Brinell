@@ -52,6 +52,10 @@ internal sealed class UatSuiteLoad : IDisposable
         return list;
     }
 
+    // A type of the loaded suite by its full name (nested types with '+'); null when none has it.
+    public Type? FindType(string fullName)
+        => _context?.Assemblies.Select(assembly => assembly.GetType(fullName, throwOnError: false)).FirstOrDefault(type => type is not null);
+
     // By name, from the metadata: the attribute's type need not load for the check.
     private static bool HasScenarioTheoryMethod(Type type)
     {
@@ -153,7 +157,7 @@ internal static class UatShadowCopy
 {
     private const string DoneMarker = ".copied";
 
-    private static readonly string[] Extensions = [".dll", ".pdb", ".json"];
+    private static readonly string[] Extensions = [".dll", ".pdb", ".json", ".xml"];
 
     public static string Root { get; set; } = Path.Combine(Path.GetTempPath(), "Brinell", "UatWorkspace");
 
