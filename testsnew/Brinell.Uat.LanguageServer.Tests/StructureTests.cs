@@ -105,6 +105,18 @@ public sealed class StructureTests : IAsyncLifetime
         Assert.DoesNotContain(tokens, token => token.Line == 4);
     }
 
+    [Fact]
+    public async Task InAnOutline_ALessThan_OffersTheExamplesColumns_BeforeABuild()
+    {
+        var path = Path.Combine(_folder, "outline.feature.md");
+        var uri = await _server.OpenAsync(path, "# Feature: Shelf\n\n## Scenario Outline: Many\n\n```gherkin\nWhen I shelve <\n```\n\n### Examples\n\n| title | shelf |\n| --- | --- |\n| Dune | top |\n");
+
+        var list = await _server.AtAsync<CompletionList>("textDocument/completion", uri, 5, 15);
+
+        Assert.Equal(["<title>", "<shelf>"], list.Items.Select(item => item.Label));
+        Assert.Equal(new Range(new Position(5, 14), new Position(5, 15)), list.Items[0].TextEdit!.Range);
+    }
+
     private static List<(int Line, int Column, int Length, string Type)> Decode(IReadOnlyList<int> data)
     {
         string[] types = ["keyword", "string", "parameter", "variable", "comment", "macro"];

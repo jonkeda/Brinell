@@ -47,6 +47,7 @@ public sealed partial class UatLanguageServer
         DocumentSymbolProvider = true,
         FoldingRangeProvider = true,
         SemanticTokensProvider = new SemanticTokensOptions(new SemanticTokensLegend(TokenTypes, []), Full: true),
+        CompletionProvider = new CompletionOptions([" ", "\"", "<"]),
     };
 
     // Only an editor's LSP client takes diagnostics; the preview's client has no use for them, so none are computed for it.

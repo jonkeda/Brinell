@@ -105,6 +105,13 @@ Markdown editor with a language server of their own, the same `Brinell.Uat.Langu
   `{x}` parameters, `<x>` placeholders, tags and comments in a fence get their own colours, from the
   server (Visual Studio has no grammar for these files). All three work before a build and while
   the file does not parse.
+- **Completion.** At the start of a step line you get the keywords. Outside a fence you get the
+  sections (`## Scenario:`, `## Step:`, a gherkin fence). After the keyword you get the step texts
+  that hold every word you typed, in any order: the C# steps of the keyword and the callable steps
+  the file sees. Steps on the current page come first, and a pick puts in the text with each `{x}`
+  as a tab stop. In a parameter, you get its values: pages for `{page}`, the controls of the page
+  the scenario is on at that line for `{control}`, users and apps, enum members, and in an outline
+  the Examples columns as `<x>` (also before a build). Needs a build for the steps and values.
 
 ## Without Visual Studio
 

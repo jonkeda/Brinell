@@ -34,7 +34,14 @@ public sealed record ServerCapabilities(TextDocumentSyncOptions TextDocumentSync
 
     /// <summary>The colours of keywords, values, placeholders and tags.</summary>
     public SemanticTokensOptions? SemanticTokensProvider { get; init; }
+
+    /// <summary>Completion of keywords, sections, steps and values.</summary>
+    public CompletionOptions? CompletionProvider { get; init; }
 }
+
+/// <summary>LSP completion options.</summary>
+/// <param name="TriggerCharacters">Typing one of these asks for completion.</param>
+public sealed record CompletionOptions(IReadOnlyList<string> TriggerCharacters);
 
 /// <summary>LSP semantic tokens options: the whole file at once.</summary>
 public sealed record SemanticTokensOptions(SemanticTokensLegend Legend, bool Full);
@@ -100,6 +107,36 @@ public sealed record Location(string Uri, Range Range);
 /// <param name="Source">Always <c>Brinell UAT</c>.</param>
 /// <param name="Message">The gate's text, word for word.</param>
 public sealed record Diagnostic(Range Range, int Severity, string Code, string Source, string Message);
+
+/// <summary>A request about a position: <c>completion</c>, <c>hover</c>, <c>definition</c>, <c>references</c>.</summary>
+public sealed record PositionParams(TextDocumentIdentifier TextDocument, Position Position);
+
+/// <summary>LSP completion list; incomplete, so the client asks again as the words change.</summary>
+public sealed record CompletionList(bool IsIncomplete, IReadOnlyList<CompletionItem> Items);
+
+/// <summary>LSP completion item.</summary>
+/// <param name="Label">What the list shows.</param>
+/// <param name="Kind">LSP completion item kind.</param>
+public sealed record CompletionItem(string Label, int Kind)
+{
+    /// <summary>What it binds to, or where it comes from.</summary>
+    public string? Detail { get; init; }
+
+    /// <summary>The text put in, replacing <see cref="TextEdit"/>'s range.</summary>
+    public TextEdit? TextEdit { get; init; }
+
+    /// <summary>1 plain text, 2 a snippet with <c>${1:x}</c> placeholders.</summary>
+    public int? InsertTextFormat { get; init; }
+
+    /// <summary>What the client filters on: the typed words, so a match by words is not dropped for not being a prefix.</summary>
+    public string? FilterText { get; init; }
+
+    /// <summary>The order in the list.</summary>
+    public string? SortText { get; init; }
+}
+
+/// <summary>LSP text edit.</summary>
+public sealed record TextEdit(Range Range, string NewText);
 
 /// <summary>A request about a whole file: <c>documentSymbol</c>, <c>foldingRange</c>, <c>semanticTokens/full</c>.</summary>
 public sealed record DocumentParams(TextDocumentIdentifier TextDocument);
