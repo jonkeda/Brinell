@@ -91,6 +91,80 @@ namespace Brinell.Uat.Tests.HeadCases
             Assert.False(maui.EvaluateSkip(["@sync"]).ShouldSkip);
         }
 
+        [Theory]
+        [InlineData("service", new[] { "@sync" }, true)]
+        [InlineData("service", new[] { "@service" }, false)]
+        [InlineData("service", new[] { "@service", "@maui" }, false)]
+        [InlineData("service", new[] { "@maui" }, true)]
+        [InlineData("service", new[] { "@mixed" }, true)]
+        [InlineData("maui", new[] { "@service" }, true)]
+        [InlineData("maui", new[] { "@service", "@maui" }, false)]
+        [InlineData("web", new[] { "@service", "@maui" }, true)]
+        [InlineData("maui", new[] { "@sync" }, false)]
+        public void AServiceSuite_RunsOnlyServiceScenarios_AndAServiceScenarioAlsoTaggedForAUiHead_RunsThereToo(string head, string[] tags, bool skipped)
+        {
+            var config = UatConfigParser.Parse($"""
+                # UAT Config
+
+                ## Runtime
+
+                | Field | Value |
+                | --- | --- |
+                | Head | {head} |
+                """);
+
+            Assert.Equal(skipped, config.EvaluateSkip(tags).ShouldSkip);
+            Assert.Equal(!skipped, config.RunsOnHead(tags));
+        }
+
+        [Fact]
+        public void AServiceSuite_ListsOnlyItsScenarios_AndAUiSuiteStillListsEveryScenario()
+        {
+            var directory = Path.Combine(Path.GetTempPath(), $"brinell-uat-service-{Guid.NewGuid():N}");
+            Directory.CreateDirectory(Path.Combine(directory, "Scenarios"));
+            try
+            {
+                File.WriteAllText(Path.Combine(directory, "Scenarios", "sync.uat.md"), """
+                    # UAT: Sync
+
+                    @service
+                    ## Scenario: Headless only
+
+                    Given the device is offline
+
+                    @service @maui
+                    ## Scenario: Both tiers
+
+                    Given the device is offline
+
+                    ## Scenario: On screen
+
+                    Given I am on the Main page
+                    """);
+
+                string[] Listed(string head)
+                {
+                    File.WriteAllText(Path.Combine(directory, "uat.config.md"), $"""
+                        # UAT Config
+
+                        ## Runtime
+
+                        | Field | Value |
+                        | --- | --- |
+                        | Head | {head} |
+                        """);
+                    return UatScenarioSource.GetScenarioTheoryData(baseDirectory: directory).Select(item => (string)item[1]).ToArray();
+                }
+
+                Assert.Equal(["Headless only", "Both tiers"], Listed("service"));
+                Assert.Equal(["Headless only", "Both tiers", "On screen"], Listed("maui"));
+            }
+            finally
+            {
+                Directory.Delete(directory, recursive: true);
+            }
+        }
+
         private static async Task Run(HeadsFixture fixture, string scenario)
         {
             var directory = CreateSuite(out var configFilePath);

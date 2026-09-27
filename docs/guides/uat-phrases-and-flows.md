@@ -117,6 +117,7 @@ Common diagnostics:
 | `UATB010` | The step matches only phrases or pages this file does not see (see [Where Phrases Live](#where-phrases-live)). |
 | `UATB011` | A `Using` names no namespace. |
 | `UATB012` | Warning: a `Using` that no step needs. |
+| `UATB013` | A page step, control verb or page phrase in a scenario for the `service` head, which has no screen. |
 | `UATA001`-`UATA007` | A value does not fit its parameter (see [Arguments](#arguments)). |
 | `UATA010`-`UATA013` | The step binds to a broken phrase (see [Broken Phrases](#broken-phrases)). |
 | `UATC001`-`UATC008` | The step calls a broken callable phrase (see [Callable Phrases](#callable-phrases)). |

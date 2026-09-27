@@ -174,6 +174,10 @@ public static class UatBinder
     private static string? FirstParameterName(UatCommandPattern pattern)
         => Regex.Match(pattern.Phrase, @"^\{([A-Za-z][A-Za-z0-9_-]*)\}") is { Success: true } found ? found.Groups[1].Value : null;
 
+    // The engine's page steps, control verbs and page phrases.
+    private static bool IsScreenStep(UatCommandPattern pattern)
+        => pattern.NamesPage || pattern.IsPageScoped || pattern.CommandId.StartsWith("Builtin.Page.", StringComparison.Ordinal);
+
     private static UatDiagnostic Error(string code, string message, UatSourceLocation location)
         => new(UatDiagnosticSeverity.Error, code, message, location);
 
@@ -273,6 +277,16 @@ public static class UatBinder
                 }
 
                 match = matches[0];
+            }
+
+            // The service head has no screen: a step that opens, drives or reads one cannot run there.
+            if (UatTagConventions.IsService(app?.Head ?? catalogs.SuiteHead) && IsScreenStep(match.Pattern))
+            {
+                diagnostics.Add(Error(
+                    "UATB013",
+                    $"'{step.Text}' is a UI step ('{match.Pattern.Phrase}'); the service head has no screen. Use a step the service head declares, or tag the scenario for a UI head.",
+                    step.Source));
+                return;
             }
 
             used?.UnionWith(where.UsingsFor(UatScope.OwnerOf(match.Pattern)));

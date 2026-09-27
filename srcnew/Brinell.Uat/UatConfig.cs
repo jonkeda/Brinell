@@ -29,6 +29,18 @@ public sealed record UatConfig(
     /// <summary>The namespaces every scenario of the suite uses, from the <c>## Using</c> table.</summary>
     public IReadOnlyList<string> Usings { get; init; } = [];
 
+    /// <summary>The suite's <c>Head</c>, trimmed; null when it names none.</summary>
+    public string? SuiteHead => Runtime.TryGetValue(UatConfigFields.Head, out var head) && head.Trim() is { Length: > 0 } trimmed ? trimmed : null;
+
+    /// <summary>Whether a scenario with these tags runs on this suite's head; a suite without a head runs every scenario.</summary>
+    /// <param name="tags">The scenario's tags, with or without <c>@</c>.</param>
+    public bool RunsOnHead(IEnumerable<string> tags)
+    {
+        ArgumentNullException.ThrowIfNull(tags);
+        return SuiteHead is not { } suiteHead ||
+            UatTagConventions.WhyNotOnHead(tags.Select(UatTagConventions.NormalizeTag).ToHashSet(StringComparer.OrdinalIgnoreCase), suiteHead) is null;
+    }
+
     public UatSkipDecision EvaluateSkip(
         IEnumerable<string> tags,
         Func<string, string?>? getEnvironmentVariable = null)
@@ -45,25 +57,9 @@ public sealed record UatConfig(
             }
         }
 
-        // One scenario file can serve several heads; a scenario tagged with heads runs only on theirs.
-        if (Runtime.TryGetValue(UatConfigFields.Head, out var head) && head.Trim() is { Length: > 0 } suiteHead)
+        if (SuiteHead is { } suiteHead && UatTagConventions.WhyNotOnHead(normalizedTags, suiteHead) is { } reason)
         {
-            var heads = UatTagConventions.Heads.Where(normalizedTags.Contains).ToList();
-            if (heads.Count == 0 && suiteHead.Equals(UatTagConventions.Mixed, StringComparison.OrdinalIgnoreCase))
-            {
-                return new UatSkipDecision(
-                    ShouldSkip: true,
-                    Reason: $"Scenario is not tagged @{UatTagConventions.Mixed}; this suite runs only mixed-head scenarios.",
-                    Rule: null);
-            }
-
-            if (heads.Count > 0 && !heads.Contains(suiteHead, StringComparer.OrdinalIgnoreCase))
-            {
-                return new UatSkipDecision(
-                    ShouldSkip: true,
-                    Reason: $"Scenario is for {string.Join(", ", heads.Select(tag => $"@{tag}"))}; this suite runs the '{suiteHead}' head.",
-                    Rule: null);
-            }
+            return new UatSkipDecision(ShouldSkip: true, Reason: reason, Rule: null);
         }
 
         if (SkipRules.Count == 0)
@@ -190,6 +186,9 @@ public static class UatTagConventions
 
     /// <summary>A scenario that uses apps of several heads; it runs only on a suite whose head is <c>mixed</c>.</summary>
     public const string Mixed = "mixed";
+
+    /// <summary>A scenario that runs without a screen, against the app's services; it runs only on a suite whose head is <c>service</c>.</summary>
+    public const string Service = "service";
     public const string Windows = "windows";
     public const string Android = "android";
     public const string Ios = "ios";
@@ -200,7 +199,36 @@ public static class UatTagConventions
     /// The head tags. A scenario tagged with one or more runs only on a suite whose
     /// <see cref="UatConfigFields.Head"/> is among them; one with none runs on every head.
     /// </summary>
-    public static IReadOnlyList<string> Heads { get; } = [Maui, Web, Mixed];
+    public static IReadOnlyList<string> Heads { get; } = [Maui, Web, Mixed, Service];
+
+    /// <summary>
+    /// The heads a scenario must name to run there: a suite with one of these runs only the
+    /// scenarios tagged with it, so an untagged scenario stays a UI scenario.
+    /// </summary>
+    public static IReadOnlyList<string> OptInHeads { get; } = [Mixed, Service];
+
+    /// <summary>Whether <paramref name="head"/> is the head without a screen.</summary>
+    /// <param name="head">A suite's head, or null.</param>
+    public static bool IsService(string? head) => string.Equals(head, Service, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Why a scenario with these tags does not run on <paramref name="suiteHead"/>; null when it does.</summary>
+    /// <param name="normalizedTags">The scenario's tags without <c>@</c>, compared ignoring case.</param>
+    /// <param name="suiteHead">The suite's head.</param>
+    public static string? WhyNotOnHead(IReadOnlySet<string> normalizedTags, string suiteHead)
+    {
+        ArgumentNullException.ThrowIfNull(normalizedTags);
+        ArgumentNullException.ThrowIfNull(suiteHead);
+
+        var heads = Heads.Where(normalizedTags.Contains).ToList();
+        if (heads.Count == 0 && OptInHeads.FirstOrDefault(optIn => optIn.Equals(suiteHead, StringComparison.OrdinalIgnoreCase)) is { } optInHead)
+        {
+            return $"Scenario is not tagged @{optInHead}; this suite runs only @{optInHead} scenarios.";
+        }
+
+        return heads.Count > 0 && !heads.Contains(suiteHead, StringComparer.OrdinalIgnoreCase)
+            ? $"Scenario is for {string.Join(", ", heads.Select(tag => $"@{tag}"))}; this suite runs the '{suiteHead}' head."
+            : null;
+    }
 
     public static string NormalizeTag(string tag)
     {

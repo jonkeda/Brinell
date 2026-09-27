@@ -175,6 +175,60 @@ public sealed class UatBinderTests
         Assert.Contains(result.Diagnostics, x => x.Code == "UATB004");
     }
 
+    [Theory]
+    [InlineData("Given I am on the Login page", "UATB013")]
+    [InlineData("When I tap Sign in", "UATB013")]
+    [InlineData("When I sign in as ada", "UATB013")]
+    [InlineData("Then I should see Welcome", "UATB013")]
+    [InlineData("Given the application is running", null)]
+    public void Bind_OnTheServiceHead_RefusesStepsThatNeedAScreen(string step, string? code)
+    {
+        var document = ParseValid($"""
+            # UAT: Headless
+
+            @service
+            ## Scenario: No screen
+
+            {step}
+            """);
+        var catalog = new UatCommandCatalog();
+        catalog.Register(UatEffectiveStepKeyword.Given, "the application is running", "AppCommands.AssertRunning");
+        catalog.Register(UatEffectiveStepKeyword.Given, "I am on the {page} page", "Builtin.Page.Open", namesPage: true);
+        catalog.Register(UatEffectiveStepKeyword.When, "I tap {control}", "Builtin.Control.Tap", allowsTable: false, controlVerb: new UatControlVerb("Click", 0, NamesControl: true, Navigates: false));
+        catalog.Register(UatEffectiveStepKeyword.When, "I sign in as {user}", "LoginPage.SignIn", page: "Login");
+        catalog.Register(UatEffectiveStepKeyword.Then, "I should see {text}", "Builtin.Page.AssertTextVisible");
+        var catalogs = new UatCatalogSet(catalog, [], suiteHead: "service", new Dictionary<string, UatCommandCatalog>(), []);
+
+        var result = UatBinder.Bind(document, catalogs);
+
+        if (code is null)
+        {
+            Assert.True(result.Success, FormatDiagnostics(result));
+        }
+        else
+        {
+            var diagnostic = Assert.Single(result.Diagnostics, x => x.Code == code);
+            Assert.Contains("service head has no screen", diagnostic.Message);
+        }
+    }
+
+    [Fact]
+    public void Bind_OnAUiHead_TakesTheSameScreenSteps()
+    {
+        var document = ParseValid("""
+            # UAT: On screen
+
+            ## Scenario: A screen
+
+            Given I am on the Login page
+            """);
+        var catalog = new UatCommandCatalog();
+        catalog.Register(UatEffectiveStepKeyword.Given, "I am on the {page} page", "Builtin.Page.Open", namesPage: true);
+        var catalogs = new UatCatalogSet(catalog, [], suiteHead: "maui", new Dictionary<string, UatCommandCatalog>(), []);
+
+        Assert.True(UatBinder.Bind(document, catalogs).Success);
+    }
+
     private static UatCommandCatalog CreateBasicCatalog()
     {
         var catalog = new UatCommandCatalog();
