@@ -11,7 +11,7 @@ namespace Brinell.Presenter.Services;
 /// disposed, where <c>LoadFromAssemblyPath</c> into the default context holds it for the life
 /// of the process and would block the next build. Attribute arguments are readable this way;
 /// property values are not, which is why a fixture declares its platforms with an attribute.
-/// See <c>.my/present/startup/00-presenter-workspace-design.md</c>.
+/// See AD-018.
 /// </remarks>
 public sealed class FixtureInspector : IFixtureInspector
 {

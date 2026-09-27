@@ -11,8 +11,7 @@ namespace Brinell.Presenter.Services;
 /// <c>-getProperty</c> with no target runs no build and no restore, so this answers in about
 /// half a second even for a project that has never been built — which is the point: it says
 /// where the output <em>will</em> be. It also never touches workloads, so a clean answer here
-/// is not evidence the project can build. See
-/// <c>.my/present/startup/00-presenter-workspace-design.md</c>.
+/// is not evidence the project can build. See AD-018.
 /// </remarks>
 public sealed class MsBuildProjectEvaluator : IProjectEvaluator
 {

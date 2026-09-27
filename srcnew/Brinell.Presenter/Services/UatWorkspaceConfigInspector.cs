@@ -54,7 +54,7 @@ internal static class UatWorkspaceConfigInspector
 
         // AppPath is an override, not a requirement: the fixture owns the app, and every
         // fixture base makes GetDefaultAppPath abstract. Only a configured-but-wrong path
-        // is an error. See .my/present/startup/00-presenter-workspace-design.md.
+        // is an error. See AD-018.
         var appPath = ReadRuntime(config, "AppPath");
         var resolvedAppPath = ResolveOptionalPath(workspacePath, appPath);
         var appPathExists = !string.IsNullOrWhiteSpace(resolvedAppPath) && File.Exists(resolvedAppPath);

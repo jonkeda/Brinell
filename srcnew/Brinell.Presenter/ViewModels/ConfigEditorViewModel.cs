@@ -14,7 +14,7 @@ namespace Brinell.Presenter.ViewModels;
 /// Saving writes through <see cref="UatConfigWriter" />, so untouched text survives, and then
 /// reloads the workspace - the tree carries expansion and selection across. Save stays enabled
 /// while the config is invalid: half-fixing and saving is legitimate, and refusing to write is
-/// how an editor loses work. See <c>.my/present/startup/00-presenter-workspace-design.md</c>.
+/// how an editor loses work. See AD-018.
 /// </remarks>
 public sealed class ConfigEditorViewModel : ViewModelBase
 {
