@@ -20,7 +20,7 @@ reusing the existing `IElement<T>`, `IDriver<T>`, `IElementScope<T>` and friends
 
 The rest of the move-down draft still holds: MAUI passed its steps 0-9 on its own interfaces
 (`IMauiElement`, `IMauiDriver`, `IMauiElementScope`, `IMauiPage`, `IMauiTestContext`); Html has a
-planned slice in [`../html/`](../html/) that will land on its own `IHtml*` interfaces; the other
+planned slice in [`../html/`](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/html/) that will land on its own `IHtml*` interfaces; the other
 stacks (NativeAndroid, WPF, WinForms, Stride) still use Core's old interfaces.
 
 **The new names let the two layers coexist.** The old `Brinell.Core.Interfaces.IElement<T>`
