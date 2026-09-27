@@ -413,7 +413,8 @@ and its web suite (`samples/Todo/tests/Brinell.Samples.Todo.Web.Uat`) run the sa
   runs on every head. A suite without `Head` runs everything.
 - Each suite has its own page objects and phrase classes with the same names and phrases: the
   scenario text is the contract between them. Steps that do not touch the screen can be one class
-  for both heads (`TodoDataPhrases`, over an `ITodoArrangement` both fixtures implement).
+  for both heads (`BackendPhrases`, `DevicePhrases` and `StoredDataPhrases`, over an
+  `ITodoArrangement` both fixtures implement).
 
 ## Several Apps In One Scenario
 

@@ -31,8 +31,8 @@ namespace Brinell.Samples.Todo.Web.Uat.Runtime;
 /// </para>
 /// </remarks>
 [TestModuleScan(typeof(TodoListPage), NamespacePrefix = "Brinell.Samples.Todo.Web.UITests.Pages")]
-[TestModuleScan(typeof(TodoScreenPhrases), NamespacePrefix = "Brinell.Samples.Todo.Web.Uat.Phrases")]
-[TestModuleScan(typeof(TodoDataPhrases), NamespacePrefix = "Brinell.Samples.Todo.TestSupport.Uat")]
+[TestModuleScan(typeof(AppLifecyclePhrases), NamespacePrefix = "Brinell.Samples.Todo.Web.Uat.Phrases")]
+[TestModuleScan(typeof(BackendPhrases), NamespacePrefix = "Brinell.Samples.Todo.TestSupport.Uat")]
 public sealed class TodoWebUatFixture : TodoWebFixture, IUatAppsHost
 {
     private TestComposition? _composition;

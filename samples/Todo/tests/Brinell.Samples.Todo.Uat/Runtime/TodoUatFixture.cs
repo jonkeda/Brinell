@@ -23,8 +23,8 @@ namespace Brinell.Samples.Todo.Uat.Runtime;
 /// <see cref="IMauiTestContext"/>). It is rebuilt after a restart, when the context is new.
 /// </remarks>
 [TestModuleScan(typeof(TodoListPage), NamespacePrefix = "Brinell.Samples.Todo.UITests.Pages")]
-[TestModuleScan(typeof(TodoScreenPhrases), NamespacePrefix = "Brinell.Samples.Todo.Uat.Phrases")]
-[TestModuleScan(typeof(TodoDataPhrases), NamespacePrefix = "Brinell.Samples.Todo.TestSupport.Uat")]
+[TestModuleScan(typeof(AppLifecyclePhrases), NamespacePrefix = "Brinell.Samples.Todo.Uat.Phrases")]
+[TestModuleScan(typeof(BackendPhrases), NamespacePrefix = "Brinell.Samples.Todo.TestSupport.Uat")]
 [UatPlatforms(MauiPlatform.Windows, MauiPlatform.Android)]
 public sealed class TodoUatFixture : TodoAppFixture
 {
