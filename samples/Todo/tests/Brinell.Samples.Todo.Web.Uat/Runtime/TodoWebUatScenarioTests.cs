@@ -33,7 +33,7 @@ public sealed class TodoWebUatScenarioTests : UatScenarioTestBase<TodoWebUatFixt
     /// <summary>Runs one scenario and asserts it passes, or that the engine skipped it.</summary>
     /// <param name="filePath">The scenario file.</param>
     /// <param name="scenarioName">The scenario in it.</param>
-    [Theory(Timeout = 120000)]
+    [UatScenarioTheory(Timeout = 120000)]
     [MemberData(nameof(Scenarios))]
     public Task Scenario_Passes(string filePath, string scenarioName) => RunUatScenarioAsync(filePath, scenarioName);
 

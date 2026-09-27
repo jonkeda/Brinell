@@ -1,0 +1,119 @@
+using System.ComponentModel;
+using Xunit;
+using Xunit.Abstractions;
+using Xunit.Sdk;
+
+namespace Brinell.Uat;
+
+/// <summary>
+/// A theory over scenarios (<c>[filePath, scenarioName]</c> rows, as
+/// <see cref="UatScenarioTestBase{TFixture}"/> gives them): the same one case per scenario as
+/// <c>[Theory]</c>, each with its stable address in the <c>UatScenario</c> trait
+/// (<see cref="UatScenarioAddress"/>), so one scenario can be run by filter (R1 of the IDE plan).
+/// </summary>
+[XunitTestCaseDiscoverer("Brinell.Uat.UatScenarioTheoryDiscoverer", "Brinell.Uat")]
+[AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+public sealed class UatScenarioTheoryAttribute : TheoryAttribute
+{
+}
+
+/// <summary>Finds the cases of a <see cref="UatScenarioTheoryAttribute"/>: one <see cref="UatScenarioTestCase"/> per row.</summary>
+/// <param name="diagnosticMessageSink">Where discovery reports problems.</param>
+public sealed class UatScenarioTheoryDiscoverer(IMessageSink diagnosticMessageSink) : TheoryDiscoverer(diagnosticMessageSink)
+{
+    /// <inheritdoc />
+    protected override IEnumerable<IXunitTestCase> CreateTestCasesForDataRow(
+        ITestFrameworkDiscoveryOptions discoveryOptions,
+        ITestMethod testMethod,
+        IAttributeInfo theoryAttribute,
+        object[] dataRow)
+        => [new UatScenarioTestCase(DiagnosticMessageSink, discoveryOptions.MethodDisplayOrDefault(), discoveryOptions.MethodDisplayOptionsOrDefault(), testMethod, dataRow)];
+}
+
+/// <summary>
+/// One scenario's case: an <see cref="XunitTestCase"/> whose <c>UatScenario</c> trait is its
+/// address, and whose source is the scenario's line in its feature file when that file is the
+/// project's own.
+/// </summary>
+public sealed class UatScenarioTestCase : XunitTestCase
+{
+    /// <summary>For the deserializer.</summary>
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    [Obsolete("Called by the de-serializer; should only be called by deriving classes for de-serialization purposes")]
+    public UatScenarioTestCase()
+    {
+    }
+
+    /// <summary>Creates the case for one row.</summary>
+    /// <param name="diagnosticMessageSink">Where problems are reported.</param>
+    /// <param name="defaultMethodDisplay">How the method is shown.</param>
+    /// <param name="defaultMethodDisplayOptions">How the method name is shown.</param>
+    /// <param name="testMethod">The theory.</param>
+    /// <param name="testMethodArguments">The row: the feature file and the scenario's name.</param>
+    public UatScenarioTestCase(
+        IMessageSink diagnosticMessageSink,
+        TestMethodDisplay defaultMethodDisplay,
+        TestMethodDisplayOptions defaultMethodDisplayOptions,
+        ITestMethod testMethod,
+        object[] testMethodArguments)
+        : base(diagnosticMessageSink, defaultMethodDisplay, defaultMethodDisplayOptions, testMethod, testMethodArguments)
+    {
+        // Set before the runner looks for the method's C# source, which it only does when this is empty.
+        if (Scenario(testMethodArguments) is var (file, name) && UatScenarioSourceFile.Of(file, name) is { } source)
+        {
+            SourceInformation = source;
+        }
+    }
+
+    /// <inheritdoc />
+    protected override void Initialize()
+    {
+        base.Initialize();
+
+        // Computed again from the row after deserializing, so it needs no serialization of its own.
+        if (Scenario(TestMethodArguments) is var (file, name) && name.Length > 0)
+        {
+            Traits[UatScenarioAddress.Trait] = [UatScenarioAddress.Of(UatScenarioSourceFile.RelativeToConfig(file), name)];
+        }
+    }
+
+    private static (string File, string Name)? Scenario(object[]? arguments)
+        => arguments is [string file, string name, ..] ? (file, name) : null;
+}
+
+// Where a case's scenario is: its file relative to the config (in the build output, as the tests
+// read it), and the scenario's line in the project's own copy of the file.
+internal static class UatScenarioSourceFile
+{
+    public static string RelativeToConfig(string file)
+        => Path.GetRelativePath(Path.GetDirectoryName(UatScenarioSource.GetConfigFilePath())!, Path.GetFullPath(file)).Replace('\\', '/');
+
+    public static ISourceInformation? Of(string file, string scenarioName)
+    {
+        if (ProjectCopy(file) is not { } source ||
+            UatMarkdownParser.ParseFile(source).Document?.Scenarios.FirstOrDefault(scenario => scenario.Name == scenarioName) is not { } scenario)
+        {
+            return null;
+        }
+
+        return new SourceInformation { FileName = source, LineNumber = scenario.Source.LineNumber };
+    }
+
+    // The build output's folder sits under the project's (bin/<configuration>/<tfm>); a file the
+    // project links from elsewhere has no copy there, and keeps the C# method as its source.
+    private static string? ProjectCopy(string file)
+    {
+        var output = Path.GetDirectoryName(UatScenarioSource.GetConfigFilePath())!;
+        var relative = Path.GetRelativePath(output, Path.GetFullPath(file));
+        for (var folder = new DirectoryInfo(output).Parent; folder is not null; folder = folder.Parent)
+        {
+            if (folder.Name.Equals("bin", StringComparison.OrdinalIgnoreCase) && folder.Parent is { } project)
+            {
+                var source = Path.Combine(project.FullName, relative);
+                return File.Exists(source) ? source : null;
+            }
+        }
+
+        return null;
+    }
+}

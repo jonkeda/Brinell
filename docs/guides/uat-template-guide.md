@@ -77,7 +77,7 @@ public sealed class TodoUatScenarioTests : UatScenarioTestBase<TodoUatFixture>
 
     public static IEnumerable<object[]> Scenarios => GetScenarioTheoryData();
 
-    [Theory(Timeout = 120000)]
+    [UatScenarioTheory(Timeout = 120000)]
     [MemberData(nameof(Scenarios))]
     public Task Scenario_Passes(string filePath, string scenarioName) => RunUatScenarioAsync(filePath, scenarioName);
 
@@ -104,6 +104,18 @@ order unless told otherwise, so the Todo sample adds a small `ITestCaseOrderer`
 (`UatScenarioOrderer`) that sorts by that key: the app then restarts once per test
 set, not once per scenario. `GetScenarioFiles` / `RunUatFileAsync` still run a
 whole file as one case.
+
+`[UatScenarioTheory]` is `[Theory]` with a stable address per case: the `UatScenario` trait is
+the file relative to the config and a slug of the scenario's name, so one scenario runs by filter
+(from the UAT project folder):
+
+```powershell
+dotnet test --filter "UatScenario=Features/TOD.11-manage-users.feature.md#TOD.11.1-Users-lists-available-users-first-each-with-its-role-and-state"
+```
+
+The slug keeps `[A-Za-z0-9._/-]` and turns every other run of characters into one `-`; an outline
+row `[2]` ends in `-2`. A suite that keeps `[Theory]` runs as before, without the trait. When the
+feature file is the project's own, the case's source is the scenario's line in it.
 
 ## Config Shape
 

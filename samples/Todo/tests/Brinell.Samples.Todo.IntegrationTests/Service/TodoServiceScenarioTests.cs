@@ -29,7 +29,7 @@ public sealed class TodoServiceScenarioTests : UatScenarioTestBase<TodoServiceFi
     /// <summary>Runs one scenario and asserts it passes.</summary>
     /// <param name="filePath">The scenario file.</param>
     /// <param name="scenarioName">The scenario in it.</param>
-    [Theory]
+    [UatScenarioTheory]
     [MemberData(nameof(Scenarios))]
     public Task Scenario_Passes(string filePath, string scenarioName) => RunUatScenarioAsync(filePath, scenarioName);
 

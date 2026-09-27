@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `[UatScenarioTheory]` (`Brinell.Uat`): `[Theory]` with a stable address per scenario, the `UatScenario`
+  trait `<file relative to the config>#<slug>` (`UatScenarioAddress` in `Brinell.Bdd`), so
+  `dotnet test --filter "UatScenario=..."` runs one scenario. A case whose feature file is the
+  project's own has the scenario's line as its source. The Todo MAUI, web, mixed and service suites
+  use it; their cases and counts are unchanged.
 - `Brinell.Uat.Workspace` (tools/): loads a suite one way for every tool. It finds the suites (projects
   with a `uat.config.md` or `bdd.config.md`), reads the config, knows which suites a feature file
   is linked into, and builds the catalogs from a shadow copy of the build output in a collectible
