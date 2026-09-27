@@ -350,7 +350,7 @@ Namespaces only help if people can see them:
 | Folder name as the namespace, or a declared name per folder? | Folder names have spaces and get renamed. A `Namespace` field in the folder's `*.phrases.md` decouples them, at the cost of one more thing to keep in sync. Built with the folder name (phase 6), compared ignoring case. |
 | Can a namespace phrase be used on any page, or only its own pages? | Namespace and page scope are independent axes. Start with "any page". |
 | Callables on a page scope | Could a callable belong to a page, like a page phrase? Now possible (phase 5 is built); not needed by Todo yet. |
-| Presenter UAT flake | `run-selected-sample` asserts "Passed", which the per-scenario status matches while the run goes on; the next scenario's reset races the run's end. Fails about 1 in 3 at `ddaa395` too. Fix in the scenario, separately. |
+| Presenter UAT flake | `run-selected-sample` asserts "Passed", which the per-scenario status matches while the run goes on; the next scenario's reset races the run's end. Fails about 1 in 3 at `ddaa395` too. **Fixed**: the step waits for "Passed: 1/1 scenarios", the run's last status (4/4 runs green). |
 | Deprecated aliases | If Accounts renames a phrase, users break. Should a phrase keep its old text as a deprecated alias for a while? |
 | A naming rule per subject | Every backend phrase starts "the server", every stored-data phrase "the database". Then the class can be read off the text. |
 | Which package owns the shared subjects (later phase)? | `Brinell.Uat` has no MAUI or mocking dependency. Interfaces in `Brinell.Uat`, implementations beside the fixtures, or a small `Brinell.Uat.Mocking`. |
