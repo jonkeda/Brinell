@@ -77,6 +77,55 @@ public sealed class JourneyCoverageTests
     }
 
     [Fact]
+    public void EveryScenario_NamesASubtask()
+    {
+        var unnamed = Report.Value.Tests
+            .Where(t => t.Name.Contains(": ", StringComparison.Ordinal) && t.Journeys.Count == 0)
+            .Select(t => t.Name)
+            .Distinct()
+            .ToList();
+
+        Assert.True(unnamed.Count == 0, "These scenarios have no @TOD.xx.y tag:\n  " + string.Join("\n  ", unnamed));
+    }
+
+    [Theory]
+    [InlineData("@TOD.09.3 @service @maui", new[] { "Integration", "UiHermetic" })]
+    [InlineData("@TOD.09.3 @service", new[] { "Integration" })]
+    [InlineData("@TOD.09.3 @maui @web", new[] { "UiHermetic" })]
+    [InlineData("@TOD.09.3", new[] { "UiHermetic" })]
+    public void AScenario_CountsInTheTierOfEachHeadItRunsOn(string tags, string[] tiers)
+    {
+        var file = Path.Combine(Path.GetTempPath(), $"coverage-{Guid.NewGuid():N}.uat.md");
+        File.WriteAllText(file, $"""
+            # UAT: Tiers
+
+            {tags}
+            ## Scenario: One scenario
+
+            Given the device is offline
+            """);
+        try
+        {
+            var tests = ScenarioCatalog.Read(file).ToList();
+
+            Assert.Equal(tiers, tests.Select(t => t.Pyramid));
+            Assert.All(tests, t => Assert.Equal(["TOD.09.3"], t.Journeys));
+        }
+        finally
+        {
+            File.Delete(file);
+        }
+    }
+
+    [Fact]
+    public void AServiceScenario_CoversAnIntegrationAssignment()
+    {
+        var assignment = Report.Value.Assignments.Single(a => a.Subtask.Id == "TOD.07.1" && a.Tier == Tier.Integration);
+
+        Assert.Contains(assignment.CoveredBy, name => name.StartsWith("TOD.07-sync-with-the-backend: TOD.07.1", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void TheCaseCounts_HaveThePyramidsShape()
     {
         // journeys.md: subtask assignments may lean to the UI, but the cases must not. If this fails,

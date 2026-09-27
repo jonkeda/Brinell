@@ -10,21 +10,6 @@ public sealed class SyncTests
     private const string AnyTodo = TodoApi.TodosPath + "/*";
 
     [Fact]
-    [Trait("Journey", "TOD.07.1")]
-    [Trait("Journey", "TOD.11.9")]
-    public async Task Sync_FetchesUsers_ThenPushes_ThenPulls()
-    {
-        using var host = await TodoHost.StartAsync("pending-local-change");
-
-        var result = await host.Sync.SyncAsync();
-
-        Assert.True(result.Succeeded);
-        Assert.Equal(2, result.Pushed);
-        var order = host.Mock.Requests().Select(request => $"{request.Method} {(request.Path.StartsWith(TodoApi.UsersPath) ? "users" : "todos")}").ToList();
-        Assert.Equal(["GET users", "PUT todos", "PUT todos", "GET todos"], order);
-    }
-
-    [Fact]
     [Trait("Journey", "TOD.11.9")]
     public async Task AUserAddedElsewhere_IsCachedAfterTheNextSync()
     {

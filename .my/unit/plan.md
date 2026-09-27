@@ -30,6 +30,8 @@ of `Brinell.Bdd` (6) is the large, internal step. The Construction pilot is not 
   (`@service @maui`), not TOD.07.2: every MAUI page phrase needs `I am on ...` first, which the
   service head refuses, so a both-tiers scenario uses only steps both heads declare as step classes.
   The DataValidator finds a service suite's fixture through a `Steps` assembly row.
+- Phase 3 done. The TOD.07.1 scenario also carries `@TOD.11.9` (users are fetched first), since the
+  deleted C# twin covered both.
 
 ---
 

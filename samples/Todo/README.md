@@ -429,20 +429,26 @@ rest (26 tests) pass on both platforms.
 ## The journey coverage report
 
 `tests/Brinell.Samples.Todo.JourneyCoverage` reads [journeys.md](journeys.md), reads every
-test's traits by reflection (nothing runs, nothing launches), and fails when:
+test's traits by reflection and parses every scenario file (nothing runs, nothing launches), and
+fails when:
 
 - a subtask has no test in a tier `journeys.md` assigns it to;
 - a subtask marked **M** is not named in `manual/charters.md`;
 - a `Journey` trait names a subtask that does not exist (a typo);
-- a test has no `Pyramid` trait;
+- a test has no `Pyramid` trait, or a scenario no `@TOD.xx.y` tag;
 - the pyramid inverts: unit cases must outnumber hermetic UI cases, and those must outnumber
   live ones.
 
 It writes the full matrix, with every subtask, tier and covering test, to
 `TestResults/<run-id>/suites/TodoJourneyCoverage/journey-coverage.md`.
 
+A scenario counts like a test: its `@TOD.xx.y` tags are its subtasks, and each head it runs on
+gives a tier. `@service` is Integration (the headless suite in `IntegrationTests/Service`); a UI
+head, or no head tag, is UiHermetic. A scenario tagged `@service @maui` counts in both.
+
 To add a behaviour: add its subtask to `journeys.md` with the lowest tier that can prove it,
-write the test with its `Journey` and `Pyramid` traits, and let the report confirm they match.
+write the test with its `Journey` and `Pyramid` traits (or the scenario with its tags), and let
+the report confirm they match.
 
 ## Rules the tests follow
 

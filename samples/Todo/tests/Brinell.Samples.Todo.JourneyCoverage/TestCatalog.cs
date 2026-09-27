@@ -61,9 +61,9 @@ public static class TestCatalog
         ("Brinell.Samples.Todo.Mixed.UITests", "net10.0-windows"),
     ];
 
-    /// <summary>Every test method in <see cref="AssemblyNames"/> and <see cref="UiProjects"/>.</summary>
+    /// <summary>Every test method in <see cref="AssemblyNames"/> and <see cref="UiProjects"/>, and every scenario (<see cref="ScenarioCatalog"/>).</summary>
     public static IReadOnlyList<TestMethod> Load()
-        => [.. AssemblyNames.Select(Assembly.Load).SelectMany(Read), .. UiProjects.SelectMany(ReadMetadata)];
+        => [.. AssemblyNames.Select(Assembly.Load).SelectMany(Read), .. UiProjects.SelectMany(ReadMetadata), .. ScenarioCatalog.Load()];
 
     private static IEnumerable<TestMethod> Read(Assembly assembly)
         => from type in assembly.GetTypes()

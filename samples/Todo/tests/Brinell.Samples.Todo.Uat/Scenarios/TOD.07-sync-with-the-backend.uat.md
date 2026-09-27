@@ -11,7 +11,7 @@
 | TestData | one-todo |
 | Tags | maui, web, sync |
 
-@TOD.07.1 @service @sync
+@TOD.07.1 @TOD.11.9 @service @sync
 ## Scenario: TOD.07.1 A sync fetches the users, pushes local changes, then pulls the server list
 
 ```gherkin
