@@ -68,6 +68,9 @@ preview's Debug, or Test Explorer's own **Debug**).
   is cancelled. The app the fixture starts is its own process and is not attached.
 - The breakpoints move with their steps as you edit lines above them. Deleting a step's line
   removes its breakpoint.
+- The app under test is debugged too. The MAUI app on Windows, or a web app started from its
+  build, is attached after the testhost, so a breakpoint in the app's own code also stops. A web
+  app started with `dotnet run` is not, since that process is the CLI.
 
 The breakpoints are a per-user file, `%LOCALAPPDATA%\Brinell\uat-breakpoints.json`, read only
 while a debugger is attached:

@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Debugging the app too: while a debugger is attached to a test, `DebuggedApps.Announce`
+  (`Brinell.Core.Diagnostics`) writes each app the test starts to
+  `%TEMP%\Brinell\debugged-apps\<test pid>-<app pid>.json`. The MAUI FlaUI driver and the web host
+  announce theirs; the web host skips `dotnet run`, whose process is the CLI. A Debug from the
+  Visual Studio preview or from VS Code's Test Explorer attaches to each announced app after the
+  testhost, so a breakpoint in the app's own code stops too.
 - The VS Code extension (`tools/Brinell.Uat.VsCode`, TypeScript):
   - an LSP client for feature, step and config files on the same language server;
   - the same Scenario Preview in a webview, its screenshots through the webview's own URIs;

@@ -1,6 +1,6 @@
 # Visual Studio extension: design and implementation plan
 
-Status: **phases 1 and 2 built** (1.1-2.4), phase 3 built (3.1-3.4), phase 4 in progress (CodeLens, quick fixes, views, config and data files, Copilot MCP, VS Code client built); checklists 6.1-6.3
+Status: **phases 1 and 2 built** (1.1-2.4), phase 3 built (3.1-3.4), phase 4 in progress (CodeLens, quick fixes, views, config and data files, Copilot MCP, VS Code client, attach to the app built); checklists 6.1-6.3
 and the spike (phase 0) not run. Date: 2026-09-27. Updated for the Bdd renames (AD-020, AD-021):
 feature and step files, `Features/`, `Brinell.Bdd` under `Brinell.Uat`, and step definitions.
 Builds on the proposal [visualstudio-extension.md](visualstudio-extension.md) and on

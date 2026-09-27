@@ -3,6 +3,9 @@
 // C# debugger to the testhost. The UI test rules hold (R4): one run at a time, and Cancel stops the
 // test process and the app it started.
 import { spawn, ChildProcess } from "child_process";
+import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
 import * as vscode from "vscode";
 import { LanguageClient } from "vscode-languageclient/node";
 
@@ -179,6 +182,38 @@ export class ScenarioTests implements vscode.Disposable {
     }
   }
 
+  // While the run goes: each app the testhost announces (Brinell.Core's DebuggedApps) is attached
+  // too, so a breakpoint in the app's own code stops.
+  private attachApps(folder: vscode.WorkspaceFolder | undefined, testhost: number, child: ChildProcess, run: vscode.TestRun): void {
+    const announced = path.join(os.tmpdir(), "Brinell", "debugged-apps");
+    const attached = new Set<number>();
+    const timer = setInterval(() => {
+      if (child.exitCode !== null) {
+        clearInterval(timer);
+        return;
+      }
+
+      let files: string[] = [];
+      try {
+        files = fs.readdirSync(announced).filter((name) => name.startsWith(`${testhost}-`) && name.endsWith(".json"));
+      } catch {
+        // No app announced yet.
+      }
+
+      for (const name of files) {
+        const app = Number(name.slice(0, -".json".length).split("-").pop());
+        if (!Number.isInteger(app) || attached.has(app)) {
+          continue;
+        }
+
+        attached.add(app);
+        void vscode.debug.startDebugging(folder, { name: `Brinell UAT app ${app}`, type: "coreclr", request: "attach", processId: String(app) }).then((started) =>
+          run.appendOutput(started ? `The debugger is attached to the app too (process ${app}).\r\n` : `The debugger could not attach to the app (process ${app}); the run goes on.\r\n`));
+        fs.rmSync(path.join(announced, name), { force: true });
+      }
+    }, 500);
+  }
+
   // Runs a command with its output in the run and the Output channel; with debug, the testhost waits
   // for a debugger (VSTEST_HOST_DEBUG), and the C# debugger attaches to the process id it prints.
   private exec(run: vscode.TestRun, command: string, args: string[], debug: boolean): Promise<number> {
@@ -198,6 +233,8 @@ export class ScenarioTests implements vscode.Disposable {
             if (!started) {
               run.appendOutput("The C# debugger did not attach; the run is cancelled. Install the C# extension.\r\n");
               this.cancel();
+            } else {
+              this.attachApps(folder, Number(attach[1]), child, run);
             }
           });
         }

@@ -93,6 +93,9 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
         // Before anything waits on the app - see QuietWindow.ForLaunch.
         _quiet = QuietWindow.ForLaunch(process.Id, previousForeground);
 
+        // A test being debugged: the IDE attaches to the app too.
+        Brinell.Core.Diagnostics.DebuggedApps.Announce(process, Path.GetFileNameWithoutExtension(executablePath));
+
         process.WaitForInputIdle();
 
         _application = Application.Attach(process);

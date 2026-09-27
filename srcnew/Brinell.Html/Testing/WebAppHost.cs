@@ -99,6 +99,13 @@ public sealed class WebAppHost : IDisposable
         var process = Process.Start(startInfo)
             ?? throw new InvalidOperationException($"Could not start {appPath}.");
         var host = new WebAppHost(process, baseUrl, options.Name ?? Path.GetFileNameWithoutExtension(appPath));
+
+        // A test being debugged: the IDE attaches to the app too. Not for 'dotnet run', whose
+        // process is the CLI, not the app.
+        if (!appPath.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase))
+        {
+            Brinell.Core.Diagnostics.DebuggedApps.Announce(process, host.Name);
+        }
         process.OutputDataReceived += (_, args) => host.Capture(args.Data);
         process.ErrorDataReceived += (_, args) => host.Capture(args.Data);
         process.BeginOutputReadLine();

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -192,51 +193,101 @@ internal sealed class UatRunController
     }
 
     // Attaches Visual Studio's debugger to the waiting testhost; a testhost left waiting would hang
-    // the run, so a failed attach cancels it.
+    // the run, so a failed attach cancels it. Then the apps the test starts are attached too.
     private async Task AttachAsync(int processId)
     {
-        await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
         try
         {
-            if (await _package.GetServiceAsync(typeof(EnvDTE.DTE)) is not EnvDTE80.DTE2 dte)
-            {
-                throw new InvalidOperationException("no DTE to attach with");
-            }
-
-            EnvDTE80.Process2? testhost = null;
-            foreach (EnvDTE.Process process in dte.Debugger.LocalProcesses)
-            {
-                if (process.ProcessID == processId)
-                {
-                    testhost = process as EnvDTE80.Process2;
-                    break;
-                }
-            }
-
-            if (testhost is null)
-            {
-                throw new InvalidOperationException($"no process {processId} to attach to");
-            }
-
-            try
-            {
-                testhost.Attach2(CoreClrEngine);
-            }
-            catch (COMException)
-            {
-                // An engine this Visual Studio names differently: let it choose.
-                testhost.Attach();
-            }
-
+            await AttachToAsync(processId);
             _log($"The debugger is attached to the testhost (process {processId}).");
         }
         catch (Exception exception) when (exception is COMException or InvalidOperationException)
         {
             await StatusAsync($"The debugger could not attach to the testhost: {exception.Message}. The run is cancelled.");
             Cancel();
+            return;
+        }
+
+        await AttachAppsAsync(processId);
+    }
+
+    // While the run goes: each app the testhost announces (Brinell.Core's DebuggedApps) is attached,
+    // so a breakpoint in the app's own code stops too.
+    private async Task AttachAppsAsync(int testhost)
+    {
+        var folder = Path.Combine(Path.GetTempPath(), "Brinell", "debugged-apps");
+        HashSet<int> attached = [];
+        while (_process is { HasExited: false })
+        {
+            foreach (var file in Directory.Exists(folder) ? Directory.EnumerateFiles(folder, $"{testhost}-*.json") : [])
+            {
+                if (!int.TryParse(Path.GetFileNameWithoutExtension(file).Split('-').Last(), out var app) || !attached.Add(app))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    await AttachToAsync(app);
+                    _log($"The debugger is attached to the app too (process {app}).");
+                }
+                catch (Exception exception) when (exception is COMException or InvalidOperationException)
+                {
+                    _log($"The debugger could not attach to the app (process {app}): {exception.Message}. The run goes on.");
+                }
+
+                TryDelete(file);
+            }
+
+            await Task.Delay(TimeSpan.FromMilliseconds(500), _package.DisposalToken);
         }
     }
 
+    private async Task AttachToAsync(int processId)
+    {
+        await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
+        if (await _package.GetServiceAsync(typeof(EnvDTE.DTE)) is not EnvDTE80.DTE2 dte)
+        {
+            throw new InvalidOperationException("no DTE to attach with");
+        }
+
+        EnvDTE80.Process2? target = null;
+        foreach (EnvDTE.Process process in dte.Debugger.LocalProcesses)
+        {
+            if (process.ProcessID == processId)
+            {
+                target = process as EnvDTE80.Process2;
+                break;
+            }
+        }
+
+        if (target is null)
+        {
+            throw new InvalidOperationException($"no process {processId} to attach to");
+        }
+
+        try
+        {
+            target.Attach2(CoreClrEngine);
+        }
+        catch (COMException)
+        {
+            // An engine this Visual Studio names differently: let it choose.
+            target.Attach();
+        }
+    }
+
+    private static void TryDelete(string file)
+    {
+        try
+        {
+            File.Delete(file);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            // Left for the next run of the same testhost id, which is not one.
+        }
+    }
     private async Task StatusAsync(string message)
     {
         _log(message);
