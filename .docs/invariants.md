@@ -28,8 +28,8 @@ The short list that must not be broken. Each links the decision that explains it
   `ScopeReadiness` have moved down: one copy, in Core.
   [AD-010](decisions/ad-010-maui-ahead-of-core.md)
 - **UAT step vocabulary is attribute-declared.** Every step is a `[BddGiven]`, `[BddWhen]` or
-  `[BddThen]` (base `BddStepAttribute`): a control verb on a control method, a phrase on a
-  fixture or phrase-class method. No hand-written phrase table; every catalog comes from one
+  `[BddThen]` (base `BddStepAttribute`): a control verb on a control method, a step definition on a
+  fixture or step-definition class method. No hand-written phrase table; every catalog comes from one
   discovery pass.
   [AD-011](decisions/ad-011-uat-vocabulary-is-attribute-declared.md)
 - **Test data is typed and validated.** Test sets are read strictly into the app's real types
@@ -49,8 +49,14 @@ The short list that must not be broken. Each links the decision that explains it
   and table cells (`12-May-2026`, `1,250.75`), checked at bind time; a broken phrase fails only the
   steps that use it; the gate and `brinell-data` check alike.
   [AD-016](decisions/ad-016-phrase-arguments-are-typed-by-the-method.md)
-- **Callable phrases are sequences, not programs.** A `## Phrase:` is steps with placeholders; no
+- **Callable phrases are sequences, not programs.** A `## Step:` is steps with placeholders; no
   branch, loop or variable; bound where it is called, problems reported at the call; no shadowing.
   [AD-017](decisions/ad-017-callable-phrases-are-sequences-not-programs.md)
+- **A tier is a head.** A feature below the UI runs on the opt-in `service` head from the same
+  files; a UI step there is a bind error (UATB013); a scenario on several heads counts for each tier.
+  [AD-020](decisions/ad-020-a-tier-is-a-head.md)
+- **Brinell.Bdd knows no UI.** It references no page object, control or UI-automation type, and not
+  `Brinell.Uat`; page names are plain strings, and page scope comes through `IStepScope`.
+  [AD-021](decisions/ad-021-bdd-under-uat.md)
 - **The generator output is not hand-edited.** `.gen.cs` mirrors `.tpl.cs` through
   `Brinell.Generator`. [control-object](contracts/control-object.md)

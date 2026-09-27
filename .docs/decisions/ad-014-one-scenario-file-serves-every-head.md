@@ -1,6 +1,6 @@
 # AD-014: One Scenario File Serves Every Head
 
-An app with more than one head (the Todo sample's MAUI app and web app) has one set of `.uat.md`
+An app with more than one head (the Todo sample's MAUI app and web app) has one set of `.feature.md`
 scenario files. Each head has its own UAT suite, which runs those files - the web suite links
 them from the MAUI one - through page objects and phrase classes of its own that use the same
 names and phrases. `Head` in a suite's `uat.config.md` names its head; a scenario's head tags
@@ -12,6 +12,8 @@ AD-015) are apps of the suite's head and share its page and phrase types. The ex
 suite whose `Head` is `mixed`: it runs only scenarios tagged `@mixed`, its apps name their own
 `Head`, and each app binds against that head's catalog (`IUatSessionHost.CompositionFor`,
 `UatCatalogSet`). Mixed scenarios live in the mixed suite, not beside the one-head files.
+
+A tier below the UI is a head too, `service`, opt-in like `mixed`: see AD-020.
 
 **Why:** a journey is the same on both heads; two copies of its scenario text drift, and a
 difference between heads should show as a failing scenario, not as two files that say different

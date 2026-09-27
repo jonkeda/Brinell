@@ -7,7 +7,8 @@ compares those traits with this file.
 
 Tiers: **U** Unit, **I** Integration (headless, WireMock + SQLite), **C** Contract (real API in
 process), **H** UI hermetic (Brinell + WireMock + seeded DB), **L** UI live (Brinell + real API),
-**M** Manual. Gates: **S** Smoke, **R** Reviews.
+**M** Manual. Gates: **S** Smoke, **R** Reviews. A feature scenario counts as **I** when tagged
+`@service` and as **H** on a UI head; tagged `@service @maui`, it counts for both.
 
 The rule is the one from the pyramid discussion: each subtask gets the **lowest** tier that can
 give confidence. A higher tier appears only for what the lower one cannot see (a rendered control,

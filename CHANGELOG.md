@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Docs: AD-020 (a tier is a head: `service`, opt-in heads, UATB013, a scenario counts for each of
+  its tiers) and AD-021 (`Brinell.Bdd` under `Brinell.Uat`), with their invariants; the guide
+  "Features Below The UI". AD-011, AD-014, AD-017 and AD-019 use the new words and file names.
 - Hooks on step-definition classes (`Brinell.Bdd`): `[BddBeforeFeature]` (static, once per feature
   file per run), `[BddBeforeScenario(tags)]`, `[BddAfterScenario(tags)]` and `[BddAfterStep(tags)]`,
   after the test base's own overrides and in class and method order.

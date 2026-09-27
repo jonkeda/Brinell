@@ -38,6 +38,8 @@ How this differs from the other trees:
 - [AD-017: Callable phrases are sequences, not programs](decisions/ad-017-callable-phrases-are-sequences-not-programs.md)
 - [AD-018: The Presenter workspace is the UAT project](decisions/ad-018-the-presenter-workspace-is-the-uat-project.md)
 - [AD-019: Phrases have scopes and namespaces](decisions/ad-019-phrases-have-scopes-and-namespaces.md)
+- [AD-020: A tier is a head](decisions/ad-020-a-tier-is-a-head.md)
+- [AD-021: Brinell.Bdd under Brinell.Uat](decisions/ad-021-bdd-under-uat.md)
 
 ## Contracts
 

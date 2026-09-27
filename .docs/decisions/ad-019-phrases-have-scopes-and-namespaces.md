@@ -5,7 +5,7 @@ A step binds only to a phrase it can see from where it is written. That is the u
 1. **the current page**: its control verbs and page phrases, followed through the steps before
    anything runs (`I am on`, a returned page object, `[UatNavigatesTo]`, a callable's steps);
 2. **the file**: its own callables;
-3. **its folder and every folder above it** under `Scenarios/`. A folder is a namespace
+3. **its folder and every folder above it** under `Features/`. A folder is a namespace
    (`Invoicing/Credit notes`): phrase files in it, and C# phrase classes and pages declared in it
    with `[BddStepDefinitions(Namespace = ...)]` or `[BddNamespace]` (class or assembly);
 4. **the namespaces it uses**: the file's `Using` metadata row, and the config's `## Using`;

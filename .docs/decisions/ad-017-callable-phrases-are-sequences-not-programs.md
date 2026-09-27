@@ -3,7 +3,7 @@
 A tester names a sequence of steps and calls it like a phrase, in scenario language:
 
 ```markdown
-## Phrase: the synced list has todos
+## Step: the synced list has todos
 
 Given I am on the Todo List page
 And the server also has todos
@@ -12,8 +12,8 @@ When I tap Sync
 Then I should be on the Todo List page
 ```
 
-It lives in a scenario file (seen by that file) or in a `*.phrases.md` file in `Scenarios/` or a
-folder under it (seen by the scenarios in that folder and below, AD-019). `## Phrase for each
+It lives in a scenario file (seen by that file) or in a `*.steps.md` file in `Features/` or a
+folder under it (seen by the scenarios in that folder and below, AD-019). `## Step for each
 row:` runs the body once per row of the call's table.
 
 - **A sequence, never a program.** No `If`, `Else`, loop, `Try`, variable or return value in a

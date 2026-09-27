@@ -41,6 +41,8 @@ invariants behind it - what must stay true when *changing* Brinell - are in
   scenario file shape
 - [UAT Step Definitions And Flows](guides/uat-step-definitions.md) - the step vocabulary and how to
   extend it
+- [Features Below The UI](guides/features-below-the-ui.md) - the `service` head: when a scenario
+  runs without a screen, its suite and step definitions
 - [BDD Glossary](guides/bdd-glossary.md) - Brinell's words beside Cucumber's and Reqnroll's
 - [Test Data](guides/test-data.md) - test sets, the `brinell-data` tool, `TestData` in UAT
   files, typed mock bodies (`BRINELL001`)

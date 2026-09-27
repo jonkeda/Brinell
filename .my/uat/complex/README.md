@@ -58,8 +58,8 @@ and is the right home for a wire-order or tombstone check.
 Lift a complex behaviour to UAT only when **the screen is part of what is under
 test** — the pending marker renders, the Error state with Retry appears, the two
 users' changes are *seen* to reconcile on the page. If the assertion never looks
-at a control, it is an integration test wearing a UAT costume; write it as the
-former.
+at a control, tag it `@service`: it runs below the UI, on the service head
+([Features Below The UI](../../../docs/guides/features-below-the-ui.md)).
 
 ```mermaid
 flowchart TD
