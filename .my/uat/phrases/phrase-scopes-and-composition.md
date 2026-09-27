@@ -18,7 +18,7 @@ scenarios. At that size, some verdicts change:
 | D. By subject | yes, for outside-the-app phrases | Yes (agreed). |
 | E. Into controls | do this first | Preferred, but **only for generic, small verbs**. |
 | F. Scoping (new) | open question | **Yes: pages and scenarios as namespaces for phrases.** |
-| G. Callable scenarios (new) | not discussed | Needed. Moved to its own discussion: [callable-phrases.md](../callable-phrases/callable-phrases.md). |
+| G. Callable scenarios (new) | not discussed | Built, except the two steps that wait for scopes ([G](#g-callable-scenarios)). |
 
 A, B and F are one idea seen from three sides: **a phrase has a scope, and pages and scenarios
 are scopes.** That is what this doc is about. G, defining phrases *in scenario language* rather
@@ -198,11 +198,37 @@ and file layout line up, which answers the original question ("how to split the 
 ## G. Callable scenarios
 
 Named, parameterised step sequences that testers write in scenario language, with a hard line
-against control flow. They have their own discussion:
-[callable-phrases.md](../callable-phrases/callable-phrases.md). They fit the scope model above:
-declared in a file, a module or globally, and visible there. The page after a call is defined in
-[the page table above](#the-hard-part-knowing-the-current-page-at-bind-time).
+against control flow. **Built** (2026-09-27): file-local and global (`Scenarios/*.phrases.md`)
+callables, types, passed tables and doc strings, per-row callables, guardrails and the tool. The
+decisions are [AD-017](../../../.docs/decisions/ad-017-callable-phrases-are-sequences-not-programs.md);
+how to write them is "Callable Phrases" in
+[uat-phrases-and-flows.md](../../../docs/guides/uat-phrases-and-flows.md). The plan and design
+are at 86cba26: [callable-phrases.md](https://github.com/exact-mobile-apps/test-tooling/blob/86cba26/.my/uat/callable-phrases/callable-phrases.md), [design.md](https://github.com/exact-mobile-apps/test-tooling/blob/86cba26/.my/uat/callable-phrases/design.md).
 
+Two steps wait for this doc's scopes:
+
+| Callable step | Waits for | What changes |
+| --- | --- | --- |
+| **6. Module `*.phrases.md` files** | module scope (B) | The loader's "only the root" rule becomes "the root and the file's module folder", and `UatCallableSet` gets a scope per callable. Matching and binding do not change. |
+| **8. Pages** | static page tracking (F) | The tracker follows the page through a call's inner steps; the page after a call is the row in [the page table above](#the-hard-part-knowing-the-current-page-at-bind-time). It walks the flat invocation list; `UatCallFrame` already says which steps came from a call. Nothing in callables changes. |
+
+What already holds, so callables written now keep working when tracking lands:
+
+- **A call is bound where it is called**, inside the binder's walk, so the same callable can bind
+  to different page phrases from two call sites, and each call is checked on its own.
+- **A callable that names a page ends with one** (`UATC006`, "ends on a page it does not say"),
+  and a per-row body that names a page ends on the page it started on. These read
+  `UatCommandPattern.NamesPage` on the invocations a call bound, and need no tracking.
+- The start page is not declared: a callable that must start on a page begins with
+  `Given I am on ...`.
+
+Open questions carried over:
+
+| Question | Notes |
+| --- | --- |
+| A call with many parameters | Five `{x}` in a heading is hard to read. Values as a `Field / Value` table would clash with `<table>` (a step has one table), so not now. |
+| Callables on a page scope | Could a callable belong to a page, like a page phrase? Needs page tracking first. |
+| `## Background` as a callable | Not done; it keeps its own code. |
 ---
 
 ## How it fits together
@@ -213,7 +239,7 @@ declared in a file, a module or globally, and visible there. The page after a ca
 | Page phrases (A) | app test devs | C#, `[UatStep]` on page-object methods | that page |
 | Subject phrases (D) | app test devs | C#, phrase classes by subject | global |
 | Module phrases (B) | app test devs | C#, `[UatPhraseClass(Module = ...)]` | a module |
-| Callable phrases (G, [separate](../callable-phrases/callable-phrases.md)) | **testers** | markdown, `## Phrase:` | file, module or global |
+| Callable phrases ([G](#g-callable-scenarios), AD-017) | **testers** | markdown, `## Phrase:` | file, module or global |
 
 The top four need a developer and can contain logic. Callable phrases need no developer and can't.
 
@@ -234,10 +260,10 @@ phrase files wait for module scope (3). The combined order:
 
 | # | Work | Doc |
 | --- | --- | --- |
-| 1 | Callable phrases: file-local, types, tables, per-row, guardrails, global `*.phrases.md` | [callable-phrases.md](../callable-phrases/callable-phrases.md) steps 1-5, 7 |
+| 1 | Callable phrases: file-local, types, tables, per-row, guardrails, global `*.phrases.md` | done 2026-09-27 (AD-017) |
 | 2 | Page phrases (A) | this doc, step 1 |
-| 3 | Static page tracking (F), with callables as a source of the page after a step | this doc, step 2; callables step 8 |
-| 4 | Module scope (B), then module `*.phrases.md` files | this doc, step 3; callables step 6 |
+| 3 | Static page tracking (F), with callables as a source of the page after a step | this doc, step 2; callables step 8 ([G](#g-callable-scenarios)) |
+| 4 | Module scope (B), then module `*.phrases.md` files | this doc, step 3; callables step 6 ([G](#g-callable-scenarios)) |
 
 ## Open questions
 

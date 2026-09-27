@@ -3,7 +3,7 @@
 Status: discussion
 Date: 2026-09-26
 Builds on: [phrase-scopes-and-composition.md](phrase-scopes-and-composition.md) (scopes: page,
-file, module, global) and [callable-phrases.md](../callable-phrases/callable-phrases.md)
+file, module, global) and [callable phrases](phrase-scopes-and-composition.md#g-callable-scenarios)
 
 The scopes doc says *that* phrases need scopes. This one asks how a scenario **gets at** phrases
 that aren't in its own scope. Four questions:
@@ -204,7 +204,7 @@ attribute), and there's only one hierarchy: the folders.
 
 ### Callable phrases bind where they're defined
 
-One consequence for [callable phrases](../callable-phrases/callable-phrases.md): the steps
+One consequence for [callable phrases](phrase-scopes-and-composition.md#g-callable-scenarios): the steps
 *inside* a callable phrase must bind in the **definition's** scope, not the caller's. That is
 lexical scoping.
 
