@@ -247,7 +247,7 @@ public sealed class AppiumMauiElement : IMauiElement
     // and a Stepper publishes nothing. Brinell.Maui.AppSupport replaces both with the MAUI values
     // and marks the node with the bounds in its extras. Only a marked node answers here: an
     // unmarked range's text is a raw fraction, and it is never presented as a value.
-    // Probed 2026-09-19 on Android 36; see .my/android/plan.md.
+    // Probed 2026-09-19 on Android 36.
 
     /// <summary>The node extras AppSupport writes the bounds under; their presence is the mark.</summary>
     private const string RangeMinimumExtra = "Brinell.Range.Minimum";

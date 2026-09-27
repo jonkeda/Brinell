@@ -7,7 +7,7 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 
     <!-- Emit XML doc files so kept summaries reach IntelliSense/help. CS1591 (missing
-         doc on a public member) is suppressed for now; see .my/documentation/plan.md phase 0.
+         doc on a public member) is suppressed until the public surface has its summaries.
          CS1710 (duplicate typeparam) is suppressed because Brinell.Generator copies the
          class-level doc onto the generated .gen.cs partial of every generic control, so both
          partials legitimately carry the same <typeparam>; the doc is authored once in .tpl.cs. -->

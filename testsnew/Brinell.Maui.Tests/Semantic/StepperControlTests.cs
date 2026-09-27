@@ -8,7 +8,7 @@ namespace Brinell.Maui.Tests.Semantic;
 /// confirms the value moved, and repeats. The step is what one press changed.
 /// </summary>
 /// <remarks>
-/// The Stepper here is shaped as Android shows it (<c>.my/android/plan.md</c>, D3): one element
+/// The Stepper here is shaped as Android shows it: one element
 /// that publishes its value as a range, holding a − and a + button. Bounds are published only
 /// where a test says so.
 /// </remarks>
