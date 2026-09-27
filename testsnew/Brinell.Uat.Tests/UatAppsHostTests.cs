@@ -159,5 +159,6 @@ public sealed class AppCounter(string app)
 public sealed class AppsHostPhrases(AppCounter counter, AppsFixture fixture) : UatPhraseClassBase
 {
     [UatWhen("I note the app")]
+    [UatWhen("{user} notes the app")]
     public void Note() => fixture.Noted.Add(counter.Next());
 }

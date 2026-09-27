@@ -13,6 +13,7 @@ public interface ISelectorControlObject<TScope> : IControlObject<TScope>
     /// </summary>
     /// <returns>The containing scope for fluent chaining.</returns>
     [UatWhen("I select {value} from {control}", CommandId = "Control.SelectByText")]
+    [UatWhen("{user} selects {value} from {control}", CommandId = "Control.SelectByText")]
     TScope SelectByText(string? text, int? timeoutMs = null);
     
     /// <summary>

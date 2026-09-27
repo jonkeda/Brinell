@@ -180,6 +180,7 @@ public sealed class UatSessionTests
     public sealed class SessionPhrases(AppName app, SessionFixture fixture) : UatPhraseClassBase
     {
         [UatWhen("I note the app")]
+        [UatWhen("{user} notes the app")]
         public void Note() => fixture.Noted.Add(app.Value);
 
         [UatThen("the step fails")]

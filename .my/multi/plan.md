@@ -121,6 +121,10 @@ What stops the goal today:
 
 ### D1. A step's subject is part of the step, parsed at bind time
 
+> **Replaced 2026-09-27** by [named-steps-plan.md](named-steps-plan.md): the named form is now
+> declared (`{user} taps {control}` beside `I tap {control}`), and the verb inference below is
+> gone. The subject rules (names from `Apps`, longest wins, `UATB005`) still hold.
+
 When a step starts with a known user or app name, that name is its **subject**. The binder strips
 the subject, turns the verb back into the first person, puts `I` in front, and matches the result
 against the ordinary catalog.

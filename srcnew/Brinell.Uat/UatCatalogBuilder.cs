@@ -80,12 +80,13 @@ internal static class UatCatalogBuilder
         return bindings;
     }
 
-    // The one non-{control} placeholder is the value argument; literal-only phrases have none.
+    // The one placeholder that is neither {control} nor {user} (the actor, AD-015) is the value
+    // argument; literal-only phrases have none.
     private static string? ResolveValueArgument(string phrase)
     {
         var names = Regex.Matches(phrase, @"\{([A-Za-z][A-Za-z0-9_-]*)\}")
             .Select(match => match.Groups[1].Value)
-            .Where(name => !name.Equals("control", StringComparison.Ordinal))
+            .Where(name => name is not ("control" or "user"))
             .ToArray();
         return names.Length == 1 ? names[0] : null;
     }

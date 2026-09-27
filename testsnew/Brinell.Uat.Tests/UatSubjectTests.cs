@@ -2,7 +2,7 @@ using Xunit;
 
 namespace Brinell.Uat.Tests;
 
-/// <summary>A step that starts with an app or user runs on that app, in the first person (AD-015).</summary>
+/// <summary>A step that starts with an app or user runs on that app, through a phrase declared with <c>{user}</c> first (AD-015).</summary>
 public sealed class UatSubjectTests
 {
     private const string Apps = """
@@ -18,18 +18,13 @@ public sealed class UatSubjectTests
         """;
 
     [Theory]
-    [InlineData("Eva taps OK", "Test.Tap")]
-    [InlineData("Eva tap OK", "Test.Tap")]
-    [InlineData("Eva is on the Main page", "Test.Open")]
-    [InlineData("Eva has 3 todos", "Test.Have")]
-    [InlineData("Eva does the dishes", "Test.Dishes")]
-    [InlineData("Eva advances the clock", "Test.Advance")]
-    [InlineData("Eva presses Enter", "Test.Press")]
-    [InlineData("Eva tries again", "Test.Retry")]
-    [InlineData("Eva should be on the Main page", "Test.AssertOpen")]
-    public void ASubject_BindsTheFirstPersonPhrase_OnItsApp(string step, string commandId)
+    [InlineData("When Eva taps OK", "Test.Tap")]
+    [InlineData("Given Eva is on the Main page", "Test.Open")]
+    [InlineData("Then Eva should be on the Main page", "Test.AssertOpen")]
+    [InlineData("When Eva presses Enter", "Test.Press")]
+    public void ASubject_BindsTheDeclaredNamedPhrase_OnItsApp(string step, string commandId)
     {
-        var invocation = BindSingle($"When {step}");
+        var invocation = BindSingle(step);
 
         Assert.Equal(commandId, invocation.CommandId);
         Assert.Equal("Eva", invocation.App);
@@ -41,7 +36,29 @@ public sealed class UatSubjectTests
         var invocation = BindSingle("When Eva presses Enter");
 
         Assert.Equal("Enter", invocation.Arguments["key"]);
+        Assert.Equal("Eva", invocation.Arguments["user"]);
         Assert.Equal("Eva presses Enter", invocation.Step.Text);
+    }
+
+    [Fact]
+    public void AVerbForm_NobodyDeclared_DoesNotBind()
+    {
+        // "I tap {control}" has a named form "{user} taps {control}"; "tap" after a name is not it.
+        var diagnostic = Assert.Single(Bind("When Eva tap OK").Diagnostics);
+
+        Assert.Equal("UATB001", diagnostic.Code);
+    }
+
+    [Fact]
+    public void AnIPhrase_WithoutANamedForm_CannotBeSaidOfAUser()
+    {
+        // "I advance the clock" is declared, but not "{user} advances the clock".
+        var diagnostic = Assert.Single(Bind("When Eva advances the clock").Diagnostics);
+
+        Assert.Equal("UATB001", diagnostic.Code);
+        Assert.Contains("binds only to a phrase declared with {user} first", diagnostic.Message);
+        Assert.Contains("'{user} presses {key}'", diagnostic.Message);
+        Assert.Contains("'{user} taps {control}'", diagnostic.Message);
     }
 
     [Fact]
@@ -101,35 +118,23 @@ public sealed class UatSubjectTests
     }
 
     [Fact]
-    public void AName_NotInTheAppsTable_IsNotASubject()
+    public void AName_NotInTheAppsTable_FailsNamingTheApps()
     {
         var diagnostic = Assert.Single(Bind("When Dan taps OK").Diagnostics);
 
-        Assert.Equal("UATB001", diagnostic.Code);
-        Assert.DoesNotContain("tried", diagnostic.Message);
+        Assert.Equal("UATB007", diagnostic.Code);
+        Assert.Contains("no app or user 'Dan'", diagnostic.Message);
     }
 
     [Fact]
-    public void ASubject_WithNoFirstPersonPhrase_ListsWhatWasTried()
-    {
-        var diagnostic = Assert.Single(Bind("When Eva frobnicates the widget").Diagnostics);
-
-        Assert.Equal("UATB001", diagnostic.Code);
-        Assert.Contains("As Eva, tried 'I frobnicates the widget'", diagnostic.Message);
-        Assert.Contains("'I frobnicate the widget'", diagnostic.Message);
-    }
-
-    [Fact]
-    public void ASubject_MatchingTwoFirstPersonPhrases_IsAmbiguous()
+    public void ASubject_MatchingTwoNamedPhrases_IsAmbiguous()
     {
         var catalog = CreateCatalog();
-        catalog.Register(UatEffectiveStepKeyword.When, "I taps {control}", "Test.Taps");
+        catalog.Register(UatEffectiveStepKeyword.When, "{user} taps {target}", "Test.TapTarget");
 
         var diagnostic = Assert.Single(Bind("When Eva taps OK", catalog).Diagnostics);
 
         Assert.Equal("UATB002", diagnostic.Code);
-        Assert.Contains("'I tap {control}'", diagnostic.Message);
-        Assert.Contains("'I taps {control}'", diagnostic.Message);
     }
 
     [Fact]
@@ -149,6 +154,7 @@ public sealed class UatSubjectTests
     {
         var web = new UatCommandCatalog();
         web.Register(UatEffectiveStepKeyword.When, "I tap {control}", "Web.Tap");
+        web.Register(UatEffectiveStepKeyword.When, "{user} taps {control}", "Web.Tap");
 
         var invocations = BindScenario(
             """
@@ -222,11 +228,13 @@ public sealed class UatSubjectTests
     }
 
     [Fact]
-    public void WithoutApps_NothingIsASubject()
+    public void WithoutApps_ANamedPhrase_IsAnError()
     {
         var result = UatBinder.Bind(Parse("When Eva taps OK"), CreateCatalog());
 
-        Assert.Equal("UATB001", Assert.Single(result.Diagnostics).Code);
+        var diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal("UATB007", diagnostic.Code);
+        Assert.Contains("no Apps table", diagnostic.Message);
     }
 
     [Fact]
@@ -277,16 +285,16 @@ public sealed class UatSubjectTests
     {
         var catalog = new UatCommandCatalog();
         catalog.Register(UatEffectiveStepKeyword.Given, "I am on the {page} page", "Test.Open");
+        catalog.Register(UatEffectiveStepKeyword.Given, "{user} is on the {page} page", "Test.Open");
         catalog.Register(UatEffectiveStepKeyword.Given, "{app} uses the app", "Test.Use");
         catalog.Register(UatEffectiveStepKeyword.When, "{app} uses the app", "Test.Use");
-        catalog.Register(UatEffectiveStepKeyword.When, "I am on the {page} page", "Test.Open");
         catalog.Register(UatEffectiveStepKeyword.When, "I tap {control}", "Test.Tap");
-        catalog.Register(UatEffectiveStepKeyword.When, "I have {count} todos", "Test.Have");
-        catalog.Register(UatEffectiveStepKeyword.When, "I do the dishes", "Test.Dishes");
+        catalog.Register(UatEffectiveStepKeyword.When, "{user} taps {control}", "Test.Tap");
         catalog.Register(UatEffectiveStepKeyword.When, "I advance the clock", "Test.Advance");
         catalog.Register(UatEffectiveStepKeyword.When, "I press {key}", "Test.Press");
-        catalog.Register(UatEffectiveStepKeyword.When, "I try again", "Test.Retry");
-        catalog.Register(UatEffectiveStepKeyword.When, "I should be on the {page} page", "Test.AssertOpen");
+        catalog.Register(UatEffectiveStepKeyword.When, "{user} presses {key}", "Test.Press");
+        catalog.Register(UatEffectiveStepKeyword.Then, "I should be on the {page} page", "Test.AssertOpen");
+        catalog.Register(UatEffectiveStepKeyword.Then, "{user} should be on the {page} page", "Test.AssertOpen");
         catalog.Register(UatEffectiveStepKeyword.Then, "{control} should have todo {title}", "Test.HasTodo");
         catalog.Register(UatEffectiveStepKeyword.Then, "{user} should have {count} todos on the server", "Test.ServerCount");
         catalog.Register(UatEffectiveStepKeyword.Then, "the server should have received {title} from {user}", "Test.ServerReceived");

@@ -41,8 +41,9 @@ The short list that must not be broken. Each links the decision that explains it
 - **One scenario file serves every head.** Head tags decide where it runs; no per-head copies.
   Apps of several heads meet only in a `mixed` suite, each binding against its own head's catalog.
   [AD-014](decisions/ad-014-one-scenario-file-serves-every-head.md)
-- **A step's subject picks its app.** `Daan taps Save` is `I tap Save` on Daan's app; names come
-  from the `Apps` table only, the subject sticks, and `{user}` is the acting user.
+- **A step's subject picks its app.** `Daan taps Save` binds to a declared `{user} taps {control}`
+  and runs on Daan's app; no verb forms are inferred, names come from the `Apps` table only, and
+  the subject sticks.
   [AD-015](decisions/ad-015-a-steps-subject-picks-its-app.md)
 - **The generator output is not hand-edited.** `.gen.cs` mirrors `.tpl.cs` through
   `Brinell.Generator`. [control-object](contracts/control-object.md)

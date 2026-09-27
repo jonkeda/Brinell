@@ -133,23 +133,27 @@ public sealed class UatReflectionRuntime
     {
         var catalog = new UatCommandCatalog();
 
-        // The engine's three intrinsic page-graph verbs — defined once, here.
-        catalog.Register(
-            UatEffectiveStepKeyword.Given,
-            "I am on the {page} page",
-            "Builtin.Page.Open",
-            handler: OpenPageAsync);
-        catalog.Register(
-            UatEffectiveStepKeyword.Then,
-            "I should be on the {page} page",
-            "Builtin.Page.AssertOpen",
-            handler: AssertPageAsync);
-        catalog.Register(
-            UatEffectiveStepKeyword.Then,
-            "I should see {text}",
-            "Builtin.Page.AssertTextVisible",
-            allowsTable: false,
-            handler: AssertAnyControlTextContainsAsync);
+        // The engine's three intrinsic page-graph verbs — defined once, here, each with its named
+        // form for a scenario with several users (AD-015).
+        foreach (var phrase in new[] { "I am on the {page} page", "{user} is on the {page} page" })
+        {
+            catalog.Register(UatEffectiveStepKeyword.Given, phrase, "Builtin.Page.Open", handler: OpenPageAsync);
+        }
+
+        foreach (var phrase in new[] { "I should be on the {page} page", "{user} should be on the {page} page" })
+        {
+            catalog.Register(UatEffectiveStepKeyword.Then, phrase, "Builtin.Page.AssertOpen", handler: AssertPageAsync);
+        }
+
+        foreach (var phrase in new[] { "I should see {text}", "{user} should see {text}" })
+        {
+            catalog.Register(
+                UatEffectiveStepKeyword.Then,
+                phrase,
+                "Builtin.Page.AssertTextVisible",
+                allowsTable: false,
+                handler: AssertAnyControlTextContainsAsync);
+        }
 
         // Everything control-shaped is discovered from [UatWhen]/[UatThen] on Brinell.Core interfaces
         // and any decorated app control types found during page discovery.

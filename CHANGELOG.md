@@ -9,11 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - UAT subjects (AD-015): a step that starts with an app or user from the `Apps` table runs on
-  that app, in the first person: `Daan taps Save` binds to `I tap Save` on Daan's app, and the app
-  stays current. `{user}` is a reserved phrase parameter for the acting user. `Apps` gains the
+  that app, through a phrase declared with `{user}` first: `Daan taps Save` binds to
+  `{user} taps {control}` on Daan's app, and the app stays current. Every built-in `I ...` control
+  verb and page step has its `{user}` form; an app adds a second keyword attribute for its own.
+  `{user}` is the acting user, and never a control verb's value. `Apps` gains the
   `User` and `Head` columns, and `AppsFile` in `Runtime` reads the table from a shared file.
   New bind errors `UATB005` (an app or user named like a page or control), `UATB006` (a subject
-  that picks no app) and `UATB007` (a bad `{user}`).
+  that picks no app) and `UATB007` (an unknown `{user}`, or one in a suite without an `Apps`
+  table).
 - UAT mixed suites: `Head | mixed` runs only `@mixed` scenarios, and each app binds against its
   own head's pages (`IUatSessionHost.CompositionFor`, `UatCatalogSet`, AD-014). Each app keeps its
   own current page, and the result JSON records the app of every step.

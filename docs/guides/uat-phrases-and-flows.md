@@ -415,33 +415,44 @@ binding and execution code does not consume them automatically.
 
 ## Several Users And Apps
 
-When the config has an `Apps` table (see the template guide), a step can name who does it. Any
-phrase that starts with `I` also binds with an app or user in its place, with the verb in the
-third person or not:
+When the config has an `Apps` table (see the template guide), a step can name who does it:
+`When Daan taps Save` runs on Daan's app. It binds to a phrase **declared** with `{user}` first,
+which a method carries as a second keyword attribute beside its `I` form:
 
-| Written | Binds as | Runs on |
-| --- | --- | --- |
-| `Daan taps Save` | `I tap Save` | Daan's app |
-| `Daan tap Save` | `I tap Save` | Daan's app |
-| `Daan is on the Todo List page` | `I am on the Todo List page` | Daan's app |
-| `Daan should be on the Todo List page` | `I should be on the Todo List page` | Daan's app |
-| `Daan's PC sets Title to "x"` | `I set Title to "x"` | the app called Daan's PC |
+```csharp
+[UatWhen("I set {control} to {value}", CommandId = "Control.SetText")]
+[UatWhen("{user} sets {control} to {value}", CommandId = "Control.SetText")]
+void SetText(string text, int? timeoutMs = null);
+```
 
-No phrase is declared twice: the engine tries the first word as written, `is`/`has`/`does`/`goes`
-as `am`/`have`/`do`/`go`, and the word without `s`, `es`, or with `ies` made `y`, and binds when
-exactly one first-person phrase matches. When none does, the error lists what it tried.
+The engine infers no verb forms: `Daan tap Save` binds to nothing, and so does any `I` phrase
+that has no `{user}` form. The built-in ones all have one:
 
+| `I` form | Named form |
+| --- | --- |
+| `I am on the {page} page` | `{user} is on the {page} page` |
+| `I should be on the {page} page` | `{user} should be on the {page} page` |
+| `I should see {text}` | `{user} should see {text}` |
+| `I tap {control}` | `{user} taps {control}` |
+| `I enter {value} into {control}` | `{user} enters {value} into {control}` |
+| `I set {control} to {value}` | `{user} sets {control} to {value}` |
+| `I clear {control}` | `{user} clears {control}` |
+| `I select {value} from {control}` | `{user} selects {value} from {control}` |
+| `I check {control}` / `I uncheck {control}` | `{user} checks {control}` / `{user} unchecks {control}` |
+
+- **Declare the named form with the same `CommandId`** (and `Literal`, for a control verb), so
+  both forms are one command. `{user}` never reaches a control method as its value; a phrase
+  method receives it only when it has a `user` parameter.
 - **The subject sticks.** The named app stays current, so `And I tap Sync` after `When Daan taps
   Save` runs on Daan's app. Still, name the user on every step of a scenario with several users.
-- **Only names from the table count.** `Todos should have todo "x"` is not about a user called
-  Todos. A name that is also a page or control name is an error (`UATB005`).
+- **Only names from the table count.** A name that is also a page or control name is an error
+  (`UATB005`); a name the table does not have, or a `{user}` step in a suite without the table,
+  is `UATB007`. A step that names a user and binds to nothing lists the declared `{user}` phrases.
 - **A user with several apps** picks the one used last in the scenario; before any is used, name
   the app (`Daan's phone taps Sync`) or start with `Daan's phone uses the app`.
-- **`{user}` is the acting user.** A phrase parameter called `user` receives the subject, or the
-  current app's user when the step says `I`. In first place it also switches apps:
-  `[UatThen("{user} should have {count} todos on the server")]` binds
-  `Then Finn should have 3 todos on the server` on Finn's app. Elsewhere it is only checked:
-  `the server should have received the todo {title} from {user}`.
+- **`{user}` elsewhere is only checked:** `the server should have received the todo {title} from
+  {user}` receives the user's name and does not switch apps. Said as `I`, it is the current app's
+  user.
 
 The rule is [AD-015](../../.docs/decisions/ad-015-a-steps-subject-picks-its-app.md).
 

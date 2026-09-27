@@ -1,10 +1,62 @@
 using System.Reflection;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Brinell.Uat.Tests;
 
 public sealed class UatCatalogParityTests
 {
+    [Fact]
+    public void EveryCoreIVerb_HasANamedTwin_WithTheSameCommand()
+    {
+        // The built-in pairs cannot drift: "I tap {control}" has "{user} taps {control}" (AD-015).
+        var patterns = UatSpecCommandCatalog.CreateDefault().Patterns;
+        var twins = patterns
+            .Where(pattern => pattern.Phrase.StartsWith("{user} ", StringComparison.Ordinal))
+            .Select(pattern => (pattern.Keyword, pattern.CommandId))
+            .ToHashSet();
+
+        var missing = patterns
+            .Where(pattern => pattern.Phrase.StartsWith("I ", StringComparison.Ordinal))
+            .Where(pattern => !twins.Contains((pattern.Keyword, pattern.CommandId)))
+            .Select(pattern => pattern.Phrase)
+            .ToList();
+
+        Assert.True(missing.Count == 0, "These built-in phrases have no {user} form: " + string.Join(", ", missing));
+    }
+
+    [Fact]
+    public async Task ANamedTwin_PassesTheValue_NotTheUser()
+    {
+        var fixture = new GadgetFixture();
+        var catalog = UatReflectionRuntime.FromRoot(fixture).CreateCommandCatalog();
+        var apps = UatConfigParser.Parse("""
+            # UAT Config
+
+            ## Apps
+
+            | Name |
+            | --- |
+            | Eva |
+            """).Apps;
+        var parse = UatMarkdownParser.Parse("""
+            # UAT: Gadget
+
+            ## Scenario: A named step with a value
+
+            Given Eva is on the Gadget page
+            When Eva sets the level of Gadget to "7"
+            """);
+        var bind = UatBinder.Bind(parse.Document!, new UatCatalogSet(catalog, apps, suiteHead: null, new Dictionary<string, UatCommandCatalog>(), []));
+        Assert.True(bind.Success, string.Join(Environment.NewLine, bind.Diagnostics.Select(x => $"{x.Code} {x.Message}")));
+
+        var runner = new UatScenarioRunner(new UatExecutionContext { SessionHost = new NoServices() });
+        var result = await runner.RunAsync(Assert.Single(bind.Document!.Scenarios));
+
+        Assert.True(result.Passed, FormatResults(result));
+        Assert.Equal("7", fixture.GadgetPage.GadgetButton.Level);
+    }
+
     [Fact]
     public void SpecCatalog_ControlVerbs_ComeFromCoreStepAttributes()
     {
@@ -159,6 +211,12 @@ public sealed class UatCatalogParityTests
         public bool WaitReady(int? timeoutMs = null) => true;
     }
 
+    // The gadget's page is a property of the fixture, so a session needs no services of its own.
+    private sealed class NoServices : IUatSessionHost
+    {
+        public IServiceProvider UseSession(string name) => new ServiceCollection().BuildServiceProvider();
+    }
+
     private sealed class GadgetControl
     {
         public string? Level { get; private set; }
@@ -171,6 +229,7 @@ public sealed class UatCatalogParityTests
         }
 
         [UatWhen("I set the level of {control} to {level}")]
+        [UatWhen("{user} sets the level of {control} to {level}")]
         public void SetLevel(string level, int? timeoutMs = null)
         {
             Level = level;

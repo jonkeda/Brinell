@@ -63,9 +63,9 @@ public static class UatBinder
     {
         var app = apps.Current;
         UatCommandMatch? match = null;
-        IReadOnlyList<string> tried = [];
+        IReadOnlyList<string> named = [];
 
-        if (catalogs.TryFindSubject(step.Text, out var subject, out var rest))
+        if (catalogs.TryFindSubject(step.Text, out var subject, out _))
         {
             if (!apps.TryResolve(subject, out var subjectApp, out var error))
             {
@@ -73,41 +73,30 @@ public static class UatBinder
                 return;
             }
 
+            // Only a phrase declared with the subject in its first parameter binds it: {user} taps
+            // {control}, {app} uses the app. The engine infers no verb forms (AD-015).
             var catalog = catalogs.CatalogFor(subjectApp);
-
-            // As written, with the subject filling the phrase's first parameter: {app} uses the app.
-            var asWritten = catalog.Match(step)
+            var declared = catalog.Match(step)
                 .Where(candidate => FirstArgument(candidate) == subject)
                 .ToArray();
-            if (asWritten.Length == 1)
+            if (declared.Length > 1)
             {
-                match = asWritten[0];
+                diagnostics.Add(new UatDiagnostic(
+                    UatDiagnosticSeverity.Error,
+                    "UATB002",
+                    $"Step '{step.Text}' is ambiguous: as {subject}, it matches {string.Join(", ", declared.Select(candidate => $"'{candidate.Pattern.Phrase}'"))}.",
+                    step.Source));
+                return;
+            }
+
+            if (declared.Length == 1)
+            {
+                match = declared[0];
                 app = subjectApp;
             }
             else
             {
-                // In the first person: "Daan taps OK" is "I tap OK" on Daan's app.
-                tried = UatSubjects.FirstPersonCandidates(rest);
-                var firstPerson = tried
-                    .SelectMany(text => catalog.Match(step with { Text = text }))
-                    .Where(candidate => candidate.Pattern.Phrase.StartsWith("I ", StringComparison.Ordinal))
-                    .DistinctBy(candidate => candidate.Pattern)
-                    .ToArray();
-                if (firstPerson.Length > 1)
-                {
-                    diagnostics.Add(new UatDiagnostic(
-                        UatDiagnosticSeverity.Error,
-                        "UATB002",
-                        $"Step '{step.Text}' is ambiguous: as {subject}, it matches {string.Join(", ", firstPerson.Select(candidate => $"'{candidate.Pattern.Phrase}'"))}.",
-                        step.Source));
-                    return;
-                }
-
-                if (firstPerson.Length == 1)
-                {
-                    match = firstPerson[0];
-                    app = subjectApp;
-                }
+                named = NamedPhrases(catalog, step.EffectiveKeyword);
             }
         }
 
@@ -119,9 +108,12 @@ public static class UatBinder
                 diagnostics.Add(new UatDiagnostic(
                     UatDiagnosticSeverity.Error,
                     "UATB001",
-                    tried.Count == 0
+                    subject.Length == 0
                         ? $"No command binding matches step '{step.Text}'."
-                        : $"No command binding matches step '{step.Text}'. As {subject}, tried {string.Join(", ", tried.Select(text => $"'{text}'"))}.",
+                        : $"No command binding matches step '{step.Text}'. A step that names {subject} binds only to a phrase declared with {{{UserParameter}}} first; "
+                          + (named.Count == 0
+                              ? $"no {step.EffectiveKeyword} phrase is."
+                              : $"the {step.EffectiveKeyword} ones are {string.Join(", ", named.Select(phrase => $"'{phrase}'"))}."),
                     step.Source));
                 return;
             }
@@ -160,6 +152,16 @@ public static class UatBinder
         }
 
         var arguments = match.Arguments;
+        if (catalogs.Apps.Count == 0 && arguments.TryGetValue(UserParameter, out var namedUser) && namedUser != "I")
+        {
+            diagnostics.Add(new UatDiagnostic(
+                UatDiagnosticSeverity.Error,
+                "UATB007",
+                $"Step '{step.Text}' names the user '{namedUser}', but the config has no Apps table to say whose app that is.",
+                step.Source));
+            return;
+        }
+
         if (catalogs.Apps.Count > 0 && arguments.TryGetValue(UserParameter, out var user))
         {
             if (!TryBindUser(catalogs, apps, match, user, ref app, out var boundUser, out var error))
@@ -223,7 +225,15 @@ public static class UatBinder
         return true;
     }
 
-    private static string? FirstArgument(UatCommandMatch match)
+    private static IReadOnlyList<string> NamedPhrases(UatCommandCatalog catalog, UatEffectiveStepKeyword keyword)
+        => catalog.Patterns
+            .Where(pattern => pattern.Keyword == keyword && FirstParameterName(pattern) == UserParameter)
+            .Select(pattern => pattern.Phrase)
+            .Distinct(StringComparer.Ordinal)
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+
+        private static string? FirstArgument(UatCommandMatch match)
         => FirstParameterName(match.Pattern) is { } name && match.Arguments.TryGetValue(name, out var value) ? value : null;
 
     private static string? FirstParameterName(UatCommandPattern pattern)

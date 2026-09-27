@@ -31,6 +31,7 @@ public interface IToggleControlObject<TScope> : IControlObject<TScope>
     /// </summary>
     /// <returns>The containing scope for fluent chaining.</returns>
     [UatWhen("I check {control}", CommandId = "Control.Check")]
+    [UatWhen("{user} checks {control}", CommandId = "Control.Check")]
     TScope Check(int? timeoutMs = null);
     
     /// <summary>
@@ -38,6 +39,7 @@ public interface IToggleControlObject<TScope> : IControlObject<TScope>
     /// </summary>
     /// <returns>The containing scope for fluent chaining.</returns>
     [UatWhen("I uncheck {control}", CommandId = "Control.Uncheck")]
+    [UatWhen("{user} unchecks {control}", CommandId = "Control.Uncheck")]
     TScope Uncheck(int? timeoutMs = null);
     
     /// <summary>

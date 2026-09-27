@@ -13,6 +13,7 @@ public interface IEditableTextControlObject<TScope> : ITextControlObject<TScope>
     /// </summary>
     /// <returns>The containing scope for fluent chaining.</returns>
     [UatWhen("I enter {value} into {control}", CommandId = "Control.Enter")]
+    [UatWhen("{user} enters {value} into {control}", CommandId = "Control.Enter")]
     TScope Enter(string? text, int? timeoutMs = null);
     
     /// <summary>
@@ -20,6 +21,7 @@ public interface IEditableTextControlObject<TScope> : ITextControlObject<TScope>
     /// </summary>
     /// <returns>The containing scope for fluent chaining.</returns>
     [UatWhen("I clear {control}", CommandId = "Control.Clear")]
+    [UatWhen("{user} clears {control}", CommandId = "Control.Clear")]
     TScope Clear(int? timeoutMs = null);
     
     /// <summary>
@@ -28,6 +30,7 @@ public interface IEditableTextControlObject<TScope> : ITextControlObject<TScope>
     /// </summary>
     /// <returns>The containing scope for fluent chaining.</returns>
     [UatWhen("I set {control} to {value}", CommandId = "Control.SetText")]
+    [UatWhen("{user} sets {control} to {value}", CommandId = "Control.SetText")]
     TScope SetText(string? text, int? timeoutMs = null);
     
     /// <summary>

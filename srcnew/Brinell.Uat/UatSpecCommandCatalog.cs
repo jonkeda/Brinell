@@ -13,10 +13,14 @@ public static class UatSpecCommandCatalog
     {
         ArgumentNullException.ThrowIfNull(catalog);
 
-        // The three intrinsic page-graph verbs — phrases only, no handler in a spec catalog.
+        // The three intrinsic page-graph verbs and their named forms — phrases only, no handler in a
+        // spec catalog.
         catalog.Register(UatEffectiveStepKeyword.Given, "I am on the {page} page", "Spec.Page.Open");
+        catalog.Register(UatEffectiveStepKeyword.Given, "{user} is on the {page} page", "Spec.Page.Open");
         catalog.Register(UatEffectiveStepKeyword.Then, "I should be on the {page} page", "Spec.Page.AssertOpen");
+        catalog.Register(UatEffectiveStepKeyword.Then, "{user} should be on the {page} page", "Spec.Page.AssertOpen");
         catalog.Register(UatEffectiveStepKeyword.Then, "I should see {text}", "Spec.Page.AssertTextVisible");
+        catalog.Register(UatEffectiveStepKeyword.Then, "{user} should see {text}", "Spec.Page.AssertTextVisible");
 
         // Control vocabulary is discovered from the same [UatWhen]/[UatThen] attributes the runtime uses,
         // so the spec surface and the executable surface can never drift.

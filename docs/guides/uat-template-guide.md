@@ -412,8 +412,9 @@ other columns are the fixture's.
 
 `User` defaults to `Name`, and `Head` to the suite's. A step that starts with an app or a user
 runs on that app ([AD-015](../../.docs/decisions/ad-015-a-steps-subject-picks-its-app.md)):
-`Daan taps Save` is `I tap Save` on Daan's app, and the app stays current, so a later `I` step
-runs there too. `{app} uses the app` still works. A failure names the app (`[Daan's PC] ...`),
+`Daan taps Save` binds to the declared `{user} taps {control}` on Daan's app, and the app stays
+current, so a later `I` step runs there too. A phrase a user can say has a `{user}` form beside
+its `I` form (see UAT Phrases And Flows); the built-in ones all do. `{app} uses the app` still works. A failure names the app (`[Daan's PC] ...`),
 and the result JSON records the app of every step.
 
 ```gherkin
