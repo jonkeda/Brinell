@@ -30,6 +30,8 @@ invocations in order and stops after a failed or canceled step.
 
 ## Step Text
 
+The formal grammar of scenario and phrase files is in [UAT Scenario Grammar](../specs/uat-grammar.md).
+
 Step lines must start with one of these exact keywords:
 
 - `Given`

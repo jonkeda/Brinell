@@ -183,6 +183,8 @@ purely through its fixture's composition.
 
 ## Scenario File Shape
 
+The formal grammar, with every parser diagnostic, is in [UAT Scenario Grammar](../specs/uat-grammar.md).
+
 ```markdown
 # UAT: MAUI Main Page Greeting
 

@@ -71,6 +71,8 @@ invariants behind it - what must stay true when *changing* Brinell - are in
 ## Specs
 
 - [Spec Status](specs/README.md)
+- [UAT Scenario Grammar](specs/uat-grammar.md) - the formal format of `.uat.md` and `.phrases.md`
+  files, and the parser's diagnostics
 
 ## Maintenance Rules
 
