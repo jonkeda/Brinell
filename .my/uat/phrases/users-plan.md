@@ -238,7 +238,7 @@ pieces above, and lists folder-based visibility as not decided.
 
 ### D9. How this meets the multi-app plan
 
-- The `Apps` table's `User` column in [plan.md](plan.md) D4 becomes the app's `TODO_USER`. So in
+- The `Apps` table's `User` column in [the multi-app plan](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/multi/plan.md) D4 becomes the app's `TODO_USER`. So in
   `When Daan taps Save`, "Daan" is both the app and the signed-in user.
 - A `{user}` phrase argument (plan.md D3) is checked against the Todo app's users when the phrase
   asks for it (`the todo {title} should be assigned to {user}`).
