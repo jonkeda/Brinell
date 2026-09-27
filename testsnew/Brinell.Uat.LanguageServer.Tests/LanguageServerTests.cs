@@ -155,6 +155,16 @@ public sealed class LanguageServerTests : IAsyncLifetime
         Assert.Contains("No suite holds or links this file", preview.Reason);
     }
 
+    [Fact]
+    public async Task PreviewHost_IsThePageTheWebviewLoads()
+    {
+        await InitializeAsync(_client);
+
+        var host = await _client.InvokeWithParameterObjectAsync<PreviewHostResult>("brinell/previewHost", new { });
+
+        Assert.Contains("<main id=\"uat-root\"></main>", host.Html);
+    }
+
     private Task<InitializeResult> InitializeAsync(JsonRpc client)
         => client.InvokeWithParameterObjectAsync<InitializeResult>("initialize", new { processId = (int?)null, initializationOptions = new { solutionDir = _solution } });
 

@@ -1,0 +1,63 @@
+<Project>
+
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+
+  <!-- The Visual Studio extension (P4: VSSDK, in process). It holds no engine types: it starts
+       Brinell.Uat.LanguageServer, carried inside the VSIX, and talks to it in messages. Build it with
+       Visual Studio's MSBuild (tools\Brinell.Uat.VisualStudio\Brinell.Uat.VisualStudio.slnx); it is
+       not in Brinell.sln. -->
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <RootNamespace>Brinell.Uat.VisualStudio</RootNamespace>
+    <UseWPF>true</UseWPF>
+    <IsPackable>false</IsPackable>
+    <GeneratePkgDefFile>true</GeneratePkgDefFile>
+    <IncludeAssemblyInVSIXContainer>true</IncludeAssemblyInVSIXContainer>
+    <IncludeDebugSymbolsInVSIXContainer>false</IncludeDebugSymbolsInVSIXContainer>
+    <IncludeDebugSymbolsInLocalVSIXDeployment>true</IncludeDebugSymbolsInLocalVSIXDeployment>
+    <CopyBuildOutputToOutputDirectory>true</CopyBuildOutputToOutputDirectory>
+    <CopyOutputSymbolsToOutputDirectory>true</CopyOutputSymbolsToOutputDirectory>
+    <DeployExtension Condition="'$(DeployExtension)' == ''">true</DeployExtension>
+    <StartAction>Program</StartAction>
+    <StartProgram>$(DevEnvDir)devenv.exe</StartProgram>
+    <StartArguments>/rootsuffix Exp</StartArguments>
+    <!-- No SourceLink for a local extension. -->
+    <EnableSourceLink>false</EnableSourceLink>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.VisualStudio.SDK" ExcludeAssets="runtime" />
+    <PackageReference Include="Microsoft.VSSDK.BuildTools" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Web.WebView2" />
+    <Reference Include="System.Design" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="source.extension.vsixmanifest" SubType="Designer" />
+    <VSCTCompile Include="BrinellUatPackage.vsct" ResourceName="Menus.ctmenu" />
+    <EmbeddedResource Update="VSPackage.resx" MergeWithCTO="true" ManifestResourceName="VSPackage" />
+  </ItemGroup>
+
+  <!-- The language server, published beside the extension: started as 'dotnet Server\Brinell.Uat.LanguageServer.dll'. -->
+  <PropertyGroup>
+    <ServerProject>..\Brinell.Uat.LanguageServer\Brinell.Uat.LanguageServer.csproj</ServerProject>
+    <ServerPublishDir>$(MSBuildProjectDirectory)\$(BaseIntermediateOutputPath)server</ServerPublishDir>
+  </PropertyGroup>
+
+  <Target Name="PublishLanguageServer" BeforeTargets="BeforeBuild" Condition="'$(SkipServerPublish)' != 'true'">
+    <Exec Command="dotnet publish &quot;$(ServerProject)&quot; -c $(Configuration) -o &quot;$(ServerPublishDir)&quot; --nologo -v:q" />
+    <ItemGroup>
+      <Content Include="$(ServerPublishDir)\**\*" Exclude="$(ServerPublishDir)\**\*.pdb">
+        <IncludeInVSIX>true</IncludeInVSIX>
+        <VSIXSubPath>Server\%(RecursiveDir)</VSIXSubPath>
+        <Link>Server\%(RecursiveDir)%(Filename)%(Extension)</Link>
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+  </Target>
+
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+  <!-- After the SDK's targets: the VSSDK's pkgdef, VSCT and VSIX container targets (Microsoft.VSSDK.BuildTools). -->
+  <Import Project="$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets" Condition="Exists('$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets')" />
+
+</Project>

@@ -31,6 +31,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   document sync, `brinell/preview` (the file rendered, bound in its suite or parsed only with the
   reason; a file linked into several suites offers each) and `brinell/buildDone` (reload the
   catalogs). `--preview <file> --out <page.html>` renders one file as a page without an IDE.
+- `Brinell.Uat.VisualStudio` (tools/, its own `.slnx`, built with Visual Studio's MSBuild): the Scenario
+  Preview tool window for Visual Studio 2022 17.10+ and 2026. A WebView2 shows the language
+  server's preview of the active feature or step file; it renders again after a pause in typing and
+  after each build, keeps the caret and the preview in step both ways, follows the VS theme, and
+  offers a suite picker for a linked file. **Ctrl+K, V** opens it. The VSIX carries the server.
+  `UatPreview.HostPage` is the webview's page (the same for VS Code) and `brinell/previewHost`
+  serves it. Guide: "Scenario Preview In Visual Studio".
 - Docs: AD-020 (a tier is a head: `service`, opt-in heads, UATB013, a scenario counts for each of
   its tiers) and AD-021 (`Brinell.Bdd` under `Brinell.Uat`), with their invariants; the guide
   "Features Below The UI". AD-011, AD-014, AD-017 and AD-019 use the new words and file names.

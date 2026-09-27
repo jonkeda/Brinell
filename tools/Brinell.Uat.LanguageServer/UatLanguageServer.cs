@@ -112,6 +112,10 @@ public sealed class UatLanguageServer : IDisposable
         }
     }
 
+    /// <summary><c>brinell/previewHost</c>: the page the client's webview loads once; <c>brinell/preview</c> fills it.</summary>
+    [JsonRpcMethod("brinell/previewHost")]
+    public PreviewHostResult PreviewHost() => new(UatPreview.HostPage);
+
     /// <summary><c>brinell/preview</c>: the file rendered, bound in its suite when it is built.</summary>
     [JsonRpcMethod("brinell/preview")]
     public PreviewResult Preview(PreviewParams request)

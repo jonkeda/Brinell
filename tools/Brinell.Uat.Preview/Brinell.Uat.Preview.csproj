@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="preview.css" LogicalName="Brinell.Uat.Preview.preview.css" />
+    <EmbeddedResource Include="preview-host.js" LogicalName="Brinell.Uat.Preview.preview-host.js" />
   </ItemGroup>
 
   <ItemGroup>

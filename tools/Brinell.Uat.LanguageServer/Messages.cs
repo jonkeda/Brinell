@@ -64,6 +64,10 @@ public sealed record PreviewParams(string Uri, string? Suite);
 /// <param name="Reason">Why it is only parsed; null when bound.</param>
 public sealed record PreviewResult(string Html, int Version, IReadOnlyList<string> Suites, string? Suite, string BindState, string? Reason);
 
+/// <summary>The preview's host page.</summary>
+/// <param name="Html">A whole page with the stylesheet and the page script (<c>UatPreview.HostPage</c>).</param>
+public sealed record PreviewHostResult(string Html);
+
 internal static class Json
 {
     public static JsonSerializerOptions Options { get; } = new(JsonSerializerDefaults.Web)

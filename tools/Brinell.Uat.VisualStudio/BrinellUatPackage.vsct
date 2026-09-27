@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CommandTable xmlns="http://schemas.microsoft.com/VisualStudio/2005-10-18/CommandTable" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <Extern href="stdidcmd.h" />
+  <Extern href="vsshlids.h" />
+
+  <Commands package="guidBrinellUatPackage">
+    <Groups>
+      <!-- The editor's context menu, shown for feature and step files only. -->
+      <Group guid="guidBrinellUatCommandSet" id="EditorContextGroup" priority="0x0600">
+        <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_CODEWIN" />
+      </Group>
+    </Groups>
+
+    <Buttons>
+      <Button guid="guidBrinellUatCommandSet" id="ShowScenarioPreview" priority="0x0100" type="Button">
+        <Parent guid="guidSHLMainMenu" id="IDG_VS_WNDO_OTRWNDWS1" />
+        <Strings>
+          <ButtonText>Scenario Preview</ButtonText>
+          <CommandName>Brinell.ScenarioPreview</CommandName>
+        </Strings>
+      </Button>
+      <Button guid="guidBrinellUatCommandSet" id="OpenScenarioPreview" priority="0x0100" type="Button">
+        <Parent guid="guidBrinellUatCommandSet" id="EditorContextGroup" />
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <Strings>
+          <ButtonText>Open Scenario Preview</ButtonText>
+          <CommandName>Brinell.OpenScenarioPreview</CommandName>
+        </Strings>
+      </Button>
+    </Buttons>
+  </Commands>
+
+  <KeyBindings>
+    <!-- Ctrl+K, V: as VS Code opens a Markdown preview to the side. -->
+    <KeyBinding guid="guidBrinellUatCommandSet" id="OpenScenarioPreview" editor="guidVSStd97" key1="K" mod1="Control" key2="V" />
+  </KeyBindings>
+
+  <Symbols>
+    <GuidSymbol name="guidBrinellUatPackage" value="{3f45aa33-e8c9-4927-830b-6ba9b74c9467}" />
+    <GuidSymbol name="guidBrinellUatCommandSet" value="{68a7da07-ac82-47a1-bd70-257d5ba3b27c}">
+      <IDSymbol name="EditorContextGroup" value="0x1020" />
+      <IDSymbol name="ShowScenarioPreview" value="0x0100" />
+      <IDSymbol name="OpenScenarioPreview" value="0x0101" />
+    </GuidSymbol>
+  </Symbols>
+</CommandTable>

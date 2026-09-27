@@ -69,10 +69,39 @@ public static class UatPreview
             """;
     }
 
-    private static string ReadStylesheet()
+    /// <summary>
+    /// The page an IDE's webview loads once: the stylesheet, a bar with the suite picker and the bind
+    /// state, and the script that takes <c>update</c>, <c>scrollTo</c> and <c>theme</c> messages and
+    /// sends <c>reveal</c> and <c>pickSuite</c>. The same page in Visual Studio and VS Code.
+    /// </summary>
+    public static string HostPage { get; } = $"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+        <meta charset="utf-8">
+        <meta name="color-scheme" content="light dark">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src https: data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+        <title>Scenario Preview</title>
+        <style>
+        {ReadResource("preview.css")}
+        </style>
+        </head>
+        <body>
+        <header class="uat-bar"><span id="uat-state" class="uat-state" data-state="parse-only">Parsed only</span><select id="uat-suite" class="uat-suite" hidden aria-label="Suite"></select></header>
+        <main id="uat-root"></main>
+        <script>
+        {ReadResource("preview-host.js")}
+        </script>
+        </body>
+        </html>
+        """;
+
+    private static string ReadStylesheet() => ReadResource("preview.css");
+
+    private static string ReadResource(string name)
     {
-        using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("Brinell.Uat.Preview.preview.css")
-            ?? throw new InvalidOperationException("The preview stylesheet is not embedded.");
+        using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("Brinell.Uat.Preview." + name)
+            ?? throw new InvalidOperationException($"The preview's {name} is not embedded.");
         using var reader = new StreamReader(stream);
         return reader.ReadToEnd();
     }

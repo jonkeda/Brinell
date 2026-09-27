@@ -108,6 +108,18 @@ public sealed class UatPreviewTests
         Assert.Contains("forced-colors", UatPreview.Stylesheet);
     }
 
+    [Fact]
+    public void TheHostPage_HasTheRootTheBarAndTheScript_AndNoRemoteContent()
+    {
+        var page = UatPreview.HostPage;
+
+        Assert.Contains("<main id=\"uat-root\"></main>", page);
+        Assert.Contains("id=\"uat-suite\"", page);
+        Assert.Contains("case \"update\": update(message); break;", page);
+        Assert.Contains("default-src 'none'", page);
+        Assert.DoesNotContain("<script src=", page);
+    }
+
     private static string FindTodo()
     {
         for (var folder = new DirectoryInfo(AppContext.BaseDirectory); folder is not null; folder = folder.Parent)

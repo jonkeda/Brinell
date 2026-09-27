@@ -210,4 +210,23 @@ th { background: var(--uat-surface); font-weight: 600; }
 .uat-row { color: var(--uat-muted); font-size: 0.85em; }
 .uat-diag-where { color: var(--uat-muted); font-family: var(--uat-mono); font-size: 0.9em; }
 
+.uat-bar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: -16px -20px 12px;
+  padding: 4px 20px;
+  background: var(--uat-surface);
+  border-bottom: 1px solid var(--uat-border);
+  font-size: 0.85em;
+}
+.uat-state { color: var(--uat-muted); }
+.uat-state[data-state="bound"]::before { content: "\25CF  "; color: var(--uat-passed); }
+.uat-state[data-state="parse-only"]::before { content: "\25CB  "; }
+.uat-suite { margin-left: auto; background: var(--uat-bg); color: var(--uat-fg); border: 1px solid var(--uat-border); }
+[data-line] { cursor: default; }
+
 a { color: var(--uat-accent); }

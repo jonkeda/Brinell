@@ -44,6 +44,8 @@ invariants behind it - what must stay true when *changing* Brinell - are in
 - [Features Below The UI](guides/features-below-the-ui.md) - the `service` head: when a scenario
   runs without a screen, its suite and step definitions
 - [BDD Glossary](guides/bdd-glossary.md) - Brinell's words beside Cucumber's and Reqnroll's
+- [Scenario Preview In Visual Studio](guides/visual-studio-preview.md) - the extension: feature and step
+  files as readable, bound steps beside the editor
 - [Test Data](guides/test-data.md) - test sets, the `brinell-data` tool, `TestData` in UAT
   files, typed mock bodies (`BRINELL001`)
 - [Test Settings](guides/settings.md)
