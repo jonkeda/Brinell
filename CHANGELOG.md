@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- The VS Code extension (`tools/Brinell.Uat.VsCode`, TypeScript):
+  - an LSP client for feature, step and config files on the same language server;
+  - the same Scenario Preview in a webview, its screenshots through the webview's own URIs;
+  - Test Explorer on the scenarios' addresses: build, then `dotnet test --filter UatScenario=...`,
+    results from the reports, and Debug attaching the C# debugger to the testhost;
+  - step breakpoints in the file Visual Studio uses, with gutter dots.
+  The server gains `brinell/scenarios` (each suite's tests and filters) and `brinell/lastRuns`
+  (a file's last results with the failed step).
 - The Brinell MCP server, for Copilot's agent mode and other agents:
   `Brinell.Uat.LanguageServer --mcp [--solution <folder>]` (`UatMcpServer`), over stdio. It has the
   tools `list_suites`, `list_steps` (by words), `list_pages`, `list_test_sets`, `validate_scenario`

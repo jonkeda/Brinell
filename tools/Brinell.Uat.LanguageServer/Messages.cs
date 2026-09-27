@@ -297,6 +297,34 @@ public sealed record ExplorerParams(string? View, string? Suite);
 /// <param name="Suite">The suite shown; null when there is none.</param>
 public sealed record ExplorerResult(string View, string Html, IReadOnlyList<string> Suites, string? Suite);
 
+/// <summary>A suite's scenarios, for an IDE's test explorer.</summary>
+/// <param name="Suite">The suite's name.</param>
+/// <param name="Project">Its project file, which <c>dotnet test</c> runs.</param>
+/// <param name="Runnable">Whether its scenarios run by address (<c>[UatScenarioTheory]</c>, built).</param>
+/// <param name="Reason">Why not; null when they do.</param>
+/// <param name="Files">Its feature files, linked ones included.</param>
+public sealed record SuiteScenarios(string Suite, string? Project, bool Runnable, string? Reason, IReadOnlyList<FileScenarios> Files);
+
+/// <summary>A feature file's scenarios.</summary>
+/// <param name="Uri">The file.</param>
+/// <param name="Relative">Its path as the suite's tests see it, relative to the config.</param>
+/// <param name="Scenarios">Its scenarios, an outline once.</param>
+public sealed record FileScenarios(string Uri, string Relative, IReadOnlyList<ScenarioTest> Scenarios);
+
+/// <summary>A scenario as a test.</summary>
+/// <param name="Name">Its name; an outline's name for all its rows.</param>
+/// <param name="Line">Its heading's line.</param>
+/// <param name="Filter">The <c>dotnet test --filter</c> that runs it: its address, or each row's.</param>
+public sealed record ScenarioTest(string Name, int Line, string Filter);
+
+/// <summary>A scenario's last run.</summary>
+/// <param name="Scenario">Its name; an outline row's has its <c>[n]</c>.</param>
+/// <param name="Status"><c>passed</c>, <c>failed</c>, <c>skipped</c> or <c>canceled</c>.</param>
+/// <param name="DurationMs">How long it took.</param>
+/// <param name="Message">The failed step's message; null when none failed.</param>
+/// <param name="Line">The failed step's line in the feature file; null when none failed.</param>
+public sealed record ScenarioResult(string Scenario, string Status, long DurationMs, string? Message, int? Line);
+
 /// <summary>The preview's host page.</summary>
 /// <param name="Html">A whole page with the stylesheet and the page script (<c>UatPreview.HostPage</c>).</param>
 public sealed record PreviewHostResult(string Html);

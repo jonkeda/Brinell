@@ -371,6 +371,36 @@ public sealed class LanguageServerTests : IAsyncLifetime
         Assert.Contains($"data-open=\"{new Uri(Feature).AbsoluteUri}\" data-line=\"3\"><span class=\"uat-result\" data-status=\"failed\"", results.Html);
     }
 
+    [Fact]
+    public async Task Scenarios_GivesEachSuitesTests_WithTheAddressEachRunsBy()
+    {
+        Build();
+        File.WriteAllText(Path.Combine(Shelf, "Shelf.Steps.csproj"), "<Project />");
+        await InitializeAsync(_client);
+
+        var suites = await _client.InvokeWithParameterObjectAsync<IReadOnlyList<SuiteScenarios>>("brinell/scenarios", new { });
+
+        var shelf = Assert.Single(suites, suite => suite.Suite == "Shelf.Steps");
+        Assert.True(shelf.Runnable, shelf.Reason);
+        var file = Assert.Single(shelf.Files);
+        Assert.Equal(new Uri(Feature).AbsoluteUri, file.Uri);
+        Assert.Equal(new ScenarioTest("One", 3, "UatScenario=Features/shelf.feature.md#One"), Assert.Single(file.Scenarios));
+        Assert.False(Assert.Single(suites, suite => suite.Suite == "Shelf.Web").Runnable);
+    }
+
+    [Fact]
+    public async Task LastRuns_GivesEachScenariosStatus_AndItsFailedStep()
+    {
+        Build();
+        File.WriteAllText(Path.Combine(_solution, "Shelf.sln"), string.Empty);
+        WriteRun("20260106-000000-lastruns", "failed", "Failed");
+        await InitializeAsync(_client);
+
+        var runs = await _client.InvokeWithParameterObjectAsync<IReadOnlyList<ScenarioResult>>("brinell/lastRuns", new { uri = new Uri(Feature).AbsoluteUri });
+
+        Assert.Equal(new ScenarioResult("One", "failed", 12, null, 6), Assert.Single(runs));
+    }
+
     private Task<InitializeResult> InitializeAsync(JsonRpc client, bool editor = false)
         => client.InvokeWithParameterObjectAsync<InitializeResult>("initialize", new
         {
