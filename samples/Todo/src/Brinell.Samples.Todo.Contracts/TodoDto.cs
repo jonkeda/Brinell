@@ -68,4 +68,10 @@ public static class TodoApi
 
     /// <summary>The route of one todo.</summary>
     public static string TodoPath(Guid id) => $"{TodosPath}/{id:D}";
+
+    /// <summary>The users collection route.</summary>
+    public const string UsersPath = "/api/users";
+
+    /// <summary>The route of one user.</summary>
+    public static string UserPath(Guid id) => $"{UsersPath}/{id:D}";
 }

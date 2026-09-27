@@ -172,6 +172,8 @@ public sealed class DatabaseTests : IDisposable
         Assert.NotNull(host.Get<TodoListViewModel>());
         Assert.NotNull(host.Get<TodoDetailViewModel>());
         Assert.NotNull(host.Get<TodoEditViewModel>());
+        Assert.NotNull(host.Get<UserListViewModel>());
+        Assert.NotNull(host.Get<UserEditViewModel>());
         Assert.Same(host.Get<TodoListViewModel>(), host.Get<TodoListViewModel>());
     }
 }

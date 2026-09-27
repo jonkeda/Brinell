@@ -1,6 +1,7 @@
 # Todo users: plan
 
-Status: **todo**, drafted 2026-09-26, revised 2026-09-27. No step has started.
+Status: **app built** 2026-09-27 (phases 1-3, section 6). The UI tests, UAT scenarios and
+section 8 are still to do.
 
 **Revised 2026-09-27:** build the app first. A user gets more fields (status, allowed-until date, role,
 and a few more chosen to exercise field types). A todo is **not** linked to a user
@@ -114,17 +115,19 @@ later (the app's clock, so `TODO_NOW` pins it). The list shows each user's state
 
 ### D3. Users are managed by the server
 
-- **Changes need a connection.** The app sends them straight to the API (`POST /api/users`,
-  `PUT /api/users/{id}`) and caches the result. Offline, Add and Save are disabled and the page
+- **Changes need a connection.** The app sends them straight to the API
+  (`PUT /api/users/{id}`, the client choosing the id as for todos) and caches the result. Offline, Add and Save are disabled and the page
   says why; the list is still readable from the cache. This is Construction's
   server-authoritative cached-entity model (`ICachedEntityRepository<T>` in
   `construction/AGENTS.md`), and keeps the offline sync rules for todos only.
 - **The server validates too**: the same rules as the app, `400` with the field name for a bad
-  value, `409` for a duplicate name. The app shows the server's message on the field.
+  value, `409` for a duplicate name, both as a validation problem document
+  (`ValidationProblemDto`). The rules are `ServerUserRules` in Contracts, so the WireMock fake
+  answers exactly as the API does. The app shows the server's message on the field.
 - **A sync fetches users** (`GET /api/users`) before todos, and replaces the cached list only
   after a complete fetch.
-- **Enums travel as names** (`"OnLeave"`, `"Engineering"`), dates as `yyyy-MM-dd`, times as
-  `HH:mm`, the rate as a JSON number, as `TodoDto` does today.
+- **Enums travel as names** (`"OnLeave"`, `"Lead"`), dates as `yyyy-MM-dd`, times as
+  `HH:mm:ss` (System.Text.Json's default), the rate as a JSON number, as `TodoDto` does today.
 
 ### D4. Where it appears in the app
 
@@ -155,8 +158,9 @@ later (the app's clock, so `TODO_NOW` pins it). The list shows each user's state
   migration is additive, and `MigrateAsync(2 -> 3)` is covered like the existing versions.
 - **Server:** a `users` table in `ServerTodoStore` (`CREATE TABLE IF NOT EXISTS`, like `todos`)
   and the routes in `TodoApiHost`.
-- **Test data schema:** `server.users[]` and `local.users[]` (the device's cached copy, which may
-  be behind). The old sets have no users and stay valid.
+- **Test data schema:** top-level `users` (the server's) and `localUsers` (the device's cached
+  copy; left out, the device has synced the server's; `[]`, it never fetched them). The old sets
+  have no users and stay valid.
 - **New test set `team`**: Daan (Lead, no end date), Eva (Member, allowed until a date after
   the pinned 10 March clock, 38 hours), Finn (Member, allowed until a date **before** the clock,
   so "Expired"), Gus (Admin, Inactive), Hana (Member, On leave, reminders off). Rates
@@ -213,14 +217,20 @@ Verify: the existing Todo UI tests (36, 3 skipped) and both Todo UAT suites, unc
 
 ### Phase 3 - Docs
 
-`samples/Todo/README.md` (the users feature, the `team` set), `journeys.md` (section 4), and a
-note in `samples/Todo/uat-walkthrough.md` that users have no tests yet.
+`samples/Todo/README.md` (the users feature, the `team` set, a note that users have no UI tests
+yet), `journeys.md` (section 4), and `CHANGELOG.md`.
 
 ## 6. Progress
 
 | Step | Status | Evidence |
 | --- | --- | --- |
-| - | - | - |
+| 1.1-1.5 | done 2026-09-27 | `UserDto`, `ValidationProblemDto`, `ServerUserRules` (Contracts); `/api/users` in `TodoApiHost`; `User`, `UserValidation`, `UserRules`, `UserService` (Core); schema v3, `SqliteUserRepository`, `TodoApiClient : IUserApi`, users first in `SyncService` (Infrastructure); `team.json`, `TodoServerStub` users, schema regenerated. Unit 193 passed (Todo), integration and contract 59 passed. |
+| 2.1 | done 2026-09-27 | `UserListViewModel`, `UserEditViewModel` with their unit tests. |
+| 2.2 | done 2026-09-27 | Launched on Windows with `team` seeded: the list shows Daan, Eva, then Finn (Expired), Gus (Inactive), Hana (On leave); Eva's edit page loads every field (rate `1,250.75`, `38 hours`, `35 %`); Save with a blank name, `eva@` and rate `1,5` shows the three errors on their fields; a valid Ivo reaches the real API with every field and shows in the list. Every AutomationId of D4 is in the tree, the disabled end date included. **On Windows the Stepper is two buttons, `UserEdit_HoursMinus` and `UserEdit_HoursPlus`; `UserEdit_Hours` itself is not in the tree.** Dark mode not checked. |
+| 2.3 | done 2026-09-27 | Builds for `net10.0-android`; not launched (no emulator attached). |
+| 3 | done 2026-09-27 | README, journeys (TOD.11.1-11.10, U/I/C tiers; `JourneyCoverage` green), CHANGELOG. |
+| Verify | done 2026-09-27 | Todo UI 36 passed (3 skipped), MAUI UAT 32, web UAT 33, web UI 10 (1 skipped), mixed UI 4 (1 skipped), mixed UAT 4; `Brinell.sln` and the Todo solution build. |
+| Later | todo | UI tests and UAT scenarios for TOD.11 (H tier), after phrase namespaces; section 8. |
 
 ## 7. Decided questions
 

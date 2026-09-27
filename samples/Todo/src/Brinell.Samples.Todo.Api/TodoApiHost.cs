@@ -114,6 +114,37 @@ public static class TodoApiHost
 
         todos.MapDelete("/{id:guid}", (Guid id, ServerTodoStore store)
             => store.Delete(id) ? Results.NoContent() : Results.NotFound());
+
+        var users = app.MapGroup(TodoApi.UsersPath);
+
+        users.MapGet("/", (ServerTodoStore store) => Results.Ok(store.GetUsers()));
+
+        users.MapGet("/{id:guid}", (Guid id, ServerTodoStore store)
+            => store.GetUser(id) is { } user ? Results.Ok(user) : Results.NotFound());
+
+        // 400 with the problems by field; 409 when the name is taken. Both are validation problem
+        // documents, so a client reads them the same way.
+        users.MapPut("/{id:guid}", (Guid id, UserDto user, ServerTodoStore store) =>
+        {
+            if (user.Id != id)
+            {
+                return Results.BadRequest($"The body's id {user.Id} is not the route's id {id}.");
+            }
+
+            if (ServerUserRules.Validate(user) is { Count: > 0 } errors)
+            {
+                return Results.ValidationProblem(errors);
+            }
+
+            if (ServerUserRules.IsDuplicateName(user, store.GetUsers()))
+            {
+                return Results.ValidationProblem(
+                    new Dictionary<string, string[]> { ["name"] = ["Another user already has this name"] },
+                    statusCode: StatusCodes.Status409Conflict);
+            }
+
+            return Results.Ok(store.UpsertUser(user));
+        });
     }
 }
 

@@ -19,7 +19,7 @@ public sealed class TodoTestDataDefinition : TestDataDefinition<TodoTestSetFile>
     public override JsonSerializerOptions JsonOptions => TodoTestSet.JsonOptions;
 
     /// <inheritdoc />
-    public override IReadOnlyList<Type> TableTypes => [typeof(TodoDto), typeof(LocalTodoData)];
+    public override IReadOnlyList<Type> TableTypes => [typeof(TodoDto), typeof(LocalTodoData), typeof(UserDto)];
 
     /// <inheritdoc />
     protected override string RelativeFolder => "TestData";
@@ -33,7 +33,20 @@ public sealed class TodoTestDataDefinition : TestDataDefinition<TodoTestSetFile>
         .ForEach("local", set => set.Local, (set, todo) => todo.FindProblem(set.Server))
         .ForEach("local", set => set.Local, todo => todo.IsSameAsServer ? null : TodoValidation.ValidateTitle(todo.Title))
         .ForEach("local", set => set.Local, todo => todo.CreatedAt > todo.UpdatedAt ? "updatedAt is before createdAt." : null)
-        .ForEach("local", set => set.Local, (set, todo) => SyncedButDifferent(set, todo));
+        .ForEach("local", set => set.Local, (set, todo) => SyncedButDifferent(set, todo))
+        .UniqueIds("users", set => set.Users ?? [], user => user.Id)
+        .UniqueIds("localUsers", set => set.LocalUsers ?? [], user => user.Id)
+        .ForEach("users", set => set.Users ?? [], UserProblem)
+        .ForEach("localUsers", set => set.LocalUsers ?? [], UserProblem)
+        .ForEach("users", set => set.Users ?? [], (set, user) => ServerUserRules.IsDuplicateName(user, set.Users ?? [])
+            ? "has the same name as another user that is not inactive."
+            : null);
+
+    // The server's own rules, so a test set cannot hold a user the API would refuse.
+    private static string? UserProblem(UserDto user)
+        => ServerUserRules.Validate(user) is { Count: > 0 } errors
+            ? string.Join(" ", errors.Select(error => $"{error.Key}: {error.Value[0]}."))
+            : null;
 
     private static string? SyncedButDifferent(TodoTestSetFile set, LocalTodoData todo)
     {

@@ -46,6 +46,7 @@ public sealed class TodoListViewModel : ParentViewModel
         _options = options;
 
         AddCommand = new TargetAsyncCommand(this, () => _navigator.GoToAsync(TodoRoutes.Edit));
+        UsersCommand = new TargetAsyncCommand(this, () => _navigator.GoToAsync(UserRoutes.List));
         OpenCommand = new TargetAsyncCommand<TodoRowViewModel>(this, OpenAsync);
         SyncCommand = new TargetAsyncCommand(this, SyncAsync, () => IsOnline);
         RetryCommand = new TargetAsyncCommand(this, SyncAsync);
@@ -142,6 +143,9 @@ public sealed class TodoListViewModel : ParentViewModel
 
     /// <summary>Opens a new, empty edit page.</summary>
     public IAsyncRelayCommand AddCommand { get; }
+
+    /// <summary>Opens the users list.</summary>
+    public IAsyncRelayCommand UsersCommand { get; }
 
     /// <summary>Opens a row's detail page.</summary>
     public IAsyncRelayCommand<TodoRowViewModel> OpenCommand { get; }

@@ -16,7 +16,7 @@ Deleted topics stay in git history; the last full tree is at
 | [documentation/](documentation/plan.md) | The comment policy applied to the code, phase by phase | todo | 2026-09 |
 | [present/](present/plan.md) | Presenter: app icon, gesture bridge, Todo workspace, scenario parity, template doc, journeys | open | 2026-09-27 |
 | [uat/complex/](uat/complex/README.md) | Guidance for service, database and other complex checks; per-user isolation | discussion | 2026-09-27 |
-| [uat/phrases/](uat/phrases/users-plan.md) | Phrase scopes, namespaces, splitting (with callable steps 6 and 8); Todo users app first (assignment and tests later) | discussion; users plan todo | 2026-09-27 |
+| [uat/phrases/](uat/phrases/users-plan.md) | Phrase scopes, namespaces, splitting (with callable steps 6 and 8); Todo users: UI tests and assignment next | discussion; users app built | 2026-09-27 |
 | [uat/tools/](uat/tools/vscode-extension.md) | A VS Code extension for scenarios: editor, preview, run and debug | proposal | 2026-09-27 |
 | [uat/rethinking-uat.md](uat/rethinking-uat.md) | UAT for Construction, from user journeys | discussion | 2026-09-20 |
 | [Scraper/](Scraper/) | `tools/Brinell.Scraper`: roadmap, steps, RCAs, UAT runs | dormant since 2026-05; owner to decide (cleanup plan, section 5) | 2026-05-27 |

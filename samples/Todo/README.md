@@ -15,13 +15,20 @@ that can prove it, and every test traced back to a user journey. It shows:
 
 ## The app
 
-Three pages in a Shell, with a local SQLite store that syncs with `Todo.Api`:
+Five pages in a Shell, with a local SQLite store that syncs with `Todo.Api`:
 
 | Page | What it does |
 | --- | --- |
-| List | All todos, a status filter, Sync, Add. Empty, Loading and Error states (CommunityToolkit `StateContainer`). |
+| List | All todos, a status filter, Sync, Add, Users. Empty, Loading and Error states (CommunityToolkit `StateContainer`). |
 | Detail | One todo in three `SectionCard`s (details, notes, sync state), Next status, Edit, Delete (with confirmation). |
 | Edit | Title (required, at most 100 characters), notes, an optional due date, status. Cancel asks before discarding changes. |
+| Users | The users, available ones first, each with role and state (Expired, On leave, Inactive). Add; tap to edit. Read-only offline. |
+| User edit | One field of each kind a test drives: name and email (`Entry`), status (`RadioButton`s), an optional end date (`CheckBox` + `DatePicker`), role (`Picker`), hours (`Stepper`), hourly rate (`1,250.75`), start of day (`TimePicker`), reminders (`Switch`), workload (`Slider`), notes (`Editor`). Save shows every error on its field. |
+
+Users are managed by the server: a change goes straight to `PUT /api/users/{id}`, which checks
+the same rules as the app, and the app caches the answer. A sync fetches the users before the
+todos. Users are not linked to todos yet, and have no UI tests or UAT scenarios yet
+(`.my/uat/phrases/users-plan.md`); the `team` test set has one user in each state.
 
 Two custom controls, each with a matching ControlObject on the test side:
 
@@ -285,6 +292,9 @@ A test set (`TestSupport/TestData/*.json`) has a local half and a server half, p
 - The **server half** loads into `TodoServerStub`, a stateful WireMock fake of `Todo.Api`. A test
   changes it per test (a 500, a delay, a failure that recovers), and the fixture resets it
   between tests.
+- **Users** are optional: `users` is what the server has, and `localUsers` what the device has
+  cached. Leave `localUsers` out for a device that has synced; `[]` for one that never fetched
+  users.
 
 The app receives the file path, the backend URL, the clock and the sync switches as launch
 settings (`MauiDriverOptions.LaunchSettings`). On Windows they are environment variables of the

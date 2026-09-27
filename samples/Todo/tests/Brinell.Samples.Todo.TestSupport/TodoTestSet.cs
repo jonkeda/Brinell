@@ -41,6 +41,8 @@ public sealed class TodoTestSet
         Now = file.Now;
         Server = file.Server;
         Local = file.Local.Select(local => local.ToItem(file.Server, name)).ToList();
+        ServerUsers = file.Users ?? [];
+        LocalUsers = (file.LocalUsers ?? ServerUsers).Select(UserMapping.ToUser).ToList();
     }
 
     /// <summary>The test set's name, its file name without extension.</summary>
@@ -54,6 +56,12 @@ public sealed class TodoTestSet
 
     /// <summary>What the device has, with the "same as the server" shortcut filled in.</summary>
     public IReadOnlyList<TodoItem> Local { get; }
+
+    /// <summary>The users the server has.</summary>
+    public IReadOnlyList<UserDto> ServerUsers { get; }
+
+    /// <summary>The users the device has cached: the server's, unless the file says otherwise.</summary>
+    public IReadOnlyList<User> LocalUsers { get; }
 
     /// <summary>The test sets that exist.</summary>
     public static IReadOnlyList<string> Names { get; } = typeof(TodoTestSet).Assembly
@@ -97,11 +105,13 @@ public sealed class TodoTestSet
         {
             await repository.SaveAsync(item, cancellationToken).ConfigureAwait(false);
         }
+
+        await new SqliteUserRepository(database).ReplaceAllAsync(LocalUsers, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Serves the server half from <paramref name="mock"/>, as a fake that remembers writes.</summary>
     public TodoServerStub StubServer(MockApiServer mock, string apiKey = TodoApi.DevelopmentApiKey)
-        => TodoServerStub.Install(mock, Server, apiKey);
+        => TodoServerStub.Install(mock, Server, apiKey, ServerUsers);
 
     private static JsonSerializerOptions CreateJsonOptions()
     {
@@ -115,11 +125,18 @@ public sealed class TodoTestSet
 /// <param name="Now">The instant the test set is set at.</param>
 /// <param name="Server">What the server has, as the API sends it.</param>
 /// <param name="Local">What the device has.</param>
+/// <param name="Users">The users the server has; none when left out.</param>
+/// <param name="LocalUsers">
+/// The users the device has cached. Left out, the device has synced the server's users; <c>[]</c>
+/// means it never fetched them.
+/// </param>
 /// <param name="Schema">The <c>$schema</c> reference editors use; ignored when loading.</param>
 public sealed record TodoTestSetFile(
     DateTimeOffset Now,
     IReadOnlyList<TodoDto> Server,
     IReadOnlyList<LocalTodoData> Local,
+    IReadOnlyList<UserDto>? Users = null,
+    IReadOnlyList<UserDto>? LocalUsers = null,
     [property: JsonPropertyName("$schema")] string? Schema = null);
 
 /// <summary>

@@ -16,12 +16,17 @@ namespace Brinell.Samples.Todo.Infrastructure.Sync;
 /// <para>
 /// One sync at a time: a second call waits for the first.
 /// </para>
+/// <para>
+/// Users come first: the whole list is fetched and replaces the cached one, and a failure there
+/// stops the sync before any todo is touched, like any other failure.
+/// </para>
 /// </remarks>
 public sealed class SyncService(
     ITodoRepository repository,
     ITodoApi api,
     IConnectivityState connectivity,
-    TimeProvider time) : ISyncService
+    TimeProvider time,
+    UserService? users = null) : ISyncService
 {
     private readonly SemaphoreSlim _gate = new(1, 1);
 
@@ -54,6 +59,11 @@ public sealed class SyncService(
 
         try
         {
+            if (users is not null)
+            {
+                await users.RefreshAsync(cancellationToken).ConfigureAwait(false);
+            }
+
             var push = SyncPlanner.PlanPush(await repository.GetAllAsync(cancellationToken).ConfigureAwait(false));
 
             foreach (var id in push.Purges)

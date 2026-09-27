@@ -135,6 +135,116 @@
         "additionalProperties": false
       }
     },
+    "users": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "enum": [
+              "Active",
+              "OnLeave",
+              "Inactive"
+            ]
+          },
+          "allowedUntil": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "role": {
+            "enum": [
+              "Member",
+              "Lead",
+              "Admin"
+            ]
+          },
+          "hoursPerWeek": {
+            "type": [
+              "string",
+              "integer"
+            ],
+            "pattern": "^-?(?:0|[1-9]\\d*)$"
+          },
+          "hourlyRate": {
+            "type": [
+              "string",
+              "number"
+            ],
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$"
+          },
+          "startOfDay": {
+            "type": "string",
+            "format": "time"
+          },
+          "receivesReminders": {
+            "type": "boolean"
+          },
+          "workload": {
+            "type": [
+              "string",
+              "integer"
+            ],
+            "pattern": "^-?(?:0|[1-9]\\d*)$"
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "status",
+          "allowedUntil",
+          "role",
+          "hoursPerWeek",
+          "hourlyRate",
+          "startOfDay",
+          "receivesReminders",
+          "workload",
+          "notes",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "default": null
+    },
+    "localUsers": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "$ref": "#/properties/users/items"
+      },
+      "default": null
+    },
     "$schema": {
       "type": [
         "string",

@@ -19,7 +19,7 @@ namespace Brinell.Samples.Todo.Infrastructure.Data;
 public sealed class TodoDatabase(string path)
 {
     /// <summary>The newest schema version.</summary>
-    public const int LatestVersion = 2;
+    public const int LatestVersion = 3;
 
     private static readonly string[] Migrations =
     [
@@ -40,6 +40,26 @@ public sealed class TodoDatabase(string path)
         // v2: tombstones, so a delete survives a restart until the server has been told.
         """
         ALTER TABLE todos ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0;
+        """,
+
+        // v3: the cached users. The rate is whole cents and the start of day minutes after
+        // midnight, because SQLite has no decimal or time type.
+        """
+        CREATE TABLE users (
+            id                  TEXT PRIMARY KEY,
+            name                TEXT NOT NULL,
+            email               TEXT NULL,
+            status              TEXT NOT NULL,
+            allowed_until       TEXT NULL,
+            role                TEXT NOT NULL,
+            hours_per_week      INTEGER NOT NULL,
+            hourly_rate_cents   INTEGER NOT NULL,
+            start_minutes       INTEGER NOT NULL,
+            receives_reminders  INTEGER NOT NULL,
+            workload            INTEGER NOT NULL,
+            notes               TEXT NULL,
+            updated_at          TEXT NOT NULL
+        );
         """,
     ];
 

@@ -11,7 +11,8 @@ public sealed class SyncTests
 
     [Fact]
     [Trait("Journey", "TOD.07.1")]
-    public async Task Sync_PushesFirst_ThenPulls()
+    [Trait("Journey", "TOD.11.9")]
+    public async Task Sync_FetchesUsers_ThenPushes_ThenPulls()
     {
         using var host = await TodoHost.StartAsync("pending-local-change");
 
@@ -19,8 +20,39 @@ public sealed class SyncTests
 
         Assert.True(result.Succeeded);
         Assert.Equal(2, result.Pushed);
-        var order = host.Mock.Requests().Select(request => request.Method).ToList();
-        Assert.Equal(["PUT", "PUT", "GET"], order);
+        var order = host.Mock.Requests().Select(request => $"{request.Method} {(request.Path.StartsWith(TodoApi.UsersPath) ? "users" : "todos")}").ToList();
+        Assert.Equal(["GET users", "PUT todos", "PUT todos", "GET todos"], order);
+    }
+
+    [Fact]
+    [Trait("Journey", "TOD.11.9")]
+    public async Task AUserAddedElsewhere_IsCachedAfterTheNextSync()
+    {
+        using var host = await TodoHost.StartAsync("team");
+        var eve = host.TestSet.ServerUsers[1] with { Id = Guid.NewGuid(), Name = "Eve" };
+        host.Server.StoreUser(eve);
+
+        var result = await host.Sync.SyncAsync();
+
+        Assert.True(result.Succeeded);
+        var cached = await host.Get<IUserRepository>().GetAllAsync();
+        Assert.Equal(["Daan", "Eva", "Eve", "Finn", "Gus", "Hana"], cached.Select(user => user.Name).Order());
+        Assert.Equal(1250.75m, cached.Single(user => user.Name == "Eve").HourlyRate);
+    }
+
+    [Fact]
+    [Trait("Journey", "TOD.11.9")]
+    public async Task AFailedUserFetch_StopsTheSync_AndKeepsTheCachedUsers()
+    {
+        using var host = await TodoHost.StartAsync("team");
+        host.Server.StoreUser(host.TestSet.ServerUsers[0] with { Id = Guid.NewGuid(), Name = "Ivo" });
+        host.Mock.Get(TodoApi.UsersPath).AtPriority(1).Fails(500);
+
+        var result = await host.Sync.SyncAsync();
+
+        Assert.Equal(SyncError.ServerError, result.Error);
+        Assert.Equal(5, (await host.Get<IUserRepository>().GetAllAsync()).Count);
+        Assert.DoesNotContain(host.Mock.Requests(), request => request.Path.StartsWith(TodoApi.TodosPath));
     }
 
     [Fact]

@@ -127,6 +127,25 @@ a navigation, a real wire). Where a subtask lists two tiers, the second checks o
 | TOD.10.3 | Screenshots per screen for design review | **R** | Artifacts (AD-007) |
 | TOD.10.4 | Dark mode, 200 % font scaling, small-screen keyboard overlap | M | Visual judgement |
 
+## TOD.11 Manage users
+
+Users are not linked to todos yet. The UI tiers (H, and UAT scenarios) are added once phrase
+scopes and namespaces exist (`.my/uat/phrases/users-plan.md`); until then each subtask is covered
+at the lowest tier that can see it. Test set: `team.json`.
+
+| Id | Subtask | Tier | Why there |
+| --- | --- | --- | --- |
+| TOD.11.1 | Users lists available users first, then the others, each with its role and state (Expired, On leave, Inactive) | U | Ordering and state text are pure rules |
+| TOD.11.2 | Add with valid values saves the user on the server and caches it | U + C | VM and service in U; the real API keeps every field in C |
+| TOD.11.3 | Each field refuses a bad value with a message on that field | U | Validation table; errors placed per field by the VM |
+| TOD.11.4 | Editing a user loads every field and saves the change | U | VM round trip |
+| TOD.11.5 | "Has an end date" off saves no end date; on, the date is saved, also one in the past | U | VM |
+| TOD.11.6 | A user whose end date has passed shows as Expired; today's and tomorrow's do not | U | Pure rule on the pinned clock |
+| TOD.11.7 | A user set Inactive stays in the list, and their name can be used again | U + C | Rule in U; the real API allows the reuse in C |
+| TOD.11.8 | Offline, Add and Save are disabled and the page says so; the list still reads | U | VM and service |
+| TOD.11.9 | A sync fetches the users first and replaces the cached list only after a complete fetch | I | WireMock + SQLite |
+| TOD.11.10 | The server refuses what the app would refuse, naming the field, and the fake answers alike | C | Real API and WireMock fake |
+
 ---
 
 ## Allocation summary
@@ -135,9 +154,9 @@ Counts are per assignment, so a subtask with two tiers counts twice.
 
 | Tier | Count | Share |
 | --- | --- | --- |
-| Unit | 21 | |
-| Integration | 18 | |
-| Contract | 2 | |
+| Unit | 29 | |
+| Integration | 19 | |
+| Contract | 5 | |
 | UI hermetic | 27 | one example per behaviour |
 | UI live | 3 | real wire only |
 | Manual | 4 | |

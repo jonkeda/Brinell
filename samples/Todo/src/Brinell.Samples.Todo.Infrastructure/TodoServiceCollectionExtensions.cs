@@ -70,16 +70,22 @@ public static class TodoServiceCollectionExtensions
             var launch = provider.GetRequiredService<LaunchSettings>();
             return TodoApiClient.CreateHttpClient(launch.ApiBaseUrl, launch.ApiKey, launch.ApiTimeout, platform.HttpHandler, launch.ClientId);
         });
-        services.AddSingleton<ITodoApi>(provider => new TodoApiClient(provider.GetRequiredService<HttpClient>()));
+        services.AddSingleton(provider => new TodoApiClient(provider.GetRequiredService<HttpClient>()));
+        services.AddSingleton<ITodoApi>(provider => provider.GetRequiredService<TodoApiClient>());
+        services.AddSingleton<IUserApi>(provider => provider.GetRequiredService<TodoApiClient>());
+        services.AddSingleton<IUserRepository, SqliteUserRepository>();
 
         services.AddSingleton<IConnectivityState>(provider =>
             CreateConnectivity(provider.GetRequiredService<LaunchSettings>(), platform));
+        services.AddSingleton<UserService>();
         services.AddSingleton<ISyncService, SyncService>();
         services.AddSingleton<TodoService>();
 
         services.AddSingleton<TodoListViewModel>();
         services.AddTransient<TodoDetailViewModel>();
         services.AddTransient<TodoEditViewModel>();
+        services.AddTransient<UserListViewModel>();
+        services.AddTransient<UserEditViewModel>();
 
         return services;
     }

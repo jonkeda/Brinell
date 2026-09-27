@@ -85,3 +85,13 @@ public static class TodoRoutes
             ? id
             : null;
 }
+
+/// <summary>The users pages' routes. They take <see cref="TodoRoutes.IdParameter"/> as todos do.</summary>
+public static class UserRoutes
+{
+    /// <summary>The users list.</summary>
+    public const string List = "users";
+
+    /// <summary>The user edit page; takes an id, or nothing for a new user.</summary>
+    public const string Edit = "user-edit";
+}

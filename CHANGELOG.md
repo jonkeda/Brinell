@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Todo sample: users (journey TOD.11). A Users page and a user edit page with one field of each
+  kind a test drives (`RadioButton`, `CheckBox` + `DatePicker`, `Picker`, `Stepper`, a decimal
+  `Entry`, `TimePicker`, `Switch`, `Slider`, `Editor`); users are managed by `Todo.Api`
+  (`/api/users`, a validation problem per field, 409 for a taken name), cached in schema v3 and
+  fetched first by a sync; the `team` test set. Unit, integration and contract tests only; the UI
+  tests and UAT scenarios follow phrase namespaces.
 - Callable phrases (AD-017): a tester names a sequence of steps under `## Phrase:` in a scenario
   file, or in `Scenarios/*.phrases.md` for every scenario, and calls it like a phrase. Its values
   are typed by the steps they go to (or an optional `Parameters` table), `<table>` / `<doc string>`

@@ -1,0 +1,20 @@
+// "Buy milk", synced, and five users, one in each state on the pinned 10 March clock: Daan and
+// Eva available (Eva until 31 December), Finn expired (1 March), Gus inactive, Hana on leave.
+// Eva's rate has thousands, so the rate format is exercised.
+{
+  "$schema": "./testdata.schema.json",
+  "now": "2026-03-10T09:00:00Z",
+  "server": [
+    { "id": "55555555-0000-0000-0000-000000000001", "title": "Buy milk", "notes": null, "dueDate": "2026-03-12", "status": "Open", "createdAt": "2026-03-01T08:00:00Z", "updatedAt": "2026-03-01T08:00:00Z" }
+  ],
+  "local": [
+    { "id": "55555555-0000-0000-0000-000000000001", "syncState": "Synced" }
+  ],
+  "users": [
+    { "id": "77777777-0000-0000-0000-000000000001", "name": "Daan", "email": "daan@example.com", "status": "Active", "allowedUntil": null, "role": "Lead", "hoursPerWeek": 40, "hourlyRate": 85.00, "startOfDay": "08:30:00", "receivesReminders": true, "workload": 60, "notes": null, "updatedAt": "2026-03-01T08:00:00Z" },
+    { "id": "77777777-0000-0000-0000-000000000002", "name": "Eva", "email": "eva@example.com", "status": "Active", "allowedUntil": "2026-12-31", "role": "Member", "hoursPerWeek": 38, "hourlyRate": 1250.75, "startOfDay": "09:00:00", "receivesReminders": true, "workload": 35, "notes": "Works Monday to Thursday", "updatedAt": "2026-03-01T08:00:00Z" },
+    { "id": "77777777-0000-0000-0000-000000000003", "name": "Finn", "email": null, "status": "Active", "allowedUntil": "2026-03-01", "role": "Member", "hoursPerWeek": 24, "hourlyRate": 45.50, "startOfDay": "10:00:00", "receivesReminders": true, "workload": 20, "notes": null, "updatedAt": "2026-03-01T08:00:00Z" },
+    { "id": "77777777-0000-0000-0000-000000000004", "name": "Gus", "email": "gus@example.com", "status": "Inactive", "allowedUntil": null, "role": "Admin", "hoursPerWeek": 40, "hourlyRate": 70.00, "startOfDay": "09:00:00", "receivesReminders": true, "workload": 0, "notes": null, "updatedAt": "2026-03-01T08:00:00Z" },
+    { "id": "77777777-0000-0000-0000-000000000005", "name": "Hana", "email": "hana@example.com", "status": "OnLeave", "allowedUntil": null, "role": "Member", "hoursPerWeek": 32, "hourlyRate": 55.25, "startOfDay": "08:00:00", "receivesReminders": false, "workload": 50, "notes": null, "updatedAt": "2026-03-01T08:00:00Z" }
+  ]
+}
