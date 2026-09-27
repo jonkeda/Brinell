@@ -5,10 +5,10 @@ Date: 2026-09-21
 Area: `srcnew/Brinell.Presenter/`, `testsnew/Brinell.Presenter.Uat.Tests/`
 Related:
 
-- [AD-008 — gestures and semantic actions go through UI Automation](../../../.docs/decisions/ad-008-gestures-and-semantic-actions-go-through-ui-automation.md)
-- [AD-005 — physical input is opt-in](../../../.docs/decisions/ad-005-physical-input-is-opt-in.md)
-- [Bridge verb contract](../../../.docs/contracts/bridge.md)
-- [Presenter UI refresh — WP3 §3.4 records this as "Route B"](../fix/00-presenter-ui-refresh.md)
+- [AD-008 — gestures and semantic actions go through UI Automation](../../.docs/decisions/ad-008-gestures-and-semantic-actions-go-through-ui-automation.md)
+- [AD-005 — physical input is opt-in](../../.docs/decisions/ad-005-physical-input-is-opt-in.md)
+- [Bridge verb contract](../../.docs/contracts/bridge.md)
+- [Presenter UI refresh — WP3 §3.4 records this as "Route B"](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/present/fix/00-presenter-ui-refresh.md)
 - `samples/Brinell.Samples.Maui.App/MauiProgram.cs` — the reference wiring
 - `samples/Brinell.Samples.Maui.App/Automation/ToolkitVerbSink.cs` — the reference sink
 
@@ -130,7 +130,7 @@ admission test ("if an assertion needs the view model, the coverage belongs in
 ## WP3 — `Tap` on the toolkit `Expander`
 
 **This work is already recorded**, as Route B in
-[the UI refresh plan's WP3 §3.4](../fix/00-presenter-ui-refresh.md), which defers it
+[the UI refresh plan's WP3 §3.4](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/present/fix/00-presenter-ui-refresh.md), which defers it
 with: *"Record Route B here as the route to take if and when someone wants
 `Expander<T>` coverage of the Presenter itself."* This WP is that "if and when" — it
 does not re-decide anything §3.4 settled. Read §3.4 first; what follows is only the
