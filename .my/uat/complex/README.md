@@ -1,6 +1,6 @@
 # UAT for complex things
 
-Status: Guidance / discussion draft
+Status: Guidance / discussion draft. [01](01-multi-user.md) was trimmed 2026-09-27: several apps and named users are built.
 Date: 2026-09-20
 Area: `srcnew/Brinell.Uat`, `srcnew/Brinell.Mocking`
 
