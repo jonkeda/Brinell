@@ -5,6 +5,13 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Brinell.Uat;
 
+/// <summary>A fixture with a pinned clock: relative dates in steps (<c>today</c>, <c>+2d</c>) resolve against it.</summary>
+public interface IUatClock
+{
+    /// <summary>The time the scenario's test data calls now.</summary>
+    DateTimeOffset Now { get; }
+}
+
 /// <summary>
 /// A fixture that runs several apps in one scenario: two devices on one backend, two users. Each
 /// app is a session with its own test context and page objects; <c>{app} uses the app</c> makes
@@ -117,7 +124,7 @@ internal static class UatSessionSteps
     public const string Phrase = "{app} uses the app";
 
     /// <summary>Registers <c>{app} uses the app</c>, as a Given and a When, for a fixture that hosts sessions.</summary>
-    public static void Register(UatCommandCatalog catalog, IUatSessionHost host, UatConfig config)
+    public static void Register(UatCommandCatalog catalog, IUatSessionHost? host, UatConfig config)
     {
         UatCommandHandler handler = (context, invocation, cancellationToken) =>
         {

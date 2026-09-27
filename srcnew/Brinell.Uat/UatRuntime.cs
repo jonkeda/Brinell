@@ -97,6 +97,12 @@ public sealed class UatRuntime
         {
             context.SessionHost = host;
         }
+
+        context.Apps = Config.Apps;
+        if (_root is IUatClock clock)
+        {
+            context.Clock = clock;
+        }
     }
 
     public IServiceScope? CreateScope()

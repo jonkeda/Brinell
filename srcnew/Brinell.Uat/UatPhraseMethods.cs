@@ -2,24 +2,9 @@ using System.Reflection;
 
 namespace Brinell.Uat;
 
-// CommandId, Literal and HasLiteral belong to control verbs; on a phrase method they are an error (AD-011).
+// CommandId, Literal and HasLiteral belong to control verbs; on a phrase method they break the phrase (AD-011, AD-016).
 internal static class UatPhraseMethods
 {
-    public static IReadOnlyList<UatPhraseAttribute> GetPhrases(MethodInfo method)
-    {
-        var phrases = method.GetCustomAttributes<UatPhraseAttribute>().ToArray();
-        foreach (var phrase in phrases)
-        {
-            var error = ControlVerbOnlyError(method, phrase);
-            if (error is not null)
-            {
-                throw new InvalidOperationException(error);
-            }
-        }
-
-        return phrases;
-    }
-
     public static string? ControlVerbOnlyError(MethodInfo method, UatPhraseAttribute phrase)
     {
         string? property = phrase.CommandId is not null ? nameof(UatPhraseAttribute.CommandId)

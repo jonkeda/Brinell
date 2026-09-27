@@ -18,7 +18,11 @@ public sealed record UatDiagnostic(
     UatDiagnosticSeverity Severity,
     string Code,
     string Message,
-    UatSourceLocation Location);
+    UatSourceLocation Location)
+{
+    /// <summary>The value rewritten on the diagnostic's line, when there is exactly one right answer.</summary>
+    public UatTextFix? Fix { get; init; }
+}
 
 public enum UatStepKeyword
 {
@@ -55,7 +59,8 @@ public sealed record UatStep(
     UatEffectiveStepKeyword EffectiveKeyword,
     string Text,
     UatTable? Table,
-    UatSourceLocation Source);
+    UatSourceLocation Source,
+    string? DocString = null);
 
 public sealed record UatTable(
     IReadOnlyList<string> Columns,

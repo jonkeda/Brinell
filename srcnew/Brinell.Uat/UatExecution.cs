@@ -19,6 +19,15 @@ public sealed class UatExecutionContext
     /// <summary>The fixture that starts the scenario's apps, when it hosts several.</summary>
     public IUatSessionHost? SessionHost { get; set; }
 
+    /// <summary>What relative dates (<c>today</c>, <c>+2d</c>) resolve against; <see cref="Clock"/>, then the current time, when null.</summary>
+    public DateTimeOffset? Now { get; set; }
+
+    /// <summary>The fixture's pinned clock, read only when a step needs the time.</summary>
+    public IUatClock? Clock { get; set; }
+
+    /// <summary>The config's <c>Apps</c> table, which user arguments are read against.</summary>
+    public IReadOnlyList<UatAppConfig> Apps { get; set; } = [];
+
     /// <summary>Values that hold for the whole scenario, whichever app is current.</summary>
     public IDictionary<string, object?> Items { get; } = new Dictionary<string, object?>(StringComparer.Ordinal);
 

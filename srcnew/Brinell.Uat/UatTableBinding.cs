@@ -15,8 +15,9 @@ namespace Brinell.Uat;
 /// An unknown column is an error naming the known ones, never a column that is quietly ignored.
 /// </para>
 /// <para>
-/// Cells are read invariantly. An empty cell or <c>null</c> is <c>null</c> where the type allows
-/// it. Dates may be relative to the test data's pinned now: <c>today</c>, <c>+2d</c>, <c>-1d</c>.
+/// Cells are read by <see cref="UatValues"/>: dates <c>12-May-2026</c>, numbers <c>1,250.75</c>. An
+/// empty cell or <c>null</c> is <c>null</c> where the type allows it. Dates may be relative to the
+/// test data's pinned now: <c>today</c>, <c>+2d</c>, <c>-1d</c>.
 /// </para>
 /// </remarks>
 public static partial class UatTableBinding
@@ -28,13 +29,146 @@ public static partial class UatTableBinding
     public static IReadOnlyList<T> Bind<T>(this UatTable table, DateTimeOffset? now = null)
     {
         ArgumentNullException.ThrowIfNull(table);
+        return BindRows(table, table.Rows, typeof(T), Context(now), now is null).Cast<T>().ToList();
+    }
 
-        var constructor = typeof(T).GetConstructors()
-            .OrderByDescending(c => c.GetParameters().Length)
-            .FirstOrDefault()
-            ?? throw new InvalidOperationException($"{typeof(T).Name} has no public constructor to bind a table to.");
+    /// <summary>
+    /// The table as a phrase parameter of <paramref name="type"/>: a list of records (one per row),
+    /// one record (a <c>Field | Value</c> table, or a table with one row), or a list of values (a
+    /// table with one column).
+    /// </summary>
+    /// <param name="table">The step table.</param>
+    /// <param name="type">The parameter type.</param>
+    /// <param name="context">What cells are read against.</param>
+    /// <exception cref="InvalidOperationException">The table does not fit the type; the message names the row and column.</exception>
+    public static object Bind(this UatTable table, Type type, UatValueContext context)
+    {
+        ArgumentNullException.ThrowIfNull(table);
+        ArgumentNullException.ThrowIfNull(type);
+        ArgumentNullException.ThrowIfNull(context);
+
+        var problems = Check(table, type, context);
+        if (problems.Count > 0)
+        {
+            throw new InvalidOperationException(string.Join(Environment.NewLine, problems.Select(p => $"{p.Location}: {p.Problem.Message}")));
+        }
+
+        var element = UatValues.ElementType(type);
+        if (element is not null && UatValues.IsInline(element, context.Types))
+        {
+            var column = table.Columns[0];
+            var values = Array.CreateInstance(element, table.Rows.Count);
+            for (var i = 0; i < table.Rows.Count; i++)
+            {
+                values.SetValue(UatValues.Read(table.Rows[i].Cells[column], element, context), i);
+            }
+
+            return AsList(type, values);
+        }
+
+        if (element is not null)
+        {
+            var records = BindRows(table, table.Rows, element, context, strictNow: false);
+            var array = Array.CreateInstance(element, records.Count);
+            for (var i = 0; i < records.Count; i++)
+            {
+                array.SetValue(records[i], i);
+            }
+
+            return AsList(type, array);
+        }
+
+        var source = IsVertical(table) ? Vertical(table) : table;
+        return BindRows(source, source.Rows, type, context, strictNow: false)[0];
+    }
+
+    /// <summary>What is wrong with <paramref name="table"/> as a parameter of <paramref name="type"/>, at the row it is in.</summary>
+    /// <param name="table">The step table.</param>
+    /// <param name="type">The parameter type.</param>
+    /// <param name="context">What cells are read against.</param>
+    public static IReadOnlyList<(UatValueProblem Problem, UatSourceLocation Location)> Check(UatTable table, Type type, UatValueContext context)
+    {
+        ArgumentNullException.ThrowIfNull(table);
+        ArgumentNullException.ThrowIfNull(type);
+        ArgumentNullException.ThrowIfNull(context);
+
+        List<(UatValueProblem, UatSourceLocation)> problems = [];
+        var element = UatValues.ElementType(type);
+        if (element is not null && UatValues.IsInline(element, context.Types))
+        {
+            if (table.Columns.Count != 1)
+            {
+                problems.Add((new UatValueProblem("UATA006", $"a list of {UatValues.Describe(element)} takes a table with one column, not {table.Columns.Count}."), table.Source));
+                return problems;
+            }
+
+            foreach (var row in table.Rows)
+            {
+                if (!UatValues.TryRead(row.Cells[table.Columns[0]], element, context, out _, out var problem))
+                {
+                    problems.Add((problem!, row.Source));
+                }
+            }
+
+            return problems;
+        }
+
+        var recordType = element ?? type;
+        var source = element is null && IsVertical(table) ? Vertical(table) : table;
+        if (element is null && source.Rows.Count != 1)
+        {
+            problems.Add((new UatValueProblem("UATA006", $"one {recordType.Name} takes a 'Field | Value' table or a table with one row; this one has {table.Rows.Count} rows."), table.Source));
+            return problems;
+        }
+
+        var constructor = WidestConstructor(recordType);
+        if (constructor is null)
+        {
+            problems.Add((new UatValueProblem("UATA006", $"{recordType.Name} has no public constructor to bind a table to."), table.Source));
+            return problems;
+        }
+
         var parameters = constructor.GetParameters();
-        var byColumn = MapColumns(table, parameters.Select(p => p.Name!).ToList(), typeof(T));
+        Dictionary<string, string> byColumn;
+        try
+        {
+            byColumn = MapColumns(source, parameters.Select(p => p.Name!).ToList(), recordType);
+        }
+        catch (InvalidOperationException exception)
+        {
+            problems.Add((new UatValueProblem("UATA006", StripSource(source, exception.Message)), source.Source));
+            return problems;
+        }
+
+        var missing = parameters.Where(p => !p.HasDefaultValue && !byColumn.Values.Contains(p.Name!)).Select(p => Title(p.Name!)).ToList();
+        if (missing.Count > 0)
+        {
+            problems.Add((new UatValueProblem("UATA006", $"the table needs column(s) {string.Join(", ", missing)} for {recordType.Name}."), source.Source));
+            return problems;
+        }
+
+        var nullability = new NullabilityInfoContext();
+        foreach (var row in source.Rows)
+        {
+            foreach (var (column, member) in byColumn)
+            {
+                var parameter = parameters.First(p => p.Name == member);
+                if (!UatValues.TryRead(row.Cells[column], parameter.ParameterType, context, out _, out var problem, nullability.Create(parameter).WriteState == NullabilityState.Nullable))
+                {
+                    problems.Add((problem! with { Message = $"column '{column}': {problem!.Message}" }, row.Source));
+                }
+            }
+        }
+
+        return problems;
+    }
+
+    private static List<object> BindRows(UatTable table, IReadOnlyList<UatTableRow> rows, Type recordType, UatValueContext context, bool strictNow)
+    {
+        var constructor = WidestConstructor(recordType)
+            ?? throw new InvalidOperationException($"{recordType.Name} has no public constructor to bind a table to.");
+        var parameters = constructor.GetParameters();
+        var byColumn = MapColumns(table, parameters.Select(p => p.Name!).ToList(), recordType);
 
         var missing = parameters
             .Where(p => !p.HasDefaultValue && !byColumn.Values.Contains(p.Name!))
@@ -43,23 +177,50 @@ public static partial class UatTableBinding
         if (missing.Count > 0)
         {
             throw new InvalidOperationException(
-                $"{table.Source}: the table needs column(s) {string.Join(", ", missing.Select(Title))} for {typeof(T).Name}.");
+                $"{table.Source}: the table needs column(s) {string.Join(", ", missing.Select(Title))} for {recordType.Name}.");
         }
 
         var nullability = new NullabilityInfoContext();
-        return table.Rows.Select(row =>
+        return rows.Select(row =>
         {
             var arguments = parameters.Select(parameter =>
             {
                 var column = byColumn.FirstOrDefault(pair => pair.Value == parameter.Name).Key;
                 return column is null
                     ? parameter.DefaultValue
-                    : Convert(row.Cells[column], parameter.ParameterType, nullability.Create(parameter).WriteState == NullabilityState.Nullable, now, row.Source, column);
+                    : Convert(row.Cells[column], parameter.ParameterType, nullability.Create(parameter).WriteState == NullabilityState.Nullable, context, strictNow, row.Source, column);
             }).ToArray();
 
-            return (T)constructor.Invoke(arguments);
+            return constructor.Invoke(arguments);
         }).ToList();
     }
+
+    private static ConstructorInfo? WidestConstructor(Type type)
+        => type.GetConstructors().OrderByDescending(c => c.GetParameters().Length).FirstOrDefault();
+
+    // A Field | Value table is one record, written top to bottom.
+    private static bool IsVertical(UatTable table)
+        => table.Columns.Count == 2 &&
+           table.Columns[0].Equals("Field", StringComparison.OrdinalIgnoreCase) &&
+           table.Columns[1].Equals("Value", StringComparison.OrdinalIgnoreCase);
+
+    private static UatTable Vertical(UatTable table)
+    {
+        var columns = table.Rows.Select(row => row.Cells[table.Columns[0]]).ToList();
+        var cells = table.Rows.ToDictionary(row => row.Cells[table.Columns[0]], row => row.Cells[table.Columns[1]], StringComparer.Ordinal);
+        return new UatTable(columns, [new UatTableRow(cells, table.Rows.Count > 0 ? table.Rows[0].Source : table.Source)], table.Source);
+    }
+
+    private static object AsList(Type type, Array values)
+        => type.IsArray || type.IsInterface ? values : Activator.CreateInstance(type, values)!;
+
+    private static string StripSource(UatTable table, string message)
+    {
+        var prefix = $"{table.Source}: ";
+        return message.StartsWith(prefix, StringComparison.Ordinal) ? message[prefix.Length..] : message;
+    }
+
+    private static UatValueContext Context(DateTimeOffset? now) => new(now ?? DateTimeOffset.UtcNow, []);
 
     /// <summary>Every row of the table matches an item of <paramref name="actual"/>, on the listed columns.</summary>
     /// <exception cref="InvalidOperationException">A row has no match; the message shows the expected and actual rows.</exception>
@@ -154,7 +315,7 @@ public static partial class UatTableBinding
     private static List<object?[]> ExpectedRows(UatTable table, List<PropertyColumn> columns, DateTimeOffset? now)
         => table.Rows
             .Select(row => columns
-                .Select(c => Convert(row.Cells[c.Column], c.Property.PropertyType, c.Nullable, now, row.Source, c.Column))
+                .Select(c => Convert(row.Cells[c.Column], c.Property.PropertyType, c.Nullable, Context(now), now is null, row.Source, c.Column))
                 .ToArray())
             .ToList();
 
@@ -177,17 +338,7 @@ public static partial class UatTableBinding
     private static List<string> Cells<T>(T item, List<PropertyColumn> columns)
         => columns.Select(column => Show(column.Property.GetValue(item))).ToList();
 
-    private static string Show(object? value) => value switch
-    {
-        null => "null",
-        "" => "\"\"",
-        string text when string.IsNullOrWhiteSpace(text) => $"\"{text}\"",
-        DateOnly date => date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-        DateTimeOffset time => time.ToString("O", CultureInfo.InvariantCulture),
-        DateTime time => time.ToString("O", CultureInfo.InvariantCulture),
-        IFormattable formattable => formattable.ToString(null, CultureInfo.InvariantCulture),
-        _ => value.ToString() ?? string.Empty,
-    };
+    private static string Show(object? value) => UatValues.Write(value);
 
     private static string Format(string label, IReadOnlyList<string> columns, IEnumerable<IReadOnlyList<string>> rows, Func<int, string?> note)
     {
@@ -231,67 +382,17 @@ public static partial class UatTableBinding
         return map;
     }
 
-    private static object? Convert(string cell, Type type, bool nullableReference, DateTimeOffset? now, UatSourceLocation source, string column)
+    private static object? Convert(string cell, Type type, bool nullableReference, UatValueContext context, bool strictNow, UatSourceLocation source, string column)
     {
-        var underlying = Nullable.GetUnderlyingType(type);
-        var target = underlying ?? type;
-        var text = cell.Trim();
-
-        if ((underlying is not null || nullableReference) && (text.Length == 0 || text == "null"))
+        var target = Nullable.GetUnderlyingType(type) ?? type;
+        if (strictNow && UatValues.IsRelativeDate(cell) && (target == typeof(DateOnly) || target == typeof(DateTime) || target == typeof(DateTimeOffset)))
         {
-            return null;
+            throw new InvalidOperationException($"{source}: column '{column}': '{cell.Trim()}' is a relative date, but no 'now' was given to resolve it against.");
         }
 
-        try
-        {
-            if (target == typeof(string))
-            {
-                return cell;
-            }
-
-            if (target.IsEnum)
-            {
-                return Enum.TryParse(target, text, ignoreCase: true, out var value)
-                    ? value
-                    : throw new FormatException($"'{text}' is not one of {string.Join(", ", Enum.GetNames(target))}");
-            }
-
-            if (RelativeDays(text) is { } days)
-            {
-                var anchor = now ?? throw new FormatException($"'{text}' is a relative date, but no 'now' was given to resolve it against");
-                return target == typeof(DateOnly) ? DateOnly.FromDateTime(anchor.UtcDateTime).AddDays(days)
-                    : target == typeof(DateTimeOffset) ? anchor.AddDays(days)
-                    : target == typeof(DateTime) ? anchor.UtcDateTime.AddDays(days)
-                    : throw new FormatException($"'{text}' is a relative date, but the field is {target.Name}");
-            }
-
-            return target switch
-            {
-                _ when target == typeof(DateOnly) => DateOnly.Parse(text, CultureInfo.InvariantCulture),
-                _ when target == typeof(DateTimeOffset) => DateTimeOffset.Parse(text, CultureInfo.InvariantCulture),
-                _ when target == typeof(DateTime) => DateTime.Parse(text, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal),
-                _ when target == typeof(Guid) => Guid.Parse(text),
-                _ when target == typeof(TimeSpan) => TimeSpan.Parse(text, CultureInfo.InvariantCulture),
-                _ when target == typeof(bool) => bool.Parse(text),
-                _ when typeof(IConvertible).IsAssignableFrom(target) => System.Convert.ChangeType(text, target, CultureInfo.InvariantCulture),
-                _ => throw new FormatException($"cells cannot be read as {target.Name}"),
-            };
-        }
-        catch (Exception exception) when (exception is FormatException or OverflowException or ArgumentException)
-        {
-            throw new InvalidOperationException($"{source}: column '{column}': {exception.Message.TrimEnd('.')}.", exception);
-        }
-    }
-
-    private static int? RelativeDays(string text)
-    {
-        if (text.Equals("today", StringComparison.OrdinalIgnoreCase))
-        {
-            return 0;
-        }
-
-        var match = RelativeDaysRegex().Match(text);
-        return match.Success ? int.Parse(match.Groups["days"].Value, CultureInfo.InvariantCulture) * (match.Groups["sign"].Value == "-" ? -1 : 1) : null;
+        return UatValues.TryRead(cell, type, context, out var value, out var problem, nullableReference)
+            ? value
+            : throw new InvalidOperationException($"{source}: column '{column}': {problem!.Message.TrimEnd('.')}.", new UatValueException(problem));
     }
 
     private static string Key(string name) => name.Replace(" ", string.Empty, StringComparison.Ordinal).Replace("_", string.Empty, StringComparison.Ordinal).ToLowerInvariant();
@@ -315,9 +416,6 @@ public static partial class UatTableBinding
 
         return previous[b.Length];
     }
-
-    [GeneratedRegex("^(?<sign>[+-])(?<days>\\d+)d$", RegexOptions.IgnoreCase)]
-    private static partial Regex RelativeDaysRegex();
 
     private sealed record PropertyColumn(string Column, PropertyInfo Property, bool Nullable);
 }

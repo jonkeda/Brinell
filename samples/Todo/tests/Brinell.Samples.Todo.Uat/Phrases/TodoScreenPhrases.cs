@@ -26,9 +26,19 @@ public sealed class TodoScreenPhrases(TodoUatFixture fixture) : UatPhraseClassBa
     // The dialog is window chrome, the same on the edit and the detail page.
     private ContentDialog<AppRoot> Dialog => new TodoDetailPage(fixture.Context).Dialog;
 
-    /// <summary>Opens the row's detail page, as tapping the row does.</summary>
-    [UatWhen("I open the todo {title}")]
-    public void OpenTodo(string title) => fixture.List.Open(title);
+    /// <summary>Opens the row's detail page, as tapping the row does. The phrase is the name: I open the todo {title}.</summary>
+    [UatWhen]
+    public void I_open_the_todo_TITLE(string title) => fixture.List.Open(title);
+
+    /// <summary>The list shows a row for each title: <c>the list should show "A", "B" and "C"</c>.</summary>
+    [UatThen]
+    public void The_list_should_show_TITLES(string[] titles)
+    {
+        foreach (var title in titles)
+        {
+            Todos.AssertRow(title, timeoutMs: TestConstants.PageTimeoutMs);
+        }
+    }
 
     /// <summary>The row shows this status name: Open, In progress, Done or Overdue.</summary>
     [UatThen("the todo {title} should show status {status}")]

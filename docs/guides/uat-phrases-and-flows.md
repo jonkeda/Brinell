@@ -86,6 +86,7 @@ Rules:
 - Captured argument values are trimmed.
 - Surrounding double quotes are removed from captured values.
 - Use C#-friendly placeholder names when binding directly to method parameters.
+- A placeholder's type is its method parameter's; see [Arguments](#arguments).
 
 ## Binding Rules
 
@@ -109,6 +110,102 @@ Common diagnostics:
 | `UATB002` | The step is ambiguous. |
 | `UATB003` | The matched command requires a table. |
 | `UATB004` | The matched command does not accept a table. |
+| `UATA001`-`UATA007` | A value does not fit its parameter (see [Arguments](#arguments)). |
+| `UATA010`-`UATA013` | The step binds to a broken phrase (see [Broken Phrases](#broken-phrases)). |
+
+## Arguments
+
+A phrase says `{name}`; the method's parameter `name` gives the type. Every value a scenario
+writes - on the step line, in an Examples cell, in a table cell - is read the same way, whatever
+the machine's culture, and checked when the step binds (AD-016):
+
+| Type | Written as | Examples |
+| --- | --- | --- |
+| `string` | as is; quotes optional, needed for `""`, spaces at the ends, or `, ` in a list item; `\"` inside quotes | `Buy milk`, `"Buy milk"` |
+| `int`, `long` | digits, `,` between groups of three | `7`, `1,250` |
+| `decimal`, `double` | `.` for decimals, `,` for thousands | `0.5`, `1,250.75` |
+| `bool` | `true` or `false` | |
+| enum | the member name, any case, spaces allowed | `Open`, `In Progress` |
+| `DateOnly` | `dd-MMM-yyyy`, English month; relative to the fixture's clock | `12-May-2026`, `3-jan-2027`, `today`, `+2d` |
+| `DateTime`, `DateTimeOffset` | `dd-MMM-yyyy HH:mm` | `12-May-2026 14:30` |
+| `TimeOnly` / `TimeSpan` | `HH:mm` / `d h m s` | `09:15` / `1h 30m` |
+| nullable | `null`, or an empty cell | |
+| `UatUserRole` | a user or app name from the `Apps` table | `Eva` |
+| arrays and lists | `, ` between items and a last `and` | `"A", "B" and "C"`, `1,250.5, 3 and 7` |
+| a record, a list of records | the table under the step | see below |
+| an app type | `[UatArgumentType]` with `static Parse(string)`, or an `IUatArgumentConverter<T>` in the fixture's scan | `1,250.00 EUR` |
+
+`1,5`, `2026-05-12` and `12/05/2026` are refused, with the way to write them. A parameter the
+phrase does not name comes from under the step:
+
+```csharp
+[UatGiven("the server also has todos")]
+public void ServerAlsoHas(IReadOnlyList<ServerTodoRow> todos) { ... }   // a row per todo
+
+[UatWhen("I create the todo")]
+public void Create(TodoRow todo) { ... }                                 // a Field | Value table, or one row, or a JSON doc string
+
+[UatThen("the todos should be open")]
+public void TodosAreOpen(List<string> titles) { ... }                    // a one-column table
+
+[UatWhen("I write the note")]
+public void Write(string note) { ... }                                   // a """ doc string
+```
+
+```gherkin
+When I create the todo
+  | Field    | Value            |
+  | -------- | ---------------- |
+  | Title    | Write the report |
+  | Due Date | 12-May-2026      |
+And I write the note
+  """
+  Dear Eva,
+  please buy milk.
+  """
+```
+
+A step has one table or doc string, so a method takes at most one such parameter. Relative dates
+resolve against `IUatClock.Now` when the fixture implements it (the Todo fixtures return their
+test set's now), and against the current time otherwise.
+
+## Phrases From Method Names
+
+An empty keyword attribute makes the method name the phrase. Words are split on `_` and on case;
+a word in capitals that is a parameter's name is its placeholder, `USER` is `{user}`, and other
+words are lowercased (`I` stays):
+
+| Method | Phrase |
+| --- | --- |
+| `[UatWhen] I_open_the_todo_TITLE(string title)` | When `I open the todo {title}` |
+| `[UatWhen] When_I_open_the_todo_TITLE(string title)` | the same; a prefix equal to the attribute's keyword is dropped |
+| `[UatThen] The_list_should_show_TITLES(string[] titles)` | Then `the list should show {titles}` |
+| `[UatGiven] [UatWhen] The_device_is_offline()` | Given and When `the device is offline` |
+
+In a phrase class a method with no attribute whose name starts with `Given`, `When` or `Then` is
+inferred too; on the fixture only an attribute makes a phrase. A phrase with punctuation
+(`read-only`) is written in text. A `{user}` form is always written in text, next to the empty
+attribute (AD-015):
+
+```csharp
+[UatWhen]                                          // I open the todo {title}
+[UatWhen("{user} opens the todo {title}")]
+public void I_open_the_todo_TITLE(string title) { ... }
+```
+
+## Broken Phrases
+
+A declaration that is wrong does not stop the catalog. The phrase is marked, everything else
+loads, and a step that binds to it fails naming the method:
+
+| Code | The phrase |
+| --- | --- |
+| `UATA010` | does not name a parameter that the step must supply |
+| `UATA011` | has a method name that cannot be read (a parameter `i`, `TITLESTATUS` with no `_`) |
+| `UATA012` | takes two parameters from under the step |
+| `UATA013` | has two empty attributes of one keyword, a name prefix that is not its keyword, an empty attribute on a control verb, or a control-verb property (`CommandId`, `Literal`) on a phrase method |
+
+`brinell-data phrases` lists the broken ones as warnings.
 
 ## Built-In Phrases
 
@@ -326,9 +423,7 @@ Supported custom phrase method inputs include:
 - typed settings classes, including classes marked with
   `[TestSettingsSection]`.
 
-Phrase argument values are converted to the target parameter type. Current code
-handles common scalar types such as `string`, `int`, `double`, `bool`, enums,
-nullable versions of those types, and types supported by `Convert.ChangeType`.
+Phrase argument values are read as the parameter's type; see [Arguments](#arguments).
 
 Supported returns:
 
@@ -380,10 +475,9 @@ Phrase classes are discovered from the fixture's `TestComposition` scan. They
 require an active DI scope at execution time. A class is treated as a phrase
 class when it has `[UatPhraseClass]` or derives from `UatPhraseClassBase`.
 
-Phrase-class methods use the same attributes. If a phrase-class method has no
-attribute, the runtime can infer a phrase from a method name starting with
-`Given`, `When`, or `Then`, but explicit attributes are clearer and are required
-when the phrase needs parameters.
+Phrase-class methods use the same attributes. A phrase-class method with no
+attribute whose name starts with `Given`, `When` or `Then` is a phrase too; see
+[Phrases From Method Names](#phrases-from-method-names).
 
 ## Tables
 
@@ -407,8 +501,8 @@ catalog.Register(
     requiresTable: true);
 ```
 
-Custom root phrases and phrase classes can read the table by accepting
-`UatStepInvocation` and using `invocation.Table`.
+Custom root phrases and phrase classes receive the table as a `UatTable`
+parameter, or bound to records by a record or list parameter (see [Arguments](#arguments)).
 
 Named `## Data: <name>` tables are parsed into the UAT document model. Current
 binding and execution code does not consume them automatically.
@@ -479,6 +573,11 @@ The rule is [AD-015](../../.docs/decisions/ad-015-a-steps-subject-picks-its-app.
 - `srcnew/Brinell.Uat/UatCommandCatalog.cs`
 - `srcnew/Brinell.Uat/UatBinder.cs` — binding, subjects and the current app
 - `srcnew/Brinell.Uat/UatCatalogSet.cs` — the catalogs per head, and what a step can see
+- `srcnew/Brinell.Uat/UatValues.cs` — how every scenario value is read and written
+- `srcnew/Brinell.Uat/UatPhraseDeclarations.cs` — a method's phrases, parameters and problems
+- `srcnew/Brinell.Uat/UatArguments.cs` — the bind-time check and the run-time read
+- `srcnew/Brinell.Uat/UatArgumentTypes.cs` — `UatUserRole`, `[UatArgumentType]`, converters
+- `srcnew/Brinell.Uat/UatScenarioCheck.cs` — checking files without running them (`brinell-data`)
 - `srcnew/Brinell.Uat/UatSessions.cs` — `IUatSessionHost`, `IUatAppsHost`
 - `srcnew/Brinell.Uat/UatExecution.cs`
 - `srcnew/Brinell.Uat/UatCatalogBuilder.cs`

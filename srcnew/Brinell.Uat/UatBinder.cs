@@ -152,6 +152,7 @@ public static class UatBinder
         }
 
         var arguments = match.Arguments;
+        var rawArguments = match.RawArguments;
         if (catalogs.Apps.Count == 0 && arguments.TryGetValue(UserParameter, out var namedUser) && namedUser != "I")
         {
             diagnostics.Add(new UatDiagnostic(
@@ -171,6 +172,23 @@ public static class UatBinder
             }
 
             arguments = new Dictionary<string, string>(arguments, StringComparer.Ordinal) { [UserParameter] = boundUser };
+            rawArguments = new Dictionary<string, string>(rawArguments, StringComparer.Ordinal) { [UserParameter] = boundUser };
+        }
+
+        // A broken phrase and a value that does not fit fail here, before any app starts (AD-016).
+        var argumentProblems = UatArguments.Check(
+            match.Pattern,
+            step,
+            rawArguments,
+            new UatValueContext(DateTimeOffset.UtcNow, catalogs.Apps, catalogs.CatalogFor(app).ArgumentTypes));
+        if (argumentProblems.Count > 0)
+        {
+            foreach (var problem in argumentProblems)
+            {
+                diagnostics.Add(problem);
+            }
+
+            return;
         }
 
         apps.Use(app);
@@ -183,6 +201,7 @@ public static class UatBinder
             fromBackground)
         {
             App = app?.Name,
+            RawArguments = rawArguments,
         });
     }
 
@@ -322,4 +341,7 @@ public sealed record UatStepInvocation(
 
     /// <summary>The app the step runs on, from the <c>Apps</c> table; null for the fixture's own.</summary>
     public string? App { get; init; }
+
+    /// <summary>The arguments as written, quotes kept, which typed parameters are read from.</summary>
+    public IReadOnlyDictionary<string, string> RawArguments { get; init; } = Arguments;
 }

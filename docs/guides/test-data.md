@@ -94,7 +94,9 @@ dotnet run --project ../../../../tools/Brinell.DataValidator -- schema
 
 | Command | Does |
 | --- | --- |
-| `validate [file] [--format json]` | Every test set (or one file), plus every `TestData` name in `Scenarios/**/*.uat.md` and `DefaultTestData` |
+| `validate [file] [--format json] [--fix]` | Every test set (or one file), plus every `TestData` name in `Scenarios/**/*.uat.md` and `DefaultTestData`. With a `Fixture` and a `Pages` assembly in the config, also every scenario file (or one `.uat.md`): parse, bind and argument errors, as the xUnit gate reports them. `--fix` rewrites values with one right answer (`2026-05-12` to `12-May-2026`) |
+| `phrases [--keyword When] [--format json]` | The phrases steps can use, with argument types (`{due: date}`), where each is declared, and broken phrases as warnings |
+| `snippet <file>:<line>` | A method for a step that binds to nothing, its phrase in the name: `When_I_archive_P1_on_P2(string p1, DateOnly p2)` |
 | `describe <Type>` | The fields a file writes for a type: required, nullable, enum values |
 | `list` | The test sets, their record counts, and which files use each |
 | `schema [--check]` | Writes (or checks) `testdata.schema.json` |
@@ -113,6 +115,7 @@ project's): rebuild, or it checks the old types.
 | `DATA004` | Not valid JSON |
 | `DATA010` / `DATA011` | A rule failed / a duplicate id |
 | `DATA020` | A `TestData` reference names no test set |
+| `UAT0xx`, `UATB0xx`, `UATA0xx` | A scenario file's parse, bind and argument errors ([Arguments](uat-phrases-and-flows.md#arguments)) |
 
 ## In UAT
 

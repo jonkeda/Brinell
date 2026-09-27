@@ -8,6 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Typed UAT arguments (AD-016): a phrase's `{name}` takes its type from the method parameter, and
+  every step value, Examples cell and table cell is read by `UatValues` in one invariant format -
+  dates `12-May-2026` (or `today`, `+2d`), numbers `1,250.75`, enums by name with spaces, lists
+  `"A", "B" and "C"`. Values are checked when a step binds (`UATA001`-`UATA007`), before any app
+  starts. Record and list parameters take the step's table (`Field | Value` for one record), a
+  string parameter the phrase does not name takes a `"""` doc string (JSON for a record),
+  `UatUserRole` is a user from the `Apps` table, and `[UatArgumentType]` / `IUatArgumentConverter<T>`
+  add app types. `IUatClock` gives relative dates the fixture's now.
+- Phrases from method names: an empty `[UatGiven]`/`[UatWhen]`/`[UatThen]` makes the method name the
+  phrase, parameters in capitals (`I_open_the_todo_TITLE(string title)`).
+- Broken phrases (`UATA010`-`UATA013`) no longer stop the catalog: the phrase is marked and only a
+  step that binds to it fails.
+- `brinell-data validate` checks scenario files too (parse, bind, arguments), `--fix` rewrites
+  values with one right answer, `phrases` lists the phrases with argument types, and `snippet`
+  writes a method for a step that binds to nothing.
 - UAT subjects (AD-015): a step that starts with an app or user from the `Apps` table runs on
   that app, through a phrase declared with `{user}` first: `Daan taps Save` binds to
   `{user} taps {control}` on Daan's app, and the app stays current. Every built-in `I ...` control
@@ -143,6 +158,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Request/response recording
 
 ### Changed
+- `UatTableBinding` reads cells with `UatValues`: table dates are written `12-May-2026`, not
+  `2026-05-12`, and failure tables print values that way. A phrase method with a `CommandId` is a
+  broken phrase instead of a catalog exception; `UatDiscovery` reports it as a warning.
 - `UatPhraseAttribute` is abstract, lives in `Brinell.Core.Testing`, has a non-null `Keyword`
   and carries `CommandId`, `Literal` and `HasLiteral`. A phrase method that sets any of those
   three fails discovery with an error naming the method (`UATD004` in `UatDiscovery`).

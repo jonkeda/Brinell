@@ -45,5 +45,9 @@ The short list that must not be broken. Each links the decision that explains it
   and runs on Daan's app; no verb forms are inferred, names come from the `Apps` table only, and
   the subject sticks.
   [AD-015](decisions/ad-015-a-steps-subject-picks-its-app.md)
+- **Phrase arguments are typed by the method.** One invariant reader for step values, Examples
+  and table cells (`12-May-2026`, `1,250.75`), checked at bind time; a broken phrase fails only the
+  steps that use it; the gate and `brinell-data` check alike.
+  [AD-016](decisions/ad-016-phrase-arguments-are-typed-by-the-method.md)
 - **The generator output is not hand-edited.** `.gen.cs` mirrors `.tpl.cs` through
   `Brinell.Generator`. [control-object](contracts/control-object.md)

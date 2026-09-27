@@ -33,15 +33,12 @@ And Todos should have todo "Buy bread"
 ```gherkin
 Given I am on the Todo List page
 And the server also has todos
-  | Title            | Status | DueDate |
-  | ---------------- | ------ | ------- |
-  | Post the letters | Open   | +2d     |
-And the server also has todos
-  | Title           | Status     |
-  | --------------- | ---------- |
-  | Paint the fence | InProgress |
+  | Title            | Status      | Due Date |
+  | ---------------- | ----------- | -------- |
+  | Post the letters | Open        | +2d      |
+  | Paint the fence  | In Progress |          |
 When I tap Sync
-Then Todos should have todo "Post the letters"
+Then the list should show "Post the letters" and "Paint the fence"
 And the todo "Post the letters" should show a due date
 And the todo "Post the letters" should show status "Open"
 And the todo "Paint the fence" should show no due date

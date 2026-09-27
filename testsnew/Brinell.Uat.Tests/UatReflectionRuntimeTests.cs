@@ -167,12 +167,22 @@ public sealed class UatReflectionRuntimeTests
     }
 
     [Fact]
-    public void PhraseMethod_WithCommandId_FailsDiscoveryNamingTheMethod()
+    public void PhraseMethod_WithCommandId_IsBroken_AndFailsOnlyTheStepThatUsesIt()
     {
-        var runtime = UatReflectionRuntime.FromRoot(new CommandIdFixture());
+        // The catalog still builds; the step that binds to the broken phrase names the problem (AD-016).
+        var catalog = UatReflectionRuntime.FromRoot(new CommandIdFixture()).CreateCommandCatalog();
+        var parse = UatMarkdownParser.Parse("""
+            # UAT: Broken
 
-        var error = Assert.Throws<InvalidOperationException>(() => runtime.CreateCommandCatalog());
+            ## Scenario: Uses the broken phrase
 
+            Given I remember something
+            """);
+
+        var bind = UatBinder.Bind(parse.Document!, catalog);
+
+        var error = Assert.Single(bind.Diagnostics);
+        Assert.Equal("UATA013", error.Code);
         Assert.Contains(nameof(CommandIdFixture.Remember), error.Message, StringComparison.Ordinal);
         Assert.Contains(nameof(UatPhraseAttribute.CommandId), error.Message, StringComparison.Ordinal);
     }

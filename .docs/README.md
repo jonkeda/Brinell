@@ -34,6 +34,7 @@ How this differs from the other trees:
 - [AD-013: Html controls have MAUI's shape](decisions/ad-013-html-controls-have-mauis-shape.md)
 - [AD-014: One scenario file serves every head](decisions/ad-014-one-scenario-file-serves-every-head.md)
 - [AD-015: A step's subject picks its app](decisions/ad-015-a-steps-subject-picks-its-app.md)
+- [AD-016: Phrase arguments are typed by the method](decisions/ad-016-phrase-arguments-are-typed-by-the-method.md)
 
 ## Contracts
 

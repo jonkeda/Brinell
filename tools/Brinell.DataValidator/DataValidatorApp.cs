@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Brinell.Core.Testing;
 using Brinell.TestData;
 using Brinell.Uat;
 
@@ -22,6 +23,8 @@ public static class DataValidatorApp
                 "validate" => Validate(options, output, errors),
                 "describe" => Describe(options, output, errors),
                 "list" => List(options, output, errors),
+                "phrases" => Phrases(options, output),
+                "snippet" => Snippet(options, output),
                 "schema" => Schema(options, output, errors),
                 "help" or "--help" or "-h" => Usage(output, 0),
                 _ => Usage(errors, 2),
@@ -36,32 +39,50 @@ public static class DataValidatorApp
 
     private static int Validate(ToolOptions options, TextWriter output, TextWriter errors)
     {
-        var definitions = LoadDefinitions(options, errors);
         List<TestDataDiagnostic> diagnostics = [];
+        var scenarioFile = options.Argument is { } argument && argument.EndsWith(".uat.md", StringComparison.OrdinalIgnoreCase)
+            ? Existing(options, argument)
+            : null;
+        var testSets = 0;
+        var scenarios = 0;
 
-        if (options.Argument is { } file)
+        if (scenarioFile is null && (options.Assemblies.Count > 0 || HasTestData(options) || options.ConfigPath is null || !ScenarioCheck.CanCheck(options.ConfigPath)))
         {
-            var path = Path.GetFullPath(Path.Combine(options.CurrentDirectory, file));
-            if (!File.Exists(path))
+            var definitions = LoadDefinitions(options, errors);
+            testSets = definitions.Sum(d => d.TestSetNames.Count);
+            if (options.Argument is { } file)
             {
-                throw new ToolException($"'{file}' does not exist.");
+                var path = Existing(options, file);
+                var owner = definitions.FirstOrDefault(d => path.StartsWith(d.Folder + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                    ?? definitions[0];
+                diagnostics.AddRange(TestDataValidator.Validate(owner, path).Diagnostics);
             }
+            else
+            {
+                foreach (var definition in definitions)
+                {
+                    diagnostics.AddRange(TestDataValidator.Validate(definition).Diagnostics);
+                }
 
-            var owner = definitions.FirstOrDefault(d => path.StartsWith(d.Folder + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
-                ?? definitions[0];
-            diagnostics.AddRange(TestDataValidator.Validate(owner, path).Diagnostics);
+                if (options.ConfigPath is { } config)
+                {
+                    var known = definitions.SelectMany(d => d.TestSetNames).ToHashSet(StringComparer.Ordinal);
+                    diagnostics.AddRange(ReferenceCheck.Check(ReferenceCheck.Find(config), known));
+                }
+            }
         }
-        else
-        {
-            foreach (var definition in definitions)
-            {
-                diagnostics.AddRange(TestDataValidator.Validate(definition).Diagnostics);
-            }
 
-            if (options.ConfigPath is { } config)
+        if (options.Argument is null || scenarioFile is not null)
+        {
+            if (options.ConfigPath is { } config && ScenarioCheck.CanCheck(config))
             {
-                var known = definitions.SelectMany(d => d.TestSetNames).ToHashSet(StringComparer.Ordinal);
-                diagnostics.AddRange(ReferenceCheck.Check(ReferenceCheck.Find(config), known));
+                var files = scenarioFile is null ? ScenarioCheck.Files(config) : [scenarioFile];
+                diagnostics.AddRange(CheckScenarios(options, ScenarioCheck.Catalogs(config), files, output, errors));
+                scenarios = files.Count;
+            }
+            else if (scenarioFile is not null)
+            {
+                throw new ToolException($"To check '{options.Argument}', run from a UAT project folder whose {ConfigFileName} names its Fixture and a Pages assembly.");
             }
         }
 
@@ -78,12 +99,111 @@ public static class DataValidatorApp
                 output.WriteLine((diagnostic with { File = Display(options, diagnostic.File) }).ToString());
             }
 
+            List<string> checkedParts = [];
+            if (testSets > 0)
+            {
+                checkedParts.Add($"{testSets} test set(s)");
+            }
+
+            if (scenarios > 0)
+            {
+                checkedParts.Add($"{scenarios} scenario file(s)");
+            }
+
             output.WriteLine(diagnostics.Count == 0
-                ? $"No problems in {definitions.Sum(d => d.TestSetNames.Count)} test set(s)."
+                ? $"No problems in {string.Join(" and ", checkedParts)}."
                 : $"{diagnostics.Count} error(s).");
         }
 
         return diagnostics.Count == 0 ? 0 : 1;
+    }
+
+    // Every problem of the scenario files, the same checks the xUnit gate runs; --fix first rewrites
+    // what has one right answer, then checks the file again.
+    private static IEnumerable<TestDataDiagnostic> CheckScenarios(ToolOptions options, UatCatalogSet catalogs, IReadOnlyList<string> files, TextWriter output, TextWriter errors)
+    {
+        foreach (var file in files)
+        {
+            var found = UatScenarioCheck.CheckFile(file, catalogs);
+            if (options.Fix)
+            {
+                var (text, count) = UatScenarioCheck.ApplyFixes(File.ReadAllText(file), found);
+                if (count > 0)
+                {
+                    File.WriteAllText(file, text);
+                    output.WriteLine($"Fixed {count} value(s) in {Display(options, file)}.");
+                    found = UatScenarioCheck.CheckFile(file, catalogs);
+                }
+            }
+
+            foreach (var warning in found.Where(d => d.Severity == UatDiagnosticSeverity.Warning))
+            {
+                errors.WriteLine($"warning: {Display(options, warning.Location.FilePath ?? file)}:{warning.Location.LineNumber}: {warning.Code} {warning.Message}");
+            }
+
+            foreach (var error in found.Where(d => d.Severity == UatDiagnosticSeverity.Error))
+            {
+                yield return new TestDataDiagnostic(error.Location.FilePath ?? file, error.Location.LineNumber, error.Code, null, error.Message);
+            }
+        }
+    }
+
+    private static int Phrases(ToolOptions options, TextWriter output)
+    {
+        var config = options.ConfigPath ?? throw new ToolException($"No {ConfigFileName} here. Run from a UAT project folder, or pass --config.");
+        var catalog = ScenarioCheck.Catalogs(config).Default;
+        UatEffectiveStepKeyword? keyword = options.Keyword is { } name
+            ? Enum.TryParse<UatEffectiveStepKeyword>(name, ignoreCase: true, out var parsed) ? parsed : throw new ToolException($"'{name}' is not Given, When or Then.")
+            : null;
+
+        if (options.Json)
+        {
+            output.WriteLine(JsonSerializer.Serialize(
+                catalog.Patterns.Where(p => keyword is null || p.Keyword == keyword).Select(p => new
+                {
+                    keyword = p.Keyword.ToString(),
+                    phrase = p.Phrase,
+                    parameters = p.Parameters.Select(parameter => new { parameter.Name, type = UatValues.Describe(parameter.Type), source = parameter.Source.ToString() }),
+                    declaration = p.CommandId,
+                    problem = p.Problem is { } problem ? $"{problem.Code} {problem.Message}" : null,
+                }),
+                OutputJson));
+            return 0;
+        }
+
+        foreach (var line in UatScenarioCheck.DescribePhrases(catalog, keyword))
+        {
+            output.WriteLine(line);
+        }
+
+        return 0;
+    }
+
+    private static int Snippet(ToolOptions options, TextWriter output)
+    {
+        var target = options.Argument ?? throw new ToolException("snippet needs a step, e.g. 'brinell-data snippet Scenarios/TOD.01.uat.md:14'.");
+        var colon = target.LastIndexOf(':');
+        if (colon <= 1 || !int.TryParse(target[(colon + 1)..], out var line))
+        {
+            throw new ToolException($"'{target}' is not <file>:<line>.");
+        }
+
+        var parse = UatMarkdownParser.ParseFile(Existing(options, target[..colon]));
+        var step = parse.Document is { } document
+            ? document.Background.Concat(document.Scenarios.SelectMany(scenario => scenario.Steps)).FirstOrDefault(candidate => candidate.Source.LineNumber == line)
+            : null;
+        output.WriteLine(UatScenarioCheck.Snippet(step ?? throw new ToolException($"There is no step on line {line} of {target[..colon]}.")));
+        return 0;
+    }
+
+    private static bool HasTestData(ToolOptions options)
+        => options.ConfigPath is { } config && UatConfigParser.Parse(File.ReadAllText(config)).Assemblies
+            .Any(a => string.Equals(a.Kind, UatConfigFields.TestDataAssemblyKind, StringComparison.OrdinalIgnoreCase));
+
+    private static string Existing(ToolOptions options, string file)
+    {
+        var path = Path.GetFullPath(Path.Combine(options.CurrentDirectory, file));
+        return File.Exists(path) ? path : throw new ToolException($"'{file}' does not exist.");
     }
 
     private static int Describe(ToolOptions options, TextWriter output, TextWriter errors)
@@ -194,7 +314,7 @@ public static class DataValidatorApp
         }
 
         var directory = Path.GetDirectoryName(config)!;
-        var assemblies = UatConfigParser.ParseFile(config).Assemblies
+        var assemblies = UatConfigParser.Parse(File.ReadAllText(config)).Assemblies
             .Where(a => string.Equals(a.Kind, UatConfigFields.TestDataAssemblyKind, StringComparison.OrdinalIgnoreCase))
             .Select(a => Path.GetFullPath(Path.Combine(directory, a.Assembly)))
             .ToList();
@@ -226,10 +346,15 @@ public static class DataValidatorApp
     private static int Usage(TextWriter writer, int exitCode)
     {
         writer.WriteLine("""
-            brinell-data - check an app's Brinell test data
+            brinell-data - check an app's Brinell test data and scenario files
 
             Usage (from a UAT project folder with a uat.config.md, or with --assembly):
-              brinell-data validate [file] [--format json]   check every test set, or one file
+              brinell-data validate [file] [--format json] [--fix]
+                                                             check every test set and scenario, or one file;
+                                                             --fix rewrites values with one right answer
+              brinell-data phrases [--keyword When] [--format json]
+                                                             the phrases steps can use, with argument types
+              brinell-data snippet <file>:<line>             a method for a step that binds to nothing
               brinell-data describe <Type>                   the fields of a test-data type
               brinell-data list                              the test sets and what uses them
               brinell-data schema [--check]                  write (or check) testdata.schema.json
@@ -254,6 +379,10 @@ internal sealed record ToolOptions(
     bool Check,
     string CurrentDirectory)
 {
+    public bool Fix { get; init; }
+
+    public string? Keyword { get; init; }
+
     public static ToolOptions Parse(string[] args, string currentDirectory)
     {
         if (args.Length == 0)
@@ -266,6 +395,8 @@ internal sealed record ToolOptions(
         List<string> assemblies = [];
         var json = false;
         var check = false;
+        var fix = false;
+        string? keyword = null;
 
         for (var i = 1; i < args.Length; i++)
         {
@@ -283,6 +414,12 @@ internal sealed record ToolOptions(
                 case "--check":
                     check = true;
                     break;
+                case "--fix":
+                    fix = true;
+                    break;
+                case "--keyword" when i + 1 < args.Length:
+                    keyword = args[++i];
+                    break;
                 case var value when value.StartsWith("--", StringComparison.Ordinal):
                     throw new ToolException($"Unknown option '{value}'.");
                 default:
@@ -292,6 +429,6 @@ internal sealed record ToolOptions(
         }
 
         config ??= Path.Combine(currentDirectory, "uat.config.md");
-        return new ToolOptions(args[0], argument, assemblies, File.Exists(config) ? config : null, json, check, currentDirectory);
+        return new ToolOptions(args[0], argument, assemblies, File.Exists(config) ? config : null, json, check, currentDirectory) { Fix = fix, Keyword = keyword };
     }
 }

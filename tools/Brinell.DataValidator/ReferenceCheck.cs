@@ -9,7 +9,7 @@ internal static class ReferenceCheck
     public static IReadOnlyList<TestDataReference> Find(string configPath)
     {
         List<TestDataReference> references = [];
-        var config = UatConfigParser.ParseFile(configPath);
+        var config = UatConfigParser.Parse(File.ReadAllText(configPath));
         if (config.Runtime.TryGetValue(UatConfigFields.DefaultTestData, out var fallback) && fallback.Length > 0)
         {
             references.Add(new TestDataReference(configPath, LineOf(configPath, UatConfigFields.DefaultTestData), fallback));

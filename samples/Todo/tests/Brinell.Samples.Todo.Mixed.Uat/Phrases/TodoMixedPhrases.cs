@@ -16,21 +16,21 @@ public sealed class TodoMixedPhrases(TodoMixedUatFixture fixture) : UatPhraseCla
 {
     /// <summary>The backend received the todo from the user's app: a PUT that carries its <c>X-Todo-Client</c>.</summary>
     [UatThen("the server should have received the todo {title} from {user}")]
-    public void ServerReceivedFrom(string title, string user) => fixture.WaitForTodoFrom(fixture.Apps.Get(user), title);
+    public void ServerReceivedFrom(string title, UatUserRole user) => fixture.WaitForTodoFrom(fixture.Apps.Get(user.Name), title);
 
     /// <summary>The user's app loses its network.</summary>
     [UatGiven("{user} is offline")]
-    public void Offline(string user) => NetworkOf(user).SetOffline();
+    public void Offline(UatUserRole user) => NetworkOf(user).SetOffline();
 
     /// <summary>The user's app loses its network.</summary>
     [UatWhen("{user} goes offline")]
-    public void GoesOffline(string user) => NetworkOf(user).SetOffline();
+    public void GoesOffline(UatUserRole user) => NetworkOf(user).SetOffline();
 
     /// <summary>The user's app has its network back.</summary>
     [UatWhen("{user} is back online")]
-    public void BackOnline(string user) => NetworkOf(user).SetOnline();
+    public void BackOnline(UatUserRole user) => NetworkOf(user).SetOnline();
 
-    private NetworkStateFile NetworkOf(string user) => fixture.Apps.Get(user) switch
+    private NetworkStateFile NetworkOf(UatUserRole user) => fixture.Apps.Get(user.Name) switch
     {
         TodoMauiDevice maui => maui.Network,
         TodoWebDevice web => web.Network,

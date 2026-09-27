@@ -54,7 +54,7 @@ public sealed class UatTableBindingTests
             | x     | Opne   |
             """).Bind<Todo>());
 
-        Assert.Contains("'Opne' is not one of Open, InProgress, Done", exception.Message);
+        Assert.Contains("'Opne' is not a Status. Did you mean Open? It is one of Open, InProgress, Done", exception.Message);
     }
 
     [Fact]
@@ -94,11 +94,11 @@ public sealed class UatTableBindingTests
     public void AssertContains_ShowsDatesAsTheyAreWritten()
     {
         var exception = Assert.Throws<InvalidOperationException>(() => Table("""
-            | Title    | Due Date   |
-            | Buy milk | 2026-03-13 |
+            | Title    | Due Date    |
+            | Buy milk | 13-Mar-2026 |
             """).AssertContains(Rows()));
 
-        Assert.Contains("closest differs in Due Date: 2026-03-12", exception.Message);
+        Assert.Contains("closest differs in Due Date: 12-Mar-2026", exception.Message);
     }
 
     [Fact]

@@ -10,7 +10,8 @@ namespace Brinell.Samples.Todo.TestSupport.Uat;
 /// </summary>
 /// <remarks>
 /// Tables bind to the real types (<see cref="TodoDto"/>, the app's <c>TodoItem</c>), listing only
-/// the columns that matter; relative dates are resolved against the test set's now. Read the
+/// the columns that matter; relative dates are resolved against the test set's now. A record list
+/// parameter (<see cref="ServerAlsoHas"/>) gets its rows from the engine, checked when the step binds. Read the
 /// database only after a UI sentinel (the row is on screen), so the app's write has landed. The same
 /// steps for every head: each head's fixture is an <see cref="ITodoArrangement"/>.
 /// </remarks>
@@ -19,10 +20,10 @@ public sealed class TodoDataPhrases(ITodoArrangement fixture) : UatPhraseClassBa
 {
     /// <summary>Adds the table's todos to the fake server, as another device would.</summary>
     [UatGiven("the server also has todos")]
-    public void ServerAlsoHas(UatTable table)
+    public void ServerAlsoHas(IReadOnlyList<ServerTodoRow> todos)
     {
         var data = new TodoData(fixture.TestSet.Now);
-        foreach (var row in table.Bind<ServerTodoRow>(fixture.TestSet.Now))
+        foreach (var row in todos)
         {
             fixture.Server.Store(data.Todo(row.Title, row.Status, row.DueDate, row.Notes));
         }

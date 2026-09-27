@@ -336,6 +336,9 @@ print the expected rows, the actual rows and the closest difference. Columns mat
 members without case or spaces (`Due Date` is `DueDate`); an unknown column is an
 error naming the known ones. An empty cell or `null` is `null` where the type
 allows it, and dates may be relative to the test set's now: `today`, `+2d`, `-1d`.
+Cells are written in the scenario format - `12-May-2026`, `1,250.75`, `In Progress` - and a
+phrase that takes a record list instead of a `UatTable` gets its rows bound and checked when the
+step binds ([Arguments](uat-phrases-and-flows.md#arguments)).
 
 ## Authoring Rules
 

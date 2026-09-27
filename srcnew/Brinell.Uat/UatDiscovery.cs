@@ -52,26 +52,36 @@ public static class UatDiscovery
                      .Where(type => !controlTypes.Contains(type) && !IsControlObjectType(type))
                      .SelectMany(GetCandidateMethods))
         {
-            foreach (var phrase in method.GetCustomAttributes<UatPhraseAttribute>())
+            // A broken phrase stays in the catalog and fails the step that uses it (AD-016); here it
+            // is only a warning.
+            var (phrases, unmatchable) = UatPhraseDeclarations.Of(method, inferWithoutAttribute: false);
+            foreach (var phrase in phrases)
             {
-                var error = UatPhraseMethods.ControlVerbOnlyError(method, phrase);
-                if (error is not null)
-                {
-                    diagnostics.Add(new UatDiagnostic(
-                        UatDiagnosticSeverity.Error,
-                        "UATD004",
-                        error,
-                        new UatSourceLocation(null, 1)));
-                    continue;
-                }
-
                 var command = new UatCommandBinding(
                     phrase.Phrase,
                     phrase.Keyword,
                     $"{method.DeclaringType!.FullName}.{method.Name}",
                     method);
                 commands.Add(command);
-                catalog.Register(phrase.Keyword, phrase.Phrase, command.CommandId);
+                catalog.Register(phrase.Keyword, phrase.Phrase, command.CommandId, parameters: phrase.Parameters, problem: phrase.Problem);
+                if (phrase.Problem is { } problem)
+                {
+                    diagnostics.Add(new UatDiagnostic(
+                        UatDiagnosticSeverity.Warning,
+                        problem.Code,
+                        $"The phrase '{phrase.Phrase}' from {problem.Declaration} {problem.Message}",
+                        new UatSourceLocation(null, 1)));
+                }
+            }
+
+            foreach (var declaration in unmatchable)
+            {
+                catalog.AddUnmatchable(declaration);
+                diagnostics.Add(new UatDiagnostic(
+                    UatDiagnosticSeverity.Warning,
+                    declaration.Problem.Code,
+                    $"{declaration.Problem.Declaration} {declaration.Problem.Message}",
+                    new UatSourceLocation(null, 1)));
             }
         }
 

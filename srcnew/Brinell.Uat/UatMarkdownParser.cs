@@ -4,6 +4,8 @@ namespace Brinell.Uat;
 
 public static class UatMarkdownParser
 {
+    private const string DocStringDelimiter = "\"\"\"";
+
     private static readonly Regex OutlineParameterRegex = new("<([^<>]+)>", RegexOptions.Compiled);
 
     public static UatParseResult Parse(string markdown, string? filePath = null)
@@ -288,7 +290,8 @@ public static class UatMarkdownParser
                 _index++;
 
                 var table = TryParseCurrentTable();
-                steps.Add(new UatStep(keyword, effectiveKeyword, text, table, Location(line)));
+                var docString = TryParseDocString();
+                steps.Add(new UatStep(keyword, effectiveKeyword, text, table, Location(line), docString));
             }
 
             return steps;
@@ -391,7 +394,7 @@ public static class UatMarkdownParser
                 table = new UatTable(step.Table.Columns, rows, step.Table.Source);
             }
 
-            return step with { Text = text, Table = table };
+            return step with { Text = text, Table = table, DocString = step.DocString is null ? null : Substitute(step.DocString, values) };
         }
 
         private static string Substitute(string text, IReadOnlyDictionary<string, string> values)
@@ -408,6 +411,14 @@ public static class UatMarkdownParser
             foreach (Match match in OutlineParameterRegex.Matches(step.Text))
             {
                 yield return match.Groups[1].Value;
+            }
+
+            if (step.DocString is not null)
+            {
+                foreach (Match match in OutlineParameterRegex.Matches(step.DocString))
+                {
+                    yield return match.Groups[1].Value;
+                }
             }
 
             if (step.Table is null)
@@ -500,6 +511,37 @@ public static class UatMarkdownParser
             }
 
             return new UatTable(columns, rows, source);
+        }
+
+        // A """ block under a step: its lines lose the opening delimiter's indentation.
+        private string? TryParseDocString()
+        {
+            if (End || Current.Text.Trim() != DocStringDelimiter)
+            {
+                return null;
+            }
+
+            var opening = Current;
+            var indent = opening.Text.Length - opening.Text.TrimStart().Length;
+            _index++;
+            List<string> lines = [];
+            while (!End && Current.Text.Trim() != DocStringDelimiter)
+            {
+                var text = Current.Text;
+                lines.Add(text.Length >= indent && string.IsNullOrWhiteSpace(text[..indent]) ? text[indent..] : text.TrimStart());
+                _index++;
+            }
+
+            if (End)
+            {
+                AddError("UAT023", "A doc string (\"\"\") is not closed.", opening);
+            }
+            else
+            {
+                _index++;
+            }
+
+            return string.Join('\n', lines);
         }
 
         private bool End => _index >= _lines.Length;
