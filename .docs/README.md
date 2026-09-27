@@ -40,6 +40,7 @@ How this differs from the other trees:
 - [AD-019: Phrases have scopes and namespaces](decisions/ad-019-phrases-have-scopes-and-namespaces.md)
 - [AD-020: A tier is a head](decisions/ad-020-a-tier-is-a-head.md)
 - [AD-021: Brinell.Bdd under Brinell.Uat](decisions/ad-021-bdd-under-uat.md)
+- [AD-022: The IDEs run the gate's engine](decisions/ad-022-the-ides-run-the-gates-engine.md)
 
 ## Contracts
 

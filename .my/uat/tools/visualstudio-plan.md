@@ -262,6 +262,13 @@ In rough value order; each is planned when started.
 After phase 3, the decisions P1, P2, R1, R2 and L1 go to `.docs/` as an AD. The proposal and this
 plan are then extracted and deleted, as `.my/` requires.
 
+Done: [AD-022](../../../.docs/decisions/ad-022-the-ides-run-the-gates-engine.md) holds P1, P2, R1, R2 and
+L1. Every phase 4 item is built except stepping through steps (DAP), which is not built: R2 has not
+yet been shown to be too little. This plan is not deleted yet. The manual checklists 6.1-6.3 and
+the spike questions S1-S6 are still open, and they are the only check that the Visual Studio and
+VS Code clients work in the IDE. When they pass, move anything they teach to AD-022 or the guides,
+then delete this plan and its proposals.
+
 ## 6. Manual checklists
 
 Run in the VS experimental instance with `samples/Todo/Brinell.Samples.Todo.slnx`, built. The
