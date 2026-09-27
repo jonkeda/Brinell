@@ -58,7 +58,7 @@ public static partial class UatScenarioCheck
         }
 
         var reserved = runtimes.SelectMany(r => r.Pages).SelectMany(page => page.Controls.Select(control => control.Name).Append(page.Name));
-        return new UatCatalogSet(catalog, config.Apps, suiteHead, byHead, reserved);
+        return new UatCatalogSet(catalog, config.Apps, suiteHead, byHead, reserved) { Usings = config.Usings };
     }
 
     private static TestCompositionDiscoveryOptions? TryModulesFor(IUatAppsHost host, UatAppConfig app)
@@ -91,6 +91,29 @@ public static partial class UatScenarioCheck
     }
 
     /// <summary>
+    /// The config's <c>## Using</c> names that nothing provides (<c>UATB011</c>): checked once per
+    /// suite, as the binder checks a file's <c>Using</c> row.
+    /// </summary>
+    /// <param name="catalogs">The suite's catalogs, with <see cref="UatCatalogSet.Usings"/>.</param>
+    /// <param name="phraseFiles">Every phrase file of the suite, whose folders are namespaces too.</param>
+    /// <param name="configPath">The config, for the diagnostics' location.</param>
+    public static IReadOnlyList<UatDiagnostic> CheckConfigUsings(UatCatalogSet catalogs, IEnumerable<string> phraseFiles, string configPath)
+    {
+        ArgumentNullException.ThrowIfNull(catalogs);
+        ArgumentNullException.ThrowIfNull(phraseFiles);
+        var callables = new UatCallableSet(phraseFiles.SelectMany(file => UatScenarioFiles.ParsePhraseFile(file).Document?.Callables ?? []));
+        var provided = catalogs.ProvidedNamespaces(callables).ToList();
+        return catalogs.Usings
+            .Where(name => !provided.Any(owner => UatNamespaces.IsVisible(owner, name)))
+            .Select(name => new UatDiagnostic(
+                UatDiagnosticSeverity.Error,
+                "UATB011",
+                $"## Using names '{name}', which no phrase class, page or phrase folder provides. The namespaces are {(provided.Count == 0 ? "(none)" : string.Join(", ", provided.Order(StringComparer.OrdinalIgnoreCase)))}.",
+                new UatSourceLocation(configPath, 1)))
+            .ToList();
+    }
+
+    /// <summary>
     /// A phrase file's problems: parse errors, and each broken callable as a warning at its heading.
     /// A call to a broken callable is the error, in the scenario that makes it.
     /// </summary>
@@ -116,6 +139,53 @@ public static partial class UatScenarioCheck
                 + (callable.Callable.Namespace.Length > 0 ? $"  in {callable.Callable.Namespace}" : string.Empty)
                 + (callable.Problem is { } problem ? $"  warning {problem.Code}: {problem.Message}" : string.Empty))
             .ToList();
+    }
+
+    /// <summary>
+    /// The phrases a scenario file can use, grouped by where they come from: every scenario, its
+    /// folders, the namespaces it uses, its own callables, and each page's own phrases. What an
+    /// editor offers at a step in that file.
+    /// </summary>
+    public static IReadOnlyList<string> DescribeVisible(string filePath, UatCatalogSet catalogs, UatEffectiveStepKeyword? keyword = null)
+    {
+        ArgumentNullException.ThrowIfNull(catalogs);
+        var file = UatScenarioFiles.Load(filePath);
+        if (file.Document is null)
+        {
+            return [.. file.Diagnostics.Select(d => $"{d.Location}: {d.Code} {d.Message}")];
+        }
+
+        var scope = UatScope.Of(file.Document, catalogs);
+        string Group(string? owner) => UatNamespaces.Normalize(owner) is { Length: > 0 } name
+            ? scope.UsingsFor(name).Any() ? $"{name} (Using)" : name
+            : "Every scenario";
+
+        var catalog = catalogs.Default;
+        var phrases = catalog.Patterns
+            .Where(pattern => (keyword is null || pattern.Keyword == keyword) && scope.Sees(pattern.Namespace))
+            .Where(pattern => pattern.Page is null || catalog.Pages.TryGetValue(pattern.Page, out var page) && scope.Sees(page.Namespace))
+            .Select(pattern => (Group: pattern.Page is { } page ? $"Page {page}" : pattern.ControlVerb is not null ? "Controls on the current page" : Group(pattern.Namespace), Line: Describe(pattern)));
+        var prepared = file.Callables.Prepare(catalogs);
+        var callables = file.Callables.Callables
+            .Where(scope.Sees)
+            .Select(callable => (Group: callable.LocalTo is not null ? "This file" : Group(callable.Namespace), Line: $"Callable {prepared.Get(callable)}  <- {callable.Source}"));
+
+        return phrases.Concat(callables)
+            .GroupBy(entry => entry.Group, StringComparer.Ordinal)
+            .OrderBy(group => GroupOrder(group.Key))
+            .ThenBy(group => group.Key, StringComparer.OrdinalIgnoreCase)
+            .SelectMany(group => group.Select(entry => entry.Line).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).Prepend($"## {group.Key}"))
+            .ToList();
+
+        static int GroupOrder(string group) => group switch
+        {
+            "This file" => 0,
+            "Every scenario" => 3,
+            "Controls on the current page" => 4,
+            _ when group.StartsWith("Page ", StringComparison.Ordinal) => 5,
+            _ when group.EndsWith("(Using)", StringComparison.Ordinal) => 2,
+            _ => 1,
+        };
     }
 
     private static IEnumerable<UatDiagnostic> BrokenCallables(IEnumerable<UatPreparedCallable> callables)

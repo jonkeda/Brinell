@@ -173,6 +173,7 @@ What each section carries:
 | Assemblies | `Pages` | The assembly holding the page objects - the source of control names. |
 | Assemblies | `Controls` | The ControlObject assembly for the platform. |
 | Assemblies | `Commands` | `Brinell.Uat`, which carries the engine's own verbs. |
+| Using | `Namespace` | Optional: namespaces every scenario uses, such as the subjects outside the screen (`Backend`). See [Where Phrases Live](uat-phrases-and-flows.md#where-phrases-live). |
 | Apps | `Name` (+ the fixture's columns) | Optional: the apps a scenario can switch between with `{app} uses the app`. See [Several Apps In One Scenario](#several-apps-in-one-scenario). |
 | Discovery | `AllowNameInference` | `true` lets `AddButton` be **Add** without `[UatName]`. |
 | Discovery | `RequireExplicitUatAttributes` | `true` limits discovery to members carrying UAT attributes. |
@@ -249,10 +250,13 @@ sample adds `Journey`, which ties each scenario to a subtask id in its
 | TestData | one-todo |
 ```
 
-Metadata is documentation and traceability, with one exception: `TestData`
+Metadata is documentation and traceability, with two exceptions. `TestData`
 (`UatMetadataFields.TestData`) names the test set the file runs on, and a fixture
 that overrides `BeforeFile` loads it; `DefaultTestData` in the config's `Runtime`
-table covers files that name none. See [Test Data](test-data.md). Otherwise the
+table covers files that name none. See [Test Data](test-data.md). `Using`
+(`UatMetadataFields.Using`) names the namespaces whose phrases and pages the file
+sees besides its folder's: `Accounts, Backend`. See
+[Where Phrases Live](uat-phrases-and-flows.md#where-phrases-live). Otherwise the
 `@tag` line above `## Scenario:` is what skip rules read, not the `Tags` row.
 
 ## One File Per Journey
@@ -349,7 +353,7 @@ Steps a tester repeats can be named once, as a callable phrase
 in a `*.phrases.md` file: one `# Phrases:` heading, then only `## Phrase:` and
 `## Phrase for each row:` sections. Put it in `Scenarios/` for every scenario, or in a module's
 folder (`Scenarios/Invoicing/`) for the scenarios in that folder and below
-([Folder Namespaces](uat-phrases-and-flows.md#folder-namespaces)). The gate reads scenarios from
+([Where Phrases Live](uat-phrases-and-flows.md#where-phrases-live)). The gate reads scenarios from
 the build output, so the project copies phrase files as it copies scenarios:
 
 ```xml

@@ -124,7 +124,10 @@ public sealed class TestCompositionCatalog
                     ResolvePageName(type, pageAttribute),
                     type,
                     pageAttribute?.Lifetime ?? ServiceLifetime.Scoped,
-                    type.Assembly.Location));
+                    type.Assembly.Location)
+                {
+                    Namespace = Brinell.Core.Testing.UatNamespaceAttribute.Of(type),
+                });
                 continue;
             }
 
@@ -238,8 +241,9 @@ public sealed class TestCompositionCatalog
         IReadOnlyList<TestPageDescriptor> pages,
         ICollection<string> diagnostics)
     {
+        // One name in two namespaces is two pages; a scenario sees at most one of them.
         foreach (var duplicate in pages
-                     .GroupBy(page => page.Name, StringComparer.OrdinalIgnoreCase)
+                     .GroupBy(page => page.Namespace is { Length: > 0 } ns ? $"{ns}/{page.Name}" : page.Name, StringComparer.OrdinalIgnoreCase)
                      .Where(group => group.Count() > 1))
         {
             diagnostics.Add($"Duplicate test page name '{duplicate.Key}'.");
@@ -305,7 +309,11 @@ public sealed record TestPageDescriptor(
     string Name,
     Type PageType,
     ServiceLifetime Lifetime,
-    string SourcePath);
+    string SourcePath)
+{
+    /// <summary>The page's UAT namespace (<see cref="Brinell.Core.Testing.UatNamespaceAttribute"/>); null for none.</summary>
+    public string? Namespace { get; init; }
+}
 
 public sealed record TestServiceDescriptor(
     Type Type,

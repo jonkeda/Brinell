@@ -12,7 +12,7 @@ namespace Brinell.Samples.Todo.TestSupport.Uat;
 /// on screen), so the app's write has landed. The same steps for every head: each head's fixture is
 /// an <see cref="ITodoArrangement"/>.
 /// </remarks>
-[UatPhraseClass]
+[UatPhraseClass(Namespace = "StoredData")]
 public sealed class StoredDataPhrases(ITodoArrangement fixture) : UatPhraseClassBase
 {
     /// <summary>The app's database holds a todo like each row.</summary>

@@ -45,7 +45,8 @@ public static class UatDiagnosticsFormatter
 
             open = chain;
             var invocation = step.Invocation;
-            yield return $"{Indent(chain, chain.Count)}{step.Status}: {invocation.Step.Source}: {invocation.CommandId}: {invocation.Step.Text} {step.Message}";
+            var scope = invocation.Scope.Length > 0 ? $"[{invocation.Scope}] " : string.Empty;
+            yield return $"{Indent(chain, chain.Count)}{step.Status}: {invocation.Step.Source}: {scope}{invocation.CommandId}: {invocation.Step.Text} {step.Message}";
         }
     }
 
@@ -102,6 +103,8 @@ public static class UatDiagnosticsFormatter
             catalog.Patterns
                 .OrderBy(pattern => pattern.Keyword)
                 .ThenBy(pattern => pattern.Phrase, StringComparer.Ordinal)
-                .Select(pattern => $"- {pattern.Keyword}: {pattern.Phrase} -> {pattern.CommandId}"));
+                .Select(pattern => $"- {pattern.Keyword}: {pattern.Phrase} -> {pattern.CommandId}"
+                    + (pattern.Namespace.Length > 0 ? $" in {pattern.Namespace}" : string.Empty)
+                    + (pattern.Page is { } page ? $" on page {page}" : string.Empty)));
     }
 }

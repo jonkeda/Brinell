@@ -85,7 +85,7 @@ public sealed class UatRuntime
         var reserved = runtimes
             .SelectMany(runtime => runtime.Pages)
             .SelectMany(page => page.Controls.Select(control => control.Name).Append(page.Name));
-        return new UatCatalogSet(defaultCatalog, Config.Apps, suiteHead, byHead, reserved);
+        return new UatCatalogSet(defaultCatalog, Config.Apps, suiteHead, byHead, reserved) { Usings = Config.Usings };
     }
 
     /// <summary>Gives a scenario's context what it needs to switch apps.</summary>

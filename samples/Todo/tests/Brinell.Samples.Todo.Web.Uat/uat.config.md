@@ -26,6 +26,17 @@
 | Commands | ../../../../srcnew/Brinell.Uat/bin/Debug/net10.0/Brinell.Uat.dll |
 | TestData | ../Brinell.Samples.Todo.TestSupport/bin/Debug/net10.0/Brinell.Samples.Todo.TestSupport.dll |
 
+## Using
+
+The subjects outside the screen every scenario may arrange or check (phrase namespaces).
+
+| Namespace |
+| --- |
+| Backend |
+| Device |
+| AppLifecycle |
+| StoredData |
+
 ## Discovery
 
 | Field | Value |

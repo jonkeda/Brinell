@@ -4,7 +4,7 @@ public static class UatSpecCommandCatalog
 {
     public static UatCommandCatalog CreateDefault()
     {
-        var catalog = new UatCommandCatalog();
+        var catalog = new UatCommandCatalog { IsGeneric = true };
         RegisterDefault(catalog);
         return catalog;
     }

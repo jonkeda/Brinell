@@ -66,12 +66,12 @@ internal static class UatPageScope
         if (Method(control.ControlType, verb)?.ReturnType is { } returned &&
             pages.Values.FirstOrDefault(candidate => candidate.PageType == returned) is { } returnedPage)
         {
-            return returnedPage.Name;
+            return returnedPage.Key;
         }
 
         if (!verb.Navigates)
         {
-            return page.Name;
+            return page.Key;
         }
 
         return control.NavigatesTo;

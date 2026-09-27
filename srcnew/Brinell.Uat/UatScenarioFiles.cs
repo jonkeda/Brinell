@@ -43,10 +43,12 @@ public static class UatScenarioFiles
         var seen = PhraseFilesFor(filePath).ToHashSet(StringComparer.OrdinalIgnoreCase);
         var phraseFiles = AllPhraseFiles(filePath).Select(path => (Seen: seen.Contains(path), Parse: ParsePhraseFile(path))).ToList();
 
-        // The file's own callables are seen by the file alone, and their bodies bind in its folder.
+        // The file's own callables are seen by the file alone, and their bodies bind in its folder,
+        // with its usings.
         var fullPath = Path.GetFullPath(filePath);
         var here = UatNamespaces.Of(fullPath);
-        List<UatCallable> callables = [.. (parse.Document?.Callables ?? []).Select(callable => callable with { Namespace = here, LocalTo = fullPath })];
+        var usings = UatNamespaces.ParseList(parse.Document?.Metadata.GetValueOrDefault(UatMetadataFields.Using));
+        List<UatCallable> callables = [.. (parse.Document?.Callables ?? []).Select(callable => callable with { Namespace = here, LocalTo = fullPath, Usings = usings })];
         callables.AddRange(phraseFiles.SelectMany(file => file.Parse.Document?.Callables ?? []));
 
         // Only a phrase file the scenario sees can break it; another folder's is that folder's problem.

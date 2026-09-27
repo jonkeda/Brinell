@@ -114,7 +114,9 @@ Common diagnostics:
 | `UATB004` | The matched command does not accept a table. |
 | `UATB008` | A control verb or page phrase needs the page, and no step has said it, or an earlier step may have left it (see [Page Scope](#page-scope)). |
 | `UATB009` | The step does not fit the current page, or names a page that does not exist. |
-| `UATB010` | The step matches only phrases of another folder, which this file does not see (see [Folder Namespaces](#folder-namespaces)). |
+| `UATB010` | The step matches only phrases or pages this file does not see (see [Where Phrases Live](#where-phrases-live)). |
+| `UATB011` | A `Using` names no namespace. |
+| `UATB012` | Warning: a `Using` that no step needs. |
 | `UATA001`-`UATA007` | A value does not fit its parameter (see [Arguments](#arguments)). |
 | `UATA010`-`UATA013` | The step binds to a broken phrase (see [Broken Phrases](#broken-phrases)). |
 | `UATC001`-`UATC008` | The step calls a broken callable phrase (see [Callable Phrases](#callable-phrases)). |
@@ -219,7 +221,7 @@ A tester can give a sequence of steps a name and call it like a phrase, with no 
 ([AD-017](../../.docs/decisions/ad-017-callable-phrases-are-sequences-not-programs.md)). It is
 declared under a `## Phrase:` heading, in a scenario file (seen by that file) or in a
 `*.phrases.md` file in `Scenarios/` or a folder under it (seen by the scenarios in that folder and
-below, [Folder Namespaces](#folder-namespaces)):
+below, [Where Phrases Live](#where-phrases-live)):
 
 ````markdown
 # Phrases: Todo
@@ -535,7 +537,14 @@ public ToolbarButton<AppRoot> AddButton => ...;
 - A catalog without pages, and a callable's body checked on its own, bind without page scope. A
   callable's steps are followed in the caller's page when it is called.
 
-## Folder Namespaces
+## Where Phrases Live
+
+A step binds only to a phrase it can see from where it is written
+([AD-019](../../.docs/decisions/ad-019-phrases-have-scopes-and-namespaces.md)): the current page's
+([Page Scope](#page-scope)), its file's own callables, its folder's and every folder's above it,
+the namespaces it uses, and the global ones.
+
+### Folder namespaces
 
 A folder under `Scenarios/` is a namespace: `Scenarios/Invoicing/Credit notes/` is
 `Invoicing/Credit notes`. A scenario sees the phrases of its own folder and every folder above it,
@@ -546,7 +555,7 @@ never a sibling's. So two modules can each have "I add a line" without colliding
 | a callable in a scenario file | that file |
 | a callable in `Scenarios/*.phrases.md` | every scenario |
 | a callable in `Scenarios/Invoicing/*.phrases.md` | the scenarios in `Invoicing/` and below |
-| a phrase class with `[UatPhraseClass(Namespace = "Invoicing")]` | the scenarios in `Invoicing/` and below |
+| a phrase class with `[UatPhraseClass(Namespace = "Invoicing")]` or `[UatNamespace("Invoicing")]` | the scenarios in `Invoicing/` and below |
 | a phrase class in an assembly with `[assembly: UatNamespace("Invoicing")]` | the same, for every phrase class of the assembly that names no namespace of its own |
 | any other phrase class, the fixture's phrases, built-ins | every scenario |
 | control verbs and page phrases | the steps on their page ([Page Scope](#page-scope)) |
@@ -560,17 +569,67 @@ public sealed class InvoicingPhrases(InvoiceApi api) : UatPhraseClassBase
 }
 ```
 
-- **No shadowing.** A step that matches a phrase of its folder and a phrase of a folder above it
-  (or a global one) is ambiguous (`UATB002`), never "the nearest wins". Rename one.
-- **A phrase of another folder** is a bind error (`UATB010`) that names the folder it is in. Move
-  the scenario under that folder, or move the phrase up to a folder both see.
+### Using
+
+A file reaches another folder's phrases and pages by naming it in its metadata, as if it were also
+in that folder:
+
+```markdown
+## Metadata
+
+| Field | Value |
+| --- | --- |
+| Journey | INV.03 |
+| Using | Accounts, Backend |
+```
+
+The config's `## Using` table is every file's `Using`: the subjects every scenario may arrange or
+check. The Todo suites put their backend, device, app-lifecycle and stored-data phrases there:
+
+```markdown
+## Using
+
+| Namespace |
+| --- |
+| Backend |
+| Device |
+```
+
+- **Explicit and not transitive.** A file sees what it names, not what those name.
+- A `Using` that names nothing is an error (`UATB011`), listing the namespaces there are; one no
+  step needs is a warning (`UATB012`).
+- A C# phrase assembly announces its namespace with `[assembly: UatNamespace("Accounts")]`; the
+  fixture's module scan loads it, as it loads any phrase class.
+
+### Pages
+
+A page belongs to a namespace too: `[UatNamespace("Accounts")]` on the page class or its assembly.
+One name in two namespaces is two pages. `Given I am on the Detail page` finds the `Detail` page
+the file sees; when it sees two, the step is ambiguous and names it with its namespace:
+`Given I am on the Accounts/Detail page`. A page of a folder the file does not see is `UATB010`.
+
+### Rules
+
+- **No shadowing.** A step that matches phrases of two scopes it sees (its folder and a folder above
+  it, a used namespace, or a global phrase) is ambiguous (`UATB002`), never "the nearest wins".
+  Stop using one namespace, or rename a phrase. There are no qualified steps.
+- **A phrase it does not see** is a bind error (`UATB010`) that names where the phrase is. Add a
+  `Using` row, move the scenario under that folder, or move the phrase up to a folder both see.
 - **A callable's body binds where it is written**, not where it is called: a callable in the root
   phrase file cannot use `Invoicing`'s phrases, and a phrase file's callable cannot call a
-  scenario file's own callable.
+  scenario file's own callable or use its `Using`. It runs in the caller's app and page.
 - A phrase file that does not parse fails only the scenarios that see it.
-- `brinell-data phrases` shows a namespaced phrase with `in Invoicing`.
 - Namespaces are folder names, compared ignoring case, with `/` between folders.
 
+### Seeing the scopes
+
+- A failure report names each step's scope: `Passed: file:12: [Invoicing] ...AddLine: When I add
+  a line "Rent"`, or `[page Todo List]` for a page phrase.
+- `brinell-data phrases <file>` lists only the phrases that file sees, grouped by where they come
+  from (`## This file`, `## Invoicing`, `## Backend (Using)`, `## Every scenario`, a page's own):
+  what an editor would offer at a step there. Without a file it lists every phrase, with
+  `in Invoicing` on a namespaced one.
+- `brinell-data references Accounts` lists the config and the files that use a namespace.
 ## Page And Control Names
 
 Page and control names come from the runtime model, not from the markdown file.

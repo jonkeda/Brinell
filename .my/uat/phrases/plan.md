@@ -1,6 +1,6 @@
 # Phrases: split, scope and namespace
 
-Status: in progress. Phases 1-6 done (see the commits per phase); callable phrases were built before.
+Status: in progress. Phases 1-7 done (see the commits per phase); callable phrases were built before.
 Date: 2026-09-27
 Replaces three discussion docs, last at 5b73a4b:
 [splitting-phrases.md](https://github.com/exact-mobile-apps/test-tooling/blob/5b73a4b/.my/uat/phrases/splitting-phrases.md),
@@ -313,6 +313,23 @@ real consumer.
 - An AD (AD-019, the next free number) records D5-D10: scopes, no shadowing, folder = namespace,
   explicit non-transitive `Using`, lexical callables. The guide `uat-phrases-and-flows.md` gets a
   "Where phrases live" section.
+- Built: the `Using` row (`UatMetadataFields.Using`, comma-separated) and `## Using`
+  (`UatConfig.Usings`, carried by `UatCatalogSet.Usings`); `UatScope` sees a used namespace as
+  if the file were in it. `UATB011` (a `Using` naming nothing) and `UATB012` (a warning: no
+  step needs it). `UatNamespaceAttribute` moved to `Brinell.Core.Testing` and applies to a class
+  too; `TestPageDescriptor.Namespace`; pages are keyed `Invoicing/Detail` in the catalog and the
+  runtime, and the binder writes the resolved key into the step. The bind report names each
+  step's scope (`UatStepInvocation.Scope`). Todo's subject classes are in `Backend`, `Device`,
+  `AppLifecycle` and `StoredData`, used by all three Todo configs. AD-019, and the guide's
+  "Where Phrases Live".
+- Changed from the plan: phrase assemblies are **not** a new `Phrases` row in `## Assemblies`.
+  `[assembly: UatNamespace]` announces the namespace, and the fixture's module scan loads the
+  assembly, as it already loads every phrase class; a config row would be a second list to keep
+  in step. The Presenter has no step completion, so section 5's completion and "who uses this
+  namespace" are `brinell-data phrases <file>` and `brinell-data references <namespace>`, the
+  data an editor's completion needs. The config's usings are checked once per suite by
+  `brinell-data validate`, not in every file; a generic catalog (`IsGeneric`, the Presenter's workspace check)
+  checks no `Using`.
 
 ## 5. Tooling
 

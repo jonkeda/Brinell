@@ -53,6 +53,9 @@ public sealed record UatCallable(
     /// <summary>The full path of the scenario file it is written in, when only that file sees it; null for a phrase file's.</summary>
     public string? LocalTo { get; init; }
 
+    /// <summary>For a scenario file's own callable, the namespaces that file uses; its body binds with them.</summary>
+    public IReadOnlyList<string> Usings { get; init; } = [];
+
     /// <summary>The heading as a call reads it: <c>Phrase for each row: ...</c> or <c>Phrase: ...</c>.</summary>
     public override string ToString() => $"{(Kind == UatCallableKind.EachRow ? "Phrase for each row" : "Phrase")}: {Phrase}";
 }

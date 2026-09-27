@@ -103,6 +103,7 @@ public abstract class UatSpecFormatTestBase
         {
             UatReflectionRuntime.RegisterCompositionPhrases(catalog, runtimeRootType);
             UatReflectionRuntime.RegisterRootPhrases(catalog, runtimeRootType);
+            catalog.IsGeneric = false;
         }
 
         return catalog;

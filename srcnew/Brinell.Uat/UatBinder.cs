@@ -46,12 +46,13 @@ public static class UatBinder
         List<UatDiagnostic> diagnostics = [.. catalogs.CheckNames(document.Source)];
         List<UatBoundScenario> scenarios = [];
         var prepared = callables.Prepare(catalogs);
-        var scope = UatScope.Of(document);
+        var scope = UatScope.Of(document, catalogs);
+        HashSet<string> used = new(StringComparer.OrdinalIgnoreCase);
 
         foreach (var scenario in document.Scenarios)
         {
             List<UatStepInvocation> invocations = [];
-            var walk = new Walk(catalogs, prepared, scenario.Name, invocations, scope, inference: null);
+            var walk = new Walk(catalogs, prepared, scenario.Name, invocations, scope, used, inference: null);
 
             foreach (var step in document.Background)
             {
@@ -66,6 +67,8 @@ public static class UatBinder
             scenarios.Add(new UatBoundScenario(scenario, invocations));
         }
 
+        diagnostics.AddRange(CheckUsings(document, catalogs, callables, used));
+
         var boundDocument = diagnostics.Any(x => x.Severity == UatDiagnosticSeverity.Error)
             ? null
             : new UatBoundDocument(document, scenarios);
@@ -77,11 +80,44 @@ public static class UatBinder
     // the types of its values. Only a problem that no call could avoid makes it broken.
     internal static void Infer(UatCallable callable, UatCatalogSet catalogs, UatPreparedCallables callables, UatInference inference)
     {
-        var walk = new Walk(catalogs, callables, callable.Phrase, [], UatScope.Of(callable), inference);
+        var walk = new Walk(catalogs, callables, callable.Phrase, [], UatScope.Of(callable, catalogs), used: null, inference);
         List<UatDiagnostic> ignored = [];
         foreach (var step in callable.Steps)
         {
             walk.Step(step, fromBackground: false, frame: null, ignored);
+        }
+    }
+
+    // A file's Using names what something provides (else it is a typo that hides phrases), and is
+    // needed by a step (else it only widens what could collide). The config's usings are the suite's
+    // choice, checked once by the tool rather than in every file. The generic catalog knows no
+    // namespaces.
+    private static IEnumerable<UatDiagnostic> CheckUsings(UatDocument document, UatCatalogSet catalogs, UatCallableSet callables, IReadOnlySet<string> used)
+    {
+        var usings = UatNamespaces.ParseList(document.Metadata.GetValueOrDefault(UatMetadataFields.Using));
+        if (usings.Count == 0 || catalogs.All.All(catalog => catalog.IsGeneric))
+        {
+            yield break;
+        }
+
+        var provided = catalogs.ProvidedNamespaces(callables).ToList();
+        foreach (var name in usings)
+        {
+            if (!provided.Any(owner => UatNamespaces.IsVisible(owner, name)))
+            {
+                yield return Error(
+                    "UATB011",
+                    $"Using '{name}' names no namespace. The namespaces are {(provided.Count == 0 ? "(none)" : string.Join(", ", provided.Order(StringComparer.OrdinalIgnoreCase)))}.",
+                    document.Source);
+            }
+            else if (!used.Contains(name))
+            {
+                yield return new UatDiagnostic(
+                    UatDiagnosticSeverity.Warning,
+                    "UATB012",
+                    $"Using '{name}' is not needed: no step binds to a phrase or page it adds. Remove it.",
+                    document.Source);
+            }
         }
     }
 
@@ -150,6 +186,7 @@ public static class UatBinder
         string scenarioName,
         List<UatStepInvocation> invocations,
         UatScope scope,
+        HashSet<string>? used,
         UatInference? inference)
     {
         private readonly AppTracker _apps = new(catalogs);
@@ -161,7 +198,7 @@ public static class UatBinder
             UatCommandMatch? match = null;
             IReadOnlyList<string> named = [];
             List<UatDiagnostic> pageProblems = [];
-            var where = frame is null ? scope : UatScope.Of(frame.Callable);
+            var where = frame is null ? scope : UatScope.Of(frame.Callable, catalogs);
 
             if (catalogs.TryFindSubject(step.Text, out var subject, out _))
             {
@@ -237,6 +274,8 @@ public static class UatBinder
 
                 match = matches[0];
             }
+
+            used?.UnionWith(where.UsingsFor(UatScope.OwnerOf(match.Pattern)));
 
             // A body step that passes the call's table has none yet: only a call can check it.
             if (match.Pattern.Callable is null && !(inference is not null && step.Passes != UatPassedBlock.None))
@@ -327,7 +366,7 @@ public static class UatBinder
                 return;
             }
 
-            if (!Advance(step, match, arguments, app, diagnostics))
+            if (!Advance(step, match, ref arguments, app, where, diagnostics))
             {
                 return;
             }
@@ -429,14 +468,14 @@ public static class UatBinder
                     : $"'{match.Pattern.Phrase}' of {UatNamespaces.Describe(match.Pattern.Namespace)}")
                 .Distinct(StringComparer.Ordinal);
             return $"Step '{step.Text}' matches {string.Join(", ", owners)}, which {UatNamespaces.Describe(where.Namespace)} does not see. "
-                + "A scenario sees the phrases of its own folder and the folders above it: move the file there, or the phrase up.";
+                + "A scenario sees the phrases of its own folder, the folders above it, and the namespaces it uses: add a 'Using' row for it, move the file there, or move the phrase up.";
         }
 
         private static bool Fits(UatPageModel page, UatCommandMatch candidate, List<string> reasons)
         {
             if (candidate.Pattern.Page is { } owner)
             {
-                if (string.Equals(owner, page.Name, StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(owner, page.Key, StringComparison.OrdinalIgnoreCase))
                 {
                     return true;
                 }
@@ -460,7 +499,7 @@ public static class UatBinder
         // The page after the step (D7): the page a step names; a page phrase's or control verb's
         // returned page. After a verb that can leave the page and does not say where, the page is
         // only a guess until a step fits it. Other phrases keep it.
-        private bool Advance(UatStep step, UatCommandMatch match, IReadOnlyDictionary<string, string> arguments, UatAppConfig? app, List<UatDiagnostic> diagnostics)
+        private bool Advance(UatStep step, UatCommandMatch match, ref IReadOnlyDictionary<string, string> arguments, UatAppConfig? app, UatScope where, List<UatDiagnostic> diagnostics)
         {
             var catalog = catalogs.CatalogFor(app);
             if (catalog.Pages.Count == 0)
@@ -472,16 +511,18 @@ public static class UatBinder
             var pattern = match.Pattern;
             if (pattern.NamesPage && arguments.TryGetValue(PageParameter, out var named))
             {
-                if (!catalog.Pages.TryGetValue(named, out var namedPage))
+                if (ResolvePage(catalog, step, named, where, diagnostics) is not { } namedPage)
                 {
-                    diagnostics.Add(Error(
-                        "UATB009",
-                        $"Step '{step.Text}' names the page '{named}', which does not exist. The pages are {string.Join(", ", catalog.Pages.Keys.Order(StringComparer.OrdinalIgnoreCase))}.",
-                        step.Source));
                     return false;
                 }
 
-                _pages[key] = new PageState(namedPage.Name, null);
+                // The step runs on the page it resolved to: its key, when two namespaces share the name.
+                if (!string.Equals(named, namedPage.Key, StringComparison.Ordinal))
+                {
+                    arguments = new Dictionary<string, string>(arguments, StringComparer.Ordinal) { [PageParameter] = namedPage.Key };
+                }
+
+                _pages[key] = new PageState(namedPage.Key, null);
                 return true;
             }
 
@@ -493,17 +534,39 @@ public static class UatBinder
 
             if (pattern.Page is not null)
             {
-                _pages[key] = new PageState(pattern.PageAfter ?? page.Name, null);
+                _pages[key] = new PageState(pattern.PageAfter ?? page.Key, null);
                 return true;
             }
 
             if (pattern.ControlVerb is { } verb && UatPageScope.ControlFor(page, match, out _) is { } control)
             {
                 var after = UatPageScope.PageAfter(page, control, verb, catalog.Pages);
-                _pages[key] = new PageState(after ?? page.Name, after is null ? step : null);
+                _pages[key] = new PageState(after ?? page.Key, after is null ? step : null);
             }
 
             return true;
+        }
+
+        // A page named in a step (D8): by name among the pages the step sees, or by its key. One name
+        // in two seen namespaces is ambiguous, as a phrase is.
+        private UatPageModel? ResolvePage(UatCommandCatalog catalog, UatStep step, string named, UatScope where, List<UatDiagnostic> diagnostics)
+        {
+            var all = catalog.Pages.Values
+                .Where(page => page.Key.Equals(named, StringComparison.OrdinalIgnoreCase) || page.Name.Equals(named, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            var seen = all.Where(page => where.Sees(page.Namespace)).ToList();
+            if (seen.Count == 1)
+            {
+                used?.UnionWith(where.UsingsFor(seen[0].Namespace));
+                return seen[0];
+            }
+
+            diagnostics.Add(seen.Count > 1
+                ? Error("UATB002", $"Step '{step.Text}' names the page '{named}', which here is {string.Join(" and ", seen.Select(page => page.Key))}. Name it with its namespace: '{seen[0].Key}'.", step.Source)
+                : all.Count > 0
+                    ? Error("UATB010", $"Step '{step.Text}' names the page '{named}' of {string.Join(", ", all.Select(page => UatNamespaces.Describe(page.Namespace)))}, which {UatNamespaces.Describe(where.Namespace)} does not see. Add 'Using' for it, or move the file there.", step.Source)
+                    : Error("UATB009", $"Step '{step.Text}' names the page '{named}', which does not exist. The pages are {string.Join(", ", catalog.Pages.Values.Where(page => where.Sees(page.Namespace)).Select(page => page.Key).Order(StringComparer.OrdinalIgnoreCase))}.", step.Source));
+            return null;
         }
 
         private static string Describe(UatCommandMatch match)
@@ -866,6 +929,12 @@ public sealed record UatStepInvocation(
 
     /// <summary>The call that put this step here, for a step of a callable phrase; null for a step written in the scenario.</summary>
     public UatCallFrame? Call { get; init; }
+
+    /// <summary>
+    /// Where the phrase this step bound to lives: <c>page Todo List</c> for a page phrase, the
+    /// namespace (<c>Invoicing</c>) for a namespace's phrase; <c>""</c> for a phrase every scenario sees.
+    /// </summary>
+    public string Scope => Command.Page is { } page ? $"page {page}" : Command.Namespace;
 
     /// <summary>
     /// The page the binder knows is current after this control verb or page phrase; null when the

@@ -54,28 +54,11 @@ public sealed class UatPhraseClassAttribute : TestScenarioServiceAttribute
 {
     /// <summary>
     /// The folder under the scenario root whose scenarios, and those below it, see this class's
-    /// phrases (<c>Invoicing</c>, <c>Invoicing/Credit notes</c>). Null takes the assembly's
-    /// <see cref="UatNamespaceAttribute"/>, and without one every scenario sees them.
+    /// phrases (<c>Invoicing</c>, <c>Invoicing/Credit notes</c>). Null takes the class's or the
+    /// assembly's <see cref="Brinell.Core.Testing.UatNamespaceAttribute"/>, and without one every
+    /// scenario sees them.
     /// </summary>
     public string? Namespace { get; init; }
-}
-
-/// <summary>
-/// The namespace of every phrase class in the assembly that does not name its own
-/// (<see cref="UatPhraseClassAttribute.Namespace"/>).
-/// </summary>
-[AttributeUsage(AttributeTargets.Assembly)]
-public sealed class UatNamespaceAttribute : Attribute
-{
-    /// <param name="name">A folder under the scenario root, with <c>/</c> between folders.</param>
-    public UatNamespaceAttribute(string name)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(name);
-        Name = name;
-    }
-
-    /// <summary>The namespace.</summary>
-    public string Name { get; }
 }
 
 public abstract class UatPhraseClassBase : TestScenarioServiceBase

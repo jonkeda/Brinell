@@ -26,6 +26,9 @@ public sealed record UatConfig(
     /// </summary>
     public IReadOnlyList<UatAppConfig> Apps { get; init; } = [];
 
+    /// <summary>The namespaces every scenario of the suite uses, from the <c>## Using</c> table.</summary>
+    public IReadOnlyList<string> Usings { get; init; } = [];
+
     public UatSkipDecision EvaluateSkip(
         IEnumerable<string> tags,
         Func<string, string?>? getEnvironmentVariable = null)
@@ -168,6 +171,9 @@ public static class UatMetadataFields
 
     /// <summary>The test set the file runs on, e.g. <c>one-todo</c>.</summary>
     public const string TestData = "TestData";
+
+    /// <summary>The namespaces whose phrases and pages the file sees besides its folder's: <c>Accounts, Backend</c>.</summary>
+    public const string Using = "Using";
 }
 
 public static class UatTagConventions
@@ -216,6 +222,7 @@ public static class UatConfigParser
         Dictionary<string, string> settings = new(StringComparer.OrdinalIgnoreCase);
         List<UatSkipRule> skipRules = [];
         List<UatAppConfig> apps = [];
+        List<string> usings = [];
 
         var sections = ParseSections(markdown);
         if (sections.TryGetValue("Runtime", out var runtimeTable))
@@ -277,6 +284,13 @@ public static class UatConfigParser
             }
         }
 
+        if (sections.TryGetValue("Using", out var usingTable))
+        {
+            usings.AddRange(usingTable.Rows
+                .Select(row => row.Cells.TryGetValue("Namespace", out var name) ? UatNamespaces.Normalize(name) : string.Empty)
+                .Where(name => name.Length > 0));
+        }
+
         return new UatConfig(
             runtime,
             assemblies,
@@ -297,6 +311,7 @@ public static class UatConfigParser
             skipRules)
         {
             Apps = apps,
+            Usings = usings,
         };
     }
 

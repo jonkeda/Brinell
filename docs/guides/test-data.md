@@ -96,6 +96,8 @@ dotnet run --project ../../../../tools/Brinell.DataValidator -- schema
 | --- | --- |
 | `validate [file] [--format json] [--fix]` | Every test set (or one file), plus every `TestData` name in `Scenarios/**/*.uat.md` and `DefaultTestData`. With a `Fixture` and a `Pages` assembly in the config, also every scenario file (or one `.uat.md`): parse, bind and argument errors, as the xUnit gate reports them. `--fix` rewrites values with one right answer (`2026-05-12` to `12-May-2026`) |
 | `phrases [--keyword When] [--format json]` | The phrases steps can use, with argument types (`{due: date}`), where each is declared, and broken phrases as warnings; then the callable phrases of every `*.phrases.md` under `Scenarios/`, with their inferred types and the folder each is seen in |
+| `phrases <file>` | Only the phrases that scenario file sees, grouped by where they come from: its own callables, its folders, the namespaces it uses (`(Using)`), every scenario, each page |
+| `references <namespace>` | The config and the scenario files that use a namespace: `Using`, `## Using`, or being in its folder |
 | `snippet <file>:<line>` | A method for a step that binds to nothing, its phrase in the name: `When_I_archive_P1_on_P2(string p1, DateOnly p2)` |
 | `describe <Type>` | The fields a file writes for a type: required, nullable, enum values |
 | `list` | The test sets, their record counts, and which files use each |

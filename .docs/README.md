@@ -37,6 +37,7 @@ How this differs from the other trees:
 - [AD-016: Phrase arguments are typed by the method](decisions/ad-016-phrase-arguments-are-typed-by-the-method.md)
 - [AD-017: Callable phrases are sequences, not programs](decisions/ad-017-callable-phrases-are-sequences-not-programs.md)
 - [AD-018: The Presenter workspace is the UAT project](decisions/ad-018-the-presenter-workspace-is-the-uat-project.md)
+- [AD-019: Phrases have scopes and namespaces](decisions/ad-019-phrases-have-scopes-and-namespaces.md)
 
 ## Contracts
 

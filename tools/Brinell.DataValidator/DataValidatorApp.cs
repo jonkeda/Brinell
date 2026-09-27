@@ -24,6 +24,7 @@ public static class DataValidatorApp
                 "describe" => Describe(options, output, errors),
                 "list" => List(options, output, errors),
                 "phrases" => Phrases(options, output),
+                "references" => References(options, output),
                 "snippet" => Snippet(options, output),
                 "schema" => Schema(options, output, errors),
                 "help" or "--help" or "-h" => Usage(output, 0),
@@ -81,6 +82,8 @@ public static class DataValidatorApp
                 if (scenarioFile is null)
                 {
                     diagnostics.AddRange(CheckPhraseFiles(options, catalogs, ScenarioCheck.PhraseFiles(config), errors));
+                    diagnostics.AddRange(UatScenarioCheck.CheckConfigUsings(catalogs, ScenarioCheck.PhraseFiles(config), config)
+                        .Select(error => new TestDataDiagnostic(config, error.Location.LineNumber, error.Code, null, error.Message)));
                     if (ScenarioCheck.CopyWarning(config) is { } copy)
                     {
                         errors.WriteLine($"warning: {copy}");
@@ -188,6 +191,17 @@ public static class DataValidatorApp
             ? Enum.TryParse<UatEffectiveStepKeyword>(name, ignoreCase: true, out var parsed) ? parsed : throw new ToolException($"'{name}' is not Given, When or Then.")
             : null;
 
+        // For one scenario file: only what it sees, grouped by where it comes from.
+        if (options.Argument is { } file)
+        {
+            foreach (var line in UatScenarioCheck.DescribeVisible(Existing(options, file), catalogs, keyword))
+            {
+                output.WriteLine(line);
+            }
+
+            return 0;
+        }
+
         if (options.Json)
         {
             output.WriteLine(JsonSerializer.Serialize(
@@ -216,6 +230,36 @@ public static class DataValidatorApp
             output.WriteLine(line);
         }
 
+        return 0;
+    }
+
+    // Who depends on a namespace: the config's ## Using, the files that name it in their Using row,
+    // and the files in its folder, which see it without saying so.
+    private static int References(ToolOptions options, TextWriter output)
+    {
+        var config = options.ConfigPath ?? throw new ToolException($"No {ConfigFileName} here. Run from a UAT project folder, or pass --config.");
+        var name = UatNamespaces.Normalize(options.Argument ?? throw new ToolException("references needs a namespace, e.g. 'brinell-data references Backend'."));
+        var found = 0;
+        if (UatConfigParser.ParseFile(config).Usings.Contains(name, StringComparer.OrdinalIgnoreCase))
+        {
+            output.WriteLine($"{Display(options, config)}: ## Using");
+            found++;
+        }
+
+        foreach (var file in ScenarioCheck.Files(config))
+        {
+            var usings = UatNamespaces.ParseList(UatMarkdownParser.ParseFile(file).Document?.Metadata.GetValueOrDefault(UatMetadataFields.Using));
+            var reason = usings.Contains(name, StringComparer.OrdinalIgnoreCase) ? "Using"
+                : UatNamespaces.IsVisible(name, UatNamespaces.Of(file)) && UatNamespaces.Normalize(UatNamespaces.Of(file)).Length > 0 ? "in the folder"
+                : null;
+            if (reason is not null)
+            {
+                output.WriteLine($"{Display(options, file)}: {reason}");
+                found++;
+            }
+        }
+
+        output.WriteLine(found == 0 ? $"Nothing uses {name}." : $"{found} use(s) of {name}.");
         return 0;
     }
 
@@ -392,8 +436,10 @@ public static class DataValidatorApp
               brinell-data validate [file] [--format json] [--fix]
                                                              check every test set and scenario, or one file;
                                                              --fix rewrites values with one right answer
-              brinell-data phrases [--keyword When] [--format json]
-                                                             the phrases steps can use, with argument types
+              brinell-data phrases [file] [--keyword When] [--format json]
+                                                             the phrases steps can use, with argument types;
+                                                             with a scenario file, only those it sees, by namespace
+              brinell-data references <namespace>            the config and files that use a namespace
               brinell-data snippet <file>:<line>             a method for a step that binds to nothing
               brinell-data describe <Type>                   the fields of a test-data type
               brinell-data list                              the test sets and what uses them

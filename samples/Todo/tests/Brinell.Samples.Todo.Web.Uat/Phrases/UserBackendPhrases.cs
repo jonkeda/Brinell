@@ -9,7 +9,7 @@ namespace Brinell.Samples.Todo.Web.Uat.Phrases;
 /// Steps about what the fake server received from each user's app. Only the web head runs several
 /// users, so only it has these; the other backend steps are the shared <c>BackendPhrases</c>.
 /// </summary>
-[UatPhraseClass]
+[UatPhraseClass(Namespace = "Backend")]
 public sealed class UserBackendPhrases(TodoWebUatFixture fixture) : UatPhraseClassBase
 {
     // The waits a scenario step gets: the MAUI suite's TestConstants.PageTimeoutMs.

@@ -8,7 +8,7 @@ namespace Brinell.Samples.Todo.Web.Uat.Phrases;
 /// Steps about the app's process: restarting it. The web head's version of the MAUI suite's class;
 /// a phrase that changes here changes there too, since the scenario files are shared.
 /// </summary>
-[UatPhraseClass]
+[UatPhraseClass(Namespace = "AppLifecycle")]
 public sealed class AppLifecyclePhrases(TodoWebUatFixture fixture) : UatPhraseClassBase
 {
     /// <summary>Stops the app and starts it again on the same database and backend.</summary>

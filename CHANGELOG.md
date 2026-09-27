@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- UAT `Using` (AD-019): a scenario file's `Using` metadata row and the config's `## Using` table
+  name the namespaces a file sees besides its folder's. A `Using` that names nothing is `UATB011`;
+  one no step needs is a `UATB012` warning. Pages have namespaces too (`[UatNamespace]` on the page
+  class or assembly, now in `Brinell.Core.Testing` and allowed on a class): one name in two
+  namespaces is two pages, a step names the one it sees, or `Accounts/Detail` when it sees both.
+  A failure report names each step's scope (`[Invoicing]`, `[page Todo List]`);
+  `brinell-data phrases <file>` lists only what that file sees, by namespace, and
+  `brinell-data references <namespace>` lists who uses one. The Todo suites put their backend,
+  device, app-lifecycle and stored-data phrases in namespaces, used by every file through
+  `## Using`.
 - UAT folder namespaces: a folder under `Scenarios/` is a namespace, and a scenario sees the
   phrases of its own folder and the folders above it. `*.phrases.md` files may sit in any folder
   (copy them with `Scenarios\**\*.phrases.md`); `[UatPhraseClass(Namespace = "Invoicing")]` and

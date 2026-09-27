@@ -16,10 +16,16 @@ public sealed class UatCommandCatalog
     public UatArgumentTypes ArgumentTypes { get; set; } = UatArgumentTypes.Empty;
 
     /// <summary>
-    /// The pages and their controls, by page name, which the binder follows the page with. Empty for
+    /// The pages and their controls, by page key (<see cref="UatPageModel.Key"/>), which the binder follows the page with. Empty for
     /// a catalog without page objects: then steps bind without page scope.
     /// </summary>
     public IReadOnlyDictionary<string, UatPageModel> Pages { get; set; } = new Dictionary<string, UatPageModel>();
+
+    /// <summary>
+    /// Whether this is the generic catalog of built-in phrases only (<see cref="UatSpecCommandCatalog"/>),
+    /// which knows no app's phrases: a file's <c>Using</c> is not checked against it.
+    /// </summary>
+    public bool IsGeneric { get; set; }
 
     public UatCommandPattern Register(
         UatEffectiveStepKeyword keyword,
@@ -261,12 +267,19 @@ public sealed class UatCommandPattern
 public sealed record UatControlVerb(string MethodName, int ArgumentCount, bool NamesControl, bool Navigates);
 
 /// <summary>A page the binder can follow: its name, its page object type and its controls.</summary>
-public sealed record UatPageModel(string Name, Type PageType, IReadOnlyList<UatControlModel> Controls);
+public sealed record UatPageModel(string Name, Type PageType, IReadOnlyList<UatControlModel> Controls)
+{
+    /// <summary>The page's namespace (<see cref="UatNamespaces"/>); <c>""</c> when every scenario sees it.</summary>
+    public string Namespace { get; init; } = string.Empty;
+
+    /// <summary>The page as steps and the runtime know it: <c>Invoicing/Detail</c>, or <see cref="Name"/>.</summary>
+    public string Key => UatNamespaces.PageKey(Namespace, Name);
+}
 
 /// <summary>A control of a page, as the binder sees it.</summary>
 /// <param name="Name">The UAT name.</param>
 /// <param name="ControlType">The property's type.</param>
-/// <param name="NavigatesTo">The page tapping it always goes to (<see cref="UatNavigatesToAttribute"/>); null when not declared.</param>
+/// <param name="NavigatesTo">The key of the page tapping it always goes to (<see cref="UatNavigatesToAttribute"/>); null when not declared.</param>
 public sealed record UatControlModel(string Name, Type ControlType, string? NavigatesTo);
 
 public sealed record UatCommandMatch(

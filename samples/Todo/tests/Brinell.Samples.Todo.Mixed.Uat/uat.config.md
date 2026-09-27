@@ -21,6 +21,17 @@ the table the mixed UI tests read too. It runs only scenarios tagged `@mixed`.
 | Pages | bin/Debug/net10.0-windows/Brinell.Samples.Todo.Web.UITests.dll |
 | Commands | bin/Debug/net10.0-windows/Brinell.Samples.Todo.Mixed.Uat.dll |
 
+## Using
+
+The subjects outside the screen every scenario may arrange or check (phrase namespaces).
+
+| Namespace |
+| --- |
+| Backend |
+| Device |
+| AppLifecycle |
+| StoredData |
+
 ## Discovery
 
 | Field | Value |

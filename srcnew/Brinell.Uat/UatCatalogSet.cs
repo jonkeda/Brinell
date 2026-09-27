@@ -68,6 +68,19 @@ public sealed class UatCatalogSet
     /// <summary>Page and control names of every catalog.</summary>
     public IReadOnlySet<string> ReservedNames { get; }
 
+    /// <summary>The namespaces every scenario uses: the config's <c>## Using</c> (<see cref="UatConfig.Usings"/>).</summary>
+    public IReadOnlyList<string> Usings { get; init; } = [];
+
+    /// <summary>
+    /// Every namespace something provides: C# phrases, pages and callables of a folder. A
+    /// <c>Using</c> of anything else is a mistake.
+    /// </summary>
+    internal IEnumerable<string> ProvidedNamespaces(UatCallableSet callables)
+        => All.SelectMany(catalog => catalog.Patterns.Select(pattern => pattern.Namespace).Concat(catalog.Pages.Values.Select(page => page.Namespace)))
+            .Concat(callables.Callables.Where(callable => callable.LocalTo is null).Select(callable => callable.Namespace))
+            .Where(name => name.Length > 0)
+            .Distinct(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>
     /// The catalog a step running on <paramref name="app"/> binds against: the one place that
     /// decides which phrases and pages a step can see.

@@ -44,30 +44,60 @@ public static class UatNamespaces
         return Normalize(Path.GetRelativePath(UatScenarioFiles.ScenarioRoot(filePath), folder));
     }
 
+    /// <summary>A page as steps and the runtime know it: <c>Invoicing/Detail</c>, or its name without a namespace.</summary>
+    public static string PageKey(string? name, string page)
+        => Normalize(name) is { Length: > 0 } normalized ? $"{normalized}/{page}" : page;
+
+    /// <summary>The namespaces a <c>Using</c> value names: <c>Accounts, Backend</c>.</summary>
+    public static IReadOnlyList<string> ParseList(string? value)
+        => (value ?? string.Empty)
+            .Split([',', ';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(Normalize)
+            .Where(name => name.Length > 0)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
     /// <summary>A namespace as a message names it.</summary>
     public static string Describe(string? name)
         => Normalize(name) is { Length: > 0 } normalized ? $"the folder '{normalized}'" : "the scenario root";
 }
 
-/// <summary>Where a step is written, for what it can see: a namespace, and the file for its own callables.</summary>
+/// <summary>
+/// Where a step is written, for what it can see: a namespace, the file for its own callables, and
+/// the namespaces it uses (the file's <c>Using</c> row and the config's <c>## Using</c>).
+/// </summary>
 /// <param name="Namespace">The folder under the scenario root.</param>
 /// <param name="File">The full path of the scenario file; null inside a phrase file's callable.</param>
-internal readonly record struct UatScope(string Namespace, string? File)
+/// <param name="Usings">The namespaces it uses; seeing one is as if the file were also in it.</param>
+internal sealed record UatScope(string Namespace, string? File, IReadOnlyList<string> Usings)
 {
-    public static UatScope Of(UatDocument document)
-        => document.Source.FilePath is { } path
-            ? new(UatNamespaces.Of(path), Path.GetFullPath(path))
-            : new(string.Empty, null);
+    public static UatScope Of(UatDocument document, UatCatalogSet catalogs)
+        => new(
+            document.Source.FilePath is { } path ? UatNamespaces.Of(path) : string.Empty,
+            document.Source.FilePath is { } file ? Path.GetFullPath(file) : null,
+            [.. catalogs.Usings, .. UatNamespaces.ParseList(document.Metadata.GetValueOrDefault(UatMetadataFields.Using))]);
 
-    // A callable's body binds where it is written (D9): its file's own callables, or its phrase
-    // file's namespace.
-    public static UatScope Of(UatCallable callable) => new(callable.Namespace, callable.LocalTo);
+    // A callable's body binds where it is written (D9): its file's own callables and usings, or
+    // its phrase file's namespace and the config's usings.
+    public static UatScope Of(UatCallable callable, UatCatalogSet catalogs)
+        => new(callable.Namespace, callable.LocalTo, [.. catalogs.Usings, .. callable.Usings]);
+
+    public bool Sees(string? owner)
+        => UatNamespaces.IsVisible(owner, Namespace) || Usings.Any(used => UatNamespaces.IsVisible(owner, used));
+
+    // The usings a phrase of owner is seen through, when the folder alone does not see it.
+    public IEnumerable<string> UsingsFor(string? owner)
+        => UatNamespaces.IsVisible(owner, Namespace) ? [] : Usings.Where(used => UatNamespaces.IsVisible(owner, used));
 
     public bool Sees(UatCallable callable)
         => callable.LocalTo is { } local
             ? File is not null && string.Equals(local, File, StringComparison.OrdinalIgnoreCase)
-            : UatNamespaces.IsVisible(callable.Namespace, Namespace);
+            : Sees(callable.Namespace);
 
     public bool Sees(UatCommandPattern pattern)
-        => pattern.Callable is { } callable ? Sees(callable) : UatNamespaces.IsVisible(pattern.Namespace, Namespace);
+        => pattern.Callable is { } callable ? Sees(callable) : Sees(pattern.Namespace);
+
+    // The namespace a bound phrase belongs to; null for a file's own callable, which is always seen.
+    public static string? OwnerOf(UatCommandPattern pattern)
+        => pattern.Callable is { } callable ? callable.LocalTo is null ? callable.Namespace : null : pattern.Namespace;
 }

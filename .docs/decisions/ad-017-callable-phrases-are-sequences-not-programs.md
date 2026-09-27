@@ -13,18 +13,19 @@ Then I should be on the Todo List page
 ```
 
 It lives in a scenario file (seen by that file) or in a `*.phrases.md` file in `Scenarios/` or a
-folder under it (seen by the scenarios in that folder and below; its body binds there too). `## Phrase for each row:` runs the body once per row of the call's
-table.
+folder under it (seen by the scenarios in that folder and below, AD-019). `## Phrase for each
+row:` runs the body once per row of the call's table.
 
 - **A sequence, never a program.** No `If`, `Else`, loop, `Try`, variable or return value in a
   callable, and none will be added. Placeholders are substituted; the call's table or doc string
   is passed on whole; a per-row callable repeats over rows the scenario writes, with no index,
   skip or break. Nesting stops at three, and a cycle is an error. Anything that decides is a C#
   phrase whose name says what it decides.
-- **Bound where it is called.** A call is expanded while the binder walks the scenario's steps,
-  so its steps bind in the caller's context (app, and later page) and every call is checked
-  before anything runs. A problem inside a call is reported at the call's line, or its row, with
-  the body steps it came through.
+- **Expanded where it is called.** A call is expanded while the binder walks the scenario's
+  steps, so its steps run in the caller's app and page, and every call is checked before
+  anything runs. The phrases they can use are those seen where the callable is written
+  (AD-019). A problem inside a call is reported at the call's line, or its row, with the body
+  steps it came through.
 - **Typed by where the values go.** A parameter's type is the type of the C# parameter its
   placeholder fills; an optional `Parameters` table declares one inference cannot see, and must
   agree with use. Values are read by `UatValues` as in AD-016.

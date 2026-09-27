@@ -30,7 +30,7 @@ public sealed class UatReflectionRuntime
         _pages = new Dictionary<string, UatRuntimePage>(StringComparer.OrdinalIgnoreCase);
         foreach (var page in pages)
         {
-            _pages[page.Name] = page;
+            _pages[page.Key] = page;
         }
     }
 
@@ -41,12 +41,12 @@ public sealed class UatReflectionRuntime
     public IReadOnlyList<string> DescribeDiscovery()
     {
         List<string> lines = ["Discovered UAT pages:"];
-        foreach (var page in Pages.OrderBy(page => page.Name, StringComparer.OrdinalIgnoreCase))
+        foreach (var page in Pages.OrderBy(page => page.Key, StringComparer.OrdinalIgnoreCase))
         {
             var controls = page.Controls.Count == 0
                 ? "(no controls)"
                 : string.Join(", ", page.Controls.Select(control => control.Name).Order(StringComparer.OrdinalIgnoreCase));
-            lines.Add($"- {page.Name}: {controls}");
+            lines.Add($"- {page.Key}: {controls}");
         }
 
         return lines;
@@ -81,7 +81,10 @@ public sealed class UatReflectionRuntime
                 page.GetType(),
                 page,
                 DiscoverControls(page),
-                navigation is null ? null : () => Invoke(root, navigation)));
+                navigation is null ? null : () => Invoke(root, navigation))
+            {
+                Namespace = UatNamespaces.Normalize(UatNamespaceAttribute.Of(page.GetType())),
+            });
         }
 
         return new UatReflectionRuntime(root, pages, argumentTypes: UatArgumentTypes.Discover(LoadableTypes(rootType.Assembly)));
@@ -102,7 +105,10 @@ public sealed class UatReflectionRuntime
                     page.PageType,
                     Instance: null,
                     DiscoverControls(page.PageType),
-                    navigation is null ? null : () => Invoke(root, navigation));
+                    navigation is null ? null : () => Invoke(root, navigation))
+                {
+                    Namespace = UatNamespaces.Normalize(page.Namespace),
+                };
             })
             .ToArray();
         var argumentTypes = UatArgumentTypes.Discover(composition.Catalog.ScannedTypes.Concat(LoadableTypes(rootType.Assembly)));
@@ -130,12 +136,18 @@ public sealed class UatReflectionRuntime
                 .Where(property => property.GetIndexParameters().Length == 0 &&
                                    property.GetCustomAttribute<UatIgnoreAttribute>() is null &&
                                    IsRuntimePageProperty(property))
-                .Select(property => new UatRuntimePage(ResolveRuntimeName(property), property.PropertyType, Instance: null, DiscoverControls(property.PropertyType), Navigate: null));
+                .Select(property => new UatRuntimePage(ResolveRuntimeName(property), property.PropertyType, Instance: null, DiscoverControls(property.PropertyType), Navigate: null)
+                {
+                    Namespace = UatNamespaces.Normalize(UatNamespaceAttribute.Of(property.PropertyType)),
+                });
             return new UatReflectionRuntime(null, rootPages, argumentTypes: UatArgumentTypes.Discover(LoadableTypes(fixtureType.Assembly)), rootType: fixtureType);
         }
 
         var catalog = modules ?? TestCompositionCatalog.Discover(TestCompositionDiscoveryOptions.FromFixture(fixtureType));
-        var pages = catalog.Pages.Select(page => new UatRuntimePage(page.Name, page.PageType, Instance: null, DiscoverControls(page.PageType), Navigate: null));
+        var pages = catalog.Pages.Select(page => new UatRuntimePage(page.Name, page.PageType, Instance: null, DiscoverControls(page.PageType), Navigate: null)
+        {
+            Namespace = UatNamespaces.Normalize(page.Namespace),
+        });
         var argumentTypes = UatArgumentTypes.Discover(catalog.ScannedTypes.Concat(LoadableTypes(fixtureType.Assembly)));
         return new UatReflectionRuntime(null, pages, DiscoverPhraseClasses(catalog.ScannedTypes, argumentTypes), argumentTypes, fixtureType);
     }
@@ -220,9 +232,9 @@ public sealed class UatReflectionRuntime
     {
         var nameOf = _pages.Values
             .GroupBy(page => page.PageType)
-            .ToDictionary(group => group.Key, group => group.First().Name);
+            .ToDictionary(group => group.Key, group => group.First().Key);
         return _pages.Values.ToDictionary(
-            page => page.Name,
+            page => page.Key,
             page => new UatPageModel(
                 page.Name,
                 page.PageType,
@@ -234,7 +246,10 @@ public sealed class UatReflectionRuntime
                             ? nameOf.GetValueOrDefault(goesTo.Page) ?? throw new InvalidOperationException(
                                 $"{page.PageType.Name}.{control.MemberName} navigates to {goesTo.Page.Name}, which is not a UAT page.")
                             : null))
-                    .ToArray()),
+                    .ToArray())
+            {
+                Namespace = page.Namespace,
+            },
             StringComparer.OrdinalIgnoreCase);
     }
 
@@ -265,8 +280,8 @@ public sealed class UatReflectionRuntime
                             InvokePagePhraseAsync(page, method, context, invocation, cancellationToken),
                         parameters: phrase.Parameters,
                         problem: phrase.Problem,
-                        page: page.Name,
-                        pageAfter: pageAfter?.Name);
+                        page: page.Key,
+                        pageAfter: pageAfter?.Key);
                 }
 
                 foreach (var declaration in unmatchable)
@@ -291,7 +306,7 @@ public sealed class UatReflectionRuntime
             return Task.FromResult(current.Result);
         }
 
-        if (!string.Equals(current.Page!.Name, page.Name, StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(current.Page!.Key, page.Key, StringComparison.OrdinalIgnoreCase))
         {
             return Task.FromResult(UatStepResult.Failed(
                 invocation,
@@ -334,7 +349,7 @@ public sealed class UatReflectionRuntime
             return UatStepResult.Failed(invocation, $"The step should have ended on the {page.Name} page, which did not become ready.");
         }
 
-        context.CurrentPageName = page.Name;
+        context.CurrentPageName = page.Key;
         context.AppItems[CurrentPageItemKey] = page;
         return UatStepResult.Passed(invocation);
     }
@@ -693,11 +708,11 @@ public sealed class UatReflectionRuntime
         return phraseClasses;
     }
 
-    // The class's own namespace, else its assembly's; the root without either.
+    // The phrase class's own namespace, else its [UatNamespace] or its assembly's; the root without any.
     private static string NamespaceOf(Type type)
         => UatNamespaces.Normalize(
             type.GetCustomAttribute<UatPhraseClassAttribute>()?.Namespace ??
-            type.Assembly.GetCustomAttribute<UatNamespaceAttribute>()?.Name);
+            UatNamespaceAttribute.Of(type));
 
     private static bool IsPhraseClassType(Type type)
     {
@@ -762,7 +777,7 @@ public sealed class UatReflectionRuntime
         cancellationToken.ThrowIfCancellationRequested();
 
         if (!invocation.Arguments.TryGetValue("page", out var pageName) ||
-            !_pages.TryGetValue(pageName, out var page))
+            FindPage(pageName) is not { } page)
         {
             return Task.FromResult(UatStepResult.Failed(
                 invocation,
@@ -785,9 +800,9 @@ public sealed class UatReflectionRuntime
                 $"UAT page '{page.Name}' did not become ready."));
         }
 
-        context.CurrentPageName = page.Name;
+        context.CurrentPageName = page.Key;
         context.AppItems[CurrentPageItemKey] = page;
-        context.Diagnostics.Add($"page:{page.Name}");
+        context.Diagnostics.Add($"page:{page.Key}");
         return Task.FromResult(UatStepResult.Passed(invocation));
     }
 
@@ -799,7 +814,7 @@ public sealed class UatReflectionRuntime
         cancellationToken.ThrowIfCancellationRequested();
 
         if (!invocation.Arguments.TryGetValue("page", out var pageName) ||
-            !_pages.TryGetValue(pageName, out var page))
+            FindPage(pageName) is not { } page)
         {
             return Task.FromResult(UatStepResult.Failed(
                 invocation,
@@ -821,7 +836,7 @@ public sealed class UatReflectionRuntime
                 $"UAT page '{page.Name}' was not ready."));
         }
 
-        context.CurrentPageName = page.Name;
+        context.CurrentPageName = page.Key;
         context.AppItems[CurrentPageItemKey] = page;
         return Task.FromResult(UatStepResult.Passed(invocation));
     }
@@ -1061,6 +1076,12 @@ public sealed class UatReflectionRuntime
         return false;
     }
 
+    // The binder writes a page's key into the step; a bare name finds the one page it names.
+    private UatRuntimePage? FindPage(string name)
+        => _pages.TryGetValue(name, out var page)
+            ? page
+            : _pages.Values.Where(candidate => candidate.Name.Equals(name, StringComparison.OrdinalIgnoreCase)).ToList() is [var only] ? only : null;
+
     private string FormatPageNames()
     {
         return _pages.Count == 0
@@ -1239,7 +1260,14 @@ public sealed record UatRuntimePage(
     Type PageType,
     object? Instance,
     IReadOnlyList<UatRuntimeControl> Controls,
-    Action? Navigate);
+    Action? Navigate)
+{
+    /// <summary>The page's namespace (<see cref="UatNamespaces"/>); <c>""</c> when every scenario sees it.</summary>
+    public string Namespace { get; init; } = string.Empty;
+
+    /// <summary>The page as steps and the runtime know it: <c>Invoicing/Detail</c>, or <see cref="Name"/>.</summary>
+    public string Key => UatNamespaces.PageKey(Namespace, Name);
+}
 
 public sealed record UatRuntimeControl(
     string Name,

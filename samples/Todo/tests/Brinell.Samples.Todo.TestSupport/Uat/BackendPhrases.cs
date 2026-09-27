@@ -13,7 +13,7 @@ namespace Brinell.Samples.Todo.TestSupport.Uat;
 /// (<see cref="ServerAlsoHas"/>) gets its rows from the engine, checked when the step binds. The
 /// same steps for every head: each head's fixture is an <see cref="ITodoArrangement"/>.
 /// </remarks>
-[UatPhraseClass]
+[UatPhraseClass(Namespace = "Backend")]
 public sealed class BackendPhrases(ITodoArrangement fixture) : UatPhraseClassBase
 {
     /// <summary>Adds the table's todos to the fake server, as another device would.</summary>

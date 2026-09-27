@@ -9,7 +9,7 @@ namespace Brinell.Samples.Todo.Uat.Phrases;
 /// has this class; a phrase that changes here changes in the web one too, since the scenario files
 /// are shared.
 /// </summary>
-[UatPhraseClass]
+[UatPhraseClass(Namespace = "AppLifecycle")]
 public sealed class AppLifecyclePhrases(TodoUatFixture fixture) : UatPhraseClassBase
 {
     /// <summary>Closes the app and starts it again on the same database and backend.</summary>

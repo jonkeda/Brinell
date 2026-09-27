@@ -7,7 +7,7 @@ namespace Brinell.Samples.Todo.TestSupport.Uat;
 /// Steps about the device the app runs on: its network. The same steps for every head: each head's
 /// fixture is an <see cref="ITodoArrangement"/>.
 /// </summary>
-[UatPhraseClass]
+[UatPhraseClass(Namespace = "Device")]
 public sealed class DevicePhrases(ITodoArrangement fixture) : UatPhraseClassBase
 {
     /// <summary>The device loses its network.</summary>
