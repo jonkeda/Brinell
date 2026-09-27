@@ -4,8 +4,8 @@ Do not fix tests by adding arbitrary sleeps or longer delays. Wait for concrete
 UI state, navigation completion, busy sentinel changes, text, visibility,
 enabled state, request observation, or another observable condition.
 
-On MAUI, the framework does the waiting, and does it one way (2026-09-19,
-`.my/stale-readiness/design.md`):
+On MAUI, the framework does the waiting, and does it one way (2026-09-19; the rules are the
+[call model](../contracts/call-model.md)):
 
 - **One unit per public call.** A call on a control, page, container, collection or
   row is one log entry/exit pair and one failure, with the action inside it.

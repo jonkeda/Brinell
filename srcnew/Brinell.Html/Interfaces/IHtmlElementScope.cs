@@ -4,7 +4,7 @@ using Brinell.Core.Scopes;
 
 namespace Brinell.Html.Interfaces;
 
-// R9: Html owns this contract and does not derive from Core's scopes. See .my/html/design.md 4.2.
+// R9: Html owns this contract and does not derive from Core's scopes. See AD-010.
 
 /// <summary>
 /// Anything controls can be declared in: the test context, a page, a container, a frame.

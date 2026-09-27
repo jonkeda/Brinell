@@ -13,7 +13,7 @@ namespace Brinell.Samples.Todo.UITests;
 /// <summary>
 /// One Todo app on Windows or Android, as one of several in a test: its own seeded database,
 /// network-state file and launch settings, on a backend its owner shares between apps. The MAUI
-/// twin of <c>TodoWebDevice</c> (plan: <c>.my/multi/plan.md</c> D8).
+/// twin of <c>TodoWebDevice</c>.
 /// </summary>
 /// <remarks>
 /// The <c>Platform</c> column of its <see cref="Definition"/> says where it runs, <c>Windows</c>

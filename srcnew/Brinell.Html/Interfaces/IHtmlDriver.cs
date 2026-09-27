@@ -3,7 +3,7 @@ using Brinell.Core.Locators;
 
 namespace Brinell.Html.Interfaces;
 
-// ?A2 in .my/html/plan.md: the driver is its own object, as in MAUI, so the context and the
+// The driver is its own object, as in MAUI, so the context and the
 // driver can later carry different jobs (the frame model, the "browser is gone" check).
 
 /// <summary>

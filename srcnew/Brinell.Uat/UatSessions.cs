@@ -15,7 +15,7 @@ public interface IUatClock
 /// <summary>
 /// A fixture that runs several apps in one scenario: two devices on one backend, two users. Each
 /// app is a session with its own test context and page objects; <c>{app} uses the app</c> makes
-/// one current. See <c>.my/html/todo-blazor.md</c> section 4.
+/// one current. See <c>.docs/contracts/uat-apps-host.md</c>.
 /// </summary>
 /// <remarks>
 /// Apps of one head share the suite's page and phrase types: a session changes which app a page
@@ -43,7 +43,7 @@ public interface IUatSessionHost
 
 /// <summary>
 /// A fixture whose apps are a <see cref="TestAppSet"/>, shared with its UI tests: sessions, subject
-/// resolution and a composition per head come from the set (plan: <c>.my/multi/plan.md</c> D12).
+/// resolution and a composition per head come from the set (<c>.docs/contracts/uat-apps-host.md</c>).
 /// </summary>
 /// <remarks>
 /// Each app gets one composition and one scope, built the first time a scenario uses it, with the

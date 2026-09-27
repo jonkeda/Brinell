@@ -6,7 +6,7 @@ namespace Brinell.Samples.Todo.Mixed.UITests;
 
 /// <summary>
 /// A todo made or changed in one app reaches the others through the backend: Windows, web and
-/// Android apps in one test (TOD.07, plan: <c>.my/multi/plan.md</c> section 4.2).
+/// Android apps in one test (TOD.07).
 /// </summary>
 /// <remarks>
 /// Each app waits for another on observed state, never on time: the backend's record of the PUT

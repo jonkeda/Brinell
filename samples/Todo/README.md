@@ -335,7 +335,7 @@ server rendering. It reuses the MAUI app's view models, rules, sync and SQLite s
 Only navigation, dialogs and the pages are its own. Its test ids are the MAUI AutomationIds
 (`data-testid="TodoEdit_Title"`), so both heads offer page objects the same contract. It exists to
 prove Brinell.Html on a real app, and later to run the MAUI and web apps against one backend in
-one test ([`.my/html/todo-blazor.md`](../../.my/html/todo-blazor.md)).
+one test ([apps in a test](../../.docs/contracts/uat-apps-host.md)).
 
 - **One host process is one device.** It reads the same launch settings as the MAUI app
   (`TODO_DB_PATH`, `TODO_API_BASEURL`, `TODO_NOW`, ...) from its environment, and has its own

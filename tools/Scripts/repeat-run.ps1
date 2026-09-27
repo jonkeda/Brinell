@@ -13,8 +13,8 @@
         or app-bug-or-test. The suggestion is a heuristic to sort the list; the class is decided
         by reading the failure.
 
-    Written for the stale-readiness plan (.my/stale-readiness/plan.md, step 2 baseline and step 8
-    comparison). UI tests drive the desktop, so the script refuses to start while another test
+    Written for the stale-readiness work (a baseline before a change, and a comparison
+    after it). UI tests drive the desktop, so the script refuses to start while another test
     host is running: two runs at once fight over the desktop and produce failures that are not real.
 
 .PARAMETER Project

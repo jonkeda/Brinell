@@ -28,7 +28,7 @@ public sealed record WebAppHostOptions
 /// </summary>
 /// <remarks>
 /// One process is one app instance, with its own port and launch settings; start two for two
-/// instances (<c>.my/html/todo-blazor.md</c> 4.2: hosts start on a free port with explicit launch
+/// instances (hosts start on a free port with explicit launch
 /// settings, never at a fixed URL).
 /// </remarks>
 public sealed class WebAppHost : IDisposable

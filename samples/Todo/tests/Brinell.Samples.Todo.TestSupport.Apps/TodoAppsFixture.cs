@@ -12,8 +12,7 @@ namespace Brinell.Samples.Todo.TestSupport.Apps;
 
 /// <summary>
 /// Several Todo apps, of any head, on one WireMock backend and one test set: the apps of
-/// <c>apps.md</c>, each started the first time a test asks for it (plan: <c>.my/multi/plan.md</c>
-/// section 4).
+/// <c>apps.md</c>, each started the first time a test asks for it (<c>.docs/contracts/uat-apps-host.md</c>).
 /// </summary>
 /// <remarks>
 /// <para>

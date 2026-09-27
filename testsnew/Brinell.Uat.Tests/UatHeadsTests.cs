@@ -4,7 +4,7 @@ using Xunit;
 
 namespace Brinell.Uat.Tests.HeadCases
 {
-    /// <summary>Apps of two heads in one scenario, each binding against its own head's pages (plan: .my/multi D5, D6).</summary>
+    /// <summary>Apps of two heads in one scenario, each binding against its own head's pages (AD-014).</summary>
     public sealed class UatHeadsTests
     {
         [Fact]

@@ -35,11 +35,11 @@ would have shipped the bug.
   near-miss warning (thresholds: `MauiTestContextOptions.NearMiss`). Set `BRINELL_CALL_LOG` to a folder to write every context's calls
   to CSV and list them.
 
-Proven on 2026-09-19 (`.my/stale-readiness/plan.md`, step 8): with the bug put back,
+Proven on 2026-09-19 ([stale-readiness plan](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/stale-readiness/plan.md), step 8): with the bug put back,
 the Todo journey TOD.04.4 failed 3 times out of 3, naming the dialog that never
 appeared.
 
-**Html holds the same rules since 2026-09-26** (`.my/html/plan.md`, step 8). Its old
+**Html holds the same rules since 2026-09-26** ([Html plan](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/html/plan.md), step 8). Its old
 `RunDoWithElement` retried an action that threw until the budget ran out (X2: 64 clicks
 for one `Click`); that is closed. A driver call below a call waits only for what is left of
 the call's budget, and a read cut off by that budget is not an observation. A busy page

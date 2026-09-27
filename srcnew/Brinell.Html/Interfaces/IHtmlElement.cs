@@ -5,7 +5,7 @@ using Brinell.Core.Locators;
 namespace Brinell.Html.Interfaces;
 
 // R9: Html owns this contract and does not derive from Core's IElement<T>; lookups make one
-// attempt and never wait. See .my/html/design.md 4.2 and .docs/decisions/ad-010-maui-ahead-of-core.md.
+// attempt and never wait. See AD-010.
 
 /// <summary>
 /// A DOM element, as the Html stack drives it.

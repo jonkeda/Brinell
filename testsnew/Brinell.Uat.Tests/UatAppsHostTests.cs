@@ -7,7 +7,7 @@ using Xunit;
 
 namespace Brinell.Uat.Tests.AppsHostCases;
 
-/// <summary>A fixture whose apps are a <see cref="TestAppSet"/> gets its sessions from it (plan: .my/multi D12, D13).</summary>
+/// <summary>A fixture whose apps are a <see cref="TestAppSet"/> gets its sessions from it.</summary>
 public sealed class UatAppsHostTests
 {
     private const string AppsFile = """

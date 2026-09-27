@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <!--
-    The list. Ids are the contract with the page objects: see .my/TodoApp/plan.md, section 2.
+    The list. Ids are the contract with the page objects: renaming one breaks them.
 
     TodoList_State is a CommunityToolkit StateContainer. Its default content is the list; the
     Loading, Empty and Error views each carry their own AutomationId, which is how Brinell's

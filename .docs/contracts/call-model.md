@@ -1,9 +1,9 @@
 # Contract: The call model
 
 The MAUI and Html stacks run every public control/page/container/collection/row member
-as one **call**. This is the shape all MAUI and Html code must keep. Sources of record:
-`.my/stale-readiness/design.md` section 2 (MAUI) and `.my/html/design.md` (Html, which
-adopts the same rules). Enforces
+as one **call**. This is the shape all MAUI and Html code must keep. Evidence:
+the [MAUI design](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/stale-readiness/design.md)
+and the [Html design](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/html/design.md), at 7162ac7. Enforces
 [AD-004](../decisions/ad-004-wait-for-state.md) and
 [AD-009](../decisions/ad-009-app-bugs-stay-failures.md).
 
@@ -44,6 +44,19 @@ adopts the same rules). Enforces
   do) caps that wait short and reports a node that is gone as stale (R5), for the poll to find
   again: one read never waits out the call (R2).
 
+## Scopes
+
+- **Who asks its parent (R4).** A page asks nobody: its root is present and shown, then
+  `IsLoaded()`, then its busy signal. A container, collection and row ask their parent first.
+  A scope shown over its parent (a popup, a dialog) does not (`AsksParent => false`).
+- **A root is cached for the object's life and checked on every use (R6).** A property declared
+  as `=> new` or `{ get; }` differs only in cost. A stale root is re-found once, in one place.
+- **A row stands for its item, as far as its key can tell.** A row records the item's key when
+  it is made and reports `ItemChanged` when the element at its place holds another item.
+  A `Logical` key (`PositionInSet`) or `AutomationId` key can tell; a `Position` key cannot. A
+  collection whose platform publishes no `PositionInSet` and whose rows carry no distinguishing
+  id cannot detect recycling: give such an item template an id per row (`Task_0`, `Task_1`).
+
 ## Broken when
 
 - A wait loop or sleep appears below a call's poll (violates R2).
@@ -66,3 +79,5 @@ The rules above hold unchanged. Where Playwright differs from UI Automation and 
   is found by position again on every read. When the item is gone it reports `ItemChanged` and
   never acts on the row now in its place.
 - **A scope shown over a busy page** (a dialog) does not ask its page (`AsksParent => false`).
+- **A frame is a scope** (`FrameScope`), not a new test context: its children resolve inside
+  the frame, and it can report not loaded while the frame loads.

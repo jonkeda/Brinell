@@ -15,8 +15,8 @@ suite whose `Head` is `mixed`: it runs only scenarios tagged `@mixed`, its apps 
 
 **Why:** a journey is the same on both heads; two copies of its scenario text drift, and a
 difference between heads should show as a failing scenario, not as two files that say different
-things. Evidence: `.my/html/review-html-vs-maui.md` section 4 (items 7, 8),
-`.my/html/todo-blazor.md` section 4.
+things. Evidence (at 7162ac7): [review-html-vs-maui.md](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/html/review-html-vs-maui.md) section 4
+(items 7, 8), [todo-blazor.md](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/html/todo-blazor.md) section 4.
 
 **Ruled out:** a copy of a scenario file per head; head-specific wording for the same step; a
 skip rule or environment variable standing in for a head tag; apps of different heads in one

@@ -10,7 +10,7 @@ parameters and meaning on Html. Every member is one synchronous call.
 **Why:** hand-written Html controls approximated MAUI's surface by hand and drifted
 (`AssertTextContaining` beside `AssertTextContains`, missing `Enter` and `AssertSelectedText`, so
 UAT phrases failed on Html). The async members wrapped the synchronous calls and added nothing.
-Evidence: `.my/html/review-html-vs-maui.md`, sections 1.3, 2 and 4.
+Evidence: [review-html-vs-maui.md at 7162ac7](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/html/review-html-vs-maui.md), sections 1.3, 2 and 4.
 
 **Ruled out:** hand-written public control members where a `*Core` method can generate them;
 `Run*` helpers whose names or signatures differ from MAUI's; async control, page or container

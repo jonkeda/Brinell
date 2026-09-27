@@ -15,7 +15,7 @@ namespace Brinell.Html.Tests;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Written in plan step 2 (<c>.my/html/plan.md</c>). Each test states what the design requires
+/// Written before the Html call-model work. Each test states what the design requires
 /// and fails on the code as it was then, for the reason in its summary. The <c>Pin</c> trait
 /// names the step expected to make it pass: <c>dotnet test --filter "Pin=step4"</c>.
 /// </para>

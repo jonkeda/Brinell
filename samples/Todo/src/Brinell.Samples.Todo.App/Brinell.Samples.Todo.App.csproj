@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <!-- Windows first; Android is phase 7 of .my/TodoApp/plan.md. -->
+    <!-- Windows first, then Android. -->
     <TargetFrameworks>net10.0-windows10.0.19041.0;net10.0-android</TargetFrameworks>
     <OutputType>Exe</OutputType>
     <RootNamespace>Brinell.Samples.Todo.App</RootNamespace>

@@ -10,7 +10,7 @@ using Brinell.Html.Scopes;
 namespace Brinell.Html.Pages;
 
 // Core's [TestPage], because Html pages no longer implement Core's IPageObject: test composition
-// and UAT find them by the attribute (the same step MAUI took, .my/stale-readiness/plan.md 2.1).
+// and UAT find them by the attribute (the same step MAUI took).
 [TestPage]
 public abstract class HtmlPageObjectBase<TSelf> : ObjectBase, IHtmlPage<TSelf>
     where TSelf : HtmlPageObjectBase<TSelf>

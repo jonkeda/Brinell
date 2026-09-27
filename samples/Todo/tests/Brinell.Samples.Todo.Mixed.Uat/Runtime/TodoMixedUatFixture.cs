@@ -13,7 +13,7 @@ namespace Brinell.Samples.Todo.Mixed.Uat.Runtime;
 
 /// <summary>
 /// The apps of <c>apps.md</c> presented to the UAT engine: a step that names Daan runs on Daan's
-/// app, through the page objects of that app's head (plan: <c>.my/multi/plan.md</c> D5, D12).
+/// app, through the page objects of that app's head (AD-014, <c>.docs/contracts/uat-apps-host.md</c>).
 /// </summary>
 /// <remarks>
 /// The fixture's own composition holds only the mixed phrases, for steps that name no app. Each

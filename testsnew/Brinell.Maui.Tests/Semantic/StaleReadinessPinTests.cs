@@ -13,7 +13,7 @@ namespace Brinell.Maui.Tests.Semantic;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Written in plan step 2 (<c>.my/stale-readiness/plan.md</c>). Each test states the behaviour
+/// Written before the stale-readiness work. Each test states the behaviour
 /// the design requires and fails on the code as it was then, for the reason given in its summary.
 /// The <c>Pin</c> trait names the step expected to make it pass, so each later step can run its
 /// own: <c>dotnet test --filter "Pin=step4"</c>.

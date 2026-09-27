@@ -43,3 +43,5 @@ How this differs from the other trees:
 - [Control object](contracts/control-object.md) - the `.tpl.cs` / `.gen.cs` contract,
   act-once and `Confirm`.
 - [Bridge](contracts/bridge.md) - `GestureAutomation.Verbs`: what an app must publish.
+- [Apps in a test](contracts/uat-apps-host.md) - `TestAppSet` and `IUatAppsHost`: one table of apps, started
+  lazily, evidence from every started app.

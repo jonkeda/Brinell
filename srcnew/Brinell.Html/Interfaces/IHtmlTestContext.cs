@@ -5,7 +5,7 @@ using Brinell.Html.Context;
 namespace Brinell.Html.Interfaces;
 
 // R9: implements Core's non-generic ITestContext (unchanged by this work) and Html's own scope,
-// not Core's generic ITestContext<T>. See .my/html/design.md 4.2.
+// not Core's generic ITestContext<T>. See AD-010.
 
 /// <summary>
 /// One browser page under test: its driver, timeouts and logger, and the root scope for lookups.

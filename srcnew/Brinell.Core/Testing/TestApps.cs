@@ -5,7 +5,7 @@ namespace Brinell.Core.Testing;
 
 /// <summary>
 /// One app a test or scenario can use: a row of an <c>Apps</c> table. The UAT engine and UI tests
-/// read the same rows (plan: <c>.my/multi/plan.md</c> D12, D13).
+/// read the same rows (<c>.docs/contracts/uat-apps-host.md</c>).
 /// </summary>
 /// <param name="Name">What tests and steps call the app, such as <c>Daan's PC</c>.</param>
 /// <param name="User">Who uses it, such as <c>Daan</c>; several apps may have one user.</param>

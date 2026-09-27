@@ -5,8 +5,8 @@ namespace Brinell.Samples.Todo.UITests.Tests;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Not a way to hide a failure. Each use names the missing arrangement or the known driver gap, and
-/// the list is kept in <c>.my/TodoApp/plan.md</c> (phase 7). Today the reasons are:
+/// Not a way to hide a failure. Each use names the missing arrangement or the known driver gap.
+/// Today the reasons are:
 /// </para>
 /// <list type="bullet">
 /// <item><see cref="LocalState"/> - the scenario's local half lives in a database file on this

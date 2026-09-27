@@ -75,7 +75,7 @@ public abstract partial class ViewBase<TScope> : IElementObject<TScope>
 
     #region Calls
 
-    // Every public member is one call (.my/stale-readiness/design.md, R1): one log pair, one
+    // Every public member is one call (call-model contract, R1): one log pair, one
     // budget, one poll. Each attempt of the poll checks the page, finds the element again, makes
     // one visibility check, and then reads, compares or confirms readiness. Nothing inside a call
     // waits with a budget of its own (R2). An action runs once, after the poll (R0).

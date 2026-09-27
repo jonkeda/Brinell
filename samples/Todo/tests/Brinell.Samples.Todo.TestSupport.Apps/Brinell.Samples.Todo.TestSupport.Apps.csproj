@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- One table of apps for the mixed UI tests and the mixed UAT suite (plan: .my/multi D13). -->
+    <!-- One table of apps for the mixed UI tests and the mixed UAT suite (.docs/contracts/uat-apps-host.md). -->
     <None Include="apps.md" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

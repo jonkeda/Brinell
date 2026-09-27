@@ -23,7 +23,7 @@ namespace Brinell.Samples.Todo.Web.Uat.Runtime;
 /// <b>Several apps.</b> The apps of the <c>Apps</c> table are more devices on the same fake backend,
 /// each with its own database, host, browser context and <c>X-Todo-Client</c>. A step that names
 /// Alice (<c>Alice taps Add</c>) starts Alice's device the first time and makes it current; a
-/// scenario starts on the main device. See <c>.my/html/todo-blazor.md</c> section 4.
+/// scenario starts on the main device. See <c>.docs/contracts/uat-apps-host.md</c>.
 /// </para>
 /// <para>
 /// Each device has its own composition, whose <see cref="IHtmlTestContext"/> is that device's. A

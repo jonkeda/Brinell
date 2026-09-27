@@ -16,7 +16,7 @@ namespace Brinell.Html.Playwright;
 /// </summary>
 /// <remarks>
 /// Every Playwright call that can wait is given what is left of the running call's budget as its
-/// timeout (?A5 in .my/html/plan.md), so no Playwright wait outlasts the caller's
+/// timeout (the call-model contract), so no Playwright wait outlasts the caller's
 /// <c>timeoutMs</c>. Outside a call (a plain <c>Is*</c>) the cap is <see cref="OutsideACallMs"/>,
 /// not Playwright's 30 s default. A read waits for its element no longer than
 /// <see cref="ReadAttachMs"/>: see <see cref="Read{T}"/>.

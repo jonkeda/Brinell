@@ -424,7 +424,7 @@ public abstract class RootedScopeBase<TSelf, TSetResult>
     // parent scope. Identical names and shapes let the generator emit one body for both
     // hierarchies. The element these operate on is the container root.
     //
-    // Every public member is one call (.my/stale-readiness/design.md, R1): one log pair, one
+    // Every public member is one call (call-model contract, R1): one log pair, one
     // budget, one poll, whose attempts check the page and then use the root. An action runs once.
 
     private protected ControlCall Call => new(Context.Logger, Context.Name, Context.NearMiss, PageName, ControlId);
