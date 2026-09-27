@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- The Brinell MCP server, for Copilot's agent mode and other agents:
+  `Brinell.Uat.LanguageServer --mcp [--solution <folder>]` (`UatMcpServer`), over stdio. It has the
+  tools `list_suites`, `list_steps` (by words), `list_pages`, `list_test_sets`, `validate_scenario`
+  (a draft checked with the gate's words) and `find_step_usages`. It calls no model. The prompt
+  file `.github/prompts/brinell-write-scenario.prompt.md` writes a feature file with them, using
+  only the suite's steps. The Scraper's corpus tools (`scraper-in-extension.md`) are not part of it:
+  that proposal waits for its owner.
 - Config and data files in the editor: `uat.config.md` and `bdd.config.md` get diagnostics (`UATG001`-`UATG009`)
   for what the suite would ignore or reject:
   - an unknown section, field or assembly kind, and a Runtime table without a Fixture;

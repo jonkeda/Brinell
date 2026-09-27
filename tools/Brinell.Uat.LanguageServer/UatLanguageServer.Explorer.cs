@@ -45,6 +45,15 @@ public sealed partial class UatLanguageServer
         return new ExplorerResult(view, html, names, suite.Name);
     }
 
+    /// <summary>A suite of the workspace by its name; null when there is none.</summary>
+    internal UatSuite? SuiteNamed(string name)
+    {
+        lock (_gate)
+        {
+            return _workspace?.Suites.FirstOrDefault(suite => string.Equals(suite.Name, name, StringComparison.OrdinalIgnoreCase));
+        }
+    }
+
     // The newest run of each scenario of the suite's feature files, with the scenario's heading line.
     private List<(string File, UatScenarioRun Run, int Line)> RunsOfSuite(UatSuite suite)
     {

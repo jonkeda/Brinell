@@ -177,6 +177,36 @@ control verbs on its page (`When I tap Sync` on the Todo List page for `TodoList
 solution without a `uat.config.md` or `bdd.config.md` never starts the server for it. The counts
 come from the last build: build to see new steps.
 
+## Copilot And Other Agents
+
+The same server is an MCP server for GitHub Copilot's agent mode (Visual Studio 17.14 and later,
+VS Code) and any other MCP client:
+- `list_suites`, `list_steps`, `list_pages` and `list_test_sets` give what a scenario can say;
+- `validate_scenario` checks a draft as the gate does;
+- `find_step_usages` finds where a C# member is used.
+
+It calls no model: it holds the catalog and runs the checks, and Copilot does the writing.
+
+Register it in the solution folder's `.mcp.json` (Visual Studio) or `.vscode/mcp.json` (VS Code).
+From the Brinell root, for the Todo sample:
+
+```json
+{
+  "servers": {
+    "brinell-uat": {
+      "type": "stdio",
+      "command": "dotnet",
+      "args": ["run", "--project", "tools/Brinell.Uat.LanguageServer", "--", "--mcp", "--solution", "samples/Todo"]
+    }
+  }
+}
+```
+
+Build the suite first; its steps come from its build. Then, in Copilot Chat's agent mode, run the
+prompt `/brinell-write-scenario` (`.github/prompts/brinell-write-scenario.prompt.md`). It writes a
+feature file with only the suite's steps, and checks it with `validate_scenario` until the gate
+passes it. A step with no phrase is left as a marked gap, never an invented phrase.
+
 ## Without Visual Studio
 
 The server renders one file as a page, for a look or a bug report (from the Brinell root, after

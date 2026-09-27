@@ -7,6 +7,19 @@ if (args.Length > 0 && args[0] == "--preview")
     return PreviewCommand.Run(args[1..], Console.Out, Console.Error);
 }
 
+// With --mcp, the Brinell MCP server for Copilot and other agents, over stdio:
+//   Brinell.Uat.LanguageServer --mcp [--solution <folder>]   (the current folder by default)
+if (args.Length > 0 && args[0] == "--mcp")
+{
+    var solution = args.Length > 2 && args[1] == "--solution" ? args[2] : Environment.CurrentDirectory;
+    // The protocol owns stdout: anything else written to the console goes to stderr.
+    var protocol = new StreamWriter(Console.OpenStandardOutput()) { AutoFlush = true };
+    Console.SetOut(Console.Error);
+    using var mcp = new UatMcpServer(solution);
+    await mcp.RunAsync(Console.In, protocol);
+    return 0;
+}
+
 using var server = new UatLanguageServer();
 using var rpc = server.Attach(Console.OpenStandardOutput(), Console.OpenStandardInput());
 var exit = new TaskCompletionSource();
