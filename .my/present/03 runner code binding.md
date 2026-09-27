@@ -6,8 +6,8 @@ Area: `srcnew/Brinell.Uat`, `srcnew/Brinell.Core/Testing`
 Related:
 
 - [UAT phrases and flows](../../docs/guides/uat-phrases-and-flows.md) — the authoritative phrase list
-- [The Gherkin language, formalised](../uat/attribute-catalog/01-grammar.md) — grammar, phrase mini-language, lexicon
-- [Attribute-driven UAT catalog](../uat/attribute-catalog/README.md)
+- [The Gherkin language, formalised](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/uat/attribute-catalog/01-grammar.md) — grammar, phrase mini-language, lexicon
+- [Attribute-driven UAT catalog](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/uat/attribute-catalog/README.md)
 - [AD-011 — UAT vocabulary is attribute-declared](../../.docs/decisions/ad-011-uat-vocabulary-is-attribute-declared.md)
 
 This document defines how the UAT runner maps parsed Markdown steps to executable Brinell code.
@@ -142,7 +142,7 @@ public class LoginPage : PageObjectBase<LoginPage>
 
 This is layer 3 of the language — the *lexicon* — and it is the one layer that was
 already attribute-driven in the original design. See
-[01-grammar.md](../uat/attribute-catalog/01-grammar.md) §3.
+[01-grammar.md](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/uat/attribute-catalog/01-grammar.md) §3.
 
 ## Name Scope
 
@@ -457,7 +457,7 @@ them on the shared `CommandId` suffix.
 The one thing this does **not** catch is a verb that loses its `[UatStep]`
 entirely — both projections then drop it together and stay green. That gap is
 recorded as an open follow-up in
-[05-implementation-review.md](../uat/attribute-catalog/05-implementation-review.md)
+[05-implementation-review.md](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/uat/attribute-catalog/05-implementation-review.md)
 Finding 1.
 
 The decision is recorded as
@@ -714,7 +714,7 @@ candidates before declaring a tie: exact phrases beat parameterised ones, and
 among parameterised phrases the one with more literal non-whitespace characters
 wins. That is why `{control} should not be visible` never loses to
 `{control} should be visible`. The ranking rules are specified in
-[01-grammar.md](../uat/attribute-catalog/01-grammar.md) §2.
+[01-grammar.md](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/uat/attribute-catalog/01-grammar.md) §2.
 
 Still true, and enforced outside the code table: control commands require matching
 capabilities (now by interface implementation), and configuration must identify at

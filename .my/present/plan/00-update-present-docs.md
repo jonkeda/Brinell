@@ -6,9 +6,9 @@ Area: `.my/present/*.md`
 Related:
 
 - [Rethinking UAT](../../uat/rethinking-uat.md)
-- [Attribute-driven UAT catalog](../../uat/attribute-catalog/README.md)
-- [The Gherkin language, formalised](../../uat/attribute-catalog/01-grammar.md)
-- [Implementation review (delivered)](../../uat/attribute-catalog/05-implementation-review.md)
+- [Attribute-driven UAT catalog](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/uat/attribute-catalog/README.md)
+- [The Gherkin language, formalised](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/uat/attribute-catalog/01-grammar.md)
+- [Implementation review (delivered)](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/uat/attribute-catalog/05-implementation-review.md)
 - [AD-011 — UAT vocabulary is attribute-declared](../../../.docs/decisions/ad-011-uat-vocabulary-is-attribute-declared.md)
 - [UAT phrases and flows](../../../docs/guides/uat-phrases-and-flows.md)
 
@@ -428,7 +428,7 @@ These came up while surveying and are **not** part of this doc plan:
 2. **The open follow-up from the implementation review** — no test pins the
    expected built-in vocabulary, so deleting a `[UatStep]` shrinks both
    projections silently and stays green
-   ([05-implementation-review.md](../../uat/attribute-catalog/05-implementation-review.md)
+   ([05-implementation-review.md](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/uat/attribute-catalog/05-implementation-review.md)
    Finding 1). That is a code change, not a doc change.
 3. **Wiring `.my/uat/todos/scenarios/*.uat.md` to a runnable Todo head** —
    review follow-up 2. Affects what `12 authoring pipeline.md` can claim as a

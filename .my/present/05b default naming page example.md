@@ -6,7 +6,7 @@ Area: `srcnew/Brinell.Uat/UatNameInference.cs`
 Related:
 
 - [Simple page and tests example](05%20simple%20page%20and%20tests%20example.md) — the same example with `[UatName]`
-- [The Gherkin language, formalised](../uat/attribute-catalog/01-grammar.md) §3 — the lexicon
+- [The Gherkin language, formalised](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/uat/attribute-catalog/01-grammar.md) §3 — the lexicon
 - [Runner code binding](03%20runner%20code%20binding.md) §Page And Control Names
 
 This document shows a UAT runner example where the PageObject does not use `[UatName]`.

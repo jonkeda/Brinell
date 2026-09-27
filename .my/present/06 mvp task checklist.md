@@ -7,7 +7,7 @@ Related:
 
 - [Development roadmap](04%20development%20roadmap.md) — the phases this slice opened
 - [UAT diagnostics and config hardening](08%20uat%20diagnostics%20and%20config%20hardening.md) — the slice that followed
-- [Attribute-driven UAT catalog](../uat/attribute-catalog/README.md) — what replaced Slice 5's phrase model
+- [Attribute-driven UAT catalog](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/uat/attribute-catalog/README.md) — what replaced Slice 5's phrase model
 
 This checklist defines the first implementation slice for the Markdown-driven UAT runner.
 
@@ -134,7 +134,7 @@ Appium, FlaUI or a launched app — the property this checklist was built around
 Every non-goal on the list above also held: no aliases, no `if`/`for`, no ANTLR,
 no source generation. The one thing that changed is that "no source generation"
 turned out not to mean "no discovery" —
-[the vocabulary is now found by reflection over attributes](../uat/attribute-catalog/README.md),
+[the vocabulary is now found by reflection over attributes](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/uat/attribute-catalog/README.md),
 which gets the benefit a generator would have given without adding a build step.
 
 What came next, in order: the diagnostics and config work in

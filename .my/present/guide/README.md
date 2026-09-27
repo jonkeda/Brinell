@@ -7,7 +7,7 @@ Related:
 
 - [Presenter platform guide](../../../docs/platform-guides/presenter.md) — settings, targets, execution
 - [Presenter development plan](../09%20brinell%20presenter%20development%20plan.md)
-- [UAT markdown grammar](../02%20uat%20markdown%20grammar.md) — what a `.uat.md` file may contain
+- [UAT markdown grammar](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/present/02%20uat%20markdown%20grammar.md) — what a `.uat.md` file may contain
 - [Running the Todo app in Presenter](todo-app-presenter-setup.md) — the richer demo workspace, and the three config fields it needs first
 
 ---

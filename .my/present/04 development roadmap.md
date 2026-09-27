@@ -7,7 +7,7 @@ Related:
 
 - [Runner code binding](03%20runner%20code%20binding.md) — the binding model as shipped
 - [UAT phrases and flows](../../docs/guides/uat-phrases-and-flows.md)
-- [The Gherkin language, formalised](../uat/attribute-catalog/01-grammar.md)
+- [The Gherkin language, formalised](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/uat/attribute-catalog/01-grammar.md)
 
 This roadmap turns the Markdown-driven UAT runner idea into a first MAUI-capable implementation.
 
@@ -94,14 +94,14 @@ Acceptance checks:
 ## Phase 2: Markdown Parser
 
 Implement the grammar from
-[01-grammar.md](../uat/attribute-catalog/01-grammar.md).
+[01-grammar.md](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/uat/attribute-catalog/01-grammar.md).
 
 > **Note (2026-09):** this phase originally cited `02 uat markdown grammar.md`,
 > which was never written at the time. The grammar the parser actually accepts was
 > written down afterwards, from the shipped parser, as `01-grammar.md` in the
 > attribute-catalog folder — document grammar (§1), phrase mini-language (§2) and
 > lexicon (§3).
-> [02](02%20uat%20markdown%20grammar.md) now exists as a pointer to it.
+> [02](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/present/02%20uat%20markdown%20grammar.md) now exists as a pointer to it.
 
 Deliverables:
 

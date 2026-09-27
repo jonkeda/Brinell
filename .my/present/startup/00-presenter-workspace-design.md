@@ -8,7 +8,7 @@ Related:
 - [Presenter current UI and execution design](../10%20presenter%20tabbed%20tree%20redesign.md) — the shell this lives in; where we disagree, 10 wins on layout
 - [Running the Todo app in Presenter](../guide/todo-app-presenter-setup.md) — the three-blocker story this ends
 - [Minimal Presenter run](../guide/README.md) — the fixture-name trap
-- [UAT markdown grammar](../02%20uat%20markdown%20grammar.md)
+- [UAT markdown grammar](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/present/02%20uat%20markdown%20grammar.md)
 - [archive/](archive/README.md) — the three working notes behind this, with the measurements
 
 ---

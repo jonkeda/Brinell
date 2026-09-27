@@ -11,7 +11,7 @@ Related:
 - [Running the Todo app in Presenter](../../guide/todo-app-presenter-setup.md) — the three-blocker story this screen exists to end
 - [Minimal Presenter run](../../guide/README.md) — the fixture-name trap
 - [Presenter platform guide](../../../../docs/platform-guides/presenter.md)
-- [UAT markdown grammar](../../02%20uat%20markdown%20grammar.md)
+- [UAT markdown grammar](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/present/02%20uat%20markdown%20grammar.md)
 
 ---
 
