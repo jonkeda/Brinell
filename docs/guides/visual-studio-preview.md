@@ -136,6 +136,20 @@ Markdown editor with a language server of their own, the same `Brinell.Uat.Langu
   across the suite. Each call keeps its values, so the new phrase must keep the same `{x}`
   placeholders.
 
+## UAT Explorer
+
+**View > Other Windows > UAT Explorer** shows a suite of the solution; pick another in its bar.
+
+- **Steps**: every step the suite can bind to, grouped by the class that declares it, the page of a
+  page phrase, control verbs and built-ins; then the callable steps of each step file; then the
+  hooks of each step-definition class, with their tags.
+- **Pages**: each page with its controls (their type, and the page tapping one goes to) and its
+  page phrases.
+- **Results**: the last run of each scenario, by feature file.
+
+Click an entry to open its source: the method, the page class, the control, the `## Step:`
+heading or the scenario. The window refreshes after a build and when a run writes results.
+
 ## CodeLens In C#
 
 Above a step definition, a page phrase or a page object's control, CodeLens says how many UAT

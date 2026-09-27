@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- UAT Explorer (Visual Studio, **View > Other Windows > UAT Explorer**) shows three views of a suite,
+  and any entry with a source opens it:
+  - **Steps**: the steps grouped by their class, page, control verbs and built-ins, then the
+    callable steps by step file, and the hooks of each step-definition class with their tags;
+  - **Pages**: each page with its controls (type, where tapping goes) and its page phrases;
+  - **Results**: the last run of each scenario.
+  The language server renders them (`brinell/explorerHost`, `brinell/explorer`), and the window
+  refreshes after a build and when a run writes results.
 - Quick fixes and refactorings in the editor (`textDocument/codeAction`, `prepareRename`, `rename`):
   - a value with one right answer is rewritten, as `brinell-data validate --fix` does;
   - old headings are rewritten, and an old file name is renamed (UAT029) when the client can

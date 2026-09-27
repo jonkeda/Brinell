@@ -46,6 +46,9 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
     private string? _path;
     private int _version;
     private CancellationTokenSource? _typing;
+    private ScenarioPreviewControl? _explorer;
+    private string _explorerView = "steps";
+    private string? _explorerSuite;
 
     public PreviewController(AsyncPackage package) => _package = package;
 
@@ -335,6 +338,74 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
         UatBreakpointStore.Instance.Toggle(path, line);
     }
 
+    /// <summary>Shows the UAT Explorer in a window's control: loads its page once, then the view.</summary>
+    public async Task AttachExplorerAsync(ScenarioPreviewControl view)
+    {
+        await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
+        if (_explorer != view)
+        {
+            _explorer = view;
+            view.MessageReceived += OnExplorerMessage;
+        }
+
+        if (!view.IsReady)
+        {
+            await EnsureServerAsync(_path);
+            var host = await _server!.ExplorerHostAsync(_package.DisposalToken);
+            await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
+            await view.InitializeAsync(host);
+            view.Post(VsTheme.Message());
+        }
+
+        await RefreshExplorerAsync();
+    }
+
+    private async Task RefreshExplorerAsync()
+    {
+        if (_explorer is not { } view || _server is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var result = await _server.ExplorerAsync(_explorerView, _explorerSuite, _package.DisposalToken);
+            await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
+            result["type"] = "update";
+            view.Post(result);
+        }
+        catch (Exception exception) when (exception is StreamJsonRpc.RemoteInvocationException or StreamJsonRpc.ConnectionLostException or IOException)
+        {
+            Log($"The UAT Explorer failed: {exception.Message}");
+        }
+    }
+
+    // From the explorer's page: a view picked, a suite picked, or an entry to open at its line.
+    private void OnExplorerMessage(object sender, JObject message)
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        switch ((string?)message["type"])
+        {
+            case "view" when (string?)message["view"] is { } name:
+                _explorerView = name;
+                _package.JoinableTaskFactory.RunAsync(RefreshExplorerAsync).FileAndForget("Brinell/ExplorerView");
+                break;
+            case "pickSuite" when (string?)message["suite"] is { } suite:
+                _explorerSuite = suite;
+                _package.JoinableTaskFactory.RunAsync(RefreshExplorerAsync).FileAndForget("Brinell/ExplorerSuite");
+                break;
+            case "open" when (string?)message["uri"] is { } uri && Uri.TryCreate(uri, UriKind.Absolute, out var parsed) && parsed.IsFile && File.Exists(parsed.LocalPath):
+                VsShellUtilities.OpenDocument(_package, parsed.LocalPath, Guid.Empty, out _, out _, out _, out var textView);
+                if (textView is not null && (int?)message["line"] is { } line && line >= 1)
+                {
+                    textView.SetCaretPos(line - 1, 0);
+                    textView.CenterLines(line - 1, 1);
+                }
+
+                break;
+        }
+    }
+
     /// <summary>The steps that use a C# member (CodeLens), in the suites of the solution that holds the C# file.</summary>
     public async Task<JObject> UsagesAsync(string csharpFile, string symbol)
     {
@@ -368,6 +439,11 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
     // A run wrote results for the file on show: draw them.
     private void OnResultsChanged(object sender, string path)
     {
+        if (_explorerView == "results")
+        {
+            _package.JoinableTaskFactory.RunAsync(RefreshExplorerAsync).FileAndForget("Brinell/ExplorerResults");
+        }
+
         if (string.Equals(path, _path, StringComparison.OrdinalIgnoreCase))
         {
             _package.JoinableTaskFactory.RunAsync(RefreshAsync).FileAndForget("Brinell/PreviewResults");
@@ -468,6 +544,7 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
             {
                 await server.BuildDoneAsync(_package.DisposalToken);
                 await RefreshAsync();
+                await RefreshExplorerAsync();
             }).FileAndForget("Brinell/PreviewBuildDone");
         }
 

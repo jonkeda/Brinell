@@ -112,5 +112,26 @@ public sealed class NavigationTests : IAsyncLifetime
         Assert.All(usages.Usages, usage => Assert.Contains("Sync", usage.Text));
     }
 
+    [Fact]
+    public async Task Explorer_Steps_GroupsTheSteps_AndOpensEachCallable()
+    {
+        var steps = await _server.Client.InvokeWithParameterObjectAsync<ExplorerResult>("brinell/explorer", new { view = "steps", suite = "Brinell.Samples.Todo.Uat" });
+
+        Assert.Equal("Brinell.Samples.Todo.Uat", steps.Suite);
+        Assert.Contains("Brinell.Samples.Todo.Web.Uat", steps.Suites);
+        Assert.Contains("<h3>Control verbs", steps.Html);
+        Assert.Contains("I tap {control}", steps.Html);
+        Assert.Contains($"data-open=\"{new Uri(Steps).AbsoluteUri}\" data-line=\"3\"><span class=\"uat-kind\">Step</span>the synced list has todos", steps.Html);
+    }
+
+    [Fact]
+    public async Task Explorer_Pages_ListsEachPageWithItsControls()
+    {
+        var pages = await _server.Client.InvokeWithParameterObjectAsync<ExplorerResult>("brinell/explorer", new { view = "pages", suite = "Brinell.Samples.Todo.Uat" });
+
+        Assert.Contains("Todo List", pages.Html);
+        Assert.Matches("data-open=\"file:[^\"]+\\.cs\" data-line=\"\\d+\"><span class=\"uat-kind\">control</span>Sync<", pages.Html);
+    }
+
     private static int LineOf(string text) => Array.IndexOf(Lines, text);
 }

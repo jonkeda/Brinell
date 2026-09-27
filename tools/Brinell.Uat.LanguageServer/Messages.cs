@@ -287,6 +287,16 @@ public sealed record UsagesResult(int Steps, int Scenarios, IReadOnlyList<Usage>
 /// <param name="Scenario">The scenario it is in.</param>
 public sealed record Usage(string Uri, int Line, string Text, string Scenario);
 
+/// <summary><c>brinell/explorer</c>: a view (<c>steps</c>, <c>pages</c>, <c>results</c>) of a suite.</summary>
+public sealed record ExplorerParams(string? View, string? Suite);
+
+/// <summary>A view of a suite, as HTML for the explorer's page.</summary>
+/// <param name="View">The view shown.</param>
+/// <param name="Html">The view.</param>
+/// <param name="Suites">Every suite, for the picker.</param>
+/// <param name="Suite">The suite shown; null when there is none.</param>
+public sealed record ExplorerResult(string View, string Html, IReadOnlyList<string> Suites, string? Suite);
+
 /// <summary>The preview's host page.</summary>
 /// <param name="Html">A whole page with the stylesheet and the page script (<c>UatPreview.HostPage</c>).</param>
 public sealed record PreviewHostResult(string Html);

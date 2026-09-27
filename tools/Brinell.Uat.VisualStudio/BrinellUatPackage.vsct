@@ -19,6 +19,13 @@
           <CommandName>Brinell.ScenarioPreview</CommandName>
         </Strings>
       </Button>
+      <Button guid="guidBrinellUatCommandSet" id="ShowUatExplorer" priority="0x0101" type="Button">
+        <Parent guid="guidSHLMainMenu" id="IDG_VS_WNDO_OTRWNDWS1" />
+        <Strings>
+          <ButtonText>UAT Explorer</ButtonText>
+          <CommandName>Brinell.UatExplorer</CommandName>
+        </Strings>
+      </Button>
       <Button guid="guidBrinellUatCommandSet" id="OpenScenarioPreview" priority="0x0100" type="Button">
         <Parent guid="guidBrinellUatCommandSet" id="EditorContextGroup" />
         <CommandFlag>DynamicVisibility</CommandFlag>
@@ -54,6 +61,7 @@
       <IDSymbol name="ShowScenarioPreview" value="0x0100" />
       <IDSymbol name="OpenScenarioPreview" value="0x0101" />
       <IDSymbol name="ToggleStepBreakpoint" value="0x0102" />
+      <IDSymbol name="ShowUatExplorer" value="0x0103" />
     </GuidSymbol>
   </Symbols>
 </CommandTable>

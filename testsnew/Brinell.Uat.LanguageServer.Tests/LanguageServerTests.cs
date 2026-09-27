@@ -357,6 +357,20 @@ public sealed class LanguageServerTests : IAsyncLifetime
         Assert.Contains("| `due` | 3-Mar-2027 | 03-Mar-2027 |", hover.Contents.Value);
     }
 
+    [Fact]
+    public async Task Explorer_Results_ShowsTheLastRunOfEachScenario_OpeningItsHeading()
+    {
+        Build();
+        File.WriteAllText(Path.Combine(_solution, "Shelf.sln"), string.Empty);
+        WriteRun("20260105-000000-explorer", "failed", "Failed");
+        await InitializeAsync(_client);
+
+        var results = await _client.InvokeWithParameterObjectAsync<ExplorerResult>("brinell/explorer", new { view = "results", suite = "Shelf.Steps" });
+
+        Assert.Contains("1 scenarios with a run in Shelf.Steps, 1 failed", results.Html);
+        Assert.Contains($"data-open=\"{new Uri(Feature).AbsoluteUri}\" data-line=\"3\"><span class=\"uat-result\" data-status=\"failed\"", results.Html);
+    }
+
     private Task<InitializeResult> InitializeAsync(JsonRpc client, bool editor = false)
         => client.InvokeWithParameterObjectAsync<InitializeResult>("initialize", new
         {

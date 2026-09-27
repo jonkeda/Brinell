@@ -9,6 +9,8 @@ internal static class PackageIds
 
     public const string ScenarioPreviewWindow = "8432b10b-2c5f-4c6b-af14-eda029606afb";
 
+    public const string UatExplorerWindow = "5d2f7c61-3e0b-4b8e-9a44-6b1f0e7c2d93";
+
     // Active when a feature or step file is selected or open in the editor: the package loads then.
     public const string FeatureFileContext = "d446c026-dd42-46af-a662-6f72d0dbf00d";
 
@@ -17,6 +19,8 @@ internal static class PackageIds
     public const int OpenScenarioPreview = 0x0101;
 
     public const int ToggleStepBreakpoint = 0x0102;
+
+    public const int ShowUatExplorer = 0x0103;
 
     public static readonly Guid CommandSet = new(CommandSetString);
 }

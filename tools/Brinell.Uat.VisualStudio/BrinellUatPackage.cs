@@ -16,6 +16,7 @@ namespace Brinell.Uat.VisualStudio;
 [Guid(PackageIds.Package)]
 [ProvideMenuResource("Menus.ctmenu", 1)]
 [ProvideToolWindow(typeof(ScenarioPreviewWindow), Style = VsDockStyle.Tabbed, Window = "{34E76E81-EE4A-11D0-AE2E-00A0C90FFFC3}", Orientation = ToolWindowOrientation.Right)]
+[ProvideToolWindow(typeof(UatExplorerWindow), Style = VsDockStyle.Tabbed, Window = "{3AE79031-E1BC-11D0-8F78-00A0C9110057}")]
 [ProvideAutoLoad(PackageIds.FeatureFileContext, PackageAutoLoadFlags.BackgroundLoad)]
 [ProvideUIContextRule(
     PackageIds.FeatureFileContext,
@@ -48,6 +49,8 @@ public sealed class BrinellUatPackage : AsyncPackage
             open.BeforeQueryStatus += (_, _) => open.Visible = _controller.ActiveIsFeatureOrSteps;
             commands.AddCommand(open);
 
+            commands.AddCommand(new MenuCommand((_, _) => ShowExplorer(), new CommandID(PackageIds.CommandSet, PackageIds.ShowUatExplorer)));
+
             var toggle = new OleMenuCommand((_, _) => ToggleStepBreakpoint(), new CommandID(PackageIds.CommandSet, PackageIds.ToggleStepBreakpoint));
             toggle.BeforeQueryStatus += (_, _) => toggle.Visible = toggle.Enabled = _controller.ActiveIsFeatureOrSteps;
             commands.AddCommand(toggle);
@@ -68,6 +71,19 @@ public sealed class BrinellUatPackage : AsyncPackage
 
     private void ToggleStepBreakpoint()
         => JoinableTaskFactory.RunAsync(() => _controller!.ToggleBreakpointAtCaretAsync()).FileAndForget("Brinell/ToggleStepBreakpoint");
+
+    private void ShowExplorer()
+    {
+        JoinableTaskFactory.RunAsync(async () =>
+        {
+            await JoinableTaskFactory.SwitchToMainThreadAsync(DisposalToken);
+            var window = await ShowToolWindowAsync(typeof(UatExplorerWindow), 0, create: true, DisposalToken);
+            if (window is UatExplorerWindow explorer && _controller is not null)
+            {
+                await _controller.AttachExplorerAsync(explorer.Control);
+            }
+        }).FileAndForget("Brinell/ShowUatExplorer");
+    }
 
     private void ShowPreview()
     {

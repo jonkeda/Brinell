@@ -93,6 +93,16 @@ public sealed class UatServerClient : IDisposable
         => await (await RpcAsync(cancellationToken).ConfigureAwait(false))
             .InvokeWithParameterObjectAsync<JObject>("brinell/runTarget", new { uri = Uri(path), line, suite }, cancellationToken).ConfigureAwait(false);
 
+    /// <summary><c>brinell/explorerHost</c>: the page the UAT Explorer's webview loads once.</summary>
+    public async Task<string> ExplorerHostAsync(CancellationToken cancellationToken)
+        => (string)(await (await RpcAsync(cancellationToken).ConfigureAwait(false))
+            .InvokeWithParameterObjectAsync<JObject>("brinell/explorerHost", new { }, cancellationToken).ConfigureAwait(false))["html"]!;
+
+    /// <summary><c>brinell/explorer</c>: a view (<c>steps</c>, <c>pages</c>, <c>results</c>) of a suite.</summary>
+    public async Task<JObject> ExplorerAsync(string view, string? suite, CancellationToken cancellationToken)
+        => await (await RpcAsync(cancellationToken).ConfigureAwait(false))
+            .InvokeWithParameterObjectAsync<JObject>("brinell/explorer", new { view, suite }, cancellationToken).ConfigureAwait(false);
+
     /// <summary><c>brinell/usages</c>: the steps across every suite that use a C# member, for CodeLens.</summary>
     public async Task<JObject> UsagesAsync(string symbol, CancellationToken cancellationToken)
         => await (await RpcAsync(cancellationToken).ConfigureAwait(false))
