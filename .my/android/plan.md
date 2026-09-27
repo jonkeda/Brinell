@@ -1,11 +1,11 @@
 # Android: plan
 
-Status: **todo**, drafted 2026-09-19. No step has started.
+Status: **doing** (step 0 baseline run 2026-09-19/20; the rest todo). Drafted 2026-09-19.
 
 This plan fixes the Android UI failures that the stale-readiness work left as "known driver gaps".
 The design decisions are in section 3. Each step's status and evidence go in section 4 as the
-work proceeds. Terms like R0, R2, R3 and `ActOnce` are from
-[../stale-readiness/design.md](../stale-readiness/design.md).
+work proceeds. Terms like R0, R2, R3 and `ActOnce` are from the
+[call-model contract](../../.docs/contracts/call-model.md).
 
 ## 1. Goal
 
@@ -168,6 +168,7 @@ Status values: `todo`, `doing`, `done`, `blocked`.
 | **6. The rest of the baseline** | todo | Whatever step 0 found beyond A1-A3, planned here as sub-steps once known | Every Android failure from step 0 is fixed or has a written reason |
 | **7. Prove it** | todo | Full Android runs of both suites, twice each (flakiness). Full Windows `Brinell.Maui.UITests` and the Todo UI suite once | Android: no failure without a written reason, and the same result both times. Windows 351 passed, 2 gated skips; Todo 36 passed, 3 skipped |
 | **8. Write it down** | todo | Memory notes (`range-uitest-baseline`, `android-selection-baseline`) updated to the new baseline; `docs/controls` platform notes; `CHANGELOG.md`; the skills (`maui-control`: the Android range route, `AppSupport` required for range state) | Docs updated |
+| **9. Mixed apps on Android** | todo | From the multi-app work (2026-09-27): TOD.07.15, a todo created on Android reaches Windows, is written in `Brinell.Samples.Todo.Mixed.UITests` and `Brinell.Samples.Todo.Mixed.Uat` but has only ever skipped (no emulator). Run both with an emulator and `BRINELL_ANDROID=1`; the WireMock backend must be reachable at `AndroidHost.EmulatorUrl` (all interfaces, or `adb reverse`) | TOD.07.15 passes in both projects, or its failure has a row in section 2 |
 
 ### 4.1 Step notes
 
