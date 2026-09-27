@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   is linked into, and builds the catalogs from a shadow copy of the build output in a collectible
   load context, so a build never meets a locked file and `Reload` releases the old build.
   `brinell-data` loads suites through it; its output is unchanged.
+- `Brinell.Uat.Preview` (tools/): renders a feature or step file as HTML for the IDE preview, from the
+  engine's parse: steps with the keyword in a gutter, quoted values, `{x}` arguments and `<x>`
+  placeholders marked, tables and doc strings, tags, the metadata table, `## Step:` sections, and
+  each parse diagnostic at its line (UAT029 with its fix for the old forms). Markdig renders the
+  Markdown around, with raw HTML off; every block has `data-line`. The stylesheet's colours are
+  CSS variables with light, dark and high-contrast values.
 - Docs: AD-020 (a tier is a head: `service`, opt-in heads, UATB013, a scenario counts for each of
   its tiers) and AD-021 (`Brinell.Bdd` under `Brinell.Uat`), with their invariants; the guide
   "Features Below The UI". AD-011, AD-014, AD-017 and AD-019 use the new words and file names.

@@ -1,0 +1,162 @@
+<article class="uat-doc" data-kind="feature" data-file="TOD.08-things-go-wrong.feature.md">
+<h1 class="uat-title" data-line="1"><span class="uat-kw">Feature</span> TOD.08 Things go wrong</h1>
+<h2 data-line="3">Metadata</h2>
+<table class="uat-metadata" data-line="5">
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>App</td>
+<td>Brinell.Samples.Todo.App</td>
+</tr>
+<tr>
+<td>Area</td>
+<td>Errors</td>
+</tr>
+<tr>
+<td>Target</td>
+<td>MAUI, BLAZOR</td>
+</tr>
+<tr>
+<td>Journey</td>
+<td>TOD.08</td>
+</tr>
+<tr>
+<td>TestData</td>
+<td>empty</td>
+</tr>
+<tr>
+<td>Tags</td>
+<td>maui, web, errors</td>
+</tr>
+</tbody>
+</table>
+<p class="uat-tags" data-line="14"><span class="uat-tag">@TOD.08.1</span> <span class="uat-tag">@smoke</span> <span class="uat-tag">@maui</span> <span class="uat-tag">@web</span> <span class="uat-tag">@errors</span></p>
+<h2 class="uat-scenario" data-line="15" data-scenario="TOD.08.1 A server error on sync shows the Error state with Retry; local data is kept"><span class="uat-kw">Scenario</span> TOD.08.1 A server error on sync shows the Error state with Retry; local data is kept</h2>
+<ol class="uat-steps" data-line="17">
+<li class="uat-step" data-line="18"><span class="uat-kw">Given</span><span class="uat-text">I am on the Todo List page</span>
+</li>
+<li class="uat-step" data-line="19"><span class="uat-kw">And</span><span class="uat-text">the server also has todos</span>
+<table class="uat-table" data-line="20">
+<thead><tr><th>Title</th></tr></thead>
+<tbody>
+<tr data-line="22"><td>Pay the bills</td></tr>
+</tbody>
+</table>
+</li>
+<li class="uat-step" data-line="23"><span class="uat-kw">When</span><span class="uat-text">I tap Sync</span>
+</li>
+<li class="uat-step" data-line="24"><span class="uat-kw">Then</span><span class="uat-text">Todos should have todo <span class="uat-value">&quot;Pay the bills&quot;</span></span>
+</li>
+<li class="uat-step" data-line="25"><span class="uat-kw">Given</span><span class="uat-text">the server fails with status 500</span>
+</li>
+<li class="uat-step" data-line="26"><span class="uat-kw">When</span><span class="uat-text">I tap Sync</span>
+</li>
+<li class="uat-step" data-line="27"><span class="uat-kw">Then</span><span class="uat-text">the list should show the Error state</span>
+</li>
+<li class="uat-step" data-line="28"><span class="uat-kw">And</span><span class="uat-text">Error Message should contain <span class="uat-value">&quot;server had a problem&quot;</span></span>
+</li>
+<li class="uat-step" data-line="29"><span class="uat-kw">And</span><span class="uat-text">Last Sync should equal <span class="uat-value">&quot;Sync failed&quot;</span></span>
+</li>
+<li class="uat-step" data-line="30"><span class="uat-kw">And</span><span class="uat-text">Retry should be enabled</span>
+</li>
+<li class="uat-step" data-line="31"><span class="uat-kw">And</span><span class="uat-text">the database should have todos</span>
+<table class="uat-table" data-line="32">
+<thead><tr><th>Title</th><th>SyncState</th></tr></thead>
+<tbody>
+<tr data-line="34"><td>Pay the bills</td><td>Synced</td></tr>
+</tbody>
+</table>
+</li>
+<li class="uat-step" data-line="35"><span class="uat-kw">When</span><span class="uat-text">the server recovers</span>
+</li>
+<li class="uat-step" data-line="36"><span class="uat-kw">And</span><span class="uat-text">I tap Retry</span>
+</li>
+<li class="uat-step" data-line="37"><span class="uat-kw">Then</span><span class="uat-text">the list should show the Content state</span>
+</li>
+<li class="uat-step" data-line="38"><span class="uat-kw">And</span><span class="uat-text">Todos should have todo <span class="uat-value">&quot;Pay the bills&quot;</span></span>
+</li>
+</ol>
+<p class="uat-tags" data-line="41"><span class="uat-tag">@TOD.08.2</span> <span class="uat-tag">@maui</span> <span class="uat-tag">@web</span> <span class="uat-tag">@errors</span></p>
+<h2 class="uat-scenario" data-line="42" data-scenario="TOD.08.2 Retry after the server recovers shows the content"><span class="uat-kw">Scenario</span> TOD.08.2 Retry after the server recovers shows the content</h2>
+<ol class="uat-steps" data-line="44">
+<li class="uat-step" data-line="45"><span class="uat-kw">Given</span><span class="uat-text">I am on the Todo List page</span>
+</li>
+<li class="uat-step" data-line="46"><span class="uat-kw">And</span><span class="uat-text">the server also has todos</span>
+<table class="uat-table" data-line="47">
+<thead><tr><th>Title</th></tr></thead>
+<tbody>
+<tr data-line="49"><td>Renew the lease</td></tr>
+</tbody>
+</table>
+</li>
+<li class="uat-step" data-line="50"><span class="uat-kw">And</span><span class="uat-text">the server fails once with status 503</span>
+</li>
+<li class="uat-step" data-line="51"><span class="uat-kw">When</span><span class="uat-text">I tap Sync</span>
+</li>
+<li class="uat-step" data-line="52"><span class="uat-kw">Then</span><span class="uat-text">the list should show the Error state</span>
+</li>
+<li class="uat-step" data-line="53"><span class="uat-kw">When</span><span class="uat-text">I tap Retry</span>
+</li>
+<li class="uat-step" data-line="54"><span class="uat-kw">Then</span><span class="uat-text">the list should show the Content state</span>
+</li>
+<li class="uat-step" data-line="55"><span class="uat-kw">And</span><span class="uat-text">Todos should have todo <span class="uat-value">&quot;Renew the lease&quot;</span></span>
+</li>
+</ol>
+<p class="uat-tags" data-line="58"><span class="uat-tag">@TOD.08.3</span> <span class="uat-tag">@maui</span> <span class="uat-tag">@web</span> <span class="uat-tag">@errors</span></p>
+<h2 class="uat-scenario" data-line="59" data-scenario="TOD.08.3 A slow server shows Loading until the answer arrives"><span class="uat-kw">Scenario</span> TOD.08.3 A slow server shows Loading until the answer arrives</h2>
+<ol class="uat-steps" data-line="61">
+<li class="uat-step" data-line="62"><span class="uat-kw">Given</span><span class="uat-text">I am on the Todo List page</span>
+</li>
+<li class="uat-step" data-line="63"><span class="uat-kw">When</span><span class="uat-text">I tap Sync</span>
+</li>
+<li class="uat-step" data-line="64"><span class="uat-kw">Then</span><span class="uat-text">the list should show the Empty state</span>
+</li>
+<li class="uat-step" data-line="65"><span class="uat-kw">Given</span><span class="uat-text">the server answers after 2 seconds</span>
+</li>
+<li class="uat-step" data-line="66"><span class="uat-kw">When</span><span class="uat-text">I tap Sync</span>
+</li>
+<li class="uat-step" data-line="67"><span class="uat-kw">Then</span><span class="uat-text">the list should show the Loading state</span>
+</li>
+<li class="uat-step" data-line="68"><span class="uat-kw">And</span><span class="uat-text">the list should show the Empty state</span>
+</li>
+</ol>
+<p class="uat-tags" data-line="71"><span class="uat-tag">@TOD.08.8</span> <span class="uat-tag">@maui</span> <span class="uat-tag">@web</span> <span class="uat-tag">@errors</span> <span class="uat-tag">@offline</span> <span class="uat-tag">@windows</span></p>
+<h2 class="uat-scenario" data-line="72" data-scenario="TOD.08.8 Offline disables Sync and shows &quot;Offline&quot;; back online, Sync clears the pending edits"><span class="uat-kw">Scenario</span> TOD.08.8 Offline disables Sync and shows &quot;Offline&quot;; back online, Sync clears the pending edits</h2>
+<ol class="uat-steps" data-line="74">
+<li class="uat-step" data-line="75"><span class="uat-kw">Given</span><span class="uat-text">I am on the Todo List page</span>
+</li>
+<li class="uat-step" data-line="76"><span class="uat-kw">And</span><span class="uat-text">the device is offline</span>
+</li>
+<li class="uat-step" data-line="77"><span class="uat-kw">Then</span><span class="uat-text">Last Sync should equal <span class="uat-value">&quot;Offline&quot;</span></span>
+</li>
+<li class="uat-step" data-line="78"><span class="uat-kw">And</span><span class="uat-text">Sync should be disabled</span>
+</li>
+<li class="uat-step" data-line="79"><span class="uat-kw">When</span><span class="uat-text">I create a todo <span class="uat-value">&quot;Buy stamps&quot;</span></span>
+</li>
+<li class="uat-step" data-line="80"><span class="uat-kw">Then</span><span class="uat-text">I should be on the Todo List page</span>
+</li>
+<li class="uat-step" data-line="81"><span class="uat-kw">And</span><span class="uat-text">the todo <span class="uat-value">&quot;Buy stamps&quot;</span> should be waiting to sync</span>
+</li>
+<li class="uat-step" data-line="82"><span class="uat-kw">When</span><span class="uat-text">the device is back online</span>
+</li>
+<li class="uat-step" data-line="83"><span class="uat-kw">Then</span><span class="uat-text">Sync should be enabled</span>
+</li>
+<li class="uat-step" data-line="84"><span class="uat-kw">When</span><span class="uat-text">I tap Sync</span>
+</li>
+<li class="uat-step" data-line="85"><span class="uat-kw">Then</span><span class="uat-text">the todo <span class="uat-value">&quot;Buy stamps&quot;</span> should be synced</span>
+</li>
+<li class="uat-step" data-line="86"><span class="uat-kw">And</span><span class="uat-text">the server should have todos</span>
+<table class="uat-table" data-line="87">
+<thead><tr><th>Title</th></tr></thead>
+<tbody>
+<tr data-line="89"><td>Buy stamps</td></tr>
+</tbody>
+</table>
+</li>
+</ol>
+</article>
