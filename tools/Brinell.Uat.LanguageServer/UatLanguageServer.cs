@@ -56,6 +56,7 @@ public sealed partial class UatLanguageServer : IDisposable
             _results = new UatRunResults(UatRunResults.RootFor(_workspace.Root));
             WatchResults(_results.Root);
             _publishes = ClientTakesDiagnostics(request.Capabilities);
+            _renamesFiles = ClientRenamesFiles(request.Capabilities);
             return new InitializeResult(
                 Capabilities(),
                 new ServerInfo("Brinell.Uat.LanguageServer", typeof(UatLanguageServer).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "0"),

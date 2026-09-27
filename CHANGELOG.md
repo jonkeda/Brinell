@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Quick fixes and refactorings in the editor (`textDocument/codeAction`, `prepareRename`, `rename`):
+  - a value with one right answer is rewritten, as `brinell-data validate --fix` does;
+  - old headings are rewritten, and an old file name is renamed (UAT029) when the client can
+    rename files;
+  - **Create step definition** for a step that binds to nothing puts a stub, with its phrase and a
+    placeholder per quoted value and number, into the suite's `[BddStepDefinitions]` class;
+  - **Extract** turns selected steps into a `## Step:` of the file with a call in their place;
+  - **Inline** puts a call's body in its place, with the call's values;
+  - **Rename** a callable step renames its heading and every call, each call keeping its values.
+    A new phrase that drops a placeholder is refused.
+  `UatSuite.StepDefinitionTypes` lists the loaded suite's step-definition classes.
 - CodeLens from C# to scenarios (Visual Studio): "used in N UAT steps · M scenarios" above step
   definitions, page phrases and page-object controls, with the steps in its details.
   `brinell/usages` in the language server counts across every suite. A new assembly,

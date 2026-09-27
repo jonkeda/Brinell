@@ -52,6 +52,23 @@ internal sealed class UatSuiteLoad : IDisposable
         return list;
     }
 
+    // The loaded suite's classes marked [BddStepDefinitions], by name so the attribute's type need not load.
+    public IReadOnlyList<Type> StepDefinitionTypes()
+        => (_context?.Assemblies ?? [])
+            .SelectMany(assembly =>
+            {
+                try
+                {
+                    return assembly.GetTypes();
+                }
+                catch (ReflectionTypeLoadException exception)
+                {
+                    return exception.Types.OfType<Type>().ToArray();
+                }
+            })
+            .Where(type => type.CustomAttributes.Any(attribute => attribute.AttributeType.Name == "BddStepDefinitionsAttribute"))
+            .ToList();
+
     // A type of the loaded suite by its full name (nested types with '+'); null when none has it.
     public Type? FindType(string fullName)
         => _context?.Assemblies.Select(assembly => assembly.GetType(fullName, throwOnError: false)).FirstOrDefault(type => type is not null);

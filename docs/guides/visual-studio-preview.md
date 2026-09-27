@@ -123,6 +123,19 @@ Markdown editor with a language server of their own, the same `Brinell.Uat.Langu
   that binds to the same method; a C# step used inside a callable counts at the body's line. On a
   call, or on a `## Step:` heading: every call of that step.
 
+- **Quick fixes (Ctrl+.).**
+  - A value with one right answer (`2026-05-12` for a date) is rewritten, as
+    `brinell-data validate --fix` does.
+  - Old headings are rewritten, and an old file name (UAT029) is renamed.
+  - On a step that binds to nothing, **Create step definition** adds a stub to the suite's
+    `[BddStepDefinitions]` class: its phrase has a placeholder for each quoted value and number.
+  - Select steps and **Extract** them to a `## Step:` of the file; the call takes their place, named
+    "the extracted steps", so rename it.
+  - On a call, **Inline** puts its body in its place, with the call's values.
+- **Rename (F2)** on a `## Step:` heading or a call renames the callable step and every call of it
+  across the suite. Each call keeps its values, so the new phrase must keep the same `{x}`
+  placeholders.
+
 ## CodeLens In C#
 
 Above a step definition, a page phrase or a page object's control, CodeLens says how many UAT

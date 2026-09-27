@@ -51,6 +51,8 @@ public sealed partial class UatLanguageServer
         HoverProvider = true,
         DefinitionProvider = true,
         ReferencesProvider = true,
+        CodeActionProvider = new CodeActionOptions(["quickfix", "refactor.extract", "refactor.inline"]),
+        RenameProvider = new RenameOptions(PrepareProvider: true),
     };
 
     // Only an editor's LSP client takes diagnostics; the preview's client has no use for them, so none are computed for it.

@@ -46,7 +46,19 @@ public sealed record ServerCapabilities(TextDocumentSyncOptions TextDocumentSync
 
     /// <summary>Every step across the suite that binds to the same thing.</summary>
     public bool ReferencesProvider { get; init; }
+
+    /// <summary>Quick fixes, create step definition, extract and inline a callable step.</summary>
+    public CodeActionOptions? CodeActionProvider { get; init; }
+
+    /// <summary>Renaming a callable step and every call of it.</summary>
+    public RenameOptions? RenameProvider { get; init; }
 }
+
+/// <summary>LSP code action options: the kinds offered.</summary>
+public sealed record CodeActionOptions(IReadOnlyList<string> CodeActionKinds);
+
+/// <summary>LSP rename options: the client asks first what can be renamed.</summary>
+public sealed record RenameOptions(bool PrepareProvider);
 
 /// <summary>LSP completion options.</summary>
 /// <param name="TriggerCharacters">Typing one of these asks for completion.</param>
@@ -155,6 +167,54 @@ public sealed record ReferenceParams(TextDocumentIdentifier TextDocument, Positi
 
 /// <summary>Whether the definition is one of the references.</summary>
 public sealed record ReferenceContext(bool IncludeDeclaration);
+
+/// <summary>LSP <c>textDocument/codeAction</c>.</summary>
+public sealed record CodeActionParams(TextDocumentIdentifier TextDocument, Range Range, CodeActionContext Context);
+
+/// <summary>The diagnostics at the range.</summary>
+public sealed record CodeActionContext(IReadOnlyList<Diagnostic> Diagnostics);
+
+/// <summary>LSP code action.</summary>
+/// <param name="Title">What the light bulb shows.</param>
+/// <param name="Kind"><c>quickfix</c>, <c>refactor.extract</c>, <c>refactor.inline</c>.</param>
+/// <param name="Edit">The change.</param>
+public sealed record CodeAction(string Title, string Kind, WorkspaceEdit Edit)
+{
+    /// <summary>The diagnostics it fixes.</summary>
+    public IReadOnlyList<Diagnostic>? Diagnostics { get; init; }
+
+    /// <summary>Whether it is the one right answer.</summary>
+    public bool? IsPreferred { get; init; }
+}
+
+/// <summary>LSP workspace edit: text edits by file, or document changes with a file rename.</summary>
+public sealed record WorkspaceEdit
+{
+    /// <summary>Text edits, by file URI.</summary>
+    public IReadOnlyDictionary<string, IReadOnlyList<TextEdit>>? Changes { get; init; }
+
+    /// <summary>Renames and text edits, in order.</summary>
+    public IReadOnlyList<object>? DocumentChanges { get; init; }
+}
+
+/// <summary>LSP rename-file operation.</summary>
+public sealed record RenameFile(string OldUri, string NewUri)
+{
+    /// <summary>Always <c>rename</c>.</summary>
+    public string Kind => "rename";
+}
+
+/// <summary>LSP text document edit.</summary>
+public sealed record TextDocumentEdit(VersionedTextDocumentIdentifierOrNull TextDocument, IReadOnlyList<TextEdit> Edits);
+
+/// <summary>LSP optional versioned document id: a null version for a file edited as it is on disk.</summary>
+public sealed record VersionedTextDocumentIdentifierOrNull(string Uri, int? Version);
+
+/// <summary>LSP <c>textDocument/rename</c>.</summary>
+public sealed record RenameParams(TextDocumentIdentifier TextDocument, Position Position, string NewName);
+
+/// <summary>LSP prepare-rename answer: the phrase's range and its text.</summary>
+public sealed record PrepareRenameResult(Range Range, string Placeholder);
 
 /// <summary>LSP text edit.</summary>
 public sealed record TextEdit(Range Range, string NewText);

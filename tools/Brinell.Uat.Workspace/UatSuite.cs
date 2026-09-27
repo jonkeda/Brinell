@@ -187,6 +187,15 @@ public sealed class UatSuite : IDisposable
         }
     }
 
+    /// <summary>The loaded suite's step-definition classes (<c>[BddStepDefinitions]</c>); empty when not loaded.</summary>
+    public IReadOnlyList<Type> StepDefinitionTypes()
+    {
+        lock (_gate)
+        {
+            return _load?.StepDefinitionTypes() ?? [];
+        }
+    }
+
     /// <summary>The suite's project file: the first <c>*.csproj</c> beside the config; null when there is none.</summary>
     public string? ProjectFile => Directory.EnumerateFiles(ProjectDirectory, "*.csproj").Order(StringComparer.OrdinalIgnoreCase).FirstOrDefault();
 
