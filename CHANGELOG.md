@@ -19,6 +19,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   each parse diagnostic at its line (UAT029 with its fix for the old forms). Markdig renders the
   Markdown around, with raw HTML off; every block has `data-line`. The stylesheet's colours are
   CSS variables with light, dark and high-contrast values.
+  With the suite's catalogs it binds the file (unsaved text too) with the gate's own check: each
+  step says what it binds to and on which page, the page shows where it changes, a step that binds
+  to nothing shows the gate's diagnostic word for word, a callable call unfolds into its body with
+  the values filled in, and each Scenario Outline row can be opened. `Brinell.Bdd` gains
+  `UatScenarioFiles.Load(path, text)`, `ParsePhrases(path, text)`, `CheckPhrases` and
+  `UatLoadedScenarioFile.Check` (the gate's per-file check, which `UatScenarioCheck` now calls), and
+  `UatBindResult.Scenarios`: every scenario as far as it bound, errors or not.
 - Docs: AD-020 (a tier is a head: `service`, opt-in heads, UATB013, a scenario counts for each of
   its tiers) and AD-021 (`Brinell.Bdd` under `Brinell.Uat`), with their invariants; the guide
   "Features Below The UI". AD-011, AD-014, AD-017 and AD-019 use the new words and file names.

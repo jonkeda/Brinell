@@ -1,0 +1,41 @@
+<article class="uat-doc" data-kind="steps" data-file="Todo.steps.md">
+<h1 class="uat-title" data-line="1"><span class="uat-kw">Steps</span> Todo</h1>
+<h2 class="uat-callable" data-line="3"><span class="uat-kw">Step</span> the synced list has todos</h2>
+<ol class="uat-steps" data-line="5">
+<li class="uat-step" data-line="6"><span class="uat-kw">Given</span><span class="uat-text">I am on the Todo List page</span>
+</li>
+<li class="uat-step" data-line="7"><span class="uat-kw">And</span><span class="uat-text">the server also has todos</span>
+<p class="uat-passes" data-line="8">passes the call's table</p>
+</li>
+<li class="uat-step" data-line="9"><span class="uat-kw">When</span><span class="uat-text">I tap Sync</span>
+</li>
+<li class="uat-step" data-line="10"><span class="uat-kw">Then</span><span class="uat-text">I should be on the Todo List page</span>
+</li>
+</ol>
+<h2 class="uat-callable" data-line="13" data-kind="each-row"><span class="uat-kw">Step for each row</span> each todo shows its status</h2>
+<table class="uat-parameters" data-line="15">
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>title</td>
+<td>text</td>
+<td>Post the letters</td>
+</tr>
+<tr>
+<td>status</td>
+<td>text</td>
+<td>In progress</td>
+</tr>
+</tbody>
+</table>
+<ol class="uat-steps" data-line="20">
+<li class="uat-step" data-line="21"><span class="uat-kw">Then</span><span class="uat-text">the todo <span class="uat-placeholder">&lt;title&gt;</span> should show status <span class="uat-placeholder">&lt;status&gt;</span></span>
+</li>
+</ol>
+</article>

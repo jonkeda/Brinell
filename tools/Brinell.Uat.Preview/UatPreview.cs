@@ -8,6 +8,12 @@ public sealed record UatPreviewOptions
 {
     /// <summary>Why the file is only parsed, not bound, shown at the top; null when binding.</summary>
     public string? ParseOnlyReason { get; init; }
+
+    /// <summary>
+    /// The suite's catalogs: with them, each step shows what it binds to, the page it runs on,
+    /// and the gate's diagnostic when it binds to nothing. Null to parse only.
+    /// </summary>
+    public UatCatalogSet? Catalogs { get; init; }
 }
 
 /// <summary>A rendered file: the HTML, and every diagnostic it shows.</summary>

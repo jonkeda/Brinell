@@ -27,6 +27,7 @@ internal sealed partial class UatPreviewWriter
     private readonly List<UatDiagnostic> _diagnostics = [];
     private readonly HashSet<UatDiagnostic> _shown = [];
     private readonly StringBuilder _html = new();
+    private readonly UatPreviewBinding _binding = new();
     private string? _nextTableClass;
 
     public UatPreviewWriter(string text, string filePath, UatPreviewOptions options)
@@ -77,11 +78,31 @@ internal sealed partial class UatPreviewWriter
                 new UatSourceLocation(_filePath, 1)));
         }
 
-        _diagnostics.AddRange(_isSteps
-            ? UatMarkdownParser.ParsePhrases(_text, _filePath).Diagnostics
-            : UatMarkdownParser.Parse(_text, _filePath).Diagnostics);
-        _diagnostics.Sort((a, b) => a.Location.LineNumber.CompareTo(b.Location.LineNumber));
+        if (_options.Catalogs is not { } catalogs)
+        {
+            _diagnostics.AddRange(_isSteps
+                ? UatMarkdownParser.ParsePhrases(_text, _filePath).Diagnostics
+                : UatMarkdownParser.Parse(_text, _filePath).Diagnostics);
+        }
+        else if (_isSteps)
+        {
+            _diagnostics.AddRange(UatScenarioFiles.CheckPhrases(UatScenarioFiles.ParsePhrases(_filePath, _text), catalogs));
+        }
+        else
+        {
+            // The gate's own check, so a step shows the words the gate would fail with.
+            var check = UatScenarioFiles.Load(_filePath, _text).Check(catalogs);
+            _diagnostics.AddRange(check.Diagnostics);
+            _binding.Add(check.Bind?.Scenarios ?? [], catalogs);
+        }
+
+        // Only this file's lines are placed; another file's problem (a step file it sees) goes at the top.
+        _diagnostics.Sort((a, b) => Line(a).CompareTo(Line(b)));
+        int Line(UatDiagnostic diagnostic) => IsHere(diagnostic) ? diagnostic.Location.LineNumber : 0;
     }
+
+    private bool IsHere(UatDiagnostic diagnostic)
+        => diagnostic.Location.FilePath is not { } file || string.Equals(Path.GetFullPath(file), Path.GetFullPath(_filePath), StringComparison.OrdinalIgnoreCase);
 
     private void WriteBlock(Block block)
     {
@@ -119,6 +140,11 @@ internal sealed partial class UatPreviewWriter
         var raw = _lines[heading.Line].Trim();
         var text = (UatFileFormat.NewHeading(raw) ?? raw).TrimStart('#').Trim();
         _nextTableClass = null;
+        if (heading.Level <= 2)
+        {
+            _binding.Leave();
+        }
+
         switch (heading.Level)
         {
             case 1 when TrySplit(text, "Feature:", out var title) || TrySplit(text, "Steps:", out title):
@@ -126,12 +152,17 @@ internal sealed partial class UatPreviewWriter
                 _html.Append($"<h1 class=\"uat-title\" data-line=\"{line}\"><span class=\"uat-kw\">{keyword}</span> {Encode(title)}</h1>\n");
                 return;
             case 2 when TrySplit(text, "Scenario Outline:", out var outline):
+                _binding.Enter(line);
                 _html.Append($"<h2 class=\"uat-scenario\" data-line=\"{line}\" data-scenario=\"{Encode(outline)}\"><span class=\"uat-kw\">Scenario Outline</span> {Encode(outline)}</h2>\n");
+                WriteNotOnHead(line);
                 return;
             case 2 when TrySplit(text, "Scenario:", out var scenario):
+                _binding.Enter(line);
                 _html.Append($"<h2 class=\"uat-scenario\" data-line=\"{line}\" data-scenario=\"{Encode(scenario)}\"><span class=\"uat-kw\">Scenario</span> {Encode(scenario)}</h2>\n");
+                WriteNotOnHead(line);
                 return;
             case 2 when text == "Background":
+                _binding.EnterBackground();
                 _html.Append($"<h2 class=\"uat-background\" data-line=\"{line}\"><span class=\"uat-kw\">Background</span></h2>\n");
                 return;
             case 2 when TrySplit(text, "Step for each row:", out var eachRow):
@@ -160,6 +191,7 @@ internal sealed partial class UatPreviewWriter
         _html.Append($"<ol class=\"uat-steps\" data-line=\"{fence.Line + 1}\">\n");
         var lines = fence.Lines.Lines.Take(fence.Lines.Count).Select(line => (Number: line.Line + 1, Text: line.Slice.ToString())).ToList();
         var open = false;
+        UatPreviewCall? call = null;
         for (var i = 0; i < lines.Count; i++)
         {
             var (number, text) = lines[i];
@@ -202,23 +234,82 @@ internal sealed partial class UatPreviewWriter
 
             if (open)
             {
-                _html.Append("</li>\n");
+                CloseStep(call);
             }
 
             open = true;
             var step = StepRegex().Match(trimmed);
+            var bound = _binding.At(number);
+            var attributes = bound is null ? string.Empty : $" data-binds=\"{Encode(bound.Describe())}\" title=\"{Encode(bound.Describe())}\"";
             _html.Append(step.Success
-                ? $"<li class=\"uat-step\" data-line=\"{number}\"><span class=\"uat-kw\">{step.Groups["keyword"].Value}</span><span class=\"uat-text\">{Mark(step.Groups["text"].Value)}</span>\n"
+                ? $"<li class=\"uat-step{(bound is null ? string.Empty : " uat-bound")}\" data-line=\"{number}\"{attributes}><span class=\"uat-kw\">{step.Groups["keyword"].Value}</span><span class=\"uat-text\">{Mark(step.Groups["text"].Value)}{PageLabel(bound)}</span>\n"
                 : $"<li class=\"uat-step uat-not-a-step\" data-line=\"{number}\"><span class=\"uat-kw\"></span><span class=\"uat-text\">{Encode(trimmed)}</span>\n");
             WriteDiagnostics(line => line == number);
+            call = bound?.Call;
         }
 
         if (open)
         {
-            _html.Append("</li>\n");
+            CloseStep(call);
         }
 
         _html.Append("</ol>\n");
+        WriteOutlineRows(fence);
+    }
+
+    // After the step's own table or doc string: the call it makes, unfolded.
+    private void CloseStep(UatPreviewCall? call)
+    {
+        if (call is not null)
+        {
+            WriteCall(call);
+        }
+
+        _html.Append("</li>\n");
+    }
+
+    private static string PageLabel(UatPreviewStep? step)
+        => step?.PageShown is { } page ? $" <span class=\"uat-page\" title=\"The page this step runs on\">{Encode(page)}</span>" : string.Empty;
+
+    // A call to a callable, unfolded: its body's steps with the values filled in, bound where the call is.
+    private void WriteCall(UatPreviewCall call)
+    {
+        _html.Append($"<details class=\"uat-call\"><summary>{Encode(call.Heading)} ({call.Steps.Count} step{(call.Steps.Count == 1 ? string.Empty : "s")})</summary>\n<ol class=\"uat-call-steps\">\n");
+        foreach (var step in call.Steps)
+        {
+            _html.Append($"<li class=\"uat-step uat-bound\" data-source=\"{Encode(step.Source)}\" data-depth=\"{step.Depth}\" title=\"{Encode(step.Binds)}\"><span class=\"uat-kw\">{step.Keyword}</span><span class=\"uat-text\">{(step.Row is { } row ? $"<span class=\"uat-row\">row {row}</span> " : string.Empty)}{Mark(step.Text)}</span></li>\n");
+        }
+
+        _html.Append("</ol>\n</details>\n");
+    }
+
+    // An outline's first row is drawn bound in the steps above; every row can be opened with its values.
+    private void WriteOutlineRows(FencedCodeBlock fence)
+    {
+        var rows = _binding.RowsOf(fence.Line + 1);
+        if (rows.Count < 2)
+        {
+            return;
+        }
+
+        foreach (var row in rows)
+        {
+            _html.Append($"<details class=\"uat-outline-row\" data-row=\"{row.Index}\"><summary>{Encode(row.Name)}</summary>\n<ol class=\"uat-call-steps\">\n");
+            foreach (var step in row.Steps)
+            {
+                _html.Append($"<li class=\"uat-step uat-bound\" data-source=\"{Encode(step.Source)}\" title=\"{Encode(step.Binds)}\"><span class=\"uat-kw\">{step.Keyword}</span><span class=\"uat-text\">{Mark(step.Text)}</span></li>\n");
+            }
+
+            _html.Append("</ol>\n</details>\n");
+        }
+    }
+
+    private void WriteNotOnHead(int line)
+    {
+        if (_binding.WhyNotOnHead(line) is { } reason)
+        {
+            _html.Append($"<p class=\"uat-not-on-head\" data-line=\"{line}\">Not run on this suite: {Encode(reason)}</p>\n");
+        }
     }
 
     private void WriteStepTable(List<(int Number, string Text)> rows)
@@ -259,12 +350,17 @@ internal sealed partial class UatPreviewWriter
 
     private void WriteDiagnostics(Func<int, bool> atLine)
     {
-        foreach (var diagnostic in _diagnostics.Where(d => !_shown.Contains(d) && atLine(d.Location.LineNumber)).ToList())
+        foreach (var diagnostic in _diagnostics.Where(d => !_shown.Contains(d) && atLine(IsHere(d) ? d.Location.LineNumber : 0)).ToList())
         {
             _shown.Add(diagnostic);
             var severity = diagnostic.Severity == UatDiagnosticSeverity.Error ? "error" : "warning";
-            _html.Append($"<div class=\"uat-diag\" data-severity=\"{severity}\" data-code=\"{Encode(diagnostic.Code)}\" data-line=\"{diagnostic.Location.LineNumber}\">");
-            _html.Append($"<span class=\"uat-diag-code\">{Encode(diagnostic.Code)}</span> {Encode(diagnostic.Message)}</div>\n");
+            var line = IsHere(diagnostic) ? $" data-line=\"{diagnostic.Location.LineNumber}\"" : string.Empty;
+            var elsewhere = IsHere(diagnostic) ? string.Empty : $" <span class=\"uat-diag-where\">{Encode(Where(diagnostic.Location))}</span>";
+            var within = diagnostic.Within.Count == 0
+                ? string.Empty
+                : $" <span class=\"uat-diag-where\">in {Encode(string.Join(" → ", diagnostic.Within.Select(Where)))}</span>";
+            _html.Append($"<div class=\"uat-diag\" data-severity=\"{severity}\" data-code=\"{Encode(diagnostic.Code)}\"{line}>");
+            _html.Append($"<span class=\"uat-diag-code\">{Encode(diagnostic.Code)}</span> {Encode(diagnostic.Message)}{within}{elsewhere}</div>\n");
         }
     }
 
@@ -313,6 +409,9 @@ internal sealed partial class UatPreviewWriter
     }
 
     internal static string Encode(string text) => WebUtility.HtmlEncode(text);
+
+    internal static string Where(UatSourceLocation location)
+        => location.FilePath is { } file ? $"{Path.GetFileName(file)}:{location.LineNumber}" : $"line {location.LineNumber}";
 
     [GeneratedRegex(@"^(?<keyword>Given|When|Then|And|But)\s+(?<text>.*)$")]
     private static partial Regex StepRegex();

@@ -36,7 +36,7 @@ public static class UatBinder
     /// </summary>
     /// <param name="document">The parsed document.</param>
     /// <param name="catalogs">The catalogs and the apps.</param>
-    /// <param name="callables">The callable phrases the document can see (<see cref="UatScenarioFiles.Load"/>).</param>
+    /// <param name="callables">The callable phrases the document can see (<see cref="UatScenarioFiles.Load(string)"/>).</param>
     public static UatBindResult Bind(UatDocument document, UatCatalogSet catalogs, UatCallableSet callables)
     {
         ArgumentNullException.ThrowIfNull(document);
@@ -86,7 +86,7 @@ public static class UatBinder
             ? null
             : new UatBoundDocument(document, scenarios);
 
-        return new UatBindResult(boundDocument, diagnostics);
+        return new UatBindResult(boundDocument, diagnostics) { Scenarios = scenarios };
     }
 
     // Binds a callable's body with its placeholders in, against the suite's own catalog, to learn
@@ -773,6 +773,12 @@ public sealed class UatBindResult
     public UatBoundDocument? Document { get; }
 
     public IReadOnlyList<UatDiagnostic> Diagnostics { get; }
+
+    /// <summary>
+    /// Every scenario as far as its steps bound, errors or not, for a tool that shows a file with a
+    /// problem (the preview); <see cref="Document"/> is null when there is an error.
+    /// </summary>
+    public IReadOnlyList<UatBoundScenario> Scenarios { get; init; } = [];
 
     public bool Success => Document is not null && Diagnostics.All(x => x.Severity != UatDiagnosticSeverity.Error);
 }

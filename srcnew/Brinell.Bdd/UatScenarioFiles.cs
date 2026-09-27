@@ -19,7 +19,32 @@ public sealed record UatLoadedScenarioFile(
     /// <summary>Binds the file against <paramref name="catalogs"/>, with its callables.</summary>
     public UatBindResult Bind(UatCatalogSet catalogs)
         => UatBinder.Bind(Document ?? throw new InvalidOperationException("The file did not parse."), catalogs, Callables);
+
+    /// <summary>
+    /// Every problem of the file, as the gate reports it: parse (<c>UAT0xx</c>), bind
+    /// (<c>UATB0xx</c>) and values (<c>UATA0xx</c>), and each of its own broken callables as a
+    /// warning at its heading (a call to one is the error).
+    /// </summary>
+    /// <param name="catalogs">The suite's catalogs.</param>
+    public UatFileCheck Check(UatCatalogSet catalogs)
+    {
+        ArgumentNullException.ThrowIfNull(catalogs);
+        if (Document is null)
+        {
+            return new UatFileCheck(Diagnostics, null);
+        }
+
+        var prepared = Callables.Prepare(catalogs);
+        var own = Callables.Callables.Where(callable => callable.LocalTo is not null).Select(prepared.Get);
+        var bind = Bind(catalogs);
+        return new UatFileCheck([.. Diagnostics, .. bind.Diagnostics, .. UatScenarioFiles.BrokenCallables(own)], bind);
+    }
 }
+
+/// <summary>A checked file: every diagnostic, and the binding when the file parsed.</summary>
+/// <param name="Diagnostics">Parse, bind and value problems, and broken callables as warnings.</param>
+/// <param name="Bind">The binding; null when the file has no <c># Feature:</c> heading.</param>
+public sealed record UatFileCheck(IReadOnlyList<UatDiagnostic> Diagnostics, UatBindResult? Bind);
 
 /// <summary>
 /// The one loader of scenario files, for the xUnit gate, the tool and the Presenter: the file, and
@@ -39,7 +64,17 @@ public static class UatScenarioFiles
     public static UatLoadedScenarioFile Load(string filePath)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
-        var parse = UatMarkdownParser.ParseFile(filePath);
+        return Load(filePath, File.ReadAllText(filePath));
+    }
+
+    /// <summary>Parses <paramref name="text"/> as the file at <paramref name="filePath"/>, which may be unsaved, and the phrase files it can see.</summary>
+    /// <param name="filePath">A <c>.feature.md</c> file, which says where its phrase files are.</param>
+    /// <param name="text">Its text.</param>
+    public static UatLoadedScenarioFile Load(string filePath, string text)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
+        ArgumentNullException.ThrowIfNull(text);
+        var parse = UatMarkdownParser.Parse(text, filePath);
         var seen = PhraseFilesFor(filePath).ToHashSet(StringComparer.OrdinalIgnoreCase);
         var phraseFiles = AllPhraseFiles(filePath).Select(path => (Seen: seen.Contains(path), Parse: ParsePhraseFile(path))).ToList();
 
@@ -124,13 +159,7 @@ public static class UatScenarioFiles
             }
         }
 
-        var parse = UatMarkdownParser.ParsePhrases(File.ReadAllText(fullPath), filePath);
-        if (parse.Document is { } document)
-        {
-            var folder = UatNamespaces.Of(fullPath);
-            parse = parse with { Document = document with { Callables = [.. document.Callables.Select(callable => callable with { Namespace = folder })] } };
-        }
-
+        var parse = ParsePhrases(filePath, File.ReadAllText(fullPath));
         lock (PhraseFiles)
         {
             PhraseFiles[fullPath] = (written, parse);
@@ -138,4 +167,45 @@ public static class UatScenarioFiles
 
         return parse;
     }
+
+    /// <summary>A phrase file's text, which may be unsaved, parsed with its callables in its folder's namespace.</summary>
+    /// <param name="filePath">The file, which says its namespace.</param>
+    /// <param name="text">Its text.</param>
+    public static UatPhrasesParseResult ParsePhrases(string filePath, string text)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
+        ArgumentNullException.ThrowIfNull(text);
+        var parse = UatMarkdownParser.ParsePhrases(text, filePath);
+        if (parse.Document is { } document)
+        {
+            var folder = UatNamespaces.Of(Path.GetFullPath(filePath));
+            parse = parse with { Document = document with { Callables = [.. document.Callables.Select(callable => callable with { Namespace = folder })] } };
+        }
+
+        return parse;
+    }
+
+    /// <summary>
+    /// A phrase file's problems: parse errors, and each broken callable as a warning at its heading.
+    /// A call to a broken callable is the error, in the scenario that makes it.
+    /// </summary>
+    /// <param name="parse">The parsed phrase file.</param>
+    /// <param name="catalogs">The suite's catalogs.</param>
+    public static IReadOnlyList<UatDiagnostic> CheckPhrases(UatPhrasesParseResult parse, UatCatalogSet catalogs)
+    {
+        ArgumentNullException.ThrowIfNull(parse);
+        ArgumentNullException.ThrowIfNull(catalogs);
+        return parse.Document is null
+            ? parse.Diagnostics
+            : [.. parse.Diagnostics, .. BrokenCallables(new UatCallableSet(parse.Document.Callables).Prepare(catalogs).All)];
+    }
+
+    internal static IEnumerable<UatDiagnostic> BrokenCallables(IEnumerable<UatPreparedCallable> callables)
+        => callables
+            .Where(callable => callable.Problem is not null)
+            .Select(callable => new UatDiagnostic(
+                UatDiagnosticSeverity.Warning,
+                callable.Problem!.Code,
+                $"The phrase '{callable.Callable.Phrase}' {callable.Problem.Message} Steps that call it fail.",
+                callable.Callable.Source));
 }
