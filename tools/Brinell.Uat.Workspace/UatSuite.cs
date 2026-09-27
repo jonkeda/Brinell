@@ -162,6 +162,38 @@ public sealed class UatSuite : IDisposable
         }
     }
 
+    /// <summary>
+    /// Whether the suite's test class runs its scenarios through <c>[UatScenarioTheory]</c>, so one
+    /// scenario can be run by its address (R1); false before the suite is loaded.
+    /// </summary>
+    public bool HasScenarioTheory
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _load?.HasScenarioTheory ?? false;
+            }
+        }
+    }
+
+    /// <summary>The suite's project file: the first <c>*.csproj</c> beside the config; null when there is none.</summary>
+    public string? ProjectFile => Directory.EnumerateFiles(ProjectDirectory, "*.csproj").Order(StringComparer.OrdinalIgnoreCase).FirstOrDefault();
+
+    /// <summary>
+    /// A feature file's path as the suite's tests see it, relative to the config in the build output:
+    /// <c>Features/</c> and its path below its own <c>Features</c> folder, which is where the project
+    /// copies or links it.
+    /// </summary>
+    /// <param name="filePath">A feature file of the suite.</param>
+    public string RelativeToConfig(string filePath)
+    {
+        var root = UatScenarioFiles.ScenarioRoot(filePath);
+        return Path.GetFileName(root).Equals(UatFileFormat.FeatureFolder, StringComparison.OrdinalIgnoreCase)
+            ? $"{UatFileFormat.FeatureFolder}/{Path.GetRelativePath(root, filePath).Replace('\\', '/')}"
+            : Path.GetRelativePath(ProjectDirectory, filePath).Replace('\\', '/');
+    }
+
     /// <summary>The catalogs, or null with the reason when the suite cannot be bound yet (no fixture named, not built).</summary>
     /// <param name="reason">Why there are no catalogs.</param>
     public UatCatalogSet? TryGetCatalogs(out string? reason)

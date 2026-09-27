@@ -60,6 +60,27 @@ public sealed class UatSuiteTests : IDisposable
     }
 
     [Fact]
+    public void ASuiteWithout_UatScenarioTheory_SaysSo_OnceLoaded()
+    {
+        using var suite = UatSuite.Open(Path.Combine(_folder, "bdd.config.md"));
+        Assert.False(suite.HasScenarioTheory);
+
+        _ = suite.Catalogs;
+
+        Assert.True(suite.IsLoaded);
+        Assert.False(suite.HasScenarioTheory);
+    }
+
+    [Fact]
+    public void RelativeToConfig_IsWhereTheBuildOutputHasTheFile()
+    {
+        using var suite = UatSuite.Open(Path.Combine(_folder, "bdd.config.md"));
+
+        Assert.Equal("Features/Users/x.feature.md", suite.RelativeToConfig(Path.Combine(_folder, "Features", "Users", "x.feature.md")));
+        Assert.Equal("Features/y.feature.md", suite.RelativeToConfig(Path.Combine(Path.GetTempPath(), "Elsewhere", "Features", "y.feature.md")));
+    }
+
+    [Fact]
     public void TheBuildOutput_CanBeOverwritten_WhileTheCatalogsAreHeld()
     {
         using var suite = UatSuite.Open(Path.Combine(_folder, "bdd.config.md"));

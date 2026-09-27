@@ -214,6 +214,44 @@ public sealed class LanguageServerTests : IAsyncLifetime
         File.SetLastWriteTimeUtc(Path.Combine(run, "manifest.json"), DateTime.UtcNow.AddMinutes(runId.EndsWith("older1", StringComparison.Ordinal) ? -10 : 0));
     }
 
+    [Fact]
+    public async Task RunTarget_ForAScenarioHeading_IsTheSuitesProject_AndItsAddress()
+    {
+        Build();
+        File.WriteAllText(Path.Combine(Shelf, "Shelf.Steps.csproj"), "<Project />");
+        await InitializeAsync(_client);
+
+        var target = await _client.InvokeWithParameterObjectAsync<RunTargetResult>("brinell/runTarget", new { uri = new Uri(Feature).AbsoluteUri, line = 3 });
+
+        Assert.True(target.CanRun, target.Reason);
+        Assert.Equal(Path.Combine(Shelf, "Shelf.Steps.csproj"), target.Project);
+        Assert.Equal("UatScenario=Features/shelf.feature.md#One", target.Filter);
+        Assert.Equal(["One"], target.Scenarios);
+    }
+
+    [Fact]
+    public async Task RunTarget_ForTheFile_MatchesEachOfItsScenarios()
+    {
+        Build();
+        File.WriteAllText(Path.Combine(Shelf, "Shelf.Steps.csproj"), "<Project />");
+        await InitializeAsync(_client);
+
+        var target = await _client.InvokeWithParameterObjectAsync<RunTargetResult>("brinell/runTarget", new { uri = new Uri(Feature).AbsoluteUri });
+
+        Assert.Equal("UatScenario~Features/shelf.feature.md#", target.Filter);
+    }
+
+    [Fact]
+    public async Task RunTarget_BeforeABuild_SaysWhy()
+    {
+        await InitializeAsync(_client);
+
+        var target = await _client.InvokeWithParameterObjectAsync<RunTargetResult>("brinell/runTarget", new { uri = new Uri(Feature).AbsoluteUri, line = 3 });
+
+        Assert.False(target.CanRun);
+        Assert.Contains("Build the UAT project first", target.Reason);
+    }
+
     private Task<InitializeResult> InitializeAsync(JsonRpc client)
         => client.InvokeWithParameterObjectAsync<InitializeResult>("initialize", new { processId = (int?)null, initializationOptions = new { solutionDir = _solution } });
 
@@ -247,6 +285,18 @@ public sealed class LanguageServerTests : IAsyncLifetime
 public sealed class ShelfFixture
 {
     public TestComposition Composition => throw new NotSupportedException("The server reads the fixture's type only.");
+}
+
+// The suite's test class, as a suite that runs by address has it.
+public sealed class ShelfScenarioTests
+{
+    [Brinell.Uat.UatScenarioTheory]
+    [InlineData("x.feature.md", "x")]
+    public void Scenario_Passes(string filePath, string scenarioName)
+    {
+        Assert.NotNull(filePath);
+        Assert.NotNull(scenarioName);
+    }
 }
 
 [BddStepDefinitions]

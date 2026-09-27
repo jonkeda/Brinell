@@ -88,6 +88,11 @@ public sealed class UatServerClient : IDisposable
         => await (await RpcAsync(cancellationToken).ConfigureAwait(false))
             .InvokeWithParameterObjectAsync<JObject>("brinell/preview", new { uri = Uri(path), suite }, cancellationToken).ConfigureAwait(false);
 
+    /// <summary><c>brinell/runTarget</c>: the project and filter for the scenario at a heading's line, or the whole file.</summary>
+    public async Task<JObject> RunTargetAsync(string path, int? line, string? suite, CancellationToken cancellationToken)
+        => await (await RpcAsync(cancellationToken).ConfigureAwait(false))
+            .InvokeWithParameterObjectAsync<JObject>("brinell/runTarget", new { uri = Uri(path), line, suite }, cancellationToken).ConfigureAwait(false);
+
     /// <inheritdoc />
     public void Dispose()
     {

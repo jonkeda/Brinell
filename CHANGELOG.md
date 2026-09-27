@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Run from the preview (Visual Studio): **Run** on each scenario heading and **Run file** on the title
+  build the solution, then run `dotnet test --no-build --filter UatScenario=<address>` with the output
+  in the Output pane. One run at a time; a build started during a run is cancelled; **Cancel run**
+  stops the test process tree. `brinell/runTarget` gives the project and filter; a suite whose test
+  class keeps `[Theory]` shows the buttons disabled, saying why (`UatSuite.HasScenarioTheory`).
 - Step breakpoints (`Brinell.Bdd`): while a debugger is attached, `UatStepExecutionSession.RunNextAsync`
   stops before a step whose line `%LOCALAPPDATA%\Brinell\uat-breakpoints.json` lists, with a
   `UatStepBreak` local (text, arguments, app, page, call chain); a line in a `.steps.md` stops at each

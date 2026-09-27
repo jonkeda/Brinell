@@ -170,6 +170,7 @@ public sealed class UatLanguageServer : IDisposable
             ParseOnlyReason = reason,
             Runs = runs,
             ImageUrl = image => ImageUrl(image, results?.Root),
+            Run = FileImageUrls ? null : RunState(suite, path),
         });
         return new PreviewResult(
             result.Html,
@@ -182,6 +183,65 @@ public sealed class UatLanguageServer : IDisposable
             ResultsRoot = results?.Root,
             ResultsHost = ResultsHost,
         };
+    }
+
+    /// <summary>
+    /// <c>brinell/runTarget</c>: the project and filter that run the scenario at a heading's line
+    /// (every row of an outline), or the whole file. Asked after the build, so the suite's test class
+    /// is known to use <c>[UatScenarioTheory]</c>.
+    /// </summary>
+    [JsonRpcMethod("brinell/runTarget")]
+    public RunTargetResult RunTarget(RunTargetParams request)
+    {
+        var path = Key(request.Uri);
+        string text;
+        UatSuite? suite;
+        lock (_gate)
+        {
+            text = _documents.TryGetValue(path, out var open) ? open.Text : File.ReadAllText(path);
+            var suites = Order(path, _workspace?.SuitesFor(path) ?? []);
+            suite = suites.FirstOrDefault(candidate => string.Equals(candidate.Name, request.Suite, StringComparison.OrdinalIgnoreCase)) ?? suites.FirstOrDefault();
+        }
+
+        if (suite is null || !path.EndsWith(UatFileFormat.FeatureExtension, StringComparison.OrdinalIgnoreCase))
+        {
+            return new RunTargetResult(false, "No suite holds or links this feature file.", null, null, [], null);
+        }
+
+        if (suite.TryGetCatalogs(out var reason) is null)
+        {
+            return new RunTargetResult(false, reason, null, null, [], suite.Name);
+        }
+
+        if (RunState(suite, path) is { CanRun: false } || suite.ProjectFile is not { } project)
+        {
+            return new RunTargetResult(false, RunState(suite, path)?.Reason ?? $"{suite.Name} has no project file.", null, null, [], suite.Name);
+        }
+
+        var file = suite.RelativeToConfig(path);
+        if (request.Line is not { } line)
+        {
+            return new RunTargetResult(true, null, project, $"{UatScenarioAddress.Trait}~{file}#", [], suite.Name);
+        }
+
+        // The scenarios under the heading at that line: one, or an outline's rows.
+        var scenarios = UatMarkdownParser.Parse(text, path).Document?.Scenarios.Where(scenario => scenario.Source.LineNumber == line).Select(scenario => scenario.Name).ToList() ?? [];
+        return scenarios.Count == 0
+            ? new RunTargetResult(false, $"There is no scenario heading at line {line}.", null, null, [], suite.Name)
+            : new RunTargetResult(true, null, project, string.Join('|', scenarios.Select(name => $"{UatScenarioAddress.Trait}={UatScenarioAddress.Of(file, name)}")), scenarios, suite.Name);
+    }
+
+    // A suite runs by address when its test class uses [UatScenarioTheory]; before it is loaded, the build that comes first tells.
+    private static Brinell.Uat.Preview.UatPreviewRunState? RunState(UatSuite? suite, string path)
+    {
+        if (suite is null || !path.EndsWith(UatFileFormat.FeatureExtension, StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        return !suite.IsLoaded || suite.HasScenarioTheory
+            ? new Brinell.Uat.Preview.UatPreviewRunState(true)
+            : new Brinell.Uat.Preview.UatPreviewRunState(false, $"{suite.Name} runs its scenarios with [Theory], so one has no address to run by. Change it to [UatScenarioTheory]; Test Explorer still runs them.");
     }
 
     // A screenshot under the results folder, through the virtual host the client maps to it.

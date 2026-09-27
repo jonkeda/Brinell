@@ -37,6 +37,22 @@ To install it for everyday use, open `tools\Brinell.Uat.VisualStudio\bin\Debug\n
   thumbnail to open it. The preview finds the newest run of each scenario through the runs'
   `TestResults/<run-id>/manifest.json`, and refreshes when a run writes one.
 
+## Run From The Preview
+
+Each scenario heading has **Run**, and the title **Run file**. A run:
+
+1. builds the solution through Visual Studio, so a stale app never runs;
+2. runs `dotnet test <suite project> --no-build --filter "UatScenario=<address>"` (every row of an
+   outline, or `UatScenario~<file>#` for the file), its output in the **Brinell UAT** Output pane;
+3. shows the results in the preview when the run writes them.
+
+The suite's test class must use `[UatScenarioTheory]`, which gives each case its address; with
+`[Theory]` the buttons are disabled and say why. Test Explorer runs the same cases either way.
+
+While a run goes, the UI test rules hold: a second run is refused, a build started during the run
+is cancelled (it would overwrite the binaries under the run), and **Cancel run** in the bar stops
+the test process and the app it started.
+
 ## Break At A Step
 
 A step breakpoint stops the debugger before that step, whichever way the test was started (the

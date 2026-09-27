@@ -29,6 +29,7 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
     private readonly Dictionary<string, string> _suites = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _opened = new(StringComparer.OrdinalIgnoreCase);
     private UatServerClient? _server;
+    private UatRunController? _runs;
     private IVsOutputWindowPane? _output;
     private IVsMonitorSelection? _selection;
     private IVsSolutionBuildManager? _builds;
@@ -52,6 +53,7 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
         _output = await CreateOutputPaneAsync();
         _server = new UatServerClient(UatServerClient.DefaultServerPath, Log);
         _server.ResultsChanged += OnResultsChanged;
+        _runs = new UatRunController(_package, _server, Log, Post);
 
         _selection = await _package.GetServiceAsync(typeof(SVsShellMonitorSelection)) as IVsMonitorSelection;
         Assumes.Present(_selection);
@@ -249,6 +251,15 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
                 view.Caret.MoveTo(start);
                 view.ViewScroller.EnsureSpanVisible(new SnapshotSpan(start, 0), EnsureSpanVisibleOptions.AlwaysCenter);
                 break;
+            case "run" when _path is { } file && (int?)message["line"] is { } heading:
+                Run(file, heading);
+                break;
+            case "runFile" when _path is { } file:
+                Run(file, null);
+                break;
+            case "cancel":
+                _runs?.Cancel();
+                break;
             case "openScreenshot" when (string?)message["path"] is { } screenshot && File.Exists(screenshot):
                 VsShellUtilities.OpenDocument(_package, screenshot);
                 break;
@@ -258,6 +269,20 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
                 break;
         }
     }
+
+    private void Run(string path, int? line)
+    {
+        var suite = _suites.TryGetValue(path, out var picked) ? picked : null;
+        _package.JoinableTaskFactory.RunAsync(() => _runs!.RunAsync(path, line, suite)).FileAndForget("Brinell/PreviewRun");
+    }
+
+    // A message to the page from any thread.
+    private void Post(object message)
+        => _package.JoinableTaskFactory.RunAsync(async () =>
+        {
+            await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
+            _view?.Post(message);
+        }).FileAndForget("Brinell/PreviewPost");
 
     // A run wrote results for the file on show: draw them.
     private void OnResultsChanged(object sender, string path)
@@ -340,11 +365,22 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
 
     int IVsSelectionEvents.OnCmdUIContextChanged(uint dwCmdUICookie, int fActive) => VSConstants.S_OK;
 
-    int IVsUpdateSolutionEvents.UpdateSolution_Begin(ref int pfCancelUpdate) => VSConstants.S_OK;
+    // R4: a build during a run would overwrite binaries under it, so it is cancelled, saying why.
+    int IVsUpdateSolutionEvents.UpdateSolution_Begin(ref int pfCancelUpdate)
+    {
+        if (_runs is { IsRunning: true, OwnBuild: false })
+        {
+            pfCancelUpdate = 1;
+            Log("A UAT run is going, so the build is cancelled: it would overwrite the binaries under the run. Cancel the run first.");
+        }
+
+        return VSConstants.S_OK;
+    }
 
     // A build finished: the suites load their new output, and the preview binds against it.
     int IVsUpdateSolutionEvents.UpdateSolution_Done(int fSucceeded, int fModified, int fCancelCommand)
     {
+        _runs?.BuildFinished(fSucceeded != 0 && fCancelCommand == 0);
         if (_server is { } server)
         {
             _package.JoinableTaskFactory.RunAsync(async () =>

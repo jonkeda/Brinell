@@ -151,18 +151,18 @@ internal sealed partial class UatPreviewWriter
         {
             case 1 when TrySplit(text, "Feature:", out var title) || TrySplit(text, "Steps:", out title):
                 var keyword = text[..text.IndexOf(':', StringComparison.Ordinal)];
-                _html.Append($"<h1 class=\"uat-title\" data-line=\"{line}\"><span class=\"uat-kw\">{keyword}</span> {Encode(title)}</h1>\n");
+                _html.Append($"<h1 class=\"uat-title\" data-line=\"{line}\"><span class=\"uat-kw\">{keyword}</span> {Encode(title)}{(_isSteps ? string.Empty : RunButtons("data-run-file", "Run file", "Run every scenario of the file"))}</h1>\n");
                 return;
             case 2 when TrySplit(text, "Scenario Outline:", out var outline):
                 _binding.Enter(line);
                 _run = _options.Runs.GetValueOrDefault($"{outline} [1]");
-                _html.Append($"<h2 class=\"uat-scenario\" data-line=\"{line}\" data-scenario=\"{Encode(outline)}\"><span class=\"uat-kw\">Scenario Outline</span> {Encode(outline)}{RunBadge(_run)}</h2>\n");
+                _html.Append($"<h2 class=\"uat-scenario\" data-line=\"{line}\" data-scenario=\"{Encode(outline)}\"><span class=\"uat-kw\">Scenario Outline</span> {Encode(outline)}{RunBadge(_run)}{RunButtons($"data-run=\"{line}\"", "Run", "Run every row")}</h2>\n");
                 WriteNotOnHead(line);
                 return;
             case 2 when TrySplit(text, "Scenario:", out var scenario):
                 _binding.Enter(line);
                 _run = _options.Runs.GetValueOrDefault(scenario);
-                _html.Append($"<h2 class=\"uat-scenario\" data-line=\"{line}\" data-scenario=\"{Encode(scenario)}\"><span class=\"uat-kw\">Scenario</span> {Encode(scenario)}{RunBadge(_run)}</h2>\n");
+                _html.Append($"<h2 class=\"uat-scenario\" data-line=\"{line}\" data-scenario=\"{Encode(scenario)}\"><span class=\"uat-kw\">Scenario</span> {Encode(scenario)}{RunBadge(_run)}{RunButtons($"data-run=\"{line}\"", "Run", "Run this scenario")}</h2>\n");
                 WriteNotOnHead(line);
                 return;
             case 2 when text == "Background":
@@ -300,6 +300,18 @@ internal sealed partial class UatPreviewWriter
         }
 
         _html.Append("</div>\n");
+    }
+
+    // A button the page turns into a run message; disabled, with the reason, when the suite cannot run by address.
+    private string RunButtons(string attribute, string label, string title)
+    {
+        if (_options.Run is not { } run)
+        {
+            return string.Empty;
+        }
+
+        var state = run.CanRun ? $"title=\"{Encode(title)}\"" : $"disabled title=\"{Encode(run.Reason ?? "This scenario cannot be run from here.")}\"";
+        return $" <span class=\"uat-actions\"><button type=\"button\" class=\"uat-run\" {attribute} {state}>\u25B6 {label}</button></span>";
     }
 
     private static string RunBadge(UatScenarioRun? run)

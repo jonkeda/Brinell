@@ -1,6 +1,6 @@
 // The preview's page script, the same in every host: Visual Studio's WebView2 or VS Code's webview.
-// In:  update {html, suites, suite, bindState, reason}, scrollTo {line}, theme {vars, kind}
-// Out: reveal {line}, pickSuite {suite}, openScreenshot {path}
+// In:  update {html, suites, suite, bindState, reason}, scrollTo {line}, theme {vars, kind}, running {line?, file?}
+// Out: reveal {line}, pickSuite {suite}, openScreenshot {path}, run {line}, runFile, cancel
 (function () {
   "use strict";
 
@@ -28,7 +28,9 @@
   const root = document.getElementById("uat-root");
   const picker = document.getElementById("uat-suite");
   const state = document.getElementById("uat-state");
+  const cancel = document.getElementById("uat-cancel");
   let current = null;
+  let running = null;
 
   // The block for a line: the last element whose data-line is at or before it.
   function blockAt(line) {
@@ -63,6 +65,7 @@
       }
     }
     window.scrollTo(0, top);
+    showRunning();
 
     const suites = message.suites || [];
     picker.hidden = suites.length < 2;
@@ -80,6 +83,19 @@
     }
   }
 
+  // While a run goes, the Run buttons hide, the running scenario says so, and the bar offers Cancel.
+  function showRunning() {
+    document.body.toggleAttribute("data-running", running !== null);
+    cancel.hidden = running === null;
+    for (const heading of root.querySelectorAll("[data-running-here]")) {
+      heading.removeAttribute("data-running-here");
+    }
+    if (running) {
+      const target = running.file ? root.querySelector(".uat-title") : root.querySelector(`.uat-scenario[data-line="${running.line}"]`);
+      target?.setAttribute("data-running-here", "");
+    }
+  }
+
   function theme(message) {
     for (const [name, value] of Object.entries(message.vars || {})) {
       document.documentElement.style.setProperty(name, value);
@@ -94,10 +110,19 @@
       case "update": update(message); break;
       case "scrollTo": scrollTo(message.line); break;
       case "theme": theme(message); break;
+      case "running": running = message.line || message.file ? { line: message.line, file: message.file } : null; showRunning(); break;
     }
   });
 
   root.addEventListener("click", (event) => {
+    const run = event.target.closest(".uat-run");
+    if (run) {
+      event.stopPropagation();
+      if (!run.disabled) {
+        host.post(run.hasAttribute("data-run-file") ? { type: "runFile" } : { type: "run", line: Number(run.getAttribute("data-run")) });
+      }
+      return;
+    }
     const shot = event.target.closest("[data-open]");
     if (shot) {
       event.preventDefault();
@@ -115,6 +140,7 @@
   });
 
   picker.addEventListener("change", () => host.post({ type: "pickSuite", suite: picker.value }));
+  cancel.addEventListener("click", () => host.post({ type: "cancel" }));
 
   host.post({ type: "ready" });
 })();

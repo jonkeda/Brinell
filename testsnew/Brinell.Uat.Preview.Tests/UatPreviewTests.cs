@@ -109,6 +109,37 @@ public sealed class UatPreviewTests
     }
 
     [Fact]
+    public void RunButtons_OnTheTitleAndEachScenario_WhenTheSuiteCanRun()
+    {
+        var result = UatPreview.Render(Scenario, "shelf.feature.md", new UatPreviewOptions { Run = new UatPreviewRunState(true) });
+
+        Assert.Contains("<button type=\"button\" class=\"uat-run\" data-run-file title=\"Run every scenario of the file\">", result.Html);
+        Assert.Contains("<button type=\"button\" class=\"uat-run\" data-run=\"3\" title=\"Run this scenario\">", result.Html);
+    }
+
+    [Fact]
+    public void RunButtons_AreDisabled_WithTheReason_WhenTheSuiteCannotRun()
+    {
+        var result = UatPreview.Render(Scenario, "shelf.feature.md", new UatPreviewOptions { Run = new UatPreviewRunState(false, "Use [UatScenarioTheory].") });
+
+        Assert.Contains("data-run=\"3\" disabled title=\"Use [UatScenarioTheory].\"", result.Html);
+    }
+
+    [Fact]
+    public void NoRunButtons_OnAPageOfItsOwn()
+        => Assert.DoesNotContain("uat-run", UatPreview.Render(Scenario, "shelf.feature.md").Html);
+
+    private const string Scenario = """
+        # Feature: Shelf
+
+        ## Scenario: Shelve
+
+        ```gherkin
+        When I shelve "Dune"
+        ```
+        """;
+
+    [Fact]
     public void TheHostPage_HasTheRootTheBarAndTheScript_AndNoRemoteContent()
     {
         var page = UatPreview.HostPage;

@@ -23,7 +23,15 @@ public sealed record UatPreviewOptions
     /// a virtual host to the results folder, since a webview does not load <c>file:</c> URLs.
     /// </summary>
     public Func<string, string?> ImageUrl { get; init; } = path => new Uri(path).AbsoluteUri;
+
+    /// <summary>Whether the scenarios can be run from the preview, and why not; null for no Run buttons (a page on its own).</summary>
+    public UatPreviewRunState? Run { get; init; }
 }
+
+/// <summary>Whether the preview offers Run on its scenarios.</summary>
+/// <param name="CanRun">Whether a scenario can be run by its address.</param>
+/// <param name="Reason">Why not, shown on the disabled buttons; null when it can.</param>
+public sealed record UatPreviewRunState(bool CanRun, string? Reason = null);
 
 /// <summary>A rendered file: the HTML, and every diagnostic it shows.</summary>
 /// <param name="Html">An <c>&lt;article&gt;</c>, every block with its <c>data-line</c>.</param>
@@ -96,7 +104,7 @@ public static class UatPreview
         </style>
         </head>
         <body>
-        <header class="uat-bar"><span id="uat-state" class="uat-state" data-state="parse-only">Parsed only</span><select id="uat-suite" class="uat-suite" hidden aria-label="Suite"></select></header>
+        <header class="uat-bar"><span id="uat-state" class="uat-state" data-state="parse-only">Parsed only</span><button type="button" id="uat-cancel" class="uat-cancel" hidden>Cancel run</button><select id="uat-suite" class="uat-suite" hidden aria-label="Suite"></select></header>
         <main id="uat-root"></main>
         <script>
         {ReadResource("preview-host.js")}

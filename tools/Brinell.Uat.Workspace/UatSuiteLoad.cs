@@ -16,6 +16,9 @@ internal sealed class UatSuiteLoad : IDisposable
 
     public UatCatalogSet Catalogs { get; set; } = null!;
 
+    // Whether a loaded assembly has a [UatScenarioTheory] method, so its scenarios have addresses to run by.
+    public bool HasScenarioTheory { get; private set; }
+
     // The context, for a test that the load is released.
     internal WeakReference Context => new(_context);
 
@@ -34,13 +37,32 @@ internal sealed class UatSuiteLoad : IDisposable
             throw new UatWorkspaceException($"'{assemblyPath}' cannot be loaded ({exception.Message}).");
         }
 
+        IEnumerable<Type> types;
         try
         {
-            return assembly.GetTypes();
+            types = assembly.GetTypes();
         }
         catch (ReflectionTypeLoadException exception)
         {
-            return exception.Types.OfType<Type>();
+            types = exception.Types.OfType<Type>();
+        }
+
+        var list = types.ToList();
+        HasScenarioTheory |= list.Any(HasScenarioTheoryMethod);
+        return list;
+    }
+
+    // By name, from the metadata: the attribute's type need not load for the check.
+    private static bool HasScenarioTheoryMethod(Type type)
+    {
+        try
+        {
+            return type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+                .Any(method => method.CustomAttributes.Any(attribute => attribute.AttributeType.FullName == "Brinell.Uat.UatScenarioTheoryAttribute"));
+        }
+        catch (Exception exception) when (exception is TypeLoadException or FileNotFoundException or FileLoadException)
+        {
+            return false;
         }
     }
 
