@@ -1,5 +1,7 @@
 # Brinell Presenter User Journeys
 
+Status: **not run**. A manual checklist; item 6 of [plan.md](plan.md).
+
 Check a journey only after all its subtasks pass. Use `[!]` for a failed check
 and `[-]` when a check does not apply; add a defect reference or reason beside it.
 

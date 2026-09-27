@@ -10,10 +10,10 @@ This plan does four things:
    together with the status filter.
 4. **A separate UI test project and UAT project** for the users feature. Its phrases and pages
    live in their own `Users` namespace, which scenarios bring in with `Using`. This is the first
-   real use of [phrase-namespaces.md](../uat/phrases/phrase-namespaces.md), which is not built yet,
+   real use of [phrase-namespaces.md](phrase-namespaces.md), which is not built yet,
    so this plan builds the minimum of it.
 
-It works alongside [plan.md](plan.md), the plan for several apps, heads and named users in one
+It works alongside [the multi-app plan](https://github.com/exact-mobile-apps/test-tooling/blob/7162ac7/.my/multi/plan.md) (done 2026-09-27), the plan for several apps, heads and named users in one
 scenario. Neither plan needs the other, but together they let `Daan` in a step be both the app's
 signed-in user and the app Daan is using (section 3, D9).
 

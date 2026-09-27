@@ -1,5 +1,8 @@
 # CommunityToolkit.Maui control objects - plan
 
+Status: **Windows done** (every control built, closeout green); **Android not run**. The
+agent and this plan stay as the template for the next control source.
+
 Goal: give `Brinell.Maui.CommunityToolkit` a ControlObject for every CommunityToolkit.Maui
 view a test can meaningfully drive, in the generatable `.tpl.cs` / `.gen.cs` format, each
 proven by UI tests against the sample app on Windows (and Android where the baseline allows).
