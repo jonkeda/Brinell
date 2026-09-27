@@ -14,6 +14,15 @@ public sealed record UatPreviewOptions
     /// and the gate's diagnostic when it binds to nothing. Null to parse only.
     /// </summary>
     public UatCatalogSet? Catalogs { get; init; }
+
+    /// <summary>The file's scenarios' last runs, by scenario name: each step shows its status, a failed one its message and screenshot.</summary>
+    public IReadOnlyDictionary<string, UatScenarioRun> Runs { get; init; } = new Dictionary<string, UatScenarioRun>();
+
+    /// <summary>
+    /// The URL a screenshot is shown from, for its path; null when it cannot be shown. The IDE maps
+    /// a virtual host to the results folder, since a webview does not load <c>file:</c> URLs.
+    /// </summary>
+    public Func<string, string?> ImageUrl { get; init; } = path => new Uri(path).AbsoluteUri;
 }
 
 /// <summary>A rendered file: the HTML, and every diagnostic it shows.</summary>

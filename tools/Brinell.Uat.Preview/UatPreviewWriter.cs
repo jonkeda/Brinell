@@ -29,6 +29,7 @@ internal sealed partial class UatPreviewWriter
     private readonly StringBuilder _html = new();
     private readonly UatPreviewBinding _binding = new();
     private string? _nextTableClass;
+    private UatScenarioRun? _run;
 
     public UatPreviewWriter(string text, string filePath, UatPreviewOptions options)
     {
@@ -143,6 +144,7 @@ internal sealed partial class UatPreviewWriter
         if (heading.Level <= 2)
         {
             _binding.Leave();
+            _run = null;
         }
 
         switch (heading.Level)
@@ -153,16 +155,19 @@ internal sealed partial class UatPreviewWriter
                 return;
             case 2 when TrySplit(text, "Scenario Outline:", out var outline):
                 _binding.Enter(line);
-                _html.Append($"<h2 class=\"uat-scenario\" data-line=\"{line}\" data-scenario=\"{Encode(outline)}\"><span class=\"uat-kw\">Scenario Outline</span> {Encode(outline)}</h2>\n");
+                _run = _options.Runs.GetValueOrDefault($"{outline} [1]");
+                _html.Append($"<h2 class=\"uat-scenario\" data-line=\"{line}\" data-scenario=\"{Encode(outline)}\"><span class=\"uat-kw\">Scenario Outline</span> {Encode(outline)}{RunBadge(_run)}</h2>\n");
                 WriteNotOnHead(line);
                 return;
             case 2 when TrySplit(text, "Scenario:", out var scenario):
                 _binding.Enter(line);
-                _html.Append($"<h2 class=\"uat-scenario\" data-line=\"{line}\" data-scenario=\"{Encode(scenario)}\"><span class=\"uat-kw\">Scenario</span> {Encode(scenario)}</h2>\n");
+                _run = _options.Runs.GetValueOrDefault(scenario);
+                _html.Append($"<h2 class=\"uat-scenario\" data-line=\"{line}\" data-scenario=\"{Encode(scenario)}\"><span class=\"uat-kw\">Scenario</span> {Encode(scenario)}{RunBadge(_run)}</h2>\n");
                 WriteNotOnHead(line);
                 return;
             case 2 when text == "Background":
                 _binding.EnterBackground();
+                _run = _options.Runs.Values.OrderBy(run => run.Scenario, StringComparer.Ordinal).FirstOrDefault();
                 _html.Append($"<h2 class=\"uat-background\" data-line=\"{line}\"><span class=\"uat-kw\">Background</span></h2>\n");
                 return;
             case 2 when TrySplit(text, "Step for each row:", out var eachRow):
@@ -242,9 +247,10 @@ internal sealed partial class UatPreviewWriter
             var bound = _binding.At(number);
             var attributes = bound is null ? string.Empty : $" data-binds=\"{Encode(bound.Describe())}\" title=\"{Encode(bound.Describe())}\"";
             _html.Append(step.Success
-                ? $"<li class=\"uat-step{(bound is null ? string.Empty : " uat-bound")}\" data-line=\"{number}\"{attributes}><span class=\"uat-kw\">{step.Groups["keyword"].Value}</span><span class=\"uat-text\">{Mark(step.Groups["text"].Value)}{PageLabel(bound)}</span>\n"
+                ? $"<li class=\"uat-step{(bound is null ? string.Empty : " uat-bound")}\" data-line=\"{number}\"{attributes}><span class=\"uat-kw\">{step.Groups["keyword"].Value}</span><span class=\"uat-text\">{StepStatus(number)}{Mark(step.Groups["text"].Value)}{PageLabel(bound)}</span>\n"
                 : $"<li class=\"uat-step uat-not-a-step\" data-line=\"{number}\"><span class=\"uat-kw\"></span><span class=\"uat-text\">{Encode(trimmed)}</span>\n");
             WriteDiagnostics(line => line == number);
+            WriteFailure(number);
             call = bound?.Call;
         }
 
@@ -255,6 +261,56 @@ internal sealed partial class UatPreviewWriter
 
         _html.Append("</ol>\n");
         WriteOutlineRows(fence);
+    }
+
+    // The run's status of a written step: a callable call's is its steps' worst; "not run" after a failure.
+    private string StepStatus(int line)
+    {
+        if (_run is null)
+        {
+            return string.Empty;
+        }
+
+        var steps = _run.Steps.Where(step => step.WrittenLine == line).ToList();
+        var status = steps.Count == 0 ? "NotRun"
+            : steps.FirstOrDefault(step => step.Status != "Passed")?.Status ?? "Passed";
+        var (icon, label) = status switch
+        {
+            "Passed" => ("✓", "Passed"),
+            "Failed" => ("✗", "Failed"),
+            "Skipped" => ("–", "Skipped"),
+            "Canceled" => ("⊘", "Canceled"),
+            _ => ("○", "Not run"),
+        };
+        return $"<span class=\"uat-status\" data-status=\"{status.ToLowerInvariant()}\" role=\"img\" aria-label=\"{label}\" title=\"{label}\">{icon}</span> ";
+    }
+
+    // Under a failed step: its message, and the screenshot taken then, which opens full size.
+    private void WriteFailure(int line)
+    {
+        if (_run?.Steps.FirstOrDefault(step => step.WrittenLine == line && step.Status == "Failed") is not { } failed)
+        {
+            return;
+        }
+
+        _html.Append($"<div class=\"uat-failure\" data-line=\"{line}\">{Encode(failed.Message ?? "The step failed.")}");
+        if (_run.EvidencePath is { } evidence && File.Exists(evidence) && _options.ImageUrl(evidence) is { } url)
+        {
+            _html.Append($"<a class=\"uat-shot\" href=\"#\" data-open=\"{Encode(evidence)}\" title=\"Open the screenshot\"><img src=\"{Encode(url)}\" alt=\"The screen when the step failed\"></a>");
+        }
+
+        _html.Append("</div>\n");
+    }
+
+    private static string RunBadge(UatScenarioRun? run)
+    {
+        if (run is null)
+        {
+            return string.Empty;
+        }
+
+        var seconds = (run.DurationMs / 1000.0).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
+        return $" <span class=\"uat-result\" data-status=\"{Encode(run.Status)}\" title=\"Last run {run.At.LocalDateTime:g}\">{Encode(run.Status)} · {seconds} s</span>";
     }
 
     // After the step's own table or doc string: the call it makes, unfolded.
@@ -294,7 +350,7 @@ internal sealed partial class UatPreviewWriter
 
         foreach (var row in rows)
         {
-            _html.Append($"<details class=\"uat-outline-row\" data-row=\"{row.Index}\"><summary>{Encode(row.Name)}</summary>\n<ol class=\"uat-call-steps\">\n");
+            _html.Append($"<details class=\"uat-outline-row\" data-row=\"{row.Index}\"><summary>{Encode(row.Name)}{RunBadge(_options.Runs.GetValueOrDefault(row.Name))}</summary>\n<ol class=\"uat-call-steps\">\n");
             foreach (var step in row.Steps)
             {
                 _html.Append($"<li class=\"uat-step uat-bound\" data-source=\"{Encode(step.Source)}\" title=\"{Encode(step.Binds)}\"><span class=\"uat-kw\">{step.Keyword}</span><span class=\"uat-text\">{Mark(step.Text)}</span></li>\n");

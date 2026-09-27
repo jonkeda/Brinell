@@ -15,7 +15,7 @@ internal static class PreviewCommand
 
         var file = Path.GetFullPath(args[0]);
         var solution = Option(args, "--solution") ?? Path.GetDirectoryName(file)!;
-        using var server = new UatLanguageServer();
+        using var server = new UatLanguageServer { FileImageUrls = true };
         server.Initialize(new InitializeParams(null, null, new InitializationOptions(Path.GetFullPath(solution))));
         var preview = server.Preview(new PreviewParams(new Uri(file).AbsoluteUri, Option(args, "--suite")));
         // --host: the IDE's host page with the preview posted into it, as a webview shows it.

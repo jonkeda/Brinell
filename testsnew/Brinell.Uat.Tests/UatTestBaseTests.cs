@@ -93,6 +93,51 @@ public sealed class UatTestBaseTests
     }
 
     [Fact]
+    public async Task ScenarioTestBase_TheReport_NamesItsFileAndLines_WithoutTheTrace()
+    {
+        var directory = CreateTempDirectory();
+        try
+        {
+            var configFilePath = WriteConfig(directory);
+            var scenarioFilePath = WriteScenario(directory, """
+                # Feature: Base Harness
+
+                ## Scenario: Reported flow
+
+                When I run the custom action
+                And I fail the custom action
+                """);
+            var fixture = new HarnessFixture();
+            var catalog = CreatePassingCatalog(fixture);
+            catalog.Register(
+                UatEffectiveStepKeyword.When,
+                "I fail the custom action",
+                "Harness.Fail",
+                handler: (_, invocation, _) => Task.FromResult(UatStepResult.Failed(invocation, "Intentional failure from harness")));
+            var harness = new ScenarioHarness(fixture, configFilePath, catalog);
+
+            await harness.RunExpectedFailureFileAsync(scenarioFilePath, "Intentional failure from harness");
+
+            using var report = System.Text.Json.JsonDocument.Parse(File.ReadAllText(Path.Combine(directory, "uat", "scenario__Reported flow__result.json")));
+            var root = report.RootElement;
+            Assert.Equal("scenario.feature.md", root.GetProperty("file").GetString());
+            Assert.Equal(3, root.GetProperty("line").GetInt32());
+            Assert.Equal("failed", root.GetProperty("status").GetString());
+            Assert.True(root.GetProperty("durationMs").GetInt64() >= 0);
+            var steps = root.GetProperty("steps").EnumerateArray().ToList();
+            Assert.Equal([5, 6], steps.Select(step => step.GetProperty("line").GetInt32()));
+            Assert.Equal(["Passed", "Failed"], steps.Select(step => step.GetProperty("status").GetString()));
+            Assert.Equal("Intentional failure from harness", steps[1].GetProperty("message").GetString());
+            Assert.False(root.TryGetProperty("commandCatalog", out _), "The catalog is trace detail.");
+            Assert.False(steps[0].TryGetProperty("commandId", out _), "A step's binding is trace detail.");
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
     public void SpecFormatTestBase_ValidatesMetadataBindingAndConfig()
     {
         var directory = CreateTempDirectory();

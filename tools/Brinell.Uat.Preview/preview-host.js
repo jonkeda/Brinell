@@ -1,6 +1,6 @@
 // The preview's page script, the same in every host: Visual Studio's WebView2 or VS Code's webview.
 // In:  update {html, suites, suite, bindState, reason}, scrollTo {line}, theme {vars, kind}
-// Out: reveal {line}, pickSuite {suite}
+// Out: reveal {line}, pickSuite {suite}, openScreenshot {path}
 (function () {
   "use strict";
 
@@ -98,6 +98,12 @@
   });
 
   root.addEventListener("click", (event) => {
+    const shot = event.target.closest("[data-open]");
+    if (shot) {
+      event.preventDefault();
+      host.post({ type: "openScreenshot", path: shot.getAttribute("data-open") });
+      return;
+    }
     if (event.target.closest("summary, a, select")) {
       return;
     }

@@ -15,6 +15,16 @@ public sealed class UatLanguageServer : IDisposable
     private readonly object _gate = new();
     private readonly Dictionary<string, (int Version, string Text)> _documents = new(StringComparer.OrdinalIgnoreCase);
     private UatWorkspace? _workspace;
+    private UatRunResults? _results;
+    private FileSystemWatcher? _resultsWatcher;
+    private Timer? _resultsChanged;
+    private JsonRpc? _rpc;
+
+    /// <summary>The virtual host a webview maps to the results folder, so it can show screenshots.</summary>
+    public const string ResultsHost = "brinell-results.local";
+
+    /// <summary>Screenshots as <c>file:</c> URLs, for a page opened on its own (<c>--preview</c>); the IDE maps <see cref="ResultsHost"/>.</summary>
+    public bool FileImageUrls { get; init; }
 
     /// <summary>Raised when the client asks the server to exit.</summary>
     public event EventHandler? ExitRequested;
@@ -28,6 +38,7 @@ public sealed class UatLanguageServer : IDisposable
         var rpc = new JsonRpc(new HeaderDelimitedMessageHandler(sending, receiving, formatter));
         rpc.AddLocalRpcTarget(this, new JsonRpcTargetOptions { UseSingleObjectParameterDeserialization = true });
         rpc.StartListening();
+        _rpc = rpc;
         return rpc;
     }
 
@@ -42,6 +53,8 @@ public sealed class UatLanguageServer : IDisposable
         {
             _workspace?.Dispose();
             _workspace = UatWorkspace.Open(root);
+            _results = new UatRunResults(UatRunResults.RootFor(_workspace.Root));
+            WatchResults(_results.Root);
             return new InitializeResult(
                 new ServerCapabilities(TextDocumentSync: 1),
                 new ServerInfo("Brinell.Uat.LanguageServer", typeof(UatLanguageServer).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "0"),
@@ -141,14 +154,83 @@ public sealed class UatLanguageServer : IDisposable
             : suite is null
                 ? $"No suite holds or links this file: no project with a {UatFileFormat.UiConfigFileName} or {UatFileFormat.ServiceConfigFileName} under {_workspace?.Root ?? "the solution"} has it."
                 : reason;
-        var result = UatPreview.Render(document.Text, path, new UatPreviewOptions { Catalogs = catalogs, ParseOnlyReason = reason });
+        var results = _results;
+        IReadOnlyDictionary<string, Brinell.Uat.Preview.UatScenarioRun> runs = new Dictionary<string, Brinell.Uat.Preview.UatScenarioRun>();
+        if (suite is not null && results is not null && path.EndsWith(UatFileFormat.FeatureExtension, StringComparison.OrdinalIgnoreCase))
+        {
+            lock (results)
+            {
+                runs = results.For(suite.Name, path);
+            }
+        }
+
+        var result = UatPreview.Render(document.Text, path, new UatPreviewOptions
+        {
+            Catalogs = catalogs,
+            ParseOnlyReason = reason,
+            Runs = runs,
+            ImageUrl = image => ImageUrl(image, results?.Root),
+        });
         return new PreviewResult(
             result.Html,
             document.Version,
             suites.Select(candidate => candidate.Name).ToList(),
             suite?.Name,
             catalogs is null ? "parse-only" : "bound",
-            reason);
+            reason)
+        {
+            ResultsRoot = results?.Root,
+            ResultsHost = ResultsHost,
+        };
+    }
+
+    // A screenshot under the results folder, through the virtual host the client maps to it.
+    private string? ImageUrl(string path, string? root)
+    {
+        if (FileImageUrls)
+        {
+            return new Uri(path).AbsoluteUri;
+        }
+
+        if (root is null || !Path.GetFullPath(path).StartsWith(Path.GetFullPath(root) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        var relative = Path.GetRelativePath(root, path).Split(Path.DirectorySeparatorChar).Select(Uri.EscapeDataString);
+        return $"https://{ResultsHost}/{string.Join('/', relative)}";
+    }
+
+    // A run writes its manifest after each scenario: the open files' previews are told to refresh,
+    // once the writes pause.
+    private void WatchResults(string root)
+    {
+        _resultsWatcher?.Dispose();
+        _resultsWatcher = null;
+        if (!Directory.Exists(root))
+        {
+            return;
+        }
+
+        _resultsChanged ??= new Timer(_ => NotifyResultsChanged());
+        _resultsWatcher = new FileSystemWatcher(root, "manifest.json") { IncludeSubdirectories = true, NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName };
+        _resultsWatcher.Changed += (_, _) => _resultsChanged.Change(TimeSpan.FromMilliseconds(500), Timeout.InfiniteTimeSpan);
+        _resultsWatcher.Created += (_, _) => _resultsChanged.Change(TimeSpan.FromMilliseconds(500), Timeout.InfiniteTimeSpan);
+        _resultsWatcher.EnableRaisingEvents = true;
+    }
+
+    private void NotifyResultsChanged()
+    {
+        List<string> open;
+        lock (_gate)
+        {
+            open = _documents.Keys.Where(path => path.EndsWith(UatFileFormat.FeatureExtension, StringComparison.OrdinalIgnoreCase)).ToList();
+        }
+
+        foreach (var path in open)
+        {
+            _ = _rpc?.NotifyWithParameterObjectAsync("brinell/resultsChanged", new { uri = new Uri(path).AbsoluteUri });
+        }
     }
 
     /// <inheritdoc />
@@ -156,6 +238,10 @@ public sealed class UatLanguageServer : IDisposable
     {
         lock (_gate)
         {
+            _resultsWatcher?.Dispose();
+            _resultsWatcher = null;
+            _resultsChanged?.Dispose();
+            _resultsChanged = null;
             _workspace?.Dispose();
             _workspace = null;
         }

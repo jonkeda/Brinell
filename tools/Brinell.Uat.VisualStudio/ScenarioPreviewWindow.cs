@@ -42,6 +42,7 @@ public sealed class ScenarioPreviewControl : UserControl
     private readonly WebView2 _web = new();
     private readonly List<string> _pending = [];
     private bool _ready;
+    private string? _mappedResults;
     private Task? _initializing;
 
     /// <summary>Creates the control; the WebView2 starts when <see cref="InitializeAsync"/> is called.</summary>
@@ -74,6 +75,24 @@ public sealed class ScenarioPreviewControl : UserControl
         {
             _pending.Add(json);
         }
+    }
+
+    /// <summary>
+    /// Maps the preview's screenshot host to the results folder, so its images load: a webview does
+    /// not load <c>file:</c> URLs from a page it was given as a string.
+    /// </summary>
+    /// <param name="host">The virtual host the server's URLs use.</param>
+    /// <param name="root">The results folder.</param>
+    public void MapResults(string host, string root)
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        if (_web.CoreWebView2 is not { } core || string.Equals(_mappedResults, root, StringComparison.OrdinalIgnoreCase) || !Directory.Exists(root))
+        {
+            return;
+        }
+
+        core.SetVirtualHostNameToFolderMapping(host, root, CoreWebView2HostResourceAccessKind.Allow);
+        _mappedResults = root;
     }
 
     private async Task StartAsync(string hostPage)

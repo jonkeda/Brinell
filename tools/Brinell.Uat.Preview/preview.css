@@ -229,4 +229,22 @@ th { background: var(--uat-surface); font-weight: 600; }
 .uat-suite { margin-left: auto; background: var(--uat-bg); color: var(--uat-fg); border: 1px solid var(--uat-border); }
 [data-line] { cursor: default; }
 
+.uat-status { display: inline-block; width: 1.1em; font-weight: 700; text-align: center; }
+.uat-status[data-status="passed"] { color: var(--uat-passed); }
+.uat-status[data-status="failed"] { color: var(--uat-failed); }
+.uat-status[data-status="skipped"], .uat-status[data-status="canceled"], .uat-status[data-status="notrun"] { color: var(--uat-skipped); }
+.uat-result { margin-left: 0.6em; font-size: 0.7em; font-weight: 400; color: var(--uat-muted); white-space: nowrap; }
+.uat-result[data-status="passed"] { color: var(--uat-passed); }
+.uat-result[data-status="failed"] { color: var(--uat-failed); }
+.uat-failure {
+  margin: 2px 0 6px;
+  padding: 4px 8px;
+  border-left: 3px solid var(--uat-failed);
+  background: var(--uat-error-bg);
+  white-space: pre-wrap;
+  font-size: 0.92em;
+}
+.uat-shot { display: block; margin-top: 6px; }
+.uat-shot img { max-width: 240px; max-height: 160px; border: 1px solid var(--uat-border); }
+
 a { color: var(--uat-accent); }

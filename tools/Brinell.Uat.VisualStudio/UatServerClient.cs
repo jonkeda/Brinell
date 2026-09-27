@@ -31,6 +31,9 @@ public sealed class UatServerClient : IDisposable
         _log = log;
     }
 
+    /// <summary>The server says a run wrote new results for an open file (its path).</summary>
+    public event EventHandler<string>? ResultsChanged;
+
     /// <summary>The server's path beside the extension's assembly.</summary>
     public static string DefaultServerPath =>
         Path.Combine(Path.GetDirectoryName(typeof(UatServerClient).Assembly.Location)!, "Server", "Brinell.Uat.LanguageServer.dll");
@@ -134,6 +137,7 @@ public sealed class UatServerClient : IDisposable
             formatter.JsonSerializer.ContractResolver = new CamelCasePropertyNamesContractResolver();
             var rpc = new JsonRpc(new HeaderDelimitedMessageHandler(process.StandardInput.BaseStream, process.StandardOutput.BaseStream, formatter));
             rpc.Disconnected += (_, e) => _log($"The language server stopped: {e.Description}");
+            rpc.AddLocalRpcMethod("brinell/resultsChanged", new Action<string>(uri => ResultsChanged?.Invoke(this, new Uri(uri).LocalPath)));
             rpc.StartListening();
             await rpc.InvokeWithParameterObjectAsync<JObject>(
                 "initialize",

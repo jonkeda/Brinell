@@ -38,6 +38,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   offers a suite picker for a linked file. **Ctrl+K, V** opens it. The VSIX carries the server.
   `UatPreview.HostPage` is the webview's page (the same for VS Code) and `brinell/previewHost`
   serves it. Guide: "Scenario Preview In Visual Studio".
+- UAT reports name their file, lines and steps: `__result.json` is named after the feature file and the
+  scenario (two files with a scenario of the same name no longer share one), and always holds the
+  file, the scenario's line, the duration, and each step's line, status and message (`callLine` for
+  a callable's step). The binding, catalog and discovery stay behind `IncludeRuntimeTrace`. The
+  manifest record gains `suite`, `file` and `line`. The preview shows the newest run of each
+  scenario: step statuses with text alternatives, the scenario's result and duration, a failed
+  step's message and screenshot; the server finds it through the manifests and sends
+  `brinell/resultsChanged` when a run writes one.
 - Docs: AD-020 (a tier is a head: `service`, opt-in heads, UATB013, a scenario counts for each of
   its tiers) and AD-021 (`Brinell.Bdd` under `Brinell.Uat`), with their invariants; the guide
   "Features Below The UI". AD-011, AD-014, AD-017 and AD-019 use the new words and file names.

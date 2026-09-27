@@ -396,10 +396,14 @@ object and supports an `include` array for required included files.
 
 ## Reporting
 
-Each scenario writes a result JSON file to the configured reporting directory.
-If `IncludeRuntimeTrace` is true, the report includes step traces, diagnostics,
-discovery data, and command catalog data. Scenario result files are also
-registered in the shared artifact manifest as `uat-scenario` artifacts.
+Each scenario writes `<feature file>__<scenario>__result.json` to the configured reporting
+directory. It always names the feature file (relative to the config) and the scenario's line, the
+status and duration, and each step's line, status and message; a step of a callable also has the
+call's line (`callLine`). That is what the IDE preview shows at the lines that ran. If
+`IncludeRuntimeTrace` is true, the report adds each step's binding and call chain, diagnostics,
+discovery data, and command catalog data. Scenario result files are also registered in the
+shared artifact manifest as `uat-scenario` artifacts, with the suite, file and line in their
+metadata.
 
 See [Reporting And Artifacts](reporting-artifacts.md).
 

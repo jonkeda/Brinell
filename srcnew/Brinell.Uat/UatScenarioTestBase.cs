@@ -1,5 +1,4 @@
 using System.Reflection;
-using System.Text.Json;
 using Brinell.Core.Artifacts;
 using Brinell.Core.Interfaces;
 using Brinell.Core.Settings;
@@ -9,11 +8,6 @@ namespace Brinell.Uat;
 public abstract class UatScenarioTestBase<TFixture>
     where TFixture : class
 {
-    private static readonly JsonSerializerOptions ReportJsonOptions = new()
-    {
-        WriteIndented = true
-    };
-
     protected UatScenarioTestBase(TFixture fixture)
     {
         Fixture = fixture ?? throw new ArgumentNullException(nameof(fixture));
@@ -158,10 +152,11 @@ public abstract class UatScenarioTestBase<TFixture>
         UatBoundScenario scenario,
         CancellationToken cancellationToken)
     {
+        var started = System.Diagnostics.Stopwatch.StartNew();
         var execution = await RunScenarioAsync(scenario, context.Runtime, cancellationToken)
             .ConfigureAwait(false);
 
-        RecordScenarioResult(context, scenario, execution);
+        RecordScenarioResult(context, scenario, execution, started.Elapsed);
 
         if (!IsAcceptableResult(execution))
         {
@@ -187,10 +182,11 @@ public abstract class UatScenarioTestBase<TFixture>
         }
 
         var scenario = context.Document.Scenarios[0];
+        var started = System.Diagnostics.Stopwatch.StartNew();
         var execution = await RunScenarioAsync(scenario, context.Runtime, CancellationToken.None)
             .ConfigureAwait(false);
 
-        RecordScenarioResult(context, scenario, execution);
+        RecordScenarioResult(context, scenario, execution, started.Elapsed);
 
         var details = UatDiagnosticsFormatter.FormatResults(
             execution.Result,
@@ -330,63 +326,23 @@ public abstract class UatScenarioTestBase<TFixture>
     private void RecordScenarioResult(
         UatBoundFileContext context,
         UatBoundScenario scenario,
-        UatScenarioExecutionResult execution)
+        UatScenarioExecutionResult execution,
+        TimeSpan duration)
     {
         try
         {
             var status = GetScenarioStatus(execution.Result);
             var directory = context.Runtime.Config.Reporting.OutputDirectory;
             Directory.CreateDirectory(directory);
-            var reportPath = Path.Combine(
-                directory,
-                $"{FormatEvidenceScenarioName(scenario)}__result.json");
-            var includeTrace = context.Runtime.Config.Reporting.IncludeRuntimeTrace;
-            object[] steps = includeTrace
-                ? execution.Result.Steps.Select(step => (object)new
-                {
-                    status = step.Status.ToString(),
-                    source = step.Invocation.Step.Source.ToString(),
-                    keyword = step.Invocation.Step.EffectiveKeyword.ToString(),
-                    app = step.Invocation.App,
-                    commandId = step.Invocation.CommandId,
-                    text = step.Invocation.Step.Text,
-                    message = step.Message,
-                    call = step.Invocation.Call?.Chain.Select(frame => new
-                    {
-                        phrase = frame.Callable.Phrase,
-                        source = frame.Location.ToString(),
-                        row = frame.Row,
-                    }).ToArray(),
-                }).ToArray()
-                : [];
-            string[] diagnostics = includeTrace
-                ? execution.Context.Diagnostics.ToArray()
-                : [];
-            object[] commandCatalog = includeTrace
-                ? context.Catalog.Patterns.Select(pattern => (object)new
-                {
-                    keyword = pattern.Keyword.ToString(),
-                    phrase = pattern.Phrase,
-                    commandId = pattern.CommandId
-                }).ToArray()
-                : [];
+            var file = scenario.Source.Source.FilePath;
+            var reportPath = Path.Combine(directory, UatScenarioReport.FileName(file, FormatEvidenceScenarioName(scenario)));
+            var trace = context.Runtime.Config.Reporting.IncludeRuntimeTrace
+                ? new UatReportTrace(context.Catalog, context.Runtime.DiscoveryReport)
+                : null;
 
-            var report = new
-            {
-                scenario = scenario.Source.Name,
-                status,
-                tags = scenario.Source.Tags,
-                evidencePath = execution.EvidencePath,
-                skipReason = execution.Result.SkipDecision?.Reason,
-                steps,
-                diagnostics,
-                discovery = includeTrace
-                    ? context.Runtime.DiscoveryReport
-                    : null,
-                commandCatalog
-            };
+            File.WriteAllText(reportPath, UatScenarioReport.Build(scenario, execution, status, duration, context.Runtime.ConfigDirectory, trace));
 
-            File.WriteAllText(reportPath, JsonSerializer.Serialize(report, ReportJsonOptions));
+            // The suite, file and line let a tool find the newest run of a file's scenarios (P5, AD-007).
             TestArtifactManifestWriter.RecordArtifact(
                 reportPath,
                 "uat-scenario",
@@ -396,7 +352,10 @@ public abstract class UatScenarioTestBase<TFixture>
                 {
                     ["target"] = context.Runtime.Config.Runtime.TryGetValue("Target", out var target) ? target : null,
                     ["fixture"] = context.Runtime.Config.Runtime.TryGetValue("Fixture", out var fixture) ? fixture : null,
-                    ["evidencePath"] = execution.EvidencePath
+                    ["evidencePath"] = execution.EvidencePath,
+                    ["suite"] = GetType().Assembly.GetName().Name,
+                    ["file"] = file is null ? null : Path.GetRelativePath(context.Runtime.ConfigDirectory, Path.GetFullPath(file)).Replace('\\', '/'),
+                    ["line"] = scenario.Source.Source.LineNumber.ToString(System.Globalization.CultureInfo.InvariantCulture),
                 });
         }
         catch
@@ -404,7 +363,6 @@ public abstract class UatScenarioTestBase<TFixture>
             // Report writing should not change scenario outcome.
         }
     }
-
     private static string GetScenarioStatus(UatScenarioRunResult result)
     {
         if (result.Passed)

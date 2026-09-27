@@ -62,7 +62,14 @@ public sealed record PreviewParams(string Uri, string? Suite);
 /// <param name="Suite">The suite it was bound in; null when none.</param>
 /// <param name="BindState"><c>bound</c> or <c>parse-only</c>.</param>
 /// <param name="Reason">Why it is only parsed; null when bound.</param>
-public sealed record PreviewResult(string Html, int Version, IReadOnlyList<string> Suites, string? Suite, string BindState, string? Reason);
+public sealed record PreviewResult(string Html, int Version, IReadOnlyList<string> Suites, string? Suite, string BindState, string? Reason)
+{
+    /// <summary>The folder of the runs, which the client maps to <see cref="ResultsHost"/> to show screenshots.</summary>
+    public string? ResultsRoot { get; init; }
+
+    /// <summary>The virtual host the preview's screenshot URLs use.</summary>
+    public string? ResultsHost { get; init; }
+}
 
 /// <summary>The preview's host page.</summary>
 /// <param name="Html">A whole page with the stylesheet and the page script (<c>UatPreview.HostPage</c>).</param>

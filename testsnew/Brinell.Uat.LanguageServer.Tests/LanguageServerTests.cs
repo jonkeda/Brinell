@@ -13,6 +13,7 @@ public sealed class LanguageServerTests : IAsyncLifetime
     private readonly UatLanguageServer _server = new();
     private JsonRpc _client = null!;
     private JsonRpc _serverRpc = null!;
+    private readonly TaskCompletionSource<string> _resultsChanged = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     private string Shelf => Path.Combine(_solution, "Shelf.Steps");
 
@@ -50,6 +51,7 @@ public sealed class LanguageServerTests : IAsyncLifetime
         _serverRpc = _server.Attach(serverStream, serverStream);
         var formatter = new SystemTextJsonFormatter { JsonSerializerOptions = { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase } };
         _client = new JsonRpc(new HeaderDelimitedMessageHandler(clientStream, clientStream, formatter));
+        _client.AddLocalRpcMethod("brinell/resultsChanged", new Action<string>(uri => _resultsChanged.TrySetResult(uri)));
         _client.StartListening();
         return Task.CompletedTask;
     }
@@ -163,6 +165,53 @@ public sealed class LanguageServerTests : IAsyncLifetime
         var host = await _client.InvokeWithParameterObjectAsync<PreviewHostResult>("brinell/previewHost", new { });
 
         Assert.Contains("<main id=\"uat-root\"></main>", host.Html);
+    }
+
+    [Fact]
+    public async Task Preview_ShowsTheNewestRun_FoundThroughTheManifests()
+    {
+        Build();
+        File.WriteAllText(Path.Combine(_solution, "Shelf.sln"), string.Empty);
+        WriteRun("20260101-000000-older1", "failed", "Failed");
+        WriteRun("20260102-000000-newer2", "passed", "Passed");
+        await InitializeAsync(_client);
+
+        var preview = await PreviewAsync();
+
+        Assert.Equal(Path.Combine(_solution, "TestResults"), preview.ResultsRoot);
+        Assert.Contains("<span class=\"uat-result\" data-status=\"passed\"", preview.Html);
+        Assert.Contains("<span class=\"uat-status\" data-status=\"passed\"", preview.Html);
+    }
+
+    [Fact]
+    public async Task ANewRun_TellsTheClientTheResultsChanged()
+    {
+        Build();
+        File.WriteAllText(Path.Combine(_solution, "Shelf.sln"), string.Empty);
+        Directory.CreateDirectory(Path.Combine(_solution, "TestResults"));
+        await InitializeAsync(_client);
+        await _client.NotifyWithParameterObjectAsync("textDocument/didOpen", new { textDocument = new { uri = new Uri(Feature).AbsoluteUri, version = 1, text = File.ReadAllText(Feature) } });
+
+        WriteRun("20260103-000000-latest", "passed", "Passed");
+
+        Assert.Equal(new Uri(Feature).AbsoluteUri, await _resultsChanged.Task.WaitAsync(TimeSpan.FromSeconds(10)));
+    }
+
+    // A run as UatScenarioTestBase writes it: the report, and its manifest record naming suite and file.
+    private void WriteRun(string runId, string status, string stepStatus)
+    {
+        var run = Path.Combine(_solution, "TestResults", runId);
+        var uat = Directory.CreateDirectory(Path.Combine(run, "suites", "testhost", "uat")).FullName;
+        File.WriteAllText(Path.Combine(uat, "shelf__One__result.json"), $$"""
+            { "scenario": "One", "file": "Features/shelf.feature.md", "line": 3, "status": "{{status}}", "durationMs": 12,
+              "steps": [ { "line": 6, "file": "Features/shelf.feature.md", "callLine": null, "status": "{{stepStatus}}", "message": null } ] }
+            """);
+        File.WriteAllText(Path.Combine(run, "manifest.json"), $$"""
+            { "RunId": "{{runId}}", "Suites": [ { "Name": "testhost", "Artifacts": [ {
+                "Kind": "uat-scenario", "Name": "One", "Path": "suites\\testhost\\uat\\shelf__One__result.json", "Reason": "{{status}}", "Status": "{{status}}",
+                "CreatedAtUtc": "2026-01-01T00:00:00Z", "Metadata": { "suite": "Shelf.Steps", "file": "Features/shelf.feature.md", "line": "3" } } ] } ] }
+            """);
+        File.SetLastWriteTimeUtc(Path.Combine(run, "manifest.json"), DateTime.UtcNow.AddMinutes(runId.EndsWith("older1", StringComparison.Ordinal) ? -10 : 0));
     }
 
     private Task<InitializeResult> InitializeAsync(JsonRpc client)

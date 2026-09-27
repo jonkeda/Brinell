@@ -51,6 +51,7 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
         await _package.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
         _output = await CreateOutputPaneAsync();
         _server = new UatServerClient(UatServerClient.DefaultServerPath, Log);
+        _server.ResultsChanged += OnResultsChanged;
 
         _selection = await _package.GetServiceAsync(typeof(SVsShellMonitorSelection)) as IVsMonitorSelection;
         Assumes.Present(_selection);
@@ -181,6 +182,11 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
             var preview = await _server.PreviewAsync(path, _suites.TryGetValue(path, out var suite) ? suite : null, _package.DisposalToken);
             await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
             preview["type"] = "update";
+            if ((string?)preview["resultsHost"] is { } host && (string?)preview["resultsRoot"] is { } root)
+            {
+                _view.MapResults(host, root);
+            }
+
             _view.Post(preview);
             if (_textView is { } view)
             {
@@ -243,10 +249,22 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
                 view.Caret.MoveTo(start);
                 view.ViewScroller.EnsureSpanVisible(new SnapshotSpan(start, 0), EnsureSpanVisibleOptions.AlwaysCenter);
                 break;
+            case "openScreenshot" when (string?)message["path"] is { } screenshot && File.Exists(screenshot):
+                VsShellUtilities.OpenDocument(_package, screenshot);
+                break;
             case "pickSuite" when _path is { } path && (string?)message["suite"] is { } suite:
                 _suites[path] = suite;
                 _package.JoinableTaskFactory.RunAsync(RefreshAsync).FileAndForget("Brinell/PreviewPickSuite");
                 break;
+        }
+    }
+
+    // A run wrote results for the file on show: draw them.
+    private void OnResultsChanged(object sender, string path)
+    {
+        if (string.Equals(path, _path, StringComparison.OrdinalIgnoreCase))
+        {
+            _package.JoinableTaskFactory.RunAsync(RefreshAsync).FileAndForget("Brinell/PreviewResults");
         }
     }
 

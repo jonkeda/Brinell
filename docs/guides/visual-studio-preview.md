@@ -32,6 +32,10 @@ To install it for everyday use, open `tools\Brinell.Uat.VisualStudio\bin\Debug\n
   suite is built, the preview parses only; build the solution and it binds.
 - A file linked into several suites (AD-014) has a suite picker in the bar.
 - The colours follow Visual Studio's theme, including high contrast.
+- After a run (Test Explorer or `dotnet test`), each step shows its status, the scenario its
+  result and duration, and a failed step its message and the screenshot taken then; click the
+  thumbnail to open it. The preview finds the newest run of each scenario through the runs'
+  `TestResults/<run-id>/manifest.json`, and refreshes when a run writes one.
 
 The extension starts `dotnet Server\Brinell.Uat.LanguageServer.dll` from its own folder; its log is
 the **Brinell UAT** pane of the Output window.
