@@ -89,6 +89,17 @@ by its path below the `Features` folder.
 The extension starts `dotnet Server\Brinell.Uat.LanguageServer.dll` from its own folder; its log is
 the **Brinell UAT** pane of the Output window.
 
+## In The Editor
+
+Feature files, step files and the suite configs (`uat.config.md`, `bdd.config.md`) open in the
+Markdown editor with a language server of their own, the same `Brinell.Uat.LanguageServer`:
+
+- **Diagnostics.** The gate's problems show as squiggles and in the Error List, word for word as
+  the xUnit gate and `brinell-data validate` report them: the open file as you type, the whole suite
+  on save and after a build. A problem inside a callable shows at the call, with the steps it went
+  through. A step that failed in the last run is an error at its line (`UATRUN`), with the failure's
+  message.
+
 ## Without Visual Studio
 
 The server renders one file as a page, for a look or a bug report (from the Brinell root, after

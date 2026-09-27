@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Diagnostics in the editor (Visual Studio, `Brinell.Uat.LanguageServer`): feature, step and config
+  files get the `brinell-uat` content type (derived from Markdown) and an LSP client. The server
+  publishes the gate's diagnostics word for word: the open file after a pause in typing, and every
+  file of its suites on save and after a build. A step that failed in the last run is a `UATRUN`
+  error at its line. `UatFileAnalysis` (`Brinell.Uat.Preview`) is the one check the preview and the
+  server share. The server only computes diagnostics for a client that declares it takes them.
 - Debug from the preview (Visual Studio): **Debug** beside each **Run** and **Debug file** beside
   **Run file** run with `VSTEST_HOST_DEBUG` and attach Visual Studio's debugger to the testhost; a
   failed attach cancels the run. Step breakpoints are toggled by clicking a step's keyword in the

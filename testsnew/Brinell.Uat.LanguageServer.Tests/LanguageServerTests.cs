@@ -14,6 +14,7 @@ public sealed class LanguageServerTests : IAsyncLifetime
     private JsonRpc _client = null!;
     private JsonRpc _serverRpc = null!;
     private readonly TaskCompletionSource<string> _resultsChanged = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly PublishedDiagnostics _published = new();
 
     private string Shelf => Path.Combine(_solution, "Shelf.Steps");
 
@@ -52,6 +53,7 @@ public sealed class LanguageServerTests : IAsyncLifetime
         var formatter = new SystemTextJsonFormatter { JsonSerializerOptions = { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase } };
         _client = new JsonRpc(new HeaderDelimitedMessageHandler(clientStream, clientStream, formatter));
         _client.AddLocalRpcMethod("brinell/resultsChanged", new Action<string>(uri => _resultsChanged.TrySetResult(uri)));
+        _client.AddLocalRpcTarget(_published, new JsonRpcTargetOptions { UseSingleObjectParameterDeserialization = true });
         _client.StartListening();
         return Task.CompletedTask;
     }
@@ -78,7 +80,8 @@ public sealed class LanguageServerTests : IAsyncLifetime
     {
         var result = await InitializeAsync(_client);
 
-        Assert.Equal(1, result.Capabilities.TextDocumentSync);
+        Assert.Equal(1, result.Capabilities.TextDocumentSync.Change);
+        Assert.True(result.Capabilities.TextDocumentSync.OpenClose);
         Assert.Equal(["Shelf.Steps", "Shelf.Web"], result.Suites.Select(suite => suite.Name).Order());
     }
 
@@ -252,8 +255,84 @@ public sealed class LanguageServerTests : IAsyncLifetime
         Assert.Contains("Build the UAT project first", target.Reason);
     }
 
-    private Task<InitializeResult> InitializeAsync(JsonRpc client)
-        => client.InvokeWithParameterObjectAsync<InitializeResult>("initialize", new { processId = (int?)null, initializationOptions = new { solutionDir = _solution } });
+    [Fact]
+    public async Task AnOpenFile_GetsTheGatesDiagnostics_AtTheStepsLine()
+    {
+        Build();
+        await InitializeAsync(_client, editor: true);
+        var uri = new Uri(Feature).AbsoluteUri;
+
+        await _client.NotifyWithParameterObjectAsync("textDocument/didOpen", new
+        {
+            textDocument = new { uri, version = 1, text = "# Feature: Shelf\n\n## Scenario: One\n\n```gherkin\n  When I dust the shelf\n```\n" },
+        });
+        var published = await _published.WaitAsync(uri, diagnostics => diagnostics.Count > 0);
+
+        var diagnostic = Assert.Single(published.Diagnostics, d => d.Code == "UATB001");
+        Assert.Equal(1, diagnostic.Severity);
+        Assert.Equal("Brinell UAT", diagnostic.Source);
+        Assert.Equal(new Range(new Position(5, 2), new Position(5, 23)), diagnostic.Range);
+        Assert.Equal(1, published.Version);
+    }
+
+    [Fact]
+    public async Task FixingTheStep_ClearsItsDiagnostic()
+    {
+        Build();
+        await InitializeAsync(_client, editor: true);
+        var uri = new Uri(Feature).AbsoluteUri;
+        await _client.NotifyWithParameterObjectAsync("textDocument/didOpen", new { textDocument = new { uri, version = 1, text = "# Feature: Shelf\n\n## Scenario: One\n\n```gherkin\nWhen I dust the shelf\n```\n" } });
+        await _published.WaitAsync(uri, diagnostics => diagnostics.Count > 0);
+
+        await _client.NotifyWithParameterObjectAsync("textDocument/didChange", new
+        {
+            textDocument = new { uri, version = 2 },
+            contentChanges = new[] { new { text = File.ReadAllText(Feature) } },
+        });
+
+        Assert.Empty((await _published.WaitAsync(uri, diagnostics => diagnostics.Count == 0)).Diagnostics);
+    }
+
+    [Fact]
+    public async Task Save_ChecksTheWholeSuite_ClosedFilesToo()
+    {
+        Build();
+        var other = Path.Combine(Shelf, "Features", "other.feature.md");
+        File.WriteAllText(other, "# Feature: Other\n\n## Scenario: Two\n\n```gherkin\nWhen I lose the shelf\n```\n");
+        await InitializeAsync(_client, editor: true);
+
+        await _client.NotifyWithParameterObjectAsync("textDocument/didSave", new { textDocument = new { uri = new Uri(Feature).AbsoluteUri } });
+
+        var published = await _published.WaitAsync(new Uri(other).AbsoluteUri, diagnostics => diagnostics.Count > 0);
+        Assert.Contains(published.Diagnostics, d => d.Code == "UATB001" && d.Range.Start.Line == 5);
+        Assert.Null(published.Version);
+    }
+
+    [Fact]
+    public async Task AStepThatFailedInTheLastRun_IsAnErrorAtItsLine()
+    {
+        Build();
+        File.WriteAllText(Path.Combine(_solution, "Shelf.sln"), string.Empty);
+        WriteRun("20260104-000000-failed", "failed", "Failed");
+        await InitializeAsync(_client, editor: true);
+        var uri = new Uri(Feature).AbsoluteUri;
+
+        await _client.NotifyWithParameterObjectAsync("textDocument/didOpen", new { textDocument = new { uri, version = 1, text = File.ReadAllText(Feature) } });
+
+        var published = await _published.WaitAsync(uri, diagnostics => diagnostics.Count > 0);
+        var failed = Assert.Single(published.Diagnostics);
+        Assert.Equal("UATRUN", failed.Code);
+        Assert.Equal(5, failed.Range.Start.Line);
+        Assert.StartsWith("Failed in the last run of 'One'", failed.Message);
+    }
+
+    private Task<InitializeResult> InitializeAsync(JsonRpc client, bool editor = false)
+        => client.InvokeWithParameterObjectAsync<InitializeResult>("initialize", new
+        {
+            processId = (int?)null,
+            initializationOptions = new { solutionDir = _solution },
+            capabilities = editor ? new { textDocument = new { publishDiagnostics = new { } } } : null,
+        });
 
     private Task<PreviewResult> PreviewAsync(string? suite = null)
         => _client.InvokeWithParameterObjectAsync<PreviewResult>("brinell/preview", new { uri = new Uri(Feature).AbsoluteUri, suite });
@@ -305,5 +384,51 @@ public sealed class ShelfSteps : BddStepDefinitionsBase
     [BddWhen("I shelve {title}")]
     public void Shelve(string title)
     {
+    }
+}
+
+/// <summary>The diagnostics the server publishes, per file, as an editor's LSP client takes them.</summary>
+public sealed class PublishedDiagnostics
+{
+    private readonly object _gate = new();
+    private readonly Dictionary<string, PublishDiagnosticsParams> _latest = [];
+    private event Action? Published;
+
+    [JsonRpcMethod("textDocument/publishDiagnostics")]
+    public void Publish(PublishDiagnosticsParams published)
+    {
+        lock (_gate)
+        {
+            _latest[published.Uri] = published;
+        }
+
+        Published?.Invoke();
+    }
+
+    /// <summary>The file's latest diagnostics once they meet the condition.</summary>
+    public async Task<PublishDiagnosticsParams> WaitAsync(string uri, Func<IReadOnlyList<Diagnostic>, bool> condition)
+    {
+        var met = new TaskCompletionSource<PublishDiagnosticsParams>(TaskCreationOptions.RunContinuationsAsynchronously);
+        void Check()
+        {
+            lock (_gate)
+            {
+                if (_latest.TryGetValue(uri, out var latest) && condition(latest.Diagnostics))
+                {
+                    met.TrySetResult(latest);
+                }
+            }
+        }
+
+        Published += Check;
+        try
+        {
+            Check();
+            return await met.Task.WaitAsync(TimeSpan.FromSeconds(20));
+        }
+        finally
+        {
+            Published -= Check;
+        }
     }
 }

@@ -37,8 +37,7 @@ internal sealed partial class UatPreviewWriter
         _filePath = filePath;
         _options = options;
         _lines = text.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n');
-        _isSteps = filePath.EndsWith(UatFileFormat.StepsExtension, StringComparison.OrdinalIgnoreCase) ||
-                   filePath.EndsWith(".phrases.md", StringComparison.OrdinalIgnoreCase);
+        _isSteps = UatFileAnalysis.IsStepFile(filePath);
     }
 
     public UatPreviewResult Write()
@@ -70,31 +69,11 @@ internal sealed partial class UatPreviewWriter
 
     private void Parse()
     {
-        if (UatFileFormat.NewFileName(_filePath) is { } renamed)
+        var analysis = UatFileAnalysis.Analyze(_text, _filePath, _options.Catalogs);
+        _diagnostics.AddRange(analysis.Diagnostics);
+        if (_options.Catalogs is { } catalogs)
         {
-            _diagnostics.Add(new UatDiagnostic(
-                UatDiagnosticSeverity.Error,
-                UatFileFormat.OldFormCode,
-                $"'{Path.GetFileName(_filePath)}' is the old name of '{Path.GetFileName(renamed)}'. Run 'brinell-data validate --fix' to rename it.",
-                new UatSourceLocation(_filePath, 1)));
-        }
-
-        if (_options.Catalogs is not { } catalogs)
-        {
-            _diagnostics.AddRange(_isSteps
-                ? UatMarkdownParser.ParsePhrases(_text, _filePath).Diagnostics
-                : UatMarkdownParser.Parse(_text, _filePath).Diagnostics);
-        }
-        else if (_isSteps)
-        {
-            _diagnostics.AddRange(UatScenarioFiles.CheckPhrases(UatScenarioFiles.ParsePhrases(_filePath, _text), catalogs));
-        }
-        else
-        {
-            // The gate's own check, so a step shows the words the gate would fail with.
-            var check = UatScenarioFiles.Load(_filePath, _text).Check(catalogs);
-            _diagnostics.AddRange(check.Diagnostics);
-            _binding.Add(check.Bind?.Scenarios ?? [], catalogs);
+            _binding.Add(analysis.Scenarios, catalogs);
         }
 
         // Only this file's lines are placed; another file's problem (a step file it sees) goes at the top.

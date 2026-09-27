@@ -9,7 +9,11 @@ namespace Brinell.Uat.LanguageServer;
 public sealed record InitializeParams(
     int? ProcessId,
     string? RootUri,
-    InitializationOptions? InitializationOptions);
+    InitializationOptions? InitializationOptions)
+{
+    /// <summary>What the client can do; the editor's LSP client says it takes diagnostics, the preview's does not.</summary>
+    public JsonElement? Capabilities { get; init; }
+}
 
 /// <summary>What the client tells the server beyond LSP's own fields.</summary>
 /// <param name="SolutionDir">The folder whose suites the server serves.</param>
@@ -18,9 +22,18 @@ public sealed record InitializationOptions(string? SolutionDir);
 /// <summary>The server's answer to <c>initialize</c>: LSP capabilities, and the suites it found.</summary>
 public sealed record InitializeResult(ServerCapabilities Capabilities, ServerInfo ServerInfo, IReadOnlyList<SuiteInfo> Suites);
 
-/// <summary>LSP capabilities: full-text document sync for now.</summary>
-/// <param name="TextDocumentSync">1: the client sends the whole text on each change.</param>
-public sealed record ServerCapabilities(int TextDocumentSync);
+/// <summary>LSP capabilities.</summary>
+/// <param name="TextDocumentSync">Open and close, the whole text on each change, and save.</param>
+public sealed record ServerCapabilities(TextDocumentSyncOptions TextDocumentSync);
+
+/// <summary>LSP text document sync options.</summary>
+/// <param name="OpenClose">Whether the client sends open and close.</param>
+/// <param name="Change">1: the whole text on each change.</param>
+/// <param name="Save">Whether the client sends save.</param>
+public sealed record TextDocumentSyncOptions(bool OpenClose, int Change, SaveOptions Save);
+
+/// <summary>LSP save options: the server reads a saved file itself.</summary>
+public sealed record SaveOptions(bool IncludeText);
 
 /// <summary>LSP server info.</summary>
 public sealed record ServerInfo(string Name, string Version);
@@ -51,6 +64,29 @@ public sealed record DidCloseTextDocumentParams(TextDocumentIdentifier TextDocum
 
 /// <summary>LSP document id.</summary>
 public sealed record TextDocumentIdentifier(string Uri);
+
+/// <summary>LSP <c>textDocument/didSave</c>.</summary>
+public sealed record DidSaveTextDocumentParams(TextDocumentIdentifier TextDocument);
+
+/// <summary>LSP position: 0-based line and character.</summary>
+public sealed record Position(int Line, int Character);
+
+/// <summary>LSP range, end exclusive.</summary>
+public sealed record Range(Position Start, Position End);
+
+/// <summary>LSP location.</summary>
+public sealed record Location(string Uri, Range Range);
+
+/// <summary>LSP diagnostic.</summary>
+/// <param name="Range">Where: the line's text.</param>
+/// <param name="Severity">1 error, 2 warning, 3 information.</param>
+/// <param name="Code">The gate's code (<c>UATB010</c>), or <c>UATRUN</c> for a step that failed in the last run.</param>
+/// <param name="Source">Always <c>Brinell UAT</c>.</param>
+/// <param name="Message">The gate's text, word for word.</param>
+public sealed record Diagnostic(Range Range, int Severity, string Code, string Source, string Message);
+
+/// <summary>LSP <c>textDocument/publishDiagnostics</c>: every diagnostic of a file, replacing the last.</summary>
+public sealed record PublishDiagnosticsParams(string Uri, int? Version, IReadOnlyList<Diagnostic> Diagnostics);
 
 /// <summary><c>brinell/preview</c>: a file, and the suite to bind it in when it is linked into several.</summary>
 public sealed record PreviewParams(string Uri, string? Suite);

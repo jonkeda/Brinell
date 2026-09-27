@@ -10,7 +10,7 @@ namespace Brinell.Uat.LanguageServer;
 /// belongs to the suites whose project holds or links it (AD-014); the client picks one when there
 /// are several. Until a suite is built, its files are parsed only, and the preview says why.
 /// </summary>
-public sealed class UatLanguageServer : IDisposable
+public sealed partial class UatLanguageServer : IDisposable
 {
     private readonly object _gate = new();
     private readonly Dictionary<string, (int Version, string Text)> _documents = new(StringComparer.OrdinalIgnoreCase);
@@ -55,8 +55,9 @@ public sealed class UatLanguageServer : IDisposable
             _workspace = UatWorkspace.Open(root);
             _results = new UatRunResults(UatRunResults.RootFor(_workspace.Root));
             WatchResults(_results.Root);
+            _publishes = ClientTakesDiagnostics(request.Capabilities);
             return new InitializeResult(
-                new ServerCapabilities(TextDocumentSync: 1),
+                Capabilities(),
                 new ServerInfo("Brinell.Uat.LanguageServer", typeof(UatLanguageServer).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "0"),
                 _workspace.Suites.Select(Info).ToList());
         }
@@ -88,6 +89,8 @@ public sealed class UatLanguageServer : IDisposable
         {
             _documents[Key(request.TextDocument.Uri)] = (request.TextDocument.Version, request.TextDocument.Text);
         }
+
+        ScheduleDiagnostics(Key(request.TextDocument.Uri));
     }
 
     /// <summary>LSP <c>textDocument/didChange</c>, full sync.</summary>
@@ -103,6 +106,8 @@ public sealed class UatLanguageServer : IDisposable
         {
             _documents[Key(request.TextDocument.Uri)] = (request.TextDocument.Version, request.ContentChanges[^1].Text);
         }
+
+        ScheduleDiagnostics(Key(request.TextDocument.Uri));
     }
 
     /// <summary>LSP <c>textDocument/didClose</c>.</summary>
@@ -113,7 +118,14 @@ public sealed class UatLanguageServer : IDisposable
         {
             _documents.Remove(Key(request.TextDocument.Uri));
         }
+
+        // The saved text is what counts now, for the Error List.
+        ScheduleDiagnostics(Key(request.TextDocument.Uri));
     }
+
+    /// <summary>LSP <c>textDocument/didSave</c>: the file's suites are checked whole, since a saved step file changes what every feature file binds to.</summary>
+    [JsonRpcMethod("textDocument/didSave")]
+    public void DidSave(DidSaveTextDocumentParams request) => PublishSuitesOf([Key(request.TextDocument.Uri)]);
 
     /// <summary><c>brinell/buildDone</c>: the solution was built, so every suite loads its new output on next use.</summary>
     [JsonRpcMethod("brinell/buildDone")]
@@ -123,6 +135,14 @@ public sealed class UatLanguageServer : IDisposable
         {
             _workspace?.Reload();
         }
+
+        List<string> open;
+        lock (_gate)
+        {
+            open = [.. _documents.Keys];
+        }
+
+        PublishSuitesOf(open);
     }
 
     /// <summary><c>brinell/previewHost</c>: the page the client's webview loads once; <c>brinell/preview</c> fills it.</summary>
@@ -133,52 +153,23 @@ public sealed class UatLanguageServer : IDisposable
     [JsonRpcMethod("brinell/preview")]
     public PreviewResult Preview(PreviewParams request)
     {
-        var path = Key(request.Uri);
-        (int Version, string Text) document;
-        UatSuite? suite;
-        IReadOnlyList<UatSuite> suites;
-        lock (_gate)
-        {
-            document = _documents.TryGetValue(path, out var open) ? open : (0, File.ReadAllText(path));
-            suites = Order(path, _workspace?.SuitesFor(path) ?? []);
-            suite = suites.FirstOrDefault(candidate => string.Equals(candidate.Name, request.Suite, StringComparison.OrdinalIgnoreCase))
-                ?? suites.FirstOrDefault();
-        }
-
-        string? reason = null;
-        var catalogs = suite is null
-            ? null
-            : suite.TryGetCatalogs(out reason);
-        reason = catalogs is not null
-            ? null
-            : suite is null
-                ? $"No suite holds or links this file: no project with a {UatFileFormat.UiConfigFileName} or {UatFileFormat.ServiceConfigFileName} under {_workspace?.Root ?? "the solution"} has it."
-                : reason;
+        var file = Context(Key(request.Uri), request.Suite);
         var results = _results;
-        IReadOnlyDictionary<string, Brinell.Uat.Preview.UatScenarioRun> runs = new Dictionary<string, Brinell.Uat.Preview.UatScenarioRun>();
-        if (suite is not null && results is not null && path.EndsWith(UatFileFormat.FeatureExtension, StringComparison.OrdinalIgnoreCase))
+        var result = UatPreview.Render(file.Text, file.Path, new UatPreviewOptions
         {
-            lock (results)
-            {
-                runs = results.For(suite.Name, path);
-            }
-        }
-
-        var result = UatPreview.Render(document.Text, path, new UatPreviewOptions
-        {
-            Catalogs = catalogs,
-            ParseOnlyReason = reason,
-            Runs = runs,
+            Catalogs = file.Catalogs,
+            ParseOnlyReason = file.Reason,
+            Runs = RunsOf(file),
             ImageUrl = image => ImageUrl(image, results?.Root),
-            Run = FileImageUrls ? null : RunState(suite, path),
+            Run = FileImageUrls ? null : RunState(file.Suite, file.Path),
         });
         return new PreviewResult(
             result.Html,
-            document.Version,
-            suites.Select(candidate => candidate.Name).ToList(),
-            suite?.Name,
-            catalogs is null ? "parse-only" : "bound",
-            reason)
+            file.Version,
+            file.Suites.Select(candidate => candidate.Name).ToList(),
+            file.Suite?.Name,
+            file.Catalogs is null ? "parse-only" : "bound",
+            file.Reason)
         {
             ResultsRoot = results?.Root,
             ResultsHost = ResultsHost,
@@ -290,6 +281,7 @@ public sealed class UatLanguageServer : IDisposable
         foreach (var path in open)
         {
             _ = _rpc?.NotifyWithParameterObjectAsync("brinell/resultsChanged", new { uri = new Uri(path).AbsoluteUri });
+            ScheduleDiagnostics(path);
         }
     }
 
@@ -302,6 +294,12 @@ public sealed class UatLanguageServer : IDisposable
             _resultsWatcher = null;
             _resultsChanged?.Dispose();
             _resultsChanged = null;
+            foreach (var timer in _pending.Values)
+            {
+                timer.Dispose();
+            }
+
+            _pending.Clear();
             _workspace?.Dispose();
             _workspace = null;
         }

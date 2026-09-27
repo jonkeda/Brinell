@@ -1,7 +1,7 @@
 # Visual Studio extension: design and implementation plan
 
-Status: **phases 1 and 2 built** (1.1-2.4); checklists 6.1-6.3 and the spike (phase 0) not run.
-Phase 3 next. Date: 2026-09-27. Updated for the Bdd renames (AD-020, AD-021):
+Status: **phases 1 and 2 built** (1.1-2.4), phase 3 in progress (3.1 built); checklists 6.1-6.3
+and the spike (phase 0) not run. Date: 2026-09-27. Updated for the Bdd renames (AD-020, AD-021):
 feature and step files, `Features/`, `Brinell.Bdd` under `Brinell.Uat`, and step definitions.
 Builds on the proposal [visualstudio-extension.md](visualstudio-extension.md) and on
 [vscode-extension.md](vscode-extension.md) for everything the two IDEs share. This plan sets the
@@ -61,6 +61,12 @@ serves is a custom request, `brinell/preview`. The LSP methods arrive in phase 3
 process. So nothing built for the preview is thrown away, and the editor phase adds handlers
 rather than a process. The extension itself stays thin: it holds no engine types, only the
 messages.
+
+As built (3.1): the editor's `ILanguageClient` starts a second process of the same server rather
+than sharing the preview's. The preview works today and has no dependency on S2. Visual Studio's
+LSP client could fail on a content type it does not like, and that must not break the preview.
+Joining them later means sending the preview's `brinell/*` requests through
+`ILanguageClientCustomMessage2`.
 
 **P3. The renderer is a library, `Brinell.Uat.Preview`.** It holds the document model and the
 catalog set, and turns them into HTML plus a stylesheet with CSS variables. It uses Markdig for
