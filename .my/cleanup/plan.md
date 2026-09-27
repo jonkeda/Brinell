@@ -1,7 +1,7 @@
 # Cleaning up `.my`: plan
 
-Status: **nearly done** (2026-09-27). Steps 1-6 and 9 are done; .my/ went from 313 files to 262,
-of which 192 are `Scraper/`. Left: step 7 (`Scraper/`, skipped for now by the owner) and
+Status: **nearly done** (2026-09-27). Steps 1-6 and 9 are done; `.my/` went from 313 files to 226,
+of which 192 are `Scraper/` (34 without it). Left: step 7 (`Scraper/`, skipped for now by the owner) and
 `uat/callable-phrases/` (it holds uncommitted work; move steps 6 and 8 into
 `uat/phrases/phrase-scopes-and-composition.md` and delete it once that work is committed).
 `construction/` stays in Brinell (step 8: the owner chose not to move it).
