@@ -22,7 +22,7 @@ public static partial class ScenarioCatalog
     {
         var folder = Path.Combine(AppContext.BaseDirectory, Folder);
         return Directory.Exists(folder)
-            ? [.. Directory.EnumerateFiles(folder, "*.uat.md", SearchOption.AllDirectories).Order(StringComparer.Ordinal).SelectMany(Read)]
+            ? [.. Directory.EnumerateFiles(folder, "*.feature.md", SearchOption.AllDirectories).Order(StringComparer.Ordinal).SelectMany(Read)]
             : throw new DirectoryNotFoundException($"No scenario files at {folder}; the project links them from the UAT suites.");
     }
 
@@ -32,7 +32,7 @@ public static partial class ScenarioCatalog
     {
         var document = UatMarkdownParser.ParseFile(filePath).Document
             ?? throw new InvalidOperationException($"{filePath} does not parse; the UAT suites report why.");
-        var file = Path.GetFileName(filePath).Replace(".uat.md", string.Empty, StringComparison.Ordinal);
+        var file = Path.GetFileName(filePath).Replace(".feature.md", string.Empty, StringComparison.Ordinal);
 
         foreach (var scenario in document.Scenarios)
         {

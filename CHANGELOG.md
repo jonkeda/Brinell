@@ -202,6 +202,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Request/response recording
 
 ### Changed
+- Feature and step files use the BDD words (D5 of the Bdd plan), with no period where both are
+  read: `*.uat.md` is `*.feature.md` with `# Feature:`, `*.phrases.md` is `*.steps.md` with
+  `# Steps:`, and `## Phrase:` / `## Phrase for each row:` are `## Step:` / `## Step for each row:`.
+  An old heading or file name is `UAT029`; `brinell-data validate --fix` renames the file and
+  rewrites its headings. A service suite's config is `bdd.config.md`; `uat.config.md` stays for
+  UI suites, and the tools read either.
 - Step attributes use the BDD words (D3 of the Bdd plan), with no aliases: `[UatGiven]`/`[UatWhen]`/
   `[UatThen]` are `[BddGiven]`/`[BddWhen]`/`[BddThen]`, `UatPhraseAttribute` is `BddStepAttribute`,
   `[UatPhraseClass]` is `[BddStepDefinitions]`, `UatPhraseClassBase` is `BddStepDefinitionsBase` and

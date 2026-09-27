@@ -47,7 +47,7 @@ public sealed record UatDocument(
     IReadOnlyList<UatScenario> Scenarios,
     UatSourceLocation Source)
 {
-    /// <summary>The file's own callable phrases (<c>## Phrase:</c> sections).</summary>
+    /// <summary>The file's own callable phrases (<c>## Step:</c> sections).</summary>
     public IReadOnlyList<UatCallable> Callables { get; init; } = [];
 }
 

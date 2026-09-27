@@ -6,7 +6,7 @@ Area: a new `tools/Brinell.Uat.VsCode` (TypeScript client) and `tools/Brinell.Ua
 
 ## 1. Goal
 
-A tester or developer writes, reads and runs `.uat.md` scenarios in VS Code with the help an IDE
+A tester or developer writes, reads and runs `.feature.md` scenarios in VS Code with the help an IDE
 gives C#: completion from the real phrase catalog, errors while typing, click-through to the code
 a step runs, a readable preview, and run and debug from the scenario itself.
 
@@ -25,7 +25,7 @@ Three rules shape everything below:
 
 | Piece | Where | Gives the extension |
 | --- | --- | --- |
-| `UatMarkdownParser` | `Brinell.Uat` | the document model with line numbers, `UAT0xx` codes, `*.phrases.md` |
+| `UatMarkdownParser` | `Brinell.Uat` | the document model with line numbers, `UAT0xx` codes, `*.steps.md` |
 | `UatCatalogSet`, `UatCommandCatalog` | `Brinell.Uat` | every phrase per head and keyword, with the declaring method, parameters and types |
 | `UatBinder`, `UatPreparedCallables` | `Brinell.Uat` | binding with `UATB0xx`/`UATA0xx`/`UATC0xx`, callable frames (`UatCallFrame`) |
 | `UatValues` | `Brinell.Uat` | value reading and the one-right-answer fixes |
@@ -67,7 +67,7 @@ VS Code
 
 ## 4. The scenario editor
 
-The extension adds language features to Markdown files named `*.uat.md` and `*.phrases.md`
+The extension adds language features to Markdown files named `*.feature.md` and `*.steps.md`
 (and `uat.config.md`, section 8). The built-in Markdown features stay.
 
 ### 4.1 While typing
@@ -75,7 +75,7 @@ The extension adds language features to Markdown files named `*.uat.md` and `*.p
 | Feature | What it does |
 | --- | --- |
 | Diagnostics | Every `UAT0xx`, `UATB0xx`, `UATA0xx`, `UATC0xx` at its line and column, with the same text as the gate. A problem inside a callable call is shown at the call, with the body step it came through as related information. |
-| Completion: keywords and sections | `Given`/`When`/`Then`/`And`/`But`; `## Scenario:`, `## Scenario Outline:` with an `### Examples` table, `## Background`, `## Data:`, `## Phrase:`, `## Phrase for each row:`, `## Metadata` with its known fields. |
+| Completion: keywords and sections | `Given`/`When`/`Then`/`And`/`But`; `## Scenario:`, `## Scenario Outline:` with an `### Examples` table, `## Background`, `## Data:`, `## Step:`, `## Step for each row:`, `## Metadata` with its known fields. |
 | Completion: phrases | The phrases of the step's effective keyword, from the suite's catalog, C# and callable alike. Typing filters by words, not just by prefix (`tap sav` finds `I tap {control}` with `Save`). Snippet placeholders for each `{x}`. |
 | Completion: values | `{page}`: page names. `{control}`: the controls of the page the scenario is on at that line, then the rest; exact once static page tracking exists. `{user}`/`{app}`: the `Apps` table. Enum parameters: member names. Dates: `today`, `+2d`. `TestData`: test set names. Table columns for record parameters. `<column>` in an outline: the Examples columns. |
 | Hover | The phrase, the method it binds to (`TodoListPage.AddButton` → `Click`), the XML `<summary>`, each argument with its type and the value as read (`+2d` → `29-Sep-2026`). For a callable call: its steps with the values filled in. |
@@ -90,7 +90,7 @@ The extension adds language features to Markdown files named `*.uat.md` and `*.p
 | --- | --- | --- |
 | A step bound to a C# phrase | the method (`[UatWhen]` on a phrase class, a page-object method, a control verb) | every step in the suite that binds to it |
 | `{control}` / `{page}` value | the page-object property or page class | every step that names it |
-| A step bound to a callable | the `## Phrase:` heading | every call |
+| A step bound to a callable | the `## Step:` heading | every call |
 | A `<x>` in a callable body | the heading's `{x}` | - |
 | `TestData` value | the test set's file | scenarios that use it |
 | A `@tag` | - | scenarios with the tag |
@@ -107,8 +107,8 @@ name, which C# Dev Kit answers.
   match, a missing Examples column).
 - **Create phrase** for an unknown step: inserts the `brinell-data snippet` C# stub into a phrase
   class the developer picks. Generates text only; it never compiles or edits a page object.
-- **Extract phrase** from selected steps: turns them into a `## Phrase:` in the file or in
-  `Scenarios/*.phrases.md`, with `{x}` for the values that differ, and replaces the steps with a
+- **Extract phrase** from selected steps: turns them into a `## Step:` in the file or in
+  `Scenarios/*.steps.md`, with `{x}` for the values that differ, and replaces the steps with a
   call. Refuses a selection with steps whose meaning depends on the page it would move away from.
 - **Inline phrase**: the reverse, for one call.
 - **Rename** a callable's heading and all its calls.
@@ -119,7 +119,7 @@ The built-in Markdown preview, extended rather than replaced, so scenarios keep 
 Markdown and the preview keeps working with every other extension.
 
 - **A markdown-it plugin** (`markdown.markdownItPlugins`) renders a ```` ```gherkin ```` fence
-  (and a fence in a `.uat.md` file with no language) as a scenario block, not as code: one step
+  (and a fence in a `.feature.md` file with no language) as a scenario block, not as code: one step
   per line, the keyword in a fixed-width gutter, the step text in a readable proportional font,
   arguments and quoted values coloured, tables as real tables, doc strings as quoted blocks,
   `<table>` and `<doc string>` as small badges.
@@ -164,7 +164,7 @@ last result.
 
 | DAP concept | In a scenario |
 | --- | --- |
-| Breakpoint | a step line (also inside a callable body or a `*.phrases.md` file) |
+| Breakpoint | a step line (also inside a callable body or a `*.steps.md` file) |
 | Step over | run the next step |
 | Step into | into a callable call, one body step at a time; on a C# phrase, into C# (below) |
 | Step out | finish the callable |

@@ -11,7 +11,7 @@ its own words where Cucumber has no equivalent.
 | step-definition class | binding class | a class with `[BddStepDefinitions]` or deriving from `BddStepDefinitionsBase`; discovered from the fixture's `TestComposition` scan |
 | step text, `{placeholder}` | step text, Cucumber expression | a strict subset: no optional text, no alternatives (AD-016) |
 | fixture | (context injection, `ScenarioContext`) | xUnit's word |
-| callable step (`## Phrase:` today) | (none) | a Markdown sequence of steps with parameters (AD-017) |
+| callable step (`## Step:`) | (none) | a Markdown sequence of steps with parameters (AD-017) |
 | control verb | (none) | a step declared on a control method (`I tap {control}`) |
 | page phrase | (closest: a page-object step definition) | a step declared on a page object, valid on that page only |
 | head | (none) | the driver a feature runs through: `maui`, `web`, `mixed`, `service` |

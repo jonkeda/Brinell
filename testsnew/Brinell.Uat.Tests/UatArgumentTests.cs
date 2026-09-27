@@ -269,7 +269,7 @@ public sealed class UatArgumentTests
     }
 
     private static string Document(string steps) => $"""
-        # UAT: Arguments
+        # Feature: Arguments
 
         ## Scenario: Arguments
 

@@ -5,10 +5,57 @@ namespace Brinell.Uat.Tests;
 public sealed class UatMarkdownParserTests
 {
     [Fact]
+    public void Parse_OldHeadings_AreOneErrorEach_AndTheRestOfTheFileIsStillRead()
+    {
+        var result = UatMarkdownParser.Parse("""
+            # UAT: Login
+
+            ## Phrase: a sign-in
+
+            When I sign in
+
+            ## Scenario: Sign in
+
+            When a sign-in
+            """);
+
+        Assert.Equal(
+            ["'# UAT: Login' is the old form of '# Feature: Login'", "'## Phrase: a sign-in' is the old form of '## Step: a sign-in'"],
+            result.Diagnostics.Select(x => x.Message[..x.Message.IndexOf(". Run", StringComparison.Ordinal)]));
+        Assert.All(result.Diagnostics, x => Assert.Equal("UAT029", x.Code));
+        Assert.Equal("Login", result.Document!.Title);
+        Assert.Single(result.Document.Callables);
+        Assert.Single(result.Document.Scenarios);
+    }
+
+    [Fact]
+    public void ParsePhrases_OldHeading_IsAnError()
+    {
+        var result = UatMarkdownParser.ParsePhrases("# Phrases: Todo\n\n## Step: one\n\nWhen I sync\n");
+
+        Assert.Equal("UAT029", Assert.Single(result.Diagnostics).Code);
+    }
+
+    [Theory]
+    [InlineData("a/b/TOD.01.uat.md", "a/b/TOD.01.feature.md")]
+    [InlineData("Todo.phrases.md", "Todo.steps.md")]
+    [InlineData("TOD.01.feature.md", null)]
+    public void FileFormat_NewFileName(string path, string? expected) =>
+        Assert.Equal(expected, UatFileFormat.NewFileName(path));
+
+    [Fact]
+    public void FileFormat_RewriteHeadings_KeepsLineEndingsAndOtherLines()
+    {
+        var (text, count) = UatFileFormat.RewriteHeadings("# UAT: T\r\n\r\n## Phrase for each row: x\r\nWhen # UAT: stays\r\n");
+
+        Assert.Equal(2, count);
+        Assert.Equal("# Feature: T\r\n\r\n## Step for each row: x\r\nWhen # UAT: stays\r\n", text);
+    }
+    [Fact]
     public void Parse_SimpleScenarioWithMetadataAndTable_ReturnsDocument()
     {
         var markdown = """
-            # UAT: Login
+            # Feature: Login
 
             ## Metadata
 
@@ -31,7 +78,7 @@ public sealed class UatMarkdownParserTests
             Then I should see "Welcome Ada"
             """;
 
-        var result = UatMarkdownParser.Parse(markdown, "login.uat.md");
+        var result = UatMarkdownParser.Parse(markdown, "login.feature.md");
 
         Assert.True(result.Success, FormatDiagnostics(result));
         Assert.NotNull(result.Document);
@@ -52,7 +99,7 @@ public sealed class UatMarkdownParserTests
     public void Parse_ScenarioOutline_ExpandsExamplesIntoScenarios()
     {
         var markdown = """
-            # UAT: Login
+            # Feature: Login
 
             ## Scenario Outline: Login result is shown
 
@@ -89,7 +136,7 @@ public sealed class UatMarkdownParserTests
     public void Parse_Background_PrependsSharedSetupModel()
     {
         var markdown = """
-            # UAT: Settings
+            # Feature: Settings
 
             ## Background
 
@@ -116,7 +163,7 @@ public sealed class UatMarkdownParserTests
     public void Parse_DefaultNamingExampleText_ParsesInferredAuthoringNames()
     {
         var markdown = """
-            # UAT: Settings
+            # Feature: Settings
 
             ## Metadata
 
@@ -151,7 +198,7 @@ public sealed class UatMarkdownParserTests
     public void Parse_StandardTemplateMetadataAndTags_ReturnsDocument()
     {
         var markdown = """
-            # UAT: Camera Actions
+            # Feature: Camera Actions
 
             ## Metadata
 
@@ -207,7 +254,7 @@ public sealed class UatMarkdownParserTests
     public void Parse_MalformedStepTable_ReturnsDiagnostic()
     {
         var markdown = """
-            # UAT: Broken
+            # Feature: Broken
 
             ## Scenario: Bad table
 
@@ -229,7 +276,7 @@ public sealed class UatMarkdownParserTests
     public void Parse_OutlineWithMissingExampleColumn_ReturnsDiagnostic()
     {
         var markdown = """
-            # UAT: Broken Outline
+            # Feature: Broken Outline
 
             ## Scenario Outline: Missing column
 
@@ -255,7 +302,7 @@ public sealed class UatMarkdownParserTests
     public void Parse_FencedSteps_ParseLikeBareSteps(string fence)
     {
         var markdown = $"""
-            # UAT: Login
+            # Feature: Login
 
             ## Scenario: Valid user can sign in
 
@@ -266,7 +313,7 @@ public sealed class UatMarkdownParserTests
             ```
             """;
 
-        var result = UatMarkdownParser.Parse(markdown, "login.uat.md");
+        var result = UatMarkdownParser.Parse(markdown, "login.feature.md");
 
         Assert.True(result.Success, FormatDiagnostics(result));
         var scenario = Assert.Single(result.Document!.Scenarios);
@@ -279,7 +326,7 @@ public sealed class UatMarkdownParserTests
     public void Parse_FencedStepsWithTable_KeepsTheTable()
     {
         var markdown = """
-            # UAT: Login
+            # Feature: Login
 
             ## Scenario: Valid user can sign in
 
@@ -292,7 +339,7 @@ public sealed class UatMarkdownParserTests
             ```
             """;
 
-        var result = UatMarkdownParser.Parse(markdown, "login.uat.md");
+        var result = UatMarkdownParser.Parse(markdown, "login.feature.md");
 
         Assert.True(result.Success, FormatDiagnostics(result));
         var scenario = Assert.Single(result.Document!.Scenarios);
@@ -305,7 +352,7 @@ public sealed class UatMarkdownParserTests
     {
         // The fence occupies line 5, so the bad step is on line 7 of the file as written.
         var markdown = """
-            # UAT: Login
+            # Feature: Login
 
             ## Scenario: Valid user can sign in
 
@@ -315,7 +362,7 @@ public sealed class UatMarkdownParserTests
             ```
             """;
 
-        var result = UatMarkdownParser.Parse(markdown, "login.uat.md");
+        var result = UatMarkdownParser.Parse(markdown, "login.feature.md");
 
         Assert.False(result.Success);
         var diagnostic = Assert.Single(result.Diagnostics, x => x.Code == "UAT011");

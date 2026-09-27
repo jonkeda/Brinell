@@ -8,7 +8,7 @@ public sealed class UatExecutionTests
     public async Task RunAsync_BoundScenario_ExecutesHandlersAndRecordsResults()
     {
         var scenario = CreateBoundScenario("""
-            # UAT: Settings
+            # Feature: Settings
 
             ## Background
 
@@ -34,7 +34,7 @@ public sealed class UatExecutionTests
     public async Task RunNextAsync_ExecutesOneStepAtATime()
     {
         var scenario = CreateBoundScenario("""
-            # UAT: Settings
+            # Feature: Settings
 
             ## Scenario: Save
 
@@ -60,7 +60,7 @@ public sealed class UatExecutionTests
     public async Task RunAsync_MissingHandler_ReturnsFailedResult()
     {
         var document = ParseValid("""
-            # UAT: Missing handler
+            # Feature: Missing handler
 
             ## Scenario: Save
 
@@ -85,7 +85,7 @@ public sealed class UatExecutionTests
     public async Task RunAsync_PreCanceledToken_ReturnsCanceledResult()
     {
         var scenario = CreateBoundScenario("""
-            # UAT: Canceled
+            # Feature: Canceled
 
             ## Scenario: Save
 
@@ -105,7 +105,7 @@ public sealed class UatExecutionTests
     public async Task RunAsync_ConfiguredSkipRule_ReturnsSkippedScenarioWithoutExecutingSteps()
     {
         var scenario = CreateBoundScenario("""
-            # UAT: Hardware
+            # Feature: Hardware
 
             @hardware
             ## Scenario: Hardware camera can capture

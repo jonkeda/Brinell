@@ -41,7 +41,7 @@ public sealed class UatScenarioCheckTests
     public void AnUnclosedDocString_IsAParseError()
     {
         var parse = UatMarkdownParser.Parse(""""
-            # UAT: Doc strings
+            # Feature: Doc strings
 
             ## Scenario: Unclosed
 
@@ -58,7 +58,7 @@ public sealed class UatScenarioCheckTests
     private static UatStep Step(string text)
     {
         var parse = UatMarkdownParser.Parse($"""
-            # UAT: Snippets
+            # Feature: Snippets
 
             ## Scenario: One step
 

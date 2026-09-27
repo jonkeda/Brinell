@@ -18,7 +18,7 @@ public sealed class UatCallableTests
         """;
 
     private const string Assigned = """
-        ## Phrase: a todo {title} for {who} with {hours} hours
+        ## Step: a todo {title} for {who} with {hours} hours
 
         ```gherkin
         When I assign <title> to <who> due 12-May-2026 for <hours> hours as Open
@@ -71,7 +71,7 @@ public sealed class UatCallableTests
         var error = Assert.Single(Bind("""
             Given a misspelled todo "Buy milk"
             """, """
-            ## Phrase: a misspelled todo {title}
+            ## Step: a misspelled todo {title}
 
             When I opn the todo <title>
             """));
@@ -86,7 +86,7 @@ public sealed class UatCallableTests
     public void ABrokenCallable_LoadsWithTheRest_AndFailsOnlyItsCalls()
     {
         const string Conflict = """
-            ## Phrase: a clash {x}
+            ## Step: a clash {x}
 
             When I assign "T" to Eva due <x> for <x> hours as Open
             """;
@@ -102,12 +102,12 @@ public sealed class UatCallableTests
     public void AnUnusedOrUnknownPlaceholder_IsBroken()
     {
         Assert.Equal("UATC001", Prepare("""
-            ## Phrase: a todo {title} and {spare}
+            ## Step: a todo {title} and {spare}
 
             When I open the todo <title>
             """).Problem?.Code);
         Assert.Equal("UATC001", Prepare("""
-            ## Phrase: a todo
+            ## Step: a todo
 
             When I open the todo <title>
             """).Problem?.Code);
@@ -117,7 +117,7 @@ public sealed class UatCallableTests
     public void ALiteralValueInTheBody_ThatDoesNotFit_IsBroken()
     {
         var prepared = Prepare("""
-            ## Phrase: a wrong todo {title}
+            ## Step: a wrong todo {title}
 
             When I assign <title> to Eva due 12-May-2026 for 8,5 hours as Open
             """);
@@ -130,7 +130,7 @@ public sealed class UatCallableTests
     public void ADeclaredType_ChecksAValueInferenceCannotSee_AndMustAgreeWithUse()
     {
         const string Declared = """
-            ## Phrase: the report of {due}
+            ## Step: the report of {due}
 
             | Parameter | Type | Example     |
             | --------- | ---- | ----------- |
@@ -144,7 +144,7 @@ public sealed class UatCallableTests
         Assert.Equal("UATA002", error.Code);
 
         Assert.Equal("UATC002", Prepare("""
-            ## Phrase: a todo {title} for {hours} hours
+            ## Step: a todo {title} for {hours} hours
 
             | Parameter | Type |
             | --------- | ---- |
@@ -154,7 +154,7 @@ public sealed class UatCallableTests
             """).Problem?.Code);
 
         Assert.Equal("UATC003", Prepare("""
-            ## Phrase: the todo {title}
+            ## Step: the todo {title}
 
             | Parameter | Type    |
             | --------- | ------- |
@@ -168,7 +168,7 @@ public sealed class UatCallableTests
     public async Task ATable_IsPassedWhole_AndABadCellIsReportedAtItsRowOfTheCall()
     {
         const string Server = """
-            ## Phrase: the server knows
+            ## Step: the server knows
 
             Given the server has todos
               <table>
@@ -207,7 +207,7 @@ public sealed class UatCallableTests
     public async Task APerRowCallable_RunsItsBodyOncePerRow()
     {
         const string PerRow = """
-            ## Phrase for each row: todos for {who}
+            ## Step for each row: todos for {who}
 
             When I assign <title> to <who> due <due> for 1 hours as Open
             """;
@@ -248,7 +248,7 @@ public sealed class UatCallableTests
     public async Task ACallableCanCallAnother_ButNotItself_AndNotTooDeep()
     {
         var (fixture, _) = await Run("Given two todos", $$"""
-            ## Phrase: two todos
+            ## Step: two todos
 
             Given a todo "One" for Eva with 1 hours
             And a todo "Two" for Bob with 2 hours
@@ -258,30 +258,30 @@ public sealed class UatCallableTests
         Assert.Equal(["One", "Two"], fixture.State.Assigned.Select(a => a.Todo));
 
         var cycle = Assert.Single(Bind("Given ping", """
-            ## Phrase: ping
+            ## Step: ping
 
             Given pong
 
-            ## Phrase: pong
+            ## Step: pong
 
             Given ping
             """));
         Assert.Equal("UATC004", cycle.Code);
 
         var deep = Assert.Single(Bind("Given level 1", """
-            ## Phrase: level 1
+            ## Step: level 1
 
             Given level 2
 
-            ## Phrase: level 2
+            ## Step: level 2
 
             Given level 3
 
-            ## Phrase: level 3
+            ## Step: level 3
 
             Given level 4
 
-            ## Phrase: level 4
+            ## Step: level 4
 
             When I open the todo "Deep"
             """));
@@ -294,7 +294,7 @@ public sealed class UatCallableTests
     public void ACallableThatNamesAPage_EndsOnOne_AndARowEndsWhereItStarted()
     {
         var unsaid = Assert.Single(Bind("Given a detour", """
-            ## Phrase: a detour
+            ## Step: a detour
 
             Given I am on the Todo page
             When I open the todo "Tea"
@@ -303,7 +303,7 @@ public sealed class UatCallableTests
         Assert.Contains("does not end on one", unsaid.Message, StringComparison.Ordinal);
 
         Assert.Empty(Bind("Given a round trip", """
-            ## Phrase: a round trip
+            ## Step: a round trip
 
             Given I am on the Todo page
             When I open the todo "Tea"
@@ -316,7 +316,7 @@ public sealed class UatCallableTests
               | ----- |
               | Tea   |
             """, """
-            ## Phrase for each row: each todo opened
+            ## Step for each row: each todo opened
 
             Given I am on the Todo page
             When I open the todo <title>
@@ -332,11 +332,11 @@ public sealed class UatCallableTests
             When Eva grabs "Milk"
             And the todo "Tea" goes to I
             """, """
-            ## Phrase: {user} grabs {todo}
+            ## Step: {user} grabs {todo}
 
             When <user> takes <todo>
 
-            ## Phrase: the todo {todo} goes to {user}
+            ## Step: the todo {todo} goes to {user}
 
             When <user> takes <todo>
             """);
@@ -348,7 +348,7 @@ public sealed class UatCallableTests
     public void ACallableWithTheTextOfACSharpPhrase_IsAmbiguous()
     {
         var error = Assert.Single(Bind("When I pay 3.00 EUR", """
-            ## Phrase: I pay {amount}
+            ## Step: I pay {amount}
 
             When I open the todo <amount>
             """));
@@ -366,7 +366,7 @@ public sealed class UatCallableTests
               | Milk  | 12-May-2026 |
               | Tea   | 13-May-2026 |
             """, """
-            ## Phrase for each row: todos for {who}
+            ## Step for each row: todos for {who}
 
             When I assign <title> to <who> due <due> for 1 hours as Open
             And I open the todo <title>
@@ -391,16 +391,16 @@ public sealed class UatCallableTests
         Directory.CreateDirectory(Path.Combine(root, "Users"));
         try
         {
-            File.WriteAllText(Path.Combine(root, "Todo.phrases.md"), "# Phrases: Todo\n\n## Phrase: a global one\n\nWhen I open the todo \"Tea\"\n");
-            File.WriteAllText(Path.Combine(root, "Todo", "Later.phrases.md"), "# Phrases: Module\n\n## Phrase: a module one\n\nWhen I open the todo \"Tea\"\n");
-            File.WriteAllText(Path.Combine(root, "Users", "Users.phrases.md"), "# Phrases: Users\n\n## Phrase: a users one\n\nWhen I open the todo \"Tea\"\n");
-            var scenario = Path.Combine(root, "Todo", "TOD.uat.md");
+            File.WriteAllText(Path.Combine(root, "Todo.steps.md"), "# Steps: Todo\n\n## Step: a global one\n\nWhen I open the todo \"Tea\"\n");
+            File.WriteAllText(Path.Combine(root, "Todo", "Later.steps.md"), "# Steps: Module\n\n## Step: a module one\n\nWhen I open the todo \"Tea\"\n");
+            File.WriteAllText(Path.Combine(root, "Users", "Users.steps.md"), "# Steps: Users\n\n## Step: a users one\n\nWhen I open the todo \"Tea\"\n");
+            var scenario = Path.Combine(root, "Todo", "TOD.feature.md");
             File.WriteAllText(scenario, Document("Given a global one\nAnd a module one", string.Empty));
 
             var file = UatScenarioFiles.Load(scenario);
 
             Assert.True(file.Success, UatDiagnosticsFormatter.FormatDiagnostics(file.Diagnostics));
-            Assert.Equal(["Todo.phrases.md", "Later.phrases.md"], UatScenarioFiles.PhraseFilesFor(scenario).Select(Path.GetFileName));
+            Assert.Equal(["Todo.steps.md", "Later.steps.md"], UatScenarioFiles.PhraseFilesFor(scenario).Select(Path.GetFileName));
             Assert.True(file.Bind(CatalogSet(new ArgumentFixture())).Success);
 
             File.WriteAllText(scenario, Document("Given a users one", string.Empty));
@@ -414,9 +414,9 @@ public sealed class UatCallableTests
 
     [Theory]
     [InlineData("When I open the todo \"Tea\"\n  <table>", "UAT024")]
-    [InlineData("When I open the todo \"Tea\"\n\n## Phrase:\n\nWhen I open the todo \"Tea\"", "UAT025")]
-    [InlineData("When I open the todo \"Tea\"\n\n## Phrase: nothing\n", "UAT026")]
-    [InlineData("When I open the todo \"Tea\"\n\n## Phrase: bad {x}\n\n| Parameter | Kind |\n| --- | --- |\n| x | text |\n\nWhen I open the todo <x>", "UAT027")]
+    [InlineData("When I open the todo \"Tea\"\n\n## Step:\n\nWhen I open the todo \"Tea\"", "UAT025")]
+    [InlineData("When I open the todo \"Tea\"\n\n## Step: nothing\n", "UAT026")]
+    [InlineData("When I open the todo \"Tea\"\n\n## Step: bad {x}\n\n| Parameter | Kind |\n| --- | --- |\n| x | text |\n\nWhen I open the todo <x>", "UAT027")]
     public void AWrongPhraseSection_IsAParseError(string steps, string code)
     {
         var parse = UatMarkdownParser.Parse(Document(steps, string.Empty));
@@ -428,13 +428,13 @@ public sealed class UatCallableTests
     public void APhraseFile_HoldsOnlyPhraseSections()
     {
         var parse = UatMarkdownParser.ParsePhrases("""
-            # Phrases: Todo
+            # Steps: Todo
 
             ## Scenario: Not here
 
             When I open the todo "Tea"
 
-            ## Phrase: a good one
+            ## Step: a good one
 
             When I open the todo "Tea"
             """);
@@ -442,7 +442,7 @@ public sealed class UatCallableTests
         var error = Assert.Single(parse.Diagnostics);
         Assert.Equal(("UAT028", 3), (error.Code, error.Location.LineNumber));
         Assert.Equal("a good one", Assert.Single(parse.Document!.Callables).Phrase);
-        Assert.Equal("UAT028", Assert.Single(UatMarkdownParser.ParsePhrases("## Phrase: headless\n\nWhen I open the todo \"Tea\"").Diagnostics).Code);
+        Assert.Equal("UAT028", Assert.Single(UatMarkdownParser.ParsePhrases("## Step: headless\n\nWhen I open the todo \"Tea\"").Diagnostics).Code);
     }
 
     private static UatCatalogSet CatalogSet(ArgumentFixture fixture)
@@ -481,7 +481,7 @@ public sealed class UatCallableTests
 
     // The scenario's steps start on line 5; its phrases follow them.
     private static string Document(string steps, string phrases) => $"""
-        # UAT: Callables
+        # Feature: Callables
 
         ## Scenario: Callables
 

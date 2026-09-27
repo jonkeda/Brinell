@@ -26,7 +26,7 @@ public sealed class UatReflectionRuntimeTests
         var fixture = new Fixture();
         var runtime = UatReflectionRuntime.FromRoot(fixture);
         var scenario = BindScenario(runtime, """
-            # UAT: Greeting
+            # Feature: Greeting
 
             ## Scenario: User receives greeting
 
@@ -51,7 +51,7 @@ public sealed class UatReflectionRuntimeTests
         var fixture = new Fixture();
         var runtime = UatReflectionRuntime.FromRoot(fixture);
         var scenario = BindScenario(runtime, """
-            # UAT: User Form
+            # Feature: User Form
 
             ## Scenario: User profile values are entered
 
@@ -79,7 +79,7 @@ public sealed class UatReflectionRuntimeTests
         var runtime = UatReflectionRuntime.FromRoot(new Fixture());
 
         var diagnostic = Assert.Single(BindErrors(runtime, """
-            # UAT: Missing Page
+            # Feature: Missing Page
 
             ## Scenario: Missing current page
 
@@ -96,7 +96,7 @@ public sealed class UatReflectionRuntimeTests
         var runtime = UatReflectionRuntime.FromRoot(new Fixture());
 
         var diagnostic = Assert.Single(BindErrors(runtime, """
-            # UAT: Missing Control
+            # Feature: Missing Control
 
             ## Scenario: Missing control
 
@@ -115,7 +115,7 @@ public sealed class UatReflectionRuntimeTests
         var fixture = new Fixture();
         var runtime = UatReflectionRuntime.FromRoot(fixture);
         var scenario = BindScenario(runtime, """
-            # UAT: Custom Root Phrase
+            # Feature: Custom Root Phrase
 
             ## Scenario: Root phrase can store scenario state
 
@@ -146,7 +146,7 @@ public sealed class UatReflectionRuntimeTests
         var fixture = new Fixture();
         var runtime = UatReflectionRuntime.FromRoot(fixture);
         var scenario = BindScenario(runtime, """
-            # UAT: But
+            # Feature: But
 
             ## Scenario: A Then phrase follows But
 
@@ -167,7 +167,7 @@ public sealed class UatReflectionRuntimeTests
         // The catalog still builds; the step that binds to the broken phrase names the problem (AD-016).
         var catalog = UatReflectionRuntime.FromRoot(new CommandIdFixture()).CreateCommandCatalog();
         var parse = UatMarkdownParser.Parse("""
-            # UAT: Broken
+            # Feature: Broken
 
             ## Scenario: Uses the broken phrase
 
@@ -188,7 +188,7 @@ public sealed class UatReflectionRuntimeTests
         var fixture = new SettingsFixture();
         var runtime = UatReflectionRuntime.FromRoot(fixture);
         var scenario = BindScenario(runtime, """
-            # UAT: Settings Injection
+            # Feature: Settings Injection
 
             ## Scenario: Settings are available to phrases
 

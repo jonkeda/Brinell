@@ -35,6 +35,9 @@ of `Brinell.Bdd` (6) is the large, internal step. The Construction pilot is not 
 - Phase 4a done, committed on its own (4b is a second commit): the `Bdd` attributes, the guide
   renamed to `uat-step-definitions.md`, and `docs/guides/bdd-glossary.md`. Engine binding types
   (`UatPhraseClassBinding`) wait for phase 6 as planned.
+- Phase 4b done. The old forms are `UAT029` (headings from the parser, file names from
+  `brinell-data validate`), and `--fix` renames and rewrites. The repo's files were moved with
+  `git mv` to keep history. `.docs/` ADs keep the old words until phase 9, as planned.
 
 ---
 

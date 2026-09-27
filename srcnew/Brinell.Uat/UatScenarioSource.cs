@@ -2,12 +2,13 @@ namespace Brinell.Uat;
 
 public static class UatScenarioSource
 {
+    /// <summary>The suite's config: <paramref name="configFileName"/>, or else <c>uat.config.md</c> or <c>bdd.config.md</c>.</summary>
     public static string GetConfigFilePath(
         string? baseDirectory = null,
-        string configFileName = "uat.config.md")
+        string? configFileName = null)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(configFileName);
-        return Path.Combine(baseDirectory ?? AppContext.BaseDirectory, configFileName);
+        var directory = baseDirectory ?? AppContext.BaseDirectory;
+        return configFileName is null ? UatFileFormat.FindConfig(directory) : Path.Combine(directory, configFileName);
     }
 
     /// <summary>
@@ -23,7 +24,7 @@ public static class UatScenarioSource
         var scenarioDirectory = Path.Combine(baseDirectory ?? AppContext.BaseDirectory, folderName);
         IEnumerable<string> files = Directory.Exists(scenarioDirectory)
             ? Directory
-                .EnumerateFiles(scenarioDirectory, "*.uat.md", SearchOption.AllDirectories)
+                .EnumerateFiles(scenarioDirectory, UatFileFormat.FeatureFilePattern, SearchOption.AllDirectories)
                 .Order(StringComparer.OrdinalIgnoreCase)
             : Array.Empty<string>();
 

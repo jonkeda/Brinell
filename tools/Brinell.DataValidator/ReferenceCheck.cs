@@ -15,13 +15,13 @@ internal static class ReferenceCheck
             references.Add(new TestDataReference(configPath, LineOf(configPath, UatConfigFields.DefaultTestData), fallback));
         }
 
-        var scenarios = Path.Combine(Path.GetDirectoryName(configPath)!, "Scenarios");
+        var scenarios = ScenarioCheck.ScenarioFolder(configPath);
         if (!Directory.Exists(scenarios))
         {
             return references;
         }
 
-        foreach (var file in Directory.EnumerateFiles(scenarios, "*.uat.md", SearchOption.AllDirectories).Order(StringComparer.Ordinal))
+        foreach (var file in Directory.EnumerateFiles(scenarios, UatFileFormat.FeatureFilePattern, SearchOption.AllDirectories).Order(StringComparer.Ordinal))
         {
             var document = UatMarkdownParser.ParseFile(file).Document;
             if (document?.Metadata.TryGetValue(UatMetadataFields.TestData, out var name) == true && name.Length > 0)

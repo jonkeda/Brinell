@@ -29,11 +29,11 @@ public sealed class UatExecutionServiceTargetTests
             var appPath = Path.Combine(root, $"Fake{target}App.exe");
             File.WriteAllText(appPath, string.Empty);
 
-            var scenarioPath = Path.Combine(root, "target-smoke.uat.md");
+            var scenarioPath = Path.Combine(root, "target-smoke.feature.md");
             File.WriteAllText(
                 scenarioPath,
                 $$"""
-                # UAT: {{target}} Presenter Execution
+                # Feature: {{target}} Presenter Execution
 
                 ## Scenario: Presenter creates a {{target}} session
 

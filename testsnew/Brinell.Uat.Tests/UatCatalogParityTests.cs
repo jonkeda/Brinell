@@ -40,7 +40,7 @@ public sealed class UatCatalogParityTests
             | Eva |
             """).Apps;
         var parse = UatMarkdownParser.Parse("""
-            # UAT: Gadget
+            # Feature: Gadget
 
             ## Scenario: A named step with a value
 
@@ -409,9 +409,9 @@ public sealed class UatCatalogParityTests
     {
         var catalog = UatReflectionRuntime.FromRoot(new GadgetFixture()).CreateCommandCatalog();
         var parse = UatMarkdownParser.Parse("""
-            # UAT: Gadget
+            # Feature: Gadget
 
-            ## Phrase: I step outside
+            ## Step: I step outside
 
             ```gherkin
             When I leave for the plain page
@@ -435,7 +435,7 @@ public sealed class UatCatalogParityTests
     private static UatDiagnostic BindError(UatCommandCatalog catalog, string steps)
     {
         var parse = UatMarkdownParser.Parse($"""
-            # UAT: Gadget
+            # Feature: Gadget
 
             ## Scenario: Gadget steps
 
@@ -448,7 +448,7 @@ public sealed class UatCatalogParityTests
     private static async Task<UatScenarioRunResult> RunAsync(UatCommandCatalog catalog, string steps)
     {
         var parse = UatMarkdownParser.Parse($"""
-            # UAT: Gadget
+            # Feature: Gadget
 
             ## Scenario: Gadget steps
 

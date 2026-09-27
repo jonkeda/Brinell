@@ -40,7 +40,7 @@ small on purpose.
 Visual Studio 2022 / 2026
  +-- Brinell UAT extension (.NET, VisualStudio.Extensibility, out of process)
  |    +-- LSP client (LanguageServerProvider) ---- Brinell.Uat.LanguageServer
- |    |      for *.uat.md, *.phrases.md, uat.config.md, on top of the Markdown editor
+ |    |      for *.feature.md, *.steps.md, uat.config.md, on top of the Markdown editor
  |    +-- Commands: Run scenario, Debug scenario, Run file, Go to scenario
  |    +-- Tool windows: Scenario preview (WebView2), Phrase catalog, Pages
  |    +-- Test Explorer: the xUnit cases already there (section 6)
@@ -85,7 +85,7 @@ Visual Studio's Markdown preview can't take a markdown-it plugin. So the extensi
 **Scenario preview** tool window: a WebView2 with the **same** markdown-it plugin and stylesheet
 as VS Code, bundled as one shared asset.
 
-- It follows the active `.uat.md` editor and scrolls with it.
+- It follows the active `.feature.md` editor and scrolls with it.
 - It reads the VS theme (light, dark, blue, high contrast) and maps it to the stylesheet's CSS
   variables.
 - **Run** and **Debug** on each scenario heading work, because it's our own window. VS Code's
@@ -111,7 +111,7 @@ stepping into C# is free, and stepping through scenario steps is the extra.
 
 **Level 1: debug the test case (no new runner).** *Debug scenario* starts the xUnit case under the
 debugger. Breakpoints in page objects and phrase classes just work. To stop **at a step**, a
-breakpoint on a step line in the `.uat.md` is passed to the run as `BRINELL_UAT_BREAK_AT=<file>:<line>`.
+breakpoint on a step line in the `.feature.md` is passed to the run as `BRINELL_UAT_BREAK_AT=<file>:<line>`.
 The executor calls `Debugger.Break()` just before invoking that step. The user lands in C# at the
 invocation, with the bound arguments in Locals and **F11** stepping into the phrase method.
 
@@ -160,7 +160,7 @@ tell Copilot the Brinell rules.
 
 | # | Phase | Delivers | Depends on |
 | --- | --- | --- | --- |
-| 0 | Spike | the VS client starts the language server on a `.uat.md`, and diagnostics show in the Markdown editor; answers Q1 and Q3 | VS Code phase 0 (the server) |
+| 0 | Spike | the VS client starts the language server on a `.feature.md`, and diagnostics show in the Markdown editor; answers Q1 and Q3 | VS Code phase 0 (the server) |
 | 1 | Editor | everything the server gives: completion, hover, go to definition, outline, colours | VS Code phase 1 |
 | 2 | Debug level 1 | `BRINELL_UAT_BREAK_AT` in the executor, and *Debug scenario* | - (useful in both IDEs) |
 | 3 | Run and Test Explorer | *Run scenario*, *Go to scenario*, results in the Error List | VS Code Q2 |

@@ -17,7 +17,7 @@ method the attribute sits on:
 ## Mental Model
 
 ```text
-.uat.md file
+.feature.md file
   -> UatMarkdownParser
   -> UatCommandCatalog
   -> UatBinder
@@ -220,14 +220,14 @@ loads, and a step that binds to it fails naming the method:
 
 A tester can give a sequence of steps a name and call it like a phrase, with no C#
 ([AD-017](../../.docs/decisions/ad-017-callable-phrases-are-sequences-not-programs.md)). It is
-declared under a `## Phrase:` heading, in a scenario file (seen by that file) or in a
-`*.phrases.md` file in `Scenarios/` or a folder under it (seen by the scenarios in that folder and
+declared under a `## Step:` heading, in a scenario file (seen by that file) or in a
+`*.steps.md` file in `Scenarios/` or a folder under it (seen by the scenarios in that folder and
 below, [Where Phrases Live](#where-phrases-live)):
 
 ````markdown
-# Phrases: Todo
+# Steps: Todo
 
-## Phrase: the synced list has todos
+## Step: the synced list has todos
 
 ```gherkin
 Given I am on the Todo List page
@@ -249,7 +249,7 @@ Given the synced list has todos
   does, and the call is expanded like an outline row. A call is matched for `Given`, `When` and
   `Then` alike. A callable and a C# phrase with the same text are ambiguous (`UATB002`): nothing
   shadows anything.
-- **Typed by where the value goes.** In `## Phrase: a todo {title} due {due}` whose body says
+- **Typed by where the value goes.** In `## Step: a todo {title} due {due}` whose body says
   `When I create a todo <title> due <due>`, `<due>` fills a `DateOnly` parameter, so `{due}` is a
   date, and the call's value is read and checked as one at the call's line. A value inside a longer
   argument (`"Report <due>"`) is text, unless a `Parameters` table under the heading says
@@ -269,11 +269,11 @@ Given the synced list has todos
   is checked against that step's parameter, and a bad cell is reported at its row of the call.
   `<doc string>` does the same for a `"""` block. Placeholders in a table the body writes are
   filled in.
-- **Once per row.** `## Phrase for each row:` runs the body once for each row of the call's
+- **Once per row.** `## Step for each row:` runs the body once for each row of the call's
   table. `{x}` in the heading is written once in the call; every other `<x>` is a column:
 
   ````markdown
-  ## Phrase for each row: each todo shows its status
+  ## Step for each row: each todo shows its status
 
   ```gherkin
   Then the todo <title> should show status <status>
@@ -315,8 +315,8 @@ and line:
 | `UATC008` | has a body step with a value that does not fit, or bound to a broken C# phrase |
 
 What the text alone shows is a parse error: `<table>` outside a phrase section (`UAT024`), a
-`## Phrase:` with no text (`UAT025`) or no steps (`UAT026`), a malformed `Parameters` table
-(`UAT027`), and a phrase file with anything but phrase sections under one `# Phrases:` heading
+`## Step:` with no text (`UAT025`) or no steps (`UAT026`), a malformed `Parameters` table
+(`UAT027`), and a phrase file with anything but phrase sections under one `# Steps:` heading
 (`UAT028`). Phrase files hold no prose, as scenario files do not.
 
 A body step that binds to nothing is not a broken callable: it may bind where it is called (in
@@ -554,8 +554,8 @@ never a sibling's. So two modules can each have "I add a line" without colliding
 | Phrase | Seen by |
 | --- | --- |
 | a callable in a scenario file | that file |
-| a callable in `Scenarios/*.phrases.md` | every scenario |
-| a callable in `Scenarios/Invoicing/*.phrases.md` | the scenarios in `Invoicing/` and below |
+| a callable in `Scenarios/*.steps.md` | every scenario |
+| a callable in `Scenarios/Invoicing/*.steps.md` | the scenarios in `Invoicing/` and below |
 | a step-definition class with `[BddStepDefinitions(Namespace = "Invoicing")]` or `[BddNamespace("Invoicing")]` | the scenarios in `Invoicing/` and below |
 | a step-definition class in an assembly with `[assembly: BddNamespace("Invoicing")]` | the same, for every step-definition class of the assembly that names no namespace of its own |
 | any other step-definition class, the fixture's phrases, built-ins | every scenario |

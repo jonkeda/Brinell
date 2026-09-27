@@ -83,10 +83,13 @@ internal static class ScenarioCheck
         throw new ToolException($"No fixture '{fixtureName}' (the config's Runtime Fixture) in {string.Join(", ", candidates.Select(Path.GetFileName))}.");
     }
 
-    /// <summary>The phrase files: <c>*.phrases.md</c> in the project's Scenarios folder and its subfolders.</summary>
+    /// <summary>The folder of feature and step files beside the config.</summary>
+    public static string ScenarioFolder(string configPath) => Path.Combine(Path.GetDirectoryName(configPath)!, "Scenarios");
+
+    /// <summary>The step files: <c>*.steps.md</c> in the project's Scenarios folder and its subfolders.</summary>
     public static IReadOnlyList<string> PhraseFiles(string configPath)
     {
-        var scenarios = Path.Combine(Path.GetDirectoryName(configPath)!, "Scenarios");
+        var scenarios = ScenarioFolder(configPath);
         return Directory.Exists(scenarios)
             ? Directory.EnumerateFiles(scenarios, UatScenarioFiles.PhraseFilePattern, SearchOption.AllDirectories).Order(StringComparer.Ordinal).ToList()
             : [];
@@ -106,17 +109,17 @@ internal static class ScenarioCheck
         }
 
         var copies = Directory.EnumerateFiles(project, "*.csproj")
-            .Any(csproj => File.ReadAllText(csproj).Contains(".phrases.md", StringComparison.OrdinalIgnoreCase));
+            .Any(csproj => File.ReadAllText(csproj).Contains(".steps.md", StringComparison.OrdinalIgnoreCase));
         return copies
             ? null
-            : "The Scenarios folder has *.phrases.md files that the project does not copy to its output, so the xUnit gate cannot see them. Add <None Update=\"Scenarios\\**\\*.phrases.md\" CopyToOutputDirectory=\"PreserveNewest\" /> to the csproj.";
+            : "The Scenarios folder has *.steps.md files that the project does not copy to its output, so the xUnit gate cannot see them. Add <None Update=\"Scenarios\\**\\*.steps.md\" CopyToOutputDirectory=\"PreserveNewest\" /> to the csproj.";
     }
 
     public static IReadOnlyList<string> Files(string configPath)
     {
-        var scenarios = Path.Combine(Path.GetDirectoryName(configPath)!, "Scenarios");
+        var scenarios = ScenarioFolder(configPath);
         return Directory.Exists(scenarios)
-            ? Directory.EnumerateFiles(scenarios, "*.uat.md", SearchOption.AllDirectories).Order(StringComparer.Ordinal).ToList()
+            ? Directory.EnumerateFiles(scenarios, UatFileFormat.FeatureFilePattern, SearchOption.AllDirectories).Order(StringComparer.Ordinal).ToList()
             : [];
     }
 

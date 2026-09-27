@@ -130,7 +130,7 @@ a navigation, a real wire). Where a subtask lists two tiers, the second checks o
 ## TOD.11 Manage users
 
 Users are not linked to todos yet. Each subtask is covered at the lowest tier that can see it, and
-H shows it once on screen (`UsersJourneyTests`); the UAT scenarios are `TOD.11-manage-users.uat.md`,
+H shows it once on screen (`UsersJourneyTests`); the UAT scenarios are `TOD.11-manage-users.feature.md`,
 which reaches the users pages with `Using | Users`. Test set: `team.json`.
 
 | Id | Subtask | Tier | Why there |

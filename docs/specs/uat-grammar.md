@@ -6,7 +6,7 @@ format it accepts, so the format is a contract and not whatever the parser happe
 
 Three layers, each owned by one piece of code:
 
-1. **The document grammar**: the shape of a `.uat.md` or `.phrases.md` file. Owned by the
+1. **The document grammar**: the shape of a `.feature.md` or `.steps.md` file. Owned by the
    parser, and fixed.
 2. **The phrase language**: the `{placeholder}` templates a step line binds to. Owned by the
    catalog ([UatCommandCatalog.cs](../../srcnew/Brinell.Uat/UatCommandCatalog.cs)); phrases are
@@ -17,7 +17,7 @@ Three layers, each owned by one piece of code:
 How to write scenarios is in the [UAT Template Guide](../guides/uat-template-guide.md); what the
 phrases are and how they bind is in [UAT Phrases And Flows](../guides/uat-step-definitions.md).
 
-## 1. Scenario files (`*.uat.md`)
+## 1. Scenario files (`*.feature.md`)
 
 `NEWLINE` and `WS` are lexical; `text` is the rest of the line, trimmed.
 
@@ -26,7 +26,7 @@ document         = feature-heading ,
                    { metadata-section | background-section | data-section
                    | phrase-section | scenario } ;          (* at least one scenario *)
 
-feature-heading  = "# UAT:" , text , NEWLINE ;             (* exactly one, first *)
+feature-heading  = "# Feature:" , text , NEWLINE ;             (* exactly one, first *)
 
 metadata-section = "## Metadata" , NEWLINE , kv-table ;
 kv-table         = table-with-columns("Field", "Value") ;
@@ -35,7 +35,7 @@ background-section = "## Background" , NEWLINE , step+ ;
 
 data-section     = "## Data:" , name , NEWLINE , table ;
 
-phrase-section   = ( "## Phrase:" | "## Phrase for each row:" ) , phrase , NEWLINE ,
+phrase-section   = ( "## Step:" | "## Step for each row:" ) , phrase , NEWLINE ,
                    [ parameters-table ] , phrase-step+ ;
 parameters-table = table-with-columns("Parameter", "Type" [, "Example"]) ;
 
@@ -74,20 +74,20 @@ Rules the EBNF does not show:
   is transparent: a list marker (`- Given ...`) is still an error.
 - **Headings** other than the ones above, and any other text outside a section, are errors.
 
-## 2. Phrase files (`*.phrases.md`)
+## 2. Phrase files (`*.steps.md`)
 
 ```ebnf
-phrases-document = "# Phrases:" , text , NEWLINE , phrase-section* ;
+phrases-document = "# Steps:" , text , NEWLINE , phrase-section* ;
 ```
 
 A phrase file holds only phrase sections. A phrase in a scenario file is seen by that file; a
-phrase in a `*.phrases.md` file in `Scenarios/` or a folder under it is seen by the scenarios in
+phrase in a `*.steps.md` file in `Scenarios/` or a folder under it is seen by the scenarios in
 that folder and below (AD-017, [Where Phrases Live](../guides/uat-step-definitions.md#where-phrases-live)).
 
 In a phrase section:
 
 - The heading's `{x}` placeholders are the call's arguments. The body uses them as `<x>`. In a
-  `## Phrase for each row:` section, `<Column>` reads a column of the current row of the call's
+  `## Step for each row:` section, `<Column>` reads a column of the current row of the call's
   table.
 - `<table>` or `<doc string>` alone on the line under a body step passes the call's table or doc
   string to that step. It is only allowed in a phrase section.
@@ -126,7 +126,7 @@ type suffix removed (`Page`, `Button`, `Entry`, ...) and split into words: `Todo
 
 | Code | Meaning |
 | --- | --- |
-| `UAT000`, `UAT001` | no `# UAT:` heading, or more than one |
+| `UAT000`, `UAT001` | no `# Feature:` heading, or more than one |
 | `UAT002`, `UAT003` | the heading has no title, or is not first |
 | `UAT004` | `## Background` has no steps |
 | `UAT005` | `## Data:` has no name |
@@ -143,7 +143,8 @@ type suffix removed (`Page`, `Button`, `Entry`, ...) and split into words: `Todo
 | `UAT024` | `<table>`/`<doc string>` outside a phrase section, or not under a step |
 | `UAT025`, `UAT026` | a phrase heading has no phrase, or the phrase has no steps |
 | `UAT027` | a malformed `Parameters` table |
-| `UAT028` | a phrase file with content other than one `# Phrases:` heading and phrase sections |
+| `UAT028` | a steps file with content other than one `# Steps:` heading and step sections |
+| `UAT029` | a heading or file name in the form before feature files (`# UAT:`, `## Phrase:`, `*.uat.md`, `*.phrases.md`); `brinell-data validate --fix` rewrites it |
 
 Binder (`UATB0xx`) and argument (`UATA0xx`) diagnostics are raised in the binder and the value
 reader (`UatBinder`, `UatValues`, `UatPhraseDeclarations`).

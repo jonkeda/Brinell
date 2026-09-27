@@ -75,12 +75,12 @@ public sealed class ScenarioValidationTests : IDisposable
         var (exit, output, _) = Run("validate");
 
         Assert.Equal(1, exit);
-        Assert.Contains("Scenarios/library.uat.md:5: UATA002", output);
+        Assert.Contains("Scenarios/library.feature.md:5: UATA002", output);
         Assert.Contains("Write 12-May-2026.", output);
-        Assert.Contains("Scenarios/library.uat.md:6: UATA005", output);
-        Assert.Contains("Scenarios/library.uat.md:10: UATA003", output);
-        Assert.Contains("Scenarios/library.uat.md:11: UATA007", output);
-        Assert.Contains("Scenarios/library.uat.md:12: UATA010", output);
+        Assert.Contains("Scenarios/library.feature.md:6: UATA005", output);
+        Assert.Contains("Scenarios/library.feature.md:10: UATA003", output);
+        Assert.Contains("Scenarios/library.feature.md:11: UATA007", output);
+        Assert.Contains("Scenarios/library.feature.md:12: UATA010", output);
         Assert.Contains("5 error(s).", output);
     }
 
@@ -109,10 +109,44 @@ public sealed class ScenarioValidationTests : IDisposable
         var (exit, output, _) = Run("validate", "--fix");
 
         Assert.Equal(0, exit);
-        Assert.Contains("Fixed 1 value(s) in Scenarios/library.uat.md.", output);
+        Assert.Contains("Fixed 1 value(s) in Scenarios/library.feature.md.", output);
         var text = File.ReadAllText(file);
         Assert.Contains("until 12-May-2026", text);
         Assert.Contains("until 3-jan-2027", text);
+    }
+
+    [Fact]
+    public void Validate_ReportsAFileInTheOldForm_AndFixRenamesItAndRewritesItsHeadings()
+    {
+        Write(Path.Combine("Scenarios", "library.uat.md"), """
+            # UAT: Library
+
+            ## Scenario: Lending
+
+            When a loan of "Dune" to Eva on 12-May-2026
+            """);
+        Write(Path.Combine("Scenarios", "Library.phrases.md"), """
+            # Phrases: Library
+
+            ## Phrase: a loan of {title} to {reader} on {due}
+
+            When I lend <title> to <reader> until <due>
+            """);
+
+        var (exit, output, _) = Run("validate");
+
+        Assert.Equal(1, exit);
+        Assert.Contains("UAT029 'library.uat.md' is the old name of 'library.feature.md'", output);
+        Assert.Contains("UAT029 'Library.phrases.md' is the old name of 'Library.steps.md'", output);
+
+        (exit, output, _) = Run("validate", "--fix");
+
+        Assert.True(exit == 0, output);
+        Assert.Contains("Renamed Scenarios/library.uat.md to library.feature.md.", output);
+        Assert.StartsWith("# Feature: Library", File.ReadAllText(Path.Combine(_folder, "Scenarios", "library.feature.md")));
+        var steps = File.ReadAllText(Path.Combine(_folder, "Scenarios", "Library.steps.md"));
+        Assert.StartsWith("# Steps: Library", steps);
+        Assert.Contains("## Step: a loan of {title}", steps);
     }
 
     [Fact]
@@ -139,14 +173,14 @@ public sealed class ScenarioValidationTests : IDisposable
         var (exit, output, errors) = Run("validate");
 
         Assert.Equal(1, exit);
-        Assert.Contains("Scenarios/library.uat.md:5: UATA002", output);
-        Assert.Contains("Scenarios/Library.phrases.md:7: UATC001", errors);
+        Assert.Contains("Scenarios/library.feature.md:5: UATA002", output);
+        Assert.Contains("Scenarios/Library.steps.md:7: UATC001", errors);
         Assert.Contains("does not copy to its output", errors);
 
         (exit, output, _) = Run("validate", "--fix");
 
         Assert.Equal(0, exit);
-        Assert.Contains("Fixed 1 value(s) in Scenarios/library.uat.md.", output);
+        Assert.Contains("Fixed 1 value(s) in Scenarios/library.feature.md.", output);
         Assert.Contains("Given a loan of \"Dune\" to Eva on 12-May-2026", File.ReadAllText(file));
     }
 
@@ -159,26 +193,26 @@ public sealed class ScenarioValidationTests : IDisposable
 
         Assert.Equal(0, exit);
         Assert.Contains("Callable a loan of {title: text} to {reader: user} on {due: date}  <- ", output);
-        Assert.Contains("Library.phrases.md:3", output);
+        Assert.Contains("Library.steps.md:3", output);
         Assert.Contains("warning UATC001", output);
     }
 
     [Fact]
     public void Validate_ChecksAFoldersPhraseFile_AndACallToItFromAnotherFolder()
     {
-        Write(Path.Combine("Scenarios", "Lending", "Lending.phrases.md"), """
-            # Phrases: Lending
+        Write(Path.Combine("Scenarios", "Lending", "Lending.steps.md"), """
+            # Steps: Lending
 
-            ## Phrase: a loan of {title} to {reader} on {due}
+            ## Step: a loan of {title} to {reader} on {due}
 
             When I lend <title> to <reader> until <due>
 
-            ## Phrase: a broken one {spare}
+            ## Step: a broken one {spare}
 
             When I shelve the books
             """);
-        Write(Path.Combine("Scenarios", "Shelving", "shelving.uat.md"), """
-            # UAT: Shelving
+        Write(Path.Combine("Scenarios", "Shelving", "shelving.feature.md"), """
+            # Feature: Shelving
 
             ## Scenario: Borrowed first
 
@@ -189,8 +223,8 @@ public sealed class ScenarioValidationTests : IDisposable
         var (_, phrases, _) = Run("phrases");
 
         Assert.Equal(1, exit);
-        Assert.Contains("Scenarios/Lending/Lending.phrases.md:7: UATC001", errors);
-        Assert.Contains("Scenarios/Shelving/shelving.uat.md:5: UATB010", output);
+        Assert.Contains("Scenarios/Lending/Lending.steps.md:7: UATC001", errors);
+        Assert.Contains("Scenarios/Shelving/shelving.feature.md:5: UATB010", output);
         Assert.Contains("of the folder 'Lending'", output);
         Assert.Contains("Callable a loan of {title: text} to {reader: user} on {due: date}  <- ", phrases);
         Assert.Contains("  in Lending", phrases);
@@ -199,15 +233,15 @@ public sealed class ScenarioValidationTests : IDisposable
     [Fact]
     public void PhrasesForAFile_ListWhatItSeesByNamespace_AndReferencesFindTheFilesThatUseOne()
     {
-        Write(Path.Combine("Scenarios", "Lending", "Lending.phrases.md"), """
-            # Phrases: Lending
+        Write(Path.Combine("Scenarios", "Lending", "Lending.steps.md"), """
+            # Steps: Lending
 
-            ## Phrase: a quick loan
+            ## Step: a quick loan
 
             When I lend "Dune" to Eva until 12-May-2026
             """);
-        Write(Path.Combine("Scenarios", "Shelving", "shelving.uat.md"), """
-            # UAT: Shelving
+        Write(Path.Combine("Scenarios", "Shelving", "shelving.feature.md"), """
+            # Feature: Shelving
 
             ## Metadata
 
@@ -221,14 +255,14 @@ public sealed class ScenarioValidationTests : IDisposable
             """);
 
         var (validated, _, _) = Run("validate");
-        var (_, phrases, _) = Run("phrases", "Scenarios/Shelving/shelving.uat.md");
+        var (_, phrases, _) = Run("phrases", "Scenarios/Shelving/shelving.feature.md");
         var (_, references, _) = Run("references", "Lending");
 
         Assert.Equal(0, validated);
         Assert.Contains("## Lending (Using)", phrases);
         Assert.Contains("Callable a quick loan", phrases);
         Assert.Contains("## Every scenario", phrases);
-        Assert.Contains("Scenarios/Shelving/shelving.uat.md: Using", references);
+        Assert.Contains("Scenarios/Shelving/shelving.feature.md: Using", references);
         Assert.Contains("1 use(s) of Lending.", references);
     }
 
@@ -254,29 +288,29 @@ public sealed class ScenarioValidationTests : IDisposable
             When I archive "Dune" on 12-May-2026
             """);
 
-        var (exit, output, _) = Run("snippet", "Scenarios/library.uat.md:5");
+        var (exit, output, _) = Run("snippet", "Scenarios/library.feature.md:5");
 
         Assert.Equal(0, exit);
         Assert.Contains("[BddWhen]", output);
         Assert.Contains("public void When_I_archive_P1_on_P2(string p1, DateOnly p2)", output);
     }
 
-    private string Scenario(string steps) => Write(Path.Combine("Scenarios", "library.uat.md"), $"""
-        # UAT: Library
+    private string Scenario(string steps) => Write(Path.Combine("Scenarios", "library.feature.md"), $"""
+        # Feature: Library
 
         ## Scenario: Lending
 
         {steps}
         """);
 
-    private void PhraseFile() => Write(Path.Combine("Scenarios", "Library.phrases.md"), """
-        # Phrases: Library
+    private void PhraseFile() => Write(Path.Combine("Scenarios", "Library.steps.md"), """
+        # Steps: Library
 
-        ## Phrase: a loan of {title} to {reader} on {due}
+        ## Step: a loan of {title} to {reader} on {due}
 
         When I lend <title> to <reader> until <due>
 
-        ## Phrase: a broken one {spare}
+        ## Step: a broken one {spare}
 
         When I shelve the books
         """);

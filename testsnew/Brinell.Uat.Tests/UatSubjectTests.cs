@@ -269,7 +269,7 @@ public sealed class UatSubjectTests
     private static UatDocument Parse(string steps)
     {
         var result = UatMarkdownParser.Parse($"""
-            # UAT: Subjects
+            # Feature: Subjects
 
             ## Scenario: Subjects
 

@@ -10,16 +10,16 @@ public sealed class UatScenarioSourceTests
         var directory = CreateTempDirectory();
         try
         {
-            WriteScenario(directory, "Scenarios", "Contacts", "00-smoke.uat.md");
-            WriteScenario(directory, "Scenarios", "Contacts", "01-list-basic.uat.md");
-            WriteScenario(directory, "Scenarios", "Projects", "00-smoke.uat.md");
+            WriteScenario(directory, "Scenarios", "Contacts", "00-smoke.feature.md");
+            WriteScenario(directory, "Scenarios", "Contacts", "01-list-basic.feature.md");
+            WriteScenario(directory, "Scenarios", "Projects", "00-smoke.feature.md");
 
             var files = UatScenarioSource.EnumerateScenarioFiles(baseDirectory: directory).ToArray();
 
             Assert.Equal(3, files.Length);
-            Assert.Contains(files, path => path.Contains(Path.Combine("Contacts", "00-smoke.uat.md"), StringComparison.Ordinal));
-            Assert.Contains(files, path => path.Contains(Path.Combine("Contacts", "01-list-basic.uat.md"), StringComparison.Ordinal));
-            Assert.Contains(files, path => path.Contains(Path.Combine("Projects", "00-smoke.uat.md"), StringComparison.Ordinal));
+            Assert.Contains(files, path => path.Contains(Path.Combine("Contacts", "00-smoke.feature.md"), StringComparison.Ordinal));
+            Assert.Contains(files, path => path.Contains(Path.Combine("Contacts", "01-list-basic.feature.md"), StringComparison.Ordinal));
+            Assert.Contains(files, path => path.Contains(Path.Combine("Projects", "00-smoke.feature.md"), StringComparison.Ordinal));
         }
         finally
         {
@@ -33,8 +33,8 @@ public sealed class UatScenarioSourceTests
         var directory = CreateTempDirectory();
         try
         {
-            WriteScenario(directory, "Scenarios", "Contacts", "00-smoke.uat.md");
-            WriteScenario(directory, "Scenarios", "Projects", "00-smoke.uat.md");
+            WriteScenario(directory, "Scenarios", "Contacts", "00-smoke.feature.md");
+            WriteScenario(directory, "Scenarios", "Projects", "00-smoke.feature.md");
 
             var files = UatScenarioSource
                 .ApplyFilter(
@@ -43,7 +43,7 @@ public sealed class UatScenarioSourceTests
                 .ToArray();
 
             var file = Assert.Single(files);
-            Assert.Contains(Path.Combine("Contacts", "00-smoke.uat.md"), file, StringComparison.Ordinal);
+            Assert.Contains(Path.Combine("Contacts", "00-smoke.feature.md"), file, StringComparison.Ordinal);
         }
         finally
         {
@@ -67,7 +67,7 @@ public sealed class UatScenarioSourceTests
         var directory = Path.Combine(root, scenarioFolder, moduleFolder);
         Directory.CreateDirectory(directory);
         File.WriteAllText(Path.Combine(directory, fileName), """
-            # UAT: Source
+            # Feature: Source
 
             @smoke
             ## Scenario: Smoke

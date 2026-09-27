@@ -8,7 +8,7 @@ public sealed class UatBinderTests
     public void Bind_KnownSteps_ReturnsBoundInvocations()
     {
         var document = ParseValid("""
-            # UAT: Login
+            # Feature: Login
 
             ## Background
 
@@ -42,7 +42,7 @@ public sealed class UatBinderTests
     public void Bind_ExactPhrase_BeatsParameterizedPhrase()
     {
         var document = ParseValid("""
-            # UAT: Exact
+            # Feature: Exact
 
             ## Scenario: Exact phrase
 
@@ -64,7 +64,7 @@ public sealed class UatBinderTests
     public void Bind_TableRequiredCommand_BindsStepTable()
     {
         var document = ParseValid("""
-            # UAT: Login
+            # Feature: Login
 
             ## Scenario: Sign in
 
@@ -93,7 +93,7 @@ public sealed class UatBinderTests
     public void Bind_TableRequiredCommandWithoutTable_ReturnsDiagnostic()
     {
         var document = ParseValid("""
-            # UAT: Login
+            # Feature: Login
 
             ## Scenario: Sign in
 
@@ -115,7 +115,7 @@ public sealed class UatBinderTests
     public void Bind_UnknownStep_ReturnsDiagnostic()
     {
         var document = ParseValid("""
-            # UAT: Unknown
+            # Feature: Unknown
 
             ## Scenario: Unknown step
 
@@ -133,7 +133,7 @@ public sealed class UatBinderTests
     public void Bind_AmbiguousExactStep_ReturnsDiagnostic()
     {
         var document = ParseValid("""
-            # UAT: Ambiguous
+            # Feature: Ambiguous
 
             ## Scenario: Ambiguous step
 
@@ -153,7 +153,7 @@ public sealed class UatBinderTests
     public void Bind_CommandThatDoesNotAllowTable_ReturnsDiagnostic()
     {
         var document = ParseValid("""
-            # UAT: Extra table
+            # Feature: Extra table
 
             ## Scenario: Extra table
 
@@ -184,7 +184,7 @@ public sealed class UatBinderTests
     public void Bind_OnTheServiceHead_RefusesStepsThatNeedAScreen(string step, string? code)
     {
         var document = ParseValid($"""
-            # UAT: Headless
+            # Feature: Headless
 
             @service
             ## Scenario: No screen
@@ -216,7 +216,7 @@ public sealed class UatBinderTests
     public void Bind_OnAHead_LeavesScenariosForOtherHeadsUnbound()
     {
         var document = ParseValid("""
-            # UAT: Shared
+            # Feature: Shared
 
             ## Scenario: On screen
 
@@ -243,7 +243,7 @@ public sealed class UatBinderTests
     public void Bind_OnAUiHead_TakesTheSameScreenSteps()
     {
         var document = ParseValid("""
-            # UAT: On screen
+            # Feature: On screen
 
             ## Scenario: A screen
 

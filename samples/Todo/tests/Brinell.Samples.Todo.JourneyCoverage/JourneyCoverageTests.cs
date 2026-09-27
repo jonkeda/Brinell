@@ -95,9 +95,9 @@ public sealed class JourneyCoverageTests
     [InlineData("@TOD.09.3", new[] { "UiHermetic" })]
     public void AScenario_CountsInTheTierOfEachHeadItRunsOn(string tags, string[] tiers)
     {
-        var file = Path.Combine(Path.GetTempPath(), $"coverage-{Guid.NewGuid():N}.uat.md");
+        var file = Path.Combine(Path.GetTempPath(), $"coverage-{Guid.NewGuid():N}.feature.md");
         File.WriteAllText(file, $"""
-            # UAT: Tiers
+            # Feature: Tiers
 
             {tags}
             ## Scenario: One scenario

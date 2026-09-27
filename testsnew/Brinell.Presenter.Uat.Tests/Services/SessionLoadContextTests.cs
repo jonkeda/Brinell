@@ -43,11 +43,11 @@ public sealed class SessionLoadContextTests
                 | Pages | {{Path.GetFileName(pages)}} |
                 """);
 
-            var scenarioPath = Path.Combine(root, "unload.uat.md");
+            var scenarioPath = Path.Combine(root, "unload.feature.md");
             File.WriteAllText(
                 scenarioPath,
                 """
-                # UAT: Unload
+                # Feature: Unload
 
                 ## Scenario: Session loads the pages assembly
 

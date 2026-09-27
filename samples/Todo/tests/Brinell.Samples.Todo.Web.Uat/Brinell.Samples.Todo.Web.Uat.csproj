@@ -16,10 +16,10 @@
     <None Update="TestSettings\**\*.json" CopyToOutputDirectory="PreserveNewest" />
     <!-- One set of scenario files for both heads: the MAUI suite's, run here where tagged @web. -->
     <!-- Users (TOD.11) have no web head yet (users-plan Q5): their file stays with the MAUI suite. -->
-    <None Include="..\Brinell.Samples.Todo.Uat\Scenarios\**\*.uat.md" Exclude="..\Brinell.Samples.Todo.Uat\Scenarios\TOD.11-*.uat.md" Link="Scenarios\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="..\Brinell.Samples.Todo.Uat\Scenarios\**\*.phrases.md" Link="Scenarios\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\Brinell.Samples.Todo.Uat\Scenarios\**\*.feature.md" Exclude="..\Brinell.Samples.Todo.Uat\Scenarios\TOD.11-*.feature.md" Link="Scenarios\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\Brinell.Samples.Todo.Uat\Scenarios\**\*.steps.md" Link="Scenarios\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <!-- And the scenarios only the web head can run yet: several apps in one scenario. -->
-    <None Update="Scenarios\*.uat.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Scenarios\*.feature.md" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

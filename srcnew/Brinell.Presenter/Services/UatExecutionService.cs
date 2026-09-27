@@ -29,7 +29,7 @@ public sealed class UatExecutionService : IUatExecutionService
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var configPath = Path.Combine(workspacePath, "uat.config.md");
+        var configPath = UatFileFormat.FindConfig(workspacePath);
         if (!File.Exists(configPath))
         {
             throw new InvalidOperationException($"UAT config was not found: {configPath}");

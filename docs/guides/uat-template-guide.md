@@ -1,7 +1,7 @@
 # UAT Template Guide
 
 Brinell UAT tests execute markdown scenarios using a `uat.config.md` file and
-one or more `.uat.md` scenario files. A small C# project ties them to a running
+one or more `.feature.md` scenario files. A small C# project ties them to a running
 app.
 
 A complete working example is
@@ -15,9 +15,9 @@ step in [One Todo UAT, end to end](../../samples/Todo/uat-walkthrough.md).
 testsnew/Brinell.<Platform>.Uat.Tests/
   uat.config.md
   Scenarios/
-    scenario-name.uat.md
+    scenario-name.feature.md
   ExpectedFailures/
-    known-failure.uat.md
+    known-failure.feature.md
   TestSettings/
     testsettings.json
   Runtime/
@@ -26,7 +26,10 @@ testsnew/Brinell.<Platform>.Uat.Tests/
     <App>UatScenarioTests.cs
 ```
 
-Put `uat.config.md`, `Scenarios/**/*.uat.md` and `TestSettings/**/*.json` in the
+A suite below the UI (the `service` head) names its config `bdd.config.md` instead; it is read the
+same way, and the name says which kind of suite it is.
+
+Put `uat.config.md`, `Scenarios/**/*.feature.md` and `TestSettings/**/*.json` in the
 csproj as `CopyToOutputDirectory="PreserveNewest"`; the runtime reads them from
 the output folder.
 
@@ -187,7 +190,7 @@ purely through its fixture's composition.
 The formal grammar, with every parser diagnostic, is in [UAT Scenario Grammar](../specs/uat-grammar.md).
 
 ```markdown
-# UAT: MAUI Main Page Greeting
+# Feature: MAUI Main Page Greeting
 
 ## Metadata
 
@@ -216,7 +219,7 @@ And Name should be enabled
 
 The scenario parser supports this document shape:
 
-- The file must contain exactly one `# UAT: <title>` heading.
+- The file must contain exactly one `# Feature: <title>` heading.
 - `## Metadata` is optional for parsing, but the format tests expect `App`,
   `Area`, `Target`, `Tags`, `Mode`, `Requires`, `Priority`, and `Evidence`.
   The table columns must be `Field` and `Value`.
@@ -232,10 +235,10 @@ The scenario parser supports this document shape:
   `### Examples` table. Step text and step table cells can reference example
   columns with `<columnName>` placeholders.
 
-Scenario discovery scans `Scenarios/**/*.uat.md` recursively, so larger apps
+Scenario discovery scans `Scenarios/**/*.feature.md` recursively, so larger apps
 can keep executable specs in module folders such as
-`Scenarios/Contacts/00-smoke.uat.md` and
-`Scenarios/Projects/01-list-basic.uat.md`.
+`Scenarios/Contacts/00-smoke.feature.md` and
+`Scenarios/Projects/01-list-basic.feature.md`.
 
 ## Metadata Fields
 
@@ -262,7 +265,7 @@ sees besides its folder's: `Accounts, Backend`. See
 ## One File Per Journey
 
 A file may hold many scenarios, so one journey can be one file: the journey in
-the `# UAT:` title and `Journey` metadata, each subtask a scenario whose heading
+the `# Feature:` title and `Journey` metadata, each subtask a scenario whose heading
 starts with its id and whose tag line carries it. The shared start goes in
 `## Background`. Fenced ```` ```gherkin ```` blocks are only for rendering - the
 parser drops the fence lines - and are the only prose-free way to lay the steps
@@ -280,7 +283,7 @@ And Title Error should not exist
 ````
 
 The Todo sample's
-[`TOD.02-create-a-todo.uat.md`](../../samples/Todo/tests/Brinell.Samples.Todo.Uat/Scenarios/TOD.02-create-a-todo.uat.md)
+[`TOD.02-create-a-todo.feature.md`](../../samples/Todo/tests/Brinell.Samples.Todo.Uat/Scenarios/TOD.02-create-a-todo.feature.md)
 is a complete one.
 
 For how step text binds to executable commands, see
@@ -350,15 +353,15 @@ step binds ([Arguments](uat-step-definitions.md#arguments)).
 
 Steps a tester repeats can be named once, as a callable phrase
 ([Callable Phrases](uat-step-definitions.md#callable-phrases)). One that several files use goes
-in a `*.phrases.md` file: one `# Phrases:` heading, then only `## Phrase:` and
-`## Phrase for each row:` sections. Put it in `Scenarios/` for every scenario, or in a module's
+in a `*.steps.md` file: one `# Steps:` heading, then only `## Step:` and
+`## Step for each row:` sections. Put it in `Scenarios/` for every scenario, or in a module's
 folder (`Scenarios/Invoicing/`) for the scenarios in that folder and below
 ([Where Phrases Live](uat-step-definitions.md#where-phrases-live)). The gate reads scenarios from
 the build output, so the project copies phrase files as it copies scenarios:
 
 ```xml
-<None Update="Scenarios\**\*.uat.md" CopyToOutputDirectory="PreserveNewest" />
-<None Update="Scenarios\**\*.phrases.md" CopyToOutputDirectory="PreserveNewest" />
+<None Update="Scenarios\**\*.feature.md" CopyToOutputDirectory="PreserveNewest" />
+<None Update="Scenarios\**\*.steps.md" CopyToOutputDirectory="PreserveNewest" />
 ```
 
 A suite that links another suite's scenarios links its phrase files too. `brinell-data validate`
@@ -410,7 +413,7 @@ enabled with `1`, `true`, `yes`, or `on`.
 
 One set of scenario files can run on two heads of the same app: the Todo sample's MAUI suite
 and its web suite (`samples/Todo/tests/Brinell.Samples.Todo.Web.Uat`) run the same
-`TOD.*.uat.md` files, the web project linking them from the MAUI one.
+`TOD.*.feature.md` files, the web project linking them from the MAUI one.
 
 - `Head` in the config's `Runtime` names the head a suite drives: `maui`, `web`, or `mixed` for
   a suite whose apps are of several heads (see below).

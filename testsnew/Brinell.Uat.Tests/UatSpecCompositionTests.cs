@@ -11,9 +11,9 @@ public sealed class UatSpecCompositionTests
         var directory = CreateTempDirectory();
         try
         {
-            var scenarioFilePath = Path.Combine(directory, "composition-spec.uat.md");
+            var scenarioFilePath = Path.Combine(directory, "composition-spec.feature.md");
             File.WriteAllText(scenarioFilePath, """
-                # UAT: Composition Spec
+                # Feature: Composition Spec
 
                 ## Metadata
 

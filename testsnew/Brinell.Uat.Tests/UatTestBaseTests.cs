@@ -15,7 +15,7 @@ public sealed class UatTestBaseTests
         {
             var configFilePath = WriteConfig(directory);
             var scenarioFilePath = WriteScenario(directory, """
-                # UAT: Base Harness
+                # Feature: Base Harness
 
                 ## Metadata
 
@@ -58,7 +58,7 @@ public sealed class UatTestBaseTests
         {
             var configFilePath = WriteConfig(directory, screenshotOnFailure: true);
             var scenarioFilePath = WriteScenario(directory, """
-                # UAT: Base Harness
+                # Feature: Base Harness
 
                 @smoke
                 ## Scenario: Expected failure flow
@@ -100,7 +100,7 @@ public sealed class UatTestBaseTests
         {
             var configFilePath = WriteConfig(directory);
             var scenarioFilePath = WriteScenario(directory, """
-                # UAT: Base Harness
+                # Feature: Base Harness
 
                 ## Metadata
 
@@ -162,7 +162,7 @@ public sealed class UatTestBaseTests
                 """);
             var configFilePath = WriteConfig(directory);
             var scenarioFilePath = WriteScenario(directory, """
-                # UAT: Settings Harness
+                # Feature: Settings Harness
 
                 @uat-900-1
                 ## Scenario: Scenario settings flow
@@ -200,7 +200,7 @@ public sealed class UatTestBaseTests
         {
             var configFilePath = WriteConfig(directory);
             var first = WriteScenario(directory, """
-                # UAT: First file
+                # Feature: First file
 
                 ## Scenario: One
 
@@ -210,9 +210,9 @@ public sealed class UatTestBaseTests
 
                 When I run the custom action
                 """);
-            var second = Path.Combine(directory, "second.uat.md");
+            var second = Path.Combine(directory, "second.feature.md");
             File.WriteAllText(second, """
-                # UAT: Second file
+                # Feature: Second file
 
                 ## Scenario: Three
 
@@ -242,7 +242,7 @@ public sealed class UatTestBaseTests
         {
             var configFilePath = WriteConfig(directory);
             var file = WriteScenario(directory, """
-                # UAT: Named
+                # Feature: Named
 
                 ## Scenario: Present
 
@@ -269,11 +269,11 @@ public sealed class UatTestBaseTests
         try
         {
             var scenarios = Directory.CreateDirectory(Path.Combine(directory, "Scenarios")).FullName;
-            File.WriteAllText(Path.Combine(scenarios, "a.uat.md"), ScenarioFile("A", "two", "A1", "A2"));
-            File.WriteAllText(Path.Combine(scenarios, "b.uat.md"), ScenarioFile("B", "one", "B1"));
-            File.WriteAllText(Path.Combine(scenarios, "c.uat.md"), ScenarioFile("C", null, "C1"));
-            File.WriteAllText(Path.Combine(scenarios, "d.uat.md"), """
-                # UAT: D
+            File.WriteAllText(Path.Combine(scenarios, "a.feature.md"), ScenarioFile("A", "two", "A1", "A2"));
+            File.WriteAllText(Path.Combine(scenarios, "b.feature.md"), ScenarioFile("B", "one", "B1"));
+            File.WriteAllText(Path.Combine(scenarios, "c.feature.md"), ScenarioFile("C", null, "C1"));
+            File.WriteAllText(Path.Combine(scenarios, "d.feature.md"), """
+                # Feature: D
 
                 ## Scenario Outline: Row
 
@@ -286,17 +286,17 @@ public sealed class UatTestBaseTests
                 | 1 |
                 | 2 |
                 """);
-            File.WriteAllText(Path.Combine(scenarios, "e.uat.md"), "not a uat file");
+            File.WriteAllText(Path.Combine(scenarios, "e.feature.md"), "not a uat file");
 
             var cases = UatScenarioSource.GetScenarioTheoryData(baseDirectory: directory)
                 .Select(data => $"{Path.GetFileName((string)data[0])}:{data[1]}")
                 .ToList();
 
-            Assert.Equal(["c.uat.md:C1", "d.uat.md:Row [1]", "d.uat.md:Row [2]", "e.uat.md:", "b.uat.md:B1", "a.uat.md:A1", "a.uat.md:A2"], cases);
+            Assert.Equal(["c.feature.md:C1", "d.feature.md:Row [1]", "d.feature.md:Row [2]", "e.feature.md:", "b.feature.md:B1", "a.feature.md:A1", "a.feature.md:A2"], cases);
             Assert.True(
                 string.CompareOrdinal(
-                    UatScenarioSource.GetOrderKey(Path.Combine(scenarios, "b.uat.md"), "B1"),
-                    UatScenarioSource.GetOrderKey(Path.Combine(scenarios, "a.uat.md"), "A1")) < 0);
+                    UatScenarioSource.GetOrderKey(Path.Combine(scenarios, "b.feature.md"), "B1"),
+                    UatScenarioSource.GetOrderKey(Path.Combine(scenarios, "a.feature.md"), "A1")) < 0);
         }
         finally
         {
@@ -307,7 +307,7 @@ public sealed class UatTestBaseTests
     private static string ScenarioFile(string title, string? testData, params string[] scenarios)
     {
         var metadata = testData is null ? string.Empty : $"## Metadata\n\n| Field | Value |\n| --- | --- |\n| TestData | {testData} |\n\n";
-        return $"# UAT: {title}\n\n{metadata}" + string.Concat(scenarios.Select(name => $"## Scenario: {name}\n\nWhen I run the custom action\n\n"));
+        return $"# Feature: {title}\n\n{metadata}" + string.Concat(scenarios.Select(name => $"## Scenario: {name}\n\nWhen I run the custom action\n\n"));
     }
 
     private static UatCommandCatalog CreatePassingCatalog(HarnessFixture fixture)
@@ -368,7 +368,7 @@ public sealed class UatTestBaseTests
 
     private static string WriteScenario(string directory, string markdown)
     {
-        var filePath = Path.Combine(directory, "scenario.uat.md");
+        var filePath = Path.Combine(directory, "scenario.feature.md");
         File.WriteAllText(filePath, markdown);
         return filePath;
     }

@@ -5,10 +5,10 @@ namespace Brinell.Uat;
 /// <summary>How often a callable phrase runs its body for one call.</summary>
 public enum UatCallableKind
 {
-    /// <summary><c>## Phrase:</c> - once.</summary>
+    /// <summary><c>## Step:</c> - once.</summary>
     Once,
 
-    /// <summary><c>## Phrase for each row:</c> - once per row of the call's table.</summary>
+    /// <summary><c>## Step for each row:</c> - once per row of the call's table.</summary>
     EachRow,
 }
 
@@ -26,7 +26,7 @@ public enum UatPassedBlock
 }
 
 /// <summary>
-/// A named sequence of steps written in scenario language: <c>## Phrase: a project {name}</c>.
+/// A named sequence of steps written in scenario language: <c>## Step: a project {name}</c>.
 /// Bound where it is called; it has no run-time existence of its own.
 /// </summary>
 /// <param name="Kind">Once, or once per row of the call's table.</param>
@@ -56,8 +56,8 @@ public sealed record UatCallable(
     /// <summary>For a scenario file's own callable, the namespaces that file uses; its body binds with them.</summary>
     public IReadOnlyList<string> Usings { get; init; } = [];
 
-    /// <summary>The heading as a call reads it: <c>Phrase for each row: ...</c> or <c>Phrase: ...</c>.</summary>
-    public override string ToString() => $"{(Kind == UatCallableKind.EachRow ? "Phrase for each row" : "Phrase")}: {Phrase}";
+    /// <summary>The heading as a call reads it: <c>Step for each row: ...</c> or <c>Step: ...</c>.</summary>
+    public override string ToString() => $"{(Kind == UatCallableKind.EachRow ? "Step for each row" : "Step")}: {Phrase}";
 }
 
 /// <summary>A row of a callable's <c>Parameters</c> table.</summary>
@@ -67,8 +67,8 @@ public sealed record UatCallable(
 /// <param name="Source">The row's line.</param>
 public sealed record UatCallableParameterDeclaration(string Name, string TypeName, string? Example, UatSourceLocation Source);
 
-/// <summary>A <c>*.phrases.md</c> file: callable phrases seen by every scenario in its folder and below.</summary>
-/// <param name="Title">The <c># Phrases:</c> heading's text.</param>
+/// <summary>A <c>*.steps.md</c> file: callable phrases seen by every scenario in its folder and below.</summary>
+/// <param name="Title">The <c># Steps:</c> heading's text.</param>
 /// <param name="Callables">Its phrases.</param>
 /// <param name="Source">The file.</param>
 public sealed record UatPhrasesDocument(string Title, IReadOnlyList<UatCallable> Callables, UatSourceLocation Source);

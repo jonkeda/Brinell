@@ -23,7 +23,7 @@ public static class UatMarkdownParser
         return Parse(File.ReadAllText(filePath), filePath);
     }
 
-    /// <summary>Parses a <c>*.phrases.md</c> file: one <c># Phrases:</c> heading and only phrase sections.</summary>
+    /// <summary>Parses a <c>*.steps.md</c> file: one <c># Steps:</c> heading and only step sections.</summary>
     /// <param name="markdown">The file's text.</param>
     /// <param name="filePath">The file, for locations.</param>
     public static UatPhrasesParseResult ParsePhrases(string markdown, string? filePath = null)
@@ -80,25 +80,25 @@ public static class UatMarkdownParser
                     pendingTags.Clear();
                 }
 
-                if (!TryParseHeading(trimmed, out var level, out var headingText))
+                if (!TryParseHeading(ReadHeading(line), out var level, out var headingText))
                 {
-                    AddError("UAT021", $"Unexpected content outside a UAT section: '{trimmed}'.", line);
+                    AddError("UAT021", $"Unexpected content outside a feature section: '{trimmed}'.", line);
                     _index++;
                     continue;
                 }
 
-                if (level == 1 && headingText.StartsWith("UAT:", StringComparison.Ordinal))
+                if (level == 1 && headingText.StartsWith("Feature:", StringComparison.Ordinal))
                 {
                     if (title is not null)
                     {
-                        AddError("UAT001", "Document must contain exactly one '# UAT:' heading.", line);
+                        AddError("UAT001", "Document must contain exactly one '# Feature:' heading.", line);
                     }
 
-                    title = headingText["UAT:".Length..].Trim();
+                    title = headingText["Feature:".Length..].Trim();
                     titleSource = Location(line);
                     if (title.Length == 0)
                     {
-                        AddError("UAT002", "UAT heading must include a title.", line);
+                        AddError("UAT002", "The '# Feature:' heading must include a title.", line);
                     }
 
                     _index++;
@@ -107,7 +107,7 @@ public static class UatMarkdownParser
 
                 if (title is null)
                 {
-                    AddError("UAT003", "Document must start with a '# UAT:' heading before other sections.", line);
+                    AddError("UAT003", "Document must start with a '# Feature:' heading before other sections.", line);
                 }
 
                 if (level == 2 && headingText.Equals("Metadata", StringComparison.Ordinal))
@@ -208,7 +208,7 @@ public static class UatMarkdownParser
                 _diagnostics.Add(new UatDiagnostic(
                     UatDiagnosticSeverity.Error,
                     "UAT000",
-                    "Document must contain exactly one '# UAT:' heading.",
+                    "Document must contain exactly one '# Feature:' heading.",
                     new UatSourceLocation(_filePath, 1)));
             }
 
@@ -253,21 +253,21 @@ public static class UatMarkdownParser
 
                 var line = Current;
                 var trimmed = line.Text.Trim();
-                if (!TryParseHeading(trimmed, out var level, out var headingText))
+                if (!TryParseHeading(ReadHeading(line), out var level, out var headingText))
                 {
-                    AddError("UAT028", $"A phrase file holds only '## Phrase:' sections; found '{trimmed}'.", line);
+                    AddError("UAT028", $"A steps file holds only '## Step:' sections; found '{trimmed}'.", line);
                     _index++;
                     continue;
                 }
 
-                if (level == 1 && headingText.StartsWith("Phrases:", StringComparison.Ordinal))
+                if (level == 1 && headingText.StartsWith("Steps:", StringComparison.Ordinal))
                 {
                     if (title is not null)
                     {
-                        AddError("UAT028", "A phrase file has exactly one '# Phrases:' heading.", line);
+                        AddError("UAT028", "A steps file has exactly one '# Steps:' heading.", line);
                     }
 
-                    title = headingText["Phrases:".Length..].Trim();
+                    title = headingText["Steps:".Length..].Trim();
                     titleSource = Location(line);
                     _index++;
                     continue;
@@ -275,7 +275,7 @@ public static class UatMarkdownParser
 
                 if (title is null)
                 {
-                    AddError("UAT028", "A phrase file starts with a '# Phrases:' heading.", line);
+                    AddError("UAT028", "A steps file starts with a '# Steps:' heading.", line);
                     title = string.Empty;
                 }
 
@@ -290,18 +290,32 @@ public static class UatMarkdownParser
                     continue;
                 }
 
-                AddError("UAT028", $"A phrase file holds only phrase sections; '{trimmed}' belongs in a .uat.md file.", line);
+                AddError("UAT028", $"A steps file holds only step sections; '{trimmed}' belongs in a .feature.md file.", line);
                 _index++;
                 SkipToNextSection();
             }
 
             if (title is null)
             {
-                AddError("UAT028", "A phrase file starts with a '# Phrases:' heading.", new UatSourceLocation(_filePath, 1));
+                AddError("UAT028", "A steps file starts with a '# Steps:' heading.", new UatSourceLocation(_filePath, 1));
             }
 
             var document = new UatPhrasesDocument(title ?? string.Empty, callables, titleSource ?? new UatSourceLocation(_filePath, 1));
             return new UatPhrasesParseResult(document, _diagnostics);
+        }
+
+        // A heading in the form before feature files is one error with its fix, then read as the
+        // new form, so the rest of the file is still checked.
+        private string ReadHeading(Line line)
+        {
+            var trimmed = line.Text.Trim();
+            if (UatFileFormat.NewHeading(trimmed) is not { } heading)
+            {
+                return trimmed;
+            }
+
+            AddError(UatFileFormat.OldFormCode, $"'{trimmed}' is the old form of '{heading}'. Run 'brinell-data validate --fix' to rewrite it.", line);
+            return heading;
         }
 
         private void SkipToNextSection()
@@ -314,7 +328,7 @@ public static class UatMarkdownParser
 
         private static bool TryParsePhraseHeading(string headingText, out UatCallableKind kind, out string phrase)
         {
-            foreach (var (prefix, candidate) in new[] { ("Phrase for each row:", UatCallableKind.EachRow), ("Phrase:", UatCallableKind.Once) })
+            foreach (var (prefix, candidate) in new[] { ("Step for each row:", UatCallableKind.EachRow), ("Step:", UatCallableKind.Once) })
             {
                 if (headingText.StartsWith(prefix, StringComparison.Ordinal))
                 {
@@ -335,7 +349,7 @@ public static class UatMarkdownParser
         {
             if (phrase.Length == 0)
             {
-                AddError("UAT025", "A '## Phrase:' heading names the phrase: '## Phrase: a project {name}'.", heading);
+                AddError("UAT025", "A '## Step:' heading names the step: '## Step: a project {name}'.", heading);
             }
 
             SkipBlankLines();
@@ -465,14 +479,14 @@ public static class UatMarkdownParser
 
                 if (trimmed is TableMarker or DocStringMarker)
                 {
-                    AddError("UAT024", $"'{trimmed}' goes directly under a step in a '## Phrase:' section.", line);
+                    AddError("UAT024", $"'{trimmed}' goes directly under a step in a '## Step:' section.", line);
                     _index++;
                     continue;
                 }
 
                 if (!TryParseStep(trimmed, out var keyword, out var text))
                 {
-                    AddError("UAT011", $"Expected a UAT step but found '{trimmed}'.", line);
+                    AddError("UAT011", $"Expected a step but found '{trimmed}'.", line);
                     _index++;
                     continue;
                 }
@@ -492,7 +506,7 @@ public static class UatMarkdownParser
                     }
                     else
                     {
-                        AddError("UAT024", $"'{Current.Text.Trim()}' passes a call's block, so it is only allowed in a '## Phrase:' section.", Current);
+                        AddError("UAT024", $"'{Current.Text.Trim()}' passes a call's block, so it is only allowed in a '## Step:' section.", Current);
                     }
 
                     _index++;

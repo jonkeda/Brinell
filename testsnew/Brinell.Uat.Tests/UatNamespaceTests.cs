@@ -35,7 +35,7 @@ public sealed class UatNamespaceTests : IDisposable
     [Fact]
     public void AScenario_BindsToThePhraseClassOfItsFolder_FromBelowIt()
     {
-        var invocation = Assert.Single(BindOk("Invoicing/Credit notes/credit.uat.md", "When I add a line \"Rent\""));
+        var invocation = Assert.Single(BindOk("Invoicing/Credit notes/credit.feature.md", "When I add a line \"Rent\""));
 
         Assert.EndsWith("InvoicingPhrases.AddLine", invocation.Command.CommandId, StringComparison.Ordinal);
     }
@@ -43,8 +43,8 @@ public sealed class UatNamespaceTests : IDisposable
     [Fact]
     public void TheSameTextInTwoSiblingFolders_IsNotAmbiguous_EachFileSeesItsOwn()
     {
-        var invoicing = Assert.Single(BindOk("Invoicing/invoice.uat.md", "When I add a line \"Rent\""));
-        var purchasing = Assert.Single(BindOk("Purchasing/order.uat.md", "When I add a line \"Rent\""));
+        var invoicing = Assert.Single(BindOk("Invoicing/invoice.feature.md", "When I add a line \"Rent\""));
+        var purchasing = Assert.Single(BindOk("Purchasing/order.feature.md", "When I add a line \"Rent\""));
 
         Assert.EndsWith("InvoicingPhrases.AddLine", invoicing.Command.CommandId, StringComparison.Ordinal);
         Assert.EndsWith("PurchasingPhrases.AddLine", purchasing.Command.CommandId, StringComparison.Ordinal);
@@ -53,7 +53,7 @@ public sealed class UatNamespaceTests : IDisposable
     [Fact]
     public void APhraseOfAnotherFolder_FailsBinding_NamingWhereItIs()
     {
-        var error = BindError("Accounts/account.uat.md", "When I add a line \"Rent\"");
+        var error = BindError("Accounts/account.feature.md", "When I add a line \"Rent\"");
 
         Assert.Equal("UATB010", error.Code);
         Assert.Contains("'I add a line {text}' of the folder 'Invoicing'", error.Message, StringComparison.Ordinal);
@@ -64,9 +64,9 @@ public sealed class UatNamespaceTests : IDisposable
     [Fact]
     public void AFolderPhrase_AndAGlobalOne_ForOneStep_AreAmbiguousInThatFolder_AndNotAtTheRoot()
     {
-        Assert.Single(BindOk("root.uat.md", "When I note \"paid\""));
+        Assert.Single(BindOk("root.feature.md", "When I note \"paid\""));
 
-        var error = BindError("Invoicing/invoice.uat.md", "When I note \"paid\"");
+        var error = BindError("Invoicing/invoice.feature.md", "When I note \"paid\"");
 
         Assert.Equal("UATB002", error.Code);
     }
@@ -74,15 +74,15 @@ public sealed class UatNamespaceTests : IDisposable
     [Fact]
     public void PhraseFiles_AreSeenFromTheFilesFolderUpToTheRoot_RootFirst_NotFromSiblings()
     {
-        Write("Common.phrases.md", Phrases("a fresh ledger", "When I note \"fresh\""));
-        Write("Invoicing/Invoicing.phrases.md", Phrases("an invoice {title}", "When I add a line <title>"));
-        Write("Accounts/Accounts.phrases.md", Phrases("an account", "When I note \"account\""));
-        var scenario = Write("Invoicing/Credit notes/credit.uat.md", Scenario("Given a fresh ledger"));
+        Write("Common.steps.md", Phrases("a fresh ledger", "When I note \"fresh\""));
+        Write("Invoicing/Invoicing.steps.md", Phrases("an invoice {title}", "When I add a line <title>"));
+        Write("Accounts/Accounts.steps.md", Phrases("an account", "When I note \"account\""));
+        var scenario = Write("Invoicing/Credit notes/credit.feature.md", Scenario("Given a fresh ledger"));
 
         var files = UatScenarioFiles.PhraseFilesFor(scenario);
         var loaded = UatScenarioFiles.Load(scenario);
 
-        Assert.Equal(["Common.phrases.md", "Invoicing.phrases.md"], files.Select(Path.GetFileName));
+        Assert.Equal(["Common.steps.md", "Invoicing.steps.md"], files.Select(Path.GetFileName));
 
         // Every folder's callables are loaded, each in its namespace; the binder picks those seen.
         Assert.Equal(
@@ -93,10 +93,10 @@ public sealed class UatNamespaceTests : IDisposable
     [Fact]
     public void ABrokenPhraseFileInAnotherFolder_DoesNotFailTheScenario()
     {
-        Write("Accounts/Accounts.phrases.md", "## Phrase: headless\n\nWhen I note \"x\"\n");
+        Write("Accounts/Accounts.steps.md", "## Step: headless\n\nWhen I note \"x\"\n");
 
-        var there = UatScenarioFiles.Load(Write("Accounts/account.uat.md", Scenario("When I note \"paid\"")));
-        var here = UatScenarioFiles.Load(Write("Invoicing/invoice.uat.md", Scenario("When I add a line \"Rent\"")));
+        var there = UatScenarioFiles.Load(Write("Accounts/account.feature.md", Scenario("When I note \"paid\"")));
+        var here = UatScenarioFiles.Load(Write("Invoicing/invoice.feature.md", Scenario("When I add a line \"Rent\"")));
 
         Assert.Contains(there.Diagnostics, d => d.Code == "UAT028");
         Assert.True(here.Success, UatDiagnosticsFormatter.FormatDiagnostics(here.Diagnostics));
@@ -105,12 +105,12 @@ public sealed class UatNamespaceTests : IDisposable
     [Fact]
     public void ACallableOfTheFolder_BindsItsStepsThere_AndASiblingsCallableIsNotSeen()
     {
-        Write("Common.phrases.md", Phrases("a fresh ledger", "When I note \"fresh\""));
-        Write("Invoicing/Invoicing.phrases.md", Phrases("an invoice {title}", "When I add a line <title>"));
-        Write("Accounts/Accounts.phrases.md", Phrases("an account", "When I note \"account\""));
+        Write("Common.steps.md", Phrases("a fresh ledger", "When I note \"fresh\""));
+        Write("Invoicing/Invoicing.steps.md", Phrases("an invoice {title}", "When I add a line <title>"));
+        Write("Accounts/Accounts.steps.md", Phrases("an account", "When I note \"account\""));
 
-        var bound = BindFile("Invoicing/invoice.uat.md", "Given a fresh ledger\nAnd an invoice \"Rent\"");
-        var hidden = BindFile("Invoicing/other.uat.md", "Given an account");
+        var bound = BindFile("Invoicing/invoice.feature.md", "Given a fresh ledger\nAnd an invoice \"Rent\"");
+        var hidden = BindFile("Invoicing/other.feature.md", "Given an account");
 
         Assert.True(bound.Success, UatDiagnosticsFormatter.FormatDiagnostics(bound.Diagnostics));
         Assert.EndsWith("InvoicingPhrases.AddLine", bound.Document!.Scenarios[0].Invocations[^1].Command.CommandId, StringComparison.Ordinal);
@@ -123,9 +123,9 @@ public sealed class UatNamespaceTests : IDisposable
     public void ACallablesSteps_BindWhereItIsWritten_NotWhereItIsCalled()
     {
         // The root's callable cannot reach Invoicing's phrase, even when an Invoicing file calls it (D9).
-        Write("Common.phrases.md", Phrases("a lined ledger", "When I add a line \"Rent\""));
+        Write("Common.steps.md", Phrases("a lined ledger", "When I add a line \"Rent\""));
 
-        var result = BindFile("Invoicing/invoice.uat.md", "Given a lined ledger");
+        var result = BindFile("Invoicing/invoice.feature.md", "Given a lined ledger");
 
         var error = Assert.Single(result.Diagnostics, d => d.Severity == UatDiagnosticSeverity.Error);
         Assert.Contains("UATB010", error.Code + error.Message, StringComparison.Ordinal);
@@ -135,21 +135,21 @@ public sealed class UatNamespaceTests : IDisposable
     [Fact]
     public void AFilesOwnCallable_IsNotSeenFromAPhraseFilesCallable()
     {
-        Write("Invoicing/Invoicing.phrases.md", Phrases("a checked invoice", "Given my own start"));
-        var scenario = Scenario("Given a checked invoice") + "\n\n" + Phrases("my own start", "When I note \"start\"").Replace("# Phrases: Test\n\n", string.Empty, StringComparison.Ordinal);
+        Write("Invoicing/Invoicing.steps.md", Phrases("a checked invoice", "Given my own start"));
+        var scenario = Scenario("Given a checked invoice") + "\n\n" + Phrases("my own start", "When I note \"start\"").Replace("# Steps: Test\n\n", string.Empty, StringComparison.Ordinal);
 
-        var result = UatScenarioFiles.Load(Write("Invoicing/invoice.uat.md", scenario)).Bind(Catalogs());
+        var result = UatScenarioFiles.Load(Write("Invoicing/invoice.feature.md", scenario)).Bind(Catalogs());
 
         Assert.False(result.Success);
-        Assert.Contains(result.Diagnostics, d => d.Message.Contains("'my own start', written in invoice.uat.md for that file only", StringComparison.Ordinal));
+        Assert.Contains(result.Diagnostics, d => d.Message.Contains("'my own start', written in invoice.feature.md for that file only", StringComparison.Ordinal));
     }
 
     [Fact]
     public void AFilesOwnCallable_BindsItsStepsInTheFilesFolder()
     {
-        var scenario = Scenario("Given my own line") + "\n\n" + Phrases("my own line", "When I add a line \"Rent\"").Replace("# Phrases: Test\n\n", string.Empty, StringComparison.Ordinal);
+        var scenario = Scenario("Given my own line") + "\n\n" + Phrases("my own line", "When I add a line \"Rent\"").Replace("# Steps: Test\n\n", string.Empty, StringComparison.Ordinal);
 
-        var result = UatScenarioFiles.Load(Write("Invoicing/invoice.uat.md", scenario)).Bind(Catalogs());
+        var result = UatScenarioFiles.Load(Write("Invoicing/invoice.feature.md", scenario)).Bind(Catalogs());
 
         Assert.True(result.Success, UatDiagnosticsFormatter.FormatDiagnostics(result.Diagnostics));
     }
@@ -249,9 +249,9 @@ public sealed class UatNamespaceTests : IDisposable
         return type.CreateType();
     }
 
-    private static string Scenario(string steps) => $"# UAT: Namespaces\n\n## Scenario: Namespaces\n\n{steps}\n";
+    private static string Scenario(string steps) => $"# Feature: Namespaces\n\n## Scenario: Namespaces\n\n{steps}\n";
 
-    private static string Phrases(string phrase, string steps) => $"# Phrases: Test\n\n## Phrase: {phrase}\n\n{steps}\n";
+    private static string Phrases(string phrase, string steps) => $"# Steps: Test\n\n## Step: {phrase}\n\n{steps}\n";
 }
 
 [TestModuleScan(typeof(NamespaceFixture), NamespacePrefix = "Brinell.Uat.Tests.NamespaceCases")]

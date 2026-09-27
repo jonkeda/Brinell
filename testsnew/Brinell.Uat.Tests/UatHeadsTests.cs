@@ -13,7 +13,7 @@ namespace Brinell.Uat.Tests.HeadCases
             var fixture = new HeadsFixture();
 
             await Run(fixture, """
-                # UAT: Two heads
+                # Feature: Two heads
 
                 ## Scenario: The same page name on two heads
 
@@ -124,8 +124,8 @@ namespace Brinell.Uat.Tests.HeadCases
             Directory.CreateDirectory(Path.Combine(directory, "Scenarios"));
             try
             {
-                File.WriteAllText(Path.Combine(directory, "Scenarios", "sync.uat.md"), """
-                    # UAT: Sync
+                File.WriteAllText(Path.Combine(directory, "Scenarios", "sync.feature.md"), """
+                    # Feature: Sync
 
                     @service
                     ## Scenario: Headless only
@@ -170,7 +170,7 @@ namespace Brinell.Uat.Tests.HeadCases
             var directory = CreateSuite(out var configFilePath);
             try
             {
-                var filePath = Path.Combine(directory, "heads.uat.md");
+                var filePath = Path.Combine(directory, "heads.feature.md");
                 File.WriteAllText(filePath, scenario);
                 await new Harness(fixture, configFilePath).RunFileAsync(filePath);
             }

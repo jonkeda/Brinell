@@ -34,7 +34,7 @@ Run the platform-specific guide before running live UI tests.
 UAT test projects combine:
 
 - `uat.config.md`;
-- one or more `.uat.md` scenario files;
+- one or more `.feature.md` scenario files;
 - a fixture, an xUnit collection and a `UatScenarioTestBase<TFixture>` class.
 
 A scenario step binds to a phrase, and the built-in phrases are `[BddWhen]` / `[BddThen]` attributes on the

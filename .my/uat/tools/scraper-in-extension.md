@@ -125,7 +125,7 @@ outputs:
 
 - **Page objects** from the DOM, as above.
 - **A draft scenario** from the *actions* recorded between snapshots (click Save, type into
-  Title). Copilot turns them into `.uat.md` steps using **only phrases from the catalog**, then
+  Title). Copilot turns them into `.feature.md` steps using **only phrases from the catalog**, then
   checks the draft with `validate_scenario` before proposing it. A step with no phrase is left as
   a marked gap for a developer, never an invented phrase.
 

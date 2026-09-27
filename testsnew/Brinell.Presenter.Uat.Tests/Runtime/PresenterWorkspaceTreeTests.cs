@@ -25,8 +25,8 @@ public sealed class PresenterWorkspaceTreeTests : IDisposable
 
         var allTree = _page.AllWorkspaceTree.GetText(timeoutMs: 10000) ?? string.Empty;
         Assert.Contains("uat.config.md", allTree, StringComparison.Ordinal);
-        Assert.Contains("main-page-greeting.uat.md", allTree, StringComparison.Ordinal);
-        Assert.Contains("main-page-validation.uat.md", allTree, StringComparison.Ordinal);
+        Assert.Contains("main-page-greeting.feature.md", allTree, StringComparison.Ordinal);
+        Assert.Contains("main-page-validation.feature.md", allTree, StringComparison.Ordinal);
         Assert.DoesNotContain(".csproj", allTree, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain(".dll", allTree, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("bin", allTree, StringComparison.OrdinalIgnoreCase);
@@ -42,7 +42,7 @@ public sealed class PresenterWorkspaceTreeTests : IDisposable
     {
         ReloadWorkspace();
 
-        const string collapsedFile = "main-page-validation.uat.md";
+        const string collapsedFile = "main-page-validation.feature.md";
         const string revealedSuite = "MAUI Main Page Greeting Validation";
 
         _page.ExpandTreeNode(UatWorkspaceNodeKind.MarkdownFile, collapsedFile, revealedSuite);

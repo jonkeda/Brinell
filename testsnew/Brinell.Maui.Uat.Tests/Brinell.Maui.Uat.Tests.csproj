@@ -12,8 +12,8 @@
 
   <ItemGroup>
     <None Update="uat.config.md" CopyToOutputDirectory="PreserveNewest" />
-    <None Update="Scenarios\**\*.uat.md" CopyToOutputDirectory="PreserveNewest" />
-    <None Update="ExpectedFailures\**\*.uat.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Scenarios\**\*.feature.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="ExpectedFailures\**\*.feature.md" CopyToOutputDirectory="PreserveNewest" />
     <None Update="TestSettings\**\*.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

@@ -39,7 +39,7 @@ public sealed class UatAppsHostTests
         var fixture = new AppsFixture();
 
         await suite.Run(fixture, """
-            # UAT: Apps host
+            # Feature: Apps host
 
             ## Scenario: Subjects use the fixture's apps
 
@@ -83,7 +83,7 @@ public sealed class UatAppsHostTests
 
         public Task Run(AppsFixture fixture, string scenario)
         {
-            var filePath = Path.Combine(_directory, "apps.uat.md");
+            var filePath = Path.Combine(_directory, "apps.feature.md");
             File.WriteAllText(filePath, scenario);
             return new Harness(fixture, ConfigFilePath).RunFileAsync(filePath);
         }

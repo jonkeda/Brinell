@@ -16,11 +16,11 @@ public sealed class UatExecutionServiceStrideTests
             var appPath = Path.Combine(root, "FakeStrideApp.exe");
             File.WriteAllText(appPath, string.Empty);
 
-            var scenarioPath = Path.Combine(root, "stride-smoke.uat.md");
+            var scenarioPath = Path.Combine(root, "stride-smoke.feature.md");
             File.WriteAllText(
                 scenarioPath,
                 """
-                # UAT: STRIDE Presenter Execution
+                # Feature: STRIDE Presenter Execution
 
                 ## Scenario: Presenter creates a STRIDE session
 

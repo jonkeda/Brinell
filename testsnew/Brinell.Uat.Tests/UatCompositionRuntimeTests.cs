@@ -14,7 +14,7 @@ public sealed class UatCompositionRuntimeTests
         {
             var configFilePath = WriteConfig(directory);
             var scenarioFilePath = WriteScenario(directory, """
-                # UAT: Composition Runtime
+                # Feature: Composition Runtime
 
                 @composition
                 ## Scenario: First scoped flow
@@ -55,7 +55,7 @@ public sealed class UatCompositionRuntimeTests
         {
             var configFilePath = WriteConfig(directory);
             var scenarioFilePath = WriteScenario(directory, """
-                # UAT: Tables
+                # Feature: Tables
 
                 ## Scenario: Rows reach the phrase
 
@@ -84,7 +84,7 @@ public sealed class UatCompositionRuntimeTests
         {
             var configFilePath = WriteConfig(directory);
             var scenarioFilePath = WriteScenario(directory, """
-                # UAT: But
+                # Feature: But
 
                 ## Scenario: A phrase-class Then follows But
 
@@ -187,7 +187,7 @@ public sealed class UatCompositionRuntimeTests
 
     private static string WriteScenario(string directory, string markdown)
     {
-        var filePath = Path.Combine(directory, "composition.uat.md");
+        var filePath = Path.Combine(directory, "composition.feature.md");
         File.WriteAllText(filePath, markdown);
         return filePath;
     }

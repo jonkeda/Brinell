@@ -23,7 +23,7 @@ internal static class UatWorkspaceConfigInspector
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(workspacePath);
 
-        var configPath = Path.Combine(workspacePath, "uat.config.md");
+        var configPath = UatFileFormat.FindConfig(workspacePath);
         if (!File.Exists(configPath))
         {
             return new UatWorkspaceConfigLoadResult(

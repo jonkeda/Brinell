@@ -26,7 +26,7 @@ public sealed class UatWorkspaceService : IUatWorkspaceService
         while (directory is not null)
         {
             var candidate = Path.Combine(directory.FullName, "testsnew", "Brinell.Maui.Uat.Tests");
-            if (File.Exists(Path.Combine(candidate, "uat.config.md")))
+            if (File.Exists(UatFileFormat.FindConfig(candidate)))
             {
                 return candidate;
             }
@@ -49,7 +49,7 @@ public sealed class UatWorkspaceService : IUatWorkspaceService
         var configInfo = UatWorkspaceConfigInspector.Inspect(folderPath, _projectEvaluator);
         diagnostics.AddRange(configInfo.Diagnostics);
 
-        var configPath = Path.Combine(folderPath, "uat.config.md");
+        var configPath = UatFileFormat.FindConfig(folderPath);
         var config = File.Exists(configPath) ? UatConfigParser.ParseFile(configPath) : null;
         var discoveryReport = config is not null
             ? FormatDiscoveryReport(config)
@@ -118,7 +118,7 @@ public sealed class UatWorkspaceService : IUatWorkspaceService
 
         if (files.Count == 0)
         {
-            diagnostics.Add("No .uat.md files were found.");
+            diagnostics.Add("No .feature.md files were found.");
         }
 
         var workspaceName = new DirectoryInfo(folderPath).Name;
@@ -136,7 +136,7 @@ public sealed class UatWorkspaceService : IUatWorkspaceService
     private static IEnumerable<string> EnumerateUatFiles(string folderPath)
     {
         return Directory
-            .EnumerateFiles(folderPath, "*.uat.md", SearchOption.AllDirectories)
+            .EnumerateFiles(folderPath, UatFileFormat.FeatureFilePattern, SearchOption.AllDirectories)
             .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase) &&
                            !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase))
             .OrderBy(path => IsExpectedFailurePath(path) ? 1 : 0)

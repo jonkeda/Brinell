@@ -3,7 +3,7 @@ using Brinell.Uat;
 namespace Brinell.Samples.Todo.Uat.Runtime;
 
 /// <summary>
-/// Runs every scenario of every <c>Scenarios/*.uat.md</c> against the hermetic Todo app, one test
+/// Runs every scenario of every <c>Scenarios/*.feature.md</c> against the hermetic Todo app, one test
 /// case per scenario (and per outline row).
 /// </summary>
 /// <remarks>
@@ -42,7 +42,7 @@ public sealed class TodoUatScenarioTests : UatScenarioTestBase<TodoUatFixture>
     [MemberData(nameof(Scenarios))]
     public Task Scenario_Passes(string filePath, string scenarioName) => RunUatScenarioAsync(filePath, scenarioName);
 
-    /// <summary>The files that must fail binding: <c>ExpectedFailures/*.uat.md</c>.</summary>
+    /// <summary>The files that must fail binding: <c>ExpectedFailures/*.feature.md</c>.</summary>
     public static IEnumerable<object[]> ExpectedFailures => GetScenarioFiles("ExpectedFailures");
 
     /// <summary>

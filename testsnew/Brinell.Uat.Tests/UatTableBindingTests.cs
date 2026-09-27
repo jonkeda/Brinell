@@ -161,7 +161,7 @@ public sealed class UatTableBindingTests
         var lines = rows.ReplaceLineEndings("\n").Split('\n').ToList();
         var columns = lines[0].Count(c => c == '|') - 1;
         lines.Insert(1, "|" + string.Concat(Enumerable.Repeat(" --- |", columns)));
-        var parse = UatMarkdownParser.Parse($"# UAT: T\n\n## Scenario: S\n\nGiven a table\n{string.Join("\n", lines)}\n");
+        var parse = UatMarkdownParser.Parse($"# Feature: T\n\n## Scenario: S\n\nGiven a table\n{string.Join("\n", lines)}\n");
         return parse.Document!.Scenarios[0].Steps[0].Table!;
     }
 

@@ -18,7 +18,7 @@ running app:
 | File | Job |
 | --- | --- |
 | `uat.config.md` | Where the app is, which assemblies hold the pages and controls, how to report. One per test project. |
-| `Scenarios/*.uat.md` | The executable scenarios themselves, in `Given / When / Then`. |
+| `Scenarios/*.feature.md` | The executable scenarios themselves, in `Given / When / Then`. |
 | `Runtime/*.cs` | The fixture, the xUnit collection and the scenario test class. Written once. |
 
 Brinell reads the scenario, matches each line to a **phrase**, and calls the matching
@@ -27,7 +27,7 @@ Markdown *is* the test.
 
 ```mermaid
 flowchart LR
-    MD[TOD.02-create-a-todo.uat.md<br/>Given/When/Then] --> P[Parser]
+    MD[TOD.02-create-a-todo.feature.md<br/>Given/When/Then] --> P[Parser]
     P --> C[Command catalog<br/>discovered phrases]
     C --> B[Binder<br/>one phrase per step]
     B --> R[Runner]
@@ -39,11 +39,11 @@ flowchart LR
 
 ## 2. The scenario file
 
-One file per journey. [`Scenarios/TOD.02-create-a-todo.uat.md`](tests/Brinell.Samples.Todo.Uat/Scenarios/TOD.02-create-a-todo.uat.md)
+One file per journey. [`Scenarios/TOD.02-create-a-todo.feature.md`](tests/Brinell.Samples.Todo.Uat/Scenarios/TOD.02-create-a-todo.feature.md)
 holds every UAT subtask of TOD.02; here is its header and TOD.02.3:
 
 ````markdown
-# UAT: TOD.02 Create a todo
+# Feature: TOD.02 Create a todo
 
 ## Metadata
 
@@ -89,7 +89,7 @@ And the database should have todos
 
 Notes on why each part is there:
 
-- **`# UAT: <title>`** — exactly one per file; it names the journey.
+- **`# Feature: <title>`** — exactly one per file; it names the journey.
 - **`## Metadata`** — the traceable header. `Journey: TOD.02` ties the file to the checklist;
   `TestData: one-todo` is the starting data the app is launched on (one synced todo, "Buy milk").
 - **`## Background`** — steps put in front of every scenario in the file.
@@ -181,7 +181,7 @@ public TodoStatus<TScope> AssertShowsStatus(string? expected, ...) { ... }
 ```
 
 No registration, no catalog edit: the attribute *is* the registration, and
-[`TOD.05-change-status.uat.md`](tests/Brinell.Samples.Todo.Uat/Scenarios/TOD.05-change-status.uat.md)
+[`TOD.05-change-status.feature.md`](tests/Brinell.Samples.Todo.Uat/Scenarios/TOD.05-change-status.feature.md)
 reads
 
 ```markdown
@@ -302,10 +302,10 @@ dotnet test tests/Brinell.Samples.Todo.Uat
 
 ## 9. Why this is worth it
 
-- A product owner can read `TOD.02-create-a-todo.uat.md` and sign off on it — there is no C#
+- A product owner can read `TOD.02-create-a-todo.feature.md` and sign off on it — there is no C#
   to understand.
 - It runs deterministically against the real app; no LLM in the loop at run time.
-- It stays traceable: `TOD.02.3` in the journey checklist → this `.uat.md` → green/red.
+- It stays traceable: `TOD.02.3` in the journey checklist → this `.feature.md` → green/red.
 
 When a scenario outgrows the phrase vocabulary, there are two escapes before giving up on
 Markdown: a `[BddWhen]` or `[BddThen]` on the control that does the work (§4), or one on a
@@ -324,7 +324,7 @@ When Finn taps Sync
 Then Todos should have todo "Pack for the trip"
 ```
 
-See `tests/Brinell.Samples.Todo.Mixed.Uat/Scenarios/TOD.07-mixed.uat.md` and
+See `tests/Brinell.Samples.Todo.Mixed.Uat/Scenarios/TOD.07-mixed.feature.md` and
 [AD-015](../../.docs/decisions/ad-015-a-steps-subject-picks-its-app.md).
 
 ---

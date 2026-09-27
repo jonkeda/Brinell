@@ -1634,12 +1634,12 @@ public sealed class PresenterShellViewModel : ViewModelBase
 
     private static UatWorkspaceNodeKind GetFileNodeKind(string fileName)
     {
-        if (fileName.Equals("uat.config.md", StringComparison.OrdinalIgnoreCase))
+        if (UatFileFormat.IsConfigFileName(fileName))
         {
             return UatWorkspaceNodeKind.WorkflowConfig;
         }
 
-        return fileName.EndsWith(".uat.md", StringComparison.OrdinalIgnoreCase)
+        return fileName.EndsWith(UatFileFormat.FeatureExtension, StringComparison.OrdinalIgnoreCase)
             ? UatWorkspaceNodeKind.MarkdownFile
             : UatWorkspaceNodeKind.MarkdownFile;
     }

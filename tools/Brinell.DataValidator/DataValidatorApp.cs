@@ -41,11 +41,16 @@ public static class DataValidatorApp
     private static int Validate(ToolOptions options, TextWriter output, TextWriter errors)
     {
         List<TestDataDiagnostic> diagnostics = [];
-        var scenarioFile = options.Argument is { } argument && argument.EndsWith(".uat.md", StringComparison.OrdinalIgnoreCase)
+        var scenarioFile = options.Argument is { } argument && argument.EndsWith(UatFileFormat.FeatureExtension, StringComparison.OrdinalIgnoreCase)
             ? Existing(options, argument)
             : null;
         var testSets = 0;
         var scenarios = 0;
+
+        if (options.Argument is null && options.ConfigPath is { } project)
+        {
+            diagnostics.AddRange(CheckOldForms(options, project, output));
+        }
 
         if (scenarioFile is null && (options.Assemblies.Count > 0 || HasTestData(options) || options.ConfigPath is null || !ScenarioCheck.CanCheck(options.ConfigPath)))
         {
@@ -129,6 +134,48 @@ public static class DataValidatorApp
         }
 
         return diagnostics.Count == 0 ? 0 : 1;
+    }
+
+    // A file named or headed in the form before feature files: --fix renames it and rewrites its
+    // headings, otherwise each old name is an error (old headings are the parser's).
+    private static IEnumerable<TestDataDiagnostic> CheckOldForms(ToolOptions options, string config, TextWriter output)
+    {
+        var folder = ScenarioCheck.ScenarioFolder(config);
+        if (!Directory.Exists(folder))
+        {
+            return [];
+        }
+
+        var old = UatFileFormat.OldFilePatterns
+            .SelectMany(pattern => Directory.EnumerateFiles(folder, pattern, SearchOption.AllDirectories))
+            .Order(StringComparer.Ordinal)
+            .ToList();
+        if (!options.Fix)
+        {
+            return old.Select(file => new TestDataDiagnostic(
+                file, 1, UatFileFormat.OldFormCode, null,
+                $"'{Path.GetFileName(file)}' is the old name of '{Path.GetFileName(UatFileFormat.NewFileName(file))}'. Run 'brinell-data validate --fix' to rename it."));
+        }
+
+        foreach (var file in old)
+        {
+            var renamed = UatFileFormat.NewFileName(file)!;
+            File.Move(file, renamed);
+            output.WriteLine($"Renamed {Display(options, file)} to {Path.GetFileName(renamed)}.");
+        }
+
+        foreach (var file in Directory.EnumerateFiles(folder, UatFileFormat.FeatureFilePattern, SearchOption.AllDirectories)
+            .Concat(Directory.EnumerateFiles(folder, UatFileFormat.StepFilePattern, SearchOption.AllDirectories)))
+        {
+            var (text, count) = UatFileFormat.RewriteHeadings(File.ReadAllText(file));
+            if (count > 0)
+            {
+                File.WriteAllText(file, text);
+                output.WriteLine($"Fixed {count} heading(s) in {Display(options, file)}.");
+            }
+        }
+
+        return [];
     }
 
     // Every problem of the scenario files, the same checks the xUnit gate runs; --fix first rewrites
@@ -265,7 +312,7 @@ public static class DataValidatorApp
 
     private static int Snippet(ToolOptions options, TextWriter output)
     {
-        var target = options.Argument ?? throw new ToolException("snippet needs a step, e.g. 'brinell-data snippet Scenarios/TOD.01.uat.md:14'.");
+        var target = options.Argument ?? throw new ToolException("snippet needs a step, e.g. 'brinell-data snippet Scenarios/TOD.01.feature.md:14'.");
         var colon = target.LastIndexOf(':');
         if (colon <= 1 || !int.TryParse(target[(colon + 1)..], out var line))
         {
@@ -447,7 +494,7 @@ public static class DataValidatorApp
 
             Options:
               --assembly <path>   the assembly with the TestDataDefinition (repeatable)
-              --config <path>     the uat.config.md to read (default: ./uat.config.md)
+              --config <path>     the config to read (default: ./uat.config.md or ./bdd.config.md)
               --format json       validate prints JSON, for tools and models
 
             Exit code: 0 fine, 1 problems found, 2 the tool could not run.
@@ -514,7 +561,7 @@ internal sealed record ToolOptions(
             }
         }
 
-        config ??= Path.Combine(currentDirectory, "uat.config.md");
+        config ??= UatFileFormat.FindConfig(currentDirectory);
         return new ToolOptions(args[0], argument, assemblies, File.Exists(config) ? config : null, json, check, currentDirectory) { Fix = fix, Keyword = keyword };
     }
 }

@@ -1,7 +1,7 @@
 namespace Brinell.Uat;
 
 /// <summary>A scenario file with the callable phrases it can see, ready to bind.</summary>
-/// <param name="Document">The parsed file; null when it has no <c># UAT:</c> heading.</param>
+/// <param name="Document">The parsed file; null when it has no <c># Feature:</c> heading.</param>
 /// <param name="Callables">
 /// The file's own callables and those of every phrase file under its scenario root. The binder
 /// binds a step only to those the file sees (<see cref="UatScenarioFiles.PhraseFilesFor"/>), and
@@ -23,19 +23,19 @@ public sealed record UatLoadedScenarioFile(
 
 /// <summary>
 /// The one loader of scenario files, for the xUnit gate, the tool and the Presenter: the file, and
-/// the <c>*.phrases.md</c> files of its folder and every folder above it, up to the scenario root.
+/// the <c>*.steps.md</c> files of its folder and every folder above it, up to the scenario root.
 /// </summary>
 public static class UatScenarioFiles
 {
     /// <summary>The name ending of a phrase file.</summary>
-    public const string PhraseFilePattern = "*.phrases.md";
+    public const string PhraseFilePattern = UatFileFormat.StepFilePattern;
 
     private const string ScenarioFolder = "Scenarios";
 
     private static readonly Dictionary<string, (DateTime Written, UatPhrasesParseResult Parse)> PhraseFiles = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Parses the file and the phrase files it can see.</summary>
-    /// <param name="filePath">A <c>.uat.md</c> file.</param>
+    /// <param name="filePath">A <c>.feature.md</c> file.</param>
     public static UatLoadedScenarioFile Load(string filePath)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
@@ -78,7 +78,7 @@ public static class UatScenarioFiles
     }
 
     /// <summary>
-    /// The phrase files a scenario file sees: the <c>*.phrases.md</c> in its scenario root and in
+    /// The phrase files a scenario file sees: the <c>*.steps.md</c> in its scenario root and in
     /// each folder down to its own, root first. A sibling folder's are not seen (D6).
     /// </summary>
     public static IReadOnlyList<string> PhraseFilesFor(string filePath)

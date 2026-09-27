@@ -31,7 +31,7 @@ public sealed class UatSessionTests
         var fixture = new SessionFixture();
 
         await suite.Run(fixture, """
-            # UAT: Two apps
+            # Feature: Two apps
 
             ## Scenario: Each step runs on the current app
 
@@ -52,7 +52,7 @@ public sealed class UatSessionTests
         var fixture = new SessionFixture();
 
         await suite.Run(fixture, """
-            # UAT: Two apps
+            # Feature: Two apps
 
             ## Scenario: Subjects switch the app
 
@@ -71,7 +71,7 @@ public sealed class UatSessionTests
         using var suite = new Suite();
 
         var error = await Assert.ThrowsAsync<InvalidOperationException>(() => suite.Run(new SessionFixture(), """
-            # UAT: Two apps
+            # Feature: Two apps
 
             ## Scenario: An unknown app
 
@@ -88,7 +88,7 @@ public sealed class UatSessionTests
         using var suite = new Suite();
 
         var error = await Assert.ThrowsAsync<InvalidOperationException>(() => suite.Run(new SessionFixture(), """
-            # UAT: Two apps
+            # Feature: Two apps
 
             ## Scenario: A failure on Bob's app
 
@@ -135,7 +135,7 @@ public sealed class UatSessionTests
 
         public Task Run(SessionFixture fixture, string scenario)
         {
-            var filePath = Path.Combine(_directory, "sessions.uat.md");
+            var filePath = Path.Combine(_directory, "sessions.feature.md");
             File.WriteAllText(filePath, scenario);
             return new Harness(fixture, ConfigFilePath).RunFileAsync(filePath);
         }

@@ -32,7 +32,7 @@ the Diagnostics tab, not the tree, is the expected first screen.
 
 ## The Workspace
 
-A workspace is a folder with `uat.config.md` and `.uat.md` scenario files. It is anchored on a
+A workspace is a folder with `uat.config.md` and `.feature.md` scenario files. It is anchored on a
 **UAT project and a fixture** (AD-018):
 
 ```markdown
@@ -90,7 +90,7 @@ milliseconds.
 | Command Catalog | every phrase, by keyword |
 
 The tree starts at the workspace folder and shows only Markdown: folders with Markdown in them,
-`.md` files, and under each `.uat.md` its suite, scenarios and steps. `bin`, `obj` and non-Markdown
+`.md` files, and under each `.feature.md` its suite, scenarios and steps. `bin`, `obj` and non-Markdown
 files are hidden. A collapsed parent shows the worst status of its children.
 
 ## Running
@@ -102,7 +102,7 @@ not wait. **Stop** cancels either.
 | Selected | Runs |
 | --- | --- |
 | Workspace or folder | every scenario file under it |
-| `.uat.md` file or suite | its scenarios |
+| `.feature.md` file or suite | its scenarios |
 | Scenario | that scenario |
 | Step | its scenario |
 | Config or other Markdown | nothing |

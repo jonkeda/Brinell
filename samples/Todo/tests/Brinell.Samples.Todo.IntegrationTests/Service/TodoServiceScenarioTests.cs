@@ -7,7 +7,7 @@ namespace Brinell.Samples.Todo.IntegrationTests.Service;
 /// scenario, each on a new <see cref="TodoHost"/>.
 /// </summary>
 /// <remarks>
-/// The scenario files are the MAUI suite's, linked; the <c>service</c> head in <c>uat.config.md</c>
+/// The scenario files are the MAUI suite's, linked; the <c>service</c> head in <c>bdd.config.md</c>
 /// lists only the <c>@service</c> scenarios and binds only them. A step that needs a screen is a bind
 /// error (<c>UATB013</c>), shown by the expected-failure file.
 /// </remarks>
@@ -33,7 +33,7 @@ public sealed class TodoServiceScenarioTests : UatScenarioTestBase<TodoServiceFi
     [MemberData(nameof(Scenarios))]
     public Task Scenario_Passes(string filePath, string scenarioName) => RunUatScenarioAsync(filePath, scenarioName);
 
-    /// <summary>The files that must fail binding: <c>ExpectedFailures/*.uat.md</c>.</summary>
+    /// <summary>The files that must fail binding: <c>ExpectedFailures/*.feature.md</c>.</summary>
     public static IEnumerable<object[]> ExpectedFailures => GetScenarioFiles("ExpectedFailures");
 
     /// <summary>A screen step in a <c>@service</c> scenario fails binding before anything runs.</summary>
