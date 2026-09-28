@@ -55,6 +55,12 @@ internal static class BddExplorerWriter
           const root = document.getElementById("uat-root");
           const picker = document.getElementById("uat-suite");
           host.on(message => {
+            // The IDE's theme, as the preview takes it: CSS variables and a light, dark or high-contrast kind.
+            if (message.type === "theme") {
+              for (const [name, value] of Object.entries(message.vars || {})) { document.documentElement.style.setProperty(name, value); }
+              if (message.kind) { document.documentElement.setAttribute("data-theme", message.kind); }
+              return;
+            }
             if (message.type !== "update") { return; }
             root.innerHTML = message.html;
             for (const tab of document.querySelectorAll("[data-view]")) {

@@ -198,6 +198,7 @@ Open the config (`uat.config.md`). Undo every change afterwards.
 | X-5 | Click **Results**. | The last run of each scenario you ran in section 5, by feature file, with status and duration. Clicking one opens its heading. | ☐ |
 | X-6 | Pick another suite in the picker. | The views change to that suite. | ☐ |
 | X-7 | Run a scenario (R-1) with Results showing. | Results refreshes when the run ends. | ☐ |
+| X-8 | With the explorer open, switch Visual Studio's theme (**Tools > Theme**) between a dark and a light one. | The explorer's colours follow at once, as the preview's do (P-11). | ☐ |
 
 ## 12. Copilot (optional)
 

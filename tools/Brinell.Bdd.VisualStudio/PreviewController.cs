@@ -539,6 +539,8 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
         {
             control.Post(VsTheme.Message());
         }
+
+        _explorer?.Post(VsTheme.Message());
     }
 
     private void Detach()
