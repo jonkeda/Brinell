@@ -41,6 +41,7 @@ How this differs from the other trees:
 - [AD-020: A tier is a head](decisions/ad-020-a-tier-is-a-head.md)
 - [AD-021: Brinell.Bdd under Brinell.Uat](decisions/ad-021-bdd-under-uat.md)
 - [AD-022: The IDEs run the gate's engine](decisions/ad-022-the-ides-run-the-gates-engine.md)
+- [AD-023: A feature file is Markdown; Gherkin is fenced](decisions/ad-023-a-feature-file-is-markdown.md)
 
 ## Contracts
 

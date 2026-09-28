@@ -65,5 +65,8 @@ The short list that must not be broken. Each links the decision that explains it
   `Brinell.Bdd.LanguageServer`, which checks with the gate's own code and words, and loads a suite
   only through `Brinell.Bdd.Workspace`. A scenario runs by its `BddScenario` address.
   [AD-022](decisions/ad-022-the-ides-run-the-gates-engine.md)
+- **Gherkin is fenced; the rest is prose.** A step is read only inside a ` ```gherkin ` block; any
+  other Markdown, step-like text included, is prose. The engine reads the file through Markdig.
+  [AD-023](decisions/ad-023-a-feature-file-is-markdown.md)
 - **The generator output is not hand-edited.** `.gen.cs` mirrors `.tpl.cs` through
   `Brinell.Generator`. [control-object](contracts/control-object.md)
