@@ -8,7 +8,7 @@ namespace Brinell.Uat.Preview.Tests;
 public sealed class UatPreviewBindingTests : IDisposable
 {
     private readonly string _folder = Path.Combine(Path.GetTempPath(), "Brinell", "UatPreviewBindingTests", Guid.NewGuid().ToString("N"), "Features");
-    private readonly UatCatalogSet _catalogs = new(UatStepDefinitionRuntime.FromTypes(new object(), typeof(ShelfSteps)).CreateCommandCatalog());
+    private readonly BddCatalogSet _catalogs = new(BddStepDefinitionRuntime.FromTypes(new object(), typeof(ShelfSteps)).CreateCommandCatalog());
 
     public UatPreviewBindingTests() => Directory.CreateDirectory(_folder);
 

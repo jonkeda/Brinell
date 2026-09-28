@@ -29,13 +29,13 @@ public sealed class UatExecutionService : IUatExecutionService
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var configPath = UatFileFormat.FindConfig(workspacePath);
+        var configPath = BddFileFormat.FindConfig(workspacePath);
         if (!File.Exists(configPath))
         {
             throw new InvalidOperationException($"UAT config was not found: {configPath}");
         }
 
-        var config = UatConfigParser.ParseFile(configPath);
+        var config = BddConfigParser.ParseFile(configPath);
         ValidateConfig(config, configPath);
 
         var workingDirectory = UatWorkspaceConfigInspector.ResolveWorkingDirectory(workspacePath, config);
@@ -60,7 +60,7 @@ public sealed class UatExecutionService : IUatExecutionService
 
             var runtime = new UatRuntime(fixture, configPath);
             var catalog = runtime.CreateCommandCatalog();
-            var file = UatScenarioFiles.Load(scenarioFilePath);
+            var file = BddScenarioFiles.Load(scenarioFilePath);
             if (!file.Success)
             {
                 throw new InvalidOperationException(FormatDiagnostics(file.Diagnostics));
@@ -84,7 +84,7 @@ public sealed class UatExecutionService : IUatExecutionService
                     $"Scenario '{scenarioName}' was not found in {scenarioFilePath}.");
             }
 
-            var runner = new UatScenarioRunner();
+            var runner = new BddScenarioRunner();
             runtime.ConfigureContext(runner.Context);
             executionScope = runtime.CreateScope();
             if (executionScope is Microsoft.Extensions.DependencyInjection.IServiceScope serviceScope)
@@ -143,7 +143,7 @@ public sealed class UatExecutionService : IUatExecutionService
         }
     }
 
-    private static void ValidateConfig(UatConfig config, string configPath)
+    private static void ValidateConfig(BddConfig config, string configPath)
     {
         if (!config.Runtime.TryGetValue("Target", out var target) ||
             !UatTargetRegistry.TryGet(target, out _))
@@ -161,7 +161,7 @@ public sealed class UatExecutionService : IUatExecutionService
 
         // A Project row replaces the Pages registration, so either is enough.
         if (config.Assemblies.Count == 0 &&
-            !config.Runtime.ContainsKey(UatConfigFields.Project))
+            !config.Runtime.ContainsKey(BddConfigFields.Project))
         {
             throw new InvalidOperationException(
                 $"UAT config '{configPath}' must set Runtime Project or register at least one assembly.");
@@ -169,7 +169,7 @@ public sealed class UatExecutionService : IUatExecutionService
     }
 
     private static IEnumerable<IDisposable?> CreateTargetEnvironment(
-        UatConfig config,
+        BddConfig config,
         string? appPath,
         string placementReportPath)
     {
@@ -188,7 +188,7 @@ public sealed class UatExecutionService : IUatExecutionService
         }
     }
 
-    private static string GetRegisteredAssembly(UatConfig config, string kind)
+    private static string GetRegisteredAssembly(BddConfig config, string kind)
     {
         var registration = config.Assemblies.FirstOrDefault(assembly =>
             assembly.Kind.Equals(kind, StringComparison.OrdinalIgnoreCase));
@@ -200,7 +200,7 @@ public sealed class UatExecutionService : IUatExecutionService
     /// The Pages assembly: an explicit registration when there is one, otherwise the output
     /// of the project named by <c>Runtime Project</c>.
     /// </summary>
-    private static string ResolvePagesAssembly(string workspacePath, UatConfig config)
+    private static string ResolvePagesAssembly(string workspacePath, BddConfig config)
     {
         var registration = config.Assemblies.FirstOrDefault(assembly =>
             assembly.Kind.Equals("Pages", StringComparison.OrdinalIgnoreCase));
@@ -223,7 +223,7 @@ public sealed class UatExecutionService : IUatExecutionService
             "UAT config must set Runtime Project or register a Pages assembly.");
     }
 
-    private static object CreateFixture(UatConfig config, Assembly pagesAssembly)
+    private static object CreateFixture(BddConfig config, Assembly pagesAssembly)
     {
         var fixtureName = config.Runtime["Fixture"].Trim();
         var fixtureType = pagesAssembly.GetTypes().FirstOrDefault(type =>
@@ -243,14 +243,14 @@ public sealed class UatExecutionService : IUatExecutionService
                ?? throw new InvalidOperationException($"Fixture '{fixtureType.FullName}' could not be created.");
     }
 
-    private static string FormatDiagnostics(IEnumerable<UatDiagnostic> diagnostics)
+    private static string FormatDiagnostics(IEnumerable<BddDiagnostic> diagnostics)
     {
         return string.Join(
             Environment.NewLine,
             diagnostics.Select(diagnostic => $"{diagnostic.Location}: {diagnostic.Code} {diagnostic.Message}"));
     }
 
-    private static string FormatCatalog(UatCommandCatalog catalog)
+    private static string FormatCatalog(BddCommandCatalog catalog)
     {
         return "Command catalog:" + Environment.NewLine + string.Join(
             Environment.NewLine,
@@ -268,7 +268,7 @@ internal sealed class UatRuntimeAssemblyResolver : IDisposable
     private readonly UatSessionLoadContext _sessionContext;
     private bool _disposed;
 
-    public UatRuntimeAssemblyResolver(string workspacePath, UatConfig config, string? workingDirectory)
+    public UatRuntimeAssemblyResolver(string workspacePath, BddConfig config, string? workingDirectory)
     {
         WorkspacePath = workspacePath;
         ProbeRoot = workingDirectory ??
@@ -355,7 +355,7 @@ internal sealed class UatRuntimeAssemblyResolver : IDisposable
 
     private static IReadOnlyList<string> BuildProbeDirectories(
         string workspacePath,
-        UatConfig config,
+        BddConfig config,
         string probeRoot,
         string? workingDirectory)
     {

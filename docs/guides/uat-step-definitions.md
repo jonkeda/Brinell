@@ -18,10 +18,10 @@ method the attribute sits on:
 
 ```text
 .feature.md file
-  -> UatMarkdownParser
-  -> UatCommandCatalog
-  -> UatBinder
-  -> UatScenarioRunner / UatStepExecutionSession
+  -> BddMarkdownParser
+  -> BddCommandCatalog
+  -> BddBinder
+  -> BddScenarioRunner / BddStepExecutionSession
 ```
 
 The parser reads the scenario shape. The catalog owns available phrases. The
@@ -92,7 +92,7 @@ Rules:
 
 ## Binding Rules
 
-`UatBinder` accepts a step only when it matches exactly one command pattern.
+`BddBinder` accepts a step only when it matches exactly one command pattern.
 
 Binding behavior:
 
@@ -139,10 +139,10 @@ the machine's culture, and checked when the step binds (AD-016):
 | `DateTime`, `DateTimeOffset` | `dd-MMM-yyyy HH:mm` | `12-May-2026 14:30` |
 | `TimeOnly` / `TimeSpan` | `HH:mm` / `d h m s` | `09:15` / `1h 30m` |
 | nullable | `null`, or an empty cell | |
-| `UatUserRole` | a user or app name from the `Apps` table | `Eva` |
+| `BddUserRole` | a user or app name from the `Apps` table | `Eva` |
 | arrays and lists | `, ` between items and a last `and` | `"A", "B" and "C"`, `1,250.5, 3 and 7` |
 | a record, a list of records | the table under the step | see below |
-| an app type | `[UatArgumentType]` with `static Parse(string)`, or an `IUatArgumentConverter<T>` in the fixture's scan | `1,250.00 EUR` |
+| an app type | `[BddArgumentType]` with `static Parse(string)`, or an `IBddArgumentConverter<T>` in the fixture's scan | `1,250.00 EUR` |
 
 `1,5`, `2026-05-12` and `12/05/2026` are refused, with the way to write them. A parameter the
 phrase does not name comes from under the step:
@@ -175,7 +175,7 @@ And I write the note
 ```
 
 A step has one table or doc string, so a method takes at most one such parameter. Relative dates
-resolve against `IUatClock.Now` when the fixture implements it (the Todo fixtures return their
+resolve against `IBddClock.Now` when the fixture implements it (the Todo fixtures return their
 test set's now), and against the current time otherwise.
 
 ## Phrases From Method Names
@@ -344,7 +344,7 @@ registered directly in the runtime and spec catalogs:
 | `Then` | `I should be on the {page} page` | Asserts the page and sets the current page. |
 | `Then` | `I should see {text}` | Searches controls on the current page with `GetText()`. |
 
-A fourth is registered only when the fixture hosts several apps (`IUatSessionHost`):
+A fourth is registered only when the fixture hosts several apps (`IBddSessionHost`):
 `{app} uses the app`, as a `Given` or a `When`, makes an app of the config's `Apps` table current.
 See [Several Apps In One Scenario](uat-template-guide.md#several-apps-in-one-scenario).
 
@@ -492,7 +492,7 @@ Then I should be on the Todo List page
 ```
 
 - The phrase is written as for a step-definition class: placeholders name the method's parameters, which
-  are typed, and a `UatTable` parameter takes the step's table. Nothing is inferred from the
+  are typed, and a `BddTable` parameter takes the step's table. Nothing is inferred from the
   method name; a page method without an attribute is not a phrase.
 - The step runs on the page object of **its own page**, and fails binding when another page is
   current ([Page Scope](#page-scope)).
@@ -674,7 +674,7 @@ Opening a page with the built-in page phrase:
 2. Runs an optional fixture navigation method named `NavigateTo<PageName>`.
 3. Gets the page instance from the fixture or the active DI scope.
 4. Waits for readiness when the page exposes a supported readiness method.
-5. Stores the current page in `UatExecutionContext`.
+5. Stores the current page in `BddExecutionContext`.
 
 Readiness methods tried by the runtime:
 
@@ -703,7 +703,7 @@ For each parsed scenario:
    result.
 
 Presenter uses the same bound model, but drives it through
-`UatStepExecutionSession` so a selected scenario can be stepped with `Next`.
+`BddStepExecutionSession` so a selected scenario can be stepped with `Next`.
 
 ## Custom Root Phrases
 
@@ -727,8 +727,8 @@ public void AssertRememberedTrainedPlayer(string name)
 Supported custom phrase method inputs include:
 
 - phrase arguments whose names match `{parameter}` placeholders;
-- `UatExecutionContext`;
-- `UatStepInvocation`;
+- `BddExecutionContext`;
+- `BddStepInvocation`;
 - `CancellationToken`;
 - `TestSettings`;
 - typed settings classes, including classes marked with
@@ -744,8 +744,8 @@ Supported returns:
 | `Task` | Passed when the task completes. |
 | `bool` | `false` fails the step; `true` passes. |
 | `string` | Passed with the string as the step message. |
-| `UatStepResult` | Uses the returned result. |
-| `Task<UatStepResult>` | Uses the awaited result. |
+| `BddStepResult` | Uses the returned result. |
+| `Task<BddStepResult>` | Uses the awaited result. |
 
 Exceptions fail the step and are included in the step result.
 
@@ -806,19 +806,19 @@ Manually registered command patterns can require or reject tables:
 
 ```csharp
 catalog.Register(
-    UatEffectiveStepKeyword.When,
+    BddEffectiveStepKeyword.When,
     "I sign in with credentials",
     "Login.SignInWithCredentials",
     requiresTable: true);
 ```
 
-Custom root phrases and step-definition classes receive the table as a `UatTable`
+Custom root phrases and step-definition classes receive the table as a `BddTable`
 parameter, or bound to records by a record or list parameter (see [Arguments](#arguments)).
 
 To check what a step found against its table, compare in one go and get one diff (missing
 items, extra items, and the closest item's different cells):
 
-- `table.AssertExactly(items)` / `table.AssertContains(items)` for a `UatTable` against objects;
+- `table.AssertExactly(items)` / `table.AssertContains(items)` for a `BddTable` against objects;
 - `BddSets.AssertSet(expected, actual, ordered: false)` for two lists, such as a table bound to
   records against what the server received.
 
@@ -840,7 +840,7 @@ public sealed class BackendHooks(ITodoArrangement fixture) : BddStepDefinitionsB
     public void ResetServer() => fixture.ResetBackend();
 
     [BddAfterStep]
-    public void Log(UatStepResult result) { }
+    public void Log(BddStepResult result) { }
 
     [BddAfterScenario]
     public void TearDown() { }
@@ -851,11 +851,11 @@ public sealed class BackendHooks(ITodoArrangement fixture) : BddStepDefinitionsB
 | --- | --- |
 | `[BddBeforeFeature]` | once per feature file per test run, before its first scenario; static |
 | `[BddBeforeScenario(tags)]` | before each scenario with one of the tags (every scenario without tags) |
-| `[BddAfterStep(tags)]` | after each step; may take the step's `UatStepResult` |
+| `[BddAfterStep(tags)]` | after each step; may take the step's `BddStepResult` |
 | `[BddAfterScenario(tags)]` | after each scenario, also when a step failed |
 
 The test base's own `BeforeFile` and `BeforeScenario` run first; then the hooks of one kind, by
-class and method name. A hook may take a `UatExecutionContext` and a `CancellationToken`. A hook
+class and method name. A hook may take a `BddExecutionContext` and a `CancellationToken`. A hook
 that throws fails the scenario: before it, at the first step; after a step, at that step. The
 step-by-step session the Presenter drives does not run hooks.
 
@@ -921,18 +921,18 @@ The rule is [AD-015](../../.docs/decisions/ad-015-a-steps-subject-picks-its-app.
 - `srcnew/Brinell.Core/Testing/BddStepAttribute.cs` and `UatKeywordAttributes.cs` — the step attributes
 - `srcnew/Brinell.Core/Interfaces/*.cs` — the built-in control-verb declarations
 - `srcnew/Brinell.Uat/UatCatalogBuilder.cs` — the discovery pass and both projections
-- `srcnew/Brinell.Uat/UatMarkdownParser.cs`
-- `srcnew/Brinell.Uat/UatCommandCatalog.cs`
-- `srcnew/Brinell.Uat/UatBinder.cs` — binding, subjects, the current app, and expanding calls
-- `srcnew/Brinell.Uat/UatCallables.cs`, `UatPreparedCallables.cs` — callable phrases, their types and problems
-- `srcnew/Brinell.Uat/UatScenarioFiles.cs` — loading a scenario file with the phrase files it sees
-- `srcnew/Brinell.Uat/UatCatalogSet.cs` — the catalogs per head, and what a step can see
-- `srcnew/Brinell.Uat/UatValues.cs` — how every scenario value is read and written
-- `srcnew/Brinell.Uat/UatPhraseDeclarations.cs` — a method's phrases, parameters and problems
-- `srcnew/Brinell.Uat/UatArguments.cs` — the bind-time check and the run-time read
-- `srcnew/Brinell.Uat/UatArgumentTypes.cs` — `UatUserRole`, `[UatArgumentType]`, converters
+- `srcnew/Brinell.Uat/BddMarkdownParser.cs`
+- `srcnew/Brinell.Uat/BddCommandCatalog.cs`
+- `srcnew/Brinell.Uat/BddBinder.cs` — binding, subjects, the current app, and expanding calls
+- `srcnew/Brinell.Uat/UatCallables.cs`, `BddPreparedCallables.cs` — callable phrases, their types and problems
+- `srcnew/Brinell.Uat/BddScenarioFiles.cs` — loading a scenario file with the phrase files it sees
+- `srcnew/Brinell.Uat/BddCatalogSet.cs` — the catalogs per head, and what a step can see
+- `srcnew/Brinell.Uat/BddValues.cs` — how every scenario value is read and written
+- `srcnew/Brinell.Uat/BddPhraseDeclarations.cs` — a method's phrases, parameters and problems
+- `srcnew/Brinell.Uat/BddArguments.cs` — the bind-time check and the run-time read
+- `srcnew/Brinell.Uat/BddArgumentTypes.cs` — `BddUserRole`, `[BddArgumentType]`, converters
 - `srcnew/Brinell.Uat/UatScenarioCheck.cs` — checking files without running them (`brinell-data`)
-- `srcnew/Brinell.Uat/UatSessions.cs` — `IUatSessionHost`, `IUatAppsHost`
+- `srcnew/Brinell.Uat/UatSessions.cs` — `IBddSessionHost`, `IUatAppsHost`
 - `srcnew/Brinell.Uat/UatExecution.cs`
 - `srcnew/Brinell.Uat/UatCatalogBuilder.cs`
 - `srcnew/Brinell.Uat/UatReflectionRuntime.cs`

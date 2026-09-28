@@ -130,7 +130,7 @@ public sealed class UatSubjectTests
     public void ASubject_MatchingTwoNamedPhrases_IsAmbiguous()
     {
         var catalog = CreateCatalog();
-        catalog.Register(UatEffectiveStepKeyword.When, "{user} taps {target}", "Test.TapTarget");
+        catalog.Register(BddEffectiveStepKeyword.When, "{user} taps {target}", "Test.TapTarget");
 
         var diagnostic = Assert.Single(Bind("When Eva taps OK", catalog).Diagnostics);
 
@@ -152,9 +152,9 @@ public sealed class UatSubjectTests
     [Fact]
     public void AnAppOfAnotherHead_BindsAgainstThatHeadsCatalog()
     {
-        var web = new UatCommandCatalog();
-        web.Register(UatEffectiveStepKeyword.When, "I tap {control}", "Web.Tap");
-        web.Register(UatEffectiveStepKeyword.When, "{user} taps {control}", "Web.Tap");
+        var web = new BddCommandCatalog();
+        web.Register(BddEffectiveStepKeyword.When, "I tap {control}", "Web.Tap");
+        web.Register(BddEffectiveStepKeyword.When, "{user} taps {control}", "Web.Tap");
 
         var invocations = BindScenario(
             """
@@ -162,7 +162,7 @@ public sealed class UatSubjectTests
             And Finn taps OK
             And I tap OK
             """,
-            catalogsByHead: new Dictionary<string, UatCommandCatalog> { ["web"] = web });
+            catalogsByHead: new Dictionary<string, BddCommandCatalog> { ["web"] = web });
 
         Assert.Equal(["Test.Tap", "Web.Tap", "Web.Tap"], invocations.Select(invocation => invocation.CommandId));
     }
@@ -218,9 +218,9 @@ public sealed class UatSubjectTests
     [Fact]
     public void AnAppNamedLikeAControl_IsAnError()
     {
-        var catalogs = new UatCatalogSet(CreateCatalog(), ReadApps(), suiteHead: null, new Dictionary<string, UatCommandCatalog>(), ["eva"]);
+        var catalogs = new BddCatalogSet(CreateCatalog(), ReadApps(), suiteHead: null, new Dictionary<string, BddCommandCatalog>(), ["eva"]);
 
-        var result = UatBinder.Bind(Parse("When I tap OK"), catalogs);
+        var result = BddBinder.Bind(Parse("When I tap OK"), catalogs);
 
         var diagnostic = Assert.Single(result.Diagnostics);
         Assert.Equal("UATB005", diagnostic.Code);
@@ -230,7 +230,7 @@ public sealed class UatSubjectTests
     [Fact]
     public void WithoutApps_ANamedPhrase_IsAnError()
     {
-        var result = UatBinder.Bind(Parse("When Eva taps OK"), CreateCatalog());
+        var result = BddBinder.Bind(Parse("When Eva taps OK"), CreateCatalog());
 
         var diagnostic = Assert.Single(result.Diagnostics);
         Assert.Equal("UATB007", diagnostic.Code);
@@ -248,27 +248,27 @@ public sealed class UatSubjectTests
         Assert.Equal("web", apps.Single(app => app.Name == "Finn's web").Head);
     }
 
-    private static UatStepInvocation BindSingle(string step)
+    private static BddStepInvocation BindSingle(string step)
         => Assert.Single(BindScenario(step));
 
-    private static IReadOnlyList<UatStepInvocation> BindScenario(
+    private static IReadOnlyList<BddStepInvocation> BindScenario(
         string steps,
-        IReadOnlyDictionary<string, UatCommandCatalog>? catalogsByHead = null)
+        IReadOnlyDictionary<string, BddCommandCatalog>? catalogsByHead = null)
     {
-        var catalogs = new UatCatalogSet(CreateCatalog(), ReadApps(), suiteHead: null, catalogsByHead ?? new Dictionary<string, UatCommandCatalog>(), []);
-        var result = UatBinder.Bind(Parse(steps), catalogs);
+        var catalogs = new BddCatalogSet(CreateCatalog(), ReadApps(), suiteHead: null, catalogsByHead ?? new Dictionary<string, BddCommandCatalog>(), []);
+        var result = BddBinder.Bind(Parse(steps), catalogs);
         Assert.True(result.Success, string.Join(Environment.NewLine, result.Diagnostics.Select(x => $"{x.Code} {x.Message}")));
         return Assert.Single(result.Document!.Scenarios).Invocations;
     }
 
-    private static UatBindResult Bind(string steps, UatCommandCatalog? catalog = null)
-        => UatBinder.Bind(
+    private static BddBindResult Bind(string steps, BddCommandCatalog? catalog = null)
+        => BddBinder.Bind(
             Parse(steps),
-            new UatCatalogSet(catalog ?? CreateCatalog(), ReadApps(), suiteHead: null, new Dictionary<string, UatCommandCatalog>(), []));
+            new BddCatalogSet(catalog ?? CreateCatalog(), ReadApps(), suiteHead: null, new Dictionary<string, BddCommandCatalog>(), []));
 
-    private static UatDocument Parse(string steps)
+    private static BddDocument Parse(string steps)
     {
-        var result = UatMarkdownParser.Parse($"""
+        var result = BddMarkdownParser.Parse($"""
             # Feature: Subjects
 
             ## Scenario: Subjects
@@ -279,25 +279,25 @@ public sealed class UatSubjectTests
         return result.Document!;
     }
 
-    private static IReadOnlyList<UatAppConfig> ReadApps() => UatConfigParser.Parse($"# UAT Config\n\n{Apps}").Apps;
+    private static IReadOnlyList<BddAppConfig> ReadApps() => BddConfigParser.Parse($"# UAT Config\n\n{Apps}").Apps;
 
-    private static UatCommandCatalog CreateCatalog()
+    private static BddCommandCatalog CreateCatalog()
     {
-        var catalog = new UatCommandCatalog();
-        catalog.Register(UatEffectiveStepKeyword.Given, "I am on the {page} page", "Test.Open");
-        catalog.Register(UatEffectiveStepKeyword.Given, "{user} is on the {page} page", "Test.Open");
-        catalog.Register(UatEffectiveStepKeyword.Given, "{app} uses the app", "Test.Use");
-        catalog.Register(UatEffectiveStepKeyword.When, "{app} uses the app", "Test.Use");
-        catalog.Register(UatEffectiveStepKeyword.When, "I tap {control}", "Test.Tap");
-        catalog.Register(UatEffectiveStepKeyword.When, "{user} taps {control}", "Test.Tap");
-        catalog.Register(UatEffectiveStepKeyword.When, "I advance the clock", "Test.Advance");
-        catalog.Register(UatEffectiveStepKeyword.When, "I press {key}", "Test.Press");
-        catalog.Register(UatEffectiveStepKeyword.When, "{user} presses {key}", "Test.Press");
-        catalog.Register(UatEffectiveStepKeyword.Then, "I should be on the {page} page", "Test.AssertOpen");
-        catalog.Register(UatEffectiveStepKeyword.Then, "{user} should be on the {page} page", "Test.AssertOpen");
-        catalog.Register(UatEffectiveStepKeyword.Then, "{control} should have todo {title}", "Test.HasTodo");
-        catalog.Register(UatEffectiveStepKeyword.Then, "{user} should have {count} todos on the server", "Test.ServerCount");
-        catalog.Register(UatEffectiveStepKeyword.Then, "the server should have received {title} from {user}", "Test.ServerReceived");
+        var catalog = new BddCommandCatalog();
+        catalog.Register(BddEffectiveStepKeyword.Given, "I am on the {page} page", "Test.Open");
+        catalog.Register(BddEffectiveStepKeyword.Given, "{user} is on the {page} page", "Test.Open");
+        catalog.Register(BddEffectiveStepKeyword.Given, "{app} uses the app", "Test.Use");
+        catalog.Register(BddEffectiveStepKeyword.When, "{app} uses the app", "Test.Use");
+        catalog.Register(BddEffectiveStepKeyword.When, "I tap {control}", "Test.Tap");
+        catalog.Register(BddEffectiveStepKeyword.When, "{user} taps {control}", "Test.Tap");
+        catalog.Register(BddEffectiveStepKeyword.When, "I advance the clock", "Test.Advance");
+        catalog.Register(BddEffectiveStepKeyword.When, "I press {key}", "Test.Press");
+        catalog.Register(BddEffectiveStepKeyword.When, "{user} presses {key}", "Test.Press");
+        catalog.Register(BddEffectiveStepKeyword.Then, "I should be on the {page} page", "Test.AssertOpen");
+        catalog.Register(BddEffectiveStepKeyword.Then, "{user} should be on the {page} page", "Test.AssertOpen");
+        catalog.Register(BddEffectiveStepKeyword.Then, "{control} should have todo {title}", "Test.HasTodo");
+        catalog.Register(BddEffectiveStepKeyword.Then, "{user} should have {count} todos on the server", "Test.ServerCount");
+        catalog.Register(BddEffectiveStepKeyword.Then, "the server should have received {title} from {user}", "Test.ServerReceived");
         return catalog;
     }
 }

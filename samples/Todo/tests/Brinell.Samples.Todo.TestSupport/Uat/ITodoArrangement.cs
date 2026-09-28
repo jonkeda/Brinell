@@ -9,13 +9,13 @@ namespace Brinell.Samples.Todo.TestSupport.Uat;
 /// steps that reach past the screen (<see cref="BackendPhrases"/>, <see cref="DevicePhrases"/>,
 /// <see cref="StoredDataPhrases"/>) are written once.
 /// </summary>
-public interface ITodoArrangement : IUatClock
+public interface ITodoArrangement : IBddClock
 {
     /// <summary>The test set the app runs on.</summary>
     TodoTestSet TestSet { get; }
 
     /// <summary>Relative dates in steps (<c>+2d</c>) resolve against the test set's now.</summary>
-    DateTimeOffset IUatClock.Now => TestSet.Now;
+    DateTimeOffset IBddClock.Now => TestSet.Now;
 
     /// <summary>The fake server's todos.</summary>
     TodoServerStub Server { get; }

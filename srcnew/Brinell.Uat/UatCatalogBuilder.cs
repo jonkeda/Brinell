@@ -12,7 +12,7 @@ namespace Brinell.Uat;
 /// without <c>{control}</c> runs on the one control of the current page that declares it.
 /// </remarks>
 internal sealed record UatStepBinding(
-    UatEffectiveStepKeyword Keyword,
+    BddEffectiveStepKeyword Keyword,
     string Phrase,
     string CommandSuffix,
     string MethodName,
@@ -35,7 +35,7 @@ internal sealed record UatStepBinding(
 
 /// <summary>
 /// Discovers control-step vocabulary from <see cref="BddStepAttribute"/> declarations on control methods and
-/// projects it into a <see cref="UatCommandCatalog"/>. This replaces the hand-written phrase
+/// projects it into a <see cref="BddCommandCatalog"/>. This replaces the hand-written phrase
 /// tables: the runtime and spec catalogs are the same discovery pass with and without handlers.
 /// </summary>
 internal static class UatCatalogBuilder
@@ -63,10 +63,10 @@ internal static class UatCatalogBuilder
     }
 
     public static void RegisterControlVerbs(
-        UatCommandCatalog catalog,
+        BddCommandCatalog catalog,
         IEnumerable<Type> stepTypes,
         string commandIdPrefix,
-        Func<UatStepBinding, UatCommandHandler?>? handlerFactory)
+        Func<UatStepBinding, BddCommandHandler?>? handlerFactory)
     {
         ArgumentNullException.ThrowIfNull(catalog);
         ArgumentNullException.ThrowIfNull(stepTypes);
@@ -80,22 +80,22 @@ internal static class UatCatalogBuilder
                 commandIdPrefix + binding.CommandSuffix,
                 allowsTable: false,
                 handler: handlerFactory?.Invoke(binding),
-                controlVerb: new UatControlVerb(binding.MethodName, binding.ArgumentCount, binding.NamesControl, binding.Navigates),
+                controlVerb: new BddControlVerb(binding.MethodName, binding.ArgumentCount, binding.NamesControl, binding.Navigates),
                 parameters: [
                     .. binding.ItemArgumentName is { } item
-                        ? [new UatPhraseParameter(item, typeof(string), UatParameterSource.Phrase, Optional: false, AllowsNull: false)]
-                        : Array.Empty<UatPhraseParameter>(),
+                        ? [new BddPhraseParameter(item, typeof(string), BddParameterSource.Phrase, Optional: false, AllowsNull: false)]
+                        : Array.Empty<BddPhraseParameter>(),
                     .. binding is { ValueArgumentName: { } name, ValueType: { } type }
-                        ? [new UatPhraseParameter(name, type, UatParameterSource.Phrase, Optional: false, AllowsNull: false)]
-                        : Array.Empty<UatPhraseParameter>(),
+                        ? [new BddPhraseParameter(name, type, BddParameterSource.Phrase, Optional: false, AllowsNull: false)]
+                        : Array.Empty<BddPhraseParameter>(),
                 ]);
         }
     }
 
-    public static IReadOnlyList<UatStepBinding> DiscoverBindings(IEnumerable<Type> stepTypes, Action<UatUnmatchableDeclaration>? unmatchable = null)
+    public static IReadOnlyList<UatStepBinding> DiscoverBindings(IEnumerable<Type> stepTypes, Action<BddUnmatchableDeclaration>? unmatchable = null)
     {
         List<UatStepBinding> bindings = [];
-        HashSet<(UatEffectiveStepKeyword Keyword, string Phrase)> seen = [];
+        HashSet<(BddEffectiveStepKeyword Keyword, string Phrase)> seen = [];
 
         foreach (var type in stepTypes)
         {
@@ -107,9 +107,9 @@ internal static class UatCatalogBuilder
                     // A control verb declares {control} and its command in text; it is never inferred.
                     if (attribute.IsInferred)
                     {
-                        unmatchable?.Invoke(new UatUnmatchableDeclaration(
+                        unmatchable?.Invoke(new BddUnmatchableDeclaration(
                             attribute.Keyword,
-                            new UatPhraseProblem(
+                            new BddPhraseProblem(
                                 "UATA013",
                                 $"is a control verb with an empty [Bdd{attribute.Keyword}]; a control verb writes its phrase, with {{control}}.",
                                 $"{type.FullName}.{method.Name}")));
@@ -121,7 +121,7 @@ internal static class UatCatalogBuilder
                         continue;
                     }
 
-                    var names = UatCommandPattern.ParameterNames(attribute.Phrase);
+                    var names = BddCommandPattern.ParameterNames(attribute.Phrase);
                     var itemArgument = names.Contains(ItemParameter) ? ItemParameter : null;
                     var valueArgument = ResolveValueArgument(names);
                     var valueIndex = itemArgument is null ? 0 : 1;

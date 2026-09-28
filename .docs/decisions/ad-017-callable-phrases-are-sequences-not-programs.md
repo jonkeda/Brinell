@@ -28,7 +28,7 @@ row:` runs the body once per row of the call's table.
   steps it came through.
 - **Typed by where the values go.** A parameter's type is the type of the C# parameter its
   placeholder fills; an optional `Parameters` table declares one inference cannot see, and must
-  agree with use. Values are read by `UatValues` as in AD-016.
+  agree with use. Values are read by `BddValues` as in AD-016.
 - **No shadowing.** A callable and a C# phrase with the same text are ambiguous, as are two
   callables. A broken callable is marked and fails only its calls (AD-016's rule for phrases).
 

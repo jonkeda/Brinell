@@ -39,9 +39,9 @@ public sealed class TodoWebUatFixture : TodoWebFixture, IUatAppsHost
     private TestAppSet? _apps;
 
     /// <summary>The test set a scenario file runs on when its metadata names none: <c>DefaultTestData</c> in <c>uat.config.md</c>.</summary>
-    public static string DefaultTestData { get; } = ReadConfig().Runtime.TryGetValue(UatConfigFields.DefaultTestData, out var name) && name.Length > 0
+    public static string DefaultTestData { get; } = ReadConfig().Runtime.TryGetValue(BddConfigFields.DefaultTestData, out var name) && name.Length > 0
         ? name
-        : throw new InvalidOperationException($"uat.config.md has no '{UatConfigFields.DefaultTestData}' in its Runtime table.");
+        : throw new InvalidOperationException($"uat.config.md has no '{BddConfigFields.DefaultTestData}' in its Runtime table.");
 
     /// <inheritdoc />
     protected override string TestDataName => DefaultTestData;
@@ -132,7 +132,7 @@ public sealed class TodoWebUatFixture : TodoWebFixture, IUatAppsHost
     private TestComposition ComposeFor(TodoWebDevice device)
         => TestComposition.ForFixture(this, services => services.AddSingleton<IHtmlTestContext>(device.Context));
 
-    private static UatConfig ReadConfig() => UatConfigParser.ParseFile(UatScenarioSource.GetConfigFilePath());
+    private static BddConfig ReadConfig() => BddConfigParser.ParseFile(BddScenarioSource.GetConfigFilePath());
 }
 
 /// <summary>Binds every UAT scenario class to the one <see cref="TodoWebUatFixture"/> (one app per run).</summary>

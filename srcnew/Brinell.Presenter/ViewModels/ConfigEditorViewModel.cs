@@ -11,7 +11,7 @@ namespace Brinell.Presenter.ViewModels;
 /// Edits the two rows a workspace config carries, and shows what the rest derives to.
 /// </summary>
 /// <remarks>
-/// Saving writes through <see cref="UatConfigWriter" />, so untouched text survives, and then
+/// Saving writes through <see cref="BddConfigWriter" />, so untouched text survives, and then
 /// reloads the workspace - the tree carries expansion and selection across. Save stays enabled
 /// while the config is invalid: half-fixing and saving is legitimate, and refusing to write is
 /// how an editor loses work. See AD-018.
@@ -231,8 +231,8 @@ public sealed class ConfigEditorViewModel : ViewModelBase
                 ? $"{config.ResolvedAppPath}   configured override"
                 : "owned by the fixture";
 
-            ProjectProblem = Describe(config.ProblemsFor(UatConfigSections.Runtime, UatConfigFields.Project));
-            FixtureProblem = Describe(config.ProblemsFor(UatConfigSections.Runtime, UatConfigFields.Fixture));
+            ProjectProblem = Describe(config.ProblemsFor(UatConfigSections.Runtime, BddConfigFields.Project));
+            FixtureProblem = Describe(config.ProblemsFor(UatConfigSections.Runtime, BddConfigFields.Fixture));
             SaveMessage = string.Empty;
 
             RefreshFixtureCandidates();
@@ -345,11 +345,11 @@ public sealed class ConfigEditorViewModel : ViewModelBase
             return;
         }
 
-        var edit = UatConfigEdit.Empty
-            .WithField(UatConfigSections.Runtime, UatConfigFields.Project, Blank(ProjectText))
-            .WithField(UatConfigSections.Runtime, UatConfigFields.Fixture, Blank(FixtureText));
+        var edit = BddConfigEdit.Empty
+            .WithField(UatConfigSections.Runtime, BddConfigFields.Project, Blank(ProjectText))
+            .WithField(UatConfigSections.Runtime, BddConfigFields.Fixture, Blank(FixtureText));
 
-        UatConfigWriter.ApplyToFile(_configPath, edit);
+        BddConfigWriter.ApplyToFile(_configPath, edit);
         _savedProjectText = ProjectText;
         _savedFixtureText = FixtureText;
         _configWriteTimeAtLoad = ReadWriteTime();
@@ -380,7 +380,7 @@ public sealed class ConfigEditorViewModel : ViewModelBase
         }
 
         var path = Path.Combine(_workspacePath, "uat.config.md");
-        UatConfigWriter.CreateFile(path, new UatConfigTemplate(Blank(ProjectText) ?? "./", Blank(FixtureText)));
+        BddConfigWriter.CreateFile(path, new BddConfigTemplate(Blank(ProjectText) ?? "./", Blank(FixtureText)));
         SaveMessage = "Created uat.config.md.";
         _reloadWorkspace();
     }

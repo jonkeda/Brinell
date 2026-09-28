@@ -54,7 +54,7 @@ internal sealed class UatRunResults
             return runs;
         }
 
-        var key = FeatureKey(filePath, UatScenarioFiles.ScenarioRoot(filePath));
+        var key = FeatureKey(filePath, BddScenarioFiles.ScenarioRoot(filePath));
         var manifests = Directory.EnumerateDirectories(Root)
             .Select(run => Path.Combine(run, "manifest.json"))
             .Where(File.Exists)
@@ -99,8 +99,8 @@ internal sealed class UatRunResults
             return Path.GetRelativePath(scenarioRoot, path).Replace('\\', '/');
         }
 
-        var at = normalized.LastIndexOf(UatFileFormat.FeatureFolder + "/", StringComparison.OrdinalIgnoreCase);
-        return at >= 0 ? normalized[(at + UatFileFormat.FeatureFolder.Length + 1)..] : Path.GetFileName(normalized);
+        var at = normalized.LastIndexOf(BddFileFormat.FeatureFolder + "/", StringComparison.OrdinalIgnoreCase);
+        return at >= 0 ? normalized[(at + BddFileFormat.FeatureFolder.Length + 1)..] : Path.GetFileName(normalized);
     }
 
     private TestArtifactManifest? Read(string manifestPath)

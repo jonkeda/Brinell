@@ -20,10 +20,10 @@ public sealed class PresenterUatExecutionSession : IDisposable
     private bool _disposed;
 
     public PresenterUatExecutionSession(
-        UatStepExecutionSession stepSession,
-        UatScenarioRunner runner,
-        UatBoundScenario scenario,
-        UatCommandCatalog catalog,
+        BddStepExecutionSession stepSession,
+        BddScenarioRunner runner,
+        BddBoundScenario scenario,
+        BddCommandCatalog catalog,
         string discoveryReport,
         string commandCatalogReport,
         string autPlacementReport,
@@ -45,13 +45,13 @@ public sealed class PresenterUatExecutionSession : IDisposable
         _environment = environment;
     }
 
-    public UatStepExecutionSession StepSession { get; private set; }
+    public BddStepExecutionSession StepSession { get; private set; }
 
-    public UatScenarioRunner Runner { get; private set; }
+    public BddScenarioRunner Runner { get; private set; }
 
-    public UatBoundScenario Scenario { get; private set; }
+    public BddBoundScenario Scenario { get; private set; }
 
-    public UatCommandCatalog Catalog { get; private set; }
+    public BddCommandCatalog Catalog { get; private set; }
 
     public string DiscoveryReport { get; }
 
@@ -63,12 +63,12 @@ public sealed class PresenterUatExecutionSession : IDisposable
 
     public bool HasNext => StepSession.HasNext;
 
-    public Task<UatStepResult> RunNextAsync(CancellationToken cancellationToken)
+    public Task<BddStepResult> RunNextAsync(CancellationToken cancellationToken)
     {
         return StepSession.RunNextAsync(cancellationToken);
     }
 
-    public UatScenarioRunResult ToResult()
+    public BddScenarioRunResult ToResult()
     {
         return StepSession.ToResult();
     }

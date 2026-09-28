@@ -6,13 +6,13 @@ public sealed class BddGivenAttribute : BddStepAttribute
 {
     /// <param name="phrase">The phrase, e.g. <c>the server also has todos</c>.</param>
     public BddGivenAttribute(string phrase)
-        : base(UatEffectiveStepKeyword.Given, phrase)
+        : base(BddEffectiveStepKeyword.Given, phrase)
     {
     }
 
     /// <summary>A <c>Given</c> step whose phrase is the method name, with parameters in capitals.</summary>
     public BddGivenAttribute()
-        : base(UatEffectiveStepKeyword.Given, string.Empty)
+        : base(BddEffectiveStepKeyword.Given, string.Empty)
     {
     }
 }
@@ -23,13 +23,13 @@ public sealed class BddWhenAttribute : BddStepAttribute
 {
     /// <param name="phrase">The phrase, e.g. <c>I set {control} to {value}</c>.</param>
     public BddWhenAttribute(string phrase)
-        : base(UatEffectiveStepKeyword.When, phrase)
+        : base(BddEffectiveStepKeyword.When, phrase)
     {
     }
 
     /// <summary>A <c>When</c> step whose phrase is the method name, with parameters in capitals.</summary>
     public BddWhenAttribute()
-        : base(UatEffectiveStepKeyword.When, string.Empty)
+        : base(BddEffectiveStepKeyword.When, string.Empty)
     {
     }
 }
@@ -43,13 +43,13 @@ public sealed class BddThenAttribute : BddStepAttribute
 {
     /// <param name="phrase">The phrase, e.g. <c>{control} should be visible</c>.</param>
     public BddThenAttribute(string phrase)
-        : base(UatEffectiveStepKeyword.Then, phrase)
+        : base(BddEffectiveStepKeyword.Then, phrase)
     {
     }
 
     /// <summary>A <c>Then</c> step whose phrase is the method name, with parameters in capitals.</summary>
     public BddThenAttribute()
-        : base(UatEffectiveStepKeyword.Then, string.Empty)
+        : base(BddEffectiveStepKeyword.Then, string.Empty)
     {
     }
 }

@@ -114,7 +114,7 @@ public sealed class UatCompositionRuntimeTests
 
         var pattern = Assert.Single(catalog.Patterns, pattern =>
             pattern.Phrase == "the composition state is fresh");
-        Assert.Equal(UatEffectiveStepKeyword.Given, pattern.Keyword);
+        Assert.Equal(BddEffectiveStepKeyword.Given, pattern.Keyword);
         Assert.Equal(
             $"{typeof(CompositionPhrases).FullName}.{nameof(CompositionPhrases.AssertFresh)}",
             pattern.CommandId);
@@ -193,7 +193,7 @@ public sealed class UatCompositionRuntimeTests
     }
 
     [TestModuleScan(typeof(UatCompositionRuntimeTests), NamespacePrefix = "Brinell.Uat.Tests.CompositionCases")]
-    [UatIgnore]
+    [BddIgnore]
     public sealed class CompositionFixture
     {
         public CompositionFixture()
@@ -223,7 +223,7 @@ public sealed class UatCompositionRuntimeTests
     }
 
     [TestModuleScan(typeof(UatCompositionRuntimeTests), NamespacePrefix = "Brinell.Uat.Tests.CompositionCases")]
-    [UatIgnore]
+    [BddIgnore]
     public sealed class AliasFixture
     {
         public AliasFixture()
@@ -235,7 +235,7 @@ public sealed class UatCompositionRuntimeTests
     }
 
     [TestPage("Main")]
-    [UatIgnore]
+    [BddIgnore]
     public sealed class CompositionMainPage
     {
         private readonly CompositionState _state;
@@ -256,7 +256,7 @@ public sealed class UatCompositionRuntimeTests
     }
 
     [BddStepDefinitions]
-    [UatIgnore]
+    [BddIgnore]
     public sealed class CompositionPhrases : BddStepDefinitionsBase
     {
         private readonly CompositionState _state;
@@ -279,7 +279,7 @@ public sealed class UatCompositionRuntimeTests
         }
 
         [BddWhen("I store these rows")]
-        public void StoreRows(UatTable table)
+        public void StoreRows(BddTable table)
         {
             _state.StoredRows = table.Rows.Count;
         }

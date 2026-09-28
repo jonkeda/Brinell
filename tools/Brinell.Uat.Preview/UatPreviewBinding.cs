@@ -6,12 +6,12 @@ internal sealed class UatPreviewBinding
 {
     private const string PageParameter = "page";
 
-    private readonly Dictionary<int, List<UatBoundScenario>> _scenarios = [];
-    private UatCatalogSet? _catalogs;
+    private readonly Dictionary<int, List<BddBoundScenario>> _scenarios = [];
+    private BddCatalogSet? _catalogs;
     private Dictionary<int, UatPreviewStep> _steps = [];
     private int? _scenarioLine;
 
-    public void Add(IReadOnlyList<UatBoundScenario> scenarios, UatCatalogSet catalogs)
+    public void Add(IReadOnlyList<BddBoundScenario> scenarios, BddCatalogSet catalogs)
     {
         _catalogs = catalogs;
         foreach (var scenario in scenarios)
@@ -73,11 +73,11 @@ internal sealed class UatPreviewBinding
             return null;
         }
 
-        var tags = rows[0].Source.Tags.Select(UatTagConventions.NormalizeTag).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        return UatTagConventions.WhyNotOnHead(tags, head);
+        var tags = rows[0].Source.Tags.Select(BddTagConventions.NormalizeTag).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        return BddTagConventions.WhyNotOnHead(tags, head);
     }
 
-    private static Dictionary<int, UatPreviewStep> Steps(IEnumerable<UatStepInvocation> invocations)
+    private static Dictionary<int, UatPreviewStep> Steps(IEnumerable<BddStepInvocation> invocations)
     {
         Dictionary<int, UatPreviewStep> steps = [];
         Dictionary<string, string?> current = new(StringComparer.OrdinalIgnoreCase);
@@ -118,10 +118,10 @@ internal sealed class UatPreviewBinding
     }
 
     // The line a step is written on in this file: its own, or the outermost call's for a callable's step.
-    private static int WrittenLine(UatStepInvocation invocation)
+    private static int WrittenLine(BddStepInvocation invocation)
         => invocation.Call is { } frame ? Outermost(frame).Call.Source.LineNumber : invocation.Step.Source.LineNumber;
 
-    private static UatCallFrame Outermost(UatCallFrame frame)
+    private static BddCallFrame Outermost(BddCallFrame frame)
     {
         while (frame.Parent is { } parent)
         {
@@ -131,7 +131,7 @@ internal sealed class UatPreviewBinding
         return frame;
     }
 
-    private static string Describe(IReadOnlyList<UatStepInvocation> invocations, string? runsOn)
+    private static string Describe(IReadOnlyList<BddStepInvocation> invocations, string? runsOn)
     {
         var first = invocations[0];
         var on = first.App is { } app ? $" · on {app}" : string.Empty;
@@ -141,17 +141,17 @@ internal sealed class UatPreviewBinding
     }
 
     // The method (or built-in) and, for a step on a page, the page.
-    private static string Describe(UatStepInvocation invocation, string? page = null)
+    private static string Describe(BddStepInvocation invocation, string? page = null)
         => $"binds to {invocation.CommandId}"
            + (invocation.Scope.Length > 0 ? $" · {invocation.Scope}" : page is not null ? $" · page {Name(page)}" : string.Empty)
            + (invocation.App is { } app ? $" · on {app}" : string.Empty);
 
     private static string Name(string page) => page[(page.LastIndexOf('/') + 1)..];
 
-    private static UatPreviewCall Call(IReadOnlyList<UatStepInvocation> invocations)
+    private static UatPreviewCall Call(IReadOnlyList<BddStepInvocation> invocations)
         => new(Outermost(invocations[0].Call!).Callable.ToString(), invocations.Select(invocation => Flat(invocation)).ToList());
 
-    private static UatPreviewFlatStep Flat(UatStepInvocation invocation)
+    private static UatPreviewFlatStep Flat(BddStepInvocation invocation)
         => new(
             invocation.Step.Keyword.ToString(),
             invocation.Step.Text,

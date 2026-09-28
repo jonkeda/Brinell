@@ -103,7 +103,7 @@ public sealed class NavigationTests : IAsyncLifetime
     [Fact]
     public async Task Usages_OfAPageControl_AreTheControlVerbsOnItsPage()
     {
-        using var suite = Workspace.UatSuite.Open(Path.Combine(TodoPaths.Project, Bdd.UatFileFormat.UiConfigFileName));
+        using var suite = Workspace.UatSuite.Open(Path.Combine(TodoPaths.Project, Bdd.BddFileFormat.UiConfigFileName));
         var page = UatPageSet.Of(suite.TryGetCatalogs(out _)!.Default).Values.Single(model => model.Name == "Todo List");
 
         var usages = await _server.Client.InvokeWithParameterObjectAsync<UsagesResult>("brinell/usages", new { symbol = page.PageType.FullName!.Replace('+', '.') + ".Sync" });

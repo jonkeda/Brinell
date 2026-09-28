@@ -21,8 +21,8 @@ internal static class UatScenarioReport
     public static string FileName(string? featureFile, string scenarioName)
     {
         var stem = featureFile is null ? null : Path.GetFileName(featureFile);
-        stem = stem?.EndsWith(UatFileFormat.FeatureExtension, StringComparison.OrdinalIgnoreCase) == true
-            ? stem[..^UatFileFormat.FeatureExtension.Length]
+        stem = stem?.EndsWith(BddFileFormat.FeatureExtension, StringComparison.OrdinalIgnoreCase) == true
+            ? stem[..^BddFileFormat.FeatureExtension.Length]
             : stem is null ? null : Path.GetFileNameWithoutExtension(stem);
         return stem is null ? $"{scenarioName}__result.json" : $"{stem}__{scenarioName}__result.json";
     }
@@ -35,8 +35,8 @@ internal static class UatScenarioReport
     /// <param name="configDirectory">The config's folder, which file paths are relative to.</param>
     /// <param name="trace">The binding and catalog detail, when the config's <c>IncludeRuntimeTrace</c> asks for it; null otherwise.</param>
     public static string Build(
-        UatBoundScenario scenario,
-        UatScenarioExecutionResult execution,
+        BddBoundScenario scenario,
+        BddScenarioExecutionResult execution,
         string status,
         TimeSpan duration,
         string configDirectory,
@@ -72,7 +72,7 @@ internal static class UatScenarioReport
     }
 
     // Always the lines and the outcome; with the trace, what the step bound to and its call chain.
-    private static JsonObject Step(UatStepResult step, string configDirectory, bool trace)
+    private static JsonObject Step(BddStepResult step, string configDirectory, bool trace)
     {
         var invocation = step.Invocation;
         var outermost = invocation.Call?.Chain.FirstOrDefault();
@@ -112,4 +112,4 @@ internal static class UatScenarioReport
 /// <summary>What <c>IncludeRuntimeTrace</c> adds to a report.</summary>
 /// <param name="Catalog">The catalog the scenario bound against.</param>
 /// <param name="Discovery">The runtime's discovery report.</param>
-internal sealed record UatReportTrace(UatCommandCatalog Catalog, object? Discovery);
+internal sealed record UatReportTrace(BddCommandCatalog Catalog, object? Discovery);

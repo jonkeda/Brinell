@@ -35,7 +35,7 @@ public abstract class BddScenarioHookAttribute : Attribute
     /// <param name="tags">The tags it runs for, with or without <c>@</c>; every scenario when none.</param>
     protected BddScenarioHookAttribute(string[] tags)
     {
-        Tags = tags.Select(UatTagConventions.NormalizeTag).Where(tag => tag.Length > 0).ToArray();
+        Tags = tags.Select(BddTagConventions.NormalizeTag).Where(tag => tag.Length > 0).ToArray();
     }
 
     /// <summary>The tags it runs for; empty for every scenario.</summary>
@@ -56,7 +56,7 @@ public sealed class BddAfterScenarioAttribute(params string[] tags) : BddScenari
     internal override BddHookKind Kind => BddHookKind.AfterScenario;
 }
 
-/// <summary>Runs after each step of a scenario (with one of the tags, when given); may take the step's <see cref="UatStepResult"/>.</summary>
+/// <summary>Runs after each step of a scenario (with one of the tags, when given); may take the step's <see cref="BddStepResult"/>.</summary>
 public sealed class BddAfterStepAttribute(params string[] tags) : BddScenarioHookAttribute(tags)
 {
     internal override BddHookKind Kind => BddHookKind.AfterStep;
@@ -71,12 +71,12 @@ public sealed record BddHook(
     BddHookKind Kind,
     string Name,
     IReadOnlyList<string> Tags,
-    Func<UatExecutionContext, UatStepResult?, CancellationToken, Task> Run)
+    Func<BddExecutionContext, BddStepResult?, CancellationToken, Task> Run)
 {
     /// <summary>Whether it runs for a scenario with these tags.</summary>
     /// <param name="scenarioTags">The scenario's tags.</param>
     public bool AppliesTo(IEnumerable<string> scenarioTags)
-        => Tags.Count == 0 || scenarioTags.Select(UatTagConventions.NormalizeTag).Any(tag => Tags.Contains(tag, StringComparer.OrdinalIgnoreCase));
+        => Tags.Count == 0 || scenarioTags.Select(BddTagConventions.NormalizeTag).Any(tag => Tags.Contains(tag, StringComparer.OrdinalIgnoreCase));
 }
 
 // Finds the hooks of a step-definition class and runs them around a scenario.
@@ -109,10 +109,10 @@ internal static class BddHooks
         return hooks;
     }
 
-    public static async Task<UatScenarioRunResult> RunAsync(
-        UatBoundScenario scenario,
-        UatExecutionContext context,
-        UatStepExecutionSession session,
+    public static async Task<BddScenarioRunResult> RunAsync(
+        BddBoundScenario scenario,
+        BddExecutionContext context,
+        BddStepExecutionSession session,
         CancellationToken cancellationToken)
     {
         var hooks = scenario.Hooks.Where(hook => hook.AppliesTo(scenario.Source.Tags)).ToList();
@@ -143,7 +143,7 @@ internal static class BddHooks
                 }
             }
 
-            if (session.Results[^1].Status is UatStepResultStatus.Failed or UatStepResultStatus.Canceled)
+            if (session.Results[^1].Status is BddStepResultStatus.Failed or BddStepResultStatus.Canceled)
             {
                 break;
             }
@@ -162,7 +162,7 @@ internal static class BddHooks
 
     private static IEnumerable<BddHook> Of(List<BddHook> hooks, BddHookKind kind) => hooks.Where(hook => hook.Kind == kind);
 
-    private static async Task<string?> TryRun(BddHook hook, UatExecutionContext context, UatStepResult? result, CancellationToken cancellationToken)
+    private static async Task<string?> TryRun(BddHook hook, BddExecutionContext context, BddStepResult? result, CancellationToken cancellationToken)
     {
         try
         {

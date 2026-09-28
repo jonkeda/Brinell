@@ -13,7 +13,7 @@ namespace Brinell.Uat;
 /// Each app gets one composition and one scope, built the first time a scenario uses it, with the
 /// app's own services (<see cref="AddAppServices"/>) on top of its head's modules.
 /// </remarks>
-public interface IUatAppsHost : IUatSessionHost
+public interface IUatAppsHost : IBddSessionHost
 {
     /// <summary>The apps; their names are the <c>Apps</c> table's.</summary>
     TestAppSet Apps { get; }
@@ -33,9 +33,9 @@ public interface IUatAppsHost : IUatSessionHost
     {
     }
 
-    IServiceProvider IUatSessionHost.UseSession(string name) => UatAppSessions.Use(this, name);
+    IServiceProvider IBddSessionHost.UseSession(string name) => UatAppSessions.Use(this, name);
 
-    TestComposition? IUatSessionHost.CompositionFor(string name) => UatAppSessions.CompositionFor(this, name);
+    TestComposition? IBddSessionHost.CompositionFor(string name) => UatAppSessions.CompositionFor(this, name);
 }
 
 internal static class UatAppSessions
@@ -88,9 +88,9 @@ internal static class UatSessionSteps
     public const string Phrase = "{app} uses the app";
 
     /// <summary>Registers <c>{app} uses the app</c>, as a Given and a When, for a fixture that hosts sessions.</summary>
-    public static void Register(UatCommandCatalog catalog, IUatSessionHost? host, UatConfig config)
+    public static void Register(BddCommandCatalog catalog, IBddSessionHost? host, BddConfig config)
     {
-        UatCommandHandler handler = (context, invocation, cancellationToken) =>
+        BddCommandHandler handler = (context, invocation, cancellationToken) =>
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -98,17 +98,17 @@ internal static class UatSessionSteps
             var app = config.Apps.FirstOrDefault(candidate => string.Equals(candidate.Name, requested, StringComparison.OrdinalIgnoreCase));
             if (config.Apps.Count > 0 && app is null)
             {
-                return Task.FromResult(UatStepResult.Failed(
+                return Task.FromResult(BddStepResult.Failed(
                     invocation,
                     $"No app '{requested}' in the Apps table of uat.config.md. It has: {string.Join(", ", config.Apps.Select(candidate => $"'{candidate.Name}'"))}."));
             }
 
             context.SessionHost ??= host;
             context.SwitchApp(app?.Name ?? requested);
-            return Task.FromResult(UatStepResult.Passed(invocation));
+            return Task.FromResult(BddStepResult.Passed(invocation));
         };
 
-        catalog.Register(UatEffectiveStepKeyword.Given, Phrase, CommandId, allowsTable: false, handler: handler);
-        catalog.Register(UatEffectiveStepKeyword.When, Phrase, CommandId, allowsTable: false, handler: handler);
+        catalog.Register(BddEffectiveStepKeyword.Given, Phrase, CommandId, allowsTable: false, handler: handler);
+        catalog.Register(BddEffectiveStepKeyword.When, Phrase, CommandId, allowsTable: false, handler: handler);
     }
 }

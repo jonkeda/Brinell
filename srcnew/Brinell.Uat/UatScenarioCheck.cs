@@ -19,21 +19,21 @@ public static partial class UatScenarioCheck
     /// they are asked of an uninitialized fixture, so a head whose modules need a started fixture
     /// binds against the suite's catalog.
     /// </remarks>
-    public static UatCatalogSet CatalogsFor(Type fixtureType, UatConfig config)
+    public static BddCatalogSet CatalogsFor(Type fixtureType, BddConfig config)
     {
         ArgumentNullException.ThrowIfNull(fixtureType);
         ArgumentNullException.ThrowIfNull(config);
 
         var runtime = UatReflectionRuntime.ForChecking(fixtureType);
         var catalog = runtime.CreateCommandCatalog();
-        if (typeof(IUatSessionHost).IsAssignableFrom(fixtureType))
+        if (typeof(IBddSessionHost).IsAssignableFrom(fixtureType))
         {
             UatSessionSteps.Register(catalog, host: null, config);
         }
 
-        var suiteHead = config.Runtime.TryGetValue(UatConfigFields.Head, out var head) && head.Trim() is { Length: > 0 } trimmed ? trimmed : null;
+        var suiteHead = config.Runtime.TryGetValue(BddConfigFields.Head, out var head) && head.Trim() is { Length: > 0 } trimmed ? trimmed : null;
         List<UatReflectionRuntime> runtimes = [runtime];
-        Dictionary<string, UatCommandCatalog> byHead = new(StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, BddCommandCatalog> byHead = new(StringComparer.OrdinalIgnoreCase);
         if (typeof(IUatAppsHost).IsAssignableFrom(fixtureType))
         {
             var host = (IUatAppsHost)RuntimeHelpers.GetUninitializedObject(fixtureType);
@@ -53,10 +53,10 @@ public static partial class UatScenarioCheck
         }
 
         var reserved = runtimes.SelectMany(r => r.Pages).SelectMany(page => page.Controls.Select(control => control.Name).Append(page.Name));
-        return new UatCatalogSet(catalog, config.Apps, suiteHead, byHead, reserved) { Usings = config.Usings };
+        return new BddCatalogSet(catalog, config.Apps, suiteHead, byHead, reserved) { Usings = config.Usings };
     }
 
-    private static TestCompositionDiscoveryOptions? TryModulesFor(IUatAppsHost host, UatAppConfig app)
+    private static TestCompositionDiscoveryOptions? TryModulesFor(IUatAppsHost host, BddAppConfig app)
     {
         try
         {
@@ -70,32 +70,32 @@ public static partial class UatScenarioCheck
     }
 
     /// <summary>Every problem in a scenario file: parse (<c>UAT0xx</c>), bind (<c>UATB0xx</c>) and values (<c>UATA0xx</c>).</summary>
-    public static IReadOnlyList<UatDiagnostic> CheckFile(string filePath, UatCatalogSet catalogs)
+    public static IReadOnlyList<BddDiagnostic> CheckFile(string filePath, BddCatalogSet catalogs)
     {
         ArgumentNullException.ThrowIfNull(catalogs);
-        return UatScenarioFiles.Load(filePath).Check(catalogs).Diagnostics;
+        return BddScenarioFiles.Load(filePath).Check(catalogs).Diagnostics;
     }
 
     /// <summary>
     /// The config's <c>## Using</c> names that nothing provides (<c>UATB011</c>): checked once per
     /// suite, as the binder checks a file's <c>Using</c> row.
     /// </summary>
-    /// <param name="catalogs">The suite's catalogs, with <see cref="UatCatalogSet.Usings"/>.</param>
+    /// <param name="catalogs">The suite's catalogs, with <see cref="BddCatalogSet.Usings"/>.</param>
     /// <param name="phraseFiles">Every phrase file of the suite, whose folders are namespaces too.</param>
     /// <param name="configPath">The config, for the diagnostics' location.</param>
-    public static IReadOnlyList<UatDiagnostic> CheckConfigUsings(UatCatalogSet catalogs, IEnumerable<string> phraseFiles, string configPath)
+    public static IReadOnlyList<BddDiagnostic> CheckConfigUsings(BddCatalogSet catalogs, IEnumerable<string> phraseFiles, string configPath)
     {
         ArgumentNullException.ThrowIfNull(catalogs);
         ArgumentNullException.ThrowIfNull(phraseFiles);
-        var callables = new UatCallableSet(phraseFiles.SelectMany(file => UatScenarioFiles.ParsePhraseFile(file).Document?.Callables ?? []));
+        var callables = new BddCallableSet(phraseFiles.SelectMany(file => BddScenarioFiles.ParsePhraseFile(file).Document?.Callables ?? []));
         var provided = catalogs.ProvidedNamespaces(callables).ToList();
         return catalogs.Usings
-            .Where(name => !provided.Any(owner => UatNamespaces.IsVisible(owner, name)))
-            .Select(name => new UatDiagnostic(
-                UatDiagnosticSeverity.Error,
+            .Where(name => !provided.Any(owner => BddNamespaces.IsVisible(owner, name)))
+            .Select(name => new BddDiagnostic(
+                BddDiagnosticSeverity.Error,
                 "UATB011",
                 $"## Using names '{name}', which no phrase class, page or phrase folder provides. The namespaces are {(provided.Count == 0 ? "(none)" : string.Join(", ", provided.Order(StringComparer.OrdinalIgnoreCase)))}.",
-                new UatSourceLocation(configPath, 1)))
+                new BddSourceLocation(configPath, 1)))
             .ToList();
     }
 
@@ -103,14 +103,14 @@ public static partial class UatScenarioCheck
     /// A phrase file's problems: parse errors, and each broken callable as a warning at its heading.
     /// A call to a broken callable is the error, in the scenario that makes it.
     /// </summary>
-    public static IReadOnlyList<UatDiagnostic> CheckPhraseFile(string filePath, UatCatalogSet catalogs)
+    public static IReadOnlyList<BddDiagnostic> CheckPhraseFile(string filePath, BddCatalogSet catalogs)
     {
         ArgumentNullException.ThrowIfNull(catalogs);
-        return UatScenarioFiles.CheckPhrases(UatScenarioFiles.ParsePhraseFile(filePath), catalogs);
+        return BddScenarioFiles.CheckPhrases(BddScenarioFiles.ParsePhraseFile(filePath), catalogs);
     }
 
     /// <summary>The callable phrases as the phrase list shows them: types, where each is declared, and problems.</summary>
-    public static IReadOnlyList<string> DescribeCallables(IEnumerable<UatPreparedCallable> callables)
+    public static IReadOnlyList<string> DescribeCallables(IEnumerable<BddPreparedCallable> callables)
     {
         ArgumentNullException.ThrowIfNull(callables);
         return callables
@@ -126,17 +126,17 @@ public static partial class UatScenarioCheck
     /// folders, the namespaces it uses, its own callables, and each page's own phrases. What an
     /// editor offers at a step in that file.
     /// </summary>
-    public static IReadOnlyList<string> DescribeVisible(string filePath, UatCatalogSet catalogs, UatEffectiveStepKeyword? keyword = null)
+    public static IReadOnlyList<string> DescribeVisible(string filePath, BddCatalogSet catalogs, BddEffectiveStepKeyword? keyword = null)
     {
         ArgumentNullException.ThrowIfNull(catalogs);
-        var file = UatScenarioFiles.Load(filePath);
+        var file = BddScenarioFiles.Load(filePath);
         if (file.Document is null)
         {
             return [.. file.Diagnostics.Select(d => $"{d.Location}: {d.Code} {d.Message}")];
         }
 
-        var scope = UatScope.Of(file.Document, catalogs);
-        string Group(string? owner) => UatNamespaces.Normalize(owner) is { Length: > 0 } name
+        var scope = BddScope.Of(file.Document, catalogs);
+        string Group(string? owner) => BddNamespaces.Normalize(owner) is { Length: > 0 } name
             ? scope.UsingsFor(name).Any() ? $"{name} (Using)" : name
             : "Every scenario";
 
@@ -169,9 +169,9 @@ public static partial class UatScenarioCheck
     }
 
 
-    /// <summary>The text of a file with every diagnostic's <see cref="UatDiagnostic.Fix"/> applied on its line.</summary>
+    /// <summary>The text of a file with every diagnostic's <see cref="BddDiagnostic.Fix"/> applied on its line.</summary>
     /// <returns>The new text, and how many values it rewrote.</returns>
-    public static (string Text, int Fixed) ApplyFixes(string text, IEnumerable<UatDiagnostic> diagnostics)
+    public static (string Text, int Fixed) ApplyFixes(string text, IEnumerable<BddDiagnostic> diagnostics)
     {
         ArgumentNullException.ThrowIfNull(text);
         ArgumentNullException.ThrowIfNull(diagnostics);
@@ -196,7 +196,7 @@ public static partial class UatScenarioCheck
     }
 
     /// <summary>The phrases of a catalog as the phrase list shows them, with types and problems.</summary>
-    public static IReadOnlyList<string> DescribePhrases(UatCommandCatalog catalog, UatEffectiveStepKeyword? keyword = null)
+    public static IReadOnlyList<string> DescribePhrases(BddCommandCatalog catalog, BddEffectiveStepKeyword? keyword = null)
     {
         ArgumentNullException.ThrowIfNull(catalog);
 
@@ -215,7 +215,7 @@ public static partial class UatScenarioCheck
     }
 
     /// <summary>A method for a step that binds to nothing: its phrase in the method name, the values as parameters.</summary>
-    public static string Snippet(UatStep step)
+    public static string Snippet(BddStep step)
     {
         ArgumentNullException.ThrowIfNull(step);
 
@@ -242,7 +242,7 @@ public static partial class UatScenarioCheck
 
         if (step.Table is not null)
         {
-            parameters.Add("UatTable table");
+            parameters.Add("BddTable table");
         }
         else if (step.DocString is not null)
         {
@@ -268,16 +268,16 @@ public static partial class UatScenarioCheck
         return builder.ToString();
     }
 
-    private static string Describe(UatCommandPattern pattern)
+    private static string Describe(BddCommandPattern pattern)
     {
         var text = pattern.Phrase;
-        foreach (var parameter in pattern.Parameters.Where(p => p.Source == UatParameterSource.Phrase))
+        foreach (var parameter in pattern.Parameters.Where(p => p.Source == BddParameterSource.Phrase))
         {
             text = text.Replace($"{{{parameter.Name}}}", parameter.ToString(), StringComparison.Ordinal);
         }
 
-        var below = pattern.Parameters.FirstOrDefault(p => p.Source != UatParameterSource.Phrase) is { } block
-            ? block.Source == UatParameterSource.DocString ? $"  + doc string '{block.Name}'" : $"  + table '{block.Name}': {UatValues.Describe(block.Type)}"
+        var below = pattern.Parameters.FirstOrDefault(p => p.Source != BddParameterSource.Phrase) is { } block
+            ? block.Source == BddParameterSource.DocString ? $"  + doc string '{block.Name}'" : $"  + table '{block.Name}': {BddValues.Describe(block.Type)}"
             : string.Empty;
         var problem = pattern.Problem is { } broken ? $"  warning {broken.Code}: {broken.Message}" : string.Empty;
         var scope = pattern.Namespace.Length > 0 ? $"  in {pattern.Namespace}" : string.Empty;

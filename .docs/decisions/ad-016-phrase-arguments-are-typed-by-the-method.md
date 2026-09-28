@@ -2,7 +2,7 @@
 
 A phrase says `{name}`; the bound method's parameter `name` says what the value is. The engine
 reads every value a scenario writes - a placeholder on the step line, an Examples cell, a table
-cell - with one reader, `UatValues`, in one invariant format whatever the machine culture:
+cell - with one reader, `BddValues`, in one invariant format whatever the machine culture:
 
 | Kind | Written as |
 | --- | --- |
@@ -14,12 +14,12 @@ cell - with one reader, `UatValues`, in one invariant format whatever the machin
 | Enum | the member name, any case, spaces allowed (`In Progress`) |
 | List | `"A", "B" and "C"`, or a one-column table |
 | Record, list of records | the table under the step (`Field | Value` for one record) |
-| User | a name from the `Apps` table, as `UatUserRole` |
-| App type | `[UatArgumentType]` with `Parse(string)`, or an `IUatArgumentConverter<T>` |
+| User | a name from the `Apps` table, as `BddUserRole` |
+| App type | `[BddArgumentType]` with `Parse(string)`, or an `IBddArgumentConverter<T>` |
 
 - **Checked at bind time.** A value that does not fit is a `UATA0xx` diagnostic at the step's
   or row's line before any app starts; the step runs with the same value read again against the
-  scenario's clock (`IUatClock`) and services.
+  scenario's clock (`IBddClock`) and services.
 - **A phrase can be the method name.** An empty keyword attribute (`[BddWhen]`) makes the name
   the phrase, parameters in capitals: `I_open_the_todo_TITLE(string title)` is
   `I open the todo {title}`. A phrase class method named `Given`/`When`/`Then...` needs no

@@ -30,7 +30,7 @@ public sealed class UatNamespaceTests : IDisposable
     [InlineData("Invoicing", "", false)]
     [InlineData(@"Invoicing\", "Invoicing", true)]
     public void AFolder_SeesItsOwnPhrases_AndThoseOfTheFoldersAboveIt(string? owner, string from, bool visible)
-        => Assert.Equal(visible, UatNamespaces.IsVisible(owner, from));
+        => Assert.Equal(visible, BddNamespaces.IsVisible(owner, from));
 
     [Fact]
     public void AScenario_BindsToThePhraseClassOfItsFolder_FromBelowIt()
@@ -79,8 +79,8 @@ public sealed class UatNamespaceTests : IDisposable
         Write("Accounts/Accounts.steps.md", Phrases("an account", "When I note \"account\""));
         var scenario = Write("Invoicing/Credit notes/credit.feature.md", Scenario("Given a fresh ledger"));
 
-        var files = UatScenarioFiles.PhraseFilesFor(scenario);
-        var loaded = UatScenarioFiles.Load(scenario);
+        var files = BddScenarioFiles.PhraseFilesFor(scenario);
+        var loaded = BddScenarioFiles.Load(scenario);
 
         Assert.Equal(["Common.steps.md", "Invoicing.steps.md"], files.Select(Path.GetFileName));
 
@@ -95,11 +95,11 @@ public sealed class UatNamespaceTests : IDisposable
     {
         Write("Accounts/Accounts.steps.md", "## Step: headless\n\nWhen I note \"x\"\n");
 
-        var there = UatScenarioFiles.Load(Write("Accounts/account.feature.md", Scenario("When I note \"paid\"")));
-        var here = UatScenarioFiles.Load(Write("Invoicing/invoice.feature.md", Scenario("When I add a line \"Rent\"")));
+        var there = BddScenarioFiles.Load(Write("Accounts/account.feature.md", Scenario("When I note \"paid\"")));
+        var here = BddScenarioFiles.Load(Write("Invoicing/invoice.feature.md", Scenario("When I add a line \"Rent\"")));
 
         Assert.Contains(there.Diagnostics, d => d.Code == "UAT028");
-        Assert.True(here.Success, UatDiagnosticsFormatter.FormatDiagnostics(here.Diagnostics));
+        Assert.True(here.Success, BddDiagnosticsFormatter.FormatDiagnostics(here.Diagnostics));
     }
 
     [Fact]
@@ -112,9 +112,9 @@ public sealed class UatNamespaceTests : IDisposable
         var bound = BindFile("Invoicing/invoice.feature.md", "Given a fresh ledger\nAnd an invoice \"Rent\"");
         var hidden = BindFile("Invoicing/other.feature.md", "Given an account");
 
-        Assert.True(bound.Success, UatDiagnosticsFormatter.FormatDiagnostics(bound.Diagnostics));
+        Assert.True(bound.Success, BddDiagnosticsFormatter.FormatDiagnostics(bound.Diagnostics));
         Assert.EndsWith("InvoicingPhrases.AddLine", bound.Document!.Scenarios[0].Invocations[^1].Command.CommandId, StringComparison.Ordinal);
-        var error = Assert.Single(hidden.Diagnostics, d => d.Severity == UatDiagnosticSeverity.Error);
+        var error = Assert.Single(hidden.Diagnostics, d => d.Severity == BddDiagnosticSeverity.Error);
         Assert.Equal("UATB010", error.Code);
         Assert.Contains("'an account' of the folder 'Accounts'", error.Message, StringComparison.Ordinal);
     }
@@ -127,7 +127,7 @@ public sealed class UatNamespaceTests : IDisposable
 
         var result = BindFile("Invoicing/invoice.feature.md", "Given a lined ledger");
 
-        var error = Assert.Single(result.Diagnostics, d => d.Severity == UatDiagnosticSeverity.Error);
+        var error = Assert.Single(result.Diagnostics, d => d.Severity == BddDiagnosticSeverity.Error);
         Assert.Contains("UATB010", error.Code + error.Message, StringComparison.Ordinal);
         Assert.Contains("the scenario root does not see", error.Message, StringComparison.Ordinal);
     }
@@ -138,7 +138,7 @@ public sealed class UatNamespaceTests : IDisposable
         Write("Invoicing/Invoicing.steps.md", Phrases("a checked invoice", "Given my own start"));
         var scenario = Scenario("Given a checked invoice") + "\n\n" + Phrases("my own start", "When I note \"start\"").Replace("# Steps: Test\n\n", string.Empty, StringComparison.Ordinal);
 
-        var result = UatScenarioFiles.Load(Write("Invoicing/invoice.feature.md", scenario)).Bind(Catalogs());
+        var result = BddScenarioFiles.Load(Write("Invoicing/invoice.feature.md", scenario)).Bind(Catalogs());
 
         Assert.False(result.Success);
         Assert.Contains(result.Diagnostics, d => d.Message.Contains("'my own start', written in invoice.feature.md for that file only", StringComparison.Ordinal));
@@ -149,9 +149,9 @@ public sealed class UatNamespaceTests : IDisposable
     {
         var scenario = Scenario("Given my own line") + "\n\n" + Phrases("my own line", "When I add a line \"Rent\"").Replace("# Steps: Test\n\n", string.Empty, StringComparison.Ordinal);
 
-        var result = UatScenarioFiles.Load(Write("Invoicing/invoice.feature.md", scenario)).Bind(Catalogs());
+        var result = BddScenarioFiles.Load(Write("Invoicing/invoice.feature.md", scenario)).Bind(Catalogs());
 
-        Assert.True(result.Success, UatDiagnosticsFormatter.FormatDiagnostics(result.Diagnostics));
+        Assert.True(result.Success, BddDiagnosticsFormatter.FormatDiagnostics(result.Diagnostics));
     }
 
     [Fact]
@@ -175,7 +175,7 @@ public sealed class UatNamespaceTests : IDisposable
 
         // The scan attribute names its marker type by assembly name, which only this handler finds.
         Assembly? Resolve(object? sender, ResolveEventArgs args) => args.Name == assembly.FullName ? assembly : null;
-        var catalog = new UatCommandCatalog();
+        var catalog = new BddCommandCatalog();
         AppDomain.CurrentDomain.AssemblyResolve += Resolve;
         try
         {
@@ -193,26 +193,26 @@ public sealed class UatNamespaceTests : IDisposable
     [Fact]
     public void ThePhraseList_NamesTheNamespace()
     {
-        var lines = UatScenarioCheck.DescribePhrases(Catalogs().Default, UatEffectiveStepKeyword.When);
+        var lines = UatScenarioCheck.DescribePhrases(Catalogs().Default, BddEffectiveStepKeyword.When);
 
         Assert.Contains(lines, line => line.Contains("InvoicingPhrases.AddLine  in Invoicing", StringComparison.Ordinal));
         Assert.Contains(lines, line => line.Contains("GlobalPhrases.Note", StringComparison.Ordinal) && !line.Contains("  in ", StringComparison.Ordinal));
     }
 
-    private IReadOnlyList<UatStepInvocation> BindOk(string path, string steps)
+    private IReadOnlyList<BddStepInvocation> BindOk(string path, string steps)
     {
         var result = BindFile(path, steps);
-        Assert.True(result.Success, UatDiagnosticsFormatter.FormatDiagnostics(result.Diagnostics));
+        Assert.True(result.Success, BddDiagnosticsFormatter.FormatDiagnostics(result.Diagnostics));
         return result.Document!.Scenarios[0].Invocations;
     }
 
-    private UatDiagnostic BindError(string path, string steps)
-        => Assert.Single(BindFile(path, steps).Diagnostics, d => d.Severity == UatDiagnosticSeverity.Error);
+    private BddDiagnostic BindError(string path, string steps)
+        => Assert.Single(BindFile(path, steps).Diagnostics, d => d.Severity == BddDiagnosticSeverity.Error);
 
-    private UatBindResult BindFile(string path, string steps)
+    private BddBindResult BindFile(string path, string steps)
     {
-        var file = UatScenarioFiles.Load(Write(path, Scenario(steps)));
-        Assert.True(file.Success, UatDiagnosticsFormatter.FormatDiagnostics(file.Diagnostics));
+        var file = BddScenarioFiles.Load(Write(path, Scenario(steps)));
+        Assert.True(file.Success, BddDiagnosticsFormatter.FormatDiagnostics(file.Diagnostics));
         return file.Bind(Catalogs());
     }
 
@@ -224,10 +224,10 @@ public sealed class UatNamespaceTests : IDisposable
         return path;
     }
 
-    private static UatCatalogSet Catalogs()
+    private static BddCatalogSet Catalogs()
     {
         var fixture = new NamespaceFixture();
-        return new UatCatalogSet(UatReflectionRuntime.FromComposition(fixture, fixture.Composition).CreateCommandCatalog());
+        return new BddCatalogSet(UatReflectionRuntime.FromComposition(fixture, fixture.Composition).CreateCommandCatalog());
     }
 
     // public sealed class {name} : BddStepDefinitionsBase { [BddWhen(phrase)] public void Step(string text) { } }
@@ -255,7 +255,7 @@ public sealed class UatNamespaceTests : IDisposable
 }
 
 [TestModuleScan(typeof(NamespaceFixture), NamespacePrefix = "Brinell.Uat.Tests.NamespaceCases")]
-[UatIgnore]
+[BddIgnore]
 public sealed class NamespaceFixture
 {
     public NamespaceFixture()
@@ -267,7 +267,7 @@ public sealed class NamespaceFixture
 }
 
 [BddStepDefinitions]
-[UatIgnore]
+[BddIgnore]
 public sealed class GlobalPhrases(List<string> notes) : BddStepDefinitionsBase
 {
     [BddWhen("I note {text}")]
@@ -275,7 +275,7 @@ public sealed class GlobalPhrases(List<string> notes) : BddStepDefinitionsBase
 }
 
 [BddStepDefinitions(Namespace = "Invoicing")]
-[UatIgnore]
+[BddIgnore]
 public sealed class InvoicingPhrases(List<string> notes) : BddStepDefinitionsBase
 {
     [BddWhen("I add a line {text}")]
@@ -286,7 +286,7 @@ public sealed class InvoicingPhrases(List<string> notes) : BddStepDefinitionsBas
 }
 
 [BddStepDefinitions(Namespace = "Purchasing")]
-[UatIgnore]
+[BddIgnore]
 public sealed class PurchasingPhrases(List<string> notes) : BddStepDefinitionsBase
 {
     [BddWhen("I add a line {text}")]

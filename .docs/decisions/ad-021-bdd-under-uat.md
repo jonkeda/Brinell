@@ -8,11 +8,11 @@ The feature-file engine is `Brinell.Bdd`; `Brinell.Uat` is UAT on top of it and 
 | the catalog and the binder, callable steps, namespaces and `Using` | page scope: `UatPageSet`, `UatPageModel`, `UatPageTracker`, control verbs (`UatCatalogBuilder`) |
 | config, feature files and source, execution and runner, hooks | apps from a `TestAppSet` (`IUatAppsHost`), sessions' steps |
 | the step-definition runtime: fixture steps, `[BddStepDefinitions]`, argument binding | `UatRuntime`, `UatScenarioTestBase` (screenshots), `UatScenarioCheck` |
-| `IUatClock`, `IUatSessionHost` (no UI in them) | target conventions, the spec catalog |
+| `IBddClock`, `IBddSessionHost` (no UI in them) | target conventions, the spec catalog |
 
 **Page names, not page types.** A catalog pattern keeps the page it belongs to and the page it
 ends on as plain strings (`Page`, `PageAfter`, `NamesPage`), and a control verb as plain data
-(`UatControlVerb`): the binder compares them, never resolves them. What gives a name meaning (the
+(`BddControlVerb`): the binder compares them, never resolves them. What gives a name meaning (the
 page's type, its controls, where a control goes, which page a step is on) is `Brinell.Uat`'s,
 reached through the catalog's `Scope` (`IStepScopeModel`, one `IStepScope` per walk).
 

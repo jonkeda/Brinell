@@ -31,7 +31,7 @@ public sealed class UatWorkspace : IDisposable
 
     /// <summary>
     /// The configs under a folder: one per project, <c>uat.config.md</c> before <c>bdd.config.md</c>
-    /// (<see cref="UatFileFormat.FindConfig"/>). Build output, hidden folders and test results are skipped.
+    /// (<see cref="BddFileFormat.FindConfig"/>). Build output, hidden folders and test results are skipped.
     /// </summary>
     /// <param name="root">The folder to search.</param>
     public static IReadOnlyList<string> FindConfigs(string root)
@@ -41,7 +41,7 @@ public sealed class UatWorkspace : IDisposable
         while (folders.Count > 0)
         {
             var folder = folders.Pop();
-            var config = UatFileFormat.FindConfig(folder);
+            var config = BddFileFormat.FindConfig(folder);
             if (File.Exists(config))
             {
                 configs.Add(config);

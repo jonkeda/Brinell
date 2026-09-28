@@ -21,7 +21,7 @@ internal static class UatPageScope
     /// <summary>
     /// The control of <paramref name="page"/> the matched step runs on, or why there is none.
     /// </summary>
-    public static UatControlModel? ControlFor(UatPageModel page, UatCommandMatch match, out string? problem)
+    public static UatControlModel? ControlFor(UatPageModel page, BddCommandMatch match, out string? problem)
     {
         var verb = match.Pattern.ControlVerb!;
         problem = null;
@@ -61,7 +61,7 @@ internal static class UatPageScope
     /// the control says it goes; otherwise the page it ran on. Null when it may have left the page
     /// for one it does not say.
     /// </summary>
-    public static string? PageAfter(UatPageModel page, UatControlModel control, UatControlVerb verb, IReadOnlyDictionary<string, UatPageModel> pages)
+    public static string? PageAfter(UatPageModel page, UatControlModel control, BddControlVerb verb, IReadOnlyDictionary<string, UatPageModel> pages)
     {
         if (Method(control.ControlType, verb)?.ReturnType is { } returned &&
             pages.Values.FirstOrDefault(candidate => candidate.PageType == returned) is { } returnedPage)
@@ -78,14 +78,14 @@ internal static class UatPageScope
     }
 
     // The method the runtime would invoke: by name, taking the step's arguments.
-    private static MethodInfo? Method(Type controlType, UatControlVerb verb)
+    private static MethodInfo? Method(Type controlType, BddControlVerb verb)
         => controlType
             .GetMethods(BindingFlags.Instance | BindingFlags.Public)
             .FirstOrDefault(method => method.Name == verb.MethodName &&
                                       method.GetParameters().Count(parameter => !parameter.IsOptional) <= verb.ArgumentCount &&
                                       method.GetParameters().Length >= verb.ArgumentCount);
 
-    private static bool Declares(Type controlType, UatCommandPattern pattern)
+    private static bool Declares(Type controlType, BddCommandPattern pattern)
     {
         for (Type? type = controlType; type is not null && type != typeof(object); type = type.BaseType)
         {

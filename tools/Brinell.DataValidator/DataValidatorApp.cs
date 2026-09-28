@@ -42,7 +42,7 @@ public static class DataValidatorApp
     private static int Validate(ToolOptions options, TextWriter output, TextWriter errors)
     {
         List<TestDataDiagnostic> diagnostics = [];
-        var scenarioFile = options.Argument is { } argument && argument.EndsWith(UatFileFormat.FeatureExtension, StringComparison.OrdinalIgnoreCase)
+        var scenarioFile = options.Argument is { } argument && argument.EndsWith(BddFileFormat.FeatureExtension, StringComparison.OrdinalIgnoreCase)
             ? Existing(options, argument)
             : null;
         var testSets = 0;
@@ -142,18 +142,18 @@ public static class DataValidatorApp
     private static IEnumerable<TestDataDiagnostic> CheckOldForms(ToolOptions options, string config, TextWriter output)
     {
         var folder = ScenarioCheck.ScenarioFolder(config);
-        var oldFolder = Path.Combine(Path.GetDirectoryName(folder)!, UatFileFormat.OldFeatureFolder);
+        var oldFolder = Path.Combine(Path.GetDirectoryName(folder)!, BddFileFormat.OldFeatureFolder);
         if (!Directory.Exists(folder) && Directory.Exists(oldFolder))
         {
             if (!options.Fix)
             {
                 return [new TestDataDiagnostic(
-                    oldFolder, 1, UatFileFormat.OldFormCode, null,
-                    $"The folder '{UatFileFormat.OldFeatureFolder}' is the old name of '{UatFileFormat.FeatureFolder}'. Run 'brinell-data validate --fix' to rename it, and update the csproj's globs.")];
+                    oldFolder, 1, BddFileFormat.OldFormCode, null,
+                    $"The folder '{BddFileFormat.OldFeatureFolder}' is the old name of '{BddFileFormat.FeatureFolder}'. Run 'brinell-data validate --fix' to rename it, and update the csproj's globs.")];
             }
 
             Directory.Move(oldFolder, folder);
-            output.WriteLine($"Renamed the folder {UatFileFormat.OldFeatureFolder} to {UatFileFormat.FeatureFolder}; update the csproj's globs.");
+            output.WriteLine($"Renamed the folder {BddFileFormat.OldFeatureFolder} to {BddFileFormat.FeatureFolder}; update the csproj's globs.");
         }
 
         if (!Directory.Exists(folder))
@@ -161,28 +161,28 @@ public static class DataValidatorApp
             return [];
         }
 
-        var old = UatFileFormat.OldFilePatterns
+        var old = BddFileFormat.OldFilePatterns
             .SelectMany(pattern => Directory.EnumerateFiles(folder, pattern, SearchOption.AllDirectories))
             .Order(StringComparer.Ordinal)
             .ToList();
         if (!options.Fix)
         {
             return old.Select(file => new TestDataDiagnostic(
-                file, 1, UatFileFormat.OldFormCode, null,
-                $"'{Path.GetFileName(file)}' is the old name of '{Path.GetFileName(UatFileFormat.NewFileName(file))}'. Run 'brinell-data validate --fix' to rename it."));
+                file, 1, BddFileFormat.OldFormCode, null,
+                $"'{Path.GetFileName(file)}' is the old name of '{Path.GetFileName(BddFileFormat.NewFileName(file))}'. Run 'brinell-data validate --fix' to rename it."));
         }
 
         foreach (var file in old)
         {
-            var renamed = UatFileFormat.NewFileName(file)!;
+            var renamed = BddFileFormat.NewFileName(file)!;
             File.Move(file, renamed);
             output.WriteLine($"Renamed {Display(options, file)} to {Path.GetFileName(renamed)}.");
         }
 
-        foreach (var file in Directory.EnumerateFiles(folder, UatFileFormat.FeatureFilePattern, SearchOption.AllDirectories)
-            .Concat(Directory.EnumerateFiles(folder, UatFileFormat.StepFilePattern, SearchOption.AllDirectories)))
+        foreach (var file in Directory.EnumerateFiles(folder, BddFileFormat.FeatureFilePattern, SearchOption.AllDirectories)
+            .Concat(Directory.EnumerateFiles(folder, BddFileFormat.StepFilePattern, SearchOption.AllDirectories)))
         {
-            var (text, count) = UatFileFormat.RewriteHeadings(File.ReadAllText(file));
+            var (text, count) = BddFileFormat.RewriteHeadings(File.ReadAllText(file));
             if (count > 0)
             {
                 File.WriteAllText(file, text);
@@ -195,7 +195,7 @@ public static class DataValidatorApp
 
     // Every problem of the scenario files, the same checks the xUnit gate runs; --fix first rewrites
     // what has one right answer, then checks the file again.
-    private static IEnumerable<TestDataDiagnostic> CheckScenarios(ToolOptions options, UatCatalogSet catalogs, IReadOnlyList<string> files, TextWriter output, TextWriter errors)
+    private static IEnumerable<TestDataDiagnostic> CheckScenarios(ToolOptions options, BddCatalogSet catalogs, IReadOnlyList<string> files, TextWriter output, TextWriter errors)
     {
         foreach (var file in files)
         {
@@ -211,29 +211,29 @@ public static class DataValidatorApp
                 }
             }
 
-            foreach (var warning in found.Where(d => d.Severity == UatDiagnosticSeverity.Warning))
+            foreach (var warning in found.Where(d => d.Severity == BddDiagnosticSeverity.Warning))
             {
                 errors.WriteLine($"warning: {Display(options, warning.Location.FilePath ?? file)}:{warning.Location.LineNumber}: {warning.Code} {warning.Message}");
             }
 
-            foreach (var error in found.Where(d => d.Severity == UatDiagnosticSeverity.Error))
+            foreach (var error in found.Where(d => d.Severity == BddDiagnosticSeverity.Error))
             {
                 yield return new TestDataDiagnostic(error.Location.FilePath ?? file, error.Location.LineNumber, error.Code, null, error.Message);
             }
         }
     }
 
-    private static IEnumerable<TestDataDiagnostic> CheckPhraseFiles(ToolOptions options, UatCatalogSet catalogs, IReadOnlyList<string> files, TextWriter errors)
+    private static IEnumerable<TestDataDiagnostic> CheckPhraseFiles(ToolOptions options, BddCatalogSet catalogs, IReadOnlyList<string> files, TextWriter errors)
     {
         foreach (var file in files)
         {
             var found = UatScenarioCheck.CheckPhraseFile(file, catalogs);
-            foreach (var warning in found.Where(d => d.Severity == UatDiagnosticSeverity.Warning))
+            foreach (var warning in found.Where(d => d.Severity == BddDiagnosticSeverity.Warning))
             {
                 errors.WriteLine($"warning: {Display(options, warning.Location.FilePath ?? file)}:{warning.Location.LineNumber}: {warning.Code} {warning.Message}");
             }
 
-            foreach (var error in found.Where(d => d.Severity == UatDiagnosticSeverity.Error))
+            foreach (var error in found.Where(d => d.Severity == BddDiagnosticSeverity.Error))
             {
                 yield return new TestDataDiagnostic(error.Location.FilePath ?? file, error.Location.LineNumber, error.Code, null, error.Message);
             }
@@ -245,12 +245,12 @@ public static class DataValidatorApp
         var config = options.ConfigPath ?? throw new ToolException($"No {ConfigFileName} here. Run from a UAT project folder, or pass --config.");
         var catalogs = ScenarioCheck.Catalogs(config);
         var catalog = catalogs.Default;
-        var callables = new UatCallableSet(ScenarioCheck.PhraseFiles(config)
-                .SelectMany(file => UatScenarioFiles.ParsePhraseFile(file).Document?.Callables ?? []))
+        var callables = new BddCallableSet(ScenarioCheck.PhraseFiles(config)
+                .SelectMany(file => BddScenarioFiles.ParsePhraseFile(file).Document?.Callables ?? []))
             .Prepare(catalogs)
             .All;
-        UatEffectiveStepKeyword? keyword = options.Keyword is { } name
-            ? Enum.TryParse<UatEffectiveStepKeyword>(name, ignoreCase: true, out var parsed) ? parsed : throw new ToolException($"'{name}' is not Given, When or Then.")
+        BddEffectiveStepKeyword? keyword = options.Keyword is { } name
+            ? Enum.TryParse<BddEffectiveStepKeyword>(name, ignoreCase: true, out var parsed) ? parsed : throw new ToolException($"'{name}' is not Given, When or Then.")
             : null;
 
         // For one scenario file: only what it sees, grouped by where it comes from.
@@ -271,7 +271,7 @@ public static class DataValidatorApp
                 {
                     keyword = p.Keyword.ToString(),
                     phrase = p.Phrase,
-                    parameters = p.Parameters.Select(parameter => new { parameter.Name, type = UatValues.Describe(parameter.Type), source = parameter.Source.ToString() }),
+                    parameters = p.Parameters.Select(parameter => new { parameter.Name, type = BddValues.Describe(parameter.Type), source = parameter.Source.ToString() }),
                     declaration = p.CommandId,
                     problem = p.Problem is { } problem ? $"{problem.Code} {problem.Message}" : null,
                 }).Concat(callables.Select(c => new
@@ -279,7 +279,7 @@ public static class DataValidatorApp
                     // A callable has no keyword: it answers Given, When and Then alike.
                     keyword = "Any",
                     phrase = c.Callable.Phrase,
-                    parameters = c.Types.Select(parameter => new { Name = parameter.Key, type = UatValues.Describe(parameter.Value), source = c.Columns.Contains(parameter.Key) ? "Column" : "Phrase" }),
+                    parameters = c.Types.Select(parameter => new { Name = parameter.Key, type = BddValues.Describe(parameter.Value), source = c.Columns.Contains(parameter.Key) ? "Column" : "Phrase" }),
                     declaration = c.Callable.Source.ToString(),
                     problem = c.Problem is { } problem ? $"{problem.Code} {problem.Message}" : null,
                 })),
@@ -300,9 +300,9 @@ public static class DataValidatorApp
     private static int References(ToolOptions options, TextWriter output)
     {
         var config = options.ConfigPath ?? throw new ToolException($"No {ConfigFileName} here. Run from a UAT project folder, or pass --config.");
-        var name = UatNamespaces.Normalize(options.Argument ?? throw new ToolException("references needs a namespace, e.g. 'brinell-data references Backend'."));
+        var name = BddNamespaces.Normalize(options.Argument ?? throw new ToolException("references needs a namespace, e.g. 'brinell-data references Backend'."));
         var found = 0;
-        if (UatConfigParser.ParseFile(config).Usings.Contains(name, StringComparer.OrdinalIgnoreCase))
+        if (BddConfigParser.ParseFile(config).Usings.Contains(name, StringComparer.OrdinalIgnoreCase))
         {
             output.WriteLine($"{Display(options, config)}: ## Using");
             found++;
@@ -310,9 +310,9 @@ public static class DataValidatorApp
 
         foreach (var file in ScenarioCheck.Files(config))
         {
-            var usings = UatNamespaces.ParseList(UatMarkdownParser.ParseFile(file).Document?.Metadata.GetValueOrDefault(UatMetadataFields.Using));
+            var usings = BddNamespaces.ParseList(BddMarkdownParser.ParseFile(file).Document?.Metadata.GetValueOrDefault(BddMetadataFields.Using));
             var reason = usings.Contains(name, StringComparer.OrdinalIgnoreCase) ? "Using"
-                : UatNamespaces.IsVisible(name, UatNamespaces.Of(file)) && UatNamespaces.Normalize(UatNamespaces.Of(file)).Length > 0 ? "in the folder"
+                : BddNamespaces.IsVisible(name, BddNamespaces.Of(file)) && BddNamespaces.Normalize(BddNamespaces.Of(file)).Length > 0 ? "in the folder"
                 : null;
             if (reason is not null)
             {
@@ -334,7 +334,7 @@ public static class DataValidatorApp
             throw new ToolException($"'{target}' is not <file>:<line>.");
         }
 
-        var parse = UatMarkdownParser.ParseFile(Existing(options, target[..colon]));
+        var parse = BddMarkdownParser.ParseFile(Existing(options, target[..colon]));
         var step = parse.Document is { } document
             ? document.Background.Concat(document.Scenarios.SelectMany(scenario => scenario.Steps)).FirstOrDefault(candidate => candidate.Source.LineNumber == line)
             : null;
@@ -343,8 +343,8 @@ public static class DataValidatorApp
     }
 
     private static bool HasTestData(ToolOptions options)
-        => options.ConfigPath is { } config && UatConfigParser.Parse(File.ReadAllText(config)).Assemblies
-            .Any(a => string.Equals(a.Kind, UatConfigFields.TestDataAssemblyKind, StringComparison.OrdinalIgnoreCase));
+        => options.ConfigPath is { } config && BddConfigParser.Parse(File.ReadAllText(config)).Assemblies
+            .Any(a => string.Equals(a.Kind, BddConfigFields.TestDataAssemblyKind, StringComparison.OrdinalIgnoreCase));
 
     private static string Existing(ToolOptions options, string file)
     {
@@ -460,14 +460,14 @@ public static class DataValidatorApp
         }
 
         var directory = Path.GetDirectoryName(config)!;
-        var assemblies = UatConfigParser.Parse(File.ReadAllText(config)).Assemblies
-            .Where(a => string.Equals(a.Kind, UatConfigFields.TestDataAssemblyKind, StringComparison.OrdinalIgnoreCase))
+        var assemblies = BddConfigParser.Parse(File.ReadAllText(config)).Assemblies
+            .Where(a => string.Equals(a.Kind, BddConfigFields.TestDataAssemblyKind, StringComparison.OrdinalIgnoreCase))
             .Select(a => Path.GetFullPath(Path.Combine(directory, a.Assembly)))
             .ToList();
 
         return assemblies.Count > 0
             ? assemblies
-            : throw new ToolException($"{config} has no '{UatConfigFields.TestDataAssemblyKind}' row in its Assemblies table, and no --assembly was given.");
+            : throw new ToolException($"{config} has no '{BddConfigFields.TestDataAssemblyKind}' row in its Assemblies table, and no --assembly was given.");
     }
 
     private static string Counts(string file)
@@ -576,7 +576,7 @@ internal sealed record ToolOptions(
             }
         }
 
-        config ??= UatFileFormat.FindConfig(currentDirectory);
+        config ??= BddFileFormat.FindConfig(currentDirectory);
         return new ToolOptions(args[0], argument, assemblies, File.Exists(config) ? config : null, json, check, currentDirectory) { Fix = fix, Keyword = keyword };
     }
 }

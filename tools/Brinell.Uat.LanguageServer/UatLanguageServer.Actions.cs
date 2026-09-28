@@ -106,7 +106,7 @@ public sealed partial class UatLanguageServer
 
         var callable = target.Callable;
         var newPhrase = request.NewName.Trim();
-        if (!UatCommandPattern.ParameterNames(newPhrase).Order(StringComparer.Ordinal).SequenceEqual(callable.HeadingParameters.Order(StringComparer.Ordinal), StringComparer.Ordinal))
+        if (!BddCommandPattern.ParameterNames(newPhrase).Order(StringComparer.Ordinal).SequenceEqual(callable.HeadingParameters.Order(StringComparer.Ordinal), StringComparer.Ordinal))
         {
             throw new LocalRpcException($"'{newPhrase}' must keep the placeholders {string.Join(", ", callable.HeadingParameters.Select(name => $"{{{name}}}"))}, so each call keeps its values.") { ErrorCode = -32803 };
         }
@@ -150,8 +150,8 @@ public sealed partial class UatLanguageServer
     // The old file name (UAT029) and the old headings: rename the file and rewrite its headings.
     private void OldForms(UatServerFile file, string uri, List<CodeAction> actions)
     {
-        var (rewritten, count) = UatFileFormat.RewriteHeadings(file.Text);
-        var newName = UatFileFormat.NewFileName(file.Path);
+        var (rewritten, count) = BddFileFormat.RewriteHeadings(file.Text);
+        var newName = BddFileFormat.NewFileName(file.Path);
         if (count > 0 && newName is null)
         {
             actions.Add(new CodeAction($"Rewrite {count} old heading(s)", "quickfix", Edit(uri, new TextEdit(Whole(file), rewritten))) { IsPreferred = true });
@@ -300,18 +300,18 @@ public sealed partial class UatLanguageServer
     private CodeAction? Inline(UatServerFile file, int line)
     {
         var invocations = InvocationsAt(file, line);
-        if (invocations.Count == 0 || invocations[0].Call is not { } call || Outermost(call).Callable.Kind != UatCallableKind.Once ||
+        if (invocations.Count == 0 || invocations[0].Call is not { } call || Outermost(call).Callable.Kind != BddCallableKind.Once ||
             file.Structure.StepAt(line) is not { } written)
         {
             return null;
         }
 
         // Each body step once: a step of the body itself, or a call in the body as expanded.
-        List<UatStep> body = [];
+        List<BddStep> body = [];
         foreach (var invocation in invocations)
         {
             var frame = invocation.Call!;
-            UatStep step = invocation.Step;
+            BddStep step = invocation.Step;
             for (var inner = frame; inner.Parent is { } parent; inner = parent)
             {
                 if (parent.Parent is null)
@@ -347,7 +347,7 @@ public sealed partial class UatLanguageServer
         return new CodeAction($"Inline '{Outermost(call).Callable}'", "refactor.inline", Edit(uri, new TextEdit(new Range(new Position(line - 1, 0), new Position(end - 1, file.Line(end).Length)), text.ToString())));
     }
 
-    private static string TableText(UatTable table, string indent)
+    private static string TableText(BddTable table, string indent)
     {
         IEnumerable<IEnumerable<string>> rows = [table.Columns, .. table.Rows.Select(row => table.Columns.Select(column => row.Cells.GetValueOrDefault(column) ?? string.Empty))];
         var cells = rows.Select(row => row.ToList()).ToList();
@@ -358,7 +358,7 @@ public sealed partial class UatLanguageServer
     }
 
     // What a rename at a line renames: the callable of a ## Step: heading, or of the call on the line.
-    private (UatCallable Callable, Range Range)? RenameTarget(UatServerFile file, int line)
+    private (BddCallable Callable, Range Range)? RenameTarget(UatServerFile file, int line)
     {
         if (file.Structure.HeadingAt(line) is { Kind: "Step" or "Step for each row" } heading && heading.Line == line &&
             UatFileAnalysisCallables(file).FirstOrDefault(callable => callable.Source.LineNumber == line) is { } own)
@@ -377,7 +377,7 @@ public sealed partial class UatLanguageServer
     }
 
     // Every call of a callable across the suites that hold a file.
-    private IEnumerable<(string File, int Line)> CallsOf(string path, UatSourceLocation callable)
+    private IEnumerable<(string File, int Line)> CallsOf(string path, BddSourceLocation callable)
     {
         HashSet<(string, int)> found = [];
         foreach (var feature in SuiteFeatureFiles(path).Append(path).Distinct(StringComparer.OrdinalIgnoreCase))
@@ -422,7 +422,7 @@ public sealed partial class UatLanguageServer
 
     private static int LeadingSpaces(string text) => text.Length - text.TrimStart().Length;
 
-    private Diagnostic ToLsp(UatServerFile file, Brinell.Uat.Preview.UatFileAnalysis analysis, UatDiagnostic diagnostic)
+    private Diagnostic ToLsp(UatServerFile file, Brinell.Uat.Preview.UatFileAnalysis analysis, BddDiagnostic diagnostic)
         => DiagnosticsOf(file).FirstOrDefault(lsp => lsp.Code == diagnostic.Code && lsp.Range.Start.Line == diagnostic.Location.LineNumber - 1)
            ?? new Diagnostic(LineRange(file, diagnostic.Location.LineNumber), 1, diagnostic.Code, DiagnosticSource, diagnostic.Message);
 }

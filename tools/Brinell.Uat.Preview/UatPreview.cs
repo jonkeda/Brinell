@@ -13,7 +13,7 @@ public sealed record UatPreviewOptions
     /// The suite's catalogs: with them, each step shows what it binds to, the page it runs on,
     /// and the gate's diagnostic when it binds to nothing. Null to parse only.
     /// </summary>
-    public UatCatalogSet? Catalogs { get; init; }
+    public BddCatalogSet? Catalogs { get; init; }
 
     /// <summary>The file's scenarios' last runs, by scenario name: each step shows its status, a failed one its message and screenshot.</summary>
     public IReadOnlyDictionary<string, UatScenarioRun> Runs { get; init; } = new Dictionary<string, UatScenarioRun>();
@@ -36,7 +36,7 @@ public sealed record UatPreviewRunState(bool CanRun, string? Reason = null);
 /// <summary>A rendered file: the HTML, and every diagnostic it shows.</summary>
 /// <param name="Html">An <c>&lt;article&gt;</c>, every block with its <c>data-line</c>.</param>
 /// <param name="Diagnostics">The parse (and, when bound, bind) diagnostics, in line order.</param>
-public sealed record UatPreviewResult(string Html, IReadOnlyList<UatDiagnostic> Diagnostics);
+public sealed record UatPreviewResult(string Html, IReadOnlyList<BddDiagnostic> Diagnostics);
 
 /// <summary>
 /// Renders a feature or step file as the preview shows it (P1, P3): the engine's parse of the file,

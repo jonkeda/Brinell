@@ -23,11 +23,11 @@ public sealed class TodoMixedUatScenarioTests(TodoMixedUatFixture fixture)
     public Task Scenario_Passes(string filePath, string scenarioName) => RunUatScenarioAsync(filePath, scenarioName);
 
     /// <inheritdoc />
-    protected override void BeforeScenario(UatBoundScenario scenario) => Fixture.StartTestAsync().GetAwaiter().GetResult();
+    protected override void BeforeScenario(BddBoundScenario scenario) => Fixture.StartTestAsync().GetAwaiter().GetResult();
 
     /// <inheritdoc />
     /// <remarks>Every started app, one folder each: the cause is often on another app's screen.</remarks>
-    protected override string? CaptureEvidenceOnFailure(UatBoundScenario scenario)
+    protected override string? CaptureEvidenceOnFailure(BddBoundScenario scenario)
     {
         var captures = Fixture.Apps.CaptureAll(EvidenceTestClassName, FormatEvidenceScenarioName(scenario), EvidenceDescription);
         return captures.Count == 0

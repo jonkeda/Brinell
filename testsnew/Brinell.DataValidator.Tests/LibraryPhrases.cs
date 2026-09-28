@@ -7,7 +7,7 @@ namespace Brinell.DataValidator.Tests.Library;
 public sealed class LibraryPhrases : BddStepDefinitionsBase
 {
     [BddWhen("I lend {title} to {reader} until {due}")]
-    public void Lend(string title, UatUserRole reader, DateOnly due)
+    public void Lend(string title, BddUserRole reader, DateOnly due)
     {
     }
 

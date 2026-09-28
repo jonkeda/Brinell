@@ -33,7 +33,7 @@ registered directly in the runtime and spec catalogs - they bind to no control m
   runtime catalog, the spec catalog and any preview all come from the same
   `UatCatalogBuilder.DiscoverBindings` pass, so a phrase and the surface that runs it cannot
   drift.
-- A second attribute for control verbs (the former `[UatStep]`).
+- A second attribute for control verbs (the former `[BddStep]`).
 - A writable long form (`[UatPhrase(keyword, phrase)]`) next to the short forms, and a form
   without a keyword.
 - `[UatAnd]` / `[UatBut]` attributes.

@@ -26,7 +26,7 @@ public sealed class UatAppsHostTests
     {
         using var suite = new Suite();
 
-        var config = UatConfigParser.ParseFile(suite.ConfigFilePath);
+        var config = BddConfigParser.ParseFile(suite.ConfigFilePath);
 
         Assert.Equal(["Alice's PC", "Bob"], config.Apps.Select(app => app.Name));
         Assert.Equal("Alice", config.Apps[0].User);
@@ -103,7 +103,7 @@ public sealed class UatAppsHostTests
 }
 
 [TestModuleScan(typeof(AppsFixture), NamespacePrefix = "Brinell.Uat.Tests.AppsHostCases")]
-[UatIgnore]
+[BddIgnore]
 public sealed class AppsFixture : IUatAppsHost
 {
     public AppsFixture()
@@ -155,7 +155,7 @@ public sealed class AppCounter(string app)
 }
 
 [BddStepDefinitions]
-[UatIgnore]
+[BddIgnore]
 public sealed class AppsHostPhrases(AppCounter counter, AppsFixture fixture) : BddStepDefinitionsBase
 {
     [BddWhen("I note the app")]

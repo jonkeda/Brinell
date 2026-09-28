@@ -56,14 +56,14 @@ And that todo should be marked pending
 ```
 
 ```csharp
-[UatPhrase(UatEffectiveStepKeyword.Then, "the database should hold a todo titled {title}")]
+[UatPhrase(BddEffectiveStepKeyword.Then, "the database should hold a todo titled {title}")]
 public void AssertRowExists(string title)
 {
     using var db = Open();
     Assert.Contains(db.AllTodos(), t => t.Title == title);
 }
 
-[UatPhrase(UatEffectiveStepKeyword.Then, "that todo should be marked pending")]
+[UatPhrase(BddEffectiveStepKeyword.Then, "that todo should be marked pending")]
 public void AssertPending()
 {
     using var db = Open();
@@ -86,7 +86,7 @@ And its due date should be stored in UTC
 ```
 
 ```csharp
-[UatPhrase(UatEffectiveStepKeyword.Then, "the stored todo {title} should have a client id")]
+[UatPhrase(BddEffectiveStepKeyword.Then, "the stored todo {title} should have a client id")]
 public void AssertClientId(string title)
 {
     using var db = Open();
@@ -94,7 +94,7 @@ public void AssertClientId(string title)
     Assert.False(string.IsNullOrEmpty(todo.ClientId));
 }
 
-[UatPhrase(UatEffectiveStepKeyword.Then, "its due date should be stored in UTC")]
+[UatPhrase(BddEffectiveStepKeyword.Then, "its due date should be stored in UTC")]
 public void AssertUtc(/* title captured from context */)
 {
     using var db = Open();
@@ -128,10 +128,10 @@ And a tombstone for "Temp" should remain
 ```
 
 ```csharp
-[UatPhrase(UatEffectiveStepKeyword.When, "I relaunch the app")]
+[UatPhrase(BddEffectiveStepKeyword.When, "I relaunch the app")]
 public Task Relaunch(CancellationToken ct) => _world.RelaunchAsync(ct);   // fixture stops + starts the app
 
-[UatPhrase(UatEffectiveStepKeyword.Then, "a tombstone for {title} should remain")]
+[UatPhrase(BddEffectiveStepKeyword.Then, "a tombstone for {title} should remain")]
 public void AssertTombstone(string title)
 {
     using var db = Open();

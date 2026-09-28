@@ -4,7 +4,7 @@ namespace Brinell.Bdd;
 
 /// <summary>On a fixture, page or step-definition member: not a step, and not discovered.</summary>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Property | AttributeTargets.Method)]
-public sealed class UatIgnoreAttribute : Attribute
+public sealed class BddIgnoreAttribute : Attribute
 {
 }
 

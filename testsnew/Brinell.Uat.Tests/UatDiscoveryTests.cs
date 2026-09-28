@@ -23,11 +23,11 @@ public sealed class UatDiscoveryTests
         Assert.Contains(login.Controls, x => x.Name == "Sign in" && x.MemberName == nameof(LoginPage.SubmitButton));
 
         Assert.Contains(result.Commands, x =>
-            x.Keyword == UatEffectiveStepKeyword.When &&
+            x.Keyword == BddEffectiveStepKeyword.When &&
             x.Phrase == "I sign in with credentials" &&
             x.Method.Name == nameof(LoginPage.SignInWithCredentials));
         Assert.Contains(result.Catalog.Patterns, x =>
-            x.Keyword == UatEffectiveStepKeyword.When &&
+            x.Keyword == BddEffectiveStepKeyword.When &&
             x.Phrase == "I sign in with credentials");
     }
 
@@ -52,10 +52,10 @@ public sealed class UatDiscoveryTests
 
         Assert.True(result.Success, FormatDiagnostics(result));
         Assert.Contains(result.Catalog.Patterns, x =>
-            x.Keyword == UatEffectiveStepKeyword.When &&
+            x.Keyword == BddEffectiveStepKeyword.When &&
             x.Phrase == "I save the settings");
         Assert.Contains(result.Catalog.Patterns, x =>
-            x.Keyword == UatEffectiveStepKeyword.Then &&
+            x.Keyword == BddEffectiveStepKeyword.Then &&
             x.Phrase == "the settings are saved");
     }
 
@@ -90,7 +90,7 @@ public sealed class UatDiscoveryTests
 
         public BrightnessSlider BrightnessSlider { get; } = new();
 
-        [UatIgnore]
+        [BddIgnore]
         public SaveButton InternalButton { get; } = new();
     }
 

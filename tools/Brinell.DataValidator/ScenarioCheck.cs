@@ -8,7 +8,7 @@ internal static class ScenarioCheck
 {
     public static bool CanCheck(string configPath) => Suite(configPath).CanBind;
 
-    public static UatCatalogSet Catalogs(string configPath) => Suite(configPath).Catalogs;
+    public static BddCatalogSet Catalogs(string configPath) => Suite(configPath).Catalogs;
 
     /// <summary>The folder of feature and step files beside the config.</summary>
     public static string ScenarioFolder(string configPath) => Suite(configPath).FeatureFolder;

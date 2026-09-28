@@ -134,8 +134,8 @@ A scenario file names its test set; the fixture loads it:
 class loads it in `BeforeFile`, before the file's first scenario:
 
 ```csharp
-protected override void BeforeFile(UatDocument document)
-    => Fixture.UseTestSet(document.Metadata.TryGetValue(UatMetadataFields.TestData, out var name) && name.Length > 0
+protected override void BeforeFile(BddDocument document)
+    => Fixture.UseTestSet(document.Metadata.TryGetValue(BddMetadataFields.TestData, out var name) && name.Length > 0
         ? name
         : TodoUatFixture.DefaultTestData);
 ```

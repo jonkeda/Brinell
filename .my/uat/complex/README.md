@@ -89,12 +89,12 @@ public sealed class TodoWorldPhrases : UatPhraseClassBase
         _world = world;
     }
 
-    [UatPhrase(UatEffectiveStepKeyword.Given, "the server has a todo {title} for user {user}")]
+    [UatPhrase(BddEffectiveStepKeyword.Given, "the server has a todo {title} for user {user}")]
     public void SeedServerTodo(string title, string user) => _world.SeedServerTodo(user, title);
 }
 ```
 
-A phrase method may also take `UatExecutionContext`, `CancellationToken`,
+A phrase method may also take `BddExecutionContext`, `CancellationToken`,
 `TestSettings`, or a typed `[TestSettingsSection]` class — see
 [docs/guides/uat-step-definitions.md](../../../docs/guides/uat-step-definitions.md#custom-root-phrases).
 Each topic doc below shows the phrase *and* the C# that backs it.

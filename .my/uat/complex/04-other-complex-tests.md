@@ -33,10 +33,10 @@ public sealed class NetworkPhrases : UatPhraseClassBase
     private readonly NetworkStateFile _network;
     public NetworkPhrases(NetworkStateFile network) => _network = network;
 
-    [UatPhrase(UatEffectiveStepKeyword.When, "I go offline")]
+    [UatPhrase(BddEffectiveStepKeyword.When, "I go offline")]
     public void GoOffline() => _network.SetOffline();
 
-    [UatPhrase(UatEffectiveStepKeyword.When, "I go online")]
+    [UatPhrase(BddEffectiveStepKeyword.When, "I go online")]
     public void GoOnline() => _network.SetOnline();
 }
 ```
@@ -82,7 +82,7 @@ And I should see "Buy milk"
 ```
 
 ```csharp
-[UatPhrase(UatEffectiveStepKeyword.Given, "the server takes {seconds} seconds to answer the next sync")]
+[UatPhrase(BddEffectiveStepKeyword.Given, "the server takes {seconds} seconds to answer the next sync")]
 public void StubDelay(int seconds)
     // AtPriority(1) makes this delayed answer win over the default list stub for the next sync;
     // mirrors SyncTests/ScenarioJourneyTests, which use the same AtPriority + WithDelay shape.

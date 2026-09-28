@@ -37,7 +37,7 @@ public sealed class UatReflectionRuntimeTests
             Then Greeting should contain "Hello, Alice!"
             """);
 
-        var result = await new UatScenarioRunner().RunAsync(scenario);
+        var result = await new BddScenarioRunner().RunAsync(scenario);
 
         Assert.True(result.Passed, FormatResults(result));
         Assert.True(fixture.MainPage.Navigated);
@@ -64,7 +64,7 @@ public sealed class UatReflectionRuntimeTests
             And Country should have selected "United States"
             """);
 
-        var result = await new UatScenarioRunner().RunAsync(scenario);
+        var result = await new BddScenarioRunner().RunAsync(scenario);
 
         Assert.True(result.Passed, FormatResults(result));
         Assert.True(fixture.UserFormPage.Navigated);
@@ -123,7 +123,7 @@ public sealed class UatReflectionRuntimeTests
             Then remembered trained player should be "Rush Alpha"
             """);
 
-        var result = await new UatScenarioRunner().RunAsync(scenario);
+        var result = await new BddScenarioRunner().RunAsync(scenario);
 
         Assert.True(result.Passed, FormatResults(result));
         Assert.Equal("Rush Alpha", fixture.RememberedTrainedPlayer);
@@ -136,7 +136,7 @@ public sealed class UatReflectionRuntimeTests
 
         var pattern = Assert.Single(catalog.Patterns, pattern =>
             pattern.Phrase == "I remember {name} as a trained player");
-        Assert.Equal(UatEffectiveStepKeyword.Given, pattern.Keyword);
+        Assert.Equal(BddEffectiveStepKeyword.Given, pattern.Keyword);
         Assert.Equal($"{typeof(Fixture).FullName}.{nameof(Fixture.RememberTrainedPlayer)}", pattern.CommandId);
     }
 
@@ -155,7 +155,7 @@ public sealed class UatReflectionRuntimeTests
             But no other player should be remembered than "Rush Alpha"
             """);
 
-        var result = await new UatScenarioRunner().RunAsync(scenario);
+        var result = await new BddScenarioRunner().RunAsync(scenario);
 
         Assert.True(result.Passed, FormatResults(result));
         Assert.Equal(1, fixture.OtherPlayerChecks);
@@ -166,7 +166,7 @@ public sealed class UatReflectionRuntimeTests
     {
         // The catalog still builds; the step that binds to the broken phrase names the problem (AD-016).
         var catalog = UatReflectionRuntime.FromRoot(new CommandIdFixture()).CreateCommandCatalog();
-        var parse = UatMarkdownParser.Parse("""
+        var parse = BddMarkdownParser.Parse("""
             # Feature: Broken
 
             ## Scenario: Uses the broken phrase
@@ -174,7 +174,7 @@ public sealed class UatReflectionRuntimeTests
             Given I remember something
             """);
 
-        var bind = UatBinder.Bind(parse.Document!, catalog);
+        var bind = BddBinder.Bind(parse.Document!, catalog);
 
         var error = Assert.Single(bind.Diagnostics);
         Assert.Equal("UATA013", error.Code);
@@ -195,7 +195,7 @@ public sealed class UatReflectionRuntimeTests
             Given the A9 camera settings are available
             Then the raw A9 host setting should match
             """);
-        var runner = new UatScenarioRunner();
+        var runner = new BddScenarioRunner();
         runner.Context.SetSettings(new TestSettingsProviderStub().Resolve(new TestSettingsRequest(
             ProjectDirectory: Directory.GetCurrentDirectory())));
 
@@ -206,39 +206,39 @@ public sealed class UatReflectionRuntimeTests
         Assert.Equal("192.168.168.1", fixture.RawHost);
     }
 
-    private static IReadOnlyList<UatDiagnostic> BindErrors(UatReflectionRuntime runtime, string markdown)
+    private static IReadOnlyList<BddDiagnostic> BindErrors(UatReflectionRuntime runtime, string markdown)
     {
-        var parse = UatMarkdownParser.Parse(markdown);
+        var parse = BddMarkdownParser.Parse(markdown);
         Assert.True(parse.Success, FormatDiagnostics(parse));
 
-        var bind = UatBinder.Bind(parse.Document!, runtime.CreateCommandCatalog());
+        var bind = BddBinder.Bind(parse.Document!, runtime.CreateCommandCatalog());
         Assert.False(bind.Success);
-        return bind.Diagnostics.Where(x => x.Severity == UatDiagnosticSeverity.Error).ToList();
+        return bind.Diagnostics.Where(x => x.Severity == BddDiagnosticSeverity.Error).ToList();
     }
 
-    private static UatBoundScenario BindScenario(UatReflectionRuntime runtime, string markdown)
+    private static BddBoundScenario BindScenario(UatReflectionRuntime runtime, string markdown)
     {
-        var parse = UatMarkdownParser.Parse(markdown);
+        var parse = BddMarkdownParser.Parse(markdown);
         Assert.True(parse.Success, FormatDiagnostics(parse));
         Assert.NotNull(parse.Document);
 
-        var bind = UatBinder.Bind(parse.Document, runtime.CreateCommandCatalog());
+        var bind = BddBinder.Bind(parse.Document, runtime.CreateCommandCatalog());
         Assert.True(bind.Success, FormatDiagnostics(bind));
         Assert.NotNull(bind.Document);
         return Assert.Single(bind.Document.Scenarios);
     }
 
-    private static string FormatDiagnostics(UatParseResult result)
+    private static string FormatDiagnostics(BddParseResult result)
     {
         return string.Join(Environment.NewLine, result.Diagnostics.Select(x => $"{x.Code} {x.Message}"));
     }
 
-    private static string FormatDiagnostics(UatBindResult result)
+    private static string FormatDiagnostics(BddBindResult result)
     {
         return string.Join(Environment.NewLine, result.Diagnostics.Select(x => $"{x.Code} {x.Message}"));
     }
 
-    private static string FormatResults(UatScenarioRunResult result)
+    private static string FormatResults(BddScenarioRunResult result)
     {
         return string.Join(
             Environment.NewLine,

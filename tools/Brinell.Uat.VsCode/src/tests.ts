@@ -1,5 +1,5 @@
 // Test Explorer on the scenarios' addresses (R1): each suite, its feature files and their scenarios,
-// run with `dotnet test --filter UatScenario=<address>` after a build, and debugged by attaching the
+// run with `dotnet test --filter BddScenario=<address>` after a build, and debugged by attaching the
 // C# debugger to the testhost. The UI test rules hold (R4): one run at a time, and Cancel stops the
 // test process and the app it started.
 import { spawn, ChildProcess } from "child_process";

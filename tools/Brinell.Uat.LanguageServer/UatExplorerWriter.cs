@@ -78,7 +78,7 @@ internal static class UatExplorerWriter
         </html>
         """;
 
-    public static string StepsView(UatSuite suite, UatCatalogSet catalogs, IReadOnlyList<UatCallable> callables)
+    public static string StepsView(UatSuite suite, BddCatalogSet catalogs, IReadOnlyList<BddCallable> callables)
     {
         StringBuilder html = new();
         var patterns = catalogs.Default.Patterns.Where(pattern => pattern.Callable is null).ToList();
@@ -108,7 +108,7 @@ internal static class UatExplorerWriter
             html.Append($"<section class=\"uat-group\"><h3>{Encode(Path.GetFileName(file.Key))} <span class=\"uat-count\">{file.Count()}</span></h3>\n");
             foreach (var callable in file)
             {
-                html.Append($"<div class=\"uat-entry\"{Open(callable.Source)}><span class=\"uat-kind\">{(callable.Kind == UatCallableKind.EachRow ? "Each row" : "Step")}</span>{Encode(callable.Phrase)}</div>\n");
+                html.Append($"<div class=\"uat-entry\"{Open(callable.Source)}><span class=\"uat-kind\">{(callable.Kind == BddCallableKind.EachRow ? "Each row" : "Step")}</span>{Encode(callable.Phrase)}</div>\n");
             }
 
             html.Append("</section>\n");
@@ -130,7 +130,7 @@ internal static class UatExplorerWriter
         return html.ToString();
     }
 
-    public static string PagesView(UatSuite suite, UatCatalogSet catalogs)
+    public static string PagesView(UatSuite suite, BddCatalogSet catalogs)
     {
         StringBuilder html = new();
         var pages = UatPageSet.Of(catalogs.Default).Values.OrderBy(page => page.Key, StringComparer.OrdinalIgnoreCase).ToList();
@@ -165,7 +165,7 @@ internal static class UatExplorerWriter
             html.Append($"<section class=\"uat-group\"><h3>{Encode(Path.GetFileName(file.Key))}</h3>\n");
             foreach (var (path, run, line) in file.OrderBy(run => run.Line))
             {
-                html.Append($"<div class=\"uat-entry\"{Open(new UatSourceLocation(path, line))}><span class=\"uat-result\" data-status=\"{Encode(run.Status)}\" title=\"{Encode(run.Status)}\"></span> {Encode(run.Scenario)}<span class=\"uat-id\">{run.DurationMs} ms · {run.At.LocalDateTime:g}</span></div>\n");
+                html.Append($"<div class=\"uat-entry\"{Open(new BddSourceLocation(path, line))}><span class=\"uat-result\" data-status=\"{Encode(run.Status)}\" title=\"{Encode(run.Status)}\"></span> {Encode(run.Scenario)}<span class=\"uat-id\">{run.DurationMs} ms · {run.At.LocalDateTime:g}</span></div>\n");
             }
 
             html.Append("</section>\n");
@@ -174,7 +174,7 @@ internal static class UatExplorerWriter
         return html.ToString();
     }
 
-    private static UatSourceLocation? Method(UatSuite suite, string commandId)
+    private static BddSourceLocation? Method(UatSuite suite, string commandId)
     {
         var dot = commandId.LastIndexOf('.');
         if (dot <= 0 || suite.FindType(commandId[..dot]) is not { } type)
@@ -185,13 +185,13 @@ internal static class UatExplorerWriter
         return UatSourceLocator.Of(type, commandId[(dot + 1)..]);
     }
 
-    private static string Parameters(UatCommandPattern pattern)
+    private static string Parameters(BddCommandPattern pattern)
         => pattern.Parameters.Count == 0 ? string.Empty : $"<span class=\"uat-id\">{Encode(string.Join(", ", pattern.Parameters.Select(parameter => parameter.ToString())))}</span>";
 
     private static string TypeName(string dottedMember)
         => dottedMember.LastIndexOf('.') is > 0 and var dot ? dottedMember[..dot] : dottedMember;
 
-    private static string Open(UatSourceLocation? at)
+    private static string Open(BddSourceLocation? at)
         => at is { FilePath: { } file } ? $" data-open=\"{Encode(new Uri(file).AbsoluteUri)}\" data-line=\"{at.LineNumber}\"" : string.Empty;
 
     private static string Encode(string text) => WebUtility.HtmlEncode(text);

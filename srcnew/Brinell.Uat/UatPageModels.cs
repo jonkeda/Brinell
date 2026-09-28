@@ -14,21 +14,21 @@ public sealed record UatPageSet(IReadOnlyDictionary<string, UatPageModel> Pages)
 
     /// <summary>The pages of <paramref name="catalog"/>; empty when it has none.</summary>
     /// <param name="catalog">A catalog.</param>
-    public static IReadOnlyDictionary<string, UatPageModel> Of(UatCommandCatalog catalog)
+    public static IReadOnlyDictionary<string, UatPageModel> Of(BddCommandCatalog catalog)
         => (catalog.Scope as UatPageSet)?.Pages ?? None;
 
     /// <inheritdoc />
-    public IStepScope StartWalk(UatCatalogSet catalogs, HashSet<string>? used) => new UatPageTracker(catalogs, used);
+    public IStepScope StartWalk(BddCatalogSet catalogs, HashSet<string>? used) => new UatPageTracker(catalogs, used);
 }
 
 /// <summary>A page the binder can follow: its name, its page object type and its controls.</summary>
 public sealed record UatPageModel(string Name, Type PageType, IReadOnlyList<UatControlModel> Controls)
 {
-    /// <summary>The page's namespace (<see cref="UatNamespaces"/>); <c>""</c> when every scenario sees it.</summary>
+    /// <summary>The page's namespace (<see cref="BddNamespaces"/>); <c>""</c> when every scenario sees it.</summary>
     public string Namespace { get; init; } = string.Empty;
 
     /// <summary>The page as steps and the runtime know it: <c>Invoicing/Detail</c>, or <see cref="Name"/>.</summary>
-    public string Key => UatNamespaces.PageKey(Namespace, Name);
+    public string Key => BddNamespaces.PageKey(Namespace, Name);
 }
 
 /// <summary>A control of a page, as the binder sees it.</summary>

@@ -59,10 +59,10 @@ public sealed class UatSuite : IDisposable
     /// The config as the suite reads it. An <c>AppsFile</c> the build copies (<c>apps.md</c> from
     /// a shared project) is found in the project's output when it is not beside the config.
     /// </summary>
-    public UatConfig ReadConfig()
+    public BddConfig ReadConfig()
     {
-        var config = UatConfigParser.Parse(File.ReadAllText(ConfigPath));
-        if (config.Apps.Count > 0 || !config.Runtime.TryGetValue(UatConfigFields.AppsFile, out var appsFile) || appsFile.Length == 0)
+        var config = BddConfigParser.Parse(File.ReadAllText(ConfigPath));
+        if (config.Apps.Count > 0 || !config.Runtime.TryGetValue(BddConfigFields.AppsFile, out var appsFile) || appsFile.Length == 0)
         {
             return config;
         }
@@ -79,7 +79,7 @@ public sealed class UatSuite : IDisposable
 
         return config with
         {
-            Apps = TestAppDefinition.ReadMarkdownFile(path).Select(app => new UatAppConfig(app.Name, app.Values)).ToArray(),
+            Apps = TestAppDefinition.ReadMarkdownFile(path).Select(app => new BddAppConfig(app.Name, app.Values)).ToArray(),
         };
     }
 
@@ -88,19 +88,19 @@ public sealed class UatSuite : IDisposable
     {
         get
         {
-            var config = UatConfigParser.Parse(File.ReadAllText(ConfigPath));
+            var config = BddConfigParser.Parse(File.ReadAllText(ConfigPath));
             return FixtureName(config) is not null && config.Assemblies.Any(NamesFixtureAssembly);
         }
     }
 
     /// <summary>The folder of feature and step files beside the config.</summary>
-    public string FeatureFolder => Path.Combine(ProjectDirectory, UatFileFormat.FeatureFolder);
+    public string FeatureFolder => Path.Combine(ProjectDirectory, BddFileFormat.FeatureFolder);
 
     /// <summary>The feature files in the project's own <c>Features</c> folder and its subfolders.</summary>
-    public IReadOnlyList<string> FeatureFiles => FilesIn(FeatureFolder, UatFileFormat.FeatureFilePattern);
+    public IReadOnlyList<string> FeatureFiles => FilesIn(FeatureFolder, BddFileFormat.FeatureFilePattern);
 
     /// <summary>The step files: <c>*.steps.md</c> in the project's own <c>Features</c> folder and its subfolders.</summary>
-    public IReadOnlyList<string> StepFiles => FilesIn(FeatureFolder, UatFileFormat.StepFilePattern);
+    public IReadOnlyList<string> StepFiles => FilesIn(FeatureFolder, BddFileFormat.StepFilePattern);
 
     /// <summary>
     /// The feature and step files the project links from another project into its <c>Features</c>
@@ -139,7 +139,7 @@ public sealed class UatSuite : IDisposable
         }
 
         var copies = Directory.EnumerateFiles(ProjectDirectory, "*.csproj")
-            .Any(csproj => File.ReadAllText(csproj).Contains(UatFileFormat.StepsExtension, StringComparison.OrdinalIgnoreCase));
+            .Any(csproj => File.ReadAllText(csproj).Contains(BddFileFormat.StepsExtension, StringComparison.OrdinalIgnoreCase));
         return copies
             ? null
             : "The Features folder has *.steps.md files that the project does not copy to its output, so the xUnit gate cannot see them. Add <None Update=\"Features\\**\\*.steps.md\" CopyToOutputDirectory=\"PreserveNewest\" /> to the csproj.";
@@ -150,7 +150,7 @@ public sealed class UatSuite : IDisposable
     /// it. Loaded once, from a shadow copy of the build output, and kept until <see cref="Reload"/>.
     /// </summary>
     /// <exception cref="UatWorkspaceException">The config names no fixture, or nothing is built yet.</exception>
-    public UatCatalogSet Catalogs
+    public BddCatalogSet Catalogs
     {
         get
         {
@@ -194,10 +194,10 @@ public sealed class UatSuite : IDisposable
     /// </summary>
     public IReadOnlyList<Brinell.TestData.ITestDataDefinition> TestDataDefinitions()
     {
-        UatConfig config;
+        BddConfig config;
         try
         {
-            config = UatConfigParser.Parse(File.ReadAllText(ConfigPath));
+            config = BddConfigParser.Parse(File.ReadAllText(ConfigPath));
         }
         catch (IOException)
         {
@@ -205,7 +205,7 @@ public sealed class UatSuite : IDisposable
         }
 
         var paths = config.Assemblies
-            .Where(assembly => string.Equals(assembly.Kind, UatConfigFields.TestDataAssemblyKind, StringComparison.OrdinalIgnoreCase))
+            .Where(assembly => string.Equals(assembly.Kind, BddConfigFields.TestDataAssemblyKind, StringComparison.OrdinalIgnoreCase))
             .Select(assembly => Path.GetFullPath(Path.Combine(ProjectDirectory, assembly.Assembly)))
             .Where(File.Exists)
             .ToList();
@@ -252,15 +252,15 @@ public sealed class UatSuite : IDisposable
     /// <param name="filePath">A feature file of the suite.</param>
     public string RelativeToConfig(string filePath)
     {
-        var root = UatScenarioFiles.ScenarioRoot(filePath);
-        return Path.GetFileName(root).Equals(UatFileFormat.FeatureFolder, StringComparison.OrdinalIgnoreCase)
-            ? $"{UatFileFormat.FeatureFolder}/{Path.GetRelativePath(root, filePath).Replace('\\', '/')}"
+        var root = BddScenarioFiles.ScenarioRoot(filePath);
+        return Path.GetFileName(root).Equals(BddFileFormat.FeatureFolder, StringComparison.OrdinalIgnoreCase)
+            ? $"{BddFileFormat.FeatureFolder}/{Path.GetRelativePath(root, filePath).Replace('\\', '/')}"
             : Path.GetRelativePath(ProjectDirectory, filePath).Replace('\\', '/');
     }
 
     /// <summary>The catalogs, or null with the reason when the suite cannot be bound yet (no fixture named, not built).</summary>
     /// <param name="reason">Why there are no catalogs.</param>
-    public UatCatalogSet? TryGetCatalogs(out string? reason)
+    public BddCatalogSet? TryGetCatalogs(out string? reason)
     {
         try
         {
@@ -334,10 +334,10 @@ public sealed class UatSuite : IDisposable
         throw new UatWorkspaceException($"No fixture '{fixtureName}' (the config's Runtime Fixture) in {string.Join(", ", candidates.Select(Path.GetFileName))}.");
     }
 
-    private static string? FixtureName(UatConfig config)
+    private static string? FixtureName(BddConfig config)
         => config.Runtime.TryGetValue("Fixture", out var name) && name.Trim() is { Length: > 0 } trimmed ? trimmed : null;
 
-    private static bool NamesFixtureAssembly(UatAssemblyRegistration assembly)
+    private static bool NamesFixtureAssembly(BddAssemblyRegistration assembly)
         => string.Equals(assembly.Kind, PagesKind, StringComparison.OrdinalIgnoreCase) ||
            string.Equals(assembly.Kind, StepsKind, StringComparison.OrdinalIgnoreCase);
 

@@ -42,7 +42,7 @@ internal static class UatTargetRegistry
         return true;
     }
 
-    public static UatTargetDescriptor GetRequired(UatConfig config)
+    public static UatTargetDescriptor GetRequired(BddConfig config)
     {
         var targetName = config.Runtime.TryGetValue("Target", out var value) ? value : string.Empty;
         return TryGet(targetName, out var descriptor)

@@ -2,7 +2,7 @@ namespace Brinell.Bdd;
 
 /// <summary>
 /// What a head adds to binding beyond the folder, file, <c>Using</c> and global scopes: the page a
-/// step runs on, for Brinell.Uat. Set on <see cref="UatCommandCatalog.Scope"/>.
+/// step runs on, for Brinell.Uat. Set on <see cref="BddCommandCatalog.Scope"/>.
 /// </summary>
 public interface IStepScopeModel
 {
@@ -12,7 +12,7 @@ public interface IStepScopeModel
     /// <summary>Starts following one scenario's steps.</summary>
     /// <param name="catalogs">The catalogs the scenario binds against.</param>
     /// <param name="used">The usings a bound step needed, to add to; null when not counted.</param>
-    IStepScope StartWalk(UatCatalogSet catalogs, HashSet<string>? used);
+    IStepScope StartWalk(BddCatalogSet catalogs, HashSet<string>? used);
 }
 
 /// <summary>One scenario's walk: what a step can bind to where it stands, and what each bound step did.</summary>
@@ -24,7 +24,7 @@ public interface IStepScope
     /// <param name="app">The step's app; null for the fixture's own.</param>
     /// <param name="candidates">The candidates the folder, file and <c>Using</c> scopes let through.</param>
     /// <param name="problems">Where a problem goes.</param>
-    IReadOnlyList<UatCommandMatch> Visible(UatCommandCatalog catalog, UatStep step, UatAppConfig? app, IReadOnlyList<UatCommandMatch> candidates, List<UatDiagnostic> problems);
+    IReadOnlyList<BddCommandMatch> Visible(BddCommandCatalog catalog, BddStep step, BddAppConfig? app, IReadOnlyList<BddCommandMatch> candidates, List<BddDiagnostic> problems);
 
     /// <summary>Follows a bound step. False when it added a problem, which stops the step.</summary>
     /// <param name="step">The step.</param>
@@ -33,10 +33,10 @@ public interface IStepScope
     /// <param name="app">The step's app.</param>
     /// <param name="where">Where the step is written.</param>
     /// <param name="diagnostics">Where a problem goes.</param>
-    bool Bound(UatStep step, UatCommandMatch match, ref IReadOnlyDictionary<string, string> arguments, UatAppConfig? app, UatScope where, List<UatDiagnostic> diagnostics);
+    bool Bound(BddStep step, BddCommandMatch match, ref IReadOnlyDictionary<string, string> arguments, BddAppConfig? app, BddScope where, List<BddDiagnostic> diagnostics);
 
     /// <summary>The scope known after the step, for the runtime to follow; null when not known.</summary>
     /// <param name="pattern">What the step bound to.</param>
     /// <param name="app">The step's app.</param>
-    string? After(UatCommandPattern pattern, UatAppConfig? app);
+    string? After(BddCommandPattern pattern, BddAppConfig? app);
 }

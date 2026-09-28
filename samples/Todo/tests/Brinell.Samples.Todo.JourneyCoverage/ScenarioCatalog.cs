@@ -30,13 +30,13 @@ public static partial class ScenarioCatalog
     /// <param name="filePath">The file.</param>
     public static IEnumerable<TestMethod> Read(string filePath)
     {
-        var document = UatMarkdownParser.ParseFile(filePath).Document
+        var document = BddMarkdownParser.ParseFile(filePath).Document
             ?? throw new InvalidOperationException($"{filePath} does not parse; the UAT suites report why.");
         var file = Path.GetFileName(filePath).Replace(".feature.md", string.Empty, StringComparison.Ordinal);
 
         foreach (var scenario in document.Scenarios)
         {
-            var tags = scenario.Tags.Select(UatTagConventions.NormalizeTag).ToList();
+            var tags = scenario.Tags.Select(BddTagConventions.NormalizeTag).ToList();
             var journeys = tags.Where(tag => SubtaskId().IsMatch(tag)).Distinct().ToList();
             var gates = tags.Select(Gate).OfType<string>().Distinct().ToList();
             foreach (var pyramid in Tiers(tags))
@@ -48,13 +48,13 @@ public static partial class ScenarioCatalog
 
     private static IEnumerable<string> Tiers(IReadOnlyList<string> tags)
     {
-        var heads = UatTagConventions.Heads.Where(head => tags.Contains(head, StringComparer.OrdinalIgnoreCase)).ToList();
-        if (heads.Contains(UatTagConventions.Service, StringComparer.OrdinalIgnoreCase))
+        var heads = BddTagConventions.Heads.Where(head => tags.Contains(head, StringComparer.OrdinalIgnoreCase)).ToList();
+        if (heads.Contains(BddTagConventions.Service, StringComparer.OrdinalIgnoreCase))
         {
             yield return "Integration";
         }
 
-        if (heads.Count == 0 || heads.Any(head => !head.Equals(UatTagConventions.Service, StringComparison.OrdinalIgnoreCase)))
+        if (heads.Count == 0 || heads.Any(head => !head.Equals(BddTagConventions.Service, StringComparison.OrdinalIgnoreCase)))
         {
             yield return "UiHermetic";
         }

@@ -35,8 +35,8 @@ internal static class UatLinkedFiles
                 var excluded = Expand(projectDirectory, item.Attribute("Exclude")?.Value).ToHashSet(StringComparer.OrdinalIgnoreCase);
                 files.UnionWith(Expand(projectDirectory, include)
                     .Where(file => !excluded.Contains(file))
-                    .Where(file => file.EndsWith(UatFileFormat.FeatureExtension, StringComparison.OrdinalIgnoreCase) ||
-                                   file.EndsWith(UatFileFormat.StepsExtension, StringComparison.OrdinalIgnoreCase)));
+                    .Where(file => file.EndsWith(BddFileFormat.FeatureExtension, StringComparison.OrdinalIgnoreCase) ||
+                                   file.EndsWith(BddFileFormat.StepsExtension, StringComparison.OrdinalIgnoreCase)));
             }
         }
 
@@ -44,7 +44,7 @@ internal static class UatLinkedFiles
     }
 
     private static bool IsInFeatures(string link)
-        => link.Replace('/', '\\').StartsWith(UatFileFormat.FeatureFolder + "\\", StringComparison.OrdinalIgnoreCase);
+        => link.Replace('/', '\\').StartsWith(BddFileFormat.FeatureFolder + "\\", StringComparison.OrdinalIgnoreCase);
 
     // Each ';'-separated pattern from the folder before its first wildcard, so '..' segments work.
     private static IEnumerable<string> Expand(string projectDirectory, string? patterns)

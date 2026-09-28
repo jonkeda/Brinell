@@ -14,7 +14,7 @@ internal sealed class UatSuiteLoad : IDisposable
     private readonly List<Func<AssemblyLoadContext, AssemblyName, Assembly?>> _resolvers = [];
     private SuiteLoadContext? _context = new();
 
-    public UatCatalogSet Catalogs { get; set; } = null!;
+    public BddCatalogSet Catalogs { get; set; } = null!;
 
     // Whether a loaded assembly has a [UatScenarioTheory] method, so its scenarios have addresses to run by.
     public bool HasScenarioTheory { get; private set; }

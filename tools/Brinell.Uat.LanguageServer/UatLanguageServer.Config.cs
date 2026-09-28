@@ -14,14 +14,14 @@ public sealed partial class UatLanguageServer
     {
         ["Runtime"] = new(StringComparer.OrdinalIgnoreCase)
         {
-            [UatConfigFields.Fixture] = "The fixture type the suite runs with: its name, or its full name.",
-            [UatConfigFields.Head] = "The head this suite drives: maui, web, mixed or service. A scenario tagged with heads runs only on theirs.",
-            [UatConfigFields.Target] = "What the fixture drives (MAUI, BLAZOR, SERVICE); derived from the fixture when left out.",
-            [UatConfigFields.AppPath] = "The app to start, relative to the config; for an app the fixture cannot find itself.",
-            [UatConfigFields.WorkingDirectory] = "The working directory of a run, relative to the config.",
-            [UatConfigFields.DefaultTestData] = "The test set a feature file runs on when its metadata names none.",
-            [UatConfigFields.AppsFile] = "A markdown file with the suite's Apps table, relative to the config (apps.md, shared with the UI tests).",
-            [UatConfigFields.Project] = "The UAT test project, from which the Pages assembly is resolved.",
+            [BddConfigFields.Fixture] = "The fixture type the suite runs with: its name, or its full name.",
+            [BddConfigFields.Head] = "The head this suite drives: maui, web, mixed or service. A scenario tagged with heads runs only on theirs.",
+            [BddConfigFields.Target] = "What the fixture drives (MAUI, BLAZOR, SERVICE); derived from the fixture when left out.",
+            [BddConfigFields.AppPath] = "The app to start, relative to the config; for an app the fixture cannot find itself.",
+            [BddConfigFields.WorkingDirectory] = "The working directory of a run, relative to the config.",
+            [BddConfigFields.DefaultTestData] = "The test set a feature file runs on when its metadata names none.",
+            [BddConfigFields.AppsFile] = "A markdown file with the suite's Apps table, relative to the config (apps.md, shared with the UI tests).",
+            [BddConfigFields.Project] = "The UAT test project, from which the Pages assembly is resolved.",
         },
         ["Discovery"] = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -49,14 +49,14 @@ public sealed partial class UatLanguageServer
         ["Steps"] = "The step definitions, and the fixture of a service suite.",
         ["Controls"] = "The control library whose control verbs the steps use.",
         ["Commands"] = "The built-in commands (Brinell.Uat).",
-        [UatConfigFields.TestDataAssemblyKind] = "The test-data definition: the test sets and their schema.",
+        [BddConfigFields.TestDataAssemblyKind] = "The test-data definition: the test sets and their schema.",
     };
 
     private static readonly string[] ConfigSections = ["Runtime", "Assemblies", "Discovery", "Reporting", "Settings", "Skip Rules", "Apps", "Using"];
 
     private static readonly HashSet<string> BooleanFields = new(StringComparer.OrdinalIgnoreCase) { "RequireExplicitUatAttributes", "AllowNameInference", "ScreenshotOnFailure", "IncludeRuntimeTrace" };
 
-    internal static bool IsConfig(string path) => UatFileFormat.IsConfigFileName(Path.GetFileName(path));
+    internal static bool IsConfig(string path) => BddFileFormat.IsConfigFileName(Path.GetFileName(path));
 
     // A config's tables: each ## section with its first table's columns and rows (1-based lines).
     private static List<(UatHeading Section, List<string> Columns, List<(int Line, List<string> Cells)> Rows)> ConfigTables(UatServerFile file)
@@ -128,20 +128,20 @@ public sealed partial class UatLanguageServer
                     {
                         Add(line, 1, "UATG004", $"{field} is true or false, not '{value}'.");
                     }
-                    else if (field.Equals(UatConfigFields.Head, StringComparison.OrdinalIgnoreCase) && !UatTagConventions.Heads.Contains(value, StringComparer.OrdinalIgnoreCase))
+                    else if (field.Equals(BddConfigFields.Head, StringComparison.OrdinalIgnoreCase) && !BddTagConventions.Heads.Contains(value, StringComparer.OrdinalIgnoreCase))
                     {
-                        Add(line, 1, "UATG004", $"'{value}' is not a head. The heads are {string.Join(", ", UatTagConventions.Heads)}.");
+                        Add(line, 1, "UATG004", $"'{value}' is not a head. The heads are {string.Join(", ", BddTagConventions.Heads)}.");
                     }
-                    else if (field.Equals(UatConfigFields.DefaultTestData, StringComparison.OrdinalIgnoreCase) && definitions.Count > 0 &&
+                    else if (field.Equals(BddConfigFields.DefaultTestData, StringComparison.OrdinalIgnoreCase) && definitions.Count > 0 &&
                              !definitions.Any(definition => definition.TestSetNames.Contains(value, StringComparer.OrdinalIgnoreCase)))
                     {
                         Add(line, 1, "UATG004", $"'{value}' is not a test set. The test sets are {string.Join(", ", definitions.SelectMany(definition => definition.TestSetNames))}.");
                     }
-                    else if (field.Equals(UatConfigFields.AppsFile, StringComparison.OrdinalIgnoreCase) && file.Suite is { } suite && ReadConfigProblem(suite) is { } problem)
+                    else if (field.Equals(BddConfigFields.AppsFile, StringComparison.OrdinalIgnoreCase) && file.Suite is { } suite && ReadConfigProblem(suite) is { } problem)
                     {
                         Add(line, 1, "UATG006", problem);
                     }
-                    else if (field.Equals(UatConfigFields.Fixture, StringComparison.OrdinalIgnoreCase) && file.Suite is { } bound && catalogs is null &&
+                    else if (field.Equals(BddConfigFields.Fixture, StringComparison.OrdinalIgnoreCase) && file.Suite is { } bound && catalogs is null &&
                              bound.TryGetCatalogs(out var reason) is null && reason is not null && !reason.Contains("Build the UAT project first", StringComparison.Ordinal))
                     {
                         Add(line, 2, "UATG008", $"The suite cannot be bound, so its feature files are only parsed: {reason}");
@@ -159,7 +159,7 @@ public sealed partial class UatLanguageServer
                         Add(line, 2, "UATG005", $"'{assembly}' is not built yet. Build it, and the suite binds.");
                     }
 
-                    if (kind.Equals(UatConfigFields.TestDataAssemblyKind, StringComparison.OrdinalIgnoreCase))
+                    if (kind.Equals(BddConfigFields.TestDataAssemblyKind, StringComparison.OrdinalIgnoreCase))
                     {
                         foreach (var definition in definitions.Where(definition => SchemaIsStale(definition)))
                         {
@@ -173,13 +173,13 @@ public sealed partial class UatLanguageServer
                     {
                         Add(line, 1, "UATG004", "An app needs a Name; the suite skips a row without one.");
                     }
-                    else if (row.GetValueOrDefault("Head") is { Length: > 0 } head && !UatTagConventions.Heads.Contains(head, StringComparer.OrdinalIgnoreCase))
+                    else if (row.GetValueOrDefault("Head") is { Length: > 0 } head && !BddTagConventions.Heads.Contains(head, StringComparer.OrdinalIgnoreCase))
                     {
-                        Add(line, 1, "UATG004", $"'{head}' is not a head. The heads are {string.Join(", ", UatTagConventions.Heads)}.");
+                        Add(line, 1, "UATG004", $"'{head}' is not a head. The heads are {string.Join(", ", BddTagConventions.Heads)}.");
                     }
                 }
                 else if (name.Equals("Using", StringComparison.OrdinalIgnoreCase) && catalogs is not null &&
-                         row.GetValueOrDefault("Namespace") is { Length: > 0 } space && !KnownNamespaces(catalogs).Contains(UatNamespaces.Normalize(space)))
+                         row.GetValueOrDefault("Namespace") is { Length: > 0 } space && !KnownNamespaces(catalogs).Contains(BddNamespaces.Normalize(space)))
                 {
                     Add(line, 2, "UATG007", $"No step or page is in the namespace '{space}', so using it gives nothing.");
                 }
@@ -187,7 +187,7 @@ public sealed partial class UatLanguageServer
         }
 
         if (!tables.Any(table => table.Section.Text.Trim().Equals("Runtime", StringComparison.OrdinalIgnoreCase) &&
-                                 table.Rows.Any(row => row.Cells.FirstOrDefault()?.Equals(UatConfigFields.Fixture, StringComparison.OrdinalIgnoreCase) == true)))
+                                 table.Rows.Any(row => row.Cells.FirstOrDefault()?.Equals(BddConfigFields.Fixture, StringComparison.OrdinalIgnoreCase) == true)))
         {
             var at = tables.FirstOrDefault(table => table.Section.Text.Trim().Equals("Runtime", StringComparison.OrdinalIgnoreCase)).Section?.Line ?? 1;
             Add(at, 1, "UATG003", "The Runtime table names no Fixture, so the scenarios cannot be bound or run.");
@@ -217,12 +217,12 @@ public sealed partial class UatLanguageServer
         }
     }
 
-    private static HashSet<string> KnownNamespaces(UatCatalogSet catalogs)
+    private static HashSet<string> KnownNamespaces(BddCatalogSet catalogs)
         => catalogs.Default.Patterns.Select(pattern => pattern.Namespace)
             .Concat(UatPageSet.Of(catalogs.Default).Values.Select(page => page.Namespace))
             .Concat(catalogs.Default.Scope?.Namespaces ?? [])
             .Where(name => name.Length > 0)
-            .Select(UatNamespaces.Normalize)
+            .Select(BddNamespaces.Normalize)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
     private static bool SchemaIsStale(ITestDataDefinition definition)
@@ -288,7 +288,7 @@ public sealed partial class UatLanguageServer
         }
         else if (section.Equals("Apps", StringComparison.OrdinalIgnoreCase) && table.Columns.ElementAtOrDefault(cell)?.Equals("Head", StringComparison.OrdinalIgnoreCase) == true)
         {
-            values = UatTagConventions.Heads.Select(head => (head, "head"));
+            values = BddTagConventions.Heads.Select(head => (head, "head"));
         }
 
         return new CompletionList(false, values
@@ -303,12 +303,12 @@ public sealed partial class UatLanguageServer
             return [("true", field), ("false", field)];
         }
 
-        if (field.Equals(UatConfigFields.Head, StringComparison.OrdinalIgnoreCase))
+        if (field.Equals(BddConfigFields.Head, StringComparison.OrdinalIgnoreCase))
         {
-            return UatTagConventions.Heads.Select(head => (head, "head"));
+            return BddTagConventions.Heads.Select(head => (head, "head"));
         }
 
-        if (field.Equals(UatConfigFields.DefaultTestData, StringComparison.OrdinalIgnoreCase))
+        if (field.Equals(BddConfigFields.DefaultTestData, StringComparison.OrdinalIgnoreCase))
         {
             return TestSets(file).Select(set => (set, "test set"));
         }
@@ -327,7 +327,7 @@ public sealed partial class UatLanguageServer
     {
         var text = file.Line(line);
         var cells = Cells(text);
-        if (!text.TrimStart().StartsWith('|') || cells.Count < 2 || !cells[0].Equals(UatMetadataFields.TestData, StringComparison.OrdinalIgnoreCase) ||
+        if (!text.TrimStart().StartsWith('|') || cells.Count < 2 || !cells[0].Equals(BddMetadataFields.TestData, StringComparison.OrdinalIgnoreCase) ||
             text[..Math.Min(column, text.Length)].Count(character => character == '|') != 2)
         {
             return null;

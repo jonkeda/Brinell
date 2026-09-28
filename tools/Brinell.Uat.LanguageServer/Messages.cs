@@ -266,7 +266,7 @@ public sealed record RunTargetParams(string Uri, int? Line, string? Suite);
 /// <param name="CanRun">Whether it can be run by address.</param>
 /// <param name="Reason">Why not; null when it can.</param>
 /// <param name="Project">The suite's project file.</param>
-/// <param name="Filter">The <c>dotnet test</c> filter on the <c>UatScenario</c> trait.</param>
+/// <param name="Filter">The <c>dotnet test</c> filter on the <c>BddScenario</c> trait.</param>
 /// <param name="Scenarios">The scenarios it runs; empty for the whole file.</param>
 /// <param name="Suite">The suite it runs in.</param>
 public sealed record RunTargetResult(bool CanRun, string? Reason, string? Project, string? Filter, IReadOnlyList<string> Scenarios, string? Suite);

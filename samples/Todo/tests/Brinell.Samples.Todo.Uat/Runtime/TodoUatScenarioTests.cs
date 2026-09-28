@@ -57,13 +57,13 @@ public sealed class TodoUatScenarioTests : UatScenarioTestBase<TodoUatFixture>
         => RunExpectedBindFailureUatFile(filePath, "UATB010", "the folder 'Users'", "Using");
 
     /// <inheritdoc />
-    protected override void BeforeFile(UatDocument document)
-        => Fixture.UseTestSet(document.Metadata.TryGetValue(UatMetadataFields.TestData, out var name) && name.Length > 0
+    protected override void BeforeFile(BddDocument document)
+        => Fixture.UseTestSet(document.Metadata.TryGetValue(BddMetadataFields.TestData, out var name) && name.Length > 0
             ? name
             : TodoUatFixture.DefaultTestData);
 
     /// <inheritdoc />
-    protected override void BeforeScenario(UatBoundScenario scenario) => Fixture.StartTest();
+    protected override void BeforeScenario(BddBoundScenario scenario) => Fixture.StartTest();
 
     /// <inheritdoc />
     /// <remarks>

@@ -5,7 +5,7 @@ using Xunit.Sdk;
 namespace Brinell.Samples.Todo.Uat.Runtime;
 
 /// <summary>
-/// Runs scenario cases in <see cref="UatScenarioSource.GetOrderKey"/> order - by test set, then
+/// Runs scenario cases in <see cref="BddScenarioSource.GetOrderKey"/> order - by test set, then
 /// file, then position - instead of xUnit's default order by case id, which interleaves files and
 /// would restart the app for nearly every scenario.
 /// </summary>
@@ -22,7 +22,7 @@ public sealed class UatScenarioOrderer : ITestCaseOrderer
         where TTestCase : ITestCase
         => testCases.OrderBy(
             testCase => testCase.TestMethodArguments is [string file, string scenario, ..]
-                ? UatScenarioSource.GetOrderKey(file, scenario)
+                ? BddScenarioSource.GetOrderKey(file, scenario)
                 : testCase.DisplayName,
             StringComparer.Ordinal);
 }

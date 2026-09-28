@@ -163,7 +163,7 @@ public sealed class UatMcpServer : IDisposable
                     : pattern.Namespace.Length > 0 ? $"namespace {pattern.Namespace} (the file must use it)"
                     : pattern.CommandId,
             })
-            .Concat(suite.StepFiles.SelectMany(path => UatScenarioFiles.ParsePhraseFile(path).Document?.Callables ?? []).Select(callable => new
+            .Concat(suite.StepFiles.SelectMany(path => BddScenarioFiles.ParsePhraseFile(path).Document?.Callables ?? []).Select(callable => new
             {
                 Keyword = "Any",
                 callable.Phrase,
@@ -236,7 +236,7 @@ public sealed class UatMcpServer : IDisposable
 
     private UatSuite SuiteNamed(string name) => _server.SuiteNamed(name) ?? throw new ToolProblem($"No suite '{name}'.");
 
-    private static UatCatalogSet Catalogs(UatSuite suite)
+    private static BddCatalogSet Catalogs(UatSuite suite)
         => suite.TryGetCatalogs(out var reason) ?? throw new ToolProblem($"{suite.Name} is not bound: {reason}");
 
     private static string? TryHead(UatSuite suite)

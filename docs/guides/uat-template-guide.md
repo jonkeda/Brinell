@@ -82,10 +82,10 @@ public sealed class TodoUatScenarioTests : UatScenarioTestBase<TodoUatFixture>
     public Task Scenario_Passes(string filePath, string scenarioName) => RunUatScenarioAsync(filePath, scenarioName);
 
     // Load the file's TestData before its first scenario (the fixture may restart the app).
-    protected override void BeforeFile(UatDocument document) => Fixture.UseTestSet(...);
+    protected override void BeforeFile(BddDocument document) => Fixture.UseTestSet(...);
 
     // Reset the app between scenarios so they stay order-independent.
-    protected override void BeforeScenario(UatBoundScenario scenario) => Fixture.StartTest();
+    protected override void BeforeScenario(BddBoundScenario scenario) => Fixture.StartTest();
 
     protected override UatRuntimeValidationOptions RuntimeValidation { get; } =
         new(Target: "MAUI", Fixture: "FlaUI");
@@ -99,18 +99,18 @@ a clean start - scenarios share one app process. Override `BeforeFile` to load
 what a file's metadata asks for; it runs before the file is bound, once per file.
 
 `GetScenarioTheoryData` orders cases by the files' `TestData`, then file, then
-position (`UatScenarioSource.GetOrderKey`). xUnit 2 runs theory cases in case-id
+position (`BddScenarioSource.GetOrderKey`). xUnit 2 runs theory cases in case-id
 order unless told otherwise, so the Todo sample adds a small `ITestCaseOrderer`
 (`UatScenarioOrderer`) that sorts by that key: the app then restarts once per test
 set, not once per scenario. `GetScenarioFiles` / `RunUatFileAsync` still run a
 whole file as one case.
 
-`[UatScenarioTheory]` is `[Theory]` with a stable address per case: the `UatScenario` trait is
+`[UatScenarioTheory]` is `[Theory]` with a stable address per case: the `BddScenario` trait is
 the file relative to the config and a slug of the scenario's name, so one scenario runs by filter
 (from the UAT project folder):
 
 ```powershell
-dotnet test --filter "UatScenario=Features/TOD.11-manage-users.feature.md#TOD.11.1-Users-lists-available-users-first-each-with-its-role-and-state"
+dotnet test --filter "BddScenario=Features/TOD.11-manage-users.feature.md#TOD.11.1-Users-lists-available-users-first-each-with-its-role-and-state"
 ```
 
 The slug keeps `[A-Za-z0-9._/-]` and turns every other run of characters into one `-`; an outline
@@ -254,7 +254,7 @@ can keep executable specs in module folders such as
 
 ## Metadata Fields
 
-`UatMetadataFields` names the fields the format tests expect: `App`, `Area`,
+`BddMetadataFields` names the fields the format tests expect: `App`, `Area`,
 `Target`, `Tags`, `Mode`, `Requires`, `Owner`, `Priority`, `Evidence`. The table
 is a plain `Field`/`Value` table, so a project can add rows of its own. The Todo
 sample adds `Journey`, which ties each scenario to a subtask id in its
@@ -266,10 +266,10 @@ sample adds `Journey`, which ties each scenario to a subtask id in its
 ```
 
 Metadata is documentation and traceability, with two exceptions. `TestData`
-(`UatMetadataFields.TestData`) names the test set the file runs on, and a fixture
+(`BddMetadataFields.TestData`) names the test set the file runs on, and a fixture
 that overrides `BeforeFile` loads it; `DefaultTestData` in the config's `Runtime`
 table covers files that name none. See [Test Data](test-data.md). `Using`
-(`UatMetadataFields.Using`) names the namespaces whose phrases and pages the file
+(`BddMetadataFields.Using`) names the namespaces whose phrases and pages the file
 sees besides its folder's: `Accounts, Backend`. See
 [Where Phrases Live](uat-step-definitions.md#where-phrases-live). Otherwise the
 `@tag` line above `## Scenario:` is what skip rules read, not the `Tags` row.
@@ -342,12 +342,12 @@ Table cells are trimmed. To pass a value whose spaces matter, quote it in the
 cell and leave the placeholder unquoted in the step: `When I set Title to <title>`
 with a `"   "` row.
 
-A custom phrase receives the step's table by taking a `UatTable` parameter, and
-binds it to the app's real types with `UatTableBinding`:
+A custom phrase receives the step's table by taking a `BddTable` parameter, and
+binds it to the app's real types with `BddTableBinding`:
 
 ```csharp
 [BddThen("the database should have todos")]
-public void DatabaseHas(UatTable table)
+public void DatabaseHas(BddTable table)
     => table.AssertContains(TodoDbReader.Todos(fixture.DatabasePath), fixture.TestSet.Now);
 ```
 
@@ -358,7 +358,7 @@ members without case or spaces (`Due Date` is `DueDate`); an unknown column is a
 error naming the known ones. An empty cell or `null` is `null` where the type
 allows it, and dates may be relative to the test set's now: `today`, `+2d`, `-1d`.
 Cells are written in the scenario format - `12-May-2026`, `1,250.75`, `In Progress` - and a
-phrase that takes a record list instead of a `UatTable` gets its rows bound and checked when the
+phrase that takes a record list instead of a `BddTable` gets its rows bound and checked when the
 step binds ([Arguments](uat-step-definitions.md#arguments)).
 
 ## Phrase Files
@@ -481,7 +481,7 @@ Then Todos should have todo "Pack for the trip"
 Name the user on every step of a scenario with several users; a step with `I` is correct but
 makes the reader look back.
 
-The fixture implements `IUatSessionHost` (`UseSession(name)` returns the services the app's page
+The fixture implements `IBddSessionHost` (`UseSession(name)` returns the services the app's page
 objects resolve through), or more simply `IUatAppsHost`: it hands over a `TestAppSet` and says
 what each app's composition needs (`AddAppServices`), and sessions come from the set. The Todo
 web suite's `TodoWebUatFixture` is the one-head example.

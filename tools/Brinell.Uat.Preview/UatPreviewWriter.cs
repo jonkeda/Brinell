@@ -24,8 +24,8 @@ internal sealed partial class UatPreviewWriter
     private readonly UatPreviewOptions _options;
     private readonly string[] _lines;
     private readonly bool _isSteps;
-    private readonly List<UatDiagnostic> _diagnostics = [];
-    private readonly HashSet<UatDiagnostic> _shown = [];
+    private readonly List<BddDiagnostic> _diagnostics = [];
+    private readonly HashSet<BddDiagnostic> _shown = [];
     private readonly StringBuilder _html = new();
     private readonly UatPreviewBinding _binding = new();
     private string? _nextTableClass;
@@ -78,10 +78,10 @@ internal sealed partial class UatPreviewWriter
 
         // Only this file's lines are placed; another file's problem (a step file it sees) goes at the top.
         _diagnostics.Sort((a, b) => Line(a).CompareTo(Line(b)));
-        int Line(UatDiagnostic diagnostic) => IsHere(diagnostic) ? diagnostic.Location.LineNumber : 0;
+        int Line(BddDiagnostic diagnostic) => IsHere(diagnostic) ? diagnostic.Location.LineNumber : 0;
     }
 
-    private bool IsHere(UatDiagnostic diagnostic)
+    private bool IsHere(BddDiagnostic diagnostic)
         => diagnostic.Location.FilePath is not { } file || string.Equals(Path.GetFullPath(file), Path.GetFullPath(_filePath), StringComparison.OrdinalIgnoreCase);
 
     private void WriteBlock(Block block)
@@ -118,7 +118,7 @@ internal sealed partial class UatPreviewWriter
     {
         var line = heading.Line + 1;
         var raw = _lines[heading.Line].Trim();
-        var text = (UatFileFormat.NewHeading(raw) ?? raw).TrimStart('#').Trim();
+        var text = (BddFileFormat.NewHeading(raw) ?? raw).TrimStart('#').Trim();
         _nextTableClass = null;
         if (heading.Level <= 2)
         {
@@ -403,7 +403,7 @@ internal sealed partial class UatPreviewWriter
         foreach (var diagnostic in _diagnostics.Where(d => !_shown.Contains(d) && atLine(IsHere(d) ? d.Location.LineNumber : 0)).ToList())
         {
             _shown.Add(diagnostic);
-            var severity = diagnostic.Severity == UatDiagnosticSeverity.Error ? "error" : "warning";
+            var severity = diagnostic.Severity == BddDiagnosticSeverity.Error ? "error" : "warning";
             var line = IsHere(diagnostic) ? $" data-line=\"{diagnostic.Location.LineNumber}\"" : string.Empty;
             var elsewhere = IsHere(diagnostic) ? string.Empty : $" <span class=\"uat-diag-where\">{Encode(Where(diagnostic.Location))}</span>";
             var within = diagnostic.Within.Count == 0
@@ -460,7 +460,7 @@ internal sealed partial class UatPreviewWriter
 
     internal static string Encode(string text) => WebUtility.HtmlEncode(text);
 
-    internal static string Where(UatSourceLocation location)
+    internal static string Where(BddSourceLocation location)
         => location.FilePath is { } file ? $"{Path.GetFileName(file)}:{location.LineNumber}" : $"line {location.LineNumber}";
 
     [GeneratedRegex(@"^(?<keyword>Given|When|Then|And|But)\s+(?<text>.*)$")]

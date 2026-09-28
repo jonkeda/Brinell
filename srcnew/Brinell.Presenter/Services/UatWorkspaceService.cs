@@ -26,7 +26,7 @@ public sealed class UatWorkspaceService : IUatWorkspaceService
         while (directory is not null)
         {
             var candidate = Path.Combine(directory.FullName, "testsnew", "Brinell.Maui.Uat.Tests");
-            if (File.Exists(UatFileFormat.FindConfig(candidate)))
+            if (File.Exists(BddFileFormat.FindConfig(candidate)))
             {
                 return candidate;
             }
@@ -49,22 +49,22 @@ public sealed class UatWorkspaceService : IUatWorkspaceService
         var configInfo = UatWorkspaceConfigInspector.Inspect(folderPath, _projectEvaluator);
         diagnostics.AddRange(configInfo.Diagnostics);
 
-        var configPath = UatFileFormat.FindConfig(folderPath);
-        var config = File.Exists(configPath) ? UatConfigParser.ParseFile(configPath) : null;
+        var configPath = BddFileFormat.FindConfig(folderPath);
+        var config = File.Exists(configPath) ? BddConfigParser.ParseFile(configPath) : null;
         var discoveryReport = config is not null
             ? FormatDiscoveryReport(config)
             : "Discovery report:\n- uat.config.md not found.";
 
         // Subject steps (Daan taps Save) bind here too; the spec catalog is the same for every head.
         var catalogs = config is null
-            ? new UatCatalogSet(catalog)
-            : new UatCatalogSet(catalog, config.Apps, suiteHead: null, new Dictionary<string, UatCommandCatalog>(), []);
+            ? new BddCatalogSet(catalog)
+            : new BddCatalogSet(catalog, config.Apps, suiteHead: null, new Dictionary<string, BddCommandCatalog>(), []);
 
         foreach (var filePath in EnumerateUatFiles(folderPath))
         {
-            var parse = UatScenarioFiles.Load(filePath);
+            var parse = BddScenarioFiles.Load(filePath);
             var parseDiagnostics = FormatDiagnostics(parse.Diagnostics);
-            UatBindResult? bind = null;
+            BddBindResult? bind = null;
 
             if (parse.Document is not null)
             {
@@ -136,7 +136,7 @@ public sealed class UatWorkspaceService : IUatWorkspaceService
     private static IEnumerable<string> EnumerateUatFiles(string folderPath)
     {
         return Directory
-            .EnumerateFiles(folderPath, UatFileFormat.FeatureFilePattern, SearchOption.AllDirectories)
+            .EnumerateFiles(folderPath, BddFileFormat.FeatureFilePattern, SearchOption.AllDirectories)
             .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase) &&
                            !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase))
             .OrderBy(path => IsExpectedFailurePath(path) ? 1 : 0)
@@ -150,14 +150,14 @@ public sealed class UatWorkspaceService : IUatWorkspaceService
             StringComparison.OrdinalIgnoreCase);
     }
 
-    private static IReadOnlyList<string> FormatDiagnostics(IEnumerable<UatDiagnostic> diagnostics)
+    private static IReadOnlyList<string> FormatDiagnostics(IEnumerable<BddDiagnostic> diagnostics)
     {
         return diagnostics
             .Select(diagnostic => $"{diagnostic.Location}: {diagnostic.Code} {diagnostic.Message}")
             .ToArray();
     }
 
-    private static string FormatDiscoveryReport(UatConfig config)
+    private static string FormatDiscoveryReport(BddConfig config)
     {
         var assemblies = config.Assemblies.Count == 0
             ? "- No assemblies registered."
@@ -171,7 +171,7 @@ public sealed class UatWorkspaceService : IUatWorkspaceService
             assemblies);
     }
 
-    private static string FormatCatalog(UatCommandCatalog catalog)
+    private static string FormatCatalog(BddCommandCatalog catalog)
     {
         return "Command catalog:" + Environment.NewLine + string.Join(
             Environment.NewLine,

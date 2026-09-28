@@ -60,7 +60,7 @@ The short list that must not be broken. Each links the decision that explains it
   [AD-021](decisions/ad-021-bdd-under-uat.md)
 - **The IDEs run the gate's engine.** An IDE never parses or binds a scenario itself. It asks
   `Brinell.Uat.LanguageServer`, which checks with the gate's own code and words, and loads a suite
-  only through `Brinell.Uat.Workspace`. A scenario runs by its `UatScenario` address.
+  only through `Brinell.Uat.Workspace`. A scenario runs by its `BddScenario` address.
   [AD-022](decisions/ad-022-the-ides-run-the-gates-engine.md)
 - **The generator output is not hand-edited.** `.gen.cs` mirrors `.tpl.cs` through
   `Brinell.Generator`. [control-object](contracts/control-object.md)

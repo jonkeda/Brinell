@@ -263,7 +263,7 @@ Scenarios share one app process, so
 resets it between them:
 
 ```csharp
-protected override void BeforeScenario(UatBoundScenario scenario) => Fixture.StartTest();
+protected override void BeforeScenario(BddBoundScenario scenario) => Fixture.StartTest();
 ```
 
 Online again, backend back to `three-todos`, list on screen. That is what keeps the four

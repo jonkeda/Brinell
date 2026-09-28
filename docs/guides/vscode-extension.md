@@ -40,7 +40,7 @@ preview beside it. It follows the active file, the caret and the preview follow 
 
 The **Testing** view lists each suite, its feature files and their scenarios; an outline is one
 test for all its rows. **Run** builds the suite's project, then runs
-`dotnet test --no-build --filter UatScenario=<address>`, and marks each scenario from the report
+`dotnet test --no-build --filter BddScenario=<address>`, and marks each scenario from the report
 its run wrote. A failed scenario points at its failed step. **Debug** runs the same way; the C#
 debugger attaches to the testhost, and step breakpoints stop the run. The suite's test class must
 use `[UatScenarioTheory]`; a suite that does not says so in the view. One run at a time, and

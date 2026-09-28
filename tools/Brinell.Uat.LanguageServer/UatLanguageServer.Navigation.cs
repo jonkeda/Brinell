@@ -85,9 +85,9 @@ public sealed partial class UatLanguageServer
     {
         var file = Context(Key(request.TextDocument.Uri));
         var line = request.Position.Line + 1;
-        UatSourceLocation? callable = null;
+        BddSourceLocation? callable = null;
         string? command = null;
-        UatSourceLocation? declaration = null;
+        BddSourceLocation? declaration = null;
         if (InvocationsAt(file, line).FirstOrDefault() is { } invocation)
         {
             if (invocation.Call is { } call)
@@ -103,7 +103,7 @@ public sealed partial class UatLanguageServer
         }
         else if (file.Structure.HeadingAt(line) is { Kind: "Step" or "Step for each row" } heading && heading.Line == line)
         {
-            callable = new UatSourceLocation(file.Path, line);
+            callable = new BddSourceLocation(file.Path, line);
             declaration = callable;
         }
 
@@ -148,7 +148,7 @@ public sealed partial class UatLanguageServer
     }
 
     // The steps bound at a line: one, or a call's whole body; from the first scenario (row) that has them.
-    private List<UatStepInvocation> InvocationsAt(UatServerFile file, int line)
+    private List<BddStepInvocation> InvocationsAt(UatServerFile file, int line)
     {
         foreach (var scenario in Analyze(file).Scenarios)
         {
@@ -163,13 +163,13 @@ public sealed partial class UatLanguageServer
     }
 
     // A step is written in this file: its own line, or its outermost call's.
-    private static bool WrittenIn(UatStepInvocation invocation, string path)
+    private static bool WrittenIn(BddStepInvocation invocation, string path)
     {
         var source = invocation.Call is { } call ? Outermost(call).Call.Source : invocation.Step.Source;
         return source.FilePath is null || string.Equals(Path.GetFullPath(source.FilePath), path, StringComparison.OrdinalIgnoreCase);
     }
 
-    private UatSourceLocation? DefinitionOf(UatServerFile file, int line, UatStepInvocation invocation)
+    private BddSourceLocation? DefinitionOf(UatServerFile file, int line, BddStepInvocation invocation)
     {
         if (invocation.Call is { } call)
         {
@@ -219,7 +219,7 @@ public sealed partial class UatLanguageServer
     }
 
     // Each argument as written and, for a typed parameter, as the step definition will read it.
-    private static void Arguments(StringBuilder text, UatStepInvocation invocation)
+    private static void Arguments(StringBuilder text, BddStepInvocation invocation)
     {
         if (invocation.RawArguments.Count == 0)
         {
@@ -231,9 +231,9 @@ public sealed partial class UatLanguageServer
         {
             var asRead = invocation.Arguments.GetValueOrDefault(name) ?? written;
             if (invocation.Command.Parameters.FirstOrDefault(parameter => parameter.Name == name) is { } parameter &&
-                UatValues.TryRead(asRead, parameter.Type, UatValueContext.Default, out var value, out _, parameter.AllowsNull))
+                BddValues.TryRead(asRead, parameter.Type, BddValueContext.Default, out var value, out _, parameter.AllowsNull))
             {
-                asRead = UatValues.Write(value);
+                asRead = BddValues.Write(value);
             }
 
             text.Append($"| `{name}` | {Cell(written)} | {Cell(asRead)} |\n");
@@ -249,7 +249,7 @@ public sealed partial class UatLanguageServer
         {
             return (_workspace?.SuitesFor(path) ?? [])
                 .SelectMany(suite => suite.FeatureFiles.Concat(suite.LinkedFiles))
-                .Where(file => file.EndsWith(UatFileFormat.FeatureExtension, StringComparison.OrdinalIgnoreCase))
+                .Where(file => file.EndsWith(BddFileFormat.FeatureExtension, StringComparison.OrdinalIgnoreCase))
                 .Select(Path.GetFullPath)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
@@ -258,10 +258,10 @@ public sealed partial class UatLanguageServer
 
     private Range LocationRange(string path, int line) => LineRange(Context(Path.GetFullPath(path)), line);
 
-    private static bool Same(UatSourceLocation a, UatSourceLocation b)
+    private static bool Same(BddSourceLocation a, BddSourceLocation b)
         => a.LineNumber == b.LineNumber && a.FilePath is { } x && b.FilePath is { } y && string.Equals(Path.GetFullPath(x), Path.GetFullPath(y), StringComparison.OrdinalIgnoreCase);
 
-    private static UatCallFrame Outermost(UatCallFrame frame)
+    private static BddCallFrame Outermost(BddCallFrame frame)
     {
         while (frame.Parent is { } parent)
         {

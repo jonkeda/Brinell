@@ -1,4 +1,4 @@
-// The step breakpoints (R2): the per-user file Brinell.Bdd's UatBreakpoints reads while a debugger is
+// The step breakpoints (R2): the per-user file Brinell.Bdd's BddBreakpoints reads while a debugger is
 // attached, shared with the Visual Studio extension. Read on each call, so neither IDE overwrites
 // the other's with a stale copy; written whole and then moved into place.
 import * as fs from "fs";

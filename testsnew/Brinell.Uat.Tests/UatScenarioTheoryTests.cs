@@ -4,17 +4,17 @@ using Xunit.Sdk;
 
 namespace Brinell.Uat.Tests;
 
-/// <summary>A <c>[UatScenarioTheory]</c> case: its <c>UatScenario</c> trait, through serialization too.</summary>
+/// <summary>A <c>[UatScenarioTheory]</c> case: its <c>BddScenario</c> trait, through serialization too.</summary>
 public sealed class UatScenarioTheoryTests
 {
-    private static readonly string Output = Path.GetDirectoryName(UatScenarioSource.GetConfigFilePath())!;
+    private static readonly string Output = Path.GetDirectoryName(BddScenarioSource.GetConfigFilePath())!;
 
     [Fact]
     public void ACase_HasItsScenariosAddress_AsTheUatScenarioTrait()
     {
         var testCase = Case(Path.Combine(Output, "Features", "Users", "TOD.11-manage-users.feature.md"), "TOD.11.1 Users list");
 
-        Assert.Equal(["Features/Users/TOD.11-manage-users.feature.md#TOD.11.1-Users-list"], testCase.Traits[UatScenarioAddress.Trait]);
+        Assert.Equal(["Features/Users/TOD.11-manage-users.feature.md#TOD.11.1-Users-list"], testCase.Traits[BddScenarioAddress.Trait]);
     }
 
     [Fact]
@@ -24,7 +24,7 @@ public sealed class UatScenarioTheoryTests
 
         var copy = SerializationHelper.Deserialize<IXunitTestCase>(SerializationHelper.Serialize(testCase))!;
 
-        Assert.Equal(["Features/shelf.feature.md#Shelve-a-book-2"], copy.Traits[UatScenarioAddress.Trait]);
+        Assert.Equal(["Features/shelf.feature.md#Shelve-a-book-2"], copy.Traits[BddScenarioAddress.Trait]);
     }
 
     [Fact]
@@ -32,7 +32,7 @@ public sealed class UatScenarioTheoryTests
     {
         var testCase = Case(Path.Combine(Output, "Features", "broken.feature.md"), string.Empty);
 
-        Assert.False(testCase.Traits.ContainsKey(UatScenarioAddress.Trait));
+        Assert.False(testCase.Traits.ContainsKey(BddScenarioAddress.Trait));
     }
 
     [Fact]

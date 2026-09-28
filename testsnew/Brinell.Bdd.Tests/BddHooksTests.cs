@@ -62,25 +62,25 @@ public sealed class BddHooksTests
             """);
 
         var step = Assert.Single(Assert.Single(runs).Steps);
-        Assert.Equal(UatStepResultStatus.Failed, step.Status);
+        Assert.Equal(BddStepResultStatus.Failed, step.Status);
         Assert.Contains("the hook HookSteps.RefuseAfterStep failed after it: no steps allowed", step.Message, StringComparison.Ordinal);
     }
 
-    private static async Task<(List<string> Log, List<UatScenarioRunResult> Runs)> RunAsync(string markdown)
+    private static async Task<(List<string> Log, List<BddScenarioRunResult> Runs)> RunAsync(string markdown)
     {
-        var parse = UatMarkdownParser.Parse(markdown, Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.feature.md"));
+        var parse = BddMarkdownParser.Parse(markdown, Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.feature.md"));
         Assert.True(parse.Success, string.Join(Environment.NewLine, parse.Diagnostics.Select(x => x.Message)));
-        var catalog = UatStepDefinitionRuntime.FromTypes(new object(), typeof(HookSteps)).CreateCommandCatalog();
-        var bind = UatBinder.Bind(parse.Document!, catalog);
+        var catalog = BddStepDefinitionRuntime.FromTypes(new object(), typeof(HookSteps)).CreateCommandCatalog();
+        var bind = BddBinder.Bind(parse.Document!, catalog);
         Assert.True(bind.Success, string.Join(Environment.NewLine, bind.Diagnostics.Select(x => x.Message)));
 
         List<string> log = [];
         using var services = new ServiceCollection().AddSingleton(log).AddTransient<HookSteps>().BuildServiceProvider();
-        List<UatScenarioRunResult> runs = [];
+        List<BddScenarioRunResult> runs = [];
         foreach (var scenario in bind.Document!.Scenarios)
         {
-            var runner = new UatScenarioRunner();
-            UatStepDefinitionRuntime.SetServiceProvider(runner.Context, services);
+            var runner = new BddScenarioRunner();
+            BddStepDefinitionRuntime.SetServiceProvider(runner.Context, services);
             HookSteps.FeatureLog = log;
             runs.Add(await runner.RunAsync(scenario));
         }
@@ -110,7 +110,7 @@ public sealed class BddHooksTests
         public void BeforeBackend() => log.Add("before-backend");
 
         [BddAfterStep]
-        public void AfterStep(UatStepResult result) => log.Add($"after-step {result.Status}");
+        public void AfterStep(BddStepResult result) => log.Add($"after-step {result.Status}");
 
         [BddAfterStep("strict")]
         public void RefuseAfterStep() => throw new InvalidOperationException("no steps allowed");

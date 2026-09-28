@@ -6,7 +6,7 @@ namespace Brinell.Uat.VisualStudio;
 
 /// <summary>
 /// The step breakpoints (R2): <c>%LOCALAPPDATA%\Brinell\uat-breakpoints.json</c>, the file
-/// <c>UatBreakpoints</c> in <c>Brinell.Bdd</c> reads while a debugger is attached. The preview's
+/// <c>BddBreakpoints</c> in <c>Brinell.Bdd</c> reads while a debugger is attached. The preview's
 /// gutter, the editor command and the glyph margin all go through this one store. The file is read
 /// on each call, so another writer (VS Code) is never overwritten with a stale copy.
 /// </summary>

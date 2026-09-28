@@ -25,10 +25,10 @@ Three rules shape everything below:
 
 | Piece | Where | Gives the extension |
 | --- | --- | --- |
-| `UatMarkdownParser` | `Brinell.Uat` | the document model with line numbers, `UAT0xx` codes, `*.steps.md` |
-| `UatCatalogSet`, `UatCommandCatalog` | `Brinell.Uat` | every phrase per head and keyword, with the declaring method, parameters and types |
-| `UatBinder`, `UatPreparedCallables` | `Brinell.Uat` | binding with `UATB0xx`/`UATA0xx`/`UATC0xx`, callable frames (`UatCallFrame`) |
-| `UatValues` | `Brinell.Uat` | value reading and the one-right-answer fixes |
+| `BddMarkdownParser` | `Brinell.Uat` | the document model with line numbers, `UAT0xx` codes, `*.steps.md` |
+| `BddCatalogSet`, `BddCommandCatalog` | `Brinell.Uat` | every phrase per head and keyword, with the declaring method, parameters and types |
+| `BddBinder`, `BddPreparedCallables` | `Brinell.Uat` | binding with `UATB0xx`/`UATA0xx`/`UATC0xx`, callable frames (`BddCallFrame`) |
+| `BddValues` | `Brinell.Uat` | value reading and the one-right-answer fixes |
 | `ScenarioCheck` | `tools/Brinell.DataValidator` | building the catalogs from a fixture type **without starting it** |
 | `brinell-data` | `tools/Brinell.DataValidator` | `validate --format json --fix`, `phrases`, `snippet`, `describe`, `schema` |
 | `UatExecutionService`, `PresenterUatExecutionSession` | `Brinell.Presenter` | running a scenario step by step, with pacing and AUT placement |
@@ -168,7 +168,7 @@ last result.
 | Step over | run the next step |
 | Step into | into a callable call, one body step at a time; on a C# phrase, into C# (below) |
 | Step out | finish the callable |
-| Call stack | the scenario, then each `UatCallFrame` (callable and row) |
+| Call stack | the scenario, then each `BddCallFrame` (callable and row) |
 | Variables | the step's arguments as read, the current app and page, the scenario's test set, per-app state |
 | Pause on failure | stop at the failing step with the screenshot in the variables view |
 | Watch | not supported: there are no variables in scenario language (AD-017) |

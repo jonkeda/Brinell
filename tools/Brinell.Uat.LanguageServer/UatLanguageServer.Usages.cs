@@ -24,7 +24,7 @@ public sealed partial class UatLanguageServer
         {
             files = (_workspace?.Suites ?? [])
                 .SelectMany(suite => suite.FeatureFiles.Concat(suite.LinkedFiles))
-                .Where(file => file.EndsWith(UatFileFormat.FeatureExtension, StringComparison.OrdinalIgnoreCase))
+                .Where(file => file.EndsWith(BddFileFormat.FeatureExtension, StringComparison.OrdinalIgnoreCase))
                 .Select(Path.GetFullPath)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();

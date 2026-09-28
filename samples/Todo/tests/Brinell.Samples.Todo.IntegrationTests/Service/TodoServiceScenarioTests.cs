@@ -44,13 +44,13 @@ public sealed class TodoServiceScenarioTests : UatScenarioTestBase<TodoServiceFi
         => RunExpectedBindFailureUatFile(filePath, "UATB013", "the service head has no screen");
 
     /// <inheritdoc />
-    protected override void BeforeFile(UatDocument document)
-        => Fixture.UseTestSet(document.Metadata.TryGetValue(UatMetadataFields.TestData, out var name) && name.Length > 0
+    protected override void BeforeFile(BddDocument document)
+        => Fixture.UseTestSet(document.Metadata.TryGetValue(BddMetadataFields.TestData, out var name) && name.Length > 0
             ? name
             : TodoServiceFixture.DefaultTestData);
 
     /// <inheritdoc />
-    protected override void BeforeScenario(UatBoundScenario scenario) => Fixture.StartTest();
+    protected override void BeforeScenario(BddBoundScenario scenario) => Fixture.StartTest();
 
     /// <inheritdoc />
     protected override UatRuntimeValidationOptions RuntimeValidation { get; } =

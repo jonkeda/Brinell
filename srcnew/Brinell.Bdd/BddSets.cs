@@ -7,7 +7,7 @@ namespace Brinell.Bdd;
 /// Compares what a step expected with what it found, item by item on their public properties, and
 /// fails with one diff: the missing items, the extra ones, and for each missing one the closest
 /// found item's different cells. For a step table against objects, use
-/// <see cref="UatTableBinding.AssertExactly{T}"/>.
+/// <see cref="BddTableBinding.AssertExactly{T}"/>.
 /// </summary>
 public static class BddSets
 {
@@ -74,8 +74,8 @@ public static class BddSets
         var headers = columns.Select(column => column.Name).ToList();
         var message = new StringBuilder()
             .AppendLine($"The {name} differ{(ordered ? " (in order)" : string.Empty)}: {missing.Count} missing, {extra.Count} extra.")
-            .AppendLine(UatTableBinding.Format("expected", headers, wanted.Select(item => Cells(item, columns)), i => missing.Contains(i) ? "<- missing" + Closest(wanted[i], found, columns, ordered ? i : null) : null))
-            .Append(UatTableBinding.Format("actual", headers, found.Select(item => Cells(item, columns)), i => extra.Contains(i) ? "<- extra" : null));
+            .AppendLine(BddTableBinding.Format("expected", headers, wanted.Select(item => Cells(item, columns)), i => missing.Contains(i) ? "<- missing" + Closest(wanted[i], found, columns, ordered ? i : null) : null))
+            .Append(BddTableBinding.Format("actual", headers, found.Select(item => Cells(item, columns)), i => extra.Contains(i) ? "<- extra" : null));
         throw new InvalidOperationException(message.ToString());
     }
 
@@ -108,11 +108,11 @@ public static class BddSets
 
         return best.Differences is null || best.Differences.Count == 0
             ? string.Empty
-            : $" ({(at is null ? "closest " : string.Empty)}differs in {string.Join(", ", best.Differences.Select(column => $"{column.Name}: {UatValues.Write(column.Read(best.Item))}"))})";
+            : $" ({(at is null ? "closest " : string.Empty)}differs in {string.Join(", ", best.Differences.Select(column => $"{column.Name}: {BddValues.Write(column.Read(best.Item))}"))})";
     }
 
     private static List<string> Cells<T>(T item, IReadOnlyList<Column> columns)
-        => columns.Select(column => UatValues.Write(column.Read(item))).ToList();
+        => columns.Select(column => BddValues.Write(column.Read(item))).ToList();
 
     private sealed record Column(string Name, Func<object?, object?> Read);
 }

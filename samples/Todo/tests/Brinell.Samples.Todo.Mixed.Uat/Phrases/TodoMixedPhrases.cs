@@ -16,21 +16,21 @@ public sealed class TodoMixedPhrases(TodoMixedUatFixture fixture) : BddStepDefin
 {
     /// <summary>The backend received the todo from the user's app: a PUT that carries its <c>X-Todo-Client</c>.</summary>
     [BddThen("the server should have received the todo {title} from {user}")]
-    public void ServerReceivedFrom(string title, UatUserRole user) => fixture.WaitForTodoFrom(fixture.Apps.Get(user.Name), title);
+    public void ServerReceivedFrom(string title, BddUserRole user) => fixture.WaitForTodoFrom(fixture.Apps.Get(user.Name), title);
 
     /// <summary>The user's app loses its network.</summary>
     [BddGiven("{user} is offline")]
-    public void Offline(UatUserRole user) => NetworkOf(user).SetOffline();
+    public void Offline(BddUserRole user) => NetworkOf(user).SetOffline();
 
     /// <summary>The user's app loses its network.</summary>
     [BddWhen("{user} goes offline")]
-    public void GoesOffline(UatUserRole user) => NetworkOf(user).SetOffline();
+    public void GoesOffline(BddUserRole user) => NetworkOf(user).SetOffline();
 
     /// <summary>The user's app has its network back.</summary>
     [BddWhen("{user} is back online")]
-    public void BackOnline(UatUserRole user) => NetworkOf(user).SetOnline();
+    public void BackOnline(BddUserRole user) => NetworkOf(user).SetOnline();
 
-    private NetworkStateFile NetworkOf(UatUserRole user) => fixture.Apps.Get(user.Name) switch
+    private NetworkStateFile NetworkOf(BddUserRole user) => fixture.Apps.Get(user.Name) switch
     {
         TodoMauiDevice maui => maui.Network,
         TodoWebDevice web => web.Network,

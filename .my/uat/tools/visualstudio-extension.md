@@ -115,7 +115,7 @@ breakpoint on a step line in the `.feature.md` is passed to the run as `BRINELL_
 The executor calls `Debugger.Break()` just before invoking that step. The user lands in C# at the
 invocation, with the bound arguments in Locals and **F11** stepping into the phrase method.
 
-- This is small: one check in `UatScenarioExecutor`, and it works from both IDEs.
+- This is small: one check in `BddScenarioExecutor`, and it works from both IDEs.
 - It's the cheapest real debugging story in either IDE, so VS Code should get it too.
 
 **Level 2: step through scenario steps.** It's the DAP adapter from VS Code section 6.2, over

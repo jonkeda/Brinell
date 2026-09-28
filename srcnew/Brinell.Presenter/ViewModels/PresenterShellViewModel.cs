@@ -1182,10 +1182,10 @@ public sealed class PresenterShellViewModel : ViewModelBase
         }
 
         var result = await RunNextStepAsync(_activeSession, scenario).ConfigureAwait(true);
-        if (result.Status is UatStepResultStatus.Failed or UatStepResultStatus.Canceled)
+        if (result.Status is BddStepResultStatus.Failed or BddStepResultStatus.Canceled)
         {
             MarkRemainingSteps("skip");
-            scenario.Status = result.Status == UatStepResultStatus.Canceled ? "cancel" : "fail";
+            scenario.Status = result.Status == BddStepResultStatus.Canceled ? "cancel" : "fail";
             StatusSummary = $"{ScenarioStatusText(result.Status)}: {scenario.Name}: {result.Message}";
             DiagnosticsText = FormatExecutionDetails(_activeSession, result.Message);
             RefreshSelectedNodeDetails();
@@ -1278,10 +1278,10 @@ public sealed class PresenterShellViewModel : ViewModelBase
             while (_activeSession.HasNext)
             {
                 var result = await RunNextStepAsync(_activeSession, scenario).ConfigureAwait(true);
-                if (result.Status is UatStepResultStatus.Failed or UatStepResultStatus.Canceled)
+                if (result.Status is BddStepResultStatus.Failed or BddStepResultStatus.Canceled)
                 {
                     MarkRemainingSteps("skip");
-                    scenario.Status = result.Status == UatStepResultStatus.Canceled ? "cancel" : "fail";
+                    scenario.Status = result.Status == BddStepResultStatus.Canceled ? "cancel" : "fail";
                     StatusSummary = $"{ScenarioStatusText(result.Status)}: {scenario.Name}: {result.Message}";
                     DiagnosticsText = FormatExecutionDetails(_activeSession, result.Message);
                     RefreshSelectedNodeDetails();
@@ -1321,7 +1321,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
         }
     }
 
-    private async Task<UatStepResult> RunNextStepAsync(
+    private async Task<BddStepResult> RunNextStepAsync(
         PresenterUatExecutionSession session,
         UatScenarioViewModel scenario)
     {
@@ -1351,7 +1351,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
             ? 0
             : (double)Math.Min(index + 1, scenario.Steps.Count) / scenario.Steps.Count;
 
-        if (result.Status is UatStepResultStatus.Failed or UatStepResultStatus.Canceled)
+        if (result.Status is BddStepResultStatus.Failed or BddStepResultStatus.Canceled)
         {
             DiagnosticsText = FormatExecutionDetails(session, result.Message);
         }
@@ -1634,12 +1634,12 @@ public sealed class PresenterShellViewModel : ViewModelBase
 
     private static UatWorkspaceNodeKind GetFileNodeKind(string fileName)
     {
-        if (UatFileFormat.IsConfigFileName(fileName))
+        if (BddFileFormat.IsConfigFileName(fileName))
         {
             return UatWorkspaceNodeKind.WorkflowConfig;
         }
 
-        return fileName.EndsWith(UatFileFormat.FeatureExtension, StringComparison.OrdinalIgnoreCase)
+        return fileName.EndsWith(BddFileFormat.FeatureExtension, StringComparison.OrdinalIgnoreCase)
             ? UatWorkspaceNodeKind.MarkdownFile
             : UatWorkspaceNodeKind.MarkdownFile;
     }
@@ -1741,25 +1741,25 @@ public sealed class PresenterShellViewModel : ViewModelBase
         _activeScenario = null;
     }
 
-    private static string StepStatusText(UatStepResultStatus status)
+    private static string StepStatusText(BddStepResultStatus status)
     {
         return status switch
         {
-            UatStepResultStatus.Passed => "pass",
-            UatStepResultStatus.Failed => "fail",
-            UatStepResultStatus.Skipped => "skip",
-            UatStepResultStatus.Canceled => "cancel",
-            UatStepResultStatus.Running => "run",
+            BddStepResultStatus.Passed => "pass",
+            BddStepResultStatus.Failed => "fail",
+            BddStepResultStatus.Skipped => "skip",
+            BddStepResultStatus.Canceled => "cancel",
+            BddStepResultStatus.Running => "run",
             _ => "wait"
         };
     }
 
-    private static string ScenarioStatusText(UatStepResultStatus status)
+    private static string ScenarioStatusText(BddStepResultStatus status)
     {
         return status switch
         {
-            UatStepResultStatus.Canceled => "Canceled",
-            UatStepResultStatus.Failed => "Failed",
+            BddStepResultStatus.Canceled => "Canceled",
+            BddStepResultStatus.Failed => "Failed",
             _ => "Stopped"
         };
     }
@@ -1769,7 +1769,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
         var options = _activeRunOptions;
         List<string> lines =
         [
-            .. UatDiagnosticsFormatter.FormatSteps(session.StepSession.Results),
+            .. BddDiagnosticsFormatter.FormatSteps(session.StepSession.Results),
             "Runtime trace:"
         ];
         if (!string.IsNullOrWhiteSpace(session.AutPlacementReport))

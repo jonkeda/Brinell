@@ -51,13 +51,13 @@ public sealed class UatSpecCompositionTests
     }
 
     [TestModuleScan(typeof(UatSpecCompositionTests), NamespacePrefix = "Brinell.Uat.Tests.SpecCompositionCases")]
-    [UatIgnore]
+    [BddIgnore]
     public sealed class SpecCompositionFixture
     {
     }
 
     [BddStepDefinitions]
-    [UatIgnore]
+    [BddIgnore]
     public sealed class SpecCompositionPhrases : BddStepDefinitionsBase
     {
         [BddWhen("I run the composition-only phrase")]

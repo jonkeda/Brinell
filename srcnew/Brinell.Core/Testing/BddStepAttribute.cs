@@ -10,7 +10,7 @@ public abstract class BddStepAttribute : Attribute
 {
     /// <param name="keyword">The Given/When/Then the step binds to.</param>
     /// <param name="phrase">The phrase, e.g. <c>I set {control} to {value}</c>; empty to infer it from the method name.</param>
-    protected BddStepAttribute(UatEffectiveStepKeyword keyword, string phrase)
+    protected BddStepAttribute(BddEffectiveStepKeyword keyword, string phrase)
     {
         ArgumentNullException.ThrowIfNull(phrase);
         Keyword = keyword;
@@ -18,7 +18,7 @@ public abstract class BddStepAttribute : Attribute
     }
 
     /// <summary>The Given/When/Then the step binds to.</summary>
-    public UatEffectiveStepKeyword Keyword { get; }
+    public BddEffectiveStepKeyword Keyword { get; }
 
     /// <summary>The phrase text, with <c>{control}</c> and value placeholders on a control verb.</summary>
     /// <remarks>Empty when the phrase is inferred from the method name: <c>[BddWhen] I_open_the_todo_TITLE(string title)</c>.</remarks>

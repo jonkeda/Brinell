@@ -47,7 +47,7 @@ public sealed class UatCallableTests
 
         Assert.Null(prepared.Problem);
         Assert.Equal(typeof(string), prepared.Types["title"]);
-        Assert.Equal(typeof(UatUserRole), prepared.Types["who"]);
+        Assert.Equal(typeof(BddUserRole), prepared.Types["who"]);
         Assert.Equal(typeof(decimal), prepared.Types["hours"]);
         Assert.Equal("a todo {title: text} for {who: user} with {hours: number} hours", prepared.ToString());
     }
@@ -359,7 +359,7 @@ public sealed class UatCallableTests
     [Fact]
     public void TheTrace_IndentsACallsSteps_UnderTheCallAndItsRows()
     {
-        var parse = UatMarkdownParser.Parse(Document("""
+        var parse = BddMarkdownParser.Parse(Document("""
             Given todos for Eva
               | Title | Due         |
               | ----- | ----------- |
@@ -371,10 +371,10 @@ public sealed class UatCallableTests
             When I assign <title> to <who> due <due> for 1 hours as Open
             And I open the todo <title>
             """));
-        var bind = UatBinder.Bind(parse.Document!, CatalogSet(new ArgumentFixture()));
-        var results = Assert.Single(bind.Document!.Scenarios).Invocations.Select(invocation => UatStepResult.Passed(invocation));
+        var bind = BddBinder.Bind(parse.Document!, CatalogSet(new ArgumentFixture()));
+        var results = Assert.Single(bind.Document!.Scenarios).Invocations.Select(invocation => BddStepResult.Passed(invocation));
 
-        var lines = UatDiagnosticsFormatter.FormatSteps(results).ToArray();
+        var lines = BddDiagnosticsFormatter.FormatSteps(results).ToArray();
 
         Assert.Equal(7, lines.Length);
         Assert.StartsWith("Call: 5: Given todos for Eva", lines[0], StringComparison.Ordinal);
@@ -397,14 +397,14 @@ public sealed class UatCallableTests
             var scenario = Path.Combine(root, "Todo", "TOD.feature.md");
             File.WriteAllText(scenario, Document("Given a global one\nAnd a module one", string.Empty));
 
-            var file = UatScenarioFiles.Load(scenario);
+            var file = BddScenarioFiles.Load(scenario);
 
-            Assert.True(file.Success, UatDiagnosticsFormatter.FormatDiagnostics(file.Diagnostics));
-            Assert.Equal(["Todo.steps.md", "Later.steps.md"], UatScenarioFiles.PhraseFilesFor(scenario).Select(Path.GetFileName));
+            Assert.True(file.Success, BddDiagnosticsFormatter.FormatDiagnostics(file.Diagnostics));
+            Assert.Equal(["Todo.steps.md", "Later.steps.md"], BddScenarioFiles.PhraseFilesFor(scenario).Select(Path.GetFileName));
             Assert.True(file.Bind(CatalogSet(new ArgumentFixture())).Success);
 
             File.WriteAllText(scenario, Document("Given a users one", string.Empty));
-            Assert.Equal("UATB010", Assert.Single(UatScenarioFiles.Load(scenario).Bind(CatalogSet(new ArgumentFixture())).Diagnostics).Code);
+            Assert.Equal("UATB010", Assert.Single(BddScenarioFiles.Load(scenario).Bind(CatalogSet(new ArgumentFixture())).Diagnostics).Code);
         }
         finally
         {
@@ -419,7 +419,7 @@ public sealed class UatCallableTests
     [InlineData("When I open the todo \"Tea\"\n\n## Step: bad {x}\n\n| Parameter | Kind |\n| --- | --- |\n| x | text |\n\nWhen I open the todo <x>", "UAT027")]
     public void AWrongPhraseSection_IsAParseError(string steps, string code)
     {
-        var parse = UatMarkdownParser.Parse(Document(steps, string.Empty));
+        var parse = BddMarkdownParser.Parse(Document(steps, string.Empty));
 
         Assert.Contains(parse.Diagnostics, diagnostic => diagnostic.Code == code);
     }
@@ -427,7 +427,7 @@ public sealed class UatCallableTests
     [Fact]
     public void APhraseFile_HoldsOnlyPhraseSections()
     {
-        var parse = UatMarkdownParser.ParsePhrases("""
+        var parse = BddMarkdownParser.ParsePhrases("""
             # Steps: Todo
 
             ## Scenario: Not here
@@ -442,40 +442,40 @@ public sealed class UatCallableTests
         var error = Assert.Single(parse.Diagnostics);
         Assert.Equal(("UAT028", 3), (error.Code, error.Location.LineNumber));
         Assert.Equal("a good one", Assert.Single(parse.Document!.Callables).Phrase);
-        Assert.Equal("UAT028", Assert.Single(UatMarkdownParser.ParsePhrases("## Step: headless\n\nWhen I open the todo \"Tea\"").Diagnostics).Code);
+        Assert.Equal("UAT028", Assert.Single(BddMarkdownParser.ParsePhrases("## Step: headless\n\nWhen I open the todo \"Tea\"").Diagnostics).Code);
     }
 
-    private static UatCatalogSet CatalogSet(ArgumentFixture fixture)
-        => new(UatReflectionRuntime.FromComposition(fixture, fixture.Composition).CreateCommandCatalog(), UatConfigParser.Parse(Apps).Apps, suiteHead: null, new Dictionary<string, UatCommandCatalog>(), []);
+    private static BddCatalogSet CatalogSet(ArgumentFixture fixture)
+        => new(UatReflectionRuntime.FromComposition(fixture, fixture.Composition).CreateCommandCatalog(), BddConfigParser.Parse(Apps).Apps, suiteHead: null, new Dictionary<string, BddCommandCatalog>(), []);
 
-    private static UatPreparedCallable Prepare(string phrases)
+    private static BddPreparedCallable Prepare(string phrases)
     {
-        var parse = UatMarkdownParser.Parse(Document("When I open the todo \"Tea\"", phrases));
-        Assert.True(parse.Success, UatDiagnosticsFormatter.FormatDiagnostics(parse.Diagnostics));
-        return new UatCallableSet(parse.Document!.Callables).Prepare(CatalogSet(new ArgumentFixture())).All[0];
+        var parse = BddMarkdownParser.Parse(Document("When I open the todo \"Tea\"", phrases));
+        Assert.True(parse.Success, BddDiagnosticsFormatter.FormatDiagnostics(parse.Diagnostics));
+        return new BddCallableSet(parse.Document!.Callables).Prepare(CatalogSet(new ArgumentFixture())).All[0];
     }
 
-    private static IReadOnlyList<UatDiagnostic> Bind(string steps, string phrases)
+    private static IReadOnlyList<BddDiagnostic> Bind(string steps, string phrases)
     {
-        var parse = UatMarkdownParser.Parse(Document(steps, phrases));
-        Assert.True(parse.Success, UatDiagnosticsFormatter.FormatDiagnostics(parse.Diagnostics));
-        return UatBinder.Bind(parse.Document!, CatalogSet(new ArgumentFixture())).Diagnostics;
+        var parse = BddMarkdownParser.Parse(Document(steps, phrases));
+        Assert.True(parse.Success, BddDiagnosticsFormatter.FormatDiagnostics(parse.Diagnostics));
+        return BddBinder.Bind(parse.Document!, CatalogSet(new ArgumentFixture())).Diagnostics;
     }
 
-    private static async Task<(ArgumentFixture Fixture, UatBoundScenario Scenario)> Run(string steps, string phrases)
+    private static async Task<(ArgumentFixture Fixture, BddBoundScenario Scenario)> Run(string steps, string phrases)
     {
         var fixture = new ArgumentFixture();
-        var parse = UatMarkdownParser.Parse(Document(steps, phrases));
-        Assert.True(parse.Success, UatDiagnosticsFormatter.FormatDiagnostics(parse.Diagnostics));
-        var bind = UatBinder.Bind(parse.Document!, CatalogSet(fixture));
-        Assert.True(bind.Success, UatDiagnosticsFormatter.FormatDiagnostics(bind.Diagnostics));
+        var parse = BddMarkdownParser.Parse(Document(steps, phrases));
+        Assert.True(parse.Success, BddDiagnosticsFormatter.FormatDiagnostics(parse.Diagnostics));
+        var bind = BddBinder.Bind(parse.Document!, CatalogSet(fixture));
+        Assert.True(bind.Success, BddDiagnosticsFormatter.FormatDiagnostics(bind.Diagnostics));
 
         using var scope = fixture.Composition.CreateScope();
-        var context = new UatExecutionContext { Now = fixture.Now, Apps = UatConfigParser.Parse(Apps).Apps, SessionHost = fixture };
+        var context = new BddExecutionContext { Now = fixture.Now, Apps = BddConfigParser.Parse(Apps).Apps, SessionHost = fixture };
         UatReflectionRuntime.SetServiceProvider(context, scope.ServiceProvider);
         var scenario = Assert.Single(bind.Document!.Scenarios);
-        var result = await new UatScenarioRunner(context).RunAsync(scenario);
-        Assert.True(result.Passed, string.Join(Environment.NewLine, UatDiagnosticsFormatter.FormatSteps(result.Steps)));
+        var result = await new BddScenarioRunner(context).RunAsync(scenario);
+        Assert.True(result.Passed, string.Join(Environment.NewLine, BddDiagnosticsFormatter.FormatSteps(result.Steps)));
         return (fixture, scenario);
     }
 

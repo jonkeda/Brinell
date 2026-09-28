@@ -22,7 +22,7 @@ public sealed class UatUsingTests : IDisposable
     {
         var bound = Bind("Accounts/account.feature.md", "When I add a line \"Rent\"", usings: "Invoicing");
 
-        Assert.True(bound.Success, UatDiagnosticsFormatter.FormatDiagnostics(bound.Diagnostics));
+        Assert.True(bound.Success, BddDiagnosticsFormatter.FormatDiagnostics(bound.Diagnostics));
         var invocation = Assert.Single(bound.Document!.Scenarios[0].Invocations);
         Assert.EndsWith("InvoicingPhrases.AddLine", invocation.Command.CommandId, StringComparison.Ordinal);
         Assert.Equal("Invoicing", invocation.Scope);
@@ -40,7 +40,7 @@ public sealed class UatUsingTests : IDisposable
     [Fact]
     public void UsingTwoNamespacesWithTheSamePhrase_IsAmbiguous()
     {
-        var error = Assert.Single(Bind("Accounts/account.feature.md", "When I add a line \"Rent\"", usings: "Invoicing, Purchasing").Diagnostics, d => d.Severity == UatDiagnosticSeverity.Error);
+        var error = Assert.Single(Bind("Accounts/account.feature.md", "When I add a line \"Rent\"", usings: "Invoicing, Purchasing").Diagnostics, d => d.Severity == BddDiagnosticSeverity.Error);
 
         Assert.Equal("UATB002", error.Code);
     }
@@ -61,18 +61,18 @@ public sealed class UatUsingTests : IDisposable
 
         Assert.True(bound.Success);
         var warning = Assert.Single(bound.Diagnostics);
-        Assert.Equal(("UATB012", UatDiagnosticSeverity.Warning), (warning.Code, warning.Severity));
+        Assert.Equal(("UATB012", BddDiagnosticSeverity.Warning), (warning.Code, warning.Severity));
     }
 
     [Fact]
     public void TheConfigsUsings_AreEveryFilesUsings()
     {
-        var file = UatScenarioFiles.Load(Write("account.feature.md", Scenario("When I add a line \"Rent\"")));
+        var file = BddScenarioFiles.Load(Write("account.feature.md", Scenario("When I add a line \"Rent\"")));
 
-        var bound = file.Bind(new UatCatalogSet(Catalog()) { Usings = ["Invoicing"] });
+        var bound = file.Bind(new BddCatalogSet(Catalog()) { Usings = ["Invoicing"] });
 
-        Assert.True(bound.Success, UatDiagnosticsFormatter.FormatDiagnostics(bound.Diagnostics));
-        Assert.Equal(["Backend", "Invoicing/Credit notes"], UatConfigParser.Parse("# UAT Config\n\n## Using\n\n| Namespace |\n| --- |\n| Backend |\n| Invoicing\\Credit notes |\n").Usings);
+        Assert.True(bound.Success, BddDiagnosticsFormatter.FormatDiagnostics(bound.Diagnostics));
+        Assert.Equal(["Backend", "Invoicing/Credit notes"], BddConfigParser.Parse("# UAT Config\n\n## Using\n\n| Namespace |\n| --- |\n| Backend |\n| Invoicing\\Credit notes |\n").Usings);
     }
 
     [Fact]
@@ -81,10 +81,10 @@ public sealed class UatUsingTests : IDisposable
         Write("Common.steps.md", "# Steps: Common\n\n## Step: a shared line\n\nWhen I add a line \"Rent\"\n");
         var own = Scenario("Given my own line", usings: "Invoicing") + "\n## Step: my own line\n\nWhen I add a line \"Rent\"\n";
 
-        var ownBound = UatScenarioFiles.Load(Write("Accounts/own.feature.md", own)).Bind(new UatCatalogSet(Catalog()));
+        var ownBound = BddScenarioFiles.Load(Write("Accounts/own.feature.md", own)).Bind(new BddCatalogSet(Catalog()));
         var sharedBound = Bind("Accounts/shared.feature.md", "Given a shared line", usings: "Invoicing");
 
-        Assert.True(ownBound.Success, UatDiagnosticsFormatter.FormatDiagnostics(ownBound.Diagnostics));
+        Assert.True(ownBound.Success, BddDiagnosticsFormatter.FormatDiagnostics(ownBound.Diagnostics));
         Assert.Contains(sharedBound.Diagnostics, d => d.Code == "UATB010");
     }
 
@@ -93,7 +93,7 @@ public sealed class UatUsingTests : IDisposable
     {
         var invocation = Assert.Single(Bind("Accounts/account.feature.md", "When I add a line \"Rent\"", usings: "Invoicing").Document!.Scenarios[0].Invocations);
 
-        var line = Assert.Single(UatDiagnosticsFormatter.FormatSteps([UatStepResult.Passed(invocation)]));
+        var line = Assert.Single(BddDiagnosticsFormatter.FormatSteps([BddStepResult.Passed(invocation)]));
 
         Assert.Contains("[Invoicing] ", line, StringComparison.Ordinal);
     }
@@ -102,32 +102,32 @@ public sealed class UatUsingTests : IDisposable
     public async Task APageName_ResolvesAmongThePagesTheFileSees_AndRunsThatPage()
     {
         var fixture = new DetailFixture();
-        var catalogs = new UatCatalogSet(UatReflectionRuntime.FromRoot(fixture).CreateCommandCatalog());
+        var catalogs = new BddCatalogSet(UatReflectionRuntime.FromRoot(fixture).CreateCommandCatalog());
 
-        var invoicing = UatScenarioFiles.Load(Write("Invoicing/invoice.feature.md", Scenario("Given I am on the Detail page\nWhen I press Approve"))).Bind(catalogs);
-        var accounts = UatScenarioFiles.Load(Write("Accounts/account.feature.md", Scenario("Given I am on the Detail page\nWhen I press Approve"))).Bind(catalogs);
+        var invoicing = BddScenarioFiles.Load(Write("Invoicing/invoice.feature.md", Scenario("Given I am on the Detail page\nWhen I press Approve"))).Bind(catalogs);
+        var accounts = BddScenarioFiles.Load(Write("Accounts/account.feature.md", Scenario("Given I am on the Detail page\nWhen I press Approve"))).Bind(catalogs);
 
-        Assert.True(invoicing.Success, UatDiagnosticsFormatter.FormatDiagnostics(invoicing.Diagnostics));
+        Assert.True(invoicing.Success, BddDiagnosticsFormatter.FormatDiagnostics(invoicing.Diagnostics));
         Assert.Equal("Invoicing/Detail", invoicing.Document!.Scenarios[0].Invocations[0].Arguments["page"]);
-        Assert.True((await new UatScenarioRunner().RunAsync(invoicing.Document.Scenarios[0])).Passed);
-        Assert.True((await new UatScenarioRunner().RunAsync(accounts.Document!.Scenarios[0])).Passed);
+        Assert.True((await new BddScenarioRunner().RunAsync(invoicing.Document.Scenarios[0])).Passed);
+        Assert.True((await new BddScenarioRunner().RunAsync(accounts.Document!.Scenarios[0])).Passed);
         Assert.Equal((1, 1), (fixture.Invoice.Approve.Pressed, fixture.Account.Approve.Pressed));
     }
 
     [Fact]
     public void APageOfAnotherFolder_FailsBinding_AndTwoSeenPagesOfOneName_AreAmbiguous_UnlessNamedWithTheirNamespace()
     {
-        var catalogs = new UatCatalogSet(UatReflectionRuntime.FromRoot(new DetailFixture()).CreateCommandCatalog());
+        var catalogs = new BddCatalogSet(UatReflectionRuntime.FromRoot(new DetailFixture()).CreateCommandCatalog());
 
-        var unseen = UatScenarioFiles.Load(Write("root.feature.md", Scenario("Given I am on the Detail page"))).Bind(catalogs);
-        var both = UatScenarioFiles.Load(Write("Invoicing/both.feature.md", Scenario("Given I am on the Detail page", usings: "Accounts"))).Bind(catalogs);
-        var named = UatScenarioFiles.Load(Write("Invoicing/named.feature.md", Scenario("Given I am on the Accounts/Detail page", usings: "Accounts"))).Bind(catalogs);
+        var unseen = BddScenarioFiles.Load(Write("root.feature.md", Scenario("Given I am on the Detail page"))).Bind(catalogs);
+        var both = BddScenarioFiles.Load(Write("Invoicing/both.feature.md", Scenario("Given I am on the Detail page", usings: "Accounts"))).Bind(catalogs);
+        var named = BddScenarioFiles.Load(Write("Invoicing/named.feature.md", Scenario("Given I am on the Accounts/Detail page", usings: "Accounts"))).Bind(catalogs);
 
         Assert.Equal("UATB010", Assert.Single(unseen.Diagnostics).Code);
-        var ambiguous = Assert.Single(both.Diagnostics, d => d.Severity == UatDiagnosticSeverity.Error);
+        var ambiguous = Assert.Single(both.Diagnostics, d => d.Severity == BddDiagnosticSeverity.Error);
         Assert.Equal("UATB002", ambiguous.Code);
         Assert.Contains("Name it with its namespace", ambiguous.Message, StringComparison.Ordinal);
-        Assert.True(named.Success, UatDiagnosticsFormatter.FormatDiagnostics(named.Diagnostics));
+        Assert.True(named.Success, BddDiagnosticsFormatter.FormatDiagnostics(named.Diagnostics));
         Assert.Empty(named.Diagnostics);
     }
 
@@ -140,11 +140,11 @@ public sealed class UatUsingTests : IDisposable
         Assert.Equal(["Accounts", "Invoicing"], catalog.Pages.Where(page => page.Name == "Ledger").Select(page => page.Namespace).Order());
     }
 
-    private UatBindResult Bind(string path, string steps, string? usings = null)
+    private BddBindResult Bind(string path, string steps, string? usings = null)
     {
-        var file = UatScenarioFiles.Load(Write(path, Scenario(steps, usings)));
-        Assert.True(file.Success, UatDiagnosticsFormatter.FormatDiagnostics(file.Diagnostics));
-        return file.Bind(new UatCatalogSet(Catalog()));
+        var file = BddScenarioFiles.Load(Write(path, Scenario(steps, usings)));
+        Assert.True(file.Success, BddDiagnosticsFormatter.FormatDiagnostics(file.Diagnostics));
+        return file.Bind(new BddCatalogSet(Catalog()));
     }
 
     private string Write(string relative, string text)
@@ -155,7 +155,7 @@ public sealed class UatUsingTests : IDisposable
         return path;
     }
 
-    private static UatCommandCatalog Catalog()
+    private static BddCommandCatalog Catalog()
     {
         var fixture = new NamespaceFixture();
         return UatReflectionRuntime.FromComposition(fixture, fixture.Composition).CreateCommandCatalog();
@@ -199,7 +199,7 @@ public sealed class UatUsingTests : IDisposable
 }
 
 [TestModuleScan(typeof(PageScanFixture), NamespacePrefix = "Brinell.Uat.Tests.PageNamespaceCases")]
-[UatIgnore]
+[BddIgnore]
 public sealed class PageScanFixture
 {
 }

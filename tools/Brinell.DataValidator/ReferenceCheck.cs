@@ -9,10 +9,10 @@ internal static class ReferenceCheck
     public static IReadOnlyList<TestDataReference> Find(string configPath)
     {
         List<TestDataReference> references = [];
-        var config = UatConfigParser.Parse(File.ReadAllText(configPath));
-        if (config.Runtime.TryGetValue(UatConfigFields.DefaultTestData, out var fallback) && fallback.Length > 0)
+        var config = BddConfigParser.Parse(File.ReadAllText(configPath));
+        if (config.Runtime.TryGetValue(BddConfigFields.DefaultTestData, out var fallback) && fallback.Length > 0)
         {
-            references.Add(new TestDataReference(configPath, LineOf(configPath, UatConfigFields.DefaultTestData), fallback));
+            references.Add(new TestDataReference(configPath, LineOf(configPath, BddConfigFields.DefaultTestData), fallback));
         }
 
         var scenarios = ScenarioCheck.ScenarioFolder(configPath);
@@ -21,12 +21,12 @@ internal static class ReferenceCheck
             return references;
         }
 
-        foreach (var file in Directory.EnumerateFiles(scenarios, UatFileFormat.FeatureFilePattern, SearchOption.AllDirectories).Order(StringComparer.Ordinal))
+        foreach (var file in Directory.EnumerateFiles(scenarios, BddFileFormat.FeatureFilePattern, SearchOption.AllDirectories).Order(StringComparer.Ordinal))
         {
-            var document = UatMarkdownParser.ParseFile(file).Document;
-            if (document?.Metadata.TryGetValue(UatMetadataFields.TestData, out var name) == true && name.Length > 0)
+            var document = BddMarkdownParser.ParseFile(file).Document;
+            if (document?.Metadata.TryGetValue(BddMetadataFields.TestData, out var name) == true && name.Length > 0)
             {
-                references.Add(new TestDataReference(file, LineOf(file, UatMetadataFields.TestData), name));
+                references.Add(new TestDataReference(file, LineOf(file, BddMetadataFields.TestData), name));
             }
         }
 

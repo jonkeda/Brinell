@@ -228,7 +228,7 @@ public sealed class LanguageServerTests : IAsyncLifetime
 
         Assert.True(target.CanRun, target.Reason);
         Assert.Equal(Path.Combine(Shelf, "Shelf.Steps.csproj"), target.Project);
-        Assert.Equal("UatScenario=Features/shelf.feature.md#One", target.Filter);
+        Assert.Equal("BddScenario=Features/shelf.feature.md#One", target.Filter);
         Assert.Equal(["One"], target.Scenarios);
     }
 
@@ -241,7 +241,7 @@ public sealed class LanguageServerTests : IAsyncLifetime
 
         var target = await _client.InvokeWithParameterObjectAsync<RunTargetResult>("brinell/runTarget", new { uri = new Uri(Feature).AbsoluteUri });
 
-        Assert.Equal("UatScenario~Features/shelf.feature.md#", target.Filter);
+        Assert.Equal("BddScenario~Features/shelf.feature.md#", target.Filter);
     }
 
     [Fact]
@@ -384,7 +384,7 @@ public sealed class LanguageServerTests : IAsyncLifetime
         Assert.True(shelf.Runnable, shelf.Reason);
         var file = Assert.Single(shelf.Files);
         Assert.Equal(new Uri(Feature).AbsoluteUri, file.Uri);
-        Assert.Equal(new ScenarioTest("One", 3, "UatScenario=Features/shelf.feature.md#One"), Assert.Single(file.Scenarios));
+        Assert.Equal(new ScenarioTest("One", 3, "BddScenario=Features/shelf.feature.md#One"), Assert.Single(file.Scenarios));
         Assert.False(Assert.Single(suites, suite => suite.Suite == "Shelf.Web").Runnable);
     }
 

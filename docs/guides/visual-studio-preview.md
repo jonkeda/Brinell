@@ -49,8 +49,8 @@ Update the extension, or the suite's Brinell packages.
 Each scenario heading has **Run**, and the title **Run file**. A run:
 
 1. builds the solution through Visual Studio, so a stale app never runs;
-2. runs `dotnet test <suite project> --no-build --filter "UatScenario=<address>"` (every row of an
-   outline, or `UatScenario~<file>#` for the file), its output in the **Brinell UAT** Output pane;
+2. runs `dotnet test <suite project> --no-build --filter "BddScenario=<address>"` (every row of an
+   outline, or `BddScenario~<file>#` for the file), its output in the **Brinell UAT** Output pane;
 3. shows the results in the preview when the run writes them.
 
 The suite's test class must use `[UatScenarioTheory]`, which gives each case its address; with
@@ -91,7 +91,7 @@ while a debugger is attached:
 - A line in a `.steps.md` stops at that step each time a scenario calls it.
 - `breakOnFailure` stops after a step that fails, before the scenario ends.
 
-The debugger stops in `UatStepExecutionSession.RunNextAsync`. The local `stepBreak` holds the
+The debugger stops in `BddStepExecutionSession.RunNextAsync`. The local `stepBreak` holds the
 step's text, its arguments as read, the app, the page and the call chain; **F11** goes into the
 step definition. A test runs the build output's copy of a feature file; a listed file matches it
 by its path below the `Features` folder.

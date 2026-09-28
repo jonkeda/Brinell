@@ -17,11 +17,11 @@ public sealed class StoredDataPhrases(ITodoArrangement fixture) : BddStepDefinit
 {
     /// <summary>The app's database holds a todo like each row.</summary>
     [BddThen("the database should have todos")]
-    public void DatabaseHas(UatTable table) => table.AssertContains(TodoDbReader.Todos(fixture.DatabasePath), fixture.TestSet.Now);
+    public void DatabaseHas(BddTable table) => table.AssertContains(TodoDbReader.Todos(fixture.DatabasePath), fixture.TestSet.Now);
 
     /// <summary>The app's database holds exactly the rows' todos. Order-dependent unless the database is reset per scenario.</summary>
     [BddThen("the database should have only todos")]
-    public void DatabaseHasOnly(UatTable table) => table.AssertExactly(TodoDbReader.Todos(fixture.DatabasePath), fixture.TestSet.Now);
+    public void DatabaseHasOnly(BddTable table) => table.AssertExactly(TodoDbReader.Todos(fixture.DatabasePath), fixture.TestSet.Now);
 
     /// <summary>No todo in the app's database has an empty or whitespace title.</summary>
     [BddThen("the database should not have a todo with a blank title")]

@@ -242,28 +242,28 @@ public sealed class UatArgumentTests
     private static UatReflectionRuntime Runtime(ArgumentFixture fixture)
         => UatReflectionRuntime.FromComposition(fixture, fixture.Composition);
 
-    private static UatCatalogSet CatalogSet(ArgumentFixture fixture)
-        => new(Runtime(fixture).CreateCommandCatalog(), UatConfigParser.Parse(Apps).Apps, suiteHead: null, new Dictionary<string, UatCommandCatalog>(), []);
+    private static BddCatalogSet CatalogSet(ArgumentFixture fixture)
+        => new(Runtime(fixture).CreateCommandCatalog(), BddConfigParser.Parse(Apps).Apps, suiteHead: null, new Dictionary<string, BddCommandCatalog>(), []);
 
-    private static IReadOnlyList<UatDiagnostic> Bind(string steps)
+    private static IReadOnlyList<BddDiagnostic> Bind(string steps)
     {
-        var parse = UatMarkdownParser.Parse(Document(steps));
+        var parse = BddMarkdownParser.Parse(Document(steps));
         Assert.True(parse.Success, string.Join(Environment.NewLine, parse.Diagnostics.Select(d => d.Message)));
-        return UatBinder.Bind(parse.Document!, CatalogSet(new ArgumentFixture())).Diagnostics;
+        return BddBinder.Bind(parse.Document!, CatalogSet(new ArgumentFixture())).Diagnostics;
     }
 
     private static async Task<ArgumentFixture> Run(string steps, ArgumentFixture? fixture = null)
     {
         fixture ??= new ArgumentFixture();
-        var parse = UatMarkdownParser.Parse(Document(steps));
+        var parse = BddMarkdownParser.Parse(Document(steps));
         Assert.True(parse.Success, string.Join(Environment.NewLine, parse.Diagnostics.Select(d => d.Message)));
-        var bind = UatBinder.Bind(parse.Document!, CatalogSet(fixture));
+        var bind = BddBinder.Bind(parse.Document!, CatalogSet(fixture));
         Assert.True(bind.Success, string.Join(Environment.NewLine, bind.Diagnostics.Select(d => $"{d.Code} {d.Message}")));
 
         using var scope = fixture.Composition.CreateScope();
-        var context = new UatExecutionContext { Now = fixture.Now, Apps = UatConfigParser.Parse(Apps).Apps, SessionHost = fixture };
+        var context = new BddExecutionContext { Now = fixture.Now, Apps = BddConfigParser.Parse(Apps).Apps, SessionHost = fixture };
         UatReflectionRuntime.SetServiceProvider(context, scope.ServiceProvider);
-        var result = await new UatScenarioRunner(context).RunAsync(Assert.Single(bind.Document!.Scenarios));
+        var result = await new BddScenarioRunner(context).RunAsync(Assert.Single(bind.Document!.Scenarios));
         Assert.True(result.Passed, string.Join(Environment.NewLine, result.Steps.Select(s => $"{s.Status}: {s.Invocation.Step.Text} {s.Message}")));
         return fixture;
     }
@@ -286,21 +286,21 @@ public enum Status
 
 public sealed record TodoRow(string Title, Status Status = Status.Open, DateOnly? DueDate = null, decimal Hours = 0);
 
-[UatArgumentType]
+[BddArgumentType]
 public sealed record Money(decimal Amount, string Currency)
 {
     public static Money Parse(string text)
     {
         var parts = text.Split(' ');
         return parts.Length == 2
-            ? new Money((decimal)UatValues.Read(parts[0], typeof(decimal), UatValueContext.Default)!, parts[1])
+            ? new Money((decimal)BddValues.Read(parts[0], typeof(decimal), BddValueContext.Default)!, parts[1])
             : throw new FormatException("write an amount and a currency, e.g. 1,250.00 EUR");
     }
 }
 
 public sealed class ArgumentState
 {
-    public List<(string Todo, UatUserRole Assignee, DateOnly Due, decimal Hours, Status Status)> Assigned { get; } = [];
+    public List<(string Todo, BddUserRole Assignee, DateOnly Due, decimal Hours, Status Status)> Assigned { get; } = [];
 
     public List<(string User, string Todo)> Taken { get; } = [];
 
@@ -316,8 +316,8 @@ public sealed class ArgumentState
 }
 
 [TestModuleScan(typeof(ArgumentFixture), NamespacePrefix = "Brinell.Uat.Tests.ArgumentCases")]
-[UatIgnore]
-public sealed class ArgumentFixture : IUatClock, IUatSessionHost
+[BddIgnore]
+public sealed class ArgumentFixture : IBddClock, IBddSessionHost
 {
     public ArgumentFixture()
     {
@@ -334,15 +334,15 @@ public sealed class ArgumentFixture : IUatClock, IUatSessionHost
 }
 
 [BddStepDefinitions]
-[UatIgnore]
+[BddIgnore]
 public sealed class ArgumentPhrases(ArgumentState state) : BddStepDefinitionsBase
 {
     [BddWhen("I assign {todo} to {assignee} due {due} for {hours} hours as {status}")]
-    public void Assign(string todo, UatUserRole assignee, DateOnly due, decimal hours, Status status)
+    public void Assign(string todo, BddUserRole assignee, DateOnly due, decimal hours, Status status)
         => state.Assigned.Add((todo, assignee, due, hours, status));
 
     [BddWhen("{user} takes {todo}")]
-    public void Take(UatUserRole user, string todo) => state.Taken.Add((user.Name, todo));
+    public void Take(BddUserRole user, string todo) => state.Taken.Add((user.Name, todo));
 
     [BddGiven("the server has todos")]
     public void ServerHas(IReadOnlyList<TodoRow> todos) => state.Server.AddRange(todos);
@@ -392,7 +392,7 @@ public sealed class ArgumentPhrases(ArgumentState state) : BddStepDefinitionsBas
 }
 
 [BddStepDefinitions]
-[UatIgnore]
+[BddIgnore]
 public sealed class BrokenPhrases : BddStepDefinitionsBase
 {
     [BddWhen]

@@ -14,7 +14,7 @@ public sealed class AppLifecyclePhrases(TodoUatFixture fixture) : BddStepDefinit
 {
     /// <summary>Closes the app and starts it again on the same database and backend.</summary>
     [BddWhen("I restart the app")]
-    public void RestartApp(UatExecutionContext context)
+    public void RestartApp(BddExecutionContext context)
     {
         fixture.Restart();
         fixture.RescopeAfterRestart(context);
@@ -22,7 +22,7 @@ public sealed class AppLifecyclePhrases(TodoUatFixture fixture) : BddStepDefinit
 
     /// <summary>Restarts the app pointed at an address nothing listens on; the next scenario restores it.</summary>
     [BddWhen("I restart the app with the server unreachable")]
-    public void RestartUnreachable(UatExecutionContext context)
+    public void RestartUnreachable(BddExecutionContext context)
     {
         fixture.RestartWith(settings => settings with { ApiBaseUrl = "http://127.0.0.1:1" });
         fixture.RescopeAfterRestart(context);

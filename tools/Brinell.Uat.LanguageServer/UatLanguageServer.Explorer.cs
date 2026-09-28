@@ -41,7 +41,7 @@ public sealed partial class UatLanguageServer
 
         var html = view == UatExplorerWriter.Pages
             ? UatExplorerWriter.PagesView(suite, catalogs)
-            : UatExplorerWriter.StepsView(suite, catalogs, [.. suite.StepFiles.SelectMany(path => (UatScenarioFiles.ParsePhraseFile(path).Document?.Callables ?? []).Select(callable => callable with { Source = callable.Source with { FilePath = callable.Source.FilePath ?? path } }))]);
+            : UatExplorerWriter.StepsView(suite, catalogs, [.. suite.StepFiles.SelectMany(path => (BddScenarioFiles.ParsePhraseFile(path).Document?.Callables ?? []).Select(callable => callable with { Source = callable.Source with { FilePath = callable.Source.FilePath ?? path } }))]);
         return new ExplorerResult(view, html, names, suite.Name);
     }
 
@@ -63,7 +63,7 @@ public sealed partial class UatLanguageServer
             return runs;
         }
 
-        foreach (var path in suite.FeatureFiles.Concat(suite.LinkedFiles).Where(path => path.EndsWith(UatFileFormat.FeatureExtension, StringComparison.OrdinalIgnoreCase)).Distinct(StringComparer.OrdinalIgnoreCase))
+        foreach (var path in suite.FeatureFiles.Concat(suite.LinkedFiles).Where(path => path.EndsWith(BddFileFormat.FeatureExtension, StringComparison.OrdinalIgnoreCase)).Distinct(StringComparer.OrdinalIgnoreCase))
         {
             IReadOnlyDictionary<string, UatScenarioRun> found;
             lock (results)
@@ -76,7 +76,7 @@ public sealed partial class UatLanguageServer
                 continue;
             }
 
-            var scenarios = UatMarkdownParser.Parse(File.ReadAllText(path), path).Document?.Scenarios ?? [];
+            var scenarios = BddMarkdownParser.Parse(File.ReadAllText(path), path).Document?.Scenarios ?? [];
             foreach (var run in found.Values)
             {
                 var line = scenarios.FirstOrDefault(scenario => scenario.Name == run.Scenario)?.Source.LineNumber ?? 1;

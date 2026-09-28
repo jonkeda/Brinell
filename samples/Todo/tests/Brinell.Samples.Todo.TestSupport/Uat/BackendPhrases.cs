@@ -55,7 +55,7 @@ public sealed class BackendPhrases(ITodoArrangement fixture) : BddStepDefinition
 
     /// <summary>The fake server holds a todo like each row.</summary>
     [BddThen("the server should have todos")]
-    public void ServerHas(UatTable table) => table.AssertContains(fixture.Server.Todos, fixture.TestSet.Now);
+    public void ServerHas(BddTable table) => table.AssertContains(fixture.Server.Todos, fixture.TestSet.Now);
 
     /// <summary>
     /// The fake server received exactly these requests, in this order, since the scenario began:

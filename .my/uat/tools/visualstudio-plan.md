@@ -30,10 +30,10 @@ Each phase is usable on its own. The preview is worth having before anything els
 | --- | --- |
 | Nothing is built: no language server, no preview renderer, no host. The VS Code proposal's markdown-it plugin doesn't exist either. | The preview renderer is new work, and its design can be chosen for Visual Studio first (P1). |
 | The engine is two packages: `Brinell.Bdd` (parse, bind, run; no UI) and `Brinell.Uat` on top (pages, controls, page scope). Both target net8.0, net9.0 and net10.0. A suite's assemblies are net10.0. Visual Studio runs in-process extensions on .NET Framework 4.8, and out-of-process ones on .NET 8. | The extension can't load the engine or a suite. All engine work happens in our own net10 process (P2). |
-| `UatMarkdownParser` (in `Brinell.Bdd`) gives the document with line numbers. `UatScenarioFiles.Load(...).Bind(catalogSet)` binds with the same diagnostics as the gate. A file in the old form (`*.uat.md`, `# UAT:`, `## Phrase:`) is UAT029, which `brinell-data validate --fix` rewrites. | The preview and the editor get parsing and binding for free. |
+| `BddMarkdownParser` (in `Brinell.Bdd`) gives the document with line numbers. `BddScenarioFiles.Load(...).Bind(catalogSet)` binds with the same diagnostics as the gate. A file in the old form (`*.uat.md`, `# UAT:`, `## Phrase:`) is UAT029, which `brinell-data validate --fix` rewrites. | The preview and the editor get parsing and binding for free. |
 | `ScenarioCheck` (in `brinell-data`) builds the catalogs from the fixture type without starting it. But it loads the suite with a **non-collectible** context straight from `bin`. | Its loading moves into a shared library that shadow-copies and can unload, so a VS build never meets a locked file (AD-018). |
 | `UatScenarioTestBase` gives one xUnit **v2** (2.9.3) theory case per scenario, `[filePath, scenarioName]`. Test Explorer already lists them. | Running from Test Explorer works today. There's no stable way to address one case from the command line: the display name holds the full path, escaped (VS Code Q2). |
-| `UatStepExecutionSession.RunNextAsync` (in `Brinell.Bdd`) invokes one step at a time. Hooks (`[BddAfterStep]` and the rest) run in `UatScenarioRunner.RunAsync`, not in the session. | A break before a step is one check in one place (R2). |
+| `BddStepExecutionSession.RunNextAsync` (in `Brinell.Bdd`) invokes one step at a time. Hooks (`[BddAfterStep]` and the rest) run in `BddScenarioRunner.RunAsync`, not in the session. | A break before a step is one check in one place (R2). |
 | `__result.json` is written per scenario under `TestResults/<run-id>/suites/<suite>/`. It is named by the scenario name only. It has step statuses **only** with `IncludeRuntimeTrace`, and has no file or line. | For the preview to show results, the report must always name the file, each step's line and each step's status (P5). |
 | The rules: one UI test process at a time, no build while one runs, rebuild the app before a UI run. | The extension enforces them. It is the first tool that can (R4). |
 
@@ -103,7 +103,7 @@ Check the manifest's other readers before renaming.
 own discoverer, in `Brinell.Uat`, which already references `xunit.extensibility.core`. It makes
 the same one case per scenario, and gives each case:
 
-- a trait `UatScenario=<file relative to the config>#<scenario slug>`, with the slug limited to
+- a trait `BddScenario=<file relative to the config>#<scenario slug>`, with the slug limited to
   `[A-Za-z0-9._/-]` so that `dotnet test --filter` needs no escaping;
 - if the spike (S5) shows xUnit v2 keeps it, the scenario's `.md` file and line as the case's
   source, so Test Explorer's own *Go to test* opens the scenario.
@@ -116,7 +116,7 @@ still runs from Test Explorer. The preview then says it can't run that scenario,
 it only when `Debugger.IsAttached`, so it costs nothing otherwise. Before a step whose line (or
 whose call's line, in a `*.steps.md`) is listed, the session:
 
-- builds a `UatStepBreak` local holding the step text, the arguments as read, the app, the page
+- builds a `BddStepBreak` local holding the step text, the arguments as read, the app, the page
   and the call chain;
 - then calls `Debugger.Break()`.
 
@@ -133,7 +133,7 @@ order:
    and there's no second MSBuild against the same outputs.
 2. Run the case. If the spike (S3) finds an API that runs a Test Explorer case by id, use it, so
    results land in Test Explorer too. Otherwise run
-   `dotnet test <project> --no-build --filter UatScenario=<address>` and write its output to an
+   `dotnet test <project> --no-build --filter BddScenario=<address>` and write its output to an
    Output window pane.
 3. For **Debug** in the fallback: set `VSTEST_HOST_DEBUG=1`, read the testhost's process id from
    the output, attach Visual Studio's debugger to it, and continue past the testhost's own
@@ -155,7 +155,7 @@ comes from `ScenarioCheck` and the Presenter's `MsBuildProjectEvaluator`, and do
 - finds the suites (projects with a `uat.config.md`, or a `bdd.config.md` for a `service` suite);
 - reads the config, including an `AppsFile` copied at build time;
 - loads the fixture's assemblies from a shadow copy, in a collectible context;
-- builds the `UatCatalogSet` through `Brinell.Uat`, so a UI suite's pages and control verbs are in
+- builds the `BddCatalogSet` through `Brinell.Uat`, so a UI suite's pages and control verbs are in
   it; a service suite needs them too, to report UATB013;
 - reloads when told the build finished.
 
@@ -225,8 +225,8 @@ and a call into Test Explorer. Its findings go into section 7, and the code is n
 
 | # | Step | Done when |
 | --- | --- | --- |
-| 2.1 | **`[UatScenarioTheory]`** (R1): discoverer, trait, and source location if S5 allows. Todo's MAUI, web, mixed and service suites move to it. | `dotnet test --filter "UatScenario=Features/TOD.11-manage-users.feature.md#<slug>"` runs exactly one case; Test Explorer lists the same cases as before; the Todo counts are unchanged (MAUI 43, web 35, mixed 4, service 3). |
-| 2.2 | **Break at a step** (R2): the breakpoint file, the check in `RunNextAsync` behind a seam (`IUatBreakHook`) so unit tests don't need a debugger, `UatStepBreak`, breaks inside callables by the call's line. | `Brinell.Bdd.Tests` (the session is in `Brinell.Bdd`): a listed line breaks, an unlisted one doesn't, nothing is read without a debugger, a line in a `*.steps.md` breaks at each call. |
+| 2.1 | **`[UatScenarioTheory]`** (R1): discoverer, trait, and source location if S5 allows. Todo's MAUI, web, mixed and service suites move to it. | `dotnet test --filter "BddScenario=Features/TOD.11-manage-users.feature.md#<slug>"` runs exactly one case; Test Explorer lists the same cases as before; the Todo counts are unchanged (MAUI 43, web 35, mixed 4, service 3). |
+| 2.2 | **Break at a step** (R2): the breakpoint file, the check in `RunNextAsync` behind a seam (`IBddBreakHook`) so unit tests don't need a debugger, `BddStepBreak`, breaks inside callables by the call's line. | `Brinell.Bdd.Tests` (the session is in `Brinell.Bdd`): a listed line breaks, an unlisted one doesn't, nothing is read without a debugger, a line in a `*.steps.md` breaks at each call. |
 | 2.3 | **Run from the preview** (R3, R4): Run and Run file buttons on the headings, build first, then the Test Explorer API or `dotnet test --no-build`, an Output pane, one run at a time, builds cancelled during a run, Cancel. | Checklist 6.2 passes. |
 | 2.4 | **Debug from the preview**: the attach route (or the Test Explorer API's debug), and the breakpoint gutter in the preview (a click on a step's gutter toggles it, as a red dot). An editor command, *Toggle UAT step breakpoint*, on the context menu and a key binding for `.feature.md` files, shows the same dot in the editor's glyph margin. | Checklist 6.3 passes, including a break hit from Test Explorer's own Debug. |
 
@@ -292,7 +292,7 @@ engine side has automated tests. These checklists cover what only Visual Studio 
 
 ### 6.3 Debug
 
-- A step breakpoint set in the preview stops the debugger before that step; `UatStepBreak` shows
+- A step breakpoint set in the preview stops the debugger before that step; `BddStepBreak` shows
   the text and arguments; F11 reaches the step definition.
 - A breakpoint in a `.steps.md` body stops at each call.
 - Test Explorer → Debug on the same case stops at the same breakpoint.

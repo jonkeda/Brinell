@@ -9,7 +9,7 @@ public sealed class UatSessionTests
     [Fact]
     public void Config_ReadsTheAppsTable()
     {
-        var config = UatConfigParser.Parse("""
+        var config = BddConfigParser.Parse("""
             # UAT Config
 
             ## Apps
@@ -155,8 +155,8 @@ public sealed class UatSessionTests
 
     /// <summary>One composition per app; each knows its app's name.</summary>
     [TestModuleScan(typeof(UatSessionTests), NamespacePrefix = "Brinell.Uat.Tests.SessionCases")]
-    [UatIgnore]
-    public sealed class SessionFixture : IUatSessionHost
+    [BddIgnore]
+    public sealed class SessionFixture : IBddSessionHost
     {
         public SessionFixture()
         {
@@ -176,7 +176,7 @@ public sealed class UatSessionTests
     public sealed record AppName(string Value);
 
     [BddStepDefinitions]
-    [UatIgnore]
+    [BddIgnore]
     public sealed class SessionPhrases(AppName app, SessionFixture fixture) : BddStepDefinitionsBase
     {
         [BddWhen("I note the app")]

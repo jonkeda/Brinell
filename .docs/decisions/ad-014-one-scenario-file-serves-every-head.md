@@ -7,11 +7,11 @@ names and phrases. `Head` in a suite's `uat.config.md` names its head; a scenari
 (`@maui`, `@web`) say where it runs, and the engine skips it on any other head. A scenario with no
 head tag runs on every head.
 
-Within one scenario, several apps (an `Apps` table, `IUatSessionHost`, a step's subject per
+Within one scenario, several apps (an `Apps` table, `IBddSessionHost`, a step's subject per
 AD-015) are apps of the suite's head and share its page and phrase types. The exception is a
 suite whose `Head` is `mixed`: it runs only scenarios tagged `@mixed`, its apps name their own
-`Head`, and each app binds against that head's catalog (`IUatSessionHost.CompositionFor`,
-`UatCatalogSet`). Mixed scenarios live in the mixed suite, not beside the one-head files.
+`Head`, and each app binds against that head's catalog (`IBddSessionHost.CompositionFor`,
+`BddCatalogSet`). Mixed scenarios live in the mixed suite, not beside the one-head files.
 
 A tier below the UI is a head too, `service`, opt-in like `mixed`: see AD-020.
 

@@ -26,9 +26,9 @@ public sealed class UatScenarioCheckTests
     public void ApplyFixes_RewritesTheValueOnItsLine_KeepingLineEndings()
     {
         var text = "line one\r\nWhen I lend it until 2026-05-12\r\n";
-        var fix = new UatDiagnostic(UatDiagnosticSeverity.Error, "UATA002", "date", new UatSourceLocation(null, 2))
+        var fix = new BddDiagnostic(BddDiagnosticSeverity.Error, "UATA002", "date", new BddSourceLocation(null, 2))
         {
-            Fix = new UatTextFix("2026-05-12", "12-May-2026"),
+            Fix = new BddTextFix("2026-05-12", "12-May-2026"),
         };
 
         var (fixedText, count) = UatScenarioCheck.ApplyFixes(text, [fix]);
@@ -40,7 +40,7 @@ public sealed class UatScenarioCheckTests
     [Fact]
     public void AnUnclosedDocString_IsAParseError()
     {
-        var parse = UatMarkdownParser.Parse(""""
+        var parse = BddMarkdownParser.Parse(""""
             # Feature: Doc strings
 
             ## Scenario: Unclosed
@@ -55,9 +55,9 @@ public sealed class UatScenarioCheckTests
         Assert.Equal(6, error.Location.LineNumber);
     }
 
-    private static UatStep Step(string text)
+    private static BddStep Step(string text)
     {
-        var parse = UatMarkdownParser.Parse($"""
+        var parse = BddMarkdownParser.Parse($"""
             # Feature: Snippets
 
             ## Scenario: One step

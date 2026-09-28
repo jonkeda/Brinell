@@ -19,7 +19,7 @@ public static partial class UatSourceLocator
 
     /// <summary>The line a method is declared on: its first sequence point, then up to its name.</summary>
     /// <param name="method">A method of a loaded suite.</param>
-    public static UatSourceLocation? Of(MethodBase method)
+    public static BddSourceLocation? Of(MethodBase method)
     {
         ArgumentNullException.ThrowIfNull(method);
         if (FirstSequencePoint(method) is not { } point)
@@ -27,12 +27,12 @@ public static partial class UatSourceLocator
             return null;
         }
 
-        return Declaration(point.File, point.Line, $@"\b{Regex.Escape(method.Name)}\s*[<(]") ?? new UatSourceLocation(point.File, point.Line);
+        return Declaration(point.File, point.Line, $@"\b{Regex.Escape(method.Name)}\s*[<(]") ?? new BddSourceLocation(point.File, point.Line);
     }
 
     /// <summary>The line a type is declared on: the file of any of its methods, then its <c>class</c> line.</summary>
     /// <param name="type">A type of a loaded suite.</param>
-    public static UatSourceLocation? Of(Type type)
+    public static BddSourceLocation? Of(Type type)
     {
         ArgumentNullException.ThrowIfNull(type);
         var point = Members(type).Select(FirstSequencePoint).FirstOrDefault(found => found is not null);
@@ -42,13 +42,13 @@ public static partial class UatSourceLocator
         }
 
         var name = type.Name.Split('`')[0];
-        return Find(found.File, $@"\b(class|record|struct|interface)\s+{Regex.Escape(name)}\b") ?? new UatSourceLocation(found.File, found.Line);
+        return Find(found.File, $@"\b(class|record|struct|interface)\s+{Regex.Escape(name)}\b") ?? new BddSourceLocation(found.File, found.Line);
     }
 
     /// <summary>The line a member of a type is declared on: a method's own, or a property's, found by its name in the type's file.</summary>
     /// <param name="type">A type of a loaded suite.</param>
     /// <param name="member">The member's name.</param>
-    public static UatSourceLocation? Of(Type type, string member)
+    public static BddSourceLocation? Of(Type type, string member)
     {
         ArgumentNullException.ThrowIfNull(type);
         var flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
@@ -191,7 +191,7 @@ public static partial class UatSourceLocator
     }
 
     // A method's first sequence point is in its body: its name is on that line or a few above.
-    private static UatSourceLocation? Declaration(string file, int line, string pattern)
+    private static BddSourceLocation? Declaration(string file, int line, string pattern)
     {
         if (!File.Exists(file))
         {
@@ -203,14 +203,14 @@ public static partial class UatSourceLocator
         {
             if (Regex.IsMatch(lines[at - 1], pattern))
             {
-                return new UatSourceLocation(file, at);
+                return new BddSourceLocation(file, at);
             }
         }
 
         return null;
     }
 
-    private static UatSourceLocation? Find(string file, string pattern)
+    private static BddSourceLocation? Find(string file, string pattern)
     {
         if (!File.Exists(file))
         {
@@ -219,7 +219,7 @@ public static partial class UatSourceLocator
 
         var lines = File.ReadAllLines(file);
         var index = Array.FindIndex(lines, line => Regex.IsMatch(line, pattern));
-        return index < 0 ? null : new UatSourceLocation(file, index + 1);
+        return index < 0 ? null : new BddSourceLocation(file, index + 1);
     }
 
     [GeneratedRegex(@"\s+")]

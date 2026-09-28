@@ -12,7 +12,7 @@ namespace Brinell.Uat.LanguageServer;
 /// <param name="Suite">The suite it is checked in; null when none holds it.</param>
 /// <param name="Catalogs">The suite's catalogs; null when it is only parsed.</param>
 /// <param name="Reason">Why it is only parsed; null when bound.</param>
-internal sealed record UatServerFile(string Path, string Text, int Version, IReadOnlyList<UatSuite> Suites, UatSuite? Suite, UatCatalogSet? Catalogs, string? Reason)
+internal sealed record UatServerFile(string Path, string Text, int Version, IReadOnlyList<UatSuite> Suites, UatSuite? Suite, BddCatalogSet? Catalogs, string? Reason)
 {
     private string[]? _lines;
 
@@ -39,7 +39,7 @@ public sealed partial class UatLanguageServer
     private static readonly TimeSpan DiagnosticsPause = TimeSpan.FromMilliseconds(200);
 
     private readonly Dictionary<string, Timer> _pending = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, (string Text, UatCatalogSet? Catalogs, UatFileAnalysis Analysis)> _analyses = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, (string Text, BddCatalogSet? Catalogs, UatFileAnalysis Analysis)> _analyses = new(StringComparer.OrdinalIgnoreCase);
     private bool _publishes;
 
     private static ServerCapabilities Capabilities() => new(new TextDocumentSyncOptions(OpenClose: true, Change: 1, new SaveOptions(IncludeText: false)))
@@ -81,7 +81,7 @@ public sealed partial class UatLanguageServer
         reason = catalogs is not null
             ? null
             : suite is null
-                ? $"No suite holds or links this file: no project with a {UatFileFormat.UiConfigFileName} or {UatFileFormat.ServiceConfigFileName} under {root} has it."
+                ? $"No suite holds or links this file: no project with a {BddFileFormat.UiConfigFileName} or {BddFileFormat.ServiceConfigFileName} under {root} has it."
                 : reason;
         return new UatServerFile(path, document.Text, document.Version, suites, suite, catalogs, reason);
     }
@@ -109,7 +109,7 @@ public sealed partial class UatLanguageServer
     // The newest run of each of a feature file's scenarios.
     private IReadOnlyDictionary<string, UatScenarioRun> RunsOf(UatServerFile file)
     {
-        if (file.Suite is not { } suite || _results is not { } results || !file.Path.EndsWith(UatFileFormat.FeatureExtension, StringComparison.OrdinalIgnoreCase))
+        if (file.Suite is not { } suite || _results is not { } results || !file.Path.EndsWith(BddFileFormat.FeatureExtension, StringComparison.OrdinalIgnoreCase))
         {
             return new Dictionary<string, UatScenarioRun>();
         }
@@ -206,7 +206,7 @@ public sealed partial class UatLanguageServer
                 + (here ? string.Empty : $" ({Where(diagnostic.Location)})");
             diagnostics.Add(new Diagnostic(
                 LineRange(file, here ? diagnostic.Location.LineNumber : 1),
-                diagnostic.Severity == UatDiagnosticSeverity.Error ? 1 : 2,
+                diagnostic.Severity == BddDiagnosticSeverity.Error ? 1 : 2,
                 diagnostic.Code,
                 DiagnosticSource,
                 message));
@@ -238,6 +238,6 @@ public sealed partial class UatLanguageServer
         return new Range(new Position(line - 1, start), new Position(line - 1, text.Length));
     }
 
-    private static string Where(UatSourceLocation location)
+    private static string Where(BddSourceLocation location)
         => location.FilePath is { } file ? $"{Path.GetFileName(file)}:{location.LineNumber}" : $"line {location.LineNumber}";
 }

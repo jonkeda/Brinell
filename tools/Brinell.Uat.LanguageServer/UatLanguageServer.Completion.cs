@@ -77,7 +77,7 @@ public sealed partial class UatLanguageServer
             return [];
         }
 
-        var steps = file.Path.EndsWith(UatFileFormat.StepsExtension, StringComparison.OrdinalIgnoreCase);
+        var steps = file.Path.EndsWith(BddFileFormat.StepsExtension, StringComparison.OrdinalIgnoreCase);
         var range = new Range(new Position(line - 1, 0), new Position(line - 1, before.Length));
         return Sections
             .Where(section => section.StepsFile == steps || section.Label.StartsWith("```", StringComparison.Ordinal))
@@ -99,7 +99,7 @@ public sealed partial class UatLanguageServer
         List<(string Phrase, string Detail, int Kind, int Rank)> candidates = [];
         if (file.Catalogs is { } catalogs)
         {
-            var keyword = Enum.Parse<UatEffectiveStepKeyword>(step.Effective.ToString());
+            var keyword = Enum.Parse<BddEffectiveStepKeyword>(step.Effective.ToString());
             foreach (var pattern in catalogs.Default.Patterns.Where(pattern => pattern.Keyword == keyword && pattern.Callable is null))
             {
                 var onPage = pattern.Page is { } own && page is not null && string.Equals(PageName(own), PageName(page), StringComparison.Ordinal);
@@ -136,7 +136,7 @@ public sealed partial class UatLanguageServer
         List<(string Name, Type? Type)> parameters = [];
         if (file.Catalogs is { } catalogs)
         {
-            var keyword = Enum.Parse<UatEffectiveStepKeyword>(step.Effective.ToString());
+            var keyword = Enum.Parse<BddEffectiveStepKeyword>(step.Effective.ToString());
             foreach (var pattern in catalogs.Default.Patterns.Where(pattern => pattern.Keyword == keyword))
             {
                 if (ParameterAt(pattern.Phrase, typed) is { } name)
@@ -286,25 +286,25 @@ public sealed partial class UatLanguageServer
     }
 
     /// <summary>The callable steps a file sees: its own, and those of the step files in its folder and above.</summary>
-    internal static IReadOnlyList<UatCallable> VisibleCallables(UatServerFile file)
+    internal static IReadOnlyList<BddCallable> VisibleCallables(UatServerFile file)
     {
         var own = UatFileAnalysisCallables(file);
         return
         [
             .. own,
-            .. UatScenarioFiles.PhraseFilesFor(file.Path)
+            .. BddScenarioFiles.PhraseFilesFor(file.Path)
                 .Where(path => !string.Equals(path, file.Path, StringComparison.OrdinalIgnoreCase))
-                .SelectMany(path => UatScenarioFiles.ParsePhraseFile(path).Document?.Callables ?? []),
+                .SelectMany(path => BddScenarioFiles.ParsePhraseFile(path).Document?.Callables ?? []),
         ];
     }
 
-    private static IReadOnlyList<UatCallable> UatFileAnalysisCallables(UatServerFile file)
+    private static IReadOnlyList<BddCallable> UatFileAnalysisCallables(UatServerFile file)
         => Brinell.Uat.Preview.UatFileAnalysis.IsStepFile(file.Path)
-            ? UatScenarioFiles.ParsePhrases(file.Path, file.Text).Document?.Callables ?? []
-            : UatMarkdownParser.Parse(file.Text, file.Path).Document?.Callables.Select(callable => callable with { Source = callable.Source with { FilePath = file.Path } }).ToList() ?? [];
+            ? BddScenarioFiles.ParsePhrases(file.Path, file.Text).Document?.Callables ?? []
+            : BddMarkdownParser.Parse(file.Text, file.Path).Document?.Callables.Select(callable => callable with { Source = callable.Source with { FilePath = file.Path } }).ToList() ?? [];
 
     // The line a step is written on: its own, or the outermost call's for a callable's step.
-    internal static int WrittenLine(UatStepInvocation invocation)
+    internal static int WrittenLine(BddStepInvocation invocation)
     {
         if (invocation.Call is not { } frame)
         {

@@ -23,7 +23,7 @@ internal static class UatWorkspaceConfigInspector
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(workspacePath);
 
-        var configPath = UatFileFormat.FindConfig(workspacePath);
+        var configPath = BddFileFormat.FindConfig(workspacePath);
         if (!File.Exists(configPath))
         {
             return new UatWorkspaceConfigLoadResult(
@@ -43,13 +43,13 @@ internal static class UatWorkspaceConfigInspector
                 [new UatConfigProblem(UatConfigSections.File, "uat.config.md", $"uat.config.md was not found at {configPath}.")]);
         }
 
-        var config = UatConfigParser.ParseFile(configPath);
+        var config = BddConfigParser.ParseFile(configPath);
         List<UatConfigProblem> problems = [];
 
         var fixture = ReadRuntime(config, "Fixture");
         if (string.IsNullOrWhiteSpace(fixture))
         {
-            problems.Add(new UatConfigProblem(UatConfigSections.Runtime, UatConfigFields.Fixture, "Runtime Fixture is required."));
+            problems.Add(new UatConfigProblem(UatConfigSections.Runtime, BddConfigFields.Fixture, "Runtime Fixture is required."));
         }
 
         // AppPath is an override, not a requirement: the fixture owns the app, and every
@@ -60,7 +60,7 @@ internal static class UatWorkspaceConfigInspector
         var appPathExists = !string.IsNullOrWhiteSpace(resolvedAppPath) && File.Exists(resolvedAppPath);
         if (!string.IsNullOrWhiteSpace(appPath) && !appPathExists)
         {
-            problems.Add(new UatConfigProblem(UatConfigSections.Runtime, UatConfigFields.AppPath, $"Runtime AppPath was not found: {resolvedAppPath}."));
+            problems.Add(new UatConfigProblem(UatConfigSections.Runtime, BddConfigFields.AppPath, $"Runtime AppPath was not found: {resolvedAppPath}."));
         }
 
         var workingDirectory = ReadRuntime(config, "WorkingDirectory");
@@ -69,7 +69,7 @@ internal static class UatWorkspaceConfigInspector
                                      Directory.Exists(resolvedWorkingDirectory);
         if (!string.IsNullOrWhiteSpace(workingDirectory) && !workingDirectoryExists)
         {
-            problems.Add(new UatConfigProblem(UatConfigSections.Runtime, UatConfigFields.WorkingDirectory, $"Runtime WorkingDirectory was not found: {resolvedWorkingDirectory}."));
+            problems.Add(new UatConfigProblem(UatConfigSections.Runtime, BddConfigFields.WorkingDirectory, $"Runtime WorkingDirectory was not found: {resolvedWorkingDirectory}."));
         }
 
         var project = ResolveProject(workspacePath, config, evaluator ?? SharedEvaluator, problems);
@@ -95,7 +95,7 @@ internal static class UatWorkspaceConfigInspector
 
         if (assemblies.Length == 0)
         {
-            problems.Add(new UatConfigProblem(UatConfigSections.Runtime, UatConfigFields.Project, "Runtime Project, or at least one assembly registration, is required."));
+            problems.Add(new UatConfigProblem(UatConfigSections.Runtime, BddConfigFields.Project, "Runtime Project, or at least one assembly registration, is required."));
         }
 
         // The project's own diagnostic says "not built" and names the output, which a
@@ -134,18 +134,18 @@ internal static class UatWorkspaceConfigInspector
     /// rather than taken on faith.
     /// </remarks>
     private static string ResolveTarget(
-        UatConfig config,
+        BddConfig config,
         IReadOnlyList<UatAssemblyLoadResult> assemblies,
         string fixture,
         IFixtureInspector inspector,
         List<UatConfigProblem> problems)
     {
-        var configured = ReadRuntime(config, UatConfigFields.Target);
+        var configured = ReadRuntime(config, BddConfigFields.Target);
         if (configured.Length > 0 && !UatTargetRegistry.TryGet(configured, out _))
         {
             problems.Add(new UatConfigProblem(
                 UatConfigSections.Runtime,
-                UatConfigFields.Target,
+                BddConfigFields.Target,
                 $"Runtime Target '{configured}' is not supported by Presenter yet. " +
                 $"Supported targets: {UatTargetRegistry.SupportedTargetList}."));
             return configured;
@@ -168,7 +168,7 @@ internal static class UatWorkspaceConfigInspector
                 var usable = inspection.Usable.Select(item => item.Name).ToArray();
                 problems.Add(new UatConfigProblem(
                     UatConfigSections.Runtime,
-                    UatConfigFields.Fixture,
+                    BddConfigFields.Fixture,
                     $"Fixture '{fixture}' was not found in {Path.GetFileName(pages.ResolvedPath)}. " +
                     (usable.Length > 0
                         ? $"Available: {string.Join(", ", usable)}."
@@ -182,7 +182,7 @@ internal static class UatWorkspaceConfigInspector
         {
             problems.Add(new UatConfigProblem(
                 UatConfigSections.Runtime,
-                UatConfigFields.Fixture,
+                BddConfigFields.Fixture,
                 $"Fixture '{candidate.Name}' cannot be constructed: {candidate.UnusableReason}."));
         }
 
@@ -195,7 +195,7 @@ internal static class UatWorkspaceConfigInspector
         {
             problems.Add(new UatConfigProblem(
                 UatConfigSections.Runtime,
-                UatConfigFields.Target,
+                BddConfigFields.Target,
                 $"Runtime Target is '{configured}' but {candidate.Name} derives " +
                 $"{candidate.FixtureBase}, which is {candidate.Target}."));
         }
@@ -212,11 +212,11 @@ internal static class UatWorkspaceConfigInspector
     /// </remarks>
     private static UatProjectResolution? ResolveProject(
         string workspacePath,
-        UatConfig config,
+        BddConfig config,
         IProjectEvaluator evaluator,
         List<UatConfigProblem> problems)
     {
-        var configured = ReadRuntime(config, UatConfigFields.Project);
+        var configured = ReadRuntime(config, BddConfigFields.Project);
         if (string.IsNullOrWhiteSpace(configured))
         {
             return null;
@@ -226,7 +226,7 @@ internal static class UatWorkspaceConfigInspector
         if (!File.Exists(resolvedPath))
         {
             problems.Add(new UatConfigProblem(
-                UatConfigSections.Runtime, UatConfigFields.Project, $"Runtime Project was not found: {resolvedPath}."));
+                UatConfigSections.Runtime, BddConfigFields.Project, $"Runtime Project was not found: {resolvedPath}."));
             return new UatProjectResolution(configured, resolvedPath, string.Empty, false, []);
         }
 
@@ -238,7 +238,7 @@ internal static class UatWorkspaceConfigInspector
         if (!evaluation.Succeeded)
         {
             problems.Add(new UatConfigProblem(
-                UatConfigSections.Runtime, UatConfigFields.Project, $"Runtime Project could not be evaluated: {evaluation.Error}"));
+                UatConfigSections.Runtime, BddConfigFields.Project, $"Runtime Project could not be evaluated: {evaluation.Error}"));
             return new UatProjectResolution(configured, resolvedPath, string.Empty, false, []);
         }
 
@@ -260,7 +260,7 @@ internal static class UatWorkspaceConfigInspector
         if (evaluation.TargetPath.Length == 0)
         {
             problems.Add(new UatConfigProblem(
-                UatConfigSections.Runtime, UatConfigFields.Project, "Runtime Project reported no output path."));
+                UatConfigSections.Runtime, BddConfigFields.Project, "Runtime Project reported no output path."));
             return new UatProjectResolution(
                 configured,
                 resolvedPath,
@@ -273,7 +273,7 @@ internal static class UatWorkspaceConfigInspector
         {
             problems.Add(new UatConfigProblem(
                 UatConfigSections.Runtime,
-                UatConfigFields.Project,
+                BddConfigFields.Project,
                 $"{Path.GetFileNameWithoutExtension(resolvedPath)} is not built. " +
                 $"Its output belongs at {evaluation.TargetPath}."));
         }
@@ -291,7 +291,7 @@ internal static class UatWorkspaceConfigInspector
     /// <param name="config">The parsed config.</param>
     /// <returns>The resolved path, or <see langword="null" /> when the fixture owns the app.</returns>
     /// <exception cref="InvalidOperationException">The configured path does not exist.</exception>
-    public static string? ResolveConfiguredAppPath(string workspacePath, UatConfig config)
+    public static string? ResolveConfiguredAppPath(string workspacePath, BddConfig config)
     {
         var configuredPath = ReadRuntime(config, "AppPath");
         if (string.IsNullOrWhiteSpace(configuredPath))
@@ -308,7 +308,7 @@ internal static class UatWorkspaceConfigInspector
         return resolvedPath;
     }
 
-    public static string? ResolveWorkingDirectory(string workspacePath, UatConfig config)
+    public static string? ResolveWorkingDirectory(string workspacePath, BddConfig config)
     {
         var configuredPath = ReadRuntime(config, "WorkingDirectory");
         if (string.IsNullOrWhiteSpace(configuredPath))
@@ -384,7 +384,7 @@ internal static class UatWorkspaceConfigInspector
         return null;
     }
 
-    private static string ReadRuntime(UatConfig config, string field)
+    private static string ReadRuntime(BddConfig config, string field)
     {
         return config.Runtime.TryGetValue(field, out var value) ? value.Trim() : string.Empty;
     }

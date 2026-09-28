@@ -26,7 +26,7 @@ control verb, and the runtime declares the named forms of its page steps (`{user
   step says `I`, and it is never a control verb's value. In first place it switches apps;
   elsewhere it is only checked. It is checked against the `Apps` table at bind time, and a suite
   without that table cannot name a user.
-- **Each app binds against its own head's catalog.** `UatCatalogSet.CatalogFor(app)` is the one
+- **Each app binds against its own head's catalog.** `BddCatalogSet.CatalogFor(app)` is the one
   place that decides what a step can see, so a MAUI page and a web page of the same name never
   meet in one lookup (AD-014).
 

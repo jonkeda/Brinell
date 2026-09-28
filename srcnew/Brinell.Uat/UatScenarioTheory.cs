@@ -8,8 +8,8 @@ namespace Brinell.Uat;
 /// <summary>
 /// A theory over scenarios (<c>[filePath, scenarioName]</c> rows, as
 /// <see cref="UatScenarioTestBase{TFixture}"/> gives them): the same one case per scenario as
-/// <c>[Theory]</c>, each with its stable address in the <c>UatScenario</c> trait
-/// (<see cref="UatScenarioAddress"/>), so one scenario can be run by filter (R1 of the IDE plan).
+/// <c>[Theory]</c>, each with its stable address in the <c>BddScenario</c> trait
+/// (<see cref="BddScenarioAddress"/>), so one scenario can be run by filter (R1 of the IDE plan).
 /// </summary>
 [XunitTestCaseDiscoverer("Brinell.Uat.UatScenarioTheoryDiscoverer", "Brinell.Uat")]
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
@@ -31,7 +31,7 @@ public sealed class UatScenarioTheoryDiscoverer(IMessageSink diagnosticMessageSi
 }
 
 /// <summary>
-/// One scenario's case: an <see cref="XunitTestCase"/> whose <c>UatScenario</c> trait is its
+/// One scenario's case: an <see cref="XunitTestCase"/> whose <c>BddScenario</c> trait is its
 /// address, and whose source is the scenario's line in its feature file when that file is the
 /// project's own.
 /// </summary>
@@ -73,7 +73,7 @@ public sealed class UatScenarioTestCase : XunitTestCase
         // Computed again from the row after deserializing, so it needs no serialization of its own.
         if (Scenario(TestMethodArguments) is var (file, name) && name.Length > 0)
         {
-            Traits[UatScenarioAddress.Trait] = [UatScenarioAddress.Of(UatScenarioSourceFile.RelativeToConfig(file), name)];
+            Traits[BddScenarioAddress.Trait] = [BddScenarioAddress.Of(UatScenarioSourceFile.RelativeToConfig(file), name)];
         }
     }
 
@@ -86,12 +86,12 @@ public sealed class UatScenarioTestCase : XunitTestCase
 internal static class UatScenarioSourceFile
 {
     public static string RelativeToConfig(string file)
-        => Path.GetRelativePath(Path.GetDirectoryName(UatScenarioSource.GetConfigFilePath())!, Path.GetFullPath(file)).Replace('\\', '/');
+        => Path.GetRelativePath(Path.GetDirectoryName(BddScenarioSource.GetConfigFilePath())!, Path.GetFullPath(file)).Replace('\\', '/');
 
     public static ISourceInformation? Of(string file, string scenarioName)
     {
         if (ProjectCopy(file) is not { } source ||
-            UatMarkdownParser.ParseFile(source).Document?.Scenarios.FirstOrDefault(scenario => scenario.Name == scenarioName) is not { } scenario)
+            BddMarkdownParser.ParseFile(source).Document?.Scenarios.FirstOrDefault(scenario => scenario.Name == scenarioName) is not { } scenario)
         {
             return null;
         }
@@ -103,7 +103,7 @@ internal static class UatScenarioSourceFile
     // project links from elsewhere has no copy there, and keeps the C# method as its source.
     private static string? ProjectCopy(string file)
     {
-        var output = Path.GetDirectoryName(UatScenarioSource.GetConfigFilePath())!;
+        var output = Path.GetDirectoryName(BddScenarioSource.GetConfigFilePath())!;
         var relative = Path.GetRelativePath(output, Path.GetFullPath(file));
         for (var folder = new DirectoryInfo(output).Parent; folder is not null; folder = folder.Parent)
         {

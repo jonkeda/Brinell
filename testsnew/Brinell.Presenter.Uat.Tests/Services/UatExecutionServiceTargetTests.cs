@@ -70,7 +70,7 @@ public sealed class UatExecutionServiceTargetTests
             while (session.HasNext)
             {
                 var result = await session.RunNextAsync(CancellationToken.None);
-                Assert.Equal(UatStepResultStatus.Passed, result.Status);
+                Assert.Equal(BddStepResultStatus.Passed, result.Status);
             }
 
             Assert.True(session.ToResult().Passed);

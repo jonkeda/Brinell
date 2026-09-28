@@ -38,13 +38,13 @@ public sealed class TodoWebUatScenarioTests : UatScenarioTestBase<TodoWebUatFixt
     public Task Scenario_Passes(string filePath, string scenarioName) => RunUatScenarioAsync(filePath, scenarioName);
 
     /// <inheritdoc />
-    protected override void BeforeFile(UatDocument document)
-        => Fixture.UseTestSet(document.Metadata.TryGetValue(UatMetadataFields.TestData, out var name) && name.Length > 0
+    protected override void BeforeFile(BddDocument document)
+        => Fixture.UseTestSet(document.Metadata.TryGetValue(BddMetadataFields.TestData, out var name) && name.Length > 0
             ? name
             : TodoWebUatFixture.DefaultTestData);
 
     /// <inheritdoc />
-    protected override void BeforeScenario(UatBoundScenario scenario) => Fixture.StartTest();
+    protected override void BeforeScenario(BddBoundScenario scenario) => Fixture.StartTest();
 
     /// <inheritdoc />
     /// <remarks>An earlier scenario may have restarted the app with other launch settings; they are put back here.</remarks>
@@ -56,7 +56,7 @@ public sealed class TodoWebUatScenarioTests : UatScenarioTestBase<TodoWebUatFixt
 
     /// <inheritdoc />
     /// <remarks>Next to the screenshot: what the fake backend received, with its clients and times.</remarks>
-    protected override string? CaptureEvidenceOnFailure(UatBoundScenario scenario)
+    protected override string? CaptureEvidenceOnFailure(BddBoundScenario scenario)
     {
         var screenshot = base.CaptureEvidenceOnFailure(scenario);
         if (!string.IsNullOrEmpty(screenshot))
@@ -75,7 +75,7 @@ public sealed class TodoWebUatScenarioTests : UatScenarioTestBase<TodoWebUatFixt
 }
 
 /// <summary>
-/// Runs scenario cases in <see cref="UatScenarioSource.GetOrderKey"/> order - by test set, then
+/// Runs scenario cases in <see cref="BddScenarioSource.GetOrderKey"/> order - by test set, then
 /// file, then position - so the app restarts once per test set.
 /// </summary>
 public sealed class UatScenarioOrderer : ITestCaseOrderer
@@ -91,7 +91,7 @@ public sealed class UatScenarioOrderer : ITestCaseOrderer
         where TTestCase : ITestCase
         => testCases.OrderBy(
             testCase => testCase.TestMethodArguments is [string file, string scenario, ..]
-                ? UatScenarioSource.GetOrderKey(file, scenario)
+                ? BddScenarioSource.GetOrderKey(file, scenario)
                 : testCase.DisplayName,
             StringComparer.Ordinal);
 }

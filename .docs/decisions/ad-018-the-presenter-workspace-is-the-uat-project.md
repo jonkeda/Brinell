@@ -17,7 +17,7 @@ the session.
   values are not.
 - **Running loads into a collectible context per session**, disposed when the session ends, so
   the Pages assembly can be rebuilt without restarting Presenter. A Build button depends on this.
-- **Presenter writes the config without reformatting it.** `UatConfigWriter` changes only the
+- **Presenter writes the config without reformatting it.** `BddConfigWriter` changes only the
   rows it edits; `Apply(md, noOp)` is byte-identical for every config in the repo. Save stays
   enabled while the config is invalid, and a valid save reloads the workspace keeping tree
   expansion and selection.

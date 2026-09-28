@@ -53,7 +53,7 @@ public sealed class TodoUatFixture : TodoAppFixture
     /// the context the restart closed.
     /// </summary>
     /// <param name="context">The scenario's execution context.</param>
-    public void RescopeAfterRestart(UatExecutionContext context)
+    public void RescopeAfterRestart(BddExecutionContext context)
     {
         _restartScope?.Dispose();
         _restartScope = Composition.CreateScope();
@@ -76,9 +76,9 @@ public sealed class TodoUatFixture : TodoAppFixture
 
     private static string ReadDefaultTestData()
     {
-        var config = UatConfigParser.ParseFile(UatScenarioSource.GetConfigFilePath());
-        return config.Runtime.TryGetValue(UatConfigFields.DefaultTestData, out var name) && name.Length > 0
+        var config = BddConfigParser.ParseFile(BddScenarioSource.GetConfigFilePath());
+        return config.Runtime.TryGetValue(BddConfigFields.DefaultTestData, out var name) && name.Length > 0
             ? name
-            : throw new InvalidOperationException($"uat.config.md has no '{UatConfigFields.DefaultTestData}' in its Runtime table.");
+            : throw new InvalidOperationException($"uat.config.md has no '{BddConfigFields.DefaultTestData}' in its Runtime table.");
     }
 }

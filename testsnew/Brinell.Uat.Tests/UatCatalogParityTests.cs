@@ -30,7 +30,7 @@ public sealed class UatCatalogParityTests
     {
         var fixture = new GadgetFixture();
         var catalog = UatReflectionRuntime.FromRoot(fixture).CreateCommandCatalog();
-        var apps = UatConfigParser.Parse("""
+        var apps = BddConfigParser.Parse("""
             # UAT Config
 
             ## Apps
@@ -39,7 +39,7 @@ public sealed class UatCatalogParityTests
             | --- |
             | Eva |
             """).Apps;
-        var parse = UatMarkdownParser.Parse("""
+        var parse = BddMarkdownParser.Parse("""
             # Feature: Gadget
 
             ## Scenario: A named step with a value
@@ -47,10 +47,10 @@ public sealed class UatCatalogParityTests
             Given Eva is on the Gadget page
             When Eva sets the level of Gadget to "7"
             """);
-        var bind = UatBinder.Bind(parse.Document!, new UatCatalogSet(catalog, apps, suiteHead: null, new Dictionary<string, UatCommandCatalog>(), []));
+        var bind = BddBinder.Bind(parse.Document!, new BddCatalogSet(catalog, apps, suiteHead: null, new Dictionary<string, BddCommandCatalog>(), []));
         Assert.True(bind.Success, string.Join(Environment.NewLine, bind.Diagnostics.Select(x => $"{x.Code} {x.Message}")));
 
-        var runner = new UatScenarioRunner(new UatExecutionContext { SessionHost = new NoServices() });
+        var runner = new BddScenarioRunner(new BddExecutionContext { SessionHost = new NoServices() });
         var result = await runner.RunAsync(Assert.Single(bind.Document!.Scenarios));
 
         Assert.True(result.Passed, FormatResults(result));
@@ -97,7 +97,7 @@ public sealed class UatCatalogParityTests
         var catalog = UatReflectionRuntime.FromRoot(new GadgetFixture()).CreateCommandCatalog();
 
         Assert.Contains(catalog.Patterns, pattern =>
-            pattern.Keyword == UatEffectiveStepKeyword.When &&
+            pattern.Keyword == BddEffectiveStepKeyword.When &&
             pattern.Phrase == "I frobnicate {control}");
     }
 
@@ -110,7 +110,7 @@ public sealed class UatCatalogParityTests
 
         var pattern = Assert.Single(catalog.Patterns, pattern =>
             pattern.Phrase == "I set the level of {control} to {level}");
-        Assert.Equal(UatEffectiveStepKeyword.When, pattern.Keyword);
+        Assert.Equal(BddEffectiveStepKeyword.When, pattern.Keyword);
         Assert.Equal("Builtin.SetLevel", pattern.CommandId);
 
         var result = await RunAsync(catalog, """
@@ -130,7 +130,7 @@ public sealed class UatCatalogParityTests
 
         var pattern = Assert.Single(catalog.Patterns, pattern =>
             pattern.Phrase == "{control} should not be frobnicated");
-        Assert.Equal(UatEffectiveStepKeyword.Then, pattern.Keyword);
+        Assert.Equal(BddEffectiveStepKeyword.Then, pattern.Keyword);
 
         var result = await RunAsync(catalog, """
             Given I am on the Gadget page
@@ -408,7 +408,7 @@ public sealed class UatCatalogParityTests
     public void ThePage_IsFollowedThroughACallablesSteps()
     {
         var catalog = UatReflectionRuntime.FromRoot(new GadgetFixture()).CreateCommandCatalog();
-        var parse = UatMarkdownParser.Parse("""
+        var parse = BddMarkdownParser.Parse("""
             # Feature: Gadget
 
             ## Step: I step outside
@@ -427,14 +427,14 @@ public sealed class UatCatalogParityTests
             """);
         Assert.True(parse.Success, string.Join(Environment.NewLine, parse.Diagnostics.Select(x => $"{x.Code} {x.Message}")));
 
-        var bind = UatBinder.Bind(parse.Document!, catalog);
+        var bind = BddBinder.Bind(parse.Document!, catalog);
 
         Assert.True(bind.Success, string.Join(Environment.NewLine, bind.Diagnostics.Select(x => $"{x.Code} {x.Message}")));
     }
 
-    private static UatDiagnostic BindError(UatCommandCatalog catalog, string steps)
+    private static BddDiagnostic BindError(BddCommandCatalog catalog, string steps)
     {
-        var parse = UatMarkdownParser.Parse($"""
+        var parse = BddMarkdownParser.Parse($"""
             # Feature: Gadget
 
             ## Scenario: Gadget steps
@@ -442,12 +442,12 @@ public sealed class UatCatalogParityTests
             {steps}
             """);
         Assert.True(parse.Success);
-        return Assert.Single(UatBinder.Bind(parse.Document!, catalog).Diagnostics, x => x.Severity == UatDiagnosticSeverity.Error);
+        return Assert.Single(BddBinder.Bind(parse.Document!, catalog).Diagnostics, x => x.Severity == BddDiagnosticSeverity.Error);
     }
 
-    private static async Task<UatScenarioRunResult> RunAsync(UatCommandCatalog catalog, string steps)
+    private static async Task<BddScenarioRunResult> RunAsync(BddCommandCatalog catalog, string steps)
     {
-        var parse = UatMarkdownParser.Parse($"""
+        var parse = BddMarkdownParser.Parse($"""
             # Feature: Gadget
 
             ## Scenario: Gadget steps
@@ -455,19 +455,19 @@ public sealed class UatCatalogParityTests
             {steps}
             """);
         Assert.True(parse.Success);
-        var bind = UatBinder.Bind(parse.Document!, catalog);
+        var bind = BddBinder.Bind(parse.Document!, catalog);
         Assert.True(bind.Success, string.Join(Environment.NewLine, bind.Diagnostics.Select(x => $"{x.Code} {x.Message}")));
-        return await new UatScenarioRunner().RunAsync(Assert.Single(bind.Document!.Scenarios));
+        return await new BddScenarioRunner().RunAsync(Assert.Single(bind.Document!.Scenarios));
     }
 
-    private static string FormatResults(UatScenarioRunResult result)
+    private static string FormatResults(BddScenarioRunResult result)
     {
         return string.Join(
             Environment.NewLine,
             result.Steps.Select(x => $"{x.Status}: {x.Invocation.Step.Text} {x.Message}"));
     }
 
-    private static IEnumerable<UatCommandPattern> ControlVerbs(UatCommandCatalog catalog)
+    private static IEnumerable<BddCommandPattern> ControlVerbs(BddCommandCatalog catalog)
     {
         return catalog.Patterns.Where(pattern =>
             pattern.CommandId.Contains(".Control.", StringComparison.Ordinal));
@@ -586,7 +586,7 @@ public sealed class UatCatalogParityTests
     }
 
     // The gadget's page is a property of the fixture, so a session needs no services of its own.
-    private sealed class NoServices : IUatSessionHost
+    private sealed class NoServices : IBddSessionHost
     {
         public IServiceProvider UseSession(string name) => new ServiceCollection().BuildServiceProvider();
     }

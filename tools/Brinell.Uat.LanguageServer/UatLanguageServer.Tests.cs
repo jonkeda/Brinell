@@ -27,12 +27,12 @@ public sealed partial class UatLanguageServer
                 : null;
             List<FileScenarios> files = [];
             foreach (var path in suite.FeatureFiles.Concat(suite.LinkedFiles)
-                .Where(path => path.EndsWith(UatFileFormat.FeatureExtension, StringComparison.OrdinalIgnoreCase))
+                .Where(path => path.EndsWith(BddFileFormat.FeatureExtension, StringComparison.OrdinalIgnoreCase))
                 .Select(Path.GetFullPath)
                 .Distinct(StringComparer.OrdinalIgnoreCase))
             {
                 var relative = suite.RelativeToConfig(path);
-                var scenarios = UatMarkdownParser.Parse(Context(path).Text, path).Document?.Scenarios ?? [];
+                var scenarios = BddMarkdownParser.Parse(Context(path).Text, path).Document?.Scenarios ?? [];
 
                 // An outline's rows share its heading: one test with each row's address.
                 var tests = scenarios
@@ -40,7 +40,7 @@ public sealed partial class UatLanguageServer
                     .Select(rows => new ScenarioTest(
                         rows.First().OutlineName ?? rows.First().Name,
                         rows.Key,
-                        string.Join('|', rows.Select(row => $"{UatScenarioAddress.Trait}={UatScenarioAddress.Of(relative, row.Name)}"))))
+                        string.Join('|', rows.Select(row => $"{BddScenarioAddress.Trait}={BddScenarioAddress.Of(relative, row.Name)}"))))
                     .ToList();
                 files.Add(new FileScenarios(new Uri(path).AbsoluteUri, relative, tests));
             }

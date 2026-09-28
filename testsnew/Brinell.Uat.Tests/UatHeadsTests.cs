@@ -48,7 +48,7 @@ namespace Brinell.Uat.Tests.HeadCases
         [Fact]
         public void EachApp_KeepsItsOwnCurrentPage()
         {
-            var context = new UatExecutionContext { SessionHost = new HeadsFixture() };
+            var context = new BddExecutionContext { SessionHost = new HeadsFixture() };
 
             context.SwitchApp("Mia");
             context.CurrentPageName = "Edit";
@@ -65,7 +65,7 @@ namespace Brinell.Uat.Tests.HeadCases
         [Fact]
         public void AMixedSuite_RunsOnlyMixedScenarios()
         {
-            var mixed = UatConfigParser.Parse("""
+            var mixed = BddConfigParser.Parse("""
                 # UAT Config
 
                 ## Runtime
@@ -74,7 +74,7 @@ namespace Brinell.Uat.Tests.HeadCases
                 | --- | --- |
                 | Head | mixed |
                 """);
-            var maui = UatConfigParser.Parse("""
+            var maui = BddConfigParser.Parse("""
                 # UAT Config
 
                 ## Runtime
@@ -103,7 +103,7 @@ namespace Brinell.Uat.Tests.HeadCases
         [InlineData("maui", new[] { "@sync" }, false)]
         public void AServiceSuite_RunsOnlyServiceScenarios_AndAServiceScenarioAlsoTaggedForAUiHead_RunsThereToo(string head, string[] tags, bool skipped)
         {
-            var config = UatConfigParser.Parse($"""
+            var config = BddConfigParser.Parse($"""
                 # UAT Config
 
                 ## Runtime
@@ -153,7 +153,7 @@ namespace Brinell.Uat.Tests.HeadCases
                         | --- | --- |
                         | Head | {head} |
                         """);
-                    return UatScenarioSource.GetScenarioTheoryData(baseDirectory: directory).Select(item => (string)item[1]).ToArray();
+                    return BddScenarioSource.GetScenarioTheoryData(baseDirectory: directory).Select(item => (string)item[1]).ToArray();
                 }
 
                 Assert.Equal(["Headless only", "Both tiers"], Listed("service"));
@@ -223,8 +223,8 @@ namespace Brinell.Uat.Tests.HeadCases
     }
 
     /// <summary>A maui head of its own, and a web head that <see cref="CompositionFor"/> brings.</summary>
-    [UatIgnore]
-    public sealed class HeadsFixture : IUatSessionHost
+    [BddIgnore]
+    public sealed class HeadsFixture : IBddSessionHost
     {
         private readonly TestComposition _web;
 
@@ -254,7 +254,7 @@ namespace Brinell.Uat.Tests.HeadCases
 namespace Brinell.Uat.Tests.HeadCases.Maui
 {
     [TestPage("Main")]
-    [UatIgnore]
+    [BddIgnore]
     public sealed class MainPage(HeadsFixture fixture)
     {
         public bool WaitReady(int? timeoutMs = null)
@@ -268,7 +268,7 @@ namespace Brinell.Uat.Tests.HeadCases.Maui
 namespace Brinell.Uat.Tests.HeadCases.Web
 {
     [TestPage("Main")]
-    [UatIgnore]
+    [BddIgnore]
     public sealed class MainPage(HeadsFixture fixture)
     {
         public bool WaitReady(int? timeoutMs = null)

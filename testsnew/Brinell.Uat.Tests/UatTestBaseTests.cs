@@ -66,13 +66,13 @@ public sealed class UatTestBaseTests
                 When I fail the custom action
                 """);
             var fixture = new HarnessFixture();
-            var catalog = new UatCommandCatalog();
+            var catalog = new BddCommandCatalog();
             catalog.Register(
-                UatEffectiveStepKeyword.When,
+                BddEffectiveStepKeyword.When,
                 "I fail the custom action",
                 "Harness.Fail",
                 handler: (_, invocation, _) => Task.FromResult(
-                    UatStepResult.Failed(invocation, "Intentional failure from harness")));
+                    BddStepResult.Failed(invocation, "Intentional failure from harness")));
             var harness = new ScenarioHarness(fixture, configFilePath, catalog);
 
             await harness.RunExpectedFailureFileAsync(
@@ -110,10 +110,10 @@ public sealed class UatTestBaseTests
             var fixture = new HarnessFixture();
             var catalog = CreatePassingCatalog(fixture);
             catalog.Register(
-                UatEffectiveStepKeyword.When,
+                BddEffectiveStepKeyword.When,
                 "I fail the custom action",
                 "Harness.Fail",
-                handler: (_, invocation, _) => Task.FromResult(UatStepResult.Failed(invocation, "Intentional failure from harness")));
+                handler: (_, invocation, _) => Task.FromResult(BddStepResult.Failed(invocation, "Intentional failure from harness")));
             var harness = new ScenarioHarness(fixture, configFilePath, catalog);
 
             await harness.RunExpectedFailureFileAsync(scenarioFilePath, "Intentional failure from harness");
@@ -215,17 +215,17 @@ public sealed class UatTestBaseTests
                 Then the scenario setting should be available
                 """);
             var fixture = new HarnessFixture();
-            var catalog = new UatCommandCatalog();
+            var catalog = new BddCommandCatalog();
             catalog.Register(
-                UatEffectiveStepKeyword.Then,
+                BddEffectiveStepKeyword.Then,
                 "the scenario setting should be available",
                 "Harness.AssertSettings",
                 handler: (context, invocation, _) =>
                 {
                     return Task.FromResult(
                         context.GetSettings().GetRequired<string>("harness.mode") == "scenario"
-                            ? UatStepResult.Passed(invocation)
-                            : UatStepResult.Failed(invocation, "Scenario settings were not loaded."));
+                            ? BddStepResult.Passed(invocation)
+                            : BddStepResult.Failed(invocation, "Scenario settings were not loaded."));
                 });
             var harness = new ScenarioHarness(fixture, configFilePath, catalog);
 
@@ -333,15 +333,15 @@ public sealed class UatTestBaseTests
                 """);
             File.WriteAllText(Path.Combine(scenarios, "e.feature.md"), "not a uat file");
 
-            var cases = UatScenarioSource.GetScenarioTheoryData(baseDirectory: directory)
+            var cases = BddScenarioSource.GetScenarioTheoryData(baseDirectory: directory)
                 .Select(data => $"{Path.GetFileName((string)data[0])}:{data[1]}")
                 .ToList();
 
             Assert.Equal(["c.feature.md:C1", "d.feature.md:Row [1]", "d.feature.md:Row [2]", "e.feature.md:", "b.feature.md:B1", "a.feature.md:A1", "a.feature.md:A2"], cases);
             Assert.True(
                 string.CompareOrdinal(
-                    UatScenarioSource.GetOrderKey(Path.Combine(scenarios, "b.feature.md"), "B1"),
-                    UatScenarioSource.GetOrderKey(Path.Combine(scenarios, "a.feature.md"), "A1")) < 0);
+                    BddScenarioSource.GetOrderKey(Path.Combine(scenarios, "b.feature.md"), "B1"),
+                    BddScenarioSource.GetOrderKey(Path.Combine(scenarios, "a.feature.md"), "A1")) < 0);
         }
         finally
         {
@@ -355,28 +355,28 @@ public sealed class UatTestBaseTests
         return $"# Feature: {title}\n\n{metadata}" + string.Concat(scenarios.Select(name => $"## Scenario: {name}\n\nWhen I run the custom action\n\n"));
     }
 
-    private static UatCommandCatalog CreatePassingCatalog(HarnessFixture fixture)
+    private static BddCommandCatalog CreatePassingCatalog(HarnessFixture fixture)
     {
-        var catalog = new UatCommandCatalog();
+        var catalog = new BddCommandCatalog();
         catalog.Register(
-            UatEffectiveStepKeyword.When,
+            BddEffectiveStepKeyword.When,
             "I run the custom action",
             "Harness.Run",
             handler: (_, invocation, _) =>
             {
                 fixture.ActionCount++;
-                return Task.FromResult(UatStepResult.Passed(invocation));
+                return Task.FromResult(BddStepResult.Passed(invocation));
             });
         catalog.Register(
-            UatEffectiveStepKeyword.Then,
+            BddEffectiveStepKeyword.Then,
             "the custom action should have run",
             "Harness.AssertRun",
             handler: (_, invocation, _) =>
             {
                 return Task.FromResult(
                     fixture.ActionCount > 0
-                        ? UatStepResult.Passed(invocation)
-                        : UatStepResult.Failed(invocation, "Action did not run."));
+                        ? BddStepResult.Passed(invocation)
+                        : BddStepResult.Failed(invocation, "Action did not run."));
             });
 
         return catalog;
@@ -433,7 +433,7 @@ public sealed class UatTestBaseTests
     private sealed class ScenarioHarness(
         HarnessFixture fixture,
         string configFilePath,
-        UatCommandCatalog catalog)
+        BddCommandCatalog catalog)
         : UatScenarioTestBase<HarnessFixture>(fixture)
     {
         public string? BeforeScenarioName { get; private set; }
@@ -449,14 +449,14 @@ public sealed class UatTestBaseTests
 
         public List<string> FilesEntered { get; } = [];
 
-        protected override void BeforeFile(UatDocument document) => FilesEntered.Add(document.Title);
+        protected override void BeforeFile(BddDocument document) => FilesEntered.Add(document.Title);
 
         public Task RunExpectedFailureFileAsync(string filePath, params string[] expectedDiagnostics) =>
             RunExpectedFailureUatFileAsync(filePath, expectedDiagnostics);
 
-        protected override UatCommandCatalog CreateCommandCatalog(UatRuntime runtime) => catalog;
+        protected override BddCommandCatalog CreateCommandCatalog(UatRuntime runtime) => catalog;
 
-        protected override void BeforeScenario(UatBoundScenario scenario)
+        protected override void BeforeScenario(BddBoundScenario scenario)
         {
             BeforeScenarioName = scenario.Source.Name;
         }
@@ -482,7 +482,7 @@ public sealed class UatTestBaseTests
 
         public void AssertConfigParses() => AssertUatConfigParses();
 
-        protected override void AssertConfig(UatConfig config)
+        protected override void AssertConfig(BddConfig config)
         {
             Assert.Equal("TEST", config.Runtime["Target"]);
             ConfigAsserted = true;

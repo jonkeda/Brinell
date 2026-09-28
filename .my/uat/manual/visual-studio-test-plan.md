@@ -92,7 +92,7 @@ These start the Todo app. Leave the mouse and keyboard alone while a run goes.
 
 | ID | Do | You should see | Result |
 | --- | --- | --- | --- |
-| R-1 | Open TOD.01. On the heading of `TOD.01.3` in the preview, click **▶ Run**. | The solution builds first. Then the **Brinell UAT** Output pane shows a `dotnet test ... --filter "UatScenario=..."` command and its output, the Todo app opens, and the scenario runs. The heading shows "running…" meanwhile. | ☐ |
+| R-1 | Open TOD.01. On the heading of `TOD.01.3` in the preview, click **▶ Run**. | The solution builds first. Then the **Brinell UAT** Output pane shows a `dotnet test ... --filter "BddScenario=..."` command and its output, the Todo app opens, and the scenario runs. The heading shows "running…" meanwhile. | ☐ |
 | R-2 | Wait for the run to end. | The preview shows each step's status (a pass mark per step), and the scenario's result and duration. | ☐ |
 | R-3 | Click **▶ Run file** on the title. | Every scenario of TOD.01 runs, and the preview shows all their results. | ☐ |
 | R-4 | While a run goes, click **Run** again on another scenario. | The second run is refused, with a message (in the status bar and the Output pane). | ☐ |
@@ -110,7 +110,7 @@ These start the Todo app. Leave the mouse and keyboard alone while a run goes.
 | B-3 | Put the caret on a blank line and press **Ctrl+K, F9**. | No dot. The status bar says the line is not a step. | ☐ |
 | B-4 | Right-click the editor on a step line. | The menu has **Toggle UAT Step Breakpoint**, and it works. | ☐ |
 | B-5 | Add two empty lines above line 54. | The dot moves down with its step. | ☐ |
-| B-6 | With the dot on `When I tap Sync`, click **● Debug** on TOD.01.3's heading. | The run starts, Visual Studio's debugger attaches (the title bar shows it is debugging), and the run stops **before** that step. You are in `UatStepExecutionSession.RunNextAsync`. | ☐ |
+| B-6 | With the dot on `When I tap Sync`, click **● Debug** on TOD.01.3's heading. | The run starts, Visual Studio's debugger attaches (the title bar shows it is debugging), and the run stops **before** that step. You are in `BddStepExecutionSession.RunNextAsync`. | ☐ |
 | B-7 | At that stop, look in **Locals**. | A local `stepBreak` shows the step's text, its arguments, the app, the page (Todo List) and the call chain. | ☐ |
 | B-8 | Press **F11** until you are in the step's code. | You reach the control verb's code for tapping (in Brinell). | ☐ |
 | B-9 | Note whether the debugger stopped anywhere **before** your breakpoint, in the test host's own code (S4). | It shouldn't have. If it did, press F5, and note it: `VSTEST_DEBUG_NOBP` did not work here. | ☐ |

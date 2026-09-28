@@ -14,7 +14,7 @@ namespace Brinell.Uat.VisualStudio;
 /// <summary>
 /// Runs a scenario, or a file, from the preview (R3) and keeps the UI test rules (R4): build the
 /// solution through Visual Studio first, so a stale app never runs; then
-/// <c>dotnet test &lt;project&gt; --no-build --filter UatScenario=&lt;address&gt;</c>, its output in the
+/// <c>dotnet test &lt;project&gt; --no-build --filter BddScenario=&lt;address&gt;</c>, its output in the
 /// Output pane. One run at a time; a build started during a run is cancelled; Cancel stops the test
 /// process and the app it started. Debug runs the same way with the testhost waiting for a debugger,
 /// and attaches Visual Studio's to it, so step breakpoints (R2) stop the run.

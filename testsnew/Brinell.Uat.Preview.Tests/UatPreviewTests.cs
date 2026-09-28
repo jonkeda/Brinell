@@ -10,8 +10,8 @@ public sealed class UatPreviewTests
     /// <summary>Every feature and step file of the Todo suites, relative to <c>samples/Todo/tests</c>.</summary>
     public static IEnumerable<object[]> TodoFiles => Directory
         .EnumerateFiles(Path.Combine(Todo, "tests"), "*.md", SearchOption.AllDirectories)
-        .Where(file => file.EndsWith(UatFileFormat.FeatureExtension, StringComparison.OrdinalIgnoreCase) ||
-                       file.EndsWith(UatFileFormat.StepsExtension, StringComparison.OrdinalIgnoreCase))
+        .Where(file => file.EndsWith(BddFileFormat.FeatureExtension, StringComparison.OrdinalIgnoreCase) ||
+                       file.EndsWith(BddFileFormat.StepsExtension, StringComparison.OrdinalIgnoreCase))
         .Select(file => Path.GetRelativePath(Path.Combine(Todo, "tests"), file))
         .Where(file => !file.Split(Path.DirectorySeparatorChar).Any(part => part is "bin" or "obj"))
         .Order(StringComparer.Ordinal)

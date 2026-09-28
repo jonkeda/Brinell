@@ -22,7 +22,7 @@ public sealed class PresenterUatScenarioTests(PresenterFixture fixture)
         return RunUatFileAsync(filePath);
     }
 
-    protected override void BeforeScenario(UatBoundScenario scenario)
+    protected override void BeforeScenario(BddBoundScenario scenario)
     {
         ResetPresenter();
     }

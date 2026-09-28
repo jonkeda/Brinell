@@ -195,7 +195,7 @@ public sealed partial class UatLanguageServer : IDisposable
             suite = suites.FirstOrDefault(candidate => string.Equals(candidate.Name, request.Suite, StringComparison.OrdinalIgnoreCase)) ?? suites.FirstOrDefault();
         }
 
-        if (suite is null || !path.EndsWith(UatFileFormat.FeatureExtension, StringComparison.OrdinalIgnoreCase))
+        if (suite is null || !path.EndsWith(BddFileFormat.FeatureExtension, StringComparison.OrdinalIgnoreCase))
         {
             return new RunTargetResult(false, "No suite holds or links this feature file.", null, null, [], null);
         }
@@ -213,20 +213,20 @@ public sealed partial class UatLanguageServer : IDisposable
         var file = suite.RelativeToConfig(path);
         if (request.Line is not { } line)
         {
-            return new RunTargetResult(true, null, project, $"{UatScenarioAddress.Trait}~{file}#", [], suite.Name);
+            return new RunTargetResult(true, null, project, $"{BddScenarioAddress.Trait}~{file}#", [], suite.Name);
         }
 
         // The scenarios under the heading at that line: one, or an outline's rows.
-        var scenarios = UatMarkdownParser.Parse(text, path).Document?.Scenarios.Where(scenario => scenario.Source.LineNumber == line).Select(scenario => scenario.Name).ToList() ?? [];
+        var scenarios = BddMarkdownParser.Parse(text, path).Document?.Scenarios.Where(scenario => scenario.Source.LineNumber == line).Select(scenario => scenario.Name).ToList() ?? [];
         return scenarios.Count == 0
             ? new RunTargetResult(false, $"There is no scenario heading at line {line}.", null, null, [], suite.Name)
-            : new RunTargetResult(true, null, project, string.Join('|', scenarios.Select(name => $"{UatScenarioAddress.Trait}={UatScenarioAddress.Of(file, name)}")), scenarios, suite.Name);
+            : new RunTargetResult(true, null, project, string.Join('|', scenarios.Select(name => $"{BddScenarioAddress.Trait}={BddScenarioAddress.Of(file, name)}")), scenarios, suite.Name);
     }
 
     // A suite runs by address when its test class uses [UatScenarioTheory]; before it is loaded, the build that comes first tells.
     private static Brinell.Uat.Preview.UatPreviewRunState? RunState(UatSuite? suite, string path)
     {
-        if (suite is null || !path.EndsWith(UatFileFormat.FeatureExtension, StringComparison.OrdinalIgnoreCase))
+        if (suite is null || !path.EndsWith(BddFileFormat.FeatureExtension, StringComparison.OrdinalIgnoreCase))
         {
             return null;
         }
@@ -276,7 +276,7 @@ public sealed partial class UatLanguageServer : IDisposable
         List<string> open;
         lock (_gate)
         {
-            open = _documents.Keys.Where(path => path.EndsWith(UatFileFormat.FeatureExtension, StringComparison.OrdinalIgnoreCase)).ToList();
+            open = _documents.Keys.Where(path => path.EndsWith(BddFileFormat.FeatureExtension, StringComparison.OrdinalIgnoreCase)).ToList();
         }
 
         foreach (var path in open)

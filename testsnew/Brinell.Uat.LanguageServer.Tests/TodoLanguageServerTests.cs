@@ -56,9 +56,9 @@ public sealed class TodoLanguageServerTests : IAsyncLifetime
         Assert.All(gate, expected => Assert.Contains(published.Diagnostics, d => d.Code == "UATB010" && d.Message == expected.Message && d.Range.Start.Line == expected.Location.LineNumber - 1));
     }
 
-    private static IReadOnlyList<UatDiagnostic> GateDiagnostics(string path)
+    private static IReadOnlyList<BddDiagnostic> GateDiagnostics(string path)
     {
-        using var suite = Workspace.UatSuite.Open(Path.Combine(Project, UatFileFormat.UiConfigFileName));
+        using var suite = Workspace.UatSuite.Open(Path.Combine(Project, BddFileFormat.UiConfigFileName));
         var catalogs = suite.TryGetCatalogs(out var reason) ?? throw new InvalidOperationException($"The Todo MAUI suite cannot be bound: {reason} Build samples/Todo first.");
         return UatScenarioCheck.CheckFile(path, catalogs);
     }

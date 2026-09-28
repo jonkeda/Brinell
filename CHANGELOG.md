@@ -22,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The VS Code extension (`tools/Brinell.Uat.VsCode`, TypeScript):
   - an LSP client for feature, step and config files on the same language server;
   - the same Scenario Preview in a webview, its screenshots through the webview's own URIs;
-  - Test Explorer on the scenarios' addresses: build, then `dotnet test --filter UatScenario=...`,
+  - Test Explorer on the scenarios' addresses: build, then `dotnet test --filter BddScenario=...`,
     results from the reports, and Debug attaching the C# debugger to the testhost;
   - step breakpoints in the file Visual Studio uses, with gutter dots.
   The server gains `brinell/scenarios` (each suite's tests and filters) and `brinell/lastRuns`
@@ -102,18 +102,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   shows in the preview's gutter and in the editor's glyph margin. Breakpoints move with their lines
   as the file is edited.
 - Run from the preview (Visual Studio): **Run** on each scenario heading and **Run file** on the title
-  build the solution, then run `dotnet test --no-build --filter UatScenario=<address>` with the output
+  build the solution, then run `dotnet test --no-build --filter BddScenario=<address>` with the output
   in the Output pane. One run at a time; a build started during a run is cancelled; **Cancel run**
   stops the test process tree. `brinell/runTarget` gives the project and filter; a suite whose test
   class keeps `[Theory]` shows the buttons disabled, saying why (`UatSuite.HasScenarioTheory`).
-- Step breakpoints (`Brinell.Bdd`): while a debugger is attached, `UatStepExecutionSession.RunNextAsync`
+- Step breakpoints (`Brinell.Bdd`): while a debugger is attached, `BddStepExecutionSession.RunNextAsync`
   stops before a step whose line `%LOCALAPPDATA%\Brinell\uat-breakpoints.json` lists, with a
-  `UatStepBreak` local (text, arguments, app, page, call chain); a line in a `.steps.md` stops at each
+  `BddStepBreak` local (text, arguments, app, page, call chain); a line in a `.steps.md` stops at each
   call, a call's line once before its first step, and `breakOnFailure` after a failed step. The
-  check is behind `IUatBreakHook` (`UatExecutionContext.Breaks`); without a debugger nothing is read.
-- `[UatScenarioTheory]` (`Brinell.Uat`): `[Theory]` with a stable address per scenario, the `UatScenario`
-  trait `<file relative to the config>#<slug>` (`UatScenarioAddress` in `Brinell.Bdd`), so
-  `dotnet test --filter "UatScenario=..."` runs one scenario. A case whose feature file is the
+  check is behind `IBddBreakHook` (`BddExecutionContext.Breaks`); without a debugger nothing is read.
+- `[UatScenarioTheory]` (`Brinell.Uat`): `[Theory]` with a stable address per scenario, the `BddScenario`
+  trait `<file relative to the config>#<slug>` (`BddScenarioAddress` in `Brinell.Bdd`), so
+  `dotnet test --filter "BddScenario=..."` runs one scenario. A case whose feature file is the
   project's own has the scenario's line as its source. The Todo MAUI, web, mixed and service suites
   use it; their cases and counts are unchanged.
 - `Brinell.Uat.Workspace` (tools/): loads a suite one way for every tool. It finds the suites (projects
@@ -131,9 +131,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   step says what it binds to and on which page, the page shows where it changes, a step that binds
   to nothing shows the gate's diagnostic word for word, a callable call unfolds into its body with
   the values filled in, and each Scenario Outline row can be opened. `Brinell.Bdd` gains
-  `UatScenarioFiles.Load(path, text)`, `ParsePhrases(path, text)`, `CheckPhrases` and
-  `UatLoadedScenarioFile.Check` (the gate's per-file check, which `UatScenarioCheck` now calls), and
-  `UatBindResult.Scenarios`: every scenario as far as it bound, errors or not.
+  `BddScenarioFiles.Load(path, text)`, `ParsePhrases(path, text)`, `CheckPhrases` and
+  `BddLoadedScenarioFile.Check` (the gate's per-file check, which `UatScenarioCheck` now calls), and
+  `BddBindResult.Scenarios`: every scenario as far as it bound, errors or not.
 - `Brinell.Uat.LanguageServer` (tools/): the one .NET process the IDEs talk to, JSON-RPC over stdio with
   LSP framing (StreamJsonRpc). It serves `initialize` (the suites under the solution), full-text
   document sync, `brinell/preview` (the file rendered, bound in its suite or parsed only with the
@@ -161,7 +161,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   file per run), `[BddBeforeScenario(tags)]`, `[BddAfterScenario(tags)]` and `[BddAfterStep(tags)]`,
   after the test base's own overrides and in class and method order.
 - `BddSets.AssertSet(expected, actual, ordered)`: one diff for two lists (missing, extra, the closest
-  item's different cells). The server-order step uses it. `UatStepDefinitionRuntime.FromTypes` and
+  item's different cells). The server-order step uses it. `BddStepDefinitionRuntime.FromTypes` and
   `CreateCommandCatalog` build a catalog of step-definition classes without pages.
 - Todo sample: UI tests and UAT scenarios for users (TOD.11): `UserListPage`, `UserEditPage` and
   `UserList` in the `Users` namespace, `UsersJourneyTests` (8), `TOD.11-manage-users.uat.md`
@@ -208,13 +208,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Broken callables (`UATC001`-`UATC008`) fail only their calls. The trace indents a call's steps,
   `brinell-data validate` checks phrase files and `phrases` lists callables with their types.
 - Typed UAT arguments (AD-016): a phrase's `{name}` takes its type from the method parameter, and
-  every step value, Examples cell and table cell is read by `UatValues` in one invariant format -
+  every step value, Examples cell and table cell is read by `BddValues` in one invariant format -
   dates `12-May-2026` (or `today`, `+2d`), numbers `1,250.75`, enums by name with spaces, lists
   `"A", "B" and "C"`. Values are checked when a step binds (`UATA001`-`UATA007`), before any app
   starts. Record and list parameters take the step's table (`Field | Value` for one record), a
   string parameter the phrase does not name takes a `"""` doc string (JSON for a record),
-  `UatUserRole` is a user from the `Apps` table, and `[UatArgumentType]` / `IUatArgumentConverter<T>`
-  add app types. `IUatClock` gives relative dates the fixture's now.
+  `BddUserRole` is a user from the `Apps` table, and `[BddArgumentType]` / `IBddArgumentConverter<T>`
+  add app types. `IBddClock` gives relative dates the fixture's now.
 - Phrases from method names: an empty `[UatGiven]`/`[UatWhen]`/`[UatThen]` makes the method name the
   phrase, parameters in capitals (`I_open_the_todo_TITLE(string title)`).
 - Broken phrases (`UATA010`-`UATA013`) no longer stop the catalog: the phrase is marked and only a
@@ -232,7 +232,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   that picks no app) and `UATB007` (an unknown `{user}`, or one in a suite without an `Apps`
   table).
 - UAT mixed suites: `Head | mixed` runs only `@mixed` scenarios, and each app binds against its
-  own head's pages (`IUatSessionHost.CompositionFor`, `UatCatalogSet`, AD-014). Each app keeps its
+  own head's pages (`IBddSessionHost.CompositionFor`, `BddCatalogSet`, AD-014). Each app keeps its
   own current page, and the result JSON records the app of every step.
 - `TestAppDefinition`, `ITestApp` and `TestAppSet` (`Brinell.Core.Testing`): the apps of a
   fixture, started on first use, reset between tests, found by name or user, and captured
@@ -261,7 +261,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   start one.
 - UAT heads: `Head` in `uat.config.md` and the `@maui` / `@web` tags. One scenario file runs on
   every head it is tagged for and is skipped on the others.
-- UAT with several apps in one scenario: an `Apps` table in `uat.config.md`, `IUatSessionHost`
+- UAT with several apps in one scenario: an `Apps` table in `uat.config.md`, `IBddSessionHost`
   on the fixture, and the built-in step `{app} uses the app`. A failure names the app.
 - The Todo sample's UAT on the web head (`Brinell.Samples.Todo.Web.Uat`): the MAUI suite's
   scenario files, run through the web page objects, and a two-device scenario (Alice and Bob on
@@ -359,13 +359,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - The feature-file engine is its own package, `Brinell.Bdd`: parser and models, values, argument
   types, tables, the catalog and binder, callable steps, namespaces, config, execution and runner,
-  the step-definition runtime, `[BddStepDefinitions]`, `BddStepDefinitionsBase`, `[UatIgnore]`,
-  `IUatClock` and `IUatSessionHost`, in the namespace `Brinell.Bdd`. `Brinell.Uat` depends on it and
+  the step-definition runtime, `[BddStepDefinitions]`, `BddStepDefinitionsBase`, `[BddIgnore]`,
+  `IBddClock` and `IBddSessionHost`, in the namespace `Brinell.Bdd`. `Brinell.Uat` depends on it and
   keeps pages, controls, page scope (behind `IStepScopeModel` / `IStepScope` on the catalog's
   `Scope`), apps, name inference and the UAT test base. A project that uses `Brinell.Uat` types adds
   `using Brinell.Bdd;` (or `<Using Include="Brinell.Bdd" />`). Type names are unchanged.
 - The folder of feature and step files is `Features/`, not `Scenarios/`: the default of
-  `UatScenarioSource`, `UatScenarioTestBase`, `UatSpecFormatTestBase` and the tools. The files stay in
+  `BddScenarioSource`, `UatScenarioTestBase`, `UatSpecFormatTestBase` and the tools. The files stay in
   the projects that own them. `brinell-data validate` reports an old `Scenarios/` folder beside the
   config as `UAT029`, and `--fix` renames it.
 - Feature and step files use the BDD words (D5 of the Bdd plan), with no period where both are
@@ -380,13 +380,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `[UatNamespace]` is `[BddNamespace]`, all still in `Brinell.Core.Testing`. `[UatNavigatesTo]` keeps
   its name. The guide `uat-phrases-and-flows.md` is now `uat-step-definitions.md`, beside a new
   `bdd-glossary.md`.
-- `UatTableBinding` reads cells with `UatValues`: table dates are written `12-May-2026`, not
+- `BddTableBinding` reads cells with `BddValues`: table dates are written `12-May-2026`, not
   `2026-05-12`, and failure tables print values that way. A phrase method with a `CommandId` is a
   broken phrase instead of a catalog exception; `UatDiscovery` reports it as a warning.
 - `UatPhraseAttribute` is abstract, lives in `Brinell.Core.Testing`, has a non-null `Keyword`
   and carries `CommandId`, `Literal` and `HasLiteral`. A phrase method that sets any of those
   three fails discovery with an error naming the method (`UATD004` in `UatDiscovery`).
-  `UatCommandBinding.Keyword` and `UatPhraseMethodPhrase.Keyword` are non-null.
+  `UatCommandBinding.Keyword` and `BddPhraseMethodPhrase.Keyword` are non-null.
 - **Breaking:** Html's `ControlBase` `Run*` helpers have MAUI's names and signatures (R8):
   `RunWaitWithElement` and `RunWaitWithOptionalElement` take `expected` first, and
   `RunGetWithOptionalElement` is new. `RunWithElement` and `RunAssert(Action<IHtmlElement>)` are

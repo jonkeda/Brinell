@@ -17,8 +17,8 @@ public sealed class UatPreviewTodoTests : IClassFixture<UatPreviewTodoTests.Todo
     /// <summary>The MAUI suite's own feature and step files, relative to its project.</summary>
     public static IEnumerable<object[]> Files => Directory
         .EnumerateFiles(TodoSuite.Project, "*.md", SearchOption.AllDirectories)
-        .Where(file => file.EndsWith(UatFileFormat.FeatureExtension, StringComparison.OrdinalIgnoreCase) ||
-                       file.EndsWith(UatFileFormat.StepsExtension, StringComparison.OrdinalIgnoreCase))
+        .Where(file => file.EndsWith(BddFileFormat.FeatureExtension, StringComparison.OrdinalIgnoreCase) ||
+                       file.EndsWith(BddFileFormat.StepsExtension, StringComparison.OrdinalIgnoreCase))
         .Select(file => Path.GetRelativePath(TodoSuite.Project, file))
         .Where(file => !file.Split(Path.DirectorySeparatorChar).Any(part => part is "bin" or "obj"))
         .Order(StringComparer.Ordinal)
@@ -52,9 +52,9 @@ public sealed class UatPreviewTodoTests : IClassFixture<UatPreviewTodoTests.Todo
     {
         public static readonly string Project = Path.Combine(FindTodo(), "tests", "Brinell.Samples.Todo.Uat");
 
-        private readonly UatSuite _suite = UatSuite.Open(Path.Combine(Project, UatFileFormat.UiConfigFileName));
+        private readonly UatSuite _suite = UatSuite.Open(Path.Combine(Project, BddFileFormat.UiConfigFileName));
 
-        public UatCatalogSet Catalogs => _suite.TryGetCatalogs(out var reason)
+        public BddCatalogSet Catalogs => _suite.TryGetCatalogs(out var reason)
             ?? throw new InvalidOperationException($"The Todo MAUI suite cannot be bound: {reason} Build samples/Todo first.");
 
         public void Dispose() => _suite.Dispose();

@@ -89,7 +89,7 @@ public sealed record UserDto(
 | **Workload** | 0-100 % | default 0, step 5 | `Slider` with the value in a label | number |
 | **Notes** | multi-line text | optional, at most 500 characters | `Editor` | text |
 
-Two new value kinds need `UatValues` later: **time** (`08:30`, 24-hour, invariant) and
+Two new value kinds need `BddValues` later: **time** (`08:30`, 24-hour, invariant) and
 **on/off** for a `Switch` (`on`/`off`, or the existing bool), added when the tests are written
 (Q3). Department was considered and dropped (Q2): `Role` is the one fixed list.
 
@@ -240,7 +240,7 @@ Answered 2026-09-27.
 | --- | --- | --- |
 | Q1 | Which tests wait? | Only the tests that drive the UI: the H-tier UI tests and the UAT scenarios. Unit, integration and contract tests come with the code. |
 | Q2 | `Role` and `Department`, two fixed lists? | Department is dropped. `Role` is the one fixed list in a `Picker`. |
-| Q3 | Time and on/off as `UatValues` kinds | Yes, added when the users tests are written, with AD-016 amended: `08:30` (24-hour, invariant) and `on`/`off`. |
+| Q3 | Time and on/off as `BddValues` kinds | Yes, added when the users tests are written, with AD-016 amended: `08:30` (24-hour, invariant) and `on`/`off`. |
 | Q4 | Is an `OnLeave` or expired user editable? | Yes. Every user is editable; the state only affects "available". |
 | Q5 | The web head | Later, with the tests. The Razor pages use the same `data-testid` values as the AutomationIds, so the scenarios will serve both heads (AD-014). |
 | Q6 | Any other field types? | No. Left out: a colour (no MAUI colour picker), an image or avatar (file picking is OS UI outside the app), a multi-select list (assignment will bring a collection of CheckBoxes, section 8), a date and time together (no MAUI control; `UpdatedAt` shows as a read-only label, which covers reading one). |

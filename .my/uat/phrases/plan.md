@@ -35,8 +35,8 @@ phrase a **scope**, and let scenarios reach other teams' phrases through **names
 | Control verbs (`[UatGiven]`/`[UatWhen]`/`[UatThen]` on a control or control interface) resolve `{control}` against the **current page**. | Behaviour placed on a control is page-scoped already. |
 | A control verb has `{control}`, optionally `{user}` (AD-015), and at most **one** value (`UatCatalogBuilder`). | "the todo {title} should show status {status}" can't be a control verb yet. |
 | `ContentDialog` and `StateContainer` carry no verbs. | The dialog and list-state phrases sit in a phrase class only because nothing lower owns them. |
-| Binding happens before running (`UatBinder.Bind` binds the whole document). | Any scope that depends on "the current page" must be known **statically**. |
-| Callable phrases are built (AD-017): file-local and global `Scenarios/*.phrases.md`, expanded inside the binder's walk, with `UatCallFrame` marking steps that came from a call. | Callables slot into scopes with no rework (sections 5-6). |
+| Binding happens before running (`BddBinder.Bind` binds the whole document). | Any scope that depends on "the current page" must be known **statically**. |
+| Callable phrases are built (AD-017): file-local and global `Scenarios/*.phrases.md`, expanded inside the binder's walk, with `BddCallFrame` marking steps that came from a call. | Callables slot into scopes with no rework (sections 5-6). |
 | Page names are global; a duplicate is a diagnostic. | "Detail" and "Edit" will collide in a large app, like phrases. |
 
 Todo's 24 phrases, by what they touch:
@@ -220,7 +220,7 @@ to different page phrases at two call sites (as today).
 What already holds, so callables written now keep working:
 
 - A callable that names a page ends with one (`UATC006`), and a per-row body that names a page ends
-  where it started. Both read `UatCommandPattern.NamesPage`, with no tracking.
+  where it started. Both read `BddCommandPattern.NamesPage`, with no tracking.
 - The start page is not declared. A callable that must start on a page begins with
   `Given I am on ...`.
 
@@ -279,11 +279,11 @@ real consumer.
 ### Phase 5: static page tracking
 
 - The binder walks the flat invocation list and keeps the page after each step, using the D7 table.
-  `UatCallFrame` already says which steps came from a call.
+  `BddCallFrame` already says which steps came from a call.
 - Control verbs and page phrases bind only against the current page. When the page is unknown, a
   page-scoped step gets a bind error that names the step that lost it.
 - `[UatNavigatesTo]` on buttons where it's free.
-- Built: `UatPageScope` and the page walk in `UatBinder`; `Navigates` on `UatPhraseAttribute`;
+- Built: `UatPageScope` and the page walk in `BddBinder`; `Navigates` on `UatPhraseAttribute`;
   `UATB008` (no page, or lost at a named step) and `UATB009` (does not fit the page, or no such
   page). A missing control is now a bind error, so the MAUI expected-failure file uses
   `RunExpectedBindFailureUatFile`. Todo: `[UatNavigatesTo]` on Add, Edit and Back on both heads.
@@ -292,12 +292,12 @@ real consumer.
 ### Phase 6: folder namespaces
 
 - The callable loader's "only the root" rule becomes "the root and the file's folder chain".
-  `UatCallableSet` gets a scope per callable. Matching and binding don't change.
+  `BddCallableSet` gets a scope per callable. Matching and binding don't change.
 - `[UatPhraseClass(Namespace = ...)]` and `[assembly: UatNamespace]`; a C# class with a namespace is
   visible to scenarios in that folder and its descendants.
-- Built: `UatNamespaces` (visibility, a file's namespace) and `UatScope` in the binder's walk; a
+- Built: `BddNamespaces` (visibility, a file's namespace) and `BddScope` in the binder's walk; a
   callable carries its `Namespace` and, for a scenario file's own, `LocalTo`; a pattern carries
-  its `Namespace`. `UatScenarioFiles.PhraseFilesFor` is the folder chain (root first).
+  its `Namespace`. `BddScenarioFiles.PhraseFilesFor` is the folder chain (root first).
   `UATB010` for a step that matches only phrases the file does not see, naming their folder.
   `brinell-data` checks phrase files in subfolders and lists namespaces (`in Invoicing`).
 - Changed from the plan: `Load` reads **every** phrase file under the root, not only the chain,
@@ -315,13 +315,13 @@ real consumer.
 - An AD (AD-019, the next free number) records D5-D10: scopes, no shadowing, folder = namespace,
   explicit non-transitive `Using`, lexical callables. The guide `uat-step-definitions.md` gets a
   "Where phrases live" section.
-- Built: the `Using` row (`UatMetadataFields.Using`, comma-separated) and `## Using`
-  (`UatConfig.Usings`, carried by `UatCatalogSet.Usings`); `UatScope` sees a used namespace as
+- Built: the `Using` row (`BddMetadataFields.Using`, comma-separated) and `## Using`
+  (`BddConfig.Usings`, carried by `BddCatalogSet.Usings`); `BddScope` sees a used namespace as
   if the file were in it. `UATB011` (a `Using` naming nothing) and `UATB012` (a warning: no
   step needs it). `UatNamespaceAttribute` moved to `Brinell.Core.Testing` and applies to a class
   too; `TestPageDescriptor.Namespace`; pages are keyed `Invoicing/Detail` in the catalog and the
   runtime, and the binder writes the resolved key into the step. The bind report names each
-  step's scope (`UatStepInvocation.Scope`). Todo's subject classes are in `Backend`, `Device`,
+  step's scope (`BddStepInvocation.Scope`). Todo's subject classes are in `Backend`, `Device`,
   `AppLifecycle` and `StoredData`, used by all three Todo configs. AD-019, and the guide's
   "Where Phrases Live".
 - Changed from the plan: phrase assemblies are **not** a new `Phrases` row in `## Assemblies`.
