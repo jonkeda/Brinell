@@ -4,8 +4,8 @@
 
   <!-- The Visual Studio extension (P4: VSSDK, in process). It holds no engine types: it starts
        Brinell.Bdd.LanguageServer, carried inside the VSIX, and talks to it in messages. Build it with
-       Visual Studio's MSBuild (tools\Brinell.Bdd.VisualStudio\Brinell.Bdd.VisualStudio.slnx); it is
-       not in Brinell.sln. -->
+       Visual Studio's MSBuild (tools\Brinell.Bdd.VisualStudio\Brinell.Bdd.VisualStudio.slnx);
+       srcnew\Brinell.sln lists it with Build unticked. -->
   <PropertyGroup>
     <TargetFramework>net48</TargetFramework>
     <RootNamespace>Brinell.Bdd.VisualStudio</RootNamespace>

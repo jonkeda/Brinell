@@ -1,5 +1,5 @@
 <Solution>
-  <!-- The Visual Studio extension only: it needs Visual Studio's MSBuild, so it is not in Brinell.sln. -->
+  <!-- The Visual Studio extension only: it needs Visual Studio's MSBuild, so srcnew/Brinell.sln lists it but does not build it. -->
   <Project Path="Brinell.Bdd.VisualStudio.csproj" />
   <Project Path="../Brinell.Bdd.VisualStudio.CodeLens/Brinell.Bdd.VisualStudio.CodeLens.csproj" />
 </Solution>

@@ -26,7 +26,6 @@ dotnet build srcnew\Brinell.WinForms\Brinell.WinForms.csproj -f net10.0-windows 
 
 ## Notes
 
-Use `srcnew\Brinell.sln` as the broad active compile check. It is not a complete
-inventory. The top-level `Brinell.sln` includes a different project slice plus
-tools and may fail for tool-specific restore policies even when the framework
-projects build.
+`srcnew\Brinell.sln` holds every project in the repository, in folders by area. The two
+Visual Studio extension projects are in it but not built by it: they need Visual Studio's
+MSBuild, and build from `tools\Brinell.Bdd.VisualStudio\Brinell.Bdd.VisualStudio.slnx`.

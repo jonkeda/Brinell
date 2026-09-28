@@ -13,11 +13,11 @@ Working directory for paths in this document: Brinell root.
 | `docs/` | Active curated documentation |
 | `docs2/` | Preserved previous documentation tree |
 | `.my/` | Plans for work in flight, indexed in `.my/README.md` |
-| `Brinell.sln` | Top-level solution, including tools and a selected source/test slice |
-| `srcnew/Brinell.sln` | Broad compile solution for many source, sample, and test projects |
+| `srcnew/Brinell.sln` | The solution: every project, in folders by area, each test project beside the one it is named after |
+| `Brinell.sln` | An older partial solution. Open `srcnew/Brinell.sln` instead; this file is kept because tests and the Presenter find the repository root by it |
 
-Neither solution is a complete inventory. Use the directory lists below when
-checking whether a project exists.
+The two Visual Studio extension projects are in the solution but not built by it; they build from
+their own `.slnx` with Visual Studio's MSBuild.
 
 ## Source Projects
 

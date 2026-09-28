@@ -35,7 +35,9 @@ dotnet test testsnew\Brinell.Blazor.Tests\Brinell.Blazor.Tests.csproj -v:minimal
 ```
 
 Use the focused platform run guides under `docs/run/` for UI tests.
-`srcnew\Brinell.sln` is a broad compile check, not a complete project inventory.
+`srcnew\Brinell.sln` holds every project in the repository, in folders by area. The two
+Visual Studio extension projects are in it but not built by it: they need Visual Studio's
+MSBuild, and build from `tools\Brinell.Bdd.VisualStudio\Brinell.Bdd.VisualStudio.slnx`.
 
 ## Architecture Rules
 

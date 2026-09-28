@@ -22,9 +22,8 @@ needs something they do not offer, add it there first; never reach past them.
 4. **Run the smallest tier that can fail**:
    `dotnet test testsnew\Brinell.Maui.UITests\Brinell.Maui.UITests.csproj --filter "Control=Foo"`.
    One UI test process at a time, and never build while it runs. Tier 2b
-   (`--filter "Stage=Background"`) also launches the Shell sample app, which `Brinell.sln` does
-   not build; in a fresh checkout build it first:
-   `dotnet build samples\Brinell.Samples.Maui.ShellApp\Brinell.Samples.Maui.ShellApp.csproj -f net10.0-windows10.0.19041.0 -v:minimal /nr:false`.
+   (`--filter "Stage=Background"`) also launches the Shell sample app, which `srcnew\Brinell.sln`
+   builds too.
 
 ## Test shape
 

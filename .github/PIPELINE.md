@@ -375,13 +375,13 @@ Before pushing, validate locally:
 
 ```bash
 # Build all platforms
-dotnet build Brinell.sln -c Release
+dotnet build srcnew/Brinell.sln -c Release
 
 # Run fixture tests
 dotnet test samples/Brinell.Samples.Maui.Fixtures/ -c Release
 
 # Run all tests
-dotnet test Brinell.sln -c Release
+dotnet test srcnew/Brinell.sln -c Release
 ```
 
 ---

@@ -19,10 +19,12 @@
     <!--
       The UI tests are only built here, for their own TFMs (the Windows and mixed ones are
       net10.0-windows), and read from their output folders as metadata (TestCatalog.UiProjects).
+      No SetTargetFramework: on a single-TFM project it is a second global property, so a
+      solution build would build the project twice at once into one obj folder.
     -->
-    <ProjectReference Include="..\Brinell.Samples.Todo.UITests\Brinell.Samples.Todo.UITests.csproj" ReferenceOutputAssembly="false" SkipGetTargetFrameworkProperties="true" SetTargetFramework="TargetFramework=net10.0-windows" />
-    <ProjectReference Include="..\Brinell.Samples.Todo.Web.UITests\Brinell.Samples.Todo.Web.UITests.csproj" ReferenceOutputAssembly="false" SkipGetTargetFrameworkProperties="true" SetTargetFramework="TargetFramework=net10.0" />
-    <ProjectReference Include="..\Brinell.Samples.Todo.Mixed.UITests\Brinell.Samples.Todo.Mixed.UITests.csproj" ReferenceOutputAssembly="false" SkipGetTargetFrameworkProperties="true" SetTargetFramework="TargetFramework=net10.0-windows" />
+    <ProjectReference Include="..\Brinell.Samples.Todo.UITests\Brinell.Samples.Todo.UITests.csproj" ReferenceOutputAssembly="false" SkipGetTargetFrameworkProperties="true" />
+    <ProjectReference Include="..\Brinell.Samples.Todo.Web.UITests\Brinell.Samples.Todo.Web.UITests.csproj" ReferenceOutputAssembly="false" SkipGetTargetFrameworkProperties="true" />
+    <ProjectReference Include="..\Brinell.Samples.Todo.Mixed.UITests\Brinell.Samples.Todo.Mixed.UITests.csproj" ReferenceOutputAssembly="false" SkipGetTargetFrameworkProperties="true" />
   </ItemGroup>
 
   <ItemGroup>

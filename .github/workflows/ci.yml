@@ -43,14 +43,9 @@ jobs:
       # Debug on purpose: the UI Automation bridge only compiles in Debug
       # (srcnew/Brinell.Uia.Contracts/Brinell.Uia.Bridge.props), and Debug is what the
       # test suites are written against.
+      # Every project in the repository but the two VSIX projects (see ide-extensions).
       - name: Build
         run: dotnet build srcnew/Brinell.sln -v:minimal /nr:false
-
-      - name: Build generator tests
-        run: dotnet build testsnew/Brinell.Generator.Tests/Brinell.Generator.Tests.csproj -v:minimal /nr:false
-
-      - name: Build data validator tests
-        run: dotnet build testsnew/Brinell.DataValidator.Tests/Brinell.DataValidator.Tests.csproj -v:minimal /nr:false
 
       # Unit tests only. The *.UITests and *.Uat.Tests projects launch real apps and
       # stay local; see AGENTS.md "Match the test scope to the change".
@@ -118,8 +113,9 @@ jobs:
             artifacts/*.nupkg
             artifacts/*.snupkg
 
-  # The IDE extensions build: the VSIX needs Visual Studio's MSBuild, so it is not in Brinell.sln.
-  # Their tests (Brinell.Uat.*.Tests) need the Todo sample built and stay local, like the UI tests.
+  # The IDE extensions build: the VSIX needs Visual Studio's MSBuild, so Brinell.sln holds its two
+  # projects with Build unticked, and they are built here from their own .slnx.
+  # Their tests (Brinell.Bdd.*.Tests) need the Todo sample built and stay local, like the UI tests.
   ide-extensions:
     name: IDE extensions
     runs-on: windows-latest

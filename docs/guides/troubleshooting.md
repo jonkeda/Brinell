@@ -10,9 +10,6 @@ Run:
 dotnet build srcnew\Brinell.sln -v:minimal /nr:false
 ```
 
-If the top-level `Brinell.sln` fails during restore, check whether the failure
-comes from a tool project or package vulnerability warning treated as an error.
-
 ## Test Cannot Find Element
 
 Check:
