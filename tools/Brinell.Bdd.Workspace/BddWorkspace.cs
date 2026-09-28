@@ -4,7 +4,7 @@ namespace Brinell.Bdd.Workspace;
 /// The suites under a folder (a solution's), and which of them a file belongs to. A file linked
 /// into several suites belongs to each (AD-014).
 /// </summary>
-public sealed class BddWorkspace : IDisposable
+public sealed partial class BddWorkspace : IDisposable
 {
     private static readonly string[] SkippedFolders = ["bin", "obj", "node_modules", "TestResults"];
 
@@ -30,14 +30,53 @@ public sealed class BddWorkspace : IDisposable
     }
 
     /// <summary>
-    /// The configs under a folder: one per project, <c>uat.config.md</c> before <c>bdd.config.md</c>
-    /// (<see cref="BddFileFormat.FindConfig"/>). Build output, hidden folders and test results are skipped.
+    /// The configs of a solution folder: one per project, <c>uat.config.md</c> before
+    /// <c>bdd.config.md</c> (<see cref="BddFileFormat.FindConfig"/>). Found under the folder, and in
+    /// the folder of each project a <c>.sln</c> or <c>.slnx</c> in it lists, which may be anywhere.
+    /// Build output, hidden folders and test results are skipped.
     /// </summary>
     /// <param name="root">The folder to search.</param>
     public static IReadOnlyList<string> FindConfigs(string root)
     {
+        var full = Path.GetFullPath(root);
+        var configs = new HashSet<string>(ConfigsUnder(full), StringComparer.OrdinalIgnoreCase);
+        foreach (var project in ProjectFolders(full))
+        {
+            if (BddFileFormat.FindConfig(project) is var config && File.Exists(config))
+            {
+                configs.Add(Path.GetFullPath(config));
+            }
+        }
+
+        return configs.Order(StringComparer.OrdinalIgnoreCase).ToList();
+    }
+
+    // The folders of the projects the solutions directly in a folder list.
+    private static IEnumerable<string> ProjectFolders(string root)
+    {
+        foreach (var solution in Directory.EnumerateFiles(root, "*.sln").Concat(Directory.EnumerateFiles(root, "*.slnx")))
+        {
+            var paths = solution.EndsWith(".slnx", StringComparison.OrdinalIgnoreCase)
+                ? System.Xml.Linq.XDocument.Load(solution).Descendants("Project").Select(project => (string?)project.Attribute("Path"))
+                : SolutionProject().Matches(File.ReadAllText(solution)).Select(match => (string?)match.Groups["path"].Value);
+            foreach (var path in paths.OfType<string>())
+            {
+                var folder = Path.GetDirectoryName(Path.GetFullPath(Path.Combine(root, path.Replace('\\', Path.DirectorySeparatorChar))));
+                if (folder is not null && Directory.Exists(folder))
+                {
+                    yield return folder;
+                }
+            }
+        }
+    }
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"^Project\(""\{[^}]+\}""\)\s*=\s*""[^""]*"",\s*""(?<path>[^""]+\.(?:cs|vb|fs)proj)""", System.Text.RegularExpressions.RegexOptions.Multiline)]
+    private static partial System.Text.RegularExpressions.Regex SolutionProject();
+
+    private static List<string> ConfigsUnder(string root)
+    {
         List<string> configs = [];
-        Stack<string> folders = new([Path.GetFullPath(root)]);
+        Stack<string> folders = new([root]);
         while (folders.Count > 0)
         {
             var folder = folders.Pop();
@@ -57,7 +96,7 @@ public sealed class BddWorkspace : IDisposable
             }
         }
 
-        return configs.Order(StringComparer.OrdinalIgnoreCase).ToList();
+        return configs;
     }
 
     /// <summary>The suites a feature or step file belongs to, by config path; empty when none.</summary>

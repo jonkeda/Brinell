@@ -22,6 +22,37 @@ public sealed class BddWorkspaceTests
             configs);
     }
 
+    // srcnew/Brinell.sln lists the Todo projects, which are not under srcnew.
+    [Fact]
+    public void FindConfigs_FindsTheSuitesOfTheProjectsASolutionLists_OutsideItsFolder()
+    {
+        var srcnew = Path.GetFullPath(Path.Combine(Todo, "..", "..", "srcnew"));
+
+        var configs = BddWorkspace.FindConfigs(srcnew).Select(path => Path.GetRelativePath(Todo, path).Replace('\\', '/')).ToList();
+
+        Assert.Contains("tests/Brinell.Samples.Todo.Uat/uat.config.md", configs);
+        Assert.Contains("tests/Brinell.Samples.Todo.IntegrationTests/bdd.config.md", configs);
+    }
+
+    [Fact]
+    public void FindConfigs_ReadsAnSlnx_AndCountsASuiteOnce()
+    {
+        var folder = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "brinell-slnx-" + Guid.NewGuid().ToString("N"))).FullName;
+        try
+        {
+            var project = Path.GetRelativePath(folder, Path.Combine(Todo, "tests", "Brinell.Samples.Todo.Web.Uat", "Brinell.Samples.Todo.Web.Uat.csproj"));
+            File.WriteAllText(Path.Combine(folder, "Only.slnx"), $"<Solution><Folder Name=\"/web/\"><Project Path=\"{project}\" /></Folder><Project Path=\"{project}\" /></Solution>");
+
+            var config = Assert.Single(BddWorkspace.FindConfigs(folder));
+
+            Assert.Equal(Path.Combine(Todo, "tests", "Brinell.Samples.Todo.Web.Uat", "uat.config.md"), config, ignoreCase: true);
+        }
+        finally
+        {
+            Directory.Delete(folder, recursive: true);
+        }
+    }
+
     [Fact]
     public void SuitesFor_AFileLinkedIntoSeveralSuites_NamesEachOfThem()
     {
