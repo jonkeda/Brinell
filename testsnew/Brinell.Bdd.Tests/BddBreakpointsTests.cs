@@ -69,7 +69,11 @@ public sealed class BddBreakpointsTests : IDisposable
     {
         var breaks = await RunAsync($$"""{ "files": { {{Json(Feature)}}: [7] } }""");
 
-        Assert.Equal(["I shelve \"Emma\""], breaks.Select(b => b.Text));
+        // It stops at the call itself, before its first step; Step into goes inside.
+        var call = Assert.Single(breaks);
+        Assert.Equal("the shelf holds \"Emma\"", call.Text);
+        Assert.True(call.IsCall);
+        Assert.Equal(7, call.Source.LineNumber);
     }
 
     [Fact]
@@ -107,6 +111,59 @@ public sealed class BddBreakpointsTests : IDisposable
         Assert.NotNull(BddBreakpoints.ForDebugger(attached: () => true, path: Path.Combine(_root, "absent.json")));
     }
 
+    // Line 7 and 8 call "the shelf holds {title}"; a call is a position of its own ("7 call").
+    [Fact]
+    public async Task StepOver_StopsAtEachScenarioStep_RunningACallWhole()
+    {
+        var stops = await StepAsync(BreakAt(Feature, 6), _ => "over");
+
+        Assert.Equal(["shelf.feature.md:6", "shelf.feature.md:7 call", "shelf.feature.md:8 call", "shelf.feature.md:9"], stops);
+    }
+
+    [Fact]
+    public async Task StepInto_GoesIntoACall_WithoutRunningIt_AndThroughItsSteps()
+    {
+        var stops = await StepAsync(BreakAt(Feature, 6), _ => "into");
+
+        Assert.Equal(
+            ["shelf.feature.md:6", "shelf.feature.md:7 call", "Shelf.steps.md:6", "Shelf.steps.md:7", "shelf.feature.md:8 call", "Shelf.steps.md:6", "Shelf.steps.md:7", "shelf.feature.md:9"],
+            stops);
+    }
+
+    [Fact]
+    public async Task StepOut_StopsAtTheFirstPositionAfterTheCall()
+    {
+        var stops = await StepAsync(BreakAt(Steps, 6), stop => stop == 0 ? "out" : null);
+
+        Assert.Equal(["Shelf.steps.md:6", "shelf.feature.md:8 call"], stops);
+    }
+
+    [Fact]
+    public async Task AMoveForAnotherProcess_IsIgnored_AndLeftInTheFile()
+    {
+        var stops = await StepAsync(BreakAt(Feature, 6), _ => "over", process: Environment.ProcessId + 1);
+
+        Assert.Equal(["shelf.feature.md:6"], stops);
+        Assert.Contains("\"next\"", File.ReadAllText(BreakpointsFile));
+    }
+
+    [Fact]
+    public async Task WhilePaused_ThePausedFileSaysWhere_AndIsGoneAfter()
+    {
+        System.Text.Json.JsonElement? seen = null;
+        var breakpoints = new BddBreakpoints(BreakpointsFile, stop: () => seen = System.Text.Json.JsonDocument.Parse(File.ReadAllText(PausedFile)).RootElement.Clone());
+        File.WriteAllText(BreakpointsFile, BreakAt(Feature, 7));
+
+        await RunWithAsync(breakpoints);
+
+        Assert.NotNull(seen);
+        Assert.Equal(Environment.ProcessId, seen.Value.GetProperty("process").GetInt32());
+        Assert.Equal(7, seen.Value.GetProperty("line").GetInt32());
+        Assert.True(seen.Value.GetProperty("isCall").GetBoolean());
+        Assert.Equal(0, seen.Value.GetProperty("depth").GetInt32());
+        Assert.False(File.Exists(PausedFile));
+    }
+
     [Fact]
     public async Task NoFile_NoBreaks()
     {
@@ -131,6 +188,55 @@ public sealed class BddBreakpointsTests : IDisposable
     }
 
     private static string Json(string path) => System.Text.Json.JsonSerializer.Serialize(path);
+
+    private string BreakpointsFile => Path.Combine(_root, "bdd-breakpoints.json");
+
+    private string PausedFile => Path.Combine(_root, "bdd-paused.json");
+
+    private static string BreakAt(string file, int line) => $$"""{ "files": { {{Json(file)}}: [{{line}}] } }""";
+
+    // Runs with the real files, as the IDE does it: at each stop, reads where the run is paused, and
+    // writes the move the script gives for that stop (null: none, the run goes on).
+    private async Task<List<string>> StepAsync(string breakpoints, Func<int, string?> move, int? process = null)
+    {
+        File.WriteAllText(BreakpointsFile, breakpoints);
+        List<string> stops = [];
+        var hook = new BddBreakpoints(BreakpointsFile, stop: () =>
+        {
+            var paused = System.Text.Json.JsonDocument.Parse(File.ReadAllText(PausedFile)).RootElement;
+            stops.Add($"{Path.GetFileName(paused.GetProperty("file").GetString())}:{paused.GetProperty("line").GetInt32()}{(paused.GetProperty("isCall").GetBoolean() ? " call" : string.Empty)}");
+            if (move(stops.Count - 1) is { } mode)
+            {
+                var root = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(BreakpointsFile))!.AsObject();
+                root["next"] = new System.Text.Json.Nodes.JsonObject
+                {
+                    ["mode"] = mode,
+                    ["depth"] = paused.GetProperty("depth").GetInt32(),
+                    ["process"] = process ?? paused.GetProperty("process").GetInt32(),
+                };
+                File.WriteAllText(BreakpointsFile, root.ToJsonString());
+            }
+        });
+
+        await RunWithAsync(hook);
+        return stops;
+    }
+
+    private async Task RunWithAsync(IBddBreakHook hook)
+    {
+        var file = BddScenarioFiles.Load(Feature);
+        var catalog = BddStepDefinitionRuntime.FromTypes(new object(), typeof(ShelfSteps)).CreateCommandCatalog();
+        var bind = file.Bind(new BddCatalogSet(catalog));
+        Assert.True(bind.Success, string.Join(Environment.NewLine, bind.Diagnostics.Select(d => d.Message)));
+
+        var runner = new BddScenarioRunner(new BddExecutionContext { Breaks = hook });
+        using var services = new ServiceCollection().AddTransient<ShelfSteps>().BuildServiceProvider();
+        BddStepDefinitionRuntime.SetServiceProvider(runner.Context, services);
+        var result = await runner.RunAsync(Assert.Single(bind.Document!.Scenarios));
+
+        // Stopping never fails a step: a failed step here is the hook's doing.
+        Assert.All(result.Steps, step => Assert.NotEqual(BddStepResultStatus.Failed, step.Status));
+    }
 
     // The running hook's decisions, with the stop recorded instead of Debugger.Break.
     private sealed class RecordingHook(BddBreakpoints inner) : IBddBreakHook
