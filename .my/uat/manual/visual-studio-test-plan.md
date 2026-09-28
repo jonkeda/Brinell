@@ -42,7 +42,7 @@ goes.
 | S-1 | From the Brinell root, run `dotnet build samples\Todo\Brinell.Samples.Todo.slnx`. | The build succeeds. | ☐ |
 | S-2 | Open `tools\Brinell.Bdd.VisualStudio\Brinell.Bdd.VisualStudio.slnx` in Visual Studio and press **F5**. | The build succeeds, and a second Visual Studio starts with "Experimental Instance" in its title bar. Everything below happens in this experimental instance. | ☐ |
 | S-3 | In the experimental instance, open `samples\Todo\Brinell.Samples.Todo.slnx`, then **Build > Build Solution**. | The Todo solution builds. | ☐ |
-| S-4 | **Extensions > Manage Extensions > Installed**. | "Brinell BDD" is listed and enabled. | ☐ |
+| S-4 | **Extensions > Manage Extensions > Installed**. | "Brinell BDD" is listed and enabled, and no "Brinell UAT". If you see "Brinell UAT", the experimental instance and the build hold the extension from before the rename: close the experimental instance, delete `tools\Brinell.Bdd.VisualStudio\bin` and `obj` (and the CodeLens project's), run **Reset the Visual Studio 2026 Experimental Instance** from the Start menu, and F5 again. | ☐ |
 
 The files used below are all under `samples\Todo\tests\Brinell.Samples.Todo.Uat\`:
 - `Features\TOD.01-see-my-todos.feature.md`, called **TOD.01** from here on;
