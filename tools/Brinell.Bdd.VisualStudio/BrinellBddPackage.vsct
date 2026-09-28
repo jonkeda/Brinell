@@ -48,10 +48,13 @@
   </Commands>
 
   <KeyBindings>
-    <!-- Ctrl+K, V: as VS Code opens a Markdown preview to the side. -->
+    <!-- Alt+Shift+V, free in every scope. Also Ctrl+K, V, as VS Code opens a Markdown preview; not
+         Ctrl+K, Ctrl+V, which is Visual Studio's (Class View's search box). -->
+    <KeyBinding guid="guidBrinellUatCommandSet" id="OpenScenarioPreview" editor="guidVSStd97" key1="V" mod1="Alt Shift" />
     <KeyBinding guid="guidBrinellUatCommandSet" id="OpenScenarioPreview" editor="guidVSStd97" key1="K" mod1="Control" key2="V" />
-    <!-- Ctrl+K, F9: beside F9, which the debugger keeps for C# breakpoints. -->
+    <!-- Ctrl+K, F9 (or Ctrl+K, Ctrl+F9): beside F9, which the debugger keeps for C# breakpoints. -->
     <KeyBinding guid="guidBrinellUatCommandSet" id="ToggleStepBreakpoint" editor="guidVSStd97" key1="K" mod1="Control" key2="VK_F9" />
+    <KeyBinding guid="guidBrinellUatCommandSet" id="ToggleStepBreakpoint" editor="guidVSStd97" key1="K" mod1="Control" key2="VK_F9" mod2="Control" />
   </KeyBindings>
 
   <Symbols>

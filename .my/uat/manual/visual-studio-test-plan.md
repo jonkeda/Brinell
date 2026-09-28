@@ -54,7 +54,7 @@ The files used below are all under `samples\Todo\tests\Brinell.Samples.Todo.Uat\
 
 | ID | Do | You should see | Result |
 | --- | --- | --- | --- |
-| P-1 | Open TOD.01. Press **Ctrl+K, V**. | The **Scenario Preview** window opens beside the editor. It shows the feature as readable steps, with the keywords in a gutter, and tables drawn as tables. The bar at the top says **Bound**. | ☐ |
+| P-1 | Open TOD.01. Press **Alt+Shift+V**. Close the preview, then press **Ctrl+K**, release Ctrl, and press **V**. | Both open the **Scenario Preview** window (not Visual Studio's own Markdown preview) beside the editor. It shows the feature as readable steps, with the keywords in a gutter, and tables drawn as tables. The bar at the top says **Bound**. | ☐ |
 | P-2 | Also try right-click in the editor, **Open Scenario Preview**, and **View > Other Windows > Scenario Preview**. | Both show the same preview. | ☐ |
 | P-3 | Hover over the step `When I tap Sync` (line 24) in the preview. | A tooltip says what it binds to and on which page (the Todo List page). | ☐ |
 | P-4 | Find the step `Given the synced list has todos` (line 34) in the preview, and unfold it. | It opens into the steps of the `## Step:` it calls, with the values filled in. | ☐ |
@@ -106,7 +106,7 @@ These start the Todo app. Leave the mouse and keyboard alone while a run goes.
 | ID | Do | You should see | Result |
 | --- | --- | --- | --- |
 | B-1 | In the preview, click the keyword of `When I tap Sync` (line 54, in TOD.01.3). | A red dot appears in the preview's gutter, and in the editor's left margin at line 54. | ☐ |
-| B-2 | Click the keyword again. Then, in the editor, put the caret on line 54 and press **Ctrl+K, F9**. | The first click removes the dot. **Ctrl+K, F9** sets it again, in both places. | ☐ |
+| B-2 | Click the keyword again. Then, in the editor, put the caret on line 54 and press **Ctrl+K, F9**, then **Ctrl+K, Ctrl+F9** (Ctrl held). | The first click removes the dot. **Ctrl+K, F9** sets it again, in both places, and **Ctrl+K, Ctrl+F9** removes it again. | ☐ |
 | B-3 | Put the caret on a blank line and press **Ctrl+K, F9**. | No dot. The status bar says the line is not a step. | ☐ |
 | B-4 | Right-click the editor on a step line. | The menu has **Toggle BDD Step Breakpoint**, and it works. | ☐ |
 | B-5 | Add two empty lines above line 54. | The dot moves down with its step. | ☐ |

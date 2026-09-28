@@ -29,8 +29,12 @@ Update the extension, or the suite's Brinell packages.
 
 ## Use
 
-- Open a `.feature.md` or `.steps.md` and press **Ctrl+K, V** (or right-click, **Open Scenario
-  Preview**; or **View > Other Windows > Scenario Preview**).
+- Open a `.feature.md` or `.steps.md` and press **Alt+Shift+V**, or **Ctrl+K, V** with Ctrl
+  released before the V (**Ctrl+K, Ctrl+V** is Visual Studio's own, Class View's search box). Or
+  right-click, **Open Scenario Preview**; or **View > Other Windows > Scenario Preview**.
+- This is Brinell's preview: steps with a keyword gutter, a bar saying **Bound** or **Parsed
+  only**, Run buttons. Visual Studio's Markdown editor also has a preview of its own, of the plain
+  Markdown; that one is not this.
 - The preview follows the active feature or step file, and renders again when you pause typing and
   after each build.
 - The caret and the preview follow each other: move the caret and its step is highlighted; click a
@@ -66,7 +70,8 @@ A step breakpoint stops the debugger before that step, whichever way the test wa
 preview's Debug, or Test Explorer's own **Debug**).
 
 - **Set one** by clicking a step's keyword in the preview, or with the caret on the step, by
-  right-clicking and choosing **Toggle BDD Step Breakpoint**, or by pressing **Ctrl+K, F9**. A red
+  right-clicking and choosing **Toggle BDD Step Breakpoint**, or by pressing **Ctrl+K, F9** (or
+  **Ctrl+K, Ctrl+F9**). A red
   dot shows in the preview's gutter and in the editor's glyph margin. A line that is not a step
   gets none, and the status bar says so.
 - **Debug** beside each **Run** (and **Debug file** beside **Run file**) runs the same way, with
