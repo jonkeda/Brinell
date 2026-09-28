@@ -22,7 +22,7 @@ namespace Brinell.Bdd.VisualStudio;
 /// keeps the caret and the preview in step both ways, and passes Visual Studio's theme on. Keeps
 /// the step breakpoints: the preview's gutter and the editor command toggle them, and both show them.
 /// </summary>
-internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionEvents, IDisposable
+internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionEvents, IVsSolutionEvents, IDisposable
 {
     // How long typing must pause before the preview is rendered again.
     private static readonly TimeSpan TypingPause = TimeSpan.FromMilliseconds(300);
@@ -39,8 +39,10 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
     private IVsMonitorSelection? _selection;
     private IVsSolutionBuildManager? _builds;
     private IVsEditorAdaptersFactoryService? _adapters;
+    private IVsSolution? _solution;
     private uint _selectionCookie;
     private uint _buildCookie;
+    private uint _solutionCookie;
     // The previews on show: the tool window's follows the active file (no path); an editor's
     // margin shows its own file.
     private readonly List<(ScenarioPreviewControl Control, string? Path)> _views = [];
@@ -72,6 +74,10 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
         _builds = await _package.GetServiceAsync(typeof(SVsSolutionBuildManager)) as IVsSolutionBuildManager;
         Assumes.Present(_builds);
         ErrorHandler.ThrowOnFailure(_builds.AdviseUpdateSolutionEvents(this, out _buildCookie));
+
+        _solution = await _package.GetServiceAsync(typeof(SVsSolution)) as IVsSolution;
+        Assumes.Present(_solution);
+        ErrorHandler.ThrowOnFailure(_solution.AdviseSolutionEvents(this, out _solutionCookie));
 
         var components = await _package.GetServiceAsync(typeof(SComponentModel)) as IComponentModel;
         Assumes.Present(components);
@@ -161,6 +167,11 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
             _builds?.UnadviseUpdateSolutionEvents(_buildCookie);
         }
 
+        if (_solutionCookie != 0)
+        {
+            _solution?.UnadviseSolutionEvents(_solutionCookie);
+        }
+
         Detach();
         _typing?.Cancel();
         _server?.Dispose();
@@ -224,7 +235,31 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
 
         // A folder opened without a solution: the file's folder, or the nearest one above with a solution file.
         directory = string.IsNullOrEmpty(directory) ? SolutionFolderOf(path) : directory;
-        await _server!.InitializeAsync(directory!.TrimEnd('\\'), _package.DisposalToken);
+        if (await _server!.InitializeAsync(directory!.TrimEnd('\\'), _package.DisposalToken))
+        {
+            // A new server: it has none of the files the old one had open.
+            _opened.Clear();
+        }
+    }
+
+    // A solution opened: its folder is where the suites are, so the server serves it from now on,
+    // and the preview and the explorer show what it finds (they may have asked before it loaded).
+    private async Task OnSolutionOpenedAsync()
+    {
+        await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
+        if (_server is null)
+        {
+            return;
+        }
+
+        await EnsureServerAsync(_path);
+        if (_path is { } path && _textView is { } view && _opened.Add(path))
+        {
+            await _server.DidOpenAsync(path, ++_version, view.TextSnapshot.GetText(), _package.DisposalToken);
+        }
+
+        await RefreshAsync();
+        await RefreshExplorerAsync();
     }
 
     private async Task RefreshAsync()
@@ -606,4 +641,28 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
     int IVsUpdateSolutionEvents.UpdateSolution_Cancel() => VSConstants.S_OK;
 
     int IVsUpdateSolutionEvents.OnActiveProjectCfgChange(IVsHierarchy pIVsHierarchy) => VSConstants.S_OK;
+
+    int IVsSolutionEvents.OnAfterOpenSolution(object pUnkReserved, int fNewSolution)
+    {
+        _package.JoinableTaskFactory.RunAsync(OnSolutionOpenedAsync).FileAndForget("Brinell/SolutionOpened");
+        return VSConstants.S_OK;
+    }
+
+    int IVsSolutionEvents.OnAfterOpenProject(IVsHierarchy pHierarchy, int fAdded) => VSConstants.S_OK;
+
+    int IVsSolutionEvents.OnQueryCloseProject(IVsHierarchy pHierarchy, int fRemoving, ref int pfCancel) => VSConstants.S_OK;
+
+    int IVsSolutionEvents.OnBeforeCloseProject(IVsHierarchy pHierarchy, int fRemoved) => VSConstants.S_OK;
+
+    int IVsSolutionEvents.OnAfterLoadProject(IVsHierarchy pStubHierarchy, IVsHierarchy pRealHierarchy) => VSConstants.S_OK;
+
+    int IVsSolutionEvents.OnQueryUnloadProject(IVsHierarchy pRealHierarchy, ref int pfCancel) => VSConstants.S_OK;
+
+    int IVsSolutionEvents.OnBeforeUnloadProject(IVsHierarchy pRealHierarchy, IVsHierarchy pStubHierarchy) => VSConstants.S_OK;
+
+    int IVsSolutionEvents.OnQueryCloseSolution(object pUnkReserved, ref int pfCancel) => VSConstants.S_OK;
+
+    int IVsSolutionEvents.OnBeforeCloseSolution(object pUnkReserved) => VSConstants.S_OK;
+
+    int IVsSolutionEvents.OnAfterCloseSolution(object pUnkReserved) => VSConstants.S_OK;
 }

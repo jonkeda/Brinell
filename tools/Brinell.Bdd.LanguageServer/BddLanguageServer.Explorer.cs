@@ -16,9 +16,11 @@ public sealed partial class BddLanguageServer
     public ExplorerResult Explorer(ExplorerParams request)
     {
         IReadOnlyList<BddSuite> suites;
+        string root;
         lock (_gate)
         {
             suites = _workspace?.Suites.OrderBy(suite => suite.Name, StringComparer.OrdinalIgnoreCase).ToList() ?? [];
+            root = _workspace?.Root ?? "the solution";
         }
 
         var view = request.View is BddExplorerWriter.Pages or BddExplorerWriter.Results ? request.View : BddExplorerWriter.Steps;
@@ -26,7 +28,7 @@ public sealed partial class BddLanguageServer
         var names = suites.Select(candidate => candidate.Name).ToList();
         if (suite is null)
         {
-            return new ExplorerResult(view, "<p class=\"uat-banner\">No suite in this solution: no project has a uat.config.md or bdd.config.md.</p>", names, null);
+            return new ExplorerResult(view, $"<p class=\"uat-banner\">No suite under {System.Net.WebUtility.HtmlEncode(root)}: no project there has a {BddFileFormat.UiConfigFileName} or {BddFileFormat.ServiceConfigFileName}. Open the solution that holds the suites.</p>", names, null);
         }
 
         if (view == BddExplorerWriter.Results)

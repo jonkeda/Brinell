@@ -41,16 +41,18 @@ public sealed class BddServerClient : IDisposable
     /// <summary>Starts the server for a solution folder, or restarts it for another one.</summary>
     /// <param name="solutionDir">The folder whose suites the server serves.</param>
     /// <param name="cancellationToken">Cancels the start.</param>
-    public async Task InitializeAsync(string solutionDir, CancellationToken cancellationToken)
+    /// <returns>Whether a new server started: the files it had open are gone.</returns>
+    public async Task<bool> InitializeAsync(string solutionDir, CancellationToken cancellationToken)
     {
         if (_rpc is not null && string.Equals(_solutionDir, solutionDir, StringComparison.OrdinalIgnoreCase))
         {
-            return;
+            return false;
         }
 
         _solutionDir = solutionDir;
         Stop();
         await RpcAsync(cancellationToken).ConfigureAwait(false);
+        return true;
     }
 
     /// <summary>LSP <c>textDocument/didOpen</c>.</summary>
