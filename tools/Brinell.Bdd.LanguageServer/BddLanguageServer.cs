@@ -16,7 +16,7 @@ public sealed partial class BddLanguageServer : IDisposable
     private readonly Dictionary<string, (int Version, string Text)> _documents = new(StringComparer.OrdinalIgnoreCase);
     private BddWorkspace? _workspace;
     private BddRunResults? _results;
-    private FileSystemWatcher? _resultsWatcher;
+    private readonly List<FileSystemWatcher> _resultsWatchers = [];
     private Timer? _resultsChanged;
     private JsonRpc? _rpc;
 
@@ -53,8 +53,8 @@ public sealed partial class BddLanguageServer : IDisposable
         {
             _workspace?.Dispose();
             _workspace = BddWorkspace.Open(root);
-            _results = new BddRunResults(BddRunResults.RootFor(_workspace.Root));
-            WatchResults(_results.Root);
+            _results = new BddRunResults();
+            WatchResults(_workspace.Suites.Select(suite => BddRunResults.RootFor(suite.ProjectDirectory)).Append(BddRunResults.RootFor(_workspace.Root)));
             _publishes = ClientTakesDiagnostics(request.Capabilities);
             _renamesFiles = ClientRenamesFiles(request.Capabilities);
             return new InitializeResult(
@@ -155,13 +155,13 @@ public sealed partial class BddLanguageServer : IDisposable
     public PreviewResult Preview(PreviewParams request)
     {
         var file = Context(Key(request.Uri), request.Suite);
-        var results = _results;
+        var resultsRoot = BddRunResults.RootFor(file.Suite?.ProjectDirectory ?? _workspace?.Root ?? Environment.CurrentDirectory);
         var result = BddPreview.Render(file.Text, file.Path, new BddPreviewOptions
         {
             Catalogs = file.Catalogs,
             ParseOnlyReason = file.Reason,
             Runs = RunsOf(file),
-            ImageUrl = image => ImageUrl(image, results?.Root),
+            ImageUrl = image => ImageUrl(image, resultsRoot),
             Run = FileImageUrls ? null : RunState(file.Suite, file.Path),
         });
         return new PreviewResult(
@@ -172,7 +172,7 @@ public sealed partial class BddLanguageServer : IDisposable
             file.Catalogs is null ? "parse-only" : "bound",
             file.Reason)
         {
-            ResultsRoot = results?.Root,
+            ResultsRoot = resultsRoot,
             ResultsHost = ResultsHost,
         };
     }
@@ -254,21 +254,34 @@ public sealed partial class BddLanguageServer : IDisposable
     }
 
     // A run writes its manifest after each scenario: the open files' previews are told to refresh,
-    // once the writes pause.
-    private void WatchResults(string root)
+    // once the writes pause. Each suite's results folder is watched; most suites share one.
+    private void WatchResults(IEnumerable<string> roots)
     {
-        _resultsWatcher?.Dispose();
-        _resultsWatcher = null;
-        if (!Directory.Exists(root))
+        foreach (var watcher in _resultsWatchers)
         {
-            return;
+            watcher.Dispose();
         }
 
+        _resultsWatchers.Clear();
         _resultsChanged ??= new Timer(_ => NotifyResultsChanged());
-        _resultsWatcher = new FileSystemWatcher(root, "manifest.json") { IncludeSubdirectories = true, NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName };
-        _resultsWatcher.Changed += (_, _) => _resultsChanged.Change(TimeSpan.FromMilliseconds(500), Timeout.InfiniteTimeSpan);
-        _resultsWatcher.Created += (_, _) => _resultsChanged.Change(TimeSpan.FromMilliseconds(500), Timeout.InfiniteTimeSpan);
-        _resultsWatcher.EnableRaisingEvents = true;
+        foreach (var root in roots.Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            // A folder the first run creates: watched from its parent, which exists.
+            var parent = Path.GetDirectoryName(root);
+            if (!Directory.Exists(root) && (parent is null || !Directory.Exists(parent)))
+            {
+                continue;
+            }
+
+            var watcher = Directory.Exists(root)
+                ? new FileSystemWatcher(root, "manifest.json") { IncludeSubdirectories = true }
+                : new FileSystemWatcher(parent!, "manifest.json") { IncludeSubdirectories = true };
+            watcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName;
+            watcher.Changed += (_, _) => _resultsChanged.Change(TimeSpan.FromMilliseconds(500), Timeout.InfiniteTimeSpan);
+            watcher.Created += (_, _) => _resultsChanged.Change(TimeSpan.FromMilliseconds(500), Timeout.InfiniteTimeSpan);
+            watcher.EnableRaisingEvents = true;
+            _resultsWatchers.Add(watcher);
+        }
     }
 
     private void NotifyResultsChanged()
@@ -291,8 +304,12 @@ public sealed partial class BddLanguageServer : IDisposable
     {
         lock (_gate)
         {
-            _resultsWatcher?.Dispose();
-            _resultsWatcher = null;
+            foreach (var watcher in _resultsWatchers)
+            {
+                watcher.Dispose();
+            }
+
+            _resultsWatchers.Clear();
             _resultsChanged?.Dispose();
             _resultsChanged = null;
             foreach (var timer in _pending.Values)

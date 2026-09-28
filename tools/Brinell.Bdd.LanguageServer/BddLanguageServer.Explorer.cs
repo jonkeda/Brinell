@@ -70,7 +70,7 @@ public sealed partial class BddLanguageServer
             IReadOnlyDictionary<string, BddScenarioRun> found;
             lock (results)
             {
-                found = results.For(suite.Name, path);
+                found = results.For(BddRunResults.RootFor(suite.ProjectDirectory), suite.Name, path);
             }
 
             if (found.Count == 0)

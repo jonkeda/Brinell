@@ -116,7 +116,7 @@ public sealed partial class BddLanguageServer
 
         lock (results)
         {
-            return results.For(suite.Name, file.Path);
+            return results.For(BddRunResults.RootFor(suite.ProjectDirectory), suite.Name, file.Path);
         }
     }
 

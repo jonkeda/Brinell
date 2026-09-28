@@ -18,21 +18,21 @@ internal sealed class BddRunResults
 
     private readonly Dictionary<string, (DateTime Written, TestArtifactManifest? Manifest)> _manifests = new(StringComparer.OrdinalIgnoreCase);
 
-    public BddRunResults(string resultsRoot) => Root = resultsRoot;
-
-    /// <summary>The folder the runs are in: <c>TestResults</c> at the repository root.</summary>
-    public string Root { get; }
-
-    /// <summary>The <c>TestResults</c> folder for a solution folder: at the nearest folder above with <c>.git</c> or a <c>.sln</c>, as the runs write it.</summary>
-    /// <param name="solutionDir">The solution folder.</param>
-    public static string RootFor(string solutionDir)
+    /// <summary>
+    /// The <c>TestResults</c> folder a suite's runs write: at the nearest folder above its project
+    /// with <c>.git</c> or a <c>.sln</c>, the walk the run makes from its output folder
+    /// (<c>DefaultTestArtifactPathProvider</c>). Not the open solution's: a solution may list
+    /// projects outside its folder.
+    /// </summary>
+    /// <param name="projectDir">The suite's project folder.</param>
+    public static string RootFor(string projectDir)
     {
         if (Environment.GetEnvironmentVariable(TestArtifactOptions.RootDirectoryEnvironmentVariable) is { Length: > 0 } configured)
         {
             return configured;
         }
 
-        for (var folder = new DirectoryInfo(solutionDir); folder is not null; folder = folder.Parent)
+        for (var folder = new DirectoryInfo(projectDir); folder is not null; folder = folder.Parent)
         {
             if (Directory.Exists(Path.Combine(folder.FullName, ".git")) || folder.EnumerateFiles("*.sln").Any())
             {
@@ -40,22 +40,23 @@ internal sealed class BddRunResults
             }
         }
 
-        return Path.Combine(solutionDir, "TestResults");
+        return Path.Combine(projectDir, "TestResults");
     }
 
     /// <summary>The newest run of each scenario of a file in a suite, by scenario name.</summary>
+    /// <param name="root">The suite's results folder (<see cref="RootFor"/>).</param>
     /// <param name="suite">The suite's name (its project's).</param>
     /// <param name="filePath">The feature file.</param>
-    public IReadOnlyDictionary<string, BddScenarioRun> For(string suite, string filePath)
+    public IReadOnlyDictionary<string, BddScenarioRun> For(string root, string suite, string filePath)
     {
         Dictionary<string, BddScenarioRun> runs = new(StringComparer.Ordinal);
-        if (!Directory.Exists(Root))
+        if (!Directory.Exists(root))
         {
             return runs;
         }
 
         var key = FeatureKey(filePath, BddScenarioFiles.ScenarioRoot(filePath));
-        var manifests = Directory.EnumerateDirectories(Root)
+        var manifests = Directory.EnumerateDirectories(root)
             .Select(run => Path.Combine(run, "manifest.json"))
             .Where(File.Exists)
             .OrderByDescending(File.GetLastWriteTimeUtc)

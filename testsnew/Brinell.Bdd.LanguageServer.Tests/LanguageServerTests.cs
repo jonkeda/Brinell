@@ -186,6 +186,24 @@ public sealed class LanguageServerTests : IAsyncLifetime
         Assert.Contains("<span class=\"uat-status\" data-status=\"passed\"", preview.Html);
     }
 
+    // srcnew/Brinell.sln: a solution in a sub-folder with its own .sln lists a suite outside it; the
+    // suite's runs write TestResults above the suite's project, not beside the open solution.
+    [Fact]
+    public async Task Preview_FindsTheRuns_WhereTheSuitesRunsWriteThem_NotBesideTheOpenSolution()
+    {
+        Build();
+        File.WriteAllText(Path.Combine(_solution, "Shelf.sln"), string.Empty);
+        var src = Directory.CreateDirectory(Path.Combine(_solution, "src")).FullName;
+        File.WriteAllText(Path.Combine(src, "Only.sln"), "Project(\"{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}\") = \"Shelf.Steps\", \"..\\Shelf.Steps\\Shelf.Steps.csproj\", \"{11111111-1111-1111-1111-111111111111}\"\nEndProject\n");
+        WriteRun("20260102-000000-newer2", "passed", "Passed");
+        await InitializeAsync(_client, solutionDir: src);
+
+        var preview = await PreviewAsync();
+
+        Assert.Equal(Path.Combine(_solution, "TestResults"), preview.ResultsRoot);
+        Assert.Contains("<span class=\"uat-status\" data-status=\"passed\"", preview.Html);
+    }
+
     [Fact]
     public async Task ANewRun_TellsTheClientTheResultsChanged()
     {
@@ -401,11 +419,11 @@ public sealed class LanguageServerTests : IAsyncLifetime
         Assert.Equal(new ScenarioResult("One", "failed", 12, null, 6), Assert.Single(runs));
     }
 
-    private Task<InitializeResult> InitializeAsync(JsonRpc client, bool editor = false)
+    private Task<InitializeResult> InitializeAsync(JsonRpc client, bool editor = false, string? solutionDir = null)
         => client.InvokeWithParameterObjectAsync<InitializeResult>("initialize", new
         {
             processId = (int?)null,
-            initializationOptions = new { solutionDir = _solution },
+            initializationOptions = new { solutionDir = solutionDir ?? _solution },
             capabilities = editor ? new { textDocument = new { publishDiagnostics = new { } } } : null,
         });
 
