@@ -12,6 +12,9 @@
     <UseWPF>true</UseWPF>
     <IsPackable>false</IsPackable>
     <GeneratePkgDefFile>true</GeneratePkgDefFile>
+    <!-- The pkgdef names the assembly's path ("CodeBase"); without it Visual Studio looks for the
+         package's assembly in its own folder, and the package fails to load. -->
+    <UseCodebase>true</UseCodebase>
     <IncludeAssemblyInVSIXContainer>true</IncludeAssemblyInVSIXContainer>
     <IncludeDebugSymbolsInVSIXContainer>false</IncludeDebugSymbolsInVSIXContainer>
     <IncludeDebugSymbolsInLocalVSIXDeployment>true</IncludeDebugSymbolsInLocalVSIXDeployment>
