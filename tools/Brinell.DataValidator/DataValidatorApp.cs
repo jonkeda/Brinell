@@ -137,8 +137,9 @@ public static class DataValidatorApp
         return diagnostics.Count == 0 ? 0 : 1;
     }
 
-    // A file named or headed in the form before feature files: --fix renames it and rewrites its
-    // headings, otherwise each old name is an error (old headings are the parser's).
+    // A file named or headed in the form before feature files: --fix renames it, rewrites its
+    // headings and puts bare steps in gherkin blocks (AD-023); otherwise each old name is an error
+    // (old headings and bare steps are the parser's).
     private static IEnumerable<TestDataDiagnostic> CheckOldForms(ToolOptions options, string config, TextWriter output)
     {
         var folder = ScenarioCheck.ScenarioFolder(config);
@@ -183,10 +184,20 @@ public static class DataValidatorApp
             .Concat(Directory.EnumerateFiles(folder, BddFileFormat.StepFilePattern, SearchOption.AllDirectories)))
         {
             var (text, count) = BddFileFormat.RewriteHeadings(File.ReadAllText(file));
+            var (fenced, sections) = BddFileFormat.FenceSteps(text);
             if (count > 0)
             {
-                File.WriteAllText(file, text);
                 output.WriteLine($"Fixed {count} heading(s) in {Display(options, file)}.");
+            }
+
+            if (sections > 0)
+            {
+                output.WriteLine($"Put the steps of {sections} section(s) in a gherkin block in {Display(options, file)}.");
+            }
+
+            if (count + sections > 0)
+            {
+                File.WriteAllText(file, fenced);
             }
         }
 

@@ -141,7 +141,17 @@ public sealed class ActionTests : IAsyncLifetime
         Assert.StartsWith("# Feature: Shelf", Assert.Single(rewrite.Edit.Changes![uri]).NewText);
     }
 
-    private const string Callable = "\n\n## Step: I tidy {shelf}\n\n```gherkin\nWhen I shelve <shelf>\n```\n";
+    [Fact]
+    public async Task BareSteps_ArePutInAGherkinBlock()
+    {
+        var uri = await _server.OpenAsync(Feature, "# Feature: Shelf\n\n## Scenario: One\n\nWhen I shelve \"Dune\"\n");
+
+        var wrap = Assert.Single(await ActionsAsync(uri, 2, 2), action => action.Title == "Put the steps in ```gherkin blocks");
+
+        Assert.Equal("# Feature: Shelf\n\n## Scenario: One\n\n```gherkin\nWhen I shelve \"Dune\"\n```\n", Assert.Single(wrap.Edit!.Changes![uri]).NewText);
+    }
+
+    private const string Callable ="\n\n## Step: I tidy {shelf}\n\n```gherkin\nWhen I shelve <shelf>\n```\n";
 
     // The feature file with one scenario whose steps start at line 5 (0-based).
     private Task<string> OpenAsync(string steps, string after = "")

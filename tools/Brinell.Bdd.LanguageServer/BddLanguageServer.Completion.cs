@@ -19,7 +19,7 @@ public sealed partial class BddLanguageServer
         ("## Scenario:", "## Scenario: ${1:name}", false),
         ("## Scenario Outline:", "## Scenario Outline: ${1:name}", false),
         ("## Background", "## Background", false),
-        ("## Examples", "## Examples", false),
+        ("### Examples", "### Examples", false),
         ("## Metadata", "## Metadata", false),
         ("## Step:", "## Step: ${1:phrase}", true),
         ("## Step for each row:", "## Step for each row: ${1:phrase}", true),

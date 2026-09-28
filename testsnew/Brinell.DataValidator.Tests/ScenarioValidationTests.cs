@@ -160,6 +160,29 @@ public sealed class ScenarioValidationTests : IDisposable
     }
 
     [Fact]
+    public void Validate_BareSteps_HaveNoSteps_AndFixPutsThemInAGherkinBlock()
+    {
+        var file = Write(Path.Combine("Features", "library.feature.md"), """
+            # Feature: Library
+
+            ## Scenario: Lending
+
+            When I lend "Dune" to Eva until 12-May-2026
+            """);
+
+        var (exit, output, _) = Run("validate");
+
+        Assert.Equal(1, exit);
+        Assert.Contains("UAT007 Scenario section must contain at least one step. " + BddFileFormat.FenceHint, output);
+
+        (exit, output, _) = Run("validate", "--fix");
+
+        Assert.True(exit == 0, output);
+        Assert.Contains("Put the steps of 1 section(s) in a gherkin block in Features/library.feature.md.", output);
+        Assert.Contains("```gherkin\nWhen I lend \"Dune\" to Eva until 12-May-2026\n```", File.ReadAllText(file).ReplaceLineEndings("\n"));
+    }
+
+    [Fact]
     public void Phrases_ListsTypesAndBrokenPhrases()
     {
         var (exit, output, _) = Run("phrases", "--keyword", "When");

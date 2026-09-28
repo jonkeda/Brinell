@@ -59,6 +59,19 @@ public sealed partial class BddLanguageServer
         }
 
         OldForms(file, uri, actions);
+
+        // Steps written bare, before AD-023: wrap them, as brinell-data validate --fix does.
+        if (analysis.Diagnostics.FirstOrDefault(diagnostic => diagnostic.Message.EndsWith(BddFileFormat.FenceHint, StringComparison.Ordinal) && analysis.IsHere(diagnostic) &&
+                diagnostic.Location.LineNumber >= first && diagnostic.Location.LineNumber <= last) is { } bare &&
+            BddFileFormat.FenceSteps(file.Text) is ({ } fenced, > 0))
+        {
+            actions.Add(new CodeAction("Put the steps in ```gherkin blocks", "quickfix", Edit(uri, new TextEdit(Whole(file), fenced)))
+            {
+                Diagnostics = [ToLsp(file, analysis, bare)],
+                IsPreferred = true,
+            });
+        }
+
         foreach (var line in Enumerable.Range(first, last - first + 1))
         {
             if (analysis.Diagnostics.FirstOrDefault(diagnostic => diagnostic.Code == NotBound && analysis.IsHere(diagnostic) && diagnostic.Location.LineNumber == line) is { } unbound &&
