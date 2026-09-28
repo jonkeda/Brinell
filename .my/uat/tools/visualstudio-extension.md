@@ -25,7 +25,7 @@ the Visual Studio extension is a second thin client:
 
 | Piece | VS Code | Visual Studio |
 | --- | --- | --- |
-| `Brinell.Uat.LanguageServer` (.NET, LSP) | shared | shared, unchanged |
+| `Brinell.Bdd.LanguageServer` (.NET, LSP) | shared | shared, unchanged |
 | `Brinell.Uat.Host` (headless runner, JSON over stdio) | shared | shared, unchanged |
 | Preview renderer (markdown-it plugin + CSS) | built-in Markdown preview | our own tool window (section 5) |
 | Brinell MCP server (catalog, validate, scraper tools; see [scraper-in-extension.md](scraper-in-extension.md)) | shared | shared |
@@ -39,7 +39,7 @@ small on purpose.
 ```text
 Visual Studio 2022 / 2026
  +-- Brinell UAT extension (.NET, VisualStudio.Extensibility, out of process)
- |    +-- LSP client (LanguageServerProvider) ---- Brinell.Uat.LanguageServer
+ |    +-- LSP client (LanguageServerProvider) ---- Brinell.Bdd.LanguageServer
  |    |      for *.feature.md, *.steps.md, uat.config.md, on top of the Markdown editor
  |    +-- Commands: Run scenario, Debug scenario, Run file, Go to scenario
  |    +-- Tool windows: Scenario preview (WebView2), Phrase catalog, Pages

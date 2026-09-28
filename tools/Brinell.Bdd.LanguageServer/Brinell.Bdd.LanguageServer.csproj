@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Brinell.Bdd.LanguageServer</RootNamespace>
+    <Description>The one process every IDE talks to about feature and step files: JSON-RPC over stdio, serving the preview now and the language features later.</Description>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Brinell.Bdd.Workspace\Brinell.Bdd.Workspace.csproj" />
+    <ProjectReference Include="..\Brinell.Bdd.Preview\Brinell.Bdd.Preview.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="StreamJsonRpc" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Brinell.Bdd.LanguageServer.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Brinell.Bdd" />
+    <Using Include="Brinell.Uat" />
+  </ItemGroup>
+
+</Project>

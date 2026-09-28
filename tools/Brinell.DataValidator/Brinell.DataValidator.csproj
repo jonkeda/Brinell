@@ -18,7 +18,7 @@
     <!-- For reading uat.config.md and the scenario files' metadata. -->
     <ProjectReference Include="..\..\srcnew\Brinell.Uat\Brinell.Uat.csproj" />
     <!-- Finds and loads the suite the way every tool does. -->
-    <ProjectReference Include="..\Brinell.Uat.Workspace\Brinell.Uat.Workspace.csproj" />
+    <ProjectReference Include="..\Brinell.Bdd.Workspace\Brinell.Bdd.Workspace.csproj" />
   </ItemGroup>
 
   <ItemGroup>

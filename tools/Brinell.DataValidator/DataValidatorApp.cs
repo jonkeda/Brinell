@@ -2,7 +2,7 @@ using System.Text.Json;
 using Brinell.Core.Testing;
 using Brinell.TestData;
 using Brinell.Uat;
-using Brinell.Uat.Workspace;
+using Brinell.Bdd.Workspace;
 
 namespace Brinell.DataValidator;
 
@@ -32,7 +32,7 @@ public static class DataValidatorApp
                 _ => Usage(errors, 2),
             };
         }
-        catch (Exception exception) when (exception is ToolException or UatWorkspaceException)
+        catch (Exception exception) when (exception is ToolException or BddWorkspaceException)
         {
             errors.WriteLine($"error: {exception.Message}");
             return 2;

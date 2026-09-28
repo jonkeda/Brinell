@@ -1,7 +1,7 @@
 # VS Code extension for UAT scenarios: high-level design
 
 Status: **proposal**, drafted 2026-09-27. Nothing is built.
-Area: a new `tools/Brinell.Uat.VsCode` (TypeScript client) and `tools/Brinell.Uat.LanguageServer`
+Area: a new `tools/Brinell.Bdd.VsCode` (TypeScript client) and `tools/Brinell.Bdd.LanguageServer`
 (.NET); a headless runner split out of `srcnew/Brinell.Presenter`.
 
 ## 1. Goal
@@ -40,7 +40,7 @@ Three rules shape everything below:
 ```text
 VS Code
  +-- Brinell UAT extension (TypeScript)
- |    +-- LSP client ------------------------------ Brinell.Uat.LanguageServer (.NET)
+ |    +-- LSP client ------------------------------ Brinell.Bdd.LanguageServer (.NET)
  |    |                                              parser, catalogs, binder, values
  |    |                                              (reuses Brinell.Uat and ScenarioCheck)
  |    +-- TextMate injection: gherkin fences in Markdown (colours only)

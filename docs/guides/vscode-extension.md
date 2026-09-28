@@ -1,7 +1,7 @@
 # Brinell UAT In VS Code
 
-The VS Code extension (`tools/Brinell.Uat.VsCode`) is the Visual Studio extension's twin. It
-starts the same language server (`Brinell.Uat.LanguageServer`) and shows the same Scenario Preview,
+The VS Code extension (`tools/Brinell.Bdd.VsCode`) is the Visual Studio extension's twin. It
+starts the same language server (`Brinell.Bdd.LanguageServer`) and shows the same Scenario Preview,
 so the two IDEs say the same thing about a file. What each feature does is in the Visual Studio
 guide ([visual-studio-preview.md](visual-studio-preview.md)). This page is only what differs in
 VS Code.
@@ -10,7 +10,7 @@ It needs the .NET 10 runtime, and the C# extension (`ms-dotnettools.csharp`) to 
 
 ## Build And Run
 
-From `tools/Brinell.Uat.VsCode`:
+From `tools/Brinell.Bdd.VsCode`:
 
 ```powershell
 npm install
@@ -21,8 +21,8 @@ Open the folder in VS Code and press **F5** to start an Extension Development Ho
 folder with a suite, such as `samples/Todo`. The extension uses:
 - the server in its own `server` folder when packaged;
 - else `brinellUat.serverPath`;
-- else the repository's build of `tools/Brinell.Uat.LanguageServer` (build it first:
-  `dotnet build tools\Brinell.Uat.LanguageServer` from the Brinell root).
+- else the repository's build of `tools/Brinell.Bdd.LanguageServer` (build it first:
+  `dotnet build tools\Brinell.Bdd.LanguageServer` from the Brinell root).
 
 ## In The Editor
 

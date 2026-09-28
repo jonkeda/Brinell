@@ -1,5 +1,0 @@
-<Solution>
-  <!-- The Visual Studio extension only: it needs Visual Studio's MSBuild, so it is not in Brinell.sln. -->
-  <Project Path="Brinell.Uat.VisualStudio.csproj" />
-  <Project Path="../Brinell.Uat.VisualStudio.CodeLens/Brinell.Uat.VisualStudio.CodeLens.csproj" />
-</Solution>

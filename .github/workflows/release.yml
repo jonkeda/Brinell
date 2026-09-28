@@ -98,24 +98,24 @@ jobs:
         shell: pwsh
         run: |
           $version = '${{ steps.version.outputs.value }}'
-          $manifest = 'tools/Brinell.Uat.VisualStudio/source.extension.vsixmanifest'
+          $manifest = 'tools/Brinell.Bdd.VisualStudio/source.extension.vsixmanifest'
           (Get-Content $manifest -Raw) -replace '(<Identity [^>]*Version=")[^"]*', "`${1}$version" | Set-Content $manifest -NoNewline
-          Push-Location tools/Brinell.Uat.VsCode
+          Push-Location tools/Brinell.Bdd.VsCode
           npm version $version --no-git-tag-version --allow-same-version
           Pop-Location
 
       - name: Visual Studio extension
         shell: pwsh
         run: |
-          msbuild tools/Brinell.Uat.VisualStudio/Brinell.Uat.VisualStudio.slnx -restore -p:Configuration=Release -p:DeployExtension=false -v:minimal
+          msbuild tools/Brinell.Bdd.VisualStudio/Brinell.Bdd.VisualStudio.slnx -restore -p:Configuration=Release -p:DeployExtension=false -v:minimal
           New-Item -ItemType Directory -Force artifacts | Out-Null
-          Copy-Item tools/Brinell.Uat.VisualStudio/bin/Release/net48/Brinell.Uat.VisualStudio.vsix "artifacts/Brinell.Uat.VisualStudio-${{ steps.version.outputs.value }}.vsix"
+          Copy-Item tools/Brinell.Bdd.VisualStudio/bin/Release/net48/Brinell.Bdd.VisualStudio.vsix "artifacts/Brinell.Bdd.VisualStudio-${{ steps.version.outputs.value }}.vsix"
 
       - name: VS Code extension
         shell: pwsh
         run: |
-          dotnet publish tools/Brinell.Uat.LanguageServer -c Release -o tools/Brinell.Uat.VsCode/server --nologo -v:q
-          Push-Location tools/Brinell.Uat.VsCode
+          dotnet publish tools/Brinell.Bdd.LanguageServer -c Release -o tools/Brinell.Bdd.VsCode/server --nologo -v:q
+          Push-Location tools/Brinell.Bdd.VsCode
           npm ci
           npm run compile
           npx --yes @vscode/vsce@3 package --allow-missing-repository --skip-license -o "../../artifacts/brinell-uat-vscode-${{ steps.version.outputs.value }}.vsix"

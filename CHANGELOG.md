@@ -12,14 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   each with the language server inside and stamped with the tag's version. CI builds both on
   every pull request (`ide-extensions`). The server warns on the suite config (`UATG010`) when the
   suite's build references a Brinell assembly at another major or minor version than its own
-  (`UatVersionCheck`, `UatSuite.VersionMismatches`).
+  (`BddVersionCheck`, `BddSuite.VersionMismatches`).
 - Debugging the app too: while a debugger is attached to a test, `DebuggedApps.Announce`
   (`Brinell.Core.Diagnostics`) writes each app the test starts to
   `%TEMP%\Brinell\debugged-apps\<test pid>-<app pid>.json`. The MAUI FlaUI driver and the web host
   announce theirs; the web host skips `dotnet run`, whose process is the CLI. A Debug from the
   Visual Studio preview or from VS Code's Test Explorer attaches to each announced app after the
   testhost, so a breakpoint in the app's own code stops too.
-- The VS Code extension (`tools/Brinell.Uat.VsCode`, TypeScript):
+- The VS Code extension (`tools/Brinell.Bdd.VsCode`, TypeScript):
   - an LSP client for feature, step and config files on the same language server;
   - the same Scenario Preview in a webview, its screenshots through the webview's own URIs;
   - Test Explorer on the scenarios' addresses: build, then `dotnet test --filter BddScenario=...`,
@@ -28,7 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   The server gains `brinell/scenarios` (each suite's tests and filters) and `brinell/lastRuns`
   (a file's last results with the failed step).
 - The Brinell MCP server, for Copilot's agent mode and other agents:
-  `Brinell.Uat.LanguageServer --mcp [--solution <folder>]` (`UatMcpServer`), over stdio. It has the
+  `Brinell.Bdd.LanguageServer --mcp [--solution <folder>]` (`BddMcpServer`), over stdio. It has the
   tools `list_suites`, `list_steps` (by words), `list_pages`, `list_test_sets`, `validate_scenario`
   (a draft checked with the gate's words) and `find_step_usages`. It calls no model. The prompt
   file `.github/prompts/brinell-write-scenario.prompt.md` writes a feature file with them, using
@@ -43,7 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     `brinell-data schema` would.
   Completion and hover cover the fields, their values (heads, booleans, test sets), the assembly
   kinds, the namespaces and the apps' heads. A feature file's `TestData` metadata offers the test
-  sets. `UatSuite.TestDataDefinitions` loads the suite's test-data definitions with its build, each
+  sets. `BddSuite.TestDataDefinitions` loads the suite's test-data definitions with its build, each
   placed at its project rather than in the shadow copy.
 - UAT Explorer (Visual Studio, **View > Other Windows > UAT Explorer**) shows three views of a suite,
   and any entry with a source opens it:
@@ -63,36 +63,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Inline** puts a call's body in its place, with the call's values;
   - **Rename** a callable step renames its heading and every call, each call keeping its values.
     A new phrase that drops a placeholder is refused.
-  `UatSuite.StepDefinitionTypes` lists the loaded suite's step-definition classes.
+  `BddSuite.StepDefinitionTypes` lists the loaded suite's step-definition classes.
 - CodeLens from C# to scenarios (Visual Studio): "used in N UAT steps · M scenarios" above step
   definitions, page phrases and page-object controls, with the steps in its details.
   `brinell/usages` in the language server counts across every suite. A new assembly,
-  `Brinell.Uat.VisualStudio.CodeLens`, runs in Visual Studio's CodeLens process and reaches the
+  `Brinell.Bdd.VisualStudio.CodeLens`, runs in Visual Studio's CodeLens process and reaches the
   server through the extension's `ICodeLensCallbackListener`.
-- Hover, go to definition and find references in the editor (`Brinell.Uat.LanguageServer`). Hover
+- Hover, go to definition and find references in the editor (`Brinell.Bdd.LanguageServer`). Hover
   shows what a step binds to, its page and app, the method's XML `<summary>`, and each argument as
   written and as read. A call shows the callable and its body. Definition opens a C# step's method
-  through the portable PDB (`UatSourceLocator` in `Brinell.Uat.Workspace`, which also reads a PDB
+  through the portable PDB (`BddSourceLocator` in `Brinell.Bdd.Workspace`, which also reads a PDB
   beside a renamed assembly), a control verb's control on the page at that line, a page step's page
   class, and a call's `## Step:` heading. References finds every step in the suite's feature files,
   linked files included, that binds to the same method or calls the same callable.
-  `UatSuite.FindType` finds a type of the loaded suite, and the shadow copy now takes the XML doc
+  `BddSuite.FindType` finds a type of the loaded suite, and the shadow copy now takes the XML doc
   files too.
 - Completion in the editor (`textDocument/completion`): keywords, sections, and step texts by
   words (every typed word in the phrase, not only a prefix) as snippets with `{x}` tab stops. The
   current page's steps come first, and the file's callable steps are included. The values of the
   parameter at the caret are offered too: pages, the controls of the page the binder has the
   scenario on at that line, users, apps, enum members, and an outline's Examples columns.
-- Outline, folding and semantic colours in the editor (`Brinell.Uat.LanguageServer`):
+- Outline, folding and semantic colours in the editor (`Brinell.Bdd.LanguageServer`):
   `textDocument/documentSymbol` gives the heading tree by kind, `foldingRange` folds the sections,
   fences, tables and doc strings, and `semanticTokens/full` colours keywords, quoted values, `{x}`
-  and `<x>` placeholders, tags and comments. They come from the file's shape (`UatDocumentStructure`),
+  and `<x>` placeholders, tags and comments. They come from the file's shape (`BddDocumentStructure`),
   so they work before a build and while the file does not parse.
-- Diagnostics in the editor (Visual Studio, `Brinell.Uat.LanguageServer`): feature, step and config
+- Diagnostics in the editor (Visual Studio, `Brinell.Bdd.LanguageServer`): feature, step and config
   files get the `brinell-uat` content type (derived from Markdown) and an LSP client. The server
   publishes the gate's diagnostics word for word: the open file after a pause in typing, and every
   file of its suites on save and after a build. A step that failed in the last run is a `UATRUN`
-  error at its line. `UatFileAnalysis` (`Brinell.Uat.Preview`) is the one check the preview and the
+  error at its line. `BddFileAnalysis` (`Brinell.Bdd.Preview`) is the one check the preview and the
   server share. The server only computes diagnostics for a client that declares it takes them.
 - Debug from the preview (Visual Studio): **Debug** beside each **Run** and **Debug file** beside
   **Run file** run with `VSTEST_HOST_DEBUG` and attach Visual Studio's debugger to the testhost; a
@@ -105,7 +105,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   build the solution, then run `dotnet test --no-build --filter BddScenario=<address>` with the output
   in the Output pane. One run at a time; a build started during a run is cancelled; **Cancel run**
   stops the test process tree. `brinell/runTarget` gives the project and filter; a suite whose test
-  class keeps `[Theory]` shows the buttons disabled, saying why (`UatSuite.HasScenarioTheory`).
+  class keeps `[Theory]` shows the buttons disabled, saying why (`BddSuite.HasScenarioTheory`).
 - Step breakpoints (`Brinell.Bdd`): while a debugger is attached, `BddStepExecutionSession.RunNextAsync`
   stops before a step whose line `%LOCALAPPDATA%\Brinell\uat-breakpoints.json` lists, with a
   `BddStepBreak` local (text, arguments, app, page, call chain); a line in a `.steps.md` stops at each
@@ -116,12 +116,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `dotnet test --filter "BddScenario=..."` runs one scenario. A case whose feature file is the
   project's own has the scenario's line as its source. The Todo MAUI, web, mixed and service suites
   use it; their cases and counts are unchanged.
-- `Brinell.Uat.Workspace` (tools/): loads a suite one way for every tool. It finds the suites (projects
+- `Brinell.Bdd.Workspace` (tools/): loads a suite one way for every tool. It finds the suites (projects
   with a `uat.config.md` or `bdd.config.md`), reads the config, knows which suites a feature file
   is linked into, and builds the catalogs from a shadow copy of the build output in a collectible
   load context, so a build never meets a locked file and `Reload` releases the old build.
   `brinell-data` loads suites through it; its output is unchanged.
-- `Brinell.Uat.Preview` (tools/): renders a feature or step file as HTML for the IDE preview, from the
+- `Brinell.Bdd.Preview` (tools/): renders a feature or step file as HTML for the IDE preview, from the
   engine's parse: steps with the keyword in a gutter, quoted values, `{x}` arguments and `<x>`
   placeholders marked, tables and doc strings, tags, the metadata table, `## Step:` sections, and
   each parse diagnostic at its line (UAT029 with its fix for the old forms). Markdig renders the
@@ -134,17 +134,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `BddScenarioFiles.Load(path, text)`, `ParsePhrases(path, text)`, `CheckPhrases` and
   `BddLoadedScenarioFile.Check` (the gate's per-file check, which `UatScenarioCheck` now calls), and
   `BddBindResult.Scenarios`: every scenario as far as it bound, errors or not.
-- `Brinell.Uat.LanguageServer` (tools/): the one .NET process the IDEs talk to, JSON-RPC over stdio with
+- `Brinell.Bdd.LanguageServer` (tools/): the one .NET process the IDEs talk to, JSON-RPC over stdio with
   LSP framing (StreamJsonRpc). It serves `initialize` (the suites under the solution), full-text
   document sync, `brinell/preview` (the file rendered, bound in its suite or parsed only with the
   reason; a file linked into several suites offers each) and `brinell/buildDone` (reload the
   catalogs). `--preview <file> --out <page.html>` renders one file as a page without an IDE.
-- `Brinell.Uat.VisualStudio` (tools/, its own `.slnx`, built with Visual Studio's MSBuild): the Scenario
+- `Brinell.Bdd.VisualStudio` (tools/, its own `.slnx`, built with Visual Studio's MSBuild): the Scenario
   Preview tool window for Visual Studio 2022 17.10+ and 2026. A WebView2 shows the language
   server's preview of the active feature or step file; it renders again after a pause in typing and
   after each build, keeps the caret and the preview in step both ways, follows the VS theme, and
   offers a suite picker for a linked file. **Ctrl+K, V** opens it. The VSIX carries the server.
-  `UatPreview.HostPage` is the webview's page (the same for VS Code) and `brinell/previewHost`
+  `BddPreview.HostPage` is the webview's page (the same for VS Code) and `brinell/previewHost`
   serves it. Guide: "Scenario Preview In Visual Studio".
 - UAT reports name their file, lines and steps: `__result.json` is named after the feature file and the
   scenario (two files with a scenario of the same name no longer share one), and always holds the

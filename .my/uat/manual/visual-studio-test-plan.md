@@ -40,7 +40,7 @@ goes.
 | ID | Do | You should see | Result |
 | --- | --- | --- | --- |
 | S-1 | From the Brinell root, run `dotnet build samples\Todo\Brinell.Samples.Todo.slnx`. | The build succeeds. | ☐ |
-| S-2 | Open `tools\Brinell.Uat.VisualStudio\Brinell.Uat.VisualStudio.slnx` in Visual Studio and press **F5**. | The build succeeds, and a second Visual Studio starts with "Experimental Instance" in its title bar. Everything below happens in this experimental instance. | ☐ |
+| S-2 | Open `tools\Brinell.Bdd.VisualStudio\Brinell.Bdd.VisualStudio.slnx` in Visual Studio and press **F5**. | The build succeeds, and a second Visual Studio starts with "Experimental Instance" in its title bar. Everything below happens in this experimental instance. | ☐ |
 | S-3 | In the experimental instance, open `samples\Todo\Brinell.Samples.Todo.slnx`, then **Build > Build Solution**. | The Todo solution builds. | ☐ |
 | S-4 | **Extensions > Manage Extensions > Installed**. | "Brinell UAT" is listed and enabled. | ☐ |
 
@@ -185,7 +185,7 @@ Open the config (`uat.config.md`). Undo every change afterwards.
 | L-2 | Click it. | A table lists each step: file, line, step text, scenario. | ☐ |
 | L-3 | Open `samples\Todo\tests\Brinell.Samples.Todo.UITests\Pages\TodoListPage.cs`. | Above `SyncButton`, CodeLens counts the tap steps on the Todo List page. | ☐ |
 | L-4 | Find a method no step uses (any private helper). | No UAT CodeLens above it. | ☐ |
-| L-5 | Open a C# file in a solution with no suite (any other solution). Watch Task Manager. | No UAT CodeLens, and no `dotnet` process running `Brinell.Uat.LanguageServer.dll` is started for it. | ☐ |
+| L-5 | Open a C# file in a solution with no suite (any other solution). Watch Task Manager. | No UAT CodeLens, and no `dotnet` process running `Brinell.Bdd.LanguageServer.dll` is started for it. | ☐ |
 
 ## 11. UAT Explorer
 

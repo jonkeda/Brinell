@@ -13,13 +13,13 @@ anyway.
 The extension needs Visual Studio's MSBuild, so it has a solution of its own. From the Brinell root:
 
 ```powershell
-& "<Visual Studio>\MSBuild\Current\Bin\MSBuild.exe" tools\Brinell.Uat.VisualStudio\Brinell.Uat.VisualStudio.slnx -restore
+& "<Visual Studio>\MSBuild\Current\Bin\MSBuild.exe" tools\Brinell.Bdd.VisualStudio\Brinell.Bdd.VisualStudio.slnx -restore
 ```
 
-The build publishes `Brinell.Uat.LanguageServer` into the VSIX and deploys the extension to the
+The build publishes `Brinell.Bdd.LanguageServer` into the VSIX and deploys the extension to the
 experimental instance (`devenv /rootsuffix Exp`); pass `/p:DeployExtension=false` to only build it.
-To install it for everyday use, open `tools\Brinell.Uat.VisualStudio\bin\Debug\net48\Brinell.Uat.VisualStudio.vsix`.
-Each GitHub release carries both extensions: `Brinell.Uat.VisualStudio-<version>.vsix` for Visual
+To install it for everyday use, open `tools\Brinell.Bdd.VisualStudio\bin\Debug\net48\Brinell.Bdd.VisualStudio.vsix`.
+Each GitHub release carries both extensions: `Brinell.Bdd.VisualStudio-<version>.vsix` for Visual
 Studio, and `brinell-uat-vscode-<version>.vsix` for VS Code (**Extensions: Install from VSIX**).
 
 The server checks that a suite is built against its own Brinell. When a Brinell assembly the
@@ -96,13 +96,13 @@ step's text, its arguments as read, the app, the page and the call chain; **F11*
 step definition. A test runs the build output's copy of a feature file; a listed file matches it
 by its path below the `Features` folder.
 
-The extension starts `dotnet Server\Brinell.Uat.LanguageServer.dll` from its own folder; its log is
+The extension starts `dotnet Server\Brinell.Bdd.LanguageServer.dll` from its own folder; its log is
 the **Brinell UAT** pane of the Output window.
 
 ## In The Editor
 
 Feature files, step files and the suite configs (`uat.config.md`, `bdd.config.md`) open in the
-Markdown editor with a language server of their own, the same `Brinell.Uat.LanguageServer`:
+Markdown editor with a language server of their own, the same `Brinell.Bdd.LanguageServer`:
 
 - **Diagnostics.** The gate's problems show as squiggles and in the Error List, word for word as
   the xUnit gate and `brinell-data validate` report them: the open file as you type, the whole suite
@@ -206,7 +206,7 @@ From the Brinell root, for the Todo sample:
     "brinell-uat": {
       "type": "stdio",
       "command": "dotnet",
-      "args": ["run", "--project", "tools/Brinell.Uat.LanguageServer", "--", "--mcp", "--solution", "samples/Todo"]
+      "args": ["run", "--project", "tools/Brinell.Bdd.LanguageServer", "--", "--mcp", "--solution", "samples/Todo"]
     }
   }
 }
@@ -220,10 +220,10 @@ passes it. A step with no phrase is left as a marked gap, never an invented phra
 ## Without Visual Studio
 
 The server renders one file as a page, for a look or a bug report (from the Brinell root, after
-`dotnet build tools\Brinell.Uat.LanguageServer`):
+`dotnet build tools\Brinell.Bdd.LanguageServer`):
 
 ```powershell
-tools\Brinell.Uat.LanguageServer\bin\Debug\net10.0\Brinell.Uat.LanguageServer.exe --preview samples\Todo\tests\Brinell.Samples.Todo.Uat\Features\TOD.01-see-my-todos.feature.md --solution samples\Todo --out TestResults\preview.html
+tools\Brinell.Bdd.LanguageServer\bin\Debug\net10.0\Brinell.Bdd.LanguageServer.exe --preview samples\Todo\tests\Brinell.Samples.Todo.Uat\Features\TOD.01-see-my-todos.feature.md --solution samples\Todo --out TestResults\preview.html
 ```
 
 `--host` writes the page the IDE's webview loads, with the preview posted into it.

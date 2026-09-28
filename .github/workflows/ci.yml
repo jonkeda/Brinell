@@ -143,11 +143,11 @@ jobs:
           node-version: '22'
 
       - name: Visual Studio extension
-        run: msbuild tools/Brinell.Uat.VisualStudio/Brinell.Uat.VisualStudio.slnx -restore -p:DeployExtension=false -v:minimal
+        run: msbuild tools/Brinell.Bdd.VisualStudio/Brinell.Bdd.VisualStudio.slnx -restore -p:DeployExtension=false -v:minimal
 
       - name: VS Code extension
         shell: pwsh
-        working-directory: tools/Brinell.Uat.VsCode
+        working-directory: tools/Brinell.Bdd.VsCode
         run: |
           npm ci
           npm run compile
@@ -156,4 +156,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: visual-studio-extension
-          path: tools/Brinell.Uat.VisualStudio/bin/Debug/net48/Brinell.Uat.VisualStudio.vsix
+          path: tools/Brinell.Bdd.VisualStudio/bin/Debug/net48/Brinell.Bdd.VisualStudio.vsix

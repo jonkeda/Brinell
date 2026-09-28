@@ -55,7 +55,7 @@ parses only and says binding is off. VS Code gets the same HTML in its own scena
 proposal's Q1 fallback). Its markdown-it plugin becomes optional, for colours in the built-in
 preview only.
 
-**P2. One .NET process from day one: `Brinell.Uat.LanguageServer`.** The extension starts it over
+**P2. One .NET process from day one: `Brinell.Bdd.LanguageServer`.** The extension starts it over
 stdio with JSON-RPC (StreamJsonRpc, as Visual Studio's own LSP client uses). The first thing it
 serves is a custom request, `brinell/preview`. The LSP methods arrive in phase 3 in the same
 process. So nothing built for the preview is thrown away, and the editor phase adds handlers
@@ -68,7 +68,7 @@ LSP client could fail on a content type it does not like, and that must not brea
 Joining them later means sending the preview's `brinell/*` requests through
 `ILanguageClientCustomMessage2`.
 
-**P3. The renderer is a library, `Brinell.Uat.Preview`.** It holds the document model and the
+**P3. The renderer is a library, `Brinell.Bdd.Preview`.** It holds the document model and the
 catalog set, and turns them into HTML plus a stylesheet with CSS variables. It uses Markdig for
 the Markdown around the scenarios, with raw HTML switched off. Every block carries `data-line`,
 for scroll sync and for the buttons. It has no IDE and no process of its own, so the Presenter
@@ -149,7 +149,7 @@ order:
 
 ### Shared loading
 
-**L1. `Brinell.Uat.Workspace`, a shared net10 library, loads a suite one way for every tool.** It
+**L1. `Brinell.Bdd.Workspace`, a shared net10 library, loads a suite one way for every tool.** It
 comes from `ScenarioCheck` and the Presenter's `MsBuildProjectEvaluator`, and does these things:
 
 - finds the suites (projects with a `uat.config.md`, or a `bdd.config.md` for a `service` suite);
@@ -167,13 +167,13 @@ preview's parse-only mode needs `Brinell.Bdd` only.
 
 ```text
 Visual Studio 2022 17.10+ / 2026
- +-- Brinell.Uat.VisualStudio (VSIX, net48, in process)
+ +-- Brinell.Bdd.VisualStudio (VSIX, net48, in process)
  |    +-- Scenario Preview tool window (WebView2) --+
  |    +-- Run / Debug / Cancel, Output pane         |  JSON-RPC over stdio
  |    +-- build events, debugger attach             |
- |    +-- (phase 3) ILanguageClient ----------------+-- Brinell.Uat.LanguageServer (net10)
- |                                                        +-- Brinell.Uat.Preview   (HTML)
- |                                                        +-- Brinell.Uat.Workspace (suites, catalogs)
+ |    +-- (phase 3) ILanguageClient ----------------+-- Brinell.Bdd.LanguageServer (net10)
+ |                                                        +-- Brinell.Bdd.Preview   (HTML)
+ |                                                        +-- Brinell.Bdd.Workspace (suites, catalogs)
  |                                                        +-- Brinell.Uat           (pages, controls, page scope)
  |                                                        +-- Brinell.Bdd           (parse, bind)
  +-- Test Explorer (xUnit adapter) ---------- dotnet test / testhost
@@ -183,10 +183,10 @@ Visual Studio 2022 17.10+ / 2026
 
 | Project | Where | Framework | Tests |
 | --- | --- | --- | --- |
-| `Brinell.Uat.Workspace` | `tools/` | net10.0 | `testsnew/Brinell.Uat.Workspace.Tests`, against the Todo suites' build output |
-| `Brinell.Uat.Preview` | `tools/` | net10.0 | snapshot tests over the Todo feature files |
-| `Brinell.Uat.LanguageServer` | `tools/` | net10.0 | JSON-RPC over an in-memory stream |
-| `Brinell.Uat.VisualStudio` | `tools/`, **own `.slnx`**; the VSIX needs Visual Studio's MSBuild, so it stays out of `Brinell.sln` | net48 | a manual checklist in the experimental instance (section 6) |
+| `Brinell.Bdd.Workspace` | `tools/` | net10.0 | `testsnew/Brinell.Bdd.Workspace.Tests`, against the Todo suites' build output |
+| `Brinell.Bdd.Preview` | `tools/` | net10.0 | snapshot tests over the Todo feature files |
+| `Brinell.Bdd.LanguageServer` | `tools/` | net10.0 | JSON-RPC over an in-memory stream |
+| `Brinell.Bdd.VisualStudio` | `tools/`, **own `.slnx`**; the VSIX needs Visual Studio's MSBuild, so it stays out of `Brinell.sln` | net48 | a manual checklist in the experimental instance (section 6) |
 
 The VSIX carries the server as a framework-dependent publish and starts `dotnet <server>.dll`. It
 needs the .NET 10 runtime, which a developer of a Brinell suite has.
@@ -214,10 +214,10 @@ and a call into Test Explorer. Its findings go into section 7, and the code is n
 
 | # | Step | Done when |
 | --- | --- | --- |
-| 1.1 | **`Brinell.Uat.Workspace`** (L1): suite discovery, config reading, shadow-copied collectible loading, catalogs, reload. `brinell-data` uses it. | `brinell-data validate` gives the same output on the Todo suites; a test rebuilds the Todo UAT project while the workspace holds its catalog, and the build succeeds. |
-| 1.2 | **`Brinell.Uat.Preview`, parse-only**: Markdown via Markdig; each gherkin fence as a scenario block, with the keyword in a gutter, the step text, quoted values and `{x}` arguments marked, tables as tables and doc strings as blocks; Metadata as a small table; `## Step:` sections; `data-line` on every block; a file in the old form shows UAT029 with its fix. A stylesheet with light, dark and high-contrast variables. | Snapshot tests over every Todo feature and step file; a file with a parse error renders with the error at its line, not as a blank. |
+| 1.1 | **`Brinell.Bdd.Workspace`** (L1): suite discovery, config reading, shadow-copied collectible loading, catalogs, reload. `brinell-data` uses it. | `brinell-data validate` gives the same output on the Todo suites; a test rebuilds the Todo UAT project while the workspace holds its catalog, and the build succeeds. |
+| 1.2 | **`Brinell.Bdd.Preview`, parse-only**: Markdown via Markdig; each gherkin fence as a scenario block, with the keyword in a gutter, the step text, quoted values and `{x}` arguments marked, tables as tables and doc strings as blocks; Metadata as a small table; `## Step:` sections; `data-line` on every block; a file in the old form shows UAT029 with its fix. A stylesheet with light, dark and high-contrast variables. | Snapshot tests over every Todo feature and step file; a file with a parse error renders with the error at its line, not as a blank. |
 | 1.3 | **Binding in the preview**: with a catalog, each step shows what it binds to (as a tooltip: the method and the page), marks a step that binds to nothing with the gate's diagnostic, shows the page per step once it changes, and can unfold a callable call into its body with values filled in. The first Scenario Outline row is shown as bound; each row can be expanded. | Snapshot tests with the Todo catalog; the text of the TOD.11-without-using file's UATB010 appears in the preview word for word as the gate reports it. |
-| 1.4 | **`Brinell.Uat.LanguageServer`, skeleton**: stdio JSON-RPC, `initialize`, document sync, `brinell/preview`, `brinell/buildDone`; a file belongs to the suite whose project holds it, with a picker for a file linked into several (AD-014). Parse-only until a build exists, saying so. | JSON-RPC tests: open, change, preview, build done reloads the catalog. |
+| 1.4 | **`Brinell.Bdd.LanguageServer`, skeleton**: stdio JSON-RPC, `initialize`, document sync, `brinell/preview`, `brinell/buildDone`; a file belongs to the suite whose project holds it, with a picker for a file linked into several (AD-014). Parse-only until a build exists, saying so. | JSON-RPC tests: open, change, preview, build done reloads the catalog. |
 | 1.5 | **The VSIX and the Scenario Preview window**: starts the server when the first `.feature.md` or `.steps.md` opens; the window follows the active document; refreshes on edit (debounced) and on build done; scroll sync both ways (caret → block, click a block → caret); VS theme → CSS variables, live on theme change; WebView2 user data under `%LOCALAPPDATA%\Brinell\WebView2`; images through a virtual host mapping, never `file://`. | Checklist 6.1 passes in the experimental instance with the Todo solution. |
 | 1.6 | **Results in the preview** (P5): the report change in `UatScenarioTestBase` and the manifest lookup in the server; each step shows its status icon with a text alternative; a scenario shows its duration; a failed step shows its message and a screenshot thumbnail that opens full size. | A Todo UAT run from the command line, then the preview shows it; the Todo UAT suites and the service suite are still green with the new report. |
 
@@ -313,7 +313,7 @@ engine side has automated tests. These checklists cover what only Visual Studio 
 
 | Question | Notes |
 | --- | --- |
-| Where do the libraries live? | `tools/` here, since only tools use them. If the Presenter adopts `Brinell.Uat.Workspace` or `Brinell.Uat.Preview`, move them to `srcnew/`. |
+| Where do the libraries live? | `tools/` here, since only tools use them. If the Presenter adopts `Brinell.Bdd.Workspace` or `Brinell.Bdd.Preview`, move them to `srcnew/`. |
 | A preview without pages | A service suite's features could be previewed with `Brinell.Bdd` alone, but binding still needs the UI step patterns for UATB013 (AD-020). Keep one server on `Brinell.Uat` unless a suite without any UI package appears. |
 | xUnit v3 | R1's discoverer is v2-specific. A v3 move would redo it (v3 lets a case set its source location, which would make S5 moot). Not a reason to move now. |
 | The Presenter's renderer | The Presenter shows steps with its own views. Should it show the preview HTML instead? Not in this plan. |
