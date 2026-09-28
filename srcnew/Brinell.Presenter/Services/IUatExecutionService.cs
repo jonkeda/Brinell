@@ -2,7 +2,7 @@ using Brinell.Uat;
 
 namespace Brinell.Presenter.Services;
 
-public interface IUatExecutionService
+public interface IBddExecutionService
 {
     Task<PresenterUatExecutionSession> CreateSessionAsync(
         string workspacePath,

@@ -114,7 +114,7 @@ Grouped by what they point at. "Dangling" means the target is already gone.
 | `multi/plan.md`, `.my/multi` | `TestApps.cs`, `UatSessions.cs`, `TodoAppsFixture`, `TodoMauiDevice`, `TodoMixedUatFixture`, `SyncAcrossAppsTests`, `UatAppsHostTests`, `UatHeadsTests` | AD-014 / AD-015, or the new apps-host contract |
 | `communitytoolkit/probe.md` | `ToolkitVerbSink`, `MediaElement.tpl/gen.cs`, `Expander.tpl/gen.cs`, `CommunityToolkitAlertsTestPage`, `docs/controls/community-toolkit.md` | the new section in `docs/controls/community-toolkit.md` (regenerate the `.gen.cs` files, do not edit them) |
 | `communitytoolkit/plan.md` | `.claude/agents/control-source-builder.md` | stays (kept) |
-| `present/startup/00-presenter-workspace-design.md` | `FixtureInspector`, `MsBuildProjectEvaluator`, `UatWorkspaceConfigInspector`, `ConfigEditorViewModel` | the new Presenter workspace AD |
+| `present/startup/00-presenter-workspace-design.md` | `FixtureInspector`, `MsBuildProjectEvaluator`, `BddWorkspaceConfigInspector`, `ConfigEditorViewModel` | the new Presenter workspace AD |
 | `core/review-what-can-move-now.md`, `stale-readiness/move-down.md` | AD-010, CHANGELOG | evidence link / leave |
 | `TodoApp/plan.md` | `WindowsOnlyFact.cs` | say the reason in the comment |
 | `uat/rethinking-uat.md` | `samples/Todo/uat-walkthrough.md` | stays while kept; repoint if deleted |

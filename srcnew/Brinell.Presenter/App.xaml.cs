@@ -24,8 +24,8 @@ public partial class App : Application
         ResolveIconFont();
 
         var viewModel = new PresenterShellViewModel(
-            new UatWorkspaceService(),
-            new UatExecutionService(),
+            new BddWorkspaceService(),
+            new BddExecutionService(),
             new FolderPickerService(),
             settingsService);
         var window = new Window(new PresenterPage(viewModel))

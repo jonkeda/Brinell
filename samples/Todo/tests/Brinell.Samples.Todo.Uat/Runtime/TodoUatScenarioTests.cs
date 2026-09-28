@@ -9,7 +9,7 @@ namespace Brinell.Samples.Todo.Uat.Runtime;
 /// <remarks>
 /// <para>
 /// Before a file's first scenario, <see cref="BeforeFile"/> loads the file's <c>TestData</c> (or
-/// <c>DefaultTestData</c>); <see cref="UatScenarioOrderer"/> keeps files on the same test set
+/// <c>DefaultTestData</c>); <see cref="BddScenarioOrderer"/> keeps files on the same test set
 /// together, so the app restarts once per test set.
 /// </para>
 /// <para>
@@ -20,7 +20,7 @@ namespace Brinell.Samples.Todo.Uat.Runtime;
 /// </para>
 /// </remarks>
 [Collection(TodoUatCollection.CollectionName)]
-[TestCaseOrderer(UatScenarioOrderer.TypeName, UatScenarioOrderer.AssemblyName)]
+[TestCaseOrderer(BddScenarioOrderer.TypeName, BddScenarioOrderer.AssemblyName)]
 [Trait("Category", "UAT")]
 [Trait("Target", "MAUI")]
 public sealed class TodoUatScenarioTests : UatScenarioTestBase<TodoUatFixture>

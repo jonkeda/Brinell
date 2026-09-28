@@ -14,7 +14,7 @@ namespace Brinell.Presenter.ViewModels;
 /// <para>
 /// <b>These never reach the hidden text mirrors.</b> <c>WorkspaceTreeText</c> and friends are what
 /// the UAT suite asserts against, and they stay plain ASCII - see
-/// <see cref="UatWorkspaceNodeViewModel.DisplayText"/>, which keeps using <c>Icon</c> and
+/// <see cref="BddWorkspaceNodeViewModel.DisplayText"/>, which keeps using <c>Icon</c> and
 /// <c>ExpansionText</c> while the on-screen row binds <c>IconGlyph</c> and <c>ExpansionGlyph</c>.
 /// </para>
 /// </remarks>

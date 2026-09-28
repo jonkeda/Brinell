@@ -9,14 +9,14 @@ namespace Brinell.Presenter.ViewModels;
 
 public sealed class PresenterShellViewModel : ViewModelBase
 {
-    private readonly IUatExecutionService _executionService;
+    private readonly IBddExecutionService _executionService;
     private readonly IFolderPickerService _folderPickerService;
     private readonly IPresenterUserSettingsService _settingsService;
-    private readonly List<UatWorkspaceNodeViewModel> _allWorkspaceNodes = [];
+    private readonly List<BddWorkspaceNodeViewModel> _allWorkspaceNodes = [];
     private readonly List<PresenterStepTiming> _stepTimings = [];
-    private readonly IUatWorkspaceService _workspaceService;
+    private readonly IBddWorkspaceService _workspaceService;
     private PresenterUatExecutionSession? _activeSession;
-    private UatScenarioViewModel? _activeScenario;
+    private BddScenarioViewModel? _activeScenario;
     private string _allWorkspaceTreeText = string.Empty;
     private string _autPlacementText = string.Empty;
     private string _commandCatalogText = string.Empty;
@@ -33,9 +33,9 @@ public sealed class PresenterShellViewModel : ViewModelBase
     private string _scenarioListText = string.Empty;
     private PresenterRunExecutionOptions? _activeRunOptions;
     private string _runScopeText = string.Empty;
-    private UatScenarioViewModel? _selectedScenario;
+    private BddScenarioViewModel? _selectedScenario;
     private string _selectedTab = TreeTabName;
-    private UatWorkspaceNodeViewModel? _selectedWorkspaceNode;
+    private BddWorkspaceNodeViewModel? _selectedWorkspaceNode;
     private string _selectedWorkspaceNodeDetailsText = "No selection";
     private string _statusSummary = "No workspace loaded";
     private PresenterTheme _theme = PresenterTheme.System;
@@ -43,7 +43,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
     private string _workspaceConfigText = string.Empty;
     private string _workspaceName = "No workspace";
     private string? _workspacePath;
-    private UatWorkspaceNodeViewModel? _workspaceRoot;
+    private BddWorkspaceNodeViewModel? _workspaceRoot;
     private string _workspaceSummaryText = string.Empty;
     private string _workspaceTreeText = string.Empty;
     private readonly IProjectBuilder _projectBuilder = new MsBuildProjectBuilder();
@@ -62,8 +62,8 @@ public sealed class PresenterShellViewModel : ViewModelBase
     private const string CommandCatalogTabName = "Command Catalog";
 
     public PresenterShellViewModel(
-        IUatWorkspaceService workspaceService,
-        IUatExecutionService executionService,
+        IBddWorkspaceService workspaceService,
+        IBddExecutionService executionService,
         IFolderPickerService folderPickerService,
         IPresenterUserSettingsService settingsService)
     {
@@ -109,20 +109,20 @@ public sealed class PresenterShellViewModel : ViewModelBase
     /// <summary>The Config tab's editor for the workspace's two config rows.</summary>
     public ConfigEditorViewModel ConfigEditor { get; }
 
-    public ObservableCollection<UatFileViewModel> Files { get; } = [];
+    public ObservableCollection<BddFileViewModel> Files { get; } = [];
 
-    public ObservableCollection<UatScenarioViewModel> Scenarios { get; } = [];
+    public ObservableCollection<BddScenarioViewModel> Scenarios { get; } = [];
 
-    public ObservableCollection<UatStepViewModel> Steps { get; } = [];
+    public ObservableCollection<BddStepViewModel> Steps { get; } = [];
 
     /// <summary>
     /// The visible rows, flattened. Still the source of <c>WorkspaceTreeText</c>, which the UAT
     /// suite asserts against; the on-screen tree binds <see cref="WorkspaceRootNodes"/>.
     /// </summary>
-    public ObservableCollection<UatWorkspaceNodeViewModel> WorkspaceTreeNodes { get; } = [];
+    public ObservableCollection<BddWorkspaceNodeViewModel> WorkspaceTreeNodes { get; } = [];
 
     /// <summary>The workspace root, as the one item the tree control nests everything under.</summary>
-    public ObservableCollection<UatWorkspaceNodeViewModel> WorkspaceRootNodes { get; } = [];
+    public ObservableCollection<BddWorkspaceNodeViewModel> WorkspaceRootNodes { get; } = [];
 
     public ObservableCollection<RecentFolderViewModel> RecentFolders { get; } = [];
 
@@ -376,7 +376,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
         private set => SetProperty(ref _runProgress, value);
     }
 
-    public UatWorkspaceNodeViewModel? SelectedWorkspaceNode
+    public BddWorkspaceNodeViewModel? SelectedWorkspaceNode
     {
         get => _selectedWorkspaceNode;
         set
@@ -400,7 +400,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
         private set => SetProperty(ref _selectedWorkspaceNodeDetailsText, value);
     }
 
-    public UatScenarioViewModel? SelectedScenario
+    public BddScenarioViewModel? SelectedScenario
     {
         get => _selectedScenario;
         set
@@ -699,13 +699,13 @@ public sealed class PresenterShellViewModel : ViewModelBase
         Files.Clear();
         foreach (var file in result.Files)
         {
-            Files.Add(new UatFileViewModel(file));
+            Files.Add(new BddFileViewModel(file));
         }
 
         Scenarios.Clear();
         foreach (var scenario in result.Scenarios)
         {
-            Scenarios.Add(new UatScenarioViewModel(scenario));
+            Scenarios.Add(new BddScenarioViewModel(scenario));
         }
 
         SelectedScenario = Scenarios.FirstOrDefault();
@@ -734,7 +734,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
         RunProgress = 0;
     }
 
-    private void BuildWorkspaceTree(UatWorkspaceLoadResult result)
+    private void BuildWorkspaceTree(BddWorkspaceLoadResult result)
     {
         // A reload rebuilds every node, so where you were is carried across by NodePath.
         // Saving the config reloads, and a save that drops your place is worse than no reload.
@@ -749,19 +749,19 @@ public sealed class PresenterShellViewModel : ViewModelBase
         WorkspaceRootNodes.Clear();
         _workspaceRoot = null;
 
-        var root = new UatWorkspaceNodeViewModel(
+        var root = new BddWorkspaceNodeViewModel(
             result.WorkspaceName,
-            UatWorkspaceNodeKind.Folder,
+            BddWorkspaceNodeKind.Folder,
             0,
             result.FolderPath,
             expansionChanged: OnWorkspaceNodeExpansionChanged);
 
-        var folderNodes = new Dictionary<string, UatWorkspaceNodeViewModel>(StringComparer.OrdinalIgnoreCase)
+        var folderNodes = new Dictionary<string, BddWorkspaceNodeViewModel>(StringComparer.OrdinalIgnoreCase)
         {
             [Path.GetFullPath(result.FolderPath)] = root
         };
 
-        var fileNodes = new Dictionary<string, UatWorkspaceNodeViewModel>(StringComparer.OrdinalIgnoreCase);
+        var fileNodes = new Dictionary<string, BddWorkspaceNodeViewModel>(StringComparer.OrdinalIgnoreCase);
         var filesByPath = Files.ToDictionary(file => Path.GetFullPath(file.FilePath), StringComparer.OrdinalIgnoreCase);
         var scenariosByFile = Scenarios
             .GroupBy(scenario => Path.GetFullPath(scenario.FilePath), StringComparer.OrdinalIgnoreCase)
@@ -774,7 +774,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
             var parentNode = EnsureFolderNode(parentFolderPath, result.FolderPath, root, folderNodes);
             var fileName = Path.GetFileName(fullFilePath);
             var kind = GetFileNodeKind(fileName);
-            var fileNode = new UatWorkspaceNodeViewModel(
+            var fileNode = new BddWorkspaceNodeViewModel(
                 fileName,
                 kind,
                 parentNode.Depth + 1,
@@ -784,14 +784,14 @@ public sealed class PresenterShellViewModel : ViewModelBase
             parentNode.AddChild(fileNode);
             fileNodes[fullFilePath] = fileNode;
 
-            if (kind == UatWorkspaceNodeKind.MarkdownFile
+            if (kind == BddWorkspaceNodeKind.MarkdownFile
                 && scenariosByFile.TryGetValue(fullFilePath, out var fileScenarios))
             {
                 var suiteName = fileScenarios.FirstOrDefault()?.SuiteName
                     ?? Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(fileName));
-                var suiteNode = new UatWorkspaceNodeViewModel(
+                var suiteNode = new BddWorkspaceNodeViewModel(
                     suiteName,
-                    UatWorkspaceNodeKind.Suite,
+                    BddWorkspaceNodeKind.Suite,
                     fileNode.Depth + 1,
                     fullFilePath,
                     expansionChanged: OnWorkspaceNodeExpansionChanged);
@@ -799,9 +799,9 @@ public sealed class PresenterShellViewModel : ViewModelBase
                 fileNode.AddChild(suiteNode);
                 foreach (var scenario in fileScenarios)
                 {
-                    var scenarioNode = new UatWorkspaceNodeViewModel(
+                    var scenarioNode = new BddWorkspaceNodeViewModel(
                         scenario.Name,
-                        UatWorkspaceNodeKind.Scenario,
+                        BddWorkspaceNodeKind.Scenario,
                         suiteNode.Depth + 1,
                         fullFilePath,
                         scenario,
@@ -810,9 +810,9 @@ public sealed class PresenterShellViewModel : ViewModelBase
                     suiteNode.AddChild(scenarioNode);
                     foreach (var step in scenario.Steps)
                     {
-                        scenarioNode.AddChild(new UatWorkspaceNodeViewModel(
+                        scenarioNode.AddChild(new BddWorkspaceNodeViewModel(
                             step.Text,
-                            UatWorkspaceNodeKind.Step,
+                            BddWorkspaceNodeKind.Step,
                             scenarioNode.Depth + 1,
                             fullFilePath,
                             scenario,
@@ -824,9 +824,9 @@ public sealed class PresenterShellViewModel : ViewModelBase
             else if (filesByPath.TryGetValue(fullFilePath, out var loadedFile)
                      && !string.IsNullOrWhiteSpace(loadedFile.Diagnostics))
             {
-                fileNode.AddChild(new UatWorkspaceNodeViewModel(
+                fileNode.AddChild(new BddWorkspaceNodeViewModel(
                     "Diagnostics available",
-                    UatWorkspaceNodeKind.File,
+                    BddWorkspaceNodeKind.File,
                     fileNode.Depth + 1,
                     fullFilePath,
                     expansionChanged: OnWorkspaceNodeExpansionChanged));
@@ -840,9 +840,9 @@ public sealed class PresenterShellViewModel : ViewModelBase
         var preferredScenario = SelectedScenario ?? Scenarios.FirstOrDefault();
         var preferredNode = FindByNodePath(selectedBefore)
                             ?? _allWorkspaceNodes.FirstOrDefault(
-                                node => node.Kind == UatWorkspaceNodeKind.Scenario
+                                node => node.Kind == BddWorkspaceNodeKind.Scenario
                                         && ReferenceEquals(node.Scenario, preferredScenario))
-                            ?? _allWorkspaceNodes.FirstOrDefault(node => node.Kind == UatWorkspaceNodeKind.Scenario)
+                            ?? _allWorkspaceNodes.FirstOrDefault(node => node.Kind == BddWorkspaceNodeKind.Scenario)
                             ?? root;
         ExpandAncestors(preferredNode);
         _workspaceRoot = root;
@@ -851,7 +851,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
         RefreshVisibleWorkspaceTree();
         SelectedWorkspaceNode = preferredNode;
 
-        void AddAllNode(UatWorkspaceNodeViewModel node)
+        void AddAllNode(BddWorkspaceNodeViewModel node)
         {
             _allWorkspaceNodes.Add(node);
             foreach (var child in node.Children)
@@ -979,7 +979,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
     }
 
     /// <summary>Re-expands the nodes that were expanded before a reload.</summary>
-    /// <param name="expandedPaths">The <see cref="UatWorkspaceNodeViewModel.NodePath" />s to expand.</param>
+    /// <param name="expandedPaths">The <see cref="BddWorkspaceNodeViewModel.NodePath" />s to expand.</param>
     private void RestoreExpansion(IReadOnlySet<string> expandedPaths)
     {
         if (expandedPaths.Count == 0)
@@ -999,7 +999,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
     /// </summary>
     /// <param name="nodePath">The path to find, or null.</param>
     /// <returns>The node, an ancestor of it, or null.</returns>
-    private UatWorkspaceNodeViewModel? FindByNodePath(string? nodePath)
+    private BddWorkspaceNodeViewModel? FindByNodePath(string? nodePath)
     {
         if (string.IsNullOrEmpty(nodePath))
         {
@@ -1028,7 +1028,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
         return null;
     }
 
-    private void OnWorkspaceNodeExpansionChanged(UatWorkspaceNodeViewModel node)
+    private void OnWorkspaceNodeExpansionChanged(BddWorkspaceNodeViewModel node)
     {
         if (_workspaceRoot is not null)
         {
@@ -1048,7 +1048,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
         UpdateWorkspaceTreeText();
         UpdateAllWorkspaceTreeText();
 
-        void AddVisibleNode(UatWorkspaceNodeViewModel node)
+        void AddVisibleNode(BddWorkspaceNodeViewModel node)
         {
             WorkspaceTreeNodes.Add(node);
             if (!node.IsExpanded)
@@ -1063,17 +1063,17 @@ public sealed class PresenterShellViewModel : ViewModelBase
         }
     }
 
-    private static void ApplyInitialExpansion(UatWorkspaceNodeViewModel root)
+    private static void ApplyInitialExpansion(BddWorkspaceNodeViewModel root)
     {
         root.IsExpanded = true;
         foreach (var child in root.Children)
         {
-            child.IsExpanded = child.Kind != UatWorkspaceNodeKind.Folder || CountMarkdownDescendants(child) <= 1;
+            child.IsExpanded = child.Kind != BddWorkspaceNodeKind.Folder || CountMarkdownDescendants(child) <= 1;
             CollapseDescendants(child);
         }
     }
 
-    private static void CollapseDescendants(UatWorkspaceNodeViewModel node)
+    private static void CollapseDescendants(BddWorkspaceNodeViewModel node)
     {
         foreach (var child in node.Children)
         {
@@ -1082,7 +1082,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
         }
     }
 
-    private static void ExpandAncestors(UatWorkspaceNodeViewModel node)
+    private static void ExpandAncestors(BddWorkspaceNodeViewModel node)
     {
         var current = node.Parent;
         while (current is not null)
@@ -1092,9 +1092,9 @@ public sealed class PresenterShellViewModel : ViewModelBase
         }
     }
 
-    private static int CountMarkdownDescendants(UatWorkspaceNodeViewModel node)
+    private static int CountMarkdownDescendants(BddWorkspaceNodeViewModel node)
     {
-        var count = node.Kind is UatWorkspaceNodeKind.MarkdownFile or UatWorkspaceNodeKind.WorkflowConfig ? 1 : 0;
+        var count = node.Kind is BddWorkspaceNodeKind.MarkdownFile or BddWorkspaceNodeKind.WorkflowConfig ? 1 : 0;
         return count + node.Children.Sum(CountMarkdownDescendants);
     }
 
@@ -1208,7 +1208,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
         RefreshSelectedNodeDetails();
     }
 
-    private async Task StartStepSessionAsync(UatScenarioViewModel scenario)
+    private async Task StartStepSessionAsync(BddScenarioViewModel scenario)
     {
         if (WorkspacePath is null)
         {
@@ -1250,7 +1250,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
     }
 
     private async Task<bool> RunScenarioAutoAsync(
-        UatScenarioViewModel scenario,
+        BddScenarioViewModel scenario,
         PresenterRunExecutionOptions options)
     {
         if (WorkspacePath is null)
@@ -1323,7 +1323,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
 
     private async Task<BddStepResult> RunNextStepAsync(
         PresenterUatExecutionSession session,
-        UatScenarioViewModel scenario)
+        BddScenarioViewModel scenario)
     {
         var index = session.CompletedStepCount;
         var startedAt = DateTimeOffset.Now;
@@ -1362,7 +1362,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
 
     private async Task WaitBeforeNextStepAsync(
         PresenterUatExecutionSession session,
-        UatScenarioViewModel scenario,
+        BddScenarioViewModel scenario,
         PresenterRunExecutionOptions options)
     {
         if (!session.HasNext)
@@ -1396,14 +1396,14 @@ public sealed class PresenterShellViewModel : ViewModelBase
         }
     }
 
-    private static string GetScenarioStepText(UatScenarioViewModel scenario, int index)
+    private static string GetScenarioStepText(BddScenarioViewModel scenario, int index)
     {
         return index >= 0 && index < scenario.Steps.Count
             ? scenario.Steps[index].Text
             : scenario.Name;
     }
 
-    private void LoadSteps(UatScenarioViewModel? scenario)
+    private void LoadSteps(BddScenarioViewModel? scenario)
     {
         Steps.Clear();
         if (scenario is not null)
@@ -1418,7 +1418,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
         RunProgress = 0;
     }
 
-    private void ResetScenario(UatScenarioViewModel scenario, bool clearTimings = true)
+    private void ResetScenario(BddScenarioViewModel scenario, bool clearTimings = true)
     {
         if (clearTimings)
         {
@@ -1500,33 +1500,33 @@ public sealed class PresenterShellViewModel : ViewModelBase
         SelectedWorkspaceNodeDetailsText = FormatSelectedNodeDetails(SelectedWorkspaceNode);
     }
 
-    private IEnumerable<UatScenarioViewModel> GetRunnableScenarios(UatWorkspaceNodeViewModel? node)
+    private IEnumerable<BddScenarioViewModel> GetRunnableScenarios(BddWorkspaceNodeViewModel? node)
     {
         if (node is null)
         {
             return [];
         }
 
-        if (node.Kind == UatWorkspaceNodeKind.Step)
+        if (node.Kind == BddWorkspaceNodeKind.Step)
         {
             return node.Scenario is null ? [] : [node.Scenario];
         }
 
-        if (node.Kind == UatWorkspaceNodeKind.Scenario)
+        if (node.Kind == BddWorkspaceNodeKind.Scenario)
         {
             return node.Scenario is null ? [] : [node.Scenario];
         }
 
         return EnumerateDescendants(node)
-            .Where(candidate => candidate.Kind == UatWorkspaceNodeKind.Scenario && candidate.Scenario is not null)
+            .Where(candidate => candidate.Kind == BddWorkspaceNodeKind.Scenario && candidate.Scenario is not null)
             .Select(candidate => candidate.Scenario!)
             .Distinct()
             .ToArray();
     }
 
     private PresenterRunExecutionOptions CaptureRunExecutionOptions(
-        UatWorkspaceNodeViewModel? selectedNode,
-        IReadOnlyCollection<UatScenarioViewModel> scenarios)
+        BddWorkspaceNodeViewModel? selectedNode,
+        IReadOnlyCollection<BddScenarioViewModel> scenarios)
     {
         var effectiveDelay = ParseDelayMilliseconds(ExecutionDelayText);
         ExecutionDelayMilliseconds = effectiveDelay;
@@ -1550,7 +1550,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
         return Math.Clamp(parsed, 0, MaxExecutionDelayMilliseconds);
     }
 
-    private string FormatSelectedNodeDetails(UatWorkspaceNodeViewModel? node)
+    private string FormatSelectedNodeDetails(BddWorkspaceNodeViewModel? node)
     {
         if (node is null)
         {
@@ -1605,7 +1605,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
             : path;
     }
 
-    private static IEnumerable<UatWorkspaceNodeViewModel> EnumerateDescendants(UatWorkspaceNodeViewModel node)
+    private static IEnumerable<BddWorkspaceNodeViewModel> EnumerateDescendants(BddWorkspaceNodeViewModel node)
     {
         foreach (var child in node.Children)
         {
@@ -1632,23 +1632,23 @@ public sealed class PresenterShellViewModel : ViewModelBase
                                        || segment.Equals("obj", StringComparison.OrdinalIgnoreCase));
     }
 
-    private static UatWorkspaceNodeKind GetFileNodeKind(string fileName)
+    private static BddWorkspaceNodeKind GetFileNodeKind(string fileName)
     {
         if (BddFileFormat.IsConfigFileName(fileName))
         {
-            return UatWorkspaceNodeKind.WorkflowConfig;
+            return BddWorkspaceNodeKind.WorkflowConfig;
         }
 
         return fileName.EndsWith(BddFileFormat.FeatureExtension, StringComparison.OrdinalIgnoreCase)
-            ? UatWorkspaceNodeKind.MarkdownFile
-            : UatWorkspaceNodeKind.MarkdownFile;
+            ? BddWorkspaceNodeKind.MarkdownFile
+            : BddWorkspaceNodeKind.MarkdownFile;
     }
 
-    private UatWorkspaceNodeViewModel EnsureFolderNode(
+    private BddWorkspaceNodeViewModel EnsureFolderNode(
         string folderPath,
         string rootPath,
-        UatWorkspaceNodeViewModel root,
-        Dictionary<string, UatWorkspaceNodeViewModel> folderNodes)
+        BddWorkspaceNodeViewModel root,
+        Dictionary<string, BddWorkspaceNodeViewModel> folderNodes)
     {
         var fullFolderPath = Path.GetFullPath(folderPath);
         if (folderNodes.TryGetValue(fullFolderPath, out var existing))
@@ -1665,9 +1665,9 @@ public sealed class PresenterShellViewModel : ViewModelBase
             : EnsureFolderNode(parentFolderPath, fullRootPath, root, folderNodes);
 
         var folderName = Path.GetFileName(fullFolderPath);
-        var node = new UatWorkspaceNodeViewModel(
+        var node = new BddWorkspaceNodeViewModel(
             folderName,
-            UatWorkspaceNodeKind.Folder,
+            BddWorkspaceNodeKind.Folder,
             parentNode.Depth + 1,
             fullFolderPath,
             expansionChanged: OnWorkspaceNodeExpansionChanged);
@@ -1676,7 +1676,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
         return node;
     }
 
-    private static void SortTree(UatWorkspaceNodeViewModel node)
+    private static void SortTree(BddWorkspaceNodeViewModel node)
     {
         node.Children.Sort(CompareNodes);
         foreach (var child in node.Children)
@@ -1685,9 +1685,9 @@ public sealed class PresenterShellViewModel : ViewModelBase
         }
     }
 
-    private static int CompareNodes(UatWorkspaceNodeViewModel left, UatWorkspaceNodeViewModel right)
+    private static int CompareNodes(BddWorkspaceNodeViewModel left, BddWorkspaceNodeViewModel right)
     {
-        if (left.Kind == UatWorkspaceNodeKind.Folder && right.Kind == UatWorkspaceNodeKind.Folder)
+        if (left.Kind == BddWorkspaceNodeKind.Folder && right.Kind == BddWorkspaceNodeKind.Folder)
         {
             var expectedFailureComparison = IsExpectedFailuresFolder(left)
                 .CompareTo(IsExpectedFailuresFolder(right));
@@ -1703,21 +1703,21 @@ public sealed class PresenterShellViewModel : ViewModelBase
             : string.Compare(left.Name, right.Name, StringComparison.OrdinalIgnoreCase);
     }
 
-    private static int IsExpectedFailuresFolder(UatWorkspaceNodeViewModel node)
+    private static int IsExpectedFailuresFolder(BddWorkspaceNodeViewModel node)
     {
         return node.Name.Equals("ExpectedFailures", StringComparison.OrdinalIgnoreCase) ? 1 : 0;
     }
 
-    private static int NodeRank(UatWorkspaceNodeKind kind)
+    private static int NodeRank(BddWorkspaceNodeKind kind)
     {
         return kind switch
         {
-            UatWorkspaceNodeKind.WorkflowConfig => 0,
-            UatWorkspaceNodeKind.Folder => 1,
-            UatWorkspaceNodeKind.MarkdownFile => 2,
-            UatWorkspaceNodeKind.Suite => 3,
-            UatWorkspaceNodeKind.Scenario => 4,
-            UatWorkspaceNodeKind.Step => 5,
+            BddWorkspaceNodeKind.WorkflowConfig => 0,
+            BddWorkspaceNodeKind.Folder => 1,
+            BddWorkspaceNodeKind.MarkdownFile => 2,
+            BddWorkspaceNodeKind.Suite => 3,
+            BddWorkspaceNodeKind.Scenario => 4,
+            BddWorkspaceNodeKind.Step => 5,
             _ => 6
         };
     }
@@ -1860,7 +1860,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
         return $"- Step {timing.StepNumber}: {timing.StartedAt:HH:mm:ss.fff} -> {timing.CompletedAt:HH:mm:ss.fff} ({duration} ms), {waitText}: {timing.StepText}";
     }
 
-    private static string FormatWorkspaceConfig(UatWorkspaceConfigLoadResult config)
+    private static string FormatWorkspaceConfig(BddWorkspaceConfigLoadResult config)
     {
         List<string> lines =
         [

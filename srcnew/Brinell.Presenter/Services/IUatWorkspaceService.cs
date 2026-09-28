@@ -2,9 +2,9 @@ using Brinell.Presenter.Models;
 
 namespace Brinell.Presenter.Services;
 
-public interface IUatWorkspaceService
+public interface IBddWorkspaceService
 {
     string? FindDefaultWorkspace();
 
-    UatWorkspaceLoadResult LoadFolder(string folderPath);
+    BddWorkspaceLoadResult LoadFolder(string folderPath);
 }

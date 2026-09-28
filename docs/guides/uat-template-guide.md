@@ -70,7 +70,7 @@ scenario - each outline row too - into a theory case of its own:
 
 ```csharp
 [Collection(TodoUatCollection.CollectionName)]
-[TestCaseOrderer(UatScenarioOrderer.TypeName, UatScenarioOrderer.AssemblyName)]
+[TestCaseOrderer(BddScenarioOrderer.TypeName, BddScenarioOrderer.AssemblyName)]
 public sealed class TodoUatScenarioTests : UatScenarioTestBase<TodoUatFixture>
 {
     public TodoUatScenarioTests(TodoUatFixture fixture) : base(fixture) { }
@@ -101,7 +101,7 @@ what a file's metadata asks for; it runs before the file is bound, once per file
 `GetScenarioTheoryData` orders cases by the files' `TestData`, then file, then
 position (`BddScenarioSource.GetOrderKey`). xUnit 2 runs theory cases in case-id
 order unless told otherwise, so the Todo sample adds a small `ITestCaseOrderer`
-(`UatScenarioOrderer`) that sorts by that key: the app then restarts once per test
+(`BddScenarioOrderer`) that sorts by that key: the app then restarts once per test
 set, not once per scenario. `GetScenarioFiles` / `RunUatFileAsync` still run a
 whole file as one case.
 

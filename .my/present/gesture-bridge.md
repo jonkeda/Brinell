@@ -2,7 +2,7 @@
 
 Status: Proposed — not started
 Date: 2026-09-21
-Area: `srcnew/Brinell.Presenter/`, `testsnew/Brinell.Presenter.Uat.Tests/`
+Area: `srcnew/Brinell.Presenter/`, `testsnew/Brinell.Presenter.Bdd.Tests/`
 Related:
 
 - [AD-008 — gestures and semantic actions go through UI Automation](../../.docs/decisions/ad-008-gestures-and-semantic-actions-go-through-ui-automation.md)
@@ -17,7 +17,7 @@ Related:
 ## 0. What this is
 
 The Presenter is the one MAUI app in `srcnew/` that is also an **app under test** —
-`Brinell.Presenter.Uat.Tests` launches the real `.exe` and drives it through UI
+`Brinell.Presenter.Bdd.Tests` launches the real `.exe` and drives it through UI
 Automation. The sample app carries the gesture bridge; the Presenter does not. This
 plan adds it, following the same two-line wiring the sample app uses.
 
@@ -93,7 +93,7 @@ working and is mechanical. That is a separate plan; note it and move on.
 
 - Debug build of the Presenter defines `BRINELL_UIA_BRIDGE`; a `-p:BrinellUiaBridge=false` build does not, and still builds and runs.
 - Launched by the UAT fixture, the bridge reports itself enabled in `BRINELL_UIA_LOG`.
-- `Brinell.Presenter.Uat.Tests` passes unchanged — **no test edit should be needed for WP1.**
+- `Brinell.Presenter.Bdd.Tests` passes unchanged — **no test edit should be needed for WP1.**
 
 ## WP2 — The first verb: `GetState` on what the user can see
 

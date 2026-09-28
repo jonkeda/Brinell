@@ -201,7 +201,7 @@ public sealed class ConfigEditorViewModel : ViewModelBase
     /// <summary>Shows the workspace's config, discarding any unsaved edits.</summary>
     /// <param name="workspacePath">The workspace folder.</param>
     /// <param name="config">What the inspector made of it.</param>
-    public void Load(string workspacePath, UatWorkspaceConfigLoadResult config)
+    public void Load(string workspacePath, BddWorkspaceConfigLoadResult config)
     {
         ArgumentNullException.ThrowIfNull(config);
 
@@ -231,8 +231,8 @@ public sealed class ConfigEditorViewModel : ViewModelBase
                 ? $"{config.ResolvedAppPath}   configured override"
                 : "owned by the fixture";
 
-            ProjectProblem = Describe(config.ProblemsFor(UatConfigSections.Runtime, BddConfigFields.Project));
-            FixtureProblem = Describe(config.ProblemsFor(UatConfigSections.Runtime, BddConfigFields.Fixture));
+            ProjectProblem = Describe(config.ProblemsFor(BddConfigSections.Runtime, BddConfigFields.Project));
+            FixtureProblem = Describe(config.ProblemsFor(BddConfigSections.Runtime, BddConfigFields.Fixture));
             SaveMessage = string.Empty;
 
             RefreshFixtureCandidates();
@@ -244,10 +244,10 @@ public sealed class ConfigEditorViewModel : ViewModelBase
         }
     }
 
-    private static string Describe(IReadOnlyList<UatConfigProblem> problems) =>
+    private static string Describe(IReadOnlyList<BddConfigProblem> problems) =>
         problems.Count == 0 ? string.Empty : string.Join(Environment.NewLine, problems.Select(p => p.Message));
 
-    private static string DescribePages(UatWorkspaceConfigLoadResult config)
+    private static string DescribePages(BddWorkspaceConfigLoadResult config)
     {
         var pages = config.Assemblies.FirstOrDefault(assembly =>
             assembly.Kind.Equals("Pages", StringComparison.OrdinalIgnoreCase));
@@ -346,8 +346,8 @@ public sealed class ConfigEditorViewModel : ViewModelBase
         }
 
         var edit = BddConfigEdit.Empty
-            .WithField(UatConfigSections.Runtime, BddConfigFields.Project, Blank(ProjectText))
-            .WithField(UatConfigSections.Runtime, BddConfigFields.Fixture, Blank(FixtureText));
+            .WithField(BddConfigSections.Runtime, BddConfigFields.Project, Blank(ProjectText))
+            .WithField(BddConfigSections.Runtime, BddConfigFields.Fixture, Blank(FixtureText));
 
         BddConfigWriter.ApplyToFile(_configPath, edit);
         _savedProjectText = ProjectText;

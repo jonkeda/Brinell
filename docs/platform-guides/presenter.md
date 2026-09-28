@@ -6,7 +6,7 @@ workspaces, narrow enough to sit beside the app under test.
 ## Projects
 
 - `srcnew/Brinell.Presenter`
-- `testsnew/Brinell.Presenter.Uat.Tests`: Presenter's own UAT suite
+- `testsnew/Brinell.Presenter.Bdd.Tests`: Presenter's own UAT suite
 
 ## A Minimal Run
 
@@ -150,5 +150,5 @@ $env:BRINELL_PRESENTER_SETTINGS_PATH = "path\to\user-settings.json"
 ```powershell
 # Working directory: Brinell root
 dotnet build srcnew\Brinell.Presenter\Brinell.Presenter.csproj -v:minimal /nr:false
-dotnet test testsnew\Brinell.Presenter.Uat.Tests\Brinell.Presenter.Uat.Tests.csproj -v:minimal /nr:false
+dotnet test testsnew\Brinell.Presenter.Bdd.Tests\Brinell.Presenter.Bdd.Tests.csproj -v:minimal /nr:false
 ```

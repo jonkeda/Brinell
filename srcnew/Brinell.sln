@@ -1,4 +1,4 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
 VisualStudioVersion = 18.3.11408.92
@@ -73,7 +73,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinell.Maui.Uat.Tests", ".
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinell.Presenter", "Brinell.Presenter\Brinell.Presenter.csproj", "{0C9D3150-EFB5-4BD7-A77A-61593EBFD48E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinell.Presenter.Uat.Tests", "..\testsnew\Brinell.Presenter.Uat.Tests\Brinell.Presenter.Uat.Tests.csproj", "{40B18B5E-AC6A-4BC4-B999-4AA2F24056C1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinell.Presenter.Bdd.Tests", "..\testsnew\Brinell.Presenter.Bdd.Tests\Brinell.Presenter.Bdd.Tests.csproj", "{40B18B5E-AC6A-4BC4-B999-4AA2F24056C1}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinell.Maui.FlaUI", "Brinell.Maui.FlaUI\Brinell.Maui.FlaUI.csproj", "{5DC953F4-9B96-4BB9-8DD1-5901F7CB1AE0}"
 EndProject

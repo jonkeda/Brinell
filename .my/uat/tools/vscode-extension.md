@@ -31,7 +31,7 @@ Three rules shape everything below:
 | `BddValues` | `Brinell.Uat` | value reading and the one-right-answer fixes |
 | `ScenarioCheck` | `tools/Brinell.DataValidator` | building the catalogs from a fixture type **without starting it** |
 | `brinell-data` | `tools/Brinell.DataValidator` | `validate --format json --fix`, `phrases`, `snippet`, `describe`, `schema` |
-| `UatExecutionService`, `PresenterUatExecutionSession` | `Brinell.Presenter` | running a scenario step by step, with pacing and AUT placement |
+| `BddExecutionService`, `PresenterUatExecutionSession` | `Brinell.Presenter` | running a scenario step by step, with pacing and AUT placement |
 | `UatScenarioTestBase` | `Brinell.Uat` | one xUnit theory case per scenario, and `<scenario>__result.json` per run |
 | `MsBuildProjectEvaluator`, `FixtureInspector` | `Brinell.Presenter` | finding the built Pages assembly and the fixture without loading it (AD-018) |
 
@@ -156,7 +156,7 @@ last result.
 
 `dotnet test` cannot pause between steps. Debug uses a headless runner instead:
 
-- **`Brinell.Uat.Host`**: the Presenter's session code (`UatExecutionService`, the collectible
+- **`Brinell.Uat.Host`**: the Presenter's session code (`BddExecutionService`, the collectible
   load context, AUT placement, pacing) moved out of the MAUI app into a console host. It speaks a
   small JSON protocol over stdio: load workspace, start scenario, next step, continue, stop,
   results. The Presenter then uses the same library in-process.
@@ -193,7 +193,7 @@ last result.
 
 | File | Support |
 | --- | --- |
-| `uat.config.md` | completion of sections and fields, validation through `UatWorkspaceConfigInspector` (the same diagnostics as the Presenter's Config tab), the derived values (target, Pages assembly, fixture) as inlay hints |
+| `uat.config.md` | completion of sections and fields, validation through `BddWorkspaceConfigInspector` (the same diagnostics as the Presenter's Config tab), the derived values (target, Pages assembly, fixture) as inlay hints |
 | `apps.md` / `Apps` table | the known columns; a user or app name used in a scenario goes to its row |
 | Test data JSON | a JSON schema association from `brinell-data schema`, and `brinell-data validate` diagnostics |
 | `journeys.md` | links from a journey id to its scenarios, and a coverage hint for journeys with no scenario |

@@ -15,7 +15,7 @@ namespace Brinell.Samples.Todo.Web.Uat.Runtime;
 /// (<see cref="BeforeScenario"/>).
 /// </remarks>
 [Collection(TodoWebUatCollection.CollectionName)]
-[TestCaseOrderer(UatScenarioOrderer.TypeName, UatScenarioOrderer.AssemblyName)]
+[TestCaseOrderer(BddScenarioOrderer.TypeName, BddScenarioOrderer.AssemblyName)]
 [Trait("Category", "UAT")]
 [Trait("Target", "BLAZOR")]
 public sealed class TodoWebUatScenarioTests : UatScenarioTestBase<TodoWebUatFixture>
@@ -78,10 +78,10 @@ public sealed class TodoWebUatScenarioTests : UatScenarioTestBase<TodoWebUatFixt
 /// Runs scenario cases in <see cref="BddScenarioSource.GetOrderKey"/> order - by test set, then
 /// file, then position - so the app restarts once per test set.
 /// </summary>
-public sealed class UatScenarioOrderer : ITestCaseOrderer
+public sealed class BddScenarioOrderer : ITestCaseOrderer
 {
     /// <summary>For <see cref="TestCaseOrdererAttribute"/>.</summary>
-    public const string TypeName = "Brinell.Samples.Todo.Web.Uat.Runtime.UatScenarioOrderer";
+    public const string TypeName = "Brinell.Samples.Todo.Web.Uat.Runtime.BddScenarioOrderer";
 
     /// <summary>For <see cref="TestCaseOrdererAttribute"/>.</summary>
     public const string AssemblyName = "Brinell.Samples.Todo.Web.Uat";
