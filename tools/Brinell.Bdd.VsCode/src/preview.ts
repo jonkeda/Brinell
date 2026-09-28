@@ -51,7 +51,7 @@ export class ScenarioPreview implements vscode.Disposable {
   /** Opens the preview beside the editor for a feature or step file. */
   async open(document: vscode.TextDocument): Promise<void> {
     if (!this.panel) {
-      this.panel = vscode.window.createWebviewPanel("brinellUat.preview", "Scenario Preview", { viewColumn: vscode.ViewColumn.Beside, preserveFocus: true }, {
+      this.panel = vscode.window.createWebviewPanel("brinellBdd.preview", "Scenario Preview", { viewColumn: vscode.ViewColumn.Beside, preserveFocus: true }, {
         enableScripts: true,
         retainContextWhenHidden: true,
         localResourceRoots: [],

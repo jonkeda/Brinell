@@ -26,7 +26,7 @@ public sealed class McpServerTests : IDisposable
 
         var lines = output.ToString().Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(line => JsonNode.Parse(line)!).ToList();
         Assert.Equal(2, lines.Count);
-        Assert.Equal("brinell-uat", (string?)lines[0]["result"]!["serverInfo"]!["name"]);
+        Assert.Equal("brinell-bdd", (string?)lines[0]["result"]!["serverInfo"]!["name"]);
         Assert.NotNull(lines[0]["result"]!["capabilities"]!["tools"]);
         Assert.Equal(
             ["list_suites", "list_steps", "list_pages", "list_test_sets", "validate_scenario", "find_step_usages"],

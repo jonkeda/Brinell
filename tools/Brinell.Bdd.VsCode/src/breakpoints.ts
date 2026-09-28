@@ -6,7 +6,7 @@ import * as os from "os";
 import * as path from "path";
 import * as vscode from "vscode";
 
-const file = path.join(process.env.LOCALAPPDATA ?? path.join(os.homedir(), ".local", "share"), "Brinell", "uat-breakpoints.json");
+const file = path.join(process.env.LOCALAPPDATA ?? path.join(os.homedir(), ".local", "share"), "Brinell", "bdd-breakpoints.json");
 
 type Store = { files?: Record<string, number[]>; [other: string]: unknown };
 

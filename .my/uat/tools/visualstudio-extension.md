@@ -38,7 +38,7 @@ small on purpose.
 
 ```text
 Visual Studio 2022 / 2026
- +-- Brinell UAT extension (.NET, VisualStudio.Extensibility, out of process)
+ +-- Brinell BDD extension (.NET, VisualStudio.Extensibility, out of process)
  |    +-- LSP client (LanguageServerProvider) ---- Brinell.Bdd.LanguageServer
  |    |      for *.feature.md, *.steps.md, uat.config.md, on top of the Markdown editor
  |    +-- Commands: Run scenario, Debug scenario, Run file, Go to scenario

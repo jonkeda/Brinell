@@ -12,7 +12,7 @@ using Newtonsoft.Json.Linq;
 namespace Brinell.Bdd.VisualStudio.CodeLens;
 
 /// <summary>
-/// "used in 12 UAT steps · 5 scenarios" above a step definition, a page phrase or a page object's
+/// "used in 12 BDD steps · 5 scenarios" above a step definition, a page phrase or a page object's
 /// control. Nothing shows for a member no step uses.
 /// </summary>
 [Export(typeof(IAsyncCodeLensDataPointProvider))]
@@ -69,8 +69,8 @@ internal sealed class BddCodeLensDataPoint : IAsyncCodeLensDataPoint
         var scenarios = (int?)usages["scenarios"] ?? 0;
         return new CodeLensDataPointDescriptor
         {
-            Description = $"used in {steps} UAT step{(steps == 1 ? string.Empty : "s")} · {scenarios} scenario{(scenarios == 1 ? string.Empty : "s")}",
-            TooltipText = "The Brinell UAT steps that bind to this member",
+            Description = $"used in {steps} BDD step{(steps == 1 ? string.Empty : "s")} · {scenarios} scenario{(scenarios == 1 ? string.Empty : "s")}",
+            TooltipText = "The Brinell BDD steps that bind to this member",
             IntValue = steps,
             ImageId = null,
         };

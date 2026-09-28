@@ -328,7 +328,7 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
             {
                 if (await _package.GetServiceAsync(typeof(SVsStatusbar)) is IVsStatusbar status)
                 {
-                    status.SetText($"Line {line} is not a step, so it cannot have a UAT step breakpoint.");
+                    status.SetText($"Line {line} is not a step, so it cannot have a BDD step breakpoint.");
                 }
 
                 return;
@@ -338,7 +338,7 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
         BddBreakpointStore.Instance.Toggle(path, line);
     }
 
-    /// <summary>Shows the UAT Explorer in a window's control: loads its page once, then the view.</summary>
+    /// <summary>Shows the BDD Explorer in a window's control: loads its page once, then the view.</summary>
     public async Task AttachExplorerAsync(ScenarioPreviewControl view)
     {
         await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
@@ -376,7 +376,7 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
         }
         catch (Exception exception) when (exception is StreamJsonRpc.RemoteInvocationException or StreamJsonRpc.ConnectionLostException or IOException)
         {
-            Log($"The UAT Explorer failed: {exception.Message}");
+            Log($"The BDD Explorer failed: {exception.Message}");
         }
     }
 
@@ -477,7 +477,7 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
         }
 
         var guid = new Guid("5c1b1a9e-6b1f-4f7e-9b1e-9c0b8f4e2a61");
-        output.CreatePane(ref guid, "Brinell UAT", fInitVisible: 1, fClearWithSolution: 0);
+        output.CreatePane(ref guid, "Brinell BDD", fInitVisible: 1, fClearWithSolution: 0);
         output.GetPane(ref guid, out var pane);
         return pane;
     }
@@ -528,7 +528,7 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
         if (_runs is { IsRunning: true, OwnBuild: false })
         {
             pfCancelUpdate = 1;
-            Log("A UAT run is going, so the build is cancelled: it would overwrite the binaries under the run. Cancel the run first.");
+            Log("A BDD run is going, so the build is cancelled: it would overwrite the binaries under the run. Cancel the run first.");
         }
 
         return VSConstants.S_OK;

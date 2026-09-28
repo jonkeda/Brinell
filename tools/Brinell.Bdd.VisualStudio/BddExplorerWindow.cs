@@ -3,7 +3,7 @@ using Microsoft.VisualStudio.Shell;
 
 namespace Brinell.Bdd.VisualStudio;
 
-/// <summary>The UAT Explorer tool window: a suite's steps and hooks, its pages, and its last results, from the language server.</summary>
+/// <summary>The BDD Explorer tool window: a suite's steps and hooks, its pages, and its last results, from the language server.</summary>
 [Guid(PackageIds.BddExplorerWindow)]
 public sealed class BddExplorerWindow : ToolWindowPane
 {
@@ -11,7 +11,7 @@ public sealed class BddExplorerWindow : ToolWindowPane
     public BddExplorerWindow()
         : base(null)
     {
-        Caption = "UAT Explorer";
+        Caption = "BDD Explorer";
         Control = new ScenarioPreviewControl();
         Content = Control;
     }

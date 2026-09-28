@@ -189,7 +189,7 @@ public sealed class BddStepExecutionSession
     {
         if (!HasNext)
         {
-            throw new InvalidOperationException("No UAT steps remain in this execution session.");
+            throw new InvalidOperationException("No BDD steps remain in this execution session.");
         }
 
         var invocation = _scenario.Invocations[_nextIndex++];

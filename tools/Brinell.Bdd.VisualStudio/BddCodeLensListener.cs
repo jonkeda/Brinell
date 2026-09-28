@@ -10,7 +10,7 @@ using Newtonsoft.Json;
 namespace Brinell.Bdd.VisualStudio;
 
 /// <summary>
-/// The Visual Studio side of the UAT CodeLens: the CodeLens process calls it by name for a C# member,
+/// The Visual Studio side of the BDD CodeLens: the CodeLens process calls it by name for a C# member,
 /// and it asks the language server which steps use it. A solution without a UAT suite never starts
 /// the server for it.
 /// </summary>
@@ -31,14 +31,14 @@ internal sealed class BddCodeLensListener : ICodeLensCallbackListener
         }
 
         await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-        if (BrinellUatPackage.Instance is null &&
+        if (BrinellBddPackage.Instance is null &&
             await AsyncServiceProvider.GlobalProvider.GetServiceAsync(typeof(SVsShell)) is IVsShell shell)
         {
             var package = new Guid(PackageIds.Package);
             shell.LoadPackage(ref package, out _);
         }
 
-        if (BrinellUatPackage.Instance?.Controller is not { } controller)
+        if (BrinellBddPackage.Instance?.Controller is not { } controller)
         {
             return "{}";
         }

@@ -4,7 +4,7 @@ using StreamJsonRpc;
 
 namespace Brinell.Bdd.LanguageServer;
 
-// The UAT Explorer (phase 4): a suite's steps and hooks, its pages, and its last results.
+// The BDD Explorer (phase 4): a suite's steps and hooks, its pages, and its last results.
 public sealed partial class BddLanguageServer
 {
     /// <summary><c>brinell/explorerHost</c>: the page the explorer's webview loads once; <c>brinell/explorer</c> fills it.</summary>

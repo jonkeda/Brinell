@@ -118,7 +118,7 @@ jobs:
           Push-Location tools/Brinell.Bdd.VsCode
           npm ci
           npm run compile
-          npx --yes @vscode/vsce@3 package --allow-missing-repository --skip-license -o "../../artifacts/brinell-uat-vscode-${{ steps.version.outputs.value }}.vsix"
+          npx --yes @vscode/vsce@3 package --allow-missing-repository --skip-license -o "../../artifacts/brinell-bdd-vscode-${{ steps.version.outputs.value }}.vsix"
           Pop-Location
 
       - name: Attach the extensions to the release

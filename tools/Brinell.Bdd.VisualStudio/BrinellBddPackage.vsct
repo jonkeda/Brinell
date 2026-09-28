@@ -3,7 +3,7 @@
   <Extern href="stdidcmd.h" />
   <Extern href="vsshlids.h" />
 
-  <Commands package="guidBrinellUatPackage">
+  <Commands package="guidBrinellBddPackage">
     <Groups>
       <!-- The editor's context menu, shown for feature and step files only. -->
       <Group guid="guidBrinellUatCommandSet" id="EditorContextGroup" priority="0x0600">
@@ -19,11 +19,11 @@
           <CommandName>Brinell.ScenarioPreview</CommandName>
         </Strings>
       </Button>
-      <Button guid="guidBrinellUatCommandSet" id="ShowUatExplorer" priority="0x0101" type="Button">
+      <Button guid="guidBrinellUatCommandSet" id="ShowBddExplorer" priority="0x0101" type="Button">
         <Parent guid="guidSHLMainMenu" id="IDG_VS_WNDO_OTRWNDWS1" />
         <Strings>
-          <ButtonText>UAT Explorer</ButtonText>
-          <CommandName>Brinell.UatExplorer</CommandName>
+          <ButtonText>BDD Explorer</ButtonText>
+          <CommandName>Brinell.BddExplorer</CommandName>
         </Strings>
       </Button>
       <Button guid="guidBrinellUatCommandSet" id="OpenScenarioPreview" priority="0x0100" type="Button">
@@ -40,7 +40,7 @@
         <CommandFlag>DynamicVisibility</CommandFlag>
         <CommandFlag>DefaultInvisible</CommandFlag>
         <Strings>
-          <ButtonText>Toggle UAT Step Breakpoint</ButtonText>
+          <ButtonText>Toggle BDD Step Breakpoint</ButtonText>
           <CommandName>Brinell.ToggleUatStepBreakpoint</CommandName>
         </Strings>
       </Button>
@@ -55,13 +55,13 @@
   </KeyBindings>
 
   <Symbols>
-    <GuidSymbol name="guidBrinellUatPackage" value="{3f45aa33-e8c9-4927-830b-6ba9b74c9467}" />
+    <GuidSymbol name="guidBrinellBddPackage" value="{3f45aa33-e8c9-4927-830b-6ba9b74c9467}" />
     <GuidSymbol name="guidBrinellUatCommandSet" value="{68a7da07-ac82-47a1-bd70-257d5ba3b27c}">
       <IDSymbol name="EditorContextGroup" value="0x1020" />
       <IDSymbol name="ShowScenarioPreview" value="0x0100" />
       <IDSymbol name="OpenScenarioPreview" value="0x0101" />
       <IDSymbol name="ToggleStepBreakpoint" value="0x0102" />
-      <IDSymbol name="ShowUatExplorer" value="0x0103" />
+      <IDSymbol name="ShowBddExplorer" value="0x0103" />
     </GuidSymbol>
   </Symbols>
 </CommandTable>

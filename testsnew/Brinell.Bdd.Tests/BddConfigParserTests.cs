@@ -8,7 +8,7 @@ public sealed class BddConfigParserTests
     [Fact]
     public void Parse_ConfigMarkdown_ReturnsRuntimeAssembliesAndDiscoverySettings()
     {
-        var root = Path.Combine(Path.GetTempPath(), $"brinell-uat-config-{Guid.NewGuid():N}");
+        var root = Path.Combine(Path.GetTempPath(), $"brinell-bdd-config-{Guid.NewGuid():N}");
         using var environment = new ArtifactEnvironment(root, "run-1");
         try
         {
@@ -95,7 +95,7 @@ public sealed class BddConfigParserTests
     [Fact]
     public void Parse_ConfigWithoutOptionalSections_UsesDefaultSettings()
     {
-        var root = Path.Combine(Path.GetTempPath(), $"brinell-uat-config-{Guid.NewGuid():N}");
+        var root = Path.Combine(Path.GetTempPath(), $"brinell-bdd-config-{Guid.NewGuid():N}");
         using var environment = new ArtifactEnvironment(root, "run-1");
         try
         {

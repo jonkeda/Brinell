@@ -33,7 +33,7 @@ internal sealed record BddServerFile(string Path, string Text, int Version, IRea
 // step that failed in the last run as an error at its line.
 public sealed partial class BddLanguageServer
 {
-    private const string DiagnosticSource = "Brinell UAT";
+    private const string DiagnosticSource = "Brinell BDD";
 
     // How long typing must pause before a file is checked again.
     private static readonly TimeSpan DiagnosticsPause = TimeSpan.FromMilliseconds(200);

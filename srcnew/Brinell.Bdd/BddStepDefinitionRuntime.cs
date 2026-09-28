@@ -234,7 +234,7 @@ public sealed class BddStepDefinitionRuntime
 
             if (result is bool boolean && !boolean)
             {
-                return BddStepResult.Failed(invocation, $"Custom UAT step '{method.Name}' returned false.");
+                return BddStepResult.Failed(invocation, $"Custom BDD step '{method.Name}' returned false.");
             }
 
             context.Diagnostics.Add($"custom:{method.Name}");
@@ -242,7 +242,7 @@ public sealed class BddStepDefinitionRuntime
         }
         catch (Exception ex)
         {
-            return BddStepResult.Failed(invocation, $"Custom UAT step '{method.Name}' failed: {ex.Message}", ex);
+            return BddStepResult.Failed(invocation, $"Custom BDD step '{method.Name}' failed: {ex.Message}", ex);
         }
     }
 
@@ -334,7 +334,7 @@ public sealed class BddStepDefinitionRuntime
                     ?? (parameter.IsOptional
                         ? null
                         : throw new InvalidOperationException(
-                            $"Custom UAT step '{method.Name}' needs a table under the step ({invocation.Step.Source})."));
+                            $"Custom BDD step '{method.Name}' needs a table under the step ({invocation.Step.Source})."));
                 continue;
             }
 
@@ -361,7 +361,7 @@ public sealed class BddStepDefinitionRuntime
             arguments[i] = parameter.IsOptional
                 ? Type.Missing
                 : throw new InvalidOperationException(
-                    $"Custom UAT step '{method.Name}' requires parameter '{parameter.Name}' but no matching phrase argument was found.");
+                    $"Custom BDD step '{method.Name}' requires parameter '{parameter.Name}' but no matching phrase argument was found.");
         }
 
         return arguments;

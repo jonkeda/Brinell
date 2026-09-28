@@ -1,6 +1,6 @@
 # Scenario Preview In Visual Studio
 
-The Brinell UAT extension shows a feature or step file as readable steps, beside the editor: what
+The Brinell BDD extension shows a feature or step file as readable steps, beside the editor: what
 each step binds to and on which page, the gate's diagnostic on a step that binds to nothing, a
 callable call unfolded into its body, and each Scenario Outline row. It is the same check the
 xUnit gate and `brinell-data validate` run, on the text as you type it.
@@ -20,7 +20,7 @@ The build publishes `Brinell.Bdd.LanguageServer` into the VSIX and deploys the e
 experimental instance (`devenv /rootsuffix Exp`); pass `/p:DeployExtension=false` to only build it.
 To install it for everyday use, open `tools\Brinell.Bdd.VisualStudio\bin\Debug\net48\Brinell.Bdd.VisualStudio.vsix`.
 Each GitHub release carries both extensions: `Brinell.Bdd.VisualStudio-<version>.vsix` for Visual
-Studio, and `brinell-uat-vscode-<version>.vsix` for VS Code (**Extensions: Install from VSIX**).
+Studio, and `brinell-bdd-vscode-<version>.vsix` for VS Code (**Extensions: Install from VSIX**).
 
 The server checks that a suite is built against its own Brinell. When a Brinell assembly the
 suite's build references differs from the server's by a major or minor version, the suite's config
@@ -50,7 +50,7 @@ Each scenario heading has **Run**, and the title **Run file**. A run:
 
 1. builds the solution through Visual Studio, so a stale app never runs;
 2. runs `dotnet test <suite project> --no-build --filter "BddScenario=<address>"` (every row of an
-   outline, or `BddScenario~<file>#` for the file), its output in the **Brinell UAT** Output pane;
+   outline, or `BddScenario~<file>#` for the file), its output in the **Brinell BDD** Output pane;
 3. shows the results in the preview when the run writes them.
 
 The suite's test class must use `[UatScenarioTheory]`, which gives each case its address; with
@@ -66,7 +66,7 @@ A step breakpoint stops the debugger before that step, whichever way the test wa
 preview's Debug, or Test Explorer's own **Debug**).
 
 - **Set one** by clicking a step's keyword in the preview, or with the caret on the step, by
-  right-clicking and choosing **Toggle UAT Step Breakpoint**, or by pressing **Ctrl+K, F9**. A red
+  right-clicking and choosing **Toggle BDD Step Breakpoint**, or by pressing **Ctrl+K, F9**. A red
   dot shows in the preview's gutter and in the editor's glyph margin. A line that is not a step
   gets none, and the status bar says so.
 - **Debug** beside each **Run** (and **Debug file** beside **Run file**) runs the same way, with
@@ -79,7 +79,7 @@ preview's Debug, or Test Explorer's own **Debug**).
   build, is attached after the testhost, so a breakpoint in the app's own code also stops. A web
   app started with `dotnet run` is not, since that process is the CLI.
 
-The breakpoints are a per-user file, `%LOCALAPPDATA%\Brinell\uat-breakpoints.json`, read only
+The breakpoints are a per-user file, `%LOCALAPPDATA%\Brinell\bdd-breakpoints.json`, read only
 while a debugger is attached:
 
 ```json
@@ -97,7 +97,7 @@ step definition. A test runs the build output's copy of a feature file; a listed
 by its path below the `Features` folder.
 
 The extension starts `dotnet Server\Brinell.Bdd.LanguageServer.dll` from its own folder; its log is
-the **Brinell UAT** pane of the Output window.
+the **Brinell BDD** pane of the Output window.
 
 ## In The Editor
 
@@ -164,9 +164,9 @@ Completion offers the fields of each table and their values (heads, `true`/`fals
 the assembly kinds, the namespaces, and the heads in the Apps table. Hover on a field says what it
 does. In a feature file, the `TestData` metadata offers the suite's test sets.
 
-## UAT Explorer
+## BDD Explorer
 
-**View > Other Windows > UAT Explorer** shows a suite of the solution; pick another in its bar.
+**View > Other Windows > BDD Explorer** shows a suite of the solution; pick another in its bar.
 
 - **Steps**: every step the suite can bind to, grouped by the class that declares it, the page of a
   page phrase, control verbs and built-ins; then the callable steps of each step file; then the
@@ -181,7 +181,7 @@ heading or the scenario. The window refreshes after a build and when a run write
 ## CodeLens In C#
 
 Above a step definition, a page phrase or a page object's control, CodeLens says how many UAT
-steps use it: "used in 12 UAT steps · 5 scenarios". Click it for the list: file, line, step and
+steps use it: "used in 12 BDD steps · 5 scenarios". Click it for the list: file, line, step and
 scenario. It counts every suite of the solution, linked files included. A control counts the
 control verbs on its page (`When I tap Sync` on the Todo List page for `TodoListPage.Sync`). A
 solution without a `uat.config.md` or `bdd.config.md` never starts the server for it. The counts
@@ -203,7 +203,7 @@ From the Brinell root, for the Todo sample:
 ```json
 {
   "servers": {
-    "brinell-uat": {
+    "brinell-bdd": {
       "type": "stdio",
       "command": "dotnet",
       "args": ["run", "--project", "tools/Brinell.Bdd.LanguageServer", "--", "--mcp", "--solution", "samples/Todo"]

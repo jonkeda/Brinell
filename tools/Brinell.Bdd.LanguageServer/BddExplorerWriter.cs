@@ -5,7 +5,7 @@ using Brinell.Bdd.Workspace;
 
 namespace Brinell.Bdd.LanguageServer;
 
-// The UAT Explorer's three views of a suite as HTML (phase 4): its steps grouped by where they come
+// The BDD Explorer's three views of a suite as HTML (phase 4): its steps grouped by where they come
 // from, with the hooks of each step-definition class; its pages with their controls and phrases;
 // and the last run of each scenario. Every entry that has a source opens it (data-open).
 internal static class BddExplorerWriter
@@ -21,7 +21,7 @@ internal static class BddExplorerWriter
         <meta charset="utf-8">
         <meta name="color-scheme" content="light dark">
         <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
-        <title>UAT Explorer</title>
+        <title>BDD Explorer</title>
         <style>
         {{BddPreview.Stylesheet}}
         .uat-tabs { display: flex; gap: 0.3em; align-items: center; padding: 0.4em 0; position: sticky; top: 0; background: var(--uat-bg); border-bottom: 1px solid var(--uat-border); }

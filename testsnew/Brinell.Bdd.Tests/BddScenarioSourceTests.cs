@@ -53,7 +53,7 @@ public sealed class BddScenarioSourceTests
 
     private static string CreateTempDirectory()
     {
-        var directory = Path.Combine(Path.GetTempPath(), $"brinell-uat-source-{Guid.NewGuid():N}");
+        var directory = Path.Combine(Path.GetTempPath(), $"brinell-bdd-source-{Guid.NewGuid():N}");
         Directory.CreateDirectory(directory);
         return directory;
     }

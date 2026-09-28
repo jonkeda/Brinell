@@ -122,7 +122,7 @@ public sealed class BddBreakpointsTests : IDisposable
         var bind = file.Bind(new BddCatalogSet(catalog));
         Assert.True(bind.Success, string.Join(Environment.NewLine, bind.Diagnostics.Select(d => d.Message)));
 
-        var hook = new RecordingHook(new BddBreakpoints(Path.Combine(_root, "uat-breakpoints.json"), _ => json));
+        var hook = new RecordingHook(new BddBreakpoints(Path.Combine(_root, "bdd-breakpoints.json"), _ => json));
         var runner = new BddScenarioRunner(new BddExecutionContext { Breaks = hook });
         using var services = new ServiceCollection().AddTransient<ShelfSteps>().BuildServiceProvider();
         BddStepDefinitionRuntime.SetServiceProvider(runner.Context, services);

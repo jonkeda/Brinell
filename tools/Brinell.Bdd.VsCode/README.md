@@ -1,4 +1,4 @@
-# Brinell UAT for VS Code
+# Brinell BDD for VS Code
 
 Brinell feature and step files (`*.feature.md`, `*.steps.md`) and suite configs, with the same
 language server as the Visual Studio extension:

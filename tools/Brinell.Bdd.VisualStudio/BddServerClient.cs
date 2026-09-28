@@ -93,7 +93,7 @@ public sealed class BddServerClient : IDisposable
         => await (await RpcAsync(cancellationToken).ConfigureAwait(false))
             .InvokeWithParameterObjectAsync<JObject>("brinell/runTarget", new { uri = Uri(path), line, suite }, cancellationToken).ConfigureAwait(false);
 
-    /// <summary><c>brinell/explorerHost</c>: the page the UAT Explorer's webview loads once.</summary>
+    /// <summary><c>brinell/explorerHost</c>: the page the BDD Explorer's webview loads once.</summary>
     public async Task<string> ExplorerHostAsync(CancellationToken cancellationToken)
         => (string)(await (await RpcAsync(cancellationToken).ConfigureAwait(false))
             .InvokeWithParameterObjectAsync<JObject>("brinell/explorerHost", new { }, cancellationToken).ConfigureAwait(false))["html"]!;

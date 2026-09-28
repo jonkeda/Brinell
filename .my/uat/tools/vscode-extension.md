@@ -39,7 +39,7 @@ Three rules shape everything below:
 
 ```text
 VS Code
- +-- Brinell UAT extension (TypeScript)
+ +-- Brinell BDD extension (TypeScript)
  |    +-- LSP client ------------------------------ Brinell.Bdd.LanguageServer (.NET)
  |    |                                              parser, catalogs, binder, values
  |    |                                              (reuses Brinell.Uat and ScenarioCheck)

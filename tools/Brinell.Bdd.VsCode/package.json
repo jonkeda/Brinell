@@ -1,6 +1,6 @@
 {
-  "name": "brinell-uat",
-  "displayName": "Brinell UAT",
+  "name": "brinell-bdd",
+  "displayName": "Brinell BDD",
   "description": "Brinell feature and step files: the gate's diagnostics as you type, completion, navigation, a Scenario Preview, and running and debugging scenarios from Test Explorer.",
   "version": "0.1.0",
   "publisher": "brinell",
@@ -21,55 +21,55 @@
   "contributes": {
     "commands": [
       {
-        "command": "brinellUat.openPreview",
+        "command": "brinellBdd.openPreview",
         "title": "Open Scenario Preview to the Side",
-        "category": "Brinell UAT",
+        "category": "Brinell BDD",
         "icon": "$(open-preview)"
       },
       {
-        "command": "brinellUat.toggleStepBreakpoint",
-        "title": "Toggle UAT Step Breakpoint",
-        "category": "Brinell UAT"
+        "command": "brinellBdd.toggleStepBreakpoint",
+        "title": "Toggle BDD Step Breakpoint",
+        "category": "Brinell BDD"
       },
       {
-        "command": "brinellUat.refreshTests",
+        "command": "brinellBdd.refreshTests",
         "title": "Refresh UAT Scenarios",
-        "category": "Brinell UAT"
+        "category": "Brinell BDD"
       }
     ],
     "menus": {
       "editor/title": [
         {
-          "command": "brinellUat.openPreview",
+          "command": "brinellBdd.openPreview",
           "when": "resourceFilename =~ /\\.(feature|steps)\\.md$/",
           "group": "navigation"
         }
       ],
       "editor/context": [
         {
-          "command": "brinellUat.toggleStepBreakpoint",
+          "command": "brinellBdd.toggleStepBreakpoint",
           "when": "resourceFilename =~ /\\.(feature|steps)\\.md$/"
         }
       ]
     },
     "keybindings": [
       {
-        "command": "brinellUat.openPreview",
+        "command": "brinellBdd.openPreview",
         "key": "ctrl+k v",
         "mac": "cmd+k v",
         "when": "editorTextFocus && resourceFilename =~ /\\.(feature|steps)\\.md$/"
       },
       {
-        "command": "brinellUat.toggleStepBreakpoint",
+        "command": "brinellBdd.toggleStepBreakpoint",
         "key": "ctrl+k f9",
         "mac": "cmd+k f9",
         "when": "editorTextFocus && resourceFilename =~ /\\.(feature|steps)\\.md$/"
       }
     ],
     "configuration": {
-      "title": "Brinell UAT",
+      "title": "Brinell BDD",
       "properties": {
-        "brinellUat.serverPath": {
+        "brinellBdd.serverPath": {
           "type": "string",
           "default": "",
           "description": "The language server's dll (Brinell.Bdd.LanguageServer.dll). Empty: the one in the extension, else the repository's build."

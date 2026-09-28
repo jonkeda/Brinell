@@ -58,7 +58,7 @@ internal sealed class BddRunController
         await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
         if (IsRunning)
         {
-            await StatusAsync("A UAT run is going already. Wait for it, or cancel it, before starting another.");
+            await StatusAsync("A BDD run is going already. Wait for it, or cancel it, before starting another.");
             return;
         }
 
@@ -70,7 +70,7 @@ internal sealed class BddRunController
             _log($"Building the solution for a UAT {(debug ? "debug " : string.Empty)}run of {System.IO.Path.GetFileName(path)}{(line is null ? string.Empty : $" line {line}")}...");
             if (!await BuildAsync())
             {
-                await StatusAsync("The build failed, so the UAT run did not start. See the Error List.");
+                await StatusAsync("The build failed, so the BDD run did not start. See the Error List.");
                 return;
             }
 
@@ -97,7 +97,7 @@ internal sealed class BddRunController
     {
         if (_process is { HasExited: false } process)
         {
-            _log("Cancelling the UAT run...");
+            _log("Cancelling the BDD run...");
 
             // The whole tree: dotnet test, its testhost, and the app the fixture started.
             using var kill = Process.Start(new ProcessStartInfo("taskkill", $"/PID {process.Id} /T /F") { UseShellExecute = false, CreateNoWindow = true });
@@ -168,7 +168,7 @@ internal sealed class BddRunController
 #pragma warning disable VSTHRD003
             var code = await exited.Task;
 #pragma warning restore VSTHRD003
-            _log(code == 0 ? "The UAT run passed." : $"The UAT run ended with exit code {code}.");
+            _log(code == 0 ? "The BDD run passed." : $"The BDD run ended with exit code {code}.");
         }
         finally
         {

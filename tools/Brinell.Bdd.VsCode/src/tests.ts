@@ -17,9 +17,9 @@ type ScenarioResult = { scenario: string; status: string; durationMs: number; me
 type Data = { kind: "suite"; project?: string; runnable: boolean; reason?: string } | { kind: "file" } | { kind: "scenario"; filter: string; name: string };
 
 export class ScenarioTests implements vscode.Disposable {
-  readonly controller = vscode.tests.createTestController("brinellUat", "Brinell UAT");
+  readonly controller = vscode.tests.createTestController("brinellBdd", "Brinell BDD");
   private readonly data = new WeakMap<vscode.TestItem, Data>();
-  private readonly output = vscode.window.createOutputChannel("Brinell UAT");
+  private readonly output = vscode.window.createOutputChannel("Brinell BDD");
   private process: ChildProcess | undefined;
 
   constructor(private readonly client: LanguageClient, private readonly running: (line: number | undefined, file: boolean) => void) {
@@ -85,7 +85,7 @@ export class ScenarioTests implements vscode.Disposable {
   /** Stops the run: the test process and everything it started, the app included. */
   cancel(): void {
     if (this.process?.pid && this.process.exitCode === null) {
-      this.output.appendLine("Cancelling the UAT run...");
+      this.output.appendLine("Cancelling the BDD run...");
       spawn("taskkill", ["/PID", String(this.process.pid), "/T", "/F"], { windowsHide: true });
     }
   }
@@ -97,7 +97,7 @@ export class ScenarioTests implements vscode.Disposable {
 
   private async run(request: vscode.TestRunRequest, token: vscode.CancellationToken, debug: boolean): Promise<void> {
     if (this.process) {
-      void vscode.window.showWarningMessage("A UAT run is going already. Wait for it, or cancel it, before starting another.");
+      void vscode.window.showWarningMessage("A BDD run is going already. Wait for it, or cancel it, before starting another.");
       return;
     }
 
@@ -130,7 +130,7 @@ export class ScenarioTests implements vscode.Disposable {
 
         // Build first, so a stale app never runs; then the scenarios by their addresses.
         if (await this.exec(run, "dotnet", ["build", data.project, "-v:minimal", "-nologo"], false) !== 0) {
-          scenarios.forEach((scenario) => run.errored(scenario, new vscode.TestMessage("The build failed, so the UAT run did not start.")));
+          scenarios.forEach((scenario) => run.errored(scenario, new vscode.TestMessage("The build failed, so the BDD run did not start.")));
           continue;
         }
 
@@ -207,7 +207,7 @@ export class ScenarioTests implements vscode.Disposable {
         }
 
         attached.add(app);
-        void vscode.debug.startDebugging(folder, { name: `Brinell UAT app ${app}`, type: "coreclr", request: "attach", processId: String(app) }).then((started) =>
+        void vscode.debug.startDebugging(folder, { name: `Brinell BDD app ${app}`, type: "coreclr", request: "attach", processId: String(app) }).then((started) =>
           run.appendOutput(started ? `The debugger is attached to the app too (process ${app}).\r\n` : `The debugger could not attach to the app (process ${app}); the run goes on.\r\n`));
         fs.rmSync(path.join(announced, name), { force: true });
       }
@@ -229,7 +229,7 @@ export class ScenarioTests implements vscode.Disposable {
         run.appendOutput(text.replace(/\r?\n/g, "\r\n"));
         const attach = debug ? /Process Id:\s*(\d+)/.exec(text) : null;
         if (attach) {
-          void vscode.debug.startDebugging(folder, { name: "Brinell UAT testhost", type: "coreclr", request: "attach", processId: attach[1] }).then((started) => {
+          void vscode.debug.startDebugging(folder, { name: "Brinell BDD testhost", type: "coreclr", request: "attach", processId: attach[1] }).then((started) => {
             if (!started) {
               run.appendOutput("The C# debugger did not attach; the run is cancelled. Install the C# extension.\r\n");
               this.cancel();

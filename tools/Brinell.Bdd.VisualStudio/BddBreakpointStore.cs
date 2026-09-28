@@ -5,7 +5,7 @@ using Newtonsoft.Json.Linq;
 namespace Brinell.Bdd.VisualStudio;
 
 /// <summary>
-/// The step breakpoints (R2): <c>%LOCALAPPDATA%\Brinell\uat-breakpoints.json</c>, the file
+/// The step breakpoints (R2): <c>%LOCALAPPDATA%\Brinell\bdd-breakpoints.json</c>, the file
 /// <c>BddBreakpoints</c> in <c>Brinell.Bdd</c> reads while a debugger is attached. The preview's
 /// gutter, the editor command and the glyph margin all go through this one store. The file is read
 /// on each call, so another writer (VS Code) is never overwritten with a stale copy.
@@ -21,7 +21,7 @@ internal sealed class BddBreakpointStore
 
     /// <summary>The store over the per-user file.</summary>
     public static BddBreakpointStore Instance { get; } = new(
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Brinell", "uat-breakpoints.json"));
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Brinell", "bdd-breakpoints.json"));
 
     /// <summary>A file's breakpoints changed (its path).</summary>
     public event EventHandler<string>? Changed;

@@ -40,7 +40,7 @@
 
   <ItemGroup>
     <None Include="source.extension.vsixmanifest" SubType="Designer" />
-    <VSCTCompile Include="BrinellUatPackage.vsct" ResourceName="Menus.ctmenu" />
+    <VSCTCompile Include="BrinellBddPackage.vsct" ResourceName="Menus.ctmenu" />
     <EmbeddedResource Update="VSPackage.resx" MergeWithCTO="true" ManifestResourceName="VSPackage" />
   </ItemGroup>
 

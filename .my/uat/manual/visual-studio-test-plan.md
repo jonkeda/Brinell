@@ -1,4 +1,4 @@
-# Manual test plan: the Brinell UAT extension for Visual Studio
+# Manual test plan: the Brinell BDD extension for Visual Studio
 
 Status: **ready to run**, not run yet. Date: 2026-09-28.
 For: a person at a Windows machine with Visual Studio. About 2 hours for everything; section 3
@@ -19,7 +19,7 @@ plan and the guide disagree, note it as a finding.
 - Each check has an ID, what to do, and what you should see. Mark it **Pass**, **Fail** or
   **Blocked** (you couldn't get to it), and write a note for anything not a plain pass.
 - When something fails, carry on with the next check if you can. Take a screenshot, and copy the
-  **Brinell UAT** Output pane (View > Output, "Show output from: Brinell UAT").
+  **Brinell BDD** Output pane (View > Output, "Show output from: Brinell BDD").
 - Record the results in the table in section 14, or copy this file and tick the boxes.
 
 ## 1. What you need
@@ -42,7 +42,7 @@ goes.
 | S-1 | From the Brinell root, run `dotnet build samples\Todo\Brinell.Samples.Todo.slnx`. | The build succeeds. | ☐ |
 | S-2 | Open `tools\Brinell.Bdd.VisualStudio\Brinell.Bdd.VisualStudio.slnx` in Visual Studio and press **F5**. | The build succeeds, and a second Visual Studio starts with "Experimental Instance" in its title bar. Everything below happens in this experimental instance. | ☐ |
 | S-3 | In the experimental instance, open `samples\Todo\Brinell.Samples.Todo.slnx`, then **Build > Build Solution**. | The Todo solution builds. | ☐ |
-| S-4 | **Extensions > Manage Extensions > Installed**. | "Brinell UAT" is listed and enabled. | ☐ |
+| S-4 | **Extensions > Manage Extensions > Installed**. | "Brinell BDD" is listed and enabled. | ☐ |
 
 The files used below are all under `samples\Todo\tests\Brinell.Samples.Todo.Uat\`:
 - `Features\TOD.01-see-my-todos.feature.md`, called **TOD.01** from here on;
@@ -92,7 +92,7 @@ These start the Todo app. Leave the mouse and keyboard alone while a run goes.
 
 | ID | Do | You should see | Result |
 | --- | --- | --- | --- |
-| R-1 | Open TOD.01. On the heading of `TOD.01.3` in the preview, click **▶ Run**. | The solution builds first. Then the **Brinell UAT** Output pane shows a `dotnet test ... --filter "BddScenario=..."` command and its output, the Todo app opens, and the scenario runs. The heading shows "running…" meanwhile. | ☐ |
+| R-1 | Open TOD.01. On the heading of `TOD.01.3` in the preview, click **▶ Run**. | The solution builds first. Then the **Brinell BDD** Output pane shows a `dotnet test ... --filter "BddScenario=..."` command and its output, the Todo app opens, and the scenario runs. The heading shows "running…" meanwhile. | ☐ |
 | R-2 | Wait for the run to end. | The preview shows each step's status (a pass mark per step), and the scenario's result and duration. | ☐ |
 | R-3 | Click **▶ Run file** on the title. | Every scenario of TOD.01 runs, and the preview shows all their results. | ☐ |
 | R-4 | While a run goes, click **Run** again on another scenario. | The second run is refused, with a message (in the status bar and the Output pane). | ☐ |
@@ -108,7 +108,7 @@ These start the Todo app. Leave the mouse and keyboard alone while a run goes.
 | B-1 | In the preview, click the keyword of `When I tap Sync` (line 54, in TOD.01.3). | A red dot appears in the preview's gutter, and in the editor's left margin at line 54. | ☐ |
 | B-2 | Click the keyword again. Then, in the editor, put the caret on line 54 and press **Ctrl+K, F9**. | The first click removes the dot. **Ctrl+K, F9** sets it again, in both places. | ☐ |
 | B-3 | Put the caret on a blank line and press **Ctrl+K, F9**. | No dot. The status bar says the line is not a step. | ☐ |
-| B-4 | Right-click the editor on a step line. | The menu has **Toggle UAT Step Breakpoint**, and it works. | ☐ |
+| B-4 | Right-click the editor on a step line. | The menu has **Toggle BDD Step Breakpoint**, and it works. | ☐ |
 | B-5 | Add two empty lines above line 54. | The dot moves down with its step. | ☐ |
 | B-6 | With the dot on `When I tap Sync`, click **● Debug** on TOD.01.3's heading. | The run starts, Visual Studio's debugger attaches (the title bar shows it is debugging), and the run stops **before** that step. You are in `BddStepExecutionSession.RunNextAsync`. | ☐ |
 | B-7 | At that stop, look in **Locals**. | A local `stepBreak` shows the step's text, its arguments, the app, the page (Todo List) and the call chain. | ☐ |
@@ -119,7 +119,7 @@ These start the Todo app. Leave the mouse and keyboard alone while a run goes.
 | B-12 | With a breakpoint set, run TOD.01.3 with **Debug** from **Test Explorer** (right-click the test > Debug), not from the preview. | It stops at the same breakpoint. | ☐ |
 | B-13 | Set an ordinary C# breakpoint (F9) in `samples\Todo\tests\Brinell.Samples.Todo.UITests\Pages\TodoListPage.cs`, on the `SyncButton` line (22). Debug TOD.01.3. | Visual Studio stops there as usual. | ☐ |
 | B-14 | Set an ordinary C# breakpoint in the Todo **app's** code: `samples\Todo\src\Brinell.Samples.Todo.App\Pages\TodoListPage.xaml.cs`, in a handler the Sync tap reaches. Debug TOD.01.3. | The Output pane says "The debugger is attached to the app too". Visual Studio stops in the app's code. The Debug Location toolbar lists two processes (testhost and the app). | ☐ |
-| B-15 | Remove every step breakpoint. Close Visual Studio. Open `%LOCALAPPDATA%\Brinell\uat-breakpoints.json`. | It lists no lines for TOD.01 (or has no entry for it). | ☐ |
+| B-15 | Remove every step breakpoint. Close Visual Studio. Open `%LOCALAPPDATA%\Brinell\bdd-breakpoints.json`. | It lists no lines for TOD.01 (or has no entry for it). | ☐ |
 
 ## 7. Editing help
 
@@ -181,17 +181,17 @@ Open the config (`uat.config.md`). Undo every change afterwards.
 
 | ID | Do | You should see | Result |
 | --- | --- | --- | --- |
-| L-1 | Open `samples\Todo\tests\Brinell.Samples.Todo.TestSupport\Uat\BackendPhrases.cs`. Wait a few seconds. | Above the method at line 40, CodeLens says "used in N UAT steps · M scenarios". | ☐ |
+| L-1 | Open `samples\Todo\tests\Brinell.Samples.Todo.TestSupport\Uat\BackendPhrases.cs`. Wait a few seconds. | Above the method at line 40, CodeLens says "used in N BDD steps · M scenarios". | ☐ |
 | L-2 | Click it. | A table lists each step: file, line, step text, scenario. | ☐ |
 | L-3 | Open `samples\Todo\tests\Brinell.Samples.Todo.UITests\Pages\TodoListPage.cs`. | Above `SyncButton`, CodeLens counts the tap steps on the Todo List page. | ☐ |
-| L-4 | Find a method no step uses (any private helper). | No UAT CodeLens above it. | ☐ |
-| L-5 | Open a C# file in a solution with no suite (any other solution). Watch Task Manager. | No UAT CodeLens, and no `dotnet` process running `Brinell.Bdd.LanguageServer.dll` is started for it. | ☐ |
+| L-4 | Find a method no step uses (any private helper). | No BDD CodeLens above it. | ☐ |
+| L-5 | Open a C# file in a solution with no suite (any other solution). Watch Task Manager. | No BDD CodeLens, and no `dotnet` process running `Brinell.Bdd.LanguageServer.dll` is started for it. | ☐ |
 
-## 11. UAT Explorer
+## 11. BDD Explorer
 
 | ID | Do | You should see | Result |
 | --- | --- | --- | --- |
-| X-1 | **View > Other Windows > UAT Explorer**. | The window opens on **Steps** for a suite, with a suite picker. | ☐ |
+| X-1 | **View > Other Windows > BDD Explorer**. | The window opens on **Steps** for a suite, with a suite picker. | ☐ |
 | X-2 | Look through Steps. | Groups by class, by page, control verbs and built-ins, then the step file's `## Step:` sections, then the hooks of each step-definition class. | ☐ |
 | X-3 | Click a C# step, a `## Step:`, and a hook. | Each opens its source at its line. | ☐ |
 | X-4 | Click **Pages**. | Each page with its controls (type, and where tapping goes) and its page steps. Clicking a control opens it. | ☐ |
@@ -205,8 +205,8 @@ Only with GitHub Copilot, Visual Studio 17.14 or later.
 
 | ID | Do | You should see | Result |
 | --- | --- | --- | --- |
-| M-1 | Add the `.mcp.json` from the guide's "Copilot And Other Agents" section to the Brinell root, and reopen the solution. | Copilot Chat's tools list has **brinell-uat** with six tools. | ☐ |
-| M-2 | In agent mode, ask: "Using brinell-uat, list the steps with 'tap' in the Todo MAUI suite." | It calls `list_steps` and shows `I tap {control}` among them. | ☐ |
+| M-1 | Add the `.mcp.json` from the guide's "Copilot And Other Agents" section to the Brinell root, and reopen the solution. | Copilot Chat's tools list has **brinell-bdd** with six tools. | ☐ |
+| M-2 | In agent mode, ask: "Using brinell-bdd, list the steps with 'tap' in the Todo MAUI suite." | It calls `list_steps` and shows `I tap {control}` among them. | ☐ |
 | M-3 | Ask it to write a scenario "the user adds a todo called Buy milk" for the Todo MAUI suite, and validate it. | It uses only existing steps, calls `validate_scenario`, and fixes what it reports. Remove `.mcp.json` afterwards. | ☐ |
 
 ## 13. Observations for the spike questions
@@ -235,7 +235,7 @@ Write what you saw; these have no pass or fail.
 | 8 Quick fixes and rename | | | | |
 | 9 Config | | | | |
 | 10 CodeLens | | | | |
-| 11 UAT Explorer | | | | |
+| 11 BDD Explorer | | | | |
 | 12 Copilot | | | | |
 
 Tester: ______  Date: ______  Visual Studio version: ______  Commit: ______

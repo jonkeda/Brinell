@@ -45,7 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   kinds, the namespaces and the apps' heads. A feature file's `TestData` metadata offers the test
   sets. `BddSuite.TestDataDefinitions` loads the suite's test-data definitions with its build, each
   placed at its project rather than in the shadow copy.
-- UAT Explorer (Visual Studio, **View > Other Windows > UAT Explorer**) shows three views of a suite,
+- BDD Explorer (Visual Studio, **View > Other Windows > BDD Explorer**) shows three views of a suite,
   and any entry with a source opens it:
   - **Steps**: the steps grouped by their class, page, control verbs and built-ins, then the
     callable steps by step file, and the hooks of each step-definition class with their tags;
@@ -64,7 +64,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Rename** a callable step renames its heading and every call, each call keeping its values.
     A new phrase that drops a placeholder is refused.
   `BddSuite.StepDefinitionTypes` lists the loaded suite's step-definition classes.
-- CodeLens from C# to scenarios (Visual Studio): "used in N UAT steps · M scenarios" above step
+- CodeLens from C# to scenarios (Visual Studio): "used in N BDD steps · M scenarios" above step
   definitions, page phrases and page-object controls, with the steps in its details.
   `brinell/usages` in the language server counts across every suite. A new assembly,
   `Brinell.Bdd.VisualStudio.CodeLens`, runs in Visual Studio's CodeLens process and reaches the
@@ -89,7 +89,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `<x>` placeholders, tags and comments. They come from the file's shape (`BddDocumentStructure`),
   so they work before a build and while the file does not parse.
 - Diagnostics in the editor (Visual Studio, `Brinell.Bdd.LanguageServer`): feature, step and config
-  files get the `brinell-uat` content type (derived from Markdown) and an LSP client. The server
+  files get the `brinell-bdd` content type (derived from Markdown) and an LSP client. The server
   publishes the gate's diagnostics word for word: the open file after a pause in typing, and every
   file of its suites on save and after a build. A step that failed in the last run is a `UATRUN`
   error at its line. `BddFileAnalysis` (`Brinell.Bdd.Preview`) is the one check the preview and the
@@ -97,8 +97,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Debug from the preview (Visual Studio): **Debug** beside each **Run** and **Debug file** beside
   **Run file** run with `VSTEST_HOST_DEBUG` and attach Visual Studio's debugger to the testhost; a
   failed attach cancels the run. Step breakpoints are toggled by clicking a step's keyword in the
-  preview, or with **Toggle UAT Step Breakpoint** (editor context menu, **Ctrl+K, F9**) on a step
-  line. Either way they are written to `%LOCALAPPDATA%\Brinell\uat-breakpoints.json`, and a red dot
+  preview, or with **Toggle BDD Step Breakpoint** (editor context menu, **Ctrl+K, F9**) on a step
+  line. Either way they are written to `%LOCALAPPDATA%\Brinell\bdd-breakpoints.json`, and a red dot
   shows in the preview's gutter and in the editor's glyph margin. Breakpoints move with their lines
   as the file is edited.
 - Run from the preview (Visual Studio): **Run** on each scenario heading and **Run file** on the title
@@ -107,7 +107,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   stops the test process tree. `brinell/runTarget` gives the project and filter; a suite whose test
   class keeps `[Theory]` shows the buttons disabled, saying why (`BddSuite.HasScenarioTheory`).
 - Step breakpoints (`Brinell.Bdd`): while a debugger is attached, `BddStepExecutionSession.RunNextAsync`
-  stops before a step whose line `%LOCALAPPDATA%\Brinell\uat-breakpoints.json` lists, with a
+  stops before a step whose line `%LOCALAPPDATA%\Brinell\bdd-breakpoints.json` lists, with a
   `BddStepBreak` local (text, arguments, app, page, call chain); a line in a `.steps.md` stops at each
   call, a call's line once before its first step, and `breakOnFailure` after a failed step. The
   check is behind `IBddBreakHook` (`BddExecutionContext.Breaks`); without a debugger nothing is read.

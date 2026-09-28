@@ -24,12 +24,12 @@ namespace Brinell.Bdd.VisualStudio;
     expression: "Feature | Steps",
     termNames: ["Feature", "Steps"],
     termValues: [@"HierSingleSelectionName:\.feature\.md$", @"HierSingleSelectionName:\.steps\.md$"])]
-public sealed class BrinellUatPackage : AsyncPackage
+public sealed class BrinellBddPackage : AsyncPackage
 {
     private PreviewController? _controller;
 
     /// <summary>The package once loaded, for CodeLens's callback, which runs outside it.</summary>
-    internal static BrinellUatPackage? Instance { get; private set; }
+    internal static BrinellBddPackage? Instance { get; private set; }
 
     /// <summary>The preview's controller, which holds the language server.</summary>
     internal PreviewController? Controller => _controller;
@@ -49,7 +49,7 @@ public sealed class BrinellUatPackage : AsyncPackage
             open.BeforeQueryStatus += (_, _) => open.Visible = _controller.ActiveIsFeatureOrSteps;
             commands.AddCommand(open);
 
-            commands.AddCommand(new MenuCommand((_, _) => ShowExplorer(), new CommandID(PackageIds.CommandSet, PackageIds.ShowUatExplorer)));
+            commands.AddCommand(new MenuCommand((_, _) => ShowExplorer(), new CommandID(PackageIds.CommandSet, PackageIds.ShowBddExplorer)));
 
             var toggle = new OleMenuCommand((_, _) => ToggleStepBreakpoint(), new CommandID(PackageIds.CommandSet, PackageIds.ToggleStepBreakpoint));
             toggle.BeforeQueryStatus += (_, _) => toggle.Visible = toggle.Enabled = _controller.ActiveIsFeatureOrSteps;
@@ -82,7 +82,7 @@ public sealed class BrinellUatPackage : AsyncPackage
             {
                 await _controller.AttachExplorerAsync(explorer.Control);
             }
-        }).FileAndForget("Brinell/ShowUatExplorer");
+        }).FileAndForget("Brinell/ShowBddExplorer");
     }
 
     private void ShowPreview()

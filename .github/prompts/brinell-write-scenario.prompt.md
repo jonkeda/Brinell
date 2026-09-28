@@ -1,11 +1,11 @@
 ---
 mode: agent
-description: Write or extend a Brinell UAT feature file from a user story, using only steps the suite has.
-tools: ['brinell-uat']
+description: Write or extend a Brinell BDD feature file from a user story, using only steps the suite has.
+tools: ['brinell-bdd']
 ---
 
 Write the scenario the user describes as a Brinell feature file (`*.feature.md`), in agent mode
-with the `brinell-uat` MCP server.
+with the `brinell-bdd` MCP server.
 
 1. Call `list_suites`, and pick the suite whose project should hold the file. Its `Features` folder
    is where the file goes.

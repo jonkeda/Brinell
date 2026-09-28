@@ -84,8 +84,8 @@ public sealed class BddMcpServer : IDisposable
                 {
                     ["protocolVersion"] = ProtocolVersion,
                     ["capabilities"] = new JsonObject { ["tools"] = new JsonObject() },
-                    ["serverInfo"] = new JsonObject { ["name"] = "brinell-uat", ["version"] = typeof(BddMcpServer).Assembly.GetName().Version?.ToString() ?? "0" },
-                    ["instructions"] = "Brinell UAT: use list_steps before writing a scenario step, and validate_scenario before proposing a feature file. Never invent a phrase: leave a step that has none as a marked gap.",
+                    ["serverInfo"] = new JsonObject { ["name"] = "brinell-bdd", ["version"] = typeof(BddMcpServer).Assembly.GetName().Version?.ToString() ?? "0" },
+                    ["instructions"] = "Brinell BDD: use list_steps before writing a scenario step, and validate_scenario before proposing a feature file. Never invent a phrase: leave a step that has none as a marked gap.",
                 },
                 "ping" => new JsonObject(),
                 "tools/list" => new JsonObject

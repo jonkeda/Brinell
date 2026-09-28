@@ -1,4 +1,4 @@
-// The Brinell UAT extension for VS Code: the same language server as Visual Studio's
+// The Brinell BDD extension for VS Code: the same language server as Visual Studio's
 // (Brinell.Bdd.LanguageServer) for diagnostics, completion and navigation, the same Scenario Preview,
 // Test Explorer on the scenarios' addresses, and step breakpoints shared with Visual Studio.
 import * as fs from "fs";
@@ -15,7 +15,7 @@ let client: LanguageClient | undefined;
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   const server = serverPath(context);
   if (!server) {
-    void vscode.window.showErrorMessage("The Brinell UAT language server is not built. Build tools/Brinell.Bdd.LanguageServer, or set brinellUat.serverPath.");
+    void vscode.window.showErrorMessage("The Brinell BDD language server is not built. Build tools/Brinell.Bdd.LanguageServer, or set brinellBdd.serverPath.");
     return;
   }
 
@@ -28,9 +28,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       { scheme: "file", language: "markdown", pattern: "**/bdd.config.md" },
     ],
     initializationOptions: { solutionDir: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath },
-    outputChannelName: "Brinell UAT Language Server",
+    outputChannelName: "Brinell BDD Language Server",
   };
-  client = new LanguageClient("brinellUat", "Brinell UAT", serverOptions, clientOptions);
+  client = new LanguageClient("brinellBdd", "Brinell BDD", serverOptions, clientOptions);
   await client.start();
 
   const tests = new ScenarioTests(client, (line, file) => preview.running(line, file));
@@ -53,19 +53,19 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     tests,
     preview,
     gutter,
-    vscode.commands.registerCommand("brinellUat.openPreview", async () => {
+    vscode.commands.registerCommand("brinellBdd.openPreview", async () => {
       const document = vscode.window.activeTextEditor?.document;
       if (document && featureOrSteps.test(document.fileName)) {
         await preview.open(document);
       }
     }),
-    vscode.commands.registerCommand("brinellUat.toggleStepBreakpoint", () => {
+    vscode.commands.registerCommand("brinellBdd.toggleStepBreakpoint", () => {
       const editor = vscode.window.activeTextEditor;
       if (editor && featureOrSteps.test(editor.document.fileName)) {
         breakpoints.toggle(editor.document.uri.fsPath, editor.selection.active.line + 1);
       }
     }),
-    vscode.commands.registerCommand("brinellUat.refreshTests", () => tests.discover()),
+    vscode.commands.registerCommand("brinellBdd.refreshTests", () => tests.discover()),
     breakpoints.onDidChangeBreakpoints(() => vscode.window.visibleTextEditors.forEach(showBreakpoints)),
     vscode.window.onDidChangeActiveTextEditor(showBreakpoints),
     vscode.workspace.onDidChangeTextDocument((change) => {
@@ -95,7 +95,7 @@ export function deactivate(): Thenable<void> | undefined {
 
 // The server: the setting, else the one packed in the extension, else the repository's own build.
 function serverPath(context: vscode.ExtensionContext): string | undefined {
-  const configured = vscode.workspace.getConfiguration("brinellUat").get<string>("serverPath");
+  const configured = vscode.workspace.getConfiguration("brinellBdd").get<string>("serverPath");
   if (configured && fs.existsSync(configured)) {
     return configured;
   }

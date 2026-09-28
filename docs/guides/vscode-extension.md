@@ -1,4 +1,4 @@
-# Brinell UAT In VS Code
+# Brinell BDD In VS Code
 
 The VS Code extension (`tools/Brinell.Bdd.VsCode`) is the Visual Studio extension's twin. It
 starts the same language server (`Brinell.Bdd.LanguageServer`) and shows the same Scenario Preview,
@@ -20,7 +20,7 @@ npm run compile
 Open the folder in VS Code and press **F5** to start an Extension Development Host. In it, open a
 folder with a suite, such as `samples/Todo`. The extension uses:
 - the server in its own `server` folder when packaged;
-- else `brinellUat.serverPath`;
+- else `brinellBdd.serverPath`;
 - else the repository's build of `tools/Brinell.Bdd.LanguageServer` (build it first:
   `dotnet build tools\Brinell.Bdd.LanguageServer` from the Brinell root).
 
@@ -50,5 +50,5 @@ cancelling a run stops the test process and the app it started.
 
 **Ctrl+K F9**, the editor's context menu, or a click on a step's keyword in the preview toggles a
 step breakpoint. A red dot marks it in the gutter. The breakpoints are the same per-user file as
-Visual Studio's (`%LOCALAPPDATA%\Brinell\uat-breakpoints.json`), so a breakpoint set in one IDE
+Visual Studio's (`%LOCALAPPDATA%\Brinell\bdd-breakpoints.json`), so a breakpoint set in one IDE
 stops a run started from the other.

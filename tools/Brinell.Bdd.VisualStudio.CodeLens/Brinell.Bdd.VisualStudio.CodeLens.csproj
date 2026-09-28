@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- The UAT CodeLens on C# members (phase 4). Visual Studio runs CodeLens providers in its own
+  <!-- The BDD CodeLens on C# members (phase 4). Visual Studio runs CodeLens providers in its own
        CodeLens process, so this is an assembly of its own, carried in the VSIX as a
        CodeLensComponent. It holds no engine types: it asks the extension, which asks the server. -->
   <PropertyGroup>

@@ -270,7 +270,7 @@ public sealed class LanguageServerTests : IAsyncLifetime
 
         var diagnostic = Assert.Single(published.Diagnostics, d => d.Code == "UATB001");
         Assert.Equal(1, diagnostic.Severity);
-        Assert.Equal("Brinell UAT", diagnostic.Source);
+        Assert.Equal("Brinell BDD", diagnostic.Source);
         Assert.Equal(new Range(new Position(5, 2), new Position(5, 23)), diagnostic.Range);
         Assert.Equal(1, published.Version);
     }

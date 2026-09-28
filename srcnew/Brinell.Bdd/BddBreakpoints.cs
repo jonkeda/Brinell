@@ -43,7 +43,7 @@ public sealed record BddStepBreak(
 
 /// <summary>
 /// The step breakpoints an IDE sets (R2 of the IDE plan): a per-user file,
-/// <c>%LOCALAPPDATA%\Brinell\uat-breakpoints.json</c>, with a list of lines per file. It is a file,
+/// <c>%LOCALAPPDATA%\Brinell\bdd-breakpoints.json</c>, with a list of lines per file. It is a file,
 /// not an environment variable, so a Debug started from Test Explorer honours it too. It is only
 /// read while a debugger is attached, and read again when it changes.
 /// </summary>
@@ -73,7 +73,7 @@ public sealed class BddBreakpoints : IBddBreakHook
 
     /// <summary>The per-user breakpoints file.</summary>
     public static string DefaultPath { get; } =
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Brinell", "uat-breakpoints.json");
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Brinell", "bdd-breakpoints.json");
 
     /// <summary>The breakpoints of <see cref="DefaultPath"/> while a debugger is attached; null otherwise, so nothing is read.</summary>
     /// <param name="attached">Whether a debugger is attached; <see cref="Debugger.IsAttached"/> by default.</param>

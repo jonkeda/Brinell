@@ -112,7 +112,7 @@ Suites change `[Theory]` to `[UatScenarioTheory]`, a one-line change. A suite th
 still runs from Test Explorer. The preview then says it can't run that scenario, and why.
 
 **R2. Break at a step, from breakpoints in a file.** The breakpoints are kept in a per-user
-`%LOCALAPPDATA%\Brinell\uat-breakpoints.json`, as a file and a list of lines. The executor reads
+`%LOCALAPPDATA%\Brinell\bdd-breakpoints.json`, as a file and a list of lines. The executor reads
 it only when `Debugger.IsAttached`, so it costs nothing otherwise. Before a step whose line (or
 whose call's line, in a `*.steps.md`) is listed, the session:
 
@@ -219,7 +219,7 @@ and a call into Test Explorer. Its findings go into section 7, and the code is n
 | 1.3 | **Binding in the preview**: with a catalog, each step shows what it binds to (as a tooltip: the method and the page), marks a step that binds to nothing with the gate's diagnostic, shows the page per step once it changes, and can unfold a callable call into its body with values filled in. The first Scenario Outline row is shown as bound; each row can be expanded. | Snapshot tests with the Todo catalog; the text of the TOD.11-without-using file's UATB010 appears in the preview word for word as the gate reports it. |
 | 1.4 | **`Brinell.Bdd.LanguageServer`, skeleton**: stdio JSON-RPC, `initialize`, document sync, `brinell/preview`, `brinell/buildDone`; a file belongs to the suite whose project holds it, with a picker for a file linked into several (AD-014). Parse-only until a build exists, saying so. | JSON-RPC tests: open, change, preview, build done reloads the catalog. |
 | 1.5 | **The VSIX and the Scenario Preview window**: starts the server when the first `.feature.md` or `.steps.md` opens; the window follows the active document; refreshes on edit (debounced) and on build done; scroll sync both ways (caret → block, click a block → caret); VS theme → CSS variables, live on theme change; WebView2 user data under `%LOCALAPPDATA%\Brinell\WebView2`; images through a virtual host mapping, never `file://`. | Checklist 6.1 passes in the experimental instance with the Todo solution. |
-| 1.6 | **Results in the preview** (P5): the report change in `UatScenarioTestBase` and the manifest lookup in the server; each step shows its status icon with a text alternative; a scenario shows its duration; a failed step shows its message and a screenshot thumbnail that opens full size. | A Todo UAT run from the command line, then the preview shows it; the Todo UAT suites and the service suite are still green with the new report. |
+| 1.6 | **Results in the preview** (P5): the report change in `UatScenarioTestBase` and the manifest lookup in the server; each step shows its status icon with a text alternative; a scenario shows its duration; a failed step shows its message and a screenshot thumbnail that opens full size. | A Todo BDD run from the command line, then the preview shows it; the Todo UAT suites and the service suite are still green with the new report. |
 
 ### Phase 2: run and debug
 
@@ -228,7 +228,7 @@ and a call into Test Explorer. Its findings go into section 7, and the code is n
 | 2.1 | **`[UatScenarioTheory]`** (R1): discoverer, trait, and source location if S5 allows. Todo's MAUI, web, mixed and service suites move to it. | `dotnet test --filter "BddScenario=Features/TOD.11-manage-users.feature.md#<slug>"` runs exactly one case; Test Explorer lists the same cases as before; the Todo counts are unchanged (MAUI 43, web 35, mixed 4, service 3). |
 | 2.2 | **Break at a step** (R2): the breakpoint file, the check in `RunNextAsync` behind a seam (`IBddBreakHook`) so unit tests don't need a debugger, `BddStepBreak`, breaks inside callables by the call's line. | `Brinell.Bdd.Tests` (the session is in `Brinell.Bdd`): a listed line breaks, an unlisted one doesn't, nothing is read without a debugger, a line in a `*.steps.md` breaks at each call. |
 | 2.3 | **Run from the preview** (R3, R4): Run and Run file buttons on the headings, build first, then the Test Explorer API or `dotnet test --no-build`, an Output pane, one run at a time, builds cancelled during a run, Cancel. | Checklist 6.2 passes. |
-| 2.4 | **Debug from the preview**: the attach route (or the Test Explorer API's debug), and the breakpoint gutter in the preview (a click on a step's gutter toggles it, as a red dot). An editor command, *Toggle UAT step breakpoint*, on the context menu and a key binding for `.feature.md` files, shows the same dot in the editor's glyph margin. | Checklist 6.3 passes, including a break hit from Test Explorer's own Debug. |
+| 2.4 | **Debug from the preview**: the attach route (or the Test Explorer API's debug), and the breakpoint gutter in the preview (a click on a step's gutter toggles it, as a red dot). An editor command, *Toggle BDD step breakpoint*, on the context menu and a key binding for `.feature.md` files, shows the same dot in the editor's glyph margin. | Checklist 6.3 passes, including a break hit from Test Explorer's own Debug. |
 
 ### Phase 3: editor
 

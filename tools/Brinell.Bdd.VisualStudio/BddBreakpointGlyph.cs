@@ -98,7 +98,7 @@ internal sealed class BddBreakpointGlyphFactory : IGlyphFactory
 
     public UIElement? GenerateGlyph(IWpfTextViewLine line, IGlyphTag tag)
         => tag is BddBreakpointTag
-            ? new Ellipse { Width = 11, Height = 11, Fill = Fill, ToolTip = "UAT step breakpoint" }
+            ? new Ellipse { Width = 11, Height = 11, Fill = Fill, ToolTip = "BDD step breakpoint" }
             : null;
 
     private static Brush Frozen(Brush brush)

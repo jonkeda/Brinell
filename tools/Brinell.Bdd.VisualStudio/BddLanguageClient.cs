@@ -19,7 +19,7 @@ namespace Brinell.Bdd.VisualStudio;
 /// </summary>
 internal static class BddContentType
 {
-    public const string Name = "brinell-uat";
+    public const string Name = "brinell-bdd";
 
     [Export]
     [Name(Name)]
@@ -36,7 +36,7 @@ internal static class BddContentType
 
 // Every *.md goes through here: only Brinell's files get the content type; the rest stay Markdown.
 [Export(typeof(IFilePathToContentTypeProvider))]
-[Name("Brinell UAT file path")]
+[Name("Brinell BDD file path")]
 [FileExtension(".md")]
 internal sealed class BddContentTypeProvider : IFilePathToContentTypeProvider
 {
@@ -74,7 +74,7 @@ internal sealed class BddLanguageClient : ILanguageClient
     public event AsyncEventHandler<EventArgs>? StopAsync;
 #pragma warning restore CS0067
 
-    public string Name => "Brinell UAT";
+    public string Name => "Brinell BDD";
 
     public IEnumerable<string>? ConfigurationSections => null;
 
@@ -128,7 +128,7 @@ internal sealed class BddLanguageClient : ILanguageClient
     public Task<InitializationFailureContext?> OnServerInitializeFailedAsync(ILanguageClientInitializationInfo initializationState)
         => Task.FromResult<InitializationFailureContext?>(new InitializationFailureContext
         {
-            FailureMessage = $"The Brinell UAT language server did not start: {initializationState.InitializationException?.Message ?? "no reason given"}. The Scenario Preview still works.",
+            FailureMessage = $"The Brinell BDD language server did not start: {initializationState.InitializationException?.Message ?? "no reason given"}. The Scenario Preview still works.",
         });
 
     private static async Task<string?> SolutionDirectoryAsync()

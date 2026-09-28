@@ -1,6 +1,6 @@
 namespace Brinell.Bdd.VisualStudio;
 
-// The GUIDs and ids of BrinellUatPackage.vsct and the package attributes; kept in step with the .vsct.
+// The GUIDs and ids of BrinellBddPackage.vsct and the package attributes; kept in step with the .vsct.
 internal static class PackageIds
 {
     public const string Package = "3f45aa33-e8c9-4927-830b-6ba9b74c9467";
@@ -20,7 +20,7 @@ internal static class PackageIds
 
     public const int ToggleStepBreakpoint = 0x0102;
 
-    public const int ShowUatExplorer = 0x0103;
+    public const int ShowBddExplorer = 0x0103;
 
     public static readonly Guid CommandSet = new(CommandSetString);
 }
