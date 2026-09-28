@@ -1,6 +1,10 @@
 # Rename `Uat*` to `Bdd*`: Bdd is the main, Uat a specialization
 
-Status: **plan**, decided 2026-09-28, not started.
+Status: **done** 2026-09-28, in commits 027b0e7 (Bdd and Core), 55c3c2e (Presenter, Todo), 63c501d
+(tool projects), d004f50 (extension names) and the docs commit. Deviations: the breakpoints file
+moved in the extension-names step, not the Bdd step; `docs/guides/visual-studio-preview.md` keeps
+its file name; the general wording "UAT step" (AD-011, a guide title) is unchanged. To extract and
+delete: AD-021 holds the decision.
 
 ## 1. Goal
 

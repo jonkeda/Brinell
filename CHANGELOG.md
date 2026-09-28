@@ -357,6 +357,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Request/response recording
 
 ### Changed
+- **Breaking: `Uat` names are only for `Brinell.Uat`.** Bdd is the main and Uat a specialization
+  of it (AD-021), so everything outside `Brinell.Uat` takes `Bdd` names. No old names are kept.
+  - The 111 `Uat*` types of `Brinell.Bdd` and `Brinell.Core` are `Bdd*`: `BddBinder`,
+    `BddCatalogSet`, `BddMarkdownParser`, `IBddClock`, `BddEffectiveStepKeyword`,
+    `[BddIgnore]`, `[BddArgumentType]` and the rest. So are the Presenter's types and the Todo
+    sample's orderer.
+  - The run address trait is `BddScenario=<file>#<slug>`.
+  - The tool projects are `Brinell.Bdd.Workspace`, `Brinell.Bdd.Preview`,
+    `Brinell.Bdd.LanguageServer`, `Brinell.Bdd.VisualStudio` (and `.CodeLens`) and
+    `Brinell.Bdd.VsCode`, and their types are `Bdd*`. The test project
+    `Brinell.Presenter.Uat.Tests` is `Brinell.Presenter.Bdd.Tests`.
+  - The IDE extensions are "Brinell BDD", with new identities, so uninstall the old ones: the
+    BDD Explorer, **Toggle BDD Step Breakpoint**, `brinellBdd.*` settings, the MCP server
+    `brinell-bdd`, and `%LOCALAPPDATA%\Brinell\bdd-breakpoints.json`.
+  - `UatPlatformsAttribute` keeps its name for now.
 - The feature-file engine is its own package, `Brinell.Bdd`: parser and models, values, argument
   types, tables, the catalog and binder, callable steps, namespaces, config, execution and runner,
   the step-definition runtime, `[BddStepDefinitions]`, `BddStepDefinitionsBase`, `[BddIgnore]`,

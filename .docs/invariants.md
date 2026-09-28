@@ -58,6 +58,9 @@ The short list that must not be broken. Each links the decision that explains it
 - **Brinell.Bdd knows no UI.** It references no page object, control or UI-automation type, and not
   `Brinell.Uat`; page names are plain strings, and page scope comes through `IStepScope`.
   [AD-021](decisions/ad-021-bdd-under-uat.md)
+- **Bdd is the main; Uat is a specialization.** Only `Brinell.Uat` and its tests have `Uat` names
+  (and `UatPlatformsAttribute`, for now). The engine, the Presenter, the tools and the IDE
+  extensions have `Bdd` names. [AD-021](decisions/ad-021-bdd-under-uat.md)
 - **The IDEs run the gate's engine.** An IDE never parses or binds a scenario itself. It asks
   `Brinell.Bdd.LanguageServer`, which checks with the gate's own code and words, and loads a suite
   only through `Brinell.Bdd.Workspace`. A scenario runs by its `BddScenario` address.
