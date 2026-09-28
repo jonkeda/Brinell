@@ -102,7 +102,9 @@ public sealed class JourneyCoverageTests
             {tags}
             ## Scenario: One scenario
 
+            ```gherkin
             Given the device is offline
+            ```
             """);
         try
         {

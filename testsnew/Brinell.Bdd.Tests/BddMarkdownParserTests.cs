@@ -12,11 +12,15 @@ public sealed class BddMarkdownParserTests
 
             ## Phrase: a sign-in
 
+            ```gherkin
             When I sign in
+            ```
 
             ## Scenario: Sign in
 
+            ```gherkin
             When a sign-in
+            ```
             """);
 
         Assert.Equal(
@@ -31,7 +35,7 @@ public sealed class BddMarkdownParserTests
     [Fact]
     public void ParsePhrases_OldHeading_IsAnError()
     {
-        var result = BddMarkdownParser.ParsePhrases("# Phrases: Todo\n\n## Step: one\n\nWhen I sync\n");
+        var result = BddMarkdownParser.ParsePhrases("# Phrases: Todo\n\n## Step: one\n\n```gherkin\nWhen I sync\n```\n");
 
         Assert.Equal("UAT029", Assert.Single(result.Diagnostics).Code);
     }
@@ -69,6 +73,7 @@ public sealed class BddMarkdownParserTests
             @smoke @login
             ## Scenario: Valid user can sign in
 
+            ```gherkin
             Given I am on the Login page
             When I sign in with credentials
             | Field | Value |
@@ -76,6 +81,7 @@ public sealed class BddMarkdownParserTests
             | User name | ada@example.com |
             | Password | correct-password |
             Then I should see "Welcome Ada"
+            ```
             """;
 
         var result = BddMarkdownParser.Parse(markdown, "login.feature.md");
@@ -103,6 +109,7 @@ public sealed class BddMarkdownParserTests
 
             ## Scenario Outline: Login result is shown
 
+            ```gherkin
             Given I am on the Login page
             When I enter credentials
             | Field | Value |
@@ -110,6 +117,7 @@ public sealed class BddMarkdownParserTests
             | User name | <user> |
             | Password | <password> |
             Then I should see "<result>"
+            ```
 
             ### Examples
 
@@ -140,13 +148,17 @@ public sealed class BddMarkdownParserTests
 
             ## Background
 
+            ```gherkin
             Given the application is running
+            ```
 
             ## Scenario: Save display name
 
+            ```gherkin
             Given I am on the Settings page
             When I enter "Ada Lovelace" into Display Name
             Then I should see "Settings saved"
+            ```
             """;
 
         var result = BddMarkdownParser.Parse(markdown);
@@ -177,11 +189,13 @@ public sealed class BddMarkdownParserTests
             @smoke @settings
             ## Scenario: Save display name
 
+            ```gherkin
             Given I am on the Settings page
             When I enter "Ada Lovelace" into Display Name
             And I check Email Notifications
             And I tap Save
             Then I should see "Settings saved"
+            ```
             """;
 
         var result = BddMarkdownParser.Parse(markdown);
@@ -217,9 +231,11 @@ public sealed class BddMarkdownParserTests
             @smoke @maui @camera @deterministic @uat-003-6
             ## Scenario: UAT-003.6 Sub-button hides action rows during capture
 
+            ```gherkin
             Given I am on the Main page
             When I tap Look
             Then Overview should be visible
+            ```
             """;
 
         var result = BddMarkdownParser.Parse(markdown);
@@ -241,7 +257,9 @@ public sealed class BddMarkdownParserTests
         var markdown = """
             ## Scenario: Missing heading
 
+            ```gherkin
             Given I am on the Login page
+            ```
             """;
 
         var result = BddMarkdownParser.Parse(markdown);
@@ -258,12 +276,14 @@ public sealed class BddMarkdownParserTests
 
             ## Scenario: Bad table
 
+            ```gherkin
             Given I am on the Login page
             When I enter credentials
             | Field | Value |
             | --- | --- |
             | User name |
             Then I should see "Welcome"
+            ```
             """;
 
         var result = BddMarkdownParser.Parse(markdown);
@@ -280,7 +300,9 @@ public sealed class BddMarkdownParserTests
 
             ## Scenario Outline: Missing column
 
+            ```gherkin
             Given I am on the <page> page
+            ```
 
             ### Examples
 
@@ -296,21 +318,22 @@ public sealed class BddMarkdownParserTests
     }
 
     [Theory]
-    [InlineData("```")]
-    [InlineData("```gherkin")]
-    [InlineData("~~~")]
-    public void Parse_FencedSteps_ParseLikeBareSteps(string fence)
+    [InlineData("```gherkin", "```")]
+    [InlineData("~~~gherkin", "~~~")]
+    [InlineData("```Gherkin", "```")]
+    [InlineData("````gherkin", "````")]
+    public void Parse_AGherkinBlock_IsReadWithAnyFenceAndCase(string open, string close)
     {
         var markdown = $"""
             # Feature: Login
 
             ## Scenario: Valid user can sign in
 
-            {fence}
+            {open}
             Given I am on the Login page
             When I tap Sign in
             Then I should see "Welcome Ada"
-            ```
+            {close}
             """;
 
         var result = BddMarkdownParser.Parse(markdown, "login.feature.md");
@@ -321,6 +344,335 @@ public sealed class BddMarkdownParserTests
         Assert.Equal("I am on the Login page", scenario.Steps[0].Text);
         Assert.Equal(BddEffectiveStepKeyword.Then, scenario.Steps[2].EffectiveKeyword);
     }
+
+    // AD-023: a step is read only inside a gherkin block; every other Markdown form is prose, and
+    // the file parses to the same document as without it.
+    [Theory]
+    [InlineData("A paragraph that explains the scenario, with *emphasis* and a [link](https://example.com).")]
+    [InlineData("- a list item\n- Given a list item that reads like a step")]
+    [InlineData("1. first\n2. When an ordered item reads like a step")]
+    [InlineData("> Given a quote that reads like a step")]
+    [InlineData("![an image](image.png)")]
+    [InlineData("<div>\nGiven some HTML\n</div>")]
+    [InlineData("---")]
+    [InlineData("Setext heading\n--------------")]
+    [InlineData("    Given an indented code block")]
+    [InlineData("```json\n{ \"Given\": 1 }\nGiven a json block\n```")]
+    [InlineData("```\nGiven a fence without a language\n```")]
+    [InlineData("Given a paragraph that reads like a step")]
+    [InlineData("### Why")]
+    [InlineData("<!-- a comment -->")]
+    public void Parse_Prose_AnywhereIsLeftOut(string prose)
+    {
+        var bare = Parse(WithProse(string.Empty));
+        var result = BddMarkdownParser.Parse(WithProse(prose), "login.feature.md");
+
+        Assert.True(result.Success, FormatDiagnostics(result));
+        Assert.DoesNotContain(result.Diagnostics, x => x.Severity == BddDiagnosticSeverity.Warning);
+        Assert.Equal(Shape(bare), Shape(result.Document!));
+    }
+
+    [Fact]
+    public void Parse_AProseSection_RunsToTheNextLevel2Heading()
+    {
+        var result = BddMarkdownParser.Parse("""
+            # Feature: Login
+
+            ## Notes
+
+            Some notes.
+
+            ```gherkin
+            Given a block in a prose section is prose
+            ```
+
+            | Field | Value |
+            | --- | --- |
+            | Not | metadata |
+
+            ## Scenario: Sign in
+
+            ```gherkin
+            Given I am on the Login page
+            ```
+            """);
+
+        Assert.True(result.Success, FormatDiagnostics(result));
+        Assert.Empty(result.Document!.Metadata);
+        Assert.Equal("I am on the Login page", Assert.Single(Assert.Single(result.Document.Scenarios).Steps).Text);
+    }
+
+    [Fact]
+    public void Parse_SeveralBlocks_AreOneListOfSteps_AndAndContinuesAcrossThem()
+    {
+        var result = BddMarkdownParser.Parse("""
+            # Feature: Login
+
+            ## Scenario: Sign in
+
+            ```gherkin
+            Given I am on the Login page
+            When I tap Sign in
+            ```
+
+            Prose between two blocks of one scenario.
+
+            ```gherkin
+            # a comment is not a heading
+            And I wait
+            Then I should see "Welcome"
+            ```
+            """);
+
+        Assert.True(result.Success, FormatDiagnostics(result));
+        var steps = Assert.Single(result.Document!.Scenarios).Steps;
+        Assert.Equal(["I am on the Login page", "I tap Sign in", "I wait", "I should see \"Welcome\""], steps.Select(x => x.Text));
+        Assert.Equal(BddEffectiveStepKeyword.When, steps[2].EffectiveKeyword);
+        Assert.Equal(14, steps[2].Source.LineNumber);
+    }
+
+    [Fact]
+    public void Parse_ProseBetweenAHeadingAndItsTable_IsAllowed()
+    {
+        var result = BddMarkdownParser.Parse("""
+            # Feature: Login
+
+            ## Metadata
+
+            What the scenarios need.
+
+            ### Where it comes from
+
+            | Field | Value |
+            | --- | --- |
+            | App | Example.Maui |
+
+            ## Scenario Outline: Sign in as <user>
+
+            ```gherkin
+            Given I sign in as <user>
+            ```
+
+            ### Examples
+
+            One row per user.
+
+            | user |
+            | --- |
+            | ada |
+            """);
+
+        Assert.True(result.Success, FormatDiagnostics(result));
+        Assert.Equal("Example.Maui", result.Document!.Metadata["App"]);
+        Assert.Equal("I sign in as ada", Assert.Single(Assert.Single(result.Document.Scenarios).Steps).Text);
+    }
+
+    [Fact]
+    public void Parse_BareSteps_AreProse_AndTheNoStepsErrorSaysWhereTheyGo()
+    {
+        var result = BddMarkdownParser.Parse("""
+            # Feature: Login
+
+            ## Scenario: Sign in
+
+            Given I am on the Login page
+            When I tap Sign in
+            """);
+
+        var diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal("UAT007", diagnostic.Code);
+        Assert.EndsWith(BddFileFormat.FenceHint, diagnostic.Message);
+    }
+
+    [Fact]
+    public void Parse_AStepLikeParagraph_BesideABlock_IsProse()
+    {
+        var result = BddMarkdownParser.Parse("""
+            # Feature: Login
+
+            ## Scenario: Sign in
+
+            Given that the user has an account, this signs in.
+
+            ```gherkin
+            Given I am on the Login page
+            ```
+            """);
+
+        Assert.True(result.Success, FormatDiagnostics(result));
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Theory]
+    [InlineData("## scenario: lower case")]
+    [InlineData("## Scenario without a colon")]
+    [InlineData("### Scenario: too deep")]
+    [InlineData("## Steps: in a feature file")]
+    [InlineData("### Examples")]
+    public void Parse_AHeadingThatLooksLikeASection_IsAWarning(string heading)
+    {
+        var result = BddMarkdownParser.Parse($"""
+            # Feature: Login
+
+            {heading}
+
+            ## Scenario: Sign in
+
+            ```gherkin
+            Given I am on the Login page
+            ```
+            """);
+
+        Assert.True(result.Success, FormatDiagnostics(result));
+        var warning = Assert.Single(result.Diagnostics);
+        Assert.Equal(("UAT031", BddDiagnosticSeverity.Warning), (warning.Code, warning.Severity));
+    }
+
+    [Fact]
+    public void Parse_AGherkinBlockOutsideASection_IsAnError()
+    {
+        var result = BddMarkdownParser.Parse("""
+            # Feature: Login
+
+            ```gherkin
+            Given I am on the Login page
+            ```
+
+            ## Scenario: Sign in
+
+            ```gherkin
+            Given I am on the Login page
+            ```
+            """);
+
+        var diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal(("UAT021", 3), (diagnostic.Code, diagnostic.Location.LineNumber));
+    }
+
+    [Fact]
+    public void Parse_TagsAboveProse_AreNotAScenariosTags()
+    {
+        var result = BddMarkdownParser.Parse("""
+            # Feature: Login
+
+            @smoke
+
+            Some prose.
+
+            ## Scenario: Sign in
+
+            ```gherkin
+            Given I am on the Login page
+            ```
+            """);
+
+        Assert.Equal("UAT020", Assert.Single(result.Diagnostics).Code);
+    }
+
+    [Fact]
+    public void FileFormat_FenceSteps_WrapsBareSteps_AndKeepsTagsParametersAndFencedSections()
+    {
+        var (text, count) = BddFileFormat.FenceSteps(
+            "# Feature: T\r\n\r\n## Scenario: A\r\n\r\nGiven a\r\n| x |\r\n| --- |\r\n| 1 |\r\n\r\n@smoke\r\n## Scenario: B\r\n\r\n```gherkin\r\nGiven b\r\n```\r\n\r\n" +
+            "## Step: c {n}\r\n\r\n| Parameter | Type |\r\n| --- | --- |\r\n| n | number |\r\n\r\nWhen c\r\n  <table>");
+
+        Assert.Equal(2, count);
+        Assert.Equal(
+            "# Feature: T\r\n\r\n## Scenario: A\r\n\r\n```gherkin\r\nGiven a\r\n| x |\r\n| --- |\r\n| 1 |\r\n```\r\n\r\n@smoke\r\n## Scenario: B\r\n\r\n```gherkin\r\nGiven b\r\n```\r\n\r\n" +
+            "## Step: c {n}\r\n\r\n| Parameter | Type |\r\n| --- | --- |\r\n| n | number |\r\n\r\n```gherkin\r\nWhen c\r\n  <table>\r\n```",
+            text);
+        Assert.True(BddMarkdownParser.Parse(text).Success, FormatDiagnostics(BddMarkdownParser.Parse(text)));
+    }
+
+    private static string WithProse(string prose) => $"""
+        {prose}
+
+        # Feature: Login
+
+        {prose}
+
+        ## Metadata
+
+        {prose}
+
+        | Field | Value |
+        | --- | --- |
+        | App | Example.Maui |
+
+        {prose}
+
+        ## Background
+
+        {prose}
+
+        ```gherkin
+        Given the application is running
+        ```
+
+        {prose}
+
+        @smoke
+        ## Scenario: Sign in
+
+        {prose}
+
+        ```gherkin
+        Given I am on the Login page
+        ```
+
+        {prose}
+
+        ```gherkin
+        When I tap Sign in
+        ```
+
+        {prose}
+
+        ## Scenario Outline: Sign in as <user>
+
+        {prose}
+
+        ```gherkin
+        Given I sign in as <user>
+        ```
+
+        {prose}
+
+        ### Examples
+
+        {prose}
+
+        | user |
+        | --- |
+        | ada |
+
+        {prose}
+
+        ## Step: I wait
+
+        {prose}
+
+        ```gherkin
+        When I tap Wait
+        ```
+
+        {prose}
+        """;
+
+    private static BddDocument Parse(string markdown)
+    {
+        var result = BddMarkdownParser.Parse(markdown);
+        Assert.True(result.Success, FormatDiagnostics(result));
+        return result.Document!;
+    }
+
+    private static string Shape(BddDocument document) => string.Join('\n', [
+        document.Title,
+        .. document.Metadata.Select(pair => $"{pair.Key}={pair.Value}"),
+        .. document.Background.Select(step => $"background {step.Keyword} {step.Text}"),
+        .. document.Scenarios.Select(scenario => $"{scenario.Name} [{string.Join(',', scenario.Tags)}]: {string.Join("; ", scenario.Steps.Select(step => $"{step.EffectiveKeyword} {step.Text}"))}"),
+        .. document.Callables.Select(callable => $"{callable.Phrase}: {string.Join("; ", callable.Steps.Select(step => step.Text))}"),
+    ]);
 
     [Fact]
     public void Parse_FencedStepsWithTable_KeepsTheTable()

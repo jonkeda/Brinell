@@ -12,6 +12,7 @@
 @smoke @presenter @load
 ## Scenario: Presenter shows the sample MAUI UAT workspace
 
+```gherkin
 Given I am on the Presenter page
 When I tap Reload
 Then Status Summary should contain "Ready"
@@ -20,3 +21,4 @@ And Workspace Tree should contain "Features"
 And All Workspace Tree should contain "main-page-greeting.feature.md"
 And All Workspace Tree should contain "user-form-basic-input.feature.md"
 And Workspace Summary should contain "App ok"
+```

@@ -35,11 +35,13 @@ public sealed class UatSessionTests
 
             ## Scenario: Each step runs on the current app
 
+            ```gherkin
             When I note the app
             And Bob uses the app
             And I note the app
             And Alice uses the app
             And I note the app
+            ```
             """);
 
         Assert.Equal(["default", "Bob", "Alice"], fixture.Noted);
@@ -56,10 +58,12 @@ public sealed class UatSessionTests
 
             ## Scenario: Subjects switch the app
 
+            ```gherkin
             When I note the app
             And Bob notes the app
             And I note the app
             And Alice notes the app
+            ```
             """);
 
         Assert.Equal(["default", "Bob", "Bob", "Alice"], fixture.Noted);
@@ -75,7 +79,9 @@ public sealed class UatSessionTests
 
             ## Scenario: An unknown app
 
+            ```gherkin
             When Carol uses the app
+            ```
             """));
 
         Assert.Contains("No app 'Carol'", error.Message);
@@ -92,8 +98,10 @@ public sealed class UatSessionTests
 
             ## Scenario: A failure on Bob's app
 
+            ```gherkin
             When Bob uses the app
             Then the step fails
+            ```
             """));
 
         Assert.Contains("[Bob] ", error.Message);

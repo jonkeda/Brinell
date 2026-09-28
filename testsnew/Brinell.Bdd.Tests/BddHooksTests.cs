@@ -14,13 +14,17 @@ public sealed class BddHooksTests
 
             ## Scenario: Plain
 
+            ```gherkin
             When I work
+            ```
 
             @backend
             ## Scenario: Backend
 
+            ```gherkin
             When I work
             And I work
+            ```
             """);
 
         Assert.All(runs, run => Assert.True(run.Passed));
@@ -40,8 +44,10 @@ public sealed class BddHooksTests
 
             ## Scenario: Broken
 
+            ```gherkin
             When I fail
             And I work
+            ```
             """);
 
         var run = Assert.Single(runs);
@@ -58,7 +64,9 @@ public sealed class BddHooksTests
             @strict
             ## Scenario: Strict
 
+            ```gherkin
             When I work
+            ```
             """);
 
         var step = Assert.Single(Assert.Single(runs).Steps);

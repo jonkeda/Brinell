@@ -51,7 +51,9 @@ public sealed class SessionLoadContextTests
 
                 ## Scenario: Session loads the pages assembly
 
+                ```gherkin
                 Given the probe is ready
+                ```
                 """);
 
             Assert.True(CanOpenForWrite(pages), "The copy should be writable before a session loads it.");

@@ -272,8 +272,9 @@ public sealed class UatSubjectTests
             # Feature: Subjects
 
             ## Scenario: Subjects
-
+            ```gherkin
             {steps}
+            ```
             """);
         Assert.True(result.Success, string.Join(Environment.NewLine, result.Diagnostics.Select(x => $"{x.Code} {x.Message}")));
         return result.Document!;

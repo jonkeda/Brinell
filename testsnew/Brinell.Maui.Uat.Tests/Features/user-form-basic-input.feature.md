@@ -12,6 +12,7 @@
 @smoke @maui @form
 ## Scenario: User can enter basic profile information
 
+```gherkin
 Given I am on the User Form page
 When I clear First Name
 And I enter "Ada" into First Name
@@ -24,3 +25,4 @@ And I select "United States" from Country
 Then First Name should contain "Ada"
 And Terms should be checked
 And Country should have selected "United States"
+```

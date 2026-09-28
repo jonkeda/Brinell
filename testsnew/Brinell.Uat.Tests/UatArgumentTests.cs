@@ -272,8 +272,9 @@ public sealed class UatArgumentTests
         # Feature: Arguments
 
         ## Scenario: Arguments
-
+        ```gherkin
         {steps}
+        ```
         """;
 }
 

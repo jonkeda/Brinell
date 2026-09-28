@@ -68,7 +68,9 @@ public sealed class DataValidatorAppTests : IDisposable
 
             ## Scenario: Nothing
 
+            ```gherkin
             Given I am on the Shelf page
+            ```
             """);
 
         var (exit, output, _) = Run("validate");

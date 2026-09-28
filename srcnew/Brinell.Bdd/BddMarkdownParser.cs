@@ -1,8 +1,10 @@
 using System.Text.RegularExpressions;
+using Markdig;
+using Markdig.Syntax;
 
 namespace Brinell.Bdd;
 
-public static class BddMarkdownParser
+public static partial class BddMarkdownParser
 {
     private const string DocStringDelimiter = "\"\"\"";
 
@@ -32,17 +34,18 @@ public static class BddMarkdownParser
         return new Parser(markdown, filePath).ParsePhrases();
     }
 
-    private sealed class Parser
+    private sealed partial class Parser
     {
         private readonly List<BddDiagnostic> _diagnostics = [];
         private readonly string? _filePath;
         private readonly Line[] _lines;
+        private readonly HashSet<int> _stepLikeProse = [];
         private int _index;
 
         public Parser(string markdown, string? filePath)
         {
             _filePath = filePath;
-            _lines = SplitLines(markdown);
+            _lines = ReadBlocks(markdown);
         }
 
         public BddParseResult Parse()
@@ -67,22 +70,34 @@ public static class BddMarkdownParser
                 var line = Current;
                 var trimmed = line.Text.Trim();
 
-                if (TryParseTags(trimmed, out var tags))
+                if (line.Kind == LineKind.Tags)
                 {
-                    pendingTags.AddRange(tags);
+                    if (line.Detached)
+                    {
+                        AddError("UAT020", "Tag lines must be immediately followed by a scenario heading.", line);
+                    }
+                    else if (TryParseTags(trimmed, out var tags))
+                    {
+                        pendingTags.AddRange(tags);
+                    }
+
                     _index++;
                     continue;
                 }
 
-                if (pendingTags.Count > 0 && !IsScenarioHeading(trimmed))
+                if (pendingTags.Count > 0 && !(line.Kind == LineKind.Heading && IsScenarioHeading(trimmed)))
                 {
                     AddError("UAT020", "Tag lines must be immediately followed by a scenario heading.", line);
                     pendingTags.Clear();
                 }
 
+                if (SkipOutsideSection(line))
+                {
+                    continue;
+                }
+
                 if (!TryParseHeading(ReadHeading(line), out var level, out var headingText))
                 {
-                    AddError("UAT021", $"Unexpected content outside a feature section: '{trimmed}'.", line);
                     _index++;
                     continue;
                 }
@@ -105,6 +120,19 @@ public static class BddMarkdownParser
                     continue;
                 }
 
+                if (level == 1)
+                {
+                    AddError("UAT022", $"A feature file has one level-1 heading, '# Feature:'; found '{trimmed}'.", line);
+                    _index++;
+                    continue;
+                }
+
+                if (level != 2 || !IsFeatureSection(headingText))
+                {
+                    ReadProseHeading(level, headingText, line);
+                    continue;
+                }
+
                 if (title is null)
                 {
                     AddError("UAT003", "Document must start with a '# Feature:' heading before other sections.", line);
@@ -123,7 +151,7 @@ public static class BddMarkdownParser
                     background = ParseStepBlock(stopAtExamples: false);
                     if (background.Count == 0)
                     {
-                        AddError("UAT004", "Background section must contain at least one step.", line);
+                        AddError("UAT004", NoSteps("Background section must contain at least one step.", line), line);
                     }
 
                     continue;
@@ -181,16 +209,13 @@ public static class BddMarkdownParser
                     var steps = ParseStepBlock(stopAtExamples: false);
                     if (steps.Count == 0)
                     {
-                        AddError("UAT007", "Scenario section must contain at least one step.", line);
+                        AddError("UAT007", NoSteps("Scenario section must contain at least one step.", line), line);
                     }
 
                     scenarios.Add(new BddScenario(scenarioName, [.. pendingTags], steps, Location(line)));
                     pendingTags.Clear();
                     continue;
                 }
-
-                AddError("UAT022", $"Unsupported heading '{trimmed}'.", line);
-                _index++;
             }
 
             if (pendingTags.Count > 0)
@@ -253,9 +278,16 @@ public static class BddMarkdownParser
 
                 var line = Current;
                 var trimmed = line.Text.Trim();
-                if (!TryParseHeading(ReadHeading(line), out var level, out var headingText))
+                if (line.Kind is LineKind.Tags or LineKind.Fence)
                 {
                     AddError("UAT028", $"A steps file holds only '## Step:' sections; found '{trimmed}'.", line);
+                    _index++;
+                    SkipBlockLines();
+                    continue;
+                }
+
+                if (!TryParseHeading(ReadHeading(line), out var level, out var headingText))
+                {
                     _index++;
                     continue;
                 }
@@ -270,6 +302,19 @@ public static class BddMarkdownParser
                     title = headingText["Steps:".Length..].Trim();
                     titleSource = Location(line);
                     _index++;
+                    continue;
+                }
+
+                if (level == 1)
+                {
+                    AddError("UAT028", $"A steps file has one level-1 heading, '# Steps:'; found '{trimmed}'.", line);
+                    _index++;
+                    continue;
+                }
+
+                if (level != 2 || !IsFeatureSection(headingText))
+                {
+                    ReadProseHeading(level, headingText, line);
                     continue;
                 }
 
@@ -320,10 +365,83 @@ public static class BddMarkdownParser
 
         private void SkipToNextSection()
         {
-            while (!End && !(TryParseHeading(Current.Text.Trim(), out var level, out _) && level <= 2))
+            while (!End && !IsSectionBoundary(Current))
             {
                 _index++;
             }
+        }
+
+        // A level-2 heading, or tags that stand above one, ends a section.
+        private static bool IsSectionBoundary(Line line)
+            => (line.Kind == LineKind.Heading && TryParseHeading(line.Text.Trim(), out var level, out _) && level <= 2) ||
+               (line.Kind == LineKind.Tags && !line.Detached);
+
+        // Between the sections: a table is prose, and a gherkin block belongs in a section.
+        private bool SkipOutsideSection(Line line)
+        {
+            switch (line.Kind)
+            {
+                case LineKind.Table:
+                case LineKind.Gherkin:
+                    _index++;
+                    return true;
+                case LineKind.Fence:
+                    AddError("UAT021", "A ```gherkin block belongs in a Background, Scenario or Step section.", line);
+                    _index++;
+                    SkipBlockLines();
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        private void SkipBlockLines()
+        {
+            while (!End && Current.Kind == LineKind.Gherkin)
+            {
+                _index++;
+            }
+        }
+
+        // A heading the engine does not read is prose; a level-2 one opens a prose section. One that
+        // looks like a section is a warning, so a typo is not silently prose (AD-023).
+        private void ReadProseHeading(int level, string headingText, Line line)
+        {
+            WarnIfLooksLikeSection(headingText, line);
+            _index++;
+            if (level == 2)
+            {
+                SkipToNextSection();
+            }
+        }
+
+        private void WarnIfLooksLikeSection(string headingText, Line line)
+        {
+            if (LooksLikeSection().IsMatch(headingText))
+            {
+                _diagnostics.Add(new BddDiagnostic(
+                    BddDiagnosticSeverity.Warning,
+                    "UAT031",
+                    $"'{line.Text.Trim()}' looks like a section heading but is not one, so it is read as prose. Check its level, spelling and colon.",
+                    Location(line)));
+            }
+        }
+
+        private static bool IsFeatureSection(string headingText)
+            => headingText is "Metadata" or "Background" ||
+               headingText.StartsWith("Data:", StringComparison.Ordinal) ||
+               headingText.StartsWith("Scenario:", StringComparison.Ordinal) ||
+               headingText.StartsWith("Scenario Outline:", StringComparison.Ordinal) ||
+               TryParsePhraseHeading(headingText, out _, out _);
+
+        // A section with no steps that holds text reading like steps is most likely in the form
+        // before gherkin blocks: say where the steps go.
+        private string NoSteps(string message, Line heading)
+        {
+            var end = End ? int.MaxValue : Current.Number;
+            return _stepLikeProse.Any(number => number > heading.Number && number < end)
+                ? $"{message} {BddFileFormat.FenceHint}"
+                : message;
         }
 
         private static bool TryParsePhraseHeading(string headingText, out BddCallableKind kind, out string phrase)
@@ -354,10 +472,10 @@ public static class BddMarkdownParser
 
             SkipBlankLines();
             IReadOnlyList<BddCallableParameterDeclaration> declared = [];
-            if (!End && IsTableRow(Current.Text) && SplitTableRow(Current.Text) is { Count: > 0 } header &&
+            if (!End && Current.Kind == LineKind.Table && SplitTableRow(Current.Text) is { Count: > 0 } header &&
                 header[0].Equals("Parameter", StringComparison.OrdinalIgnoreCase))
             {
-                var table = TryParseCurrentTable();
+                var table = TryParseCurrentTable(LineKind.Table);
                 if (table is null)
                 {
                     AddError("UAT027", "A Parameters table needs a separator row under its header.", Current);
@@ -372,7 +490,7 @@ public static class BddMarkdownParser
             var steps = ParseStepBlock(stopAtExamples: false, inPhrase: true);
             if (steps.Count == 0)
             {
-                AddError("UAT026", $"The phrase '{phrase}' has no steps.", heading);
+                AddError("UAT026", NoSteps($"The phrase '{phrase}' has no steps.", heading), heading);
             }
 
             return phrase.Length == 0 ? null : new BddCallable(kind, phrase, declared, steps, Location(heading));
@@ -459,22 +577,28 @@ public static class BddMarkdownParser
                 var line = Current;
                 var trimmed = line.Text.Trim();
 
-                if (TryParseHeading(trimmed, out var level, out var headingText))
+                if (line.Kind == LineKind.Heading && TryParseHeading(trimmed, out var level, out var headingText))
                 {
-                    if (stopAtExamples && level == 3 && headingText.Equals("Examples", StringComparison.Ordinal))
+                    if (level <= 2 || (stopAtExamples && level == 3 && headingText.Equals("Examples", StringComparison.Ordinal)))
                     {
                         break;
                     }
 
-                    if (level <= 2)
-                    {
-                        break;
-                    }
+                    WarnIfLooksLikeSection(headingText, line);
+                    _index++;
+                    continue;
                 }
 
-                if (TryParseTags(trimmed, out _))
+                if (line.Kind == LineKind.Tags)
                 {
                     break;
+                }
+
+                // Prose tables and the fence lines between blocks; a '#' in a block is a comment.
+                if (line.Kind != LineKind.Gherkin || trimmed.StartsWith('#'))
+                {
+                    _index++;
+                    continue;
                 }
 
                 if (trimmed is TableMarker or DocStringMarker)
@@ -495,10 +619,10 @@ public static class BddMarkdownParser
                 currentEffectiveKeyword = effectiveKeyword;
                 _index++;
 
-                var table = TryParseCurrentTable();
+                var table = TryParseCurrentTable(LineKind.Gherkin);
                 var docString = TryParseDocString();
                 var passes = BddPassedBlock.None;
-                if (table is null && docString is null && !End && Current.Text.Trim() is TableMarker or DocStringMarker)
+                if (table is null && docString is null && !End && Current.Kind == LineKind.Gherkin && Current.Text.Trim() is TableMarker or DocStringMarker)
                 {
                     if (inPhrase)
                     {
@@ -552,7 +676,7 @@ public static class BddMarkdownParser
 
             if (outlineSteps.Count == 0)
             {
-                AddError("UAT014", "Scenario Outline section must contain at least one step.", headingLine);
+                AddError("UAT014", NoSteps("Scenario Outline section must contain at least one step.", headingLine), headingLine);
             }
 
             if (examples is null)
@@ -617,10 +741,18 @@ public static class BddMarkdownParser
             return BddEffectiveStepKeyword.Given;
         }
 
+        // The first table of the section; a lower heading before it is prose.
         private BddTable? ParseRequiredTable(string message)
         {
             SkipBlankLines();
-            var table = TryParseCurrentTable();
+            while (!End && Current.Kind == LineKind.Heading && TryParseHeading(Current.Text.Trim(), out var level, out var headingText) &&
+                   level >= 3 && !headingText.Equals("Examples", StringComparison.Ordinal))
+            {
+                WarnIfLooksLikeSection(headingText, Current);
+                _index++;
+            }
+
+            var table = TryParseCurrentTable(LineKind.Table);
             if (table is null)
             {
                 var location = End ? new BddSourceLocation(_filePath, _lines.Length + 1) : Location(Current);
@@ -630,9 +762,12 @@ public static class BddMarkdownParser
             return table;
         }
 
-        private BddTable? TryParseCurrentTable()
+        // A table is read from lines of one kind: a step's table from its gherkin block, a section's
+        // table from the Markdown around the blocks.
+        private BddTable? TryParseCurrentTable(LineKind kind)
         {
-            if (End || _index + 1 >= _lines.Length || !IsTableRow(Current.Text) || !IsSeparatorRow(_lines[_index + 1].Text))
+            if (End || _index + 1 >= _lines.Length || Current.Kind != kind || _lines[_index + 1].Kind != kind ||
+                !IsTableRow(Current.Text) || !IsSeparatorRow(_lines[_index + 1].Text))
             {
                 return null;
             }
@@ -642,7 +777,7 @@ public static class BddMarkdownParser
             _index += 2;
 
             List<BddTableRow> rows = [];
-            while (!End && IsTableRow(Current.Text))
+            while (!End && Current.Kind == kind && IsTableRow(Current.Text))
             {
                 var rowLine = Current;
                 var cells = SplitTableRow(rowLine.Text);
@@ -674,7 +809,7 @@ public static class BddMarkdownParser
         // A """ block under a step: its lines lose the opening delimiter's indentation.
         private string? TryParseDocString()
         {
-            if (End || Current.Text.Trim() != DocStringDelimiter)
+            if (End || Current.Kind != LineKind.Gherkin || Current.Text.Trim() != DocStringDelimiter)
             {
                 return null;
             }
@@ -683,14 +818,14 @@ public static class BddMarkdownParser
             var indent = opening.Text.Length - opening.Text.TrimStart().Length;
             _index++;
             List<string> lines = [];
-            while (!End && Current.Text.Trim() != DocStringDelimiter)
+            while (!End && Current.Kind == LineKind.Gherkin && Current.Text.Trim() != DocStringDelimiter)
             {
                 var text = Current.Text;
                 lines.Add(text.Length >= indent && string.IsNullOrWhiteSpace(text[..indent]) ? text[indent..] : text.TrimStart());
                 _index++;
             }
 
-            if (End)
+            if (End || Current.Kind != LineKind.Gherkin)
             {
                 AddError("UAT023", "A doc string (\"\"\") is not closed.", opening);
             }
@@ -817,27 +952,86 @@ public static class BddMarkdownParser
             return inner.Split('|').Select(x => x.Trim()).ToArray();
         }
 
-        private static Line[] SplitLines(string markdown)
+        // The parts the engine reads, found in Markdig's block tree at the top level of the document:
+        // ATX headings, the lines of ```gherkin blocks, tables and tag lines. Every other block is
+        // prose and is left out, so the rest of the parser never sees it (AD-023). Tables are read
+        // from the raw lines, so one without a separator row still reaches its section's check.
+        private Line[] ReadBlocks(string markdown)
         {
-            // Fence delimiters are dropped here, so a scenario whose steps are fenced for
-            // rendering parses exactly like a bare one. Numbers are assigned before the drop,
-            // which keeps diagnostics pointing at the line the author sees.
-            return markdown
-                .Replace("\r\n", "\n", StringComparison.Ordinal)
-                .Replace('\r', '\n')
-                .Split('\n')
-                .Select((text, index) => new Line(text, index + 1))
-                .Where(line => !IsCodeFenceDelimiter(line.Text))
-                .ToArray();
+            var text = markdown.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
+            var raw = text.Split('\n');
+            var starts = new int[raw.Length];
+            for (var i = 1; i < raw.Length; i++)
+            {
+                starts[i] = starts[i - 1] + raw[i - 1].Length + 1;
+            }
+
+            var document = Markdown.Parse(text, Pipeline);
+            List<Line> lines = [];
+            for (var b = 0; b < document.Count; b++)
+            {
+                switch (document[b])
+                {
+                    case HeadingBlock { IsSetext: false } heading:
+                        lines.Add(new Line(raw[heading.Line], heading.Line + 1, LineKind.Heading));
+                        break;
+                    case HeadingBlock setext:
+                        if (LooksLikeSection().IsMatch(raw[setext.Line].Trim()))
+                        {
+                            _diagnostics.Add(new BddDiagnostic(
+                                BddDiagnosticSeverity.Warning,
+                                "UAT031",
+                                $"'{raw[setext.Line].Trim()}' is underlined, so it is read as prose; a section heading starts with '##'.",
+                                new BddSourceLocation(_filePath, setext.Line + 1)));
+                        }
+
+                        break;
+                    case FencedCodeBlock fence when string.Equals(fence.Info, "gherkin", StringComparison.OrdinalIgnoreCase):
+                        lines.Add(new Line(raw[fence.Line], fence.Line + 1, LineKind.Fence));
+                        for (var i = 0; i < fence.Lines.Count; i++)
+                        {
+                            lines.Add(new Line(fence.Lines.Lines[i].Slice.ToString(), fence.Line + i + 2, LineKind.Gherkin));
+                        }
+
+                        break;
+                    case ParagraphBlock paragraph when LinesOf(paragraph) is var texts && texts.All(line => TryParseTags(line.Text.Trim(), out _)):
+                        var detached = b + 1 >= document.Count || document[b + 1] is not HeadingBlock { IsSetext: false };
+                        lines.AddRange(texts.Select(line => line with { Kind = LineKind.Tags, Detached = detached }));
+                        break;
+                    case ParagraphBlock paragraph when LinesOf(paragraph) is var texts && texts.All(line => IsTableRow(line.Text)):
+                        lines.AddRange(texts.Select(line => line with { Kind = LineKind.Table }));
+                        break;
+                    case LeafBlock prose:
+                        _stepLikeProse.UnionWith(LinesOf(prose).Where(line => TryParseStep(line.Text.Trim(), out _, out _)).Select(line => line.Number));
+                        break;
+                }
+            }
+
+            return [.. lines];
+
+            // A top-level block's lines run from its first to the line its span ends on.
+            List<Line> LinesOf(Block block)
+            {
+                var last = Array.BinarySearch(starts, Math.Max(block.Span.End, block.Span.Start));
+                last = last >= 0 ? last : ~last - 1;
+                return [.. Enumerable.Range(block.Line, Math.Max(1, last - block.Line + 1)).Select(number => new Line(raw[number], number + 1, LineKind.Heading))];
+            }
         }
 
-        private static bool IsCodeFenceDelimiter(string text)
-        {
-            var trimmed = text.Trim();
-            return trimmed.StartsWith("```", StringComparison.Ordinal) ||
-                   trimmed.StartsWith("~~~", StringComparison.Ordinal);
-        }
+        [GeneratedRegex(@"^(feature|steps?|phrases?|background|scenario|examples|data|metadata)\b", RegexOptions.IgnoreCase)]
+        private static partial Regex LooksLikeSection();
     }
 
-    private sealed record Line(string Text, int Number);
+    private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder().Build();
+
+    private enum LineKind
+    {
+        Heading,
+        Fence,
+        Gherkin,
+        Table,
+        Tags,
+    }
+
+    private sealed record Line(string Text, int Number, LineKind Kind, bool Detached = false);
 }

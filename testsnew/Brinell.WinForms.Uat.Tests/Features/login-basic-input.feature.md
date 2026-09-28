@@ -12,6 +12,7 @@
 @winforms @login
 ## Scenario: Basic login input updates status
 
+```gherkin
 Given I am on the Login page
 When I enter "Alice" into Username
 And I enter "secret" into Password
@@ -21,3 +22,4 @@ And I tap Login
 Then Remember should be checked
 And Status should contain "Logged in as Alice"
 And Status should contain "(User)"
+```

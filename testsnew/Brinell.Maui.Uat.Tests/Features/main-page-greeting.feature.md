@@ -16,6 +16,7 @@
 @smoke @maui @greeting @automated @deterministic
 ## Scenario: Greeting appears when a name is entered
 
+```gherkin
 Given I am on the Main page
 When I clear Name
 And I enter "Alice" into Name
@@ -23,3 +24,4 @@ And I tap Greet
 Then Greeting should contain "Hello, Alice!"
 And Greeting should be visible
 And Name should be enabled
+```

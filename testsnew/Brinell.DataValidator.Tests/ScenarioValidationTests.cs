@@ -123,14 +123,18 @@ public sealed class ScenarioValidationTests : IDisposable
 
             ## Scenario: Lending
 
+            ```gherkin
             When a loan of "Dune" to Eva on 12-May-2026
+            ```
             """);
         Write(Path.Combine("Features", "Library.phrases.md"), """
             # Phrases: Library
 
             ## Phrase: a loan of {title} to {reader} on {due}
 
+            ```gherkin
             When I lend <title> to <reader> until <due>
+            ```
             """);
 
         var (exit, output, _) = Run("validate");
@@ -180,7 +184,7 @@ public sealed class ScenarioValidationTests : IDisposable
 
         Assert.Equal(1, exit);
         Assert.Contains("Features/library.feature.md:5: UATA002", output);
-        Assert.Contains("Features/Library.steps.md:7: UATC001", errors);
+        Assert.Contains("Features/Library.steps.md:9: UATC001", errors);
         Assert.Contains("does not copy to its output", errors);
 
         (exit, output, _) = Run("validate", "--fix");
@@ -211,26 +215,32 @@ public sealed class ScenarioValidationTests : IDisposable
 
             ## Step: a loan of {title} to {reader} on {due}
 
+            ```gherkin
             When I lend <title> to <reader> until <due>
+            ```
 
             ## Step: a broken one {spare}
 
+            ```gherkin
             When I shelve the books
+            ```
             """);
         Write(Path.Combine("Features", "Shelving", "shelving.feature.md"), """
             # Feature: Shelving
 
             ## Scenario: Borrowed first
 
+            ```gherkin
             Given a loan of "Dune" to Eva on 12-May-2026
+            ```
             """);
 
         var (exit, output, errors) = Run("validate");
         var (_, phrases, _) = Run("phrases");
 
         Assert.Equal(1, exit);
-        Assert.Contains("Features/Lending/Lending.steps.md:7: UATC001", errors);
-        Assert.Contains("Features/Shelving/shelving.feature.md:5: UATB010", output);
+        Assert.Contains("Features/Lending/Lending.steps.md:9: UATC001", errors);
+        Assert.Contains("Features/Shelving/shelving.feature.md:6: UATB010", output);
         Assert.Contains("of the folder 'Lending'", output);
         Assert.Contains("Callable a loan of {title: text} to {reader: user} on {due: date}  <- ", phrases);
         Assert.Contains("  in Lending", phrases);
@@ -244,7 +254,9 @@ public sealed class ScenarioValidationTests : IDisposable
 
             ## Step: a quick loan
 
+            ```gherkin
             When I lend "Dune" to Eva until 12-May-2026
+            ```
             """);
         Write(Path.Combine("Features", "Shelving", "shelving.feature.md"), """
             # Feature: Shelving
@@ -257,7 +269,9 @@ public sealed class ScenarioValidationTests : IDisposable
 
             ## Scenario: Borrowed first
 
+            ```gherkin
             Given a quick loan
+            ```
             """);
 
         var (validated, _, _) = Run("validate");
@@ -305,8 +319,9 @@ public sealed class ScenarioValidationTests : IDisposable
         # Feature: Library
 
         ## Scenario: Lending
-
+        ```gherkin
         {steps}
+        ```
         """);
 
     private void PhraseFile() => Write(Path.Combine("Features", "Library.steps.md"), """
@@ -314,11 +329,15 @@ public sealed class ScenarioValidationTests : IDisposable
 
         ## Step: a loan of {title} to {reader} on {due}
 
+        ```gherkin
         When I lend <title> to <reader> until <due>
+        ```
 
         ## Step: a broken one {spare}
 
+        ```gherkin
         When I shelve the books
+        ```
         """);
 
     private (int Exit, string Output, string Errors) Run(params string[] args)

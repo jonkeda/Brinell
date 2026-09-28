@@ -30,11 +30,13 @@ public sealed class UatReflectionRuntimeTests
 
             ## Scenario: User receives greeting
 
+            ```gherkin
             Given I am on the Main page
             When I clear Name
             And I enter "Alice" into Name
             And I tap Greet
             Then Greeting should contain "Hello, Alice!"
+            ```
             """);
 
         var result = await new BddScenarioRunner().RunAsync(scenario);
@@ -55,6 +57,7 @@ public sealed class UatReflectionRuntimeTests
 
             ## Scenario: User profile values are entered
 
+            ```gherkin
             Given I am on the User Form page
             When I enter "Ada" into First Name
             And I check Terms
@@ -62,6 +65,7 @@ public sealed class UatReflectionRuntimeTests
             Then First Name should contain "Ada"
             And Terms should be checked
             And Country should have selected "United States"
+            ```
             """);
 
         var result = await new BddScenarioRunner().RunAsync(scenario);
@@ -83,7 +87,9 @@ public sealed class UatReflectionRuntimeTests
 
             ## Scenario: Missing current page
 
+            ```gherkin
             When I tap Greet
+            ```
             """));
 
         Assert.Equal("UATB008", diagnostic.Code);
@@ -100,8 +106,10 @@ public sealed class UatReflectionRuntimeTests
 
             ## Scenario: Missing control
 
+            ```gherkin
             Given I am on the Main page
             When I tap Imaginary Button
+            ```
             """));
 
         Assert.Equal("UATB009", diagnostic.Code);
@@ -119,8 +127,10 @@ public sealed class UatReflectionRuntimeTests
 
             ## Scenario: Root phrase can store scenario state
 
+            ```gherkin
             Given I remember "Rush Alpha" as a trained player
             Then remembered trained player should be "Rush Alpha"
+            ```
             """);
 
         var result = await new BddScenarioRunner().RunAsync(scenario);
@@ -150,9 +160,11 @@ public sealed class UatReflectionRuntimeTests
 
             ## Scenario: A Then phrase follows But
 
+            ```gherkin
             Given I remember "Rush Alpha" as a trained player
             Then remembered trained player should be "Rush Alpha"
             But no other player should be remembered than "Rush Alpha"
+            ```
             """);
 
         var result = await new BddScenarioRunner().RunAsync(scenario);
@@ -171,7 +183,9 @@ public sealed class UatReflectionRuntimeTests
 
             ## Scenario: Uses the broken phrase
 
+            ```gherkin
             Given I remember something
+            ```
             """);
 
         var bind = BddBinder.Bind(parse.Document!, catalog);
@@ -192,8 +206,10 @@ public sealed class UatReflectionRuntimeTests
 
             ## Scenario: Settings are available to phrases
 
+            ```gherkin
             Given the A9 camera settings are available
             Then the raw A9 host setting should match
+            ```
             """);
         var runner = new BddScenarioRunner();
         runner.Context.SetSettings(new TestSettingsProviderStub().Resolve(new TestSettingsRequest(

@@ -78,8 +78,8 @@ public sealed class UatUsingTests : IDisposable
     [Fact]
     public void AFilesOwnCallable_BindsWithTheFilesUsings_APhraseFilesDoesNot()
     {
-        Write("Common.steps.md", "# Steps: Common\n\n## Step: a shared line\n\nWhen I add a line \"Rent\"\n");
-        var own = Scenario("Given my own line", usings: "Invoicing") + "\n## Step: my own line\n\nWhen I add a line \"Rent\"\n";
+        Write("Common.steps.md", "# Steps: Common\n\n## Step: a shared line\n\n```gherkin\nWhen I add a line \"Rent\"\n```\n");
+        var own = Scenario("Given my own line", usings: "Invoicing") + "\n## Step: my own line\n\n```gherkin\nWhen I add a line \"Rent\"\n```\n";
 
         var ownBound = BddScenarioFiles.Load(Write("Accounts/own.feature.md", own)).Bind(new BddCatalogSet(Catalog()));
         var sharedBound = Bind("Accounts/shared.feature.md", "Given a shared line", usings: "Invoicing");
@@ -162,7 +162,7 @@ public sealed class UatUsingTests : IDisposable
     }
 
     private static string Scenario(string steps, string? usings = null)
-        => $"# Feature: Using\n\n{(usings is null ? string.Empty : $"## Metadata\n\n| Field | Value |\n| --- | --- |\n| Using | {usings} |\n\n")}## Scenario: Using\n\n{steps}\n";
+        => $"# Feature: Using\n\n{(usings is null ? string.Empty : $"## Metadata\n\n| Field | Value |\n| --- | --- |\n| Using | {usings} |\n\n")}## Scenario: Using\n```gherkin\n{steps}\n```\n";
 
     private sealed class DetailFixture
     {

@@ -12,7 +12,9 @@
 @stride @greeting
 ## Scenario: Greeting appears when a name is entered
 
+```gherkin
 Given I am on the Main page
 When I set Name to "Alice"
 And I tap Greet
 Then Greeting should equal "Hello, Alice!"
+```

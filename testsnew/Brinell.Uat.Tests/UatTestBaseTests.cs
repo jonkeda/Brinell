@@ -33,8 +33,10 @@ public sealed class UatTestBaseTests
                 @smoke
                 ## Scenario: Passing flow
 
+                ```gherkin
                 When I run the custom action
                 Then the custom action should have run
+                ```
                 """);
             var fixture = new HarnessFixture();
             var harness = new ScenarioHarness(fixture, configFilePath, CreatePassingCatalog(fixture));
@@ -63,7 +65,9 @@ public sealed class UatTestBaseTests
                 @smoke
                 ## Scenario: Expected failure flow
 
+                ```gherkin
                 When I fail the custom action
+                ```
                 """);
             var fixture = new HarnessFixture();
             var catalog = new BddCommandCatalog();
@@ -104,8 +108,10 @@ public sealed class UatTestBaseTests
 
                 ## Scenario: Reported flow
 
+                ```gherkin
                 When I run the custom action
                 And I fail the custom action
+                ```
                 """);
             var fixture = new HarnessFixture();
             var catalog = CreatePassingCatalog(fixture);
@@ -125,7 +131,7 @@ public sealed class UatTestBaseTests
             Assert.Equal("failed", root.GetProperty("status").GetString());
             Assert.True(root.GetProperty("durationMs").GetInt64() >= 0);
             var steps = root.GetProperty("steps").EnumerateArray().ToList();
-            Assert.Equal([5, 6], steps.Select(step => step.GetProperty("line").GetInt32()));
+            Assert.Equal([6, 7], steps.Select(step => step.GetProperty("line").GetInt32()));
             Assert.Equal(["Passed", "Failed"], steps.Select(step => step.GetProperty("status").GetString()));
             Assert.Equal("Intentional failure from harness", steps[1].GetProperty("message").GetString());
             Assert.False(root.TryGetProperty("commandCatalog", out _), "The catalog is trace detail.");
@@ -163,7 +169,9 @@ public sealed class UatTestBaseTests
                 @smoke
                 ## Scenario: Spec format flow
 
+                ```gherkin
                 When I run the custom action
+                ```
                 """);
             var harness = new SpecFormatHarness(configFilePath);
 
@@ -212,7 +220,9 @@ public sealed class UatTestBaseTests
                 @uat-900-1
                 ## Scenario: Scenario settings flow
 
+                ```gherkin
                 Then the scenario setting should be available
+                ```
                 """);
             var fixture = new HarnessFixture();
             var catalog = new BddCommandCatalog();
@@ -249,11 +259,15 @@ public sealed class UatTestBaseTests
 
                 ## Scenario: One
 
+                ```gherkin
                 When I run the custom action
+                ```
 
                 ## Scenario: Two
 
+                ```gherkin
                 When I run the custom action
+                ```
                 """);
             var second = Path.Combine(directory, "second.feature.md");
             File.WriteAllText(second, """
@@ -261,7 +275,9 @@ public sealed class UatTestBaseTests
 
                 ## Scenario: Three
 
+                ```gherkin
                 When I run the custom action
+                ```
                 """);
             var fixture = new HarnessFixture();
             var harness = new ScenarioHarness(fixture, configFilePath, CreatePassingCatalog(fixture));
@@ -291,7 +307,9 @@ public sealed class UatTestBaseTests
 
                 ## Scenario: Present
 
+                ```gherkin
                 When I run the custom action
+                ```
                 """);
             var fixture = new HarnessFixture();
             var harness = new ScenarioHarness(fixture, configFilePath, CreatePassingCatalog(fixture));
@@ -322,7 +340,9 @@ public sealed class UatTestBaseTests
 
                 ## Scenario Outline: Row
 
+                ```gherkin
                 When I run the custom action <n>
+                ```
 
                 ### Examples
 
@@ -352,7 +372,7 @@ public sealed class UatTestBaseTests
     private static string ScenarioFile(string title, string? testData, params string[] scenarios)
     {
         var metadata = testData is null ? string.Empty : $"## Metadata\n\n| Field | Value |\n| --- | --- |\n| TestData | {testData} |\n\n";
-        return $"# Feature: {title}\n\n{metadata}" + string.Concat(scenarios.Select(name => $"## Scenario: {name}\n\nWhen I run the custom action\n\n"));
+        return $"# Feature: {title}\n\n{metadata}" + string.Concat(scenarios.Select(name => $"## Scenario: {name}\n\n```gherkin\nWhen I run the custom action\n```\n\n"));
     }
 
     private static BddCommandCatalog CreatePassingCatalog(HarnessFixture fixture)

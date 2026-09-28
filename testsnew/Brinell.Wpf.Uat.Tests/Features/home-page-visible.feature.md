@@ -12,6 +12,8 @@
 @wpf @smoke
 ## Scenario: Home page is visible
 
+```gherkin
 Given I am on the Home page
 Then Welcome should be visible
 And Description should be visible
+```

@@ -12,5 +12,7 @@
 @expected-failure @diagnostics
 ## Scenario: Missing control reports available controls
 
+```gherkin
 Given I am on the Main page
 When I tap Imaginary Button
+```

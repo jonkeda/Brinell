@@ -73,12 +73,14 @@ public sealed class UatCallableTests
             """, """
             ## Step: a misspelled todo {title}
 
+            ```gherkin
             When I opn the todo <title>
+            ```
             """));
 
         Assert.Equal("UATB001", error.Code);
         Assert.Equal(5, error.Location.LineNumber);
-        Assert.Equal([9], error.Within.Select(inner => inner.LineNumber));
+        Assert.Equal([11], error.Within.Select(inner => inner.LineNumber));
         Assert.Contains("I opn the todo \"Buy milk\"", error.Message, StringComparison.Ordinal);
     }
 
@@ -88,7 +90,9 @@ public sealed class UatCallableTests
         const string Conflict = """
             ## Step: a clash {x}
 
+            ```gherkin
             When I assign "T" to Eva due <x> for <x> hours as Open
+            ```
             """;
 
         Assert.Empty(Bind("When I open the todo \"Tea\"", Conflict));
@@ -104,12 +108,16 @@ public sealed class UatCallableTests
         Assert.Equal("UATC001", Prepare("""
             ## Step: a todo {title} and {spare}
 
+            ```gherkin
             When I open the todo <title>
+            ```
             """).Problem?.Code);
         Assert.Equal("UATC001", Prepare("""
             ## Step: a todo
 
+            ```gherkin
             When I open the todo <title>
+            ```
             """).Problem?.Code);
     }
 
@@ -119,7 +127,9 @@ public sealed class UatCallableTests
         var prepared = Prepare("""
             ## Step: a wrong todo {title}
 
+            ```gherkin
             When I assign <title> to Eva due 12-May-2026 for 8,5 hours as Open
+            ```
             """);
 
         Assert.Equal("UATC008", prepared.Problem?.Code);
@@ -136,7 +146,9 @@ public sealed class UatCallableTests
             | --------- | ---- | ----------- |
             | due       | date | 12-May-2026 |
 
+            ```gherkin
             When I open the todo "Report <due>"
+            ```
             """;
 
         Assert.Equal(typeof(DateOnly), Prepare(Declared).Types["due"]);
@@ -150,7 +162,9 @@ public sealed class UatCallableTests
             | --------- | ---- |
             | hours     | date |
 
+            ```gherkin
             When I assign <title> to Eva due 12-May-2026 for <hours> hours as Open
+            ```
             """).Problem?.Code);
 
         Assert.Equal("UATC003", Prepare("""
@@ -160,7 +174,9 @@ public sealed class UatCallableTests
             | --------- | ------- |
             | title     | colour  |
 
+            ```gherkin
             When I open the todo <title>
+            ```
             """).Problem?.Code);
     }
 
@@ -170,8 +186,10 @@ public sealed class UatCallableTests
         const string Server = """
             ## Step: the server knows
 
+            ```gherkin
             Given the server has todos
               <table>
+            ```
             """;
 
         var (fixture, _) = await Run("""
@@ -209,7 +227,9 @@ public sealed class UatCallableTests
         const string PerRow = """
             ## Step for each row: todos for {who}
 
+            ```gherkin
             When I assign <title> to <who> due <due> for 1 hours as Open
+            ```
             """;
 
         var (fixture, scenario) = await Run("""
@@ -250,8 +270,10 @@ public sealed class UatCallableTests
         var (fixture, _) = await Run("Given two todos", $$"""
             ## Step: two todos
 
+            ```gherkin
             Given a todo "One" for Eva with 1 hours
             And a todo "Two" for Bob with 2 hours
+            ```
 
             {{Assigned}}
             """);
@@ -260,30 +282,42 @@ public sealed class UatCallableTests
         var cycle = Assert.Single(Bind("Given ping", """
             ## Step: ping
 
+            ```gherkin
             Given pong
+            ```
 
             ## Step: pong
 
+            ```gherkin
             Given ping
+            ```
             """));
         Assert.Equal("UATC004", cycle.Code);
 
         var deep = Assert.Single(Bind("Given level 1", """
             ## Step: level 1
 
+            ```gherkin
             Given level 2
+            ```
 
             ## Step: level 2
 
+            ```gherkin
             Given level 3
+            ```
 
             ## Step: level 3
 
+            ```gherkin
             Given level 4
+            ```
 
             ## Step: level 4
 
+            ```gherkin
             When I open the todo "Deep"
+            ```
             """));
         Assert.Equal("UATC005", deep.Code);
         Assert.Equal(5, deep.Location.LineNumber);
@@ -296,8 +330,10 @@ public sealed class UatCallableTests
         var unsaid = Assert.Single(Bind("Given a detour", """
             ## Step: a detour
 
+            ```gherkin
             Given I am on the Todo page
             When I open the todo "Tea"
+            ```
             """));
         Assert.Equal("UATC006", unsaid.Code);
         Assert.Contains("does not end on one", unsaid.Message, StringComparison.Ordinal);
@@ -305,9 +341,11 @@ public sealed class UatCallableTests
         Assert.Empty(Bind("Given a round trip", """
             ## Step: a round trip
 
+            ```gherkin
             Given I am on the Todo page
             When I open the todo "Tea"
             Then I should be on the Detail page
+            ```
             """));
 
         var wandering = Assert.Single(Bind("""
@@ -318,9 +356,11 @@ public sealed class UatCallableTests
             """, """
             ## Step for each row: each todo opened
 
+            ```gherkin
             Given I am on the Todo page
             When I open the todo <title>
             Then I should be on the Detail page
+            ```
             """));
         Assert.Equal(("UATC006", 8), (wandering.Code, wandering.Location.LineNumber));
     }
@@ -334,11 +374,15 @@ public sealed class UatCallableTests
             """, """
             ## Step: {user} grabs {todo}
 
+            ```gherkin
             When <user> takes <todo>
+            ```
 
             ## Step: the todo {todo} goes to {user}
 
+            ```gherkin
             When <user> takes <todo>
+            ```
             """);
 
         Assert.Equal([("Eva", "Milk"), ("Eva", "Tea")], fixture.State.Taken);
@@ -350,7 +394,9 @@ public sealed class UatCallableTests
         var error = Assert.Single(Bind("When I pay 3.00 EUR", """
             ## Step: I pay {amount}
 
+            ```gherkin
             When I open the todo <amount>
+            ```
             """));
 
         Assert.Equal("UATB002", error.Code);
@@ -368,8 +414,10 @@ public sealed class UatCallableTests
             """, """
             ## Step for each row: todos for {who}
 
+            ```gherkin
             When I assign <title> to <who> due <due> for 1 hours as Open
             And I open the todo <title>
+            ```
             """));
         var bind = BddBinder.Bind(parse.Document!, CatalogSet(new ArgumentFixture()));
         var results = Assert.Single(bind.Document!.Scenarios).Invocations.Select(invocation => BddStepResult.Passed(invocation));
@@ -379,7 +427,7 @@ public sealed class UatCallableTests
         Assert.Equal(7, lines.Length);
         Assert.StartsWith("Call: 5: Given todos for Eva", lines[0], StringComparison.Ordinal);
         Assert.Equal("  row 1 (Milk, 12-May-2026)", lines[1]);
-        Assert.StartsWith("    Passed: 13: ", lines[2], StringComparison.Ordinal);
+        Assert.StartsWith("    Passed: 15: ", lines[2], StringComparison.Ordinal);
         Assert.Equal("  row 2 (Tea, 13-May-2026)", lines[4]);
     }
 
@@ -391,9 +439,9 @@ public sealed class UatCallableTests
         Directory.CreateDirectory(Path.Combine(root, "Users"));
         try
         {
-            File.WriteAllText(Path.Combine(root, "Todo.steps.md"), "# Steps: Todo\n\n## Step: a global one\n\nWhen I open the todo \"Tea\"\n");
-            File.WriteAllText(Path.Combine(root, "Todo", "Later.steps.md"), "# Steps: Module\n\n## Step: a module one\n\nWhen I open the todo \"Tea\"\n");
-            File.WriteAllText(Path.Combine(root, "Users", "Users.steps.md"), "# Steps: Users\n\n## Step: a users one\n\nWhen I open the todo \"Tea\"\n");
+            File.WriteAllText(Path.Combine(root, "Todo.steps.md"), "# Steps: Todo\n\n## Step: a global one\n\n```gherkin\nWhen I open the todo \"Tea\"\n```\n");
+            File.WriteAllText(Path.Combine(root, "Todo", "Later.steps.md"), "# Steps: Module\n\n## Step: a module one\n\n```gherkin\nWhen I open the todo \"Tea\"\n```\n");
+            File.WriteAllText(Path.Combine(root, "Users", "Users.steps.md"), "# Steps: Users\n\n## Step: a users one\n\n```gherkin\nWhen I open the todo \"Tea\"\n```\n");
             var scenario = Path.Combine(root, "Todo", "TOD.feature.md");
             File.WriteAllText(scenario, Document("Given a global one\nAnd a module one", string.Empty));
 
@@ -414,9 +462,9 @@ public sealed class UatCallableTests
 
     [Theory]
     [InlineData("When I open the todo \"Tea\"\n  <table>", "UAT024")]
-    [InlineData("When I open the todo \"Tea\"\n\n## Step:\n\nWhen I open the todo \"Tea\"", "UAT025")]
-    [InlineData("When I open the todo \"Tea\"\n\n## Step: nothing\n", "UAT026")]
-    [InlineData("When I open the todo \"Tea\"\n\n## Step: bad {x}\n\n| Parameter | Kind |\n| --- | --- |\n| x | text |\n\nWhen I open the todo <x>", "UAT027")]
+    [InlineData("When I open the todo \"Tea\"\n```\n\n## Step:\n\n```gherkin\nWhen I open the todo \"Tea\"", "UAT025")]
+    [InlineData("When I open the todo \"Tea\"\n```\n\n## Step: nothing\n\n```gherkin", "UAT026")]
+    [InlineData("When I open the todo \"Tea\"\n```\n\n## Step: bad {x}\n\n| Parameter | Kind |\n| --- | --- |\n| x | text |\n\n```gherkin\nWhen I open the todo <x>", "UAT027")]
     public void AWrongPhraseSection_IsAParseError(string steps, string code)
     {
         var parse = BddMarkdownParser.Parse(Document(steps, string.Empty));
@@ -432,17 +480,21 @@ public sealed class UatCallableTests
 
             ## Scenario: Not here
 
+            ```gherkin
             When I open the todo "Tea"
+            ```
 
             ## Step: a good one
 
+            ```gherkin
             When I open the todo "Tea"
+            ```
             """);
 
         var error = Assert.Single(parse.Diagnostics);
         Assert.Equal(("UAT028", 3), (error.Code, error.Location.LineNumber));
         Assert.Equal("a good one", Assert.Single(parse.Document!.Callables).Phrase);
-        Assert.Equal("UAT028", Assert.Single(BddMarkdownParser.ParsePhrases("## Step: headless\n\nWhen I open the todo \"Tea\"").Diagnostics).Code);
+        Assert.Equal("UAT028", Assert.Single(BddMarkdownParser.ParsePhrases("## Step: headless\n\n```gherkin\nWhen I open the todo \"Tea\"\n```").Diagnostics).Code);
     }
 
     private static BddCatalogSet CatalogSet(ArgumentFixture fixture)
@@ -484,8 +536,9 @@ public sealed class UatCallableTests
         # Feature: Callables
 
         ## Scenario: Callables
-
+        ```gherkin
         {steps}
+        ```
 
         {phrases}
         """;

@@ -17,9 +17,11 @@ namespace Brinell.Uat.Tests.HeadCases
 
                 ## Scenario: The same page name on two heads
 
+                ```gherkin
                 Given Mia is on the Main page
                 And Wendy is on the Main page
                 And Mia is on the Main page
+                ```
                 """);
 
             Assert.Equal(["maui", "web", "maui"], fixture.Opened);
@@ -130,16 +132,22 @@ namespace Brinell.Uat.Tests.HeadCases
                     @service
                     ## Scenario: Headless only
 
+                    ```gherkin
                     Given the device is offline
+                    ```
 
                     @service @maui
                     ## Scenario: Both tiers
 
+                    ```gherkin
                     Given the device is offline
+                    ```
 
                     ## Scenario: On screen
 
+                    ```gherkin
                     Given I am on the Main page
+                    ```
                     """);
 
                 string[] Listed(string head)

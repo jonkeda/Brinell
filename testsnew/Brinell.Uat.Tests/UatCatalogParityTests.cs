@@ -44,8 +44,10 @@ public sealed class UatCatalogParityTests
 
             ## Scenario: A named step with a value
 
+            ```gherkin
             Given Eva is on the Gadget page
             When Eva sets the level of Gadget to "7"
+            ```
             """);
         var bind = BddBinder.Bind(parse.Document!, new BddCatalogSet(catalog, apps, suiteHead: null, new Dictionary<string, BddCommandCatalog>(), []));
         Assert.True(bind.Success, string.Join(Environment.NewLine, bind.Diagnostics.Select(x => $"{x.Code} {x.Message}")));
@@ -438,8 +440,9 @@ public sealed class UatCatalogParityTests
             # Feature: Gadget
 
             ## Scenario: Gadget steps
-
+            ```gherkin
             {steps}
+            ```
             """);
         Assert.True(parse.Success);
         return Assert.Single(BddBinder.Bind(parse.Document!, catalog).Diagnostics, x => x.Severity == BddDiagnosticSeverity.Error);
@@ -451,8 +454,9 @@ public sealed class UatCatalogParityTests
             # Feature: Gadget
 
             ## Scenario: Gadget steps
-
+            ```gherkin
             {steps}
+            ```
             """);
         Assert.True(parse.Success);
         var bind = BddBinder.Bind(parse.Document!, catalog);

@@ -93,7 +93,7 @@ public sealed class UatNamespaceTests : IDisposable
     [Fact]
     public void ABrokenPhraseFileInAnotherFolder_DoesNotFailTheScenario()
     {
-        Write("Accounts/Accounts.steps.md", "## Step: headless\n\nWhen I note \"x\"\n");
+        Write("Accounts/Accounts.steps.md", "## Step: headless\n\n```gherkin\nWhen I note \"x\"\n```\n");
 
         var there = BddScenarioFiles.Load(Write("Accounts/account.feature.md", Scenario("When I note \"paid\"")));
         var here = BddScenarioFiles.Load(Write("Invoicing/invoice.feature.md", Scenario("When I add a line \"Rent\"")));
@@ -249,9 +249,9 @@ public sealed class UatNamespaceTests : IDisposable
         return type.CreateType();
     }
 
-    private static string Scenario(string steps) => $"# Feature: Namespaces\n\n## Scenario: Namespaces\n\n{steps}\n";
+    private static string Scenario(string steps) => $"# Feature: Namespaces\n\n## Scenario: Namespaces\n```gherkin\n{steps}\n```\n";
 
-    private static string Phrases(string phrase, string steps) => $"# Steps: Test\n\n## Step: {phrase}\n\n{steps}\n";
+    private static string Phrases(string phrase, string steps) => $"# Steps: Test\n\n## Step: {phrase}\n```gherkin\n{steps}\n```\n";
 }
 
 [TestModuleScan(typeof(NamespaceFixture), NamespacePrefix = "Brinell.Uat.Tests.NamespaceCases")]

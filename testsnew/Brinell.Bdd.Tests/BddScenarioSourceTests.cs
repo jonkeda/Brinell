@@ -72,7 +72,9 @@ public sealed class BddScenarioSourceTests
             @smoke
             ## Scenario: Smoke
 
+            ```gherkin
             When I run
+            ```
             """);
     }
 }

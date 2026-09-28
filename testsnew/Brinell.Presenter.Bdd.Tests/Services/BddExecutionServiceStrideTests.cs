@@ -24,8 +24,10 @@ public sealed class BddExecutionServiceStrideTests
 
                 ## Scenario: Presenter creates a STRIDE session
 
+                ```gherkin
                 Given STRIDE app path is available
                 Then STRIDE app path should still be available
+                ```
                 """);
 
             File.WriteAllText(

@@ -12,13 +12,17 @@ public sealed class BddExecutionTests
 
             ## Background
 
+            ```gherkin
             Given the application is running
+            ```
 
             ## Scenario: Save display name
 
+            ```gherkin
             Given I am on the Settings page
             When I tap Save
             Then I should see the Settings page
+            ```
             """);
         var runner = new BddScenarioRunner();
 
@@ -38,8 +42,10 @@ public sealed class BddExecutionTests
 
             ## Scenario: Save
 
+            ```gherkin
             Given I am on the Settings page
             When I tap Save
+            ```
             """);
         var session = new BddScenarioRunner().CreateSession(scenario);
 
@@ -64,7 +70,9 @@ public sealed class BddExecutionTests
 
             ## Scenario: Save
 
+            ```gherkin
             When I tap Save
+            ```
             """);
         var catalog = new BddCommandCatalog();
         catalog.Register(BddEffectiveStepKeyword.When, "I tap {control}", "InteractionCommands.Tap");
@@ -89,7 +97,9 @@ public sealed class BddExecutionTests
 
             ## Scenario: Save
 
+            ```gherkin
             When I tap Save
+            ```
             """);
         using var cancellation = new CancellationTokenSource();
         cancellation.Cancel();
@@ -110,8 +120,10 @@ public sealed class BddExecutionTests
             @hardware
             ## Scenario: Hardware camera can capture
 
+            ```gherkin
             Given I am on the Settings page
             When I tap Save
+            ```
             """);
         var config = BddConfigParser.Parse("""
             # UAT Config

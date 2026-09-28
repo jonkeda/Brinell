@@ -45,14 +45,16 @@ public sealed class UatScenarioCheckTests
 
             ## Scenario: Unclosed
 
+            ```gherkin
             When I write the note
               """
               Dear Eva,
+            ```
             """");
 
         var error = Assert.Single(parse.Diagnostics);
         Assert.Equal("UAT023", error.Code);
-        Assert.Equal(6, error.Location.LineNumber);
+        Assert.Equal(7, error.Location.LineNumber);
     }
 
     private static BddStep Step(string text)
@@ -61,8 +63,9 @@ public sealed class UatScenarioCheckTests
             # Feature: Snippets
 
             ## Scenario: One step
-
+            ```gherkin
             {text}
+            ```
             """);
         return Assert.Single(Assert.Single(parse.Document!.Scenarios).Steps);
     }

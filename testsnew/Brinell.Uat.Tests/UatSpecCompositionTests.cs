@@ -31,7 +31,9 @@ public sealed class UatSpecCompositionTests
                 @smoke
                 ## Scenario: Phrase class binding
 
+                ```gherkin
                 When I run the composition-only phrase
+                ```
                 """);
             var harness = new SpecCompositionHarness();
 

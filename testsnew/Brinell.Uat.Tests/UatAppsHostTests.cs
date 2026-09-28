@@ -43,9 +43,11 @@ public sealed class UatAppsHostTests
 
             ## Scenario: Subjects use the fixture's apps
 
+            ```gherkin
             When Alice notes the app
             And Bob notes the app
             And Alice notes the app
+            ```
             """);
 
         Assert.Equal(["Alice's PC#1", "Bob#1", "Alice's PC#2"], fixture.Noted);

@@ -121,4 +121,131 @@ public static class BddFileFormat
 
         return (string.Join('\n', lines), count);
     }
+
+    /// <summary>What a "no steps" error adds when its section holds text that reads like steps.</summary>
+    public const string FenceHint = "Steps go in a ```gherkin block; run 'brinell-data validate --fix' to wrap them.";
+
+    private static readonly string[] StepSections = ["## Background", "## Scenario:", "## Scenario Outline:", "## Step:", "## Step for each row:"];
+
+    private static readonly string[] StepKeywords = ["Given ", "When ", "Then ", "And ", "But "];
+
+    /// <summary>
+    /// Wraps the steps of each step section that has no <c>```gherkin</c> block in one: the form
+    /// before AD-023, where steps were written bare. A section with a block is left as it is, and
+    /// so are its Parameters table and the tags above the next heading.
+    /// </summary>
+    /// <param name="text">A feature or step file's text.</param>
+    /// <returns>The text, and how many sections changed.</returns>
+    public static (string Text, int Count) FenceSteps(string text)
+    {
+        var lines = text.Split('\n').ToList();
+        var fenced = FencedLines(lines);
+        List<(int Start, int Last, string Indent, string Eol)> wraps = [];
+        for (var h = 0; h < lines.Count; h++)
+        {
+            var heading = lines[h].Trim();
+            heading = NewHeading(heading) ?? heading;
+            if (fenced[h] || !StepSections.Any(section => heading.StartsWith(section, StringComparison.Ordinal)))
+            {
+                continue;
+            }
+
+            var end = h + 1;
+            while (end < lines.Count && !(fenced[end] ? IsFenceDelimiter(lines[end]) : lines[end].TrimStart().StartsWith('#')))
+            {
+                end++;
+            }
+
+            // A fence in the section: it already has a block, or holds something else.
+            if (end < lines.Count && fenced[end])
+            {
+                continue;
+            }
+
+            var start = h + 1;
+            while (start < end && string.IsNullOrWhiteSpace(lines[start]))
+            {
+                start++;
+            }
+
+            if (heading.StartsWith("## Step", StringComparison.Ordinal) && start < end &&
+                lines[start].Trim() is var first && first.StartsWith('|') && first.TrimStart('|').TrimStart().StartsWith("Parameter", StringComparison.OrdinalIgnoreCase))
+            {
+                while (start < end && lines[start].TrimStart().StartsWith('|'))
+                {
+                    start++;
+                }
+
+                while (start < end && string.IsNullOrWhiteSpace(lines[start]))
+                {
+                    start++;
+                }
+            }
+
+            var last = end - 1;
+            while (last >= start && (string.IsNullOrWhiteSpace(lines[last]) || IsTagLine(lines[last])))
+            {
+                last--;
+            }
+
+            if (last < start || !Enumerable.Range(start, last - start + 1).Any(i => StepKeywords.Any(keyword => lines[i].TrimStart().StartsWith(keyword, StringComparison.Ordinal))))
+            {
+                continue;
+            }
+
+            var raw = lines[h];
+            wraps.Add((start, last, raw[..(raw.Length - raw.TrimStart().Length)], raw.EndsWith('\r') ? "\r" : string.Empty));
+        }
+
+        for (var i = wraps.Count - 1; i >= 0; i--)
+        {
+            var (start, last, indent, eol) = wraps[i];
+            if (last == lines.Count - 1)
+            {
+                // The text ends in a step: the closing fence becomes the last line.
+                lines[last] += eol;
+                lines.Add(indent + "```");
+            }
+            else
+            {
+                lines.Insert(last + 1, indent + "```" + eol);
+            }
+
+            lines.Insert(start, indent + "```gherkin" + eol);
+        }
+
+        return (string.Join('\n', lines), wraps.Count);
+    }
+
+    // Each line inside a fence, its delimiters included.
+    private static bool[] FencedLines(List<string> lines)
+    {
+        var fenced = new bool[lines.Count];
+        string? open = null;
+        for (var i = 0; i < lines.Count; i++)
+        {
+            var trimmed = lines[i].Trim();
+            if (open is null && IsFenceDelimiter(trimmed))
+            {
+                open = trimmed[..3];
+                fenced[i] = true;
+            }
+            else if (open is not null)
+            {
+                fenced[i] = true;
+                if (trimmed.StartsWith(open, StringComparison.Ordinal) && trimmed.TrimStart(open[0]).Length == 0)
+                {
+                    open = null;
+                }
+            }
+        }
+
+        return fenced;
+    }
+
+    private static bool IsFenceDelimiter(string line)
+        => line.TrimStart().StartsWith("```", StringComparison.Ordinal) || line.TrimStart().StartsWith("~~~", StringComparison.Ordinal);
+
+    private static bool IsTagLine(string line)
+        => line.Trim() is { Length: > 0 } trimmed && trimmed.Split(' ', StringSplitOptions.RemoveEmptyEntries).All(word => word.StartsWith('@'));
 }

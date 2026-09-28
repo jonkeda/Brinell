@@ -12,14 +12,18 @@ public sealed class BddBinderTests
 
             ## Background
 
+            ```gherkin
             Given the application is running
+            ```
 
             ## Scenario: Valid user can sign in
 
+            ```gherkin
             Given I am on the Login page
             When I enter "ada@example.com" into User name
             And I tap Sign in
             Then I should see the Dashboard page
+            ```
             """);
         var catalog = CreateBasicCatalog();
 
@@ -46,7 +50,9 @@ public sealed class BddBinderTests
 
             ## Scenario: Exact phrase
 
+            ```gherkin
             When I tap Save
+            ```
             """);
         var catalog = new BddCommandCatalog();
         catalog.Register(BddEffectiveStepKeyword.When, "I tap {control}", "InteractionCommands.Tap");
@@ -68,11 +74,13 @@ public sealed class BddBinderTests
 
             ## Scenario: Sign in
 
+            ```gherkin
             When I sign in with credentials
             | Field | Value |
             | --- | --- |
             | User name | ada@example.com |
             | Password | correct-password |
+            ```
             """);
         var catalog = new BddCommandCatalog();
         catalog.Register(
@@ -97,7 +105,9 @@ public sealed class BddBinderTests
 
             ## Scenario: Sign in
 
+            ```gherkin
             When I sign in with credentials
+            ```
             """);
         var catalog = new BddCommandCatalog();
         catalog.Register(
@@ -119,7 +129,9 @@ public sealed class BddBinderTests
 
             ## Scenario: Unknown step
 
+            ```gherkin
             When I do something unsupported
+            ```
             """);
         var catalog = CreateBasicCatalog();
 
@@ -137,7 +149,9 @@ public sealed class BddBinderTests
 
             ## Scenario: Ambiguous step
 
+            ```gherkin
             When I tap Save
+            ```
             """);
         var catalog = new BddCommandCatalog();
         catalog.Register(BddEffectiveStepKeyword.When, "I tap Save", "First");
@@ -157,10 +171,12 @@ public sealed class BddBinderTests
 
             ## Scenario: Extra table
 
+            ```gherkin
             When I tap Save
             | Field | Value |
             | --- | --- |
             | Ignored | Data |
+            ```
             """);
         var catalog = new BddCommandCatalog();
         catalog.Register(
@@ -189,7 +205,9 @@ public sealed class BddBinderTests
             @service
             ## Scenario: No screen
 
+            ```gherkin
             {step}
+            ```
             """);
         var catalog = new BddCommandCatalog();
         catalog.Register(BddEffectiveStepKeyword.Given, "the application is running", "AppCommands.AssertRunning");
@@ -220,12 +238,16 @@ public sealed class BddBinderTests
 
             ## Scenario: On screen
 
+            ```gherkin
             Given I am on the Login page
+            ```
 
             @service
             ## Scenario: Headless
 
+            ```gherkin
             Given the application is running
+            ```
             """);
         var catalog = new BddCommandCatalog();
         catalog.Register(BddEffectiveStepKeyword.Given, "the application is running", "AppCommands.AssertRunning");
@@ -247,7 +269,9 @@ public sealed class BddBinderTests
 
             ## Scenario: A screen
 
+            ```gherkin
             Given I am on the Login page
+            ```
             """);
         var catalog = new BddCommandCatalog();
         catalog.Register(BddEffectiveStepKeyword.Given, "I am on the {page} page", "Builtin.Page.Open", namesPage: true);

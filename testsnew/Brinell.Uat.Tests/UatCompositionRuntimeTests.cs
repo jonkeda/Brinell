@@ -19,18 +19,22 @@ public sealed class UatCompositionRuntimeTests
                 @composition
                 ## Scenario: First scoped flow
 
+                ```gherkin
                 Given I am on the Main page
                 When I tap Save
                 And I choose DI flow
                 Then scoped action count should be 2
+                ```
 
                 @composition
                 ## Scenario: Second scoped flow
 
+                ```gherkin
                 Given I am on the Main page
                 When I tap Save
                 And I choose DI flow
                 Then scoped action count should be 2
+                ```
                 """);
             var fixture = new CompositionFixture();
             var harness = new CompositionScenarioHarness(fixture, configFilePath);
@@ -59,12 +63,14 @@ public sealed class UatCompositionRuntimeTests
 
                 ## Scenario: Rows reach the phrase
 
+                ```gherkin
                 When I store these rows
                 | Title |
                 | --- |
                 | One |
                 | Two |
                 Then 2 rows should be stored
+                ```
                 """);
             var harness = new CompositionScenarioHarness(new CompositionFixture(), configFilePath);
 
@@ -88,6 +94,7 @@ public sealed class UatCompositionRuntimeTests
 
                 ## Scenario: A phrase-class Then follows But
 
+                ```gherkin
                 Given the composition state is fresh
                 When I store these rows
                 | Title |
@@ -95,6 +102,7 @@ public sealed class UatCompositionRuntimeTests
                 | One |
                 Then 1 rows should be stored
                 But no action should have run
+                ```
                 """);
             var harness = new CompositionScenarioHarness(new CompositionFixture(), configFilePath);
 

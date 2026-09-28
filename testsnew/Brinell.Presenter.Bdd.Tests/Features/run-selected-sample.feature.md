@@ -12,6 +12,8 @@
 @smoke @presenter @execution
 ## Scenario: Presenter runs the selected sample scenario
 
+```gherkin
 Given I am on the Presenter page
 When I tap Run
 Then Status Summary should contain "Passed: 1/1 scenarios"
+```

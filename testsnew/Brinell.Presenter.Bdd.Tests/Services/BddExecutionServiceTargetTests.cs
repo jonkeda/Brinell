@@ -37,8 +37,10 @@ public sealed class BddExecutionServiceTargetTests
 
                 ## Scenario: Presenter creates a {{target}} session
 
+                ```gherkin
                 Given app path is available from {{environmentVariable}}
                 Then app path should still be available from {{environmentVariable}}
+                ```
                 """);
 
             File.WriteAllText(

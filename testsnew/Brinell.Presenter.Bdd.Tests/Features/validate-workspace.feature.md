@@ -12,7 +12,9 @@
 @smoke @presenter @validation
 ## Scenario: Presenter validates the loaded suite
 
+```gherkin
 Given I am on the Presenter page
 When I tap Validate
 Then Status Summary should contain "Parse: ok"
 And Status Summary should contain "Bind: ok"
+```
