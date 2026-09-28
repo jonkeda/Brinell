@@ -278,4 +278,37 @@ th { background: var(--uat-surface); font-weight: 600; }
 .uat-step > .uat-kw:hover::before { content: ""; position: absolute; left: 0.2em; top: 0.45em; width: 0.7em; height: 0.7em; border-radius: 50%; outline: 1px solid var(--uat-failed); }
 .uat-run[data-debug] { color: var(--uat-failed); }
 
+/* A debugged run paused at a step: a bar with where and the moves, and the step marked. */
+.uat-paused {
+  position: sticky;
+  /* Under the bar: 0.85 x 14px x 1.5 line, 2 x 4px padding and its 1px border. */
+  top: 27px;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  align-items: center;
+  margin: -8px -20px 12px;
+  padding: 4px 20px;
+  background: var(--uat-warning-bg);
+  border-bottom: 2px solid var(--uat-warning);
+  font-size: 0.85em;
+}
+.uat-paused[hidden] { display: none; }
+.uat-paused-at { color: var(--uat-fg); }
+.uat-moves { display: flex; gap: 4px; margin-left: auto; }
+.uat-moves button {
+  padding: 1px 8px;
+  border: 1px solid var(--uat-border);
+  border-radius: 3px;
+  background: var(--uat-surface);
+  color: var(--uat-fg);
+  font: inherit;
+  cursor: pointer;
+}
+.uat-moves button:hover:not(:disabled) { border-color: var(--uat-accent); }
+.uat-moves button:disabled { opacity: 0.5; cursor: not-allowed; }
+[data-paused] { outline: 2px solid var(--uat-warning); outline-offset: 1px; background: var(--uat-warning-bg); }
+.uat-step[data-paused] > .uat-kw::after { content: " \25B6"; color: var(--uat-warning); }
+
 a { color: var(--uat-accent); }

@@ -9,6 +9,10 @@
       <Group guid="guidBrinellUatCommandSet" id="EditorContextGroup" priority="0x0600">
         <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_CODEWIN" />
       </Group>
+      <!-- The Debug menu: stepping through a scenario's steps while a debugged run is paused at one. -->
+      <Group guid="guidBrinellUatCommandSet" id="DebugStepGroup" priority="0x0700">
+        <Parent guid="guidSHLMainMenu" id="IDM_VS_MENU_DEBUG" />
+      </Group>
     </Groups>
 
     <Buttons>
@@ -44,6 +48,30 @@
           <CommandName>Brinell.ToggleUatStepBreakpoint</CommandName>
         </Strings>
       </Button>
+      <Button guid="guidBrinellUatCommandSet" id="StepOverBdd" priority="0x0100" type="Button">
+        <Parent guid="guidBrinellUatCommandSet" id="DebugStepGroup" />
+        <CommandFlag>DefaultDisabled</CommandFlag>
+        <Strings>
+          <ButtonText>Step Over BDD Step</ButtonText>
+          <CommandName>Brinell.StepOverBddStep</CommandName>
+        </Strings>
+      </Button>
+      <Button guid="guidBrinellUatCommandSet" id="StepIntoBdd" priority="0x0101" type="Button">
+        <Parent guid="guidBrinellUatCommandSet" id="DebugStepGroup" />
+        <CommandFlag>DefaultDisabled</CommandFlag>
+        <Strings>
+          <ButtonText>Step Into BDD Call</ButtonText>
+          <CommandName>Brinell.StepIntoBddCall</CommandName>
+        </Strings>
+      </Button>
+      <Button guid="guidBrinellUatCommandSet" id="StepOutBdd" priority="0x0102" type="Button">
+        <Parent guid="guidBrinellUatCommandSet" id="DebugStepGroup" />
+        <CommandFlag>DefaultDisabled</CommandFlag>
+        <Strings>
+          <ButtonText>Step Out of BDD Call</ButtonText>
+          <CommandName>Brinell.StepOutOfBddCall</CommandName>
+        </Strings>
+      </Button>
     </Buttons>
   </Commands>
 
@@ -56,6 +84,11 @@
     <!-- Ctrl+K, F9 (or Ctrl+K, Ctrl+F9): beside F9, which the debugger keeps for C# breakpoints. -->
     <KeyBinding guid="guidBrinellUatCommandSet" id="ToggleStepBreakpoint" editor="guidVSStd97" key1="K" mod1="Control" key2="VK_F9" />
     <KeyBinding guid="guidBrinellUatCommandSet" id="ToggleStepBreakpoint" editor="guidVSStd97" key1="K" mod1="Control" key2="VK_F9" mod2="Control" />
+    <!-- Stepping through BDD steps: single chords, free in every scope (Ctrl+F10 is Run To Cursor,
+         Ctrl+F11 Toggle Disassembly); Step out cannot be Alt+Shift+F11, which is Step into. -->
+    <KeyBinding guid="guidBrinellUatCommandSet" id="StepOverBdd" editor="guidVSStd97" key1="VK_F10" mod1="Alt Shift" />
+    <KeyBinding guid="guidBrinellUatCommandSet" id="StepIntoBdd" editor="guidVSStd97" key1="VK_F11" mod1="Alt Shift" />
+    <KeyBinding guid="guidBrinellUatCommandSet" id="StepOutBdd" editor="guidVSStd97" key1="VK_F11" mod1="Control Shift" />
   </KeyBindings>
 
   <Symbols>
@@ -66,6 +99,10 @@
       <IDSymbol name="OpenScenarioPreview" value="0x0101" />
       <IDSymbol name="ToggleStepBreakpoint" value="0x0102" />
       <IDSymbol name="ShowBddExplorer" value="0x0103" />
+      <IDSymbol name="StepOverBdd" value="0x0104" />
+      <IDSymbol name="StepIntoBdd" value="0x0105" />
+      <IDSymbol name="StepOutBdd" value="0x0106" />
+      <IDSymbol name="DebugStepGroup" value="0x1030" />
     </GuidSymbol>
   </Symbols>
 </CommandTable>

@@ -1,4 +1,5 @@
 using System.IO;
+using System.Threading;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -125,24 +126,77 @@ internal sealed class BddBreakpointStore
             root["files"] = files = new JObject();
         }
 
-        _cache = null;
         Entry(files, file)?.Remove();
         if (lines.Count > 0)
         {
             files[file] = new JArray(lines.OrderBy(line => line));
         }
 
-        // Written whole and then moved into place: the engine never reads half a file.
-        Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
-        var temporary = _path + ".tmp";
-        File.WriteAllText(temporary, root.ToString(Formatting.Indented));
-        if (File.Exists(_path))
+        Save(root);
+    }
+
+    /// <summary>The file that says where a debugged run is paused, beside the breakpoints (the engine writes it).</summary>
+    public string PausedPath => Path.Combine(Path.GetDirectoryName(_path)!, "bdd-paused.json");
+
+    /// <summary>
+    /// Writes a one-shot move from a paused step (<c>over</c>, <c>into</c>, <c>out</c>) for the test
+    /// process that paused; the engine takes it at the step it lands on.
+    /// </summary>
+    public void SetMove(string mode, int depth, int process)
+    {
+        lock (_gate)
         {
-            File.Replace(temporary, _path, destinationBackupFileName: null);
-        }
-        else
-        {
-            File.Move(temporary, _path);
+            var root = Read();
+            root["next"] = new JObject { ["mode"] = mode, ["depth"] = depth, ["process"] = process };
+            Save(root);
         }
     }
+
+    /// <summary>Removes a move no run took: a run that ended, or a Continue.</summary>
+    public void ClearMove()
+    {
+        lock (_gate)
+        {
+            var root = Read();
+            if (root.Remove("next"))
+            {
+                Save(root);
+            }
+        }
+    }
+
+    private void Save(JObject root)
+    {
+        _cache = null;
+
+        // Written whole and then moved into place: the engine never reads half a file. The engine
+        // reads it at every step while debugging, so the move may meet it open: tried again.
+        Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
+        var temporary = _path + ".tmp";
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                File.WriteAllText(temporary, root.ToString(Formatting.Indented));
+                if (File.Exists(_path))
+                {
+                    File.Replace(temporary, _path, destinationBackupFileName: null);
+                }
+                else
+                {
+                    File.Move(temporary, _path);
+                }
+
+                return;
+            }
+            catch (Exception exception) when (attempt < SaveAttempts && exception is IOException or UnauthorizedAccessException)
+            {
+                Thread.Sleep(SaveRetryPause);
+            }
+        }
+    }
+
+    // How often, and how far apart, a save the engine's read is in the way of is tried.
+    private const int SaveAttempts = 10;
+    private static readonly TimeSpan SaveRetryPause = TimeSpan.FromMilliseconds(20);
 }

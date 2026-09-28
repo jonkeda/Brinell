@@ -19,6 +19,8 @@ namespace Brinell.Bdd.VisualStudio;
 [ProvideToolWindow(typeof(ScenarioPreviewWindow), Style = VsDockStyle.Tabbed, Window = "{34E76E81-EE4A-11D0-AE2E-00A0C90FFFC3}", Orientation = ToolWindowOrientation.Right)]
 [ProvideToolWindow(typeof(BddExplorerWindow), Style = VsDockStyle.Tabbed, Window = "{3AE79031-E1BC-11D0-8F78-00A0C9110057}")]
 [ProvideAutoLoad(PackageIds.FeatureFileContext, PackageAutoLoadFlags.BackgroundLoad)]
+// Loaded when debugging starts too, so a run debugged from Test Explorer can be stepped through.
+[ProvideAutoLoad(Microsoft.VisualStudio.VSConstants.UICONTEXT.Debugging_string, PackageAutoLoadFlags.BackgroundLoad)]
 [ProvideUIContextRule(
     PackageIds.FeatureFileContext,
     name: "Brinell feature or step file",
@@ -76,6 +78,11 @@ public sealed class BrinellBddPackage : AsyncPackage
             var toggle = new OleMenuCommand((_, _) => ToggleStepBreakpoint(), new CommandID(PackageIds.CommandSet, PackageIds.ToggleStepBreakpoint));
             toggle.BeforeQueryStatus += (_, _) => toggle.Visible = toggle.Enabled = _controller.ActiveIsFeatureOrSteps;
             commands.AddCommand(toggle);
+
+            // Stepping through a scenario while a debugged run is paused at a step (Debug menu, and the preview's bar).
+            AddStep(commands, PackageIds.StepOverBdd, "over", () => _controller.IsPaused);
+            AddStep(commands, PackageIds.StepIntoBdd, "into", () => _controller.PausedAtCall);
+            AddStep(commands, PackageIds.StepOutBdd, "out", () => _controller.PausedInCall);
         }
     }
 
@@ -89,6 +96,19 @@ public sealed class BrinellBddPackage : AsyncPackage
         }
 
         base.Dispose(disposing);
+    }
+
+    private void AddStep(OleMenuCommandService commands, int id, string move, Func<bool> enabled)
+    {
+        var command = new OleMenuCommand(
+            (_, _) =>
+            {
+                ThreadHelper.ThrowIfNotOnUIThread();
+                _controller?.Move(move);
+            },
+            new CommandID(PackageIds.CommandSet, id));
+        command.BeforeQueryStatus += (_, _) => command.Enabled = enabled();
+        commands.AddCommand(command);
     }
 
     private void ToggleStepBreakpoint()

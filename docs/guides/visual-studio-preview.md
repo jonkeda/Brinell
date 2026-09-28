@@ -86,6 +86,24 @@ preview's Debug, or Test Explorer's own **Debug**).
   build, is attached after the testhost, so a breakpoint in the app's own code also stops. A web
   app started with `dotnet run` is not, since that process is the CLI.
 
+### Step Through A Scenario
+
+While the run is paused at a step, the preview shows a bar with where it is paused, the step is
+marked, and the editor shows its line (in the step file, for a call's step). From there:
+
+| Move | Keys | Goes to |
+| --- | --- | --- |
+| **Step over** | Alt+Shift+F10 | the next step; a `## Step:` call runs whole |
+| **Step into** | Alt+Shift+F11 | inside a `## Step:` call, before its first step, without running anything |
+| **Step out** | Ctrl+Shift+F11 | the first step after the call the run is in |
+| **Continue** | F5 | the next step breakpoint |
+| **Stop** | Shift+F5 | the end of the run |
+
+The same moves are the bar's buttons and the **Debug** menu's **Step Over BDD Step**, **Step Into
+BDD Call** and **Step Out of BDD Call**. A `## Step:` call is a position of its own: the run stops
+at the call first (its line in the feature file), and Step into goes inside. F10 and F11 stay the
+C# debugger's: F11 at a paused step goes into its step definition's code.
+
 The breakpoints are a per-user file, `%LOCALAPPDATA%\Brinell\bdd-breakpoints.json`, read only
 while a debugger is attached:
 
@@ -94,7 +112,10 @@ while a debugger is attached:
 ```
 
 - A line of a feature file stops before that step; the line of a call to a callable stops once,
-  before the call's first step.
+  at the call, before its first step.
+- While paused, the engine writes `bdd-paused.json` beside it (where, and the test process); a
+  step move is a one-shot `"next": { "mode": "over", "depth": 0, "process": 4711 }` the extension
+  writes and the engine removes when it stops.
 - A line in a `.steps.md` stops at that step each time a scenario calls it.
 - `breakOnFailure` stops after a step that fails, before the scenario ends.
 

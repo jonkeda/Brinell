@@ -1,6 +1,8 @@
 // The preview's page script, the same in every host: Visual Studio's WebView2 or VS Code's webview.
-// In:  update {html, suites, suite, bindState, reason}, scrollTo {line}, theme {vars, kind}, running {line?, file?}, breaks {lines}
-// Out: reveal {line}, pickSuite {suite}, openScreenshot {path}, run {line, debug}, runFile {debug}, cancel, toggleBreak {line}
+// In:  update {html, suites, suite, bindState, reason}, scrollTo {line}, theme {vars, kind}, running {line?, file?}, breaks {lines},
+//      paused {text, line, here, isCall, depth, calls} (or {} when the run goes on)
+// Out: reveal {line}, pickSuite {suite}, openScreenshot {path}, run {line, debug}, runFile {debug}, cancel, toggleBreak {line},
+//      debug {move: continue | over | into | out | stop}
 (function () {
   "use strict";
 
@@ -29,9 +31,12 @@
   const picker = document.getElementById("uat-suite");
   const state = document.getElementById("uat-state");
   const cancel = document.getElementById("uat-cancel");
+  const pausedBar = document.getElementById("uat-paused");
+  const pausedAt = document.getElementById("uat-paused-at");
   let current = null;
   let running = null;
   let breaks = [];
+  let paused = null;
 
   // The block for a line: the last element whose data-line is at or before it.
   function blockAt(line) {
@@ -68,6 +73,7 @@
     window.scrollTo(0, top);
     showRunning();
     showBreaks();
+    showPaused();
 
     const suites = message.suites || [];
     picker.hidden = suites.length < 2;
@@ -104,6 +110,30 @@
     }
   }
 
+  // A debugged run paused at a step: the bar says where and offers the moves; the step is marked
+  // when it is in this file. Step into only at a call; Step out only inside one.
+  function showPaused() {
+    pausedBar.hidden = paused === null;
+    for (const element of root.querySelectorAll("[data-paused]")) {
+      element.removeAttribute("data-paused");
+    }
+    if (paused === null) {
+      return;
+    }
+    const inCall = paused.calls && paused.calls.length ? " · in " + paused.calls[paused.calls.length - 1] : "";
+    pausedAt.textContent = "⏸ Paused " + (paused.isCall ? "at the call: " : "before: ") + paused.text + " (line " + paused.line + inCall + ")";
+    pausedBar.querySelector('[data-move="into"]').disabled = !paused.isCall;
+    pausedBar.querySelector('[data-move="out"]').disabled = !(paused.depth > 0);
+    if (paused.here) {
+      const step = root.querySelector(`.uat-step[data-line="${paused.line}"]`) || blockAt(paused.line);
+      if (step) {
+        step.setAttribute("data-paused", "");
+        // Centred: the sticky bars would hide a step scrolled only to the edge.
+        step.scrollIntoView({ block: "center" });
+      }
+    }
+  }
+
   function theme(message) {
     for (const [name, value] of Object.entries(message.vars || {})) {
       document.documentElement.style.setProperty(name, value);
@@ -120,6 +150,14 @@
       case "theme": theme(message); break;
       case "running": running = message.line || message.file ? { line: message.line, file: message.file } : null; showRunning(); break;
       case "breaks": breaks = message.lines || []; showBreaks(); break;
+      case "paused": paused = message.text ? message : null; showPaused(); break;
+    }
+  });
+
+  pausedBar.addEventListener("click", (event) => {
+    const move = event.target.closest("[data-move]");
+    if (move && !move.disabled) {
+      host.post({ type: "debug", move: move.getAttribute("data-move") });
     }
   });
 

@@ -51,6 +51,8 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
     private int _version;
     private CancellationTokenSource? _typing;
     private ScenarioPreviewControl? _explorer;
+    private FileSystemWatcher? _pausedWatcher;
+    private JObject? _paused;
     private string _explorerView = "steps";
     private string? _explorerSuite;
 
@@ -85,6 +87,7 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
 
         VSColorTheme.ThemeChanged += OnThemeChanged;
         BddBreakpointStore.Instance.Changed += OnBreakpointsChanged;
+        WatchPaused();
 
         ErrorHandler.ThrowOnFailure(_selection.GetCurrentElementValue((uint)VSConstants.VSSELELEMID.SEID_DocumentFrame, out var frame));
         await TrackAsync(frame, cancellationToken);
@@ -173,8 +176,148 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
         }
 
         Detach();
+        _pausedWatcher?.Dispose();
         _typing?.Cancel();
         _server?.Dispose();
+    }
+
+    /// <summary>Whether a debugged run is paused at a step (the engine's <c>bdd-paused.json</c>).</summary>
+    public bool IsPaused => _paused is not null;
+
+    /// <summary>Paused at a <c>## Step:</c> call: Step into goes inside.</summary>
+    public bool PausedAtCall => _paused?["isCall"]?.Value<bool>() == true;
+
+    /// <summary>Paused inside a call: Step out goes after it.</summary>
+    public bool PausedInCall => (_paused?["depth"]?.Value<int>() ?? 0) > 0;
+
+    /// <summary>
+    /// A move from the paused step: <c>over</c>, <c>into</c> and <c>out</c> are written for the
+    /// engine and the debugger goes on; <c>continue</c> goes on to the next breakpoint; <c>stop</c>
+    /// ends the debugging.
+    /// </summary>
+    public void Move(string move)
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        if (_paused is not { } paused)
+        {
+            return;
+        }
+
+        if (move is "over" or "into" or "out")
+        {
+            BddBreakpointStore.Instance.SetMove(move, paused["depth"]?.Value<int>() ?? 0, paused["process"]?.Value<int>() ?? 0);
+        }
+        else
+        {
+            BddBreakpointStore.Instance.ClearMove();
+        }
+
+        _package.JoinableTaskFactory.RunAsync(async () =>
+        {
+            await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
+            if (await _package.GetServiceAsync(typeof(EnvDTE.DTE)) is not EnvDTE80.DTE2 dte || dte.Debugger.CurrentMode != EnvDTE.dbgDebugMode.dbgBreakMode)
+            {
+                Log("No debugger is paused, so there is nothing to step.");
+                return;
+            }
+
+            if (move == "stop")
+            {
+                dte.Debugger.Stop(WaitForDesignMode: false);
+            }
+            else
+            {
+                dte.Debugger.Go(WaitForBreakOrEnd: false);
+            }
+        }).FileAndForget("Brinell/DebugMove");
+    }
+
+    // The engine writes where it is paused, and deletes the file when the run goes on.
+    private void WatchPaused()
+    {
+        var path = BddBreakpointStore.Instance.PausedPath;
+        var folder = Path.GetDirectoryName(path)!;
+        Directory.CreateDirectory(folder);
+        _pausedWatcher = new FileSystemWatcher(folder, Path.GetFileName(path)) { NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite };
+        FileSystemEventHandler changed = (_, _) => _package.JoinableTaskFactory.RunAsync(OnPausedChangedAsync).FileAndForget("Brinell/Paused");
+        _pausedWatcher.Created += changed;
+        _pausedWatcher.Changed += changed;
+        _pausedWatcher.Deleted += changed;
+        _pausedWatcher.Renamed += (_, _) => _package.JoinableTaskFactory.RunAsync(OnPausedChangedAsync).FileAndForget("Brinell/Paused");
+        _pausedWatcher.EnableRaisingEvents = true;
+        _package.JoinableTaskFactory.RunAsync(OnPausedChangedAsync).FileAndForget("Brinell/Paused");
+    }
+
+    // Paused: the step's source file in the editor at its line, and the bar in every preview. Gone
+    // on: the bar goes.
+    private async Task OnPausedChangedAsync()
+    {
+        await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
+        _paused = ReadPaused(BddBreakpointStore.Instance.PausedPath);
+        if (_paused is not { } paused || (string?)paused["file"] is not { } running)
+        {
+            foreach (var (control, _) in _views.ToList())
+            {
+                control.Post(new { type = "paused" });
+            }
+
+            return;
+        }
+
+        var file = SourceOf(running);
+        var line = paused["line"]?.Value<int>() ?? 1;
+        if (File.Exists(file))
+        {
+            VsShellUtilities.OpenDocument(_package, file, Guid.Empty, out _, out _, out _, out var textView);
+            if (textView is not null && line >= 1)
+            {
+                textView.SetCaretPos(line - 1, 0);
+                textView.CenterLines(line - 1, 1);
+            }
+        }
+
+        foreach (var (control, path) in _views.ToList())
+        {
+            control.Post(new
+            {
+                type = "paused",
+                text = (string?)paused["text"],
+                line,
+                isCall = paused["isCall"]?.Value<bool>() == true,
+                depth = paused["depth"]?.Value<int>() ?? 0,
+                calls = paused["calls"]?.ToObject<string[]>() ?? [],
+                here = string.Equals(path ?? file, file, StringComparison.OrdinalIgnoreCase),
+            });
+        }
+    }
+
+    private static JObject? ReadPaused(string path)
+    {
+        try
+        {
+            return File.Exists(path) ? JObject.Parse(File.ReadAllText(path)) : null;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or Newtonsoft.Json.JsonException)
+        {
+            // Being written or removed just now: the watcher tells again when it settles.
+            return null;
+        }
+    }
+
+    // The run's file is the build output's copy: the source is the file at the same path under the
+    // active file's Features folder, as the engine matches breakpoints.
+    private string SourceOf(string running)
+    {
+        const string Features = "\\Features\\";
+        var at = running.LastIndexOf(Features, StringComparison.OrdinalIgnoreCase);
+        var mine = _path?.LastIndexOf(Features, StringComparison.OrdinalIgnoreCase) ?? -1;
+        if (at < 0 || mine < 0)
+        {
+            return running;
+        }
+
+        var source = Path.Combine(_path!.Substring(0, mine + Features.Length), running.Substring(at + Features.Length));
+        return File.Exists(source) ? source : running;
     }
 
     // The active document changed: follow it when it is a feature or step file; otherwise the
@@ -365,6 +508,9 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
                 break;
             case "cancel":
                 _runs?.Cancel();
+                break;
+            case "debug" when (string?)message["move"] is { } move:
+                Move(move);
                 break;
             case "openScreenshot" when (string?)message["path"] is { } screenshot && File.Exists(screenshot):
                 VsShellUtilities.OpenDocument(_package, screenshot);

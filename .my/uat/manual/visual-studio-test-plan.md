@@ -119,7 +119,12 @@ These start the Todo app. Leave the mouse and keyboard alone while a run goes.
 | B-12 | With a breakpoint set, run TOD.01.3 with **Debug** from **Test Explorer** (right-click the test > Debug), not from the preview. | It stops at the same breakpoint. | ☐ |
 | B-13 | Set an ordinary C# breakpoint (F9) in `samples\Todo\tests\Brinell.Samples.Todo.UITests\Pages\TodoListPage.cs`, on the `SyncButton` line (22). Debug TOD.01.3. | Visual Studio stops there as usual. | ☐ |
 | B-14 | Set an ordinary C# breakpoint in the Todo **app's** code: `samples\Todo\src\Brinell.Samples.Todo.App\Pages\TodoListPage.xaml.cs`, in a handler the Sync tap reaches. Debug TOD.01.3. | The Output pane says "The debugger is attached to the app too". Visual Studio stops in the app's code. The Debug Location toolbar lists two processes (testhost and the app). | ☐ |
-| B-15 | Remove every step breakpoint. Close Visual Studio. Open `%LOCALAPPDATA%\Brinell\bdd-breakpoints.json`. | It lists no lines for TOD.01 (or has no entry for it). | ☐ |
+| B-16 | Set a step breakpoint on TOD.01.2's first step (`Given I am on the Todo List page`). Debug TOD.01.2. | The run stops there. The preview shows a yellow bar "Paused before: …" with Continue, Step over, Step into (disabled), Step out (disabled) and Stop; the step is outlined with a ▶. | ☐ |
+| B-17 | Press **Alt+Shift+F10** (Step over). | The run stops at the next step, `Given the synced list has todos` (line 34), "Paused at the call"; Step into is enabled now. | ☐ |
+| B-18 | Press **Alt+Shift+F11** (Step into). | The step file opens at the call's first step, "Paused before: …", without the app having done anything; Step out is enabled. | ☐ |
+| B-19 | Press **Ctrl+Shift+F11** (Step out). | Back in TOD.01, at the first step after the call. | ☐ |
+| B-20 | Use the bar's buttons instead of the keys for a few moves, then **Debug** menu > **Step Over BDD Step**; then **Continue**, and last **Stop**. | Each does the same as its key. Continue runs to the next breakpoint or the end; Stop ends the run and the bar goes. | ☐ |
+| B-15 | Remove every step breakpoint. Close Visual Studio. Open `%LOCALAPPDATA%\Brinell\bdd-breakpoints.json`. | It lists no lines for TOD.01 (or has no entry for it), and no `next`. | ☐ |
 
 ## 7. Editing help
 

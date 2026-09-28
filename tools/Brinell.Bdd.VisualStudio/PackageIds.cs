@@ -22,5 +22,11 @@ internal static class PackageIds
 
     public const int ShowBddExplorer = 0x0103;
 
+    public const int StepOverBdd = 0x0104;
+
+    public const int StepIntoBdd = 0x0105;
+
+    public const int StepOutBdd = 0x0106;
+
     public static readonly Guid CommandSet = new(CommandSetString);
 }

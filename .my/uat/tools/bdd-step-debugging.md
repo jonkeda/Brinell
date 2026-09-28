@@ -1,6 +1,16 @@
 # Design: stepping through a scenario (shortcuts and buttons)
 
-Status: **step 1 (engine) done** 2026-09-28; steps 2-4 open. Date: 2026-09-28.
+Status: **steps 1 (engine) and 2 (Visual Studio) built** 2026-09-28, step 2 not yet seen in Visual
+Studio (manual B-16 to B-20); steps 3 (VS Code) and 4 open. Date: 2026-09-28.
+
+Visual Studio (step 2): the commands **Step Over BDD Step**, **Step Into BDD Call** and **Step Out
+of BDD Call** on the Debug menu with their chords, enabled from `bdd-paused.json`; the controller
+watches that file, opens the paused step's source (the build output's path mapped back under the
+`Features` folder) at its line, and sends the preview a `paused` message; the preview's bar sends
+`debug {move}`. A move writes `next` (`BddBreakpointStore.SetMove`) and `Debugger.Go`; Continue
+clears it and goes; Stop is `Debugger.Stop`. The package also loads when debugging starts, so a
+run debugged from Test Explorer can be stepped. The bar was checked in a browser against TOD.01's
+rendered preview (colours, which buttons are enabled, the posted message, hiding on resume).
 
 What the engine does (`BddBreakpoints`, tests in `BddBreakpointsTests`):
 - **A call is a position of its own.** A `## Step:` call has no step of its own; the run stops

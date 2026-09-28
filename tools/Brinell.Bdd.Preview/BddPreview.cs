@@ -105,6 +105,7 @@ public static class BddPreview
         </head>
         <body>
         <header class="uat-bar"><span id="uat-state" class="uat-state" data-state="parse-only">Parsed only</span><button type="button" id="uat-cancel" class="uat-cancel" hidden>Cancel run</button><select id="uat-suite" class="uat-suite" hidden aria-label="Suite"></select></header>
+        <div id="uat-paused" class="uat-paused" role="toolbar" aria-label="Paused" hidden><span id="uat-paused-at" class="uat-paused-at"></span><span class="uat-moves"><button type="button" data-move="continue" title="Continue (F5)">&#9654; Continue</button><button type="button" data-move="over" title="Step over (Alt+Shift+F10)">&#10556; Step over</button><button type="button" data-move="into" title="Step into (Alt+Shift+F11)">&#8600; Step into</button><button type="button" data-move="out" title="Step out (Ctrl+Shift+F11)">&#8599; Step out</button><button type="button" data-move="stop" title="Stop (Shift+F5)">&#9632; Stop</button></span></div>
         <main id="uat-root"></main>
         <script>
         {ReadResource("preview-host.js")}
