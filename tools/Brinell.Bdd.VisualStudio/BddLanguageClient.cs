@@ -14,7 +14,8 @@ namespace Brinell.Bdd.VisualStudio;
 
 /// <summary>
 /// The content type of Brinell's Markdown files: feature and step files and the suite configs. It
-/// derives from Markdown, so the Markdown editor keeps its colours and preview, and from the
+/// derives from the Markdown editor's own type (<c>vs-markdown</c>), so its colours and outlining
+/// stay (its preview is turned off for them: <see cref="BddTextViewListener"/>), and from the
 /// remote-content type an LSP client needs (S2).
 /// </summary>
 internal static class BddContentType
@@ -23,7 +24,7 @@ internal static class BddContentType
 
     [Export]
     [Name(Name)]
-    [BaseDefinition("markdown")]
+    [BaseDefinition("vs-markdown")]
     [BaseDefinition(CodeRemoteContentDefinition.CodeRemoteContentTypeName)]
     internal static ContentTypeDefinition? Definition { get; set; }
 

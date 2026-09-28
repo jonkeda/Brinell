@@ -77,6 +77,14 @@ public sealed class ScenarioPreviewControl : UserControl
         }
     }
 
+    /// <summary>Closes the WebView2: a preview margin is closed with its editor.</summary>
+    public void Close()
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        MessageReceived = null;
+        _web.Dispose();
+    }
+
     /// <summary>
     /// Maps the preview's screenshot host to the results folder, so its images load: a webview does
     /// not load <c>file:</c> URLs from a page it was given as a string.

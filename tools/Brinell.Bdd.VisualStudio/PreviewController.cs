@@ -41,7 +41,9 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
     private IVsEditorAdaptersFactoryService? _adapters;
     private uint _selectionCookie;
     private uint _buildCookie;
-    private ScenarioPreviewControl? _view;
+    // The previews on show: the tool window's follows the active file (no path); an editor's
+    // margin shows its own file.
+    private readonly List<(ScenarioPreviewControl Control, string? Path)> _views = [];
     private IWpfTextView? _textView;
     private string? _path;
     private int _version;
@@ -82,26 +84,66 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
         await TrackAsync(frame, cancellationToken);
     }
 
-    /// <summary>Shows the preview in a window's control: loads the host page once, then the active file.</summary>
-    public async Task AttachAsync(ScenarioPreviewControl view)
+    /// <summary>
+    /// Shows the preview in a control: loads the host page once, then the file. The tool window's
+    /// control follows the active file; an editor margin's shows its own.
+    /// </summary>
+    /// <param name="view">The control.</param>
+    /// <param name="path">The margin's file; null for the tool window.</param>
+    public async Task AttachAsync(ScenarioPreviewControl view, string? path = null)
     {
         await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
-        if (_view != view)
+        if (!_views.Any(entry => entry.Control == view))
         {
-            _view = view;
+            _views.Add((view, path));
             view.MessageReceived += OnMessage;
         }
 
         if (!view.IsReady)
         {
-            await EnsureServerAsync(_path);
+            await EnsureServerAsync(path ?? _path);
             var host = await _server!.PreviewHostAsync(_package.DisposalToken);
             await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
             await view.InitializeAsync(host);
             view.Post(VsTheme.Message());
         }
 
-        await RefreshAsync();
+        // A margin's file renders once it is the active one (TrackAsync opens it on the server).
+        if (path is null || string.Equals(path, _path, StringComparison.OrdinalIgnoreCase))
+        {
+            await RefreshAsync();
+        }
+    }
+
+    /// <summary>Forgets a control: its editor closed.</summary>
+    public void Release(ScenarioPreviewControl view)
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        view.MessageReceived -= OnMessage;
+        _views.RemoveAll(entry => entry.Control == view);
+    }
+
+    /// <summary>The editor command: shows or hides the preview beside the active feature or step file.</summary>
+    public void TogglePreviewMargin()
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        if (_textView is { } view)
+        {
+            view.Options.SetOptionValue(BddPreviewOptions.ShowPreview, !view.Options.GetOptionValue(BddPreviewOptions.ShowPreview));
+        }
+    }
+
+    // The controls that show a file: the tool window's, and the margins of that file.
+    private IEnumerable<ScenarioPreviewControl> ViewsOf(string? path)
+        => _views.Where(entry => entry.Path is null || string.Equals(entry.Path, path, StringComparison.OrdinalIgnoreCase)).Select(entry => entry.Control).ToList();
+
+    private void PostTo(string? path, object message)
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        foreach (var view in ViewsOf(path))
+        {
+            view.Post(message);
+        }
     }
 
     public void Dispose()
@@ -187,7 +229,7 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
 
     private async Task RefreshAsync()
     {
-        if (_view is null || _path is not { } path || _server is null)
+        if (_path is not { } path || _server is null || !ViewsOf(path).Any())
         {
             return;
         }
@@ -197,16 +239,19 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
             var preview = await _server.PreviewAsync(path, _suites.TryGetValue(path, out var suite) ? suite : null, _package.DisposalToken);
             await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
             preview["type"] = "update";
-            if ((string?)preview["resultsHost"] is { } host && (string?)preview["resultsRoot"] is { } root)
+            foreach (var target in ViewsOf(path))
             {
-                _view.MapResults(host, root);
-            }
+                if ((string?)preview["resultsHost"] is { } host && (string?)preview["resultsRoot"] is { } root)
+                {
+                    target.MapResults(host, root);
+                }
 
-            _view.Post(preview);
-            _view.Post(Breaks(path));
-            if (_textView is { } view)
-            {
-                _view.Post(new { type = "scrollTo", line = view.Caret.Position.BufferPosition.GetContainingLine().LineNumber + 1 });
+                target.Post(preview);
+                target.Post(Breaks(path));
+                if (_textView is { } view)
+                {
+                    target.Post(new { type = "scrollTo", line = view.Caret.Position.BufferPosition.GetContainingLine().LineNumber + 1 });
+                }
             }
         }
         catch (Exception exception) when (exception is StreamJsonRpc.RemoteInvocationException or StreamJsonRpc.ConnectionLostException or IOException)
@@ -248,7 +293,7 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
     private void OnCaretMoved(object sender, CaretPositionChangedEventArgs e)
     {
         ThreadHelper.ThrowIfNotOnUIThread();
-        _view?.Post(new { type = "scrollTo", line = e.NewPosition.BufferPosition.GetContainingLine().LineNumber + 1 });
+        PostTo(_path, new { type = "scrollTo", line = e.NewPosition.BufferPosition.GetContainingLine().LineNumber + 1 });
     }
 
     private void OnViewClosed(object sender, EventArgs e)
@@ -418,22 +463,24 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
     // A breakpoint set or cleared, from the preview, the editor or an edit: the preview shows it.
     private void OnBreakpointsChanged(object sender, string path)
     {
-        if (string.Equals(path, _path, StringComparison.OrdinalIgnoreCase))
+        _package.JoinableTaskFactory.RunAsync(async () =>
         {
-            _package.JoinableTaskFactory.RunAsync(async () =>
+            await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
+
+            // The tool window shows the active file only; a margin of that file shows it always.
+            foreach (var entry in _views.Where(entry => string.Equals(entry.Path ?? _path, path, StringComparison.OrdinalIgnoreCase)).ToList())
             {
-                await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
-                _view?.Post(Breaks(path));
-            }).FileAndForget("Brinell/PreviewBreaks");
-        }
+                entry.Control.Post(Breaks(path));
+            }
+        }).FileAndForget("Brinell/PreviewBreaks");
     }
 
-    // A message to the page from any thread.
+    // A message to the active file's previews, from any thread.
     private void Post(object message)
         => _package.JoinableTaskFactory.RunAsync(async () =>
         {
             await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
-            _view?.Post(message);
+            PostTo(_path, message);
         }).FileAndForget("Brinell/PreviewPost");
 
     // A run wrote results for the file on show: draw them.
@@ -453,7 +500,10 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
     private void OnThemeChanged(ThemeChangedEventArgs e)
     {
         ThreadHelper.ThrowIfNotOnUIThread();
-        _view?.Post(VsTheme.Message());
+        foreach (var (control, _) in _views.ToList())
+        {
+            control.Post(VsTheme.Message());
+        }
     }
 
     private void Detach()

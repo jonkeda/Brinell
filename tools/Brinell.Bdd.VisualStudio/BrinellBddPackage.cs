@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
 using Task = System.Threading.Tasks.Task;
 
 namespace Brinell.Bdd.VisualStudio;
@@ -34,6 +35,27 @@ public sealed class BrinellBddPackage : AsyncPackage
     /// <summary>The preview's controller, which holds the language server.</summary>
     internal PreviewController? Controller => _controller;
 
+    /// <summary>
+    /// The package, loaded if it is not yet: an editor's preview margin can be created before the
+    /// package's background load has run.
+    /// </summary>
+    internal static async Task<BrinellBddPackage?> LoadAsync()
+    {
+        if (Instance is { } loaded)
+        {
+            return loaded;
+        }
+
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+        if (await AsyncServiceProvider.GlobalProvider.GetServiceAsync(typeof(SVsShell)) is IVsShell7 shell)
+        {
+            var guid = new Guid(PackageIds.Package);
+            await shell.LoadPackageAsync(ref guid);
+        }
+
+        return Instance;
+    }
+
     /// <inheritdoc />
     protected override async Task InitializeAsync(CancellationToken cancellationToken, IProgress<ServiceProgressData> progress)
     {
@@ -45,7 +67,7 @@ public sealed class BrinellBddPackage : AsyncPackage
         if (await GetServiceAsync(typeof(IMenuCommandService)) is OleMenuCommandService commands)
         {
             commands.AddCommand(new MenuCommand((_, _) => ShowPreview(), new CommandID(PackageIds.CommandSet, PackageIds.ShowScenarioPreview)));
-            var open = new OleMenuCommand((_, _) => ShowPreview(), new CommandID(PackageIds.CommandSet, PackageIds.OpenScenarioPreview));
+            var open = new OleMenuCommand((_, _) => _controller.TogglePreviewMargin(), new CommandID(PackageIds.CommandSet, PackageIds.OpenScenarioPreview));
             open.BeforeQueryStatus += (_, _) => open.Visible = _controller.ActiveIsFeatureOrSteps;
             commands.AddCommand(open);
 

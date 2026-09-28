@@ -31,7 +31,7 @@
         <CommandFlag>DynamicVisibility</CommandFlag>
         <CommandFlag>DefaultInvisible</CommandFlag>
         <Strings>
-          <ButtonText>Open Scenario Preview</ButtonText>
+          <ButtonText>Show/Hide Scenario Preview</ButtonText>
           <CommandName>Brinell.OpenScenarioPreview</CommandName>
         </Strings>
       </Button>
@@ -48,7 +48,8 @@
   </Commands>
 
   <KeyBindings>
-    <!-- Alt+Shift+V, free in every scope. Also Ctrl+K, V, as VS Code opens a Markdown preview; not
+    <!-- Shows or hides the preview beside the editor's text (BddPreviewMargin).
+         Alt+Shift+V, free in every scope. Also Ctrl+K, V, as VS Code opens a Markdown preview; not
          Ctrl+K, Ctrl+V, which is Visual Studio's (Class View's search box). -->
     <KeyBinding guid="guidBrinellUatCommandSet" id="OpenScenarioPreview" editor="guidVSStd97" key1="V" mod1="Alt Shift" />
     <KeyBinding guid="guidBrinellUatCommandSet" id="OpenScenarioPreview" editor="guidVSStd97" key1="K" mod1="Control" key2="V" />

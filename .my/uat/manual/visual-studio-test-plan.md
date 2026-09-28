@@ -54,8 +54,8 @@ The files used below are all under `samples\Todo\tests\Brinell.Samples.Todo.Uat\
 
 | ID | Do | You should see | Result |
 | --- | --- | --- | --- |
-| P-1 | Open TOD.01. Press **Alt+Shift+V**. Close the preview, then press **Ctrl+K**, release Ctrl, and press **V**. | Both open the **Scenario Preview** window (not Visual Studio's own Markdown preview) beside the editor. It shows the feature as readable steps, with the keywords in a gutter, and tables drawn as tables. The bar at the top says **Bound**. | ☐ |
-| P-2 | Also try right-click in the editor, **Open Scenario Preview**, and **View > Other Windows > Scenario Preview**. | Both show the same preview. | ☐ |
+| P-1 | Open TOD.01. Press **Alt+Shift+V** twice, then **Ctrl+K**, release Ctrl, and press **V**. Open a plain `.md` (the repository's `README.md`). | TOD.01 opens with the BDD preview beside the text, and not Visual Studio's Markdown preview. Each key press hides or shows it. The README still shows Visual Studio's Markdown preview. It shows the feature as readable steps, with the keywords in a gutter, and tables drawn as tables. The bar at the top says **Bound**. | ☐ |
+| P-2 | Right-click in the editor, **Show/Hide Scenario Preview**. Then **View > Other Windows > Scenario Preview**. Drag the preview's left edge. | The menu item hides and shows the preview beside the text. The tool window shows the same preview. The preview keeps its new width, also for the next file you open. | ☐ |
 | P-3 | Hover over the step `When I tap Sync` (line 24) in the preview. | A tooltip says what it binds to and on which page (the Todo List page). | ☐ |
 | P-4 | Find the step `Given the synced list has todos` (line 34) in the preview, and unfold it. | It opens into the steps of the `## Step:` it calls, with the values filled in. | ☐ |
 | P-5 | Put the caret on a step in the editor, then on another. | The preview highlights the step under the caret each time. | ☐ |

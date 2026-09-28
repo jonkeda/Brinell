@@ -29,12 +29,14 @@ Update the extension, or the suite's Brinell packages.
 
 ## Use
 
-- Open a `.feature.md` or `.steps.md` and press **Alt+Shift+V**, or **Ctrl+K, V** with Ctrl
-  released before the V (**Ctrl+K, Ctrl+V** is Visual Studio's own, Class View's search box). Or
-  right-click, **Open Scenario Preview**; or **View > Other Windows > Scenario Preview**.
-- This is Brinell's preview: steps with a keyword gutter, a bar saying **Bound** or **Parsed
-  only**, Run buttons. Visual Studio's Markdown editor also has a preview of its own, of the plain
-  Markdown; that one is not this.
+- Open a `.feature.md` or `.steps.md`: the preview is beside the text, where Visual Studio shows
+  its Markdown preview for other `.md` files (that one is turned off for feature and step files).
+  Drag its left edge to resize it.
+- **Alt+Shift+V** shows or hides it; so do **Ctrl+K, V** (Ctrl released before the V;
+  **Ctrl+K, Ctrl+V** is Visual Studio's own, Class View's search box) and right-click, **Show/Hide
+  Scenario Preview**.
+- **View > Other Windows > Scenario Preview** shows the same preview in a tool window, which you
+  can float onto another screen. It follows the active file.
 - The preview follows the active feature or step file, and renders again when you pause typing and
   after each build.
 - The caret and the preview follow each other: move the caret and its step is highlighted; click a
