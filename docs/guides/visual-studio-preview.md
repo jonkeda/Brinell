@@ -49,6 +49,12 @@ Update the extension, or the suite's Brinell packages.
   result and duration, and a failed step its message and the screenshot taken then; click the
   thumbnail to open it. The preview finds the newest run of each scenario through the runs'
   `TestResults/<run-id>/manifest.json`, and refreshes when a run writes one.
+- **Delete old results** so nothing old shows: **✕** beside a scenario's result deletes that
+  scenario's (an outline's, every row's), and **Delete results** in the bar the whole file's. In the
+  BDD Explorer's Results tab, **Delete** on a file and **Delete all results** for the suite. Each
+  asks first, naming how many runs and files, and deletes for good in every run: the scenario's
+  report and its screenshot. A run left with nothing else is removed; other tests' artifacts stay.
+  A run written to in the last half minute, or while a run from the preview goes, is left alone.
 
 ## Run From The Preview
 

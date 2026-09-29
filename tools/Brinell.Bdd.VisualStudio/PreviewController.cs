@@ -512,6 +512,9 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
             case "debug" when (string?)message["move"] is { } move:
                 Move(move);
                 break;
+            case "deleteResults" when _path is { } file && (string?)message["scope"] is { } scope:
+                DeleteResults(scope, new Uri(file).AbsoluteUri, (int?)message["line"], _suites.TryGetValue(file, out var picked) ? picked : null);
+                break;
             case "openScreenshot" when (string?)message["path"] is { } screenshot && File.Exists(screenshot):
                 VsShellUtilities.OpenDocument(_package, screenshot);
                 break;
@@ -521,6 +524,60 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
                 break;
         }
     }
+
+    // Old results, for good: the server counts first, the user confirms with the counts, then it deletes.
+    private void DeleteResults(string scope, string? uri, int? line, string? suite)
+        => _package.JoinableTaskFactory.RunAsync(async () =>
+        {
+            if (_server is null)
+            {
+                return;
+            }
+
+            if (_runs is { IsRunning: true })
+            {
+                Log("A BDD run is going, so no results are deleted now: its test process still writes them.");
+                return;
+            }
+
+            var count = await _server.DeleteResultsAsync(scope, uri, line, suite, dryRun: true, _package.DisposalToken);
+            await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
+            if ((bool?)count["done"] != true)
+            {
+                Log($"No results deleted: {(string?)count["reason"]}");
+                return;
+            }
+
+            var runs = ((int?)count["runsChanged"] ?? 0) + ((int?)count["runsDeleted"] ?? 0);
+            var what = (string?)count["what"];
+            if (runs == 0)
+            {
+                VsShellUtilities.ShowMessageBox(_package, $"{what} has no results to delete in {(string?)count["suite"]}.", "Delete results", OLEMSGICON.OLEMSGICON_INFO, OLEMSGBUTTON.OLEMSGBUTTON_OK, OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
+                return;
+            }
+
+            var answer = VsShellUtilities.ShowMessageBox(
+                _package,
+                $"Delete the results of {what} in {runs} run(s) of {(string?)count["suite"]}: {(int?)count["filesDeleted"] ?? 0} file(s)?\n\nThey are deleted for good.",
+                "Delete results",
+                OLEMSGICON.OLEMSGICON_WARNING,
+                OLEMSGBUTTON.OLEMSGBUTTON_OKCANCEL,
+                OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_SECOND);
+            if (answer != (int)VSConstants.MessageBoxResult.IDOK)
+            {
+                return;
+            }
+
+            var done = await _server.DeleteResultsAsync(scope, uri, line, suite, dryRun: false, _package.DisposalToken);
+            Log($"Deleted the results of {what}: {(int?)done["filesDeleted"] ?? 0} file(s); {(int?)done["runsDeleted"] ?? 0} run(s) left empty and removed, {(int?)done["runsChanged"] ?? 0} kept with other results.");
+            foreach (var skipped in done["skipped"] as JArray ?? [])
+            {
+                Log($"  Left {(string?)skipped["run"]} alone: {(string?)skipped["reason"]}.");
+            }
+
+            await RefreshAsync();
+            await RefreshExplorerAsync();
+        }).FileAndForget("Brinell/DeleteResults");
 
     private void Run(string path, int? line, bool debug)
     {
@@ -615,6 +672,9 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
             case "view" when (string?)message["view"] is { } name:
                 _explorerView = name;
                 _package.JoinableTaskFactory.RunAsync(RefreshExplorerAsync).FileAndForget("Brinell/ExplorerView");
+                break;
+            case "deleteResults" when (string?)message["scope"] is { } scope:
+                DeleteResults(scope, (string?)message["uri"], null, (string?)message["suite"] ?? _explorerSuite);
                 break;
             case "pickSuite" when (string?)message["suite"] is { } suite:
                 _explorerSuite = suite;

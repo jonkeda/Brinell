@@ -36,6 +36,8 @@ internal static class BddExplorerWriter
         .uat-kind { display: inline-block; min-width: 4.5em; color: var(--uat-muted); }
         .uat-id { color: var(--uat-muted); font-size: 0.85em; margin-left: 0.6em; }
         .uat-count { color: var(--uat-muted); font-weight: 400; }
+        .uat-delete { margin-left: 0.6em; padding: 0 6px; border: 1px solid var(--uat-border); border-radius: 3px; background: var(--uat-surface); color: var(--uat-muted); font: inherit; font-size: 0.85em; cursor: pointer; }
+        .uat-delete:hover { color: var(--uat-failed); border-color: var(--uat-failed); }
         </style>
         </head>
         <body>
@@ -71,6 +73,9 @@ internal static class BddExplorerWriter
             picker.replaceChildren(...suites.map(name => new Option(name, name, false, name === message.suite)));
           });
           document.addEventListener("click", event => {
+            const file = event.target.closest("[data-delete-file]");
+            if (file) { host.post({ type: "deleteResults", scope: "file", uri: file.getAttribute("data-delete-file") }); return; }
+            if (event.target.closest("[data-delete-suite]")) { host.post({ type: "deleteResults", scope: "suite", suite: picker.value || null }); return; }
             const tab = event.target.closest("[data-view]");
             if (tab) { host.post({ type: "view", view: tab.getAttribute("data-view") }); return; }
             const entry = event.target.closest("[data-open]");
@@ -165,10 +170,12 @@ internal static class BddExplorerWriter
     {
         StringBuilder html = new();
         var failed = runs.Count(run => run.Run.Status == "failed");
-        html.Append($"<p class=\"uat-count\">{runs.Count} scenarios with a run in {Encode(suite.Name)}, {failed} failed</p>\n");
+        var deleteAll = runs.Count == 0 ? string.Empty : " <button type=\"button\" class=\"uat-delete\" data-delete-suite title=\"Delete every scenario result of this suite, in every run\">Delete all results</button>";
+        html.Append($"<p class=\"uat-count\">{runs.Count} scenarios with a run in {Encode(suite.Name)}, {failed} failed{deleteAll}</p>\n");
         foreach (var file in runs.GroupBy(run => run.File).OrderBy(group => group.Key, StringComparer.OrdinalIgnoreCase))
         {
-            html.Append($"<section class=\"uat-group\"><h3>{Encode(Path.GetFileName(file.Key))}</h3>\n");
+            var uri = new Uri(file.Key).AbsoluteUri;
+            html.Append($"<section class=\"uat-group\"><h3>{Encode(Path.GetFileName(file.Key))} <button type=\"button\" class=\"uat-delete\" data-delete-file=\"{Encode(uri)}\" title=\"Delete this file's results, in every run\">Delete</button></h3>\n");
             foreach (var (path, run, line) in file.OrderBy(run => run.Line))
             {
                 html.Append($"<div class=\"uat-entry\"{Open(new BddSourceLocation(path, line))}><span class=\"uat-result\" data-status=\"{Encode(run.Status)}\" title=\"{Encode(run.Status)}\"></span> {Encode(run.Scenario)}<span class=\"uat-id\">{run.DurationMs} ms · {run.At.LocalDateTime:g}</span></div>\n");

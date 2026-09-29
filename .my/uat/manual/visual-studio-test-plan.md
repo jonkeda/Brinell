@@ -100,6 +100,9 @@ These start the Todo app. Leave the mouse and keyboard alone while a run goes.
 | R-6 | While a run goes, click **Cancel run** in the preview's bar. | The test process stops and the Todo app closes. | ☐ |
 | R-7 | Make a run fail. Change a value in a `Then` step of a copy of TOD.01.3 (in the editor, don't save it elsewhere), run it, then undo. | The failed step shows its message in the preview, with a screenshot thumbnail. Clicking the thumbnail opens the screenshot full size. The step is also an error `UATRUN` in the Error List. | ☐ |
 | R-8 | Run the same scenario from **Test > Test Explorer** instead (search for "TOD.01.3"). | It runs, and the preview shows its new results afterwards. | ☐ |
+| R-9 | Wait half a minute after the last run. Click **✕** beside TOD.01.3's result; press **Cancel**, then again and **OK**. | The question names the runs and files. Cancel changes nothing; OK removes TOD.01.3's result from the preview, and the Output pane says what was deleted. Other scenarios keep theirs. | ☐ |
+| R-10 | Click **Delete results** in the preview's bar, then **OK**. | Every scenario of TOD.01 loses its result; the button hides. `TestResults` keeps the runs that hold other files' results. | ☐ |
+| R-11 | In the BDD Explorer's **Results**, click **Delete** on a file, then **Delete all results**. | The file's results, then all of the suite's, go; the view refreshes each time. | ☐ |
 
 ## 6. Step breakpoints and Debug
 

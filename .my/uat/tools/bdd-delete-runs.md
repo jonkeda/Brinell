@@ -1,6 +1,12 @@
 # Design: deleting old run results (a scenario, a feature file, a project)
 
-Status: **design**, not started. Date: 2026-09-29.
+Status: **steps 1-3 built** 2026-09-29 (server, request and MCP tool, Visual Studio), not yet seen
+in Visual Studio (manual R-9 to R-11); steps 4 (VS Code) and 5 (its guide) open. Date: 2026-09-29.
+
+As built: the preview's **✕** is beside a scenario heading's result (not a menu), and **Delete
+results** is a bar button shown when the file has results; an outline row's result has no button
+of its own (the heading's deletes every row). "Running" is a manifest written in the last 30
+seconds, or a run the IDE has going. The buttons were checked in a browser against TOD.01's preview.
 
 ## Problem
 

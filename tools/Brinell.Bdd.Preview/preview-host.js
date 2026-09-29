@@ -2,7 +2,7 @@
 // In:  update {html, suites, suite, bindState, reason}, scrollTo {line}, theme {vars, kind}, running {line?, file?}, breaks {lines},
 //      paused {text, line, here, isCall, depth, calls} (or {} when the run goes on)
 // Out: reveal {line}, pickSuite {suite}, openScreenshot {path}, run {line, debug}, runFile {debug}, cancel, toggleBreak {line},
-//      debug {move: continue | over | into | out | stop}
+//      debug {move: continue | over | into | out | stop}, deleteResults {scope: scenario | file, line?}
 (function () {
   "use strict";
 
@@ -31,6 +31,7 @@
   const picker = document.getElementById("uat-suite");
   const state = document.getElementById("uat-state");
   const cancel = document.getElementById("uat-cancel");
+  const deleteFile = document.getElementById("uat-delete-file");
   const pausedBar = document.getElementById("uat-paused");
   const pausedAt = document.getElementById("uat-paused-at");
   let current = null;
@@ -74,6 +75,8 @@
     showRunning();
     showBreaks();
     showPaused();
+    // The file's results can be deleted when there are any, and a host to do it.
+    deleteFile.hidden = !root.querySelector(".uat-delete");
 
     const suites = message.suites || [];
     picker.hidden = suites.length < 2;
@@ -162,6 +165,12 @@
   });
 
   root.addEventListener("click", (event) => {
+    const remove = event.target.closest("[data-delete]");
+    if (remove) {
+      event.stopPropagation();
+      host.post({ type: "deleteResults", scope: "scenario", line: Number(remove.getAttribute("data-delete")) });
+      return;
+    }
     const run = event.target.closest(".uat-run");
     if (run) {
       event.stopPropagation();
@@ -194,6 +203,7 @@
 
   picker.addEventListener("change", () => host.post({ type: "pickSuite", suite: picker.value }));
   cancel.addEventListener("click", () => host.post({ type: "cancel" }));
+  deleteFile.addEventListener("click", () => host.post({ type: "deleteResults", scope: "file" }));
 
   host.post({ type: "ready" });
 })();

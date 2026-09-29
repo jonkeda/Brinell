@@ -135,13 +135,13 @@ internal sealed partial class BddPreviewWriter
             case 2 when TrySplit(text, "Scenario Outline:", out var outline):
                 _binding.Enter(line);
                 _run = _options.Runs.GetValueOrDefault($"{outline} [1]");
-                _html.Append($"<h2 class=\"uat-scenario\" data-line=\"{line}\" data-scenario=\"{Encode(outline)}\"><span class=\"uat-kw\">Scenario Outline</span> {Encode(outline)}{RunBadge(_run)}{RunButtons($"data-run=\"{line}\"", "Run", "Run every row")}</h2>\n");
+                _html.Append($"<h2 class=\"uat-scenario\" data-line=\"{line}\" data-scenario=\"{Encode(outline)}\"><span class=\"uat-kw\">Scenario Outline</span> {Encode(outline)}{RunBadge(_run, line)}{RunButtons($"data-run=\"{line}\"", "Run", "Run every row")}</h2>\n");
                 WriteNotOnHead(line);
                 return;
             case 2 when TrySplit(text, "Scenario:", out var scenario):
                 _binding.Enter(line);
                 _run = _options.Runs.GetValueOrDefault(scenario);
-                _html.Append($"<h2 class=\"uat-scenario\" data-line=\"{line}\" data-scenario=\"{Encode(scenario)}\"><span class=\"uat-kw\">Scenario</span> {Encode(scenario)}{RunBadge(_run)}{RunButtons($"data-run=\"{line}\"", "Run", "Run this scenario")}</h2>\n");
+                _html.Append($"<h2 class=\"uat-scenario\" data-line=\"{line}\" data-scenario=\"{Encode(scenario)}\"><span class=\"uat-kw\">Scenario</span> {Encode(scenario)}{RunBadge(_run, line)}{RunButtons($"data-run=\"{line}\"", "Run", "Run this scenario")}</h2>\n");
                 WriteNotOnHead(line);
                 return;
             case 2 when text == "Background":
@@ -296,7 +296,9 @@ internal sealed partial class BddPreviewWriter
             + $" <button type=\"button\" class=\"uat-run\" data-debug {attribute} {debugState}>\u25CF {label.Replace("Run", "Debug", StringComparison.Ordinal)}</button></span>";
     }
 
-    private static string RunBadge(BddScenarioRun? run)
+    // The last run's result; in a host, on a heading, with a button that deletes the scenario's results
+    // in every run (an outline's, every row's: a row has none of its own).
+    private string RunBadge(BddScenarioRun? run, int? line = null)
     {
         if (run is null)
         {
@@ -304,7 +306,10 @@ internal sealed partial class BddPreviewWriter
         }
 
         var seconds = (run.DurationMs / 1000.0).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
-        return $" <span class=\"uat-result\" data-status=\"{Encode(run.Status)}\" title=\"Last run {run.At.LocalDateTime:g}\">{Encode(run.Status)} · {seconds} s</span>";
+        var delete = _options.Run is null || line is null
+            ? string.Empty
+            : $"<button type=\"button\" class=\"uat-run uat-delete\" data-delete=\"{line}\" title=\"Delete this scenario's results, in every run\">✕</button>";
+        return $" <span class=\"uat-result\" data-status=\"{Encode(run.Status)}\" title=\"Last run {run.At.LocalDateTime:g}\">{Encode(run.Status)} · {seconds} s</span>{delete}";
     }
 
     // After the step's own table or doc string: the call it makes, unfolded.

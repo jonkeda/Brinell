@@ -262,6 +262,8 @@ th { background: var(--uat-surface); font-weight: 600; }
 [data-running] .uat-run { display: none; }
 [data-running-here]::after { content: " running\2026"; margin-left: 0.6em; font-size: 0.65em; font-weight: 400; color: var(--uat-accent); }
 .uat-cancel[hidden] { display: none; }
+.uat-delete { margin-left: 0.4em; padding: 0 5px; font-size: 0.65em; font-weight: 400; color: var(--uat-muted); vertical-align: middle; }
+.uat-delete:hover { color: var(--uat-failed); }
 
 /* Step breakpoints: a click on a step's keyword toggles one, shown as a red dot in the gutter. */
 .uat-step > .uat-kw { position: relative; cursor: pointer; }
