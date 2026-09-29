@@ -72,6 +72,14 @@ While a run goes, the UI test rules hold: a second run is refused, a build start
 is cancelled (it would overwrite the binaries under the run), and **Cancel run** in the bar stops
 the test process and the app it started.
 
+## Record On Video
+
+A video script (`*.video.md`) previews as the scenes it will record, and its title has **Record**;
+a scenario heading has **Record** beside **Run**. Record builds the solution, runs the scenes
+with `BRINELL_RECORD`, and offers to watch the video when it is made; the preview lists the
+file's recordings to watch. The folder, the voice and the beat are in **Tools > Options > Brinell
+BDD > Recording**. It needs ffmpeg. See [Narrated Recordings](narrated-recordings.md).
+
 ## Break At A Step
 
 A step breakpoint stops the debugger before that step, whichever way the test was started (the

@@ -1,6 +1,6 @@
 # Design: the narrator
 
-Status: **design**, 2026-09-29. Built on [plan.md](plan.md) and its decisions, the capture design
+Status: **built, 2026-09-29; the end-to-end checks are in [manual-test-plan.md](manual-test-plan.md)** (no ffmpeg on the build machine). Built on [plan.md](plan.md) and its decisions, the capture design
 in [screen-capture.md](screen-capture.md) and the script format of
 [todo-video-script.md](todo-video-script.md).
 
@@ -152,7 +152,7 @@ results deletes it; one in another folder is never deleted by Brinell.
 | 6 | **Done, not run end to end** (no ffmpeg here). Presenter: Record in the run toolbar (each run recorded while it is on; narrated by the scene a video script has for the scenario, else silent), Watch, and Settings: Recordings folder, voice, beat, Speak aloud. | A recording made from Presenter matches the IDE's. |
 | 7 | **Done; the page checked with a sample timeline** (no ffmpeg here for a real video). MCP `record_video` (build, the recording run, the video) and `review_page` (`BddReviewPage`: summary, changes, each video with WebVTT captions, chapters that seek, every step's result); the `narrated-review` skill. | An agent's review page shows the video. |
 | 8 | **Done**: `PlaywrightRecorder` (Chromium's screencast; a headless page records, `PlaywrightRecorderTests`) and `AndroidRecorder` (`adb screenrecord` in 3-minute segments joined by ffmpeg; the Appium driver names its device). **Not run**: an emulator scene past 3 minutes (no emulator or ffmpeg here). | A Blazor scene records headless; a scene on the emulator records past 3 minutes. |
-| 9 | Guide, an AD (the pacer seam, output, no input), the manual test plan. | |
+| 9 | **Done.** [Narrated Recordings](../../docs/guides/narrated-recordings.md), the IDE and Presenter guides, [AD-024](../../.docs/decisions/ad-024-a-recording-is-a-paced-gate-run.md), the [manual test plan](manual-test-plan.md). | |
 
 ## Risks
 

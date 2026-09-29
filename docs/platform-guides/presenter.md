@@ -157,6 +157,18 @@ run starts or goes on, and applied between steps, never before the first: seven 
 at least six seconds. A step is marked passed only after its command completes. The
 status line under the list shows the current step, where the run is paused, or the result
 (`Passed: 1/1 scenarios`); per-step timings are in Diagnostics.
+### Record
+
+**Record** (the dot at the end of the run toolbar) records each run on video while it is on
+([Narrated Recordings](../guides/narrated-recordings.md)). A scenario that a video script of the
+suite has a scene for is narrated by it: its intro, each step's line, its outro; any other runs
+silently, with its beats. The video is made when the run ends, however it ends, and **Watch**
+opens the last one. It needs ffmpeg; without it, Record says how to get it and stays off.
+
+On the Settings page, **Recording**: the Recordings folder (the suite's `TestResults\recordings`
+when empty), the voice when the script names none, the beat after a step, and **Speak aloud**,
+which also plays each line while the run waits for it.
+
 ## Supported Targets
 
 The target comes from the fixture's base class.

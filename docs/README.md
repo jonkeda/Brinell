@@ -48,6 +48,8 @@ invariants behind it - what must stay true when *changing* Brinell - are in
   files as readable, bound steps beside the editor
 - [Brinell BDD In VS Code](guides/vscode-extension.md) - the VS Code extension: the same server and
   preview, Test Explorer on the scenarios' addresses
+- [Narrated Recordings](guides/narrated-recordings.md) - record scenarios on video with a voice-over:
+  video scripts (`*.video.md`), Record in the IDEs and Presenter, `BRINELL_RECORD`
 - [Test Data](guides/test-data.md) - test sets, the `brinell-data` tool, `TestData` in UAT
   files, typed mock bodies (`BRINELL001`)
 - [Test Settings](guides/settings.md)
