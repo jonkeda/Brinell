@@ -35,6 +35,29 @@ public sealed class WindowsSpeech : ISpeechSynthesizer
         return Speech.WavDuration(wavPath);
     }
 
+    /// <summary>Plays a clip aloud, to its end; for Speak aloud, while a recording waits for the line.</summary>
+    /// <param name="clip">The line, with its WAV.</param>
+    /// <param name="cancellationToken">Stops it.</param>
+    public static async Task PlayAsync(SpeechClip clip, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(clip);
+        if (clip.WavPath is null)
+        {
+            return;
+        }
+
+        using var player = new global::Windows.Media.Playback.MediaPlayer { Source = global::Windows.Media.Core.MediaSource.CreateFromUri(new Uri(clip.WavPath)) };
+        var ended = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        player.MediaEnded += (_, _) => ended.TrySetResult();
+        player.MediaFailed += (_, failed) => ended.TrySetException(new InvalidOperationException($"The line could not be played: {failed.ErrorMessage}"));
+        player.Play();
+        using (cancellationToken.Register(() => ended.TrySetCanceled(cancellationToken)))
+        {
+            // The clip's own length bounds the wait: a player that never says it ended does not hold the run.
+            await Task.WhenAny(ended.Task, Task.Delay(clip.Duration + TimeSpan.FromSeconds(1), cancellationToken)).ConfigureAwait(false);
+        }
+    }
+
     // No speech runtime (a server without the feature) means no voices, not a failed run.
     private static IReadOnlyList<VoiceInformation>? TryVoices()
     {

@@ -470,57 +470,91 @@
 
                 <!-- The moves, below the steps they move through: the same as the IDEs' stepping,
                      on keys a presentation clicker sends too. Speed cycles Fast, Normal, Slow. -->
-                <HorizontalStackLayout Grid.Row="5"
-                                       Spacing="6"
-                                       VerticalOptions="Center">
+                <!-- Wraps on a narrow bar: Record and Watch go to a second line rather than off the edge. -->
+                <FlexLayout Grid.Row="5"
+                            Wrap="Wrap"
+                            AlignItems="Center">
                     <Button Text="&#xE768;"
                             AutomationId="RunButton"
                             Style="{StaticResource PresenterIconButton}"
+                            Margin="0,0,6,6"
                             Command="{Binding RunCommand}"
                             SemanticProperties.Description="Run"
                             ToolTipProperties.Text="Run, or go on from a pause, to a breakpoint or the end (F5)" />
                     <Button Text="&#xE893;"
                             AutomationId="NextButton"
                             Style="{StaticResource PresenterIconButton}"
+                            Margin="0,0,6,6"
                             Command="{Binding NextStepCommand}"
                             SemanticProperties.Description="Next step"
                             ToolTipProperties.Text="Step: run the highlighted step, or start paused before the first (Space, Right, Page Down)" />
                     <Button Text="&#xE74B;"
                             AutomationId="StepIntoButton"
                             Style="{StaticResource PresenterIconButton}"
+                            Margin="0,0,6,6"
                             Command="{Binding StepIntoCommand}"
                             SemanticProperties.Description="Step into"
                             ToolTipProperties.Text="Step into the call, running nothing (Down)" />
                     <Button Text="&#xE74A;"
                             AutomationId="StepOutButton"
                             Style="{StaticResource PresenterIconButton}"
+                            Margin="0,0,6,6"
                             Command="{Binding StepOutCommand}"
                             SemanticProperties.Description="Step out"
                             ToolTipProperties.Text="Step out: run the rest of the call (Up)" />
                     <Button Text="&#xE71A;"
                             AutomationId="StopButton"
                             Style="{StaticResource PresenterIconButton}"
+                            Margin="0,0,6,6"
                             Command="{Binding StopCommand}"
                             SemanticProperties.Description="Stop"
                             ToolTipProperties.Text="Stop (Esc)" />
                     <Button Text="&#xE777;"
                             AutomationId="RestartButton"
                             Style="{StaticResource PresenterIconButton}"
+                            Margin="0,0,6,6"
                             Command="{Binding RestartCommand}"
                             SemanticProperties.Description="Restart"
                             ToolTipProperties.Text="Restart the scenario, paused before its first step (Ctrl+R)" />
                     <Button Text="{Binding SpeedGlyph}"
                             AutomationId="SpeedButton"
                             Style="{StaticResource PresenterIconButton}"
+                            Margin="0,0,6,6"
                             Command="{Binding CycleSpeedCommand}"
                             SemanticProperties.Description="{Binding SpeedDescription}"
                             ToolTipProperties.Text="{Binding SpeedDescription}" />
-                </HorizontalStackLayout>
+                    <!-- Record: the next runs are recorded on video; the glyph turns red while it is on. -->
+                    <Button Text="&#xE7C8;"
+                            AutomationId="RecordButton"
+                            Style="{StaticResource PresenterIconButton}"
+                            Margin="0,0,6,6"
+                            Command="{Binding ToggleRecordCommand}"
+                            SemanticProperties.Description="{Binding RecordDescription}"
+                            ToolTipProperties.Text="{Binding RecordDescription}">
+                        <Button.Triggers>
+                            <DataTrigger TargetType="Button" Binding="{Binding IsRecording}" Value="True">
+                                <Setter Property="TextColor" Value="#D13438" />
+                            </DataTrigger>
+                        </Button.Triggers>
+                    </Button>
+                    <Button Text="&#xE714;"
+                            AutomationId="WatchRecordingButton"
+                            Style="{StaticResource PresenterIconButton}"
+                            Margin="0,0,6,6"
+                            Command="{Binding WatchRecordingCommand}"
+                            IsVisible="{Binding HasRecording}"
+                            SemanticProperties.Description="Watch the last recording"
+                            ToolTipProperties.Text="Watch the last recording" />
+                </FlexLayout>
                 <VerticalStackLayout Grid.Row="6"
                                      Spacing="2">
                     <Label Text="{Binding StatusSummary}"
                            FontAttributes="Bold"
                            AutomationId="StatusSummaryLabel" />
+                    <Label Text="{Binding RecordingStatus}"
+                           AutomationId="RecordingStatusLabel"
+                           FontSize="11"
+                           Style="{StaticResource PresenterMutedLabel}" />
                 </VerticalStackLayout>
 
                 <toolkit:Expander Grid.Row="7"
@@ -619,6 +653,31 @@
                         <Label Text="Keep it open: the app stays until the next run, Stop, or closing Presenter."
                                FontSize="11"
                                Style="{StaticResource PresenterMutedLabel}" />
+                        <Label Text="Recording" FontAttributes="Bold" />
+                        <Label Text="Recordings folder (empty: the suite's TestResults\recordings)" />
+                        <Entry AutomationId="RecordingsFolderInput"
+                               Text="{Binding RecordingsFolderText}"
+                               Placeholder="TestResults\recordings" />
+                        <Label Text="Voice, when the video script names none" />
+                        <Picker AutomationId="VoicePicker"
+                                ItemsSource="{Binding VoiceChoices}"
+                                SelectedItem="{Binding VoiceChoice, Mode=TwoWay}"
+                                SemanticProperties.Description="Voice" />
+                        <HorizontalStackLayout Spacing="6">
+                            <Label Text="Beat after a step" VerticalTextAlignment="Center" />
+                            <Entry AutomationId="BeatInput"
+                                   Keyboard="Numeric"
+                                   MaxLength="5"
+                                   WidthRequest="80"
+                                   Text="{Binding BeatText}" />
+                            <Label Text="ms" VerticalTextAlignment="Center" />
+                        </HorizontalStackLayout>
+                        <HorizontalStackLayout Spacing="6">
+                            <Label Text="Speak aloud while recording" VerticalTextAlignment="Center" />
+                            <CheckBox AutomationId="SpeakAloudCheckBox"
+                                      IsChecked="{Binding SpeakAloud}" />
+                        </HorizontalStackLayout>
+
                         <Label Text="Theme" />
                         <HorizontalStackLayout Spacing="6">
                             <Button Text="{Binding ThemeGlyph}"

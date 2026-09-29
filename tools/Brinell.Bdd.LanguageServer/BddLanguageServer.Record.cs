@@ -152,5 +152,5 @@ public sealed partial class BddLanguageServer
 
     // The setting's folder, else the recordings folder in the suite's results.
     private static string RecordingsFolder(string? setting, BddSuite suite)
-        => setting is { Length: > 0 } ? Path.GetFullPath(setting) : Path.Combine(BddRunResults.RootFor(suite.ProjectDirectory), "recordings");
+        => setting is { Length: > 0 } ? Path.GetFullPath(setting) : BddRecordings.DefaultFolder(suite.ProjectDirectory);
 }

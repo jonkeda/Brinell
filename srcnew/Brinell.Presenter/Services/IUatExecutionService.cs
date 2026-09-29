@@ -69,6 +69,9 @@ public sealed class PresenterUatExecutionSession : IDisposable
 
     public string AutPlacementReport { get; }
 
+    /// <summary>What the session's app shows, for a recording; asked when the recording starts.</summary>
+    public Func<Brinell.Core.Recording.RecordingTarget?> RecordingTarget { get; init; } = () => null;
+
     public int CompletedStepCount => StepSession.Results.Count;
 
     public bool HasNext => StepSession.HasNext;

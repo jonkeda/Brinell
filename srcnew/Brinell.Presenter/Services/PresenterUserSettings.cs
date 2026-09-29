@@ -34,6 +34,18 @@ public sealed class PresenterUserSettings
     [JsonConverter(typeof(JsonStringEnumConverter<PresenterRunEnd>))]
     public PresenterRunEnd RunEnd { get; set; } = PresenterRunEnd.CloseApp;
 
+    /// <summary>Where Record puts its videos; null for the suite's <c>TestResults\recordings</c>.</summary>
+    public string? RecordingsFolder { get; set; }
+
+    /// <summary>The voice a recording speaks with when the video script names none; null for the default voice.</summary>
+    public string? Voice { get; set; }
+
+    /// <summary>How long a recording waits after a step, in milliseconds, when the video script does not say.</summary>
+    public int Beat { get; set; } = 600;
+
+    /// <summary>Whether a recording also plays each line aloud while the run waits for it.</summary>
+    public bool SpeakAloud { get; set; }
+
     /// <summary>
     /// The build configuration and platform chosen per workspace folder.
     /// </summary>

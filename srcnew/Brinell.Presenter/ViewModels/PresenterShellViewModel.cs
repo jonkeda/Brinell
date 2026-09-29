@@ -9,7 +9,7 @@ using Brinell.Uat;
 
 namespace Brinell.Presenter.ViewModels;
 
-public sealed class PresenterShellViewModel : ViewModelBase, IStepRowHost
+public sealed partial class PresenterShellViewModel : ViewModelBase, IStepRowHost
 {
     private readonly IBddExecutionService _executionService;
     private readonly IFolderPickerService _folderPickerService;
@@ -89,7 +89,8 @@ public sealed class PresenterShellViewModel : ViewModelBase, IStepRowHost
         IPresenterUserSettingsService settingsService,
         IScenarioPreviewService? previewService = null,
         PresenterBreakpointStore? breakpoints = null,
-        IPresenterWindowService? windowService = null)
+        IPresenterWindowService? windowService = null,
+        IPresenterRecorder? recorder = null)
     {
         _workspaceService = workspaceService;
         _windowService = windowService;
@@ -144,6 +145,7 @@ public sealed class PresenterShellViewModel : ViewModelBase, IStepRowHost
         _speeds = settings.Speeds ?? new PresenterSpeeds();
         _speed = settings.Speed;
         ExecutionDelayMilliseconds = _speeds.Of(_speed);
+        InitializeRecording(settings, recorder);
         ApplyTheme();
 
         if (Application.Current is { } application)
@@ -1671,6 +1673,7 @@ public sealed class PresenterShellViewModel : ViewModelBase, IStepRowHost
                 .ConfigureAwait(true);
             _activeScenario = scenario;
             TryPlaceApp();
+            await StartRecordingAsync(_activeSession, scenario).ConfigureAwait(true);
             DiscoveryText = _activeSession.DiscoveryReport;
             CommandCatalogText = _activeSession.CommandCatalogReport;
             AutPlacementText = _placedThisRun ? AutPlacementText : _activeSession.AutPlacementReport;
@@ -1719,6 +1722,7 @@ public sealed class PresenterShellViewModel : ViewModelBase, IStepRowHost
                 .ConfigureAwait(true);
             _activeScenario = scenario;
             TryPlaceApp();
+            await StartRecordingAsync(_activeSession, scenario).ConfigureAwait(true);
             DiscoveryText = _activeSession.DiscoveryReport;
             CommandCatalogText = _activeSession.CommandCatalogReport;
             AutPlacementText = _placedThisRun ? AutPlacementText : _activeSession.AutPlacementReport;
@@ -2499,6 +2503,7 @@ public sealed class PresenterShellViewModel : ViewModelBase, IStepRowHost
 
     private void StopActiveSession()
     {
+        FinishRecording();
         CurrentRow = null;
         _executionCancellation?.Cancel();
         _executionCancellation?.Dispose();
@@ -2512,6 +2517,7 @@ public sealed class PresenterShellViewModel : ViewModelBase, IStepRowHost
     // A run ended (passed, failed or stopped): its app is closed, or kept open as the setting says.
     private void FinishActiveSession()
     {
+        FinishRecording();
         CurrentRow = null;
         _executionCancellation?.Dispose();
         _executionCancellation = null;

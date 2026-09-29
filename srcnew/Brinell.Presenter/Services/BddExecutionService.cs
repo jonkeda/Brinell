@@ -108,7 +108,10 @@ public sealed class BddExecutionService : IBddExecutionService
                 executionScope,
                 fixture as IDisposable,
                 resolver,
-                environment);
+                environment)
+            {
+                RecordingTarget = () => UatRecording.TargetOf(fixture),
+            };
         }
         catch
         {

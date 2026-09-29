@@ -335,6 +335,64 @@ public sealed class PresenterUserSettingsServiceTests
             }
         }
     }
+    /// <summary>The Recording settings are remembered; Record turns on only where it can work.</summary>
+    [Theory]
+    [InlineData(null, true)]
+    [InlineData("Recording needs ffmpeg.", false)]
+    public void PresenterShell_RemembersTheRecordingSettings_AndRecordsOnlyWhereItCan(string? unavailable, bool records)
+    {
+        var root = Path.Combine(Path.GetTempPath(), "BrinellPresenterStartup", Guid.NewGuid().ToString("N"));
+        var workspace = Path.Combine(root, "Workspace");
+        Directory.CreateDirectory(workspace);
+        File.WriteAllText(Path.Combine(workspace, "uat.config.md"), "# Workspace");
+
+        try
+        {
+            var settingsService = new PresenterUserSettingsService(Path.Combine(root, "settings.json"));
+            settingsService.Save(new PresenterUserSettings { LastOpenedFolder = workspace });
+            var viewModel = new PresenterShellViewModel(
+                new FakeWorkspaceService(workspace),
+                new FakeExecutionService(),
+                new FakeFolderPickerService(),
+                settingsService,
+                recorder: new FakeRecorder(unavailable));
+
+            Assert.Equal("Default voice", viewModel.VoiceChoice);
+            Assert.Equal("600", viewModel.BeatText);
+            viewModel.RecordingsFolderText = @"C:\Videos";
+            viewModel.BeatText = "450";
+            viewModel.BeatText = "slow";
+            viewModel.SpeakAloud = true;
+            viewModel.ToggleRecordCommand.Execute(null);
+
+            var saved = settingsService.Load();
+            Assert.Equal(@"C:\Videos", saved.RecordingsFolder);
+            Assert.Null(saved.Voice);
+            Assert.Equal(450, saved.Beat);
+            Assert.True(saved.SpeakAloud);
+            Assert.Equal(records, viewModel.IsRecording);
+            Assert.Equal(unavailable ?? "Recording is on: the next run is recorded.", viewModel.RecordingStatus);
+            Assert.False(viewModel.HasRecording);
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+            {
+                Directory.Delete(root, recursive: true);
+            }
+        }
+    }
+
+    private sealed class FakeRecorder(string? unavailable) : IPresenterRecorder
+    {
+        public string? Unavailable { get; } = unavailable;
+
+        public Task StartAsync(PresenterUatExecutionSession session, string workspacePath, string featureFile, string scenarioName, PresenterRecordingSettings settings, CancellationToken cancellationToken)
+            => Task.CompletedTask;
+
+        public Task<PresenterRecorded?> FinishAsync(CancellationToken cancellationToken) => Task.FromResult<PresenterRecorded?>(null);
+    }
+
     [Fact]
     public void Layout_PutsTheBarOnItsSide_AndTheAppBesideIt()
     {

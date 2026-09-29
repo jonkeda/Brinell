@@ -77,24 +77,7 @@ public abstract class UatScenarioTestBase<TFixture>
     /// What the app shows, for a recording (<c>BRINELL_RECORD</c>): the fixture, when it is
     /// <see cref="IRecordable"/>, else its first public property that is (its test context).
     /// </summary>
-    protected virtual RecordingTarget? RecordingTarget
-    {
-        get
-        {
-            if (Fixture is IRecordable recordable)
-            {
-                return recordable.RecordingTarget;
-            }
-
-            return Fixture.GetType()
-                .GetProperties(BindingFlags.Instance | BindingFlags.Public)
-                .Where(property => property.GetIndexParameters().Length == 0 && typeof(ITestContext).IsAssignableFrom(property.PropertyType))
-                .Select(property => property.GetValue(Fixture))
-                .OfType<IRecordable>()
-                .Select(context => context.RecordingTarget)
-                .FirstOrDefault(target => target is not null);
-        }
-    }
+    protected virtual RecordingTarget? RecordingTarget => UatRecording.TargetOf(Fixture);
 
     protected virtual bool IsAcceptableResult(BddScenarioExecutionResult execution) =>
         execution.Result.Passed || execution.Result.Skipped;
