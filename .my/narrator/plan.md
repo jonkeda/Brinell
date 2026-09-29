@@ -1,6 +1,6 @@
 # Plan: narrated recordings of a scenario run
 
-Status: **plan**, 2026-09-29. Q1-Q6 open.
+Status: **plan**, 2026-09-29; Q1 and Q3-Q6 decided. The design is [design.md](design.md).
 
 ## Goal
 
@@ -77,13 +77,13 @@ run the scenario ──► pace: pause before each step ──────┤
 | 5 | AI review: MCP `record_scenarios` and `review_page`; the agent skill. | An agent asked to add a small Todo feature ends with a review page with videos. |
 | 6 | Guide, an AD for recording (engine hook, evidence files, no input), the manual test plan. | |
 
-## Open questions
+## Decisions
 
-| # | Question | Default |
+| # | Question | Decided 2026-09-29 |
 | --- | --- | --- |
-| Q1 | Depend on ffmpeg (installed, or downloaded on first use), or record with Windows' own capture API? | ffmpeg: it records, mixes and captions; Windows capture only if ffmpeg is refused. |
-| Q2 | Voice: Windows' built-in voices (offline, free, plain), or a cloud voice (Azure, OpenAI; better, needs a key)? | Built-in by default, a cloud voice as a setting. |
-| Q3 | Where do `Say:` lines go: under the step as prose, or a `### Narration` table per scenario? | Under the step: it reads well and stays next to what it narrates. |
-| Q4 | Record the app only, or the app with Presenter's bar (the steps visible)? | The app only, with the step as a caption. |
-| Q5 | Captions burned into the video, or a separate `.vtt`? | Both: burned for sharing, `.vtt` for players. |
-| Q6 | Keep videos in `TestResults` (large), and for how long? | In the run's folder; deleting old results deletes them; never committed. |
+| Q1 | ffmpeg, or Windows' own capture API? | Windows.Graphics.Capture records ([screen-capture.md](screen-capture.md)); ffmpeg encodes, adds the voice and joins. |
+| Q2 | Built-in or cloud voice? | Not answered; the default stands: built-in, a cloud voice later as a setting. |
+| Q3 | Where does the narration go? | In a video script (`*.video.md`), as [todo-video-script.md](todo-video-script.md), not in the feature files. |
+| Q4 | App only, or with the bar? And Presenter or the extension? | The app only. One engine in the runner, used by both: see [design.md](design.md). |
+| Q5 | Captions burned in, or a separate file? | A separate `.srt`. |
+| Q6 | Where are the videos kept? | A Recordings folder setting; the run's `TestResults` folder when not set. |
