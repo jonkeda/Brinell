@@ -263,6 +263,97 @@ public sealed class LanguageServerTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task RecordTarget_ForAVideoScript_RunsItsScenes_WithTheRecordingVariables()
+    {
+        Build();
+        File.WriteAllText(Path.Combine(Shelf, "Shelf.Steps.csproj"), "<Project />");
+        var script = Path.Combine(Shelf, "Features", "shelf.video.md");
+        File.WriteAllText(script, "# Video: The shelf\n\n## Scene: Shelving\n\nScenario: Features/shelf.feature.md#One\n");
+        await InitializeAsync(_client);
+
+        var target = await WithFfmpegAsync(() => _client.InvokeWithParameterObjectAsync<RecordTargetResult>("brinell/recordTarget", new { uri = new Uri(script).AbsoluteUri, recordingsFolder = Path.Combine(_solution, "Videos"), beat = 250 }));
+
+        Assert.True(target.CanRecord, target.Reason);
+        Assert.Equal(Path.Combine(Shelf, "Shelf.Steps.csproj"), target.Project);
+        Assert.Equal("BddScenario=Features/shelf.feature.md#One", target.Filter);
+        Assert.Equal(script, target.Environment["BRINELL_RECORD"]);
+        Assert.Equal(Path.Combine(_solution, "Videos"), target.Environment["BRINELL_RECORD_DIR"]);
+        Assert.Equal("250", target.Environment["BRINELL_BEAT"]);
+        Assert.Equal(Path.Combine(_solution, "Videos", Path.GetFileNameWithoutExtension(target.Video!) + ".scenes"), target.Environment["BRINELL_RECORD_OUT"]);
+        Assert.StartsWith("shelf-", target.Video, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task RecordTarget_ForAScenario_RecordsItOnItsOwn()
+    {
+        Build();
+        File.WriteAllText(Path.Combine(Shelf, "Shelf.Steps.csproj"), "<Project />");
+        await InitializeAsync(_client);
+
+        var target = await WithFfmpegAsync(() => _client.InvokeWithParameterObjectAsync<RecordTargetResult>("brinell/recordTarget", new { uri = new Uri(Feature).AbsoluteUri, line = 3 }));
+
+        Assert.True(target.CanRecord, target.Reason);
+        Assert.Equal("BddScenario=Features/shelf.feature.md#One", target.Filter);
+        Assert.Equal("1", target.Environment["BRINELL_RECORD"]);
+        Assert.Null(target.Video);
+        Assert.EndsWith(Path.Combine("TestResults", "recordings"), target.Folder, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task RecordTarget_WithoutFfmpeg_SaysHowToGetIt()
+    {
+        Build();
+        await InitializeAsync(_client);
+        var original = Environment.GetEnvironmentVariable("BRINELL_FFMPEG");
+        Environment.SetEnvironmentVariable("BRINELL_FFMPEG", Path.Combine(_solution, "no-ffmpeg.exe"));
+        try
+        {
+            var target = await _client.InvokeWithParameterObjectAsync<RecordTargetResult>("brinell/recordTarget", new { uri = new Uri(Feature).AbsoluteUri, line = 3 });
+
+            Assert.False(target.CanRecord);
+            Assert.Contains("winget install", target.Reason, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("BRINELL_FFMPEG", original);
+        }
+    }
+
+    [Fact]
+    public async Task Recordings_OfAVideoScript_AreItsVideos_NewestFirst()
+    {
+        var script = Path.Combine(Shelf, "Features", "shelf.video.md");
+        File.WriteAllText(script, "# Video: The shelf\n");
+        var videos = Directory.CreateDirectory(Path.Combine(_solution, "Videos")).FullName;
+        File.WriteAllText(Path.Combine(videos, "shelf-20260101-090000.mp4"), string.Empty);
+        File.SetLastWriteTimeUtc(Path.Combine(videos, "shelf-20260101-090000.mp4"), new DateTime(2026, 1, 1, 9, 0, 0, DateTimeKind.Utc));
+        File.WriteAllText(Path.Combine(videos, "shelf-20260102-090000.mp4"), string.Empty);
+        File.WriteAllText(Path.Combine(videos, "shelf-20260102-090000.srt"), string.Empty);
+        File.WriteAllText(Path.Combine(videos, "other-20260102-090000.mp4"), string.Empty);
+        await InitializeAsync(_client);
+
+        var recordings = await _client.InvokeWithParameterObjectAsync<RecordingEntry[]>("brinell/recordings", new { uri = new Uri(script).AbsoluteUri, recordingsFolder = videos });
+
+        Assert.Equal(["shelf-20260102-090000.mp4", "shelf-20260101-090000.mp4"], recordings.Select(video => video.Name));
+        Assert.Equal(Path.Combine(videos, "shelf-20260102-090000.srt"), recordings[0].Captions);
+    }
+
+    // Record checks for ffmpeg first: any file named by BRINELL_FFMPEG passes that check.
+    private static async Task<T> WithFfmpegAsync<T>(Func<Task<T>> action)
+    {
+        var original = Environment.GetEnvironmentVariable("BRINELL_FFMPEG");
+        Environment.SetEnvironmentVariable("BRINELL_FFMPEG", Environment.ProcessPath);
+        try
+        {
+            return await action();
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("BRINELL_FFMPEG", original);
+        }
+    }
+
+    [Fact]
     public async Task RunTarget_BeforeABuild_SaysWhy()
     {
         await InitializeAsync(_client);

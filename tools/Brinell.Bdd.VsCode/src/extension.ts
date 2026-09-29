@@ -40,6 +40,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const tests = new ScenarioTests(client, (line, file) => preview.running(line, file));
   const preview = new ScenarioPreview(client, {
     run: (uri, line, debug) => void tests.runAt(uri, line, debug),
+    record: (uri, line, suite) => void tests.record(uri, line, suite).then(() => preview.refresh()),
     cancel: () => tests.cancel(),
     move: (move) => void stepping.move(move as Move),
   });

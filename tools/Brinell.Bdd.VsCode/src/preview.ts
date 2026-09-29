@@ -10,6 +10,8 @@ type Preview = { html: string; suites: string[]; suite?: string; bindState: stri
 /** What the preview asks of the rest of the extension. */
 export interface PreviewHost {
   run(uri: vscode.Uri, line: number | undefined, debug: boolean): void;
+  /** Records a video script, or the scenario at a heading's line, on video. */
+  record(uri: vscode.Uri, line: number | undefined, suite: string | undefined): void;
   cancel(): void;
   /** A move from the paused bar: continue, over, into, out or stop. */
   move(move: string): void;
@@ -76,7 +78,8 @@ export class ScenarioPreview implements vscode.Disposable {
     }
 
     const uri = this.document.uri;
-    const preview = await this.client.sendRequest<Preview>("brinell/preview", { uri: uri.toString(), suite: this.suite.get(uri.fsPath) });
+    const recordingsFolder = vscode.workspace.getConfiguration("brinellBdd").get<string>("recordingsFolder") || undefined;
+    const preview = await this.client.sendRequest<Preview>("brinell/preview", { uri: uri.toString(), suite: this.suite.get(uri.fsPath), recordingsFolder });
     let html = preview.html;
 
     // Screenshots: the server's virtual host is the results folder, which a VS Code webview reaches through its own URIs.
@@ -169,6 +172,15 @@ export class ScenarioPreview implements vscode.Disposable {
         break;
       case "runFile":
         this.host.run(document.uri, undefined, message.debug === true);
+        break;
+      case "record":
+        this.host.record(document.uri, message.line, this.suite.get(document.uri.fsPath));
+        break;
+      case "watch":
+        if (message.path) {
+          void vscode.env.openExternal(vscode.Uri.file(message.path));
+        }
+
         break;
       case "cancel":
         this.host.cancel();

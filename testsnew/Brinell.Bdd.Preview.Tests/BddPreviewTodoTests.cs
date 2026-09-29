@@ -63,6 +63,34 @@ public sealed class BddPreviewTodoTests : IClassFixture<BddPreviewTodoTests.Todo
     }
 
     [Fact]
+    public void AVideoScript_OffersRecord_AndListsItsRecordingsToWatch()
+    {
+        var path = Path.Combine(TodoSuite.Project, "Features", "how-todo-works.video.md");
+        var options = new BddPreviewOptions
+        {
+            Record = new BddPreviewRunState(false, "Recording needs ffmpeg."),
+            Recordings = [new BddPreviewRecording(@"C:\Videos\how-todo-works-20260929-101500.mp4", "how-todo-works-20260929-101500.mp4", new DateTime(2026, 9, 29, 10, 15, 0))],
+        };
+
+        var html = WebUtility.HtmlDecode(BddPreview.Render(File.ReadAllText(path), path, options).Html);
+
+        Assert.Contains("class=\"uat-run uat-record\" data-record-file disabled title=\"Recording needs ffmpeg.\">\u23FA Record</button>", html);
+        Assert.Contains("<a href=\"#\" data-watch=\"C:\\Videos\\how-todo-works-20260929-101500.mp4\"", html);
+        Assert.Contains("2026-09-29 10:15", html);
+    }
+
+    [Fact]
+    public void AScenarioHeading_OffersRecord_BesideRunAndDebug()
+    {
+        var path = Path.Combine(TodoSuite.Project, "Features", "TOD.01-see-my-todos.feature.md");
+        var options = new BddPreviewOptions { Run = new BddPreviewRunState(true), Record = new BddPreviewRunState(true) };
+
+        var html = BddPreview.Render(File.ReadAllText(path), path, options).Html;
+
+        Assert.Contains("data-record=\"15\" title=\"Record this scenario on video\">\u23FA Record</button>", html);
+    }
+
+    [Fact]
     public void AVideoScript_IsCheckedLikeAFeatureFile()
     {
         var path = Path.Combine(TodoSuite.Project, "Features", "broken.video.md");

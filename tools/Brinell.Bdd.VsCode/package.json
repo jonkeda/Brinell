@@ -111,6 +111,21 @@
           "type": "string",
           "default": "",
           "description": "The language server's dll (Brinell.Bdd.LanguageServer.dll). Empty: the one in the extension, else the repository's build."
+        },
+        "brinellBdd.recordingsFolder": {
+          "type": "string",
+          "default": "",
+          "description": "Where Record puts its videos. Empty: TestResults/recordings of the suite's results."
+        },
+        "brinellBdd.voice": {
+          "type": "string",
+          "default": "",
+          "description": "The voice a recording speaks with, by (part of) its name, when the video script names none. Empty: the system's default voice."
+        },
+        "brinellBdd.beat": {
+          "type": "number",
+          "default": 600,
+          "description": "How long a recording waits after a step, in milliseconds, when the video script does not say."
         }
       }
     }

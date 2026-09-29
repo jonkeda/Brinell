@@ -171,6 +171,20 @@
       host.post({ type: "deleteResults", scope: "scenario", line: Number(remove.getAttribute("data-delete")) });
       return;
     }
+    const record = event.target.closest("[data-record], [data-record-file]");
+    if (record) {
+      event.stopPropagation();
+      if (!record.disabled) {
+        host.post(record.hasAttribute("data-record-file") ? { type: "record" } : { type: "record", line: Number(record.getAttribute("data-record")) });
+      }
+      return;
+    }
+    const watch = event.target.closest("[data-watch]");
+    if (watch) {
+      event.preventDefault();
+      host.post({ type: "watch", path: watch.getAttribute("data-watch") });
+      return;
+    }
     const run = event.target.closest(".uat-run");
     if (run) {
       event.stopPropagation();

@@ -15,6 +15,8 @@ type SuiteScenarios = { suite: string; project?: string; runnable: boolean; reas
 type ScenarioResult = { scenario: string; status: string; durationMs: number; message?: string; line?: number };
 
 type Data = { kind: "suite"; project?: string; runnable: boolean; reason?: string } | { kind: "file" } | { kind: "scenario"; filter: string; name: string };
+type RecordTarget = { canRecord: boolean; reason?: string; project?: string; filter?: string; environment: Record<string, string>; video?: string; folder?: string };
+type Recording = { path: string; name: string; written: string; captions?: string };
 
 export class ScenarioTests implements vscode.Disposable {
   readonly controller = vscode.tests.createTestController("brinellBdd", "Brinell BDD");
@@ -80,6 +82,56 @@ export class ScenarioTests implements vscode.Disposable {
     const request = new vscode.TestRunRequest([matches[0]]);
     const source = new vscode.CancellationTokenSource();
     await this.run(request, source.token, debug);
+  }
+
+  /**
+   * Records a video script, or the scenario at a heading's line (the narrator): the gate run with
+   * BRINELL_RECORD, then the video it made, to watch. The settings give the Recordings folder, the
+   * voice and the beat.
+   */
+  async record(uri: vscode.Uri, line: number | undefined, suite: string | undefined): Promise<void> {
+    if (this.process) {
+      void vscode.window.showWarningMessage("A BDD run is going already. Wait for it, or cancel it, before recording.");
+      return;
+    }
+
+    const settings = vscode.workspace.getConfiguration("brinellBdd");
+    const recordingsFolder = settings.get<string>("recordingsFolder") || undefined;
+    const target = await this.client.sendRequest<RecordTarget>("brinell/recordTarget", {
+      uri: uri.toString(), line, suite, recordingsFolder, voice: settings.get<string>("voice") || undefined, beat: settings.get<number>("beat") || undefined,
+    });
+    if (!target.canRecord || !target.project || !target.filter) {
+      void vscode.window.showWarningMessage(`This cannot be recorded: ${target.reason ?? "no suite runs it."}`);
+      return;
+    }
+
+    this.output.show(true);
+    this.running(line, line === undefined);
+    try {
+      this.output.appendLine(`Recording into ${target.folder}...`);
+      if (await this.exec(undefined, "dotnet", ["build", target.project, "-v:minimal", "-nologo"], false) !== 0) {
+        void vscode.window.showErrorMessage("The build failed, so the recording did not start.");
+        return;
+      }
+
+      const code = await this.exec(undefined, "dotnet", ["test", target.project, "--no-build", "--filter", target.filter, "--logger", "console;verbosity=normal"], false, target.environment);
+      const videos = await this.client.sendRequest<Recording[]>("brinell/recordings", { uri: uri.toString(), suite, recordingsFolder });
+      const video = target.video ? videos.find((candidate) => candidate.name === target.video) : videos[0];
+      if (!video) {
+        void vscode.window.showWarningMessage("The run made no video: see the Brinell BDD output.");
+        return;
+      }
+
+      const failed = code !== 0 ? " A scenario failed: the video shows where." : "";
+      const choice = await vscode.window.showInformationMessage(`Recorded ${video.name}.${failed}`, "Watch", "Open folder");
+      if (choice === "Watch") {
+        void vscode.env.openExternal(vscode.Uri.file(video.path));
+      } else if (choice === "Open folder") {
+        void vscode.commands.executeCommand("revealFileInOS", vscode.Uri.file(video.path));
+      }
+    } finally {
+      this.running(undefined, false);
+    }
   }
 
   /** Stops the run: the test process and everything it started, the app included. */
@@ -216,19 +268,19 @@ export class ScenarioTests implements vscode.Disposable {
 
   // Runs a command with its output in the run and the Output channel; with debug, the testhost waits
   // for a debugger (VSTEST_HOST_DEBUG), and the C# debugger attaches to the process id it prints.
-  private exec(run: vscode.TestRun, command: string, args: string[], debug: boolean): Promise<number> {
+  private exec(run: vscode.TestRun | undefined, command: string, args: string[], debug: boolean, variables: Record<string, string> = {}): Promise<number> {
     const folder = vscode.workspace.workspaceFolders?.[0];
     this.output.appendLine(`${command} ${args.join(" ")}`);
-    const env = debug ? { ...process.env, VSTEST_HOST_DEBUG: "1", VSTEST_DEBUG_NOBP: "1" } : process.env;
+    const env = { ...process.env, ...variables, ...(debug ? { VSTEST_HOST_DEBUG: "1", VSTEST_DEBUG_NOBP: "1" } : {}) };
     return new Promise((resolve) => {
       const child = spawn(command, args, { cwd: folder?.uri.fsPath, env, windowsHide: true });
       this.process = child;
       const line = (data: Buffer) => {
         const text = data.toString();
         this.output.append(text);
-        run.appendOutput(text.replace(/\r?\n/g, "\r\n"));
+        run?.appendOutput(text.replace(/\r?\n/g, "\r\n"));
         const attach = debug ? /Process Id:\s*(\d+)/.exec(text) : null;
-        if (attach) {
+        if (attach && run) {
           void vscode.debug.startDebugging(folder, { name: "Brinell BDD testhost", type: "coreclr", request: "attach", processId: attach[1] }).then((started) => {
             if (!started) {
               run.appendOutput("The C# debugger did not attach; the run is cancelled. Install the C# extension.\r\n");

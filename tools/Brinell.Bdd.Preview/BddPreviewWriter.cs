@@ -131,6 +131,7 @@ internal sealed partial class BddPreviewWriter
             case 1 when TrySplit(text, "Feature:", out var title) || TrySplit(text, "Steps:", out title):
                 var keyword = text[..text.IndexOf(':', StringComparison.Ordinal)];
                 _html.Append($"<h1 class=\"uat-title\" data-line=\"{line}\"><span class=\"uat-kw\">{keyword}</span> {Encode(title)}{(_isSteps ? string.Empty : RunButtons("data-run-file", "Run file", "Run every scenario of the file"))}</h1>\n");
+                _html.Append(BddPreviewRecord.List(_options.Recordings));
                 return;
             case 2 when TrySplit(text, "Scenario Outline:", out var outline):
                 _binding.Enter(line);
@@ -292,8 +293,12 @@ internal sealed partial class BddPreviewWriter
         var reason = Encode(run.Reason ?? "This scenario cannot be run from here.");
         var runState = run.CanRun ? $"title=\"{Encode(title)}\"" : $"disabled title=\"{reason}\"";
         var debugState = run.CanRun ? $"title=\"{Encode(title.Replace("Run", "Debug", StringComparison.Ordinal))}, stopping at step breakpoints\"" : $"disabled title=\"{reason}\"";
+        // A scenario records on its own too (the narrator), silently, with its beats.
+        var record = attribute.StartsWith("data-run=", StringComparison.Ordinal)
+            ? BddPreviewRecord.Button(_options.Record, attribute.Replace("data-run=", "data-record=", StringComparison.Ordinal), "Record", "Record this scenario on video")
+            : string.Empty;
         return $" <span class=\"uat-actions\"><button type=\"button\" class=\"uat-run\" {attribute} {runState}>\u25B6 {label}</button>"
-            + $" <button type=\"button\" class=\"uat-run\" data-debug {attribute} {debugState}>\u25CF {label.Replace("Run", "Debug", StringComparison.Ordinal)}</button></span>";
+            + $" <button type=\"button\" class=\"uat-run\" data-debug {attribute} {debugState}>\u25CF {label.Replace("Run", "Debug", StringComparison.Ordinal)}</button>{record}</span>";
     }
 
     // The last run's result; in a host, on a heading, with a button that deletes the scenario's results

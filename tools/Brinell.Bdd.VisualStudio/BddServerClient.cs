@@ -86,9 +86,29 @@ public sealed class BddServerClient : IDisposable
     }
 
     /// <summary><c>brinell/preview</c>: the file rendered, with its suites and bind state, as the page's <c>update</c> message takes it.</summary>
-    public async Task<JObject> PreviewAsync(string path, string? suite, CancellationToken cancellationToken)
+    public async Task<JObject> PreviewAsync(string path, string? suite, CancellationToken cancellationToken, string? recordingsFolder = null)
         => await (await RpcAsync(cancellationToken).ConfigureAwait(false))
-            .InvokeWithParameterObjectAsync<JObject>("brinell/preview", new { uri = Uri(path), suite }, cancellationToken).ConfigureAwait(false);
+            .InvokeWithParameterObjectAsync<JObject>("brinell/preview", new { uri = Uri(path), suite, recordingsFolder }, cancellationToken).ConfigureAwait(false);
+
+    /// <summary><c>brinell/recordTarget</c>: the project, filter and variables of the run that records a video script, or the scenario at a heading's line.</summary>
+    public async Task<JObject> RecordTargetAsync(string path, int? line, string? suite, BddOptionsPage options, CancellationToken cancellationToken)
+        => await (await RpcAsync(cancellationToken).ConfigureAwait(false))
+            .InvokeWithParameterObjectAsync<JObject>("brinell/recordTarget", new
+            {
+                uri = Uri(path),
+                line,
+                suite,
+                recordingsFolder = Setting(options.RecordingsFolder),
+                voice = Setting(options.Voice),
+                beat = options.Beat > 0 ? options.Beat : (int?)null,
+            }, cancellationToken).ConfigureAwait(false);
+
+    /// <summary><c>brinell/recordings</c>: the videos of a video script, or of a feature file's scenarios, newest first.</summary>
+    public async Task<JArray> RecordingsAsync(string path, string? suite, string? recordingsFolder, CancellationToken cancellationToken)
+        => await (await RpcAsync(cancellationToken).ConfigureAwait(false))
+            .InvokeWithParameterObjectAsync<JArray>("brinell/recordings", new { uri = Uri(path), suite, recordingsFolder = Setting(recordingsFolder) }, cancellationToken).ConfigureAwait(false);
+
+    private static string? Setting(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
 
     /// <summary><c>brinell/runTarget</c>: the project and filter for the scenario at a heading's line, or the whole file.</summary>
     public async Task<JObject> RunTargetAsync(string path, int? line, string? suite, CancellationToken cancellationToken)

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -414,7 +415,7 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
 
         try
         {
-            var preview = await _server.PreviewAsync(path, _suites.TryGetValue(path, out var suite) ? suite : null, _package.DisposalToken);
+            var preview = await _server.PreviewAsync(path, _suites.TryGetValue(path, out var suite) ? suite : null, _package.DisposalToken, ((BrinellBddPackage)_package).Options.RecordingsFolder);
             await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
             preview["type"] = "update";
             foreach (var target in ViewsOf(path))
@@ -503,6 +504,16 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
             case "runFile" when _path is { } file:
                 Run(file, null, (bool?)message["debug"] == true);
                 break;
+            case "record" when _path is { } file:
+                Record(file, (int?)message["line"]);
+                break;
+            case "watch" when (string?)message["path"] is { } video && File.Exists(video):
+                // The system's video player: Visual Studio has none.
+                using (Process.Start(new ProcessStartInfo(video) { UseShellExecute = true }))
+                {
+                }
+
+                break;
             case "toggleBreak" when _path is { } file && (int?)message["line"] is { } step:
                 BddBreakpointStore.Instance.Toggle(file, step);
                 break;
@@ -579,6 +590,17 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
             await RefreshExplorerAsync();
         }).FileAndForget("Brinell/DeleteResults");
 
+    private void Record(string path, int? line)
+    {
+        var suite = _suites.TryGetValue(path, out var picked) ? picked : null;
+        var options = ((BrinellBddPackage)_package).Options;
+        _package.JoinableTaskFactory.RunAsync(async () =>
+        {
+            await _runs!.RecordAsync(path, line, suite, options);
+            await RefreshAsync();
+        }).FileAndForget("Brinell/PreviewRecord");
+    }
+
     private void Run(string path, int? line, bool debug)
     {
         var suite = _suites.TryGetValue(path, out var picked) ? picked : null;
@@ -603,7 +625,7 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
             await EnsureServerAsync(path);
             _typing?.Cancel();
             await _server.DidChangeAsync(path, ++_version, view.TextSnapshot.GetText(), _package.DisposalToken);
-            var preview = await _server.PreviewAsync(path, _suites.TryGetValue(path, out var suite) ? suite : null, _package.DisposalToken);
+            var preview = await _server.PreviewAsync(path, _suites.TryGetValue(path, out var suite) ? suite : null, _package.DisposalToken, ((BrinellBddPackage)_package).Options.RecordingsFolder);
             await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
             var steps = StepLine.Matches((string?)preview["html"] ?? string.Empty).Cast<Match>()
                 .Select(match => int.Parse(match.Groups["line"].Value, System.Globalization.CultureInfo.InvariantCulture));

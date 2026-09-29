@@ -6,7 +6,7 @@ namespace Brinell.Bdd.Preview;
 
 // A video script as it will play: each scene's scenario with every step, what is said before it,
 // and which steps run silently; the check's diagnostics at their lines.
-internal sealed class BddVideoScriptPreviewWriter(string text, string filePath)
+internal sealed class BddVideoScriptPreviewWriter(string text, string filePath, BddPreviewOptions options)
 {
     private readonly StringBuilder _html = new();
     private readonly HashSet<BddDiagnostic> _shown = [];
@@ -23,7 +23,7 @@ internal sealed class BddVideoScriptPreviewWriter(string text, string filePath)
             return new BddPreviewResult(_html.ToString(), _check.Diagnostics);
         }
 
-        _html.Append($"<h1 class=\"uat-title\" data-line=\"1\"><span class=\"uat-kw\">Video</span> {Encode(script.Title)}</h1>\n");
+        _html.Append($"<h1 class=\"uat-title\" data-line=\"1\"><span class=\"uat-kw\">Video</span> {Encode(script.Title)}{BddPreviewRecord.Button(options.Record, "data-record-file", "Record", "Record the video: run its scenes, with the voice")}</h1>\n");
         var fields = new List<(string Field, string Value)>();
         if (script.Voice is { } voice)
         {
@@ -42,6 +42,7 @@ internal sealed class BddVideoScriptPreviewWriter(string text, string filePath)
             _html.Append("</p>\n");
         }
 
+        _html.Append(BddPreviewRecord.List(options.Recordings));
         var firstScene = script.Scenes.Count == 0 ? int.MaxValue : script.Scenes[0].Line;
         Diagnostics(line => line < firstScene);
         for (var index = 0; index < script.Scenes.Count; index++)

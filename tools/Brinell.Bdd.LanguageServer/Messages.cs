@@ -241,7 +241,11 @@ public sealed record SemanticTokens(IReadOnlyList<int> Data);
 public sealed record PublishDiagnosticsParams(string Uri, int? Version, IReadOnlyList<Diagnostic> Diagnostics);
 
 /// <summary><c>brinell/preview</c>: a file, and the suite to bind it in when it is linked into several.</summary>
-public sealed record PreviewParams(string Uri, string? Suite);
+public sealed record PreviewParams(string Uri, string? Suite)
+{
+    /// <summary>The Recordings folder setting, whose videos the preview lists; null for the suite's results.</summary>
+    public string? RecordingsFolder { get; init; }
+}
 
 /// <summary>The rendered preview.</summary>
 /// <param name="Html">The file, rendered (<c>Brinell.Bdd.Preview</c>).</param>
@@ -362,3 +366,40 @@ internal static class Json
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     };
 }
+
+/// <summary>
+/// <c>brinell/recordTarget</c>: what to record: a video script, or the scenario at a heading's
+/// line; with the IDE's settings.
+/// </summary>
+/// <param name="Uri">The video script, or the feature file.</param>
+/// <param name="Line">The scenario heading's line, for a feature file.</param>
+/// <param name="Suite">The suite picked for a linked file; null for the first.</param>
+/// <param name="RecordingsFolder">The Recordings folder setting; null for the suite's results.</param>
+/// <param name="Voice">The voice setting; null for the default voice.</param>
+/// <param name="Beat">The beat setting, in milliseconds; null for the default.</param>
+public sealed record RecordTargetParams(string Uri, int? Line, string? Suite, string? RecordingsFolder, string? Voice, int? Beat);
+
+/// <summary>How to record it: <c>dotnet test &lt;Project&gt; --no-build --filter &lt;Filter&gt;</c> with <paramref name="Environment"/> set.</summary>
+/// <param name="CanRecord">Whether it can be recorded here.</param>
+/// <param name="Reason">Why not (no ffmpeg, a script with errors, a suite that cannot run by address); null when it can.</param>
+/// <param name="Project">The suite's project file.</param>
+/// <param name="Filter">The <c>dotnet test</c> filter on the <c>BddScenario</c> trait.</param>
+/// <param name="Environment">The gate run's variables (<c>BRINELL_RECORD</c> and the rest).</param>
+/// <param name="Video">The video's file name in <paramref name="Folder"/>, for a script; null for a scenario, whose name the run stamps.</param>
+/// <param name="Folder">The Recordings folder.</param>
+/// <param name="Suite">The suite it runs in.</param>
+public sealed record RecordTargetResult(bool CanRecord, string? Reason, string? Project, string? Filter, IReadOnlyDictionary<string, string> Environment, string? Video, string? Folder, string? Suite)
+{
+    /// <summary>It cannot be recorded, for <paramref name="reason"/>.</summary>
+    public static RecordTargetResult Not(string reason) => new(false, reason, null, null, new Dictionary<string, string>(), null, null, null);
+}
+
+/// <summary><c>brinell/recordings</c>: a video script or a feature file, and the Recordings folder setting.</summary>
+public sealed record RecordingsParams(string Uri, string? Suite, string? RecordingsFolder);
+
+/// <summary>A recorded video.</summary>
+/// <param name="Path">The video file.</param>
+/// <param name="Name">Its file name.</param>
+/// <param name="Written">When it was made.</param>
+/// <param name="Captions">Its <c>.srt</c>; null when it has none.</param>
+public sealed record RecordingEntry(string Path, string Name, DateTime Written, string? Captions);

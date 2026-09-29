@@ -92,6 +92,73 @@ internal sealed class BddRunController
         }
     }
 
+    /// <summary>
+    /// Records a video script, or the scenario at a heading's line (the narrator): the build, the
+    /// gate run with <c>BRINELL_RECORD</c>, then the video it made, offered to watch.
+    /// </summary>
+    /// <param name="path">The video script, or the feature file.</param>
+    /// <param name="line">The scenario heading's line, for a feature file.</param>
+    /// <param name="suite">The suite picked for a linked file; null for the first.</param>
+    /// <param name="options">The Recording options: the folder, the voice and the beat.</param>
+    public async Task RecordAsync(string path, int? line, string? suite, BddOptionsPage options)
+    {
+        await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
+        if (IsRunning)
+        {
+            await StatusAsync("A BDD run is going already. Wait for it, or cancel it, before recording.");
+            return;
+        }
+
+        IsRunning = true;
+        _post(new { type = "running", line, file = line is null });
+        try
+        {
+            _log(string.Empty);
+            _log($"Building the solution to record {Path.GetFileName(path)}{(line is null ? string.Empty : $" line {line}")}...");
+            if (!await BuildAsync())
+            {
+                await StatusAsync("The build failed, so the recording did not start. See the Error List.");
+                return;
+            }
+
+            await _server.BuildDoneAsync(_package.DisposalToken);
+            var target = await _server.RecordTargetAsync(path, line, suite, options, _package.DisposalToken);
+            if ((bool?)target["canRecord"] != true || (string?)target["project"] is not { } project || (string?)target["filter"] is not { } filter)
+            {
+                await StatusAsync($"This cannot be recorded: {(string?)target["reason"]}");
+                return;
+            }
+
+            var variables = (target["environment"] as JObject)?.Properties().ToDictionary(property => property.Name, property => (string?)property.Value ?? string.Empty) ?? [];
+            _log($"Recording into {(string?)target["folder"]}...");
+            var code = await RunTestsAsync(project, filter, debug: false, variables);
+            var videos = await _server.RecordingsAsync(path, suite, options.RecordingsFolder, _package.DisposalToken);
+            var expected = (string?)target["video"];
+            var video = videos.OfType<JObject>().FirstOrDefault(candidate => expected is null || (string?)candidate["name"] == expected);
+            if (video is null || (string?)video["path"] is not { } file)
+            {
+                await StatusAsync("The run made no video: see the Brinell BDD output.");
+                return;
+            }
+
+            await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
+            var failed = code != 0 ? " A scenario failed: the video shows where." : string.Empty;
+            _log($"Recorded {file}.{failed}");
+            if (VsShellUtilities.ShowMessageBox(_package, $"Recorded {Path.GetFileName(file)}.{failed}\n\nWatch it now?", "Brinell BDD", OLEMSGICON.OLEMSGICON_INFO, OLEMSGBUTTON.OLEMSGBUTTON_YESNO, OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST) == 6)
+            {
+                using (Process.Start(new ProcessStartInfo(file) { UseShellExecute = true }))
+                {
+                }
+            }
+        }
+        finally
+        {
+            await _package.JoinableTaskFactory.SwitchToMainThreadAsync();
+            IsRunning = false;
+            _post(new { type = "running" });
+        }
+    }
+
     /// <summary>Stops the run: the test process and everything it started, the app included.</summary>
     public void Cancel()
     {
@@ -130,7 +197,7 @@ internal sealed class BddRunController
 #pragma warning restore VSTHRD003
     }
 
-    private async Task RunTestsAsync(string project, string filter, bool debug)
+    private async Task<int> RunTestsAsync(string project, string filter, bool debug, IReadOnlyDictionary<string, string>? variables = null)
     {
         var arguments = $"test \"{project}\" --no-build --filter \"{filter}\" --logger \"console;verbosity=normal\"";
         _log($"dotnet {arguments}");
@@ -146,6 +213,11 @@ internal sealed class BddRunController
             },
             EnableRaisingEvents = true,
         };
+        foreach (var variable in variables ?? new Dictionary<string, string>())
+        {
+            process.StartInfo.EnvironmentVariables[variable.Key] = variable.Value;
+        }
+
         if (debug)
         {
             // The testhost prints its process id and waits for a debugger; VSTEST_DEBUG_NOBP skips
@@ -169,6 +241,7 @@ internal sealed class BddRunController
             var code = await exited.Task;
 #pragma warning restore VSTHRD003
             _log(code == 0 ? "The BDD run passed." : $"The BDD run ended with exit code {code}.");
+            return code;
         }
         finally
         {

@@ -19,20 +19,24 @@ namespace Brinell.Bdd.VisualStudio;
 [ProvideToolWindow(typeof(ScenarioPreviewWindow), Style = VsDockStyle.Tabbed, Window = "{34E76E81-EE4A-11D0-AE2E-00A0C90FFFC3}", Orientation = ToolWindowOrientation.Right)]
 [ProvideToolWindow(typeof(BddExplorerWindow), Style = VsDockStyle.Tabbed, Window = "{3AE79031-E1BC-11D0-8F78-00A0C9110057}")]
 [ProvideAutoLoad(PackageIds.FeatureFileContext, PackageAutoLoadFlags.BackgroundLoad)]
+[ProvideOptionPage(typeof(BddOptionsPage), "Brinell BDD", "Recording", 0, 0, true)]
 // Loaded when debugging starts too, so a run debugged from Test Explorer can be stepped through.
 [ProvideAutoLoad(Microsoft.VisualStudio.VSConstants.UICONTEXT.Debugging_string, PackageAutoLoadFlags.BackgroundLoad)]
 [ProvideUIContextRule(
     PackageIds.FeatureFileContext,
-    name: "Brinell feature or step file",
-    expression: "Feature | Steps",
-    termNames: ["Feature", "Steps"],
-    termValues: [@"HierSingleSelectionName:\.feature\.md$", @"HierSingleSelectionName:\.steps\.md$"])]
+    name: "Brinell feature, step or video file",
+    expression: "Feature | Steps | Video",
+    termNames: ["Feature", "Steps", "Video"],
+    termValues: [@"HierSingleSelectionName:\.feature\.md$", @"HierSingleSelectionName:\.steps\.md$", @"HierSingleSelectionName:\.video\.md$"])]
 public sealed class BrinellBddPackage : AsyncPackage
 {
     private PreviewController? _controller;
 
     /// <summary>The package once loaded, for CodeLens's callback, which runs outside it.</summary>
     internal static BrinellBddPackage? Instance { get; private set; }
+
+    /// <summary>Tools, Options, Brinell BDD, Recording.</summary>
+    internal BddOptionsPage Options => (BddOptionsPage)GetDialogPage(typeof(BddOptionsPage));
 
     /// <summary>The preview's controller, which holds the language server.</summary>
     internal PreviewController? Controller => _controller;

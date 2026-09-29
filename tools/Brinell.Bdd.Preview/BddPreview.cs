@@ -26,7 +26,19 @@ public sealed record BddPreviewOptions
 
     /// <summary>Whether the scenarios can be run from the preview, and why not; null for no Run buttons (a page on its own).</summary>
     public BddPreviewRunState? Run { get; init; }
+
+    /// <summary>Whether a video script, or a scenario, can be recorded on video, and why not; null for no Record buttons.</summary>
+    public BddPreviewRunState? Record { get; init; }
+
+    /// <summary>The file's recorded videos, newest first: the preview lists them to watch.</summary>
+    public IReadOnlyList<BddPreviewRecording> Recordings { get; init; } = [];
 }
+
+/// <summary>A recorded video the preview lists.</summary>
+/// <param name="Path">The video file.</param>
+/// <param name="Name">Its file name.</param>
+/// <param name="Written">When it was made.</param>
+public sealed record BddPreviewRecording(string Path, string Name, DateTime Written);
 
 /// <summary>Whether the preview offers Run on its scenarios.</summary>
 /// <param name="CanRun">Whether a scenario can be run by its address.</param>
@@ -54,7 +66,7 @@ public static class BddPreview
         ArgumentNullException.ThrowIfNull(text);
         ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
         return Brinell.Narrator.BddVideoScript.IsVideoScript(filePath)
-            ? new BddVideoScriptPreviewWriter(text, filePath).Write()
+            ? new BddVideoScriptPreviewWriter(text, filePath, options ?? new BddPreviewOptions()).Write()
             : new BddPreviewWriter(text, filePath, options ?? new BddPreviewOptions()).Write();
     }
 

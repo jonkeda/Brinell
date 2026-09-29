@@ -163,6 +163,8 @@ public sealed partial class BddLanguageServer : IDisposable
             Runs = RunsOf(file),
             ImageUrl = image => ImageUrl(image, resultsRoot),
             Run = FileImageUrls ? null : RunState(file.Suite, file.Path),
+            Record = FileImageUrls ? null : RecordState(file),
+            Recordings = PreviewRecordings(file, request.RecordingsFolder),
         });
         return new PreviewResult(
             result.Html,
