@@ -249,7 +249,7 @@ charter records where it went.
 against the same hermetic app tier 3 uses - WireMock backend, seeded database - but the test
 is the Markdown, not C#:
 
-```markdown
+```gherkin
 Given I am on the Todo List page
 When I tap Add
 Then I should be on the Todo Edit page

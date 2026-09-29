@@ -1,7 +1,7 @@
 # UAT Scenario Grammar
 
 Status: **Implemented**. The parser is
-[BddMarkdownParser.cs](../../srcnew/Brinell.Uat/BddMarkdownParser.cs); this page writes down the
+[BddMarkdownParser.cs](../../srcnew/Brinell.Bdd/BddMarkdownParser.cs); this page writes down the
 format it accepts, so the format is a contract and not whatever the parser happens to do.
 
 Three layers, each owned by one piece of code:
@@ -9,7 +9,7 @@ Three layers, each owned by one piece of code:
 1. **The document grammar**: the shape of a `.feature.md` or `.steps.md` file. Owned by the
    parser, and fixed.
 2. **The phrase language**: the `{placeholder}` templates a step line binds to. Owned by the
-   catalog ([BddCommandCatalog.cs](../../srcnew/Brinell.Uat/BddCommandCatalog.cs)); phrases are
+   catalog ([BddCommandCatalog.cs](../../srcnew/Brinell.Bdd/BddCommandCatalog.cs)); phrases are
    declared by attributes (AD-011) or as callable phrases (AD-017).
 3. **The lexicon**: the page, control, app and user names that fill the placeholders. Owned by
    name resolution (`[UatName]`, `UatNameInference`, the `Apps` table).
@@ -19,32 +19,47 @@ phrases are and how they bind is in [UAT Phrases And Flows](../guides/uat-step-d
 
 ## 1. Scenario files (`*.feature.md`)
 
-`NEWLINE` and `WS` are lexical; `text` is the rest of the line, trimmed.
+A feature file is a Markdown document (AD-023). The engine reads the parts below from the top
+level of the document, as Markdig splits it into blocks; everything else is `prose`, and is left
+out. `NEWLINE` and `WS` are lexical; `text` is the rest of the line, trimmed.
 
 ```ebnf
-document         = feature-heading ,
+document         = { prose } , feature-heading ,
                    { metadata-section | background-section | data-section
-                   | phrase-section | scenario } ;          (* at least one scenario *)
+                   | phrase-section | scenario | prose-section | prose } ;
+                                                            (* at least one scenario *)
 
-feature-heading  = "# Feature:" , text , NEWLINE ;             (* exactly one, first *)
+feature-heading  = "# Feature:" , text , NEWLINE ;             (* the only level-1 heading *)
 
-metadata-section = "## Metadata" , NEWLINE , kv-table ;
+metadata-section = "## Metadata" , NEWLINE , { prose } , kv-table ;
 kv-table         = table-with-columns("Field", "Value") ;
 
-background-section = "## Background" , NEWLINE , step+ ;
+background-section = "## Background" , NEWLINE , steps ;
 
-data-section     = "## Data:" , name , NEWLINE , table ;
+data-section     = "## Data:" , name , NEWLINE , { prose } , table ;
 
 phrase-section   = ( "## Step:" | "## Step for each row:" ) , phrase , NEWLINE ,
-                   [ parameters-table ] , phrase-step+ ;
+                   { prose } , [ parameters-table ] , phrase-steps ;
 parameters-table = table-with-columns("Parameter", "Type" [, "Example"]) ;
 
 scenario         = [ tag-line ] ,
-                   ( "## Scenario:" , name , NEWLINE , step+
-                   | "## Scenario Outline:" , name , NEWLINE , step+ ,
-                     "### Examples" , NEWLINE , table ) ;
+                   ( "## Scenario:" , name , NEWLINE , steps
+                   | "## Scenario Outline:" , name , NEWLINE , steps ,
+                     "### Examples" , NEWLINE , { prose } , table ) ;
 
-tag-line         = "@" , tag , { WS , "@" , tag } , NEWLINE ;
+tag-line         = "@" , tag , { WS , "@" , tag } , NEWLINE ;   (* directly above the heading *)
+
+steps            = { prose } , gherkin-block , { gherkin-block | prose } ;
+phrase-steps     = { prose } , phrase-block , { phrase-block | prose } ;
+gherkin-block    = fence , "gherkin" , NEWLINE , { step | comment | NEWLINE } , fence ;
+phrase-block     = fence , "gherkin" , NEWLINE , { phrase-step | comment | NEWLINE } , fence ;
+fence            = "```" | "~~~" ;                (* or longer, as CommonMark; "gherkin" in any case *)
+comment          = "#" , text , NEWLINE ;
+
+prose-section    = "## " , text , NEWLINE , { prose } ;  (* a level-2 heading not named above *)
+prose            = (* any other Markdown block: a paragraph, list, quote, image, link, table,
+                      HTML block, rule, code block of another language, or a heading of level 3
+                      or lower but an outline's "### Examples" *) ;
 
 step             = keyword , WS , step-text , NEWLINE , [ table ] , [ doc-string ] ;
 phrase-step      = step | keyword , WS , step-text , NEWLINE , passed-block ;
@@ -65,14 +80,23 @@ Rules the EBNF does not show:
 - **Outlines.** Each `<column>` in an outline step is replaced from one `### Examples` row, and
   every placeholder needs a column. Row *n* runs as `<name> [n]`.
 - **Tables.** Every row has as many cells as the header, and a table has at least one data row.
-  Cells are trimmed. Where a table sits under a step, the step gets the table.
+  Cells are trimmed. In a gherkin block, a table under a step is the step's. Outside the blocks,
+  a section's table (Metadata, Data, Examples, Parameters) is the first table of the section;
+  another table is prose.
 - **Doc strings.** A `"""` block under a step (after its table, if it has one) is passed to the
   step as text. Lines lose the indentation of the opening `"""`.
-- **Code fences are transparent.** A ```` ``` ```` or `~~~` line, with or without an info
-  string, is dropped before parsing, so steps fenced as `gherkin` for rendering parse like bare
-  ones. Line numbers are kept, so diagnostics point at the line the author sees. Only the fence
-  is transparent: a list marker (`- Given ...`) is still an error.
-- **Headings** other than the ones above, and any other text outside a section, are errors.
+- **Gherkin blocks.** A step is read only inside a fenced block whose info string is `gherkin`,
+  at the top level of the document; a block in a list or a quote is prose, and so is a block of
+  another language. A section may have several blocks, read in order as one list, so `And`
+  continues across them. In a block, a `#` line is a comment and every other line must be a step,
+  its table or its doc string (`UAT011`). Line numbers are the file's.
+- **Prose** is everything else, in any Markdown form, before, between and after the parts
+  above. A level-2 heading the engine does not know opens a prose section, up to the next
+  level-2 heading. Text that reads like a step outside a block is prose; when its section then
+  has no steps, the "no steps" error says to put them in a gherkin block, and
+  `brinell-data validate --fix` does.
+- **Headings** that look like a section but are not one (`## scenario:`, `### Scenario:`,
+  `## Scenario x`, an underlined heading) are a warning, `UAT031`, and read as prose.
 
 ## 2. Phrase files (`*.steps.md`)
 
@@ -128,23 +152,25 @@ type suffix removed (`Page`, `Button`, `Entry`, ...) and split into words: `Todo
 | --- | --- |
 | `UAT000`, `UAT001` | no `# Feature:` heading, or more than one |
 | `UAT002`, `UAT003` | the heading has no title, or is not first |
-| `UAT004` | `## Background` has no steps |
+| `UAT004` | `## Background` has no steps; when it holds step-like prose, the message says to put it in a gherkin block |
 | `UAT005` | `## Data:` has no name |
-| `UAT006`, `UAT007` | a scenario has no name, or no steps |
+| `UAT006`, `UAT007` | a scenario has no name, or no steps (with the same hint as `UAT004`) |
 | `UAT008` | the file has no scenario |
 | `UAT009`, `UAT010` | the Metadata table's columns are not `Field`/`Value`, or a field is empty |
-| `UAT011` | a line in a step block is not a step |
-| `UAT012` - `UAT015` | an outline has no `### Examples`, no name, no steps, or a placeholder with no column |
+| `UAT011` | a line in a gherkin block is not a step, a comment, a table or a doc string |
+| `UAT012` - `UAT015` | an outline has no `### Examples`, no name, no steps (with the hint), or a placeholder with no column |
 | `UAT016` | `And`/`But` without a step before it |
-| `UAT017` - `UAT019` | a table is missing, has a row of the wrong width, or has no data rows |
+| `UAT017` - `UAT019` | a section's table is missing, a row has the wrong width, or a table has no data rows |
 | `UAT020` | a tag line is not directly above a scenario |
-| `UAT021`, `UAT022` | text outside a section, or an unknown heading |
+| `UAT021` | a gherkin block outside a Background, Scenario or Step section |
+| `UAT022` | a second level-1 heading |
 | `UAT023` | a doc string is not closed |
 | `UAT024` | `<table>`/`<doc string>` outside a phrase section, or not under a step |
-| `UAT025`, `UAT026` | a phrase heading has no phrase, or the phrase has no steps |
+| `UAT025`, `UAT026` | a phrase heading has no phrase, or the phrase has no steps (with the hint) |
 | `UAT027` | a malformed `Parameters` table |
 | `UAT028` | a steps file with content other than one `# Steps:` heading and step sections |
 | `UAT029` | a heading or file name in the form before feature files (`# UAT:`, `## Phrase:`, `*.uat.md`, `*.phrases.md`); `brinell-data validate --fix` rewrites it |
+| `UAT031` | warning: a heading that looks like a section but is not one, read as prose |
 
 Binder (`UATB0xx`) and argument (`UATA0xx`) diagnostics are raised in the binder and the value
 reader (`BddBinder`, `BddValues`, `BddPhraseDeclarations`).

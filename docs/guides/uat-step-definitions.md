@@ -46,7 +46,7 @@ After a `Then` step, `And Status should be visible` is treated as a `Then`
 step. So there is no `[UatAnd]` or `[UatBut]`: a negative check written after
 `But` is declared with `[BddThen]`.
 
-```markdown
+```gherkin
 Given I am on the User Form page
 When I clear First Name
 And I enter "Ada" into First Name
@@ -66,7 +66,7 @@ TScope Enter(string? text, int? timeoutMs = null);
 
 This matches:
 
-```markdown
+```gherkin
 When I enter "Ada" into First Name
 ```
 
@@ -377,7 +377,7 @@ it. `I check Terms` on a `Label` fails at execution, not at binding.
 
 Control phrases need a current page. Start most UI flows with:
 
-```markdown
+```gherkin
 Given I am on the Main page
 ```
 
@@ -425,7 +425,7 @@ public TodoList AssertPending(string title, bool expected = true, int? timeoutMs
 
 which the scenarios then read as:
 
-```markdown
+```gherkin
 When I advance Status to "Done"
 Then Status should show status "Done"
 And Todos should have todo "Plan the sprint"
@@ -485,7 +485,7 @@ page-object method that already does it:
 public TodoListPage CreateTodo(string title) => Add().EnterTitle(title).SaveNew();
 ```
 
-```markdown
+```gherkin
 Given I am on the Todo List page
 When I create a todo "Oil the hinges"
 Then I should be on the Todo List page
@@ -518,7 +518,7 @@ out before anything runs, by reading the steps in order:
 So a scenario starts with `Given I am on ...`, and after a step that may leave the page, the next
 step either fits the page it was on or says where it is now:
 
-```markdown
+```gherkin
 When I tap Save
 Then I should be on the Todo List page
 And the todo "Oil the hinges" should be synced
@@ -794,7 +794,7 @@ attribute whose name starts with `Given`, `When` or `Then` is a phrase too; see
 
 Markdown step tables attach to the previous step:
 
-```markdown
+```gherkin
 When I sign in with credentials
 | Field | Value |
 | --- | --- |

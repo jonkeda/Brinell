@@ -2,15 +2,17 @@
 
 A tester names a sequence of steps and calls it like a phrase, in scenario language:
 
-```markdown
+````markdown
 ## Step: the synced list has todos
 
+```gherkin
 Given I am on the Todo List page
 And the server also has todos
   <table>
 When I tap Sync
 Then I should be on the Todo List page
 ```
+````
 
 It lives in a scenario file (seen by that file) or in a `*.steps.md` file in `Features/` or a
 folder under it (seen by the scenarios in that folder and below, AD-019). `## Step for each

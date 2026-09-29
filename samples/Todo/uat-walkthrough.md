@@ -184,7 +184,7 @@ No registration, no catalog edit: the attribute *is* the registration, and
 [`TOD.05-change-status.feature.md`](tests/Brinell.Samples.Todo.Uat/Features/TOD.05-change-status.feature.md)
 reads
 
-```markdown
+```gherkin
 When I advance Status to "Done"
 Then Status should show status "Done"
 ```

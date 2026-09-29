@@ -201,7 +201,7 @@ purely through its fixture's composition.
 
 The formal grammar, with every parser diagnostic, is in [UAT Scenario Grammar](../specs/uat-grammar.md).
 
-```markdown
+````markdown
 # Feature: MAUI Main Page Greeting
 
 ## Metadata
@@ -220,6 +220,7 @@ The formal grammar, with every parser diagnostic, is in [UAT Scenario Grammar](.
 @smoke @maui @greeting @automated @deterministic
 ## Scenario: Greeting appears when a name is entered
 
+```gherkin
 Given I am on the Main page
 When I clear Name
 And I enter "Alice" into Name
@@ -228,6 +229,7 @@ Then Greeting should contain "Hello, Alice!"
 And Greeting should be visible
 And Name should be enabled
 ```
+````
 
 The scenario parser supports this document shape:
 
@@ -235,17 +237,20 @@ The scenario parser supports this document shape:
 - `## Metadata` is optional for parsing, but the format tests expect `App`,
   `Area`, `Target`, `Tags`, `Mode`, `Requires`, `Priority`, and `Evidence`.
   The table columns must be `Field` and `Value`.
+- **Steps are only read inside a ```` ```gherkin ```` block.** A step, its table
+  and its doc string go in one; a `#` line in a block is a comment. A section may
+  have several blocks, read in order as one list.
 - `## Background` is optional and contains shared `Given`, `When`, `Then`,
   `And`, or `But` steps.
 - `## Data: <name>` is optional and must contain a markdown table.
 - Tags are written as `@tag` lines and must be immediately followed by
   `## Scenario:` or `## Scenario Outline:`.
-- `## Scenario: <name>` contains one or more step lines. Numbered lists and
-  generic `## Steps` / `## Expected` sections are not part of the parser
-  format.
+- `## Scenario: <name>` contains one or more gherkin blocks.
 - `## Scenario Outline: <name>` expands one scenario per row in a required
   `### Examples` table. Step text and step table cells can reference example
   columns with `<columnName>` placeholders.
+- **Everything else is prose** (AD-023), in any Markdown form, anywhere: see
+  [Prose](#prose).
 
 Scenario discovery scans `Features/**/*.feature.md` recursively, so larger apps
 can keep executable specs in module folders such as
@@ -279,9 +284,8 @@ sees besides its folder's: `Accounts, Backend`. See
 A file may hold many scenarios, so one journey can be one file: the journey in
 the `# Feature:` title and `Journey` metadata, each subtask a scenario whose heading
 starts with its id and whose tag line carries it. The shared start goes in
-`## Background`. Fenced ```` ```gherkin ```` blocks are only for rendering - the
-parser drops the fence lines - and are the only prose-free way to lay the steps
-out under a heading; any other heading or text is a parse error.
+`## Background`. The steps of each scenario go in a ```` ```gherkin ```` block, and
+the text around them can say what the journey is for.
 
 ````markdown
 @TOD.02.1 @maui @create
@@ -305,9 +309,10 @@ For how step text binds to executable commands, see
 
 Scenario steps may include an immediate markdown table:
 
-```markdown
+````markdown
 ## Scenario: Valid user can sign in
 
+```gherkin
 Given I am on the Login page
 When I sign in with credentials
 | Field | Value |
@@ -316,12 +321,14 @@ When I sign in with credentials
 | Password | correct-password |
 Then I should see "Welcome Ada"
 ```
+````
 
 Scenario outlines use `### Examples`:
 
-```markdown
+````markdown
 ## Scenario Outline: Login result is shown
 
+```gherkin
 Given I am on the Login page
 When I enter credentials
 | Field | Value |
@@ -329,6 +336,7 @@ When I enter credentials
 | User name | <user> |
 | Password | <password> |
 Then I should see "<result>"
+```
 
 ### Examples
 
@@ -336,7 +344,7 @@ Then I should see "<result>"
 | --- | --- | --- |
 | ada@example.com | correct-password | Dashboard |
 | locked@example.com | correct-password | Account locked |
-```
+````
 
 Table cells are trimmed. To pass a value whose spaces matter, quote it in the
 cell and leave the placeholder unquoted in the step: `When I set Title to <title>`
