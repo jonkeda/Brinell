@@ -83,7 +83,7 @@ milliseconds.
 
 | Tab | Shows |
 | --- | --- |
-| Tree | a workspace summary, the tree, the status message, and a Selection expander |
+| Tree | a workspace summary, the Scenarios tree, the Steps list, the status message, and a Selection expander |
 | Config | the config editor |
 | Diagnostics | config, parse and bind results, and run timings |
 | Discovery | the pages and controls the scenarios can name |
@@ -96,9 +96,17 @@ is only parsed, and Diagnostics says to build it. A file under an `ExpectedFailu
 on purpose: it is reported as "expected failure" and does not make the workspace need attention.
 The config can be `uat.config.md` or, for a service suite, `bdd.config.md`.
 
-The tree starts at the workspace folder and shows only Markdown: folders with Markdown in them,
-`.md` files, and under each `.feature.md` its suite, scenarios and steps. `bin`, `obj` and non-Markdown
-files are hidden. A collapsed parent shows the worst status of its children.
+Pick in a tree, step in a list. The **Scenarios** tree starts at the workspace folder and shows only
+Markdown: folders with Markdown in them, `.md` files, and under each `.feature.md` its suite and
+scenarios. `bin`, `obj` and non-Markdown files are hidden. A collapsed parent shows the worst
+status of its children. The **Steps** list below it holds the picked scenario's steps with their
+status; a `## Step:` call is a bold row of its own, with its steps indented under it. The step a
+run is at is highlighted and kept in view. Hovering a row shows its full text, and after a failure
+the message. Each section is an expander.
+
+The button beside the Steps header opens the **Scenario Preview** the IDEs show, in a window of its
+own: the whole feature file with prose, tables and Examples, bound against the suite. It follows
+the picked scenario and its run: each step's result, and the step the run is at.
 
 ## Running
 
@@ -111,7 +119,6 @@ not wait. **Stop** cancels either.
 | Workspace or folder | every scenario file under it |
 | `.feature.md` file or suite | its scenarios |
 | Scenario | that scenario |
-| Step | its scenario |
 | Config or other Markdown | nothing |
 
 **Delay** is read once when the run starts and applied between steps, never before the first:

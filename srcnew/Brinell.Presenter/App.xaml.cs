@@ -27,7 +27,8 @@ public partial class App : Application
             new BddWorkspaceService(),
             new BddExecutionService(),
             new FolderPickerService(),
-            settingsService);
+            settingsService,
+            new ScenarioPreviewWindowService());
         var window = new Window(new PresenterPage(viewModel))
         {
             Title = "Brinell Presenter"

@@ -92,7 +92,8 @@ public sealed class BddWorkspaceService : IBddWorkspaceService, IDisposable
             scenarios,
             diagnostics,
             discoveryReport,
-            FormatCatalog(catalogs?.Default ?? UatSpecCommandCatalog.CreateDefault()));
+            FormatCatalog(catalogs?.Default ?? UatSpecCommandCatalog.CreateDefault()),
+            catalogs);
     }
 
     /// <inheritdoc />
@@ -160,11 +161,12 @@ public sealed class BddWorkspaceService : IBddWorkspaceService, IDisposable
             scenario.Source.Tags,
             [.. scenario.Invocations.Select(invocation => new BddStepLoadResult(
                 "wait",
-                invocation.Call is { } call ? $"{new string(' ', 2 * call.Depth)}{invocation.Step.Text}" : invocation.Step.Text,
+                invocation.Call is { } call ? $"{new string(' ', 2 * call.Depth)}{Written(invocation.Step)}" : Written(invocation.Step),
                 invocation.CommandId,
                 // One row per step keeps the run pointer's index; a callable's step opens the call.
                 invocation.Call is { } frame ? frame.Chain[0].Location.LineNumber : invocation.Step.Source.LineNumber,
-                invocation.Call is { } root ? $"{root.Chain[0].Call.Keyword} {root.Chain[0].Call.Text}" : null))]);
+                invocation.Call is { } root ? $"{root.Chain[0].Call.Keyword} {root.Chain[0].Call.Text}" : null))],
+            scenario.Source.Source.LineNumber);
 
     private static BddScenarioLoadResult Unbound(BddScenario scenario, string suiteName, string filePath)
         => new(
@@ -172,7 +174,11 @@ public sealed class BddWorkspaceService : IBddWorkspaceService, IDisposable
             suiteName,
             filePath,
             scenario.Tags,
-            [.. scenario.Steps.Select(step => new BddStepLoadResult("wait", step.Text, "(unbound)", step.Source.LineNumber))]);
+            [.. scenario.Steps.Select(step => new BddStepLoadResult("wait", Written(step), "(unbound)", step.Source.LineNumber))],
+            scenario.Source.LineNumber);
+
+    // A step as it is written: its keyword, then its text.
+    private static string Written(BddStep step) => $"{step.Keyword} {step.Text}";
 
     private static IEnumerable<string> EnumerateFiles(string folderPath, string pattern)
     {

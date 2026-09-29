@@ -8,7 +8,8 @@ public sealed record BddWorkspaceLoadResult(
     IReadOnlyList<BddScenarioLoadResult> Scenarios,
     IReadOnlyList<string> Diagnostics,
     string DiscoveryReport,
-    string CommandCatalogReport)
+    string CommandCatalogReport,
+    BddCatalogSet? Catalogs = null)
 {
     public int ErrorCount => Diagnostics.Count(line => line.Contains("error", StringComparison.OrdinalIgnoreCase));
 }
@@ -122,12 +123,14 @@ public sealed record BddFileLoadResult(
     bool BindSucceeded,
     IReadOnlyList<string> Diagnostics);
 
+/// <param name="LineNumber">The scenario's heading line in its file; 0 when not known.</param>
 public sealed record BddScenarioLoadResult(
     string Name,
     string SuiteName,
     string FilePath,
     IReadOnlyList<string> Tags,
-    IReadOnlyList<BddStepLoadResult> Steps);
+    IReadOnlyList<BddStepLoadResult> Steps,
+    int LineNumber = 0);
 
 /// <param name="Status">The step's status.</param>
 /// <param name="Text">The step's text; a callable phrase's steps are indented under their call.</param>

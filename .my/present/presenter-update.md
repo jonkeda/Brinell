@@ -1,7 +1,7 @@
 # Presenter update: what the IDE work taught us
 
-Status: **step 1 built** 2026-09-29; the owner's comments of the same day are in. Input for
-[plan.md](plan.md); nothing here is built.
+Status: **steps 1-2 built** 2026-09-29; the owner's comments of the same day are in. Input for
+[plan.md](plan.md).
 
 Presenter exists so a person can **click through a UAT scenario** without an IDE, for one of two
 reasons:
@@ -60,6 +60,15 @@ The IDE's Scenario Preview is **too big to be the main panel** of a narrow bar, 
 (`BddPreview.HostPage` in a `WebView`), for prose, tables and Examples. It follows the run.
 
 Fixes U1.
+
+**Built 2026-09-29 (step 2).** The tree stops at scenarios (`BuildWorkspaceTree` adds no step
+nodes); the step list binds `StepRows` (`BddStepRowViewModel`: a step, or a call over its steps, with
+its status, tooltip and `IsCurrent`); `PresenterPage.xaml.cs` gives a collapsed section's row no
+height and keeps the current row in view. Steps show their keyword. The preview is
+`ScenarioPreviewWindowService`: `BddPreview.HostPage` in a WebView2 in a second window, sent
+`update`, `running`, `scrollTo` and `theme`, with the run so far as a `BddScenarioRun`. Selection
+starts collapsed. Tests: `StepRowsTests`; `PresenterWorkspaceTreeTests` (the tree has no steps, the
+list has them).
 
 ### P2. Pause before a step; run from here, run until here
 
@@ -176,7 +185,7 @@ Smaller:
 | # | Step | Done when |
 | --- | --- | --- |
 | 1 | P5: load and bind through `Brinell.Bdd.Workspace` and `BddFileAnalysis`. **Done** 2026-09-29. | Presenter's diagnostics for TOD.01 equal the language server's; a `## Step:` call binds. |
-| 2 | P1: scenario tree and step list in expanders, tooltips, the preview on demand. | TOD.01's steps read in full on hover; the preview opens and follows a run. |
+| 2 | P1: scenario tree and step list in expanders, tooltips, the preview on demand. **Done** 2026-09-29. | TOD.01's steps read in full on hover; the preview opens and follows a run. |
 | 3 | P2: pause-before stepping, keys, clicker, the step menu, shared breakpoints. | PR11 rewritten for it passes; a breakpoint set in VS stops Play; Run until here pauses at the step. |
 | 4 | P3: the docked bar, placement for every target, Present and Workspace modes. | TOD.01 presented beside its app, and a Blazor scenario beside its browser, without help. |
 | 5 | P5's smaller things, and [userjourney.md](userjourney.md) updated for the new UI. | The journeys pass. |

@@ -34,6 +34,22 @@ public sealed class PresenterWorkspaceTreeTests : IDisposable
     }
 
     /// <summary>
+    /// Pick in a tree, step in a list: the tree stops at scenarios, and the step list holds the
+    /// selected scenario's steps.
+    /// </summary>
+    [Fact]
+    public void StepList_HoldsTheSelectedScenariosSteps_AndTheTreeNone()
+    {
+        ReloadWorkspace();
+
+        var steps = (_page.StepList.GetText(timeoutMs: 10000) ?? string.Empty)
+            .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        Assert.NotEmpty(steps);
+        var firstStep = steps[0].TrimStart('>', ' ')[1..].Trim();
+        Assert.DoesNotContain(firstStep, _page.AllWorkspaceTree.GetText(timeoutMs: 10000) ?? string.Empty, StringComparison.Ordinal);
+    }
+
+    /// <summary>
     /// Reload rebuilds every node, so it has to carry expansion and selection across. Saving the
     /// config reloads, and a save that drops your place is worse than no reload at all.
     /// </summary>

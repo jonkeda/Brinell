@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Windows.Input;
+using Brinell.Bdd.Preview;
 using Brinell.Presenter.Commands;
 using Brinell.Presenter.Models;
 using Brinell.Presenter.Services;
@@ -27,7 +28,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
     private string _executionDelayText = "250";
     private string _executionTimingText = string.Empty;
     private bool _isRecentFoldersExpanded;
-    private bool _isSelectionExpanded = true;
+    private bool _isSelectionExpanded;
     private string _recentFoldersText = "No recent folders";
     private double _runProgress;
     private string _scenarioListText = string.Empty;
@@ -52,6 +53,11 @@ public sealed class PresenterShellViewModel : ViewModelBase
     private string _buildConfiguration = "Debug";
     private string _platform = "windows";
     private bool _isBuilding;
+    private bool _isScenariosExpanded = true;
+    private bool _isStepsExpanded = true;
+    private BddStepRowViewModel? _currentRow;
+    private BddCatalogSet? _catalogs;
+    private readonly IScenarioPreviewService? _preview;
 
     private const int MaxExecutionDelayMilliseconds = 99999;
 
@@ -65,9 +71,16 @@ public sealed class PresenterShellViewModel : ViewModelBase
         IBddWorkspaceService workspaceService,
         IBddExecutionService executionService,
         IFolderPickerService folderPickerService,
-        IPresenterUserSettingsService settingsService)
+        IPresenterUserSettingsService settingsService,
+        IScenarioPreviewService? previewService = null)
     {
         _workspaceService = workspaceService;
+        _preview = previewService;
+        if (_preview is not null)
+        {
+            _preview.Ready += RefreshPreview;
+        }
+
         _executionService = executionService;
         _folderPickerService = folderPickerService;
         _settingsService = settingsService;
@@ -87,6 +100,9 @@ public sealed class PresenterShellViewModel : ViewModelBase
         ShowCommandCatalogTabCommand = new RelayCommand(() => SelectedTab = CommandCatalogTabName);
         ToggleThemeCommand = new RelayCommand(ToggleTheme);
         BuildCommand = new AsyncRelayCommand(BuildWorkspaceProjectAsync, () => !_isBuilding);
+        ToggleScenariosCommand = new RelayCommand(() => IsScenariosExpanded = !IsScenariosExpanded);
+        ToggleStepsCommand = new RelayCommand(() => IsStepsExpanded = !IsStepsExpanded);
+        OpenPreviewCommand = new RelayCommand(OpenPreview, () => _preview is not null);
 
         ConfigEditor = new ConfigEditorViewModel(
             new FixtureInspector(),
@@ -114,6 +130,71 @@ public sealed class PresenterShellViewModel : ViewModelBase
     public ObservableCollection<BddScenarioViewModel> Scenarios { get; } = [];
 
     public ObservableCollection<BddStepViewModel> Steps { get; } = [];
+
+    /// <summary>The selected scenario's step list: its steps, and a row for each <c>## Step:</c> call.</summary>
+    public ObservableCollection<BddStepRowViewModel> StepRows { get; } = [];
+
+    /// <summary>The row the run is paused before, or running; null when no run is on.</summary>
+    public BddStepRowViewModel? CurrentRow
+    {
+        get => _currentRow;
+        private set
+        {
+            var previous = _currentRow;
+            if (SetProperty(ref _currentRow, value))
+            {
+                if (previous is not null)
+                {
+                    previous.IsCurrent = false;
+                }
+
+                if (value is not null)
+                {
+                    value.IsCurrent = true;
+                }
+
+                UpdateStepListText();
+            }
+        }
+    }
+
+    public bool IsScenariosExpanded
+    {
+        get => _isScenariosExpanded;
+        set
+        {
+            if (SetProperty(ref _isScenariosExpanded, value))
+            {
+                OnPropertyChanged(nameof(ScenariosExpanderGlyph));
+            }
+        }
+    }
+
+    public string ScenariosExpanderGlyph => IsScenariosExpanded ? PresenterIcons.ChevronUp : PresenterIcons.ChevronDown;
+
+    public bool IsStepsExpanded
+    {
+        get => _isStepsExpanded;
+        set
+        {
+            if (SetProperty(ref _isStepsExpanded, value))
+            {
+                OnPropertyChanged(nameof(StepsExpanderGlyph));
+            }
+        }
+    }
+
+    public string StepsExpanderGlyph => IsStepsExpanded ? PresenterIcons.ChevronUp : PresenterIcons.ChevronDown;
+
+    /// <summary>The Steps header: the selected scenario's name.</summary>
+    public string StepsHeaderText => SelectedScenario is { } scenario ? $"Steps: {scenario.Name}" : "Steps";
+
+    public ICommand ToggleScenariosCommand { get; }
+
+    public ICommand ToggleStepsCommand { get; }
+
+    /// <summary>Opens the Scenario Preview for the selected scenario, in a window of its own.</summary>
+    public ICommand OpenPreviewCommand { get; }
 
     /// <summary>
     /// The visible rows, flattened. Still the source of <c>WorkspaceTreeText</c>, which the UAT
@@ -409,6 +490,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
             {
                 StopActiveSession();
                 LoadSteps(value);
+                OnPropertyChanged(nameof(StepsHeaderText));
                 OnPropertyChanged(nameof(SelectedScenarioName));
                 OnPropertyChanged(nameof(SelectedScenarioTags));
             }
@@ -562,6 +644,13 @@ public sealed class PresenterShellViewModel : ViewModelBase
         {
             node.RefreshThemeColors();
         }
+
+        foreach (var row in StepRows)
+        {
+            row.RefreshThemeColors();
+        }
+
+        RefreshPreview();
     }
 
     private void LoadDefaultWorkspace()
@@ -693,6 +782,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
         StopActiveSession();
 
         var result = _workspaceService.LoadFolder(folderPath);
+        _catalogs = result.Catalogs;
         WorkspacePath = result.FolderPath;
         WorkspaceName = result.WorkspaceName;
 
@@ -807,18 +897,8 @@ public sealed class PresenterShellViewModel : ViewModelBase
                         scenario,
                         expansionChanged: OnWorkspaceNodeExpansionChanged);
 
+                    // The steps are in the step list, not the tree.
                     suiteNode.AddChild(scenarioNode);
-                    foreach (var step in scenario.Steps)
-                    {
-                        scenarioNode.AddChild(new BddWorkspaceNodeViewModel(
-                            step.Text,
-                            BddWorkspaceNodeKind.Step,
-                            scenarioNode.Depth + 1,
-                            fullFilePath,
-                            scenario,
-                            step,
-                            OnWorkspaceNodeExpansionChanged));
-                    }
                 }
             }
             else if (filesByPath.TryGetValue(fullFilePath, out var loadedFile)
@@ -1328,6 +1408,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
         var index = session.CompletedStepCount;
         var startedAt = DateTimeOffset.Now;
         var stepText = GetScenarioStepText(scenario, index);
+        CurrentRow = RowOfStep(index);
         SetStepStatus(index, "run");
         StatusSummary = stepText;
         RefreshSelectedNodeDetails();
@@ -1345,6 +1426,11 @@ public sealed class PresenterShellViewModel : ViewModelBase
             startedAt,
             completedAt));
         ExecutionTimingText = FormatExecutionTiming(_activeRunOptions);
+
+        if (index >= 0 && index < Steps.Count)
+        {
+            Steps[index].Message = result.Status == BddStepResultStatus.Passed ? null : result.Message;
+        }
 
         SetStepStatus(index, StepStatusText(result.Status));
         RunProgress = scenario.Steps.Count == 0
@@ -1405,12 +1491,19 @@ public sealed class PresenterShellViewModel : ViewModelBase
 
     private void LoadSteps(BddScenarioViewModel? scenario)
     {
+        CurrentRow = null;
         Steps.Clear();
+        StepRows.Clear();
         if (scenario is not null)
         {
             foreach (var step in scenario.Steps)
             {
                 Steps.Add(step);
+            }
+
+            foreach (var row in scenario.Rows)
+            {
+                StepRows.Add(row);
             }
         }
 
@@ -1432,6 +1525,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
         foreach (var step in scenario.Steps)
         {
             step.Status = "wait";
+            step.Message = null;
         }
 
         RunProgress = 0;
@@ -1480,10 +1574,73 @@ public sealed class PresenterShellViewModel : ViewModelBase
 
     private void UpdateStepListText()
     {
-        StepListText = string.Join(Environment.NewLine, Steps.Select(step => step.DisplayText));
+        StepListText = string.Join(Environment.NewLine, StepRows.Select(row => row.DisplayText));
         UpdateWorkspaceTreeText();
         UpdateAllWorkspaceTreeText();
+        RefreshPreview();
     }
+
+    // The row a step of the run shows on: its own, never its call's.
+    private BddStepRowViewModel? RowOfStep(int stepIndex)
+        => StepRows.FirstOrDefault(row => !row.IsCall && row.FirstStep == stepIndex);
+
+    private void OpenPreview()
+    {
+        _preview?.Open();
+        RefreshPreview();
+    }
+
+    // The preview follows the selected scenario and its run: each step's status, and the current row.
+    private void RefreshPreview()
+    {
+        if (_preview is not { IsOpen: true } preview || SelectedScenario is not { } scenario)
+        {
+            return;
+        }
+
+        preview.Show(new ScenarioPreviewState(
+            scenario.FilePath,
+            scenario.Name,
+            scenario.LineNumber,
+            ScenarioRun(scenario),
+            CurrentRow?.LineNumber,
+            _catalogs,
+            IsDarkThemeActive,
+            WorkspaceName));
+    }
+
+    // The run so far, as the preview reads a report: the steps that ran, by the line they are written on.
+    private static BddScenarioRun? ScenarioRun(BddScenarioViewModel scenario)
+    {
+        var ran = scenario.Steps.Where(step => step.Status is "pass" or "fail" or "skip" or "cancel").ToList();
+        if (ran.Count == 0)
+        {
+            return null;
+        }
+
+        var status = scenario.Status switch
+        {
+            "pass" => "passed",
+            "fail" => "failed",
+            "cancel" => "canceled",
+            _ => "running",
+        };
+        return new BddScenarioRun(
+            scenario.Name,
+            status,
+            0,
+            null,
+            [.. ran.Select(step => new BddStepRun(step.LineNumber, null, null, PreviewStatus(step.Status), step.Message))],
+            DateTimeOffset.Now);
+    }
+
+    private static string PreviewStatus(string status) => status switch
+    {
+        "pass" => "Passed",
+        "fail" => "Failed",
+        "cancel" => "Canceled",
+        _ => "Skipped",
+    };
 
     private void UpdateWorkspaceTreeText()
     {
@@ -1724,6 +1881,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
 
     private void StopActiveSession()
     {
+        CurrentRow = null;
         _executionCancellation?.Cancel();
         _executionCancellation?.Dispose();
         _executionCancellation = null;
@@ -1734,6 +1892,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
 
     private void FinishActiveSession()
     {
+        CurrentRow = null;
         _executionCancellation?.Dispose();
         _executionCancellation = null;
         _activeSession?.Dispose();

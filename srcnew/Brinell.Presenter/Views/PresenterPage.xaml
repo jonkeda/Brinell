@@ -262,20 +262,39 @@
 
         <Grid Grid.Row="4"
               VerticalOptions="Fill">
-            <Grid RowDefinitions="Auto,*,Auto,Auto"
-                  RowSpacing="8"
+            <!--
+                Pick in a tree, step in a list. The two sections are expanders with a real
+                Button in the header (a toolkit Expander's own header tap is not reachable from
+                UI Automation); PresenterPage.xaml.cs gives a collapsed section's row no height.
+            -->
+            <Grid x:Name="TreeTab"
+                  RowDefinitions="Auto,Auto,*,Auto,*,Auto,Auto"
+                  RowSpacing="6"
                   IsVisible="{Binding IsTreeTabSelected}">
-                <VerticalStackLayout Grid.Row="0"
-                                     Spacing="2">
-                    <Label Text="{Binding WorkspaceSummaryText}"
-                           FontSize="12"
-                           Style="{StaticResource PresenterMutedLabel}"
-                           AutomationId="WorkspaceSummaryLabel" />
-                </VerticalStackLayout>
+                <Label Grid.Row="0"
+                       Text="{Binding WorkspaceSummaryText}"
+                       FontSize="12"
+                       Style="{StaticResource PresenterMutedLabel}"
+                       AutomationId="WorkspaceSummaryLabel" />
 
-                <Border Grid.Row="1"
+                <Grid Grid.Row="1">
+                    <Button Text="Scenarios"
+                            AutomationId="ScenariosExpander"
+                            Command="{Binding ToggleScenariosCommand}"
+                            HorizontalOptions="Fill" />
+                    <Label Text="{Binding ScenariosExpanderGlyph}"
+                           Style="{StaticResource PresenterGlyphLabel}"
+                           FontSize="11"
+                           HorizontalOptions="End"
+                           VerticalOptions="Center"
+                           Margin="0,0,12,0"
+                           InputTransparent="True" />
+                </Grid>
+
+                <Border Grid.Row="2"
                         Padding="8"
-                        VerticalOptions="Fill">
+                        VerticalOptions="Fill"
+                        IsVisible="{Binding IsScenariosExpanded}">
                     <Border.StrokeShape>
                         <RoundRectangle CornerRadius="6" />
                     </Border.StrokeShape>
@@ -315,6 +334,7 @@
                                            SemanticProperties.Description="{Binding StatusDescription}" />
                                     <Label Grid.Column="2"
                                            Text="{Binding Name}"
+                                           ToolTipProperties.Text="{Binding Name}"
                                            AutomationId="{Binding AutomationId}"
                                            LineBreakMode="TailTruncation"
                                            VerticalTextAlignment="Center" />
@@ -324,7 +344,95 @@
                     </controls:TreeView>
                 </Border>
 
-                <VerticalStackLayout Grid.Row="2"
+                <Grid Grid.Row="3"
+                      ColumnDefinitions="*,Auto"
+                      ColumnSpacing="6">
+                    <Button Grid.Column="0"
+                            Text="{Binding StepsHeaderText}"
+                            AutomationId="StepsExpander"
+                            Padding="10,6,30,6"
+                            Command="{Binding ToggleStepsCommand}"
+                            LineBreakMode="TailTruncation"
+                            ToolTipProperties.Text="{Binding StepsHeaderText}"
+                            HorizontalOptions="Fill" />
+                    <Label Grid.Column="0"
+                           Text="{Binding StepsExpanderGlyph}"
+                           Style="{StaticResource PresenterGlyphLabel}"
+                           FontSize="11"
+                           HorizontalOptions="End"
+                           VerticalOptions="Center"
+                           Margin="0,0,12,0"
+                           InputTransparent="True" />
+                    <Button Grid.Column="1"
+                            Text="&#xE8A7;"
+                            AutomationId="OpenPreviewButton"
+                            Style="{StaticResource PresenterIconButton}"
+                            Command="{Binding OpenPreviewCommand}"
+                            SemanticProperties.Description="Open the Scenario Preview"
+                            ToolTipProperties.Text="Open the Scenario Preview" />
+                </Grid>
+
+                <Border Grid.Row="4"
+                        Padding="4"
+                        VerticalOptions="Fill"
+                        IsVisible="{Binding IsStepsExpanded}">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="6" />
+                    </Border.StrokeShape>
+                    <CollectionView x:Name="StepList"
+                                    AutomationId="StepList"
+                                    ItemsSource="{Binding StepRows}"
+                                    SelectionMode="None">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Padding="{Binding Indent}"
+                                      ColumnDefinitions="14,24,*"
+                                      MinimumHeightRequest="26">
+                                    <Grid.Triggers>
+                                        <DataTrigger TargetType="Grid"
+                                                     Binding="{Binding IsCurrent}"
+                                                     Value="True">
+                                            <Setter Property="BackgroundColor"
+                                                    Value="{AppThemeBinding Light={StaticResource PresenterSelectedLight}, Dark={StaticResource PresenterSelectedDark}}" />
+                                        </DataTrigger>
+                                    </Grid.Triggers>
+                                    <Label Grid.Column="0"
+                                           Text="{Binding BreakpointGlyph}"
+                                           TextColor="#D13438"
+                                           FontSize="11"
+                                           HorizontalTextAlignment="Center"
+                                           VerticalTextAlignment="Center" />
+                                    <Label Grid.Column="1"
+                                           Text="{Binding StatusGlyph}"
+                                           TextColor="{Binding StatusColor}"
+                                           Style="{StaticResource PresenterGlyphLabel}"
+                                           FontSize="12"
+                                           SemanticProperties.Description="{Binding StatusDescription}" />
+                                    <Label Grid.Column="2"
+                                           Text="{Binding Label}"
+                                           ToolTipProperties.Text="{Binding Tooltip}"
+                                           AutomationId="{Binding AutomationId}"
+                                           LineBreakMode="TailTruncation"
+                                           VerticalTextAlignment="Center">
+                                        <Label.Triggers>
+                                            <DataTrigger TargetType="Label"
+                                                         Binding="{Binding IsCall}"
+                                                         Value="True">
+                                                <Setter Property="FontAttributes" Value="Bold" />
+                                            </DataTrigger>
+                                        </Label.Triggers>
+                                    </Label>
+                                </Grid>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                        <CollectionView.EmptyView>
+                            <Label Text="Pick a scenario"
+                                   Style="{StaticResource PresenterMutedLabel}" />
+                        </CollectionView.EmptyView>
+                    </CollectionView>
+                </Border>
+
+                <VerticalStackLayout Grid.Row="5"
                                      Spacing="2">
                     <Label Text="{Binding StatusSummary}"
                            FontAttributes="Bold"
@@ -352,7 +460,7 @@
                            Style="{StaticResource PresenterMirrorLabel}" />
                 </VerticalStackLayout>
 
-                <toolkit:Expander Grid.Row="3"
+                <toolkit:Expander Grid.Row="6"
                                   IsExpanded="{Binding IsSelectionExpanded, Mode=TwoWay}">
                     <toolkit:Expander.Header>
                         <!-- The caption is a plain label again; the chevron is a separate
