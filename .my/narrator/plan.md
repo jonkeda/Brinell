@@ -81,7 +81,7 @@ run the scenario ──► pace: pause before each step ──────┤
 
 | # | Question | Decided 2026-09-29 |
 | --- | --- | --- |
-| Q1 | ffmpeg, or Windows' own capture API? | Windows.Graphics.Capture records ([screen-capture.md](screen-capture.md)); ffmpeg encodes, adds the voice and joins. |
+| Q1 | ffmpeg, or Windows' own capture API? | As [screen-capture.md](screen-capture.md): one recorder API with a recorder per platform (Windows.Graphics.Capture for a window, Playwright's screencast, adb, simctl, an ffmpeg region last); ffmpeg over a pipe encodes first, Media Foundation only if needed; ffmpeg composes. |
 | Q2 | Built-in or cloud voice? | Not answered; the default stands: built-in, a cloud voice later as a setting. |
 | Q3 | Where does the narration go? | In a video script (`*.video.md`), as [todo-video-script.md](todo-video-script.md), not in the feature files. |
 | Q4 | App only, or with the bar? And Presenter or the extension? | The app only. One engine in the runner, used by both: see [design.md](design.md). |

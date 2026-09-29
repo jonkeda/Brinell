@@ -8,7 +8,7 @@ in [screen-capture.md](screen-capture.md) and the script format of
 
 | From | Decision |
 | --- | --- |
-| Q1 | Capture with **Windows.Graphics.Capture** (screen-capture.md); **ffmpeg** encodes the frames (over a pipe), adds the voice and joins scenes. |
+| Q1 | As [screen-capture.md](screen-capture.md): one recorder API (`Brinell.Recording`) with a recorder per platform: **Windows.Graphics.Capture** for a Windows window, Playwright's screencast for a browser page, `adb screenrecord` for Android, `simctl` for the iOS simulator, an ffmpeg region as the last resort. Frames are encoded by **ffmpeg over a pipe** first, behind the recorder, so a Media Foundation encoder can replace it if the pipe costs too much. ffmpeg also lays in the voice and joins the scenes. |
 | Q2 | Not answered: the default stands, Windows' own voices, a cloud voice later as a setting. |
 | Q3 | The narration lives in a **video script** (`*.video.md`), a file of scenes like todo-video-script.md, not in the feature files. A feature file stays a test; one scenario can be in several videos. |
 | Q4 | The **app only**. Recording is **one engine, used by both** the extension and Presenter (below). |
@@ -84,10 +84,11 @@ compose: scene videos joined, each Say WAV laid at its clock time, chapters per 
 - **The pacer is an engine seam**, like the break hook: `BddExecutionContext.Pacer`
   (`IBddStepPacer`: `BeforeAsync(invocation)`, `AfterAsync(result)`), null unless recording. The
   gate run and Presenter both call it, so both record the same way.
-- **The recorder** is the one from screen-capture.md: `IRecordable.RecordingTarget` from the
-  scenario's test context (the MAUI, WPF, WinForms window; a browser's window or page), then
-  `WindowsCaptureRecorder`. One recording per scene, because each scene's fixture opens its own app
-  window.
+- **The recorder** comes from screen-capture.md's registry: the scenario's test context names its
+  target (`IRecordable.RecordingTarget`: the MAUI, WPF, WinForms or Stride window, a browser page, an
+  Android device, an iOS simulator), and the first recorder that `CanRecord` it records. On Windows
+  that is `WindowsCaptureRecorder` for a window, `PlaywrightRecorder` for a page. One recording per
+  scene, because each scene's fixture opens its own app.
 - **A failed step** is recorded as it happened: the remaining steps are not run, their lines are
   not spoken, the `.srt` shows the failure message for a few seconds, and the timeline marks the
   scene failed. The video is still written; it is evidence.
@@ -105,7 +106,7 @@ compose: scene videos joined, each Say WAV laid at its clock time, chapters per 
 | Voice | the script's `Voice`, else Presenter's Settings or the extension setting | the system's default voice |
 | Beat | the script's `Beat`, else the setting | 600 ms |
 | Speak aloud | Presenter's Settings | off |
-| ffmpeg | on `PATH`, or `BRINELL_FFMPEG` | not found: record anyway, compose later, and say how to get ffmpeg |
+| ffmpeg | on `PATH`, or `BRINELL_FFMPEG` | not found: Record says so, and how to get it, before anything runs |
 
 Output, in the Recordings folder: `<script name>-<yyyyMMdd-HHmmss>.mp4`, `.srt`, `.timeline.json`,
 and the scene files under `<same name>.scenes/` until the compose has finished. A recording in
@@ -117,8 +118,9 @@ results deletes it; one in another folder is never deleted by Brinell.
 | Project | Holds |
 | --- | --- |
 | `Brinell.Bdd` | only the seam: `IBddStepPacer` on the execution context |
-| `Brinell.Recording` (net10.0) | the recorder API, the clock, the registry (screen-capture.md) |
+| `Brinell.Recording` (net10.0) | the recorder API, the clock, the registry, `FfmpegRegionRecorder` (screen-capture.md) |
 | `Brinell.Recording.Windows` (net10.0-windows10.0.19041) | `WindowsCaptureRecorder` |
+| the platform packages | `PlaywrightRecorder` (`Brinell.Html.Playwright`), `AndroidRecorder` (`Brinell.Maui.Appium`), `IosSimulatorRecorder`; `IRecordable` on each test context |
 | `Brinell.Narrator` (net10.0) | the video script parser and checker, the plan, the pacer, the timeline, the `.srt` writer, the ffmpeg composer |
 | `Brinell.Narrator.Windows` | the Windows speech synthesizer (`Windows.Media.SpeechSynthesis` → WAV) |
 | hosts | the language server (`brinell/record`, MCP `record_video`), both extensions' Record commands, Presenter's button and settings |
@@ -127,14 +129,15 @@ results deletes it; one in another folder is never deleted by Brinell.
 
 | # | Step | Done when |
 | --- | --- | --- |
-| 1 | `Brinell.Recording` + `WindowsCaptureRecorder` (screen-capture.md steps 1-3). | The MAUI sample's window records while covered. |
+| 1 | Recording, as screen-capture.md steps 1-3: the API and the ffmpeg region recorder, `WindowsCaptureRecorder` over an ffmpeg pipe, `IRecordable` on the contexts. | The MAUI sample's window records while covered. |
 | 2 | The video script: parser, checker, preview; `todo.video.md` from the Todo script. | The script shows in the preview with no diagnostics. |
 | 3 | Speech to WAV and the pacer seam; a gate run with `BRINELL_RECORD` makes scene videos and the timeline. | Scene 1 of the Todo script records from `dotnet test`. |
 | 4 | The composer: joined scenes, laid-in voice, chapters, `.srt`; the Recordings folder. | The whole Todo video plays with voice and captions in step. |
 | 5 | Record in Visual Studio and VS Code; **Watch** on a result. | Record on `todo.video.md` in Visual Studio gives the video. |
 | 6 | Presenter: Record, Speak aloud, the settings. | A recording made from Presenter matches the IDE's. |
 | 7 | MCP `record_video` and the review page (plan step 5). | An agent's review page shows the video. |
-| 8 | Guide, an AD (the pacer seam, output, no input), the manual test plan. | |
+| 8 | The other recorders, as screen-capture.md steps 4-5: Playwright's screencast, Android. | A Blazor scene records headless; a scene on the emulator records past 3 minutes. |
+| 9 | Guide, an AD (the pacer seam, output, no input), the manual test plan. | |
 
 ## Risks
 
@@ -142,6 +145,6 @@ results deletes it; one in another folder is never deleted by Brinell.
   they agree; other platforms convert at the first frame.
 - **The first frames** before the app has painted: the recorder starts after the fixture reports
   the app ready, and the intro plays over the first frame.
-- **ffmpeg is a download** for the user; without it the recording still produces scene videos
-  (raw capture) only if the encoder is in-process, so step 1 keeps the Media Foundation encoder
-  (screen-capture.md step 6) as the fallback to write.
+- **ffmpeg is a download** for the user, and every recording needs it (the encoder pipe, the voice,
+  the join), so Record checks for it first. The Media Foundation encoder (screen-capture.md step 6)
+  is only for when the pipe costs too much; it would not remove ffmpeg, which still composes.
