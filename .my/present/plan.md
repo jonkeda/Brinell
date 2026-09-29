@@ -8,12 +8,13 @@ The notes these items came from are at
 
 | # | Item | Status | Done when |
 | --- | --- | --- | --- |
-| 1 | App icon (was WP4 of the UI refresh) | todo | the icon shows in the taskbar, Alt-Tab and the title bar |
+| 1 | App icon (was WP4 of the UI refresh) | done 2026-09-29: the exe and the window have it (`WM_GETICON`, small and big), which is what the taskbar, Alt-Tab and the title bar show | the icon shows in the taskbar, Alt-Tab and the title bar |
 | 2 | Gesture bridge in Presenter | proposed, not started | [gesture-bridge.md](gesture-bridge.md) is done |
 | 3 | Todo workspace in Presenter | to verify | a Todo scenario runs from Presenter |
 | 4 | Scenario parity across techs | todo | the baseline scenarios run on every tech, or each gap has a reason |
 | 5 | Template doc for a new tech UAT project | todo | a new project can be made from the doc alone |
-| 6 | User journeys | not run | every journey in [userjourney.md](userjourney.md) is checked |
+| 6 | User journeys | updated for the new UI (PR16-PR18 new), not run | every journey in [userjourney.md](userjourney.md) is checked |
+| 7 | [The Presenter update](presenter-update.md): the step list, the moves, the modes, the docked bar | steps 1-5 built 2026-09-29; recording (P4) deferred | the design's steps are done |
 
 ## 1. App icon
 

@@ -1,6 +1,6 @@
 # Presenter update: what the IDE work taught us
 
-Status: **steps 1-4 built** 2026-09-29; the owner's comments of the same day are in. Input for
+Status: **steps 1-5 built** (recording, P4, deferred) 2026-09-29; the owner's comments of the same day are in. Input for
 [plan.md](plan.md).
 
 Presenter exists so a person can **click through a UAT scenario** without an IDE, for one of two
@@ -180,11 +180,15 @@ bound; the expected failure; the unbuilt suite); Presenter's UI scenarios pass.
 Still open: a **run** loads the build through Presenter's own `BddRuntimeAssemblyResolver` and
 binds with the live fixture's catalogs, which is what the xUnit gate does at run time too; only the
 checking went through `Brinell.Bdd.Workspace`.
-Smaller:
-- Move the UI-test text mirrors out of the layout (a zero-size container, or read the same values
-  through page objects). Fixes U10.
-- The app icon (plan.md item 1): the files exist in `Resources/AppIcon`, still to check in the
-  taskbar, Alt-Tab and the title bar.
+
+Smaller, **built 2026-09-29 (step 5)**:
+- The UI-test text mirrors are laid over the content row (1 px each, transparent to input), so
+  they take no room and stay in the automation tree whichever tab or mode shows. Fixes U10.
+- The app icon (plan.md item 1): the exe and the window have it (`WM_GETICON` answers small and
+  big), which is what the taskbar, Alt-Tab and the title bar show.
+- [userjourney.md](userjourney.md) is rewritten for the new UI: PR11 is the moves, PR16 the modes
+  and the dock, PR17 the step list and the preview, PR18 breakpoints and Run until/from here. The
+  journeys are not run; the UI scenarios cover PR02, PR04, PR09, PR11.1-11.2 and the config.
 
 ## 3. Sketch: Present mode, docked left
 
@@ -216,7 +220,7 @@ Smaller:
 | 2 | P1: scenario tree and step list in expanders, tooltips, the preview on demand. **Done** 2026-09-29. | TOD.01's steps read in full on hover; the preview opens and follows a run. |
 | 3 | P2: pause-before stepping, keys, clicker, the step menu, shared breakpoints. **Done** 2026-09-29. | PR11 rewritten for it passes; a breakpoint set in VS stops Play; Run until here pauses at the step. |
 | 4 | P3: the docked bar, placement for every target, Present and Workspace modes. **Done** 2026-09-29. | TOD.01 presented beside its app, and a Blazor scenario beside its browser, without help. |
-| 5 | P5's smaller things, and [userjourney.md](userjourney.md) updated for the new UI. | The journeys pass. |
+| 5 | P5's smaller things, and [userjourney.md](userjourney.md) updated for the new UI. **Done** 2026-09-29, journeys not run. | The journeys pass. |
 | - | P4, recording. | Deferred. |
 
 ## 5. Open questions

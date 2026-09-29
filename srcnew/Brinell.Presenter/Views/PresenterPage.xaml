@@ -523,27 +523,6 @@
                     <Label Text="{Binding StatusSummary}"
                            FontAttributes="Bold"
                            AutomationId="StatusSummaryLabel" />
-                    <Label Text="{Binding WorkspaceTreeText}"
-                           AutomationId="WorkspaceTreeText"
-                           Style="{StaticResource PresenterMirrorLabel}" />
-                    <Label Text="{Binding AllWorkspaceTreeText}"
-                           AutomationId="AllWorkspaceTreeText"
-                           Style="{StaticResource PresenterMirrorLabel}" />
-                    <Label Text="{Binding StepListText}"
-                           AutomationId="StepListText"
-                           Style="{StaticResource PresenterMirrorLabel}" />
-                    <Label Text="{Binding ExecutionTimingText}"
-                           AutomationId="ExecutionTimingText"
-                           Style="{StaticResource PresenterMirrorLabel}" />
-                    <Label Text="{Binding RunScopeText}"
-                           AutomationId="RunScopeText"
-                           Style="{StaticResource PresenterMirrorLabel}" />
-                    <Label Text="{Binding RecentFoldersText}"
-                           AutomationId="RecentFoldersText"
-                           Style="{StaticResource PresenterMirrorLabel}" />
-                    <Label Text="{Binding AutPlacementText}"
-                           AutomationId="AutPlacementText"
-                           Style="{StaticResource PresenterMirrorLabel}" />
                 </VerticalStackLayout>
 
                 <toolkit:Expander Grid.Row="6"
@@ -729,5 +708,37 @@
                 </ScrollView>
             </Border>
         </Grid>
+
+        <!--
+            The hidden text mirrors the UAT suite asserts against (K2): laid over the content row,
+            1 px each and transparent to input, so they take no room from the layout and stay in
+            the automation tree whichever tab or mode is showing.
+        -->
+        <VerticalStackLayout Grid.Row="4"
+                             VerticalOptions="Start"
+                             InputTransparent="True"
+                             Spacing="0">
+            <Label Text="{Binding WorkspaceTreeText}"
+                   AutomationId="WorkspaceTreeText"
+                   Style="{StaticResource PresenterMirrorLabel}" />
+            <Label Text="{Binding AllWorkspaceTreeText}"
+                   AutomationId="AllWorkspaceTreeText"
+                   Style="{StaticResource PresenterMirrorLabel}" />
+            <Label Text="{Binding StepListText}"
+                   AutomationId="StepListText"
+                   Style="{StaticResource PresenterMirrorLabel}" />
+            <Label Text="{Binding ExecutionTimingText}"
+                   AutomationId="ExecutionTimingText"
+                   Style="{StaticResource PresenterMirrorLabel}" />
+            <Label Text="{Binding RunScopeText}"
+                   AutomationId="RunScopeText"
+                   Style="{StaticResource PresenterMirrorLabel}" />
+            <Label Text="{Binding RecentFoldersText}"
+                   AutomationId="RecentFoldersText"
+                   Style="{StaticResource PresenterMirrorLabel}" />
+            <Label Text="{Binding AutPlacementText}"
+                   AutomationId="AutPlacementText"
+                   Style="{StaticResource PresenterMirrorLabel}" />
+        </VerticalStackLayout>
     </Grid>
 </ContentPage>
