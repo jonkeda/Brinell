@@ -15,6 +15,10 @@ public sealed class PresenterUserSettings
     [JsonConverter(typeof(JsonStringEnumConverter<PresenterTheme>))]
     public PresenterTheme Theme { get; set; } = PresenterTheme.System;
 
+    /// <summary>The side the Presenter bar docks to; the app under test takes the rest of the screen.</summary>
+    [JsonConverter(typeof(JsonStringEnumConverter<PresenterDock>))]
+    public PresenterDock Dock { get; set; } = PresenterDock.Left;
+
     /// <summary>
     /// The build configuration and platform chosen per workspace folder.
     /// </summary>

@@ -14,7 +14,7 @@
 
 ```gherkin
 Given I am on the Presenter page
-When I tap Validate
+When I tap Reload
 Then Status Summary should contain "Parse: ok"
 And Status Summary should contain "Bind: ok"
 ```

@@ -23,17 +23,20 @@ public partial class App : Application
         ApplyPersistedTheme(settingsService);
         ResolveIconFont();
 
+        Window? window = null;
         var viewModel = new PresenterShellViewModel(
             new BddWorkspaceService(),
             new BddExecutionService(),
             new FolderPickerService(),
             settingsService,
-            new ScenarioPreviewWindowService());
-        var window = new Window(new PresenterPage(viewModel))
+            new ScenarioPreviewWindowService(),
+            windowService: new PresenterWindowService(() => window));
+        window = new Window(new PresenterPage(viewModel))
         {
             Title = "Brinell Presenter"
         };
-        window.Created += (_, _) => PlacePresenterWindow(window);
+        // A narrow bar on its side of the screen; the app under test is placed beside it.
+        window.Created += (_, _) => viewModel.ApplyDock();
         window.Activated += (_, _) => ShowTitleBarIcon(window);
         return window;
     }
@@ -73,25 +76,6 @@ public partial class App : Application
         {
             Resources["PresenterIconFont"] = "Segoe MDL2 Assets";
         }
-    }
-
-    private static void PlacePresenterWindow(Window window)
-    {
-#if WINDOWS
-        if (window.Handler?.PlatformView is not Microsoft.UI.Xaml.Window platformWindow)
-        {
-            return;
-        }
-
-        var handle = WindowNative.GetWindowHandle(platformWindow);
-        var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(handle);
-        var appWindow = AppWindow.GetFromWindowId(windowId);
-        var displayArea = DisplayArea.GetFromWindowId(windowId, DisplayAreaFallback.Primary);
-        var workArea = displayArea.WorkArea;
-        var width = workArea.Width / 4;
-
-        appWindow.MoveAndResize(new RectInt32(workArea.X, workArea.Y, width, workArea.Height));
-#endif
     }
 
     /// <summary>

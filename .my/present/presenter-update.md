@@ -1,6 +1,6 @@
 # Presenter update: what the IDE work taught us
 
-Status: **steps 1-3 built** 2026-09-29; the owner's comments of the same day are in. Input for
+Status: **steps 1-4 built** 2026-09-29; the owner's comments of the same day are in. Input for
 [plan.md](plan.md).
 
 Presenter exists so a person can **click through a UAT scenario** without an IDE, for one of two
@@ -134,6 +134,23 @@ Two modes, one toggle:
 
 Fixes U3, U4, U5 and U11.
 
+**Built 2026-09-29 (step 4).** `PresenterWindowService` docks the window (`PresenterLayout.Bar`: a
+quarter of the work area, at least 320 px) and places the app by its top-level window: a snapshot
+before the session starts, the largest new window of another process moved to
+`PresenterLayout.App` once the session is created, or after the first step. One way for every
+target, since each fixture starts its app in a process of its own; the MAUI driver's own
+`BRINELL_AUT_PLACE_RIGHT` stays for a left dock. The dock is in the user settings. Present and
+Workspace are a pair of buttons (both always there, so a test can ask for either); Validate is
+gone (it was Reload); "Not built yet" shows above Build. Checked by hand: docked right, the MAUI
+sample was moved to x=0, w=1430 beside the bar at x=1440. Tests: the dock and mode test in
+`PresenterUserSettingsServiceTests`, `Layout_PutsTheBarOnItsSide_AndTheAppBesideIt`; the config
+scenarios switch to Workspace mode first.
+
+Found on the way, not fixed here: the WPF and WinForms sample fixtures (`WpfSampleFixture`,
+`WinFormsSampleFixture`) work out their app from the test output folder, five folders up, so
+under Presenter they look in `srcnew\samples\...` and the run fails to start, although the
+workspace config sets `AppPath`. That is scenario parity work (plan.md item 4).
+
 ### P4. Record a run (deferred)
 
 Later: write a Presenter run the way `[UatScenarioTheory]` does (a run folder under the suite's
@@ -198,7 +215,7 @@ Smaller:
 | 1 | P5: load and bind through `Brinell.Bdd.Workspace` and `BddFileAnalysis`. **Done** 2026-09-29. | Presenter's diagnostics for TOD.01 equal the language server's; a `## Step:` call binds. |
 | 2 | P1: scenario tree and step list in expanders, tooltips, the preview on demand. **Done** 2026-09-29. | TOD.01's steps read in full on hover; the preview opens and follows a run. |
 | 3 | P2: pause-before stepping, keys, clicker, the step menu, shared breakpoints. **Done** 2026-09-29. | PR11 rewritten for it passes; a breakpoint set in VS stops Play; Run until here pauses at the step. |
-| 4 | P3: the docked bar, placement for every target, Present and Workspace modes. | TOD.01 presented beside its app, and a Blazor scenario beside its browser, without help. |
+| 4 | P3: the docked bar, placement for every target, Present and Workspace modes. **Done** 2026-09-29. | TOD.01 presented beside its app, and a Blazor scenario beside its browser, without help. |
 | 5 | P5's smaller things, and [userjourney.md](userjourney.md) updated for the new UI. | The journeys pass. |
 | - | P4, recording. | Deferred. |
 

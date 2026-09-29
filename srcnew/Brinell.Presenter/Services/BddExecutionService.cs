@@ -6,6 +6,9 @@ namespace Brinell.Presenter.Services;
 
 public sealed class BddExecutionService : IBddExecutionService
 {
+    /// <inheritdoc />
+    public PresenterDock Dock { get; set; } = PresenterDock.Left;
+
     public Task<PresenterUatExecutionSession> CreateSessionAsync(
         string workspacePath,
         string scenarioFilePath,
@@ -17,7 +20,7 @@ public sealed class BddExecutionService : IBddExecutionService
         ArgumentException.ThrowIfNullOrWhiteSpace(scenarioName);
 
         return Task.Run(
-            () => CreateSession(workspacePath, scenarioFilePath, scenarioName, cancellationToken),
+            () => CreateSession(workspacePath, scenarioFilePath, scenarioName, Dock, cancellationToken),
             cancellationToken);
     }
 
@@ -25,6 +28,7 @@ public sealed class BddExecutionService : IBddExecutionService
         string workspacePath,
         string scenarioFilePath,
         string scenarioName,
+        PresenterDock dock,
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -51,7 +55,7 @@ public sealed class BddExecutionService : IBddExecutionService
         {
             var appPath = BddWorkspaceConfigInspector.ResolveConfiguredAppPath(workspacePath, config);
             environment = new DisposableGroup(
-                [.. CreateTargetEnvironment(config, appPath, placementReportPath),
+                [.. CreateTargetEnvironment(config, appPath, placementReportPath, dock),
                  workingDirectory is null ? null : new CurrentDirectoryScope(workingDirectory)]);
 
             var pagesAssembly = resolver.LoadRequired(ResolvePagesAssembly(workspacePath, config));
@@ -174,7 +178,8 @@ public sealed class BddExecutionService : IBddExecutionService
     private static IEnumerable<IDisposable?> CreateTargetEnvironment(
         BddConfig config,
         string? appPath,
-        string placementReportPath)
+        string placementReportPath,
+        PresenterDock dock)
     {
         var target = BddTargetRegistry.GetRequired(config);
 
@@ -184,7 +189,9 @@ public sealed class BddExecutionService : IBddExecutionService
             ? null
             : new EnvironmentVariableScope(target.AppPathEnvironmentVariable, appPath);
 
-        if (target.SupportsPresenterAutPlacement)
+        // The MAUI driver places its app right of a left-hand bar as it opens; any other side or
+        // target is placed by the Presenter once the window is there (PresenterWindowService).
+        if (target.SupportsPresenterAutPlacement && dock == PresenterDock.Left)
         {
             yield return new EnvironmentVariableScope("BRINELL_AUT_PLACE_RIGHT", "1");
             yield return new EnvironmentVariableScope("BRINELL_AUT_PLACEMENT_RESULT_FILE", placementReportPath);

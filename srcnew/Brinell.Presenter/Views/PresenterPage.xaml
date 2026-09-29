@@ -33,19 +33,57 @@
                 one-row layout. OpenRecentButton stays a real Button with its own command.
             -->
             <toolkit:Expander.Header>
+                <!-- Present and Workspace are a pair of buttons, the current one filled, so either
+                     can be asked for whatever the mode is; the rest of the row is Workspace mode's. -->
                 <Grid ColumnDefinitions="Auto,*,Auto">
                     <HorizontalStackLayout Grid.Column="0"
                                            Spacing="6">
+                        <Button Text="&#xE7F4;"
+                                AutomationId="PresentModeButton"
+                                Style="{StaticResource PresenterIconButton}"
+                                Command="{Binding ShowPresentModeCommand}"
+                                SemanticProperties.Description="Present mode"
+                                ToolTipProperties.Text="Present mode: the scenarios, the steps and the moves">
+                            <Button.Triggers>
+                                <DataTrigger TargetType="Button"
+                                             Binding="{Binding IsPresentMode}"
+                                             Value="True">
+                                    <Setter Property="BackgroundColor"
+                                            Value="{AppThemeBinding Light={StaticResource PresenterSelectedLight}, Dark={StaticResource PresenterSelectedDark}}" />
+                                    <Setter Property="BorderColor"
+                                            Value="{AppThemeBinding Light={StaticResource PresenterAccentLight}, Dark={StaticResource PresenterAccentDark}}" />
+                                </DataTrigger>
+                            </Button.Triggers>
+                        </Button>
+                        <Button Text="&#xE8F1;"
+                                AutomationId="WorkspaceModeButton"
+                                Style="{StaticResource PresenterIconButton}"
+                                Command="{Binding ShowWorkspaceModeCommand}"
+                                SemanticProperties.Description="Workspace mode"
+                                ToolTipProperties.Text="Workspace mode: open, build, config and diagnostics">
+                            <Button.Triggers>
+                                <DataTrigger TargetType="Button"
+                                             Binding="{Binding IsWorkspaceMode}"
+                                             Value="True">
+                                    <Setter Property="BackgroundColor"
+                                            Value="{AppThemeBinding Light={StaticResource PresenterSelectedLight}, Dark={StaticResource PresenterSelectedDark}}" />
+                                    <Setter Property="BorderColor"
+                                            Value="{AppThemeBinding Light={StaticResource PresenterAccentLight}, Dark={StaticResource PresenterAccentDark}}" />
+                                </DataTrigger>
+                            </Button.Triggers>
+                        </Button>
                         <Button Text="&#xE838;"
                                 AutomationId="OpenFolderButton"
                                 Style="{StaticResource PresenterIconButton}"
                                 Command="{Binding OpenFolderCommand}"
+                                IsVisible="{Binding IsWorkspaceMode}"
                                 SemanticProperties.Description="Open workspace folder"
                                 ToolTipProperties.Text="Open workspace folder" />
                         <Button Text="{Binding RecentFoldersGlyph}"
                                 AutomationId="OpenRecentButton"
                                 Style="{StaticResource PresenterIconButton}"
                                 Command="{Binding ToggleRecentFoldersCommand}"
+                                IsVisible="{Binding IsWorkspaceMode}"
                                 SemanticProperties.Description="Recent folders"
                                 ToolTipProperties.Text="Recent folders" />
                         <Button Text="&#xE72C;"
@@ -53,21 +91,23 @@
                                 Style="{StaticResource PresenterIconButton}"
                                 Command="{Binding ReloadCommand}"
                                 SemanticProperties.Description="Reload workspace"
-                                ToolTipProperties.Text="Reload workspace" />
-                        <Button Text="&#xE73E;"
-                                AutomationId="ValidateButton"
-                                Style="{StaticResource PresenterIconButton}"
-                                Command="{Binding ValidateCommand}"
-                                SemanticProperties.Description="Validate workspace"
-                                ToolTipProperties.Text="Validate workspace" />
+                                ToolTipProperties.Text="Reload and check the workspace" />
                     </HorizontalStackLayout>
-                    <Button Grid.Column="2"
-                            Text="{Binding ThemeGlyph}"
-                            AutomationId="ThemeToggleButton"
-                            Style="{StaticResource PresenterIconButton}"
-                            Command="{Binding ToggleThemeCommand}"
-                            SemanticProperties.Description="{Binding ThemeDescription}"
-                            ToolTipProperties.Text="{Binding ThemeDescription}" />
+                    <HorizontalStackLayout Grid.Column="2"
+                                           Spacing="6">
+                        <Button Text="&#xE8AB;"
+                                AutomationId="DockToggleButton"
+                                Style="{StaticResource PresenterIconButton}"
+                                Command="{Binding ToggleDockCommand}"
+                                SemanticProperties.Description="{Binding DockDescription}"
+                                ToolTipProperties.Text="{Binding DockDescription}" />
+                        <Button Text="{Binding ThemeGlyph}"
+                                AutomationId="ThemeToggleButton"
+                                Style="{StaticResource PresenterIconButton}"
+                                Command="{Binding ToggleThemeCommand}"
+                                SemanticProperties.Description="{Binding ThemeDescription}"
+                                ToolTipProperties.Text="{Binding ThemeDescription}" />
+                    </HorizontalStackLayout>
                 </Grid>
             </toolkit:Expander.Header>
 
@@ -169,10 +209,16 @@
             resolves its own app binary; both persist per workspace.
         -->
         <Border Grid.Row="2"
-                Padding="10">
+                Padding="10"
+                IsVisible="{Binding IsWorkspaceMode}">
             <Border.StrokeShape>
                 <RoundRectangle CornerRadius="6" />
             </Border.StrokeShape>
+            <VerticalStackLayout Spacing="6">
+            <Label Text="Not built yet: Build it to check and run the steps."
+                   AutomationId="NotBuiltLabel"
+                   FontAttributes="Bold"
+                   IsVisible="{Binding NeedsBuild}" />
             <HorizontalStackLayout Spacing="6"
                                    VerticalOptions="Center">
                 <Picker AutomationId="BuildConfigurationPicker"
@@ -192,6 +238,7 @@
                         SemanticProperties.Description="Build the workspace project"
                         ToolTipProperties.Text="Build the workspace project" />
             </HorizontalStackLayout>
+            </VerticalStackLayout>
         </Border>
 
         <!--
@@ -200,7 +247,8 @@
             the theme button fit on one row at quarter-screen width.
         -->
         <HorizontalStackLayout Grid.Row="3"
-                               Spacing="4">
+                               Spacing="4"
+                               IsVisible="{Binding IsWorkspaceMode}">
             <Button Text="&#xF168;"
                     AutomationId="TreeTabButton"
                     Style="{StaticResource PresenterIconButton}"
@@ -499,6 +547,7 @@
                 </VerticalStackLayout>
 
                 <toolkit:Expander Grid.Row="6"
+                                  IsVisible="{Binding IsWorkspaceMode}"
                                   IsExpanded="{Binding IsSelectionExpanded, Mode=TwoWay}">
                     <toolkit:Expander.Header>
                         <!-- The caption is a plain label again; the chevron is a separate

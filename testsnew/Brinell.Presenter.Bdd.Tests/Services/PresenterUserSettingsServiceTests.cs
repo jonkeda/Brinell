@@ -190,6 +190,73 @@ public sealed class PresenterUserSettingsServiceTests
         }
     }
 
+    /// <summary>
+    /// A clean workspace opens in Present mode, the bar docks to the remembered side, and the
+    /// dock toggle moves it and remembers the new side.
+    /// </summary>
+    [Fact]
+    public void PresenterShell_OpensInPresentMode_AndRemembersTheDock()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "BrinellPresenterStartup", Guid.NewGuid().ToString("N"));
+        var workspace = Path.Combine(root, "Workspace");
+        Directory.CreateDirectory(workspace);
+        File.WriteAllText(Path.Combine(workspace, "uat.config.md"), "# Workspace");
+
+        try
+        {
+            var settingsService = new PresenterUserSettingsService(Path.Combine(root, "settings.json"));
+            settingsService.Save(new PresenterUserSettings { LastOpenedFolder = workspace, Dock = PresenterDock.Right });
+            var window = new FakeWindowService();
+            var viewModel = new PresenterShellViewModel(
+                new FakeWorkspaceService(workspace),
+                new FakeExecutionService(),
+                new FakeFolderPickerService(),
+                settingsService,
+                windowService: window);
+
+            Assert.True(viewModel.IsPresentMode);
+            viewModel.ApplyDock();
+            viewModel.ToggleDockCommand.Execute(null);
+            viewModel.ShowWorkspaceModeCommand.Execute(null);
+
+            Assert.Equal([PresenterDock.Right, PresenterDock.Left], window.Docks);
+            Assert.Equal(PresenterDock.Left, settingsService.Load().Dock);
+            Assert.True(viewModel.IsWorkspaceMode);
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+            {
+                Directory.Delete(root, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
+    public void Layout_PutsTheBarOnItsSide_AndTheAppBesideIt()
+    {
+        var work = new System.Drawing.Rectangle(0, 0, 1920, 1040);
+
+        var left = PresenterLayout.Bar(work, PresenterDock.Left);
+        var right = PresenterLayout.Bar(work, PresenterDock.Right);
+
+        Assert.Equal(new System.Drawing.Rectangle(0, 0, 480, 1040), left);
+        Assert.Equal(new System.Drawing.Rectangle(1440, 0, 480, 1040), right);
+        Assert.Equal(System.Drawing.Rectangle.FromLTRB(488, 0, 1920, 1040), PresenterLayout.App(work, left, PresenterDock.Left));
+        Assert.Equal(System.Drawing.Rectangle.FromLTRB(0, 0, 1432, 1040), PresenterLayout.App(work, right, PresenterDock.Right));
+    }
+
+    private sealed class FakeWindowService : IPresenterWindowService
+    {
+        public List<PresenterDock> Docks { get; } = [];
+
+        public void Dock(PresenterDock dock) => Docks.Add(dock);
+
+        public object Snapshot() => new();
+
+        public string? PlaceApp(object before, PresenterDock dock) => null;
+    }
+
     private sealed class FakeFolderPickerService : IFolderPickerService
     {
         public Task<string?> PickFolderAsync(CancellationToken cancellationToken = default)

@@ -66,7 +66,13 @@ public sealed class PresenterPage : PageObjectBase<PresenterPage>
 
     public Button<PresenterPage> ReloadButton => new(this,"ReloadButton");
 
-    public Button<PresenterPage> ValidateButton => new(this,"ValidateButton");
+    /// <summary>Present mode: the scenarios, the steps and the moves.</summary>
+    [UatName("Present Mode")]
+    public Button<PresenterPage> PresentModeButton => new(this, "PresentModeButton");
+
+    /// <summary>Workspace mode: open, build, config, diagnostics and the tabs.</summary>
+    [UatName("Workspace Mode")]
+    public Button<PresenterPage> WorkspaceModeButton => new(this, "WorkspaceModeButton");
 
     [UatName("Next")]
     public Button<PresenterPage> NextButton => new(this,"NextButton");

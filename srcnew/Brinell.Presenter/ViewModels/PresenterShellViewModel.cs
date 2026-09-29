@@ -60,6 +60,12 @@ public sealed class PresenterShellViewModel : ViewModelBase, IStepRowHost
     private readonly IScenarioPreviewService? _preview;
     private readonly PresenterBreakpointStore _breakpoints;
     private bool _isMoving;
+    private readonly IPresenterWindowService? _windowService;
+    private PresenterDock _dock;
+    private bool _isPresentMode;
+    private bool _needsBuild;
+    private object? _placementSnapshot;
+    private bool _placedThisRun;
 
     private const int MaxExecutionDelayMilliseconds = 99999;
 
@@ -75,9 +81,11 @@ public sealed class PresenterShellViewModel : ViewModelBase, IStepRowHost
         IFolderPickerService folderPickerService,
         IPresenterUserSettingsService settingsService,
         IScenarioPreviewService? previewService = null,
-        PresenterBreakpointStore? breakpoints = null)
+        PresenterBreakpointStore? breakpoints = null,
+        IPresenterWindowService? windowService = null)
     {
         _workspaceService = workspaceService;
+        _windowService = windowService;
         _breakpoints = breakpoints ?? new PresenterBreakpointStore();
         _preview = previewService;
         if (_preview is not null)
@@ -93,7 +101,6 @@ public sealed class PresenterShellViewModel : ViewModelBase, IStepRowHost
         OpenFolderCommand = new AsyncRelayCommand(OpenFolderAsync);
         ToggleRecentFoldersCommand = new RelayCommand(() => IsRecentFoldersExpanded = !IsRecentFoldersExpanded);
         ReloadCommand = new RelayCommand(ReloadWorkspace, () => WorkspacePath is not null);
-        ValidateCommand = new RelayCommand(ReloadWorkspace, () => WorkspacePath is not null);
         RunCommand = new AsyncRelayCommand(RunAsync, () => !_isMoving);
         StopCommand = new RelayCommand(Stop);
         NextStepCommand = new AsyncRelayCommand(StepAsync, () => WorkspacePath is not null && !_isMoving);
@@ -111,6 +118,9 @@ public sealed class PresenterShellViewModel : ViewModelBase, IStepRowHost
         ToggleScenariosCommand = new RelayCommand(() => IsScenariosExpanded = !IsScenariosExpanded);
         ToggleStepsCommand = new RelayCommand(() => IsStepsExpanded = !IsStepsExpanded);
         OpenPreviewCommand = new RelayCommand(OpenPreview, () => _preview is not null);
+        ShowPresentModeCommand = new RelayCommand(() => IsPresentMode = true);
+        ShowWorkspaceModeCommand = new RelayCommand(() => IsPresentMode = false);
+        ToggleDockCommand = new RelayCommand(ToggleDock);
 
         ConfigEditor = new ConfigEditorViewModel(
             new FixtureInspector(),
@@ -119,6 +129,7 @@ public sealed class PresenterShellViewModel : ViewModelBase, IStepRowHost
 
         var settings = _settingsService.Load();
         _theme = settings.Theme;
+        _dock = settings.Dock;
         ApplyTheme();
 
         if (Application.Current is { } application)
@@ -197,6 +208,99 @@ public sealed class PresenterShellViewModel : ViewModelBase, IStepRowHost
     /// <summary>The Steps header: the selected scenario's name.</summary>
     public string StepsHeaderText => SelectedScenario is { } scenario ? $"Steps: {scenario.Name}" : "Steps";
 
+    /// <summary>
+    /// Present mode: the scenarios, the steps and the moves, nothing else. Workspace mode adds
+    /// opening folders, building, the config and the diagnostics. A workspace that loads cleanly
+    /// opens in Present mode; one with problems in Workspace mode.
+    /// </summary>
+    public bool IsPresentMode
+    {
+        get => _isPresentMode;
+        set
+        {
+            if (SetProperty(ref _isPresentMode, value))
+            {
+                OnPropertyChanged(nameof(IsWorkspaceMode));
+                if (value)
+                {
+                    SelectedTab = TreeTabName;
+                }
+            }
+        }
+    }
+
+    public bool IsWorkspaceMode => !IsPresentMode;
+
+    public ICommand ShowPresentModeCommand { get; }
+
+    public ICommand ShowWorkspaceModeCommand { get; }
+
+    /// <summary>The side the bar docks to; the app under test is placed in the rest of the screen.</summary>
+    public PresenterDock Dock
+    {
+        get => _dock;
+        private set
+        {
+            if (SetProperty(ref _dock, value))
+            {
+                OnPropertyChanged(nameof(DockDescription));
+            }
+        }
+    }
+
+    /// <summary>The dock button's tooltip: where it moves the bar.</summary>
+    public string DockDescription => Dock == PresenterDock.Left ? "Dock to the right" : "Dock to the left";
+
+    public ICommand ToggleDockCommand { get; }
+
+    /// <summary>Whether the workspace's suite is not built, so its steps cannot be checked or run.</summary>
+    public bool NeedsBuild
+    {
+        get => _needsBuild;
+        private set => SetProperty(ref _needsBuild, value);
+    }
+
+    /// <summary>Docks the window to the remembered side; called once the window exists.</summary>
+    public void ApplyDock() => _windowService?.Dock(Dock);
+
+    private void ToggleDock()
+    {
+        Dock = Dock == PresenterDock.Left ? PresenterDock.Right : PresenterDock.Left;
+        _windowService?.Dock(Dock);
+        try
+        {
+            var settings = _settingsService.Load();
+            settings.Dock = Dock;
+            _settingsService.Save(settings);
+        }
+        catch (Exception ex)
+        {
+            DiagnosticsText = $"Could not save the dock side: {ex.Message}";
+        }
+    }
+
+    // Before a run starts its app: the windows now, to find the app's once it opens.
+    private void SnapshotWindows()
+    {
+        _executionService.Dock = Dock;
+        _placedThisRun = false;
+        _placementSnapshot = _windowService?.Snapshot();
+    }
+
+    // Places the app's window beside the bar once it has opened; tried again after a step, for an
+    // app (a browser) that opens its window late.
+    private void TryPlaceApp()
+    {
+        if (_placementSnapshot is null || _windowService?.PlaceApp(_placementSnapshot, Dock) is not { } report)
+        {
+            return;
+        }
+
+        _placementSnapshot = null;
+        _placedThisRun = true;
+        AutPlacementText = report;
+    }
+
     public ICommand ToggleScenariosCommand { get; }
 
     public ICommand ToggleStepsCommand { get; }
@@ -220,8 +324,6 @@ public sealed class PresenterShellViewModel : ViewModelBase, IStepRowHost
     public ICommand ToggleRecentFoldersCommand { get; }
 
     public ICommand ReloadCommand { get; }
-
-    public ICommand ValidateCommand { get; }
 
     public ICommand RunCommand { get; }
 
@@ -828,7 +930,10 @@ public sealed class PresenterShellViewModel : ViewModelBase, IStepRowHost
         StopActiveSession();
 
         var result = _workspaceService.LoadFolder(folderPath);
+        var sameWorkspace = WorkspacePath is not null && string.Equals(
+            Path.GetFullPath(WorkspacePath), Path.GetFullPath(result.FolderPath), StringComparison.OrdinalIgnoreCase);
         _catalogs = result.Catalogs;
+        NeedsBuild = result.Config.ConfigExists && result.Catalogs is null;
         WorkspacePath = result.FolderPath;
         WorkspaceName = result.WorkspaceName;
 
@@ -860,6 +965,17 @@ public sealed class PresenterShellViewModel : ViewModelBase, IStepRowHost
         StatusSummary = result.ErrorCount == 0
             ? $"Ready: {Files.Count} files, {Scenarios.Count} scenarios, Config: ok, Parse: ok, Bind: ok"
             : $"Needs attention: {result.ErrorCount} diagnostics";
+        // A new workspace opens in Present mode when it is clean; a reload keeps the mode unless
+        // something is now wrong, which only Workspace mode shows.
+        if (result.ErrorCount > 0)
+        {
+            IsPresentMode = false;
+        }
+        else if (!sameWorkspace)
+        {
+            IsPresentMode = true;
+        }
+
         SelectedTab = result.ErrorCount == 0 ? TreeTabName : DiagnosticsTabName;
         if (recordRecent)
         {
@@ -1341,13 +1457,15 @@ public sealed class PresenterShellViewModel : ViewModelBase, IStepRowHost
 
         try
         {
+            SnapshotWindows();
             _activeSession = await _executionService
                 .CreateSessionAsync(WorkspacePath, scenario.FilePath, scenario.Name, _executionCancellation.Token)
                 .ConfigureAwait(true);
             _activeScenario = scenario;
+            TryPlaceApp();
             DiscoveryText = _activeSession.DiscoveryReport;
             CommandCatalogText = _activeSession.CommandCatalogReport;
-            AutPlacementText = _activeSession.AutPlacementReport;
+            AutPlacementText = _placedThisRun ? AutPlacementText : _activeSession.AutPlacementReport;
             DiagnosticsText = string.Join(
                 Environment.NewLine,
                 "Step session ready.",
@@ -1387,13 +1505,15 @@ public sealed class PresenterShellViewModel : ViewModelBase, IStepRowHost
 
         try
         {
+            SnapshotWindows();
             _activeSession = await _executionService
                 .CreateSessionAsync(WorkspacePath, scenario.FilePath, scenario.Name, _executionCancellation.Token)
                 .ConfigureAwait(true);
             _activeScenario = scenario;
+            TryPlaceApp();
             DiscoveryText = _activeSession.DiscoveryReport;
             CommandCatalogText = _activeSession.CommandCatalogReport;
-            AutPlacementText = _activeSession.AutPlacementReport;
+            AutPlacementText = _placedThisRun ? AutPlacementText : _activeSession.AutPlacementReport;
             RefreshBreakpoints(scenario);
             return await AdvanceAsync(_activeSession, scenario, new StepPlan(int.MaxValue, true, null), -1, options, checkFirst: true)
                 .ConfigureAwait(true);
@@ -1717,6 +1837,7 @@ public sealed class PresenterShellViewModel : ViewModelBase, IStepRowHost
         }
 
         SetStepStatus(index, StepStatusText(result.Status));
+        TryPlaceApp();
         RunProgress = scenario.Steps.Count == 0
             ? 0
             : (double)Math.Min(index + 1, scenario.Steps.Count) / scenario.Steps.Count;

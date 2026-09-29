@@ -4,6 +4,13 @@ namespace Brinell.Presenter.Services;
 
 public interface IBddExecutionService
 {
+    /// <summary>The side the Presenter bar is on, for a driver that places its app itself.</summary>
+    PresenterDock Dock
+    {
+        get => PresenterDock.Left;
+        set { }
+    }
+
     Task<PresenterUatExecutionSession> CreateSessionAsync(
         string workspacePath,
         string scenarioFilePath,

@@ -1,7 +1,8 @@
 # Presenter Platform Guide
 
 `Brinell.Presenter` is a Windows desktop shell (a MAUI app) for loading and running UAT
-workspaces, narrow enough to sit beside the app under test.
+workspaces: a narrow bar docked to one side of the screen, with the app under test (or its browser)
+placed in the rest.
 
 ## Projects
 
@@ -28,7 +29,7 @@ Then, in Presenter (the toolbar is icon-only; hover for tooltips):
 4. **Run**, or **Next** to go one step at a time.
 
 On first start Presenter opens the default sample workspace, which is usually not built yet:
-the Diagnostics tab, not the tree, is the expected first screen.
+Workspace mode with "Not built yet" and the Diagnostics tab is the expected first screen.
 
 ## The Workspace
 
@@ -77,9 +78,18 @@ referencing it:
 
 ## The Shell
 
-Top actions: **Open** (a split button; the dropdown lists recent folders), **Reload**,
-**Validate**. Under them the run toolbar: **Run**, **Next**, **Into**, **Out**, **Stop**, **Restart**,
-and **Delay** in milliseconds with its presets.
+Presenter has two modes, a pair of buttons at the top left:
+
+- **Present**: the scenarios, the steps and the moves, nothing else. A workspace that loads cleanly
+  opens in it.
+- **Workspace**: adds **Open** (with the recent folders beside it), the build choices and
+  **Build**, the tabs and the Selection panel. A workspace with problems opens in it, and says
+  "Not built yet" above **Build** when the suite has no build.
+
+**Reload** (both modes) reloads and checks the workspace. At the top right, **Dock** moves the bar
+to the other side of the screen (remembered), and the theme button switches light and dark. Under
+them the run toolbar: **Run**, **Next**, **Into**, **Out**, **Stop**, **Restart**, and **Delay** in
+milliseconds with its presets.
 
 | Tab | Shows |
 | --- | --- |
@@ -159,9 +169,12 @@ The target comes from the fixture's base class.
 
 Presenter exports `AppPath`, when the config sets one, to the variable for the target.
 
-For MAUI, Presenter places the app to its right, on the same monitor when there is room, by
-setting `BRINELL_AUT_PLACE_RIGHT` and `BRINELL_AUT_PLACEMENT_RESULT_FILE`. A placement that
-fails does not fail the run; Diagnostics shows the result.
+Presenter places the app under test beside the bar, on the bar's monitor, for every target: it
+notes the top-level windows before a run starts, and once the fixture has opened its app (a MAUI,
+WPF or WinForms window, or a browser) it moves the new window into the rest of the work area. It
+tries again after the first step, for an app that opens its window late. With the bar docked left,
+the MAUI driver also places its app itself as it opens (`BRINELL_AUT_PLACE_RIGHT`). A placement
+that fails does not fail the run; Diagnostics shows the result.
 
 ## User Settings
 
