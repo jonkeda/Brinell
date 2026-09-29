@@ -29,7 +29,7 @@ public sealed class McpServerTests : IDisposable
         Assert.Equal("brinell-bdd", (string?)lines[0]["result"]!["serverInfo"]!["name"]);
         Assert.NotNull(lines[0]["result"]!["capabilities"]!["tools"]);
         Assert.Equal(
-            ["list_suites", "list_steps", "list_pages", "list_test_sets", "validate_scenario", "find_step_usages"],
+            ["list_suites", "list_steps", "list_pages", "list_test_sets", "validate_scenario", "find_step_usages", "delete_results"],
             lines[1]["result"]!["tools"]!.AsArray().Select(tool => (string?)tool!["name"]));
     }
 

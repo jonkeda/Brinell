@@ -73,6 +73,34 @@ public static class TestArtifactManifestWriter
         string reason)
         => RecordArtifact(path, kind, name, reason, null);
 
+    /// <summary>Reads a run's manifest; null when there is none or it cannot be read.</summary>
+    /// <param name="runDirectory">The run's folder.</param>
+    public static TestArtifactManifest? Read(string runDirectory)
+    {
+        var manifestPath = Path.Combine(runDirectory, "manifest.json");
+        try
+        {
+            return File.Exists(manifestPath) ? JsonSerializer.Deserialize<TestArtifactManifest>(File.ReadAllText(manifestPath), JsonOptions) : null;
+        }
+        catch (Exception exception) when (exception is JsonException or IOException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>Writes a changed manifest back, with its <c>summary.md</c>: after artifacts are removed from a run.</summary>
+    /// <param name="runDirectory">The run's folder.</param>
+    /// <param name="manifest">The manifest to write.</param>
+    public static void Save(string runDirectory, TestArtifactManifest manifest)
+    {
+        ArgumentNullException.ThrowIfNull(manifest);
+        lock (SyncRoot)
+        {
+            File.WriteAllText(Path.Combine(runDirectory, "manifest.json"), JsonSerializer.Serialize(manifest, JsonOptions));
+            File.WriteAllText(Path.Combine(runDirectory, "summary.md"), BuildSummary(manifest));
+        }
+    }
+
     private static TestArtifactManifest LoadManifest(
         string manifestPath,
         ITestArtifactPathProvider provider)

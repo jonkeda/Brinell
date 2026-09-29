@@ -271,6 +271,32 @@ public sealed record RunTargetParams(string Uri, int? Line, string? Suite);
 /// <param name="Suite">The suite it runs in.</param>
 public sealed record RunTargetResult(bool CanRun, string? Reason, string? Project, string? Filter, IReadOnlyList<string> Scenarios, string? Suite);
 
+/// <summary>
+/// <c>brinell/deleteResults</c>: deletes old scenario results, for good. <paramref name="Scope"/> is
+/// <c>scenario</c> (the heading at <paramref name="Line"/> of <paramref name="Uri"/>, every row of
+/// an outline), <c>file</c> (<paramref name="Uri"/>) or <c>suite</c> (<paramref name="Suite"/>).
+/// </summary>
+/// <param name="Scope"><c>scenario</c>, <c>file</c> or <c>suite</c>.</param>
+/// <param name="Uri">The feature file, for a scenario or a file.</param>
+/// <param name="Line">The scenario heading's line, for a scenario.</param>
+/// <param name="Suite">The suite: the one picked for a linked file, or the one to clear.</param>
+/// <param name="DryRun">Counts only, for the confirmation; nothing is deleted.</param>
+public sealed record DeleteResultsParams(string Scope, string? Uri, int? Line, string? Suite, bool DryRun);
+
+/// <summary>What was deleted, or would be in a dry run.</summary>
+/// <param name="Done">Whether the scope was found; <paramref name="Reason"/> says why not.</param>
+/// <param name="Reason">Why nothing could be done.</param>
+/// <param name="What">What the results are of: <c>TOD.01.2 …</c>, <c>TOD.01-see-my-todos.feature.md</c>, a suite.</param>
+/// <param name="Suite">The suite whose results they are.</param>
+/// <param name="RunsChanged">Runs that kept other results.</param>
+/// <param name="RunsDeleted">Runs left empty, deleted whole.</param>
+/// <param name="FilesDeleted">Reports and screenshots deleted.</param>
+/// <param name="Skipped">Runs not touched, and why.</param>
+public sealed record DeleteResultsResult(bool Done, string? Reason, string? What, string? Suite, int RunsChanged, int RunsDeleted, int FilesDeleted, IReadOnlyList<SkippedRun> Skipped);
+
+/// <summary>A run left alone.</summary>
+public sealed record SkippedRun(string Run, string Reason);
+
 /// <summary><c>brinell/usages</c>: a C# member, as CodeLens names it (<c>Ns.Type.Method(int)</c>).</summary>
 public sealed record UsagesParams(string Symbol);
 

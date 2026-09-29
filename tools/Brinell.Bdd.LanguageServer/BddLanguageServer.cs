@@ -223,6 +223,76 @@ public sealed partial class BddLanguageServer : IDisposable
             : new RunTargetResult(true, null, project, string.Join('|', scenarios.Select(name => $"{BddScenarioAddress.Trait}={BddScenarioAddress.Of(file, name)}")), scenarios, suite.Name);
     }
 
+    /// <summary>
+    /// <c>brinell/deleteResults</c>: deletes the old results of a scenario, a feature file or a
+    /// suite from every run, the ones the preview and the explorer read; a dry run only counts.
+    /// </summary>
+    [JsonRpcMethod("brinell/deleteResults")]
+    public DeleteResultsResult DeleteResults(DeleteResultsParams request)
+    {
+        BddSuite? suite;
+        string? path = null;
+        IReadOnlyCollection<string>? scenarios = null;
+        string what;
+        if (request.Scope == "suite")
+        {
+            lock (_gate)
+            {
+                suite = _workspace?.Suites.FirstOrDefault(candidate => string.Equals(candidate.Name, request.Suite, StringComparison.OrdinalIgnoreCase));
+            }
+
+            what = suite?.Name ?? request.Suite ?? "the suite";
+        }
+        else if (request.Uri is { } uri && request.Scope is "file" or "scenario")
+        {
+            path = Key(uri);
+            var file = Context(path, request.Suite);
+            suite = file.Suite;
+            what = Path.GetFileName(path);
+            if (request.Scope == "scenario")
+            {
+                var found = BddMarkdownParser.Parse(file.Text, path).Document?.Scenarios.Where(scenario => scenario.Source.LineNumber == request.Line).ToList() ?? [];
+                if (found.Count == 0)
+                {
+                    return new DeleteResultsResult(false, $"There is no scenario heading at line {request.Line}.", null, suite?.Name, 0, 0, 0, []);
+                }
+
+                scenarios = found.Select(scenario => scenario.Name).ToList();
+                what = found[0].OutlineName ?? found[0].Name;
+            }
+        }
+        else
+        {
+            return new DeleteResultsResult(false, $"'{request.Scope}' is not a scope: scenario, file or suite (a scenario and a file need the file's uri).", null, null, 0, 0, 0, []);
+        }
+
+        if (suite is null || _results is not { } results)
+        {
+            return new DeleteResultsResult(false, "No suite holds this file, so it has no results to delete.", what, null, 0, 0, 0, []);
+        }
+
+        BddDeleteResult deleted;
+        lock (results)
+        {
+            deleted = results.Delete(BddRunResults.RootFor(suite.ProjectDirectory), suite.Name, path, scenarios, request.DryRun);
+        }
+
+        if (!request.DryRun && deleted.RunsChanged + deleted.RunsDeleted > 0)
+        {
+            NotifyResultsChanged();
+        }
+
+        return new DeleteResultsResult(
+            true,
+            null,
+            what,
+            suite.Name,
+            deleted.RunsChanged,
+            deleted.RunsDeleted,
+            deleted.FilesDeleted,
+            deleted.Skipped.Select(skipped => new SkippedRun(skipped.Run, skipped.Reason)).ToList());
+    }
+
     // A suite runs by address when its test class uses [UatScenarioTheory]; before it is loaded, the build that comes first tells.
     private static Brinell.Bdd.Preview.BddPreviewRunState? RunState(BddSuite? suite, string path)
     {

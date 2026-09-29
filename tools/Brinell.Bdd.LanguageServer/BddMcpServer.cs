@@ -36,6 +36,7 @@ public sealed class BddMcpServer : IDisposable
         ("list_test_sets", "A suite's test sets: the values of a feature file's TestData metadata.", Schema(("suite", "string", "A suite name; the first suite when left out."))),
         ("validate_scenario", "Checks a feature or step file as the xUnit gate would, with its words: every step must bind. Give 'path' (where the file is, or will be, in a suite's Features folder) and 'text' for a draft; without 'text' the file on disk is checked.", Schema(("path", "string", "The file's path; required."), ("text", "string", "The draft's text; the file on disk when left out."))),
         ("find_step_usages", "The steps across every suite that use a C# member: a step definition, a page phrase or a page object's control, as Namespace.Type.Member.", Schema(("symbol", "string", "Namespace.Type.Member; required."))),
+        ("delete_results", "Deletes old scenario results from every run, for good: of a scenario (the heading at 'line' of 'path'), a feature file ('path') or a suite ('suite'). Only scenario reports and their screenshots; a run left empty goes. Counts only (dryRun) unless 'dryRun' is false.", Schema(("scope", "string", "scenario, file or suite; required."), ("path", "string", "The feature file, for a scenario or a file."), ("line", "integer", "The scenario heading's line, for a scenario."), ("suite", "string", "The suite, for a suite (or the one a linked file is picked in)."), ("dryRun", "boolean", "Only count; true when left out."))),
     ];
 
     /// <summary>Serves until the input ends.</summary>
@@ -124,6 +125,7 @@ public sealed class BddMcpServer : IDisposable
                 "list_test_sets" => Suite(arguments).TestDataDefinitions().SelectMany(definition => definition.TestSetNames).Distinct().ToList(),
                 "validate_scenario" => Validate(Required(arguments, "path"), (string?)arguments["text"]),
                 "find_step_usages" => _server.Usages(new UsagesParams(Required(arguments, "symbol"))),
+                "delete_results" => DeleteResults(arguments),
                 _ => throw new McpException(-32602, $"No tool '{name}'. The tools are {string.Join(", ", Tools.Select(tool => tool.Name))}."),
             };
             return Text(JsonSerializer.Serialize(answer, Json), error: false);
@@ -132,6 +134,19 @@ public sealed class BddMcpServer : IDisposable
         {
             return Text(problem.Message, error: true);
         }
+    }
+
+    // An agent is not asked first, so it only counts unless it says dryRun: false.
+    private DeleteResultsResult DeleteResults(JsonObject arguments)
+    {
+        var path = (string?)arguments["path"];
+        var result = _server.DeleteResults(new DeleteResultsParams(
+            Required(arguments, "scope"),
+            path is null ? null : new Uri(Path.GetFullPath(path, _solutionDir)).AbsoluteUri,
+            (int?)arguments["line"],
+            (string?)arguments["suite"],
+            (bool?)arguments["dryRun"] ?? true));
+        return result.Done ? result : throw new ToolProblem(result.Reason ?? "Nothing to delete.");
     }
 
     private object ListSuites()
