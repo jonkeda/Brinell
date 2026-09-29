@@ -1,4 +1,6 @@
 using System.ComponentModel;
+using System.Windows.Input;
+using Brinell.Presenter.Commands;
 using Microsoft.Maui.Graphics;
 
 namespace Brinell.Presenter.ViewModels;
@@ -25,6 +27,33 @@ public sealed class BddStepRowViewModel : ViewModelBase
         {
             step.PropertyChanged += OnStepChanged;
         }
+
+        RunUntilCommand = new RelayCommand(() => Host?.RunUntil(this), () => Host?.CanRunUntil(this) == true);
+        RunFromCommand = new RelayCommand(() => Host?.RunFrom(this), () => Host?.CanRunFrom(this) == true);
+        ToggleBreakpointCommand = new RelayCommand(() => Host?.ToggleBreakpoint(this), () => CanBreak);
+    }
+
+    /// <summary>The step list the row is in, for its menu; set when the list shows it.</summary>
+    public IStepRowHost? Host { get; set; }
+
+    /// <summary>Runs from where the run is (or the start) and pauses before this row.</summary>
+    public ICommand RunUntilCommand { get; }
+
+    /// <summary>Skips the rows before this one and runs on from it; only while a run is paused before it.</summary>
+    public ICommand RunFromCommand { get; }
+
+    /// <summary>Sets or clears the breakpoint on this row's line.</summary>
+    public ICommand ToggleBreakpointCommand { get; }
+
+    /// <summary>The menu item's text, which says why Run from here is off.</summary>
+    public string RunFromText => Host?.CanRunFrom(this) == true ? "Run from here" : "Run from here (pause a run before this step)";
+
+    /// <summary>Re-reads what the menu offers, after the run moved.</summary>
+    public void RefreshMenu()
+    {
+        ((RelayCommand)RunUntilCommand).NotifyCanExecuteChanged();
+        ((RelayCommand)RunFromCommand).NotifyCanExecuteChanged();
+        OnPropertyChanged(nameof(RunFromText));
     }
 
     /// <summary>A step's row.</summary>
@@ -148,4 +177,23 @@ public sealed class BddStepRowViewModel : ViewModelBase
             OnPropertyChanged(nameof(Tooltip));
         }
     }
+}
+
+/// <summary>What a step row's menu asks of the step list.</summary>
+public interface IStepRowHost
+{
+    /// <summary>Whether the run can go on to the row and pause before it.</summary>
+    bool CanRunUntil(BddStepRowViewModel row);
+
+    /// <summary>Whether the run can skip to the row and run on from it.</summary>
+    bool CanRunFrom(BddStepRowViewModel row);
+
+    /// <summary>Runs on to the row and pauses before it.</summary>
+    void RunUntil(BddStepRowViewModel row);
+
+    /// <summary>Skips to the row and runs on from it.</summary>
+    void RunFrom(BddStepRowViewModel row);
+
+    /// <summary>Sets or clears the row's breakpoint.</summary>
+    void ToggleBreakpoint(BddStepRowViewModel row);
 }

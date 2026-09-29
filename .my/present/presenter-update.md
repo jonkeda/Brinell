@@ -1,6 +1,6 @@
 # Presenter update: what the IDE work taught us
 
-Status: **steps 1-2 built** 2026-09-29; the owner's comments of the same day are in. Input for
+Status: **steps 1-3 built** 2026-09-29; the owner's comments of the same day are in. Input for
 [plan.md](plan.md).
 
 Presenter exists so a person can **click through a UAT scenario** without an IDE, for one of two
@@ -102,6 +102,17 @@ directly; only the breakpoints are shared through the file.
 
 Fixes U7 and U8.
 
+**Built 2026-09-29 (step 3).** `PresenterStepping` plans a move from the paused row (a call's row
+is a position of its own; Into runs nothing; Out runs to the call's end; Play checks breakpoints
+before each step but the first); the shell runs the plan through one loop (`AdvanceAsync`), used by
+Run too, so a breakpoint pauses a Run as well. Next with no run on starts one paused before the
+first step. The engine gained `BddStepExecutionSession.Next` and `SkipNext` (for Run from here);
+the Presenter sets `Context.Breaks` to null, as it pauses itself. `PresenterBreakpointStore` reads
+and toggles the IDEs' file, keeping every other entry. Keys come from `PreviewKeyDown` on the page
+(not in a text box); the preview's bar posts `debug` moves. Delay has Fast, Normal and Slow
+presets (Q5). Tests: `PresenterSteppingTests`, `SkipNext_PassesOverAStepWithoutRunningIt`, the UI
+scenario `step-through-sample.feature.md`.
+
 ### P3. The bar and its two modes
 
 Presenter is a **narrow bar docked left or right** (a toggle, remembered), full height. The app
@@ -186,7 +197,7 @@ Smaller:
 | --- | --- | --- |
 | 1 | P5: load and bind through `Brinell.Bdd.Workspace` and `BddFileAnalysis`. **Done** 2026-09-29. | Presenter's diagnostics for TOD.01 equal the language server's; a `## Step:` call binds. |
 | 2 | P1: scenario tree and step list in expanders, tooltips, the preview on demand. **Done** 2026-09-29. | TOD.01's steps read in full on hover; the preview opens and follows a run. |
-| 3 | P2: pause-before stepping, keys, clicker, the step menu, shared breakpoints. | PR11 rewritten for it passes; a breakpoint set in VS stops Play; Run until here pauses at the step. |
+| 3 | P2: pause-before stepping, keys, clicker, the step menu, shared breakpoints. **Done** 2026-09-29. | PR11 rewritten for it passes; a breakpoint set in VS stops Play; Run until here pauses at the step. |
 | 4 | P3: the docked bar, placement for every target, Present and Workspace modes. | TOD.01 presented beside its app, and a Blazor scenario beside its browser, without help. |
 | 5 | P5's smaller things, and [userjourney.md](userjourney.md) updated for the new UI. | The journeys pass. |
 | - | P4, recording. | Deferred. |

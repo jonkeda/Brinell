@@ -101,38 +101,66 @@
             <Border.StrokeShape>
                 <RoundRectangle CornerRadius="6" />
             </Border.StrokeShape>
-            <HorizontalStackLayout Spacing="6"
-                                   VerticalOptions="Center">
-                <Button Text="&#xE768;"
-                        AutomationId="RunButton"
-                        Style="{StaticResource PresenterIconButton}"
-                        Command="{Binding RunCommand}"
-                        SemanticProperties.Description="Run"
-                        ToolTipProperties.Text="Run" />
-                <Button Text="&#xE71A;"
-                        AutomationId="StopButton"
-                        Style="{StaticResource PresenterIconButton}"
-                        Command="{Binding StopCommand}"
-                        SemanticProperties.Description="Stop"
-                        ToolTipProperties.Text="Stop" />
-                <Button Text="&#xE893;"
-                        AutomationId="NextButton"
-                        Style="{StaticResource PresenterIconButton}"
-                        Command="{Binding NextStepCommand}"
-                        SemanticProperties.Description="Next step"
-                        ToolTipProperties.Text="Next step" />
-                <Label Text="Delay"
-                       Margin="10,0,0,0"
-                       VerticalTextAlignment="Center" />
-                <Entry AutomationId="DelayMillisecondsInput"
-                       Keyboard="Numeric"
-                       MaxLength="5"
-                       WidthRequest="58"
-                       Text="{Binding ExecutionDelayText}" />
-                <Label Text="ms"
-                       AutomationId="DelayMillisecondsLabel"
-                       VerticalTextAlignment="Center" />
-            </HorizontalStackLayout>
+            <VerticalStackLayout Spacing="6">
+                <!-- The moves: the same as the IDEs' stepping, on keys a presentation clicker sends too. -->
+                <HorizontalStackLayout Spacing="6"
+                                       VerticalOptions="Center">
+                    <Button Text="&#xE768;"
+                            AutomationId="RunButton"
+                            Style="{StaticResource PresenterIconButton}"
+                            Command="{Binding RunCommand}"
+                            SemanticProperties.Description="Run"
+                            ToolTipProperties.Text="Run, or go on from a pause, to a breakpoint or the end (F5)" />
+                    <Button Text="&#xE893;"
+                            AutomationId="NextButton"
+                            Style="{StaticResource PresenterIconButton}"
+                            Command="{Binding NextStepCommand}"
+                            SemanticProperties.Description="Next step"
+                            ToolTipProperties.Text="Step: run the highlighted step, or start paused before the first (Space, Right, Page Down)" />
+                    <Button Text="&#xE74B;"
+                            AutomationId="StepIntoButton"
+                            Style="{StaticResource PresenterIconButton}"
+                            Command="{Binding StepIntoCommand}"
+                            SemanticProperties.Description="Step into"
+                            ToolTipProperties.Text="Step into the call, running nothing (Down)" />
+                    <Button Text="&#xE74A;"
+                            AutomationId="StepOutButton"
+                            Style="{StaticResource PresenterIconButton}"
+                            Command="{Binding StepOutCommand}"
+                            SemanticProperties.Description="Step out"
+                            ToolTipProperties.Text="Step out: run the rest of the call (Up)" />
+                    <Button Text="&#xE71A;"
+                            AutomationId="StopButton"
+                            Style="{StaticResource PresenterIconButton}"
+                            Command="{Binding StopCommand}"
+                            SemanticProperties.Description="Stop"
+                            ToolTipProperties.Text="Stop (Esc)" />
+                    <Button Text="&#xE777;"
+                            AutomationId="RestartButton"
+                            Style="{StaticResource PresenterIconButton}"
+                            Command="{Binding RestartCommand}"
+                            SemanticProperties.Description="Restart"
+                            ToolTipProperties.Text="Restart the scenario, paused before its first step (Ctrl+R)" />
+                </HorizontalStackLayout>
+                <HorizontalStackLayout Spacing="6"
+                                       VerticalOptions="Center">
+                    <Label Text="Delay"
+                           VerticalTextAlignment="Center" />
+                    <Entry AutomationId="DelayMillisecondsInput"
+                           Keyboard="Numeric"
+                           MaxLength="5"
+                           WidthRequest="58"
+                           Text="{Binding ExecutionDelayText}" />
+                    <Label Text="ms"
+                           AutomationId="DelayMillisecondsLabel"
+                           VerticalTextAlignment="Center" />
+                    <Picker AutomationId="DelayPresetPicker"
+                            WidthRequest="92"
+                            ItemsSource="{Binding DelayPresets}"
+                            SelectedItem="{Binding DelayPreset, Mode=TwoWay}"
+                            SemanticProperties.Description="Delay preset" />
+                </HorizontalStackLayout>
+            </VerticalStackLayout>
         </Border>
 
         <!--
@@ -388,6 +416,16 @@
                                 <Grid Padding="{Binding Indent}"
                                       ColumnDefinitions="14,24,*"
                                       MinimumHeightRequest="26">
+                                    <FlyoutBase.ContextFlyout>
+                                        <MenuFlyout>
+                                            <MenuFlyoutItem Text="Run until here"
+                                                            Command="{Binding RunUntilCommand}" />
+                                            <MenuFlyoutItem Text="{Binding RunFromText}"
+                                                            Command="{Binding RunFromCommand}" />
+                                            <MenuFlyoutItem Text="Toggle breakpoint"
+                                                            Command="{Binding ToggleBreakpointCommand}" />
+                                        </MenuFlyout>
+                                    </FlyoutBase.ContextFlyout>
                                     <Grid.Triggers>
                                         <DataTrigger TargetType="Grid"
                                                      Binding="{Binding IsCurrent}"

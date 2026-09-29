@@ -68,6 +68,13 @@ public sealed class PresenterUatExecutionSession : IDisposable
         return StepSession.RunNextAsync(cancellationToken);
     }
 
+    /// <summary>Passes over the next step without running it (Run from here).</summary>
+    /// <param name="message">Why it was skipped.</param>
+    public BddStepResult SkipNext(string? message = null)
+    {
+        return StepSession.SkipNext(message);
+    }
+
     public BddScenarioRunResult ToResult()
     {
         return StepSession.ToResult();

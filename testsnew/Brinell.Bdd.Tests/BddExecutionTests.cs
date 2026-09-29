@@ -63,6 +63,32 @@ public sealed class BddExecutionTests
     }
 
     [Fact]
+    public async Task SkipNext_PassesOverAStepWithoutRunningIt()
+    {
+        var scenario = CreateBoundScenario("""
+            # Feature: Settings
+
+            ## Scenario: Save
+
+            ```gherkin
+            Given I am on the Settings page
+            When I tap Save
+            ```
+            """);
+        var session = new BddScenarioRunner().CreateSession(scenario);
+
+        Assert.Same(scenario.Invocations[0], session.Next);
+        var skipped = session.SkipNext("Run from here");
+        var ran = await session.RunNextAsync();
+
+        Assert.Equal(BddStepResultStatus.Skipped, skipped.Status);
+        Assert.Equal("Run from here", skipped.Message);
+        Assert.Same(scenario.Invocations[1], ran.Invocation);
+        Assert.Null(session.Next);
+        Assert.Throws<InvalidOperationException>(() => session.SkipNext());
+    }
+
+    [Fact]
     public async Task RunAsync_MissingHandler_ReturnsFailedResult()
     {
         var document = ParseValid("""

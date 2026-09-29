@@ -78,8 +78,8 @@ referencing it:
 ## The Shell
 
 Top actions: **Open** (a split button; the dropdown lists recent folders), **Reload**,
-**Validate**. Under them the run toolbar: **Run**, **Stop**, **Next**, and **Delay** in
-milliseconds.
+**Validate**. Under them the run toolbar: **Run**, **Next**, **Into**, **Out**, **Stop**, **Restart**,
+and **Delay** in milliseconds with its presets.
 
 | Tab | Shows |
 | --- | --- |
@@ -110,9 +110,27 @@ the picked scenario and its run: each step's result, and the step the run is at.
 
 ## Running
 
-**Run** runs the selected node's scenarios until they finish, one fails, or **Stop** is pressed.
-**Next** runs exactly one step, starting a session from the selection if there is none, and does
-not wait. **Stop** cancels either.
+A run pauses **before** a step, so what is about to happen can be said before it happens. The
+moves are those of the IDEs' stepping (AD-022), on keys a presentation clicker sends too:
+
+| Button | Keys | Does |
+| --- | --- | --- |
+| **Run** | F5 | runs the selection's scenarios; from a pause, goes on. Stops at a breakpoint, a failure or the end |
+| **Next** (Step) | Space, Right, Page Down | with no run on, starts one paused before the first step; else runs the highlighted step (a `## Step:` call whole) and pauses before the next |
+| **Into** | Down | at a call, goes inside it without running anything |
+| **Out** | Up | inside a call, runs the rest of it and pauses after it |
+| **Stop** | Esc | ends the run and closes the app |
+| **Restart** | Ctrl+R | the scenario again, paused before its first step |
+
+The keys work anywhere in the Presenter window except in a text box. A right-click on a step in
+the list offers **Run until here** (runs on and pauses before it), **Run from here** (only while a
+run is paused before it: skips the steps in between, marked skipped, and runs on; the app must
+already be where they lead) and **Toggle breakpoint**. The preview's paused bar has the same moves.
+
+Breakpoints are the IDEs' own file, `%LOCALAPPDATA%\Brinell\bdd-breakpoints.json`: a red dot in the
+list marks one, a breakpoint set in Visual Studio or VS Code stops Run in Presenter, and one set in
+Presenter stops a debugged run in the IDEs. A breakpoint can be on a step or a call of the feature
+file, not on a step inside a step file.
 
 | Selected | Runs |
 | --- | --- |
@@ -121,11 +139,11 @@ not wait. **Stop** cancels either.
 | Scenario | that scenario |
 | Config or other Markdown | nothing |
 
-**Delay** is read once when the run starts and applied between steps, never before the first:
-seven steps at 1000 ms take at least six seconds. A step is marked passed only after its command
-completes. The status line under the tree shows the current step, or the result
+**Delay** is read when a run starts or goes on, and applied between steps, never before the first:
+seven steps at 1000 ms take at least six seconds. The **Fast**, **Normal** and **Slow** presets
+set it to 250, 800 and 1500 ms. A step is marked passed only after its command completes. The
+status line under the list shows the current step, where the run is paused, or the result
 (`Passed: 1/1 scenarios`); per-step timings are in Diagnostics.
-
 ## Supported Targets
 
 The target comes from the fixture's base class.

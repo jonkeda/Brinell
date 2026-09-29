@@ -185,6 +185,26 @@ public sealed class BddStepExecutionSession
 
     public IReadOnlyList<BddStepResult> Results => _results;
 
+    /// <summary>The step <see cref="RunNextAsync"/> runs next; null when none remain.</summary>
+    public BddStepInvocation? Next => HasNext ? _scenario.Invocations[_nextIndex] : null;
+
+    /// <summary>
+    /// Passes over the next step without running it: its result is <see cref="BddStepResultStatus.Skipped"/>.
+    /// For a tool that goes on from a later step, when the app is already where the skipped ones lead.
+    /// </summary>
+    /// <param name="message">Why it was skipped.</param>
+    public BddStepResult SkipNext(string? message = null)
+    {
+        if (!HasNext)
+        {
+            throw new InvalidOperationException("No BDD steps remain in this execution session.");
+        }
+
+        var skipped = new BddStepResult(BddStepResultStatus.Skipped, _scenario.Invocations[_nextIndex++], message);
+        _results.Add(skipped);
+        return skipped;
+    }
+
     public async Task<BddStepResult> RunNextAsync(CancellationToken cancellationToken = default)
     {
         if (!HasNext)

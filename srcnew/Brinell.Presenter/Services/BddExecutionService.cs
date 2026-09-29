@@ -86,6 +86,9 @@ public sealed class BddExecutionService : IBddExecutionService
 
             var runner = new BddScenarioRunner();
             runtime.ConfigureContext(runner.Context);
+
+            // Presenter pauses between steps itself; the engine's own breaks are for a debugger.
+            runner.Context.Breaks = null;
             executionScope = runtime.CreateScope();
             if (executionScope is Microsoft.Extensions.DependencyInjection.IServiceScope serviceScope)
             {

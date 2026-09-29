@@ -8,7 +8,7 @@ using Brinell.Uat;
 
 namespace Brinell.Presenter.ViewModels;
 
-public sealed class PresenterShellViewModel : ViewModelBase
+public sealed class PresenterShellViewModel : ViewModelBase, IStepRowHost
 {
     private readonly IBddExecutionService _executionService;
     private readonly IFolderPickerService _folderPickerService;
@@ -58,6 +58,8 @@ public sealed class PresenterShellViewModel : ViewModelBase
     private BddStepRowViewModel? _currentRow;
     private BddCatalogSet? _catalogs;
     private readonly IScenarioPreviewService? _preview;
+    private readonly PresenterBreakpointStore _breakpoints;
+    private bool _isMoving;
 
     private const int MaxExecutionDelayMilliseconds = 99999;
 
@@ -72,13 +74,16 @@ public sealed class PresenterShellViewModel : ViewModelBase
         IBddExecutionService executionService,
         IFolderPickerService folderPickerService,
         IPresenterUserSettingsService settingsService,
-        IScenarioPreviewService? previewService = null)
+        IScenarioPreviewService? previewService = null,
+        PresenterBreakpointStore? breakpoints = null)
     {
         _workspaceService = workspaceService;
+        _breakpoints = breakpoints ?? new PresenterBreakpointStore();
         _preview = previewService;
         if (_preview is not null)
         {
             _preview.Ready += RefreshPreview;
+            _preview.Message += OnPreviewMessage;
         }
 
         _executionService = executionService;
@@ -89,9 +94,12 @@ public sealed class PresenterShellViewModel : ViewModelBase
         ToggleRecentFoldersCommand = new RelayCommand(() => IsRecentFoldersExpanded = !IsRecentFoldersExpanded);
         ReloadCommand = new RelayCommand(ReloadWorkspace, () => WorkspacePath is not null);
         ValidateCommand = new RelayCommand(ReloadWorkspace, () => WorkspacePath is not null);
-        RunCommand = new AsyncRelayCommand(RunSelectedNodeAsync);
+        RunCommand = new AsyncRelayCommand(RunAsync, () => !_isMoving);
         StopCommand = new RelayCommand(Stop);
-        NextStepCommand = new AsyncRelayCommand(NextStepAsync, () => WorkspacePath is not null);
+        NextStepCommand = new AsyncRelayCommand(StepAsync, () => WorkspacePath is not null && !_isMoving);
+        StepIntoCommand = new AsyncRelayCommand(() => MoveAsync(PresenterMove.Into), () => IsPaused && CurrentRow?.IsCall == true);
+        StepOutCommand = new AsyncRelayCommand(() => MoveAsync(PresenterMove.Out), () => IsPaused && CurrentRow?.IsInCall == true);
+        RestartCommand = new AsyncRelayCommand(RestartAsync, () => WorkspacePath is not null && !_isMoving);
         ToggleSelectionCommand = new RelayCommand(() => IsSelectionExpanded = !IsSelectionExpanded);
         ShowTreeTabCommand = new RelayCommand(() => SelectedTab = TreeTabName);
         ShowConfigTabCommand = new RelayCommand(() => SelectedTab = ConfigTabName);
@@ -219,7 +227,20 @@ public sealed class PresenterShellViewModel : ViewModelBase
 
     public ICommand StopCommand { get; }
 
+    /// <summary>Step: runs the row the run is paused before; with no run on, starts one paused before its first step.</summary>
     public ICommand NextStepCommand { get; }
+
+    /// <summary>At a <c>## Step:</c> call, goes inside it without running anything.</summary>
+    public ICommand StepIntoCommand { get; }
+
+    /// <summary>Inside a call, runs the rest of it and pauses after it.</summary>
+    public ICommand StepOutCommand { get; }
+
+    /// <summary>Starts the scenario again, paused before its first step.</summary>
+    public ICommand RestartCommand { get; }
+
+    /// <summary>Whether a run is paused before a row, waiting for a move.</summary>
+    public bool IsPaused => _activeSession is not null && !_isMoving && CurrentRow is not null;
 
     public ICommand ToggleSelectionCommand { get; }
 
@@ -430,6 +451,30 @@ public sealed class PresenterShellViewModel : ViewModelBase
             {
                 _executionDelayMilliseconds = ParseDelayMilliseconds(value);
                 OnPropertyChanged(nameof(ExecutionDelayMilliseconds));
+                OnPropertyChanged(nameof(DelayPreset));
+            }
+        }
+    }
+
+    /// <summary>The Delay presets: a pace to show at, beside the milliseconds.</summary>
+    public IReadOnlyList<string> DelayPresets { get; } = [.. Presets.Keys];
+
+    private static IReadOnlyDictionary<string, int> Presets { get; } = new Dictionary<string, int>
+    {
+        ["Fast"] = 250,
+        ["Normal"] = 800,
+        ["Slow"] = 1500,
+    };
+
+    /// <summary>The preset the Delay matches; setting one sets the Delay.</summary>
+    public string? DelayPreset
+    {
+        get => Presets.FirstOrDefault(preset => preset.Value == ExecutionDelayMilliseconds).Key;
+        set
+        {
+            if (value is not null && Presets.TryGetValue(value, out var milliseconds))
+            {
+                ExecutionDelayText = milliseconds.ToString(System.Globalization.CultureInfo.InvariantCulture);
             }
         }
     }
@@ -446,6 +491,7 @@ public sealed class PresenterShellViewModel : ViewModelBase
                 if (!string.Equals(_executionDelayText, text, StringComparison.Ordinal))
                 {
                     SetProperty(ref _executionDelayText, text, nameof(ExecutionDelayText));
+                    OnPropertyChanged(nameof(DelayPreset));
                 }
             }
         }
@@ -1178,6 +1224,10 @@ public sealed class PresenterShellViewModel : ViewModelBase
         return count + node.Children.Sum(CountMarkdownDescendants);
     }
 
+    // Run (F5): on from where a paused run is, else the selection's scenarios from the start.
+    private Task RunAsync()
+        => IsPaused ? MoveAsync(PresenterMove.Play) : RunSelectedNodeAsync();
+
     private async Task RunSelectedNodeAsync()
     {
         if (WorkspacePath is null)
@@ -1206,7 +1256,14 @@ public sealed class PresenterShellViewModel : ViewModelBase
         foreach (var scenario in scenarios)
         {
             SelectedScenario = scenario;
-            if (!await RunScenarioAutoAsync(scenario, options).ConfigureAwait(true))
+            var outcome = await RunScenarioAutoAsync(scenario, options).ConfigureAwait(true);
+            if (outcome == RunOutcome.Paused)
+            {
+                // A breakpoint: the run waits there; Run goes on with this scenario only.
+                return;
+            }
+
+            if (outcome != RunOutcome.Passed)
             {
                 StatusSummary = $"Failed: {passed}/{scenarios.Length} scenarios passed";
                 RefreshSelectedNodeDetails();
@@ -1227,9 +1284,23 @@ public sealed class PresenterShellViewModel : ViewModelBase
         _executionCancellation?.Cancel();
         StopActiveSession();
         StatusSummary = "Stopped";
+        RaiseStepping();
     }
 
-    private async Task NextStepAsync()
+    // Step (Space, Right, PageDown): with no run on, starts one paused before its first row.
+    private Task StepAsync()
+        => _activeSession is null ? StartPausedAsync(null) : MoveAsync(PresenterMove.Step);
+
+    private async Task RestartAsync()
+    {
+        var scenario = _activeScenario ?? SelectedScenario;
+        StopActiveSession();
+        await StartPausedAsync(scenario).ConfigureAwait(true);
+    }
+
+    // Starts a run of the scenario (or the selection's first) and pauses before its first row,
+    // so what is about to happen can be said before it happens.
+    private async Task StartPausedAsync(BddScenarioViewModel? scenario)
     {
         if (WorkspacePath is null)
         {
@@ -1237,55 +1308,23 @@ public sealed class PresenterShellViewModel : ViewModelBase
             return;
         }
 
-        var scenario = _activeScenario
-                       ?? GetRunnableScenarios(SelectedWorkspaceNode).FirstOrDefault()
-                       ?? SelectedScenario;
+        scenario ??= GetRunnableScenarios(SelectedWorkspaceNode).FirstOrDefault() ?? SelectedScenario;
         if (scenario is null)
         {
             StatusSummary = "No runnable scenario below selection";
             return;
         }
 
-        if (_activeSession is null && !ReferenceEquals(SelectedScenario, scenario))
+        if (!ReferenceEquals(SelectedScenario, scenario))
         {
             SelectedScenario = scenario;
         }
 
-        if (_activeSession is null || _activeScenario != scenario)
+        await StartStepSessionAsync(scenario).ConfigureAwait(true);
+        if (_activeSession is not null && StepRows.Count > 0)
         {
-            await StartStepSessionAsync(scenario).ConfigureAwait(true);
+            Pause(StepRows[0]);
         }
-
-        if (_activeSession is null)
-        {
-            return;
-        }
-
-        var result = await RunNextStepAsync(_activeSession, scenario).ConfigureAwait(true);
-        if (result.Status is BddStepResultStatus.Failed or BddStepResultStatus.Canceled)
-        {
-            MarkRemainingSteps("skip");
-            scenario.Status = result.Status == BddStepResultStatus.Canceled ? "cancel" : "fail";
-            StatusSummary = $"{ScenarioStatusText(result.Status)}: {scenario.Name}: {result.Message}";
-            DiagnosticsText = FormatExecutionDetails(_activeSession, result.Message);
-            RefreshSelectedNodeDetails();
-            FinishActiveSession();
-            return;
-        }
-
-        if (!_activeSession.HasNext)
-        {
-            scenario.Status = "pass";
-            StatusSummary = $"Passed: {scenario.Name}";
-            DiagnosticsText = FormatExecutionDetails(_activeSession, null);
-            FinishActiveSession();
-        }
-        else
-        {
-            StatusSummary = $"Ready: {scenario.Name}. Tap Next.";
-        }
-
-        RefreshSelectedNodeDetails();
     }
 
     private async Task StartStepSessionAsync(BddScenarioViewModel scenario)
@@ -1313,7 +1352,6 @@ public sealed class PresenterShellViewModel : ViewModelBase
                 Environment.NewLine,
                 "Step session ready.",
                 AutPlacementText);
-            StatusSummary = $"Ready: {scenario.Name}. Tap Next.";
         }
         catch (Exception ex)
         {
@@ -1329,13 +1367,13 @@ public sealed class PresenterShellViewModel : ViewModelBase
         }
     }
 
-    private async Task<bool> RunScenarioAutoAsync(
+    private async Task<RunOutcome> RunScenarioAutoAsync(
         BddScenarioViewModel scenario,
         PresenterRunExecutionOptions options)
     {
         if (WorkspacePath is null)
         {
-            return false;
+            return RunOutcome.Failed;
         }
 
         StopActiveSession();
@@ -1344,6 +1382,8 @@ public sealed class PresenterShellViewModel : ViewModelBase
         StatusSummary = $"Starting: {scenario.Name}";
         scenario.Status = "run";
         UpdateScenarioListText();
+        _isMoving = true;
+        RaiseStepping();
 
         try
         {
@@ -1354,36 +1394,18 @@ public sealed class PresenterShellViewModel : ViewModelBase
             DiscoveryText = _activeSession.DiscoveryReport;
             CommandCatalogText = _activeSession.CommandCatalogReport;
             AutPlacementText = _activeSession.AutPlacementReport;
-
-            while (_activeSession.HasNext)
-            {
-                var result = await RunNextStepAsync(_activeSession, scenario).ConfigureAwait(true);
-                if (result.Status is BddStepResultStatus.Failed or BddStepResultStatus.Canceled)
-                {
-                    MarkRemainingSteps("skip");
-                    scenario.Status = result.Status == BddStepResultStatus.Canceled ? "cancel" : "fail";
-                    StatusSummary = $"{ScenarioStatusText(result.Status)}: {scenario.Name}: {result.Message}";
-                    DiagnosticsText = FormatExecutionDetails(_activeSession, result.Message);
-                    RefreshSelectedNodeDetails();
-                    return false;
-                }
-
-                await WaitBeforeNextStepAsync(_activeSession, scenario, options).ConfigureAwait(true);
-            }
-
-            scenario.Status = "pass";
-            StatusSummary = $"Passed: {scenario.Name}";
-            DiagnosticsText = FormatExecutionDetails(_activeSession, null);
-            RefreshSelectedNodeDetails();
-            return true;
+            RefreshBreakpoints(scenario);
+            return await AdvanceAsync(_activeSession, scenario, new StepPlan(int.MaxValue, true, null), -1, options, checkFirst: true)
+                .ConfigureAwait(true);
         }
         catch (OperationCanceledException)
         {
             scenario.Status = "cancel";
             StatusSummary = $"Canceled: {scenario.Name}";
             MarkRunningSteps("cancel");
+            FinishActiveSession();
             RefreshSelectedNodeDetails();
-            return false;
+            return RunOutcome.Stopped;
         }
         catch (Exception ex)
         {
@@ -1391,14 +1413,276 @@ public sealed class PresenterShellViewModel : ViewModelBase
             StatusSummary = $"Failed: {scenario.Name}: {Describe(ex)}";
             DiagnosticsText = Describe(ex);
             MarkRunningSteps("fail");
+            FinishActiveSession();
             RefreshSelectedNodeDetails();
-            return false;
+            return RunOutcome.Failed;
         }
         finally
         {
+            _isMoving = false;
+            RaiseStepping();
             UpdateScenarioListText();
+        }
+    }
+
+    // One move from the row the run is paused before (P2 of the Presenter update).
+    private async Task MoveAsync(PresenterMove move, BddStepRowViewModel? until = null, BddStepRowViewModel? from = null)
+    {
+        if (_activeSession is not { } session || _activeScenario is not { } scenario || _isMoving || CurrentRow is not { } at)
+        {
+            return;
+        }
+
+        var start = at.Index;
+        if (from is not null)
+        {
+            // Run from here: the rows before it are skipped, not run; the app must already be there.
+            while (session.HasNext && session.CompletedStepCount < from.FirstStep)
+            {
+                var index = session.CompletedStepCount;
+                session.SkipNext("Skipped by Run from here.");
+                SetStepStatus(index, "skip");
+            }
+
+            start = from.Index;
+            move = PresenterMove.Play;
+        }
+
+        var plan = until is not null
+            ? PresenterStepping.PlanUntil(StepRows, start, until.Index)
+            : PresenterStepping.Plan(StepRows, start, move);
+        if (plan is not { } planned)
+        {
+            return;
+        }
+
+        _isMoving = true;
+        RaiseStepping();
+        _executionCancellation ??= new CancellationTokenSource();
+        PresenterRunExecutionOptions? pacing = null;
+        if (planned.CheckBreaks)
+        {
+            RefreshBreakpoints(scenario);
+            pacing = CaptureRunExecutionOptions(SelectedWorkspaceNode, [scenario]);
+            _activeRunOptions ??= pacing;
+        }
+
+        try
+        {
+            // A move from a pause runs the paused row first, so its own breakpoint does not stop it again.
+            await AdvanceAsync(session, scenario, planned, start, pacing, checkFirst: from is not null).ConfigureAwait(true);
+        }
+        catch (OperationCanceledException)
+        {
+            scenario.Status = "cancel";
+            StatusSummary = $"Canceled: {scenario.Name}";
+            MarkRunningSteps("cancel");
             FinishActiveSession();
         }
+        finally
+        {
+            _isMoving = false;
+            RaiseStepping();
+            UpdateScenarioListText();
+            RefreshSelectedNodeDetails();
+        }
+    }
+
+    // Runs steps until the plan's count, a breakpoint, a failure or the end; then pauses, or ends the run.
+    private async Task<RunOutcome> AdvanceAsync(
+        PresenterUatExecutionSession session,
+        BddScenarioViewModel scenario,
+        StepPlan plan,
+        int fromRow,
+        PresenterRunExecutionOptions? pacing,
+        bool checkFirst)
+    {
+        var first = true;
+        while (session.HasNext && session.CompletedStepCount < plan.Until)
+        {
+            var step = session.CompletedStepCount;
+            if (plan.CheckBreaks && (checkFirst || !first) && PresenterStepping.BreakBefore(StepRows, step) is { } breakRow)
+            {
+                Pause(breakRow, "Breakpoint");
+                return RunOutcome.Paused;
+            }
+
+            first = false;
+            var result = await RunNextStepAsync(session, scenario).ConfigureAwait(true);
+            if (!ReferenceEquals(_activeSession, session))
+            {
+                return RunOutcome.Stopped;
+            }
+
+            if (result.Status is BddStepResultStatus.Failed or BddStepResultStatus.Canceled)
+            {
+                MarkRemainingSteps("skip");
+                scenario.Status = result.Status == BddStepResultStatus.Canceled ? "cancel" : "fail";
+                StatusSummary = $"{ScenarioStatusText(result.Status)}: {scenario.Name}: {result.Message}";
+                DiagnosticsText = FormatExecutionDetails(session, result.Message);
+                FinishActiveSession();
+                return RunOutcome.Failed;
+            }
+
+            if (pacing is not null)
+            {
+                await WaitBeforeNextStepAsync(session, scenario, pacing).ConfigureAwait(true);
+                if (!ReferenceEquals(_activeSession, session))
+                {
+                    return RunOutcome.Stopped;
+                }
+            }
+        }
+
+        if (!session.HasNext)
+        {
+            scenario.Status = "pass";
+            StatusSummary = $"Passed: {scenario.Name}";
+            DiagnosticsText = FormatExecutionDetails(session, null);
+            FinishActiveSession();
+            return RunOutcome.Passed;
+        }
+
+        var stop = plan.StopRow ?? PresenterStepping.PositionAfter(StepRows, session.CompletedStepCount, fromRow);
+        Pause(StepRows[Math.Min(stop, StepRows.Count - 1)]);
+        return RunOutcome.Paused;
+    }
+
+    // The run waits before a row: the row is highlighted, and the moves say what they will do.
+    private void Pause(BddStepRowViewModel row, string reason = "Paused")
+    {
+        CurrentRow = row;
+        StatusSummary = $"{reason} before: {row.Label}";
+        RaiseStepping();
+        RefreshPreview();
+    }
+
+    private void RaiseStepping()
+    {
+        OnPropertyChanged(nameof(IsPaused));
+        foreach (var command in new[] { RunCommand, NextStepCommand, StepIntoCommand, StepOutCommand, RestartCommand })
+        {
+            (command as AsyncRelayCommand)?.NotifyCanExecuteChanged();
+        }
+
+        foreach (var row in StepRows)
+        {
+            row.RefreshMenu();
+        }
+    }
+
+    // The shared breakpoints file, read again before a run goes on, so one set in an IDE counts.
+    private void RefreshBreakpoints(BddScenarioViewModel scenario)
+    {
+        var lines = _breakpoints.Lines(scenario.FilePath);
+        foreach (var row in scenario.Rows)
+        {
+            row.HasBreakpoint = row.CanBreak && lines.Contains(row.LineNumber);
+        }
+    }
+
+    /// <inheritdoc />
+    public bool CanRunUntil(BddStepRowViewModel row)
+        => WorkspacePath is not null && !_isMoving && (_activeSession is null || (CurrentRow is { } at && row.Index > at.Index));
+
+    /// <inheritdoc />
+    public bool CanRunFrom(BddStepRowViewModel row)
+        => IsPaused && CurrentRow is { } at && row.Index > at.Index && !row.IsInCall;
+
+    /// <inheritdoc />
+    public async void RunUntil(BddStepRowViewModel row)
+    {
+        if (_activeSession is null)
+        {
+            await StartPausedAsync(SelectedScenario).ConfigureAwait(true);
+        }
+
+        if (CurrentRow is { } at && row.Index > at.Index)
+        {
+            await MoveAsync(PresenterMove.Step, until: row).ConfigureAwait(true);
+        }
+    }
+
+    /// <inheritdoc />
+    public async void RunFrom(BddStepRowViewModel row)
+    {
+        if (CanRunFrom(row))
+        {
+            await MoveAsync(PresenterMove.Play, from: row).ConfigureAwait(true);
+        }
+    }
+
+    /// <inheritdoc />
+    public void ToggleBreakpoint(BddStepRowViewModel row)
+    {
+        if (row.CanBreak && SelectedScenario is { } scenario)
+        {
+            row.HasBreakpoint = _breakpoints.Toggle(scenario.FilePath, row.LineNumber);
+        }
+    }
+
+    /// <summary>
+    /// The keys, for a keyboard or a presentation clicker (which sends PageDown and PageUp).
+    /// Space, Right and PageDown step; Down goes into a call, Up out of it; F5 runs; Escape
+    /// stops; Ctrl+R restarts.
+    /// </summary>
+    /// <param name="key">The key's name, as Windows gives it (<c>Space</c>, <c>PageDown</c>, <c>F5</c> ...).</param>
+    /// <param name="control">Whether Ctrl is down.</param>
+    /// <returns>Whether the key was one of these.</returns>
+    public bool HandleKey(string key, bool control)
+    {
+        var command = (key, control) switch
+        {
+            ("Space" or "Right" or "PageDown", false) => NextStepCommand,
+            ("Down", false) => StepIntoCommand,
+            ("Up", false) => StepOutCommand,
+            ("F5", false) => RunCommand,
+            ("Escape", false) => StopCommand,
+            ("R", true) => RestartCommand,
+            _ => null,
+        };
+        if (command is null)
+        {
+            return false;
+        }
+
+        if (command.CanExecute(null))
+        {
+            command.Execute(null);
+        }
+
+        return true;
+    }
+
+    // The preview's paused bar sends the same moves.
+    private void OnPreviewMessage(string type, System.Text.Json.JsonElement message)
+    {
+        if (type != "debug" || !message.TryGetProperty("move", out var move))
+        {
+            return;
+        }
+
+        var command = move.GetString() switch
+        {
+            "continue" => RunCommand,
+            "over" => NextStepCommand,
+            "into" => StepIntoCommand,
+            "out" => StepOutCommand,
+            "stop" => StopCommand,
+            _ => null,
+        };
+        if (command?.CanExecute(null) == true)
+        {
+            command.Execute(null);
+        }
+    }
+
+    private enum RunOutcome
+    {
+        Passed,
+        Failed,
+        Paused,
+        Stopped,
     }
 
     private async Task<BddStepResult> RunNextStepAsync(
@@ -1501,8 +1785,10 @@ public sealed class PresenterShellViewModel : ViewModelBase
                 Steps.Add(step);
             }
 
+            RefreshBreakpoints(scenario);
             foreach (var row in scenario.Rows)
             {
+                row.Host = this;
                 StepRows.Add(row);
             }
         }
@@ -1606,7 +1892,10 @@ public sealed class PresenterShellViewModel : ViewModelBase
             CurrentRow?.LineNumber,
             _catalogs,
             IsDarkThemeActive,
-            WorkspaceName));
+            WorkspaceName,
+            IsPaused && CurrentRow is { } paused
+                ? new ScenarioPreviewPause(paused.Label, paused.LineNumber, paused.IsCall, paused.IsInCall)
+                : null));
     }
 
     // The run so far, as the preview reads a report: the steps that ran, by the line they are written on.
