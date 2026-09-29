@@ -3,6 +3,7 @@
 import * as vscode from "vscode";
 import { LanguageClient } from "vscode-languageclient/node";
 import * as breakpoints from "./breakpoints";
+import { Paused } from "./breakpoints";
 
 type Preview = { html: string; suites: string[]; suite?: string; bindState: string; reason?: string; resultsRoot?: string; resultsHost?: string };
 
@@ -10,6 +11,8 @@ type Preview = { html: string; suites: string[]; suite?: string; bindState: stri
 export interface PreviewHost {
   run(uri: vscode.Uri, line: number | undefined, debug: boolean): void;
   cancel(): void;
+  /** A move from the paused bar: continue, over, into, out or stop. */
+  move(move: string): void;
 }
 
 const featureOrSteps = /\.(feature|steps)\.md$/i;
@@ -89,6 +92,26 @@ export class ScenarioPreview implements vscode.Disposable {
     await this.panel.webview.postMessage(theme());
   }
 
+  /** The file the preview shows. */
+  get documentPath(): string | undefined {
+    return this.document?.uri.fsPath;
+  }
+
+  /** Tells the page where a debugged run is paused, or that it went on (nothing). */
+  paused(paused: Paused | undefined, source: string | undefined): void {
+    void this.panel?.webview.postMessage(paused
+      ? {
+          type: "paused",
+          text: paused.text,
+          line: paused.line,
+          isCall: paused.isCall,
+          depth: paused.depth,
+          calls: paused.calls,
+          here: source !== undefined && source.toLowerCase() === this.document?.uri.fsPath.toLowerCase(),
+        }
+      : { type: "paused" });
+  }
+
   /** Tells the page a run started (a line, or the whole file) or ended (nothing). */
   running(line: number | undefined, file: boolean): void {
     void this.panel?.webview.postMessage(line !== undefined || file ? { type: "running", line, file } : { type: "running" });
@@ -106,7 +129,12 @@ export class ScenarioPreview implements vscode.Disposable {
     }
   }
 
-  private onMessage(message: { type: string; line?: number; suite?: string; path?: string; debug?: boolean; scope?: string }): void {
+  private onMessage(message: { type: string; line?: number; suite?: string; path?: string; debug?: boolean; scope?: string; move?: string }): void {
+    if (message.type === "debug" && message.move) {
+      this.host.move(message.move);
+      return;
+    }
+
     const document = this.document;
     if (!document) {
       return;

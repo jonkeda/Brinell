@@ -57,3 +57,19 @@ cancelling a run stops the test process and the app it started.
 step breakpoint. A red dot marks it in the gutter. The breakpoints are the same per-user file as
 Visual Studio's (`%LOCALAPPDATA%\Brinell\bdd-breakpoints.json`), so a breakpoint set in one IDE
 stops a run started from the other.
+
+## Step Through A Scenario
+
+While a debugged run is paused at a step, the paused step's file opens at its line, and the
+preview shows the paused bar with the step marked, as in Visual Studio. The moves:
+
+| Move | Keys | Command |
+| --- | --- | --- |
+| Step over | Alt+Shift+F10 | **Brinell BDD: Step Over BDD Step** |
+| Step into (a `## Step:` call) | Alt+Shift+F11 | **Brinell BDD: Step Into BDD Call** |
+| Step out (of a call) | Ctrl+Shift+F11 | **Brinell BDD: Step Out of BDD Call** |
+| Continue / Stop | F5 / Shift+F5 | the debugger's own |
+
+The keys work only while a run is paused at a step (the context keys `brinellBdd.paused`,
+`brinellBdd.pausedAtCall`, `brinellBdd.pausedInCall`), so they take no key from VS Code otherwise.
+The bar's buttons do the same. F10 and F11 stay the C# debugger's.

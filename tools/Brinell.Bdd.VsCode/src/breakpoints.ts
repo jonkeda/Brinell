@@ -79,9 +79,61 @@ function write(store: Store, filePath: string, lines: number[]): void {
     store.files[filePath] = [...lines].sort((a, b) => a - b);
   }
 
+  save(store);
+  changed.fire(filePath);
+}
+
+// The engine reads the file at every step while debugging, so the move into place may meet it
+// open: it is tried again, briefly.
+function save(store: Store): void {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const temporary = `${file}.${process.pid}.tmp`;
   fs.writeFileSync(temporary, JSON.stringify(store, null, 2));
-  fs.renameSync(temporary, file);
-  changed.fire(filePath);
+  for (let attempt = 1; ; attempt++) {
+    try {
+      fs.renameSync(temporary, file);
+      return;
+    } catch (error) {
+      if (attempt === saveAttempts) {
+        throw error;
+      }
+
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, saveRetryPauseMs);
+    }
+  }
+}
+
+const saveAttempts = 10;
+const saveRetryPauseMs = 20;
+
+/** The file the engine writes while a debugged run is paused at a step, beside the breakpoints. */
+export const pausedFile = path.join(path.dirname(file), "bdd-paused.json");
+
+/** Where a debugged run is paused, as the engine wrote it. */
+export type Paused = { process: number; file: string; line: number; depth: number; isCall: boolean; text: string; calls: string[]; failed: boolean };
+
+/** Where a debugged run is paused; undefined when none is. */
+export function readPaused(): Paused | undefined {
+  try {
+    return JSON.parse(fs.readFileSync(pausedFile, "utf8")) as Paused;
+  } catch {
+    // No run paused, or the engine is writing or removing the file just now.
+    return undefined;
+  }
+}
+
+/** A one-shot move from the paused step (over, into, out) for the test process that paused. */
+export function setMove(mode: "over" | "into" | "out", depth: number, processId: number): void {
+  const store = read();
+  store.next = { mode, depth, process: processId };
+  save(store);
+}
+
+/** Removes a move no run took: a Continue, or a run that ended. */
+export function clearMove(): void {
+  const store = read();
+  if ("next" in store) {
+    delete store.next;
+    save(store);
+  }
 }

@@ -40,6 +40,24 @@
         "command": "brinellBdd.deleteSuiteResults",
         "title": "Delete All Results of a Suite",
         "category": "Brinell BDD"
+      },
+      {
+        "command": "brinellBdd.stepOver",
+        "title": "Step Over BDD Step",
+        "category": "Brinell BDD",
+        "enablement": "brinellBdd.paused"
+      },
+      {
+        "command": "brinellBdd.stepInto",
+        "title": "Step Into BDD Call",
+        "category": "Brinell BDD",
+        "enablement": "brinellBdd.pausedAtCall"
+      },
+      {
+        "command": "brinellBdd.stepOut",
+        "title": "Step Out of BDD Call",
+        "category": "Brinell BDD",
+        "enablement": "brinellBdd.pausedInCall"
       }
     ],
     "menus": {
@@ -69,6 +87,21 @@
         "key": "ctrl+k f9",
         "mac": "cmd+k f9",
         "when": "editorTextFocus && resourceFilename =~ /\\.(feature|steps)\\.md$/"
+      },
+      {
+        "command": "brinellBdd.stepOver",
+        "key": "alt+shift+f10",
+        "when": "brinellBdd.paused"
+      },
+      {
+        "command": "brinellBdd.stepInto",
+        "key": "alt+shift+f11",
+        "when": "brinellBdd.pausedAtCall"
+      },
+      {
+        "command": "brinellBdd.stepOut",
+        "key": "ctrl+shift+f11",
+        "when": "brinellBdd.pausedInCall"
       }
     ],
     "configuration": {

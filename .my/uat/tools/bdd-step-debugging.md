@@ -1,7 +1,16 @@
 # Design: stepping through a scenario (shortcuts and buttons)
 
-Status: **steps 1 (engine) and 2 (Visual Studio) built** 2026-09-28, step 2 not yet seen in Visual
-Studio (manual B-16 to B-20); steps 3 (VS Code) and 4 open. Date: 2026-09-28.
+Status: **built** 2026-09-29: engine, Visual Studio, VS Code, the guides and AD-022. Not yet seen
+in either IDE (manual B-16 to B-20 in Visual Studio; the same in VS Code). Date: 2026-09-29.
+
+VS Code (step 3): `stepping.ts` watches `bdd-paused.json`, opens the paused step's source at its line
+(the build output's path mapped back under a `Features` folder), sends the preview its `paused`
+message, and sets the context keys `brinellBdd.paused`, `brinellBdd.pausedAtCall` and
+`brinellBdd.pausedInCall`; the commands **Step Over BDD Step**, **Step Into BDD Call** and **Step Out
+of BDD Call** and their keys are enabled by those keys only. A move writes `next`
+(`breakpoints.setMove`) and runs `workbench.action.debug.continue`; Continue clears it; Stop is
+`workbench.action.debug.stop`. The keys cannot clash with VS Code's outside a pause, since they only
+apply while one is.
 
 Visual Studio (step 2): the commands **Step Over BDD Step**, **Step Into BDD Call** and **Step Out
 of BDD Call** on the Debug menu with their chords, enabled from `bdd-paused.json`; the controller
@@ -80,10 +89,10 @@ A bar at the top of the preview, shown only while a debugged run is paused:
 ## How it works
 
 - **The engine** reads one more entry in `bdd-breakpoints.json`: a one-shot move,
-  `"next": { "mode": "over" | "into" | "out", "depth": 2, "run": "<run id>" }`, written by the IDE.
-  `BddBreakpoints.Before` breaks at the next step that fits the move (`over`: depth ≤ the paused
-  depth; `into`: any; `out`: depth < the paused depth) and removes the entry. The run id keeps a
-  stale move from breaking another run.
+  `"next": { "mode": "over" | "into" | "out", "depth": 2, "process": 4711 }`, written by the IDE
+  with the paused step's depth and test process. `BddBreakpoints.Before` stops at the first
+  position that fits the move (see the status notes above: a call is a position of its own) and
+  removes the entry. The process id keeps a stale move from stopping another run.
 - **The IDE** writes the move, then continues the debugger (DTE `Debugger.Go` in VS; the debug
   session's `continue` in VS Code). No new channel into the test process: the file is already
   read while a debugger is attached.
@@ -105,4 +114,4 @@ A bar at the top of the preview, shown only while a debugged run is paused:
 | # | Question | Default |
 | --- | --- | --- |
 | Q1 | Bare F10/F11, or Ctrl+F10/F11, instead of the single chords above? | Decided 2026-09-28: single chords (Alt+Shift+F10, Alt+Shift+F11, Ctrl+Shift+F11). F10/F11 stay C#'s; Ctrl+F10/F11 are Visual Studio's. |
-| Q2 | Should Step over also stop after a failed step (before the next), or only with "break on failure"? | Only with "break on failure", as today. |
+| Q2 | Should Step over also stop after a failed step (before the next), or only with "break on failure"? | Built as the default: only with "break on failure", as before. |

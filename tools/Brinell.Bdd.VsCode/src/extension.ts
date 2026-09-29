@@ -7,6 +7,7 @@ import * as vscode from "vscode";
 import { LanguageClient, LanguageClientOptions, ServerOptions } from "vscode-languageclient/node";
 import * as breakpoints from "./breakpoints";
 import { deleteResults, ScenarioPreview } from "./preview";
+import { BddStepping, Move } from "./stepping";
 import { ScenarioTests } from "./tests";
 
 const featureOrSteps = /\.(feature|steps)\.md$/i;
@@ -37,7 +38,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const preview = new ScenarioPreview(client, {
     run: (uri, line, debug) => void tests.runAt(uri, line, debug),
     cancel: () => tests.cancel(),
+    move: (move) => void stepping.move(move as Move),
   });
+  const stepping = new BddStepping(preview);
   const gutter = vscode.window.createTextEditorDecorationType({
     gutterIconPath: context.asAbsolutePath(path.join("media", "breakpoint.svg")),
     gutterIconSize: "70%",
@@ -52,7 +55,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     client,
     tests,
     preview,
+    stepping,
     gutter,
+    vscode.commands.registerCommand("brinellBdd.stepOver", () => stepping.move("over")),
+    vscode.commands.registerCommand("brinellBdd.stepInto", () => stepping.move("into")),
+    vscode.commands.registerCommand("brinellBdd.stepOut", () => stepping.move("out")),
     vscode.commands.registerCommand("brinellBdd.openPreview", async () => {
       const document = vscode.window.activeTextEditor?.document;
       if (document && featureOrSteps.test(document.fileName)) {

@@ -10,6 +10,7 @@ gate runs. It is served by one .NET process, `Brinell.Bdd.LanguageServer`:
 | **One way to load a suite** (L1) | `Brinell.Bdd.Workspace` finds the suites, reads their configs, and loads a suite's build from a shadow copy in a collectible context: a build never meets a locked file, and a reload releases the old build (AD-018). `brinell-data` and the server load through it. A test-data definition loaded from the copy is placed at its project. |
 | **A scenario has an address** (R1) | `[UatScenarioTheory]` gives each case the trait `BddScenario=<file relative to the config>#<slug>`. The IDEs, `dotnet test --filter` and CI all run one scenario by it. A suite that keeps `[Theory]` still runs in Test Explorer, but not from the preview. |
 | **A step breakpoint is a file** (R2) | `%LOCALAPPDATA%\Brinell\bdd-breakpoints.json`, read by `BddBreakpoints` only while a debugger is attached. It is a file, not an environment variable, so a Debug that Test Explorer starts honours it, and both IDEs write the same one. An app a debugged test starts is announced the same way (`DebuggedApps`, keyed by the test's process id), and the IDE attaches to it. |
+| **Stepping goes through the same file** | While paused, the engine writes where (`bdd-paused.json`: file, line, call depth, whether it is a `## Step:` call, the test process); a step over, into or out is a one-shot `next` the IDE writes into `bdd-breakpoints.json`, for that process, before it lets the debugger go on. A call is a position of its own: the run stops at it, Step over runs it whole, Step into goes inside without running anything. Both IDEs, the same files; reading and writing them never fails a step. |
 
 **As built:** Visual Studio runs two processes of the same server, one for the preview and one
 for its `ILanguageClient`, so a failing editor client never takes the preview down. VS Code runs
@@ -26,7 +27,8 @@ sections 3-5,
   binding;
 - loading the engine or a suite into Visual Studio's own process, which is .NET Framework and
   locks files;
-- a debug adapter (DAP) that steps scenario by scenario, until R2 proves not to be enough;
+- a debug adapter (DAP) that steps scenario by scenario: stepping by BDD step is the breakpoints
+  file's one-shot move and the C# debugger's own Continue, with no adapter;
 - an environment variable for breakpoints, which Test Explorer's own Debug cannot pass.
 
 **Broken when:**
@@ -35,4 +37,6 @@ sections 3-5,
 - a tool loads a suite's build other than through `Brinell.Bdd.Workspace`, or loads it from `bin`
   in place;
 - a scenario is run by display name or index rather than its `BddScenario` address;
-- breakpoints are read without a debugger attached, or passed by environment variable.
+- breakpoints are read without a debugger attached, or passed by environment variable;
+- a step move is taken by a test process it was not written for, or reading or writing the files
+  fails a step.
