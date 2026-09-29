@@ -28,6 +28,11 @@ internal static class PresenterIcons
     public const string Stop = "";         // stop
     public const string Next = "";         // step forward
 
+    // The Speed button: a gauge, high to low.
+    public const string SpeedFast = "";   // speed high
+    public const string SpeedNormal = ""; // speed medium
+    public const string SpeedSlow = "";   // speed off
+
     // Theme toggle. Names the destination, not the current state.
     public const string ThemeLight = "";   // sun
     public const string ThemeDark = "";    // moon

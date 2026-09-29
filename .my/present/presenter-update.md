@@ -190,6 +190,13 @@ Smaller, **built 2026-09-29 (step 5)**:
   and the dock, PR17 the step list and the preview, PR18 breakpoints and Run until/from here. The
   journeys are not run; the UI scenarios cover PR02, PR04, PR09, PR11.1-11.2 and the config.
 
+### After a first look (2026-09-29)
+
+The owner asked, and it is built: Open first in the top row, in both modes; Speed a button cycling
+Fast, Normal and Slow (a gauge each) instead of the Delay box and presets; a Settings page (the gear,
+both modes) with each speed's pause and the theme; the Config tab's icon a document; a narrower
+tree (indent 10); a click on a step toggles its breakpoint; the run toolbar under the steps.
+
 ## 3. Sketch: Present mode, docked left
 
 ```text

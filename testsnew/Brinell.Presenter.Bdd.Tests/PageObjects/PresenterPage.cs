@@ -77,8 +77,13 @@ public sealed class PresenterPage : PageObjectBase<PresenterPage>
     [UatName("Next")]
     public Button<PresenterPage> NextButton => new(this,"NextButton");
 
-    [UatName("Delay")]
-    public Entry<PresenterPage> DelayMillisecondsInput => new(this, "DelayMillisecondsInput");
+    /// <summary>The run's speed: a click cycles Fast, Normal and Slow.</summary>
+    [UatName("Speed")]
+    public Button<PresenterPage> SpeedButton => new(this, "SpeedButton");
+
+    /// <summary>Opens and closes the Settings page.</summary>
+    [UatName("Settings")]
+    public Button<PresenterPage> SettingsButton => new(this, "SettingsButton");
 
     /// <summary>The Config tab's state header: clean, unsaved, or problems.</summary>
     [UatName("Config State")]

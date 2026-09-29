@@ -85,16 +85,14 @@ and `[-]` when a check does not apply; add a defect reference or reason beside i
   - [ ] **PR07.6** The command catalog lists the available step phrases, grouped by keyword, with the command each maps to.
   - [ ] **PR07.7** Switching between views does not lose the tree selection or an active run.
 
-## PR08 Set the execution delay
+## PR08 Set the speed
 
 - [ ] **Journey passed**
-  - [ ] **PR08.1** The delay input shows a default value with a visible `ms` label beside it.
-  - [ ] **PR08.2** The input accepts digits only and at most five characters.
-  - [ ] **PR08.3** A delay entered before pressing `Run` is the delay actually applied during that run.
-  - [ ] **PR08.4** Changing the delay while a run is in progress does not change the pacing of that run.
-  - [ ] **PR08.5** An empty or non-numeric delay runs without waiting between steps rather than failing.
-  - [ ] **PR08.6** The effective delay used by a run is reported in the diagnostics.
-
+  - [ ] **PR08.1** The Speed button, last in the run toolbar under the steps, shows a gauge for its speed, and its tooltip says the speed, its pause and what a click chooses.
+  - [ ] **PR08.2** A click cycles Fast, Normal and Slow; the choice is there after a restart.
+  - [ ] **PR08.3** The Settings page sets the pause of each speed in milliseconds; a value that is not a number of 0 to 99999 is not taken.
+  - [ ] **PR08.4** The speed chosen before `Run` is the pause applied during that run; changing it while a run goes on does not change that run's pace.
+  - [ ] **PR08.5** The effective pause of a run is reported in the diagnostics.
 ## PR09 Run a scenario automatically
 
 - [ ] **Journey passed**
@@ -179,7 +177,7 @@ and `[-]` when a check does not apply; add a defect reference or reason beside i
 ## PR16 Present and Workspace modes, and the dock
 
 - [ ] **Journey passed**
-  - [ ] **PR16.1** A workspace that loads cleanly opens in Present mode: the mode buttons, Reload, Dock, theme, the run toolbar, the Scenarios tree, the Steps list and the status; nothing else.
+  - [ ] **PR16.1** A workspace that loads cleanly opens in Present mode: Open, the mode buttons, Reload, Dock, Settings, the Scenarios tree, the Steps list, the run toolbar under it and the status; nothing else.
   - [ ] **PR16.2** Workspace mode adds Open and the recent folders, the build choices and Build, the tabs and the Selection panel; the current mode's button is filled.
   - [ ] **PR16.3** A workspace that is not built opens in Workspace mode and says "Not built yet" above Build; building it and reloading shows the steps bound.
   - [ ] **PR16.4** Reloading keeps the mode, unless the workspace now has problems.
@@ -198,7 +196,7 @@ and `[-]` when a check does not apply; add a defect reference or reason beside i
 ## PR18 Breakpoints, run until here, run from here
 
 - [ ] **Journey passed**
-  - [ ] **PR18.1** A right-click on a step offers Run until here, Run from here and Toggle breakpoint.
+  - [ ] **PR18.1** A click on a step sets or clears its breakpoint; a right-click offers Run until here, Run from here and Toggle breakpoint.
   - [ ] **PR18.2** Toggle breakpoint marks the step with a red dot; `Run` pauses before it.
   - [ ] **PR18.3** A breakpoint on a `## Step:` call pauses at the call, before its first step.
   - [ ] **PR18.4** A breakpoint set in Visual Studio or VS Code shows in Presenter and stops `Run` there; one set in Presenter shows in the IDEs.

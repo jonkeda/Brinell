@@ -78,18 +78,19 @@ referencing it:
 
 ## The Shell
 
-Presenter has two modes, a pair of buttons at the top left:
+The top row starts with **Open** (a workspace folder), in both modes. Then the two modes, a pair of
+buttons:
 
 - **Present**: the scenarios, the steps and the moves, nothing else. A workspace that loads cleanly
   opens in it.
-- **Workspace**: adds **Open** (with the recent folders beside it), the build choices and
+- **Workspace**: adds the recent folders, the build choices and
   **Build**, the tabs and the Selection panel. A workspace with problems opens in it, and says
   "Not built yet" above **Build** when the suite has no build.
 
 **Reload** (both modes) reloads and checks the workspace. At the top right, **Dock** moves the bar
-to the other side of the screen (remembered), and the theme button switches light and dark. Under
-them the run toolbar: **Run**, **Next**, **Into**, **Out**, **Stop**, **Restart**, and **Delay** in
-milliseconds with its presets.
+to the other side of the screen (remembered), and **Settings** opens the Settings page (the same
+button closes it): the pause between steps of each speed, and the theme. The run toolbar is under the
+steps: **Run**, **Next**, **Into**, **Out**, **Stop**, **Restart**, and **Speed**.
 
 | Tab | Shows |
 | --- | --- |
@@ -132,8 +133,8 @@ moves are those of the IDEs' stepping (AD-022), on keys a presentation clicker s
 | **Stop** | Esc | ends the run and closes the app |
 | **Restart** | Ctrl+R | the scenario again, paused before its first step |
 
-The keys work anywhere in the Presenter window except in a text box. A right-click on a step in
-the list offers **Run until here** (runs on and pauses before it), **Run from here** (only while a
+The keys work anywhere in the Presenter window except in a text box. A click on a step sets or
+clears its breakpoint. A right-click offers **Run until here** (runs on and pauses before it), **Run from here** (only while a
 run is paused before it: skips the steps in between, marked skipped, and runs on; the app must
 already be where they lead) and **Toggle breakpoint**. The preview's paused bar has the same moves.
 
@@ -149,9 +150,10 @@ file, not on a step inside a step file.
 | Scenario | that scenario |
 | Config or other Markdown | nothing |
 
-**Delay** is read when a run starts or goes on, and applied between steps, never before the first:
-seven steps at 1000 ms take at least six seconds. The **Fast**, **Normal** and **Slow** presets
-set it to 250, 800 and 1500 ms. A step is marked passed only after its command completes. The
+**Speed** cycles **Fast**, **Normal** and **Slow**, with a gauge for each; the pause of each is set on
+the Settings page (250, 800 and 1500 ms at first), and both are remembered. The pause is read when a
+run starts or goes on, and applied between steps, never before the first: seven steps at 1000 ms take
+at least six seconds. A step is marked passed only after its command completes. The
 status line under the list shows the current step, where the run is paused, or the result
 (`Passed: 1/1 scenarios`); per-step timings are in Diagnostics.
 ## Supported Targets

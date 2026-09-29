@@ -21,7 +21,7 @@
     -->
     <Grid AutomationId="PresenterRoot"
           Padding="12"
-          RowDefinitions="Auto,Auto,Auto,Auto,*"
+          RowDefinitions="Auto,Auto,Auto,*"
           RowSpacing="8"
           HorizontalOptions="Fill"
           VerticalOptions="Fill">
@@ -33,11 +33,17 @@
                 one-row layout. OpenRecentButton stays a real Button with its own command.
             -->
             <toolkit:Expander.Header>
-                <!-- Present and Workspace are a pair of buttons, the current one filled, so either
-                     can be asked for whatever the mode is; the rest of the row is Workspace mode's. -->
+                <!-- Open, then Present and Workspace as a pair, the current one filled, so either can be
+                     asked for whatever the mode is. Recent folders are Workspace mode's. -->
                 <Grid ColumnDefinitions="Auto,*,Auto">
                     <HorizontalStackLayout Grid.Column="0"
                                            Spacing="6">
+                        <Button Text="&#xE838;"
+                                AutomationId="OpenFolderButton"
+                                Style="{StaticResource PresenterIconButton}"
+                                Command="{Binding OpenFolderCommand}"
+                                SemanticProperties.Description="Open workspace folder"
+                                ToolTipProperties.Text="Open workspace folder" />
                         <Button Text="&#xE7F4;"
                                 AutomationId="PresentModeButton"
                                 Style="{StaticResource PresenterIconButton}"
@@ -60,7 +66,7 @@
                                 Style="{StaticResource PresenterIconButton}"
                                 Command="{Binding ShowWorkspaceModeCommand}"
                                 SemanticProperties.Description="Workspace mode"
-                                ToolTipProperties.Text="Workspace mode: open, build, config and diagnostics">
+                                ToolTipProperties.Text="Workspace mode: build, config and diagnostics">
                             <Button.Triggers>
                                 <DataTrigger TargetType="Button"
                                              Binding="{Binding IsWorkspaceMode}"
@@ -72,13 +78,6 @@
                                 </DataTrigger>
                             </Button.Triggers>
                         </Button>
-                        <Button Text="&#xE838;"
-                                AutomationId="OpenFolderButton"
-                                Style="{StaticResource PresenterIconButton}"
-                                Command="{Binding OpenFolderCommand}"
-                                IsVisible="{Binding IsWorkspaceMode}"
-                                SemanticProperties.Description="Open workspace folder"
-                                ToolTipProperties.Text="Open workspace folder" />
                         <Button Text="{Binding RecentFoldersGlyph}"
                                 AutomationId="OpenRecentButton"
                                 Style="{StaticResource PresenterIconButton}"
@@ -101,12 +100,23 @@
                                 Command="{Binding ToggleDockCommand}"
                                 SemanticProperties.Description="{Binding DockDescription}"
                                 ToolTipProperties.Text="{Binding DockDescription}" />
-                        <Button Text="{Binding ThemeGlyph}"
-                                AutomationId="ThemeToggleButton"
+                        <Button Text="&#xE713;"
+                                AutomationId="SettingsButton"
                                 Style="{StaticResource PresenterIconButton}"
-                                Command="{Binding ToggleThemeCommand}"
-                                SemanticProperties.Description="{Binding ThemeDescription}"
-                                ToolTipProperties.Text="{Binding ThemeDescription}" />
+                                Command="{Binding ShowSettingsCommand}"
+                                SemanticProperties.Description="Settings"
+                                ToolTipProperties.Text="Settings: the speeds and the theme">
+                            <Button.Triggers>
+                                <DataTrigger TargetType="Button"
+                                             Binding="{Binding IsSettingsTabSelected}"
+                                             Value="True">
+                                    <Setter Property="BackgroundColor"
+                                            Value="{AppThemeBinding Light={StaticResource PresenterSelectedLight}, Dark={StaticResource PresenterSelectedDark}}" />
+                                    <Setter Property="BorderColor"
+                                            Value="{AppThemeBinding Light={StaticResource PresenterAccentLight}, Dark={StaticResource PresenterAccentDark}}" />
+                                </DataTrigger>
+                            </Button.Triggers>
+                        </Button>
                     </HorizontalStackLayout>
                 </Grid>
             </toolkit:Expander.Header>
@@ -136,79 +146,13 @@
             </Border>
         </toolkit:Expander>
 
-        <Border Grid.Row="1"
-                Padding="10">
-            <Border.StrokeShape>
-                <RoundRectangle CornerRadius="6" />
-            </Border.StrokeShape>
-            <VerticalStackLayout Spacing="6">
-                <!-- The moves: the same as the IDEs' stepping, on keys a presentation clicker sends too. -->
-                <HorizontalStackLayout Spacing="6"
-                                       VerticalOptions="Center">
-                    <Button Text="&#xE768;"
-                            AutomationId="RunButton"
-                            Style="{StaticResource PresenterIconButton}"
-                            Command="{Binding RunCommand}"
-                            SemanticProperties.Description="Run"
-                            ToolTipProperties.Text="Run, or go on from a pause, to a breakpoint or the end (F5)" />
-                    <Button Text="&#xE893;"
-                            AutomationId="NextButton"
-                            Style="{StaticResource PresenterIconButton}"
-                            Command="{Binding NextStepCommand}"
-                            SemanticProperties.Description="Next step"
-                            ToolTipProperties.Text="Step: run the highlighted step, or start paused before the first (Space, Right, Page Down)" />
-                    <Button Text="&#xE74B;"
-                            AutomationId="StepIntoButton"
-                            Style="{StaticResource PresenterIconButton}"
-                            Command="{Binding StepIntoCommand}"
-                            SemanticProperties.Description="Step into"
-                            ToolTipProperties.Text="Step into the call, running nothing (Down)" />
-                    <Button Text="&#xE74A;"
-                            AutomationId="StepOutButton"
-                            Style="{StaticResource PresenterIconButton}"
-                            Command="{Binding StepOutCommand}"
-                            SemanticProperties.Description="Step out"
-                            ToolTipProperties.Text="Step out: run the rest of the call (Up)" />
-                    <Button Text="&#xE71A;"
-                            AutomationId="StopButton"
-                            Style="{StaticResource PresenterIconButton}"
-                            Command="{Binding StopCommand}"
-                            SemanticProperties.Description="Stop"
-                            ToolTipProperties.Text="Stop (Esc)" />
-                    <Button Text="&#xE777;"
-                            AutomationId="RestartButton"
-                            Style="{StaticResource PresenterIconButton}"
-                            Command="{Binding RestartCommand}"
-                            SemanticProperties.Description="Restart"
-                            ToolTipProperties.Text="Restart the scenario, paused before its first step (Ctrl+R)" />
-                </HorizontalStackLayout>
-                <HorizontalStackLayout Spacing="6"
-                                       VerticalOptions="Center">
-                    <Label Text="Delay"
-                           VerticalTextAlignment="Center" />
-                    <Entry AutomationId="DelayMillisecondsInput"
-                           Keyboard="Numeric"
-                           MaxLength="5"
-                           WidthRequest="58"
-                           Text="{Binding ExecutionDelayText}" />
-                    <Label Text="ms"
-                           AutomationId="DelayMillisecondsLabel"
-                           VerticalTextAlignment="Center" />
-                    <Picker AutomationId="DelayPresetPicker"
-                            WidthRequest="92"
-                            ItemsSource="{Binding DelayPresets}"
-                            SelectedItem="{Binding DelayPreset, Mode=TwoWay}"
-                            SemanticProperties.Description="Delay preset" />
-                </HorizontalStackLayout>
-            </VerticalStackLayout>
-        </Border>
 
         <!--
             Session choices, not config: a configuration and a platform are things you switch
             while demoing. Platform sets APPIUM_PLATFORM, which the fixture reads before it
             resolves its own app binary; both persist per workspace.
         -->
-        <Border Grid.Row="2"
+        <Border Grid.Row="1"
                 Padding="10"
                 IsVisible="{Binding IsWorkspaceMode}">
             <Border.StrokeShape>
@@ -246,7 +190,7 @@
             the DataTrigger fills the selected one instead, which is what lets five tabs plus
             the theme button fit on one row at quarter-screen width.
         -->
-        <HorizontalStackLayout Grid.Row="3"
+        <HorizontalStackLayout Grid.Row="2"
                                Spacing="4"
                                IsVisible="{Binding IsWorkspaceMode}">
             <Button Text="&#xF168;"
@@ -266,7 +210,7 @@
                     </DataTrigger>
                 </Button.Triggers>
             </Button>
-            <Button Text="&#xE713;"
+            <Button Text="&#xE8A5;"
                     AutomationId="ConfigTabButton"
                     Style="{StaticResource PresenterIconButton}"
                     Command="{Binding ShowConfigTabCommand}"
@@ -336,7 +280,7 @@
             </Button>
         </HorizontalStackLayout>
 
-        <Grid Grid.Row="4"
+        <Grid Grid.Row="3"
               VerticalOptions="Fill">
             <!--
                 Pick in a tree, step in a list. The two sections are expanders with a real
@@ -344,7 +288,7 @@
                 UI Automation); PresenterPage.xaml.cs gives a collapsed section's row no height.
             -->
             <Grid x:Name="TreeTab"
-                  RowDefinitions="Auto,Auto,*,Auto,*,Auto,Auto"
+                  RowDefinitions="Auto,Auto,*,Auto,*,Auto,Auto,Auto"
                   RowSpacing="6"
                   IsVisible="{Binding IsTreeTabSelected}">
                 <Label Grid.Row="0"
@@ -386,11 +330,13 @@
                                        IsExpandedPath="IsExpanded"
                                        SelectedValue="{Binding SelectedWorkspaceNode, Mode=TwoWay}"
                                        ShowExpandButton="False"
+                                       IndentWidth="10"
                                        VerticalOptions="Fill">
                         <controls:TreeView.ItemTemplate>
                             <DataTemplate>
                                 <Grid Padding="0,4"
-                                      ColumnDefinitions="28,42,*">
+                                      ColumnDefinitions="22,20,*"
+                                      ColumnSpacing="4">
                                     <!-- ExpansionGlyph and IconGlyph, never ExpansionText/Icon:
                                          those two stay ASCII for the hidden text mirrors.
                                          The description states expanded/collapsed because it is
@@ -474,6 +420,10 @@
                                                             Command="{Binding ToggleBreakpointCommand}" />
                                         </MenuFlyout>
                                     </FlyoutBase.ContextFlyout>
+                                    <!-- A click on a step sets or clears its breakpoint, as a click in the IDEs' gutter does. -->
+                                    <Grid.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding ToggleBreakpointCommand}" />
+                                    </Grid.GestureRecognizers>
                                     <Grid.Triggers>
                                         <DataTrigger TargetType="Grid"
                                                      Binding="{Binding IsCurrent}"
@@ -518,14 +468,62 @@
                     </CollectionView>
                 </Border>
 
-                <VerticalStackLayout Grid.Row="5"
+                <!-- The moves, below the steps they move through: the same as the IDEs' stepping,
+                     on keys a presentation clicker sends too. Speed cycles Fast, Normal, Slow. -->
+                <HorizontalStackLayout Grid.Row="5"
+                                       Spacing="6"
+                                       VerticalOptions="Center">
+                    <Button Text="&#xE768;"
+                            AutomationId="RunButton"
+                            Style="{StaticResource PresenterIconButton}"
+                            Command="{Binding RunCommand}"
+                            SemanticProperties.Description="Run"
+                            ToolTipProperties.Text="Run, or go on from a pause, to a breakpoint or the end (F5)" />
+                    <Button Text="&#xE893;"
+                            AutomationId="NextButton"
+                            Style="{StaticResource PresenterIconButton}"
+                            Command="{Binding NextStepCommand}"
+                            SemanticProperties.Description="Next step"
+                            ToolTipProperties.Text="Step: run the highlighted step, or start paused before the first (Space, Right, Page Down)" />
+                    <Button Text="&#xE74B;"
+                            AutomationId="StepIntoButton"
+                            Style="{StaticResource PresenterIconButton}"
+                            Command="{Binding StepIntoCommand}"
+                            SemanticProperties.Description="Step into"
+                            ToolTipProperties.Text="Step into the call, running nothing (Down)" />
+                    <Button Text="&#xE74A;"
+                            AutomationId="StepOutButton"
+                            Style="{StaticResource PresenterIconButton}"
+                            Command="{Binding StepOutCommand}"
+                            SemanticProperties.Description="Step out"
+                            ToolTipProperties.Text="Step out: run the rest of the call (Up)" />
+                    <Button Text="&#xE71A;"
+                            AutomationId="StopButton"
+                            Style="{StaticResource PresenterIconButton}"
+                            Command="{Binding StopCommand}"
+                            SemanticProperties.Description="Stop"
+                            ToolTipProperties.Text="Stop (Esc)" />
+                    <Button Text="&#xE777;"
+                            AutomationId="RestartButton"
+                            Style="{StaticResource PresenterIconButton}"
+                            Command="{Binding RestartCommand}"
+                            SemanticProperties.Description="Restart"
+                            ToolTipProperties.Text="Restart the scenario, paused before its first step (Ctrl+R)" />
+                    <Button Text="{Binding SpeedGlyph}"
+                            AutomationId="SpeedButton"
+                            Style="{StaticResource PresenterIconButton}"
+                            Command="{Binding CycleSpeedCommand}"
+                            SemanticProperties.Description="{Binding SpeedDescription}"
+                            ToolTipProperties.Text="{Binding SpeedDescription}" />
+                </HorizontalStackLayout>
+                <VerticalStackLayout Grid.Row="6"
                                      Spacing="2">
                     <Label Text="{Binding StatusSummary}"
                            FontAttributes="Bold"
                            AutomationId="StatusSummaryLabel" />
                 </VerticalStackLayout>
 
-                <toolkit:Expander Grid.Row="6"
+                <toolkit:Expander Grid.Row="7"
                                   IsVisible="{Binding IsWorkspaceMode}"
                                   IsExpanded="{Binding IsSelectionExpanded, Mode=TwoWay}">
                     <toolkit:Expander.Header>
@@ -561,6 +559,71 @@
                 </toolkit:Expander>
             </Grid>
 
+            <!-- Settings: in either mode, from the gear at the top right; the same button closes it. -->
+            <Border Padding="10"
+                    IsVisible="{Binding IsSettingsTabSelected}">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="6" />
+                </Border.StrokeShape>
+                <ScrollView>
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="Settings"
+                               FontAttributes="Bold"
+                               FontSize="15" />
+
+                        <Label Text="Speeds: the pause between steps, in milliseconds" />
+                        <Grid ColumnDefinitions="28,70,80,Auto"
+                              RowDefinitions="Auto,Auto,Auto"
+                              ColumnSpacing="6"
+                              RowSpacing="6">
+                            <Label Grid.Row="0" Grid.Column="0" Text="&#xEC4A;" Style="{StaticResource PresenterGlyphLabel}" />
+                            <Label Grid.Row="0" Grid.Column="1" Text="Fast" VerticalTextAlignment="Center" />
+                            <Entry Grid.Row="0" Grid.Column="2"
+                                   AutomationId="FastMillisecondsInput"
+                                   Keyboard="Numeric"
+                                   MaxLength="5"
+                                   Text="{Binding FastMillisecondsText}" />
+                            <Label Grid.Row="0" Grid.Column="3" Text="ms" VerticalTextAlignment="Center" />
+                            <Label Grid.Row="1" Grid.Column="0" Text="&#xEC49;" Style="{StaticResource PresenterGlyphLabel}" />
+                            <Label Grid.Row="1" Grid.Column="1" Text="Normal" VerticalTextAlignment="Center" />
+                            <Entry Grid.Row="1" Grid.Column="2"
+                                   AutomationId="NormalMillisecondsInput"
+                                   Keyboard="Numeric"
+                                   MaxLength="5"
+                                   Text="{Binding NormalMillisecondsText}" />
+                            <Label Grid.Row="1" Grid.Column="3" Text="ms" VerticalTextAlignment="Center" />
+                            <Label Grid.Row="2" Grid.Column="0" Text="&#xEC48;" Style="{StaticResource PresenterGlyphLabel}" />
+                            <Label Grid.Row="2" Grid.Column="1" Text="Slow" VerticalTextAlignment="Center" />
+                            <Entry Grid.Row="2" Grid.Column="2"
+                                   AutomationId="SlowMillisecondsInput"
+                                   Keyboard="Numeric"
+                                   MaxLength="5"
+                                   Text="{Binding SlowMillisecondsText}" />
+                            <Label Grid.Row="2" Grid.Column="3" Text="ms" VerticalTextAlignment="Center" />
+                        </Grid>
+                        <Label Text="{Binding SpeedDescription}"
+                               FontSize="11"
+                               Style="{StaticResource PresenterMutedLabel}" />
+
+                        <Label Text="Theme" />
+                        <HorizontalStackLayout Spacing="6">
+                            <Button Text="{Binding ThemeGlyph}"
+                                    AutomationId="ThemeToggleButton"
+                                    Style="{StaticResource PresenterIconButton}"
+                                    Command="{Binding ToggleThemeCommand}"
+                                    SemanticProperties.Description="{Binding ThemeDescription}"
+                                    ToolTipProperties.Text="{Binding ThemeDescription}" />
+                            <Label Text="{Binding ThemeDescription}"
+                                   VerticalTextAlignment="Center" />
+                        </HorizontalStackLayout>
+
+                        <Button Text="Done"
+                                AutomationId="SettingsDoneButton"
+                                Command="{Binding ShowSettingsCommand}"
+                                HorizontalOptions="Start" />
+                    </VerticalStackLayout>
+                </ScrollView>
+            </Border>
             <!--
                 The config editor. Two editable rows - the project and the fixture - and a
                 read-only panel for everything derived from them, each line saying how it was
@@ -714,7 +777,7 @@
             1 px each and transparent to input, so they take no room from the layout and stay in
             the automation tree whichever tab or mode is showing.
         -->
-        <VerticalStackLayout Grid.Row="4"
+        <VerticalStackLayout Grid.Row="3"
                              VerticalOptions="Start"
                              InputTransparent="True"
                              Spacing="0">

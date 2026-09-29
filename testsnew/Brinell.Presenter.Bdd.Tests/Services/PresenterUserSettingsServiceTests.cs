@@ -232,6 +232,61 @@ public sealed class PresenterUserSettingsServiceTests
         }
     }
 
+    /// <summary>
+    /// The Speed button cycles Fast, Normal and Slow; each speed's pause is set on the Settings
+    /// page; both are remembered.
+    /// </summary>
+    [Fact]
+    public void PresenterShell_CyclesSpeeds_AndRemembersTheirPauses()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "BrinellPresenterStartup", Guid.NewGuid().ToString("N"));
+        var workspace = Path.Combine(root, "Workspace");
+        Directory.CreateDirectory(workspace);
+        File.WriteAllText(Path.Combine(workspace, "uat.config.md"), "# Workspace");
+
+        try
+        {
+            var settingsService = new PresenterUserSettingsService(Path.Combine(root, "settings.json"));
+            settingsService.Save(new PresenterUserSettings { LastOpenedFolder = workspace });
+            var viewModel = new PresenterShellViewModel(
+                new FakeWorkspaceService(workspace),
+                new FakeExecutionService(),
+                new FakeFolderPickerService(),
+                settingsService);
+
+            Assert.Equal(PresenterSpeed.Normal, viewModel.Speed);
+            Assert.Equal(800, viewModel.ExecutionDelayMilliseconds);
+
+            viewModel.CycleSpeedCommand.Execute(null);
+            Assert.Equal(PresenterSpeed.Slow, viewModel.Speed);
+            Assert.Equal(1500, viewModel.ExecutionDelayMilliseconds);
+
+            viewModel.SlowMillisecondsText = "2000";
+            viewModel.FastMillisecondsText = "not a number";
+            Assert.Equal(2000, viewModel.ExecutionDelayMilliseconds);
+
+            viewModel.CycleSpeedCommand.Execute(null);
+            Assert.Equal(PresenterSpeed.Fast, viewModel.Speed);
+            Assert.Equal(250, viewModel.ExecutionDelayMilliseconds);
+
+            var saved = settingsService.Load();
+            Assert.Equal(PresenterSpeed.Fast, saved.Speed);
+            Assert.Equal(2000, saved.Speeds.Slow);
+
+            viewModel.ShowSettingsCommand.Execute(null);
+            Assert.True(viewModel.IsSettingsTabSelected);
+            viewModel.ShowSettingsCommand.Execute(null);
+            Assert.True(viewModel.IsTreeTabSelected);
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+            {
+                Directory.Delete(root, recursive: true);
+            }
+        }
+    }
+
     [Fact]
     public void Layout_PutsTheBarOnItsSide_AndTheAppBesideIt()
     {

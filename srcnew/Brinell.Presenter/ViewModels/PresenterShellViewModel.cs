@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Windows.Input;
 using Brinell.Bdd.Preview;
 using Brinell.Presenter.Commands;
@@ -26,6 +27,8 @@ public sealed class PresenterShellViewModel : ViewModelBase, IStepRowHost
     private CancellationTokenSource? _executionCancellation;
     private int _executionDelayMilliseconds = 250;
     private string _executionDelayText = "250";
+    private PresenterSpeed _speed;
+    private PresenterSpeeds _speeds = new();
     private string _executionTimingText = string.Empty;
     private bool _isRecentFoldersExpanded;
     private bool _isSelectionExpanded;
@@ -74,6 +77,7 @@ public sealed class PresenterShellViewModel : ViewModelBase, IStepRowHost
     private const string DiagnosticsTabName = "Diagnostics";
     private const string DiscoveryTabName = "Discovery";
     private const string CommandCatalogTabName = "Command Catalog";
+    private const string SettingsTabName = "Settings";
 
     public PresenterShellViewModel(
         IBddWorkspaceService workspaceService,
@@ -121,6 +125,8 @@ public sealed class PresenterShellViewModel : ViewModelBase, IStepRowHost
         ShowPresentModeCommand = new RelayCommand(() => IsPresentMode = true);
         ShowWorkspaceModeCommand = new RelayCommand(() => IsPresentMode = false);
         ToggleDockCommand = new RelayCommand(ToggleDock);
+        CycleSpeedCommand = new RelayCommand(CycleSpeed);
+        ShowSettingsCommand = new RelayCommand(() => SelectedTab = IsSettingsTabSelected ? TreeTabName : SettingsTabName);
 
         ConfigEditor = new ConfigEditorViewModel(
             new FixtureInspector(),
@@ -130,6 +136,9 @@ public sealed class PresenterShellViewModel : ViewModelBase, IStepRowHost
         var settings = _settingsService.Load();
         _theme = settings.Theme;
         _dock = settings.Dock;
+        _speeds = settings.Speeds ?? new PresenterSpeeds();
+        _speed = settings.Speed;
+        ExecutionDelayMilliseconds = _speeds.Of(_speed);
         ApplyTheme();
 
         if (Application.Current is { } application)
@@ -544,39 +553,16 @@ public sealed class PresenterShellViewModel : ViewModelBase, IStepRowHost
         private set => SetProperty(ref _runScopeText, value);
     }
 
+    /// <summary>The pause between steps, in milliseconds: the current speed's.</summary>
     public string ExecutionDelayText
     {
         get => _executionDelayText;
-        set
+        private set
         {
             if (SetProperty(ref _executionDelayText, value))
             {
                 _executionDelayMilliseconds = ParseDelayMilliseconds(value);
                 OnPropertyChanged(nameof(ExecutionDelayMilliseconds));
-                OnPropertyChanged(nameof(DelayPreset));
-            }
-        }
-    }
-
-    /// <summary>The Delay presets: a pace to show at, beside the milliseconds.</summary>
-    public IReadOnlyList<string> DelayPresets { get; } = [.. Presets.Keys];
-
-    private static IReadOnlyDictionary<string, int> Presets { get; } = new Dictionary<string, int>
-    {
-        ["Fast"] = 250,
-        ["Normal"] = 800,
-        ["Slow"] = 1500,
-    };
-
-    /// <summary>The preset the Delay matches; setting one sets the Delay.</summary>
-    public string? DelayPreset
-    {
-        get => Presets.FirstOrDefault(preset => preset.Value == ExecutionDelayMilliseconds).Key;
-        set
-        {
-            if (value is not null && Presets.TryGetValue(value, out var milliseconds))
-            {
-                ExecutionDelayText = milliseconds.ToString(System.Globalization.CultureInfo.InvariantCulture);
             }
         }
     }
@@ -584,18 +570,108 @@ public sealed class PresenterShellViewModel : ViewModelBase, IStepRowHost
     public int ExecutionDelayMilliseconds
     {
         get => _executionDelayMilliseconds;
-        set
+        private set
         {
             var clamped = Math.Clamp(value, 0, MaxExecutionDelayMilliseconds);
             if (SetProperty(ref _executionDelayMilliseconds, clamped))
             {
-                var text = clamped.ToString();
-                if (!string.Equals(_executionDelayText, text, StringComparison.Ordinal))
-                {
-                    SetProperty(ref _executionDelayText, text, nameof(ExecutionDelayText));
-                    OnPropertyChanged(nameof(DelayPreset));
-                }
+                SetProperty(ref _executionDelayText, clamped.ToString(CultureInfo.InvariantCulture), nameof(ExecutionDelayText));
             }
+        }
+    }
+
+    /// <summary>The run's pace; the Speed button cycles Fast, Normal and Slow.</summary>
+    public PresenterSpeed Speed
+    {
+        get => _speed;
+        private set
+        {
+            if (SetProperty(ref _speed, value))
+            {
+                ApplySpeed();
+            }
+        }
+    }
+
+    /// <summary>The Speed button's gauge: high, medium or low.</summary>
+    public string SpeedGlyph => Speed switch
+    {
+        PresenterSpeed.Fast => PresenterIcons.SpeedFast,
+        PresenterSpeed.Slow => PresenterIcons.SpeedSlow,
+        _ => PresenterIcons.SpeedNormal,
+    };
+
+    /// <summary>The Speed button's tooltip: the speed, its pause, and what a click chooses.</summary>
+    public string SpeedDescription => $"Speed: {Speed}, {_speeds.Of(Speed)} ms between steps. Click for {NextSpeed(Speed)}.";
+
+    public ICommand CycleSpeedCommand { get; }
+
+    /// <summary>The Settings page's pause of each speed, in milliseconds.</summary>
+    public string FastMillisecondsText
+    {
+        get => _speeds.Fast.ToString(CultureInfo.InvariantCulture);
+        set => SetSpeedMilliseconds(value, milliseconds => _speeds.Fast = milliseconds);
+    }
+
+    /// <inheritdoc cref="FastMillisecondsText"/>
+    public string NormalMillisecondsText
+    {
+        get => _speeds.Normal.ToString(CultureInfo.InvariantCulture);
+        set => SetSpeedMilliseconds(value, milliseconds => _speeds.Normal = milliseconds);
+    }
+
+    /// <inheritdoc cref="FastMillisecondsText"/>
+    public string SlowMillisecondsText
+    {
+        get => _speeds.Slow.ToString(CultureInfo.InvariantCulture);
+        set => SetSpeedMilliseconds(value, milliseconds => _speeds.Slow = milliseconds);
+    }
+
+    private static PresenterSpeed NextSpeed(PresenterSpeed speed) => speed switch
+    {
+        PresenterSpeed.Fast => PresenterSpeed.Normal,
+        PresenterSpeed.Normal => PresenterSpeed.Slow,
+        _ => PresenterSpeed.Fast,
+    };
+
+    private void CycleSpeed()
+    {
+        Speed = NextSpeed(Speed);
+        SaveSpeeds();
+    }
+
+    private void ApplySpeed()
+    {
+        ExecutionDelayMilliseconds = _speeds.Of(Speed);
+        OnPropertyChanged(nameof(SpeedGlyph));
+        OnPropertyChanged(nameof(SpeedDescription));
+    }
+
+    // A value that is not a number of 0 to 99999 ms is ignored; the field shows it until it is fixed.
+    private void SetSpeedMilliseconds(string value, Action<int> set)
+    {
+        if (!int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var milliseconds) || milliseconds > MaxExecutionDelayMilliseconds)
+        {
+            return;
+        }
+
+        set(milliseconds);
+        ApplySpeed();
+        SaveSpeeds();
+    }
+
+    private void SaveSpeeds()
+    {
+        try
+        {
+            var settings = _settingsService.Load();
+            settings.Speed = Speed;
+            settings.Speeds = _speeds;
+            _settingsService.Save(settings);
+        }
+        catch (Exception ex)
+        {
+            DiagnosticsText = $"Could not save the speeds: {ex.Message}";
         }
     }
 
@@ -661,6 +737,7 @@ public sealed class PresenterShellViewModel : ViewModelBase, IStepRowHost
                 OnPropertyChanged(nameof(IsDiagnosticsTabSelected));
                 OnPropertyChanged(nameof(IsDiscoveryTabSelected));
                 OnPropertyChanged(nameof(IsCommandCatalogTabSelected));
+                OnPropertyChanged(nameof(IsSettingsTabSelected));
             }
         }
     }
@@ -674,6 +751,11 @@ public sealed class PresenterShellViewModel : ViewModelBase, IStepRowHost
     public bool IsDiscoveryTabSelected => SelectedTab == DiscoveryTabName;
 
     public bool IsCommandCatalogTabSelected => SelectedTab == CommandCatalogTabName;
+
+    /// <summary>Whether the Settings page shows; its button opens and closes it, in either mode.</summary>
+    public bool IsSettingsTabSelected => SelectedTab == SettingsTabName;
+
+    public ICommand ShowSettingsCommand { get; }
 
     public bool IsSelectionExpanded
     {
