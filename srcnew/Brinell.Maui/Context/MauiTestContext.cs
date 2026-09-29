@@ -7,7 +7,7 @@ namespace Brinell.Maui.Context;
 /// MAUI test context implementation supporting multiple drivers (Appium, FlaUI).
 /// Uses MauiDriverFactory to create the appropriate driver for the platform.
 /// </summary>
-public class MauiTestContext : IMauiTestContext
+public class MauiTestContext : IMauiTestContext, Brinell.Core.Recording.IRecordable
 {
     private readonly Interfaces.IMauiDriver _driver;
     private readonly TimeoutSettings _timeouts;
@@ -65,6 +65,12 @@ public class MauiTestContext : IMauiTestContext
     
     /// <inheritdoc />
     public MauiPlatform Platform => _platform;
+
+    /// <summary>The app's window on Windows; null on a device, until a device recorder names it.</summary>
+    public Brinell.Core.Recording.RecordingTarget? RecordingTarget
+        => _platform == MauiPlatform.Windows && !_disposed
+            ? Brinell.Core.Recording.RecordingTarget.ForWindow(_driver.CurrentWindowHandle)
+            : null;
 
     /// <inheritdoc />
     public IMauiElement AppElement => _driver.AppElement;

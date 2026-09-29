@@ -11,7 +11,7 @@ using Microsoft.Playwright;
 
 namespace Brinell.Html.Playwright;
 
-public sealed class PlaywrightTestContext : IHtmlTestContext, IAsyncDisposable
+public sealed class PlaywrightTestContext : IHtmlTestContext, IAsyncDisposable, Brinell.Core.Recording.IRecordable
 {
     private readonly IPage _page;
     private readonly IFrame? _frame;
@@ -132,6 +132,10 @@ public sealed class PlaywrightTestContext : IHtmlTestContext, IAsyncDisposable
     public string PageTitle => _driver.PageTitle;
 
     public IPage InternalPage => _page;
+
+    /// <summary>The browser page; null once it is closed.</summary>
+    public Brinell.Core.Recording.RecordingTarget? RecordingTarget
+        => _page.IsClosed ? null : new Brinell.Core.Recording.RecordingTarget.BrowserPage(_page);
 
     public IFrame? InternalFrame => _frame;
 

@@ -110,7 +110,11 @@ public sealed record RecordingResult(string Path, TimeSpan Duration, Size Size, 
   serial on Android), `IHtmlTestContext` (the page), and the WPF, WinForms and Stride contexts
   (the window). The runner asks the context, then the registry for a recorder that `CanRecord` it.
 - **No platform types in `Brinell.Core`** (AGENTS.md): the targets are handles, strings and an
-  opaque page.
+  opaque page. So `RecordingTarget` and `IRecordable` live in `Brinell.Core.Recording`, where every
+  context can implement it; the recorders live in `Brinell.Recording` and the platform packages.
+- **Discovery.** A platform package declares its recorder with `[assembly: ScreenRecorder(typeof(...))]`;
+  `ScreenRecorders.Discover()` loads the known packages from the output folder, so a runner that
+  cannot reference a Windows-only package still finds its recorder.
 
 ### The recorders
 
@@ -120,7 +124,7 @@ public sealed record RecordingResult(string Path, TimeSpan Duration, Size Size, 
 | `PlaywrightRecorder` (`Brinell.Html.Playwright`) | `BrowserPage` | Chromium: CDP `Page.startScreencast` (frames on demand, can start mid-run); others: the context's `recordVideo` (from the context's start, trimmed to `StartedAt`) | a headed browser under Presenter is a `Window` too: the window recorder is the fallback |
 | `AndroidRecorder` (`Brinell.Maui.Appium`) | `AndroidDevice` | `adb shell screenrecord`, restarted every 3 minutes (its limit) and joined; or scrcpy's `--record` when present | device clock: aligned by the first frame's time as adb reports it |
 | `IosSimulatorRecorder` | `IosSimulator` | `xcrun simctl io <udid> recordVideo`; stopped with SIGINT | macOS only; a real device is out of scope |
-| `FfmpegRegionRecorder` | `Monitor` with a crop | ffmpeg `ddagrab` | the last resort: records whatever covers the area |
+| `FfmpegRegionRecorder` | `Monitor` | ffmpeg `gdigrab` (any ffmpeg build; `ddagrab` needs ffmpeg 6 and an output index, not an area) | the last resort: records whatever covers the area |
 
 ### What the narrator does with it
 
@@ -133,9 +137,9 @@ record is a warning in the report, not a failed run.
 
 | # | Step | Done when |
 | --- | --- | --- |
-| 1 | `Brinell.Recording`: the API, the clock, the registry; `FfmpegRegionRecorder` as the first recorder. | A unit test records a region for two seconds and reads the MP4's duration. |
-| 2 | `WindowsCaptureRecorder` over an ffmpeg pipe. | The MAUI sample's window records while it is behind another window. |
-| 3 | `IRecordable` on the MAUI, WPF, WinForms and Html contexts. | Each context names its target. |
+| 1 | **Done.** `Brinell.Recording`: the API, the clock, the registry; `FfmpegRegionRecorder` as the first recorder. | A unit test records a region for two seconds and reads the MP4's duration (runs where ffmpeg is installed, skipped elsewhere). |
+| 2 | **Done.** `WindowsCaptureRecorder` over an ffmpeg pipe; `FrameVideo` turns frames-on-change into a steady frame rate. | A window behind an always-on-top window records its own pixels (`WindowsCaptureRecorderTests`); the MP4 test runs where ffmpeg is installed. |
+| 3 | **Done** for MAUI (Windows), WPF, WinForms, Html and Blazor. Stride's context talks to the game over a channel and does not know its window yet. | Each context names its target. |
 | 4 | `PlaywrightRecorder` (screencast). | A Blazor scenario records headless. |
 | 5 | `AndroidRecorder`. | A TOD scenario on the emulator records past 3 minutes. |
 | 6 | Media Foundation encoder for the window recorder, if the pipe costs too much. | 30 fps at 1920x1080 without dropped frames. |

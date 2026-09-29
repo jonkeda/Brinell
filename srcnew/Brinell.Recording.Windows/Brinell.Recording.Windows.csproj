@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net10.0-windows10.0.19041.0</TargetFrameworks>
+    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+    <RootNamespace>Brinell.Recording.Windows</RootNamespace>
+    <Description>The Windows window recorder for Brinell: Windows.Graphics.Capture, which records a window while it is covered.</Description>
+    <PackageId>Brinell.Recording.Windows</PackageId>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Brinell.Recording\Brinell.Recording.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Brinell.Recording.Tests" />
+  </ItemGroup>
+
+</Project>

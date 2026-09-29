@@ -10,7 +10,7 @@ using Microsoft.Playwright;
 
 namespace Brinell.Blazor.Context;
 
-public sealed class BlazorTestContext : IHtmlTestContext, IAsyncDisposable
+public sealed class BlazorTestContext : IHtmlTestContext, IAsyncDisposable, Brinell.Core.Recording.IRecordable
 {
     private readonly PlaywrightTestContext _inner;
 
@@ -50,6 +50,9 @@ public sealed class BlazorTestContext : IHtmlTestContext, IAsyncDisposable
     public void ResetAppState() => _inner.ResetAppState();
 
     internal IPage InternalPage => _inner.InternalPage;
+
+    /// <summary>The browser page; null once it is closed.</summary>
+    public Brinell.Core.Recording.RecordingTarget? RecordingTarget => _inner.RecordingTarget;
 
     public void Dispose() => _inner.Dispose();
 
