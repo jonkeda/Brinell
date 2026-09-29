@@ -87,8 +87,8 @@
     <!-- The workspace row's chevron and kind/status glyph: smaller, and borderless. -->
     <Style TargetType="Button" x:Key="PresenterRowGlyphButton" BasedOn="{StaticResource PresenterIconButton}">
         <Setter Property="FontSize" Value="11" />
-        <Setter Property="WidthRequest" Value="26" />
-        <Setter Property="HeightRequest" Value="26" />
+        <Setter Property="WidthRequest" Value="22" />
+        <Setter Property="HeightRequest" Value="22" />
         <Setter Property="BorderWidth" Value="0" />
         <Setter Property="BackgroundColor" Value="Transparent" />
     </Style>

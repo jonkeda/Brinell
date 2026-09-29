@@ -334,7 +334,7 @@
                                        VerticalOptions="Fill">
                         <controls:TreeView.ItemTemplate>
                             <DataTemplate>
-                                <Grid Padding="0,4"
+                                <Grid Padding="0,0"
                                       ColumnDefinitions="22,20,*"
                                       ColumnSpacing="4">
                                     <!-- ExpansionGlyph and IconGlyph, never ExpansionText/Icon:
