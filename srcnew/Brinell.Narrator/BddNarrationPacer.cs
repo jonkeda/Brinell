@@ -95,7 +95,7 @@ public sealed class BddNarrationPacer : IBddStepPacer
     {
         double At(long time) => Math.Max(0, Stopwatch.GetElapsedTime(videoStart, time).TotalSeconds);
         var steps = _steps.Select(step => new BddTimedStep(step.Line, step.Text, At(step.Start), At(step.End ?? step.Start), step.Status, step.Message)).ToList();
-        var clips = _spoken.Select(spoken => new BddTimedClip(spoken.Clip.Text, spoken.Clip.WavPath, At(spoken.Start), At(spoken.Start) + spoken.Clip.Duration.TotalSeconds)).ToList();
+        var clips = _spoken.Select(spoken => new BddTimedClip(spoken.Clip.Text, spoken.Clip.WavPath is { } wav ? Path.GetFileName(wav) : null, At(spoken.Start), At(spoken.Start) + spoken.Clip.Duration.TotalSeconds)).ToList();
         var status = steps.Count == 0 ? BddStepResultStatus.Skipped : steps.Select(step => step.Status).Aggregate((worst, next) => Worse(next, worst) ? next : worst);
         return new BddSceneTimeline(number, name, scenario, video, At(videoEnd), status, steps, clips, warnings);
     }

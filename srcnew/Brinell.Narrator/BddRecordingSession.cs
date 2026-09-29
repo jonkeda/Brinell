@@ -37,12 +37,14 @@ public sealed class BddRecordingSession
 
     private readonly string _configDirectory;
     private readonly ISpeechSynthesizer? _synthesizer;
-    private int _unscripted;
+    private readonly string _stamp = DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
+    private readonly SemaphoreSlim _composing = new(1, 1);
+    private bool _composed;
 
     /// <summary>Creates a session.</summary>
     /// <param name="configDirectory">The suite's folder, which scenario addresses are relative to.</param>
     /// <param name="script">The video script's check; null to record every scenario.</param>
-    /// <param name="scenesFolder">Where the scenes go.</param>
+    /// <param name="scenesFolder">Where a script's scenes go; the Recordings folder, where each scenario gets its own, without one.</param>
     /// <param name="synthesizer">The voice; null to estimate the lines' lengths only.</param>
     /// <param name="voice">The voice's name, when the script names none.</param>
     /// <param name="beat">The beat, when the script does not say.</param>
@@ -59,7 +61,7 @@ public sealed class BddRecordingSession
     /// <summary>The video script's check; null when every scenario is recorded.</summary>
     public BddVideoScriptCheck? Script { get; }
 
-    /// <summary>Where the scenes go: a folder per scene.</summary>
+    /// <summary>Where a script's scenes go (a folder per scene); without a script, the Recordings folder.</summary>
     public string ScenesFolder { get; }
 
     /// <summary>The voice's name; null for the default voice.</summary>
@@ -107,7 +109,7 @@ public sealed class BddRecordingSession
         var folder = read(FolderVariable) is { Length: > 0 } named ? named : DefaultTestArtifactPathProvider.Create().RunDirectory;
         var scenes = read(OutputVariable) is { Length: > 0 } output
             ? output
-            : Path.Combine(folder, $"{name}-{DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture)}.scenes");
+            : script is null ? folder : Path.Combine(folder, $"{name}-{DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture)}.scenes");
         var beat = int.TryParse(read(BeatVariable), NumberStyles.None, CultureInfo.InvariantCulture, out var milliseconds)
             ? TimeSpan.FromMilliseconds(milliseconds)
             : DefaultBeat;
@@ -126,8 +128,8 @@ public sealed class BddRecordingSession
         var address = BddScenarioAddress.Of(Path.GetRelativePath(_configDirectory, featureFile), scenarioName);
         if (Script is null)
         {
-            var number = Interlocked.Increment(ref _unscripted);
-            return new BddSceneRequest(number, scenarioName, address, SceneFolder(number), BddSceneClips.Silent, Beat);
+            var own = Path.Combine(ScenesFolder, $"{BddScenarioAddress.Slug(scenarioName)}-{_stamp}.scenes", "scene-01");
+            return new BddSceneRequest(1, scenarioName, address, own, BddSceneClips.Silent, Beat);
         }
 
         var scenes = Script.Script!.Scenes;
@@ -144,6 +146,39 @@ public sealed class BddRecordingSession
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Finishes a scene, and composes the video once it is whole: a scenario on its own at once, a
+    /// script's scenes when the last of them has finished in this run.
+    /// </summary>
+    /// <param name="recording">The scene's recording, after its scenario ran.</param>
+    /// <param name="cancellationToken">Cancels the outro and the compose.</param>
+    /// <returns>The video, when this scene made it whole; null otherwise.</returns>
+    public async Task<BddComposedVideo?> FinishAsync(BddSceneRecording recording, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(recording);
+        var scene = await recording.FinishAsync(cancellationToken).ConfigureAwait(false);
+        if (Script is null)
+        {
+            return await BddVideoComposer.ComposeAsync(scene.Name, Path.GetDirectoryName(recording.Request.Folder)!, cancellationToken).ConfigureAwait(false);
+        }
+
+        await _composing.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            if (_composed || !BddVideoComposer.IsComplete(ScenesFolder, Script.Script!.Scenes.Count))
+            {
+                return null;
+            }
+
+            _composed = true;
+            return await BddVideoComposer.ComposeAsync(Script.Script.Title, ScenesFolder, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            _composing.Release();
+        }
     }
 
     private string SceneFolder(int number) => Path.Combine(ScenesFolder, $"scene-{number:00}");

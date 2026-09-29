@@ -49,6 +49,9 @@ public sealed class BddSceneRecording : IBddStepPacer, IAsyncDisposable
         _pacer = new BddNarrationPacer(request.Clips, request.Beat, play);
     }
 
+    /// <summary>The scene.</summary>
+    public BddSceneRequest Request => _request;
+
     /// <summary>What went less well than asked, so far.</summary>
     public IReadOnlyList<string> Warnings => _warnings;
 
@@ -71,6 +74,7 @@ public sealed class BddSceneRecording : IBddStepPacer, IAsyncDisposable
         await _pacer.FinishAsync(cancellationToken).ConfigureAwait(false);
         var end = Stopwatch.GetTimestamp();
         string? video = null;
+        var size = System.Drawing.Size.Empty;
         if (_recording is { } recording)
         {
             _recording = null;
@@ -80,9 +84,10 @@ public sealed class BddSceneRecording : IBddStepPacer, IAsyncDisposable
             _startedAt = result.StartedAt;
             end = Math.Max(end, RecordingClock.Add(result.StartedAt, result.Duration));
             video = Path.GetFileName(result.Path);
+            size = result.Size;
         }
 
-        var timeline = _pacer.Timeline(_request.Number, _request.Name, _request.Scenario, video, _startedAt, end, _warnings);
+        var timeline = _pacer.Timeline(_request.Number, _request.Name, _request.Scenario, video, _startedAt, end, _warnings) with { Width = size.Width, Height = size.Height };
         timeline.Save(_request.TimelinePath);
         return timeline;
     }

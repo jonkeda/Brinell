@@ -197,7 +197,9 @@ public sealed class BddRecordingSessionTests : IDisposable
         var second = await session.SceneForAsync(Path.Combine(_suite, "Features", "A.feature.md"), "A.2 Closes");
 
         Assert.Equal((1, "Features/A.feature.md#A.1-Opens"), (first!.Number, first.Scenario));
-        Assert.Equal(2, second!.Number);
+        Assert.Equal((1, "scene-01"), (second!.Number, Path.GetFileName(second.Folder)));
+        Assert.StartsWith("A.1-Opens-", Path.GetFileName(Path.GetDirectoryName(first.Folder)), StringComparison.Ordinal);
+        Assert.StartsWith("A.2-Closes-", Path.GetFileName(Path.GetDirectoryName(second.Folder)), StringComparison.Ordinal);
         Assert.Same(BddSceneClips.Silent, first.Clips);
     }
 }

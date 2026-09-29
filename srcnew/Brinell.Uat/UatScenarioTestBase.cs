@@ -306,7 +306,8 @@ public abstract class UatScenarioTestBase<TFixture>
     {
         using (scope)
         {
-            await using var recording = await RecordingFor(scenario, runtime, cancellationToken).ConfigureAwait(false);
+            var session = Recordings.GetOrAdd(runtime.ConfigDirectory, directory => new Lazy<BddRecordingSession?>(() => BddRecordingSession.FromEnvironment(directory))).Value;
+            await using var recording = session is null ? null : await RecordingFor(session, scenario, cancellationToken).ConfigureAwait(false);
             var execution = await BddScenarioExecutor.RunAsync(
                 scenario,
                 GetRunConfig(runtime),
@@ -329,7 +330,7 @@ public abstract class UatScenarioTestBase<TFixture>
                 cancellationToken).ConfigureAwait(false);
             if (recording is not null)
             {
-                await recording.FinishAsync(cancellationToken).ConfigureAwait(false);
+                await session!.FinishAsync(recording, cancellationToken).ConfigureAwait(false);
             }
 
             return execution;
@@ -337,10 +338,9 @@ public abstract class UatScenarioTestBase<TFixture>
     }
 
     // The scene this scenario records under BRINELL_RECORD; null when the run does not record it.
-    private async Task<BddSceneRecording?> RecordingFor(BddBoundScenario scenario, UatRuntime runtime, CancellationToken cancellationToken)
+    private async Task<BddSceneRecording?> RecordingFor(BddRecordingSession session, BddBoundScenario scenario, CancellationToken cancellationToken)
     {
-        var session = Recordings.GetOrAdd(runtime.ConfigDirectory, directory => new Lazy<BddRecordingSession?>(() => BddRecordingSession.FromEnvironment(directory))).Value;
-        if (session is null || scenario.Source.Source.FilePath is not { } featureFile)
+        if (scenario.Source.Source.FilePath is not { } featureFile)
         {
             return null;
         }
