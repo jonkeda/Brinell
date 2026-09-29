@@ -1,6 +1,9 @@
+using System.Diagnostics;
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Brinell.Bdd.Workspace;
+using Brinell.Narrator;
 
 namespace Brinell.Bdd.LanguageServer;
 
@@ -36,6 +39,8 @@ public sealed class BddMcpServer : IDisposable
         ("list_test_sets", "A suite's test sets: the values of a feature file's TestData metadata.", Schema(("suite", "string", "A suite name; the first suite when left out."))),
         ("validate_scenario", "Checks a feature or step file as the xUnit gate would, with its words: every step must bind. Give 'path' (where the file is, or will be, in a suite's Features folder) and 'text' for a draft; without 'text' the file on disk is checked.", Schema(("path", "string", "The file's path; required."), ("text", "string", "The draft's text; the file on disk when left out."))),
         ("find_step_usages", "The steps across every suite that use a C# member: a step definition, a page phrase or a page object's control, as Namespace.Type.Member.", Schema(("symbol", "string", "Namespace.Type.Member; required."))),
+        ("record_video", "Records a video script (*.video.md), or the scenario at 'line' of a feature file, on video with its voice-over: builds the suite, runs the scenes with BRINELL_RECORD, and gives the video, its captions (.srt) and its timeline. Needs ffmpeg; says how to get it when it is missing. Takes minutes: one scene is one scenario run.", Schema(("path", "string", "The video script or the feature file; required."), ("line", "integer", "The scenario heading's line, for a feature file."), ("suite", "string", "The suite a linked file runs in; its own when left out."), ("recordingsFolder", "string", "Where the video goes; the suite's TestResults/recordings when left out."), ("voice", "string", "The voice, when the script names none."))),
+        ("review_page", "Writes the review page an agent hands over when a feature is done: what it did, what changed, and each recorded video with captions, chapters and every step's result. Give the videos record_video made. Returns the page's path, to open in a browser.", Schema(("title", "string", "What the work was; required."), ("summary", "string", "A paragraph or two on what was done."), ("changes", "array", "What changed, a line each; code spans in backticks are kept."), ("videos", "array", "The videos (.mp4) record_video made; required."), ("path", "string", "Where the page goes; beside the first video when left out."))),
         ("delete_results", "Deletes old scenario results from every run, for good: of a scenario (the heading at 'line' of 'path'), a feature file ('path') or a suite ('suite'). Only scenario reports and their screenshots; a run left empty goes. Counts only (dryRun) unless 'dryRun' is false.", Schema(("scope", "string", "scenario, file or suite; required."), ("path", "string", "The feature file, for a scenario or a file."), ("line", "integer", "The scenario heading's line, for a scenario."), ("suite", "string", "The suite, for a suite (or the one a linked file is picked in)."), ("dryRun", "boolean", "Only count; true when left out."))),
     ];
 
@@ -86,7 +91,7 @@ public sealed class BddMcpServer : IDisposable
                     ["protocolVersion"] = ProtocolVersion,
                     ["capabilities"] = new JsonObject { ["tools"] = new JsonObject() },
                     ["serverInfo"] = new JsonObject { ["name"] = "brinell-bdd", ["version"] = typeof(BddMcpServer).Assembly.GetName().Version?.ToString() ?? "0" },
-                    ["instructions"] = "Brinell BDD: use list_steps before writing a scenario step, and validate_scenario before proposing a feature file. Never invent a phrase: leave a step that has none as a marked gap.",
+                    ["instructions"] = "Brinell BDD: use list_steps before writing a scenario step, and validate_scenario before proposing a feature file. Never invent a phrase: leave a step that has none as a marked gap. When a feature is done: record its scenarios (record_video) and hand over a review_page.",
                 },
                 "ping" => new JsonObject(),
                 "tools/list" => new JsonObject
@@ -126,6 +131,8 @@ public sealed class BddMcpServer : IDisposable
                 "validate_scenario" => Validate(Required(arguments, "path"), (string?)arguments["text"]),
                 "find_step_usages" => _server.Usages(new UsagesParams(Required(arguments, "symbol"))),
                 "delete_results" => DeleteResults(arguments),
+                "record_video" => RecordVideo(arguments),
+                "review_page" => ReviewPage(arguments),
                 _ => throw new McpException(-32602, $"No tool '{name}'. The tools are {string.Join(", ", Tools.Select(tool => tool.Name))}."),
             };
             return Text(JsonSerializer.Serialize(answer, Json), error: false);
@@ -147,6 +154,109 @@ public sealed class BddMcpServer : IDisposable
             (string?)arguments["suite"],
             (bool?)arguments["dryRun"] ?? true));
         return result.Done ? result : throw new ToolProblem(result.Reason ?? "Nothing to delete.");
+    }
+
+    // Build, then the gate run with the recording variables; the video it made, and how the run went.
+    private object RecordVideo(JsonObject arguments)
+    {
+        var path = Path.GetFullPath(Required(arguments, "path"), _solutionDir);
+        var recordingsFolder = (string?)arguments["recordingsFolder"];
+        var suite = (string?)arguments["suite"];
+        var target = _server.RecordTarget(new RecordTargetParams(new Uri(path).AbsoluteUri, (int?)arguments["line"], suite, recordingsFolder, (string?)arguments["voice"], null));
+        if (!target.CanRecord || target.Project is not { } project || target.Filter is not { } filter)
+        {
+            throw new ToolProblem($"This cannot be recorded: {target.Reason}");
+        }
+
+        var build = Run("dotnet", ["build", project, "-v:minimal", "-nologo"], new Dictionary<string, string>());
+        if (build.Code != 0)
+        {
+            throw new ToolProblem($"The build failed, so nothing was recorded:{Environment.NewLine}{build.Tail}");
+        }
+
+        var test = Run("dotnet", ["test", project, "--no-build", "--filter", filter, "--logger", "console;verbosity=normal"], target.Environment);
+        var videos = _server.Recordings(new RecordingsParams(new Uri(path).AbsoluteUri, suite, recordingsFolder));
+        var video = target.Video is { } expected ? videos.FirstOrDefault(candidate => candidate.Name == expected) : videos.FirstOrDefault();
+        if (video is null)
+        {
+            throw new ToolProblem($"The run made no video (exit code {test.Code}):{Environment.NewLine}{test.Tail}");
+        }
+
+        var timeline = Path.ChangeExtension(video.Path, ".timeline.json");
+        return new
+        {
+            Video = video.Path,
+            video.Captions,
+            Timeline = File.Exists(timeline) ? timeline : null,
+            Passed = test.Code == 0,
+            Output = test.Code == 0 ? null : test.Tail,
+        };
+    }
+
+    private static object ReviewPage(JsonObject arguments)
+    {
+        var videos = (arguments["videos"] as JsonArray)?.Select(node => (string?)node).OfType<string>().Select(Path.GetFullPath).ToList() ?? [];
+        if (videos.Count == 0)
+        {
+            throw new ToolProblem("'videos' is required: the videos record_video made.");
+        }
+
+        var missing = videos.Where(video => !File.Exists(video)).ToList();
+        if (missing.Count > 0)
+        {
+            throw new ToolProblem($"No video at {string.Join(", ", missing)}.");
+        }
+
+        var page = (string?)arguments["path"] is { Length: > 0 } named
+            ? Path.GetFullPath(named)
+            : Path.Combine(Path.GetDirectoryName(videos[0])!, $"review-{DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture)}.html");
+        var changes = (arguments["changes"] as JsonArray)?.Select(node => (string?)node).OfType<string>().ToList() ?? [];
+        BddReviewPage.Write(page, Required(arguments, "title"), (string?)arguments["summary"], changes, videos);
+        return new { Page = page, Url = new Uri(page).AbsoluteUri };
+    }
+
+    // A process to its end, its output kept: the last lines say why a build or a run failed.
+    private static (int Code, string Tail) Run(string command, IReadOnlyList<string> arguments, IReadOnlyDictionary<string, string> variables)
+    {
+        var info = new ProcessStartInfo(command) { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, CreateNoWindow = true };
+        foreach (var argument in arguments)
+        {
+            info.ArgumentList.Add(argument);
+        }
+
+        foreach (var (name, value) in variables)
+        {
+            info.Environment[name] = value;
+        }
+
+        var lines = new Queue<string>();
+        void Keep(string? line)
+        {
+            if (line is null)
+            {
+                return;
+            }
+
+            lock (lines)
+            {
+                lines.Enqueue(line);
+                if (lines.Count > 40)
+                {
+                    lines.Dequeue();
+                }
+            }
+        }
+
+        using var process = Process.Start(info) ?? throw new ToolProblem($"{command} did not start.");
+        process.OutputDataReceived += (_, e) => Keep(e.Data);
+        process.ErrorDataReceived += (_, e) => Keep(e.Data);
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
+        process.WaitForExit();
+        lock (lines)
+        {
+            return (process.ExitCode, string.Join(Environment.NewLine, lines));
+        }
     }
 
     private object ListSuites()

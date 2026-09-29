@@ -45,6 +45,9 @@ Task workflows live in `.github/skills/` (Claude Code reads them through stubs i
   ControlObject, container, frame or collection.
 - [html-ui-test](.github/skills/html-ui-test/SKILL.md) - write Html and Blazor UI tests and
   page objects (the Html UI tests, the Blazor UI tests, the Todo web head).
+- [narrated-review](.github/skills/narrated-review/SKILL.md) - finish a feature with its
+  scenarios recorded on video with a voice-over, and a review page (MCP `record_video`,
+  `review_page`).
 
 Read the matching skill before doing that task.
 

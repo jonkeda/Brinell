@@ -29,7 +29,7 @@ public sealed class McpServerTests : IDisposable
         Assert.Equal("brinell-bdd", (string?)lines[0]["result"]!["serverInfo"]!["name"]);
         Assert.NotNull(lines[0]["result"]!["capabilities"]!["tools"]);
         Assert.Equal(
-            ["list_suites", "list_steps", "list_pages", "list_test_sets", "validate_scenario", "find_step_usages", "delete_results"],
+            ["list_suites", "list_steps", "list_pages", "list_test_sets", "validate_scenario", "find_step_usages", "record_video", "review_page", "delete_results"],
             lines[1]["result"]!["tools"]!.AsArray().Select(tool => (string?)tool!["name"]));
     }
 
@@ -65,6 +65,68 @@ public sealed class McpServerTests : IDisposable
         Assert.Contains("\"valid\":false", text);
         Assert.Contains("\"line\":7,\"severity\":\"error\",\"code\":\"UATB001\"", text);
         Assert.False(File.Exists(path));
+    }
+
+    [Fact]
+    public void RecordVideo_WithoutFfmpeg_IsAToolError_SayingHowToGetIt()
+    {
+        var original = Environment.GetEnvironmentVariable("BRINELL_FFMPEG");
+        Environment.SetEnvironmentVariable("BRINELL_FFMPEG", Path.Combine(Path.GetTempPath(), "no-ffmpeg-here.exe"));
+        try
+        {
+            var result = Call("record_video", new JsonObject { ["path"] = Path.Combine(TodoPaths.Project, "Features", "how-todo-works.video.md") });
+
+            Assert.True((bool)result["isError"]!);
+            Assert.Contains("winget install", (string?)result["content"]![0]!["text"]);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("BRINELL_FFMPEG", original);
+        }
+    }
+
+    [Fact]
+    public void ReviewPage_ShowsEachVideo_WithCaptionsChaptersAndStepResults()
+    {
+        var folder = Directory.CreateTempSubdirectory("brinell-review-").FullName;
+        try
+        {
+            var video = Path.Combine(folder, "how-todo-works-20260929-101500.mp4");
+            File.WriteAllBytes(video, []);
+            File.WriteAllText(Path.ChangeExtension(video, ".srt"), "1\n00:00:01,000 --> 00:00:02,500\nYou tap Sync.\n\n");
+            new Brinell.Narrator.BddVideoTimeline("How the Todo app works",
+            [
+                new Brinell.Narrator.BddSceneTimeline(1, "Opening the app", "Features/TOD.01-see-my-todos.feature.md#TOD.01.1", null, 12, BddStepResultStatus.Failed,
+                    [
+                        new Brinell.Narrator.BddTimedStep(15, "Given I am on the Todo List page", 1.5, 2, BddStepResultStatus.Passed),
+                        new Brinell.Narrator.BddTimedStep(22, "When I tap Sync", 64, 66, BddStepResultStatus.Failed, "Sync is gone."),
+                    ],
+                    [], []),
+            ]).Save(Path.ChangeExtension(video, ".timeline.json"));
+
+            var text = CallText("review_page", new JsonObject
+            {
+                ["title"] = "TOD.12 Archive a todo",
+                ["summary"] = "Added Archive to the detail page.",
+                ["changes"] = new JsonArray("`TodoDetailPage.xaml`: an Archive button", "TOD.12-archive.feature.md: two scenarios"),
+                ["videos"] = new JsonArray(video),
+            });
+            var page = (string)JsonNode.Parse(text)!["page"]!;
+            var html = File.ReadAllText(page);
+
+            Assert.Equal(folder, Path.GetDirectoryName(page));
+            Assert.Contains("<h1>TOD.12 Archive a todo</h1>", html);
+            Assert.Contains("<li><code>TodoDetailPage.xaml</code>: an Archive button</li>", html);
+            Assert.Contains("src=\"how-todo-works-20260929-101500.mp4\"", html);
+            Assert.Contains("<track kind=\"captions\" srclang=\"en\" label=\"Captions\" default src=\"how-todo-works-20260929-101500.vtt\">", html);
+            Assert.Contains("data-at=\"64\">1:04</a> When I tap Sync<div class=\"message\">Sync is gone.</div>", html);
+            Assert.Contains("data-status=\"failed\">failed</span>", html);
+            Assert.StartsWith("WEBVTT\n\n1\n00:00:01.000 --> 00:00:02.500", File.ReadAllText(Path.ChangeExtension(video, ".vtt")));
+        }
+        finally
+        {
+            Directory.Delete(folder, recursive: true);
+        }
     }
 
     [Fact]
