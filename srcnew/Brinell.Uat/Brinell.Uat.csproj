@@ -11,6 +11,8 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <ProjectReference Include="..\Brinell.Bdd\Brinell.Bdd.csproj" />
     <ProjectReference Include="..\Brinell.Core\Brinell.Core.csproj" />
+    <!-- BRINELL_RECORD: a run records its scenes (the narrator). -->
+    <ProjectReference Include="..\Brinell.Narrator\Brinell.Narrator.csproj" />
     <!-- [UatScenarioTheory]: a suite runs under xUnit, which brings both. -->
     <PackageReference Include="xunit.extensibility.core" PrivateAssets="all" />
     <PackageReference Include="xunit.extensibility.execution" PrivateAssets="all" />

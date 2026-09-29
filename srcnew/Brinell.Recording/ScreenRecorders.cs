@@ -8,7 +8,7 @@ namespace Brinell.Recording;
 /// </summary>
 public sealed class ScreenRecorders
 {
-    // The platform packages a run may have in its output folder without referencing them itself.
+    // The platform packages that may bring recorders, loaded when the run has them (RecordingPackages).
     private static readonly string[] KnownPackages = ["Brinell.Recording.Windows", "Brinell.Html.Playwright", "Brinell.Maui.Appium"];
 
     private readonly List<IScreenRecorder> _recorders;
@@ -25,16 +25,12 @@ public sealed class ScreenRecorders
     public IReadOnlyList<IScreenRecorder> Recorders => _recorders;
 
     /// <summary>
-    /// The recorders on this machine: those the platform packages declare (loaded from the output
-    /// folder when present), then <see cref="FfmpegRegionRecorder"/> as the last resort.
+    /// The recorders on this machine: those the platform packages declare (see
+    /// <see cref="RecordingPackages"/>), then <see cref="FfmpegRegionRecorder"/> as the last resort.
     /// </summary>
     public static ScreenRecorders Discover()
     {
-        foreach (var name in KnownPackages)
-        {
-            TryLoad(name);
-        }
-
+        RecordingPackages.Load(KnownPackages);
         var declared = AppDomain.CurrentDomain.GetAssemblies()
             .SelectMany(assembly => assembly.GetCustomAttributes<ScreenRecorderAttribute>())
             .OrderBy(attribute => attribute.Order)
@@ -48,19 +44,6 @@ public sealed class ScreenRecorders
     {
         ArgumentNullException.ThrowIfNull(target);
         return _recorders.FirstOrDefault(recorder => recorder.CanRecord(target));
-    }
-
-    // A platform package is optional: not being there means its recorders are not offered.
-    private static void TryLoad(string name)
-    {
-        try
-        {
-            Assembly.Load(new AssemblyName(name));
-        }
-        catch (Exception exception) when (exception is FileNotFoundException or FileLoadException or BadImageFormatException)
-        {
-            Debug.WriteLine($"Recorders: {name} is not available ({exception.GetType().Name}).");
-        }
     }
 }
 

@@ -1,13 +1,21 @@
+using System.Collections.Concurrent;
 using System.Reflection;
 using Brinell.Core.Artifacts;
 using Brinell.Core.Interfaces;
+using Brinell.Core.Recording;
 using Brinell.Core.Settings;
+using Brinell.Narrator;
+using Brinell.Recording;
 
 namespace Brinell.Uat;
 
 public abstract class UatScenarioTestBase<TFixture>
     where TFixture : class
 {
+    // One recording session per suite per test process: every scenario of the run shares its scenes folder.
+    private static readonly ConcurrentDictionary<string, Lazy<BddRecordingSession?>> Recordings = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly Lazy<ScreenRecorders> Recorders = new(ScreenRecorders.Discover);
+
     protected UatScenarioTestBase(TFixture fixture)
     {
         Fixture = fixture ?? throw new ArgumentNullException(nameof(fixture));
@@ -63,6 +71,29 @@ public abstract class UatScenarioTestBase<TFixture>
             EvidenceTestClassName,
             FormatEvidenceScenarioName(scenario),
             EvidenceDescription);
+    }
+
+    /// <summary>
+    /// What the app shows, for a recording (<c>BRINELL_RECORD</c>): the fixture, when it is
+    /// <see cref="IRecordable"/>, else its first public property that is (its test context).
+    /// </summary>
+    protected virtual RecordingTarget? RecordingTarget
+    {
+        get
+        {
+            if (Fixture is IRecordable recordable)
+            {
+                return recordable.RecordingTarget;
+            }
+
+            return Fixture.GetType()
+                .GetProperties(BindingFlags.Instance | BindingFlags.Public)
+                .Where(property => property.GetIndexParameters().Length == 0 && typeof(ITestContext).IsAssignableFrom(property.PropertyType))
+                .Select(property => property.GetValue(Fixture))
+                .OfType<IRecordable>()
+                .Select(context => context.RecordingTarget)
+                .FirstOrDefault(target => target is not null);
+        }
     }
 
     protected virtual bool IsAcceptableResult(BddScenarioExecutionResult execution) =>
@@ -275,7 +306,8 @@ public abstract class UatScenarioTestBase<TFixture>
     {
         using (scope)
         {
-            return await BddScenarioExecutor.RunAsync(
+            await using var recording = await RecordingFor(scenario, runtime, cancellationToken).ConfigureAwait(false);
+            var execution = await BddScenarioExecutor.RunAsync(
                 scenario,
                 GetRunConfig(runtime),
                 BeforeScenario,
@@ -287,10 +319,34 @@ public abstract class UatScenarioTestBase<TFixture>
                     {
                         UatRuntime.ConfigureScope(context, serviceScope.ServiceProvider);
                     }
+
+                    if (recording is not null)
+                    {
+                        context.Pacer = recording;
+                    }
                 },
                 CaptureEvidenceOnFailure,
                 cancellationToken).ConfigureAwait(false);
+            if (recording is not null)
+            {
+                await recording.FinishAsync(cancellationToken).ConfigureAwait(false);
+            }
+
+            return execution;
         }
+    }
+
+    // The scene this scenario records under BRINELL_RECORD; null when the run does not record it.
+    private async Task<BddSceneRecording?> RecordingFor(BddBoundScenario scenario, UatRuntime runtime, CancellationToken cancellationToken)
+    {
+        var session = Recordings.GetOrAdd(runtime.ConfigDirectory, directory => new Lazy<BddRecordingSession?>(() => BddRecordingSession.FromEnvironment(directory))).Value;
+        if (session is null || scenario.Source.Source.FilePath is not { } featureFile)
+        {
+            return null;
+        }
+
+        var scene = await session.SceneForAsync(featureFile, scenario.Source.Name, cancellationToken).ConfigureAwait(false);
+        return scene is null ? null : new BddSceneRecording(scene, () => RecordingTarget, Recorders.Value);
     }
 
     protected virtual IScreenshotService? GetScreenshotService()

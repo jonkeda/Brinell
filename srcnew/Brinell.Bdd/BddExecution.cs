@@ -39,6 +39,9 @@ public sealed class BddExecutionContext
     /// <summary>Where the steps stop for the debugger; the IDE's step breakpoints while one is attached, null otherwise.</summary>
     public IBddBreakHook? Breaks { get; set; } = BddBreakpoints.ForDebugger();
 
+    /// <summary>What sets the run's pace, such as a narrated recording; null to run at full speed.</summary>
+    public IBddStepPacer? Pacer { get; set; }
+
     /// <summary>
     /// Makes <paramref name="app"/> current: the host makes it the app page objects drive, and its
     /// own page and services come back. Nothing happens when it is current already.
@@ -243,9 +246,15 @@ public sealed class BddStepExecutionSession
                 _context.Breaks.Break(stepBreak);
             }
 
+            if (_context.Pacer is { } pacer)
+            {
+                await pacer.BeforeAsync(invocation, _context, cancellationToken).ConfigureAwait(false);
+            }
+
             var result = NameTheSession(await invocation.Command.Handler(_context, invocation, cancellationToken).ConfigureAwait(false));
             BreakOnFailure(invocation, result);
             _results.Add(result);
+            await PaceAfterAsync(result, cancellationToken).ConfigureAwait(false);
             return result;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -259,9 +268,14 @@ public sealed class BddStepExecutionSession
             var failed = NameTheSession(BddStepResult.Failed(invocation, ex.Message, ex));
             BreakOnFailure(invocation, failed);
             _results.Add(failed);
+            await PaceAfterAsync(failed, cancellationToken).ConfigureAwait(false);
             return failed;
         }
     }
+
+    // A failed step is paced too: a recording shows it failing, and its message.
+    private Task PaceAfterAsync(BddStepResult result, CancellationToken cancellationToken)
+        => _context.Pacer?.AfterAsync(result, _context, cancellationToken) ?? Task.CompletedTask;
 
     // Break on failure: the failed step's result, with its exception, before the scenario ends.
     private void BreakOnFailure(BddStepInvocation invocation, BddStepResult result)

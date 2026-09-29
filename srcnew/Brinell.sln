@@ -250,6 +250,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinell.Recording.Windows",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinell.Narrator", "Brinell.Narrator\Brinell.Narrator.csproj", "{28CBE990-11E1-4D27-AA64-B01A08BBC707}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brinell.Narrator.Windows", "Brinell.Narrator.Windows\Brinell.Narrator.Windows.csproj", "{4C98F5FF-3C58-476E-9110-D538802FB617}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -1364,6 +1366,18 @@ Global
 		{28CBE990-11E1-4D27-AA64-B01A08BBC707}.Release|x64.Build.0 = Release|Any CPU
 		{28CBE990-11E1-4D27-AA64-B01A08BBC707}.Release|x86.ActiveCfg = Release|Any CPU
 		{28CBE990-11E1-4D27-AA64-B01A08BBC707}.Release|x86.Build.0 = Release|Any CPU
+		{4C98F5FF-3C58-476E-9110-D538802FB617}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4C98F5FF-3C58-476E-9110-D538802FB617}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4C98F5FF-3C58-476E-9110-D538802FB617}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{4C98F5FF-3C58-476E-9110-D538802FB617}.Debug|x64.Build.0 = Debug|Any CPU
+		{4C98F5FF-3C58-476E-9110-D538802FB617}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{4C98F5FF-3C58-476E-9110-D538802FB617}.Debug|x86.Build.0 = Debug|Any CPU
+		{4C98F5FF-3C58-476E-9110-D538802FB617}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4C98F5FF-3C58-476E-9110-D538802FB617}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4C98F5FF-3C58-476E-9110-D538802FB617}.Release|x64.ActiveCfg = Release|Any CPU
+		{4C98F5FF-3C58-476E-9110-D538802FB617}.Release|x64.Build.0 = Release|Any CPU
+		{4C98F5FF-3C58-476E-9110-D538802FB617}.Release|x86.ActiveCfg = Release|Any CPU
+		{4C98F5FF-3C58-476E-9110-D538802FB617}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

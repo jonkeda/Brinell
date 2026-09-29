@@ -98,6 +98,21 @@ compose: scene videos joined, each Say WAV laid at its clock time, chapters per 
   message, and each clip's start and end, on the video's clock: the review page and later edits use
   it.
 
+## The gate's variables
+
+| Variable | What it says |
+| --- | --- |
+| `BRINELL_RECORD` | a `*.video.md` (full, or relative to the suite's folder) records its scenes; `1` records every scenario, silently |
+| `BRINELL_RECORD_DIR` | the Recordings folder; the run's `TestResults/<run>` folder when not set |
+| `BRINELL_RECORD_OUT` | the scenes folder, for a host that composes after the run; else `<name>-<yyyyMMdd-HHmmss>.scenes` in the Recordings folder |
+| `BRINELL_VOICE`, `BRINELL_BEAT` | the settings' voice and beat (ms), when the script does not say |
+| `BRINELL_RECORDERS` | a folder with `Brinell.Narrator.Windows` (built as a plugin, with the Windows SDK's projections): a suite that targets `net10.0-windows` cannot reference it, so the host points here |
+| `BRINELL_FFMPEG` | ffmpeg's executable, when it is not on `PATH` |
+
+Each scene gets `scene-NN/` in the scenes folder: `video.mp4`, `timeline.json`, and its lines'
+WAVs. With no voice (not Windows), the lines' lengths are estimated from their words, so the pace
+and the captions still work.
+
 ## Settings and output
 
 | Setting | Where | Default |
@@ -131,7 +146,7 @@ results deletes it; one in another folder is never deleted by Brinell.
 | --- | --- | --- |
 | 1 | **Done.** Recording, as screen-capture.md steps 1-3: the API and the ffmpeg region recorder, `WindowsCaptureRecorder` over an ffmpeg pipe, `IRecordable` on the contexts. | A covered window records (`WindowsCaptureRecorderTests`). |
 | 2 | **Done.** The video script: parser, checker (`VID0xx`), preview, the IDEs; `Features/how-todo-works.video.md` from the Todo script. | The script shows in the preview with no diagnostics. |
-| 3 | Speech to WAV and the pacer seam; a gate run with `BRINELL_RECORD` makes scene videos and the timeline. | Scene 1 of the Todo script records from `dotnet test`. |
+| 3 | **Done, not run end to end** (no ffmpeg here). Speech to WAV (`WindowsSpeech`) and the pacer seam (`IBddStepPacer`); a gate run with `BRINELL_RECORD` makes scene videos and timelines (`BddRecordingSession`, `BddSceneRecording`). | Scene 1 of the Todo script records from `dotnet test`. |
 | 4 | The composer: joined scenes, laid-in voice, chapters, `.srt`; the Recordings folder. | The whole Todo video plays with voice and captions in step. |
 | 5 | Record in Visual Studio and VS Code; **Watch** on a result. | Record on `todo.video.md` in Visual Studio gives the video. |
 | 6 | Presenter: Record, Speak aloud, the settings. | A recording made from Presenter matches the IDE's. |

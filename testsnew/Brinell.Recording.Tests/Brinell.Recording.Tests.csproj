@@ -10,6 +10,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\srcnew\Brinell.Recording\Brinell.Recording.csproj" />
     <ProjectReference Include="..\..\srcnew\Brinell.Recording.Windows\Brinell.Recording.Windows.csproj" />
+    <ProjectReference Include="..\..\srcnew\Brinell.Narrator.Windows\Brinell.Narrator.Windows.csproj" />
   </ItemGroup>
 
   <ItemGroup>

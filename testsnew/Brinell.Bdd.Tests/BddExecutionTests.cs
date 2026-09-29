@@ -89,6 +89,64 @@ public sealed class BddExecutionTests
     }
 
     [Fact]
+    public async Task Pacer_IsWaitedOnBeforeAndAfterEveryStep_AFailedOneToo()
+    {
+        var document = ParseValid("""
+            # Feature: Settings
+
+            ## Scenario: Save
+
+            ```gherkin
+            Given I am on the Settings page
+            When I tap Crash
+            ```
+            """);
+        var catalog = CreateExecutableCatalog();
+        catalog.Register(BddEffectiveStepKeyword.When, "I tap Crash", "InteractionCommands.Crash", allowsTable: false,
+            handler: (_, _, _) => throw new InvalidOperationException("It crashed."));
+        var scenario = Assert.Single(BddBinder.Bind(document, catalog).Document!.Scenarios);
+        var pacer = new RecordingPacer();
+        var runner = new BddScenarioRunner(new BddExecutionContext { Breaks = null, Pacer = pacer });
+
+        await runner.RunAsync(scenario);
+
+        Assert.Equal(["before I am on the Settings page", "after Passed", "before I tap Crash", "after Failed It crashed."], pacer.Calls);
+    }
+
+    [Fact]
+    public void WrittenLine_OfAScenarioStep_IsItsOwnLine()
+    {
+        var scenario = CreateBoundScenario("""
+            # Feature: Settings
+
+            ## Scenario: Save
+
+            ```gherkin
+            Given I am on the Settings page
+            ```
+            """);
+
+        Assert.Equal(6, BddWrittenStep.Line(scenario.Invocations[0]));
+    }
+
+    private sealed class RecordingPacer : IBddStepPacer
+    {
+        public List<string> Calls { get; } = [];
+
+        public Task BeforeAsync(BddStepInvocation invocation, BddExecutionContext context, CancellationToken cancellationToken)
+        {
+            Calls.Add($"before {invocation.Step.Text}");
+            return Task.CompletedTask;
+        }
+
+        public Task AfterAsync(BddStepResult result, BddExecutionContext context, CancellationToken cancellationToken)
+        {
+            Calls.Add($"after {result.Status}{(result.Message is { } message ? " " + message : string.Empty)}");
+            return Task.CompletedTask;
+        }
+    }
+
+    [Fact]
     public async Task RunAsync_MissingHandler_ReturnsFailedResult()
     {
         var document = ParseValid("""

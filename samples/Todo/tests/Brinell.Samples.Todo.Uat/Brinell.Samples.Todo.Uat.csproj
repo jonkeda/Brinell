@@ -17,6 +17,8 @@
     <None Update="Features\**\*.feature.md" CopyToOutputDirectory="PreserveNewest" />
     <!-- Callable phrases every scenario can use; the gate reads them from the output. -->
     <None Update="Features\**\*.steps.md" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Video scripts: BRINELL_RECORD names one, relative to the config, in the run's folder. -->
+    <None Update="Features\**\*.video.md" CopyToOutputDirectory="PreserveNewest" />
     <!-- Files that must fail binding: a scenario without the Using its pages need. -->
     <None Update="ExpectedFailures\*.feature.md" CopyToOutputDirectory="PreserveNewest" />
     <None Update="TestSettings\**\*.json" CopyToOutputDirectory="PreserveNewest" />

@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Brinell.Bdd\Brinell.Bdd.csproj" />
+    <ProjectReference Include="..\Brinell.Recording\Brinell.Recording.csproj" />
   </ItemGroup>
 
   <ItemGroup>
