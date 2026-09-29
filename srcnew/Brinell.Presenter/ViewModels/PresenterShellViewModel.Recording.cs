@@ -137,7 +137,7 @@ public sealed partial class PresenterShellViewModel
         }
 
         IsRecording = !IsRecording;
-        RecordingStatus = IsRecording ? "Recording is on: the next run is recorded." : string.Empty;
+        RecordingStatus = IsRecording ? "Recording is on: the next run is recorded." : "Recording is off.";
     }
 
     // After the session is created, before its first step: the recording starts at that step.

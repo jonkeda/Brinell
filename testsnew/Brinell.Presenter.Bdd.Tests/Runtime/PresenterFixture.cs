@@ -16,6 +16,9 @@ public sealed class PresenterFixture : MauiTestFixtureBase
 
     public TestComposition Composition { get; }
 
+    /// <summary>Where Presenter's Record puts its videos during the suite.</summary>
+    public string RecordingsFolder { get; private set; } = string.Empty;
+
     protected override MauiTestContextOptions CreateTestContextOptions()
     {
         var settingsDirectory = Path.Combine(
@@ -23,9 +26,12 @@ public sealed class PresenterFixture : MauiTestFixtureBase
             "BrinellPresenterUat",
             Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(settingsDirectory);
-        Environment.SetEnvironmentVariable(
-            "BRINELL_PRESENTER_SETTINGS_PATH",
-            Path.Combine(settingsDirectory, "presenter-settings.json"));
+        var settingsPath = Path.Combine(settingsDirectory, "presenter-settings.json");
+        Environment.SetEnvironmentVariable("BRINELL_PRESENTER_SETTINGS_PATH", settingsPath);
+
+        // Recordings go beside the settings, not into the repository's TestResults.
+        RecordingsFolder = Path.Combine(settingsDirectory, "recordings");
+        File.WriteAllText(settingsPath, System.Text.Json.JsonSerializer.Serialize(new { RecordingsFolder }));
 
         return base.CreateTestContextOptions();
     }

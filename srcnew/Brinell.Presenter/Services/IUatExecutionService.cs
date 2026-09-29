@@ -27,6 +27,7 @@ public sealed class PresenterUatExecutionSession : IDisposable
     private readonly IDisposable? _executionScope;
     private readonly IDisposable? _fixture;
     private readonly IDisposable? _resolver;
+    private Func<Brinell.Core.Recording.RecordingTarget?> _recordingTarget = () => null;
     private bool _disposed;
 
     public PresenterUatExecutionSession(
@@ -70,7 +71,11 @@ public sealed class PresenterUatExecutionSession : IDisposable
     public string AutPlacementReport { get; }
 
     /// <summary>What the session's app shows, for a recording; asked when the recording starts.</summary>
-    public Func<Brinell.Core.Recording.RecordingTarget?> RecordingTarget { get; init; } = () => null;
+    public Func<Brinell.Core.Recording.RecordingTarget?> RecordingTarget
+    {
+        get => _recordingTarget;
+        init => _recordingTarget = value;
+    }
 
     public int CompletedStepCount => StepSession.Results.Count;
 
@@ -110,6 +115,7 @@ public sealed class PresenterUatExecutionSession : IDisposable
         // the workspace fails. Reading them after Dispose is not valid.
         StepSession = null!;
         Runner = null!;
+        _recordingTarget = () => null;
         Scenario = null!;
         Catalog = null!;
 

@@ -44,7 +44,7 @@
     Microsoft.Maui.* only. Keep it that way.
   -->
   <ItemGroup>
-    <PackageReference Include="Microsoft.Maui.Controls" VersionOverride="10.0.60" />
+    <PackageReference Include="Microsoft.Maui.Controls" />
   </ItemGroup>
 
   <!--

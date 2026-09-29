@@ -81,6 +81,18 @@ public sealed class PresenterPage : PageObjectBase<PresenterPage>
     [UatName("Speed")]
     public Button<PresenterPage> SpeedButton => new(this, "SpeedButton");
 
+    /// <summary>Record: each run is recorded on video while it is on.</summary>
+    [UatName("Record")]
+    public Button<PresenterPage> RecordButton => new(this, "RecordButton");
+
+    /// <summary>Opens the last recording; there only once a run was recorded.</summary>
+    [UatName("Watch Recording")]
+    public Button<PresenterPage> WatchRecordingButton => new(this, "WatchRecordingButton");
+
+    /// <summary>What the last recording made, or why it could not; composing can take a while after the run.</summary>
+    [UatName("Recording Status")]
+    public PresenterStatusLabel<PresenterPage> RecordingStatus => new(this, "RecordingStatusLabel");
+
     /// <summary>Opens and closes the Settings page.</summary>
     [UatName("Settings")]
     public Button<PresenterPage> SettingsButton => new(this, "SettingsButton");

@@ -16,8 +16,7 @@ the web, and keeps your todos on your device.
 | Given I am on the Todo List page | The app opens on your list. |
 | And the server also has todos | The server has a todo you have not seen here yet. |
 | And the server answers after 2 seconds | The server is a little slow today. |
-| When I tap Sync | You tap Sync to fetch it. |
-| Then the list should show the Loading state | While the app waits, it tells you it is loading. |
+| When I tap Sync | You tap Sync to fetch it; while the app waits, it tells you it is loading. |
 | And the list should show the Content state | And when the answer arrives, the list shows it. |
 | And Todos should have todo "Buy bread" | There it is: Buy bread. |
 
