@@ -1,0 +1,70 @@
+# Plan: the app window under Presenter
+
+Status: **plan**, 2026-09-29. Follows [presenter-update.md](presenter-update.md) (the docked bar).
+
+## Problem
+
+A test run keeps the app under test out of the way; Presenter needs the opposite.
+
+- **MAUI** ([QuietWindow.cs](../../srcnew/Brinell.Maui.FlaUI/Windowing/QuietWindow.cs)): the
+  driver marks the app's window "no activate", sends it to the bottom of the z-order, hands the
+  foreground back, and a watchdog pushes it back whenever it comes forward, for the whole session.
+  Presenter's placement ([PresenterWindowService.cs](../../srcnew/Brinell.Presenter/Services/PresenterWindowService.cs))
+  moves it beside the bar, but it stays behind the IDE or whatever else is open.
+- **WPF, WinForms**: the drivers do the reverse (`SetForeground`), so the app lands on top, and
+  takes the keys Presenter needs (Space, F5). Neither starts from Presenter today (the app path task).
+- **Blazor, HTML**: Playwright starts the browser headless or headed from `HtmlTestContextOptions.Headless`;
+  a headless run has no window to show.
+
+## Goal
+
+One setting, **App window**, on Presenter's Settings page, that every target honours:
+
+| Choice | The app's window | Default for |
+| --- | --- | --- |
+| **Beside the bar** | shown, in front of other windows, sized into the rest of the bar's monitor | Presenter |
+| **Maximized, other monitor** | shown maximized on a monitor without the bar (a projector); falls back to Beside the bar | |
+| **Maximized** | shown maximized on the bar's monitor, the bar kept on top | |
+| **Where it opens** | shown, not moved | |
+| **Background** | behind everything, never activated (today's MAUI) | test runs |
+
+Whatever the choice, the keys stay with Presenter: the app is shown without taking the focus, and
+Presenter takes the foreground back after a launch.
+
+## How
+
+- **One contract, read by every launcher:** `BRINELL_AUT_WINDOW` = `background` | `shown`.
+  `background` is today's behaviour and the default, so test runs do not change. `shown` turns
+  QuietWindow off in the MAUI driver, and `SetForeground` off in the WPF and WinForms drivers
+  (shown, not activated). Presenter sets `shown` for every choice but Background.
+- **Placement stays in Presenter**, for every target, as built: the new top-level window is found
+  and moved (`PresenterLayout` gains Maximized, Other monitor, Leave). The driver's own
+  `BRINELL_AUT_PLACE` stays for test runs; Presenter stops setting it.
+- **Z-order and focus**: Presenter shows the app with `HWND_TOP` and `SWP_NOACTIVATE`, then brings
+  its own window to the foreground. For Maximized on the bar's monitor, the bar is topmost while a
+  run is on.
+- **Browsers**: under Presenter, `Headless` is off (an environment override the Playwright context
+  reads), and the browser starts with `--window-position` and `--window-size` for the target area,
+  so it does not flash elsewhere first. Placement still moves it if it did.
+- **AD-005 holds**: placement, z-order and focus are not input. The background default protects
+  the person at the machine during test runs; Presenter asks for the other case explicitly. A
+  line in AD-005 says so.
+
+## Steps
+
+| # | Step | Done when |
+| --- | --- | --- |
+| 1 | `BRINELL_AUT_WINDOW`: MAUI's QuietWindow off for `shown`; WPF and WinForms show without activating. | A unit test per driver option; the MAUI UI suite unchanged with the variable unset. |
+| 2 | Presenter: the App window setting, the five choices in `PresenterWindowService`, focus back to Presenter after a launch. | The MAUI sample shows beside the bar in front of the IDE; Space still steps. |
+| 3 | Browsers: headed under Presenter, started at the target area. | A Blazor scenario runs from Presenter with its browser beside the bar. |
+| 4 | WPF and WinForms from Presenter (after the app path task). | A WPF scenario shows beside the bar. |
+| 5 | Guide, AD-005 line, journeys PR15 and PR16. | |
+
+## Open questions
+
+| # | Question | Default |
+| --- | --- | --- |
+| Q1 | Should the app get the focus, so a viewer can click in it, and Presenter's keys stop until Presenter is clicked? | No: Presenter keeps the keys; a click on the app still works (it is not refused activation any more). |
+| Q2 | Maximized on the bar's monitor: bar topmost always, or only while a run is on? | Only while a run is on. |
+| Q3 | Other monitor: which one, when there are several? | The largest that does not hold the bar; a setting only if asked for. |
+| Q4 | When the run ends: leave the app where it is, or close it (today: closed)? | Closed, as today; Restart opens it in the same place. |
