@@ -10,7 +10,7 @@ namespace Brinell.Maui.Appium;
 /// Appium-based implementation of <see cref="IMauiDriver"/>.
 /// Delegates all operations to the underlying AppiumDriver.
 /// </summary>
-public sealed class AppiumMauiDriver : IMauiDriver, IDisposable
+public sealed class AppiumMauiDriver : IMauiDriver, IDisposable, Brinell.Core.Recording.IRecordable
 {
     private readonly AppiumDriver _driver;
     private readonly MauiPlatform _platform;
@@ -44,6 +44,16 @@ public sealed class AppiumMauiDriver : IMauiDriver, IDisposable
     
     /// <inheritdoc />
     public MauiPlatform Platform => _platform;
+
+    /// <summary>
+    /// The Android device the session drives, by the serial UiAutomator2 reports (<c>deviceUDID</c>,
+    /// else the <c>udid</c> asked for); null on iOS, where a simulator and a device cannot be told apart here.
+    /// </summary>
+    public Brinell.Core.Recording.RecordingTarget? RecordingTarget
+        => _platform == MauiPlatform.Android && !_disposed
+           && (_driver.Capabilities.GetCapability("deviceUDID") ?? _driver.Capabilities.GetCapability("udid"))?.ToString() is { Length: > 0 } serial
+            ? new Brinell.Core.Recording.RecordingTarget.AndroidDevice(serial)
+            : null;
     
     #endregion
     

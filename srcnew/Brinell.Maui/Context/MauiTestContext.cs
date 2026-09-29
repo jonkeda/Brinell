@@ -66,10 +66,11 @@ public class MauiTestContext : IMauiTestContext, Brinell.Core.Recording.IRecorda
     /// <inheritdoc />
     public MauiPlatform Platform => _platform;
 
-    /// <summary>The app's window on Windows; null on a device, until a device recorder names it.</summary>
+    /// <summary>What the driver says it shows (the device, for Appium); else the app's window on Windows.</summary>
     public Brinell.Core.Recording.RecordingTarget? RecordingTarget
-        => _platform == MauiPlatform.Windows && !_disposed
-            ? Brinell.Core.Recording.RecordingTarget.ForWindow(_driver.CurrentWindowHandle)
+        => _disposed ? null
+            : _driver is Brinell.Core.Recording.IRecordable recordable ? recordable.RecordingTarget
+            : _platform == MauiPlatform.Windows ? Brinell.Core.Recording.RecordingTarget.ForWindow(_driver.CurrentWindowHandle)
             : null;
 
     /// <inheritdoc />

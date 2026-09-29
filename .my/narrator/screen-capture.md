@@ -140,6 +140,6 @@ record is a warning in the report, not a failed run.
 | 1 | **Done.** `Brinell.Recording`: the API, the clock, the registry; `FfmpegRegionRecorder` as the first recorder. | A unit test records a region for two seconds and reads the MP4's duration (runs where ffmpeg is installed, skipped elsewhere). |
 | 2 | **Done.** `WindowsCaptureRecorder` over an ffmpeg pipe; `FrameVideo` turns frames-on-change into a steady frame rate. | A window behind an always-on-top window records its own pixels (`WindowsCaptureRecorderTests`); the MP4 test runs where ffmpeg is installed. |
 | 3 | **Done** for MAUI (Windows), WPF, WinForms, Html and Blazor. Stride's context talks to the game over a channel and does not know its window yet. | Each context names its target. |
-| 4 | `PlaywrightRecorder` (screencast). | A Blazor scenario records headless. |
-| 5 | `AndroidRecorder`. | A TOD scenario on the emulator records past 3 minutes. |
+| 4 | **Done.** `PlaywrightRecorder` (Chromium's screencast into ffmpeg's image pipe, `ImageVideo`). | A headless page records (`PlaywrightRecorderTests`). |
+| 5 | **Done, not run on a device.** `AndroidRecorder` (segments restarted at screenrecord's limit, stopped with SIGINT, pulled and joined); `AppiumMauiDriver` names the device (`deviceUDID`). | A TOD scenario on the emulator records past 3 minutes. |
 | 6 | Media Foundation encoder for the window recorder, if the pipe costs too much. | 30 fps at 1920x1080 without dropped frames. |
