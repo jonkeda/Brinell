@@ -1,7 +1,8 @@
 # Design: deleting old run results (a scenario, a feature file, a project)
 
-Status: **steps 1-3 built** 2026-09-29 (server, request and MCP tool, Visual Studio), not yet seen
-in Visual Studio (manual R-9 to R-11); steps 4 (VS Code) and 5 (its guide) open. Date: 2026-09-29.
+Status: **built** 2026-09-29: server, request and MCP tool, Visual Studio, VS Code (its preview's
+buttons and a Command Palette command for a suite, since it has no BDD Explorer), both guides. Not
+yet seen in either IDE (manual R-9 to R-11 for Visual Studio). Date: 2026-09-29.
 
 As built: the preview's **✕** is beside a scenario heading's result (not a menu), and **Delete
 results** is a bar button shown when the file has results; an outline row's result has no button

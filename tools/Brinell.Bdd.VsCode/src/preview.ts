@@ -106,7 +106,7 @@ export class ScenarioPreview implements vscode.Disposable {
     }
   }
 
-  private onMessage(message: { type: string; line?: number; suite?: string; path?: string; debug?: boolean }): void {
+  private onMessage(message: { type: string; line?: number; suite?: string; path?: string; debug?: boolean; scope?: string }): void {
     const document = this.document;
     if (!document) {
       return;
@@ -151,8 +151,47 @@ export class ScenarioPreview implements vscode.Disposable {
         }
 
         break;
+      case "deleteResults":
+        if (message.scope === "scenario" || message.scope === "file") {
+          void deleteResults(this.client, { scope: message.scope, uri: document.uri.toString(), line: message.line, suite: this.suite.get(document.uri.fsPath) }).then(() => this.refresh());
+        }
+
+        break;
     }
   }
+}
+
+type DeleteResults = { done: boolean; reason?: string; what?: string; suite?: string; runsChanged: number; runsDeleted: number; filesDeleted: number; skipped: { run: string; reason: string }[] };
+
+/**
+ * Old results, for good (brinell/deleteResults): the server counts first, the user confirms with
+ * the counts, then it deletes. Also the BDD Explorer's and a command's way to it.
+ */
+export async function deleteResults(client: LanguageClient, target: { scope: "scenario" | "file" | "suite"; uri?: string; line?: number; suite?: string }): Promise<void> {
+  const count = await client.sendRequest<DeleteResults>("brinell/deleteResults", { ...target, dryRun: true });
+  if (!count.done) {
+    void vscode.window.showInformationMessage(`No results deleted: ${count.reason ?? "nothing to delete"}.`);
+    return;
+  }
+
+  const runs = count.runsChanged + count.runsDeleted;
+  if (runs === 0) {
+    void vscode.window.showInformationMessage(`${count.what} has no results to delete in ${count.suite}.`);
+    return;
+  }
+
+  const answer = await vscode.window.showWarningMessage(
+    `Delete the results of ${count.what} in ${runs} run(s) of ${count.suite}: ${count.filesDeleted} file(s)?`,
+    { modal: true, detail: "They are deleted for good." },
+    "Delete",
+  );
+  if (answer !== "Delete") {
+    return;
+  }
+
+  const done = await client.sendRequest<DeleteResults>("brinell/deleteResults", { ...target, dryRun: false });
+  const skipped = done.skipped.length ? ` ${done.skipped.length} run(s) left alone: ${done.skipped.map((run) => `${run.run} (${run.reason})`).join("; ")}.` : "";
+  void vscode.window.showInformationMessage(`Deleted the results of ${done.what}: ${done.filesDeleted} file(s); ${done.runsDeleted} run(s) removed, ${done.runsChanged} kept with other results.${skipped}`);
 }
 
 // VS Code's own theme colours, as the preview's variables.

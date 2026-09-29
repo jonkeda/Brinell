@@ -36,6 +36,11 @@ references, quick fixes and rename, as in Visual Studio.
 preview beside it. It follows the active file, the caret and the preview follow each other, and
 **Run** and **Debug** on a heading run that scenario through Test Explorer.
 
+Old results are deleted as in Visual Studio: **✕** beside a scenario's result, **Delete results**
+in the preview's bar for the file, and **Brinell BDD: Delete All Results of a Suite** in the
+Command Palette for a whole suite (VS Code has no BDD Explorer). Each asks first in a modal dialog,
+naming how many runs and files, and deletes for good.
+
 ## Test Explorer
 
 The **Testing** view lists each suite, its feature files and their scenarios; an outline is one

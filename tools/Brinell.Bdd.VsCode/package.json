@@ -35,6 +35,11 @@
         "command": "brinellBdd.refreshTests",
         "title": "Refresh UAT Scenarios",
         "category": "Brinell BDD"
+      },
+      {
+        "command": "brinellBdd.deleteSuiteResults",
+        "title": "Delete All Results of a Suite",
+        "category": "Brinell BDD"
       }
     ],
     "menus": {

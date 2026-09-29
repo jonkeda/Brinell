@@ -6,7 +6,7 @@ import * as path from "path";
 import * as vscode from "vscode";
 import { LanguageClient, LanguageClientOptions, ServerOptions } from "vscode-languageclient/node";
 import * as breakpoints from "./breakpoints";
-import { ScenarioPreview } from "./preview";
+import { deleteResults, ScenarioPreview } from "./preview";
 import { ScenarioTests } from "./tests";
 
 const featureOrSteps = /\.(feature|steps)\.md$/i;
@@ -66,6 +66,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       }
     }),
     vscode.commands.registerCommand("brinellBdd.refreshTests", () => tests.discover()),
+    vscode.commands.registerCommand("brinellBdd.deleteSuiteResults", async () => {
+      // The suites as the BDD Explorer lists them; the picked one loses every scenario result.
+      const suites = (await client!.sendRequest<{ suites: string[] }>("brinell/explorer", { view: "results" })).suites;
+      const suite = suites.length === 1 ? suites[0] : await vscode.window.showQuickPick(suites, { placeHolder: "The suite whose results to delete" });
+      if (suite) {
+        await deleteResults(client!, { scope: "suite", suite });
+        await preview.refresh();
+      }
+    }),
     breakpoints.onDidChangeBreakpoints(() => vscode.window.visibleTextEditors.forEach(showBreakpoints)),
     vscode.window.onDidChangeActiveTextEditor(showBreakpoints),
     vscode.workspace.onDidChangeTextDocument((change) => {
