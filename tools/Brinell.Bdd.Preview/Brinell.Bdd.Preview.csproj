@@ -10,6 +10,8 @@
   <ItemGroup>
     <!-- Parsing and binding only: the preview needs no page machinery (AD-021). -->
     <ProjectReference Include="..\..\srcnew\Brinell.Bdd\Brinell.Bdd.csproj" />
+    <!-- Video scripts: the preview and the language server show their check like a feature file's. -->
+    <ProjectReference Include="..\..\srcnew\Brinell.Narrator\Brinell.Narrator.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -60,7 +60,7 @@ internal sealed class BddTextViewListener : IWpfTextViewCreationListener
             buffer.ChangeContentType(bdd, null);
         }
 
-        var hidden = PreviewController.IsFeatureOrSteps(document.FilePath) && TrySet(textView.Options, BddPreviewOptions.ShowMarkdownPreviewName, false);
+        var hidden = PreviewController.IsPreviewable(document.FilePath) && TrySet(textView.Options, BddPreviewOptions.ShowMarkdownPreviewName, false);
         ActivityLog.LogInformation("Brinell BDD", $"{Path.GetFileName(document.FilePath)}: content type {before} -> {buffer.ContentType.TypeName}; Visual Studio's Markdown preview hidden: {hidden}");
     }
 
@@ -90,7 +90,7 @@ internal sealed class BddPreviewMarginProvider : IWpfTextViewMarginProvider
     internal ITextDocumentFactoryService Documents { get; set; } = null!;
 
     public IWpfTextViewMargin? CreateMargin(IWpfTextViewHost wpfTextViewHost, IWpfTextViewMargin marginContainer)
-        => Documents.TryGetTextDocument(wpfTextViewHost.TextView.TextDataModel.DocumentBuffer, out var document) && PreviewController.IsFeatureOrSteps(document.FilePath)
+        => Documents.TryGetTextDocument(wpfTextViewHost.TextView.TextDataModel.DocumentBuffer, out var document) && PreviewController.IsPreviewable(document.FilePath)
             ? new BddPreviewMargin(document.FilePath)
             : null;
 }

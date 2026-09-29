@@ -47,6 +47,31 @@ public sealed class BddPreviewTodoTests : IClassFixture<BddPreviewTodoTests.Todo
         Assert.All(gate, diagnostic => Assert.Contains($"data-line=\"{diagnostic.Location.LineNumber}\"><span class=\"uat-diag-code\">UATB010</span> {diagnostic.Message}", html));
     }
 
+    [Fact]
+    public void TheTodoVideo_ShowsEverySceneWithItsSteps_AndNoDiagnostics()
+    {
+        var path = Path.Combine(TodoSuite.Project, "Features", "how-todo-works.video.md");
+
+        var result = BddPreview.Render(File.ReadAllText(path), path);
+        var html = WebUtility.HtmlDecode(result.Html);
+
+        Assert.Empty(result.Diagnostics);
+        Assert.Contains("data-kind=\"video\"", html);
+        Assert.Equal(11, html.Split("<span class=\"uat-kw\">Scene ").Length - 1);
+        Assert.Contains("<span class=\"uat-kw\">When</span><span class=\"uat-text\">I tap Sync<span class=\"uat-video-say\">You tap Sync to fetch it.</span>", html);
+        Assert.Contains("<span class=\"uat-video-silent\">silent</span>", html);
+    }
+
+    [Fact]
+    public void AVideoScript_IsCheckedLikeAFeatureFile()
+    {
+        var path = Path.Combine(TodoSuite.Project, "Features", "broken.video.md");
+
+        var analysis = BddFileAnalysis.Analyze("# Video: V\n## Scene: S\nScenario: Features/TOD.01-see-my-todos.feature.md#TOD.01.99-None\n", path, catalogs: null);
+
+        Assert.Equal("VID012", Assert.Single(analysis.Diagnostics).Code);
+    }
+
     /// <summary>The MAUI suite, loaded once for the class.</summary>
     public sealed class TodoSuite : IDisposable
     {

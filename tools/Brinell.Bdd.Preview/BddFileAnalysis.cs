@@ -1,7 +1,7 @@
 namespace Brinell.Bdd.Preview;
 
 /// <summary>
-/// The gate's check of one feature or step file, as its text is now: the parse, and with the suite's
+/// The gate's check of one feature, step or video file, as its text is now: the parse, and with the suite's
 /// catalogs the bind. The preview draws it, and the language server reports and navigates it, so
 /// both say what the gate would say.
 /// </summary>
@@ -34,6 +34,12 @@ public sealed record BddFileAnalysis(
                 BddFileFormat.OldFormCode,
                 $"'{Path.GetFileName(filePath)}' is the old name of '{Path.GetFileName(renamed)}'. Run 'brinell-data validate --fix' to rename it.",
                 new BddSourceLocation(filePath, 1)));
+        }
+
+        if (Brinell.Narrator.BddVideoScript.IsVideoScript(filePath))
+        {
+            diagnostics.AddRange(Brinell.Narrator.BddVideoScriptCheck.Check(text, filePath).Diagnostics);
+            return new BddFileAnalysis(filePath, false, diagnostics, [], []);
         }
 
         if (isSteps)

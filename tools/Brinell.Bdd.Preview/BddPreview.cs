@@ -53,7 +53,9 @@ public static class BddPreview
     {
         ArgumentNullException.ThrowIfNull(text);
         ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
-        return new BddPreviewWriter(text, filePath, options ?? new BddPreviewOptions()).Write();
+        return Brinell.Narrator.BddVideoScript.IsVideoScript(filePath)
+            ? new BddVideoScriptPreviewWriter(text, filePath).Write()
+            : new BddPreviewWriter(text, filePath, options ?? new BddPreviewOptions()).Write();
     }
 
     /// <summary>

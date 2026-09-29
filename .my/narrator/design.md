@@ -130,7 +130,7 @@ results deletes it; one in another folder is never deleted by Brinell.
 | # | Step | Done when |
 | --- | --- | --- |
 | 1 | **Done.** Recording, as screen-capture.md steps 1-3: the API and the ffmpeg region recorder, `WindowsCaptureRecorder` over an ffmpeg pipe, `IRecordable` on the contexts. | A covered window records (`WindowsCaptureRecorderTests`). |
-| 2 | The video script: parser, checker, preview; `todo.video.md` from the Todo script. | The script shows in the preview with no diagnostics. |
+| 2 | **Done.** The video script: parser, checker (`VID0xx`), preview, the IDEs; `Features/how-todo-works.video.md` from the Todo script. | The script shows in the preview with no diagnostics. |
 | 3 | Speech to WAV and the pacer seam; a gate run with `BRINELL_RECORD` makes scene videos and the timeline. | Scene 1 of the Todo script records from `dotnet test`. |
 | 4 | The composer: joined scenes, laid-in voice, chapters, `.srt`; the Recordings folder. | The whole Todo video plays with voice and captions in step. |
 | 5 | Record in Visual Studio and VS Code; **Watch** on a result. | Record on `todo.video.md` in Visual Studio gives the video. |

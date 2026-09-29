@@ -64,7 +64,7 @@
       "editor/title": [
         {
           "command": "brinellBdd.openPreview",
-          "when": "resourceFilename =~ /\\.(feature|steps)\\.md$/",
+          "when": "resourceFilename =~ /\\.(feature|steps|video)\\.md$/",
           "group": "navigation"
         }
       ],
@@ -80,7 +80,7 @@
         "command": "brinellBdd.openPreview",
         "key": "ctrl+k v",
         "mac": "cmd+k v",
-        "when": "editorTextFocus && resourceFilename =~ /\\.(feature|steps)\\.md$/"
+        "when": "editorTextFocus && resourceFilename =~ /\\.(feature|steps|video)\\.md$/"
       },
       {
         "command": "brinellBdd.toggleStepBreakpoint",

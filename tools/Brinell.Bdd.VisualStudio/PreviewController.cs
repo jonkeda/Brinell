@@ -328,7 +328,7 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
         if (documentFrame is not IVsWindowFrame frame ||
             ErrorHandler.Failed(frame.GetProperty((int)__VSFPROPID.VSFPROPID_pszMkDocument, out var document)) ||
             document is not string path ||
-            !IsFeatureOrSteps(path))
+            !IsPreviewable(path))
         {
             _path = null;
             return;
@@ -779,6 +779,10 @@ internal sealed class PreviewController : IVsSelectionEvents, IVsUpdateSolutionE
 #pragma warning disable VSTHRD010
     private void Log(string line) => _output?.OutputStringThreadSafe(line + Environment.NewLine);
 #pragma warning restore VSTHRD010
+
+    // A video script previews too, as the scenes it will record; it has no step breakpoints.
+    internal static bool IsPreviewable(string path)
+        => IsFeatureOrSteps(path) || path.EndsWith(".video.md", StringComparison.OrdinalIgnoreCase);
 
     internal static bool IsFeatureOrSteps(string path)
         => path.EndsWith(".feature.md", StringComparison.OrdinalIgnoreCase) ||

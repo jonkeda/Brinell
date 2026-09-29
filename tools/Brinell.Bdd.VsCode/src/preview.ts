@@ -15,7 +15,7 @@ export interface PreviewHost {
   move(move: string): void;
 }
 
-const featureOrSteps = /\.(feature|steps)\.md$/i;
+const previewable = /\.(feature|steps|video)\.md$/i;
 
 export class ScenarioPreview implements vscode.Disposable {
   private panel: vscode.WebviewPanel | undefined;
@@ -123,7 +123,7 @@ export class ScenarioPreview implements vscode.Disposable {
   }
 
   private follow(document: vscode.TextDocument): void {
-    if (this.panel && featureOrSteps.test(document.fileName) && document !== this.document) {
+    if (this.panel && previewable.test(document.fileName) && document !== this.document) {
       this.document = document;
       void this.refresh();
     }

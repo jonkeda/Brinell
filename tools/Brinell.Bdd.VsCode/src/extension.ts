@@ -11,6 +11,8 @@ import { BddStepping, Move } from "./stepping";
 import { ScenarioTests } from "./tests";
 
 const featureOrSteps = /\.(feature|steps)\.md$/i;
+// A video script previews too, as the scenes it will record.
+const previewable = /\.(feature|steps|video)\.md$/i;
 let client: LanguageClient | undefined;
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
@@ -25,6 +27,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     documentSelector: [
       { scheme: "file", language: "markdown", pattern: "**/*.feature.md" },
       { scheme: "file", language: "markdown", pattern: "**/*.steps.md" },
+      { scheme: "file", language: "markdown", pattern: "**/*.video.md" },
       { scheme: "file", language: "markdown", pattern: "**/uat.config.md" },
       { scheme: "file", language: "markdown", pattern: "**/bdd.config.md" },
     ],
@@ -62,7 +65,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand("brinellBdd.stepOut", () => stepping.move("out")),
     vscode.commands.registerCommand("brinellBdd.openPreview", async () => {
       const document = vscode.window.activeTextEditor?.document;
-      if (document && featureOrSteps.test(document.fileName)) {
+      if (document && previewable.test(document.fileName)) {
         await preview.open(document);
       }
     }),

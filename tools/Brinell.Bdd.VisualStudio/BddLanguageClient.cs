@@ -28,9 +28,9 @@ internal static class BddContentType
     [BaseDefinition(CodeRemoteContentDefinition.CodeRemoteContentTypeName)]
     internal static ContentTypeDefinition? Definition { get; set; }
 
-    /// <summary>Whether a path is a feature, step or config file.</summary>
+    /// <summary>Whether a path is a feature, step, video or config file.</summary>
     public static bool Holds(string path)
-        => PreviewController.IsFeatureOrSteps(path) ||
+        => PreviewController.IsPreviewable(path) ||
            path.EndsWith("uat.config.md", StringComparison.OrdinalIgnoreCase) ||
            path.EndsWith("bdd.config.md", StringComparison.OrdinalIgnoreCase);
 }

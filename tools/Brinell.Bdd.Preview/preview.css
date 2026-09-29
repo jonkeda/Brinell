@@ -188,6 +188,14 @@ th { background: var(--uat-surface); font-weight: 600; }
 .uat-diag-code { font-family: var(--uat-mono); font-weight: 600; color: var(--uat-error); }
 .uat-diag[data-severity="warning"] .uat-diag-code { color: var(--uat-warning); }
 
+/* Video scripts: what is said, and the steps that run without a word. */
+.uat-video-scenario, .uat-video-fields { color: var(--uat-muted); }
+p.uat-video-say { font-style: italic; border-left: 3px solid var(--uat-accent); padding-left: 0.6em; }
+.uat-step span.uat-video-say { display: block; font-style: italic; color: var(--uat-accent); }
+.uat-step span.uat-video-say::before { content: "\201C"; }
+.uat-step span.uat-video-say::after { content: "\201D"; }
+.uat-video-silent { margin-left: 0.6em; color: var(--uat-muted); font-size: 0.85em; }
+
 .uat-bound > .uat-text { cursor: default; }
 .uat-page {
   margin-left: 0.6em;
