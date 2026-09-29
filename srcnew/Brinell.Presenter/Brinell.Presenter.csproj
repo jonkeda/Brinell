@@ -37,6 +37,9 @@
     <ProjectReference Include="..\Brinell.Maui\Brinell.Maui.csproj" />
     <ProjectReference Include="..\Brinell.Maui.FlaUI\Brinell.Maui.FlaUI.csproj" />
     <ProjectReference Include="..\Brinell.Uat\Brinell.Uat.csproj" />
+    <!-- The suite and the file check the IDEs use, so Presenter says what the gate says (AD-022). -->
+    <ProjectReference Include="..\..\tools\Brinell.Bdd.Workspace\Brinell.Bdd.Workspace.csproj" />
+    <ProjectReference Include="..\..\tools\Brinell.Bdd.Preview\Brinell.Bdd.Preview.csproj" />
   </ItemGroup>
 
   <ItemGroup>

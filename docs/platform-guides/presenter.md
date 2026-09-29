@@ -89,6 +89,13 @@ milliseconds.
 | Discovery | the pages and controls the scenarios can name |
 | Command Catalog | every phrase, by keyword |
 
+Presenter checks each feature and step file as the xUnit gate and the IDEs do: against the suite's
+own catalogs, loaded through `Brinell.Bdd.Workspace` from a shadow copy of its build. The
+Diagnostics tab lists the gate's diagnostics, with severity and code. A suite that is not built yet
+is only parsed, and Diagnostics says to build it. A file under an `ExpectedFailures` folder fails
+on purpose: it is reported as "expected failure" and does not make the workspace need attention.
+The config can be `uat.config.md` or, for a service suite, `bdd.config.md`.
+
 The tree starts at the workspace folder and shows only Markdown: folders with Markdown in them,
 `.md` files, and under each `.feature.md` its suite, scenarios and steps. `bin`, `obj` and non-Markdown
 files are hidden. A collapsed parent shows the worst status of its children.

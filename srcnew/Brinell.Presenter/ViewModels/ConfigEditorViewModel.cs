@@ -182,21 +182,24 @@ public sealed class ConfigEditorViewModel : ViewModelBase
         {
             if (!ConfigExists)
             {
-                return "No uat.config.md";
+                return $"No {BddFileFormat.UiConfigFileName}";
             }
 
             var problems = _hasErrors ? "problems" : string.Empty;
             return (IsDirty, problems.Length > 0) switch
             {
-                (true, true) => "uat.config.md  * unsaved, problems",
-                (true, false) => "uat.config.md  * unsaved",
-                (false, true) => "uat.config.md  problems",
-                _ => "uat.config.md"
+                (true, true) => $"{ConfigName}  * unsaved, problems",
+                (true, false) => $"{ConfigName}  * unsaved",
+                (false, true) => $"{ConfigName}  problems",
+                _ => ConfigName
             };
         }
     }
 
     private bool WorkspacePathIsSet => _workspacePath.Length > 0;
+
+    // uat.config.md or bdd.config.md, whichever the workspace has.
+    private string ConfigName => _configPath.Length > 0 ? Path.GetFileName(_configPath) : BddFileFormat.UiConfigFileName;
 
     /// <summary>Shows the workspace's config, discarding any unsaved edits.</summary>
     /// <param name="workspacePath">The workspace folder.</param>
@@ -340,7 +343,7 @@ public sealed class ConfigEditorViewModel : ViewModelBase
 
         if (ReadWriteTime() != _configWriteTimeAtLoad)
         {
-            SaveMessage = "uat.config.md changed on disk. Reload to see it, or save again to overwrite.";
+            SaveMessage = $"{ConfigName} changed on disk. Reload to see it, or save again to overwrite.";
             _configWriteTimeAtLoad = ReadWriteTime();
             return;
         }

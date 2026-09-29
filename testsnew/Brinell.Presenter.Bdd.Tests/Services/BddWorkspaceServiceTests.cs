@@ -1,3 +1,5 @@
+using Brinell.Bdd.Preview;
+using Brinell.Bdd.Workspace;
 using Brinell.Presenter.Services;
 
 namespace Brinell.Presenter.Bdd.Tests.Services;
@@ -157,5 +159,115 @@ public sealed class BddWorkspaceServiceTests
                 Directory.Delete(root, recursive: true);
             }
         }
+    }
+
+    /// <summary>
+    /// Each file is checked as the gate and the IDEs check it: the same diagnostics as
+    /// <see cref="BddFileAnalysis"/> with the suite's catalogs, and a <c>## Step:</c> call from a
+    /// step file bound to its steps (AD-022).
+    /// </summary>
+    [Fact]
+    public void LoadFolder_ChecksEachFileAsTheLanguageServerDoes()
+    {
+        var folder = RepositoryPath("samples", "Todo", "tests", "Brinell.Samples.Todo.Uat");
+        using var service = new BddWorkspaceService();
+        using var suite = BddSuite.Open(BddFileFormat.FindConfig(folder));
+        var catalogs = suite.TryGetCatalogs(out var reason);
+        Assert.True(catalogs is not null, $"Build Brinell.Samples.Todo.Uat first: {reason}");
+
+        var result = service.LoadFolder(folder);
+
+        Assert.NotEmpty(result.Files);
+        foreach (var file in result.Files)
+        {
+            var analysis = BddFileAnalysis.Analyze(File.ReadAllText(file.FilePath), file.FilePath, catalogs);
+            Assert.Equal(
+                analysis.Diagnostics.Where(analysis.IsHere).Select(diagnostic => diagnostic.Code),
+                file.Diagnostics.Select(line => line.Split(' ')[2]));
+            var expected = file.FilePath.Contains($"{Path.DirectorySeparatorChar}ExpectedFailures{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase);
+            Assert.Contains($"{file.Name}: Bind: {(expected ? "expected failure" : "ok")}", result.Diagnostics);
+        }
+
+        var callStep = result.Scenarios.SelectMany(scenario => scenario.Steps).First(step => step.CallText is not null);
+        Assert.NotEqual("(unbound)", callStep.CommandId);
+    }
+
+    [Fact]
+    public void LoadFolder_ExpectedFailureFile_IsReportedButNotAnError()
+    {
+        var folder = RepositoryPath("testsnew", "Brinell.Maui.Uat.Tests");
+
+        using var service = new BddWorkspaceService();
+        var result = service.LoadFolder(folder);
+
+        Assert.Contains("main-page-missing-control.feature.md: Bind: expected failure", result.Diagnostics);
+        Assert.DoesNotContain(
+            result.Diagnostics,
+            line => line.Contains("missing-control", StringComparison.Ordinal) && line.Contains("error", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void LoadFolder_NotBuilt_ParsesOnlyAndSaysWhy()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "BrinellPresenterUat", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(root, "Features"));
+
+        try
+        {
+            File.WriteAllText(
+                Path.Combine(root, "uat.config.md"),
+                """
+                # UAT Config
+
+                ## Runtime
+
+                | Field | Value |
+                | --- | --- |
+                | Target | MAUI |
+                | Fixture | MauiFixture |
+
+                ## Assemblies
+
+                | Kind | Assembly |
+                | --- | --- |
+                | Pages | Missing.Pages.dll |
+                """);
+            File.WriteAllText(
+                Path.Combine(root, "Features", "one.feature.md"),
+                """
+                # Feature: One
+
+                ## Scenario: Taps
+
+                ```gherkin
+                When I tap Save
+                ```
+                """);
+
+            using var service = new BddWorkspaceService();
+            var result = service.LoadFolder(root);
+
+            Assert.Contains("one.feature.md: Bind: not checked", result.Diagnostics);
+            Assert.Contains(result.Diagnostics, line => line.StartsWith("Error: the steps cannot be checked", StringComparison.Ordinal));
+            Assert.Equal("(unbound)", Assert.Single(Assert.Single(result.Scenarios).Steps).CommandId);
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+            {
+                Directory.Delete(root, recursive: true);
+            }
+        }
+    }
+
+    private static string RepositoryPath(params string[] parts)
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null && !Directory.Exists(Path.Combine(directory.FullName, "testsnew")))
+        {
+            directory = directory.Parent;
+        }
+
+        return Path.Combine([directory?.FullName ?? throw new DirectoryNotFoundException("The Brinell root was not found."), .. parts]);
     }
 }
