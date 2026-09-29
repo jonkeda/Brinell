@@ -1,6 +1,6 @@
 # Plan: the app window under Presenter
 
-Status: **plan**, 2026-09-29. Follows [presenter-update.md](presenter-update.md) (the docked bar).
+Status: **plan**, Q1-Q4 decided 2026-09-29. Follows [presenter-update.md](presenter-update.md) (the docked bar).
 
 ## Problem
 
@@ -31,6 +31,13 @@ One setting, **App window**, on Presenter's Settings page, that every target hon
 Whatever the choice, the keys stay with Presenter: the app is shown without taking the focus, and
 Presenter takes the foreground back after a launch.
 
+A second setting, **When a run ends**:
+
+| Choice | The app |
+| --- | --- |
+| **Close the app** (default) | closed when the run passes, fails or is stopped, as today |
+| **Keep it open** | left open where it is, showing where the run ended, until the next run starts (which closes it first), Presenter closes, or **Stop** is pressed with no run on |
+
 ## How
 
 - **One contract, read by every launcher:** `BRINELL_AUT_WINDOW` = `background` | `shown`.
@@ -56,15 +63,16 @@ Presenter takes the foreground back after a launch.
 | --- | --- | --- |
 | 1 | `BRINELL_AUT_WINDOW`: MAUI's QuietWindow off for `shown`; WPF and WinForms show without activating. | A unit test per driver option; the MAUI UI suite unchanged with the variable unset. |
 | 2 | Presenter: the App window setting, the five choices in `PresenterWindowService`, focus back to Presenter after a launch. | The MAUI sample shows beside the bar in front of the IDE; Space still steps. |
+| 2b | When a run ends: Keep it open holds the ended session's fixture (and its app) until the next run, Stop or closing Presenter, instead of disposing it at the end. | With Keep it open, the MAUI sample stays open after a pass and closes when the next run starts. |
 | 3 | Browsers: headed under Presenter, started at the target area. | A Blazor scenario runs from Presenter with its browser beside the bar. |
 | 4 | WPF and WinForms from Presenter (after the app path task). | A WPF scenario shows beside the bar. |
 | 5 | Guide, AD-005 line, journeys PR15 and PR16. | |
 
-## Open questions
+## Decisions
 
-| # | Question | Default |
+| # | Question | Decided 2026-09-29 |
 | --- | --- | --- |
-| Q1 | Should the app get the focus, so a viewer can click in it, and Presenter's keys stop until Presenter is clicked? | No: Presenter keeps the keys; a click on the app still works (it is not refused activation any more). |
+| Q1 | Should the app get the focus, so a viewer can click in it? | No: Presenter keeps the keys; a click on the app still works (it is not refused activation any more). |
 | Q2 | Maximized on the bar's monitor: bar topmost always, or only while a run is on? | Only while a run is on. |
-| Q3 | Other monitor: which one, when there are several? | The largest that does not hold the bar; a setting only if asked for. |
-| Q4 | When the run ends: leave the app where it is, or close it (today: closed)? | Closed, as today; Restart opens it in the same place. |
+| Q3 | Other monitor: which one, when there are several? | The largest that does not hold the bar. |
+| Q4 | When the run ends: leave the app open, or close it? | A setting, **When a run ends**: Close the app (default) or Keep it open. |
