@@ -105,7 +105,7 @@
                                 Style="{StaticResource PresenterIconButton}"
                                 Command="{Binding ShowSettingsCommand}"
                                 SemanticProperties.Description="Settings"
-                                ToolTipProperties.Text="Settings: the speeds and the theme">
+                                ToolTipProperties.Text="Settings: the speeds, the app window and the theme">
                             <Button.Triggers>
                                 <DataTrigger TargetType="Button"
                                              Binding="{Binding IsSettingsTabSelected}"
@@ -605,6 +605,20 @@
                                FontSize="11"
                                Style="{StaticResource PresenterMutedLabel}" />
 
+                        <Label Text="App window: how the app under test shows during a run" />
+                        <Picker AutomationId="AppWindowPicker"
+                                ItemsSource="{Binding AppWindowChoices}"
+                                SelectedItem="{Binding AppWindowChoice, Mode=TwoWay}"
+                                SemanticProperties.Description="App window" />
+
+                        <Label Text="When a run ends" />
+                        <Picker AutomationId="RunEndPicker"
+                                ItemsSource="{Binding RunEndChoices}"
+                                SelectedItem="{Binding RunEndChoice, Mode=TwoWay}"
+                                SemanticProperties.Description="When a run ends" />
+                        <Label Text="Keep it open: the app stays until the next run, Stop, or closing Presenter."
+                               FontSize="11"
+                               Style="{StaticResource PresenterMutedLabel}" />
                         <Label Text="Theme" />
                         <HorizontalStackLayout Spacing="6">
                             <Button Text="{Binding ThemeGlyph}"

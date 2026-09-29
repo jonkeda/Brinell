@@ -90,8 +90,9 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
         var process = Process.Start(processStartInfo)
             ?? throw new InvalidOperationException($"Failed to start process: {executablePath}");
 
-        // Before anything waits on the app - see QuietWindow.ForLaunch.
-        _quiet = QuietWindow.ForLaunch(process.Id, previousForeground);
+        // Before anything waits on the app - see QuietWindow.ForLaunch. An app someone is watching
+        // (BRINELL_AUT_WINDOW=shown, the Presenter) is left where it can be seen.
+        _quiet = Brinell.Core.Diagnostics.AutWindow.IsShown(environment) ? null : QuietWindow.ForLaunch(process.Id, previousForeground);
 
         // A test being debugged: the IDE attaches to the app too.
         Brinell.Core.Diagnostics.DebuggedApps.Announce(process, Path.GetFileNameWithoutExtension(executablePath));
@@ -106,7 +107,7 @@ public sealed class FlaUIMauiDriver : IMauiDriver, IDisposable
         _conditionFactory = new ConditionFactory(_automation.PropertyLibrary);
 
         WindowPlacement.ApplyRequested(_window, environment);
-        _quiet.Settle(_window.Handle);
+        _quiet?.Settle(_window.Handle);
     }
 
     /// <summary>

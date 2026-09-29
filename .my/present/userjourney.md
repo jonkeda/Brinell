@@ -202,3 +202,12 @@ and `[-]` when a check does not apply; add a defect reference or reason beside i
   - [ ] **PR18.4** A breakpoint set in Visual Studio or VS Code shows in Presenter and stops `Run` there; one set in Presenter shows in the IDEs.
   - [ ] **PR18.5** Run until here runs on from where the run is (or starts one) and pauses before the step.
   - [ ] **PR18.6** Run from here is off, and says why, unless a run is paused before the step; when on, it skips the steps in between (marked skipped) and runs on.
+
+## PR19 The app window
+
+- [ ] **Journey passed**
+  - [ ] **PR19.1** With App window "Beside the bar", the app opens in front of the other windows, beside the bar, and Space still steps.
+  - [ ] **PR19.2** "Maximized" fills the bar's monitor and the bar stays on top while the run is on; "Maximized, other monitor" fills another monitor when there is one.
+  - [ ] **PR19.3** "Where it opens" leaves the app where it opened, in front; "Background" keeps it behind everything.
+  - [ ] **PR19.4** A browser target opens a visible browser, beside the bar.
+  - [ ] **PR19.5** With When a run ends "Keep it open", the app stays after the run; Stop closes it ("Closed the app"); the next run closes it first.

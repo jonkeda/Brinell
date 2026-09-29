@@ -45,15 +45,19 @@ internal sealed class BddSessionLoadContext(Func<string, string?> resolvePath)
         return path is null ? null : LoadFromAssemblyPath(path);
     }
 
-    private static bool CanHostLoad(AssemblyName assemblyName)
+    // What the host ships: the framework and Presenter's own folder, or what it has loaded. Not
+    // Default.LoadFromAssemblyName, which raises the default context's Resolving event: the
+    // workspace check's shadow copy answers there (BddSuiteLoad), and a copy from it is not the
+    // suite's own - Playwright loaded from it found no browser driver beside it.
+    private static readonly Lazy<HashSet<string>> HostAssemblies = new(() =>
     {
-        try
-        {
-            return Default.LoadFromAssemblyName(assemblyName) is not null;
-        }
-        catch (Exception ex) when (ex is FileNotFoundException or FileLoadException or BadImageFormatException)
-        {
-            return false;
-        }
-    }
+        var trusted = (AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES") as string ?? string.Empty)
+            .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries);
+        var own = Directory.EnumerateFiles(AppContext.BaseDirectory, "*.dll");
+        return trusted.Concat(own).Select(Path.GetFileNameWithoutExtension).OfType<string>().ToHashSet(StringComparer.OrdinalIgnoreCase);
+    });
+
+    private static bool CanHostLoad(AssemblyName assemblyName)
+        => HostAssemblies.Value.Contains(assemblyName.Name!)
+           || Default.Assemblies.Any(assembly => string.Equals(assembly.GetName().Name, assemblyName.Name, StringComparison.OrdinalIgnoreCase));
 }

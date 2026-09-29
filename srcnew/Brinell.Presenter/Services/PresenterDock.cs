@@ -36,4 +36,14 @@ public static class PresenterLayout
         => dock == PresenterDock.Left
             ? Rectangle.FromLTRB(bar.Right + Gap, workArea.Top, workArea.Right, workArea.Bottom)
             : Rectangle.FromLTRB(workArea.Left, workArea.Top, bar.Left - Gap, workArea.Bottom);
+
+    /// <summary>The work area of another monitor for a maximized app: the largest that is not the bar's; null with one monitor.</summary>
+    /// <param name="workAreas">Every monitor's work area.</param>
+    /// <param name="barWorkArea">The work area of the bar's monitor.</param>
+    public static Rectangle? OtherMonitor(IEnumerable<Rectangle> workAreas, Rectangle barWorkArea)
+        => workAreas
+            .Where(area => area != barWorkArea)
+            .OrderByDescending(area => (long)area.Width * area.Height)
+            .Cast<Rectangle?>()
+            .FirstOrDefault();
 }

@@ -26,6 +26,14 @@ public sealed class PresenterUserSettings
     /// <summary>The pause between steps of each speed, set on the Settings page.</summary>
     public PresenterSpeeds Speeds { get; set; } = new();
 
+    /// <summary>How the app under test's window is shown during a run.</summary>
+    [JsonConverter(typeof(JsonStringEnumConverter<PresenterAppWindow>))]
+    public PresenterAppWindow AppWindow { get; set; } = PresenterAppWindow.BesideBar;
+
+    /// <summary>What happens to the app when a run ends.</summary>
+    [JsonConverter(typeof(JsonStringEnumConverter<PresenterRunEnd>))]
+    public PresenterRunEnd RunEnd { get; set; } = PresenterRunEnd.CloseApp;
+
     /// <summary>
     /// The build configuration and platform chosen per workspace folder.
     /// </summary>
@@ -72,4 +80,33 @@ public sealed class PresenterSpeeds
         PresenterSpeed.Slow => Slow,
         _ => Normal,
     };
+}
+
+/// <summary>How the app under test's window is shown during a run.</summary>
+public enum PresenterAppWindow
+{
+    /// <summary>In front of other windows, in the rest of the bar's monitor.</summary>
+    BesideBar = 0,
+
+    /// <summary>Maximized on a monitor without the bar; beside the bar when there is none.</summary>
+    MaximizedOtherMonitor = 1,
+
+    /// <summary>Maximized on the bar's monitor, the bar kept on top while a run is on.</summary>
+    Maximized = 2,
+
+    /// <summary>In front of other windows, where it opened.</summary>
+    WhereItOpens = 3,
+
+    /// <summary>Behind everything and never activated, as in a test run.</summary>
+    Background = 4,
+}
+
+/// <summary>What happens to the app under test when a run ends.</summary>
+public enum PresenterRunEnd
+{
+    /// <summary>Closed when the run passes, fails or is stopped.</summary>
+    CloseApp = 0,
+
+    /// <summary>Left open until the next run starts, Stop is pressed with no run on, or Presenter closes.</summary>
+    KeepOpen = 1,
 }

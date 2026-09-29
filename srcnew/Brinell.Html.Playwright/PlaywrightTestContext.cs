@@ -1,5 +1,6 @@
 using Brinell.Core.Calls;
 using Brinell.Core.Configuration;
+using Brinell.Core.Diagnostics;
 using Brinell.Core.Exceptions;
 using Brinell.Core.Locators;
 using Brinell.Core.Logging;
@@ -72,12 +73,21 @@ public sealed class PlaywrightTestContext : IHtmlTestContext, IAsyncDisposable
             _ => playwright.Chromium
         };
 
-        var browser = await browserType.LaunchAsync(new BrowserTypeLaunchOptions
+        // Someone is watching (BRINELL_AUT_WINDOW=shown, the Presenter): a window to see, opened
+        // where it will be placed, and a page that fills it.
+        var shown = AutWindow.IsShown();
+        var launchOptions = new BrowserTypeLaunchOptions
         {
-            Headless = options.Headless
-        }).ConfigureAwait(false);
+            Headless = options.Headless && !shown
+        };
+        if (shown && AutWindow.Bounds() is { } bounds && ReferenceEquals(browserType, playwright.Chromium))
+        {
+            launchOptions.Args = [$"--window-position={bounds.X},{bounds.Y}", $"--window-size={bounds.Width},{bounds.Height}"];
+        }
 
-        var browserContext = await browser.NewContextAsync().ConfigureAwait(false);
+        var browser = await browserType.LaunchAsync(launchOptions).ConfigureAwait(false);
+
+        var browserContext = await browser.NewContextAsync(shown ? new BrowserNewContextOptions { ViewportSize = ViewportSize.NoViewport } : null).ConfigureAwait(false);
         var page = await browserContext.NewPageAsync().ConfigureAwait(false);
 
         if (!string.IsNullOrWhiteSpace(options.BaseUrl))

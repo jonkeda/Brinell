@@ -37,6 +37,7 @@ public partial class App : Application
         };
         // A narrow bar on its side of the screen; the app under test is placed beside it.
         window.Created += (_, _) => viewModel.ApplyDock();
+        window.Destroying += (_, _) => viewModel.Shutdown();
         window.Activated += (_, _) => ShowTitleBarIcon(window);
         return window;
     }

@@ -7,7 +7,7 @@ namespace Brinell.Presenter.Services;
 public sealed class BddExecutionService : IBddExecutionService
 {
     /// <inheritdoc />
-    public PresenterDock Dock { get; set; } = PresenterDock.Left;
+    public IReadOnlyDictionary<string, string> WindowEnvironment { get; set; } = new Dictionary<string, string>();
 
     public Task<PresenterUatExecutionSession> CreateSessionAsync(
         string workspacePath,
@@ -20,7 +20,7 @@ public sealed class BddExecutionService : IBddExecutionService
         ArgumentException.ThrowIfNullOrWhiteSpace(scenarioName);
 
         return Task.Run(
-            () => CreateSession(workspacePath, scenarioFilePath, scenarioName, Dock, cancellationToken),
+            () => CreateSession(workspacePath, scenarioFilePath, scenarioName, WindowEnvironment, cancellationToken),
             cancellationToken);
     }
 
@@ -28,7 +28,7 @@ public sealed class BddExecutionService : IBddExecutionService
         string workspacePath,
         string scenarioFilePath,
         string scenarioName,
-        PresenterDock dock,
+        IReadOnlyDictionary<string, string> windowEnvironment,
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -44,9 +44,6 @@ public sealed class BddExecutionService : IBddExecutionService
 
         var workingDirectory = BddWorkspaceConfigInspector.ResolveWorkingDirectory(workspacePath, config);
         var resolver = new BddRuntimeAssemblyResolver(workspacePath, config, workingDirectory);
-        var placementReportPath = Path.Combine(
-            Path.GetTempPath(),
-            $"BrinellPresenterAutPlacement_{Guid.NewGuid():N}.txt");
         DisposableGroup? environment = null;
         object? fixture = null;
         IDisposable? executionScope = null;
@@ -55,12 +52,13 @@ public sealed class BddExecutionService : IBddExecutionService
         {
             var appPath = BddWorkspaceConfigInspector.ResolveConfiguredAppPath(workspacePath, config);
             environment = new DisposableGroup(
-                [.. CreateTargetEnvironment(config, appPath, placementReportPath, dock),
+                [.. CreateTargetEnvironment(config, appPath, windowEnvironment),
                  workingDirectory is null ? null : new CurrentDirectoryScope(workingDirectory)]);
 
             var pagesAssembly = resolver.LoadRequired(ResolvePagesAssembly(workspacePath, config));
             fixture = CreateFixture(config, pagesAssembly);
-            var autPlacementReport = TryReadPlacementReport(placementReportPath);
+            // The session does not place the app; Presenter does, once its window is open.
+            var autPlacementReport = "AUT placement:" + Environment.NewLine + "Result: not supported";
 
             var runtime = new UatRuntime(fixture, configPath);
             var catalog = runtime.CreateCommandCatalog();
@@ -122,34 +120,6 @@ public sealed class BddExecutionService : IBddExecutionService
         }
     }
 
-    private static string TryReadPlacementReport(string path)
-    {
-        try
-        {
-            return File.Exists(path)
-                ? File.ReadAllText(path)
-                : "AUT placement:" + Environment.NewLine + "Result: not supported";
-        }
-        catch (Exception ex)
-        {
-            return "AUT placement:" + Environment.NewLine + $"Result: failed: {ex.Message}";
-        }
-        finally
-        {
-            try
-            {
-                if (File.Exists(path))
-                {
-                    File.Delete(path);
-                }
-            }
-            catch
-            {
-                // Placement diagnostics are best effort only.
-            }
-        }
-    }
-
     private static void ValidateConfig(BddConfig config, string configPath)
     {
         if (!config.Runtime.TryGetValue("Target", out var target) ||
@@ -178,8 +148,7 @@ public sealed class BddExecutionService : IBddExecutionService
     private static IEnumerable<IDisposable?> CreateTargetEnvironment(
         BddConfig config,
         string? appPath,
-        string placementReportPath,
-        PresenterDock dock)
+        IReadOnlyDictionary<string, string> windowEnvironment)
     {
         var target = BddTargetRegistry.GetRequired(config);
 
@@ -189,15 +158,13 @@ public sealed class BddExecutionService : IBddExecutionService
             ? null
             : new EnvironmentVariableScope(target.AppPathEnvironmentVariable, appPath);
 
-        // The MAUI driver places its app right of a left-hand bar as it opens; any other side or
-        // target is placed by the Presenter once the window is there (PresenterWindowService).
-        if (target.SupportsPresenterAutPlacement && dock == PresenterDock.Left)
+        // How the app's window is shown; Presenter places it itself once it is open
+        // (PresenterWindowService), for every target.
+        foreach (var (name, value) in windowEnvironment)
         {
-            yield return new EnvironmentVariableScope("BRINELL_AUT_PLACE_RIGHT", "1");
-            yield return new EnvironmentVariableScope("BRINELL_AUT_PLACEMENT_RESULT_FILE", placementReportPath);
+            yield return new EnvironmentVariableScope(name, value);
         }
     }
-
     private static string GetRegisteredAssembly(BddConfig config, string kind)
     {
         var registration = config.Assemblies.FirstOrDefault(assembly =>

@@ -4,19 +4,18 @@ namespace Brinell.Presenter.Services;
 
 internal sealed record BddTargetDescriptor(
     string Name,
-    string AppPathEnvironmentVariable,
-    bool SupportsPresenterAutPlacement);
+    string AppPathEnvironmentVariable);
 
 internal static class BddTargetRegistry
 {
     private static readonly BddTargetDescriptor[] Targets =
     [
-        new("MAUI", "APPIUM_APP_PATH", true),
-        new("WPF", "WPF_APP_PATH", false),
-        new("WINFORMS", "WINFORMS_APP_PATH", false),
-        new("BLAZOR", "BLAZOR_APP_PATH", false),
-        new("HTML", "HTML_APP_PATH", false),
-        new("STRIDE", "STRIDE_APP_PATH", false)
+        new("MAUI", "APPIUM_APP_PATH"),
+        new("WPF", "WPF_APP_PATH"),
+        new("WINFORMS", "WINFORMS_APP_PATH"),
+        new("BLAZOR", "BLAZOR_APP_PATH"),
+        new("HTML", "HTML_APP_PATH"),
+        new("STRIDE", "STRIDE_APP_PATH")
     ];
 
     public static IReadOnlyList<BddTargetDescriptor> SupportedTargets => Targets;

@@ -288,6 +288,54 @@ public sealed class PresenterUserSettingsServiceTests
     }
 
     [Fact]
+    public void OtherMonitor_IsTheLargestWithoutTheBar()
+    {
+        var bar = new System.Drawing.Rectangle(0, 0, 1920, 1040);
+        var small = new System.Drawing.Rectangle(-1280, 0, 1280, 984);
+        var large = new System.Drawing.Rectangle(1920, 0, 2560, 1400);
+
+        Assert.Equal(large, PresenterLayout.OtherMonitor([bar, small, large], bar));
+        Assert.Null(PresenterLayout.OtherMonitor([bar], bar));
+    }
+
+    /// <summary>The App window and When a run ends settings are remembered; the names map both ways.</summary>
+    [Fact]
+    public void PresenterShell_RemembersTheAppWindowAndRunEnd()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "BrinellPresenterStartup", Guid.NewGuid().ToString("N"));
+        var workspace = Path.Combine(root, "Workspace");
+        Directory.CreateDirectory(workspace);
+        File.WriteAllText(Path.Combine(workspace, "uat.config.md"), "# Workspace");
+
+        try
+        {
+            var settingsService = new PresenterUserSettingsService(Path.Combine(root, "settings.json"));
+            settingsService.Save(new PresenterUserSettings { LastOpenedFolder = workspace });
+            var viewModel = new PresenterShellViewModel(
+                new FakeWorkspaceService(workspace),
+                new FakeExecutionService(),
+                new FakeFolderPickerService(),
+                settingsService);
+
+            Assert.Equal("Beside the bar", viewModel.AppWindowChoice);
+            Assert.Equal("Close the app", viewModel.RunEndChoice);
+
+            viewModel.AppWindowChoice = "Maximized, other monitor";
+            viewModel.RunEndChoice = "Keep it open";
+
+            var saved = settingsService.Load();
+            Assert.Equal(PresenterAppWindow.MaximizedOtherMonitor, saved.AppWindow);
+            Assert.Equal(PresenterRunEnd.KeepOpen, saved.RunEnd);
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+            {
+                Directory.Delete(root, recursive: true);
+            }
+        }
+    }
+    [Fact]
     public void Layout_PutsTheBarOnItsSide_AndTheAppBesideIt()
     {
         var work = new System.Drawing.Rectangle(0, 0, 1920, 1040);
@@ -307,9 +355,19 @@ public sealed class PresenterUserSettingsServiceTests
 
         public void Dock(PresenterDock dock) => Docks.Add(dock);
 
+        public System.Drawing.Rectangle? TargetBounds(PresenterAppWindow mode, PresenterDock dock) => null;
+
         public object Snapshot() => new();
 
-        public string? PlaceApp(object before, PresenterDock dock) => null;
+        public string? PlaceApp(object before, PresenterDock dock, PresenterAppWindow mode) => null;
+
+        public void ReclaimFocus()
+        {
+        }
+
+        public void SetBarTopmost(bool topmost)
+        {
+        }
     }
 
     private sealed class FakeFolderPickerService : IFolderPickerService

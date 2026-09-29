@@ -4,15 +4,17 @@ using System.Runtime.InteropServices;
 namespace Brinell.Presenter.Services;
 
 /// <summary>
-/// Docks the Presenter window, and places the app under test beside it by its top-level window:
-/// the one way that works for every target, since a fixture starts its app (or its browser) in a
-/// process of its own. The MAUI driver can also place its app itself (<c>BRINELL_AUT_PLACE</c>).
+/// Docks the Presenter window, and shows the app under test by its top-level window: the one way
+/// that works for every target, since a fixture starts its app (or its browser) in a process of
+/// its own. The launchers only leave the window shown (<c>BRINELL_AUT_WINDOW=shown</c>).
 /// </summary>
 /// <param name="window">The Presenter's window, once it exists.</param>
 public sealed class PresenterWindowService(Func<Window?> window) : IPresenterWindowService
 {
     private const int MinimumWidth = 200;
     private const int MinimumHeight = 150;
+
+    private int _appProcess;
 
     /// <inheritdoc />
     public void Dock(PresenterDock dock)
@@ -30,10 +32,31 @@ public sealed class PresenterWindowService(Func<Window?> window) : IPresenterWin
     }
 
     /// <inheritdoc />
+    public Rectangle? TargetBounds(PresenterAppWindow mode, PresenterDock dock)
+    {
+#if WINDOWS
+        if (Handle() is not { } own || own == IntPtr.Zero || WorkArea(own) is not { } workArea)
+        {
+            return null;
+        }
+
+        return mode switch
+        {
+            PresenterAppWindow.BesideBar => PresenterLayout.App(workArea, Bounds(own), dock),
+            PresenterAppWindow.Maximized => workArea,
+            PresenterAppWindow.MaximizedOtherMonitor => PresenterLayout.OtherMonitor(WorkAreas(), workArea) ?? PresenterLayout.App(workArea, Bounds(own), dock),
+            _ => null,
+        };
+#else
+        return null;
+#endif
+    }
+
+    /// <inheritdoc />
     public object Snapshot() => new HashSet<IntPtr>(TopLevelWindows().Select(entry => entry.Handle));
 
     /// <inheritdoc />
-    public string? PlaceApp(object before, PresenterDock dock)
+    public string? PlaceApp(object before, PresenterDock dock, PresenterAppWindow mode)
     {
 #if WINDOWS
         if (Handle() is not { } own || own == IntPtr.Zero || WorkArea(own) is not { } workArea)
@@ -53,25 +76,75 @@ public sealed class PresenterWindowService(Func<Window?> window) : IPresenterWin
             return null;
         }
 
-        GetWindowRect(own, out var ownRect);
-        var bar = Rectangle.FromLTRB(ownRect.Left, ownRect.Top, ownRect.Right, ownRect.Bottom);
-        var target = PresenterLayout.App(workArea, bar, dock);
-        if (IsZoomed(candidate.Handle))
+        _appProcess = candidate.ProcessId;
+        var bar = Bounds(own);
+        var other = mode == PresenterAppWindow.MaximizedOtherMonitor ? PresenterLayout.OtherMonitor(WorkAreas(), workArea) : null;
+        if (mode == PresenterAppWindow.MaximizedOtherMonitor && other is null)
         {
-            ShowWindow(candidate.Handle, SwRestore);
+            // One monitor: beside the bar instead.
+            mode = PresenterAppWindow.BesideBar;
         }
 
-        var moved = SetWindowPos(candidate.Handle, IntPtr.Zero, target.X, target.Y, target.Width, target.Height, SwpNoZOrder | SwpNoActivate);
+        bool moved;
+        Rectangle? target = null;
+        switch (mode)
+        {
+            case PresenterAppWindow.Background:
+                moved = SetWindowPos(candidate.Handle, HwndBottom, 0, 0, 0, 0, SwpNoMove | SwpNoSize | SwpNoActivate);
+                break;
+            case PresenterAppWindow.WhereItOpens:
+                moved = SetWindowPos(candidate.Handle, HwndTop, 0, 0, 0, 0, SwpNoMove | SwpNoSize | SwpNoActivate);
+                break;
+            case PresenterAppWindow.Maximized:
+            case PresenterAppWindow.MaximizedOtherMonitor:
+                // Filled rather than maximized: a real maximize activates the window, and the keys
+                // would leave Presenter.
+                target = other ?? workArea;
+                Restore(candidate.Handle);
+                moved = SetWindowPos(candidate.Handle, HwndTop, target.Value.X, target.Value.Y, target.Value.Width, target.Value.Height, SwpNoActivate);
+                break;
+            default:
+                target = PresenterLayout.App(workArea, bar, dock);
+                Restore(candidate.Handle);
+                moved = SetWindowPos(candidate.Handle, HwndTop, target.Value.X, target.Value.Y, target.Value.Width, target.Value.Height, SwpNoActivate);
+                break;
+        }
+
+        ReclaimFocus();
         return string.Join(
             Environment.NewLine,
             "AUT placement:",
-            $"Placement: {(dock == PresenterDock.Left ? "Right" : "Left")} of the Presenter",
+            $"Placement: {mode}",
             $"Presenter bounds: {Format(bar)}",
-            $"Requested AUT bounds: {Format(target)}",
+            $"Requested AUT bounds: {(target is { } requested ? Format(requested) : "where it opened")}",
             $"Result: {(moved ? "moved" : "failed")}",
             $"Window: {candidate.Title}");
 #else
         return "AUT placement:" + Environment.NewLine + "Result: not supported";
+#endif
+    }
+
+    /// <inheritdoc />
+    public void ReclaimFocus()
+    {
+#if WINDOWS
+        // Only from the app it showed: a person who went to another window keeps it.
+        if (Handle() is { } own && own != IntPtr.Zero && _appProcess != 0
+            && GetWindowThreadProcessId(GetForegroundWindow(), out var foreground) != 0 && foreground == _appProcess)
+        {
+            SetForegroundWindow(own);
+        }
+#endif
+    }
+
+    /// <inheritdoc />
+    public void SetBarTopmost(bool topmost)
+    {
+#if WINDOWS
+        if (Handle() is { } own && own != IntPtr.Zero)
+        {
+            SetWindowPos(own, topmost ? HwndTopmost : HwndNoTopmost, 0, 0, 0, 0, SwpNoMove | SwpNoSize | SwpNoActivate);
+        }
 #endif
     }
 
@@ -80,10 +153,59 @@ public sealed class PresenterWindowService(Func<Window?> window) : IPresenterWin
 
 #if WINDOWS
     private const int SwRestore = 9;
+    private const uint SwpNoSize = 0x0001;
+    private const uint SwpNoMove = 0x0002;
+    private static readonly IntPtr HwndTop = IntPtr.Zero;
+    private static readonly IntPtr HwndBottom = new(1);
+    private static readonly IntPtr HwndTopmost = new(-1);
+    private static readonly IntPtr HwndNoTopmost = new(-2);
     private const uint SwpNoZOrder = 0x0004;
     private const uint SwpNoActivate = 0x0010;
     private const uint GwOwner = 4;
     private const uint MonitorDefaultToNearest = 2;
+
+    private static Rectangle Bounds(IntPtr handle)
+    {
+        GetWindowRect(handle, out var rect);
+        return Rectangle.FromLTRB(rect.Left, rect.Top, rect.Right, rect.Bottom);
+    }
+
+    private static void Restore(IntPtr handle)
+    {
+        if (IsZoomed(handle))
+        {
+            ShowWindow(handle, SwRestore);
+        }
+    }
+
+    private static List<Rectangle> WorkAreas()
+    {
+        List<Rectangle> areas = [];
+        EnumDisplayMonitors(IntPtr.Zero, IntPtr.Zero, (monitor, _, _, _) =>
+        {
+            var info = new MonitorInfo { Size = Marshal.SizeOf<MonitorInfo>() };
+            if (GetMonitorInfo(monitor, ref info))
+            {
+                areas.Add(Rectangle.FromLTRB(info.WorkArea.Left, info.WorkArea.Top, info.WorkArea.Right, info.WorkArea.Bottom));
+            }
+
+            return true;
+        }, IntPtr.Zero);
+        return areas;
+    }
+
+    private delegate bool MonitorEnumProc(IntPtr monitor, IntPtr hdc, IntPtr rect, IntPtr data);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool EnumDisplayMonitors(IntPtr hdc, IntPtr clip, MonitorEnumProc callback, IntPtr data);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetForegroundWindow();
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool SetForegroundWindow(IntPtr handle);
 
     private IntPtr? Handle()
         => window()?.Handler?.PlatformView is Microsoft.UI.Xaml.Window platform

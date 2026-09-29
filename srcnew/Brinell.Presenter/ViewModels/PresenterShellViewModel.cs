@@ -68,6 +68,9 @@ public sealed class PresenterShellViewModel : ViewModelBase, IStepRowHost
     private bool _isPresentMode;
     private bool _needsBuild;
     private object? _placementSnapshot;
+    private PresenterAppWindow _appWindow;
+    private PresenterRunEnd _runEnd;
+    private PresenterUatExecutionSession? _endedSession;
     private bool _placedThisRun;
 
     private const int MaxExecutionDelayMilliseconds = 99999;
@@ -136,6 +139,8 @@ public sealed class PresenterShellViewModel : ViewModelBase, IStepRowHost
         var settings = _settingsService.Load();
         _theme = settings.Theme;
         _dock = settings.Dock;
+        _appWindow = settings.AppWindow;
+        _runEnd = settings.RunEnd;
         _speeds = settings.Speeds ?? new PresenterSpeeds();
         _speed = settings.Speed;
         ExecutionDelayMilliseconds = _speeds.Of(_speed);
@@ -288,26 +293,131 @@ public sealed class PresenterShellViewModel : ViewModelBase, IStepRowHost
         }
     }
 
-    // Before a run starts its app: the windows now, to find the app's once it opens.
+    /// <summary>The App window choices, as the Settings page shows them.</summary>
+    public IReadOnlyList<string> AppWindowChoices { get; } = [.. AppWindowNames.Values];
+
+    private static IReadOnlyDictionary<PresenterAppWindow, string> AppWindowNames { get; } = new Dictionary<PresenterAppWindow, string>
+    {
+        [PresenterAppWindow.BesideBar] = "Beside the bar",
+        [PresenterAppWindow.MaximizedOtherMonitor] = "Maximized, other monitor",
+        [PresenterAppWindow.Maximized] = "Maximized",
+        [PresenterAppWindow.WhereItOpens] = "Where it opens",
+        [PresenterAppWindow.Background] = "Background",
+    };
+
+    /// <summary>How the app under test's window is shown during a run.</summary>
+    public PresenterAppWindow AppWindow
+    {
+        get => _appWindow;
+        set
+        {
+            if (SetProperty(ref _appWindow, value))
+            {
+                OnPropertyChanged(nameof(AppWindowChoice));
+                SaveWindowSettings();
+            }
+        }
+    }
+
+    /// <summary><see cref="AppWindow"/> by its name on the Settings page.</summary>
+    public string AppWindowChoice
+    {
+        get => AppWindowNames[AppWindow];
+        set => AppWindow = AppWindowNames.FirstOrDefault(entry => entry.Value == value, new(AppWindow, value)).Key;
+    }
+
+    /// <summary>The When a run ends choices, as the Settings page shows them.</summary>
+    public IReadOnlyList<string> RunEndChoices { get; } = ["Close the app", "Keep it open"];
+
+    /// <summary>What happens to the app when a run ends.</summary>
+    public PresenterRunEnd RunEnd
+    {
+        get => _runEnd;
+        set
+        {
+            if (SetProperty(ref _runEnd, value))
+            {
+                OnPropertyChanged(nameof(RunEndChoice));
+                SaveWindowSettings();
+                if (value == PresenterRunEnd.CloseApp)
+                {
+                    ReleaseEndedSession();
+                }
+            }
+        }
+    }
+
+    /// <summary><see cref="RunEnd"/> by its name on the Settings page.</summary>
+    public string RunEndChoice
+    {
+        get => RunEndChoices[(int)RunEnd];
+        set => RunEnd = value == RunEndChoices[1] ? PresenterRunEnd.KeepOpen : PresenterRunEnd.CloseApp;
+    }
+
+    /// <summary>Closes what is open: the run, and an app kept open after one. Called when Presenter closes.</summary>
+    public void Shutdown()
+    {
+        StopActiveSession();
+        ReleaseEndedSession();
+    }
+
+    private void SaveWindowSettings()
+    {
+        try
+        {
+            var settings = _settingsService.Load();
+            settings.AppWindow = AppWindow;
+            settings.RunEnd = RunEnd;
+            _settingsService.Save(settings);
+        }
+        catch (Exception ex)
+        {
+            DiagnosticsText = $"Could not save the app window settings: {ex.Message}";
+        }
+    }
+
+    // Before a run starts its app: an app kept open from the last run is closed, the launcher is
+    // told how to show the app (BRINELL_AUT_WINDOW, and where: BRINELL_AUT_BOUNDS), and the
+    // windows now are noted, to find the app's once it opens.
     private void SnapshotWindows()
     {
-        _executionService.Dock = Dock;
+        ReleaseEndedSession();
+        Dictionary<string, string> environment = new()
+        {
+            [Brinell.Core.Diagnostics.AutWindow.Variable] = AppWindow == PresenterAppWindow.Background ? "background" : "shown",
+        };
+        if (_windowService?.TargetBounds(AppWindow, Dock) is { } bounds)
+        {
+            environment[Brinell.Core.Diagnostics.AutWindow.BoundsVariable] = FormattableString.Invariant($"{bounds.X},{bounds.Y},{bounds.Width},{bounds.Height}");
+        }
+
+        _executionService.WindowEnvironment = environment;
+        _windowService?.SetBarTopmost(AppWindow == PresenterAppWindow.Maximized);
         _placedThisRun = false;
         _placementSnapshot = _windowService?.Snapshot();
     }
 
-    // Places the app's window beside the bar once it has opened; tried again after a step, for an
-    // app (a browser) that opens its window late.
+    // Shows the app's window as the App window setting says once it has opened; tried again after
+    // a step, for an app (a browser) that opens its window late. Presenter keeps the keys.
     private void TryPlaceApp()
     {
-        if (_placementSnapshot is null || _windowService?.PlaceApp(_placementSnapshot, Dock) is not { } report)
+        if (_placementSnapshot is null || _windowService?.PlaceApp(_placementSnapshot, Dock, AppWindow) is not { } report)
         {
+            _windowService?.ReclaimFocus();
             return;
         }
 
         _placementSnapshot = null;
         _placedThisRun = true;
         AutPlacementText = report;
+    }
+
+    // Keep it open: the ended run's session (its fixture and app) waits here until the next run,
+    // Stop with no run on, or Presenter closing.
+    private void ReleaseEndedSession()
+    {
+        _endedSession?.Dispose();
+        _endedSession = null;
     }
 
     public ICommand ToggleScenariosCommand { get; }
@@ -1014,6 +1124,11 @@ public sealed class PresenterShellViewModel : ViewModelBase, IStepRowHost
         var result = _workspaceService.LoadFolder(folderPath);
         var sameWorkspace = WorkspacePath is not null && string.Equals(
             Path.GetFullPath(WorkspacePath), Path.GetFullPath(result.FolderPath), StringComparison.OrdinalIgnoreCase);
+        if (!sameWorkspace)
+        {
+            ReleaseEndedSession();
+        }
+
         _catalogs = result.Catalogs;
         NeedsBuild = result.Config.ConfigExists && result.Catalogs is null;
         WorkspacePath = result.FolderPath;
@@ -1205,6 +1320,7 @@ public sealed class PresenterShellViewModel : ViewModelBase, IStepRowHost
         // A run maps the Pages assembly; the session's load context releases it on dispose,
         // and building over a mapped file would fail.
         StopActiveSession();
+        ReleaseEndedSession();
 
         _isBuilding = true;
         (BuildCommand as AsyncRelayCommand)?.NotifyCanExecuteChanged();
@@ -1477,10 +1593,20 @@ public sealed class PresenterShellViewModel : ViewModelBase, IStepRowHost
         RefreshSelectedNodeDetails();
     }
 
+    // Stop ends the run; with no run on, it closes an app kept open after one.
     private void Stop()
     {
+        if (_activeSession is null)
+        {
+            var closed = _endedSession is not null;
+            ReleaseEndedSession();
+            StatusSummary = closed ? "Closed the app" : "Stopped";
+            RaiseStepping();
+            return;
+        }
+
         _executionCancellation?.Cancel();
-        StopActiveSession();
+        FinishActiveSession();
         StatusSummary = "Stopped";
         RaiseStepping();
     }
@@ -2380,16 +2506,28 @@ public sealed class PresenterShellViewModel : ViewModelBase, IStepRowHost
         _activeSession?.Dispose();
         _activeSession = null;
         _activeScenario = null;
+        _windowService?.SetBarTopmost(false);
     }
 
+    // A run ended (passed, failed or stopped): its app is closed, or kept open as the setting says.
     private void FinishActiveSession()
     {
         CurrentRow = null;
         _executionCancellation?.Dispose();
         _executionCancellation = null;
-        _activeSession?.Dispose();
+        if (RunEnd == PresenterRunEnd.KeepOpen && _activeSession is not null)
+        {
+            ReleaseEndedSession();
+            _endedSession = _activeSession;
+        }
+        else
+        {
+            _activeSession?.Dispose();
+        }
+
         _activeSession = null;
         _activeScenario = null;
+        _windowService?.SetBarTopmost(false);
     }
 
     private static string StepStatusText(BddStepResultStatus status)

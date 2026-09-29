@@ -89,7 +89,8 @@ buttons:
 
 **Reload** (both modes) reloads and checks the workspace. At the top right, **Dock** moves the bar
 to the other side of the screen (remembered), and **Settings** opens the Settings page (the same
-button closes it): the pause between steps of each speed, and the theme. The run toolbar is under the
+button closes it): the pause between steps of each speed, the App window, When a run ends, and the
+theme. The run toolbar is under the
 steps: **Run**, **Next**, **Into**, **Out**, **Stop**, **Restart**, and **Speed**.
 
 | Tab | Shows |
@@ -171,12 +172,27 @@ The target comes from the fixture's base class.
 
 Presenter exports `AppPath`, when the config sets one, to the variable for the target.
 
-Presenter places the app under test beside the bar, on the bar's monitor, for every target: it
-notes the top-level windows before a run starts, and once the fixture has opened its app (a MAUI,
-WPF or WinForms window, or a browser) it moves the new window into the rest of the work area. It
-tries again after the first step, for an app that opens its window late. With the bar docked left,
-the MAUI driver also places its app itself as it opens (`BRINELL_AUT_PLACE_RIGHT`). A placement
-that fails does not fail the run; Diagnostics shows the result.
+Presenter shows the app under test as the **App window** setting says, for every target (a MAUI, WPF
+or WinForms window, or a browser):
+
+| App window | The app |
+| --- | --- |
+| Beside the bar (default) | in front of other windows, in the rest of the bar's monitor |
+| Maximized, other monitor | filling the largest monitor without the bar; beside the bar when there is one monitor |
+| Maximized | filling the bar's monitor, with the bar on top while a run is on |
+| Where it opens | in front of other windows, not moved |
+| Background | behind everything, as in a test run |
+
+It tells the launcher to leave the window shown (`BRINELL_AUT_WINDOW=shown`: the MAUI driver no longer
+sends it behind, and a browser is not headless and opens at `BRINELL_AUT_BOUNDS`). It notes the
+top-level windows before a run starts, and once the app's window opens it moves it, without taking
+the focus; it tries again after the first step, for an app that opens late. Presenter keeps the keys:
+when the app it showed takes the focus (WPF and WinForms do, for real input), Presenter takes it
+back after the step. A placement that fails does not fail the run; Diagnostics shows the result.
+
+**When a run ends**: **Close the app** (default) closes it when the run passes, fails or is stopped;
+**Keep it open** leaves it where it is until the next run starts, **Stop** is pressed with no run on
+("Closed the app"), another workspace is opened or built, or Presenter closes.
 
 ## User Settings
 

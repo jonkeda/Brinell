@@ -4,10 +4,13 @@ namespace Brinell.Presenter.Services;
 
 public interface IBddExecutionService
 {
-    /// <summary>The side the Presenter bar is on, for a driver that places its app itself.</summary>
-    PresenterDock Dock
+    /// <summary>
+    /// Variables set while a session's app is started: how its window is shown
+    /// (<c>BRINELL_AUT_WINDOW</c>) and where (<c>BRINELL_AUT_BOUNDS</c>).
+    /// </summary>
+    IReadOnlyDictionary<string, string> WindowEnvironment
     {
-        get => PresenterDock.Left;
+        get => new Dictionary<string, string>();
         set { }
     }
 
