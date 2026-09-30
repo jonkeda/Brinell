@@ -281,5 +281,5 @@ What they found, fixed in this step:
 
 Still rough: on MudBlazor's docs 254 of 364 suggestions have only a position (the drawer's items
 and icon buttons have no test id, and the same text twice); the pattern list of a docs site is
-dominated by its navigation. A real app with test ids does far better (the Blazor sample: 0 of 62).
+dominated by its navigation. A real app with test ids does far better (the Blazor sample's `/userform`: 0 of 45 by position).
 
