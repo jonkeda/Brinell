@@ -37,6 +37,10 @@
     <ProjectReference Include="..\Brinell.Maui\Brinell.Maui.csproj" />
     <ProjectReference Include="..\Brinell.Maui.FlaUI\Brinell.Maui.FlaUI.csproj" />
     <ProjectReference Include="..\Brinell.Uat\Brinell.Uat.csproj" />
+    <!-- Presenter is an app under test too (Brinell.Presenter.Bdd.Tests): the automation handlers
+         that give its layouts an AutomationId on Windows, and the gesture bridge. The one
+         reference from srcnew into samples: AppSupport is what an app under test adds. -->
+    <ProjectReference Include="..\..\samples\Brinell.Maui.AppSupport\Brinell.Maui.AppSupport.csproj" />
     <!-- Record: the window recorder and Windows' voices (the narrator). -->
     <ProjectReference Include="..\Brinell.Narrator.Windows\Brinell.Narrator.Windows.csproj" />
     <!-- The suite and the file check the IDEs use, so Presenter says what the gate says (AD-022). -->
