@@ -23,7 +23,7 @@ From the review: a **checkbox before each scene**; the checked scenes are the on
 | # | Decision | Review |
 | --- | --- | --- |
 | D1 | **A third mode**, beside Present mode and Workspace mode: a **Narrator mode** button with a video icon in the header, next to the two there. It swaps the page's content as those do; the window, dock side and theme stay. | changed: was a page of its own |
-| D2 | **A `NarratorViewModel` of its own**, held by the shell. `PresenterShellViewModel` is 2,700 lines: the run engine it holds (session, step, pause, stop, speed) moves into a `PresenterRunController` that Present mode and Narrator mode both use. | agreed |
+| D2 | **A `NarratorViewModel` of its own**, held by the shell, for the script, the tree and the recording. **The run engine stays in the shell**, in a file of its own (`PresenterShellViewModel.Run.cs`) with one entry both modes call, `RunScenariosAsync`. It was to be a separate `PresenterRunController`; the engine is bound to what the page shows (the step rows, their statuses, the preview, the timings), so a separate class would re-plumb every binding for no change in behaviour. | agreed; built as a partial, 2026-09-30 |
 | D3 | **Config by walking up**: `BddVideoScriptCheck.FindConfigDirectory` from the script's folder, the walk the gate and the IDEs use. The folder found is loaded as the workspace; no config found is an error in the mode, not a failed run. | agreed |
 | D4 | **The script is checked when it loads** (`BddVideoScriptCheck.Check`): a `VID0xx` error shows on its scene or step, and a scene with an error cannot be recorded. | agreed |
 | D5 | **Recorded per scene, stitched after.** Each scene is recorded on its own into the script's scenes folder, and **kept**. Redoing one scene replaces that scene only; **Stitch** joins the latest recording of every scene into the video. | changed: was one pass over the whole script |
@@ -92,7 +92,7 @@ redoes those. Out of date is decided by a hash stored with the scene's recording
 
 ### The run buttons (ask 5)
 
-Present mode's toolbar, driven by the shared `PresenterRunController` (D2):
+Present mode's toolbar, on the shell's run engine (D2):
 
 | Button | In Narrator mode |
 | --- | --- |
@@ -160,8 +160,8 @@ Known, not fixed: a session whose context cannot unload stays in memory until Pr
 
 | Step | What | Checked by |
 | --- | --- | --- |
-| 0 | The fixes above; the lock after a failed start | TOD.01.1 runs from Presenter; the suite rebuilds after a failed start |
-| 1 | `PresenterRunController` out of the shell ViewModel; Present mode unchanged | Presenter's UAT suite, identical |
+| 0 | The fixes above (**done**) | TOD.01.1 runs from Presenter, again and again; the suite rebuilds while Presenter is open |
+| 1 | The run engine in `PresenterShellViewModel.Run.cs`, with `RunScenariosAsync`; Present mode unchanged (**done**) | Presenter's test project, identical: 73 passed |
 | 2 | The Narrator mode button; open a script, walk up to the config; the tree with its lines and diagnostics | UAT: a script loads, its scenes and lines show; a bad address shows `VID0xx` |
 | 3 | Run and the step buttons over the checked scenes; a failure goes on (D6) | UAT: a rehearsal of two checked scenes passes both; an unchecked scene is skipped |
 | 4 | The engine: a kept scenes folder, the scene hash, recording states | Unit tests: a changed line makes its scene out of date, and only that one |
