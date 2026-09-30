@@ -1,6 +1,6 @@
 # The Scraper, next: Playwright in the extensions, a test plan, a help guide
 
-Status: **plan**, 2026-09-30. Nothing is built. Questions in section 5 wait for the owner.
+Status: **step 1 done**, 2026-09-30. Questions in section 5 wait for the owner.
 Follows [plan.md](plan.md), whose open items (section 13) this takes up: Q8, the IDE runs, and
 Pick.
 
@@ -76,7 +76,7 @@ One commit per step.
 
 | # | Step | Verify |
 | --- | --- | --- |
-| 1 | The manual test plan written (section 2) | a reviewer can follow it cold |
+| 1 | The manual test plan written (section 2) | **Done:** [manual-test-plan.md](manual-test-plan.md), each check marked O (owner, in the IDE), C (Claude, scripted) or both |
 | 2 | The help in the view and the guide's walkthrough and troubleshooting (section 3) | screenshots of the view's help in both themes; the walkthrough followed once from scratch |
 | 3 | Install browser: the view's button and `install_browser`, when Record finds no Chromium | the automated check above; the manual check in the test plan |
 | 4 | The manual test plan run in VS Code and Visual Studio | the results recorded in it |
