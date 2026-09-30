@@ -42,15 +42,16 @@ public sealed class RunnerSessionTests : IDisposable
     [Fact(Timeout = 120000)]
     public async Task ASession_RunsInAProcessOfItsOwn_WhichEndsWithIt()
     {
-        Config(nameof(UnloadProbeFixture));
+        Config(nameof(ProbeFixture));
         using var service = new BddExecutionService();
 
         var session = await service.CreateSessionAsync(_root, _feature, "The probe is ready", CancellationToken.None);
         var runner = Process.GetProcessById(session.RunnerProcessId);
         var step = await session.RunNextAsync(CancellationToken.None);
         session.Dispose();
-        await runner.WaitForExitAsync();
+        await service.EndRunnersAsync();
 
+        Assert.True(runner.HasExited, "No runner is left once EndRunnersAsync completes: the suite can be built.");
         Assert.NotEqual(Environment.ProcessId, runner.Id);
         Assert.Equal(BddStepResultStatus.Passed, step.Status);
         Assert.True(session.Passed);
@@ -59,7 +60,7 @@ public sealed class RunnerSessionTests : IDisposable
     [Fact(Timeout = 120000)]
     public async Task ARun_KeepsOneRunnerForItsScenarios_AndEndsItWhenTheRunEnds()
     {
-        Config(nameof(UnloadProbeFixture));
+        Config(nameof(ProbeFixture));
         using var service = new BddExecutionService();
         var run = service.BeginRun();
 
@@ -82,7 +83,7 @@ public sealed class RunnerSessionTests : IDisposable
     [Fact(Timeout = 120000)]
     public async Task ASession_HasItsRunnerPaceAndRecordTheScenario()
     {
-        Config(nameof(UnloadProbeFixture));
+        Config(nameof(ProbeFixture));
         using var service = new BddExecutionService();
         using var session = await service.CreateSessionAsync(_root, _feature, "The probe is ready", CancellationToken.None);
         List<string> said = [];
@@ -135,7 +136,7 @@ public sealed class RunnerSessionTests : IDisposable
 }
 
 /// <summary>A fixture with nothing to launch, so the test measures the runner and nothing else.</summary>
-public sealed class UnloadProbeFixture
+public sealed class ProbeFixture
 {
     /// <summary>The one phrase the probe scenario uses.</summary>
     [BddGiven("the probe is ready")]
@@ -145,7 +146,7 @@ public sealed class UnloadProbeFixture
     [BddGiven("the probe runs in its own output")]
     public void RunsInItsOutput()
         => Assert.Equal(
-            Path.GetDirectoryName(typeof(UnloadProbeFixture).Assembly.Location),
+            Path.GetDirectoryName(typeof(ProbeFixture).Assembly.Location),
             AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar));
 }
 

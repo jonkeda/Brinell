@@ -124,7 +124,7 @@ public sealed class TestCompositionCatalog
                     ResolvePageName(type, pageAttribute),
                     type,
                     pageAttribute?.Lifetime ?? ServiceLifetime.Scoped,
-                    AssemblyFile.PathOf(type.Assembly))
+                    type.Assembly.Location)
                 {
                     Namespace = Brinell.Core.Testing.BddNamespaceAttribute.Of(type),
                 });
@@ -137,7 +137,7 @@ public sealed class TestCompositionCatalog
                 services.Add(new TestServiceDescriptor(
                     type,
                     serviceAttribute?.Lifetime ?? ServiceLifetime.Scoped,
-                    AssemblyFile.PathOf(type.Assembly)));
+                    type.Assembly.Location));
             }
         }
 

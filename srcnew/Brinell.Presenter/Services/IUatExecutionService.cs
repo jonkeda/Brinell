@@ -26,6 +26,12 @@ public interface IBddExecutionService
     /// </summary>
     IDisposable BeginRun() => NoRun.Instance;
 
+    /// <summary>
+    /// Completes when no runner process of an ended session is left: the suite's files are free,
+    /// and it can be built.
+    /// </summary>
+    Task EndRunnersAsync() => Task.CompletedTask;
+
     private sealed class NoRun : IDisposable
     {
         public static readonly NoRun Instance = new();

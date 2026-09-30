@@ -1325,10 +1325,11 @@ public sealed partial class PresenterShellViewModel : ViewModelBase, IStepRowHos
             return;
         }
 
-        // A run maps the Pages assembly; the session's load context releases it on dispose,
-        // and building over a mapped file would fail.
+        // A run's runner process holds the suite's files until it has ended, and building over
+        // them would fail.
         StopActiveSession();
         ReleaseEndedSession();
+        await _executionService.EndRunnersAsync().ConfigureAwait(true);
 
         _isBuilding = true;
         (BuildCommand as AsyncRelayCommand)?.NotifyCanExecuteChanged();

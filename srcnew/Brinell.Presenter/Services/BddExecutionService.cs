@@ -11,6 +11,7 @@ public sealed class BddExecutionService : IBddExecutionService, IDisposable
 {
     private readonly object _lock = new();
     private readonly RunnerJob _job = new();
+    private readonly List<Task> _ending = [];
     private Idle? _idle;
     private int _runs;
 
@@ -71,6 +72,16 @@ public sealed class BddExecutionService : IBddExecutionService, IDisposable
         return new Run(this);
     }
 
+    /// <inheritdoc />
+    public Task EndRunnersAsync()
+    {
+        EndIdle();
+        lock (_lock)
+        {
+            return Task.WhenAll(_ending);
+        }
+    }
+
     /// <summary>Ends the runner that waits for a next session, and every runner when Presenter closes.</summary>
     public void Dispose()
     {
@@ -119,8 +130,15 @@ public sealed class BddExecutionService : IBddExecutionService, IDisposable
             }
         }
 
-        _ = EndAsync(replaced?.Runner, Task.CompletedTask);
-        _ = keep ? ObserveAsync(closing) : EndAsync(runner, closing);
+        End(replaced?.Runner, Task.CompletedTask);
+        if (keep)
+        {
+            _ = ObserveAsync(closing);
+        }
+        else
+        {
+            End(runner, closing);
+        }
     }
 
     private void EndRun()
@@ -146,16 +164,26 @@ public sealed class BddExecutionService : IBddExecutionService, IDisposable
             _idle = null;
         }
 
-        _ = EndAsync(idle?.Runner, Task.CompletedTask);
+        End(idle?.Runner, Task.CompletedTask);
     }
 
-    private static async Task EndAsync(BddRunnerClient? runner, Task closing)
+    private void End(BddRunnerClient? runner, Task closing)
     {
         if (runner is null)
         {
             return;
         }
 
+        var ending = EndAsync(runner, closing);
+        lock (_lock)
+        {
+            _ending.RemoveAll(task => task.IsCompleted);
+            _ending.Add(ending);
+        }
+    }
+
+    private static async Task EndAsync(BddRunnerClient runner, Task closing)
+    {
         await ObserveAsync(closing).ConfigureAwait(false);
         await runner.DisposeAsync().ConfigureAwait(false);
     }
