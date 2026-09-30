@@ -20,10 +20,10 @@
     <!-- Appium for MAUI -->
     <PackageVersion Include="Appium.WebDriver" Version="8.3.2" />
     <!-- MAUI app projects -->
-    <PackageVersion Include="Microsoft.Maui.Controls" Version="10.0.90" />
+    <PackageVersion Include="Microsoft.Maui.Controls" Version="10.0.60" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.9" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Debug" Version="10.0.9" />
-    <PackageVersion Include="CommunityToolkit.Maui" Version="15.0.1" />
+    <PackageVersion Include="CommunityToolkit.Maui" Version="14.0.1" />
     <PackageVersion Include="CommunityToolkit.Maui.MediaElement" Version="10.0.0" />
     <!-- Markdown for feature files (AD-023) -->
     <PackageVersion Include="Markdig" Version="1.3.2" />
