@@ -1,0 +1,117 @@
+using Brinell.Core.Scraping;
+using Brinell.Scraper.Html;
+
+namespace Brinell.Scraper.Tests.Html;
+
+public sealed class ControlAdvisorTests
+{
+    private static readonly string[] TestIds = ["data-testid", "data-test"];
+
+    private static ScrapeNode N(int n, int p, string type, string? text = null, string? name = null, params (string Key, string Value)[] attributes) => new()
+    {
+        Number = n,
+        Parent = p,
+        Type = type,
+        Text = text,
+        Name = name,
+        Attributes = attributes.ToDictionary(a => a.Key, a => a.Value),
+    };
+
+    private static ScrapeSnapshot Page(params ScrapeNode[] nodes) => new() { Platform = "html", Location = "https://x/", Nodes = nodes };
+
+    private static ControlSuggestion Of(ScrapeSnapshot page, int node, bool blazor = false) => ControlAdvisor.Suggest(page, page[node], TestIds, blazor);
+
+    [Fact]
+    public void A_test_id_is_the_first_choice_and_names_the_member()
+    {
+        var page = Page(N(1, 0, "body"), N(2, 1, "button", "Save", null, ("data-testid", "save-order"), ("id", "b1")));
+
+        var suggestion = Of(page, 2);
+
+        Assert.Equal(("ButtonControl", "Brinell.Html.Controls.Buttons"), (suggestion.Control, suggestion.Namespace));
+        Assert.Equal("Locator.ByDataTestId(\"save-order\")", suggestion.Locator);
+        Assert.Equal("SaveOrder", suggestion.Name);
+        Assert.True(suggestion.Stable);
+    }
+
+    [Fact]
+    public void Another_test_id_attribute_from_the_config_is_used_as_css()
+    {
+        var page = Page(N(1, 0, "body"), N(2, 1, "input", null, null, ("data-test", "username"), ("type", "text"), ("placeholder", "Enter your name")));
+
+        var suggestion = Of(page, 2);
+
+        Assert.Equal("TextInputControl", suggestion.Control);
+        Assert.Equal("Username", suggestion.Name);
+        Assert.Equal("Locator.ByCss(\"[data-test='username']\")", suggestion.Locator);
+    }
+
+    [Fact]
+    public void A_generated_id_is_passed_over_for_the_accessible_name()
+    {
+        var page = Page(N(1, 0, "body"), N(2, 1, "input", null, "Search", ("id", "react-12345"), ("type", "search")));
+
+        var suggestion = Of(page, 2);
+
+        Assert.Equal("Locator.ByCss(\"input[aria-label='Search']\")", suggestion.Locator);
+    }
+
+    [Fact]
+    public void A_test_id_that_repeats_is_not_unique_and_the_next_choice_is_taken()
+    {
+        var page = Page(N(1, 0, "body"),
+            N(2, 1, "a", "Home", null, ("data-testid", "nav"), ("href", "/")),
+            N(3, 1, "a", "Orders", null, ("data-testid", "nav"), ("href", "/orders")));
+
+        var suggestion = Of(page, 3);
+
+        Assert.Equal("LinkControl", suggestion.Control);
+        Assert.Equal("Locator.ByLinkText(\"Orders\")", suggestion.Locator);
+    }
+
+    [Fact]
+    public void With_nothing_stable_the_position_is_given_and_said_to_be_unstable()
+    {
+        var page = Page(N(1, 0, "body"), N(2, 1, "div"), N(3, 2, "button", "Go"), N(4, 2, "button", "Go"));
+
+        var suggestion = Of(page, 4);
+
+        Assert.False(suggestion.Stable);
+        Assert.Equal("Locator.ByCss(\"div > button:nth-of-type(2)\")", suggestion.Locator);
+        Assert.Contains("test id", suggestion.Why);
+    }
+
+    [Fact]
+    public void Uniqueness_is_counted_per_frame_document()
+    {
+        var page = Page(N(1, 0, "body"),
+            N(2, 1, "button", "Pay", null, ("data-testid", "pay")),
+            N(3, 1, "iframe") with { Frame = "https://pay/" },
+            N(4, 3, "html"),
+            N(5, 4, "button", "Pay", null, ("data-testid", "pay")));
+
+        Assert.Equal("Locator.ByDataTestId(\"pay\")", Of(page, 5).Locator);
+        Assert.Equal("FrameScope", Of(page, 3).Control);
+    }
+
+    [Fact]
+    public void A_blazor_project_gets_the_blazor_controls_where_they_exist()
+    {
+        var page = Page(N(1, 0, "body"), N(2, 1, "input", null, null, ("type", "date"), ("id", "due")), N(3, 1, "h1", "Orders"));
+
+        Assert.Equal(("DateInputControl", "Brinell.Blazor.Controls"), (Of(page, 2, blazor: true).Control, Of(page, 2, blazor: true).Namespace));
+        Assert.Equal(("LabelControl", "Brinell.Html.Controls.Display"), (Of(page, 3, blazor: true).Control, Of(page, 3, blazor: true).Namespace));
+    }
+
+    [Fact]
+    public void A_page_suggests_what_is_acted_on_read_or_marked_and_leaves_wrappers_out()
+    {
+        var page = Page(N(1, 0, "body"), N(2, 1, "div"), N(3, 2, "h1", "Orders"), N(4, 2, "p", "Some text"),
+            N(5, 2, "button", "New"), N(6, 2, "span", "3", null, ("data-testid", "count")),
+            N(7, 2, "select", null, null, ("data-testid", "country")), N(8, 7, "option", "NL", null, ("data-testid", "nl")));
+
+        var suggestions = ControlAdvisor.Suggest(page, TestIds, blazor: false);
+
+        Assert.Equal([3, 5, 6, 7], suggestions.Select(s => s.Node));
+    }
+}

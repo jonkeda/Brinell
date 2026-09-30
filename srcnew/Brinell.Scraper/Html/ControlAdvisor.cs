@@ -1,0 +1,179 @@
+using System.Text.RegularExpressions;
+using Brinell.Core.Scraping;
+
+namespace Brinell.Scraper.Html;
+
+/// <summary>
+/// For a recorded Html node: the Brinell control that fits it and the locator to find it by, in the
+/// preference order of the scrape-pages skill (a test id, the accessible name or text, a stable id, a
+/// stable class; a position last). A suggestion, not a decision: the agent and the user pick.
+/// </summary>
+public static partial class ControlAdvisor
+{
+    private static readonly HashSet<string> Headings = new(StringComparer.Ordinal) { "h1", "h2", "h3", "h4", "h5", "h6" };
+
+    /// <summary>The nodes a page object would name: what is acted on, read, or a frame, with their suggestions.</summary>
+    /// <param name="snapshot">The capture.</param>
+    /// <param name="testIds">The test-id attributes, preferred first (the config's).</param>
+    /// <param name="blazor">Whether the app is Blazor: the <c>Brinell.Blazor</c> controls are preferred.</param>
+    /// <param name="root">Only this node's subtree, or 0 for the page.</param>
+    public static IReadOnlyList<ControlSuggestion> Suggest(ScrapeSnapshot snapshot, IReadOnlyList<string> testIds, bool blazor, int root = 0)
+    {
+        var within = root == 0 ? null : new HashSet<int>(Subtree(snapshot, root));
+        var documents = Documents(snapshot);
+        return snapshot.Nodes
+            .Where(n => within is null || within.Contains(n.Number))
+            // An option is its select's: SelectControl picks it by text or value.
+            .Where(n => n.Type != "option" && ControlOf(snapshot, n, blazor) is not null && (IsActedOn(n) || HasTestId(n, testIds) || Headings.Contains(n.Type) || n.Frame is not null))
+            .Select(n => Suggest(snapshot, n, testIds, blazor, documents))
+            .ToArray();
+    }
+
+    /// <summary>The suggestion for one node.</summary>
+    public static ControlSuggestion Suggest(ScrapeSnapshot snapshot, ScrapeNode node, IReadOnlyList<string> testIds, bool blazor)
+        => Suggest(snapshot, node, testIds, blazor, Documents(snapshot));
+
+    private static ControlSuggestion Suggest(ScrapeSnapshot snapshot, ScrapeNode node, IReadOnlyList<string> testIds, bool blazor, int[] documents)
+    {
+        var (control, ns) = ControlOf(snapshot, node, blazor) ?? ("LabelControl", "Brinell.Html.Controls.Display");
+        var (locator, stable, why) = LocatorOf(snapshot, node, testIds, documents);
+        return new ControlSuggestion(node.Number, Name(node, testIds), control, ns, locator, stable, why);
+    }
+
+    private static (string Control, string Namespace)? ControlOf(ScrapeSnapshot snapshot, ScrapeNode node, bool blazor)
+    {
+        (string, string)? Html(string control, string ns) => blazor && BlazorControls.Contains(control) ? (control, "Brinell.Blazor.Controls") : (control, "Brinell.Html.Controls." + ns);
+        var type = node.Attribute("type")?.ToLowerInvariant();
+        return node.Type switch
+        {
+            "button" => Html("ButtonControl", "Buttons"),
+            "input" when type is "button" or "submit" or "reset" => Html("ButtonControl", "Buttons"),
+            "input" when type is "checkbox" => Html("CheckBoxControl", "Toggle"),
+            "input" when type is "radio" => Html("RadioButtonControl", "Toggle"),
+            "input" when type is "date" or "datetime-local" => Html("DateInputControl", "DateTime"),
+            "input" when type is "time" => Html("TimeInputControl", "DateTime"),
+            "input" when type is "range" => Html("RangeInputControl", "Range"),
+            "input" when type is "hidden" or "file" => null,
+            "input" => Html("TextInputControl", "Text"),
+            "textarea" => Html("TextAreaControl", "Text"),
+            "select" => Html("SelectControl", "Selection"),
+            "a" when node.Attribute("href") is not null => Html("LinkControl", "Buttons"),
+            "table" => Html("TableControl", "Collection"),
+            "ul" or "ol" when snapshot.ChildrenOf(node.Number).Count() >= 2 => Html("ListControl", "Collection"),
+            "progress" => Html("ProgressControl", "Display"),
+            "iframe" or "frame" => ("FrameScope", "Brinell.Html.Controls.Container"),
+            "img" when blazor => ("ImageControl", "Brinell.Blazor.Controls"),
+            "video" when blazor => ("VideoControl", "Brinell.Blazor.Controls"),
+            "audio" when blazor => ("AudioControl", "Brinell.Blazor.Controls"),
+            _ when node.Role is "tablist" => Html("TabContainerControl", "Container"),
+            _ when node.Role is "button" => Html("ButtonControl", "Buttons"),
+            _ when node.Role is "checkbox" or "switch" => Html("CheckBoxControl", "Toggle"),
+            _ when node.Text is { Length: > 0 } || Headings.Contains(node.Type) => Html("LabelControl", "Display"),
+            _ => null,
+        };
+    }
+
+    // The Brinell.Blazor controls: a Blazor project uses these where they exist (they know Blazor's binding).
+    private static readonly HashSet<string> BlazorControls = new(StringComparer.Ordinal)
+    {
+        "ButtonControl", "CheckBoxControl", "DateInputControl", "LinkControl", "ListControl", "ProgressControl", "RadioButtonControl",
+        "RangeInputControl", "SelectControl", "TabContainerControl", "TableControl", "TextAreaControl", "TextInputControl", "TimeInputControl",
+    };
+
+    private static (string Locator, bool Stable, string Why) LocatorOf(ScrapeSnapshot snapshot, ScrapeNode node, IReadOnlyList<string> testIds, int[] documents)
+    {
+        var document = documents[node.Number];
+        bool Unique(Func<ScrapeNode, bool> match) => snapshot.Nodes.Count(n => documents[n.Number] == document && match(n)) == 1;
+
+        foreach (var attribute in testIds)
+        {
+            if (node.Attribute(attribute) is { Length: > 0 } id && Unique(n => n.Attribute(attribute) == id))
+                return (attribute == "data-testid" ? $"Locator.ByDataTestId({Quote(id)})" : $"Locator.ByCss({Quote($"[{attribute}='{id}']")})", true, $"its {attribute}");
+        }
+        if (node.Attribute("id") is { Length: > 0 } elementId && IsStableId(elementId) && Unique(n => n.Attribute("id") == elementId))
+            return ($"Locator.ById({Quote(elementId)})", true, "its id");
+        if (node.Name is { Length: > 0 } name && Unique(n => n.Name == name && n.Type == node.Type))
+            return ($"Locator.ByCss({Quote($"{node.Type}[aria-label='{name}']")})", true, "its accessible name");
+        if (node.Attribute("name") is { Length: > 0 } formName && Unique(n => n.Attribute("name") == formName))
+            return ($"Locator.ByName({Quote(formName)})", true, "its name attribute");
+        if (node.Type == "a" && node.Text is { Length: > 0 } linkText && Unique(n => n.Type == "a" && n.Text == linkText))
+            return ($"Locator.ByLinkText({Quote(linkText)})", true, "its link text");
+        if (node.Type is "button" && node.Text is { Length: > 0 } buttonText && Unique(n => n.Type == "button" && n.Text == buttonText))
+            return ($"Locator.ByCss({Quote($"button:has-text('{buttonText}')")})", true, "its text");
+        if (node.Attribute("placeholder") is { Length: > 0 } placeholder && Unique(n => n.Attribute("placeholder") == placeholder))
+            return ($"Locator.ByCss({Quote($"{node.Type}[placeholder='{placeholder}']")})", true, "its placeholder");
+        if (Headings.Contains(node.Type) && node.Text is { Length: > 0 } heading && Unique(n => n.Type == node.Type && n.Text == heading))
+            return ($"Locator.ByCss({Quote($"{node.Type}:has-text('{heading}')")})", true, "its text");
+        var stableClass = node.Attribute("class")?.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(c => IsStableClass(c) && Unique(n => HasClass(n, c) && n.Type == node.Type));
+        if (stableClass is not null)
+            return ($"Locator.ByCss({Quote($"{node.Type}.{stableClass}")})", true, "a class only it has");
+        return ($"Locator.ByCss({Quote(Path(snapshot, node))})", false, "nothing stable: its position; ask for a test id in the app");
+    }
+
+    // The app's own test id says what the element is best; then what the user sees.
+    private static string Name(ScrapeNode node, IReadOnlyList<string> testIds)
+    {
+        var source = testIds.Select(node.Attribute).FirstOrDefault(v => v is { Length: > 0 }) ?? node.Name ?? node.Text ?? node.Attribute("placeholder") ?? node.Attribute("name") ?? node.Attribute("id") ?? node.Type;
+        var words = Words().Matches(source).Select(m => char.ToUpperInvariant(m.Value[0]) + m.Value[1..].ToLowerInvariant()).Take(4);
+        var name = string.Concat(words);
+        return name.Length == 0 || char.IsDigit(name[0]) ? "Element" + name : name;
+    }
+
+    private static bool IsActedOn(ScrapeNode node) =>
+        node.Type is "button" or "input" or "textarea" or "select" or "a" or "iframe" or "table" or "progress"
+        || node.Role is "button" or "checkbox" or "switch" or "tablist" or "link";
+
+    private static bool HasTestId(ScrapeNode node, IReadOnlyList<string> testIds) => testIds.Any(t => node.Attribute(t) is { Length: > 0 });
+
+    private static bool HasClass(ScrapeNode node, string name) =>
+        node.Attribute("class")?.Split(' ', StringSplitOptions.RemoveEmptyEntries).Contains(name, StringComparer.Ordinal) == true;
+
+    // An id with a long number or a GUID in it is made per render (react-123, ng-scope-456).
+    private static bool IsStableId(string id) => !UnstableId().IsMatch(id);
+
+    private static bool IsStableClass(string name) => !UnstableClass().IsMatch(name);
+
+    // The frame document each node is in: the nearest iframe above it, or 0 for the page. A parent
+    // comes before its children, so one pass in order does it.
+    private static int[] Documents(ScrapeSnapshot snapshot)
+    {
+        var documents = new int[snapshot.Nodes.Count + 1];
+        foreach (var node in snapshot.Nodes)
+            documents[node.Number] = node.Parent == 0 ? 0 : snapshot[node.Parent].Frame is not null ? node.Parent : documents[node.Parent];
+        return documents;
+    }
+
+    private static string Path(ScrapeSnapshot snapshot, ScrapeNode node)
+    {
+        var parts = new List<string>();
+        for (var n = node; n.Parent != 0 && snapshot[n.Parent].Frame is null && n.Type is not "body"; n = snapshot[n.Parent])
+        {
+            var siblings = snapshot.ChildrenOf(n.Parent).Where(s => s.Type == n.Type).ToList();
+            parts.Add(siblings.Count > 1 ? $"{n.Type}:nth-of-type({siblings.IndexOf(n) + 1})" : n.Type);
+        }
+        parts.Reverse();
+        return string.Join(" > ", parts);
+    }
+
+    private static IEnumerable<int> Subtree(ScrapeSnapshot snapshot, int root)
+    {
+        yield return root;
+        foreach (var child in snapshot.ChildrenOf(root))
+            foreach (var number in Subtree(snapshot, child.Number))
+                yield return number;
+    }
+
+    private static string Quote(string value) => "\"" + value.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal) + "\"";
+
+    [GeneratedRegex(@"\d{3,}|[0-9a-f]{8}-[0-9a-f]{4}|^(react|ng|ember|mui|radix)-|^:r")]
+    private static partial Regex UnstableId();
+
+    [GeneratedRegex(@"^(css|jss|sc|emotion)-|^_|\d{3,}|^(ng|is|has)-|active|selected|open|hover|focus|disabled")]
+    private static partial Regex UnstableClass();
+
+    [GeneratedRegex(@"[A-Za-z0-9]+")]
+    private static partial Regex Words();
+}
+
+/// <summary>A node's suggested member: its node, a name, the control type and namespace, the locator expression, and whether that locator is stable and why.</summary>
+public sealed record ControlSuggestion(int Node, string Name, string Control, string Namespace, string Locator, bool Stable, string Why);

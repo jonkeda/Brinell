@@ -1,0 +1,16 @@
+{
+  "name": "sample",
+  "events": [
+    {
+      "number": 1,
+      "kind": "page",
+      "at": "2026-09-30T18:27:59.6865436+00:00",
+      "location": "http://localhost:5180/counter",
+      "page": "/counter",
+      "title": "Counter - Brinell Blazor Sample",
+      "snapshot": "001-counter-brinell-blazor-sample.nodes.jsonl",
+      "nodes": 46,
+      "displayName": "Counter - Brinell Blazor Sample"
+    }
+  ]
+}

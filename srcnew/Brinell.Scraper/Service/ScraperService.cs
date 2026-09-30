@@ -228,6 +228,18 @@ public sealed class ScraperService : IAsyncDisposable
         return new ControlMatches(page, pageObject?.Name, pageObject?.Header?.Hash is { } hash ? hash != SnapshotFile.ContentHash(snapshot) : null, matches);
     }
 
+    /// <summary>
+    /// The members a page object would have for a page's newest capture (or a node's subtree of it): a
+    /// name, the control that fits, and the locator, in the preference order, with whether it is stable.
+    /// </summary>
+    public IReadOnlyList<ControlSuggestion> Suggest(string? projectName, string page, int? node = null)
+    {
+        var project = Project(projectName);
+        var (_, snapshot) = Snapshot(project.Name, page);
+        if (node is { } n && (n < 1 || n > snapshot.Nodes.Count)) throw new ScraperProblem($"Page '{page}' has nodes 1 to {snapshot.Nodes.Count}, not {n}.");
+        return ControlAdvisor.Suggest(snapshot, project.Config.TestIds, project.Config.Platform == "blazor", node ?? 0);
+    }
+
     /// <summary>Writes a C# file into the project, when its syntax is valid.</summary>
     public WriteResult WriteCode(string? projectName, string path, string code) => CodeGate.Write(Project(projectName), path, code);
 

@@ -215,9 +215,11 @@ internal static class ScraperPage
             if (isLive(state.capture)) await answer("highlight", { node: number });
             const similar = await answer("similar", { project: state.project, page: state.page, node: number }) || [];
             const header = await answer("header", { project: state.project, page: state.page, node: number });
+            const suggested = (await answer("suggest", { project: state.project, page: state.page, node: number }) || []).find(s => s.node === number);
             $("sc-node").replaceChildren(el("div", { class: "sc-node" },
               el("div", {}, current ? current.textContent.trim() : `#${number}`),
               el("div", { class: "sc-muted" }, `The same kind of node: ${similar.length} on ${new Set(similar.map(s => s.page)).size} page(s).`),
+              suggested ? el("div", {}, el("code", {}, `${suggested.control}<…> ${suggested.name} => new(this, ${suggested.locator});`), el("span", { class: "sc-muted" }, `  by ${suggested.why}`)) : null,
               el("div", { class: "sc-actions" },
                 el("button", { type: "button", class: "sc-small", onclick: () => chat(`Make a control for the node #${number} of the recorded page ${state.page} of ${state.project} (it occurs ${similar.length} times). Its header: ${header || ""}`) }, "Make a control"))));
           }

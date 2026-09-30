@@ -12,7 +12,7 @@ namespace Brinell.Scraper.Code;
 /// </summary>
 public static class ProjectCode
 {
-    private static readonly string[] PageBases = ["HtmlPageObjectBase", "PageObjectBase"];
+    private static readonly string[] PageBases = ["HtmlPageObjectBase", "BlazorPageObjectBase", "PageObjectBase"];
     private static readonly string[] ContainerBases = ["ContainerBase", "FrameScope"];
     private static readonly string[] CollectionBases = ["CollectionObjectBase"];
     private static readonly string[] ItemBases = ["ItemObjectBase"];

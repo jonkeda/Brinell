@@ -38,6 +38,11 @@ public sealed partial class BddLanguageServer
     public ScraperResult<IReadOnlyList<SimilarNode>> ScraperSimilar(ScraperPageNodeParams request)
         => Answer(() => Scraper.Similar(request.Project, request.Page, request.Node ?? 0));
 
+    /// <summary><c>brinell/scraper/suggest</c>: the control and locator for a node, or for each member-worthy node of a page.</summary>
+    [JsonRpcMethod("brinell/scraper/suggest")]
+    public ScraperResult<IReadOnlyList<Brinell.Scraper.Html.ControlSuggestion>> ScraperSuggest(ScraperPageNodeParams request)
+        => Answer(() => Scraper.Suggest(request.Project, request.Page, request.Node));
+
     /// <summary><c>brinell/scraper/header</c>: the first line of a file made from a page, or from one of its nodes.</summary>
     [JsonRpcMethod("brinell/scraper/header")]
     public ScraperResult<string> ScraperHeader(ScraperPageNodeParams request)
