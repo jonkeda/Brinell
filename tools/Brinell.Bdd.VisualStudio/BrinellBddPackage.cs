@@ -18,6 +18,7 @@ namespace Brinell.Bdd.VisualStudio;
 [ProvideMenuResource("Menus.ctmenu", 1)]
 [ProvideToolWindow(typeof(ScenarioPreviewWindow), Style = VsDockStyle.Tabbed, Window = "{34E76E81-EE4A-11D0-AE2E-00A0C90FFFC3}", Orientation = ToolWindowOrientation.Right)]
 [ProvideToolWindow(typeof(BddExplorerWindow), Style = VsDockStyle.Tabbed, Window = "{3AE79031-E1BC-11D0-8F78-00A0C9110057}")]
+[ProvideToolWindow(typeof(ScraperWindow), Style = VsDockStyle.MDI)]
 [ProvideAutoLoad(PackageIds.FeatureFileContext, PackageAutoLoadFlags.BackgroundLoad)]
 [ProvideOptionPage(typeof(BddOptionsPage), "Brinell BDD", "Recording", 0, 0, true)]
 // Loaded when debugging starts too, so a run debugged from Test Explorer can be stepped through.
@@ -31,6 +32,7 @@ namespace Brinell.Bdd.VisualStudio;
 public sealed class BrinellBddPackage : AsyncPackage
 {
     private PreviewController? _controller;
+    private ScraperController? _scraper;
 
     /// <summary>The package once loaded, for CodeLens's callback, which runs outside it.</summary>
     internal static BrinellBddPackage? Instance { get; private set; }
@@ -78,6 +80,7 @@ public sealed class BrinellBddPackage : AsyncPackage
             commands.AddCommand(open);
 
             commands.AddCommand(new MenuCommand((_, _) => ShowExplorer(), new CommandID(PackageIds.CommandSet, PackageIds.ShowBddExplorer)));
+            commands.AddCommand(new MenuCommand((_, _) => ShowScraper(), new CommandID(PackageIds.CommandSet, PackageIds.ShowScraper)));
 
             var toggle = new OleMenuCommand((_, _) => ToggleStepBreakpoint(), new CommandID(PackageIds.CommandSet, PackageIds.ToggleStepBreakpoint));
             toggle.BeforeQueryStatus += (_, _) => toggle.Visible = toggle.Enabled = _controller.ActiveIsFeatureOrSteps;
@@ -96,6 +99,7 @@ public sealed class BrinellBddPackage : AsyncPackage
         ThreadHelper.ThrowIfNotOnUIThread();
         if (disposing)
         {
+            _scraper?.Dispose();
             _controller?.Dispose();
         }
 
@@ -129,6 +133,20 @@ public sealed class BrinellBddPackage : AsyncPackage
                 await _controller.AttachExplorerAsync(explorer.Control);
             }
         }).FileAndForget("Brinell/ShowBddExplorer");
+    }
+
+    private void ShowScraper()
+    {
+        JoinableTaskFactory.RunAsync(async () =>
+        {
+            await JoinableTaskFactory.SwitchToMainThreadAsync(DisposalToken);
+            var window = await ShowToolWindowAsync(typeof(ScraperWindow), 0, create: true, DisposalToken);
+            if (window is ScraperWindow scraper && _controller is not null)
+            {
+                _scraper ??= new ScraperController(this, _controller);
+                await _scraper.AttachAsync(scraper.Control);
+            }
+        }).FileAndForget("Brinell/ShowScraper");
     }
 
     private void ShowPreview()
