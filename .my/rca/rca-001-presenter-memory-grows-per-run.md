@@ -1,6 +1,7 @@
 # RCA-001: Presenter's memory grows with every run of the Todo suite
 
-Status: **analysed, not fixed**, 2026-09-30. Found while building the Narrator mode
+Status: **analysed, not fixed**, 2026-09-30. Decided: **option 2**, a process of its own
+([plan](rca-001-plan-runner-process.md)), over the option 1 recommended below. Found while building the Narrator mode
 ([design](../narrator/presenter/design.md), AD-025): after recording the eleven scenes of the Todo
 video, Presenter "held about 850 MB".
 
