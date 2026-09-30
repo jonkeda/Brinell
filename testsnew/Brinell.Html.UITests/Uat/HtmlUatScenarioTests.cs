@@ -1,4 +1,6 @@
-namespace Brinell.Html.Uat.Tests.Runtime;
+namespace Brinell.Html.UITests.Uat;
+
+using Brinell.Html.UITests.Uat.Pages;
 
 [Trait("Category", "UAT")]
 [Trait("Target", "HTML")]

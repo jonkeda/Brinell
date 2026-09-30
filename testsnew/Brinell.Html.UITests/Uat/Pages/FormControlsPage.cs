@@ -3,7 +3,7 @@ using Brinell.Html.Controls.Selection;
 using Brinell.Html.Controls.Text;
 using Brinell.Html.Controls.Toggle;
 
-namespace Brinell.Html.Uat.Tests.Pages;
+namespace Brinell.Html.UITests.Uat.Pages;
 
 [TestPage("Form Controls")]
 public sealed class FormControlsPage : HtmlPageObjectBase<FormControlsPage>

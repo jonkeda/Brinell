@@ -1,7 +1,7 @@
 using Brinell.Html.Controls.Buttons;
 using Brinell.Html.Controls.Display;
 
-namespace Brinell.Html.Uat.Tests.Pages;
+namespace Brinell.Html.UITests.Uat.Pages;
 
 [TestPage("Counter")]
 public sealed class CounterPage : HtmlPageObjectBase<CounterPage>

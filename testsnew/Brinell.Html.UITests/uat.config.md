@@ -12,7 +12,7 @@
 
 | Kind | Assembly |
 | --- | --- |
-| Pages | Brinell.Html.Uat.Tests.dll |
+| Pages | Brinell.Html.UITests.dll |
 
 ## Discovery
 

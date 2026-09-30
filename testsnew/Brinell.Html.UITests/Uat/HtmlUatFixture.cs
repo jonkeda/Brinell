@@ -1,9 +1,11 @@
-namespace Brinell.Html.Uat.Tests.Runtime;
+namespace Brinell.Html.UITests.Uat;
+
+using Brinell.Html.UITests.Uat.Pages;
 
 using Brinell.Core.Configuration;
 using Brinell.Html.Testing;
 
-[TestModuleScan(typeof(CounterPage), NamespacePrefix = "Brinell.Html.Uat.Tests.Pages")]
+[TestModuleScan(typeof(CounterPage), NamespacePrefix = "Brinell.Html.UITests.Uat.Pages")]
 public sealed class HtmlUatFixture : IDisposable
 {
     private readonly WebAppHost _host;

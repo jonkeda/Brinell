@@ -22,4 +22,19 @@
     </PackageReference>
   </ItemGroup>
 
+  <!-- The UAT suite: uat.config.md, Features/ and Uat/ (the fixture and the scenario test class). -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\srcnew\Brinell.Uat\Brinell.Uat.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="uat.config.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Features\**\*.feature.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="TestSettings\**\*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Brinell.Bdd" />
+  </ItemGroup>
+
 </Project>
