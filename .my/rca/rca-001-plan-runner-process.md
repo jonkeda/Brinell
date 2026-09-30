@@ -1,6 +1,6 @@
 # Plan: a suite runs in a process of its own (RCA-001, option 2)
 
-Status: **being built** (steps 1 to 5 done), 2026-09-30. Decided: option 2 of
+Status: **built** (steps 1 to 7), 2026-09-30. The decisions are in AD-025. Decided: option 2 of
 [RCA-001](rca-001-presenter-memory-grows-per-run.md), and Q1 to Q4 below.
 
 ## Goal
@@ -118,6 +118,12 @@ with a spike `Main` in `Brinell.Uat` that made the fixture, bound one scenario a
 | 4 | Runners are in a Windows job that ends them, the app and the mock server when Presenter ends, however it ends |
 | 4 | Todo, TOD.01.1, eight runs through `BddExecutionService` (the RCA's loop): **81 assemblies after every run and private memory flat** (17 to 24 MB), against 277, 379, 481... and +4 MB a run before. 5 to 6 s from Run to the first step, the app's own start |
 | 5 | From Presenter, Narrator mode, the short Todo script: three scenes recorded by the runner and stitched (40 s); Stop dropped a scene; recording it again replaced it; a rehearsal with Speak aloud was paced by its lines; Present mode's Record made its video. After each: no runner, no Todo app, the suite's DLL free. Presenter's private memory: 220 MB before, 229 MB after six runs |
+
+| 6 | `AssemblyFile` is only `FolderOf` now: nothing loads a suite from memory, so there is no path to record. `FolderOf` stays what a fixture uses, since it is right in every process |
+| 6 | Build waits for the runners of ended sessions (`EndRunnersAsync`): a session's `Dispose` no longer waits, so without it a build could start while the suite's files were still held |
+| 6 | One scenario each of the Maui, WPF, WinForms, Html, Blazor and Stride suites passes through `BddExecutionService` |
+| 6 | **Not done:** Presenter's references to `Brinell.Maui` and `Brinell.Maui.FlaUI`. Its code uses neither any more, and it built without them, but the Presenter suite was not run on that build |
+| 6 | **Open:** the Todo web suite (`Brinell.Samples.Todo.Web.Uat`) does not open from Presenter: "The fixture is not started". Its fixture is started by xUnit's own lifetime, which neither the old service nor the runner calls. Not looked into further |
 
 ## What can go wrong
 

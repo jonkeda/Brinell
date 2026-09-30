@@ -1,7 +1,9 @@
 # RCA-001: Presenter's memory grows with every run of the Todo suite
 
-Status: **analysed, not fixed**, 2026-09-30. Decided: **option 2**, a process of its own
-([plan](rca-001-plan-runner-process.md)), over the option 1 recommended below. Found while building the Narrator mode
+Status: **fixed**, 2026-09-30, by option 2: a suite runs in a runner process of its own
+([plan, as built](rca-001-plan-runner-process.md); AD-025). After the fix, eight Todo runs leave
+Presenter's run service at 81 assemblies and flat private memory, where each run added 102
+assemblies and about 4 MB before. Found while building the Narrator mode
 ([design](../narrator/presenter/design.md), AD-025): after recording the eleven scenes of the Todo
 video, Presenter "held about 850 MB".
 
