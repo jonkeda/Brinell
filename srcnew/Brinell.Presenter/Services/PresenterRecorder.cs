@@ -41,6 +41,16 @@ public interface IPresenterRecorder
     /// <summary>After the run: the outro, then the video is composed. Null when nothing was being recorded.</summary>
     /// <param name="cancellationToken">Cancels the outro and the compose.</param>
     Task<PresenterRecorded?> FinishAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// A rehearsal's pacer for a scene: each line is spoken and played before its step, nothing is
+    /// recorded. Null when this machine has no voice.
+    /// </summary>
+    /// <param name="scene">The scene.</param>
+    /// <param name="voice">The voice, by (part of) its name; null for the default.</param>
+    /// <param name="beat">The wait after a step.</param>
+    /// <param name="cancellationToken">Cancels the speech.</param>
+    Task<BddNarrationPacer?> RehearseAsync(BddVideoScenePlan scene, string? voice, TimeSpan beat, CancellationToken cancellationToken);
 }
 
 /// <inheritdoc />
@@ -85,6 +95,20 @@ public sealed class PresenterRecorder : IPresenterRecorder
         var request = new BddSceneRequest(1, name, address, sceneFolder, clips, beat);
         _recording = new BddSceneRecording(request, session.RecordingTarget, Recorders.Value, settings.SpeakAloud ? WindowsSpeech.PlayAsync : null);
         session.Runner.Context.Pacer = _recording;
+    }
+
+    /// <inheritdoc />
+    public async Task<BddNarrationPacer?> RehearseAsync(BddVideoScenePlan scene, string? voice, TimeSpan beat, CancellationToken cancellationToken)
+    {
+        var speech = new WindowsSpeech();
+        if (!speech.IsAvailable)
+        {
+            return null;
+        }
+
+        var folder = Path.Combine(Path.GetTempPath(), "BrinellPresenter", "rehearsal");
+        var clips = await BddSceneClips.SpeakAsync(scene, speech, voice, folder, cancellationToken).ConfigureAwait(false);
+        return new BddNarrationPacer(clips, beat, WindowsSpeech.PlayAsync);
     }
 
     /// <inheritdoc />

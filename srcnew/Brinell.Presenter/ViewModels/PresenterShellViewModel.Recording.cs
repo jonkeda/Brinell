@@ -143,6 +143,13 @@ public sealed partial class PresenterShellViewModel
     // After the session is created, before its first step: the recording starts at that step.
     private async Task StartRecordingAsync(PresenterUatExecutionSession session, BddScenarioViewModel scenario)
     {
+        // Narrator mode runs scenes; the Record toggle is Present mode's.
+        if (IsNarratorMode)
+        {
+            await StartSceneAsync(session, scenario).ConfigureAwait(true);
+            return;
+        }
+
         if (!IsRecording || WorkspacePath is null)
         {
             return;

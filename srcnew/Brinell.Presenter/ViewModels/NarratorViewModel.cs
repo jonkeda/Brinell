@@ -115,6 +115,7 @@ public sealed class NarratorViewModel : ViewModelBase
     private string _problemsText = string.Empty;
     private string _treeText = string.Empty;
     private bool _updatingChecks;
+    private NarratorNodeViewModel? _selectedNode;
 
     /// <summary>The tree's root rows: the script, when one is open.</summary>
     public ObservableCollection<NarratorNodeViewModel> Roots { get; } = [];
@@ -183,6 +184,32 @@ public sealed class NarratorViewModel : ViewModelBase
 
     /// <summary>Raised when the checked scenes change.</summary>
     public event Action? CheckedChanged;
+
+    /// <summary>Raised when a row is selected, with the scene it is of; null for the script's row.</summary>
+    public event Action<NarratorSceneViewModel?>? SceneSelected;
+
+    /// <summary>The selected row of the tree.</summary>
+    public NarratorNodeViewModel? SelectedNode
+    {
+        get => _selectedNode;
+        set
+        {
+            if (SetProperty(ref _selectedNode, value))
+            {
+                SceneSelected?.Invoke(SceneOf(value));
+            }
+        }
+    }
+
+    /// <summary>The scene a row is of: the scene's own row, or one under it.</summary>
+    /// <param name="node">A row of the tree.</param>
+    public NarratorSceneViewModel? SceneOf(NarratorNodeViewModel? node)
+        => node is null ? null : Scenes.FirstOrDefault(scene => ReferenceEquals(scene.Node, node) || scene.Node.Children.Contains(node));
+
+    /// <summary>The scene that runs a scenario of the workspace; null when none does.</summary>
+    /// <param name="scenario">A scenario.</param>
+    public NarratorSceneViewModel? SceneOf(BddScenarioViewModel? scenario)
+        => scenario is null ? null : Scenes.FirstOrDefault(scene => ReferenceEquals(scene.Scenario, scenario));
 
     /// <summary>Opens a video script: reads it, finds its suite by walking up to the config, and checks it.</summary>
     /// <param name="path">The <c>*.video.md</c> file.</param>

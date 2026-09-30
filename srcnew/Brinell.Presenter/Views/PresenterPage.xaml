@@ -369,6 +369,7 @@
                                        ItemsSource="{Binding Narrator.Roots}"
                                        ChildrenPath="Children"
                                        IsExpandedPath="IsExpanded"
+                                       SelectedValue="{Binding Narrator.SelectedNode, Mode=TwoWay}"
                                        ShowExpandButton="False"
                                        IndentWidth="10"
                                        VerticalOptions="Fill">

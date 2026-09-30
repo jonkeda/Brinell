@@ -60,3 +60,29 @@ Then Workspace Tree should contain "Features"
 When I tap Narrator Mode
 Then Narrator Script should contain "sample-tour.video.md"
 ```
+
+@presenter @narrator @execution
+## Scenario: Run rehearses the checked scenes, one after another
+
+```gherkin
+Given I am on the Presenter page
+When I tap Narrator Mode
+Then Narrator Summary should contain "2 scenes, 2 checked"
+When I tap Run
+Then Status Summary should contain "Passed: 2/2 scenarios"
+And Narrator Tree should contain "[x] ✓ 1 A name is needed"
+And Narrator Tree should contain "[x] ✓ 2 Filling in the form"
+```
+
+@presenter @narrator @execution
+## Scenario: An unchecked scene is not run
+
+```gherkin
+Given I am on the Presenter page
+When I tap Narrator Mode
+And I uncheck Scene 2
+And I tap Run
+Then Status Summary should contain "Passed: 1/1 scenarios"
+And Narrator Tree should contain "[x] ✓ 1 A name is needed"
+And Narrator Tree should contain "[ ] ○ 2 Filling in the form"
+```

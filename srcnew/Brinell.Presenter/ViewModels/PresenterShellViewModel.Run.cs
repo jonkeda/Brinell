@@ -11,7 +11,7 @@ public sealed partial class PresenterShellViewModel
 {
     // Run (F5): on from where a paused run is, else the selection's scenarios from the start.
     private Task RunAsync()
-        => IsPaused ? MoveAsync(PresenterMove.Play) : RunSelectedNodeAsync();
+        => IsPaused ? MoveAsync(PresenterMove.Play) : IsNarratorMode ? RunCheckedScenesAsync() : RunSelectedNodeAsync();
 
     private Task RunSelectedNodeAsync()
     {
@@ -118,7 +118,10 @@ public sealed partial class PresenterShellViewModel
             return;
         }
 
-        scenario ??= GetRunnableScenarios(SelectedWorkspaceNode).FirstOrDefault() ?? SelectedScenario;
+        // Narrator mode steps through the scene shown, or the first checked one.
+        scenario ??= IsNarratorMode
+            ? Narrator.SceneOf(SelectedScenario)?.Scenario ?? Narrator.CheckedScenes.FirstOrDefault()?.Scenario
+            : GetRunnableScenarios(SelectedWorkspaceNode).FirstOrDefault() ?? SelectedScenario;
         if (scenario is null)
         {
             StatusSummary = "No runnable scenario below selection";
@@ -336,6 +339,7 @@ public sealed partial class PresenterShellViewModel
                 scenario.Status = result.Status == BddStepResultStatus.Canceled ? "cancel" : "fail";
                 StatusSummary = $"{ScenarioStatusText(result.Status)}: {scenario.Name}: {result.Message}";
                 DiagnosticsText = FormatExecutionDetails(session, result.Message);
+                await EndSceneAsync().ConfigureAwait(true);
                 FinishActiveSession();
                 return RunOutcome.Failed;
             }
@@ -355,6 +359,7 @@ public sealed partial class PresenterShellViewModel
             scenario.Status = "pass";
             StatusSummary = $"Passed: {scenario.Name}";
             DiagnosticsText = FormatExecutionDetails(session, null);
+            await EndSceneAsync().ConfigureAwait(true);
             FinishActiveSession();
             return RunOutcome.Passed;
         }

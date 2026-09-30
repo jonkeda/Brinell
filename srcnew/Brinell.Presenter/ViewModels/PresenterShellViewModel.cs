@@ -1752,13 +1752,19 @@ public sealed partial class PresenterShellViewModel : ViewModelBase, IStepRowHos
     private PresenterRunExecutionOptions CaptureRunExecutionOptions(
         BddWorkspaceNodeViewModel? selectedNode,
         IReadOnlyCollection<BddScenarioViewModel> scenarios)
+        => CaptureRunExecutionOptions(selectedNode?.Kind.ToString() ?? "None", selectedNode?.Name ?? "No selection", scenarios);
+
+    private PresenterRunExecutionOptions CaptureRunExecutionOptions(
+        string scopeKind,
+        string scopeName,
+        IReadOnlyCollection<BddScenarioViewModel> scenarios)
     {
         var effectiveDelay = ParseDelayMilliseconds(ExecutionDelayText);
         ExecutionDelayMilliseconds = effectiveDelay;
 
         return new PresenterRunExecutionOptions(
-            selectedNode?.Kind.ToString() ?? "None",
-            selectedNode?.Name ?? "No selection",
+            scopeKind,
+            scopeName,
             scenarios.Count,
             scenarios.Sum(scenario => scenario.Steps.Count),
             effectiveDelay,

@@ -163,7 +163,7 @@ Known, not fixed: a session whose context cannot unload stays in memory until Pr
 | 0 | The fixes above (**done**) | TOD.01.1 runs from Presenter, again and again; the suite rebuilds while Presenter is open |
 | 1 | The run engine in `PresenterShellViewModel.Run.cs`, with `RunScenariosAsync`; Present mode unchanged (**done**) | Presenter's test project, identical: 73 passed |
 | 2 | The Narrator mode button; open a script, walk up to the config; the tree with its lines and diagnostics (**done**) | UAT `narrator-mode.feature.md`: the script loads, its scenes and lines show, a checkbox takes a scene out. Unit tests: a bad address shows `VID012`, a bad step `VID013`, no config `VID010` |
-| 3 | Run and the step buttons over the checked scenes; a failure goes on (D6) | UAT: a rehearsal of two checked scenes passes both; an unchecked scene is skipped |
+| 3 | Run and the step buttons over the checked scenes; a failure goes on (D6); a rehearsal speaks the lines when Speak aloud is on (**done**) | UAT: a rehearsal of two checked scenes passes both; an unchecked scene is not run. Unit tests: a failed scene does not stop the next; Present mode still stops at the first |
 | 4 | The engine: a kept scenes folder, the scene hash, recording states | Unit tests: a changed line makes its scene out of date, and only that one |
 | 5 | Record the checked scenes; Stitch; Watch, Open folder | UAT: two scenes recorded and stitched, two chapters; redo one, stitch again. Manual: the Todo video |
 | 6 | Settings: the Narrator section, Try | UAT: the voice list; manual: the voice is heard |
