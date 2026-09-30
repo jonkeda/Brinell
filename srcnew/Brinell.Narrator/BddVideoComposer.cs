@@ -96,8 +96,26 @@ public static class BddVideoComposer
     {
         var folder = Path.GetFullPath(scenesFolder).TrimEnd(Path.DirectorySeparatorChar);
         var basePath = folder.EndsWith(".scenes", StringComparison.OrdinalIgnoreCase) ? folder[..^".scenes".Length] : folder;
-        var video = basePath + ".mp4";
-        var plan = Plan(title, ReadScenes(folder), video);
+        var composed = await StitchAsync(title, folder, basePath + ".mp4", null, cancellationToken).ConfigureAwait(false);
+        Directory.Delete(folder, recursive: true);
+        return composed;
+    }
+
+    /// <summary>
+    /// Stitches the scenes of a kept folder into a video, with its captions and timeline beside it;
+    /// the folder stays, so a scene can be recorded again and the video stitched again.
+    /// </summary>
+    /// <param name="title">The video's title.</param>
+    /// <param name="scenesFolder">The scenes folder.</param>
+    /// <param name="video">The video to write.</param>
+    /// <param name="sceneCount">The script's scene count: a folder of a scene the script no longer has is left out. Null for every scene there.</param>
+    /// <param name="cancellationToken">Cancels ffmpeg.</param>
+    public static async Task<BddComposedVideo> StitchAsync(string title, string scenesFolder, string video, int? sceneCount, CancellationToken cancellationToken = default)
+    {
+        var folder = Path.GetFullPath(scenesFolder).TrimEnd(Path.DirectorySeparatorChar);
+        var basePath = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(video))!, Path.GetFileNameWithoutExtension(video));
+        var scenes = ReadScenes(folder);
+        var plan = Plan(title, sceneCount is { } count ? [.. scenes.Where(scene => scene.Scene.Number <= count)] : scenes, video);
 
         var chapters = Path.Combine(folder, "chapters.txt");
         await File.WriteAllTextAsync(chapters, plan.Chapters, cancellationToken).ConfigureAwait(false);
@@ -107,7 +125,6 @@ public static class BddVideoComposer
         var timeline = basePath + ".timeline.json";
         await File.WriteAllTextAsync(captions, plan.Captions, cancellationToken).ConfigureAwait(false);
         plan.Timeline.Save(timeline);
-        Directory.Delete(folder, recursive: true);
         return new BddComposedVideo(video, captions, timeline, plan.Warnings);
     }
 

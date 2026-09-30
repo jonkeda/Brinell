@@ -32,6 +32,13 @@ public sealed class BddRecordingSession
     /// <summary>The beat in milliseconds, when the script does not say.</summary>
     public const string BeatVariable = "BRINELL_BEAT";
 
+    /// <summary>
+    /// When set with a video script: its scenes are kept in <c>&lt;folder&gt;\&lt;script&gt;.scenes</c> and
+    /// not deleted when the video is made, so scenes can be recorded again one at a time, here or
+    /// in Presenter's Narrator mode, and stitched again.
+    /// </summary>
+    public const string KeepVariable = "BRINELL_RECORD_KEEP";
+
     /// <summary>The beat when nothing says: long enough to see a step's result.</summary>
     public static readonly TimeSpan DefaultBeat = TimeSpan.FromMilliseconds(600);
 
@@ -57,6 +64,9 @@ public sealed class BddRecordingSession
         Voice = script?.Script?.Voice ?? voice;
         Beat = script?.Script?.Beat ?? beat;
     }
+
+    /// <summary>Whether the script's scenes folder is kept when the video is made (<see cref="BddKeptScenes"/>).</summary>
+    public bool KeepScenes { get; init; }
 
     /// <summary>The video script's check; null when every scenario is recorded.</summary>
     public BddVideoScriptCheck? Script { get; }
@@ -107,13 +117,16 @@ public sealed class BddRecordingSession
         }
 
         var folder = read(FolderVariable) is { Length: > 0 } named ? named : DefaultTestArtifactPathProvider.Create().RunDirectory;
+        var keep = script is not null && read(KeepVariable)?.Trim() is { Length: > 0 } kept && kept is not "0" && !kept.Equals("false", StringComparison.OrdinalIgnoreCase);
         var scenes = read(OutputVariable) is { Length: > 0 } output
             ? output
-            : script is null ? folder : Path.Combine(folder, $"{name}-{DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture)}.scenes");
+            : script is null ? folder
+            : keep ? BddKeptScenes.Folder(folder, script.Script!.FilePath)
+            : Path.Combine(folder, $"{name}-{DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture)}.scenes");
         var beat = int.TryParse(read(BeatVariable), NumberStyles.None, CultureInfo.InvariantCulture, out var milliseconds)
             ? TimeSpan.FromMilliseconds(milliseconds)
             : DefaultBeat;
-        return new BddRecordingSession(configDirectory, script, scenes, Speech.Discover(), read(VoiceVariable), beat);
+        return new BddRecordingSession(configDirectory, script, scenes, Speech.Discover(), read(VoiceVariable), beat) { KeepScenes = keep };
     }
 
     /// <summary>
@@ -141,7 +154,7 @@ public sealed class BddRecordingSession
                 var number = IndexOf(scenes, plan.Scene) + 1;
                 var folder = SceneFolder(number);
                 var clips = await BddSceneClips.SpeakAsync(plan, _synthesizer, Voice, folder, cancellationToken).ConfigureAwait(false);
-                return new BddSceneRequest(number, plan.Scene.Name, address, folder, clips, Beat);
+                return new BddSceneRequest(number, plan.Scene.Name, address, folder, clips, Beat) { Hash = BddKeptScenes.Hash(plan, Voice, Beat) };
             }
         }
 
@@ -173,6 +186,12 @@ public sealed class BddRecordingSession
             }
 
             _composed = true;
+            if (KeepScenes)
+            {
+                var video = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(ScenesFolder))!, $"{BddKeptScenes.NameOf(Script.Script.FilePath)}-{_stamp}.mp4");
+                return await BddVideoComposer.StitchAsync(Script.Script.Title, ScenesFolder, video, Script.Script.Scenes.Count, cancellationToken).ConfigureAwait(false);
+            }
+
             return await BddVideoComposer.ComposeAsync(Script.Script.Title, ScenesFolder, cancellationToken).ConfigureAwait(false);
         }
         finally

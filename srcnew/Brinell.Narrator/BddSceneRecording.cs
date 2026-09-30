@@ -13,6 +13,9 @@ namespace Brinell.Narrator;
 /// <param name="Beat">The wait after a step.</param>
 public sealed record BddSceneRequest(int Number, string Name, string Scenario, string Folder, BddSceneClips Clips, TimeSpan Beat)
 {
+    /// <summary>What the recording was made from (<see cref="BddKeptScenes.Hash"/>), written to its timeline; null when the scene is not kept.</summary>
+    public string? Hash { get; init; }
+
     /// <summary>The scene's video file.</summary>
     public string VideoPath => Path.Combine(Folder, "video.mp4");
 
@@ -87,7 +90,7 @@ public sealed class BddSceneRecording : IBddStepPacer, IAsyncDisposable
             size = result.Size;
         }
 
-        var timeline = _pacer.Timeline(_request.Number, _request.Name, _request.Scenario, video, _startedAt, end, _warnings) with { Width = size.Width, Height = size.Height };
+        var timeline = _pacer.Timeline(_request.Number, _request.Name, _request.Scenario, video, _startedAt, end, _warnings) with { Width = size.Width, Height = size.Height, Hash = _request.Hash };
         timeline.Save(_request.TimelinePath);
         return timeline;
     }

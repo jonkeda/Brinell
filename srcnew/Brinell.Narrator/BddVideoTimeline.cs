@@ -41,6 +41,7 @@ public sealed record BddVideoTimeline(string Title, IReadOnlyList<BddSceneTimeli
 /// <param name="Warnings">What went less well than asked.</param>
 /// <param name="Width">The video's width in pixels; 0 when there is no video.</param>
 /// <param name="Height">The video's height in pixels; 0 when there is no video.</param>
+/// <param name="Hash">What a kept scene's recording was made from (<see cref="BddKeptScenes.Hash"/>); null when the scene is not kept.</param>
 public sealed record BddSceneTimeline(
     int Number,
     string Name,
@@ -52,7 +53,8 @@ public sealed record BddSceneTimeline(
     IReadOnlyList<BddTimedClip> Clips,
     IReadOnlyList<string> Warnings,
     int Width = 0,
-    int Height = 0)
+    int Height = 0,
+    string? Hash = null)
 {
     /// <summary>The file a scene's timeline is kept in beside its video.</summary>
     public const string FileName = "timeline.json";
