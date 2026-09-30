@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Brinell.Core.Scraping;
+using Brinell.Scraper.Explore;
 using Microsoft.Playwright;
 
 namespace Brinell.Scraper.Html;
@@ -28,6 +29,7 @@ public sealed class PlaywrightScrapeSource : IScrapeSource
     private IBrowserContext? _context;
     private IPage? _page;
     private string? _lastLocation;
+    private RequestGuard? _guard;
 
     // Global node number of the last capture -> the frame and its local number there.
     private readonly List<(IFrame Frame, int Local)> _numbers = [];
@@ -149,6 +151,53 @@ public sealed class PlaywrightScrapeSource : IScrapeSource
             cancellationToken.ThrowIfCancellationRequested();
         }
     }
+
+    /// <summary>
+    /// Puts Explore's request and host guards on every request of the browser: a blocked one is aborted.
+    /// Refused when the page is not on an Explore host.
+    /// </summary>
+    public async Task GuardAsync(RequestGuard guard)
+    {
+        var page = Started();
+        if (_guard is not null) throw new InvalidOperationException("The source is guarded already.");
+        if (Uri.TryCreate(page.Url, UriKind.Absolute, out var location) && RequestGuard.RefuseHost(location, guard.Settings) is { } refused)
+            throw new InvalidOperationException(refused);
+        _guard = guard;
+        page.WebSocket += OnWebSocket;
+        await _context!.RouteAsync("**/*", RouteAsync).ConfigureAwait(false);
+    }
+
+    /// <summary>Takes the guards of <see cref="GuardAsync"/> off.</summary>
+    public async Task UnguardAsync()
+    {
+        if (_guard is null) return;
+        _guard = null;
+        if (_page is not null) _page.WebSocket -= OnWebSocket;
+        if (_context is not null) await _context.UnrouteAsync("**/*", RouteAsync).ConfigureAwait(false);
+    }
+
+    private async Task RouteAsync(IRoute route)
+    {
+        var request = route.Request;
+        if (_guard?.Check(request.Method, request.Url, request.IsNavigationRequest && IsMainFrame(request)) is not null)
+            await route.AbortAsync("blockedbyclient").ConfigureAwait(false);
+        else
+            await route.ContinueAsync().ConfigureAwait(false);
+    }
+
+    private bool IsMainFrame(IRequest request)
+    {
+        try
+        {
+            return request.Frame == _page?.MainFrame;
+        }
+        catch (PlaywrightException)
+        {
+            return false; // a service worker's request has no frame
+        }
+    }
+
+    private void OnWebSocket(object? sender, IWebSocket socket) => _guard?.WebSocketOpened(socket.Url);
 
     /// <inheritdoc/>
     public async ValueTask DisposeAsync()

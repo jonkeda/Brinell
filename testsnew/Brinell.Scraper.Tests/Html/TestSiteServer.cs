@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 
@@ -5,12 +6,14 @@ namespace Brinell.Scraper.Tests.Html;
 
 /// <summary>
 /// Serves the test site (copied beside the tests) on a free port, on <c>localhost</c> and on
-/// <c>127.0.0.1</c>: two origins, for cross-origin frames.
+/// <c>127.0.0.1</c>: two origins, for cross-origin frames. Every request is logged; <c>/api/…</c>
+/// answers any method, so a test can prove which requests reached the site.
 /// </summary>
 public sealed class TestSiteServer : IDisposable
 {
     private readonly HttpListener _listener = new();
     private readonly string _root = Path.Combine(AppContext.BaseDirectory, "TestSite");
+    private readonly ConcurrentQueue<(string Method, string Path)> _requests = new();
 
     public TestSiteServer()
     {
@@ -22,6 +25,12 @@ public sealed class TestSiteServer : IDisposable
     }
 
     public int Port { get; }
+
+    /// <summary>The requests that reached the site, in order: the method and the path with its query.</summary>
+    public IReadOnlyList<(string Method, string Path)> Requests => _requests.ToArray();
+
+    /// <summary>How many requests with this method reached a path starting with <paramref name="path"/>.</summary>
+    public int Count(string method, string path) => Requests.Count(r => r.Method == method && r.Path.StartsWith(path, StringComparison.Ordinal));
 
     /// <summary>A page's address on the first origin.</summary>
     public string Url(string path) => $"http://localhost:{Port}/{path}";
@@ -37,6 +46,14 @@ public sealed class TestSiteServer : IDisposable
         {
             var context = await TryNextAsync();
             if (context is null) return;
+            _requests.Enqueue((context.Request.HttpMethod, context.Request.Url!.PathAndQuery));
+            if (context.Request.Url!.AbsolutePath.StartsWith("/api/", StringComparison.Ordinal))
+            {
+                context.Response.ContentType = "application/json";
+                await context.Response.OutputStream.WriteAsync("{\"ok\":true}"u8.ToArray());
+                context.Response.Close();
+                continue;
+            }
             var file = Path.Combine(_root, context.Request.Url!.AbsolutePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
             if (File.Exists(file))
             {

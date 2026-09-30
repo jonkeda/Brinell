@@ -1,6 +1,6 @@
 # The Scraper, automatic: explore an app and draft its page objects
 
-Status: **building**: steps 1-2 done (2026-09-30). Decisions in section 8 and 9.
+Status: **building**: steps 1-3 done (2026-09-30). Decisions in section 8 and 9.
 Builds on [plan.md](plan.md) (the Scraper as built, AD-027) and [next-plan.md](next-plan.md).
 
 ## 1. What we want
@@ -211,7 +211,7 @@ One commit per step, tests with each. From step 6 on, each step ends with a run 
 | --- | --- | --- |
 | 1 | The settings (section 6) read and written: `ScraperConfig` for the new sections, `ScraperConfigWriter` for one-row edits that keep the file's other text | **Done.** `ExploreSettings` (the budget, `ClickPolicy`, `BlockMethods`, `WebsocketApps`, danger categories, hosts, never/always click, never visit, allow requests) on `ScraperConfig.Explore`; `ScraperConfigWriter`: set a field, add or remove a row, a new config, keeping the file's other text and line endings. 14 tests |
 | 2 | The judge (guard 1): safe, unsafe, unknown for a node; `ClickPolicy`; the danger categories on and off; `NeverClick`, `AlwaysClick`, `NeverVisit` | **Done.** `ClickJudge` (safe, unsafe, unknown; visit or click; the reason) and `ClickJudge.Allows` for the policy; `DangerWords` matched as whole words in text, names, test ids, classes, URLs and icons (`fa-trash`, `alt`, `data-icon`), camelCase and dashes split, accents ignored; "edit" and "checkout" added; `Never click` / `Always click` texts as phrases, selectors as the nodes the page matched (filled in step 5). The capture keeps `download`. 90 tests |
-| 3 | The request guard (guard 2, `BlockMethods`, `AllowRequests`) and the host guard (guard 4) in the Html source | browser tests on the test site: a POST blocked by default and let through when unblocked; a host outside `ExploreHosts` refused |
+| 3 | The request guard (guard 2, `BlockMethods`, `AllowRequests`) and the host guard (guard 4) in the Html source | **Done.** `RequestGuard`: a blocked method aborted unless `AllowRequests` lets it (method, path or URL), a page navigation to a host outside the Explore hosts aborted, `RefuseHost` for the start (host, or host and port), what it stopped and the websockets opened kept for the report; `PlaywrightScrapeSource.GuardAsync`/`UnguardAsync` route every request of the browser through it. The test site logs its requests and answers `/api/…` for any method. 16 unit and 5 browser tests |
 | 4 | The test site gets a dangerous page: logout link, delete buttons, a submit form, a POST that would delete, a websocket; each counted by the site, so a test can prove what happened | the site itself |
 | 5 | Explore: links, then clicks by policy; state dedup; budget; sign-in detection with Continue; the websocket guard; the report; dry run | browser tests on the test site: all pages found; with the defaults the dangerous page's counters stay 0; with `delete` off and `BlockMethods` without DELETE, the delete counter moves and nothing else does |
 | 6 | The command line (`scrape explore`, `scrape draft`, `scrape verify`) and the MCP tools, `update_scraper_config` too | a run on the test site from the command line, exit codes |
