@@ -159,7 +159,7 @@ void PrintUsage()
 {
     Console.WriteLine("Brinell ControlObject Generator");
     Console.WriteLine();
-    Console.WriteLine("Usage: Brinell.Generator.Cli [options]");
+    Console.WriteLine("Usage: Brinell.Generator [options]");
     Console.WriteLine();
     Console.WriteLine("Options:");
     Console.WriteLine("  --input, -i <paths>   Semicolon-separated list of files and/or folders.");

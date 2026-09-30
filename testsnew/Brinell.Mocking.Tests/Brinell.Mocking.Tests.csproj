@@ -8,11 +8,14 @@
 
   <ItemGroup>
     <PackageReference Include="Moq" />
+    <!-- The analyzer tests compile snippets against Brinell.Mocking. -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\srcnew\Brinell.Core\Brinell.Core.csproj" />
     <ProjectReference Include="..\..\srcnew\Brinell.Mocking\Brinell.Mocking.csproj" />
+    <ProjectReference Include="..\..\srcnew\Brinell.Mocking.Analyzers\Brinell.Mocking.Analyzers.csproj" />
   </ItemGroup>
 
   <ItemGroup>

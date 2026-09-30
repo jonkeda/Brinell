@@ -5,11 +5,11 @@ rem Generates .gen.cs files from every .tpl.cs file under the MAUI Controls fold
 rem (Brinell.Maui and Brinell.Maui.CommunityToolkit) using the Brinell ControlObject generator.
 
 set "SCRIPT_DIR=%~dp0"
-set "CLI_PROJECT=%SCRIPT_DIR%..\Brinell.Generator.Cli\Brinell.Generator.Cli.csproj"
-set "CLI_EXE=%SCRIPT_DIR%..\Brinell.Generator.Cli\bin\Release\net10.0\Brinell.Generator.Cli.exe"
+set "CLI_PROJECT=%SCRIPT_DIR%..\Brinell.Generator\Brinell.Generator.csproj"
+set "CLI_EXE=%SCRIPT_DIR%..\Brinell.Generator\bin\Release\net10.0\Brinell.Generator.exe"
 set "INPUT=%SCRIPT_DIR%..\..\srcnew\Brinell.Maui\Controls;%SCRIPT_DIR%..\..\srcnew\Brinell.Maui.CommunityToolkit\Controls"
 
-echo Building Brinell.Generator.Cli...
+echo Building Brinell.Generator...
 dotnet build "%CLI_PROJECT%" -c Release -v:minimal /nr:false
 if errorlevel 1 (
     echo Build failed.

@@ -1,11 +1,12 @@
 using System.Collections.Immutable;
 using Brinell.Mocking;
+using Brinell.Mocking.Analyzers;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Xunit;
 
-namespace Brinell.Mocking.Analyzers.Tests;
+namespace Brinell.Mocking.Tests.Analyzers;
 
 public sealed class AnonymousMockBodyAnalyzerTests
 {

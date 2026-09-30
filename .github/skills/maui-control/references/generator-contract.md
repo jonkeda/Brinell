@@ -21,7 +21,7 @@ and `srcnew\Brinell.Blazor\Controls`: the contract below holds for Html controls
 `IHtmlElement` as the element type. For one file or folder elsewhere, run the CLI directly:
 
 ```
-tools\Brinell.Generator.Cli\bin\Release\net10.0\Brinell.Generator.Cli.exe --input <file-or-folder>[;<file-or-folder>...]
+tools\Brinell.Generator\bin\Release\net10.0\Brinell.Generator.exe --input <file-or-folder>[;<file-or-folder>...]
 ```
 
 Output is always `<name>.gen.cs` beside the input.
