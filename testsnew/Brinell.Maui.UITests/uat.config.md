@@ -13,7 +13,7 @@
 
 | Kind | Assembly |
 | --- | --- |
-| Pages | ../Brinell.Maui.UITests/bin/Debug/net10.0-windows/Brinell.Maui.UITests.dll |
+| Pages | bin/Debug/net10.0-windows/Brinell.Maui.UITests.dll |
 | Controls | ../../srcnew/Brinell.Maui/bin/Debug/net10.0/Brinell.Maui.dll |
 | Commands | ../../srcnew/Brinell.Uat/bin/Debug/net10.0/Brinell.Uat.dll |
 

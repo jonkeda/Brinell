@@ -167,6 +167,8 @@ narrower tier fails in a way that suggests wider breakage.
 
 Notes:
 
+- A platform's UAT suite lives in its `*.UITests` project (`uat.config.md`, `Features/`, `Uat/`):
+  `--filter "Category=UAT"` runs it alone, `--filter "Category!=UAT"` the UI tests alone.
 - `dotnet test` takes **one** `--filter`; passing two silently drops the first. Use
   `|` for OR and `&` for AND inside a single filter string.
 - The full suite is expected to be **green with nothing set**: 0 failed. The only deliberate

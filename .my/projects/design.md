@@ -1,6 +1,6 @@
 # Design: fewer projects
 
-Status: **decided**, 2026-09-30 (Q1 to Q3 answered); not built. The question: there are a lot of
+Status: **built, steps 1 to 7**, 2026-09-30 (98 projects to 84). Step 8, the Todo sample, waits for Q5. The question: there are a lot of
 `Brinell.Bdd.*` projects, and a lot of projects altogether; which should be combined?
 
 ## Answer
@@ -167,3 +167,15 @@ After each: `srcnew/Brinell.sln`, the CI project list, `docs/architecture/struct
 | Q3 | The six UAT projects into their UI test projects? | **Answered: yes.** UI tests and UAT are tightly connected |
 | Q4 | `Brinell.Recording` into `Brinell.Core` after all? | No |
 | Q5 | Does the Todo sample follow Q3 (three more projects, 98 to 81)? | Yes, as step 8: the sample should show what the framework does |
+
+## What building it found
+
+| Step | Found |
+| --- | --- |
+| 1 | `Brinell.Stride.Tests` was not a test project (usings only): deleted rather than merged. The Shell control's doc was kept and repointed: the control is in `Brinell.Maui` |
+| 4 | `srcnew/` has its own central package versions: `Microsoft.Extensions.FileSystemGlobbing` was added there. The Todo video's preview test pinned a line the Loading fix had changed |
+| 7 | A UAT suite's own page objects can have the names of the UI tests' page objects (Html, WinForms): they stay apart in `Uat/Pages`, and the suite's files name that namespace themselves. Using one set of page objects for both is the next step for those two |
+| 7 | The WPF, WinForms and Stride sample fixtures looked for their app from `AppContext.BaseDirectory`: fixed per AD-025, so those suites run from Presenter |
+| 7 | `Brinell.Stride.UITests` targets `net10.0-windows` now, as its UAT project did |
+| 7 | Maui: the UAT class joined the UI tests' `Maui` collection (one app, and the parallelism tests keep their two collections); the mobile head excludes `Uat/`; Presenter's test project no longer copies `Maui.UITests`' config and features into its own output (`Private="false"`) |
+| 7 | Not from the merges: 2 WPF UI tests and about half the WinForms UI tests fail on this machine before and after (they use real input, and the desktop was in use) |

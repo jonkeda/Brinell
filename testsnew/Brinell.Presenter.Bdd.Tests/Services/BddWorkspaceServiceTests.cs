@@ -195,7 +195,7 @@ public sealed class BddWorkspaceServiceTests
     [Fact]
     public void LoadFolder_ExpectedFailureFile_IsReportedButNotAnError()
     {
-        var folder = RepositoryPath("testsnew", "Brinell.Maui.Uat.Tests");
+        var folder = RepositoryPath("testsnew", "Brinell.Maui.UITests");
 
         using var service = new BddWorkspaceService();
         var result = service.LoadFolder(folder);

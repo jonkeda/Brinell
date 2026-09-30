@@ -9,9 +9,8 @@ modern browser automation.
 - `srcnew/Brinell.Html.Playwright`
 - `srcnew/Brinell.Blazor`
 - `testsnew/Brinell.Blazor.Tests`
-- `testsnew/Brinell.Html.UITests`
-- `testsnew/Brinell.Blazor.UITests`
-- `testsnew/Brinell.Html.UITests`, `testsnew/Brinell.Blazor.UITests`
+- `testsnew/Brinell.Html.UITests` (the UI tests and the UAT suite)
+- `testsnew/Brinell.Blazor.UITests` (the UI tests and the UAT suite)
 - `samples/Todo/tests/Brinell.Samples.Todo.Web.UITests`, `samples/Todo/tests/Brinell.Samples.Todo.Web.Uat`
 
 ## Rules

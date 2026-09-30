@@ -6,8 +6,7 @@ Brinell automates WinForms through FlaUI.
 
 - `srcnew/Brinell.WinForms`
 - `testsnew/Brinell.WinForms.Tests`
-- `testsnew/Brinell.WinForms.UITests`
-- `testsnew/Brinell.WinForms.UITests`
+- `testsnew/Brinell.WinForms.UITests` (the UI tests and the UAT suite)
 - `samples/Brinell.Samples.WinForms.App`
 
 ## Rules

@@ -11,8 +11,11 @@ step in [One Todo UAT, end to end](../../samples/Todo/uat-walkthrough.md).
 
 ## Project Layout
 
+The UAT suite lives in the platform's UI test project, beside the page objects its scenarios
+name: a scenario is only as good as those, and a page object changes for both.
+
 ```text
-testsnew/Brinell.<Platform>.Uat.Tests/
+testsnew/Brinell.<Platform>.UITests/
   uat.config.md
   Features/
     scenario-name.feature.md
@@ -20,11 +23,17 @@ testsnew/Brinell.<Platform>.Uat.Tests/
     known-failure.feature.md
   TestSettings/
     testsettings.json
-  Runtime/
+  Uat/
     <App>UatFixture.cs
-    <App>UatCollection.cs
     <App>UatScenarioTests.cs
+  PageObjects/ ...          the page objects the UI tests and the scenarios share
+  Tests/ ...                the UI tests
 ```
+
+The scenario test class carries `[Trait("Category", "UAT")]`, so `--filter "Category=UAT"` runs
+the suite alone and `--filter "Category!=UAT"` the UI tests alone. Put it in the UI tests' own
+collection when they share one app. A suite may still be a project of its own (the Todo sample's
+is): the layout inside is the same, with its C# under `Runtime/`.
 
 A suite below the UI (the `service` head) names its config `bdd.config.md` instead; it is read the
 same way, and the name says which kind of suite it is.

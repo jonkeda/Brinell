@@ -1014,7 +1014,7 @@ public sealed partial class PresenterShellViewModel : ViewModelBase, IStepRowHos
         if (folder is null)
         {
             StatusSummary = "Sample workspace not found";
-            DiagnosticsText = "Could not find testsnew/Brinell.Maui.Uat.Tests from the application folder.";
+            DiagnosticsText = "Could not find testsnew/Brinell.Maui.UITests from the application folder.";
             WorkspaceSummaryText = "No workspace config";
             return;
         }

@@ -47,7 +47,7 @@ jobs:
       - name: Build
         run: dotnet build srcnew/Brinell.sln -v:minimal /nr:false
 
-      # Unit tests only. The *.UITests and *.Uat.Tests projects launch real apps and
+      # Unit tests only. The *.UITests projects (UI tests and UAT suites) launch real apps and
       # stay local; see AGENTS.md "Match the test scope to the change".
       - name: Unit tests
         shell: pwsh

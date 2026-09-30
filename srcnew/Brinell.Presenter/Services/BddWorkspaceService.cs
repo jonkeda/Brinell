@@ -28,7 +28,7 @@ public sealed class BddWorkspaceService : IBddWorkspaceService, IDisposable
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         while (directory is not null)
         {
-            var candidate = Path.Combine(directory.FullName, "testsnew", "Brinell.Maui.Uat.Tests");
+            var candidate = Path.Combine(directory.FullName, "testsnew", "Brinell.Maui.UITests");
             if (File.Exists(BddFileFormat.FindConfig(candidate)))
             {
                 return candidate;

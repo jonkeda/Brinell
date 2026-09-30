@@ -1,9 +1,10 @@
-using Brinell.Maui.UITests;
 using Brinell.Uat;
 
-namespace Brinell.Maui.Uat.Tests.Runtime;
+namespace Brinell.Maui.UITests.Uat;
 
-[Collection(MauiUatCollection.CollectionName)]
+// The UI tests' collection and its one app: a collection of its own would launch a second app,
+// and take one of the two collections the parallelism tests need running side by side.
+[Collection("Maui")]
 [Trait("Category", "UAT")]
 [Trait("Target", "MAUI")]
 public sealed class MauiUatScenarioTests

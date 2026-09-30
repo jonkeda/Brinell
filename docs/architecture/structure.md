@@ -46,8 +46,9 @@ their own `.slnx` with Visual Studio's MSBuild.
 `testsnew/` follows naming by capability:
 
 - `Brinell.*.Tests` for unit and integration-style checks;
-- `Brinell.*.UITests` for live UI automation;
-- `Brinell.*.Uat.Tests` for markdown scenario execution.
+- `Brinell.*.UITests` for live UI automation: the UI tests, the page objects, and the platform's
+  UAT suite (`uat.config.md`, `Features/`, and `Uat/` with its fixture and scenario test class),
+  which drives the same page objects. A UAT run is the filter `Category=UAT`.
 
 ## Samples
 
@@ -67,8 +68,8 @@ their own `.slnx` with Visual Studio's MSBuild.
 - Add tests to the matching `testsnew/Brinell.*.Tests` project.
 - Add UI coverage to `testsnew/Brinell.*.UITests` only when a live app or
   platform driver is required.
-- Add UAT scenario examples under the matching `testsnew/Brinell.*.Uat.Tests`
-  project.
+- Add UAT scenario examples under `Features/` of the matching
+  `testsnew/Brinell.*.UITests` project.
 - Add test settings code under `srcnew/Brinell.Core/Settings`.
 - Add artifact/reporting code under `srcnew/Brinell.Core/Artifacts` unless the
   behavior is platform-specific.
