@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Brinell.Bdd.Workspace;
 using Brinell.Narrator;
+using Brinell.Scraper.Service;
 
 namespace Brinell.Bdd.LanguageServer;
 
@@ -41,6 +42,14 @@ public sealed class BddMcpServer : IDisposable
         ("find_step_usages", "The steps across every suite that use a C# member: a step definition, a page phrase or a page object's control, as Namespace.Type.Member.", Schema(("symbol", "string", "Namespace.Type.Member; required."))),
         ("record_video", "Records a video script (*.video.md), or the scenario at 'line' of a feature file, on video with its voice-over: builds the suite, runs the scenes with BRINELL_RECORD, and gives the video, its captions (.srt) and its timeline. Needs ffmpeg; says how to get it when it is missing. Takes minutes: one scene is one scenario run.", Schema(("path", "string", "The video script or the feature file; required."), ("line", "integer", "The scenario heading's line, for a feature file."), ("suite", "string", "The suite a linked file runs in; its own when left out."), ("recordingsFolder", "string", "Where the video goes; the suite's TestResults/recordings when left out."), ("voice", "string", "The voice, when the script names none."))),
         ("review_page", "Writes the review page an agent hands over when a feature is done: what it did, what changed, and each recorded video with captions, chapters and every step's result. Give the videos record_video made. Returns the page's path, to open in a browser.", Schema(("title", "string", "What the work was; required."), ("summary", "string", "A paragraph or two on what was done."), ("changes", "array", "What changed, a line each; code spans in backticks are kept."), ("videos", "array", "The videos (.mp4) record_video made; required."), ("path", "string", "Where the page goes; beside the first video when left out."))),
+        ("list_scraped_projects", "The UI test projects the Scraper records into (those with a scraper.config.md): name, folder, platform, start URL, recording sessions.", Schema()),
+        ("start_recording", "Opens the recording browser (a Chromium window the user works in) on a scraped project's start URL, and starts a recording session in the project's Recordings folder. Each page the app moves to is captured once it settles. One recording at a time.", Schema(("project", "string", "The project; the only one when left out."), ("session", "string", "What the session is about, e.g. 'invoices'; required."), ("url", "string", "Where to start; the config's StartUrl when left out."), ("autoCapture", "boolean", "Capture each page the app moves to; true when left out."))),
+        ("capture_page", "Captures the page the recording browser shows now. Without a name, a page that did not change since its last capture is not captured again.", Schema(("name", "string", "What to call the page, e.g. 'Invoice edit'."))),
+        ("stop_recording", "Closes the recording browser. The session stays in the project.", Schema()),
+        ("list_recorded_pages", "A scraped project's recorded pages, by page key (the path and hash route with ids as {id}): name, location and every capture (session, number, when, node count), newest first.", Schema(("project", "string", "The project; the only one when left out."))),
+        ("get_page_snapshot", "A captured page as an outline: one line per node that matters, '#<node> <type> \"text\" name=... role=... #id .class [data-*]', indented by depth; wrappers with nothing of their own are left out. The newest capture unless 'session' is given. Give 'node' for one node's subtree when the page is large.", Schema(("project", "string", "The project; the only one when left out."), ("page", "string", "The page key; required."), ("session", "string", "A session id, for an older capture."), ("number", "integer", "The capture's number in that session."), ("node", "integer", "A node's number: only its subtree."), ("maxLines", "integer", "At most this many lines; 400 when left out."))),
+        ("find_similar_elements", "The nodes, on every recorded page's newest capture, of the same kind as a node: the same type, role, class names (generated ones left out) and child types. A pattern on many pages is a control to make.", Schema(("project", "string", "The project; the only one when left out."), ("page", "string", "The page key; required."), ("node", "integer", "The node's number on the page's newest capture; required."))),
+        ("search_recordings", "The nodes, on every recorded page's newest capture, whose text, accessible name or an attribute value holds the text (ignoring case).", Schema(("project", "string", "The project; the only one when left out."), ("text", "string", "What to look for; required."))),
         ("delete_results", "Deletes old scenario results from every run, for good: of a scenario (the heading at 'line' of 'path'), a feature file ('path') or a suite ('suite'). Only scenario reports and their screenshots; a run left empty goes. Counts only (dryRun) unless 'dryRun' is false.", Schema(("scope", "string", "scenario, file or suite; required."), ("path", "string", "The feature file, for a scenario or a file."), ("line", "integer", "The scenario heading's line, for a scenario."), ("suite", "string", "The suite, for a suite (or the one a linked file is picked in)."), ("dryRun", "boolean", "Only count; true when left out."))),
     ];
 
@@ -91,7 +100,7 @@ public sealed class BddMcpServer : IDisposable
                     ["protocolVersion"] = ProtocolVersion,
                     ["capabilities"] = new JsonObject { ["tools"] = new JsonObject() },
                     ["serverInfo"] = new JsonObject { ["name"] = "brinell-bdd", ["version"] = typeof(BddMcpServer).Assembly.GetName().Version?.ToString() ?? "0" },
-                    ["instructions"] = "Brinell BDD: use list_steps before writing a scenario step, and validate_scenario before proposing a feature file. Never invent a phrase: leave a step that has none as a marked gap. When a feature is done: record its scenarios (record_video) and hand over a review_page.",
+                    ["instructions"] = "Brinell BDD: use list_steps before writing a scenario step, and validate_scenario before proposing a feature file. Never invent a phrase: leave a step that has none as a marked gap. When a feature is done: record its scenarios (record_video) and hand over a review_page. Page objects from recorded pages: list_recorded_pages, get_page_snapshot and find_similar_elements; the user browses in the recording browser, never sign in for them.",
                 },
                 "ping" => new JsonObject(),
                 "tools/list" => new JsonObject
@@ -133,13 +142,35 @@ public sealed class BddMcpServer : IDisposable
                 "delete_results" => DeleteResults(arguments),
                 "record_video" => RecordVideo(arguments),
                 "review_page" => ReviewPage(arguments),
+                "list_scraped_projects" => Scraper(() => _server.ScraperProjects()),
+                "start_recording" => Scraper(() => _server.Scraper.StartRecordingAsync((string?)arguments["project"], Required(arguments, "session"), (string?)arguments["url"], (bool?)arguments["autoCapture"] ?? true).GetAwaiter().GetResult()),
+                "capture_page" => Scraper(() => (object?)_server.Scraper.CapturePageAsync((string?)arguments["name"]).GetAwaiter().GetResult() ?? new { Captured = false, Reason = "The page did not change since its last capture; give a name to capture it anyway." }),
+                "stop_recording" => Scraper(() => (object?)_server.Scraper.StopRecordingAsync().GetAwaiter().GetResult() ?? new { Stopped = false, Reason = "No recording was in progress." }),
+                "list_recorded_pages" => Scraper(() => _server.ScraperPages(new ScraperProjectParams((string?)arguments["project"])) switch { { Problem: { } problem } => throw new ScraperProblem(problem), var pages => pages.Value! }),
+                "get_page_snapshot" => Scraper(() => SnapshotOutline.Render(_server.Scraper.Snapshot((string?)arguments["project"], Required(arguments, "page"), (string?)arguments["session"], (int?)arguments["number"]).Snapshot, (int?)arguments["node"] ?? 0, (int?)arguments["maxLines"] ?? 400)),
+                "find_similar_elements" => Scraper(() => _server.Scraper.Similar((string?)arguments["project"], Required(arguments, "page"), (int?)arguments["node"] ?? throw new ToolProblem("'node' is required."))),
+                "search_recordings" => Scraper(() => _server.Scraper.Search((string?)arguments["project"], Required(arguments, "text"))),
                 _ => throw new McpException(-32602, $"No tool '{name}'. The tools are {string.Join(", ", Tools.Select(tool => tool.Name))}."),
             };
-            return Text(JsonSerializer.Serialize(answer, Json), error: false);
+            // Text (an outline) as it is; anything else as JSON.
+            return Text(answer as string ?? JsonSerializer.Serialize(answer, Json), error: false);
         }
         catch (ToolProblem problem)
         {
             return Text(problem.Message, error: true);
+        }
+    }
+
+    // The Scraper says why it cannot answer as a problem; the agent reads it as the tool's result.
+    private static object Scraper(Func<object> work)
+    {
+        try
+        {
+            return work();
+        }
+        catch (Exception exception) when (exception is ScraperProblem or FormatException or FileNotFoundException or InvalidOperationException or Microsoft.Playwright.PlaywrightException)
+        {
+            throw new ToolProblem(exception.Message);
         }
     }
 

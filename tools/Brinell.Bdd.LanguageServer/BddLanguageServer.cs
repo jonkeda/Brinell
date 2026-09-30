@@ -374,6 +374,7 @@ public sealed partial class BddLanguageServer : IDisposable
     /// <inheritdoc />
     public void Dispose()
     {
+        DisposeScraper();
         lock (_gate)
         {
             foreach (var watcher in _resultsWatchers)
