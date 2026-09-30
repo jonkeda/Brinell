@@ -253,7 +253,7 @@ In rough value order; each is planned when started.
 | Quick fixes and code actions | the `brinell-data validate --fix` fixes (values, and the old file forms: UAT029), Create step definition, Extract and Inline callable step, Rename a callable step. |
 | Views | Step catalog, Pages and Results tool windows; hooks listed with their step-definition classes. |
 | Config and data files | `uat.config.md` / `bdd.config.md` and the apps table, test-data JSON schema. |
-| Copilot | the Brinell MCP server ([scraper-in-extension.md](scraper-in-extension.md)). |
+| Copilot | the Brinell MCP server (with the Scraper's tools, AD-027). |
 | VS Code client | the same server and preview HTML, in a TypeScript client; its Test Explorer on R1's addresses. |
 | Stepping through steps (DAP) | only if R2 turns out not to be enough. |
 | Attach to the app too | for breakpoints in the MAUI app's own code, if the fixture can say its process id. |

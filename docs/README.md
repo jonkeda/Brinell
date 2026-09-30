@@ -50,6 +50,8 @@ invariants behind it - what must stay true when *changing* Brinell - are in
   preview, Test Explorer on the scenarios' addresses
 - [Narrated Recordings](guides/narrated-recordings.md) - record scenarios on video with a voice-over:
   video scripts (`*.video.md`), Record in the IDEs and Presenter, `BRINELL_RECORD`
+- [The Scraper](guides/scraper.md) - record an app's pages into a UI test project and have an
+  agent make page objects and controls from them, from VS Code, Visual Studio or MCP
 - [Test Data](guides/test-data.md) - test sets, the `brinell-data` tool, `TestData` in UAT
   files, typed mock bodies (`BRINELL001`)
 - [Test Settings](guides/settings.md)

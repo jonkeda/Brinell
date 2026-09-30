@@ -3,7 +3,7 @@ using Brinell.Blazor.UITests.TestBase;
 
 namespace Brinell.Blazor.UITests.Tests.Pages;
 
-// The page object the Scraper made from a recording (ScraperEx step 9): its locators find the form.
+// The page object the Scraper made from a recording (AD-027): its locators find the form.
 public sealed class UserFormPageTests : BlazorSampleTestBase
 {
     [Fact]

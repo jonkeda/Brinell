@@ -5,10 +5,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="NSubstitute" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\..\srcnew\Brinell.Scraper\Brinell.Scraper.csproj" />
   </ItemGroup>
 

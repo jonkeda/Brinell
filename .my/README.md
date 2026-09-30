@@ -9,7 +9,7 @@ Deleted topics stay in git history; the last full tree is at
 | Topic | What is open | Status | Updated |
 | --- | --- | --- | --- |
 | [android/](android/plan.md) | Every Android UI failure fixed or explained; TOD.07.15 on an emulator (step 9) | doing: baseline taken | 2026-09-27 |
-| [cleanup/](cleanup/plan.md) | This cleanup: only `Scraper/` is left | nearly done | 2026-09-27 |
+| [cleanup/](cleanup/plan.md) | This cleanup: every step done, `Scraper/` last | done; to close | 2026-09-30 |
 | [communitytoolkit/](communitytoolkit/plan.md) | Android runs of the toolkit controls; the agent template for the next control source | Windows done | 2026-09-27 |
 | [construction/](construction/plan.md) | Exact.Construction's UI test migration onto Brinell | infrastructure in place, Todos not started | 2026-09 |
 | [core/](core/README.md) | One `ICore*` shape for every stack: L2 (busy signal), then the interfaces and bases | draft; L1 done | 2026-09-27 |
@@ -22,14 +22,12 @@ Deleted topics stay in git history; the last full tree is at
 | [uat/tools/visualstudio-inline-preview.md](uat/tools/visualstudio-inline-preview.md) | The BDD preview in the editor, where Visual Studio's Markdown preview is, for feature and step files: a right-hand margin, Visual Studio's preview hidden for them | built, to check in Visual Studio (manual P-1, P-2) | 2026-09-28 |
 | [uat/tools/bdd-step-debugging.md](uat/tools/bdd-step-debugging.md) | Step over, into and out of BDD steps while debugging: Alt+Shift+F10, Alt+Shift+F11, Ctrl+Shift+F11, and a paused bar with buttons in the preview; a one-shot move in the breakpoints file | built (engine, VS, VS Code, AD-022); to try in the IDEs (B-16 to B-20) | 2026-09-29 |
 | [uat/tools/bdd-delete-runs.md](uat/tools/bdd-delete-runs.md) | Deleting old run results for a scenario, a feature file or a project, from the preview, the BDD Explorer and MCP; one server request; manifests rewritten, empty runs removed | design, Q1-Q3 decided | 2026-09-29 |
-| [uat/tools/scraper-in-extension.md](uat/tools/scraper-in-extension.md) | The Scraper as a headless MCP service driven by Copilot from either IDE; draft scenarios from recordings | superseded by [ScraperEx/](ScraperEx/plan.md); deleted with it | 2026-09-30 |
+| [ScraperEx/](ScraperEx/plan.md) | The Scraper in the IDE extensions (AD-027, `docs/guides/scraper.md`): built, the WPF tool removed. Open: the views tried inside VS Code and Visual Studio, Pick by hand, Q8 (the VSIX's 102 MB Playwright driver), recorded actions to tests, a UI Automation source, suggestions on sites without test ids | built; open items in section 13 | 2026-09-30 |
 | [uat/format/](uat/format/plan.md) | Feature files are Markdown: Gherkin only in a ```` ```gherkin ```` block (a step outside one is prose; old files fixed with `--fix`), prose in any Markdown form everywhere else; the parser reads blocks (Markdig); migrate 16 files and the test inputs | plan, Q1-Q4 decided | 2026-09-28 |
 | [uat/manual/](uat/manual/visual-studio-test-plan.md) | Manual test plan for the Visual Studio extension, for a person: setup, preview, run, debug and breakpoints, editing help, quick fixes, config, CodeLens, UAT Explorer, Copilot; answers spike S1-S6 | ready to run | 2026-09-28 |
 | [uat/rename/](uat/rename/plan.md) | Bdd is the main, Uat a specialization: every `Uat*` type and `Brinell.Uat.*` tool project outside Brinell.Uat becomes `Bdd*` (Bdd, Core, Presenter, Todo, Workspace, Preview, LanguageServer, both IDE extensions and their user-facing names); only `UatPlatformsAttribute` stays | done; AD-021 holds it, to delete | 2026-09-28 |
 | [uat/reqnroll-comparison.md](uat/reqnroll-comparison.md) | Reqnroll/SpecFlow vs Brinell.Uat: what to add (hooks, Examples blocks, set diff, Cucumber Messages) and what Brinell has extra | analysis | 2026-09-27 |
 | [uat/rethinking-uat.md](uat/rethinking-uat.md) | UAT for Construction, from user journeys | discussion | 2026-09-20 |
-| [Scraper/](Scraper/) | `tools/Brinell.Scraper`: roadmap, steps, RCAs, UAT runs | the WPF tool; restarted as [ScraperEx/](ScraperEx/plan.md), which deletes this at its end | 2026-09-30 |
-| [ScraperEx/](ScraperEx/plan.md) | The Scraper restarted in the IDE extensions: a headless engine behind the language server, recordings as files in the UI test project, Html and Blazor first, both IDEs; the WPF tool removed at the end | step 0 (spike) done; Q1-Q7 decided | 2026-09-30 |
 
 ## Open items without a topic
 

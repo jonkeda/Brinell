@@ -9,7 +9,6 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
-    <PackageReference Include="Microsoft.Extensions.Logging" />
     <!-- The Html source; moves to a project of its own with the second source (AD-026, R3). -->
     <PackageReference Include="Microsoft.Playwright" />
   </ItemGroup>

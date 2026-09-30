@@ -1,0 +1,98 @@
+# The Scraper
+
+The Scraper records an app's pages into a UI test project and helps an agent (Copilot, Claude) make
+page objects and controls from them. Html and Blazor apps today. The decisions are in
+[AD-027](../../.docs/decisions/ad-027-the-scraper-records-into-the-project-and-calls-no-model.md).
+
+## Make a project scrapeable
+
+Add `scraper.config.md` to the UI test project the page objects go into (one project per app, or
+several for a large app; a project that references another scraped project sees its controls):
+
+```markdown
+# Scraper Config
+
+## App
+
+| Field | Value |
+| --- | --- |
+| Platform | blazor |
+| StartUrl | http://localhost:5180/ |
+| Namespace | MyApp.UITests.PageObjects |
+| Pages | PageObjects |
+| Controls | PageObjects/Controls |
+| Screenshots | false |
+
+## Aliases
+
+| Url |
+| --- |
+| https://myapp.example.be/ |
+
+## Test ids
+
+| Attribute |
+| --- |
+| data-testid |
+| data-automation-id |
+
+## Masks
+
+| Pattern | Replacement |
+| --- | --- |
+| `NL\d{2}[A-Z]{4}\d{10}` | `IBAN` |
+```
+
+- `Platform`: `html` or `blazor` (a Blazor project gets the `Brinell.Blazor` controls suggested).
+- `Aliases`: other hosts of the same app; a page elsewhere (a sign-in provider) is not recorded.
+- `Test ids`: the attributes that are test ids, preferred first.
+- `Masks`: text replaced before anything is written; what a user types is never recorded.
+
+`testsnew/Brinell.Blazor.UITests` is an example: its config, its `Recordings/`, and
+`PageObjects/UserFormPage.cs`, made from them.
+
+## Record
+
+- **VS Code:** **Brinell BDD: Open Scraper** (also on a `scraper.config.md`'s title bar).
+- **Visual Studio:** View, Other Windows, **Scraper**.
+- **An agent:** the MCP tools below.
+
+**Record** opens a Chromium window. Work in it: each page the app moves to is captured once it has
+settled (a hash route and `pushState` count as moves). **Capture** takes the page again (a dialog
+open, a tab chosen); **Pick** lets you click an element to find it in the capture; **Stop** closes
+the window. The window keeps its own login per project, under your local application data.
+
+Recordings go to `Recordings/<date>-<session>/` in the project: `recording.json` and one
+`*.nodes.jsonl` per page. Commit them: they are what the page objects were made from. The browser
+is Playwright's Chromium (`pwsh <an Html test project's output>\playwright.ps1 install chromium`).
+
+## Generate
+
+The view's **Generate…**, **Generate page object** and **Make a control** open the agent's chat
+with the `/brinell-scrape-pages` prompt (Visual Studio puts it on the clipboard). The agent follows
+the [scrape-pages](../../.github/skills/scrape-pages/SKILL.md) skill: controls for the parts that
+repeat, then a page object per page, then the build until it passes. Review the result in your
+usual diff.
+
+Register the MCP server as in [Copilot And Other Agents](visual-studio-preview.md#copilot-and-other-agents).
+Its Scraper tools:
+
+| Tool | Gives or does |
+| --- | --- |
+| `list_scraped_projects` | the projects with a `scraper.config.md` |
+| `start_recording`, `capture_page`, `stop_recording` | a recording (one at a time per server) |
+| `list_recorded_pages` | pages by key (path and hash route, ids as `{id}`), their captures, the page object made for each and whether the page changed since |
+| `get_page_snapshot` | a capture as an outline with node numbers; a node's subtree for a large page |
+| `find_similar_elements`, `search_recordings` | where a kind of node, or a text, occurs |
+| `detect_patterns` | repeated parts (controls to make) and forms, tables, lists, navigation, dialogs, frames |
+| `list_controls`, `match_controls` | the project's page objects and controls, and which occur on a page |
+| `suggest_controls` | per element: a name, the control that fits, and a locator (test id, accessible name or text, stable id, stable class; a position last, marked unstable) |
+| `scraped_header` | the first line of a generated file: what it was made from |
+| `write_code`, `check_code` | write a file into the project (syntax checked first), then build it |
+| `diff_page` | what changed on a page since its page object was made |
+
+## When the app changes
+
+Record the page again. The page list marks a page whose page object was made from an older
+capture; **Changes** (or `diff_page`) lists what was added, removed and changed since, and
+**Update page object** asks the agent to change only that.

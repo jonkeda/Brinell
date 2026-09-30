@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- The Scraper, restarted in the IDE extensions (AD-027, `docs/guides/scraper.md`): `Brinell.Scraper`
+  records an app's pages through Playwright's Chromium into the UI test project
+  (`scraper.config.md`, `Recordings/`), finds repeated parts, suggests controls and locators, diffs
+  captures, writes code and builds it. The language server serves it to a Scraper view in VS Code and
+  Visual Studio and to agents as MCP tools; the `scrape-pages` skill and `/brinell-scrape-pages`
+  prompt say how. `Brinell.Core.Scraping` holds `IScrapeSource` and the snapshot model. The WPF
+  Scraper (`tools/Brinell.Scraper`), its per-user SQLite corpus and its Copilot SDK calls are removed.
 - Packaging of the IDE extensions: a release attaches the Visual Studio VSIX and the VS Code VSIX,
   each with the language server inside and stamped with the tag's version. CI builds both on
   every pull request (`ide-extensions`). The server warns on the suite config (`UATG010`) when the

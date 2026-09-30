@@ -28,7 +28,7 @@ the Visual Studio extension is a second thin client:
 | `Brinell.Bdd.LanguageServer` (.NET, LSP) | shared | shared, unchanged |
 | `Brinell.Uat.Host` (headless runner, JSON over stdio) | shared | shared, unchanged |
 | Preview renderer (markdown-it plugin + CSS) | built-in Markdown preview | our own tool window (section 5) |
-| Brinell MCP server (catalog, validate, scraper tools; see [scraper-in-extension.md](scraper-in-extension.md)) | shared | shared |
+| Brinell MCP server (catalog, validate, and the Scraper's tools: AD-027, `docs/guides/scraper.md`) | shared | shared |
 | Client | TypeScript extension | .NET extension (section 3) |
 
 Any feature added to the server or host lands in both IDEs. The Visual Studio client is kept

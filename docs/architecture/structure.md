@@ -9,7 +9,7 @@ Working directory for paths in this document: Brinell root.
 | `srcnew/` | Active Brinell source projects |
 | `testsnew/` | Active unit, UI, and UAT test projects |
 | `samples/` | Sample applications used by UI tests and demos |
-| `tools/` | Developer tools such as the scraper |
+| `tools/` | Developer tools: the generator, the data validator, the language server and the IDE extensions |
 | `docs/` | Active curated documentation |
 | `docs2/` | Preserved previous documentation tree |
 | `.my/` | Plans for work in flight, indexed in `.my/README.md` |

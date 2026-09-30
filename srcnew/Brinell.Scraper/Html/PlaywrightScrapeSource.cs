@@ -194,7 +194,7 @@ public sealed class PlaywrightScrapeSource : IScrapeSource
     {
         await page.WaitForLoadStateAsync(LoadState.Load).ConfigureAwait(false);
         // An app still fetching its script bundle changes nothing in the page, so the page can look
-        // quiet before it renders (react-admin's demo, step 10): the network first.
+        // quiet before it renders (react-admin's demo does): the network first.
         await TryWaitForNetworkIdleAsync(page).ConfigureAwait(false);
         cancellationToken.ThrowIfCancellationRequested();
         // Not settled within the limit (an animation that never stops): capture what is there.
