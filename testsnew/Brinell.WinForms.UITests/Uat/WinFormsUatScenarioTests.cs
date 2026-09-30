@@ -1,4 +1,4 @@
-namespace Brinell.WinForms.Uat.Tests.Runtime;
+namespace Brinell.WinForms.UITests.Uat;
 
 [Trait("Category", "UAT")]
 [Trait("Target", "WINFORMS")]

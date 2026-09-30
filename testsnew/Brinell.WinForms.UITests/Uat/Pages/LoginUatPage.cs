@@ -1,4 +1,4 @@
-namespace Brinell.WinForms.Uat.Tests.Pages;
+namespace Brinell.WinForms.UITests.Uat.Pages;
 
 [TestPage("Login")]
 [UatName("Login")]

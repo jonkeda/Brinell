@@ -1,6 +1,6 @@
-namespace Brinell.WinForms.Uat.Tests.Runtime;
+namespace Brinell.WinForms.UITests.Uat;
 
-[TestModuleScan(typeof(Pages.LoginUatPage), NamespacePrefix = "Brinell.WinForms.Uat.Tests.Pages")]
+[TestModuleScan(typeof(Pages.LoginUatPage), NamespacePrefix = "Brinell.WinForms.UITests.Uat.Pages")]
 public sealed class WinFormsUatFixture : WinFormsSampleFixture
 {
     public WinFormsUatFixture()
