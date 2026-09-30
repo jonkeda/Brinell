@@ -53,6 +53,11 @@ A workspace is a folder with `uat.config.md` and `.feature.md` scenario files. I
   xUnit runners take the fixture as a type argument and only check the name, so a suite can pass
   in xUnit and still name a fixture Presenter cannot find.
 - **AppPath** is an optional override. The fixture finds its own app.
+- **The suite runs in Presenter's process**, not in a test host. A fixture finds its files (the
+  config, the app, its solution) from its own assembly
+  (`Path.GetDirectoryName(typeof(MyFixture).Assembly.Location)`), never from
+  `AppContext.BaseDirectory`: that is Presenter's folder here. Presenter resolves the suite's
+  assemblies, its native libraries (`runtimes\<rid>\native`) and ASP.NET Core for it.
 
 The **Config** tab edits the file in place: the project, a fixture picker that lists every
 candidate with the reason an unusable one is unusable ("abstract", "no parameterless

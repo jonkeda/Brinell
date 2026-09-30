@@ -8,14 +8,13 @@ namespace Brinell.Samples.Todo.Uat.Runtime;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Before a file's first scenario, <see cref="BeforeFile"/> loads the file's <c>TestData</c> (or
-/// <c>DefaultTestData</c>); <see cref="BddScenarioOrderer"/> keeps files on the same test set
-/// together, so the app restarts once per test set.
+/// Before a file's first scenario, the fixture (<see cref="IUatScenarioLifecycle"/>) loads the
+/// file's <c>TestData</c> (or <c>DefaultTestData</c>); <see cref="BddScenarioOrderer"/> keeps files
+/// on the same test set together, so the app restarts once per test set.
 /// </para>
 /// <para>
-/// Each scenario then gets a clean start through <see cref="BeforeScenario"/>, which calls the
-/// fixture's <c>StartTest</c>: online again, backend reset to the test set's server half, the list
-/// on screen. The device's database is not reset, so scenarios add their own todos and check only
+/// Each scenario then gets a clean start from the fixture's <c>StartTest</c>: online again, backend
+/// reset to the test set's server half, the list on screen. The device's database is not reset, so scenarios add their own todos and check only
 /// those.
 /// </para>
 /// </remarks>
@@ -55,15 +54,6 @@ public sealed class TodoUatScenarioTests : UatScenarioTestBase<TodoUatFixture>
     [MemberData(nameof(ExpectedFailures))]
     public void ExpectedFailure_FailsBinding(string filePath)
         => RunExpectedBindFailureUatFile(filePath, "UATB010", "the folder 'Users'", "Using");
-
-    /// <inheritdoc />
-    protected override void BeforeFile(BddDocument document)
-        => Fixture.UseTestSet(document.Metadata.TryGetValue(BddMetadataFields.TestData, out var name) && name.Length > 0
-            ? name
-            : TodoUatFixture.DefaultTestData);
-
-    /// <inheritdoc />
-    protected override void BeforeScenario(BddBoundScenario scenario) => Fixture.StartTest();
 
     /// <inheritdoc />
     /// <remarks>

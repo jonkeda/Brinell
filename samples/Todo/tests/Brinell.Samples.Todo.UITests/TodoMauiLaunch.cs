@@ -95,7 +95,9 @@ public static class TodoMauiLaunch
             _ => throw new NotSupportedException($"The Todo UI tests run on Windows and Android, not {platform}."),
         };
 
-        var root = new DirectoryInfo(AppContext.BaseDirectory);
+        // From this assembly, not the host: Presenter loads the suite into its own process.
+        var start = Path.GetDirectoryName(typeof(TodoMauiLaunch).Assembly.Location)!;
+        var root = new DirectoryInfo(start);
         while (root is not null && !File.Exists(Path.Combine(root.FullName, "Brinell.Samples.Todo.slnx")))
         {
             root = root.Parent;
@@ -104,7 +106,7 @@ public static class TodoMauiLaunch
         if (root is null)
         {
             throw new DirectoryNotFoundException(
-                $"No folder above '{AppContext.BaseDirectory}' holds Brinell.Samples.Todo.slnx.");
+                $"No folder above '{start}' holds Brinell.Samples.Todo.slnx.");
         }
 
         var bin = Path.Combine(root.FullName, "src", "Brinell.Samples.Todo.App", "bin");

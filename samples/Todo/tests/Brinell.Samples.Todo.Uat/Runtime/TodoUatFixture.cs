@@ -26,7 +26,7 @@ namespace Brinell.Samples.Todo.Uat.Runtime;
 [TestModuleScan(typeof(AppLifecyclePhrases), NamespacePrefix = "Brinell.Samples.Todo.Uat.Phrases")]
 [TestModuleScan(typeof(BackendPhrases), NamespacePrefix = "Brinell.Samples.Todo.TestSupport.Uat")]
 [UatPlatforms(MauiPlatform.Windows, MauiPlatform.Android)]
-public sealed class TodoUatFixture : TodoAppFixture
+public sealed class TodoUatFixture : TodoAppFixture, IUatScenarioLifecycle
 {
     private IServiceScope? _restartScope;
 
@@ -47,6 +47,16 @@ public sealed class TodoUatFixture : TodoAppFixture
 
     /// <inheritdoc />
     protected override void OnAppRestarted() => Composition = CreateComposition();
+
+    /// <inheritdoc />
+    /// <remarks>The file's <c>TestData</c>, or <see cref="DefaultTestData"/>; the app restarts when it changes.</remarks>
+    public void BeforeFile(BddDocument document)
+        => UseTestSet(document.Metadata.TryGetValue(BddMetadataFields.TestData, out var name) && name.Length > 0
+            ? name
+            : DefaultTestData);
+
+    /// <inheritdoc />
+    public void BeforeScenario(BddBoundScenario scenario) => StartTest();
 
     /// <summary>
     /// Points a running scenario at the restarted app: its own scope still resolves pages against
@@ -76,7 +86,8 @@ public sealed class TodoUatFixture : TodoAppFixture
 
     private static string ReadDefaultTestData()
     {
-        var config = BddConfigParser.ParseFile(BddScenarioSource.GetConfigFilePath());
+        // Beside this assembly, not the host's: Presenter loads the suite into its own process.
+        var config = BddConfigParser.ParseFile(BddScenarioSource.GetConfigFilePath(Path.GetDirectoryName(typeof(TodoUatFixture).Assembly.Location)));
         return config.Runtime.TryGetValue(BddConfigFields.DefaultTestData, out var name) && name.Length > 0
             ? name
             : throw new InvalidOperationException($"uat.config.md has no '{BddConfigFields.DefaultTestData}' in its Runtime table.");

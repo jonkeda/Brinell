@@ -1,4 +1,6 @@
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 using Brinell.Uat;
 
@@ -44,6 +46,30 @@ public sealed class BddExecutionService : IBddExecutionService
 
         var workingDirectory = BddWorkspaceConfigInspector.ResolveWorkingDirectory(workspacePath, config);
         var resolver = new BddRuntimeAssemblyResolver(workspacePath, config, workingDirectory);
+        if (TryCreateSession(workspacePath, scenarioFilePath, scenarioName, windowEnvironment, configPath, config, workingDirectory, resolver, out var failure) is { } session)
+        {
+            return session;
+        }
+
+        // Only here, with the failure's own frames gone: the exception holds the suite's types,
+        // and unloading while it lives leaves the suite's files locked until Presenter closes.
+        resolver.Dispose();
+        throw new InvalidOperationException(failure);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static PresenterUatExecutionSession? TryCreateSession(
+        string workspacePath,
+        string scenarioFilePath,
+        string scenarioName,
+        IReadOnlyDictionary<string, string> windowEnvironment,
+        string configPath,
+        BddConfig config,
+        string? workingDirectory,
+        BddRuntimeAssemblyResolver resolver,
+        out string failure)
+    {
+        failure = string.Empty;
         DisposableGroup? environment = null;
         object? fixture = null;
         IDisposable? executionScope = null;
@@ -57,6 +83,15 @@ public sealed class BddExecutionService : IBddExecutionService
 
             var pagesAssembly = resolver.LoadRequired(ResolvePagesAssembly(workspacePath, config));
             fixture = CreateFixture(config, pagesAssembly);
+
+            // As the suite's test class does, and before binding: it may restart the app on the
+            // file's test set, and binding reads the fixture's composition.
+            var lifecycle = fixture as IUatScenarioLifecycle;
+            if (lifecycle is not null && BddMarkdownParser.ParseFile(scenarioFilePath).Document is { } document)
+            {
+                lifecycle.BeforeFile(document);
+            }
+
             // The session does not place the app; Presenter does, once its window is open.
             var autPlacementReport = "AUT placement:" + Environment.NewLine + "Result: not supported";
 
@@ -86,6 +121,7 @@ public sealed class BddExecutionService : IBddExecutionService
                     $"Scenario '{scenarioName}' was not found in {scenarioFilePath}.");
             }
 
+            lifecycle?.BeforeScenario(scenario);
             var runner = new BddScenarioRunner();
             runtime.ConfigureContext(runner.Context);
 
@@ -113,14 +149,35 @@ public sealed class BddExecutionService : IBddExecutionService
                 RecordingTarget = () => UatRecording.TargetOf(fixture),
             };
         }
-        catch
+        catch (Exception ex)
         {
             executionScope?.Dispose();
             (fixture as IDisposable)?.Dispose();
             environment?.Dispose();
-            resolver.Dispose();
-            throw;
+            if (ex is OperationCanceledException)
+            {
+                resolver.Dispose();
+                throw;
+            }
+
+            failure = Describe(ex);
+            return null;
         }
+    }
+
+    // Every message of the chain once, without reflection's own wrapper.
+    private static string Describe(Exception exception)
+    {
+        List<string> messages = [];
+        for (var current = exception; current is not null; current = current.InnerException)
+        {
+            if (current is not TargetInvocationException && !messages.Contains(current.Message, StringComparer.Ordinal))
+            {
+                messages.Add(current.Message);
+            }
+        }
+
+        return messages.Count == 0 ? exception.Message : string.Join(Environment.NewLine, messages);
     }
 
     private static void ValidateConfig(BddConfig config, string configPath)
@@ -244,6 +301,7 @@ public sealed class BddExecutionService : IBddExecutionService
 internal sealed class BddRuntimeAssemblyResolver : IDisposable
 {
     private readonly Func<AssemblyLoadContext, AssemblyName, Assembly?> _handler;
+    private readonly Func<Assembly, string, IntPtr> _nativeHandler;
     private readonly IReadOnlyList<string> _probeDirectories;
     private readonly BddSessionLoadContext _sessionContext;
     private bool _disposed;
@@ -258,6 +316,11 @@ internal sealed class BddRuntimeAssemblyResolver : IDisposable
         _sessionContext = new BddSessionLoadContext(ResolveAssemblyPath);
         _handler = ResolveAssembly;
         AssemblyLoadContext.Default.Resolving += _handler;
+
+        // Native libraries too (e_sqlite3): the host's folder has none of the suite's runtimes\<rid>\native.
+        _nativeHandler = ResolveNativeLibrary;
+        AssemblyLoadContext.Default.ResolvingUnmanagedDll += _nativeHandler;
+        _sessionContext.ResolvingUnmanagedDll += _nativeHandler;
     }
 
     private string WorkspacePath { get; }
@@ -295,6 +358,8 @@ internal sealed class BddRuntimeAssemblyResolver : IDisposable
         }
 
         AssemblyLoadContext.Default.Resolving -= _handler;
+        AssemblyLoadContext.Default.ResolvingUnmanagedDll -= _nativeHandler;
+        _sessionContext.ResolvingUnmanagedDll -= _nativeHandler;
         _sessionContext.Unload();
         _disposed = true;
 
@@ -312,6 +377,27 @@ internal sealed class BddRuntimeAssemblyResolver : IDisposable
         var fileName = assemblyName.Name + ".dll";
         var path = ResolveAssemblyPath(fileName);
         return path is null ? null : context.LoadFromAssemblyPath(path);
+    }
+
+    private IntPtr ResolveNativeLibrary(Assembly assembly, string name)
+    {
+        var fileName = name.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) ? name : name + ".dll";
+        var native = Path.Combine("runtimes", "win-" + RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant(), "native");
+        var directories = string.IsNullOrEmpty(assembly.Location)
+            ? _probeDirectories
+            : _probeDirectories.Prepend(Path.GetDirectoryName(assembly.Location)!);
+        foreach (var directory in directories)
+        {
+            foreach (var candidate in new[] { Path.Combine(directory, native, fileName), Path.Combine(directory, fileName) })
+            {
+                if (File.Exists(candidate))
+                {
+                    return NativeLibrary.Load(candidate);
+                }
+            }
+        }
+
+        return IntPtr.Zero;
     }
 
     private string? ResolveAssemblyPath(string fileName)
@@ -351,11 +437,6 @@ internal sealed class BddRuntimeAssemblyResolver : IDisposable
             directories.Add(workingDirectory);
         }
 
-        foreach (var sharedFrameworkDirectory in GetSharedFrameworkDirectories())
-        {
-            directories.Add(sharedFrameworkDirectory);
-        }
-
         foreach (var registration in config.Assemblies)
         {
             var resolvedPath = BddWorkspaceConfigInspector.ResolveAssemblyPath(workspacePath, registration.Assembly);
@@ -376,25 +457,47 @@ internal sealed class BddRuntimeAssemblyResolver : IDisposable
             }
         }
 
+        // Last: what the suite ships wins over the shared framework's copy.
+        foreach (var sharedFrameworkDirectory in GetSharedFrameworkDirectories())
+        {
+            directories.Add(sharedFrameworkDirectory);
+        }
+
         return directories.Where(Directory.Exists).ToArray();
     }
 
+    // The shared frameworks beside the runtime's own (ASP.NET Core for a suite with a mock server),
+    // each at the running runtime's version, or its newest of the same major. They load into the
+    // session's context: in the host, ASP.NET Core loads a second copy of the suite's assemblies by name.
     private static IEnumerable<string> GetSharedFrameworkDirectories()
     {
-        var coreLibraryDirectory = Path.GetDirectoryName(typeof(object).Assembly.Location);
-        var sharedDirectory = coreLibraryDirectory is null
+        var runtimeDirectory = Path.GetDirectoryName(typeof(object).Assembly.Location);
+        var sharedDirectory = runtimeDirectory is null
             ? null
-            : Directory.GetParent(coreLibraryDirectory)?.FullName;
+            : Directory.GetParent(runtimeDirectory)?.Parent?.FullName;
         if (sharedDirectory is null || !Directory.Exists(sharedDirectory))
         {
             yield break;
         }
 
+        var running = Path.GetFileName(runtimeDirectory)!;
         foreach (var frameworkDirectory in Directory.EnumerateDirectories(sharedDirectory))
         {
-            foreach (var versionDirectory in Directory.EnumerateDirectories(frameworkDirectory))
+            var exact = Path.Combine(frameworkDirectory, running);
+            if (Directory.Exists(exact))
             {
-                yield return versionDirectory;
+                yield return exact;
+                continue;
+            }
+
+            var newest = Directory.EnumerateDirectories(frameworkDirectory)
+                .Select(directory => (Directory: directory, Version: Version.TryParse(Path.GetFileName(directory), out var version) ? version : null))
+                .Where(candidate => candidate.Version?.Major == Environment.Version.Major)
+                .OrderByDescending(candidate => candidate.Version)
+                .FirstOrDefault();
+            if (newest.Directory is not null)
+            {
+                yield return newest.Directory;
             }
         }
     }

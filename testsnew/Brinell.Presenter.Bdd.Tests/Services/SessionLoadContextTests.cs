@@ -81,6 +81,72 @@ public sealed class SessionLoadContextTests
         }
     }
 
+    [Fact(Timeout = 120000)]
+    public async Task Session_ReleasesThePagesAssemblyWhenItFailsToStart()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "BrinellSessionUnload", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        var pages = Path.Combine(root, "Brinell.Probe.Pages.dll");
+        File.Copy(typeof(SessionLoadContextTests).Assembly.Location, pages);
+
+        try
+        {
+            File.WriteAllText(
+                Path.Combine(root, "uat.config.md"),
+                $$"""
+                # UAT Config
+
+                ## Runtime
+
+                | Field | Value |
+                | --- | --- |
+                | Target | WPF |
+                | Fixture | FailingProbeFixture |
+
+                ## Assemblies
+
+                | Kind | Assembly |
+                | --- | --- |
+                | Pages | {{Path.GetFileName(pages)}} |
+                """);
+
+            var scenarioPath = Path.Combine(root, "unload.feature.md");
+            File.WriteAllText(
+                scenarioPath,
+                """
+                # Feature: Unload
+
+                ## Scenario: Session fails to start
+
+                ```gherkin
+                Given the probe is ready
+                ```
+                """);
+
+            var message = await StartFailureAsync(root, scenarioPath);
+
+            Assert.Contains(FailingProbeFixture.Reason, message, StringComparison.Ordinal);
+            Assert.True(
+                CanOpenForWrite(pages),
+                "The Pages assembly is still locked after the session failed to start, so the next build would fail.");
+        }
+        finally
+        {
+            TryDelete(root);
+        }
+    }
+
+    // Only the message leaves: a test that held the exception would hold the suite's types itself.
+    private static async Task<string> StartFailureAsync(string root, string scenarioPath)
+    {
+        var failure = await Assert.ThrowsAnyAsync<Exception>(() => new BddExecutionService().CreateSessionAsync(
+            root,
+            scenarioPath,
+            "Session fails to start",
+            CancellationToken.None));
+        return failure.Message;
+    }
+
     private static bool CanOpenForWrite(string path)
     {
         try
@@ -114,4 +180,20 @@ public sealed class UnloadProbeFixture
     /// <summary>The one phrase the probe scenario uses.</summary>
     [BddGiven("the probe is ready")]
     public bool Ready() => true;
+}
+
+/// <summary>A fixture whose type cannot be initialized, as one that reads a missing file when it loads.</summary>
+public sealed class FailingProbeFixture
+{
+    /// <summary>What the failure says.</summary>
+    public const string Reason = "The probe fixture cannot start.";
+
+    private static readonly string Setting;
+
+    static FailingProbeFixture() => Setting = Fail();
+
+    /// <summary>What the fixture read when it loaded.</summary>
+    public string Read => Setting;
+
+    private static string Fail() => throw new InvalidOperationException(Reason);
 }

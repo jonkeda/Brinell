@@ -54,8 +54,11 @@ public abstract class UatScenarioTestBase<TFixture>
         context.SetSettings(ResolveScenarioSettings(scenario, runtime));
     }
 
+    /// <summary>Called before each scenario; by default the fixture's <see cref="IUatScenarioLifecycle"/>, when it has one.</summary>
+    /// <param name="scenario">The scenario about to run.</param>
     protected virtual void BeforeScenario(BddBoundScenario scenario)
     {
+        (Fixture as IUatScenarioLifecycle)?.BeforeScenario(scenario);
     }
 
     protected virtual string EvidenceTestClassName => GetType().Name;
@@ -103,11 +106,13 @@ public abstract class UatScenarioTestBase<TFixture>
 
     /// <summary>
     /// Called before the first scenario of a file runs, and again whenever the file changes: the
-    /// place to load what the file's metadata asks for, such as its <c>TestData</c>.
+    /// place to load what the file's metadata asks for, such as its <c>TestData</c>. By default the
+    /// fixture's <see cref="IUatScenarioLifecycle"/>, when it has one.
     /// </summary>
     /// <param name="document">The file, as parsed.</param>
     protected virtual void BeforeFile(BddDocument document)
     {
+        (Fixture as IUatScenarioLifecycle)?.BeforeFile(document);
     }
 
     protected async Task RunUatFileAsync(
